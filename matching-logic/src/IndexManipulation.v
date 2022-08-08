@@ -14,6 +14,7 @@ From MatchingLogic.Utils Require Import stdpp_ext extralibrary.
 From MatchingLogic Require Import Syntax.
 
 Import MatchingLogic.Syntax.Notations.
+Import MatchingLogic.Substitution.Notations.
 
 Section index_manipulation.
   Context {Σ : Signature}.
@@ -150,6 +151,115 @@ Section index_manipulation.
     * specialize (IHφ (S dbi) (S dbi2) ψ more ltac:(lia) Hwf). simpl in IHφ.
       rewrite -> IHφ; auto.
   Qed.
+
+
+(** NESTING AND QUANTIFICATION **)
+
+  Lemma nest_ex_gt_evar_quantify : forall φ dbi dbi2 x more, dbi >= dbi2 ->
+     evar_quantify x (dbi + more) (nest_ex_aux dbi2 more φ) = nest_ex_aux dbi2 more (evar_quantify x dbi φ).
+  Proof.
+    induction φ; intros dbi dbi2 x' more Hgt; cbn; auto.
+    * case_match; auto; simpl; try case_match; subst; try lia; auto.
+    * rewrite -> IHφ1, -> IHφ2; auto.
+    * rewrite -> IHφ1, -> IHφ2; auto.
+    * specialize (IHφ (S dbi) (S dbi2) x' more ltac:(lia)). simpl in IHφ.
+      rewrite -> IHφ; auto.
+    * rewrite -> IHφ; auto.
+  Qed.
+
+  Lemma nest_mu_gt_svar_quantify : forall φ dbi dbi2 x more, dbi >= dbi2 ->
+     svar_quantify x (dbi + more) (nest_mu_aux dbi2 more φ) = nest_mu_aux dbi2 more (svar_quantify x dbi φ).
+  Proof.
+    induction φ; intros dbi dbi2 x' more Hgt; cbn; auto.
+    * case_match; auto; simpl; try case_match; subst; try lia; auto.
+    * rewrite -> IHφ1, -> IHφ2; auto.
+    * rewrite -> IHφ1, -> IHφ2; auto.
+    * rewrite -> IHφ; auto.
+    * specialize (IHφ (S dbi) (S dbi2) x' more ltac:(lia)). simpl in IHφ.
+      rewrite -> IHφ; auto.
+  Qed.
+
+  Lemma nest_mu_evar_quantify : forall φ dbi dbi2 x more,
+     evar_quantify x dbi (nest_mu_aux dbi2 more φ) = nest_mu_aux dbi2 more (evar_quantify x dbi φ).
+  Proof.
+    induction φ; intros dbi dbi2 x' more; cbn; auto.
+    * case_match; auto; simpl; try case_match; subst; try lia; auto.
+    * rewrite -> IHφ1, -> IHφ2; auto.
+    * rewrite -> IHφ1, -> IHφ2; auto.
+    * rewrite -> IHφ; auto.
+    * rewrite -> IHφ; auto.
+  Qed.
+
+  Lemma nest_ex_svar_quantify : forall φ dbi dbi2 x more,
+     svar_quantify x dbi (nest_ex_aux dbi2 more φ) = nest_ex_aux dbi2 more (svar_quantify x dbi φ).
+  Proof.
+    induction φ; intros dbi dbi2 x' more; cbn; auto.
+    * case_match; auto; simpl; try case_match; subst; try lia; auto.
+    * rewrite -> IHφ1, -> IHφ2; auto.
+    * rewrite -> IHφ1, -> IHφ2; auto.
+    * rewrite -> IHφ; auto.
+    * rewrite -> IHφ; auto.
+  Qed.
+
+(** NESTING AND FREE VARIABLE SUBSTITUTION **)
+
+  Lemma nest_ex_free_evar_subst : forall φ dbi x more ψ,
+     well_formed_closed_ex_aux ψ dbi ->
+     (nest_ex_aux dbi more φ).[[evar: x ↦ ψ]] = 
+     nest_ex_aux dbi more (φ.[[evar: x ↦ ψ]]).
+  Proof.
+    induction φ; intros dbi x' more ψ Hwf; cbn; auto.
+    * case_match; auto; simpl; try case_match; subst; try lia; auto.
+      now rewrite nest_ex_aux_wfcex.
+    * rewrite -> IHφ1, -> IHφ2; auto.
+    * rewrite -> IHφ1, -> IHφ2; auto.
+    * rewrite -> IHφ; auto. eapply well_formed_closed_ex_aux_ind. 2: eassumption. lia.
+    * rewrite -> IHφ; auto.
+  Qed.
+
+  Lemma nest_mu_free_evar_subst : forall φ dbi x more ψ,
+     well_formed_closed_mu_aux ψ dbi ->
+     (nest_mu_aux dbi more φ).[[evar: x ↦ ψ]] = 
+     nest_mu_aux dbi more (φ.[[evar: x ↦ ψ]]).
+  Proof.
+    induction φ; intros dbi x' more ψ Hwf; cbn; auto.
+    * case_match; auto; simpl; try case_match; subst; try lia; auto.
+      now rewrite nest_mu_aux_wfcmu.
+    * rewrite -> IHφ1, -> IHφ2; auto.
+    * rewrite -> IHφ1, -> IHφ2; auto.
+    * rewrite -> IHφ; auto.
+    * rewrite -> IHφ; auto. eapply well_formed_closed_mu_aux_ind. 2: eassumption. lia.
+  Qed.
+
+  Lemma nest_ex_free_svar_subst : forall φ dbi X more ψ,
+     well_formed_closed_ex_aux ψ dbi ->
+     (nest_ex_aux dbi more φ).[[svar: X ↦ ψ]] = 
+     nest_ex_aux dbi more (φ.[[svar: X ↦ ψ]]).
+  Proof.
+    induction φ; intros dbi x' more ψ Hwf; cbn; auto.
+    * case_match; auto; simpl; try case_match; subst; try lia; auto.
+      now rewrite nest_ex_aux_wfcex.
+    * rewrite -> IHφ1, -> IHφ2; auto.
+    * rewrite -> IHφ1, -> IHφ2; auto.
+    * rewrite -> IHφ; auto. eapply well_formed_closed_ex_aux_ind. 2: eassumption. lia.
+    * rewrite -> IHφ; auto.
+  Qed.
+
+  Lemma nest_mu_free_svar_subst : forall φ dbi X more ψ,
+     well_formed_closed_mu_aux ψ dbi ->
+     (nest_mu_aux dbi more φ).[[svar: X ↦ ψ]] = 
+     nest_mu_aux dbi more (φ.[[svar: X ↦ ψ]]).
+  Proof.
+    induction φ; intros dbi x' more ψ Hwf; cbn; auto.
+    * case_match; auto; simpl; try case_match; subst; try lia; auto.
+      now rewrite nest_mu_aux_wfcmu.
+    * rewrite -> IHφ1, -> IHφ2; auto.
+    * rewrite -> IHφ1, -> IHφ2; auto.
+    * rewrite -> IHφ; auto.
+    * rewrite -> IHφ; auto. eapply well_formed_closed_mu_aux_ind. 2: eassumption. lia.
+  Qed.
+
+(** ******* **)
 
   Lemma nest_ex_same_general : forall φ dbi ψ more,
      forall x,  x >= dbi -> x < dbi + more -> 

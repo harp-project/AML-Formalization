@@ -26,6 +26,7 @@ From stdpp Require Import base fin_sets sets propset proof_irrel option list coG
 Import extralibrary.
 
 Import MatchingLogic.Syntax.Notations.
+Import MatchingLogic.Substitution.Notations.
 Import MatchingLogic.DerivedOperators_Syntax.Notations.
 Import MatchingLogic.Syntax.BoundVarSugar.
 Import MatchingLogic.ProofSystem.Notations.

@@ -14,6 +14,7 @@ From MatchingLogic Require Import Syntax DerivedOperators_Syntax Utils.extralibr
 Require Import MatchingLogic.Theories.Definedness_Syntax.
 
 Import MatchingLogic.Syntax.Notations.
+Import MatchingLogic.Substitution.Notations.
 Import MatchingLogic.Syntax.BoundVarSugar.
 Import MatchingLogic.IndexManipulation.
 Import MatchingLogic.DerivedOperators_Syntax.Notations.
@@ -63,6 +64,10 @@ Section sorts.
     {| unary_bevar_subst := bevar_subst_inhabitant_set ;
        unary_bsvar_subst := bsvar_subst_inhabitant_set ;
        unary_wf := ltac:(wf_auto2) ;
+       unary_free_evar_subst := ltac:(reflexivity) ;
+       unary_free_svar_subst := ltac:(reflexivity) ;
+       unary_evar_quantify := ltac:(reflexivity) ;
+       unary_svar_quantify := ltac:(reflexivity) ;
     |}.
 
   Definition patt_sorted_neg (sort phi : Pattern) : Pattern :=
@@ -84,6 +89,10 @@ Section sorts.
     {| binary_bevar_subst := bevar_subst_sorted_neg ;
        binary_bsvar_subst := bsvar_subst_sorted_neg ;
        binary_wf := ltac:(wf_auto2) ;
+       binary_free_evar_subst := ltac:(reflexivity) ;
+       binary_free_svar_subst := ltac:(reflexivity) ;
+       binary_evar_quantify := ltac:(reflexivity) ;
+       binary_svar_quantify := ltac:(reflexivity) ;
     |}.
 
   Definition patt_forall_of_sort (sort phi : Pattern) : Pattern :=
@@ -116,6 +125,57 @@ Section sorts.
     reflexivity.
   Qed.
 
+  Lemma evar_quantify_forall_of_sort s ψ x ϕ :
+    free_evar_subst (all s , ϕ) ψ x = all (free_evar_subst s (nest_ex ψ) x) , (free_evar_subst ϕ ψ x).
+  Proof.
+    unfold patt_forall_of_sort.
+    mlSimpl.
+    unfold nest_ex.
+    simpl. unfold nest_ex. replace (S db) with (db + 1) by lia.
+    rewrite nest_ex_gt_evar_quantify; auto. lia.
+  Qed.
+
+  Lemma svar_quantify_forall_of_sort s x db ϕ :
+    svar_quantify x db (all s , ϕ) = all (svar_quantify x db s) , (svar_quantify x db ϕ).
+  Proof.
+    unfold patt_exists_of_sort.
+    repeat (rewrite simpl_bevar_subst';[assumption|]).
+    unfold nest_ex.
+    simpl. unfold nest_ex. replace (S db) with (db + 1) by lia.
+    rewrite nest_ex_svar_quantify; auto.
+  Qed.
+
+  Lemma evar_quantify_forall_of_sort s x db ϕ :
+    evar_quantify x db (all s , ϕ) = all (evar_quantify x db s) , (evar_quantify x (S db) ϕ).
+  Proof.
+    unfold patt_forall_of_sort.
+    repeat (rewrite simpl_bevar_subst';[assumption|]).
+    unfold nest_ex.
+    simpl. unfold nest_ex. replace (S db) with (db + 1) by lia.
+    rewrite nest_ex_gt_evar_quantify; auto. lia.
+  Qed.
+
+  Lemma svar_quantify_forall_of_sort s x db ϕ :
+    svar_quantify x db (all s , ϕ) = all (svar_quantify x db s) , (svar_quantify x db ϕ).
+  Proof.
+    unfold patt_exists_of_sort.
+    repeat (rewrite simpl_bevar_subst';[assumption|]).
+    unfold nest_ex.
+    simpl. unfold nest_ex. replace (S db) with (db + 1) by lia.
+    rewrite nest_ex_svar_quantify; auto.
+  Qed.
+
+  #[global]
+   Instance Binder_forall_of_sort s : Binder (patt_forall_of_sort s) _ _ _ _ _ _ :=
+    {|
+       binder_bevar_subst := bevar_subst_forall_of_sort s ;
+       binder_bsvar_subst := bsvar_subst_forall_of_sort s ;
+       binder_free_evar_subst :=  ;
+       binder_free_svar_subst :=  ;
+       binder_evar_quantify := evar_quantify_forall_of_sort ;
+       binder_svar_quantify := svar_quantify_forall_of_sort ;
+    |}.
+
   Lemma bevar_subst_exists_of_sort s ψ (wfcψ : well_formed_closed ψ) db ϕ :
     (ex s , ϕ).[evar: db ↦ ψ] = ex s.[evar: db ↦ ψ] , ϕ.[evar: S db ↦ ψ].
   Proof.
@@ -137,18 +197,35 @@ Section sorts.
     reflexivity.
   Qed.
 
-  #[global]
-   Instance EBinder_forall_of_sort s : EBinder (patt_forall_of_sort s) _ _:=
-    {|
-    ebinder_bevar_subst := bevar_subst_forall_of_sort s ;
-    ebinder_bsvar_subst := bsvar_subst_forall_of_sort s ;
-    |}.
+  Lemma evar_quantify_exists_of_sort s x db ϕ :
+    evar_quantify x db (ex s , ϕ) = ex (evar_quantify x db s) , (evar_quantify x (S db) ϕ).
+  Proof.
+    unfold patt_exists_of_sort.
+    repeat (rewrite simpl_bevar_subst';[assumption|]).
+    unfold nest_ex.
+    simpl. unfold nest_ex. replace (S db) with (db + 1) by lia.
+    rewrite nest_ex_gt_evar_quantify; auto. lia.
+  Qed.
+
+  Lemma svar_quantify_exists_of_sort s x db ϕ :
+    svar_quantify x db (ex s , ϕ) = ex (svar_quantify x db s) , (svar_quantify x db ϕ).
+  Proof.
+    unfold patt_exists_of_sort.
+    repeat (rewrite simpl_bevar_subst';[assumption|]).
+    unfold nest_ex.
+    simpl. unfold nest_ex. replace (S db) with (db + 1) by lia.
+    rewrite nest_ex_svar_quantify; auto.
+  Qed.
 
   #[global]
-   Instance EBinder_exists_of_sort s : EBinder (patt_exists_of_sort s) _ _:=
+   Instance Binder_exists_of_sort s : Binder (patt_exists_of_sort s) _ _ _ _ _ _ :=
     {|
-    ebinder_bevar_subst := bevar_subst_exists_of_sort s ;
-    ebinder_bsvar_subst := bsvar_subst_exists_of_sort s ;
+       binder_bevar_subst := bevar_subst_exists_of_sort s ;
+       binder_bsvar_subst := bsvar_subst_exists_of_sort s ;
+       binder_free_evar_subst :=  ;
+       binder_free_svar_subst :=  ;
+       binder_evar_quantify :=  ;
+       binder_svar_quantify :=  ;
     |}.
   
   (* TODO patt_forall_of_sort and patt_exists_of_sorts are duals - a lemma *)

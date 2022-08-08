@@ -175,50 +175,12 @@ Import MatchingLogic.Syntax.Notations.
 (**********************************************************************************)
 (********************FREE ELEMENT VARIABLE SUBSTITUTION****************************)
 
-    Lemma free_evar_subst_not ψ x ϕ :
-      free_evar_subst (patt_not ϕ) ψ x = patt_not (free_evar_subst ϕ ψ x).
-    Proof. simpl. unfold patt_not. reflexivity. Qed.
-
-    Lemma free_evar_subst_or ψ x ϕ₁ ϕ₂ :
-      free_evar_subst (patt_or ϕ₁ ϕ₂) ψ x = patt_or (free_evar_subst ϕ₁ ψ x) (free_evar_subst ϕ₂ ψ x).
-    Proof. simpl. unfold patt_or. unfold patt_not. reflexivity. Qed.
-
-    Lemma free_evar_subst_and ψ x ϕ₁ ϕ₂ :
-      free_evar_subst (patt_and ϕ₁ ϕ₂) ψ x = patt_and (free_evar_subst ϕ₁ ψ x) (free_evar_subst ϕ₂ ψ x).
-    Proof. simpl. unfold patt_and. unfold patt_not. reflexivity. Qed.
-
-    Lemma free_evar_subst_iff ψ x ϕ₁ ϕ₂ :
-      free_evar_subst (patt_iff ϕ₁ ϕ₂) ψ x = patt_iff (free_evar_subst ϕ₁ ψ x) (free_evar_subst ϕ₂ ψ x).
-    Proof. simpl. unfold patt_iff. unfold patt_and. unfold patt_not. reflexivity. Qed.
-
-    Lemma free_evar_subst_top ψ x : free_evar_subst patt_top ψ x = patt_top.
-    Proof. simpl. unfold patt_top. unfold patt_not. reflexivity. Qed.
-
     Lemma free_evar_subst_forall ψ x ϕ :
       free_evar_subst (patt_forall ϕ) ψ x = patt_forall (free_evar_subst ϕ ψ x).
     Proof. simpl. unfold patt_forall. unfold patt_not. reflexivity. Qed.
 
 (******************************************************************************)
 (********************FREE SET VARIABLE SUBSTITUTION****************************)
-
-    Lemma free_svar_subst_not ψ X ϕ :
-      free_svar_subst (patt_not ϕ) ψ X = patt_not (free_svar_subst ϕ ψ X).
-    Proof. simpl. unfold patt_not. reflexivity. Qed.
-
-    Lemma free_svar_subst_or ψ X ϕ₁ ϕ₂ :
-      free_svar_subst (patt_or ϕ₁ ϕ₂) ψ X = patt_or (free_svar_subst ϕ₁ ψ X) (free_svar_subst ϕ₂ ψ X).
-    Proof. simpl. unfold patt_or. unfold patt_not. reflexivity. Qed.
-
-    Lemma free_svar_subst_and ψ X ϕ₁ ϕ₂ :
-      free_svar_subst (patt_and ϕ₁ ϕ₂) ψ X = patt_and (free_svar_subst ϕ₁ ψ X) (free_svar_subst ϕ₂ ψ X).
-    Proof. simpl. unfold patt_and. unfold patt_not. reflexivity. Qed.
-
-    Lemma free_svar_subst_iff ψ X ϕ₁ ϕ₂ :
-      free_svar_subst (patt_iff ϕ₁ ϕ₂) ψ X = patt_iff (free_svar_subst ϕ₁ ψ X) (free_svar_subst ϕ₂ ψ X).
-    Proof. simpl. unfold patt_iff. unfold patt_and. unfold patt_not. reflexivity. Qed.
-
-    Lemma free_svar_subst_top ψ X : free_svar_subst patt_top ψ X = patt_top.
-    Proof. simpl. unfold patt_top. unfold patt_not. reflexivity. Qed.
 
     Lemma free_svar_subst_forall ψ X ϕ :
       free_svar_subst (patt_forall ϕ) ψ X = patt_forall (free_svar_subst ϕ ψ X).
@@ -227,25 +189,6 @@ Import MatchingLogic.Syntax.Notations.
 (*******************************************************************************)
 (********************ELEMENT VARIABLE QUANTIFICATION****************************)
 
-    Lemma evar_quantify_not n x ϕ :
-      evar_quantify x n (patt_not ϕ) = patt_not (evar_quantify x n ϕ).
-    Proof. simpl. unfold patt_not. reflexivity. Qed.
-
-    Lemma evar_quantify_or n x ϕ₁ ϕ₂ :
-      evar_quantify x n (patt_or ϕ₁ ϕ₂) = patt_or (evar_quantify x n ϕ₁) (evar_quantify x n ϕ₂).
-    Proof. simpl. unfold patt_or. unfold patt_not. reflexivity. Qed.
-
-    Lemma evar_quantify_and n x ϕ₁ ϕ₂ :
-      evar_quantify x n (patt_and ϕ₁ ϕ₂) = patt_and (evar_quantify x n ϕ₁) (evar_quantify x n ϕ₂).
-    Proof. simpl. unfold patt_and. unfold patt_not. reflexivity. Qed.
-
-    Lemma evar_quantify_iff n x ϕ₁ ϕ₂ :
-      evar_quantify x n (patt_iff ϕ₁ ϕ₂) = patt_iff (evar_quantify x n ϕ₁) (evar_quantify x n ϕ₂).
-    Proof. simpl. unfold patt_iff. unfold patt_and. unfold patt_not. reflexivity. Qed.
-
-    Lemma evar_quantify_top n x : evar_quantify x n patt_top = patt_top.
-    Proof. simpl. unfold patt_top. unfold patt_not. reflexivity. Qed.
-
     Lemma evar_quantify_forall n x ϕ :
       evar_quantify x n (patt_forall ϕ) = patt_forall (evar_quantify x (S n) ϕ).
     Proof. simpl. unfold patt_forall. unfold patt_not. reflexivity. Qed.
@@ -253,83 +196,19 @@ Import MatchingLogic.Syntax.Notations.
 (***************************************************************************)
 (********************SET VARIABLE QUANTIFICATION****************************)
 
-    Lemma svar_quantify_not n X ϕ :
-      svar_quantify X n (patt_not ϕ) = patt_not (svar_quantify X n ϕ).
-    Proof. simpl. unfold patt_not. reflexivity. Qed.
-
-    Lemma svar_quantify_or n X ϕ₁ ϕ₂ :
-      svar_quantify X n (patt_or ϕ₁ ϕ₂) = patt_or (svar_quantify X n ϕ₁) (svar_quantify X n ϕ₂).
-    Proof. simpl. unfold patt_or. unfold patt_not. reflexivity. Qed.
-
-    Lemma svar_quantify_and n X ϕ₁ ϕ₂ :
-      svar_quantify X n (patt_and ϕ₁ ϕ₂) = patt_and (svar_quantify X n ϕ₁) (svar_quantify X n ϕ₂).
-    Proof. simpl. unfold patt_and. unfold patt_not. reflexivity. Qed.
-
-    Lemma svar_quantify_iff n X ϕ₁ ϕ₂ :
-      svar_quantify X n (patt_iff ϕ₁ ϕ₂) = patt_iff (svar_quantify X n ϕ₁) (svar_quantify X n ϕ₂).
-    Proof. simpl. unfold patt_iff. unfold patt_and. unfold patt_not. reflexivity. Qed.
-
-    Lemma svar_quantify_top n X : svar_quantify X n patt_top = patt_top.
-    Proof. simpl. unfold patt_top. unfold patt_not. reflexivity. Qed.
-
     Lemma svar_quantify_forall n X ϕ :
       svar_quantify X n (patt_forall ϕ) = patt_forall (svar_quantify X n ϕ).
     Proof. simpl. unfold patt_forall. unfold patt_not. reflexivity. Qed.
-
-    (* ******* 
-      TODO: are these needed? :
-    *)
-
-    (* Lemma evar_open_not k x ϕ : evar_open k x (patt_not ϕ) = patt_not (evar_open k x ϕ).
-    Proof. simpl. unfold patt_not. reflexivity. Qed.
-
-    Lemma evar_open_or k x ϕ₁ ϕ₂ : evar_open k x (patt_or ϕ₁ ϕ₂) = patt_or (evar_open k x ϕ₁) (evar_open k x ϕ₂).
-    Proof. simpl. unfold patt_or. unfold patt_not. reflexivity. Qed.
-
-    Lemma evar_open_and k x ϕ₁ ϕ₂ : evar_open k x (patt_and ϕ₁ ϕ₂) = patt_and (evar_open k x ϕ₁) (evar_open k x ϕ₂).
-    Proof. simpl. unfold patt_and. unfold patt_not. reflexivity. Qed.
-
-    Lemma evar_open_iff k x ϕ₁ ϕ₂ : evar_open k x (patt_iff ϕ₁ ϕ₂) = patt_iff (evar_open k x ϕ₁) (evar_open k x ϕ₂).
-    Proof. simpl. unfold patt_iff. unfold patt_and. unfold patt_not. reflexivity. Qed.
-
-    Lemma evar_open_top k x : evar_open k x patt_top = patt_top.
-    Proof. simpl. unfold patt_top. unfold patt_not. reflexivity. Qed.
-
-    Lemma evar_open_forall k x ϕ : evar_open k x (patt_forall ϕ) = patt_forall (evar_open (S k) x ϕ).
-    Proof. simpl. unfold patt_forall. unfold patt_not. reflexivity. Qed.
-
-    Lemma evar_open_nu k x ϕ : evar_open k x (patt_nu ϕ) = patt_nu (evar_open k x ϕ).
-    Proof. simpl. unfold patt_nu. unfold patt_not. unfold evar_open. simpl.
-      rewrite -> bevar_subst_bsvar_subst; auto.
-    Abort.
-
-    Lemma svar_open_not k x ϕ : svar_open k x (patt_not ϕ) = patt_not (svar_open k x ϕ).
-    Proof. simpl. unfold patt_not. reflexivity. Qed.
-
-    Lemma svar_open_or k x ϕ₁ ϕ₂ : svar_open k x (patt_or ϕ₁ ϕ₂) = patt_or (svar_open k x ϕ₁) (svar_open k x ϕ₂).
-    Proof. simpl. unfold patt_or. unfold patt_not. reflexivity. Qed.
-
-    Lemma svar_open_and k x ϕ₁ ϕ₂ : svar_open k x (patt_and ϕ₁ ϕ₂) = patt_and (svar_open k x ϕ₁) (svar_open k x ϕ₂).
-    Proof. simpl. unfold patt_and. unfold patt_not. reflexivity. Qed.
-
-    Lemma svar_open_iff k x ϕ₁ ϕ₂ : svar_open k x (patt_iff ϕ₁ ϕ₂) = patt_iff (svar_open k x ϕ₁) (svar_open k x ϕ₂).
-    Proof. simpl. unfold patt_iff. unfold patt_and. unfold patt_not. reflexivity. Qed.
-
-    Lemma svar_open_top k x : svar_open k x patt_top = patt_top.
-    Proof. simpl. unfold patt_top. unfold patt_not. reflexivity. Qed.
-
-    Lemma svar_open_forall k x ϕ : svar_open k x (patt_forall ϕ) = patt_forall (svar_open k x ϕ).
-    Proof. simpl. unfold patt_forall. unfold patt_not. reflexivity. Qed. *)
 
     #[global]
      Instance Unary_not : Unary patt_not :=
      {|
       unary_bevar_subst := bevar_subst_not ;
       unary_bsvar_subst := bsvar_subst_not ;
-      unary_free_evar_subst := free_evar_subst_not;
-      unary_free_svar_subst := free_svar_subst_not;
-      unary_evar_quantify := evar_quantify_not;
-      unary_svar_quantify := svar_quantify_not;
+      unary_free_evar_subst := ltac:(reflexivity);
+      unary_free_svar_subst := ltac:(reflexivity);
+      unary_evar_quantify := ltac:(reflexivity);
+      unary_svar_quantify := ltac:(reflexivity);
       unary_wf := well_formed_not ;
      |}.
 
@@ -338,10 +217,10 @@ Import MatchingLogic.Syntax.Notations.
      {|
       nvnullary_bevar_subst := bevar_subst_top ;
       nvnullary_bsvar_subst := bsvar_subst_top ;
-      nvnullary_free_evar_subst := free_evar_subst_top;
-      nvnullary_free_svar_subst := free_svar_subst_top;
-      nvnullary_evar_quantify := evar_quantify_top;
-      nvnullary_svar_quantify := svar_quantify_top;
+      nvnullary_free_evar_subst := ltac:(reflexivity);
+      nvnullary_free_svar_subst := ltac:(reflexivity);
+      nvnullary_evar_quantify := ltac:(reflexivity);
+      nvnullary_svar_quantify := ltac:(reflexivity);
       nvnullary_wf := well_formed_top ;
      |}.
 
@@ -350,10 +229,10 @@ Import MatchingLogic.Syntax.Notations.
      {|
       binary_bevar_subst := bevar_subst_or ;
       binary_bsvar_subst := bsvar_subst_or ;
-      binary_free_evar_subst := free_evar_subst_or;
-      binary_free_svar_subst := free_svar_subst_or;
-      binary_evar_quantify := evar_quantify_or;
-      binary_svar_quantify := svar_quantify_or;
+      binary_free_evar_subst := ltac:(reflexivity);
+      binary_free_svar_subst := ltac:(reflexivity);
+      binary_evar_quantify := ltac:(reflexivity);
+      binary_svar_quantify := ltac:(reflexivity);
       binary_wf := well_formed_or ;
      |}.
 
@@ -362,10 +241,10 @@ Import MatchingLogic.Syntax.Notations.
      {|
       binary_bevar_subst := bevar_subst_and ;
       binary_bsvar_subst := bsvar_subst_and ;
-      binary_free_evar_subst := free_evar_subst_and;
-      binary_free_svar_subst := free_svar_subst_and;
-      binary_evar_quantify := evar_quantify_and;
-      binary_svar_quantify := svar_quantify_and;
+      binary_free_evar_subst := ltac:(reflexivity);
+      binary_free_svar_subst := ltac:(reflexivity);
+      binary_evar_quantify := ltac:(reflexivity);
+      binary_svar_quantify := ltac:(reflexivity);
       binary_wf := well_formed_and ;
      |}.
 
@@ -374,25 +253,25 @@ Import MatchingLogic.Syntax.Notations.
      {|
       binary_bevar_subst := bevar_subst_iff ;
       binary_bsvar_subst := bsvar_subst_iff ;
-      binary_free_evar_subst := free_evar_subst_iff;
-      binary_free_svar_subst := free_svar_subst_iff;
-      binary_evar_quantify := evar_quantify_iff;
-      binary_svar_quantify := svar_quantify_iff;
+      binary_free_evar_subst := ltac:(reflexivity);
+      binary_free_svar_subst := ltac:(reflexivity);
+      binary_evar_quantify := ltac:(reflexivity);
+      binary_svar_quantify := ltac:(reflexivity);
       binary_wf := well_formed_iff ;
      |}.
 
     #[global]
-     Instance EBinder_forall : EBinder patt_forall _ _ _ _ :=
+     Instance EBinder_forall : Binder patt_forall _ _ _ _ _ _ :=
      {|
-      ebinder_bevar_subst := bevar_subst_forall ;
-      ebinder_bsvar_subst := bsvar_subst_forall ;
-      ebinder_free_evar_subst := free_evar_subst_forall;
-      ebinder_free_svar_subst := free_svar_subst_forall;
-      ebinder_evar_quantify := evar_quantify_forall;
-      ebinder_svar_quantify := svar_quantify_forall;
+      binder_bevar_subst := bevar_subst_forall ;
+      binder_bsvar_subst := bsvar_subst_forall ;
+      binder_free_evar_subst := free_evar_subst_forall;
+      binder_free_svar_subst := free_svar_subst_forall;
+      binder_evar_quantify := evar_quantify_forall;
+      binder_svar_quantify := svar_quantify_forall;
      |}.
-  
-  
+
+
   End with_signature.
 
 

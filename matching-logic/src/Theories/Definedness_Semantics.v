@@ -35,6 +35,7 @@ Import MatchingLogic.Syntax.Notations.
 Import MatchingLogic.Semantics.Notations.
 Import MatchingLogic.DerivedOperators_Syntax.Notations.
 Import MatchingLogic.Syntax.BoundVarSugar.
+Import MatchingLogic.Substitution.Notations.
 
 Import Definedness_Syntax.Notations.
 
