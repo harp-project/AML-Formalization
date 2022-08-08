@@ -538,7 +538,7 @@ Section definedness.
               (BoundVarSugar.b0
                  and patt_in BoundVarSugar.b1 (nest_ex (nest_ex ϕ₂) $ BoundVarSugar.b0)))))) as x.
     unfold evar_open.
-    simpl_bevar_subst.
+    mlSimpl.
     rewrite equal_iff_interpr_same.
     { apply Htheory. }
 

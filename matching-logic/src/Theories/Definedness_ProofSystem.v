@@ -3199,7 +3199,7 @@ replace (b0 ∈ml (ϕ ---> ex , ⌈ b0 and ϕ ⌉))
 apply universal_generalization.
 { apply pile_any. }
 { wf_auto2. }
-unfold evar_open. simpl_bevar_subst. simpl.
+unfold evar_open. mlSimpl. simpl.
 rewrite bevar_subst_not_occur.
 { wf_auto2. }
 rewrite bevar_subst_not_occur.
@@ -3211,7 +3211,7 @@ mlRewrite ((@membership_exists Σ syntax Γ x (⌈ b0 and ϕ ⌉) HΓ ltac:(wf_a
 mlIntro "H0".
 remember (fresh_evar ϕ) as y.
 mlApplyMetaRaw (useAnyReasoning (@Ex_quan Σ Γ (patt_free_evar x ∈ml ⌈ b0 and ϕ ⌉) y ltac:(wf_auto2))).
-unfold instantiate. simpl_bevar_subst. simpl.
+unfold instantiate. mlSimpl. simpl.
 rewrite bevar_subst_not_occur.
 { wf_auto2. }
 
@@ -3344,7 +3344,7 @@ eapply syllogism_meta.
     apply ex_quan_monotone.
     { apply pile_any. }
     {
-      unfold evar_open. simpl_bevar_subst. simpl.
+      unfold evar_open. mlSimpl. simpl.
       rewrite bevar_subst_not_occur.
       { wf_auto2. }
       gapply def_def_phi_impl_def_phi.
@@ -3438,7 +3438,7 @@ apply (@strip_exists_quantify_r Σ Γ y).
 { simpl. split_and!; auto; wf_auto2. }
 apply ex_quan_monotone.
 { apply pile_any. }
-unfold evar_open. simpl_bevar_subst. simpl.
+unfold evar_open. mlSimpl. simpl.
 rewrite bevar_subst_not_occur.
 { wf_auto2. }
 
@@ -3498,7 +3498,7 @@ eapply MP.
 all: fold bevar_subst.
 2,3,4: wf_auto2.
 2,3: apply wfc_ex_aux_bevar_subst; wf_auto2.
-simpl_bevar_subst. simpl.
+mlSimpl. simpl.
 rewrite bevar_subst_not_occur.
 { wf_auto2. }
 replace (⌈ patt_free_evar x and ϕ ⌉) with (subst_ctx AC_patt_defined (patt_free_evar x and ϕ)) by reflexivity.
@@ -3530,7 +3530,7 @@ eapply syllogism_meta.
   apply ex_quan_monotone.
   { apply pile_any. }
   {
-    unfold evar_open. simpl_bevar_subst. simpl.
+    unfold evar_open. mlSimpl. simpl.
     rewrite bevar_subst_not_occur.
     { wf_auto2. }
     apply membership_symbol_ceil_aux_0 with (y := x); assumption.
@@ -3580,7 +3580,7 @@ eapply syllogism_meta.
     eapply syllogism_meta.
     1: wf_auto2.
     3: {
-      unfold evar_open. simpl_bevar_subst. simpl.
+      unfold evar_open. mlSimpl. simpl.
       rewrite bevar_subst_evar_quantify_free_evar.
       { wf_auto2. }
       apply membership_symbol_ceil_aux_0 with (y := y); assumption.
@@ -3683,7 +3683,7 @@ eapply cast_proof'.
 apply universal_generalization.
 { apply pile_any. }
 { wf_auto2. }
-unfold evar_open. simpl_bevar_subst. simpl.
+unfold evar_open. mlSimpl. simpl.
 rewrite bevar_subst_not_occur.
 { wf_auto2. }
 
@@ -3708,7 +3708,7 @@ eapply cast_proof_ml_hyps.
 
 assert (Htmp: Γ ⊢i ((evar_open 0 y (b0 ∈ml (! ⌈ ϕ ⌉))) ---> (evar_open 0 y (! (b0 ∈ml ⌈ ϕ ⌉)))) using AnyReasoning).
 {
-  unfold evar_open. simpl_bevar_subst. simpl. gapply membership_not_1.
+  unfold evar_open. mlSimpl. simpl. gapply membership_not_1.
   { apply pile_any. }
   { wf_auto2.
     apply wfc_ex_aux_bevar_subst. wf_auto2. reflexivity.

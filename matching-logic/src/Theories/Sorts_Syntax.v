@@ -125,27 +125,25 @@ Section sorts.
     reflexivity.
   Qed.
 
-  Lemma evar_quantify_forall_of_sort s ψ x ϕ :
-    free_evar_subst (all s , ϕ) ψ x = all (free_evar_subst s (nest_ex ψ) x) , (free_evar_subst ϕ ψ x).
+  Lemma free_evar_subst_forall_of_sort s ψ x ϕ :
+    well_formed_closed ψ ->
+    free_evar_subst (all s , ϕ) ψ x = all (free_evar_subst s ψ x) , (free_evar_subst ϕ ψ x).
   Proof.
+    intro Hwf.
     unfold patt_forall_of_sort.
-    mlSimpl.
-    unfold nest_ex.
-    simpl. unfold nest_ex. replace (S db) with (db + 1) by lia.
-    rewrite nest_ex_gt_evar_quantify; auto. lia.
+    mlSimpl. rewrite nest_ex_free_evar_subst. wf_auto2. done.
   Qed.
 
-  Lemma svar_quantify_forall_of_sort s x db ϕ :
-    svar_quantify x db (all s , ϕ) = all (svar_quantify x db s) , (svar_quantify x db ϕ).
+  Lemma free_svar_subst_forall_of_sort s ψ x ϕ :
+    well_formed_closed ψ ->
+    free_svar_subst (all s , ϕ) ψ x = all (free_svar_subst s ψ x) , (free_svar_subst ϕ ψ x).
   Proof.
-    unfold patt_exists_of_sort.
-    repeat (rewrite simpl_bevar_subst';[assumption|]).
-    unfold nest_ex.
-    simpl. unfold nest_ex. replace (S db) with (db + 1) by lia.
-    rewrite nest_ex_svar_quantify; auto.
+    intro Hwf.
+    unfold patt_forall_of_sort.
+    mlSimpl. rewrite nest_ex_free_svar_subst. wf_auto2. done.
   Qed.
 
-  Lemma evar_quantify_forall_of_sort s x db ϕ :
+  Lemma evar_quantify_forall_of_sort s db x ϕ :
     evar_quantify x db (all s , ϕ) = all (evar_quantify x db s) , (evar_quantify x (S db) ϕ).
   Proof.
     unfold patt_forall_of_sort.
@@ -155,8 +153,8 @@ Section sorts.
     rewrite nest_ex_gt_evar_quantify; auto. lia.
   Qed.
 
-  Lemma svar_quantify_forall_of_sort s x db ϕ :
-    svar_quantify x db (all s , ϕ) = all (svar_quantify x db s) , (svar_quantify x db ϕ).
+  Lemma svar_quantify_forall_of_sort s db X ϕ :
+    svar_quantify X db (all s , ϕ) = all (svar_quantify X db s) , (svar_quantify X db ϕ).
   Proof.
     unfold patt_exists_of_sort.
     repeat (rewrite simpl_bevar_subst';[assumption|]).
@@ -170,10 +168,10 @@ Section sorts.
     {|
        binder_bevar_subst := bevar_subst_forall_of_sort s ;
        binder_bsvar_subst := bsvar_subst_forall_of_sort s ;
-       binder_free_evar_subst :=  ;
-       binder_free_svar_subst :=  ;
-       binder_evar_quantify := evar_quantify_forall_of_sort ;
-       binder_svar_quantify := svar_quantify_forall_of_sort ;
+       binder_free_evar_subst := free_evar_subst_forall_of_sort s ;
+       binder_free_svar_subst := free_svar_subst_forall_of_sort s ;
+       binder_evar_quantify := evar_quantify_forall_of_sort s ;
+       binder_svar_quantify := svar_quantify_forall_of_sort s ;
     |}.
 
   Lemma bevar_subst_exists_of_sort s ψ (wfcψ : well_formed_closed ψ) db ϕ :
@@ -197,7 +195,25 @@ Section sorts.
     reflexivity.
   Qed.
 
-  Lemma evar_quantify_exists_of_sort s x db ϕ :
+  Lemma free_evar_subst_exists_of_sort s ψ x ϕ :
+    well_formed_closed ψ ->
+    free_evar_subst (ex s , ϕ) ψ x = ex (free_evar_subst s ψ x) , (free_evar_subst ϕ ψ x).
+  Proof.
+    intro Hwf.
+    unfold patt_exists_of_sort.
+    mlSimpl. rewrite nest_ex_free_evar_subst. wf_auto2. done.
+  Qed.
+
+  Lemma free_svar_subst_exists_of_sort s ψ x ϕ :
+    well_formed_closed ψ ->
+    free_svar_subst (ex s , ϕ) ψ x = ex (free_svar_subst s ψ x) , (free_svar_subst ϕ ψ x).
+  Proof.
+    intro Hwf.
+    unfold patt_exists_of_sort.
+    mlSimpl. rewrite nest_ex_free_svar_subst. wf_auto2. done.
+  Qed.
+
+  Lemma evar_quantify_exists_of_sort s db x ϕ :
     evar_quantify x db (ex s , ϕ) = ex (evar_quantify x db s) , (evar_quantify x (S db) ϕ).
   Proof.
     unfold patt_exists_of_sort.
@@ -207,8 +223,8 @@ Section sorts.
     rewrite nest_ex_gt_evar_quantify; auto. lia.
   Qed.
 
-  Lemma svar_quantify_exists_of_sort s x db ϕ :
-    svar_quantify x db (ex s , ϕ) = ex (svar_quantify x db s) , (svar_quantify x db ϕ).
+  Lemma svar_quantify_exists_of_sort s db X ϕ :
+    svar_quantify X db (ex s , ϕ) = ex (svar_quantify X db s) , (svar_quantify X db ϕ).
   Proof.
     unfold patt_exists_of_sort.
     repeat (rewrite simpl_bevar_subst';[assumption|]).
@@ -222,10 +238,10 @@ Section sorts.
     {|
        binder_bevar_subst := bevar_subst_exists_of_sort s ;
        binder_bsvar_subst := bsvar_subst_exists_of_sort s ;
-       binder_free_evar_subst :=  ;
-       binder_free_svar_subst :=  ;
-       binder_evar_quantify :=  ;
-       binder_svar_quantify :=  ;
+       binder_free_evar_subst := free_evar_subst_exists_of_sort s ;
+       binder_free_svar_subst := free_svar_subst_exists_of_sort s ;
+       binder_evar_quantify := evar_quantify_exists_of_sort s ;
+       binder_svar_quantify := svar_quantify_exists_of_sort s ;
     |}.
   
   (* TODO patt_forall_of_sort and patt_exists_of_sorts are duals - a lemma *)

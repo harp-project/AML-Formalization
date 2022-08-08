@@ -261,16 +261,15 @@ Import MatchingLogic.Syntax.Notations.
      |}.
 
     #[global]
-     Instance EBinder_forall : Binder patt_forall _ _ _ _ _ _ :=
+     Instance Binder_forall : Binder patt_forall _ _ _ _ _ _ :=
      {|
       binder_bevar_subst := bevar_subst_forall ;
       binder_bsvar_subst := bsvar_subst_forall ;
-      binder_free_evar_subst := free_evar_subst_forall;
-      binder_free_svar_subst := free_svar_subst_forall;
+      binder_free_evar_subst := λ ψ x φ _, free_evar_subst_forall ψ x φ;
+      binder_free_svar_subst := λ ψ x φ _, free_svar_subst_forall ψ x φ;
       binder_evar_quantify := evar_quantify_forall;
       binder_svar_quantify := svar_quantify_forall;
      |}.
-
 
   End with_signature.
 
@@ -285,6 +284,7 @@ Module Notations.
   Notation "'Top'" := patt_top : ml_scope.
   Notation "'all' , phi" := (patt_forall phi) (at level 70) : ml_scope.
   Notation "'nu' , phi" := (patt_nu phi) (at level 70) : ml_scope.
+
 End Notations.
 
 Module Semantics.

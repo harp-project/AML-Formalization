@@ -47,10 +47,10 @@ binder_bsvar_subst :
     forall n ϕ,
       bsvar_subst (ebinder ϕ) ψ n = bsvo n ψ ϕ ;
 binder_free_evar_subst :
-  forall ψ x φ,
+  forall ψ x φ, well_formed_closed ψ ->
     (ebinder φ).[[evar: x ↦ ψ]] = fevo x ψ φ;
 binder_free_svar_subst :
-  forall ψ x φ,
+  forall ψ x φ, well_formed_closed ψ ->
     (ebinder φ).[[svar: x ↦ ψ]] = fsvo x ψ φ;
 binder_evar_quantify :
   forall n x φ,
@@ -231,8 +231,8 @@ Instance Binder_exists : Binder patt_exists _ _ _ _ _ _ :=
 {|
 binder_bevar_subst := bevar_subst_exists ;
 binder_bsvar_subst := bsvar_subst_exists ;
-binder_free_evar_subst := free_evar_subst_exists;
-binder_free_svar_subst := free_svar_subst_exists;
+binder_free_evar_subst := λ ψ x φ _, free_evar_subst_exists ψ x φ;
+binder_free_svar_subst := λ ψ x φ _, free_svar_subst_exists ψ x φ;
 binder_evar_quantify := evar_quantify_exists;
 binder_svar_quantify := svar_quantify_exists;
 |}.
@@ -242,8 +242,8 @@ Instance Binder_mu : Binder patt_mu _ _ _ _ _ _ :=
 {|
 binder_bevar_subst := bevar_subst_mu ;
 binder_bsvar_subst := bsvar_subst_mu ;
-binder_free_evar_subst := free_evar_subst_mu;
-binder_free_svar_subst := free_svar_subst_mu;
+binder_free_evar_subst := λ ψ x φ _, free_evar_subst_mu ψ x φ;
+binder_free_svar_subst := λ ψ x φ _, free_svar_subst_mu ψ x φ;
 binder_evar_quantify := evar_quantify_mu;
 binder_svar_quantify := svar_quantify_mu;
 |}.

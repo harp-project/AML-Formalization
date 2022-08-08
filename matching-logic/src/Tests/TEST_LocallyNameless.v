@@ -1,15 +1,21 @@
 From Coq Require Import ssreflect ssrfun ssrbool.
-Set Implicit Arguments.
-Unset Strict Implicit.
-Unset Printing Implicit Defensive.
-
 From Coq Require Import String Ensembles.
 Require Import Coq.Logic.Classical_Prop.
 
 From stdpp Require Import base fin_sets sets propset finite.
 
-From MatchingLogic Require Import Syntax Semantics DerivedOperators_Syntax DerivedOperators_Semantics StringSignature ProofSystem ProofMode.
-From MatchingLogic.Theories Require Import Definedness_Syntax Definedness_Semantics Sorts_Syntax Sorts_Semantics Definedness_ProofSystem.
+From MatchingLogic Require Import Syntax
+                                  Semantics
+                                  DerivedOperators_Syntax
+                                  DerivedOperators_Semantics
+                                  StringSignature
+                                  ProofSystem
+                                  ProofMode.
+From MatchingLogic.Theories Require Import Definedness_Syntax
+                                           Definedness_Semantics
+                                           Sorts_Syntax
+                                           Sorts_Semantics
+                                           Definedness_ProofSystem.
 From MatchingLogic.Utils Require Import stdpp_ext.
 
 Import MatchingLogic.Syntax.Notations.
@@ -291,28 +297,21 @@ Module test_3.
       { gapply hypothesis; [ apply pile_any | wf_auto2 | set_solver ]. }
       apply universal_generalization with (x := "X") in RA as RA1. (* revert Meta *)
       2: apply pile_any. 2: auto.
-      assert (Γₙₐₜ
-       ⊢i all ,
-           (X0 ∈ml sym_succ $ sym_succ $ b0 --->
-            sym_even $ X0 =ml patt_sym even $ b0) using AnyReasoning) as RA1' by auto.
-      clear RA1.
+      unfold ruleA in RA1.
+      mlSimpl in RA1. 
       assert (Γₙₐₜ ⊢i ex , (sym_succ $ sym_succ $ sym_zero =ml b0) using AnyReasoning) as S2WF.
       { admit. }
       assert (Γₙₐₜ ⊢i ex , (sym_succ $ sym_succ $ sym_succ $ sym_succ $ sym_zero =ml b0) using AnyReasoning) as S4WF.
       { admit. }
-      mgSpecMeta RA1' with (sym_succ $ sym_succ $ sym_zero).
-      repeat rewrite simpl_bevar_subst'  in RA1'; wf_auto2. 2: admit. (* apply def_theory. *)
-      simpl in RA1'.
-      apply universal_generalization with (x := "X0") in RA1' as RA2. (* revert Meta *)
+      mgSpecMeta RA1 with (sym_succ $ sym_succ $ sym_zero).
+      mlSimpl in RA1; wf_auto2. 2: admit. (* apply def_theory. *)
+      simpl in RA1.
+      apply universal_generalization with (x := "X0") in RA1 as RA2. (* revert Meta *)
       2: apply pile_any. 2: auto.
-      assert (Γₙₐₜ
-       ⊢i all ,
-           (b0 ∈ml sym_succ $ sym_succ $ sym_succ $ sym_succ $ sym_zero --->
-            sym_even $ b0 =ml patt_sym even $ sym_succ $ sym_succ $ sym_zero) using AnyReasoning) as RA2' by auto.
-      clear RA2 RA1'.
-      mgSpecMeta RA2' with (sym_succ $ sym_succ $ sym_succ $ sym_succ $ sym_zero).
-      repeat rewrite simpl_bevar_subst'  in RA2'; wf_auto2. 2: admit. (* apply def_theory. *)
-      simpl in RA2'.
+      mlSimpl in RA2. simpl in RA2.
+      mgSpecMeta RA2 with (sym_succ $ sym_succ $ sym_succ $ sym_succ $ sym_zero).
+      mlSimpl in RA2; wf_auto2. 2: admit. (* apply def_theory. *)
+      simpl in RA2.
       Search patt_exists ML_proof_system.
     Abort.
   End test_3.

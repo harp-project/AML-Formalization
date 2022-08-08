@@ -190,35 +190,36 @@ lazymatch goal with
 end.
 
 Ltac simpl_bevar_subst :=
-  repeat (rewrite simpl_bevar_subst';try_wfauto2).
+  (rewrite simpl_bevar_subst';try_wfauto2).
 Ltac simpl_bsvar_subst :=
-  repeat (rewrite simpl_bsvar_subst';try_wfauto2).
+  (rewrite simpl_bsvar_subst';try_wfauto2).
 Ltac simpl_free_evar_subst :=
-  repeat (rewrite simpl_free_evar_subst').
+  (rewrite simpl_free_evar_subst';try_wfauto2).
 Ltac simpl_free_svar_subst :=
-  repeat (rewrite simpl_free_svar_subst').
+  (rewrite simpl_free_svar_subst';try_wfauto2).
 Ltac simpl_evar_quantify :=
-  repeat (rewrite simpl_evar_quantify').
+  (rewrite simpl_evar_quantify').
 Ltac simpl_svar_quantify :=
-  repeat (rewrite simpl_svar_quantify').
+  (rewrite simpl_svar_quantify').
 
 Ltac simpl_bevar_subst_in H :=
-  repeat (rewrite simpl_bevar_subst' in H;try_wfauto2).
+  (rewrite simpl_bevar_subst' in H;try_wfauto2).
 Ltac simpl_bsvar_subst_in H :=
-  repeat (rewrite simpl_bsvar_subst' in H;try_wfauto2).
+  (rewrite simpl_bsvar_subst' in H;try_wfauto2).
 Ltac simpl_free_evar_subst_in H :=
-  repeat (rewrite simpl_free_evar_subst' in H).
+  (rewrite simpl_free_evar_subst' in H;try_wfauto2).
 Ltac simpl_free_svar_subst_in H :=
-  repeat (rewrite simpl_free_svar_subst' in H).
+  (rewrite simpl_free_svar_subst' in H;try_wfauto2).
 Ltac simpl_evar_quantify_in H :=
-  repeat (rewrite simpl_evar_quantify' in H).
+  (rewrite simpl_evar_quantify' in H).
 Ltac simpl_svar_quantify_in H :=
-  repeat (rewrite simpl_svar_quantify' in H).
+  (rewrite simpl_svar_quantify' in H).
 
 Tactic Notation "mlSimpl" :=
   repeat (simpl_bevar_subst || simpl_bsvar_subst || simpl_free_evar_subst
          || simpl_free_svar_subst || simpl_evar_quantify || simpl_svar_quantify).
 
-Tactic Notation "mlSimpl in" constr(H) :=
-  repeat (simpl_bevar_subst H || simpl_bsvar_subst H || simpl_free_evar_subst H
-         || simpl_free_svar_subst H || simpl_evar_quantify H || simpl_svar_quantify H).
+Tactic Notation "mlSimpl" "in" hyp(H) :=
+  repeat (simpl_bevar_subst_in H || simpl_bsvar_subst_in H 
+         || simpl_free_evar_subst_in H || simpl_free_svar_subst_in H 
+         || simpl_evar_quantify_in H || simpl_svar_quantify_in H).
