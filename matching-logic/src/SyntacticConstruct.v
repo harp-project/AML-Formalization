@@ -27,7 +27,7 @@ Section with_signature.
    and has to have certain properties about well-formedness
    and substitution.
 *)
-Class (* E *) Binder (ebinder : Pattern -> Pattern)
+Class Binder (ebinder : Pattern -> Pattern)
     (bevo: db_index -> Pattern -> Pattern -> Pattern)
     (bsvo: db_index -> Pattern -> Pattern -> Pattern)
     (fevo: evar -> Pattern -> Pattern -> Pattern)
@@ -48,10 +48,10 @@ binder_bsvar_subst :
       bsvar_subst (ebinder ϕ) ψ n = bsvo n ψ ϕ ;
 binder_free_evar_subst :
   forall ψ x φ, well_formed_closed ψ ->
-    (ebinder φ).[[evar: x ↦ ψ]] = fevo x ψ φ;
+    (ebinder φ)^[[evar: x ↦ ψ]] = fevo x ψ φ;
 binder_free_svar_subst :
   forall ψ x φ, well_formed_closed ψ ->
-    (ebinder φ).[[svar: x ↦ ψ]] = fsvo x ψ φ;
+    (ebinder φ)^[[svar: x ↦ ψ]] = fsvo x ψ φ;
 binder_evar_quantify :
   forall n x φ,
     evar_quantify x n (ebinder φ) = feq x n φ;
@@ -59,39 +59,6 @@ binder_svar_quantify :
   forall n x φ,
     svar_quantify x n (ebinder φ) = fsq x n φ;
 }.
-
-(* Class SBinder (sbinder : Pattern -> Pattern)
-    (bevo: db_index -> Pattern -> Pattern -> Pattern)
-    (bsvo: db_index -> Pattern -> Pattern -> Pattern)
-    (fevo: evar -> Pattern -> Pattern -> Pattern)
-    (fsvo: svar -> Pattern -> Pattern -> Pattern)
-    (feq: evar -> db_index -> Pattern -> Pattern)
-    (fsq: svar -> db_index -> Pattern -> Pattern)
-:=
-{
-sbinder_bevar_subst :
-  forall ψ,
-    well_formed_closed ψ ->
-    forall n φ,
-      bevar_subst (sbinder φ) ψ n = bevo n ψ φ ;
-sbinder_bsvar_subst :
-  forall ψ,
-    well_formed_closed ψ ->
-    forall n φ,
-      bsvar_subst (sbinder φ) ψ n = bsvo n ψ φ ;
-sbinder_free_evar_subst :
-  forall ψ x φ,
-    (sbinder φ).[[evar: x ↦ ψ]] = fevo x ψ φ;
-sbinder_free_svar_subst :
-  forall ψ x φ,
-    (sbinder φ).[[svar: x ↦ ψ]] = fsvo x ψ φ;
-sbinder_evar_quantify :
-  forall n x φ,
-    evar_quantify x n (sbinder φ) = feq x n φ;
-sbinder_svar_quantify :
-  forall n x φ,
-    svar_quantify x n (sbinder φ) = fsq x n φ;
-}. *)
 
 (* Non-variable nullary operation *)
 Class NVNullary (nvnullary : Pattern) :=
@@ -108,10 +75,10 @@ nvnullary_bsvar_subst :
       bevar_subst nvnullary ψ n = nvnullary ;
 nvnullary_free_evar_subst :
   forall ψ x,
-    nvnullary.[[evar: x ↦ ψ]] = nvnullary;
+    nvnullary^[[evar: x ↦ ψ]] = nvnullary;
 nvnullary_free_svar_subst :
   forall ψ x,
-    nvnullary.[[svar: x ↦ ψ]] = nvnullary;
+    nvnullary^[[svar: x ↦ ψ]] = nvnullary;
 nvnullary_evar_quantify :
   forall n x,
     evar_quantify x n nvnullary = nvnullary;
@@ -136,10 +103,10 @@ unary_bsvar_subst :
       bsvar_subst (patt ϕ) ψ n = patt (bsvar_subst ϕ ψ n) ;
 unary_free_evar_subst :
   forall ψ x φ,
-    (patt φ).[[evar: x ↦ ψ]] = patt φ.[[evar: x ↦ ψ]];
+    (patt φ)^[[evar: x ↦ ψ]] = patt φ^[[evar: x ↦ ψ]];
 unary_free_svar_subst :
   forall ψ x φ,
-    (patt φ).[[svar: x ↦ ψ]] = patt φ.[[svar: x ↦ ψ]];
+    (patt φ)^[[svar: x ↦ ψ]] = patt φ^[[svar: x ↦ ψ]];
 unary_evar_quantify :
   forall n x φ,
     evar_quantify x n (patt φ) = patt (evar_quantify x n φ);
@@ -164,10 +131,10 @@ binary_bsvar_subst :
       bsvar_subst (binary ϕ₁ ϕ₂) ψ n = binary (bsvar_subst ϕ₁ ψ n) (bsvar_subst ϕ₂ ψ n) ;
 binary_free_evar_subst :
   forall ψ x φ₁ φ₂,
-    (binary φ₁ φ₂).[[evar: x ↦ ψ]] = binary (φ₁.[[evar: x ↦ ψ]]) (φ₂.[[evar: x ↦ ψ]]);
+    (binary φ₁ φ₂)^[[evar: x ↦ ψ]] = binary (φ₁^[[evar: x ↦ ψ]]) (φ₂^[[evar: x ↦ ψ]]);
 binary_free_svar_subst :
   forall ψ x φ₁ φ₂,
-    (binary φ₁ φ₂).[[svar: x ↦ ψ]] = binary (φ₁.[[svar: x ↦ ψ]]) (φ₂.[[svar: x ↦ ψ]]);
+    (binary φ₁ φ₂)^[[svar: x ↦ ψ]] = binary (φ₁^[[svar: x ↦ ψ]]) (φ₂^[[svar: x ↦ ψ]]);
 binary_evar_quantify :
   forall n x φ₁ φ₂,
     evar_quantify x n (binary φ₁ φ₂) = binary (evar_quantify x n φ₁) (evar_quantify x n φ₂);

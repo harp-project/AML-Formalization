@@ -205,8 +205,8 @@ Section index_manipulation.
 
   Lemma nest_ex_free_evar_subst : forall φ dbi x more ψ,
      well_formed_closed_ex_aux ψ dbi ->
-     (nest_ex_aux dbi more φ).[[evar: x ↦ ψ]] = 
-     nest_ex_aux dbi more (φ.[[evar: x ↦ ψ]]).
+     (nest_ex_aux dbi more φ)^[[evar: x ↦ ψ]] = 
+     nest_ex_aux dbi more (φ^[[evar: x ↦ ψ]]).
   Proof.
     induction φ; intros dbi x' more ψ Hwf; cbn; auto.
     * case_match; auto; simpl; try case_match; subst; try lia; auto.
@@ -219,8 +219,8 @@ Section index_manipulation.
 
   Lemma nest_mu_free_evar_subst : forall φ dbi x more ψ,
      well_formed_closed_mu_aux ψ dbi ->
-     (nest_mu_aux dbi more φ).[[evar: x ↦ ψ]] = 
-     nest_mu_aux dbi more (φ.[[evar: x ↦ ψ]]).
+     (nest_mu_aux dbi more φ)^[[evar: x ↦ ψ]] = 
+     nest_mu_aux dbi more (φ^[[evar: x ↦ ψ]]).
   Proof.
     induction φ; intros dbi x' more ψ Hwf; cbn; auto.
     * case_match; auto; simpl; try case_match; subst; try lia; auto.
@@ -233,8 +233,8 @@ Section index_manipulation.
 
   Lemma nest_ex_free_svar_subst : forall φ dbi X more ψ,
      well_formed_closed_ex_aux ψ dbi ->
-     (nest_ex_aux dbi more φ).[[svar: X ↦ ψ]] = 
-     nest_ex_aux dbi more (φ.[[svar: X ↦ ψ]]).
+     (nest_ex_aux dbi more φ)^[[svar: X ↦ ψ]] = 
+     nest_ex_aux dbi more (φ^[[svar: X ↦ ψ]]).
   Proof.
     induction φ; intros dbi x' more ψ Hwf; cbn; auto.
     * case_match; auto; simpl; try case_match; subst; try lia; auto.
@@ -247,8 +247,8 @@ Section index_manipulation.
 
   Lemma nest_mu_free_svar_subst : forall φ dbi X more ψ,
      well_formed_closed_mu_aux ψ dbi ->
-     (nest_mu_aux dbi more φ).[[svar: X ↦ ψ]] = 
-     nest_mu_aux dbi more (φ.[[svar: X ↦ ψ]]).
+     (nest_mu_aux dbi more φ)^[[svar: X ↦ ψ]] = 
+     nest_mu_aux dbi more (φ^[[svar: X ↦ ψ]]).
   Proof.
     induction φ; intros dbi x' more ψ Hwf; cbn; auto.
     * case_match; auto; simpl; try case_match; subst; try lia; auto.
