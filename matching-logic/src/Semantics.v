@@ -21,10 +21,13 @@ From MatchingLogic Require Import
 .
 
 Import MatchingLogic.Syntax.Notations.
+Import MatchingLogic.Substitution.Notations.
+
 (** ** Matching Logic Semantics *)
 Section semantics.
 
   Context {signature : Signature}.
+  Open Scope ml_scope.
 
   (* Model of AML ref. snapshot: Definition 2 *)
 
@@ -659,10 +662,10 @@ Section semantics.
   (* theory predicate *)
   Definition T_predicate Γ ϕ := forall M, satisfies_theory M Γ -> M_predicate M ϕ.
 
-  Hint Extern 4 (M_predicate _ (evar_open _ _ _)) => unfold evar_open; rewrite !simpl_bevar_subst' : core.
-  Hint Extern 4 (T_predicate _ (evar_open _ _ _)) => unfold evar_open; rewrite !simpl_bevar_subst' : core.
-  Hint Extern 4 (M_predicate _ (svar_open _ _ _)) => unfold svar_open; rewrite !simpl_bsvar_subst' : core.
-  Hint Extern 4 (T_predicate _ (svar_open _ _ _)) => unfold svar_open; rewrite !simpl_bsvar_subst' : core.
+  Hint Extern 4 (M_predicate _ (evar_open _ _ _)) => mlSimpl : core.
+  Hint Extern 4 (T_predicate _ (evar_open _ _ _)) => mlSimpl : core.
+  Hint Extern 4 (M_predicate _ (svar_open _ _ _)) => mlSimpl : core.
+  Hint Extern 4 (T_predicate _ (svar_open _ _ _)) => mlSimpl : core.
   
   Lemma T_predicate_impl_M_predicate M Γ ϕ:
     satisfies_theory M Γ -> T_predicate Γ ϕ -> M_predicate M ϕ.
@@ -952,8 +955,18 @@ Section semantics.
           fold bsvar_subst.
           unfold svar_open.
           reflexivity.
-        + rewrite 2!svar_open_mu.
-          rewrite 2!eval_mu_simpl. fold svar_open. simpl.
+        + mlSimpl. unfold shift_mu_subst.
+          pose proof (@shift_mu_morphism _ (svar_open dbi X) _).
+          epose proof (@correctness _ _ X0). unfold shift_mu_subst in H.
+          rewrite H.
+          pose proof (@correctness _ _ (Svar_open_morphism dbi X) ϕ).
+          rewrite <- H0.
+        
+        rewrite <- (@correctness _ _ ). cbn.
+        unfold svar_open. simpl.
+          fold (svar_open (Datatypes.S dbi) X ϕ).
+          fold (svar_open (Datatypes.S dbi) Y ϕ).
+          rewrite 2!eval_mu_simpl. simpl.
           apply f_equal. apply functional_extensionality.
           intros S'.
 
@@ -1002,7 +1015,7 @@ Section semantics.
           apply not_elem_of_union in HB.
           destruct HB as [HnotinFree2 HnotinFree].
           fold bsvar_subst.
-          
+
           rewrite (proj1 (IHsz _ _ _ _) X' fresh3). rewrite -svar_open_size. lia.
           rewrite HeqX'. apply set_svar_fresh_is_fresh. unfold svar_is_fresh_in. apply HnotinFree1.
           rewrite (proj1 (IHsz _ _ _ _) Y' fresh3). rewrite -svar_open_size. lia.
@@ -1048,7 +1061,9 @@ Section semantics.
           eapply evar_is_fresh_in_app_r. apply Hfrx.
           eapply evar_is_fresh_in_app_r. apply Hfry.
           reflexivity.
-        + do 2 rewrite evar_open_exists.
+        + unfold evar_open. simpl.
+          fold (evar_open (S dbi) x ϕ).
+          fold (evar_open (S dbi) y ϕ).
           rewrite 2!eval_ex_simpl. fold evar_open. simpl.
           apply f_equal. apply functional_extensionality. intros e.
           remember (fresh_evar (evar_open (Datatypes.S dbi) x ϕ)) as x'.
@@ -1165,7 +1180,7 @@ Section semantics.
       size phi1 <= sz -> forall (ρ : Valuation) (X : svar),
         well_formed_closed phi2 -> well_formed_closed_mu_aux phi1 (S dbi) ->
         ~ elem_of X (free_svars phi1) ->
-        @eval M ρ (bsvar_subst phi1 phi2 dbi)
+        @eval M ρ (phi1^[svar:dbi ↦ phi2])
         = @eval M (update_svar_val X (@eval M ρ phi2) ρ)
                                   (svar_open dbi X phi1).
   Proof.
@@ -1271,7 +1286,7 @@ Section semantics.
         (* x = fresh_evar phi1' *)
         (* y = evar_fresh (elements (free_evars phi1') U (free_evars phi2)) *)
 
-        remember (bsvar_subst phi1 (patt_free_svar X) dbi) as phi1'.
+        remember (phi1^[svar: dbi ↦ (patt_free_svar X)]) as phi1'.
         remember (fresh_evar phi1') as Xfr2'.
         remember (evar_fresh (elements (union (free_evars phi1') (free_evars phi2)))) as Xu.
         remember (update_svar_val X (eval ρ phi2) ρ) as ρ2'.
@@ -1285,17 +1300,17 @@ Section semantics.
              apply not_elem_of_union in Hfr. destruct Hfr as [Hfr _]. auto.
         }
 
-        remember (update_evar_val (fresh_evar (bsvar_subst phi1 phi2 dbi)) c ρ) as ρe1'.
+        remember (update_evar_val (fresh_evar (phi1^[svar: dbi ↦ phi2])) c ρ) as ρe1'.
         remember (update_evar_val Xu c ρ) as ρe2'.
         rewrite -> evar_open_bsvar_subst. 2: auto.
-        remember (fresh_evar (bsvar_subst phi1 phi2 dbi)) as Xfr1.
+        remember (fresh_evar (phi1^[svar: dbi ↦ phi2])) as Xfr1.
 
         (* dbi may or may not occur in phi1 *)
         remember (bsvar_occur phi1 dbi) as Hoc.
         move: HeqHoc.
         case: Hoc => HeqHoc.
         -- (* dbi ocurs in phi1 *)
-          pose proof (HXfr1Fresh := @set_evar_fresh_is_fresh signature (bsvar_subst phi1 phi2 dbi)).
+          pose proof (HXfr1Fresh := @set_evar_fresh_is_fresh signature (phi1^[svar: dbi ↦ phi2])).
           rewrite <- HeqXfr1 in HXfr1Fresh.
           symmetry in HeqHoc.
           pose proof (Hsub := @bsvar_subst_contains_subformula signature phi1 phi2 dbi HeqHoc).
@@ -1321,7 +1336,7 @@ Section semantics.
           assert (HXu: (Xfr1 = Xu)).
           { subst Xfr1. subst Xu. unfold fresh_evar.
             rewrite -> free_evars_bsvar_subst_eq.
-            replace (bsvar_subst phi1 (patt_free_svar X) dbi) with
+            replace (phi1^[svar: dbi ↦ (patt_free_svar X)]) with
                     (svar_open dbi X phi1) by reflexivity.
             rewrite -> free_evars_svar_open. auto. auto.
           }
@@ -1355,8 +1370,7 @@ Section semantics.
               symmetry.
               apply eval_free_svar_independent.
               unfold svar_is_fresh_in. rewrite -> free_svars_evar_open. subst phi1'.
-              replace (bsvar_subst phi1 (patt_free_svar X) dbi) with
-                      (svar_open dbi X phi1) by reflexivity.
+              fold (svar_open dbi X phi1).
               rewrite -> HWF. auto.
             }
             subst phi1'. unfold svar_open in HWF. rewrite -> HWF.
@@ -1376,7 +1390,7 @@ Section semantics.
             }
 
       + (* Mu case *)
-        rewrite svar_open_mu.
+           asdasdasd----
         rewrite 2!eval_mu_simpl. simpl.
         apply f_equal. apply functional_extensionality. intros E.
 

@@ -21,64 +21,65 @@ Require Import
 Import Substitution.Notations.
 
 Section lemmas.
-    Context {Σ : Signature}.
+  Context {Σ : Signature}.
+  Open Scope ml_scope.
 
-Lemma evar_is_fresh_in_free_evar_subst x phi psi:
-evar_is_fresh_in x psi ->
-evar_is_fresh_in x (phi^[[evar: x ↦ psi]]).
-Proof.
-move: x psi. induction phi; intros y psi H; unfold evar_is_fresh_in; simpl; try set_solver.
-case_match; auto. set_solver.
-Qed.
+  Lemma evar_is_fresh_in_free_evar_subst x phi psi:
+  evar_is_fresh_in x psi ->
+  evar_is_fresh_in x (phi^[[evar: x ↦ psi]]).
+  Proof.
+  move: x psi. induction phi; intros y psi H; unfold evar_is_fresh_in; simpl; try set_solver.
+  case_match; auto. set_solver.
+  Qed.
 
-Lemma evar_is_fresh_in_evar_quantify x n phi:
-evar_is_fresh_in x (evar_quantify x n phi).
-Proof.
-move: x n. induction phi; intros y m; unfold evar_is_fresh_in; simpl; try set_solver.
-case_match; auto; set_solver.
-Qed.
+  Lemma evar_is_fresh_in_evar_quantify x n phi:
+  evar_is_fresh_in x (evar_quantify x n phi).
+  Proof.
+  move: x n. induction phi; intros y m; unfold evar_is_fresh_in; simpl; try set_solver.
+  case_match; auto; set_solver.
+  Qed.
 
-Lemma svar_is_fresh_in_free_evar_subst X phi psi:
-svar_is_fresh_in X psi ->
-svar_is_fresh_in X (phi^[[svar: X ↦ psi]]).
-Proof.
-move: X psi. induction phi; intros y psi H; unfold svar_is_fresh_in; simpl; try set_solver.
-case_match; auto. set_solver.
-Qed.
+  Lemma svar_is_fresh_in_free_evar_subst X phi psi:
+  svar_is_fresh_in X psi ->
+  svar_is_fresh_in X (phi^[[svar: X ↦ psi]]).
+  Proof.
+  move: X psi. induction phi; intros y psi H; unfold svar_is_fresh_in; simpl; try set_solver.
+  case_match; auto. set_solver.
+  Qed.
 
-Lemma svar_is_fresh_in_svar_quantify X n phi:
-svar_is_fresh_in X (svar_quantify X n phi).
-Proof.
-move: X n. induction phi; intros Y m; unfold svar_is_fresh_in; simpl; try set_solver.
-case_match; auto; set_solver.
-Qed.
+  Lemma svar_is_fresh_in_svar_quantify X n phi:
+  svar_is_fresh_in X (svar_quantify X n phi).
+  Proof.
+  move: X n. induction phi; intros Y m; unfold svar_is_fresh_in; simpl; try set_solver.
+  case_match; auto; set_solver.
+  Qed.
 
-(*If phi is a closed body, then (ex, phi) is closed too*)
-Corollary wfc_body_to_wfc_ex phi:
-wfc_body_ex phi ->
-well_formed_closed (patt_exists phi) = true.
-Proof.
-intros WFE. unfold wfc_body_ex in WFE. unfold well_formed_closed. simpl.
-unfold well_formed_closed in WFE.
-pose proof (Htmp := WFE (fresh_evar phi) ltac:(apply set_evar_fresh_is_fresh)).
-destruct_and!.
-split_and.
-2: { rewrite -> wfc_ex_aux_body_iff. eassumption. }
-eapply wfc_mu_aux_body_ex_imp2. eassumption.
-Qed.
+  (*If phi is a closed body, then (ex, phi) is closed too*)
+  Corollary wfc_body_to_wfc_ex phi:
+  wfc_body_ex phi ->
+  well_formed_closed (patt_exists phi) = true.
+  Proof.
+  intros WFE. unfold wfc_body_ex in WFE. unfold well_formed_closed. simpl.
+  unfold well_formed_closed in WFE.
+  pose proof (Htmp := WFE (fresh_evar phi) ltac:(apply set_evar_fresh_is_fresh)).
+  destruct_and!.
+  split_and.
+  2: { rewrite -> wfc_ex_aux_body_iff. eassumption. }
+  eapply wfc_mu_aux_body_ex_imp2. eassumption.
+  Qed.
 
-(* Lemmas about wfc_ex and wfc_mu *)
+  (* Lemmas about wfc_ex and wfc_mu *)
 
-(* From https://www.chargueraud.org/research/2009/ln/main.pdf in 3.4 (lc_abs_iff_body) *)
-(*Conclusion*)
-Corollary wfc_body_wfc_ex_iff: 
-forall phi,
-  well_formed_closed (patt_exists phi) = true <-> wfc_body_ex phi.
-Proof.
-split.
-- apply wfc_ex_to_wfc_body.
-- apply wfc_body_to_wfc_ex.
-Qed.
+  (* From https://www.chargueraud.org/research/2009/ln/main.pdf in 3.4 (lc_abs_iff_body) *)
+  (*Conclusion*)
+  Corollary wfc_body_wfc_ex_iff: 
+  forall phi,
+    well_formed_closed (patt_exists phi) = true <-> wfc_body_ex phi.
+  Proof.
+  split.
+  - apply wfc_ex_to_wfc_body.
+  - apply wfc_body_to_wfc_ex.
+  Qed.
 
 
 
@@ -89,7 +90,7 @@ Qed.
       v ∉ (free_evars phi) ->
       v ∉ (free_evars psi) ->
       forall n,
-        v ∉ (free_evars (bevar_subst phi psi n)).
+        v ∉ (free_evars (phi^[evar: n ↦ psi])).
   Proof.
     induction sz; destruct phi; intros psi v Hsz Hlsv Hneq n0; simpl in *; try inversion Hsz; auto.
     - case_match; set_solver.
@@ -118,7 +119,7 @@ Qed.
       v ∉ (free_svars phi) ->
       v ∉ (free_svars psi) ->
       forall n,
-        v ∉ (free_svars (bsvar_subst phi psi n)).
+        v ∉ (free_svars (phi^[svar: n ↦ psi])).
   Proof.
     induction sz; destruct phi; intros psi v Hsz Hlsv Hneq n0; simpl in *; try inversion Hsz; auto.
     - case_match; set_solver.
@@ -333,9 +334,9 @@ Qed.
 
 Lemma Private_evar_open_free_svar_subst_comm: ∀ sz phi psi fresh n X,
 ((size phi) <= sz) → (well_formed_closed_ex_aux psi 0) → evar_is_fresh_in fresh phi →
-evar_is_fresh_in fresh (free_svar_subst phi psi X)
+evar_is_fresh_in fresh (phi^[[svar: X ↦ psi]])
 →
-(evar_open n fresh (free_svar_subst phi psi X)) = (free_svar_subst (evar_open n fresh phi) psi X).
+(evar_open n fresh (phi^[[svar: X ↦ psi]])) = ((evar_open n fresh phi)^[[svar:X ↦ psi]]).
 Proof.
 induction sz; destruct phi; intros psi fresh n0 X Hsz Hwf Hfresh1 Hfresh2; try inversion Hsz; auto.
 - simpl. case_match.
@@ -343,41 +344,39 @@ induction sz; destruct phi; intros psi fresh n0 X Hsz Hwf Hfresh1 Hfresh2; try i
   assumption.
 + simpl. reflexivity.
 - cbn. case_match; done.
-- simpl. unfold evar_open in *. rewrite -> bevar_subst_app, -> (IHsz phi1), -> (IHsz phi2); try lia; try assumption. reflexivity.
-apply (evar_is_fresh_in_app_r Hfresh1). simpl in Hfresh2.
-apply (evar_is_fresh_in_app_r Hfresh2). apply (evar_is_fresh_in_app_l Hfresh1).
-apply (evar_is_fresh_in_app_l Hfresh2).
-reflexivity.
-- simpl. unfold evar_open in *. rewrite -> bevar_subst_imp, -> (IHsz phi1), -> (IHsz phi2); try lia; try assumption. reflexivity.
-apply (evar_is_fresh_in_imp_r Hfresh1). simpl in Hfresh2.
-apply (evar_is_fresh_in_imp_r Hfresh2). apply (evar_is_fresh_in_app_l Hfresh1).
-apply (evar_is_fresh_in_imp_l Hfresh2).
-reflexivity.
-- simpl. unfold evar_open in *. rewrite -> bevar_subst_exists, -> IHsz. reflexivity. lia. assumption.
-apply evar_is_fresh_in_exists in Hfresh1. assumption.
-simpl in Hfresh2. apply evar_is_fresh_in_exists in Hfresh1. assumption.
-reflexivity.
-- simpl. unfold evar_open in *. rewrite -> bevar_subst_mu.
-f_equal.
-rewrite -> IHsz; auto. lia.
-reflexivity.
+- simpl. unfold evar_open in *. simpl. 
+  rewrite -> (IHsz phi1), -> (IHsz phi2); try lia; try assumption. reflexivity.
+  apply (evar_is_fresh_in_app_r Hfresh1). simpl in Hfresh2.
+  apply (evar_is_fresh_in_app_r Hfresh2). apply (evar_is_fresh_in_app_l Hfresh1).
+  apply (evar_is_fresh_in_app_l Hfresh2).
+- simpl. unfold evar_open in *. simpl. rewrite -> (IHsz phi1), -> (IHsz phi2); try lia; try assumption. reflexivity.
+  apply (evar_is_fresh_in_imp_r Hfresh1). simpl in Hfresh2.
+  apply (evar_is_fresh_in_imp_r Hfresh2). apply (evar_is_fresh_in_app_l Hfresh1).
+  apply (evar_is_fresh_in_imp_l Hfresh2).
+- simpl. unfold evar_open in *. simpl. rewrite -> IHsz. reflexivity.
+  lia. assumption.
+  apply evar_is_fresh_in_exists in Hfresh1. assumption.
+  simpl in Hfresh2. apply evar_is_fresh_in_exists in Hfresh1. assumption.
+- simpl. unfold evar_open in *. simpl.
+  f_equal.
+  rewrite -> IHsz; auto. lia.
 Qed.
 
 Corollary evar_open_free_svar_subst_comm: ∀ phi psi fresh n X,
 (well_formed_closed_ex_aux psi 0) → evar_is_fresh_in fresh phi →
-evar_is_fresh_in fresh (free_svar_subst phi psi X)
+evar_is_fresh_in fresh (phi^[[svar: X ↦ psi]])
 →
-(evar_open n fresh (free_svar_subst phi psi X)) = (free_svar_subst (evar_open n fresh phi) psi X).
+(evar_open n fresh (phi^[[svar: X ↦ psi]])) = (evar_open n fresh phi)^[[svar: X ↦ psi]].
 Proof.
 intros phi psi fresh n X H H0 H1. apply Private_evar_open_free_svar_subst_comm with (sz := (size phi)); try lia; try assumption.
 Qed.
 
 Lemma Private_svar_open_free_svar_subst_comm : ∀ sz phi psi fresh n X,
 ((size phi) <= sz) → (well_formed_closed_mu_aux psi 0) →  
-svar_is_fresh_in fresh phi → svar_is_fresh_in fresh (free_svar_subst phi psi X) → (fresh ≠ X) 
+svar_is_fresh_in fresh phi → svar_is_fresh_in fresh (phi^[[svar: X ↦ psi]]) → (fresh ≠ X) 
 →
-(svar_open n fresh (free_svar_subst phi psi X)) = 
-(free_svar_subst (svar_open n fresh phi) psi X).
+(svar_open n fresh (phi^[[svar: X ↦ psi]])) = 
+((svar_open n fresh phi)^[[svar: X ↦ psi]]).
 Proof.
 unfold free_svar_subst.
 induction sz; destruct phi; intros psi fresh n0 X Hsz Hwf (* Hwfc *) Hfresh1 Hfresh2 Hneq; auto.
@@ -398,7 +397,7 @@ rewrite -> svar_open_closed; auto.
   * congruence.
   * reflexivity.
 - simpl.
-unfold svar_open in *. rewrite -> bsvar_subst_app, -> (IHsz phi1), -> (IHsz phi2); try lia; try assumption; try lia; try assumption.
+unfold svar_open in *. simpl. rewrite -> (IHsz phi1), -> (IHsz phi2); try lia; try assumption; try lia; try assumption.
 reflexivity.
 simpl in Hsz. lia.
 simpl in Hfresh1. apply svar_is_fresh_in_app_r in Hfresh1. assumption.
@@ -406,9 +405,8 @@ simpl in Hfresh2. apply svar_is_fresh_in_app_r in Hfresh2. assumption.
 simpl in Hsz. lia.
 simpl in Hfresh1. apply svar_is_fresh_in_app_l in Hfresh1. assumption.
 simpl in Hfresh2. apply svar_is_fresh_in_app_l in Hfresh2. assumption.
-reflexivity.
 - simpl.
-unfold svar_open in *. rewrite -> bsvar_subst_imp, -> (IHsz phi1), -> (IHsz phi2); try lia; try assumption; try lia; try assumption.
+unfold svar_open in *. simpl. rewrite -> (IHsz phi1), -> (IHsz phi2); try lia; try assumption; try lia; try assumption.
 reflexivity.
 simpl in Hsz. lia.
 simpl in Hfresh1. apply svar_is_fresh_in_app_r in Hfresh1. assumption.
@@ -416,10 +414,9 @@ simpl in Hfresh2. apply svar_is_fresh_in_app_r in Hfresh2. assumption.
 simpl in Hsz. lia.
 simpl in Hfresh1. apply svar_is_fresh_in_app_l in Hfresh1. assumption.
 simpl in Hfresh2. apply svar_is_fresh_in_app_l in Hfresh2. assumption.
-reflexivity.
-- remember ((free_evars (svar_open n0 fresh (free_svar_subst phi psi X))) ∪
-                                                                        (free_evars (free_svar_subst (svar_open n0 fresh phi) psi X))) as B.
-simpl. unfold svar_open in *. rewrite -> bsvar_subst_exists by reflexivity. remember (@evar_fresh Σ (elements B)) as x.
+- remember ((free_evars (svar_open n0 fresh (phi^[[svar: X ↦ psi]]))) ∪
+                                                                        (free_evars ((svar_open n0 fresh phi)^[[svar: X ↦ psi]]))) as B.
+simpl. unfold svar_open in *. simpl. remember (@evar_fresh Σ (elements B)) as x.
 assert(x ∉ B).
 {
   subst. apply set_evar_fresh_is_fresh'.
@@ -427,27 +424,27 @@ assert(x ∉ B).
 subst B.  apply not_elem_of_union in H. destruct H.
 
 fold free_svar_subst. (* this is needed *)
-fold (svar_open n0 fresh (free_svar_subst phi psi X)). (* only this is not sufficient *)
-erewrite (@evar_open_inj (svar_open n0 fresh (free_svar_subst phi psi X)) (free_svar_subst (svar_open n0 fresh phi) psi X) x 0 _ _ ).
+fold (svar_open n0 fresh (phi^[[svar: X ↦ psi]])). (* only this is not sufficient *)
+erewrite (@evar_open_inj (svar_open n0 fresh (phi^[[svar: X ↦ psi]])) ((svar_open n0 fresh phi)^[[svar: X ↦ psi]]) x 0 _ _ ).
 reflexivity.
 (*x needs to be fresh in ...*)
 unfold svar_open in *.
 rewrite -> IHsz. reflexivity. simpl in Hsz. lia. assumption. simpl in Hfresh2. apply svar_is_fresh_in_exists in Hfresh1. assumption.
 apply svar_is_fresh_in_exists in Hfresh2. assumption. assumption.
-- remember ((free_svars (svar_open (S n0) fresh (free_svar_subst phi psi X)) ∪
-                      (free_svars (free_svar_subst (svar_open (S n0) fresh phi) psi X)))) as B.
+- remember ((free_svars (svar_open (S n0) fresh (phi^[[svar: X ↦ psi]])) ∪
+                      (free_svars ((svar_open (S n0) fresh phi)^[[svar: X ↦ psi]])))) as B.
 simpl. remember (@svar_fresh Σ (elements B)) as X'.
 assert(X' ∉ B).
 {
   subst. apply set_svar_fresh_is_fresh'.
 }
 subst B.  apply not_elem_of_union in H. destruct H.
-simpl. unfold svar_open in *. rewrite bsvar_subst_mu.
+simpl. unfold svar_open in *. simpl.
 
 f_equal.
 fold free_svar_subst.
-fold (svar_open (S n0) fresh (free_svar_subst phi psi X)).
-erewrite (@svar_open_inj (svar_open (S n0) fresh (free_svar_subst phi psi X)) (free_svar_subst (svar_open (S n0) fresh phi) psi X) X' 0 _ _ ).
+fold (svar_open (S n0) fresh (phi^[[svar: X ↦ psi]])).
+erewrite (@svar_open_inj (svar_open (S n0) fresh (phi^[[svar: X ↦ psi]])) ((svar_open (S n0) fresh phi)^[[svar: X ↦ psi]]) X' 0 _ _ ).
 { reflexivity. }
 (*x needs to be fresh in ...*)
 unfold svar_open in *.
@@ -460,10 +457,10 @@ Qed.
 
 Corollary svar_open_free_svar_subst_comm : ∀ phi psi fresh n X,
 (well_formed_closed_mu_aux psi 0) →  
-svar_is_fresh_in fresh phi → svar_is_fresh_in fresh (free_svar_subst phi psi X) → (fresh ≠ X) 
+svar_is_fresh_in fresh phi → svar_is_fresh_in fresh (phi^[[svar: X ↦ psi]]) → (fresh ≠ X) 
 →
-(svar_open n fresh (free_svar_subst phi psi X)) = 
-(free_svar_subst (svar_open n fresh phi) psi X).
+(svar_open n fresh (phi^[[svar: X ↦ psi]])) = 
+((svar_open n fresh phi)^[[svar: X ↦ psi]]).
 Proof.
 intros phi psi fresh n X H H0 H1 H2. apply (Private_svar_open_free_svar_subst_comm) with (sz := (size phi)); try lia; try assumption.
 Qed.
@@ -473,12 +470,12 @@ Qed.
 Lemma free_evar_subst_preserves_no_negative_occurrence x p q n:
 well_formed_closed_mu_aux q 0 ->
 no_negative_occurrence_db_b n p ->
-no_negative_occurrence_db_b n (free_evar_subst p q x)
+no_negative_occurrence_db_b n (p^[[evar: x ↦ q]])
 with
 free_evar_subst_preserves_no_positive_occurrence x p q n:
 well_formed_closed_mu_aux q 0 ->
 no_positive_occurrence_db_b n p ->
-no_positive_occurrence_db_b n (free_evar_subst p q x)
+no_positive_occurrence_db_b n (p^[[evar: x ↦ q]])
 .
 Proof.
 - intros wfq nno.
@@ -509,11 +506,11 @@ Qed.
 Lemma Private_well_formed_free_evar_subst x p q n1 n2:
 well_formed q ->
 well_formed_positive p && well_formed_closed_mu_aux p n2 && well_formed_closed_ex_aux p n1 ->
-no_negative_occurrence_db_b n2 (free_evar_subst p q x)
-&& no_positive_occurrence_db_b n2 (free_evar_subst p q x)
-&& well_formed_positive (free_evar_subst p q x)
-&& well_formed_closed_mu_aux (free_evar_subst p q x) n2
-&& well_formed_closed_ex_aux (free_evar_subst p q x) n1
+no_negative_occurrence_db_b n2 (p^[[evar: x ↦ q]])
+&& no_positive_occurrence_db_b n2 (p^[[evar: x ↦ q]])
+&& well_formed_positive (p^[[evar: x ↦ q]])
+&& well_formed_closed_mu_aux (p^[[evar: x ↦ q]]) n2
+&& well_formed_closed_ex_aux (p^[[evar: x ↦ q]]) n1
 = true.
 Proof.
 intros wfq wfp.
@@ -570,7 +567,7 @@ Qed.
 Lemma well_formed_free_evar_subst x p q:
 well_formed q = true ->
 well_formed p = true ->
-well_formed (free_evar_subst p q x) = true.
+well_formed (p^[[evar: x ↦ q]]) = true.
 Proof.
 intros wfq wfp.
 pose proof (H := @Private_well_formed_free_evar_subst x p q 0 0 wfq).
@@ -584,7 +581,7 @@ Qed.
 Lemma well_formed_free_evar_subst_0 x p q:
 well_formed q = true ->
 well_formed p = true ->
-well_formed (free_evar_subst p q x) = true.
+well_formed (p^[[evar: x ↦ q]]) = true.
 Proof.
 intros. apply well_formed_free_evar_subst; assumption.
 Qed.
@@ -634,20 +631,16 @@ induction phi; intros n' H; cbn; auto.
   rewrite IHphi; auto.
 Qed.
 
-
-End lemmas.
-
-
-Lemma svar_hno_bsvar_subst {Σ : Signature} X ϕ ψ dbi:
+Lemma svar_hno_bsvar_subst X ϕ ψ dbi:
   (svar_has_negative_occurrence X ψ = true -> no_positive_occurrence_db_b dbi ϕ = true) ->
   (svar_has_positive_occurrence X ψ = true -> no_negative_occurrence_db_b dbi ϕ = true) ->
   svar_has_negative_occurrence X ϕ = false ->
-  svar_has_negative_occurrence X (bsvar_subst ϕ ψ dbi) = false
-with svar_hpo_bsvar_subst {Σ : Signature} X ϕ ψ dbi:
+  svar_has_negative_occurrence X (ϕ^[svar: dbi ↦ ψ]) = false
+with svar_hpo_bsvar_subst X ϕ ψ dbi:
        (svar_has_negative_occurrence X ψ = true -> no_negative_occurrence_db_b dbi ϕ = true) ->
        (svar_has_positive_occurrence X ψ = true -> no_positive_occurrence_db_b dbi ϕ = true) ->
        svar_has_positive_occurrence X ϕ = false ->
-       svar_has_positive_occurrence X (bsvar_subst ϕ ψ dbi) = false.
+       svar_has_positive_occurrence X (ϕ^[svar: dbi ↦ ψ]) = false.
 Proof.
   -
     move: dbi.
@@ -702,10 +695,10 @@ Proof.
       { naive_bsolver. }
 Qed.
 
-Lemma svar_hno_false_if_fresh {Σ : Signature} X ϕ:
+Lemma svar_hno_false_if_fresh X ϕ:
   svar_is_fresh_in X ϕ ->
   svar_has_negative_occurrence X ϕ = false
-with svar_hpo_false_if_fresh {Σ : Signature} X ϕ:
+with svar_hpo_false_if_fresh X ϕ:
        svar_is_fresh_in X ϕ ->
        svar_has_positive_occurrence X ϕ = false.
 Proof.
@@ -728,16 +721,16 @@ Qed.
 
 
 (* TODO remove the no-negative-ocurrence assumption from the svar version *)
-Lemma wfp_free_evar_subst {Σ : Signature} ϕ ψ x:
+Lemma wfp_free_evar_subst ϕ ψ x:
   well_formed_closed_mu_aux ψ 0 ->
   well_formed_positive ψ = true ->
   well_formed_positive ϕ = true ->
-  well_formed_positive (free_evar_subst ϕ ψ x) = true
-with wfp_neg_free_evar_subst {Σ : Signature} ϕ ψ x:
+  well_formed_positive (ϕ^[[evar: x ↦ ψ]]) = true
+with wfp_neg_free_evar_subst ϕ ψ x:
   well_formed_closed_mu_aux ψ 0 ->
   well_formed_positive ψ = true ->
   well_formed_positive ϕ = true ->
-  well_formed_positive (free_evar_subst ϕ ψ x) = true.
+  well_formed_positive (ϕ^[[evar: x ↦ ψ]]) = true.
 Proof.
   -
     intros Hwfcψ Hwfpψ Hwfpϕ. (* Hnoneg.*)
@@ -751,7 +744,7 @@ Proof.
       split_and!; auto.
     + cbn in Hwfpϕ.
       destruct_and!.
-      pose proof (IH1 := wfp_neg_free_evar_subst Σ ϕ1 ψ x ltac:(assumption)).
+      pose proof (IH1 := wfp_neg_free_evar_subst ϕ1 ψ x ltac:(assumption)).
       feed specialize IH1.
       { assumption. }
       { assumption. }
@@ -772,7 +765,7 @@ Proof.
       split_and!; auto.
     + cbn in Hwfpϕ.
       destruct_and!.
-      pose proof (IH1 := wfp_free_evar_subst Σ ϕ1 ψ x ltac:(assumption)).
+      pose proof (IH1 := wfp_free_evar_subst ϕ1 ψ x ltac:(assumption)).
       feed specialize IH1.
       { assumption. }
       { assumption. }
@@ -782,6 +775,8 @@ Proof.
       rewrite IHϕ. assumption. split_and!; auto.
       rewrite free_evar_subst_preserves_no_negative_occurrence; auto.
 Qed.
+
+End lemmas.
 
 #[export]
  Hint Resolve wfp_free_evar_subst : core.

@@ -22,9 +22,10 @@ Require Import
 Import Substitution.Notations.
 
 Section lemmas.
-    Context {Σ : Signature}.
+  Context {Σ : Signature}.
+  Open Scope ml_scope.
 
-Lemma evar_is_fresh_in_subst_ctx x AC p:
+  Lemma evar_is_fresh_in_subst_ctx x AC p:
     evar_is_fresh_in x (subst_ctx AC p)
     <-> (evar_is_fresh_in x p /\ x ∉ AC_free_evars AC).
   Proof.
@@ -92,18 +93,18 @@ Lemma evar_is_fresh_in_subst_ctx x AC p:
 
 
   Lemma subst_ctx_bevar_subst AC p q n:
-  subst_ctx AC (bevar_subst p q n) = bevar_subst (subst_ctx AC p) q n.
+  subst_ctx AC (p^[evar: n ↦ q]) = (subst_ctx AC p)^[evar: n ↦ q].
 Proof.
   induction AC.
   - reflexivity.
   - simpl. rewrite IHAC. clear IHAC.
-    rewrite [bevar_subst p0 q n]bevar_subst_not_occur.
+    rewrite [p0^[evar: n ↦ q] ]bevar_subst_not_occur.
     2: { reflexivity. }
     unfold well_formed,well_formed_closed in Prf.
     destruct_and!.
     auto. eapply well_formed_closed_ex_aux_ind. 2: exact H2. lia.
   - simpl. rewrite IHAC. clear IHAC.
-    rewrite [bevar_subst p0 q n]bevar_subst_not_occur.
+    rewrite [p0^[evar: n ↦ q] ]bevar_subst_not_occur.
     2: { reflexivity. }
     unfold well_formed,well_formed_closed in Prf.
     destruct_and!.

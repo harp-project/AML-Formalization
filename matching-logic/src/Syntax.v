@@ -38,6 +38,7 @@ Close Scope boolean_if_scope.
 
 Section syntax.
   Context {Σ : Signature}.
+  Open Scope ml_scope.
 
   Inductive is_subformula_of_ind : Pattern -> Pattern -> Prop :=
   | sub_eq ϕ₁ ϕ₂ : ϕ₁ = ϕ₂ -> is_subformula_of_ind ϕ₁ ϕ₂
@@ -97,7 +98,7 @@ Section syntax.
 
   Lemma bsvar_subst_contains_subformula ϕ₁ ϕ₂ dbi :
     bsvar_occur ϕ₁ dbi = true ->
-    is_subformula_of_ind ϕ₂ (bsvar_subst ϕ₁ ϕ₂ dbi).
+    is_subformula_of_ind ϕ₂ (ϕ₁^[svar: dbi ↦ ϕ₂]).
   Proof.
     generalize dependent dbi.
     induction ϕ₁; intros dbi H; simpl; simpl in H; try inversion H.
@@ -124,7 +125,7 @@ Section syntax.
 
   Lemma bevar_subst_contains_subformula ϕ₁ ϕ₂ dbi :
     bevar_occur ϕ₁ dbi = true ->
-    is_subformula_of_ind ϕ₂ (bevar_subst ϕ₁ ϕ₂ dbi).
+    is_subformula_of_ind ϕ₂ (ϕ₁^[evar: dbi ↦ ϕ₂]).
   Proof.
     generalize dependent dbi.
     induction ϕ₁; intros dbi H; simpl; simpl in H; try inversion H.
@@ -225,7 +226,7 @@ Section syntax.
   Qed.
 
   Lemma free_evars_bsvar_subst ϕ₁ ϕ₂ dbi:
-    free_evars (bsvar_subst ϕ₁ ϕ₂ dbi) ⊆ free_evars ϕ₁ ∪ free_evars ϕ₂.
+    free_evars (ϕ₁^[svar: dbi ↦ ϕ₂]) ⊆ free_evars ϕ₁ ∪ free_evars ϕ₂.
   Proof.
     generalize dependent dbi.
     induction ϕ₁; intros db; simpl.
@@ -236,8 +237,8 @@ Section syntax.
     - apply empty_subseteq.
     - specialize (IHϕ₁1 db).
       specialize (IHϕ₁2 db).
-      remember (free_evars (bsvar_subst ϕ₁1 ϕ₂ db)) as A1.
-      remember (free_evars (bsvar_subst ϕ₁2 ϕ₂ db)) as A2.
+      remember (free_evars (ϕ₁1^[svar: db ↦ ϕ₂])) as A1.
+      remember (free_evars (ϕ₁2^[svar: db ↦ ϕ₂])) as A2.
       remember (free_evars ϕ₁1) as B1.
       remember (free_evars ϕ₁2) as B2.
       remember (free_evars ϕ₂) as C.
@@ -251,8 +252,8 @@ Section syntax.
     - apply empty_subseteq.
     - specialize (IHϕ₁1 db).
       specialize (IHϕ₁2 db).
-      remember (free_evars (bsvar_subst ϕ₁1 ϕ₂ db)) as A1.
-      remember (free_evars (bsvar_subst ϕ₁2 ϕ₂ db)) as A2.
+      remember (free_evars (ϕ₁1^[svar: db ↦ ϕ₂])) as A1.
+      remember (free_evars (ϕ₁2^[svar: db ↦ ϕ₂])) as A2.
       remember (free_evars ϕ₁1) as B1.
       remember (free_evars ϕ₁2) as B2.
       remember (free_evars ϕ₂) as C.
@@ -268,7 +269,7 @@ Section syntax.
   Qed.
 
   Lemma free_svars_bevar_subst ϕ₁ ϕ₂ dbi:
-    free_svars (bevar_subst ϕ₁ ϕ₂ dbi) ⊆ free_svars ϕ₁ ∪ free_svars ϕ₂.
+    free_svars (ϕ₁^[evar: dbi ↦ ϕ₂]) ⊆ free_svars ϕ₁ ∪ free_svars ϕ₂.
   Proof.
     generalize dependent dbi.
     induction ϕ₁; intros db; simpl.
@@ -279,8 +280,8 @@ Section syntax.
     - apply empty_subseteq.
     - specialize (IHϕ₁1 db).
       specialize (IHϕ₁2 db).
-      remember (free_svars (bevar_subst ϕ₁1 ϕ₂ db)) as A1.
-      remember (free_svars (bevar_subst ϕ₁2 ϕ₂ db)) as A2.
+      remember (free_svars (ϕ₁1^[evar: db ↦ ϕ₂])) as A1.
+      remember (free_svars (ϕ₁2^[evar: db ↦ ϕ₂])) as A2.
       remember (free_svars ϕ₁1) as B1.
       remember (free_svars ϕ₁2) as B2.
       remember (free_svars ϕ₂) as C.
@@ -294,8 +295,8 @@ Section syntax.
     - apply empty_subseteq.
     - specialize (IHϕ₁1 db).
       specialize (IHϕ₁2 db).
-      remember (free_svars (bevar_subst ϕ₁1 ϕ₂ db)) as A1.
-      remember (free_svars (bevar_subst ϕ₁2 ϕ₂ db)) as A2.
+      remember (free_svars (ϕ₁1^[evar: db ↦ ϕ₂])) as A1.
+      remember (free_svars (ϕ₁2^[evar: db ↦ ϕ₂])) as A2.
       remember (free_svars ϕ₁1) as B1.
       remember (free_svars ϕ₁2) as B2.
       remember (free_svars ϕ₂) as C.
@@ -311,7 +312,7 @@ Section syntax.
   Qed.
 
   Lemma free_evars_bsvar_subst_1 ϕ₁ ϕ₂ dbi:
-    free_evars ϕ₁ ⊆ free_evars (bsvar_subst ϕ₁ ϕ₂ dbi).
+    free_evars ϕ₁ ⊆ free_evars (ϕ₁^[svar: dbi ↦ ϕ₂]).
   Proof.
     generalize dependent dbi.
     induction ϕ₁; intros dbi; simpl; try apply reflexivity.
@@ -323,7 +324,7 @@ Section syntax.
   Qed.
 
   Lemma free_svars_bevar_subst_1 ϕ₁ ϕ₂ dbi:
-    free_svars ϕ₁ ⊆ free_svars (bevar_subst ϕ₁ ϕ₂ dbi).
+    free_svars ϕ₁ ⊆ free_svars (ϕ₁^[evar: dbi ↦ ϕ₂]).
   Proof.
     generalize dependent dbi.
     induction ϕ₁; intros dbi; simpl; try apply reflexivity.
@@ -336,7 +337,7 @@ Section syntax.
 
   Corollary free_evars_bsvar_subst_eq ϕ₁ ϕ₂ dbi:
     bsvar_occur ϕ₁ dbi ->
-    free_evars (bsvar_subst ϕ₁ ϕ₂ dbi) = free_evars ϕ₁ ∪ free_evars ϕ₂.
+    free_evars (ϕ₁^[svar: dbi ↦ ϕ₂]) = free_evars ϕ₁ ∪ free_evars ϕ₂.
   Proof.
     intros H.
     apply (anti_symm subseteq).
@@ -349,7 +350,7 @@ Section syntax.
 
   Corollary free_svars_bevar_subst_eq ϕ₁ ϕ₂ dbi:
     bevar_occur ϕ₁ dbi ->
-    free_svars (bevar_subst ϕ₁ ϕ₂ dbi) = free_svars ϕ₁ ∪ free_svars ϕ₂.
+    free_svars (ϕ₁^[evar: dbi ↦ ϕ₂]) = free_svars ϕ₁ ∪ free_svars ϕ₂.
   Proof.
     intros H.
     apply (anti_symm subseteq).
@@ -424,7 +425,7 @@ Section syntax.
 
   Lemma not_bsvar_occur_bsvar_subst phi psi n:
     well_formed_closed_mu_aux psi 0 -> well_formed_closed_mu_aux phi n ->
-    ~ bsvar_occur (bsvar_subst phi psi n) n.
+    ~ bsvar_occur (phi^[svar: n ↦ psi]) n.
   Proof.
     move: n.
     induction phi; intros n' H H0; simpl; auto.
@@ -438,14 +439,14 @@ Section syntax.
         * lia.
         * congruence.
     - intros Hcontra.
-      destruct (bsvar_occur (bsvar_subst phi1 psi n') n') eqn:Heq1, (bsvar_occur (bsvar_subst phi2 psi n') n') eqn:Heq2.
+      destruct (bsvar_occur (phi1^[svar: n' ↦ psi]) n') eqn:Heq1, (bsvar_occur (phi2^[svar: n' ↦ psi]) n') eqn:Heq2.
       + eapply IHphi2; eauto. now apply andb_true_iff in H0.
       + eapply IHphi1; eauto. now apply andb_true_iff in H0.
       + eapply IHphi2; eauto. now apply andb_true_iff in H0.
       + simpl in Hcontra. congruence.
     - intros Hcontra.
-      destruct (bsvar_occur (bsvar_subst phi1 psi n') n')
-               eqn:Heq1, (bsvar_occur (bsvar_subst phi2 psi n') n') eqn:Heq2.
+      destruct (bsvar_occur ((phi1^[svar: n' ↦ psi])) n')
+               eqn:Heq1, (bsvar_occur ((phi2^[svar: n' ↦ psi])) n') eqn:Heq2.
       + eapply IHphi1; eauto. now apply andb_true_iff in H0.
       + eapply IHphi1; eauto. now apply andb_true_iff in H0.
       + eapply IHphi2; eauto. now apply andb_true_iff in H0.
@@ -528,7 +529,7 @@ Module Notations.
   Declare Scope ml_scope.
   Delimit Scope ml_scope with ml.
   (* TODO: change Bot and Top to unicode symbols *)
-  (* TODO: this associativity is wrong! However, stdpp disallows defining it otherwise *)
+  (* TODO: this associativity is wrong! However, stdpp disallows defining it otherwise. We could use @ instead, associated to the left *)
   Notation "a $ b" := (patt_app a b) (at level 65, right associativity) : ml_scope.
   Notation "'Bot'" := patt_bott : ml_scope.
   Notation "⊥" := patt_bott : ml_scope.
@@ -623,206 +624,822 @@ End BoundVarSugar.
  *)
 
 
-Section with_signature.
-  Context {Σ : Signature}.
-
-  
-
-End with_signature.
-
-
 #[export]
  Hint Resolve wf_imp_wfc : core.
 
 #[export]
  Hint Resolve wfc_ex_implies_not_bevar_occur : core.
 
+Section with_signature.
+  Context {Σ : Signature}.
+  Open Scope ml_scope.
 
+  Definition evar_quantify_ctx (x : evar) (n : db_index) (C : PatternCtx) : PatternCtx :=
+    match decide (x = pcEvar C)  with
+    | left _ => C
+    | right pf => @Build_PatternCtx Σ (pcEvar C) (evar_quantify x n (pcPattern C))
+    end.
 
-Definition evar_quantify_ctx {Σ : Signature} (x : evar) (n : db_index) (C : PatternCtx) : PatternCtx :=
-  match decide (x = pcEvar C)  with
-  | left _ => C
-  | right pf => @Build_PatternCtx Σ (pcEvar C) (evar_quantify x n (pcPattern C))
-  end.
+  Lemma is_linear_context_evar_quantify (x : evar) (n : db_index) (C : PatternCtx) :
+    is_linear_context C ->
+    is_linear_context (evar_quantify_ctx x n C).
+  Proof.
+    intros Hlin. unfold evar_quantify_ctx.
+    unfold is_linear_context in *.
+    destruct (decide (x = pcEvar C)); simpl.
+    - assumption.
+    - destruct C. simpl in *.
+      rename pcEvar into pcEvar0. rename pcPattern into pcPattern0.
+      assert (count_evar_occurrences pcEvar0 (evar_quantify x n pcPattern0)
+              = count_evar_occurrences pcEvar0 pcPattern0).
+      {
+        clear Hlin.
+        move: n.
+        induction pcPattern0; intros n'; simpl in *; try lia.
+        + destruct (decide (x0 = pcEvar0)); subst; simpl in *.
+          * destruct (decide (x = pcEvar0)); try contradiction; simpl in *.
+            destruct (decide (pcEvar0 = pcEvar0)); try contradiction. reflexivity.
+          * destruct (decide (x = x0)); simpl; try reflexivity.
+            destruct (decide (x0 = pcEvar0)); try contradiction.
+            reflexivity.
+        + rewrite IHpcPattern0_1. rewrite IHpcPattern0_2. reflexivity.
+        + rewrite IHpcPattern0_1. rewrite IHpcPattern0_2. reflexivity.
+        + rewrite IHpcPattern0. reflexivity.
+        + rewrite IHpcPattern0. reflexivity.
+      }
+      congruence.
+  Qed.
 
-Lemma is_linear_context_evar_quantify {Σ : Signature} (x : evar) (n : db_index) (C : PatternCtx) :
-  is_linear_context C ->
-  is_linear_context (evar_quantify_ctx x n C).
-Proof.
-  intros Hlin. unfold evar_quantify_ctx.
-  unfold is_linear_context in *.
-  destruct (decide (x = pcEvar C)); simpl.
-  - assumption.
-  - destruct C. simpl in *.
+  Definition svar_quantify_ctx (X : svar) (n : db_index) (C : PatternCtx) : PatternCtx :=
+    @Build_PatternCtx Σ (pcEvar C) (svar_quantify X n (pcPattern C)).
+
+  Lemma is_linear_context_svar_quantify (X : svar) (n : db_index) (C : PatternCtx) :
+    is_linear_context C ->
+    is_linear_context (svar_quantify_ctx X n C).
+  Proof.
+    intros Hlin. unfold svar_quantify_ctx. unfold is_linear_context in *.
+    destruct C. simpl in *.
     rename pcEvar into pcEvar0. rename pcPattern into pcPattern0.
-    assert (count_evar_occurrences pcEvar0 (evar_quantify x n pcPattern0)
+    assert (count_evar_occurrences pcEvar0 (svar_quantify X n pcPattern0)
             = count_evar_occurrences pcEvar0 pcPattern0).
     {
       clear Hlin.
       move: n.
       induction pcPattern0; intros n'; simpl in *; try lia.
-      + destruct (decide (x0 = pcEvar0)); subst; simpl in *.
-        * destruct (decide (x = pcEvar0)); try contradiction; simpl in *.
-          destruct (decide (pcEvar0 = pcEvar0)); try contradiction. reflexivity.
-        * destruct (decide (x = x0)); simpl; try reflexivity.
-          destruct (decide (x0 = pcEvar0)); try contradiction.
-          reflexivity.
+      + case_match; subst; simpl in *; reflexivity.
       + rewrite IHpcPattern0_1. rewrite IHpcPattern0_2. reflexivity.
       + rewrite IHpcPattern0_1. rewrite IHpcPattern0_2. reflexivity.
       + rewrite IHpcPattern0. reflexivity.
       + rewrite IHpcPattern0. reflexivity.
     }
     congruence.
-Qed.
+  Qed.
 
-Definition svar_quantify_ctx {Σ : Signature} (X : svar) (n : db_index) (C : PatternCtx) : PatternCtx :=
-  @Build_PatternCtx Σ (pcEvar C) (svar_quantify X n (pcPattern C)).
-
-Lemma is_linear_context_svar_quantify {Σ : Signature} (X : svar) (n : db_index) (C : PatternCtx) :
-  is_linear_context C ->
-  is_linear_context (svar_quantify_ctx X n C).
-Proof.
-  intros Hlin. unfold svar_quantify_ctx. unfold is_linear_context in *.
-  destruct C. simpl in *.
-  rename pcEvar into pcEvar0. rename pcPattern into pcPattern0.
-  assert (count_evar_occurrences pcEvar0 (svar_quantify X n pcPattern0)
-          = count_evar_occurrences pcEvar0 pcPattern0).
-  {
-    clear Hlin.
+  Lemma svar_quantify_free_evar_subst ψ ϕ x X n:
+    svar_quantify X n (ψ^[[evar: x ↦ ϕ]]) =
+    (svar_quantify X n ψ)^[[evar: x ↦ (svar_quantify X n ϕ)]].
+  Proof.
     move: n.
-    induction pcPattern0; intros n'; simpl in *; try lia.
-    + case_match; subst; simpl in *; reflexivity.
-    + rewrite IHpcPattern0_1. rewrite IHpcPattern0_2. reflexivity.
-    + rewrite IHpcPattern0_1. rewrite IHpcPattern0_2. reflexivity.
-    + rewrite IHpcPattern0. reflexivity.
-    + rewrite IHpcPattern0. reflexivity.
-  }
-  congruence.
-Qed.
-
-Lemma svar_quantify_free_evar_subst {Σ : Signature} ψ ϕ x X n:
-  svar_quantify X n (free_evar_subst ψ ϕ x) =
-  free_evar_subst (svar_quantify X n ψ) (svar_quantify X n ϕ) x.
-Proof.
-  move: n.
-  induction ψ; intros n'; simpl; auto.
-  - case_match.
-    + auto.
-    + simpl. reflexivity.
-  - case_match; reflexivity.
-  - rewrite IHψ1. rewrite IHψ2. reflexivity.
-  - rewrite IHψ1. rewrite IHψ2. reflexivity.
-  - rewrite IHψ. reflexivity.
-  - rewrite IHψ. Fail reflexivity.
-Abort. (* OOPS, does not hold. The problem is that [free_evar_subst'] does not wrap the target
-          in nest_mu. *)
+    induction ψ; intros n'; simpl; auto.
+    - case_match.
+      + auto.
+      + simpl. reflexivity.
+    - case_match; reflexivity.
+    - rewrite IHψ1. rewrite IHψ2. reflexivity.
+    - rewrite IHψ1. rewrite IHψ2. reflexivity.
+    - rewrite IHψ. reflexivity.
+    - rewrite IHψ. Fail reflexivity.
+  Abort. (* OOPS, does not hold. The problem is that [free_evar_subst'] does not wrap the target
+            in nest_mu. *)
 
 
-Lemma svar_quantify_emplace {Σ : Signature} X n C ϕ:
-  svar_quantify X n (emplace C ϕ) = emplace (svar_quantify_ctx X n C) (svar_quantify X n ϕ).
-Proof.
-  destruct C.
-  unfold svar_quantify_ctx,emplace. simpl.
-Abort.
+  Lemma svar_quantify_emplace X n C ϕ:
+    svar_quantify X n (emplace C ϕ) = emplace (svar_quantify_ctx X n C) (svar_quantify X n ϕ).
+  Proof.
+    destruct C.
+    unfold svar_quantify_ctx,emplace. simpl.
+  Abort.
 
-Lemma evar_quantify_subst_ctx {Σ : Signature} x n AC ϕ:
-  x ∉ AC_free_evars AC ->
-  evar_quantify x n (subst_ctx AC ϕ) = subst_ctx AC (evar_quantify x n ϕ).
-Proof.
-  intros Hx.
-  induction AC.
-  - reflexivity.
-  - simpl. simpl in Hx.
-    rewrite IHAC.
-    { set_solver. }
-    rewrite [evar_quantify x n p]evar_quantify_fresh.
-    unfold evar_is_fresh_in. set_solver.
-    reflexivity.
-  - simpl. simpl in Hx.
-    rewrite IHAC.
-    { set_solver. }
-    rewrite [evar_quantify x n p]evar_quantify_fresh.
-    unfold evar_is_fresh_in. set_solver.
-    reflexivity.
-Qed.
+  Lemma evar_quantify_subst_ctx x n AC ϕ:
+    x ∉ AC_free_evars AC ->
+    evar_quantify x n (subst_ctx AC ϕ) = subst_ctx AC (evar_quantify x n ϕ).
+  Proof.
+    intros Hx.
+    induction AC.
+    - reflexivity.
+    - simpl. simpl in Hx.
+      rewrite IHAC.
+      { set_solver. }
+      rewrite [evar_quantify x n p]evar_quantify_fresh.
+      unfold evar_is_fresh_in. set_solver.
+      reflexivity.
+    - simpl. simpl in Hx.
+      rewrite IHAC.
+      { set_solver. }
+      rewrite [evar_quantify x n p]evar_quantify_fresh.
+      unfold evar_is_fresh_in. set_solver.
+      reflexivity.
+  Qed.
 
 
-Lemma Private_no_negative_occurrence_svar_quantify {Σ : Signature} ϕ level X:
-  (
+  Lemma Private_no_negative_occurrence_svar_quantify ϕ level X:
+    (
+      no_negative_occurrence_db_b level ϕ = true ->
+      svar_has_negative_occurrence X ϕ = false ->
+      no_negative_occurrence_db_b level (svar_quantify X level ϕ) = true
+    )
+    /\
+    (
+      no_positive_occurrence_db_b level ϕ = true ->
+      svar_has_positive_occurrence X ϕ = false ->
+      no_positive_occurrence_db_b level (svar_quantify X level ϕ) = true
+    ).
+  Proof.
+    move: level.
+    induction ϕ; intros level; split; intros HnoX Hnolevel; cbn in *; auto.
+    - case_match; reflexivity.
+    - case_match; cbn. 2: reflexivity. congruence.
+    - apply orb_false_iff in Hnolevel. destruct_and!.
+      pose proof (IH1 := IHϕ1 level).
+      destruct IH1 as [IH11 _].
+      specialize (IH11 ltac:(assumption) ltac:(assumption)).
+      pose proof (IH2 := IHϕ2 level).
+      destruct IH2 as [IH21 _].
+      specialize (IH21 ltac:(assumption) ltac:(assumption)).
+      split_and!; assumption.
+    - apply orb_false_iff in Hnolevel. destruct_and!.
+      pose proof (IH1 := IHϕ1 level).
+      destruct IH1 as [_ IH12].
+      specialize (IH12 ltac:(assumption) ltac:(assumption)).
+      pose proof (IH2 := IHϕ2 level).
+      destruct IH2 as [_ IH22].
+      specialize (IH22 ltac:(assumption) ltac:(assumption)).
+      split_and!; assumption.
+    - apply orb_false_iff in Hnolevel. destruct_and!.
+      pose proof (IH1 := IHϕ1 level).
+      destruct IH1 as [_ IH12].
+      specialize (IH12 ltac:(assumption) ltac:(assumption)).
+      pose proof (IH2 := IHϕ2 level).
+      destruct IH2 as [IH21 _].
+      specialize (IH21 ltac:(assumption) ltac:(assumption)).
+      split_and!; assumption.
+    - apply orb_false_iff in Hnolevel. destruct_and!.
+      pose proof (IH1 := IHϕ1 level).
+      destruct IH1 as [IH11 _].
+      specialize (IH11 ltac:(assumption) ltac:(assumption)).
+      pose proof (IH2 := IHϕ2 level).
+      destruct IH2 as [_ IH22].
+      specialize (IH22 ltac:(assumption) ltac:(assumption)).
+      split_and!; assumption.
+    - firstorder.
+    - firstorder.
+    - firstorder.
+    - firstorder.
+  Qed.
+
+  Lemma no_negative_occurrence_svar_quantify ϕ level X:
     no_negative_occurrence_db_b level ϕ = true ->
     svar_has_negative_occurrence X ϕ = false ->
-    no_negative_occurrence_db_b level (svar_quantify X level ϕ) = true
-  )
-  /\
-  (
-    no_positive_occurrence_db_b level ϕ = true ->
-    svar_has_positive_occurrence X ϕ = false ->
-    no_positive_occurrence_db_b level (svar_quantify X level ϕ) = true
-  ).
-Proof.
-  move: level.
-  induction ϕ; intros level; split; intros HnoX Hnolevel; cbn in *; auto.
-  - case_match; reflexivity.
-  - case_match; cbn. 2: reflexivity. congruence.
-  - apply orb_false_iff in Hnolevel. destruct_and!.
-    pose proof (IH1 := IHϕ1 level).
-    destruct IH1 as [IH11 _].
-    specialize (IH11 ltac:(assumption) ltac:(assumption)).
-    pose proof (IH2 := IHϕ2 level).
-    destruct IH2 as [IH21 _].
-    specialize (IH21 ltac:(assumption) ltac:(assumption)).
-    split_and!; assumption.
-  - apply orb_false_iff in Hnolevel. destruct_and!.
-    pose proof (IH1 := IHϕ1 level).
-    destruct IH1 as [_ IH12].
-    specialize (IH12 ltac:(assumption) ltac:(assumption)).
-    pose proof (IH2 := IHϕ2 level).
-    destruct IH2 as [_ IH22].
-    specialize (IH22 ltac:(assumption) ltac:(assumption)).
-    split_and!; assumption.
-  - apply orb_false_iff in Hnolevel. destruct_and!.
-    pose proof (IH1 := IHϕ1 level).
-    destruct IH1 as [_ IH12].
-    specialize (IH12 ltac:(assumption) ltac:(assumption)).
-    pose proof (IH2 := IHϕ2 level).
-    destruct IH2 as [IH21 _].
-    specialize (IH21 ltac:(assumption) ltac:(assumption)).
-    split_and!; assumption.
-  - apply orb_false_iff in Hnolevel. destruct_and!.
-    pose proof (IH1 := IHϕ1 level).
-    destruct IH1 as [IH11 _].
-    specialize (IH11 ltac:(assumption) ltac:(assumption)).
-    pose proof (IH2 := IHϕ2 level).
-    destruct IH2 as [_ IH22].
-    specialize (IH22 ltac:(assumption) ltac:(assumption)).
-    split_and!; assumption.
-  - firstorder.
-  - firstorder.
-  - firstorder.
-  - firstorder.
-Qed.
+    no_negative_occurrence_db_b level (svar_quantify X level ϕ) = true.
+  Proof.
+    intros H1 H2.
+    pose proof (Htmp :=Private_no_negative_occurrence_svar_quantify ϕ level X).
+    destruct Htmp as [Htmp1 Htmp2].
+    auto.
+  Qed.
 
-Lemma no_negative_occurrence_svar_quantify {Σ : Signature} ϕ level X:
-  no_negative_occurrence_db_b level ϕ = true ->
-  svar_has_negative_occurrence X ϕ = false ->
-  no_negative_occurrence_db_b level (svar_quantify X level ϕ) = true.
-Proof.
-  intros H1 H2.
-  pose proof (Htmp :=Private_no_negative_occurrence_svar_quantify ϕ level X).
-  destruct Htmp as [Htmp1 Htmp2].
-  auto.
-Qed.
+  Lemma no_positive_occurrence_svar_quantify ϕ level X:
+      no_positive_occurrence_db_b level ϕ = true ->
+      svar_has_positive_occurrence X ϕ = false ->
+      no_positive_occurrence_db_b level (svar_quantify X level ϕ) = true.
+  Proof.
+    intros H1 H2.
+    pose proof (Htmp :=Private_no_negative_occurrence_svar_quantify ϕ level X).
+    destruct Htmp as [Htmp1 Htmp2].
+    auto.
+  Qed.
 
-Lemma no_positive_occurrence_svar_quantify {Σ : Signature} ϕ level X:
-    no_positive_occurrence_db_b level ϕ = true ->
+
+  Lemma no_negative_occurrence_svar_quantify_2 X dbi1 dbi2 ϕ:
+    dbi1 <> dbi2 ->
+    no_negative_occurrence_db_b dbi1 (svar_quantify X dbi2 ϕ) = no_negative_occurrence_db_b dbi1 ϕ
+  with no_positive_occurrence_svar_quantify_2  X dbi1 dbi2 ϕ:
+    dbi1 <> dbi2 ->
+    no_positive_occurrence_db_b dbi1 (svar_quantify X dbi2 ϕ) = no_positive_occurrence_db_b dbi1 ϕ.
+  Proof.
+    - move: dbi1 dbi2.
+      induction ϕ; intros dbi1 dbi2 Hdbi; simpl; auto.
+      + case_match; reflexivity.
+      + cbn. rewrite IHϕ1. lia. rewrite IHϕ2. lia. reflexivity.
+      + unfold no_negative_occurrence_db_b at 1.
+        fold (no_positive_occurrence_db_b dbi1 (svar_quantify X dbi2 ϕ1)).
+        fold (no_negative_occurrence_db_b dbi1 (svar_quantify X dbi2 ϕ2)).
+        rewrite no_positive_occurrence_svar_quantify_2. lia. rewrite IHϕ2. lia. reflexivity.
+      + cbn. rewrite IHϕ. lia. reflexivity.
+      + cbn. rewrite IHϕ. lia. reflexivity.
+    - move: dbi1 dbi2.
+      induction ϕ; intros dbi1 dbi2 Hdbi; simpl; auto.
+      + case_match; cbn. 2: reflexivity. case_match; congruence.
+      + cbn. rewrite IHϕ1. lia. rewrite IHϕ2. lia. reflexivity.
+      + unfold no_positive_occurrence_db_b at 1.
+        fold (no_negative_occurrence_db_b dbi1 (svar_quantify X dbi2 ϕ1)).
+        fold (no_positive_occurrence_db_b dbi1 (svar_quantify X dbi2 ϕ2)).
+        rewrite no_negative_occurrence_svar_quantify_2. lia. rewrite IHϕ2. lia. reflexivity.
+      + cbn. rewrite IHϕ. lia. reflexivity.
+      + cbn. rewrite IHϕ. lia. reflexivity.
+  Qed.
+
+  Lemma well_formed_positive_svar_quantify X dbi ϕ:
+    well_formed_positive ϕ ->
+    well_formed_positive (svar_quantify X dbi ϕ) = true.
+  Proof.
+    intros Hϕ.
+    move: dbi.
+    induction ϕ; intros dbi; simpl; auto.
+    - case_match; reflexivity.
+    - simpl in Hϕ.
+      destruct_and!.
+      specialize (IHϕ1 ltac:(assumption)).
+      specialize (IHϕ2 ltac:(assumption)).
+      rewrite IHϕ1. rewrite IHϕ2.
+      reflexivity.
+    - simpl in Hϕ.
+      destruct_and!.
+      specialize (IHϕ1 ltac:(assumption)).
+      specialize (IHϕ2 ltac:(assumption)).
+      rewrite IHϕ1. rewrite IHϕ2.
+      reflexivity.
+    - simpl in Hϕ.
+      destruct_and!.
+      specialize (IHϕ ltac:(assumption)).
+      rewrite IHϕ.
+      rewrite no_negative_occurrence_svar_quantify_2. lia.
+      split_and!; auto.
+  Qed.
+
+  (* Lemma bevar_occur_positivity ψ dbi :
+    bsvar_occur ψ dbi = false ->
+    no_negative_occurrence_db_b dbi ψ = true /\ no_positive_occurrence_db_b dbi ψ.
+  Proof.
+    induction ψ; intros H; cbn; auto.
+    * simpl in H. case_match; auto.
+    * Search bsvar_occur. *)
+
+  Lemma nno_free_svar_subst dbi ϕ ψ X:
+    well_formed_closed_mu_aux ψ dbi ->
+    no_negative_occurrence_db_b dbi (ϕ^[[svar: X ↦ ψ]])
+    = no_negative_occurrence_db_b dbi ϕ
+  with npo_free_svar_subst dbi ϕ ψ X:
+    well_formed_closed_mu_aux ψ dbi ->
+    no_positive_occurrence_db_b dbi (ϕ^[[svar: X ↦ ψ]])
+    = no_positive_occurrence_db_b dbi ϕ.
+  Proof.
+    - move: dbi.
+      induction ϕ; intros dbi Hwf; simpl; auto.
+      + case_match; cbn; [|reflexivity].
+        eapply Private_wfc_impl_no_neg_pos_occ. exact Hwf. lia.
+      + cbn. rewrite IHϕ1; auto. rewrite IHϕ2; auto.
+      + cbn.
+        fold (no_positive_occurrence_db_b).
+        rewrite nno_free_svar_subst; auto.
+        rewrite npo_free_svar_subst; auto.
+      + cbn.
+        rewrite IHϕ; auto.
+      + cbn.
+        rewrite IHϕ; auto. eapply well_formed_closed_mu_aux_ind. 2: exact Hwf. lia.
+    - move: dbi.
+      induction ϕ; intros dbi Hwf; simpl; auto.
+      + case_match; cbn; [|reflexivity].
+        eapply Private_wfc_impl_no_neg_pos_occ. exact Hwf. lia.
+      + cbn. rewrite IHϕ1; auto. rewrite IHϕ2; auto.
+      + cbn.
+        fold (no_negative_occurrence_db_b).
+        rewrite nno_free_svar_subst; auto.
+        rewrite IHϕ2; auto.
+      + cbn.
+        rewrite IHϕ; auto.
+      + cbn.
+        rewrite IHϕ; auto. eapply well_formed_closed_mu_aux_ind. 2: exact Hwf. lia.
+  Qed.
+
+  Lemma wfp_free_svar_subst_1 ϕ ψ X:
+    well_formed_closed ψ = true ->
+    well_formed_positive ψ = true ->
+    well_formed_positive ϕ = true ->
+    well_formed_positive (ϕ^[[svar: X ↦ ψ]]) = true.
+  Proof.
+    intros wfcψ wfpψ wfpϕ.
+    induction ϕ; simpl; auto.
+    - case_match; auto.
+    - simpl in wfpϕ. destruct_and!.
+      rewrite -> IHϕ1 by assumption.
+      rewrite -> IHϕ2 by assumption.
+      reflexivity.
+    - simpl in wfpϕ. destruct_and!.
+      rewrite -> IHϕ1 by assumption.
+      rewrite -> IHϕ2 by assumption.
+      reflexivity.
+    - simpl in wfpϕ. destruct_and!.
+      specialize (IHϕ H0).
+      rewrite -> IHϕ.
+      rewrite nno_free_svar_subst.
+      { apply andb_true_iff in wfcψ. apply wfcψ. }
+      rewrite H.
+      reflexivity.
+  Qed.
+
+  Lemma wfp_free_svar_subst ϕ ψ X:
+    well_formed_closed_mu_aux ψ 0 ->
+    well_formed_positive ψ = true ->
+    well_formed_positive ϕ = true ->
+    svar_has_negative_occurrence X ϕ = false ->
+    well_formed_positive (ϕ^[[svar: X ↦ ψ]]) = true
+  with wfp_neg_free_svar_subst ϕ ψ X:
+    well_formed_closed_mu_aux ψ 0 ->
+    well_formed_positive ψ = true ->
+    well_formed_positive ϕ = true ->
     svar_has_positive_occurrence X ϕ = false ->
-    no_positive_occurrence_db_b level (svar_quantify X level ϕ) = true.
-Proof.
-  intros H1 H2.
-  pose proof (Htmp :=Private_no_negative_occurrence_svar_quantify ϕ level X).
-  destruct Htmp as [Htmp1 Htmp2].
-  auto.
-Qed.
+    well_formed_positive (ϕ^[[svar: X ↦ ψ]]) = true.
+  Proof.
+    - intros Hwfcψ Hwfpψ Hwfpϕ Hnoneg.
+      induction ϕ; simpl; auto.
+      + case_match; [|reflexivity].
+        assumption.
+      + cbn in Hnoneg. cbn in Hwfpϕ.
+        apply orb_false_iff in Hnoneg.
+        destruct_and!.
+        specialize (IHϕ1 ltac:(assumption) ltac:(assumption)).
+        specialize (IHϕ2 ltac:(assumption) ltac:(assumption)).
+        split_and!; auto.
+      + cbn in Hnoneg. cbn in Hwfpϕ.
+        apply orb_false_iff in Hnoneg.
+        destruct_and!.
+        pose proof (IH1 := wfp_neg_free_svar_subst ϕ1 ψ X ltac:(assumption)).
+        feed specialize IH1.
+        { assumption. }
+        { assumption. }
+        { assumption. }
+        specialize (IHϕ2 ltac:(assumption)).
+        split_and!; auto.
+      + cbn in Hnoneg. cbn in Hwfpϕ. destruct_and!.
+        rewrite IHϕ. assumption. assumption. split_and!; auto.
+        rewrite nno_free_svar_subst.
+        assumption. assumption.
+    -
+      intros Hwfcψ Hwfpψ Hwfpϕ Hnoneg.
+      induction ϕ; simpl; auto.
+      + case_match; [|reflexivity].
+        assumption.
+      + cbn in Hnoneg. cbn in Hwfpϕ.
+        apply orb_false_iff in Hnoneg.
+        destruct_and!.
+        specialize (IHϕ1 ltac:(assumption) ltac:(assumption)).
+        specialize (IHϕ2 ltac:(assumption) ltac:(assumption)).
+        split_and!; auto.
+      + cbn in Hnoneg. cbn in Hwfpϕ.
+        apply orb_false_iff in Hnoneg.
+        destruct_and!.
+        pose proof (IH1 := wfp_free_svar_subst ϕ1 ψ X ltac:(assumption)).
+        feed specialize IH1.
+        { assumption. }
+        { assumption. }
+        { assumption. }
+        specialize (IHϕ2 ltac:(assumption)).
+        split_and!; auto.
+      + cbn in Hnoneg. cbn in Hwfpϕ. destruct_and!.
+        rewrite IHϕ. assumption. assumption. split_and!; auto.
+        rewrite nno_free_svar_subst.
+        assumption. assumption.
+  Qed.
+
+  Lemma count_evar_occurrences_bevar_subst pcEvar ϕ ψ k:
+    count_evar_occurrences pcEvar ψ = 0 ->
+    count_evar_occurrences pcEvar (ϕ^[evar: k ↦ ψ]) = count_evar_occurrences pcEvar ϕ.
+  Proof.
+    intros H.
+    move: k.
+    induction ϕ; intros k; simpl; auto.
+    - case_match; auto.
+  Qed.
+
+  Lemma count_evar_occurrences_evar_open pcEvar ϕ x:
+    pcEvar <> x ->
+    count_evar_occurrences pcEvar (evar_open 0 x ϕ) = count_evar_occurrences pcEvar ϕ.
+  Proof.
+    intros H. apply count_evar_occurrences_bevar_subst. simpl. case_match; congruence.
+  Qed.
+
+
+  Lemma count_evar_occurrences_svar_open x dbi ϕ ψ:
+    count_evar_occurrences x ψ = 0 ->
+    count_evar_occurrences x (ϕ^[svar: dbi ↦ ψ]) = count_evar_occurrences x ϕ.
+  Proof.
+    move: dbi.
+    induction ϕ; intros dbi H; simpl; auto.
+    case_match; auto.
+  Qed.
+
+  Lemma free_evar_subst_bsvar_subst ϕ ψ ξ x dbi:
+    well_formed_closed_mu_aux ξ 0 ->
+    evar_is_fresh_in x ψ ->
+    (ϕ^[svar: dbi ↦ ψ])^[[evar:x ↦ ξ]]
+    = (ϕ^[[evar:x ↦ ξ]])^[svar: dbi ↦ ψ].
+  Proof.
+    move: dbi.
+    induction ϕ; intros dbi H1 H2; simpl; auto.
+    - repeat case_match; auto.
+      erewrite well_formed_bsvar_subst. reflexivity.
+      2: eassumption.
+      lia.
+    - repeat case_match; auto.
+      apply free_evar_subst_no_occurrence.
+      apply count_evar_occurrences_0. assumption.
+    - rewrite IHϕ1; auto. rewrite IHϕ2; auto.
+    - rewrite IHϕ1; auto. rewrite IHϕ2; auto.
+    - rewrite IHϕ; auto.
+    - rewrite IHϕ; auto.
+  Qed.
+
+  Lemma wf_svar_open_from_wf_mu X ϕ:
+    well_formed (patt_mu ϕ) ->
+    well_formed (svar_open 0 X ϕ).
+  Proof.
+    intros H. wf_auto;
+    destruct_and!;
+        [ (apply wfp_svar_open; auto)
+        | (apply wfc_mu_aux_body_mu_imp1; assumption)
+        | (apply wfc_ex_aux_body_mu_imp1; assumption)
+        ].
+  Qed.
+
+
+  Lemma wfcex_after_subst_impl_wfcex_before ϕ ψ x dbi:
+    well_formed_closed_ex_aux (ϕ^[[evar:x ↦ ψ]]) dbi = true ->
+    well_formed_closed_ex_aux ϕ dbi = true.
+  Proof.
+    intros Hsubst.
+    move: dbi Hsubst.
+    induction ϕ; intros dbi Hsubst; simpl in *; auto.
+    - apply andb_prop in Hsubst. destruct Hsubst as [Hsubst1 Hsubst2].
+      specialize (IHϕ1 dbi Hsubst1).
+      specialize (IHϕ2 dbi Hsubst2).
+      rewrite IHϕ1 IHϕ2.
+      reflexivity.
+    - apply andb_prop in Hsubst. destruct Hsubst as [Hsubst1 Hsubst2].
+      specialize (IHϕ1 dbi Hsubst1).
+      specialize (IHϕ2 dbi Hsubst2).
+      rewrite IHϕ1 IHϕ2.
+      reflexivity.
+  Qed.
+
+  Lemma wfcmu_after_subst_impl_wfcmu_before ϕ ψ x dbi:
+    well_formed_closed_mu_aux (ϕ^[[evar:x ↦ ψ]]) dbi = true ->
+    well_formed_closed_mu_aux ϕ dbi = true.
+  Proof.
+    intros Hsubst.
+    move: dbi Hsubst.
+    induction ϕ; intros dbi Hsubst; simpl in *; auto.
+    - apply andb_prop in Hsubst. destruct Hsubst as [Hsubst1 Hsubst2].
+      specialize (IHϕ1 dbi Hsubst1).
+      specialize (IHϕ2 dbi Hsubst2).
+      rewrite IHϕ1 IHϕ2.
+      reflexivity.
+    - apply andb_prop in Hsubst. destruct Hsubst as [Hsubst1 Hsubst2].
+      specialize (IHϕ1 dbi Hsubst1).
+      specialize (IHϕ2 dbi Hsubst2).
+      rewrite IHϕ1 IHϕ2.
+      reflexivity.
+  Qed.
+
+  Lemma nno_after_subst_impl_nno_before ϕ ψ x dbi:
+    no_negative_occurrence_db_b dbi (ϕ^[[evar:x ↦ ψ]]) = true ->
+    no_negative_occurrence_db_b dbi ϕ = true
+  with npo_after_subst_impl_npo_before ϕ ψ x dbi:
+    no_positive_occurrence_db_b dbi (ϕ^[[evar:x ↦ ψ]]) = true ->
+    no_positive_occurrence_db_b dbi ϕ = true.
+  Proof.
+    - move: dbi.
+      induction ϕ; intros dbi Hsubst; cbn in *; auto.
+      + apply andb_prop in Hsubst. destruct Hsubst as [Hsubst1 Hsubst2].
+        specialize (IHϕ1 dbi Hsubst1).
+        specialize (IHϕ2 dbi Hsubst2).
+        rewrite IHϕ1. rewrite IHϕ2.
+        reflexivity.
+      + apply andb_prop in Hsubst. destruct Hsubst as [Hsubst1 Hsubst2].
+        fold no_positive_occurrence_db_b in Hsubst1.
+        fold no_positive_occurrence_db_b.
+        specialize (IHϕ2 dbi Hsubst2).
+        rewrite IHϕ2.
+        erewrite npo_after_subst_impl_npo_before.
+        reflexivity. eassumption.
+    - move: dbi.
+      induction ϕ; intros dbi Hsubst; cbn in *; auto.
+      + apply andb_prop in Hsubst. destruct Hsubst as [Hsubst1 Hsubst2].
+        specialize (IHϕ1 dbi Hsubst1).
+        specialize (IHϕ2 dbi Hsubst2).
+        rewrite IHϕ1. rewrite IHϕ2.
+        reflexivity.
+      + apply andb_prop in Hsubst. destruct Hsubst as [Hsubst1 Hsubst2].
+        fold no_negative_occurrence_db_b in Hsubst1.
+        fold no_negative_occurrence_db_b.
+        specialize (IHϕ2 dbi Hsubst2).
+        rewrite IHϕ2.
+        erewrite nno_after_subst_impl_nno_before.
+        reflexivity. eassumption.
+  Qed.
+
+  Lemma wfp_after_subst_impl_wfp_before ϕ ψ x:
+    well_formed_positive (ϕ^[[evar:x ↦ ψ]]) = true ->
+    well_formed_positive ϕ = true.
+  Proof.
+    intros Hsubst.
+    move: Hsubst.
+    induction ϕ; intros Hsubst; simpl in *; auto.
+    - apply andb_prop in Hsubst. destruct Hsubst as [Hsubst1 Hsubst2].
+      specialize (IHϕ1 Hsubst1).
+      specialize (IHϕ2 Hsubst2).
+      rewrite IHϕ1. rewrite IHϕ2.
+      reflexivity.
+    - apply andb_prop in Hsubst. destruct Hsubst as [Hsubst1 Hsubst2].
+      specialize (IHϕ1 Hsubst1).
+      specialize (IHϕ2 Hsubst2).
+      rewrite IHϕ1. rewrite IHϕ2.
+      reflexivity.
+    - apply andb_prop in Hsubst. destruct Hsubst as [Hnno Hsubst]. 
+      specialize (IHϕ Hsubst).
+      rewrite IHϕ.
+      erewrite nno_after_subst_impl_nno_before.
+      reflexivity. eassumption.
+  Qed.
+
+  Lemma wf_after_subst_impl_wf_before ϕ ψ x:
+    well_formed (ϕ^[[evar:x ↦ ψ]]) = true ->
+    well_formed ϕ = true.
+  Proof.
+    intros H.
+    unfold well_formed,well_formed_closed in *.
+    destruct_and!.
+    split_and!.
+    - eapply wfp_after_subst_impl_wfp_before. eassumption.
+    - eapply wfcmu_after_subst_impl_wfcmu_before. eassumption.
+    - eapply wfcex_after_subst_impl_wfcex_before. eassumption.
+  Qed.
+
+  Lemma wf_emplaced_impl_wf_context (C : PatternCtx) (ψ : Pattern) :
+    well_formed (emplace C ψ) = true ->
+    PC_wf C.
+  Proof.
+    intros H.
+    unfold emplace in H. unfold PC_wf.
+    eapply wf_after_subst_impl_wf_before.
+    eassumption.
+  Qed.
+
+  Global Instance evar_is_fresh_in_dec (x : evar) (p : Pattern) :
+    Decision (evar_is_fresh_in x p).
+  Proof.
+    unfold evar_is_fresh_in.
+    apply not_dec. apply gset_elem_of_dec.
+  Defined.
+
+  Definition evar_is_fresh_in_list (x : evar) (l : list Pattern) :=
+    Forall (evar_is_fresh_in x) l.
+
+  Global Instance evar_is_fresh_in_list_dec (x : evar) (l : list Pattern) :
+    Decision (evar_is_fresh_in_list x l).
+  Proof.
+    unfold Decision. unfold evar_is_fresh_in_list.
+    apply Forall_dec.
+    intros p.
+    apply evar_is_fresh_in_dec.
+  Defined.
+
+  Global Instance svar_is_fresh_in_dec (X : svar) (p : Pattern) :
+    Decision (svar_is_fresh_in X p).
+  Proof.
+    unfold svar_is_fresh_in.
+    apply not_dec. apply gset_elem_of_dec.
+  Defined.
+
+  Definition svar_is_fresh_in_list (X : svar) (l : list Pattern) :=
+    Forall (svar_is_fresh_in X) l.
+
+  Global Instance svar_is_fresh_in_list_dec (X : svar) (l : list Pattern) :
+    Decision (svar_is_fresh_in_list X l).
+  Proof.
+    unfold Decision. unfold svar_is_fresh_in_list.
+    apply Forall_dec.
+    intros p.
+    apply svar_is_fresh_in_dec.
+  Defined.
+
+  Lemma no_neg_occ_quan_impl_no_neg_occ x n1 n2 ϕ:
+   no_negative_occurrence_db_b n1 (evar_quantify x n2 ϕ) = true ->
+   no_negative_occurrence_db_b n1 ϕ = true
+  with no_pos_occ_quan_impl_no_pos_occ x n1 n2 ϕ:
+   no_positive_occurrence_db_b n1 (evar_quantify x n2 ϕ) = true ->
+   no_positive_occurrence_db_b n1 ϕ = true.
+  Proof.
+   - intros H.
+     move: n1 n2 H.
+     induction ϕ; intros n1 n2 H; simpl in *; auto.
+     + unfold no_negative_occurrence_db_b in *. simpl in *. fold no_negative_occurrence_db_b in *.
+       destruct_and!.
+       erewrite -> IHϕ1 by eassumption.
+       erewrite -> IHϕ2 by eassumption.
+       reflexivity.
+     + unfold no_negative_occurrence_db_b in *. simpl in *.
+       fold no_negative_occurrence_db_b no_positive_occurrence_db_b in *.
+       destruct_and!.
+       erewrite -> no_pos_occ_quan_impl_no_pos_occ by eassumption.
+       erewrite -> IHϕ2 by eassumption.
+       reflexivity.
+     + unfold no_negative_occurrence_db_b in *. simpl in *. fold no_negative_occurrence_db_b in *.
+       erewrite -> IHϕ by eassumption.
+       reflexivity.
+     + unfold no_negative_occurrence_db_b in *. simpl in *. fold no_negative_occurrence_db_b in *.
+       erewrite -> IHϕ by eassumption.
+       reflexivity.
+   - intros H.
+     move: n1 n2 H.
+     induction ϕ; intros n1 n2 H; simpl in *; auto.
+     + unfold no_positive_occurrence_db_b in *. simpl in *. fold no_positive_occurrence_db_b in *.
+       destruct_and!.
+       erewrite -> IHϕ1 by eassumption.
+       erewrite -> IHϕ2 by eassumption.
+       reflexivity.
+     + unfold no_positive_occurrence_db_b in *. simpl in *.
+       fold no_positive_occurrence_db_b no_negative_occurrence_db_b in *.
+       destruct_and!.
+       erewrite -> no_neg_occ_quan_impl_no_neg_occ by eassumption.
+       erewrite -> IHϕ2 by eassumption.
+       reflexivity.
+     + unfold no_positive_occurrence_db_b in *. simpl in *. fold no_positive_occurrence_db_b in *.
+       erewrite -> IHϕ by eassumption.
+       reflexivity.
+     + unfold no_positive_occurrence_db_b in *. simpl in *. fold no_positive_occurrence_db_b in *.
+       erewrite -> IHϕ by eassumption.
+       reflexivity.
+  Qed.
+
+  Lemma wfp_evar_quan_impl_wfp x n ϕ:
+    well_formed_positive (evar_quantify x n ϕ) = true ->
+    well_formed_positive ϕ.
+  Proof.
+    intros H.
+    move: n H.
+    induction ϕ; intros n' H; simpl in *; auto.
+    - destruct_and!.
+      erewrite -> IHϕ1 by eassumption.
+      erewrite -> IHϕ2 by eassumption.
+      reflexivity.
+    - destruct_and!.
+      erewrite -> IHϕ1 by eassumption.
+      erewrite -> IHϕ2 by eassumption.
+      reflexivity.
+    - erewrite IHϕ by eassumption.
+      reflexivity.
+    - simpl.
+      destruct_and!.
+      erewrite -> IHϕ by eassumption.
+      erewrite -> no_neg_occ_quan_impl_no_neg_occ by eassumption.
+      reflexivity.
+  Qed.
+
+  Lemma wfcex_evar_quan_impl_wfcex x n dbi ϕ:
+    well_formed_closed_ex_aux (evar_quantify x n ϕ) dbi = true ->
+    well_formed_closed_ex_aux ϕ dbi.
+  Proof.
+    intros H.
+    move: n dbi H.
+    induction ϕ; intros n' dbi H; simpl in *; auto.
+    - destruct_and!.
+      erewrite -> IHϕ1 by eassumption.
+      erewrite -> IHϕ2 by eassumption.
+      reflexivity.
+    - destruct_and!.
+      erewrite -> IHϕ1 by eassumption.
+      erewrite -> IHϕ2 by eassumption.
+      reflexivity.
+    - erewrite IHϕ by eassumption.
+      reflexivity.
+    - simpl.
+      erewrite -> IHϕ by eassumption.
+      reflexivity.
+  Qed.
+
+  Lemma wfcmu_evar_quan_impl_wfcmu x n dbi ϕ:
+    well_formed_closed_mu_aux (evar_quantify x n ϕ) dbi = true ->
+    well_formed_closed_mu_aux ϕ dbi.
+  Proof.
+    intros H.
+    move: n dbi H.
+    induction ϕ; intros n' dbi H; simpl in *; auto.
+    - destruct_and!.
+      erewrite -> IHϕ1 by eassumption.
+      erewrite -> IHϕ2 by eassumption.
+      reflexivity.
+    - destruct_and!.
+      erewrite -> IHϕ1 by eassumption.
+      erewrite -> IHϕ2 by eassumption.
+      reflexivity.
+    - erewrite IHϕ by eassumption.
+      reflexivity.
+    - simpl.
+      erewrite -> IHϕ by eassumption.
+      reflexivity.
+  Qed.
+
+  Lemma wfc_ex_lower ϕ n:
+    bevar_occur ϕ n = false ->
+    well_formed_closed_ex_aux ϕ (S n) = true ->
+    well_formed_closed_ex_aux ϕ n = true.
+  Proof.
+    intros H1 H2.
+    move: n H1 H2.
+    induction ϕ; intros n' H1 H2; simpl in *; auto.
+    - repeat case_match; auto. lia.
+    - apply orb_false_elim in H1. destruct_and!.
+      erewrite -> IHϕ1 by eassumption.
+      erewrite -> IHϕ2 by eassumption.
+      reflexivity.
+    - apply orb_false_elim in H1. destruct_and!.
+      erewrite -> IHϕ1 by eassumption.
+      erewrite -> IHϕ2 by eassumption.
+      reflexivity.
+  Qed.
+
+  Lemma wfc_mu_lower ϕ n:
+    bsvar_occur ϕ n = false ->
+    well_formed_closed_mu_aux ϕ (S n) = true ->
+    well_formed_closed_mu_aux ϕ n = true.
+  Proof.
+    intros H1 H2.
+    move: n H1 H2.
+    induction ϕ; intros n' H1 H2; simpl in *; auto.
+    - repeat case_match; auto. lia.
+    - apply orb_false_elim in H1. destruct_and!.
+      erewrite -> IHϕ1 by eassumption.
+      erewrite -> IHϕ2 by eassumption.
+      reflexivity.
+    - apply orb_false_elim in H1. destruct_and!.
+      erewrite -> IHϕ1 by eassumption.
+      erewrite -> IHϕ2 by eassumption.
+      reflexivity.
+  Qed.
+
+  Lemma wf_ex_quan_impl_wf (x : evar) (ϕ : Pattern):
+    bevar_occur ϕ 0 = false ->
+    well_formed (exists_quantify x ϕ) = true ->
+    well_formed ϕ = true.
+  Proof.
+    intros H0 H. unfold exists_quantify in H.
+    unfold well_formed, well_formed_closed in *. destruct_and!. simpl in *.
+    split_and!.
+    - eapply wfp_evar_quan_impl_wfp. eassumption.
+    - eapply wfcmu_evar_quan_impl_wfcmu. eassumption.
+    - apply wfcex_evar_quan_impl_wfcex in H3.
+      apply wfc_ex_lower; assumption.
+  Qed.
+
+  Lemma bevar_occur_evar_open_2 dbi x ϕ:
+    well_formed_closed_ex_aux ϕ dbi ->
+    bevar_occur (evar_open dbi x ϕ) dbi = false.
+  Proof.
+    move: dbi.
+    unfold evar_open.
+    induction ϕ; intros dbi Hwf; simpl; try reflexivity.
+    - case_match; simpl; auto.
+      case_match; try lia. simpl in Hwf. case_match; [lia | congruence ].
+    - simpl in Hwf. destruct_and!.
+      rewrite IHϕ1; auto. rewrite IHϕ2; auto.
+    - simpl in Hwf. destruct_and!.
+      rewrite IHϕ1; auto. rewrite IHϕ2; auto.
+    - rewrite IHϕ; auto.
+    - rewrite IHϕ; auto.
+  Qed.
+
+  Lemma bsvar_occur_svar_open_2 dbi X ϕ:
+    well_formed_closed_mu_aux ϕ dbi ->
+    bsvar_occur (svar_open dbi X ϕ) dbi = false.
+  Proof.
+    move: dbi.
+    unfold svar_open.
+    induction ϕ; intros dbi Hwf; simpl; try reflexivity.
+    - case_match; simpl; auto.
+      case_match; try lia. simpl in Hwf. case_match; [lia | congruence ].
+    - simpl in Hwf. destruct_and!.
+      rewrite IHϕ1; auto. rewrite IHϕ2; auto.
+    - simpl in Hwf. destruct_and!.
+      rewrite IHϕ1; auto. rewrite IHϕ2; auto.
+    - rewrite IHϕ; auto.
+    - rewrite IHϕ; auto.
+  Qed.
+
+End with_signature.
+
+#[export]
+ Hint Resolve well_formed_positive_svar_quantify : core.
 
 #[export]
  Hint Resolve no_positive_occurrence_svar_quantify : core.
@@ -832,202 +1449,6 @@ Qed.
 
 #[export]
  Hint Resolve wfc_impl_no_neg_occ : core.
-
-
-Lemma no_negative_occurrence_svar_quantify_2 {Σ : Signature} X dbi1 dbi2 ϕ:
-  dbi1 <> dbi2 ->
-  no_negative_occurrence_db_b dbi1 (svar_quantify X dbi2 ϕ) = no_negative_occurrence_db_b dbi1 ϕ
-with no_positive_occurrence_svar_quantify_2  {Σ : Signature} X dbi1 dbi2 ϕ:
-  dbi1 <> dbi2 ->
-  no_positive_occurrence_db_b dbi1 (svar_quantify X dbi2 ϕ) = no_positive_occurrence_db_b dbi1 ϕ.
-Proof.
-  - move: dbi1 dbi2.
-    induction ϕ; intros dbi1 dbi2 Hdbi; simpl; auto.
-    + case_match; reflexivity.
-    + cbn. rewrite IHϕ1. lia. rewrite IHϕ2. lia. reflexivity.
-    + unfold no_negative_occurrence_db_b at 1.
-      fold (no_positive_occurrence_db_b dbi1 (svar_quantify X dbi2 ϕ1)).
-      fold (no_negative_occurrence_db_b dbi1 (svar_quantify X dbi2 ϕ2)).
-      rewrite no_positive_occurrence_svar_quantify_2. lia. rewrite IHϕ2. lia. reflexivity.
-    + cbn. rewrite IHϕ. lia. reflexivity.
-    + cbn. rewrite IHϕ. lia. reflexivity.
-  - move: dbi1 dbi2.
-    induction ϕ; intros dbi1 dbi2 Hdbi; simpl; auto.
-    + case_match; cbn. 2: reflexivity. case_match; congruence.
-    + cbn. rewrite IHϕ1. lia. rewrite IHϕ2. lia. reflexivity.
-    + unfold no_positive_occurrence_db_b at 1.
-      fold (no_negative_occurrence_db_b dbi1 (svar_quantify X dbi2 ϕ1)).
-      fold (no_positive_occurrence_db_b dbi1 (svar_quantify X dbi2 ϕ2)).
-      rewrite no_negative_occurrence_svar_quantify_2. lia. rewrite IHϕ2. lia. reflexivity.
-    + cbn. rewrite IHϕ. lia. reflexivity.
-    + cbn. rewrite IHϕ. lia. reflexivity.
-Qed.
-
-Lemma well_formed_positive_svar_quantify {Σ : Signature} X dbi ϕ:
-  well_formed_positive ϕ ->
-  well_formed_positive (svar_quantify X dbi ϕ) = true.
-Proof.
-  intros Hϕ.
-  move: dbi.
-  induction ϕ; intros dbi; simpl; auto.
-  - case_match; reflexivity.
-  - simpl in Hϕ.
-    destruct_and!.
-    specialize (IHϕ1 ltac:(assumption)).
-    specialize (IHϕ2 ltac:(assumption)).
-    rewrite IHϕ1. rewrite IHϕ2.
-    reflexivity.
-  - simpl in Hϕ.
-    destruct_and!.
-    specialize (IHϕ1 ltac:(assumption)).
-    specialize (IHϕ2 ltac:(assumption)).
-    rewrite IHϕ1. rewrite IHϕ2.
-    reflexivity.
-  - simpl in Hϕ.
-    destruct_and!.
-    specialize (IHϕ ltac:(assumption)).
-    rewrite IHϕ.
-    rewrite no_negative_occurrence_svar_quantify_2. lia.
-    split_and!; auto.
-Qed.
-
-#[export]
- Hint Resolve well_formed_positive_svar_quantify : core.
-
-(* Lemma bevar_occur_positivity {Σ : Signature} ψ dbi :
-  bsvar_occur ψ dbi = false ->
-  no_negative_occurrence_db_b dbi ψ = true /\ no_positive_occurrence_db_b dbi ψ.
-Proof.
-  induction ψ; intros H; cbn; auto.
-  * simpl in H. case_match; auto.
-  * Search bsvar_occur. *)
-
-Lemma nno_free_svar_subst {Σ : Signature} dbi ϕ ψ X:
-  well_formed_closed_mu_aux ψ dbi ->
-  no_negative_occurrence_db_b dbi (free_svar_subst ϕ ψ X)
-  = no_negative_occurrence_db_b dbi ϕ
-with npo_free_svar_subst {Σ : Signature} dbi ϕ ψ X:
-  well_formed_closed_mu_aux ψ dbi ->
-  no_positive_occurrence_db_b dbi (free_svar_subst ϕ ψ X)
-  = no_positive_occurrence_db_b dbi ϕ.
-Proof.
-  - move: dbi.
-    induction ϕ; intros dbi Hwf; simpl; auto.
-    + case_match; cbn; [|reflexivity].
-      eapply Private_wfc_impl_no_neg_pos_occ. exact Hwf. lia.
-    + cbn. rewrite IHϕ1; auto. rewrite IHϕ2; auto.
-    + cbn.
-      fold (no_positive_occurrence_db_b).
-      rewrite nno_free_svar_subst; auto.
-      rewrite npo_free_svar_subst; auto.
-    + cbn.
-      rewrite IHϕ; auto.
-    + cbn.
-      rewrite IHϕ; auto. eapply well_formed_closed_mu_aux_ind. 2: exact Hwf. lia.
-  - move: dbi.
-    induction ϕ; intros dbi Hwf; simpl; auto.
-    + case_match; cbn; [|reflexivity].
-      eapply Private_wfc_impl_no_neg_pos_occ. exact Hwf. lia.
-    + cbn. rewrite IHϕ1; auto. rewrite IHϕ2; auto.
-    + cbn.
-      fold (no_negative_occurrence_db_b).
-      rewrite nno_free_svar_subst; auto.
-      rewrite IHϕ2; auto.
-    + cbn.
-      rewrite IHϕ; auto.
-    + cbn.
-      rewrite IHϕ; auto. eapply well_formed_closed_mu_aux_ind. 2: exact Hwf. lia.
-Qed.
-
-Lemma wfp_free_svar_subst_1 {Σ : Signature} ϕ ψ X:
-  well_formed_closed ψ = true ->
-  well_formed_positive ψ = true ->
-  well_formed_positive ϕ = true ->
-  well_formed_positive (free_svar_subst ϕ ψ X) = true.
-Proof.
-  intros wfcψ wfpψ wfpϕ.
-  induction ϕ; simpl; auto.
-  - case_match; auto.
-  - simpl in wfpϕ. destruct_and!.
-    rewrite -> IHϕ1 by assumption.
-    rewrite -> IHϕ2 by assumption.
-    reflexivity.
-  - simpl in wfpϕ. destruct_and!.
-    rewrite -> IHϕ1 by assumption.
-    rewrite -> IHϕ2 by assumption.
-    reflexivity.
-  - simpl in wfpϕ. destruct_and!.
-    specialize (IHϕ H0).
-    rewrite -> IHϕ.
-    rewrite nno_free_svar_subst.
-    { apply andb_true_iff in wfcψ. apply wfcψ. }
-    rewrite H.
-    reflexivity.
-Qed.
-
-Lemma wfp_free_svar_subst {Σ : Signature} ϕ ψ X:
-  well_formed_closed_mu_aux ψ 0 ->
-  well_formed_positive ψ = true ->
-  well_formed_positive ϕ = true ->
-  svar_has_negative_occurrence X ϕ = false ->
-  well_formed_positive (free_svar_subst ϕ ψ X) = true
-with wfp_neg_free_svar_subst {Σ : Signature} ϕ ψ X:
-  well_formed_closed_mu_aux ψ 0 ->
-  well_formed_positive ψ = true ->
-  well_formed_positive ϕ = true ->
-  svar_has_positive_occurrence X ϕ = false ->
-  well_formed_positive (free_svar_subst ϕ ψ X) = true.
-Proof.
-  - intros Hwfcψ Hwfpψ Hwfpϕ Hnoneg.
-    induction ϕ; simpl; auto.
-    + case_match; [|reflexivity].
-      assumption.
-    + cbn in Hnoneg. cbn in Hwfpϕ.
-      apply orb_false_iff in Hnoneg.
-      destruct_and!.
-      specialize (IHϕ1 ltac:(assumption) ltac:(assumption)).
-      specialize (IHϕ2 ltac:(assumption) ltac:(assumption)).
-      split_and!; auto.
-    + cbn in Hnoneg. cbn in Hwfpϕ.
-      apply orb_false_iff in Hnoneg.
-      destruct_and!.
-      pose proof (IH1 := wfp_neg_free_svar_subst Σ ϕ1 ψ X ltac:(assumption)).
-      feed specialize IH1.
-      { assumption. }
-      { assumption. }
-      { assumption. }
-      specialize (IHϕ2 ltac:(assumption)).
-      split_and!; auto.
-    + cbn in Hnoneg. cbn in Hwfpϕ. destruct_and!.
-      rewrite IHϕ. assumption. assumption. split_and!; auto.
-      rewrite nno_free_svar_subst.
-      assumption. assumption.
-  -
-    intros Hwfcψ Hwfpψ Hwfpϕ Hnoneg.
-    induction ϕ; simpl; auto.
-    + case_match; [|reflexivity].
-      assumption.
-    + cbn in Hnoneg. cbn in Hwfpϕ.
-      apply orb_false_iff in Hnoneg.
-      destruct_and!.
-      specialize (IHϕ1 ltac:(assumption) ltac:(assumption)).
-      specialize (IHϕ2 ltac:(assumption) ltac:(assumption)).
-      split_and!; auto.
-    + cbn in Hnoneg. cbn in Hwfpϕ.
-      apply orb_false_iff in Hnoneg.
-      destruct_and!.
-      pose proof (IH1 := wfp_free_svar_subst Σ ϕ1 ψ X ltac:(assumption)).
-      feed specialize IH1.
-      { assumption. }
-      { assumption. }
-      { assumption. }
-      specialize (IHϕ2 ltac:(assumption)).
-      split_and!; auto.
-    + cbn in Hnoneg. cbn in Hwfpϕ. destruct_and!.
-      rewrite IHϕ. assumption. assumption. split_and!; auto.
-      rewrite nno_free_svar_subst.
-      assumption. assumption.
-Qed.
 
 #[export]
  Hint Resolve wfp_free_svar_subst : core.
@@ -1041,7 +1462,7 @@ Qed.
 
 #[export]
  Hint Resolve svar_quantify_closed_mu : core.
-    
+
 #[export]
  Hint Resolve evar_quantify_positive : core.
 
@@ -1051,25 +1472,6 @@ Qed.
 #[export]
  Hint Resolve evar_quantify_closed_ex : core.
 
-Lemma count_evar_occurrences_bevar_subst {Σ : Signature} pcEvar ϕ ψ k:
-  count_evar_occurrences pcEvar ψ = 0 ->
-  count_evar_occurrences pcEvar (bevar_subst ϕ ψ k) = count_evar_occurrences pcEvar ϕ.
-Proof.
-  intros H.
-  move: k.
-  induction ϕ; intros k; simpl; auto.
-  - case_match; auto.
-Qed.
-
-Lemma count_evar_occurrences_evar_open {Σ : Signature} pcEvar ϕ x:
-  pcEvar <> x ->
-  count_evar_occurrences pcEvar (evar_open 0 x ϕ) = count_evar_occurrences pcEvar ϕ.
-Proof.
-  intros H. apply count_evar_occurrences_bevar_subst. simpl. case_match; congruence.
-Qed.
-
-
-      
 #[export]
  Hint Resolve wfp_evar_open : core.
 
@@ -1078,9 +1480,6 @@ Qed.
 
 #[export]
  Hint Resolve wfc_ex_aux_body_ex_imp1 : core.
-
-
-
 
 #[export]
 Hint Resolve bevar_subst_positive_2 : core.
@@ -1091,417 +1490,8 @@ Hint Resolve wfc_mu_aux_bevar_subst : core.
 #[export]
 Hint Resolve wfc_ex_aux_bevar_subst : core.
 
-Lemma count_evar_occurrences_svar_open {Σ : Signature} x dbi ϕ ψ:
-  count_evar_occurrences x ψ = 0 ->
-  count_evar_occurrences x (bsvar_subst ϕ ψ dbi) = count_evar_occurrences x ϕ.
-Proof.
-  move: dbi.
-  induction ϕ; intros dbi H; simpl; auto.
-  case_match; auto.
-Qed.
-
 #[export]
 Hint Resolve wfp_svar_open : core.
 
-Lemma free_evar_subst_bsvar_subst {Σ : Signature} ϕ ψ ξ x dbi:
-  well_formed_closed_mu_aux ξ 0 ->
-  evar_is_fresh_in x ψ ->
-  free_evar_subst (bsvar_subst ϕ ψ dbi) ξ x
-  = bsvar_subst (free_evar_subst ϕ ξ x) ψ dbi.
-Proof.
-  move: dbi.
-  induction ϕ; intros dbi H1 H2; simpl; auto.
-  - repeat case_match; auto.
-    erewrite well_formed_bsvar_subst. reflexivity.
-    2: eassumption.
-    lia.
-  - repeat case_match; auto.
-    apply free_evar_subst_no_occurrence.
-    apply count_evar_occurrences_0. assumption.
-  - rewrite IHϕ1; auto. rewrite IHϕ2; auto.
-  - rewrite IHϕ1; auto. rewrite IHϕ2; auto.
-  - rewrite IHϕ; auto.
-  - rewrite IHϕ; auto.
-Qed.
-
-
-Import Notations.
-
-  Lemma wf_svar_open_from_wf_mu {Σ : Signature} X ϕ:
-    well_formed (patt_mu ϕ) ->
-    well_formed (svar_open 0 X ϕ).
-  Proof.
-    intros H. wf_auto;
-    destruct_and!;
-        [ (apply wfp_svar_open; auto)
-        | (apply wfc_mu_aux_body_mu_imp1; assumption)
-        | (apply wfc_ex_aux_body_mu_imp1; assumption)
-        ].
-  Qed.
-
-
-Lemma wfcex_after_subst_impl_wfcex_before {Σ : Signature} ϕ ψ x dbi:
-  well_formed_closed_ex_aux (free_evar_subst ϕ ψ x) dbi = true ->
-  well_formed_closed_ex_aux ϕ dbi = true.
-Proof.
-  intros Hsubst.
-  move: dbi Hsubst.
-  induction ϕ; intros dbi Hsubst; simpl in *; auto.
-  - apply andb_prop in Hsubst. destruct Hsubst as [Hsubst1 Hsubst2].
-    specialize (IHϕ1 dbi Hsubst1).
-    specialize (IHϕ2 dbi Hsubst2).
-    rewrite IHϕ1 IHϕ2.
-    reflexivity.
-  - apply andb_prop in Hsubst. destruct Hsubst as [Hsubst1 Hsubst2].
-    specialize (IHϕ1 dbi Hsubst1).
-    specialize (IHϕ2 dbi Hsubst2).
-    rewrite IHϕ1 IHϕ2.
-    reflexivity.
-Qed.
-
-Lemma wfcmu_after_subst_impl_wfcmu_before {Σ : Signature} ϕ ψ x dbi:
-  well_formed_closed_mu_aux (free_evar_subst ϕ ψ x) dbi = true ->
-  well_formed_closed_mu_aux ϕ dbi = true.
-Proof.
-  intros Hsubst.
-  move: dbi Hsubst.
-  induction ϕ; intros dbi Hsubst; simpl in *; auto.
-  - apply andb_prop in Hsubst. destruct Hsubst as [Hsubst1 Hsubst2].
-    specialize (IHϕ1 dbi Hsubst1).
-    specialize (IHϕ2 dbi Hsubst2).
-    rewrite IHϕ1 IHϕ2.
-    reflexivity.
-  - apply andb_prop in Hsubst. destruct Hsubst as [Hsubst1 Hsubst2].
-    specialize (IHϕ1 dbi Hsubst1).
-    specialize (IHϕ2 dbi Hsubst2).
-    rewrite IHϕ1 IHϕ2.
-    reflexivity.
-Qed.
-
-Lemma nno_after_subst_impl_nno_before {Σ : Signature} ϕ ψ x dbi:
-  no_negative_occurrence_db_b dbi (free_evar_subst ϕ ψ x) = true ->
-  no_negative_occurrence_db_b dbi ϕ = true
-with npo_after_subst_impl_npo_before {Σ : Signature} ϕ ψ x dbi:
-  no_positive_occurrence_db_b dbi (free_evar_subst ϕ ψ x) = true ->
-  no_positive_occurrence_db_b dbi ϕ = true.
-Proof.
-  - move: dbi.
-    induction ϕ; intros dbi Hsubst; cbn in *; auto.
-    + apply andb_prop in Hsubst. destruct Hsubst as [Hsubst1 Hsubst2].
-      specialize (IHϕ1 dbi Hsubst1).
-      specialize (IHϕ2 dbi Hsubst2).
-      rewrite IHϕ1. rewrite IHϕ2.
-      reflexivity.
-    + apply andb_prop in Hsubst. destruct Hsubst as [Hsubst1 Hsubst2].
-      fold no_positive_occurrence_db_b in Hsubst1.
-      fold no_positive_occurrence_db_b.
-      specialize (IHϕ2 dbi Hsubst2).
-      rewrite IHϕ2.
-      erewrite npo_after_subst_impl_npo_before.
-      reflexivity. eassumption.
-  - move: dbi.
-    induction ϕ; intros dbi Hsubst; cbn in *; auto.
-    + apply andb_prop in Hsubst. destruct Hsubst as [Hsubst1 Hsubst2].
-      specialize (IHϕ1 dbi Hsubst1).
-      specialize (IHϕ2 dbi Hsubst2).
-      rewrite IHϕ1. rewrite IHϕ2.
-      reflexivity.
-    + apply andb_prop in Hsubst. destruct Hsubst as [Hsubst1 Hsubst2].
-      fold no_negative_occurrence_db_b in Hsubst1.
-      fold no_negative_occurrence_db_b.
-      specialize (IHϕ2 dbi Hsubst2).
-      rewrite IHϕ2.
-      erewrite nno_after_subst_impl_nno_before.
-      reflexivity. eassumption.
-Qed.
-
 #[export]
  Hint Resolve wfc_mu_free_evar_subst : core.
-
-Lemma wfp_after_subst_impl_wfp_before {Σ : Signature} ϕ ψ x:
-  well_formed_positive (free_evar_subst ϕ ψ x) = true ->
-  well_formed_positive ϕ = true.
-Proof.
-  intros Hsubst.
-  move: Hsubst.
-  induction ϕ; intros Hsubst; simpl in *; auto.
-  - apply andb_prop in Hsubst. destruct Hsubst as [Hsubst1 Hsubst2].
-    specialize (IHϕ1 Hsubst1).
-    specialize (IHϕ2 Hsubst2).
-    rewrite IHϕ1. rewrite IHϕ2.
-    reflexivity.
-  - apply andb_prop in Hsubst. destruct Hsubst as [Hsubst1 Hsubst2].
-    specialize (IHϕ1 Hsubst1).
-    specialize (IHϕ2 Hsubst2).
-    rewrite IHϕ1. rewrite IHϕ2.
-    reflexivity.
-  - apply andb_prop in Hsubst. destruct Hsubst as [Hnno Hsubst]. 
-    specialize (IHϕ Hsubst).
-    rewrite IHϕ.
-    erewrite nno_after_subst_impl_nno_before.
-    reflexivity. eassumption.
-Qed.
-
-Lemma wf_after_subst_impl_wf_before {Σ : Signature} ϕ ψ x:
-  well_formed (free_evar_subst ϕ ψ x) = true ->
-  well_formed ϕ = true.
-Proof.
-  intros H.
-  unfold well_formed,well_formed_closed in *.
-  destruct_and!.
-  split_and!.
-  - eapply wfp_after_subst_impl_wfp_before. eassumption.
-  - eapply wfcmu_after_subst_impl_wfcmu_before. eassumption.
-  - eapply wfcex_after_subst_impl_wfcex_before. eassumption.
-Qed.
-
-Lemma wf_emplaced_impl_wf_context {Σ : Signature} (C : PatternCtx) (ψ : Pattern) :
-  well_formed (emplace C ψ) = true ->
-  PC_wf C.
-Proof.
-  intros H.
-  unfold emplace in H. unfold PC_wf.
-  eapply wf_after_subst_impl_wf_before.
-  eassumption.
-Qed.
-
-Global Instance evar_is_fresh_in_dec {Σ : Signature} (x : evar) (p : Pattern) :
-  Decision (evar_is_fresh_in x p).
-Proof.
-  unfold evar_is_fresh_in.
-  apply not_dec. apply gset_elem_of_dec.
-Defined.
-
-Definition evar_is_fresh_in_list {Σ : Signature} (x : evar) (l : list Pattern) :=
-  Forall (evar_is_fresh_in x) l.
-
-Global Instance evar_is_fresh_in_list_dec {Σ : Signature} (x : evar) (l : list Pattern) :
-  Decision (evar_is_fresh_in_list x l).
-Proof.
-  unfold Decision. unfold evar_is_fresh_in_list.
-  apply Forall_dec.
-  intros p.
-  apply evar_is_fresh_in_dec.
-Defined.
-
-Global Instance svar_is_fresh_in_dec {Σ : Signature} (X : svar) (p : Pattern) :
-  Decision (svar_is_fresh_in X p).
-Proof.
-  unfold svar_is_fresh_in.
-  apply not_dec. apply gset_elem_of_dec.
-Defined.
-
-Definition svar_is_fresh_in_list {Σ : Signature} (X : svar) (l : list Pattern) :=
-  Forall (svar_is_fresh_in X) l.
-
-Global Instance svar_is_fresh_in_list_dec {Σ : Signature} (X : svar) (l : list Pattern) :
-  Decision (svar_is_fresh_in_list X l).
-Proof.
-  unfold Decision. unfold svar_is_fresh_in_list.
-  apply Forall_dec.
-  intros p.
-  apply svar_is_fresh_in_dec.
-Defined.
-
-Lemma no_neg_occ_quan_impl_no_neg_occ {Σ : Signature} x n1 n2 ϕ:
- no_negative_occurrence_db_b n1 (evar_quantify x n2 ϕ) = true ->
- no_negative_occurrence_db_b n1 ϕ = true
-with no_pos_occ_quan_impl_no_pos_occ {Σ : Signature} x n1 n2 ϕ:
- no_positive_occurrence_db_b n1 (evar_quantify x n2 ϕ) = true ->
- no_positive_occurrence_db_b n1 ϕ = true.
-Proof.
- - intros H.
-   move: n1 n2 H.
-   induction ϕ; intros n1 n2 H; simpl in *; auto.
-   + unfold no_negative_occurrence_db_b in *. simpl in *. fold no_negative_occurrence_db_b in *.
-     destruct_and!.
-     erewrite -> IHϕ1 by eassumption.
-     erewrite -> IHϕ2 by eassumption.
-     reflexivity.
-   + unfold no_negative_occurrence_db_b in *. simpl in *.
-     fold no_negative_occurrence_db_b no_positive_occurrence_db_b in *.
-     destruct_and!.
-     erewrite -> no_pos_occ_quan_impl_no_pos_occ by eassumption.
-     erewrite -> IHϕ2 by eassumption.
-     reflexivity.
-   + unfold no_negative_occurrence_db_b in *. simpl in *. fold no_negative_occurrence_db_b in *.
-     erewrite -> IHϕ by eassumption.
-     reflexivity.
-   + unfold no_negative_occurrence_db_b in *. simpl in *. fold no_negative_occurrence_db_b in *.
-     erewrite -> IHϕ by eassumption.
-     reflexivity.
- - intros H.
-   move: n1 n2 H.
-   induction ϕ; intros n1 n2 H; simpl in *; auto.
-   + unfold no_positive_occurrence_db_b in *. simpl in *. fold no_positive_occurrence_db_b in *.
-     destruct_and!.
-     erewrite -> IHϕ1 by eassumption.
-     erewrite -> IHϕ2 by eassumption.
-     reflexivity.
-   + unfold no_positive_occurrence_db_b in *. simpl in *.
-     fold no_positive_occurrence_db_b no_negative_occurrence_db_b in *.
-     destruct_and!.
-     erewrite -> no_neg_occ_quan_impl_no_neg_occ by eassumption.
-     erewrite -> IHϕ2 by eassumption.
-     reflexivity.
-   + unfold no_positive_occurrence_db_b in *. simpl in *. fold no_positive_occurrence_db_b in *.
-     erewrite -> IHϕ by eassumption.
-     reflexivity.
-   + unfold no_positive_occurrence_db_b in *. simpl in *. fold no_positive_occurrence_db_b in *.
-     erewrite -> IHϕ by eassumption.
-     reflexivity.
-Qed.
-
-Lemma wfp_evar_quan_impl_wfp {Σ : Signature} x n ϕ:
-  well_formed_positive (evar_quantify x n ϕ) = true ->
-  well_formed_positive ϕ.
-Proof.
-  intros H.
-  move: n H.
-  induction ϕ; intros n' H; simpl in *; auto.
-  - destruct_and!.
-    erewrite -> IHϕ1 by eassumption.
-    erewrite -> IHϕ2 by eassumption.
-    reflexivity.
-  - destruct_and!.
-    erewrite -> IHϕ1 by eassumption.
-    erewrite -> IHϕ2 by eassumption.
-    reflexivity.
-  - erewrite IHϕ by eassumption.
-    reflexivity.
-  - simpl.
-    destruct_and!.
-    erewrite -> IHϕ by eassumption.
-    erewrite -> no_neg_occ_quan_impl_no_neg_occ by eassumption.
-    reflexivity.
-Qed.
-
-Lemma wfcex_evar_quan_impl_wfcex {Σ : Signature} x n dbi ϕ:
-  well_formed_closed_ex_aux (evar_quantify x n ϕ) dbi = true ->
-  well_formed_closed_ex_aux ϕ dbi.
-Proof.
-  intros H.
-  move: n dbi H.
-  induction ϕ; intros n' dbi H; simpl in *; auto.
-  - destruct_and!.
-    erewrite -> IHϕ1 by eassumption.
-    erewrite -> IHϕ2 by eassumption.
-    reflexivity.
-  - destruct_and!.
-    erewrite -> IHϕ1 by eassumption.
-    erewrite -> IHϕ2 by eassumption.
-    reflexivity.
-  - erewrite IHϕ by eassumption.
-    reflexivity.
-  - simpl.
-    erewrite -> IHϕ by eassumption.
-    reflexivity.
-Qed.
-
-Lemma wfcmu_evar_quan_impl_wfcmu {Σ : Signature} x n dbi ϕ:
-  well_formed_closed_mu_aux (evar_quantify x n ϕ) dbi = true ->
-  well_formed_closed_mu_aux ϕ dbi.
-Proof.
-  intros H.
-  move: n dbi H.
-  induction ϕ; intros n' dbi H; simpl in *; auto.
-  - destruct_and!.
-    erewrite -> IHϕ1 by eassumption.
-    erewrite -> IHϕ2 by eassumption.
-    reflexivity.
-  - destruct_and!.
-    erewrite -> IHϕ1 by eassumption.
-    erewrite -> IHϕ2 by eassumption.
-    reflexivity.
-  - erewrite IHϕ by eassumption.
-    reflexivity.
-  - simpl.
-    erewrite -> IHϕ by eassumption.
-    reflexivity.
-Qed.
-
-Lemma wfc_ex_lower (Σ : Signature) ϕ n:
-  bevar_occur ϕ n = false ->
-  well_formed_closed_ex_aux ϕ (S n) = true ->
-  well_formed_closed_ex_aux ϕ n = true.
-Proof.
-  intros H1 H2.
-  move: n H1 H2.
-  induction ϕ; intros n' H1 H2; simpl in *; auto.
-  - repeat case_match; auto. lia.
-  - apply orb_false_elim in H1. destruct_and!.
-    erewrite -> IHϕ1 by eassumption.
-    erewrite -> IHϕ2 by eassumption.
-    reflexivity.
-  - apply orb_false_elim in H1. destruct_and!.
-    erewrite -> IHϕ1 by eassumption.
-    erewrite -> IHϕ2 by eassumption.
-    reflexivity.
-Qed.
-
-Lemma wfc_mu_lower (Σ : Signature) ϕ n:
-  bsvar_occur ϕ n = false ->
-  well_formed_closed_mu_aux ϕ (S n) = true ->
-  well_formed_closed_mu_aux ϕ n = true.
-Proof.
-  intros H1 H2.
-  move: n H1 H2.
-  induction ϕ; intros n' H1 H2; simpl in *; auto.
-  - repeat case_match; auto. lia.
-  - apply orb_false_elim in H1. destruct_and!.
-    erewrite -> IHϕ1 by eassumption.
-    erewrite -> IHϕ2 by eassumption.
-    reflexivity.
-  - apply orb_false_elim in H1. destruct_and!.
-    erewrite -> IHϕ1 by eassumption.
-    erewrite -> IHϕ2 by eassumption.
-    reflexivity.
-Qed.
-
-Lemma wf_ex_quan_impl_wf {Σ : Signature} (x : evar) (ϕ : Pattern):
-  bevar_occur ϕ 0 = false ->
-  well_formed (exists_quantify x ϕ) = true ->
-  well_formed ϕ = true.
-Proof.
-  intros H0 H. unfold exists_quantify in H.
-  unfold well_formed, well_formed_closed in *. destruct_and!. simpl in *.
-  split_and!.
-  - eapply wfp_evar_quan_impl_wfp. eassumption.
-  - eapply wfcmu_evar_quan_impl_wfcmu. eassumption.
-  - apply wfcex_evar_quan_impl_wfcex in H3.
-    apply wfc_ex_lower; assumption.
-Qed.
-
-Lemma bevar_occur_evar_open_2 {Σ : Signature} dbi x ϕ:
-  well_formed_closed_ex_aux ϕ dbi ->
-  bevar_occur (evar_open dbi x ϕ) dbi = false.
-Proof.
-  move: dbi.
-  unfold evar_open.
-  induction ϕ; intros dbi Hwf; simpl; try reflexivity.
-  - case_match; simpl; auto.
-    case_match; try lia. simpl in Hwf. case_match; [lia | congruence ].
-  - simpl in Hwf. destruct_and!.
-    rewrite IHϕ1; auto. rewrite IHϕ2; auto.
-  - simpl in Hwf. destruct_and!.
-    rewrite IHϕ1; auto. rewrite IHϕ2; auto.
-  - rewrite IHϕ; auto.
-  - rewrite IHϕ; auto.
-Qed.
-
-Lemma bsvar_occur_svar_open_2 {Σ : Signature} dbi X ϕ:
-  well_formed_closed_mu_aux ϕ dbi ->
-  bsvar_occur (svar_open dbi X ϕ) dbi = false.
-Proof.
-  move: dbi.
-  unfold svar_open.
-  induction ϕ; intros dbi Hwf; simpl; try reflexivity.
-  - case_match; simpl; auto.
-    case_match; try lia. simpl in Hwf. case_match; [lia | congruence ].
-  - simpl in Hwf. destruct_and!.
-    rewrite IHϕ1; auto. rewrite IHϕ2; auto.
-  - simpl in Hwf. destruct_and!.
-    rewrite IHϕ1; auto. rewrite IHϕ2; auto.
-  - rewrite IHϕ; auto.
-  - rewrite IHϕ; auto.
-Qed.

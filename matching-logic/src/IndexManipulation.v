@@ -18,6 +18,7 @@ Import MatchingLogic.Substitution.Notations.
 
 Section index_manipulation.
   Context {Σ : Signature}.
+  Open Scope ml_scope.
 
   Fixpoint nest_ex_aux level more ϕ {struct ϕ} : Pattern :=
     match ϕ with
@@ -125,7 +126,7 @@ Section index_manipulation.
   Qed.
 
   Lemma nest_ex_gt : forall φ dbi dbi2 ψ more, dbi2 >= dbi -> well_formed_closed ψ ->
-     bevar_subst (nest_ex_aux dbi more φ) ψ (dbi2 + more) = nest_ex_aux dbi more (bevar_subst φ ψ dbi2).
+     (nest_ex_aux dbi more φ)^[evar: (dbi2 + more) ↦ ψ] = nest_ex_aux dbi more (φ^[evar: dbi2 ↦ ψ]).
   Proof.
     induction φ; intros dbi dbi2 ψ more Hgt Hwf; cbn; auto.
     * do 3 case_match; auto; simpl; try case_match; subst; try lia; auto.
@@ -139,7 +140,7 @@ Section index_manipulation.
   Qed.
 
   Lemma nest_mu_gt : forall φ dbi dbi2 ψ more, dbi2 >= dbi -> well_formed_closed ψ ->
-     bsvar_subst (nest_mu_aux dbi more φ) ψ (dbi2 + more) = nest_mu_aux dbi more (bsvar_subst φ ψ dbi2).
+     (nest_mu_aux dbi more φ)^[svar: (dbi2 + more) ↦ ψ] = nest_mu_aux dbi more (φ^[svar: dbi2 ↦ ψ]).
   Proof.
     induction φ; intros dbi dbi2 ψ more Hgt Hwf; cbn; auto.
     * do 3 case_match; auto; simpl; try case_match; subst; try lia; auto.
@@ -263,7 +264,7 @@ Section index_manipulation.
 
   Lemma nest_ex_same_general : forall φ dbi ψ more,
      forall x,  x >= dbi -> x < dbi + more -> 
-     bevar_subst (nest_ex_aux dbi more φ) ψ x = nest_ex_aux dbi (pred more) φ.
+     (nest_ex_aux dbi more φ)^[evar: x ↦ ψ] = nest_ex_aux dbi (pred more) φ.
   Proof.
     induction φ; intros dbi ψ more x' Hx1 Hx2; cbn; auto.
     * do 2 case_match; auto; try lia.
@@ -276,7 +277,7 @@ Section index_manipulation.
 
   Lemma nest_mu_same_general : forall φ dbi ψ more,
      forall x,  x >= dbi -> x < dbi + more -> 
-     bsvar_subst (nest_mu_aux dbi more φ) ψ x = nest_mu_aux dbi (pred more) φ.
+     (nest_mu_aux dbi more φ)^[svar: x ↦ ψ] = nest_mu_aux dbi (pred more) φ.
   Proof.
     induction φ; intros dbi ψ more x' Hx1 Hx2; cbn; auto.
     * do 2 case_match; auto; try lia.
@@ -312,14 +313,14 @@ Section index_manipulation.
   Defined.
 
   Corollary nest_ex_same : forall φ dbi ψ,
-     bevar_subst (nest_ex_aux dbi 1 φ) ψ dbi = φ.
+     (nest_ex_aux dbi 1 φ)^[evar: dbi ↦ ψ] = φ.
   Proof.
     intros φ dbi ψ. rewrite nest_ex_same_general; try lia.
     simpl. now rewrite nest_ex_aux_0.
   Qed.
 
   Corollary nest_mu_same : forall φ dbi ψ,
-     bsvar_subst (nest_mu_aux dbi 1 φ) ψ dbi = φ.
+     (nest_mu_aux dbi 1 φ)^[svar: dbi ↦ ψ] = φ.
   Proof.
     intros φ dbi ψ. rewrite nest_mu_same_general; try lia.
     simpl. now rewrite nest_mu_aux_0.
@@ -367,7 +368,7 @@ Section index_manipulation.
 
  Lemma bsvar_subst_nest_ex_aux_comm level more ϕ dbi ψ:
     well_formed_closed_ex_aux ψ level ->
-    bsvar_subst (nest_ex_aux level more ϕ) ψ dbi = nest_ex_aux level more (bsvar_subst ϕ ψ dbi).
+    (nest_ex_aux level more ϕ)^[svar: dbi ↦ ψ] = nest_ex_aux level more (ϕ^[svar: dbi ↦ ψ]).
   Proof.
     move: level dbi. unfold svar_open.
     induction ϕ; move=> level dbi H; simpl; auto.
@@ -389,7 +390,7 @@ Section index_manipulation.
 
   Lemma bevar_subst_nest_mu_aux_comm level more ϕ dbi ψ:
     well_formed_closed_mu_aux ψ level ->
-    bevar_subst (nest_mu_aux level more ϕ) ψ dbi = nest_mu_aux level more (bevar_subst ϕ ψ dbi).
+    (nest_mu_aux level more ϕ)^[evar: dbi ↦ ψ] = nest_mu_aux level more (ϕ^[evar: dbi ↦ ψ]).
   Proof.
     move: level dbi. unfold svar_open.
     induction ϕ; move=> level dbi H; simpl; auto.

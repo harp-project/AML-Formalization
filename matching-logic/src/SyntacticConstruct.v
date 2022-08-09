@@ -125,6 +125,154 @@ Section with_signature.
     * now rewrite IHφ.
   Defined.
 
+  #[global]
+  Program Instance Bevar_subst_morphism (db : db_index) (ψ : Pattern) :
+     PatternMorphism (bevar_subst db ψ) := {
+    base_type := db_index ;
+    init := db ;
+    spec_data := {|
+      increase_ex := fun x => S x ;
+      increase_mu := id ;
+      on_fevar := fun _ x => patt_free_evar x;
+      on_fsvar := fun _ X => patt_free_svar X;
+      on_bevar := fun x n =>
+        match compare_nat n x with
+        | Nat_less _ _ _ => patt_bound_evar n
+        | Nat_equal _ _ _ => ψ
+        | Nat_greater _ _ _ => patt_bound_evar (Nat.pred n)
+        end;
+      on_bsvar := fun _ N => patt_bound_svar N;
+    |}
+  }.
+  Next Obligation.
+    intros x' db φ. revert x' db. induction φ; intros x' db; simpl; auto.
+    * case_match; simpl; auto.
+    * now rewrite -> IHφ1, IHφ2.
+    * now rewrite -> IHφ1, IHφ2.
+    * now rewrite IHφ.
+    * now rewrite IHφ.
+  Defined.
+
+  #[global]
+  Program Instance Bsvar_subst_morphism (Db : db_index) (ψ : Pattern) :
+     PatternMorphism (bsvar_subst Db ψ) := {
+    base_type := db_index ;
+    init := Db ;
+    spec_data := {|
+      increase_ex := id ;
+      increase_mu := fun x => S x ;
+      on_fevar := fun _ x => patt_free_evar x;
+      on_fsvar := fun _ X => patt_free_svar X;
+      on_bevar := fun _ n => patt_bound_evar n;
+      on_bsvar := fun X N =>
+        match compare_nat N X with
+        | Nat_less _ _ _ => patt_bound_svar N
+        | Nat_equal _ _ _ => ψ
+        | Nat_greater _ _ _ => patt_bound_svar (Nat.pred N)
+        end;
+    |}
+  }.
+  Next Obligation.
+    intros x' db φ. revert x' db. induction φ; intros x' db; simpl; auto.
+    * case_match; simpl; auto.
+    * now rewrite -> IHφ1, IHφ2.
+    * now rewrite -> IHφ1, IHφ2.
+    * now rewrite IHφ.
+    * now rewrite IHφ.
+  Defined.
+
+  #[global]
+  Program Instance Evar_open_morphism (db : db_index) (x : evar) :
+     PatternMorphism (evar_open db x) := {
+    base_type := db_index ;
+    init := db ;
+    spec_data := {|
+      increase_ex := fun x => S x ;
+      increase_mu := id ;
+      on_fevar := fun _ x => patt_free_evar x;
+      on_fsvar := fun _ X => patt_free_svar X;
+      on_bevar := fun dbi n =>
+        match compare_nat n dbi with
+        | Nat_less _ _ _ => patt_bound_evar n
+        | Nat_equal _ _ _ => patt_free_evar x
+        | Nat_greater _ _ _ => patt_bound_evar (Nat.pred n)
+        end;
+      on_bsvar := fun _ N => patt_bound_svar N;
+    |}
+  }.
+  Next Obligation.
+    unfold evar_open. intros. rewrite correctness. auto.
+  Defined.
+
+  #[global]
+  Program Instance Svar_open_morphism (Db : db_index) (X : svar) :
+     PatternMorphism (svar_open Db X) := {
+   base_type := db_index ;
+    init := Db ;
+    spec_data := {|
+      increase_ex := id ;
+      increase_mu := fun x => S x ;
+      on_fevar := fun _ x => patt_free_evar x;
+      on_fsvar := fun _ X => patt_free_svar X;
+      on_bevar := fun _ n => patt_bound_evar n;
+      on_bsvar := fun Dbi N =>
+        match compare_nat N Dbi with
+        | Nat_less _ _ _ => patt_bound_svar N
+        | Nat_equal _ _ _ => patt_free_svar X
+        | Nat_greater _ _ _ => patt_bound_svar (Nat.pred N)
+        end;
+    |}
+  }.
+  Next Obligation.
+    unfold svar_open. intros. rewrite correctness. auto.
+  Defined.
+
+  #[global]
+  Program Instance Free_evar_subst_morphism (x : evar) (ψ : Pattern) :
+     PatternMorphism (free_evar_subst x ψ) := {
+    base_type := evar ;
+    init := x ;
+    spec_data := {|
+      increase_ex := id ;
+      increase_mu := id ;
+      on_fevar := fun x x' => if decide (x = x') then ψ else patt_free_evar x';
+      on_fsvar := fun _ X => patt_free_svar X;
+      on_bevar := fun _ n => patt_bound_evar n;
+      on_bsvar := fun _ N => patt_bound_svar N;
+    |}
+  }.
+  Next Obligation.
+    intros x' db φ. revert x' db. induction φ; intros x' db; simpl; auto.
+    * case_match; simpl; auto.
+    * now rewrite -> IHφ1, IHφ2.
+    * now rewrite -> IHφ1, IHφ2.
+    * now rewrite IHφ.
+    * now rewrite IHφ.
+  Defined.
+
+  #[global]
+  Program Instance Free_svar_subst_morphism (X : svar) (ψ : Pattern) :
+     PatternMorphism (free_svar_subst X ψ) := {
+    base_type := svar ;
+    init := X ;
+    spec_data := {|
+      increase_ex := id ;
+      increase_mu := id ;
+      on_fevar := fun _ x => patt_free_evar x ;
+      on_fsvar := fun X X' => if decide (X = X') then ψ else patt_free_svar X';
+      on_bevar := fun _ n => patt_bound_evar n;
+      on_bsvar := fun _ N => patt_bound_svar N;
+    |}
+  }.
+  Next Obligation.
+    intros x' db φ. revert x' db. induction φ; intros x' db; simpl; auto.
+    * case_match; simpl; auto.
+    * now rewrite -> IHφ1, IHφ2.
+    * now rewrite -> IHφ1, IHφ2.
+    * now rewrite IHφ.
+    * now rewrite IHφ.
+  Defined.
+
 (**
 
   Next, we define shifting substitutions for the body of the binders.
