@@ -24,7 +24,7 @@ Tactic Notation "wf_auto" := wf_auto 5.
 
 Ltac wf_auto2 := unfold is_true in *;
 repeat (try assumption; try reflexivity; try (solve [wf_auto]); (* TODO: get rid of [wf_auto] *)
-apply nvnullary_wf || apply unary_wf || apply binary_wf ||
+apply nullary_wf || apply unary_wf || apply binary_wf ||
 match goal with
 | [ |- (forall _, _) ]
   => intro
@@ -189,37 +189,8 @@ lazymatch goal with
 | _ => idtac
 end.
 
-Ltac simpl_bevar_subst :=
-  (rewrite simpl_bevar_subst';try_wfauto2).
-Ltac simpl_bsvar_subst :=
-  (rewrite simpl_bsvar_subst';try_wfauto2).
-Ltac simpl_free_evar_subst :=
-  (rewrite simpl_free_evar_subst';try_wfauto2).
-Ltac simpl_free_svar_subst :=
-  (rewrite simpl_free_svar_subst';try_wfauto2).
-Ltac simpl_evar_quantify :=
-  (rewrite simpl_evar_quantify').
-Ltac simpl_svar_quantify :=
-  (rewrite simpl_svar_quantify').
-
-Ltac simpl_bevar_subst_in H :=
-  (rewrite simpl_bevar_subst' in H;try_wfauto2).
-Ltac simpl_bsvar_subst_in H :=
-  (rewrite simpl_bsvar_subst' in H;try_wfauto2).
-Ltac simpl_free_evar_subst_in H :=
-  (rewrite simpl_free_evar_subst' in H;try_wfauto2).
-Ltac simpl_free_svar_subst_in H :=
-  (rewrite simpl_free_svar_subst' in H;try_wfauto2).
-Ltac simpl_evar_quantify_in H :=
-  (rewrite simpl_evar_quantify' in H).
-Ltac simpl_svar_quantify_in H :=
-  (rewrite simpl_svar_quantify' in H).
-
 Tactic Notation "mlSimpl" :=
-  repeat (simpl_bevar_subst || simpl_bsvar_subst || simpl_free_evar_subst
-         || simpl_free_svar_subst || simpl_evar_quantify || simpl_svar_quantify).
+  repeat rewrite mlSimpl'.
 
 Tactic Notation "mlSimpl" "in" hyp(H) :=
-  repeat (simpl_bevar_subst_in H || simpl_bsvar_subst_in H 
-         || simpl_free_evar_subst_in H || simpl_free_svar_subst_in H 
-         || simpl_evar_quantify_in H || simpl_svar_quantify_in H).
+  repeat rewrite mlSimpl' in H.

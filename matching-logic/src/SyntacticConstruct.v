@@ -11,6 +11,8 @@ Require Import
     stdpp_ext
 .
 
+From stdpp Require Import fin_sets.
+
 From MatchingLogic
 Require Import
     Pattern
@@ -20,248 +22,255 @@ Require Import
 Import MatchingLogic.Substitution.Notations.
 
 Section with_signature.
-    Context {Σ : Signature}.
+  Context {Σ : Signature}.
+
+(**
+  * General substitutions
 
 
-(* Every syntactic construct has a category (unary operator, binder etc),
+  First, we extract the information that identify the different substiutions:
+  - How to "step" or "increase" (mostly de Bruijn indices) some properties
+    in the recursive calls for binders
+  - How the substitutions work for variables (both set and element, bound and free)
+*)
+
+  Record SpecificSubst (A : Type) : Type := {
+      increase_ex : A -> A;
+      increase_mu : A -> A;
+      on_fevar : A -> evar -> Pattern;
+      on_fsvar : A -> svar -> Pattern;
+      on_bevar : A -> db_index -> Pattern;
+      on_bsvar : A -> db_index -> Pattern;
+  }.
+
+  (**
+    We define the general structure of substitutions, and use the specific
+    information for the binders and the variables defined in `SpeificSubst`.
+   *)
+
+  Fixpoint apply_subst {A : Type} (s : SpecificSubst A) (st : A) (phi : Pattern) :=
+    match phi with
+    | patt_free_evar x => on_fevar s st x
+    | patt_free_svar X => on_fsvar s st X
+    | patt_bound_evar n => on_bevar s st n
+    | patt_bound_svar N => on_bsvar s st N
+    | patt_sym sm => patt_sym sm
+    | patt_app phi1 phi2 => patt_app (apply_subst s st phi1) (apply_subst s st phi2)
+    | patt_bott => patt_bott
+    | patt_imp phi1 phi2 => patt_imp (apply_subst s st phi1) (apply_subst s st phi2)
+    | patt_exists phi' => patt_exists (apply_subst s (increase_ex s st) phi')
+    | patt_mu phi' => patt_mu (apply_subst s (increase_mu s st) phi')
+    end.
+
+  (** For substitutions that can be described with the previous definition,
+      we can instantiate the following type class: *)
+
+  Class PatternMorphism (f : Pattern -> Pattern) := {
+      base_type : Type ;
+      init : base_type ;
+      spec_data : SpecificSubst base_type ;
+      correctness : forall phi, f phi = apply_subst spec_data init phi
+  }.
+
+  (** Variable quantifications are such morphisms: *)
+
+  #[global]
+  Program Instance Evar_quantify_morphism (x' : evar) (db : db_index) :
+     PatternMorphism (evar_quantify x' db) := {
+    base_type := db_index ;
+    init := db ;
+    spec_data := {|
+      increase_ex := fun x => S x ;
+      increase_mu := id ;
+      on_fevar := fun level x => if decide (x' = x)
+                                 then patt_bound_evar level
+                                 else patt_free_evar x;
+      on_fsvar := fun _ X => patt_free_svar X;
+      on_bevar := fun _ n => patt_bound_evar n;
+      on_bsvar := fun _ N => patt_bound_svar N;
+    |}
+  }.
+  Next Obligation.
+    intros x' db φ. revert x' db. induction φ; intros x' db; simpl; auto.
+    * case_match; simpl; auto.
+    * now rewrite -> IHφ1, IHφ2.
+    * now rewrite -> IHφ1, IHφ2.
+    * now rewrite IHφ.
+    * now rewrite IHφ.
+  Defined.
+
+
+  #[global]
+  Program Instance Svar_quantify_morphism (x' : svar) (db : db_index) :
+     PatternMorphism (svar_quantify x' db) := {
+    base_type := db_index ;
+    init := db ;
+    spec_data := {|
+      increase_ex := id;
+      increase_mu := fun x => S x ;
+      on_fevar := fun _ X => patt_free_evar X;
+      on_fsvar := fun level x => if decide (x' = x)
+                                 then patt_bound_svar level
+                                 else patt_free_svar x;
+      on_bevar := fun _ n => patt_bound_evar n;
+      on_bsvar := fun _ N => patt_bound_svar N;
+    |}
+  }.
+  Next Obligation.
+    intros x' db φ. revert x' db. induction φ; intros x' db; simpl; auto.
+    * case_match; simpl; auto.
+    * now rewrite -> IHφ1, IHφ2.
+    * now rewrite -> IHφ1, IHφ2.
+    * now rewrite IHφ.
+    * now rewrite IHφ.
+  Defined.
+
+(**
+
+  Next, we define shifting substitutions for the body of the binders.
+
+*)
+
+Definition shift_exists_subst (f : Pattern -> Pattern) (m : PatternMorphism f)
+    : (Pattern -> Pattern)
+    := (apply_subst spec_data (increase_ex spec_data init)).
+
+Definition shift_mu_subst (f : Pattern -> Pattern) (m : PatternMorphism f)
+    : (Pattern -> Pattern)
+    := (apply_subst spec_data (increase_mu spec_data init)).
+
+(**  Shifting preserves the morphism property *)
+
+Lemma shift_exists_morphism (f : Pattern -> Pattern) (m : PatternMorphism f) :
+    PatternMorphism (shift_exists_subst m).
+Proof.
+    destruct m as [A0 i0 d0 corr0].
+    simpl.
+    exists A0 (increase_ex d0 i0) d0.
+    intros phi.
+    reflexivity.
+Defined.
+
+Lemma shift_mu_morphism (f : Pattern -> Pattern) (m : PatternMorphism f) :
+    PatternMorphism (shift_mu_subst m).
+Proof.
+    destruct m as [A0 i0 d0 corr0].
+    simpl.
+    exists A0 (increase_mu d0 i0) d0.
+    intros phi.
+    reflexivity.
+Defined.
+
+(**
+   * Substitution type classes for the different syntacical cateories
+
+   Every syntactic construct has a category (unary operator, binder etc),
    and has to have certain properties about well-formedness
    and substitution.
 *)
-Class Binder (ebinder : Pattern -> Pattern)
-    (bevo: db_index -> Pattern -> Pattern -> Pattern)
-    (bsvo: db_index -> Pattern -> Pattern -> Pattern)
-    (fevo: evar -> Pattern -> Pattern -> Pattern)
-    (fsvo: svar -> Pattern -> Pattern -> Pattern)
-    (feq: evar -> db_index -> Pattern -> Pattern)
-    (fsq: svar -> db_index -> Pattern -> Pattern)
-    :=
-{
-binder_bevar_subst :
-  forall ψ,
-    well_formed_closed ψ ->
-    forall n ϕ,
-      bevar_subst (ebinder ϕ) ψ n = bevo n ψ ϕ ;
-binder_bsvar_subst :
-  forall ψ,
-    well_formed_closed ψ ->
-    forall n ϕ,
-      bsvar_subst (ebinder ϕ) ψ n = bsvo n ψ ϕ ;
-binder_free_evar_subst :
-  forall ψ x φ, well_formed_closed ψ ->
-    (ebinder φ)^[[evar: x ↦ ψ]] = fevo x ψ φ;
-binder_free_svar_subst :
-  forall ψ x φ, well_formed_closed ψ ->
-    (ebinder φ)^[[svar: x ↦ ψ]] = fsvo x ψ φ;
-binder_evar_quantify :
-  forall n x φ,
-    evar_quantify x n (ebinder φ) = feq x n φ;
-binder_svar_quantify :
-  forall n x φ,
-    svar_quantify x n (ebinder φ) = fsq x n φ;
+
+Class Binary (binary : Pattern -> Pattern -> Pattern) := {
+    binary_morphism :
+      forall f (f_morph : PatternMorphism f) (phi1 phi2 : Pattern),
+        f (binary phi1 phi2) = binary (f phi1) (f phi2) ;
+     binary_wf : forall ψ1 ψ2, well_formed ψ1 -> well_formed ψ2 -> 
+        well_formed (binary ψ1 ψ2) ;
 }.
 
-(* Non-variable nullary operation *)
-Class NVNullary (nvnullary : Pattern) :=
-{
-nvnullary_bevar_subst :
-  forall ψ,
-    well_formed_closed ψ ->
-    forall n,
-      bevar_subst nvnullary ψ n = nvnullary ;
-nvnullary_bsvar_subst :
-  forall ψ,
-    well_formed_closed ψ ->
-    forall n,
-      bevar_subst nvnullary ψ n = nvnullary ;
-nvnullary_free_evar_subst :
-  forall ψ x,
-    nvnullary^[[evar: x ↦ ψ]] = nvnullary;
-nvnullary_free_svar_subst :
-  forall ψ x,
-    nvnullary^[[svar: x ↦ ψ]] = nvnullary;
-nvnullary_evar_quantify :
-  forall n x,
-    evar_quantify x n nvnullary = nvnullary;
-nvnullary_svar_quantify :
-  forall n x,
-    svar_quantify x n nvnullary = nvnullary;
-
-nvnullary_wf : well_formed nvnullary = true ;
+Class Unary (unary : Pattern -> Pattern) := {
+    unary_morphism :
+      forall f (f_morph : PatternMorphism f) (phi : Pattern),
+        f (unary phi) = unary (f phi) ;
+    unary_wf : forall ψ, well_formed ψ -> well_formed (unary ψ) ;
 }.
 
-Class Unary (patt : Pattern -> Pattern) :=
-{
-unary_bevar_subst :
-  forall ψ,
-    well_formed_closed ψ ->
-    forall n ϕ,
-      bevar_subst (patt ϕ) ψ n = patt (bevar_subst ϕ ψ n) ;
-unary_bsvar_subst :
-  forall ψ,
-    well_formed_closed ψ ->
-    forall n ϕ,
-      bsvar_subst (patt ϕ) ψ n = patt (bsvar_subst ϕ ψ n) ;
-unary_free_evar_subst :
-  forall ψ x φ,
-    (patt φ)^[[evar: x ↦ ψ]] = patt φ^[[evar: x ↦ ψ]];
-unary_free_svar_subst :
-  forall ψ x φ,
-    (patt φ)^[[svar: x ↦ ψ]] = patt φ^[[svar: x ↦ ψ]];
-unary_evar_quantify :
-  forall n x φ,
-    evar_quantify x n (patt φ) = patt (evar_quantify x n φ);
-unary_svar_quantify :
-  forall n x φ,
-    svar_quantify x n (patt φ) = patt (svar_quantify x n φ);
-
-unary_wf : forall ψ, well_formed ψ -> well_formed (patt ψ) ;
+Class Nullary (nullary : Pattern) := {
+    nullary_morphism :
+      forall f (f_morph : PatternMorphism f),
+        f nullary = nullary ;
+    nullary_wf : well_formed nullary ;
 }.
 
-Class Binary (binary : Pattern -> Pattern -> Pattern) :=
-{
-binary_bevar_subst :
-  forall ψ,
-    well_formed_closed ψ ->
-    forall n ϕ₁ ϕ₂,
-      bevar_subst (binary ϕ₁ ϕ₂) ψ n = binary (bevar_subst ϕ₁ ψ n) (bevar_subst ϕ₂ ψ n) ;
-binary_bsvar_subst :
-  forall ψ,
-    well_formed_closed ψ ->
-    forall n ϕ₁ ϕ₂,
-      bsvar_subst (binary ϕ₁ ϕ₂) ψ n = binary (bsvar_subst ϕ₁ ψ n) (bsvar_subst ϕ₂ ψ n) ;
-binary_free_evar_subst :
-  forall ψ x φ₁ φ₂,
-    (binary φ₁ φ₂)^[[evar: x ↦ ψ]] = binary (φ₁^[[evar: x ↦ ψ]]) (φ₂^[[evar: x ↦ ψ]]);
-binary_free_svar_subst :
-  forall ψ x φ₁ φ₂,
-    (binary φ₁ φ₂)^[[svar: x ↦ ψ]] = binary (φ₁^[[svar: x ↦ ψ]]) (φ₂^[[svar: x ↦ ψ]]);
-binary_evar_quantify :
-  forall n x φ₁ φ₂,
-    evar_quantify x n (binary φ₁ φ₂) = binary (evar_quantify x n φ₁) (evar_quantify x n φ₂);
-binary_svar_quantify :
-  forall n x φ₁ φ₂,
-    svar_quantify x n (binary φ₁ φ₂) = binary (svar_quantify x n φ₁) (svar_quantify x n φ₂);
-
-binary_wf : forall ψ1 ψ2, well_formed ψ1 -> well_formed ψ2 -> well_formed (binary ψ1 ψ2) ;
+Class EBinder (binder : Pattern -> Pattern) := {
+    ebinder_morphism :
+      forall f (f_morph : PatternMorphism f) (phi : Pattern),
+        f (binder phi) = binder (shift_exists_subst f_morph phi) ;
 }.
 
-Definition simpl_bevar_subst' :=
-(@binder_bevar_subst,
- (* @sbinder_bevar_subst, *)
- @nvnullary_bevar_subst,
- @unary_bevar_subst,
- @binary_bevar_subst
+Class SBinder (binder : Pattern -> Pattern) := {
+    sbinder_morphism :
+      forall f (f_morph : PatternMorphism f) (phi : Pattern),
+        f (binder phi) = binder (shift_mu_subst f_morph phi) ;
+}.
+
+
+(** Next, we define the substitution simplification record: *)
+
+Definition mlSimpl' :=
+(
+  @binary_morphism,
+  @unary_morphism,
+  @nullary_morphism,
+  @ebinder_morphism,
+  @sbinder_morphism
 ).
 
-Definition simpl_bsvar_subst' :=
-(@binder_bsvar_subst,
- (* @sbinder_bsvar_subst, *)
- @nvnullary_bsvar_subst,
- @unary_bsvar_subst,
- @binary_bsvar_subst
-).
-
-Definition simpl_free_evar_subst' :=
-(@binder_free_evar_subst,
-(*  @sbinder_free_evar_subst, *)
- @nvnullary_free_evar_subst,
- @unary_free_evar_subst,
- @binary_free_evar_subst
-).
-
-Definition simpl_free_svar_subst' :=
-(@binder_free_svar_subst,
-(*  @sbinder_free_svar_subst, *)
- @nvnullary_free_svar_subst,
- @unary_free_svar_subst,
- @binary_free_svar_subst
-).
-
-Definition simpl_evar_quantify' :=
-(@binder_evar_quantify,
-(*  @sbinder_evar_quantify, *)
- @nvnullary_evar_quantify,
- @unary_evar_quantify,
- @binary_evar_quantify
-).
-
-Definition simpl_svar_quantify' :=
-(@binder_svar_quantify,
-(*  @sbinder_svar_quantify, *)
- @nvnullary_svar_quantify,
- @unary_svar_quantify,
- @binary_svar_quantify
-).
+(** Finally, we define instances for the primitives of matching logic: *)
 
 #[global]
-Instance Binder_exists : Binder patt_exists _ _ _ _ _ _ :=
-{|
-binder_bevar_subst := bevar_subst_exists ;
-binder_bsvar_subst := bsvar_subst_exists ;
-binder_free_evar_subst := λ ψ x φ _, free_evar_subst_exists ψ x φ;
-binder_free_svar_subst := λ ψ x φ _, free_svar_subst_exists ψ x φ;
-binder_evar_quantify := evar_quantify_exists;
-binder_svar_quantify := svar_quantify_exists;
-|}.
+Program Instance EBinder_exists : EBinder patt_exists := {}.
+Next Obligation.
+  intros f m φ. repeat rewrite correctness.
+  simpl. reflexivity.
+Defined.
 
 #[global]
-Instance Binder_mu : Binder patt_mu _ _ _ _ _ _ :=
-{|
-binder_bevar_subst := bevar_subst_mu ;
-binder_bsvar_subst := bsvar_subst_mu ;
-binder_free_evar_subst := λ ψ x φ _, free_evar_subst_mu ψ x φ;
-binder_free_svar_subst := λ ψ x φ _, free_svar_subst_mu ψ x φ;
-binder_evar_quantify := evar_quantify_mu;
-binder_svar_quantify := svar_quantify_mu;
-|}.
-
+Program Instance SBinder_mu : SBinder patt_mu := {}.
+Next Obligation.
+  intros f m φ. repeat rewrite correctness.
+  simpl. reflexivity.
+Defined.
 
 #[global]
-Instance NVNullary_bott : NVNullary patt_bott :=
-{|
-nvnullary_bevar_subst := bevar_subst_bott ;
-nvnullary_bsvar_subst := bsvar_subst_bott ;
-nvnullary_free_evar_subst := ltac:(reflexivity);
-nvnullary_free_svar_subst := ltac:(reflexivity);
-nvnullary_evar_quantify := ltac:(reflexivity);
-nvnullary_svar_quantify := ltac:(reflexivity);
-nvnullary_wf := well_formed_bott ;
-|}.
+Program Instance Binary_imp : Binary patt_imp := {}.
+Next Obligation.
+  intros f m φ1 φ2. repeat rewrite correctness.
+  simpl. reflexivity.
+Defined.
+Next Obligation.
+  intros φ1 φ2 WF1 WF2.
+  now apply well_formed_imp.
+Defined.
 
 #[global]
-Instance NVNullary_sym s : NVNullary (patt_sym s) :=
-{|
-nvnullary_bevar_subst := λ ψ (wfcψ : well_formed_closed ψ) n, @bevar_subst_sym Σ ψ wfcψ n s ;
-nvnullary_bsvar_subst := λ ψ (wfcψ : well_formed_closed ψ) n, @bsvar_subst_sym Σ ψ wfcψ n s;
-nvnullary_free_evar_subst := ltac:(reflexivity);
-nvnullary_free_svar_subst := ltac:(reflexivity);
-nvnullary_evar_quantify := ltac:(reflexivity);
-nvnullary_svar_quantify := ltac:(reflexivity);
-nvnullary_wf := (well_formed_sym s) ;
-|}.
+Program Instance Binary_app : Binary patt_app := {}.
+Next Obligation.
+  intros f m φ1 φ2. repeat rewrite correctness.
+  simpl. reflexivity.
+Defined.
+Next Obligation.
+  intros φ1 φ2 WF1 WF2.
+  now apply well_formed_app.
+Defined.
 
 #[global]
-Instance Binary_app : Binary patt_app :=
-{|
-binary_bevar_subst := bevar_subst_app ;
-binary_bsvar_subst := bsvar_subst_app ;
-binary_free_evar_subst := ltac:(reflexivity);
-binary_free_svar_subst := ltac:(reflexivity);
-binary_evar_quantify := ltac:(reflexivity);
-binary_svar_quantify := ltac:(reflexivity);
-binary_wf := well_formed_app ;
-|}.
+Program Instance Nullary_bott : Nullary patt_bott := {}.
+Next Obligation.
+  intros f m. repeat rewrite correctness.
+  simpl. reflexivity.
+Defined.
+Next Obligation.
+  auto.
+Defined.
 
 #[global]
-Instance Binary_imp : Binary patt_imp :=
-{|
-binary_bevar_subst := bevar_subst_imp ;
-binary_bsvar_subst := bsvar_subst_imp ;
-binary_free_evar_subst := ltac:(reflexivity);
-binary_free_svar_subst := ltac:(reflexivity);
-binary_evar_quantify := ltac:(reflexivity);
-binary_svar_quantify := ltac:(reflexivity);
-binary_wf := well_formed_imp ;
-|}.
+Program Instance Nullary_sym s : Nullary (patt_sym s) := {}.
+Next Obligation.
+  intros s f m. repeat rewrite correctness.
+  simpl. reflexivity.
+Defined.
+Next Obligation.
+  auto.
+Defined.
 
 End with_signature.
