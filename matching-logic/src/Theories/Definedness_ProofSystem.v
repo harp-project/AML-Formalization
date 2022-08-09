@@ -28,6 +28,7 @@ Import extralibrary.
 Import MatchingLogic.Syntax.Notations.
 Import MatchingLogic.Substitution.Notations.
 Import MatchingLogic.DerivedOperators_Syntax.Notations.
+Import MatchingLogic.Substitution.Notations.
 Import MatchingLogic.Syntax.BoundVarSugar.
 Import MatchingLogic.ProofSystem.Notations.
 
@@ -4261,7 +4262,7 @@ Lemma mlSpecializeMeta {Σ : Signature} {syntax : Syntax} :
   well_formed (ex , φ) -> well_formed ψ -> mu_free φ ->
   Γ ⊢i (all , φ) using AnyReasoning -> 
   Γ ⊢i ex , ψ =ml b0 using AnyReasoning ->
-  Γ ⊢i φ.[evar: 0 ↦ ψ] using AnyReasoning.
+  Γ ⊢i φ^[evar: 0 ↦ ψ] using AnyReasoning.
 Proof.
   intros Γ φ ψ HΓ WF1 WF2 MF P1 P2.
   toMLGoal. wf_auto2.
@@ -4278,7 +4279,7 @@ Local Lemma test_spec {Σ : Signature} {syntax : Syntax}:
   well_formed (ex , φ) -> well_formed ψ -> mu_free φ ->
   Γ ⊢i (all , φ) using AnyReasoning -> 
   Γ ⊢i ex , ψ =ml b0 using AnyReasoning ->
-  Γ ⊢i φ.[evar: 0 ↦ ψ] using AnyReasoning.
+  Γ ⊢i φ^[evar: 0 ↦ ψ] using AnyReasoning.
 Proof.
   intros. mgSpecMeta H3 with ψ.
 Defined.
@@ -4286,7 +4287,7 @@ Defined.
 Lemma MLGoal_mlSpecialize {Σ : Signature} {syntax : Syntax} Γ l₁ l₂ p t g name:
   theory ⊆ Γ ->
   mu_free p -> well_formed t ->
-  @mkMLGoal Σ Γ (l₁ ++ (mkNH name p.[evar: 0 ↦ t]) ::l₂ ) g AnyReasoning ->
+  @mkMLGoal Σ Γ (l₁ ++ (mkNH name p^[evar: 0 ↦ t]) ::l₂ ) g AnyReasoning ->
   @mkMLGoal Σ Γ (l₁ ++ (mkNH name ((all, p) and (ex , t =ml b0)))::l₂) g AnyReasoning.
 Proof.
   intros HΓ MF WF MG.
@@ -4329,7 +4330,7 @@ Tactic Notation "mlSpec" constr(name') :=
 
 Goal forall (Σ : Signature) (syntax : Syntax) Γ φ t, 
   theory ⊆ Γ -> mu_free φ -> well_formed t -> well_formed (ex , φ) ->
-  Γ ⊢i all , φ ---> (ex , t =ml b0) ---> φ.[evar: 0 ↦ t] using AnyReasoning.
+  Γ ⊢i all , φ ---> (ex , t =ml b0) ---> φ^[evar: 0 ↦ t] using AnyReasoning.
 Proof.
   intros. toMLGoal. wf_auto2.
   mlIntro "mH". mlIntro "mH0".

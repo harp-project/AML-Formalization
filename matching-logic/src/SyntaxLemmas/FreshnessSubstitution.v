@@ -25,7 +25,7 @@ Section lemmas.
 
 Lemma evar_is_fresh_in_free_evar_subst x phi psi:
 evar_is_fresh_in x psi ->
-evar_is_fresh_in x (phi.[[evar: x ↦ psi]]).
+evar_is_fresh_in x (phi^[[evar: x ↦ psi]]).
 Proof.
 move: x psi. induction phi; intros y psi H; unfold evar_is_fresh_in; simpl; try set_solver.
 case_match; auto. set_solver.
@@ -40,7 +40,7 @@ Qed.
 
 Lemma svar_is_fresh_in_free_evar_subst X phi psi:
 svar_is_fresh_in X psi ->
-svar_is_fresh_in X (phi.[[svar: X ↦ psi]]).
+svar_is_fresh_in X (phi^[[svar: X ↦ psi]]).
 Proof.
 move: X psi. induction phi; intros y psi H; unfold svar_is_fresh_in; simpl; try set_solver.
 case_match; auto. set_solver.
