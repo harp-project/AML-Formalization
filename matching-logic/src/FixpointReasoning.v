@@ -22,22 +22,24 @@ From MatchingLogic Require Import
 .
 
 Import MatchingLogic.Syntax.Notations.
+Import MatchingLogic.Substitution.Notations.
 Import MatchingLogic.DerivedOperators_Syntax.Notations.
 
 
 Section with_signature.
   Context {Σ : Signature}.
+  Open Scope ml_scope.
 
   Lemma eval_mu_lfp_fixpoint M ρ ϕ :
     well_formed_positive (patt_mu ϕ) ->
     let X := fresh_svar ϕ in
-    let F := Fassoc ρ (svar_open 0 X ϕ) X in
+    let F := Fassoc ρ (ϕ^{svar: 0 ↦ X}) X in
     let Sfix := @eval Σ M ρ (patt_mu ϕ) in
     F Sfix = Sfix.
   Proof.
     simpl.
     remember (fresh_svar ϕ) as X.
-    remember (Fassoc ρ (svar_open 0 X ϕ) X) as F.
+    remember (Fassoc ρ (ϕ^{svar: 0 ↦ X}) X) as F.
     remember (@eval Σ M ρ (patt_mu ϕ)) as Sfix.
     pose (OS := PropsetOrderedSet (Domain M)).
     pose (L := PowersetLattice (Domain M)).
@@ -66,14 +68,14 @@ Section with_signature.
   Lemma eval_mu_lfp_least M ρ ϕ S:
     well_formed_positive (patt_mu ϕ) ->
     let X := fresh_svar ϕ in
-    let F := Fassoc ρ (svar_open 0 X ϕ) X in
+    let F := Fassoc ρ (ϕ^{svar: 0 ↦ X}) X in
     let Sfix := @eval Σ M ρ (patt_mu ϕ) in
     (F S) ⊆ S ->
     Sfix ⊆ S.
   Proof.
     simpl.
     remember (fresh_svar ϕ) as X.
-    remember (Fassoc ρ (svar_open 0 X ϕ) X) as F.
+    remember (Fassoc ρ (ϕ^{svar: 0 ↦ X}) X) as F.
     remember (@eval Σ M ρ (patt_mu ϕ)) as Sfix.
     pose (OS := PropsetOrderedSet (Domain M)).
     pose (L := PowersetLattice (Domain M)).
@@ -97,14 +99,14 @@ Section with_signature.
   Lemma eval_mu_if_lfp M ρ ϕ Sfix :
     well_formed_positive (patt_mu ϕ) ->
     let X := fresh_svar ϕ in
-    let F := Fassoc ρ (svar_open 0 X ϕ) X in
+    let F := Fassoc ρ (ϕ^{svar: 0 ↦ X}) X in
     (F Sfix) ⊆ Sfix ->
     (∀ S, (F S) ⊆ S -> Sfix ⊆ S) ->
     Sfix = @eval Σ M ρ (patt_mu ϕ).
   Proof.
     intros Hwfp. simpl.
     remember (fresh_svar ϕ) as X.
-    remember (Fassoc ρ (svar_open 0 X ϕ) X) as F.
+    remember (Fassoc ρ (ϕ^{svar: 0 ↦ X}) X) as F.
     intros Hprefix Hleast.
     rewrite eval_mu_simpl. simpl.
     unfold Fassoc in HeqF. rewrite HeqX in HeqF. rewrite -HeqF.
@@ -114,7 +116,7 @@ Section with_signature.
   Lemma eval_mu_lfp_iff M ρ ϕ Sfix :
     well_formed_positive (patt_mu ϕ) ->
     let X := fresh_svar ϕ in
-    let F := Fassoc ρ (svar_open 0 X ϕ) X in
+    let F := Fassoc ρ (ϕ^{svar: 0 ↦ X}) X in
     (
     (F Sfix) ⊆ Sfix /\
     (∀ S, (F S) ⊆ S -> Sfix ⊆ S)
@@ -122,7 +124,7 @@ Section with_signature.
   Proof.
     intros Hwfp. simpl.
     remember (fresh_svar ϕ) as X.
-    remember (Fassoc ρ (svar_open 0 X ϕ) X) as F.
+    remember (Fassoc ρ (ϕ^{svar: 0 ↦ X}) X) as F.
     remember (@eval Σ M ρ (patt_mu ϕ)) as Sfix'.
     split.
     - intros [H1 H2]. subst.
@@ -170,7 +172,7 @@ Section with_signature.
 
     Lemma svar_open_patt_ind_gen_body_simpl M ρ X:
       svar_is_fresh_in X patt_ind_gen_body ->
-      @eval Σ M ρ (svar_open 0 X patt_ind_gen_body)
+      @eval Σ M ρ (patt_ind_gen_body^{svar: 0 ↦ X})
       = @eval Σ M ρ (patt_or base (patt_app step (patt_free_svar X))).
     Proof.
       intros Hfr.
@@ -181,7 +183,7 @@ Section with_signature.
 
       rewrite /patt_ind_gen_body.
       unfold svar_open.
-      simpl_bsvar_subst. simpl.
+      mlSimpl. simpl.
       rewrite 2!eval_or_simpl.
       unfold nest_mu. rewrite 2!nest_mu_same.
       reflexivity.
@@ -194,7 +196,7 @@ Section with_signature.
 
 
       Let F := let X := fresh_svar patt_ind_gen_body in
-               @Fassoc Σ M ρ (svar_open 0 X patt_ind_gen_body) X.
+               @Fassoc Σ M ρ (patt_ind_gen_body^{svar: 0 ↦ X}) X.
       (*
       Lemma svar_open_patt_ind_gen_body_assoc S:
         let X := fresh_svar patt_ind_gen_body in
@@ -340,11 +342,11 @@ Section with_signature.
                                app_ext
                                  (eval ρ step)
                                  {[old]})).
-        
+
         { apply functional_extensionality. intros [x₁ x₂].
           reflexivity.
         }
-        
+
         split.
         - intros [[m' [Hlast Hbase] ] [Hhd Hfa] ].
           destruct l as [|x l].
@@ -478,10 +480,8 @@ Section with_signature.
             simpl in IHl.
             destruct IHl as [_ [_ Hforall] ].
             inversion Hforall. subst. apply H2.
-        -            
+        -
       Abort.
-            
-          
 
 
       Lemma witnessing_sequence_old_extend
@@ -502,7 +502,7 @@ Section with_signature.
           simpl.
           split.
           { apply Hwit2. }
-          
+
           destruct l.
           { simpl. apply Forall_cons. split. 2: { apply Forall_nil. exact I. }
             exists step'. exists x. split.
@@ -554,7 +554,7 @@ Section with_signature.
           split.
           { apply Hbase. }
           clear Hbase.
-          
+
           move: x l Hlast Hall Hlen.
           induction len.
           + intros x l Hlast Hall Hlen.
@@ -606,8 +606,8 @@ Section with_signature.
         rewrite elem_of_subseteq. intros x Hx.
         unfold F in Hx. unfold Fassoc in Hx. unfold svar_open in Hx. simpl in Hx.
         rewrite eval_or_simpl in Hx.
-        fold (svar_open 0 (fresh_svar patt_ind_gen_body) (nest_mu base)) in Hx.
-        fold (svar_open 0 (fresh_svar patt_ind_gen_body) (nest_mu step)) in Hx.
+        fold ((nest_mu base)^{svar: 0 ↦ (fresh_svar patt_ind_gen_body)}) in Hx.
+        fold ((nest_mu step)^{svar: 0 ↦ (fresh_svar patt_ind_gen_body)}) in Hx.
         destruct Hx.
         - unfold Ensembles.In in H.
           unfold witnessed_elements_old.
@@ -919,7 +919,7 @@ Section with_signature.
             destruct l₂ as [|m₂ l₂].
             { simpl in Hlst₂. inversion Hlst₂. }
             simpl in Hhd₂. inversion Hhd₂. subst. clear Hhd₂.
-            
+
             simpl.
             destruct (decide (m=m)).
             2: { contradiction. }
@@ -936,7 +936,7 @@ Section with_signature.
             assert (Hlen₁ : length l₁ <= len₁).
             { lia. }
             clear Heqlen₁.
-            
+
             move: m l₁ l₂ Hlen12 Hlen₁ Hlst₁ Hlst₂ Hfa₁ Hfa₂ Hmwit.
             induction len₁; intros m l₁ l₂ Hlen12 Hlen₁ Hlst₁ Hlst₂ Hfa₁ Hfa₂ Hmwit.
             - destruct l₁.
@@ -981,7 +981,7 @@ Section with_signature.
                 { reflexivity. }
                 simpl. apply Hfa₂.
               }
-              
+
               simpl in Hma. simpl in Hmb.
 
               assert (Ham: app_ext (eval ρ step) {[a]} = {[m]}).
@@ -1014,7 +1014,7 @@ Section with_signature.
               }
               subst.
               clear Ham Hbm Hwita Hma.
-              
+
               simpl.
               destruct (decide (b=b)).
               2: { contradiction. }
@@ -1047,8 +1047,8 @@ Section with_signature.
             lia.
           }
 
-          (*assert (Hbasem': eval ρ base lst).*)          
-          
+          (*assert (Hbasem': eval ρ base lst).*)
+
           assert (~ (length l₁ > length l₂)).
           {
             intros Hcontra.
@@ -1146,9 +1146,9 @@ Section with_signature.
 
           apply (common_length_impl_eq _ _ Hlength12 Hlcom).
         Qed.
-        
+
       End injective.
-      
+
     End with_eval.
 
   End inductive_generation.

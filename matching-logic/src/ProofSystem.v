@@ -8,6 +8,7 @@ From stdpp Require Import base fin_sets sets propset gmap.
 From MatchingLogic.Utils Require Import extralibrary.
 
 Import MatchingLogic.Syntax.Notations.
+Import MatchingLogic.Substitution.Notations.
 Import MatchingLogic.DerivedOperators_Syntax.Notations.
 
 Section ml_proof_system.
@@ -15,7 +16,6 @@ Section ml_proof_system.
 
   Context {Σ : Signature}.
 
-  
   (* Proof system for AML ref. snapshot: Section 3 *)
 
   Reserved Notation "theory ⊢r pattern" (at level 76).
@@ -26,7 +26,7 @@ Section ml_proof_system.
   | hypothesis (axiom : Pattern) :
       well_formed axiom ->
       (axiom ∈ theory) -> theory ⊢r axiom
-                                              
+
   (* FOL reasoning *)
   (* Propositional tautology *)
   | P1 (phi psi : Pattern) :
@@ -100,7 +100,7 @@ Section ml_proof_system.
   (* Set Variable Substitution *)
   | Svar_subst (phi psi : Pattern) (X : svar) :
       well_formed phi -> well_formed psi ->
-      theory ⊢r phi -> theory ⊢r (free_svar_subst phi psi X)
+      theory ⊢r phi -> theory ⊢r (phi^[[svar: X ↦ psi]])
 
   (* Pre-Fixpoint *)
   | Pre_fixp (phi : Pattern) :
@@ -551,102 +551,104 @@ Module Notations_private.
 End Notations_private.
 
 From stdpp Require Import coGset.
-Import Notations_private.
 
-Lemma instantiate_named_axiom {Σ : Signature} (NA : NamedAxioms) (name : (NAName NA)) :
-  (theory_of_NamedAxioms NA) ⊢r (@NAAxiom Σ NA name).
-Proof.
-  apply hypothesis.
-  { apply NAwf. }
-  unfold theory_of_NamedAxioms.
-  apply elem_of_PropSet.
-  exists name.
-  reflexivity.
-Defined.
+Section proof_info.
+  Context {Σ : Signature}.
+  Import Notations_private.
+
+  Lemma instantiate_named_axiom (NA : NamedAxioms) (name : (NAName NA)) :
+    (theory_of_NamedAxioms NA) ⊢r (@NAAxiom Σ NA name).
+  Proof.
+    apply hypothesis.
+    { apply NAwf. }
+    unfold theory_of_NamedAxioms.
+    apply elem_of_PropSet.
+    exists name.
+    reflexivity.
+  Defined.
 
 
+  Definition coEVarSet := coGset evar.
+  Definition coSVarSet := coGset svar.
+  Definition WfpSet := gmap.gset wfPattern.
+  Definition coWfpSet := coGset wfPattern.
+
+  Record ProofInfo :=
+    mkProofInfo
+    {
+      pi_generalized_evars : coEVarSet ;
+      pi_substituted_svars : coSVarSet ;
+      pi_uses_kt : bool ;
+      pi_framing_patterns : coWfpSet ; 
+    }.
+
+  Notation "'ExGen' ':=' evs ',' 'SVSubst' := svs ',' 'KT' := bkt ',' 'FP' := fpl"
+    := (@mkProofInfo _ evs svs bkt fpl) (at level 95, no associativity).
 
 
-Definition coEVarSet {Σ : Signature} := coGset evar.
-Definition coSVarSet {Σ : Signature} := coGset svar.
-Definition WfpSet {Σ : Signature} := gmap.gset wfPattern.
-Definition coWfpSet {Σ : Signature} := coGset wfPattern.
-
-Record ProofInfo {Σ : Signature} :=
-  mkProofInfo
+  (* A proof together with some properties of it. *)
+  Record ProofInfoMeaning
+    (Γ : Theory)
+    (ϕ : Pattern)
+    (pwi_pf : Γ ⊢r ϕ)
+    (pi : ProofInfo)
+    : Prop
+    :=
+  mkProofInfoMeaning
   {
-    pi_generalized_evars : coEVarSet ;
-    pi_substituted_svars : coSVarSet ;
-    pi_uses_kt : bool ;
-    pi_framing_patterns : coWfpSet ; 
+    pwi_pf_ge : gset_to_coGset (@uses_of_ex_gen Σ Γ ϕ pwi_pf) ⊆ pi_generalized_evars pi ;
+    pwi_pf_svs : gset_to_coGset (@uses_of_svar_subst Σ Γ ϕ pwi_pf) ⊆ pi_substituted_svars pi ;
+    pwi_pf_kt : implb (@uses_kt Σ Γ ϕ pwi_pf) (pi_uses_kt pi) ;
+    pwi_pf_fp : gset_to_coGset (@framing_patterns Σ Γ ϕ pwi_pf) ⊆ (pi_framing_patterns pi) ;
   }.
 
-Notation "'ExGen' ':=' evs ',' 'SVSubst' := svs ',' 'KT' := bkt ',' 'FP' := fpl"
-  := (@mkProofInfo _ evs svs bkt fpl) (at level 95, no associativity).
+  Class ProofInfoLe (i₁ i₂ : ProofInfo) :=
+  { pi_le :
+    forall (Γ : Theory) (ϕ : Pattern) (pf : Γ ⊢r ϕ),
+      @ProofInfoMeaning Γ ϕ pf i₁ -> @ProofInfoMeaning Γ ϕ pf i₂ ;
+  }.
+
+  (*
+  #[global]
+  Instance
+  *)
+  Lemma pile_refl (i : ProofInfo) : ProofInfoLe i i.
+  Proof.
+    constructor. intros Γ ϕ pf H. exact H.
+  Qed.
+
+  (*
+  #[global]
+  Instance
+  *)
+  Lemma pile_trans
+    (i₁ i₂ i₃ : ProofInfo) (PILE12 : ProofInfoLe i₁ i₂) (PILE23 : ProofInfoLe i₂ i₃)
+  : ProofInfoLe i₁ i₃.
+  Proof.
+    destruct PILE12 as [PILE12].
+    destruct PILE23 as [PILE23].
+    constructor. intros Γ ϕ pf.
+    specialize (PILE12 Γ ϕ pf).
+    specialize (PILE23 Γ ϕ pf).
+    tauto.
+  Qed.
+
+  Definition BasicReasoning : ProofInfo := ((@mkProofInfo ∅ ∅ false ∅)).
+  Definition AnyReasoning : ProofInfo := (@mkProofInfo ⊤ ⊤ true ⊤).
 
 
-(* A proof together with some properties of it. *)
-Record ProofInfoMeaning
-  {Σ : Signature}
-  (Γ : Theory)
-  (ϕ : Pattern)
-  (pwi_pf : Γ ⊢r ϕ)
-  (pi : ProofInfo)
-  : Prop
-  :=
-mkProofInfoMeaning
-{
-  pwi_pf_ge : gset_to_coGset (@uses_of_ex_gen Σ Γ ϕ pwi_pf) ⊆ pi_generalized_evars pi ;
-  pwi_pf_svs : gset_to_coGset (@uses_of_svar_subst Σ Γ ϕ pwi_pf) ⊆ pi_substituted_svars pi ;
-  pwi_pf_kt : implb (@uses_kt Σ Γ ϕ pwi_pf) (pi_uses_kt pi) ;
-  pwi_pf_fp : gset_to_coGset (@framing_patterns Σ Γ ϕ pwi_pf) ⊆ (pi_framing_patterns pi) ;
-}.
+  Definition derives_using Γ ϕ pi
+  := ({pf : Γ ⊢r ϕ | @ProofInfoMeaning _ _ pf pi }).
 
-Class ProofInfoLe {Σ : Signature} (i₁ i₂ : ProofInfo) :=
-{ pi_le :
-  forall (Γ : Theory) (ϕ : Pattern) (pf : Γ ⊢r ϕ),
-    @ProofInfoMeaning Σ Γ ϕ pf i₁ -> @ProofInfoMeaning Σ Γ ϕ pf i₂ ;
-}.
+  Definition derives Γ ϕ
+  := derives_using Γ ϕ AnyReasoning.
 
-(*
-#[global]
-Instance
-*)
-Lemma pile_refl {Σ : Signature} (i : ProofInfo) : ProofInfoLe i i.
-Proof.
-  constructor. intros Γ ϕ pf H. exact H.
-Qed.
+  Definition raw_proof_of {Γ} {ϕ} {pi}:
+    derives_using Γ ϕ pi ->
+    ML_proof_system Γ ϕ
+  := fun pf => proj1_sig pf.
 
-(*
-#[global]
-Instance
-*)
-Lemma pile_trans {Σ : Signature}
-  (i₁ i₂ i₃ : ProofInfo) (PILE12 : ProofInfoLe i₁ i₂) (PILE23 : ProofInfoLe i₂ i₃)
-: ProofInfoLe i₁ i₃.
-Proof.
-  destruct PILE12 as [PILE12].
-  destruct PILE23 as [PILE23].
-  constructor. intros Γ ϕ pf.
-  specialize (PILE12 Γ ϕ pf).
-  specialize (PILE23 Γ ϕ pf).
-  tauto.
-Qed.
-
-Definition BasicReasoning {Σ} : ProofInfo := ((@mkProofInfo Σ ∅ ∅ false ∅)).
-Definition AnyReasoning {Σ : Signature} : ProofInfo := (@mkProofInfo Σ ⊤ ⊤ true ⊤).
-
-
-Definition derives_using {Σ : Signature} Γ ϕ pi
-:= ({pf : Γ ⊢r ϕ | @ProofInfoMeaning _ _ _ pf pi }).
-
-Definition derives {Σ : Signature} Γ ϕ
-:= derives_using Γ ϕ AnyReasoning.
-
-Definition raw_proof_of {Σ : Signature} {Γ} {ϕ} {pi}:
-  derives_using Γ ϕ pi ->
-  ML_proof_system Γ ϕ
-:= fun pf => proj1_sig pf.
+End proof_info.
 
 Module Notations.
 

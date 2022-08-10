@@ -382,7 +382,7 @@ Next Obligation.
 Defined.
 
 (* Test: *)
-Import MatchingLogic.Substitution.Notations.
+(* Import MatchingLogic.Substitution.Notations.
 Open Scope ml_scope.
 Goal forall φ x y ψ,
   (patt_exists φ)^[[evar: x ↦ ψ]] = patt_bott ->
@@ -396,5 +396,5 @@ Proof.
   rewrite mlSimpl' in H1.
   simpl in *.
 Abort.
-
+ *)
 End with_signature.

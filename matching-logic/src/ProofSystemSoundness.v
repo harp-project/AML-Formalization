@@ -8,6 +8,7 @@ From stdpp Require Import base fin_sets sets propset.
 From MatchingLogic.Utils Require Import extralibrary.
 
 Import MatchingLogic.Syntax.Notations.
+Import MatchingLogic.Substitution.Notations.
 Import MatchingLogic.Semantics.Notations.
 Import MatchingLogic.DerivedOperators_Syntax.Notations.
 Import MatchingLogic.ProofSystem.Notations_private.
@@ -61,7 +62,7 @@ Section soundness.
       destruct H1 as [le [re [Hunion [Hext_le Happ] ] ] ].
       rewrite -> elem_of_PropSet in Hunion.
       destruct Hunion as [c Hext_re].
-      exists c. rewrite -> evar_open_app, -> eval_app_simpl. unfold app_ext.
+      exists c. mlSimpl. rewrite -> eval_app_simpl. unfold app_ext.
       rewrite -> elem_of_PropSet.
       exists le, re.
       split.
@@ -131,7 +132,7 @@ Section soundness.
       rewrite -> elem_of_PropSet in Hunion.
       destruct Hunion as [c Hext_re].
 
-      exists c. rewrite -> evar_open_app, -> eval_app_simpl. unfold app_ext.
+      exists c. mlSimpl. rewrite -> eval_app_simpl. unfold app_ext.
       exists le, re.
       split.
       + erewrite -> evar_open_closed.
@@ -163,7 +164,7 @@ Lemma proof_rule_set_var_subst_sound {m : Model}: ∀ phi psi,
       eval ρ phi = ⊤)
   →
   ∀ X ρ,
-    @eval Σ m ρ (free_svar_subst phi psi X) = ⊤.
+    @eval Σ m ρ (phi^[[svar: X ↦ psi]]) = ⊤.
 Proof.
   intros. pose (H1 (update_svar_val X 
                                   (eval ρ psi) ρ)).
@@ -256,7 +257,7 @@ Proof.
     destruct (classic (x ∈ (⊤ ∖
                               (eval
                                  (update_evar_val (fresh_evar phi) (evar_valuation ρ y) ρ)
-                                 (evar_open 0 (fresh_evar phi) phi))))).
+                                 (phi^{evar: 0 ↦ fresh_evar phi}))))).
     -- left. apply H.
     -- right. unfold not in H.
        rewrite -> elem_of_difference in H.
@@ -265,7 +266,7 @@ Proof.
        exists (evar_valuation ρ y).
        assert (x
                  ∉ eval (update_evar_val (fresh_evar phi) (evar_valuation ρ y) ρ)
-                 (evar_open 0 (fresh_evar phi) phi) → False).
+                 (phi^{evar: 0 ↦ fresh_evar phi}) → False).
        { intros Hcontra. apply H. split. apply elem_of_top'. apply Hcontra. }
        apply NNPP in H0. exact H0.
     -- apply andb_true_iff in i as [_ i]. apply andb_true_iff in i as [_ i]. auto.
@@ -306,7 +307,7 @@ Proof.
          apply propset_fa_union_included.
          setoid_rewrite -> elem_of_subseteq.
          intros c x1 H3.
-         remember (fresh_evar (evar_quantify x 0 phi1)) as x2.
+         remember (fresh_evar (phi1^{{evar: x ↦ 0}})) as x2.
          erewrite eval_fresh_evar_open with (y := x) in H3.
          3: { apply evar_is_fresh_in_evar_quantify. }
          2: { subst x2. apply set_evar_fresh_is_fresh. }
@@ -360,7 +361,7 @@ Proof.
     rewrite -> set_eq_subseteq.
     split.
     1: { apply top_subseteq. }
-    
+
     rewrite -> elem_of_subseteq.
     intros x _.
     destruct (classic (x ∈ Xext_union)).
@@ -372,7 +373,7 @@ Proof.
     + left. rewrite -> elem_of_compl. apply H.
 
   (* Propagation disjunction - right *)
-  - intros Hv ρ. 
+  - intros Hv ρ.
     unfold patt_or, patt_not. repeat rewrite -> eval_imp_simpl.
     repeat rewrite -> eval_app_simpl, eval_imp_simpl.
     rewrite -> eval_app_simpl, eval_bott_simpl.
@@ -388,7 +389,7 @@ Proof.
     rewrite -> set_eq_subseteq.
     split.
     1: { apply top_subseteq. }
-    
+
     rewrite -> elem_of_subseteq.
     intros x _.
     destruct (classic (x ∈ Xext_union)).
@@ -485,7 +486,7 @@ Proof.
     remember (fun S : propset (Domain m) =>
                 eval
                                        (update_svar_val (fresh_svar phi) S ρ)
-                                       (svar_open 0 (fresh_svar phi) phi)) as F.
+                                       (phi^{svar: 0 ↦ fresh_svar phi})) as F.
     pose (OS := Lattice.PropsetOrderedSet (@Domain Σ m)).
     pose (L := Lattice.PowersetLattice (@Domain Σ m)).
     assert (Ffix : Lattice.isFixpoint F (Lattice.LeastFixpointOf F)).
@@ -512,7 +513,7 @@ Proof.
     specialize (Hsimpl ρ phi).
     simpl in Hsimpl. subst OS. subst L.
     rewrite <- Hsimpl.
-    
+
     rewrite <- set_substitution_lemma.
     2: { now apply andb_true_iff in i as [_ i]. }
     2: { apply andb_true_iff in i as [_ i]. apply andb_true_iff in i as [i _]. auto.  }
@@ -526,7 +527,7 @@ Proof.
     remember (fun S : propset (Domain m) =>
                 eval 
                                        (update_svar_val (fresh_svar phi) S ρ)
-                                       (svar_open 0 (fresh_svar phi) phi)) as F.
+                                       (phi^{svar: 0 ↦ fresh_svar phi})) as F.
 
     pose (OS := Lattice.PropsetOrderedSet (@Domain Σ m)).
     pose (L := Lattice.PowersetLattice (@Domain Σ m)).
@@ -543,7 +544,7 @@ Proof.
       reflexivity.
       apply set_svar_fresh_is_fresh.
     }
-    
+
     unfold Lattice.isFixpoint in Ffix.
     assert (Ffix_set : (F (Lattice.LeastFixpointOf F)) = (Lattice.LeastFixpointOf F)).
     { rewrite -> Ffix. reflexivity. }
@@ -582,7 +583,7 @@ Proof.
         apply wfc_ex_aux_bsvar_subst; auto.
     }
     specialize (IHHp Hwf').
-    
+
 
     simpl in IHHp.
     unfold well_formed in Hwf.
@@ -639,7 +640,7 @@ Proof.
     rewrite -> elem_of_PropSet.
     rewrite eval_imp_simpl.
     clear. set_solver.
-    
+
   (* Singleton *)
   - assert (Hemp: forall (ρ : @Valuation Σ m),
                eval
