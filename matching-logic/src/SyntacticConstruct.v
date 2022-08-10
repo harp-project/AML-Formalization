@@ -65,20 +65,16 @@ Section with_signature.
   (** For substitutions that can be described with the previous definition,
       we can instantiate the following type class: *)
 
-  Class PatternMorphism (f : Pattern -> Pattern) := {
-      base_type : Type ;
-      init : base_type ;
-      spec_data : SpecificSubst base_type ;
-      correctness : forall phi, f phi = apply_subst spec_data init phi
+  Class PatternMorphism (A : Type) (f : A -> Pattern -> Pattern) := {
+      spec_data : SpecificSubst A ;
+      correctness : forall a (phi : Pattern), f a phi = apply_subst spec_data a phi
   }.
 
   (** Variable quantifications are such morphisms: *)
 
   #[global]
-  Program Instance Evar_quantify_morphism (x' : evar) (db : db_index) :
-     PatternMorphism (evar_quantify x' db) := {
-    base_type := db_index ;
-    init := db ;
+  Program Instance Evar_quantify_morphism (x' : evar) :
+     PatternMorphism (evar_quantify x') := {
     spec_data := {|
       increase_ex := fun x => S x ;
       increase_mu := id ;
@@ -101,10 +97,8 @@ Section with_signature.
 
 
   #[global]
-  Program Instance Svar_quantify_morphism (x' : svar) (db : db_index) :
-     PatternMorphism (svar_quantify x' db) := {
-    base_type := db_index ;
-    init := db ;
+  Program Instance Svar_quantify_morphism (x' : svar) :
+     PatternMorphism (svar_quantify x') := {
     spec_data := {|
       increase_ex := id;
       increase_mu := fun x => S x ;
@@ -126,10 +120,8 @@ Section with_signature.
   Defined.
 
   #[global]
-  Program Instance Bevar_subst_morphism (db : db_index) (ψ : Pattern) :
-     PatternMorphism (bevar_subst db ψ) := {
-    base_type := db_index ;
-    init := db ;
+  Program Instance Bevar_subst_morphism (ψ : Pattern) :
+     PatternMorphism (bevar_subst ψ) := {
     spec_data := {|
       increase_ex := fun x => S x ;
       increase_mu := id ;
@@ -154,10 +146,8 @@ Section with_signature.
   Defined.
 
   #[global]
-  Program Instance Bsvar_subst_morphism (Db : db_index) (ψ : Pattern) :
-     PatternMorphism (bsvar_subst Db ψ) := {
-    base_type := db_index ;
-    init := Db ;
+  Program Instance Bsvar_subst_morphism (ψ : Pattern) :
+     PatternMorphism (bsvar_subst ψ) := {
     spec_data := {|
       increase_ex := id ;
       increase_mu := fun x => S x ;
@@ -181,8 +171,10 @@ Section with_signature.
     * now rewrite IHφ.
   Defined.
 
+(*  TODO: adjust evar_open, svar_open
+
   #[global]
-  Program Instance Evar_open_morphism (db : db_index) (x : evar) :
+  Program Instance Evar_open_morphism (db : db_index) :
      PatternMorphism (evar_open db x) := {
     base_type := db_index ;
     init := db ;
@@ -225,13 +217,11 @@ Section with_signature.
   }.
   Next Obligation.
     unfold svar_open. intros. rewrite correctness. auto.
-  Defined.
+  Defined. *)
 
   #[global]
-  Program Instance Free_evar_subst_morphism (x : evar) (ψ : Pattern) :
-     PatternMorphism (free_evar_subst x ψ) := {
-    base_type := evar ;
-    init := x ;
+  Program Instance Free_evar_subst_morphism (ψ : Pattern) :
+     PatternMorphism (free_evar_subst ψ) := {
     spec_data := {|
       increase_ex := id ;
       increase_mu := id ;
@@ -251,10 +241,8 @@ Section with_signature.
   Defined.
 
   #[global]
-  Program Instance Free_svar_subst_morphism (X : svar) (ψ : Pattern) :
-     PatternMorphism (free_svar_subst X ψ) := {
-    base_type := svar ;
-    init := X ;
+  Program Instance Free_svar_subst_morphism (ψ : Pattern) :
+     PatternMorphism (free_svar_subst ψ) := {
     spec_data := {|
       increase_ex := id ;
       increase_mu := id ;
@@ -279,25 +267,27 @@ Section with_signature.
 
 *)
 
-Definition shift_exists_subst (f : Pattern -> Pattern) (m : PatternMorphism f)
-    : (Pattern -> Pattern)
-    := (apply_subst spec_data (increase_ex spec_data init)).
+Definition shift_exists_subst {A : Type} (f : A -> Pattern -> Pattern) (m : PatternMorphism f)
+    : (A -> Pattern -> Pattern)
+    := fun a => apply_subst spec_data (increase_ex spec_data a).
 
-Definition shift_mu_subst (f : Pattern -> Pattern) (m : PatternMorphism f)
-    : (Pattern -> Pattern)
-    := (apply_subst spec_data (increase_mu spec_data init)).
+Definition shift_mu_subst {A : Type} (f : A -> Pattern -> Pattern) (m : PatternMorphism f)
+    : (A -> Pattern -> Pattern)
+    := fun a => apply_subst spec_data (increase_mu spec_data a).
 
 (**  Shifting preserves the morphism property *)
 
-Lemma shift_exists_morphism (f : Pattern -> Pattern) (m : PatternMorphism f) :
+(* Lemma shift_exists_morphism {A : Type} (f : A -> Pattern -> Pattern) (m : PatternMorphism f) :
     PatternMorphism (shift_exists_subst m).
 Proof.
-    destruct m as [A0 i0 d0 corr0].
+    destruct m as [A0 i0].
     simpl.
-    exists A0 (increase_ex d0 i0) d0.
-    intros phi.
+    exists A0.
+    intros a phi. unfold shift_exists_subst.
     reflexivity.
 Defined.
+
+Print shift_exists_morphism.
 
 Lemma shift_mu_morphism (f : Pattern -> Pattern) (m : PatternMorphism f) :
     PatternMorphism (shift_mu_subst m).
@@ -307,7 +297,7 @@ Proof.
     exists A0 (increase_mu d0 i0) d0.
     intros phi.
     reflexivity.
-Defined.
+Defined. *)
 
 (**
    * Substitution type classes for the different syntacical cateories
@@ -319,36 +309,36 @@ Defined.
 
 Class Binary (binary : Pattern -> Pattern -> Pattern) := {
     binary_morphism :
-      forall f (f_morph : PatternMorphism f) (phi1 phi2 : Pattern),
-        f (binary phi1 phi2) = binary (f phi1) (f phi2) ;
+      forall {A : Type} (f : A -> Pattern -> Pattern) (f_morph : PatternMorphism f) (phi1 phi2 : Pattern) a,
+        f a (binary phi1 phi2) = binary (f a phi1) (f a phi2) ;
      binary_wf : forall ψ1 ψ2, well_formed ψ1 -> well_formed ψ2 -> 
         well_formed (binary ψ1 ψ2) ;
 }.
 
 Class Unary (unary : Pattern -> Pattern) := {
     unary_morphism :
-      forall f (f_morph : PatternMorphism f) (phi : Pattern),
-        f (unary phi) = unary (f phi) ;
+      forall {A : Type} (f : A -> Pattern -> Pattern) (f_morph : PatternMorphism f) (phi : Pattern) a,
+        f a (unary phi) = unary (f a phi) ;
     unary_wf : forall ψ, well_formed ψ -> well_formed (unary ψ) ;
 }.
 
 Class Nullary (nullary : Pattern) := {
     nullary_morphism :
-      forall f (f_morph : PatternMorphism f),
-        f nullary = nullary ;
+      forall {A : Type} (f : A -> Pattern -> Pattern) (f_morph : PatternMorphism f) a,
+        f a nullary = nullary ;
     nullary_wf : well_formed nullary ;
 }.
 
 Class EBinder (binder : Pattern -> Pattern) := {
     ebinder_morphism :
-      forall f (f_morph : PatternMorphism f) (phi : Pattern),
-        f (binder phi) = binder (shift_exists_subst f_morph phi) ;
+      forall {A : Type} (f : A -> Pattern -> Pattern) (f_morph : PatternMorphism f) (phi : Pattern) a,
+        f a (binder phi) = binder (f (increase_ex spec_data a) phi) ;
 }.
 
 Class SBinder (binder : Pattern -> Pattern) := {
     sbinder_morphism :
-      forall f (f_morph : PatternMorphism f) (phi : Pattern),
-        f (binder phi) = binder (shift_mu_subst f_morph phi) ;
+      forall {A : Type} (f : A -> Pattern -> Pattern) (f_morph : PatternMorphism f) (phi : Pattern) a,
+        f a (binder phi) = binder (f (increase_mu spec_data a) phi) ;
 }.
 
 
@@ -368,21 +358,21 @@ Definition mlSimpl' :=
 #[global]
 Program Instance EBinder_exists : EBinder patt_exists := {}.
 Next Obligation.
-  intros f m φ. repeat rewrite correctness.
+  intros A f m φ a. repeat rewrite correctness.
   simpl. reflexivity.
 Defined.
 
 #[global]
 Program Instance SBinder_mu : SBinder patt_mu := {}.
 Next Obligation.
-  intros f m φ. repeat rewrite correctness.
+  intros A f m φ a. repeat rewrite correctness.
   simpl. reflexivity.
 Defined.
 
 #[global]
 Program Instance Binary_imp : Binary patt_imp := {}.
 Next Obligation.
-  intros f m φ1 φ2. repeat rewrite correctness.
+  intros A f m φ1 φ2 a. repeat rewrite correctness.
   simpl. reflexivity.
 Defined.
 Next Obligation.
@@ -393,7 +383,7 @@ Defined.
 #[global]
 Program Instance Binary_app : Binary patt_app := {}.
 Next Obligation.
-  intros f m φ1 φ2. repeat rewrite correctness.
+  intros A f m φ1 φ2 a. repeat rewrite correctness.
   simpl. reflexivity.
 Defined.
 Next Obligation.
@@ -404,7 +394,7 @@ Defined.
 #[global]
 Program Instance Nullary_bott : Nullary patt_bott := {}.
 Next Obligation.
-  intros f m. repeat rewrite correctness.
+  intros A f m a. repeat rewrite correctness.
   simpl. reflexivity.
 Defined.
 Next Obligation.
@@ -414,11 +404,27 @@ Defined.
 #[global]
 Program Instance Nullary_sym s : Nullary (patt_sym s) := {}.
 Next Obligation.
-  intros s f m. repeat rewrite correctness.
+  intros A s f m a. repeat rewrite correctness.
   simpl. reflexivity.
 Defined.
 Next Obligation.
   auto.
 Defined.
+
+(* Test: *)
+Import MatchingLogic.Substitution.Notations.
+Open Scope ml_scope.
+Goal forall φ x y ψ,
+  (patt_exists φ)^[[evar: x ↦ ψ]] = patt_bott ->
+  (patt_exists φ)^[evar: y ↦ ψ] = patt_bott ->
+  evar_quantify x y (patt_exists φ) = patt_bott
+  -> False.
+Proof.
+  intros.
+  rewrite mlSimpl' in H.
+  rewrite mlSimpl' in H0.
+  rewrite mlSimpl' in H1.
+  simpl in *.
+Abort.
 
 End with_signature.
