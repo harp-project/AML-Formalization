@@ -171,13 +171,9 @@ Section with_signature.
     * now rewrite IHφ.
   Defined.
 
-(*  TODO: adjust evar_open, svar_open
-
   #[global]
-  Program Instance Evar_open_morphism (db : db_index) :
-     PatternMorphism (evar_open db x) := {
-    base_type := db_index ;
-    init := db ;
+  Program Instance Evar_open_morphism (x : evar) :
+     PatternMorphism (evar_open x) := {
     spec_data := {|
       increase_ex := fun x => S x ;
       increase_mu := id ;
@@ -197,10 +193,8 @@ Section with_signature.
   Defined.
 
   #[global]
-  Program Instance Svar_open_morphism (Db : db_index) (X : svar) :
-     PatternMorphism (svar_open Db X) := {
-   base_type := db_index ;
-    init := Db ;
+  Program Instance Svar_open_morphism (X : svar) :
+     PatternMorphism (svar_open X) := {
     spec_data := {|
       increase_ex := id ;
       increase_mu := fun x => S x ;
@@ -217,7 +211,7 @@ Section with_signature.
   }.
   Next Obligation.
     unfold svar_open. intros. rewrite correctness. auto.
-  Defined. *)
+  Defined.
 
   #[global]
   Program Instance Free_evar_subst_morphism (ψ : Pattern) :
@@ -274,30 +268,6 @@ Definition shift_exists_subst {A : Type} (f : A -> Pattern -> Pattern) (m : Patt
 Definition shift_mu_subst {A : Type} (f : A -> Pattern -> Pattern) (m : PatternMorphism f)
     : (A -> Pattern -> Pattern)
     := fun a => apply_subst spec_data (increase_mu spec_data a).
-
-(**  Shifting preserves the morphism property *)
-
-(* Lemma shift_exists_morphism {A : Type} (f : A -> Pattern -> Pattern) (m : PatternMorphism f) :
-    PatternMorphism (shift_exists_subst m).
-Proof.
-    destruct m as [A0 i0].
-    simpl.
-    exists A0.
-    intros a phi. unfold shift_exists_subst.
-    reflexivity.
-Defined.
-
-Print shift_exists_morphism.
-
-Lemma shift_mu_morphism (f : Pattern -> Pattern) (m : PatternMorphism f) :
-    PatternMorphism (shift_mu_subst m).
-Proof.
-    destruct m as [A0 i0 d0 corr0].
-    simpl.
-    exists A0 (increase_mu d0 i0) d0.
-    intros phi.
-    reflexivity.
-Defined. *)
 
 (**
    * Substitution type classes for the different syntacical cateories
