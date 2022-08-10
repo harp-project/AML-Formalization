@@ -637,7 +637,7 @@ Section with_signature.
   Definition evar_quantify_ctx (x : evar) (n : db_index) (C : PatternCtx) : PatternCtx :=
     match decide (x = pcEvar C)  with
     | left _ => C
-    | right pf => @Build_PatternCtx Σ (pcEvar C) (evar_quantify x n (pcPattern C))
+    | right pf => @Build_PatternCtx Σ (pcEvar C) ((pcPattern C)^{{evar: x ↦ n}})
     end.
 
   Lemma is_linear_context_evar_quantify (x : evar) (n : db_index) (C : PatternCtx) :
@@ -671,7 +671,7 @@ Section with_signature.
   Qed.
 
   Definition svar_quantify_ctx (X : svar) (n : db_index) (C : PatternCtx) : PatternCtx :=
-    @Build_PatternCtx Σ (pcEvar C) (svar_quantify X n (pcPattern C)).
+    @Build_PatternCtx Σ (pcEvar C) ((pcPattern C)^{{svar: X ↦ n}}).
 
   Lemma is_linear_context_svar_quantify (X : svar) (n : db_index) (C : PatternCtx) :
     is_linear_context C ->
@@ -696,8 +696,8 @@ Section with_signature.
   Qed.
 
   Lemma svar_quantify_free_evar_subst ψ ϕ x X n:
-    svar_quantify X n (ψ^[[evar: x ↦ ϕ]]) =
-    (svar_quantify X n ψ)^[[evar: x ↦ (svar_quantify X n ϕ)]].
+    ψ^[[evar: x ↦ ϕ]]^{{svar: X ↦ n}} =
+    ψ^{{svar: X ↦ n}}^[[evar: x ↦ ϕ^{{svar: X ↦ n}}]].
   Proof.
     move: n.
     induction ψ; intros n'; simpl; auto.
@@ -714,7 +714,7 @@ Section with_signature.
 
 
   Lemma svar_quantify_emplace X n C ϕ:
-    svar_quantify X n (emplace C ϕ) = emplace (svar_quantify_ctx X n C) (svar_quantify X n ϕ).
+    (emplace C ϕ)^{{svar: X ↦ n}} = emplace (svar_quantify_ctx X n C) (ϕ^{{svar: X ↦ n}}).
   Proof.
     destruct C.
     unfold svar_quantify_ctx,emplace. simpl.
@@ -722,7 +722,7 @@ Section with_signature.
 
   Lemma evar_quantify_subst_ctx x n AC ϕ:
     x ∉ AC_free_evars AC ->
-    evar_quantify x n (subst_ctx AC ϕ) = subst_ctx AC (evar_quantify x n ϕ).
+    (subst_ctx AC ϕ)^{{evar: x ↦ n}} = subst_ctx AC (ϕ^{{evar: x ↦ n}}).
   Proof.
     intros Hx.
     induction AC.
@@ -746,13 +746,13 @@ Section with_signature.
     (
       no_negative_occurrence_db_b level ϕ = true ->
       svar_has_negative_occurrence X ϕ = false ->
-      no_negative_occurrence_db_b level (svar_quantify X level ϕ) = true
+      no_negative_occurrence_db_b level (ϕ^{{svar: X ↦ level}}) = true
     )
     /\
     (
       no_positive_occurrence_db_b level ϕ = true ->
       svar_has_positive_occurrence X ϕ = false ->
-      no_positive_occurrence_db_b level (svar_quantify X level ϕ) = true
+      no_positive_occurrence_db_b level (ϕ^{{svar: X ↦ level}}) = true
     ).
   Proof.
     move: level.
@@ -800,7 +800,7 @@ Section with_signature.
   Lemma no_negative_occurrence_svar_quantify ϕ level X:
     no_negative_occurrence_db_b level ϕ = true ->
     svar_has_negative_occurrence X ϕ = false ->
-    no_negative_occurrence_db_b level (svar_quantify X level ϕ) = true.
+    no_negative_occurrence_db_b level (ϕ^{{svar: X ↦ level}}) = true.
   Proof.
     intros H1 H2.
     pose proof (Htmp :=Private_no_negative_occurrence_svar_quantify ϕ level X).
@@ -811,7 +811,7 @@ Section with_signature.
   Lemma no_positive_occurrence_svar_quantify ϕ level X:
       no_positive_occurrence_db_b level ϕ = true ->
       svar_has_positive_occurrence X ϕ = false ->
-      no_positive_occurrence_db_b level (svar_quantify X level ϕ) = true.
+      no_positive_occurrence_db_b level (ϕ^{{svar: X ↦ level}}) = true.
   Proof.
     intros H1 H2.
     pose proof (Htmp :=Private_no_negative_occurrence_svar_quantify ϕ level X).
@@ -822,18 +822,18 @@ Section with_signature.
 
   Lemma no_negative_occurrence_svar_quantify_2 X dbi1 dbi2 ϕ:
     dbi1 <> dbi2 ->
-    no_negative_occurrence_db_b dbi1 (svar_quantify X dbi2 ϕ) = no_negative_occurrence_db_b dbi1 ϕ
+    no_negative_occurrence_db_b dbi1 (ϕ^{{svar: X ↦ dbi2}}) = no_negative_occurrence_db_b dbi1 ϕ
   with no_positive_occurrence_svar_quantify_2  X dbi1 dbi2 ϕ:
     dbi1 <> dbi2 ->
-    no_positive_occurrence_db_b dbi1 (svar_quantify X dbi2 ϕ) = no_positive_occurrence_db_b dbi1 ϕ.
+    no_positive_occurrence_db_b dbi1 (ϕ^{{svar: X ↦ dbi2}}) = no_positive_occurrence_db_b dbi1 ϕ.
   Proof.
     - move: dbi1 dbi2.
       induction ϕ; intros dbi1 dbi2 Hdbi; simpl; auto.
       + case_match; reflexivity.
       + cbn. rewrite IHϕ1. lia. rewrite IHϕ2. lia. reflexivity.
       + unfold no_negative_occurrence_db_b at 1.
-        fold (no_positive_occurrence_db_b dbi1 (svar_quantify X dbi2 ϕ1)).
-        fold (no_negative_occurrence_db_b dbi1 (svar_quantify X dbi2 ϕ2)).
+        fold (no_positive_occurrence_db_b dbi1 (ϕ1^{{svar: X ↦ dbi2}})).
+        fold (no_negative_occurrence_db_b dbi1 (ϕ2^{{svar: X ↦ dbi2}})).
         rewrite no_positive_occurrence_svar_quantify_2. lia. rewrite IHϕ2. lia. reflexivity.
       + cbn. rewrite IHϕ. lia. reflexivity.
       + cbn. rewrite IHϕ. lia. reflexivity.
@@ -842,8 +842,8 @@ Section with_signature.
       + case_match; cbn. 2: reflexivity. case_match; congruence.
       + cbn. rewrite IHϕ1. lia. rewrite IHϕ2. lia. reflexivity.
       + unfold no_positive_occurrence_db_b at 1.
-        fold (no_negative_occurrence_db_b dbi1 (svar_quantify X dbi2 ϕ1)).
-        fold (no_positive_occurrence_db_b dbi1 (svar_quantify X dbi2 ϕ2)).
+        fold (no_negative_occurrence_db_b dbi1 (ϕ1^{{svar: X ↦ dbi2}})).
+        fold (no_positive_occurrence_db_b dbi1 (ϕ2^{{svar: X ↦ dbi2}})).
         rewrite no_negative_occurrence_svar_quantify_2. lia. rewrite IHϕ2. lia. reflexivity.
       + cbn. rewrite IHϕ. lia. reflexivity.
       + cbn. rewrite IHϕ. lia. reflexivity.
@@ -851,7 +851,7 @@ Section with_signature.
 
   Lemma well_formed_positive_svar_quantify X dbi ϕ:
     well_formed_positive ϕ ->
-    well_formed_positive (svar_quantify X dbi ϕ) = true.
+    well_formed_positive (ϕ^{{svar: X ↦ dbi}}) = true.
   Proof.
     intros Hϕ.
     move: dbi.
@@ -1024,7 +1024,7 @@ Section with_signature.
 
   Lemma count_evar_occurrences_evar_open pcEvar ϕ x:
     pcEvar <> x ->
-    count_evar_occurrences pcEvar (evar_open 0 x ϕ) = count_evar_occurrences pcEvar ϕ.
+    count_evar_occurrences pcEvar (ϕ^{evar: 0 ↦ x}) = count_evar_occurrences pcEvar ϕ.
   Proof.
     intros H. apply count_evar_occurrences_bevar_subst. simpl. case_match; congruence.
   Qed.
@@ -1062,7 +1062,7 @@ Section with_signature.
 
   Lemma wf_svar_open_from_wf_mu X ϕ:
     well_formed (patt_mu ϕ) ->
-    well_formed (svar_open 0 X ϕ).
+    well_formed (ϕ^{svar: 0 ↦ X}).
   Proof.
     intros H. wf_auto;
     destruct_and!;
@@ -1234,10 +1234,10 @@ Section with_signature.
   Defined.
 
   Lemma no_neg_occ_quan_impl_no_neg_occ x n1 n2 ϕ:
-   no_negative_occurrence_db_b n1 (evar_quantify x n2 ϕ) = true ->
+   no_negative_occurrence_db_b n1 (ϕ^{{evar: x ↦ n2}}) = true ->
    no_negative_occurrence_db_b n1 ϕ = true
   with no_pos_occ_quan_impl_no_pos_occ x n1 n2 ϕ:
-   no_positive_occurrence_db_b n1 (evar_quantify x n2 ϕ) = true ->
+   no_positive_occurrence_db_b n1 (ϕ^{{evar: x ↦ n2}}) = true ->
    no_positive_occurrence_db_b n1 ϕ = true.
   Proof.
    - intros H.
@@ -1283,7 +1283,7 @@ Section with_signature.
   Qed.
 
   Lemma wfp_evar_quan_impl_wfp x n ϕ:
-    well_formed_positive (evar_quantify x n ϕ) = true ->
+    well_formed_positive (ϕ^{{evar: x ↦ n}}) = true ->
     well_formed_positive ϕ.
   Proof.
     intros H.
@@ -1307,7 +1307,7 @@ Section with_signature.
   Qed.
 
   Lemma wfcex_evar_quan_impl_wfcex x n dbi ϕ:
-    well_formed_closed_ex_aux (evar_quantify x n ϕ) dbi = true ->
+    well_formed_closed_ex_aux (ϕ^{{evar: x ↦ n}}) dbi = true ->
     well_formed_closed_ex_aux ϕ dbi.
   Proof.
     intros H.
@@ -1329,7 +1329,7 @@ Section with_signature.
   Qed.
 
   Lemma wfcmu_evar_quan_impl_wfcmu x n dbi ϕ:
-    well_formed_closed_mu_aux (evar_quantify x n ϕ) dbi = true ->
+    well_formed_closed_mu_aux (ϕ^{{evar: x ↦ n}}) dbi = true ->
     well_formed_closed_mu_aux ϕ dbi.
   Proof.
     intros H.
@@ -1404,7 +1404,7 @@ Section with_signature.
 
   Lemma bevar_occur_evar_open_2 dbi x ϕ:
     well_formed_closed_ex_aux ϕ dbi ->
-    bevar_occur (evar_open dbi x ϕ) dbi = false.
+    bevar_occur (ϕ^{evar: dbi ↦ x}) dbi = false.
   Proof.
     move: dbi.
     unfold evar_open.
@@ -1421,7 +1421,7 @@ Section with_signature.
 
   Lemma bsvar_occur_svar_open_2 dbi X ϕ:
     well_formed_closed_mu_aux ϕ dbi ->
-    bsvar_occur (svar_open dbi X ϕ) dbi = false.
+    bsvar_occur (ϕ^{svar: dbi ↦ X}) dbi = false.
   Proof.
     move: dbi.
     unfold svar_open.

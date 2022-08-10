@@ -66,7 +66,7 @@ Section lemmas.
 
   Lemma wf_ex_eq_sctx_eo AC x p:
     well_formed (patt_exists p) = true ->
-    well_formed (patt_exists (evar_quantify x 0 (subst_ctx AC (evar_open 0 x p)))) = true.
+    well_formed (patt_exists ((subst_ctx AC (p^{evar: 0 ↦ x}))^{{evar: x ↦ 0}})) = true.
   Proof.
     intros Hwf.
     unfold well_formed in Hwf.

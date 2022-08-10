@@ -157,7 +157,8 @@ Section index_manipulation.
 (** NESTING AND QUANTIFICATION **)
 
   Lemma nest_ex_gt_evar_quantify : forall φ dbi dbi2 x more, dbi >= dbi2 ->
-     evar_quantify x (dbi + more) (nest_ex_aux dbi2 more φ) = nest_ex_aux dbi2 more (evar_quantify x dbi φ).
+     (nest_ex_aux dbi2 more φ)^{{evar: x ↦ dbi + more}} = 
+     nest_ex_aux dbi2 more (φ^{{evar: x ↦ dbi}}).
   Proof.
     induction φ; intros dbi dbi2 x' more Hgt; cbn; auto.
     * case_match; auto; simpl; try case_match; subst; try lia; auto.
@@ -169,7 +170,8 @@ Section index_manipulation.
   Qed.
 
   Lemma nest_mu_gt_svar_quantify : forall φ dbi dbi2 x more, dbi >= dbi2 ->
-     svar_quantify x (dbi + more) (nest_mu_aux dbi2 more φ) = nest_mu_aux dbi2 more (svar_quantify x dbi φ).
+     (nest_mu_aux dbi2 more φ)^{{svar: x ↦ dbi + more}} = 
+     nest_mu_aux dbi2 more (φ^{{svar: x ↦ dbi}}).
   Proof.
     induction φ; intros dbi dbi2 x' more Hgt; cbn; auto.
     * case_match; auto; simpl; try case_match; subst; try lia; auto.
@@ -181,7 +183,7 @@ Section index_manipulation.
   Qed.
 
   Lemma nest_mu_evar_quantify : forall φ dbi dbi2 x more,
-     evar_quantify x dbi (nest_mu_aux dbi2 more φ) = nest_mu_aux dbi2 more (evar_quantify x dbi φ).
+     (nest_mu_aux dbi2 more φ)^{{evar: x ↦ dbi}} = nest_mu_aux dbi2 more (φ^{{evar: x ↦ dbi}}).
   Proof.
     induction φ; intros dbi dbi2 x' more; cbn; auto.
     * case_match; auto; simpl; try case_match; subst; try lia; auto.
@@ -192,7 +194,7 @@ Section index_manipulation.
   Qed.
 
   Lemma nest_ex_svar_quantify : forall φ dbi dbi2 x more,
-     svar_quantify x dbi (nest_ex_aux dbi2 more φ) = nest_ex_aux dbi2 more (svar_quantify x dbi φ).
+     (nest_ex_aux dbi2 more φ)^{{svar: x ↦ dbi}} = nest_ex_aux dbi2 more (φ^{{svar: x ↦ dbi}}).
   Proof.
     induction φ; intros dbi dbi2 x' more; cbn; auto.
     * case_match; auto; simpl; try case_match; subst; try lia; auto.
@@ -382,7 +384,8 @@ Section index_manipulation.
   Qed.
 
   Lemma svar_open_nest_ex_aux_comm level more ϕ dbi X:
-    svar_open dbi X (nest_ex_aux level more ϕ) = nest_ex_aux level more (svar_open dbi X ϕ).
+    (nest_ex_aux level more ϕ)^{svar: dbi ↦ X} = 
+    nest_ex_aux level more (ϕ^{svar: dbi ↦ X}).
   Proof.
     apply bsvar_subst_nest_ex_aux_comm.
     reflexivity.
@@ -404,7 +407,8 @@ Section index_manipulation.
   Qed.
 
   Lemma evar_open_nest_mu_aux_comm level more ϕ dbi X:
-    evar_open dbi X (nest_mu_aux level more ϕ) = nest_mu_aux level more (evar_open dbi X ϕ).
+    (nest_mu_aux level more ϕ)^{evar: dbi ↦ X} =
+    nest_mu_aux level more (ϕ^{evar: dbi ↦ X}).
   Proof.
     move: level dbi. unfold evar_open.
     induction ϕ; move=> level dbi; simpl; auto; try congruence.
@@ -492,13 +496,13 @@ Section index_manipulation.
   Qed.
 
   Corollary svar_open_nest_ex_comm ϕ dbi X:
-    svar_open dbi X (nest_ex ϕ) = nest_ex (svar_open dbi X ϕ).
+    (nest_ex ϕ)^{svar: dbi ↦ X} = nest_ex (ϕ^{svar: dbi ↦ X}).
   Proof.
     exact (svar_open_nest_ex_aux_comm 0 1 ϕ dbi X).
   Qed.
 
   Corollary evar_open_nest_mu_comm ϕ dbi X:
-    evar_open dbi X (nest_mu ϕ) = nest_mu (evar_open dbi X ϕ).
+    (nest_mu ϕ)^{evar: dbi ↦ X} = nest_mu (ϕ^{evar: dbi ↦ X}).
   Proof.
     exact (evar_open_nest_mu_aux_comm 0 1 ϕ dbi X).
   Qed.

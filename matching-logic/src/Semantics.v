@@ -957,12 +957,15 @@ Section semantics.
           reflexivity.
         + mlSimpl. unfold shift_mu_subst.
           pose proof (@shift_mu_morphism _ (svar_open dbi X) _).
+          cbn in X0.
           epose proof (@correctness _ _ X0). unfold shift_mu_subst in H.
-          rewrite H.
-          pose proof (@correctness _ _ (Svar_open_morphism dbi X) ϕ).
-          rewrite <- H0.
+          pose proof (@correctness _ _ (Svar_open_morphism (Datatypes.S dbi) X) ϕ).
+          rewrite <- H in H0.
         
-        rewrite <- (@correctness _ _ ). cbn.
+          rewrite <- (@correctness _ _ ). cbn.
+        
+        
+        
         unfold svar_open. simpl.
           fold (svar_open (Datatypes.S dbi) X ϕ).
           fold (svar_open (Datatypes.S dbi) Y ϕ).
