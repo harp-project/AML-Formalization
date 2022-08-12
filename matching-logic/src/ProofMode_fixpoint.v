@@ -29,6 +29,7 @@ Import extralibrary.
 
 Import
   MatchingLogic.Syntax.Notations
+  MatchingLogic.Substitution.Notations
   MatchingLogic.DerivedOperators_Syntax.Notations
   MatchingLogic.ProofSystem.Notations
 .
@@ -36,7 +37,8 @@ Import
 Set Default Proof Mode "Classic".
 
 Open Scope ml_scope.
-
+Open Scope string_scope.
+Open Scope list_scope.
 
 
 Lemma pile_impl_uses_kt {Σ : Signature} gpi evs svs fp:
@@ -135,7 +137,7 @@ Lemma Svar_subst {Σ : Signature}
         |}) i} :
   well_formed ψ ->
   Γ ⊢i ϕ using i ->
-  Γ ⊢i (free_svar_subst ϕ ψ X) using i.
+  Γ ⊢i (ϕ^[[svar: X ↦ ψ]]) using i.
 Proof.
   intros wfψ [pf Hpf].
   unshelve (eexists).
@@ -196,7 +198,7 @@ Defined.
     svar_has_negative_occurrence X ϕ₁ = false ->
     svar_has_negative_occurrence X ϕ₂ = false ->
     Γ ⊢i ϕ₁ ---> ϕ₂ using i->
-    Γ ⊢i (patt_mu (svar_quantify X 0 ϕ₁)) ---> (patt_mu (svar_quantify X 0 ϕ₂))
+    Γ ⊢i (patt_mu (ϕ₁^{{svar: X ↦ 0}})) ---> (patt_mu (ϕ₂^{{svar: X ↦ 0}}))
     using i.
   Proof.
     intros pile nonegϕ₁ nonegϕ₂ Himp.
@@ -208,7 +210,7 @@ Defined.
     { eapply pile_trans. 2: apply pile. apply pile_svs_subseteq. set_solver. }
     { wf_auto2. }
 
-    pose proof (Htmp := @Svar_subst Σ Γ (ϕ₁ ---> ϕ₂) (mu, svar_quantify X 0 ϕ₂) X i).
+    pose proof (Htmp := @Svar_subst Σ Γ (ϕ₁ ---> ϕ₂) (mu, ϕ₂^{{svar: X ↦ 0}}) X i).
     feed specialize Htmp.
     { eapply pile_trans. 2: apply pile. apply pile_kt_impl. simpl. reflexivity. }
     { wf_auto2. }
@@ -217,7 +219,7 @@ Defined.
     simpl in Htmp.
     fold free_svar_subst in Htmp.
 
-    pose proof (Hpf := @Pre_fixp Σ Γ (svar_quantify X 0 ϕ₂)).
+    pose proof (Hpf := @Pre_fixp Σ Γ (ϕ₂^{{svar: X ↦ 0}})).
     simpl in Hpf.
 
     unshelve (eapply (@cast_proof' Σ Γ _ _) in Hpf).
@@ -246,7 +248,7 @@ Defined.
     }
 
 
-    assert(well_formed_positive (free_svar_subst ϕ₂ (mu , svar_quantify X 0 ϕ₂) X) = true).
+    assert(well_formed_positive (ϕ₂^[[svar: X ↦ mu , ϕ₂^{{svar: X ↦ 0}}]]) = true).
     {
       unfold well_formed, well_formed_closed in *. destruct_and!. simpl; split_and?.
       apply wfp_free_svar_subst; auto.
@@ -257,7 +259,7 @@ Defined.
       }
     }
 
-    assert(well_formed_closed_mu_aux (free_svar_subst ϕ₂ (mu , svar_quantify X 0 ϕ₂) X) 0 = true).
+    assert(well_formed_closed_mu_aux (ϕ₂^[[svar: X ↦ mu , ϕ₂^{{svar: X ↦ 0}}]]) 0 = true).
     {
       unfold well_formed, well_formed_closed in *. destruct_and!. simpl; split_and?; auto.
       replace 0 with (0 + 0) at 3 by lia.
@@ -266,7 +268,7 @@ Defined.
       apply svar_quantify_closed_mu. assumption.
     }
     
-    assert(well_formed_closed_ex_aux (free_svar_subst ϕ₂ (mu , svar_quantify X 0 ϕ₂) X) 0 = true).
+    assert(well_formed_closed_ex_aux (ϕ₂^[[svar: X ↦ mu , ϕ₂^{{svar: X ↦ 0}}]]) 0 = true).
     {
       unfold well_formed, well_formed_closed in *. destruct_and!. simpl; split_and?; auto.
       replace 0 with (0 + 0) at 3 by lia.
@@ -275,7 +277,7 @@ Defined.
       apply svar_quantify_closed_ex. assumption.
     }
 
-    assert(well_formed_positive (free_svar_subst ϕ₁ (mu , svar_quantify X 0 ϕ₂) X) = true).
+    assert(well_formed_positive (ϕ₁^[[svar: X ↦ mu , ϕ₂^{{svar: X ↦ 0}}]]) = true).
     {
       unfold well_formed, well_formed_closed in *. destruct_and!. simpl; split_and?.
       apply wfp_free_svar_subst; auto.
@@ -286,7 +288,7 @@ Defined.
       }
     }
 
-    assert(well_formed_closed_mu_aux (free_svar_subst ϕ₁ (mu , svar_quantify X 0 ϕ₂) X) 0 = true).
+    assert(well_formed_closed_mu_aux (ϕ₁^[[svar: X ↦ mu , ϕ₂^{{svar: X ↦ 0}}]]) 0 = true).
     {
       unfold well_formed, well_formed_closed in *. destruct_and!. simpl; split_and?; auto.
       replace 0 with (0 + 0) at 3 by lia.
@@ -295,7 +297,7 @@ Defined.
       apply svar_quantify_closed_mu. assumption.
     }
     
-    assert(well_formed_closed_ex_aux (free_svar_subst ϕ₁ (mu , svar_quantify X 0 ϕ₂) X) 0 = true).
+    assert(well_formed_closed_ex_aux (ϕ₁^[[svar: X ↦ mu , ϕ₂^{{svar: X ↦ 0}}]]) 0 = true).
     {
       unfold well_formed, well_formed_closed in *. destruct_and!. simpl; split_and?; auto.
       replace 0 with (0 + 0) at 3 by lia.
@@ -303,7 +305,7 @@ Defined.
       simpl.
       apply svar_quantify_closed_ex. assumption.
     }
-    
+
     apply useBasicReasoning with (i := i) in Hpf.
     epose proof (Hsi := @syllogism_meta Σ _ _ _ _ _ _ _ _ Htmp Hpf).
     simpl.
@@ -334,3 +336,7 @@ Defined.
     Unshelve.
     all: abstract(wf_auto2).
   Defined.
+
+Close Scope ml_scope.
+Close Scope string_scope.
+Close Scope list_scope.

@@ -190,7 +190,22 @@ lazymatch goal with
 end.
 
 Tactic Notation "mlSimpl" :=
-  repeat rewrite mlSimpl'.
+  repeat (rewrite mlSimpl'); try rewrite [increase_ex _ _]/=; try rewrite [increase_mu]/=.
 
 Tactic Notation "mlSimpl" "in" hyp(H) :=
-  repeat rewrite mlSimpl' in H.
+  repeat (rewrite mlSimpl' in H); try rewrite [increase_ex _ _]/= in H; try rewrite [increase_mu _ _]/= in H.
+
+(* Test: *)
+(* Import MatchingLogic.Substitution.Notations.
+Open Scope ml_scope.
+Goal forall Σ : Signature, forall φ x y ψ,
+  (patt_exists φ)^[[evar: x ↦ ψ]] = patt_bott ->
+  (patt_exists φ)^[evar: y ↦ ψ] = patt_bott ->
+  evar_quantify x y (patt_exists φ) = patt_bott
+  -> False.
+Proof.
+  intros.
+  mlSimpl in H.
+  mlSimpl in H0.
+  mlSimpl in H1.
+Abort. *)

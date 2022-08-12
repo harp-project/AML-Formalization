@@ -1,31 +1,28 @@
 (* In this module we define the definedness symbol and use it to build derived notions
    like totality and equality.
  *)
- From Coq Require Import ssreflect ssrfun ssrbool.
- Set Implicit Arguments.
- Unset Strict Implicit.
- Unset Printing Implicit Defensive.
-  
- From Coq Require Import String Setoid.
- Require Import Coq.Program.Equality.
- Require Import Coq.Logic.Classical_Prop.
- From Coq.Logic Require Import FunctionalExtensionality Eqdep_dec.
- From Coq.Classes Require Import Morphisms_Prop.
- From Coq.Unicode Require Import Utf8.
- From Coq.micromega Require Import Lia.
- 
- From MatchingLogic Require Import Syntax NamedAxioms DerivedOperators_Syntax IndexManipulation wftactics.
- From MatchingLogic.Utils Require Import stdpp_ext.
- 
- From stdpp Require Import base fin_sets sets propset proof_irrel option list.
- 
- Import extralibrary.
- 
- Import MatchingLogic.Syntax.Notations.
- Import MatchingLogic.DerivedOperators_Syntax.Notations.
- Import MatchingLogic.Syntax.BoundVarSugar.
+From Coq Require Import ssreflect ssrfun ssrbool.
+Set Implicit Arguments.
+Unset Strict Implicit.
+Unset Printing Implicit Defensive.
 
- Open Scope ml_scope.
+From Coq Require Import String Setoid.
+Require Import Coq.Program.Equality.
+Require Import Coq.Logic.Classical_Prop.
+From Coq.Logic Require Import FunctionalExtensionality Eqdep_dec.
+From Coq.Classes Require Import Morphisms_Prop.
+From Coq.Unicode Require Import Utf8.
+From Coq.micromega Require Import Lia.
+
+From MatchingLogic.Utils Require Import stdpp_ext.
+
+From stdpp Require Import base fin_sets sets propset proof_irrel option list.
+
+
+From MatchingLogic Require Import Logic.
+Import MatchingLogic.Logic.Notations.
+
+Import extralibrary.
 
 (* We have only one symbol *)
 Inductive Symbols := definedness.
@@ -42,20 +39,22 @@ Proof. unfold EqDecision. intros x y. unfold Decision. destruct x. decide equali
     }.
 
 Section definedness.
-  
+
+  Open Scope ml_scope.
+
   Context {Σ : Signature}.
 
   Context {syntax : Syntax}.
 
   Definition patt_defined (phi : Pattern) : Pattern :=
     patt_sym (inj definedness) $ phi.
-  
+
   Definition patt_total (phi: Pattern) : Pattern :=
     patt_not (patt_defined (patt_not phi)).
 
   Definition patt_subseteq (phi1 phi2 : Pattern) : Pattern :=
     patt_total (phi1 ---> phi2).
-  
+
   Definition patt_equal (phi1 phi2 : Pattern) : Pattern :=
     patt_total (phi1 <---> phi2).
 
@@ -81,13 +80,13 @@ Module Notations.
 
 End Notations.
 
-Import Notations.
-
 Section definedness.
   Context
     {Σ : Signature}
     {syntax : Syntax}
   .
+  Import Notations.
+  Open Scope ml_scope.
 
   Lemma well_formed_defined ϕ:
     well_formed ϕ = true ->
@@ -123,7 +122,7 @@ Section definedness.
 
   #[local]
    Hint Resolve well_formed_equal : core.
-  
+
   Lemma well_formed_subseteq (phi1 phi2 : Pattern) :
     well_formed phi1 = true ->
     well_formed phi2 = true ->
@@ -149,10 +148,10 @@ Section definedness.
 
   Definition ev_x := (evar_fresh []).
   Definition p_x := patt_free_evar ev_x.
-  
+
   Inductive AxiomName := AxDefinedness.
 
-  Definition axiom(name : AxiomName) : Pattern :=
+  Definition axiom (name : AxiomName) : Pattern :=
     match name with
     | AxDefinedness => patt_defined p_x
     end.
@@ -162,105 +161,46 @@ Section definedness.
       NAAxiom := axiom;
     |}.
   Next Obligation.
-    intros name. destruct name; simpl; wf_auto2.
+    destruct name; simpl; wf_auto2.
   Qed.
 
   Definition theory := theory_of_NamedAxioms named_axioms.
 
-
-
-  (* defined, total, subseteq, equal, in *)
-  Lemma bevar_subst_defined ψ (wfcψ : well_formed_closed ψ) x ϕ :
-    bevar_subst (patt_defined ϕ) ψ x = patt_defined (bevar_subst ϕ ψ x).
-  Proof. unfold patt_defined. cbn. auto. Qed.
-  Lemma bsvar_subst_defined ψ (wfcψ : well_formed_closed ψ) x ϕ :
-    bsvar_subst (patt_defined ϕ) ψ x = patt_defined (bsvar_subst ϕ ψ x).
-  Proof. unfold patt_defined. cbn. auto. Qed.
+  (** Substitution classes: *)
+  #[global]
+  Program Instance Unary_defined : Unary patt_defined := {}.
+  Next Obligation.
+    unfold patt_defined. repeat rewrite correctness.
+    simpl. reflexivity.
+  Defined.
 
   #[global]
-   Instance Unary_defined : Unary patt_defined :=
-    {| unary_bevar_subst := bevar_subst_defined ;
-       unary_bsvar_subst := bsvar_subst_defined ;
-       unary_wf := well_formed_defined ;
-       unary_free_evar_subst := ltac:(reflexivity) ;
-       unary_free_svar_subst := ltac:(reflexivity) ;
-       unary_evar_quantify := ltac:(reflexivity) ;
-       unary_svar_quantify := ltac:(reflexivity) ;
-    |}.
-  
-
-  Lemma bevar_subst_total ψ (wfcψ : well_formed_closed ψ) x ϕ :
-    bevar_subst (patt_total ϕ) ψ x = patt_total (bevar_subst ϕ ψ x).
-  Proof. unfold patt_total. simpl_bevar_subst. reflexivity. Qed.
-  Lemma bsvar_subst_total ψ (wfcψ : well_formed_closed ψ) x ϕ :
-    bsvar_subst (patt_total ϕ) ψ x = patt_total (bsvar_subst ϕ ψ x).
-  Proof. unfold patt_total. simpl_bsvar_subst. reflexivity. Qed.
+  Program Instance Unary_total : Unary patt_total := {}.
+  Next Obligation.
+    unfold patt_total. repeat rewrite correctness.
+    simpl. reflexivity.
+  Defined.
 
   #[global]
-   Instance Unary_total : Unary patt_total :=
-    {| unary_bevar_subst := bevar_subst_total ;
-       unary_bsvar_subst := bsvar_subst_total ;
-       unary_wf := well_formed_total ;
-       unary_free_evar_subst := ltac:(reflexivity) ;
-       unary_free_svar_subst := ltac:(reflexivity) ;
-       unary_evar_quantify := ltac:(reflexivity) ;
-       unary_svar_quantify := ltac:(reflexivity) ;
-    |}.
-
-
-  Lemma bevar_subst_equal ψ (wfcψ : well_formed_closed ψ) x ϕ₁ ϕ₂ :
-    bevar_subst (patt_equal ϕ₁ ϕ₂) ψ x = patt_equal (bevar_subst ϕ₁ ψ x) (bevar_subst ϕ₂ ψ x).
-  Proof. unfold patt_equal. simpl_bevar_subst. reflexivity. Qed.
-  Lemma bsvar_subst_equal ψ (wfcψ : well_formed_closed ψ) x ϕ₁ ϕ₂ :
-    bsvar_subst (patt_equal ϕ₁ ϕ₂) ψ x = patt_equal (bsvar_subst ϕ₁ ψ x) (bsvar_subst ϕ₂ ψ x).
-  Proof. unfold patt_equal. simpl_bsvar_subst. reflexivity. Qed.
+  Program Instance Binary_equal : Binary patt_equal := {}.
+  Next Obligation.
+    unfold patt_equal. repeat rewrite correctness.
+    simpl. reflexivity.
+  Defined.
 
   #[global]
-   Instance Binary_equal : Binary patt_equal :=
-    {| binary_bevar_subst := bevar_subst_equal ;
-       binary_bsvar_subst := bsvar_subst_equal ;
-       binary_wf := well_formed_equal ;
-       binary_free_evar_subst := ltac:(reflexivity) ;
-       binary_free_svar_subst := ltac:(reflexivity) ;
-       binary_evar_quantify := ltac:(reflexivity) ;
-       binary_svar_quantify := ltac:(reflexivity) ;
-    |}.
-  
-  Lemma bevar_subst_subseteq ψ (wfcψ : well_formed_closed ψ) x ϕ₁ ϕ₂ :
-    bevar_subst (patt_subseteq ϕ₁ ϕ₂) ψ x = patt_subseteq (bevar_subst ϕ₁ ψ x) (bevar_subst ϕ₂ ψ x).
-  Proof. unfold patt_subseteq. simpl_bevar_subst. reflexivity. Qed.
-  Lemma bsvar_subst_subseteq ψ (wfcψ : well_formed_closed ψ) x ϕ₁ ϕ₂ :
-    bsvar_subst (patt_subseteq ϕ₁ ϕ₂) ψ x = patt_subseteq (bsvar_subst ϕ₁ ψ x) (bsvar_subst ϕ₂ ψ x).
-  Proof. unfold patt_subseteq. simpl_bsvar_subst. reflexivity. Qed.
+  Program Instance Binary_subseteq : Binary patt_subseteq := {}.
+  Next Obligation.
+    unfold patt_subseteq. repeat rewrite correctness.
+    simpl. reflexivity.
+  Defined.
 
   #[global]
-   Instance Binary_subseteq : Binary patt_subseteq :=
-    {| binary_bevar_subst := bevar_subst_subseteq ;
-       binary_bsvar_subst := bsvar_subst_subseteq ;
-       binary_wf := well_formed_subseteq ;
-       binary_free_evar_subst := ltac:(reflexivity) ;
-       binary_free_svar_subst := ltac:(reflexivity) ;
-       binary_evar_quantify := ltac:(reflexivity) ;
-       binary_svar_quantify := ltac:(reflexivity) ;
-    |}.
-
-  Lemma bevar_subst_in ψ (wfcψ : well_formed_closed ψ) x ϕ₁ ϕ₂ :
-    bevar_subst (patt_in ϕ₁ ϕ₂) ψ x = patt_in (bevar_subst ϕ₁ ψ x) (bevar_subst ϕ₂ ψ x).
-  Proof. unfold patt_in. simpl_bevar_subst. reflexivity. Qed.
-  Lemma bsvar_subst_in ψ (wfcψ : well_formed_closed ψ) x ϕ₁ ϕ₂ :
-    bsvar_subst (patt_in ϕ₁ ϕ₂) ψ x = patt_in (bsvar_subst ϕ₁ ψ x) (bsvar_subst ϕ₂ ψ x).
-  Proof. unfold patt_in. simpl_bsvar_subst. reflexivity. Qed.
-
-  #[global]
-   Instance Binary_in : Binary patt_in :=
-    {| binary_bevar_subst := bevar_subst_in ;
-       binary_bsvar_subst := bsvar_subst_in ;
-       binary_wf := well_formed_in ;
-       binary_free_evar_subst := ltac:(reflexivity) ;
-       binary_free_svar_subst := ltac:(reflexivity) ;
-       binary_evar_quantify := ltac:(reflexivity) ;
-       binary_svar_quantify := ltac:(reflexivity) ;
-    |}.
+  Program Instance Binary_in : Binary patt_in := {}.
+  Next Obligation.
+    unfold patt_in. repeat rewrite correctness.
+    simpl. reflexivity.
+  Defined.
 
   (* Defines ϕ₁ to be an inversion of ϕ₂ *)
   (* ∀ x. ϕ₁ x = ∃ y. y ∧ (x ∈ ϕ₂ y)
@@ -272,6 +212,6 @@ Section definedness.
              (patt_exists (patt_and (patt_bound_evar 0)
                                     (patt_in (patt_bound_evar 1)
                                              (patt_app (nest_ex (nest_ex ϕ₂)) (patt_bound_evar 0)))))).
- 
+
 
 End definedness.

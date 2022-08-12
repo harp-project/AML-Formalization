@@ -13,16 +13,13 @@ From Coq.Classes Require Import Morphisms_Prop.
 From Coq.Unicode Require Import Utf8.
 From Coq.micromega Require Import Lia.
 
-From MatchingLogic
-Require Import
-  Syntax
-  NamedAxioms
+From MatchingLogic Require Import Logic.
+From MatchingLogic Require Import
   Semantics
-  DerivedOperators_Syntax
   DerivedOperators_Semantics
-  IndexManipulation
   PrePredicate
 .
+Import MatchingLogic.Logic.Notations.
 From MatchingLogic.Utils Require Import stdpp_ext.
 
 From stdpp Require Import base fin_sets sets propset proof_irrel option list finite.
@@ -30,25 +27,20 @@ From stdpp Require Import base fin_sets sets propset proof_irrel option list fin
 Import extralibrary.
 
 Require Import MatchingLogic.Theories.Definedness_Syntax.
-
-Import MatchingLogic.Syntax.Notations.
-Import MatchingLogic.Semantics.Notations.
-Import MatchingLogic.DerivedOperators_Syntax.Notations.
-Import MatchingLogic.Substitution.Notations.
-Import MatchingLogic.Syntax.BoundVarSugar.
-Import MatchingLogic.Substitution.Notations.
-
 Import Definedness_Syntax.Notations.
+Import MatchingLogic.Semantics.Notations.
+Import MatchingLogic.Syntax.BoundVarSugar.
 
 Section definedness.
   Context
     {Σ : Signature}
     {syntax : Syntax}
   .
+  Open Scope ml_scope.
 
   Let sym (s : Symbols) : Pattern :=
     @patt_sym Σ (inj s).
-  
+
   Lemma definedness_model_application :
     forall (M : @Model Σ) (ρ : @Valuation Σ M),
       M ⊨ᵀ theory ->
@@ -105,7 +97,7 @@ Section definedness.
     destruct H'.
     unfold patt_defined.
     rewrite -> eval_app_simpl.
-    
+
     pose proof (H'' := @definedness_model_application M ρ H x).
     unfold sym in H''.
     rewrite -> set_eq_subseteq in H''.
@@ -515,9 +507,8 @@ Section definedness.
     match goal with
     | |- context G [fresh_evar ?t] => remember (fresh_evar t) as X
     end.
-    
-    unfold evar_open.
-    simpl_bevar_subst.
+
+    mlSimpl.
     apply T_predicate_equals.
     apply Hm.
   Qed.
@@ -531,7 +522,7 @@ Section definedness.
   Proof.
     intros Htheory.
     rewrite eval_forall_predicate.
-    { unfold evar_open. simpl_bevar_subst. apply T_predicate_equals. apply Htheory. }
+    { mlSimpl. apply T_predicate_equals. apply Htheory. }
     apply all_iff_morphism. intros m₁.
     remember ((fresh_evar
           (patt_equal (nest_ex ϕ₁ $ BoundVarSugar.b0)
@@ -544,7 +535,7 @@ Section definedness.
     { apply Htheory. }
 
     rewrite eval_set_builder.
-    { unfold evar_open. simpl_bevar_subst. apply T_predicate_in. apply Htheory. }
+    { mlSimpl. apply T_predicate_in. apply Htheory. }
 
     assert (Hpi: ∀ M ρ ϕ rhs,
                @eval _ M ρ ϕ = rhs
@@ -574,8 +565,8 @@ Section definedness.
                 (patt_free_evar x
                  ∈ml (nest_ex_aux 0 1 (nest_ex_aux 0 1 ϕ₂))^[evar:1↦patt_free_evar x] $ b0)) as y.
     rewrite fuse_nest_ex_same.
-    rewrite nest_ex_same_general. 1-2: lia.
-    simpl_bevar_subst. simpl. rewrite nest_ex_same.
+    rewrite nest_ex_same_general. 1-2: cbn; lia.
+    mlSimpl. rewrite nest_ex_same.
 (*
     do 3 rewrite evar_open_bound_evar.
     repeat case_match; try lia.
@@ -589,7 +580,7 @@ Section definedness.
     2: { apply Htheory. } *)
     rewrite eval_free_evar_simpl.
     rewrite update_evar_val_same.
-    fold (m₂ ∈ rel_of ρ ϕ₁ m₁).
+    fold (m₂ ∈ rel_of ρ ϕ₁ m₁). simpl.
 
     (*rewrite simpl_evar_open.*)
     rewrite <- free_evar_in_patt; auto.
@@ -737,7 +728,7 @@ End definedness.
 From MatchingLogic Require Import StringSignature.
 
 Module equivalence_insufficient.
-
+  Open Scope ml_scope.
   Inductive exampleSymbols : Set :=
   | sym_f.
 
@@ -894,7 +885,7 @@ Module equivalence_insufficient.
         set_unfold. intuition.
         left. intuition. apply H. intro. congruence.
   Qed.
-
+  Close Scope ml_scope.
 End equivalence_insufficient.
 
 

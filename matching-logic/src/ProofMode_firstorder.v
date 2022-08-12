@@ -38,6 +38,9 @@ Set Default Proof Mode "Classic".
 
 Section with_signature.
   Context {Σ : Signature}.
+  Open Scope ml_scope.
+  Open Scope string_scope.
+  Open Scope list_scope.
 
   Lemma pile_impl_allows_gen_x x gpi svs kt fp:
     ProofInfoLe ( (ExGen := {[x]}, SVSubst := svs, KT := kt, FP := fp)) ( gpi) ->
@@ -278,10 +281,10 @@ Section with_signature.
 
 
   Lemma strip_exists_quantify_l Γ x P Q i :
-  x ∉ free_evars P ->
-  well_formed_closed_ex_aux P 1 ->
-  Γ ⊢i (exists_quantify x (evar_open 0 x P) ---> Q) using i ->
-  Γ ⊢i (ex , P) ---> Q using i.
+    x ∉ free_evars P ->
+    well_formed_closed_ex_aux P 1 ->
+    Γ ⊢i (exists_quantify x (P^{evar: 0 ↦ x}) ---> Q) using i ->
+    Γ ⊢i (ex , P) ---> Q using i.
   Proof.
   intros Hx HwfcP H.
   unshelve (eapply (@cast_proof' Σ Γ _ _ _ _ H)).
@@ -293,10 +296,10 @@ Section with_signature.
   Defined.
 
   Lemma strip_exists_quantify_r Γ x P Q i :
-  x ∉ free_evars Q ->
-  well_formed_closed_ex_aux Q 1 ->
-  Γ ⊢i P ---> (exists_quantify x (evar_open 0 x Q)) using i ->
-  Γ ⊢i P ---> ex, Q using i.
+    x ∉ free_evars Q ->
+    well_formed_closed_ex_aux Q 1 ->
+    Γ ⊢i P ---> (exists_quantify x (Q^{evar: 0 ↦ x})) using i ->
+    Γ ⊢i P ---> ex, Q using i.
   Proof.
   intros Hx HwfcP H.
   unshelve (eapply (@cast_proof' Σ Γ _ _ _ _ H)).
@@ -339,11 +342,11 @@ Section with_signature.
 
     eapply cast_proof'.
     {
-      replace (evar_open 0 x ϕ₁ and ϕ₂)
-              with (evar_open 0 x (ϕ₁ and ϕ₂)).
+      replace (ϕ₁^{evar: 0 ↦ x} and ϕ₂)
+              with ((ϕ₁ and ϕ₂)^{evar: 0 ↦ x}).
       2: {
-        unfold evar_open. simpl_bevar_subst.
-        rewrite [bevar_subst ϕ₂ _ _]bevar_subst_not_occur.
+        unfold evar_open. mlSimpl.
+        rewrite [bevar_subst _ _ ϕ₂]bevar_subst_not_occur.
         {
           wf_auto2.
         }
@@ -386,8 +389,8 @@ Section with_signature.
       apply ex_quan_monotone.
       { apply pile_refl. }
 
-      unfold evar_open. simpl_bevar_subst.
-      rewrite [bevar_subst ϕ₂ _ _]bevar_subst_not_occur.
+      unfold evar_open. mlSimpl.
+      rewrite [bevar_subst _ _ ϕ₂]bevar_subst_not_occur.
       {
         wf_auto2.
       }
@@ -409,9 +412,8 @@ Section with_signature.
         simpl. clear. set_solver.
       }
 
-      unfold evar_open.
-      simpl_bevar_subst.
-      rewrite [bevar_subst ϕ₂ _ _]bevar_subst_not_occur.
+      unfold evar_open. mlSimpl.
+      rewrite [bevar_subst _ _ ϕ₂]bevar_subst_not_occur.
       {
         wf_auto2.
       }
@@ -474,10 +476,10 @@ Section with_signature.
   Lemma forall_variable_substitution' Γ ϕ x (i : ProofInfo):
     well_formed ϕ ->
     (ProofInfoLe ( (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)) i) ->
-    Γ ⊢i (all, evar_quantify x 0 ϕ) ---> ϕ using i.
+    Γ ⊢i (all, ϕ^{{evar: x ↦ 0}}) ---> ϕ using i.
   Proof.
     intros wfϕ pile.
-    pose proof (Htmp := @forall_variable_substitution Σ Γ ϕ x wfϕ).
+    pose proof (Htmp := @forall_variable_substitution Γ ϕ x wfϕ).
     eapply useGenericReasoning. apply pile. apply Htmp.
   Defined.
 
@@ -486,7 +488,7 @@ Section with_signature.
     evar_is_fresh_in x ϕ ->
     ProofInfoLe ( (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)) i ->
     Γ ⊢i (all, ϕ) using i ->
-    Γ ⊢i (evar_open 0 x ϕ) using i.
+    Γ ⊢i (ϕ^{evar: 0 ↦ x}) using i.
   Proof.
     intros wfϕ frϕ pile H.
     destruct i.
@@ -513,7 +515,7 @@ Section with_signature.
   Proof.
     intros wfϕ₁ wfϕ₂ pile H.
     remember (fresh_evar (ϕ₁ ---> ϕ₂)) as x.
-    apply (@strip_exists_quantify_l Σ Γ x).
+    apply (@strip_exists_quantify_l Γ x).
     { subst x.
       eapply evar_is_fresh_in_richer'.
       2: { apply set_evar_fresh_is_fresh'. }
@@ -626,8 +628,6 @@ Section with_signature.
 
   Abort.
 
-  Import Substitution.Notations. 
-
   Lemma existential_instantiation :
     forall Γ (φ : Pattern) x y, well_formed φ -> x <> y ->  y ∉ free_evars φ ->
       Γ ⊢i exists_quantify x φ ---> φ^[[evar: x ↦ patt_free_evar y]]
@@ -646,7 +646,7 @@ Section with_signature.
   Lemma MLGoal_IntroVar : forall Γ l g i x,
     x ∉ free_evars g ->
     ProofInfoLe ( (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)) i ->
-    @mkMLGoal Σ Γ l (evar_open 0 x g) i ->
+    @mkMLGoal Σ Γ l (g^{evar: 0 ↦ x}) i ->
     @mkMLGoal Σ Γ l (all , g) i.
   Proof.
     (*Search derives_using foldr.*)
@@ -655,7 +655,7 @@ Section with_signature.
     eapply prf_weaken_conclusion_iter_meta_meta. 5: apply H.
     all: try wf_auto2.
     toMLGoal. wf_auto2. mlIntro "H". mlIntro "H0".
-    epose proof (@Ex_gen _ Γ (! evar_open 0 x g) ⊥ x i _ _ _).
+    epose proof (@Ex_gen Γ (! g^{evar: 0 ↦ x}) ⊥ x i _ _ _).
     mlApplyMeta H0. unfold exists_quantify. simpl.
     rewrite evar_quantify_evar_open; auto.
     apply andb_true_iff in wf1 as [_ wf1].

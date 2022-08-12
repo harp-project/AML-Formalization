@@ -381,20 +381,4 @@ Next Obligation.
   auto.
 Defined.
 
-(* Test: *)
-(* Import MatchingLogic.Substitution.Notations.
-Open Scope ml_scope.
-Goal forall φ x y ψ,
-  (patt_exists φ)^[[evar: x ↦ ψ]] = patt_bott ->
-  (patt_exists φ)^[evar: y ↦ ψ] = patt_bott ->
-  evar_quantify x y (patt_exists φ) = patt_bott
-  -> False.
-Proof.
-  intros.
-  rewrite mlSimpl' in H.
-  rewrite mlSimpl' in H0.
-  rewrite mlSimpl' in H1.
-  simpl in *.
-Abort.
- *)
 End with_signature.

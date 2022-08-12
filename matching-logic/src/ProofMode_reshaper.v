@@ -38,7 +38,6 @@ Set Default Proof Mode "Classic".
 Open Scope ml_scope.
 
 
-
 Structure TaggedPattern {Σ : Signature} := TagPattern { untagPattern :> Pattern; }.
 
 Definition reshape_nil {Σ : Signature} p := TagPattern p.
@@ -164,3 +163,4 @@ Proof.
   apply lhs_and_to_imp_r.
 Abort.
 
+Close Scope ml_scope.

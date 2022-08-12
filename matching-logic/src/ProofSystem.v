@@ -582,10 +582,6 @@ Section proof_info.
       pi_framing_patterns : coWfpSet ; 
     }.
 
-  Notation "'ExGen' ':=' evs ',' 'SVSubst' := svs ',' 'KT' := bkt ',' 'FP' := fpl"
-    := (@mkProofInfo _ evs svs bkt fpl) (at level 95, no associativity).
-
-
   (* A proof together with some properties of it. *)
   Record ProofInfoMeaning
     (Γ : Theory)
@@ -657,6 +653,9 @@ Notation "Γ '⊢i' ϕ 'using' pi"
 
 Notation "Γ ⊢ ϕ" := (derives Γ ϕ)
 (at level 95, no associativity).
+
+Notation "'ExGen' ':=' evs ',' 'SVSubst' := svs ',' 'KT' := bkt ',' 'FP' := fpl"
+  := (@mkProofInfo _ evs svs bkt fpl) (at level 95, no associativity).
 
 End Notations.
 

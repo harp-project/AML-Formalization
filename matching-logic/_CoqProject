@@ -39,6 +39,7 @@ src/ProofMode_propositional.v
 src/ProofMode_firstorder.v
 src/ProofMode_fixpoint.v
 src/ProofMode_reshaper.v
+src/ProofMode_misc.v
 src/ProofMode.v
 
 src/Theories/Definedness_Syntax.v

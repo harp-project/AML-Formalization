@@ -3,7 +3,9 @@ From MatchingLogic Require Export Syntax
                                   Semantics
                                   ProofSystem
                                   StringSignature
-                                  wftactics.
+                                  wftactics
+                                  DerivedOperators_Syntax
+                                  NamedAxioms.
 
 Module Notations.
   Export MatchingLogic.Syntax.Notations
