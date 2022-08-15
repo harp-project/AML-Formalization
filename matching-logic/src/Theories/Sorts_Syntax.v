@@ -63,6 +63,24 @@ Section sorts.
   Next Obligation.
     repeat rewrite correctness. reflexivity.
   Defined.
+  Next Obligation.
+    wf_auto2.
+  Defined.
+
+  Definition patt_exists_of_sort (sort phi : Pattern) : Pattern :=
+    ex , ((b0 ∈ml 〚nest_ex sort〛) and phi).
+  Local Notation "'ex' s ,  phi" := 
+    (patt_exists_of_sort s phi) (at level 70) : ml_scope.
+
+  #[global]
+  Program Instance sorted_exists_binder : ESortedBinder patt_exists_of_sort nest_ex := {}.
+  Next Obligation.
+    repeat rewrite correctness.
+    cbn.
+    rewrite (@asd _ _ nest_ex _ f_swap).
+    replace (on_bevar spec_data (increase_ex spec_data a) 0) with b0. reflexivity.
+    reflexivity.
+  Defined.
 
   Definition patt_forall_of_sort (sort phi : Pattern) : Pattern :=
     all , ((b0 ∈ml 〚nest_ex sort〛) ---> phi).
@@ -70,40 +88,10 @@ Section sorts.
   Local Notation "'all' s ,  phi" := 
     (patt_forall_of_sort s phi) (at level 70) : ml_scope.
 
-  Definition patt_exists_of_sort (sort phi : Pattern) : Pattern :=
-    ex , ((patt_bound_evar 0 ∈ml 〚nest_ex sort〛) and phi).
-  Local Notation "'ex' s ,  phi" := 
-    (patt_exists_of_sort s phi) (at level 70) : ml_scope.
-
-  #[global]
-  Program Instance Binder_forall_of_sort s : EBinder (patt_forall_of_sort s) := {}.
-  Next Obligation.
-    wf_auto2.
-  Defined.
-  Next Obligation.
-    repeat rewrite correctness.
-    simpl.
-    replace (apply_subst spec_data (increase_ex spec_data a) (nest_ex s)) with s.
-    unfold patt_forall_of_sort, patt_inhabitant_set, patt_in.
-    (* TODO: prolematic! s should not be substituted! *)
-    reflexivity.
-  Defined.
-
-  #[global]
-   Instance Binder_exists_of_sort s : Binder (patt_exists_of_sort s) _ _ _ _ _ _ :=
-    {|
-       binder_bevar_subst := bevar_subst_exists_of_sort s ;
-       binder_bsvar_subst := bsvar_subst_exists_of_sort s ;
-       binder_free_evar_subst := free_evar_subst_exists_of_sort s ;
-       binder_free_svar_subst := free_svar_subst_exists_of_sort s ;
-       binder_evar_quantify := evar_quantify_exists_of_sort s ;
-       binder_svar_quantify := svar_quantify_exists_of_sort s ;
-    |}.
-  
   (* TODO patt_forall_of_sort and patt_exists_of_sorts are duals - a lemma *)
 
   (* TODO a lemma about patt_forall_of_sort *)
-  
+
   Definition patt_total_function(phi from to : Pattern) : Pattern :=
     all from , (ex (nest_ex to) , ((nest_ex (nest_ex phi) $ b1) =ml b0)).
 

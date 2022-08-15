@@ -1,7 +1,4 @@
 From Coq Require Import ssreflect ssrfun ssrbool.
-Set Implicit Arguments.
-Unset Strict Implicit.
-Unset Printing Implicit Defensive.
 
 From Coq.Logic Require Import FunctionalExtensionality PropExtensionality Classical_Pred_Type Classical_Prop.
 From Coq.micromega Require Import Lia.
@@ -11,9 +8,8 @@ From stdpp Require Import base fin_sets.
 From stdpp Require Import pmap gmap mapset fin_sets sets propset.
 
 From MatchingLogic.Utils Require Import stdpp_ext extralibrary.
-From MatchingLogic Require Import Syntax.
+From MatchingLogic Require Import Pattern Substitution Freshness.
 
-Import MatchingLogic.Syntax.Notations.
 Import MatchingLogic.Substitution.Notations.
 
 Section index_manipulation.
@@ -130,7 +126,8 @@ Section index_manipulation.
   Proof.
     induction φ; intros dbi dbi2 ψ more Hgt Hwf; cbn; auto.
     * do 3 case_match; auto; simpl; try case_match; subst; try lia; auto.
-      rewrite nest_ex_aux_wfcex; auto. wf_auto. eapply well_formed_closed_ex_aux_ind. 2: exact H0. lia.
+      rewrite nest_ex_aux_wfcex; auto. eapply well_formed_closed_ex_aux_ind.
+      2: apply andb_true_iff in Hwf; apply Hwf. lia.
       now replace (pred n + more) with (pred (n + more)) by lia.
     * rewrite -> IHφ1, -> IHφ2; auto.
     * rewrite -> IHφ1, -> IHφ2; auto.
@@ -144,7 +141,8 @@ Section index_manipulation.
   Proof.
     induction φ; intros dbi dbi2 ψ more Hgt Hwf; cbn; auto.
     * do 3 case_match; auto; simpl; try case_match; subst; try lia; auto.
-      rewrite nest_mu_aux_wfcmu; auto. wf_auto. eapply well_formed_closed_mu_aux_ind. 2: exact H. lia.
+      rewrite nest_mu_aux_wfcmu; auto. eapply well_formed_closed_mu_aux_ind.
+      2: apply andb_true_iff in Hwf; apply Hwf. lia.
       now replace (pred n + more) with (pred (n + more)) by lia.
     * rewrite -> IHφ1, -> IHφ2; auto.
     * rewrite -> IHφ1, -> IHφ2; auto.

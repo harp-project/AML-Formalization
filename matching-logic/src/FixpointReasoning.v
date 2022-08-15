@@ -1,7 +1,4 @@
 From Coq Require Import ssreflect ssrfun ssrbool.
-Set Implicit Arguments.
-Unset Strict Implicit.
-Unset Printing Implicit Defensive.
 
 Require Import Setoid.
 From Coq Require Import Ensembles.
@@ -40,7 +37,7 @@ Section with_signature.
     simpl.
     remember (fresh_svar ϕ) as X.
     remember (Fassoc ρ (ϕ^{svar: 0 ↦ X}) X) as F.
-    remember (@eval Σ M ρ (patt_mu ϕ)) as Sfix.
+    remember (@eval _ M ρ (patt_mu ϕ)) as Sfix.
     pose (OS := PropsetOrderedSet (Domain M)).
     pose (L := PowersetLattice (Domain M)).
     intros Hwfp.
@@ -76,7 +73,7 @@ Section with_signature.
     simpl.
     remember (fresh_svar ϕ) as X.
     remember (Fassoc ρ (ϕ^{svar: 0 ↦ X}) X) as F.
-    remember (@eval Σ M ρ (patt_mu ϕ)) as Sfix.
+    remember (@eval _ M ρ (patt_mu ϕ)) as Sfix.
     pose (OS := PropsetOrderedSet (Domain M)).
     pose (L := PowersetLattice (Domain M)).
     intros Hwfp.
@@ -148,7 +145,7 @@ Section with_signature.
 
     Let patt_ind_gen_body := (patt_or (nest_mu base) (patt_app (nest_mu step) (patt_bound_svar 0))).
     Let patt_ind_gen_simple_body := (patt_or base (patt_app step (patt_free_svar (fresh_svar patt_ind_gen_body)))).
-    
+
     Definition patt_ind_gen := patt_mu patt_ind_gen_body.
 
     Hypothesis (Hwfpbase : well_formed_positive base).
@@ -256,7 +253,7 @@ Section with_signature.
                                  )
                                  (zip (m₀::ms) ms)
                          )
-                           
+
          end).
 
       Definition is_witnessing_sequence (m : Domain M) (l : list (Domain M)) :=
@@ -368,7 +365,7 @@ Section with_signature.
           assert (Hm'd: m' = d).
           {
             rewrite reverse_cons in Heq.
-            pose proof (H := @last_reverse_head _ l m).
+            pose proof (H := last_reverse_head _ l m).
             rewrite Hlast in H.
             unfold reverse in Heq.
             rewrite Heq in H.
@@ -436,7 +433,7 @@ Section with_signature.
 
       Lemma witnessing_sequence_extend (m m' : Domain M) (l : list (Domain M)) :
         (is_witnessing_sequence m l
-         /\ (∃ step', step' ∈ eval ρ step /\ m' ∈ app_interp step' m)
+         /\ (∃ step', step' ∈ eval ρ step /\ m' ∈ app_interp _ step' m)
         ) <-> (is_witnessing_sequence m' (m'::l) /\ l ≠ []).
       Proof.
         split.
@@ -488,7 +485,7 @@ Section with_signature.
             (m x m' : Domain M) (l : list (Domain M)):
         (is_witnessing_sequence_old m (x::l) /\
         ∃ step', (step' ∈ eval ρ step /\
-        m' ∈ app_interp step' m)) <->
+        m' ∈ app_interp _ step' m)) <->
         (last (x::l) = Some m /\ is_witnessing_sequence_old m' ((x::l) ++ [m'])).
       Proof.
         split.
@@ -670,8 +667,8 @@ Section with_signature.
         apply eval_mu_lfp_fixpoint.
         apply patt_ind_gen_wfp.
       Qed.
-      
-      
+
+
       Definition witnessed_elements_old_of_max_len len : propset (Domain M) :=
         PropSet (λ m, ∃ l, is_witnessing_sequence_old m l /\ length l <= len).
 
@@ -706,7 +703,7 @@ Section with_signature.
           destruct Hwit as [Hlast Hl].
           destruct l.
           { contradiction. }
-          
+
           simpl in Hlen.
           destruct Hl as [Hd Hl].
           destruct l.
@@ -750,7 +747,7 @@ Section with_signature.
             inversion H2. subst. clear H2.
             pose (mp := (rev (d0 :: x' :: l')) !! 1).
             simpl in mp.
-            epose proof (Htot := (@list_lookup_lookup_total_lt (Domain M) _ (rev (d0 :: x' :: l')) 1 _)).
+            epose proof (Htot := (list_lookup_lookup_total_lt (rev (d0 :: x' :: l')) 1 _)).
             Unshelve. 2: { constructor. exact d0. }
             2: { simpl. rewrite app_length. rewrite app_length. simpl.  lia.  }
 
@@ -780,7 +777,7 @@ Section with_signature.
               reflexivity.
             }
             destruct P as [_ P].
-            
+
 
             destruct (rev (tail (rev (d0 :: x' :: l')))) eqn:Heqrev.
             {
@@ -794,7 +791,7 @@ Section with_signature.
             simpl in Heq1. inversion Heq1. subst d0. clear Heq1.
             simpl in P.
             rewrite -H2 in P.
-            
+
             assert (Hm : (match l with [] => Some d1 | _ :: _ => last l end ) = Some mprev).
             {
               clear P Heqrev H1 H3 H4 mp.
@@ -873,7 +870,7 @@ Section with_signature.
           apply is_witnessing_sequence_iff_is_witnessing_sequence_old_reverse.
           apply H.
       Qed.
-      
+
       Lemma patt_ind_gen_simpl:
         @eval Σ M ρ patt_ind_gen = witnessed_elements.
       Proof.
@@ -883,7 +880,7 @@ Section with_signature.
         + apply interp_included_in_witnessed_elements_old.
         + apply witnessed_elements_old_included_in_interp.
       Qed.
-      
+
       Section injective.
         Hypothesis (Domain_eq_dec : EqDecision (Domain M)).
         Hypothesis (Hstep_total_function : @is_total_function _ M step witnessed_elements witnessed_elements ρ).
@@ -987,7 +984,7 @@ Section with_signature.
               assert (Ham: app_ext (eval ρ step) {[a]} = {[m]}).
               {
                 unfold is_total_function in Hstep_total_function.
-                pose proof (Hstep_total_function Hwita).
+                pose proof (Hstep_total_function _ Hwita).
                 destruct H as [a' [_ Ha'] ].
                 rewrite Ha' in Hma.
                 inversion Hma. subst.
@@ -997,7 +994,7 @@ Section with_signature.
               assert (Hbm: app_ext (eval ρ step) {[b]} = {[m]}).
               {
                 unfold is_total_function in Hstep_total_function.
-                pose proof (Hstep_total_function Hwitb).
+                pose proof (Hstep_total_function _ Hwitb).
                 destruct H as [b' [_ Hb'] ].
                 rewrite Hb' in Hmb.
                 inversion Hmb. subst.
@@ -1056,7 +1053,7 @@ Section with_signature.
             { lia. }
             pose proof (Hexm := list_ex_elem l₁ (length l₂ - 1) Hlt). clear Hlt.
             destruct Hexm as [m' Hm'].
-            pose proof (Hwsm := witnessing_sequence_middle Hw₁ Hm').
+            pose proof (Hwsm := witnessing_sequence_middle _ _ _ _ Hw₁ Hm').
             pose proof (Hw₂' := Hw₂).
             unfold is_witnessing_sequence in Hw₂'.
             destruct Hw₂' as [[lst [Hlst1 Hlst2] ] _].
@@ -1092,7 +1089,7 @@ Section with_signature.
               lia.
             }
             (* `d0` is a member of `witnessed_elements` *)
-            epose proof (Hwd0 := witnessing_sequence_tail Hwsm).
+            epose proof (Hwd0 := witnessing_sequence_tail _ _ _ Hwsm).
             simpl in Hwd0.
             assert (Htmp: Some d0 = Some d0).
             { reflexivity. }

@@ -1,8 +1,4 @@
 From Coq Require Import ssreflect ssrfun ssrbool.
-Set Implicit Arguments.
-Unset Strict Implicit.
-Unset Printing Implicit Defensive.
-
 Require Import Setoid.
 Require Import List.
 Require Import Ensembles.
@@ -344,7 +340,7 @@ Section syntax.
     - apply free_evars_bsvar_subst.
     - apply union_least.
       + apply free_evars_bsvar_subst_1.
-      + pose proof (Hsub := @bsvar_subst_contains_subformula ϕ₁ ϕ₂ dbi H).
+      + pose proof (Hsub := bsvar_subst_contains_subformula ϕ₁ ϕ₂ dbi H).
         apply free_evars_subformula. auto.
   Qed.
 
@@ -357,7 +353,7 @@ Section syntax.
     - apply free_svars_bevar_subst.
     - apply union_least.
       + apply free_svars_bevar_subst_1.
-      + pose proof (Hsub := @bevar_subst_contains_subformula ϕ₁ ϕ₂ dbi H).
+      + pose proof (Hsub := bevar_subst_contains_subformula ϕ₁ ϕ₂ dbi H).
         apply free_svars_subformula. auto.
   Qed.
 
@@ -495,7 +491,7 @@ Section syntax.
     no_positive_occurrence_db_b n phi.
   Proof.
     intros H.
-    pose proof (H1 := not_bsvar_occur_impl_no_neg_occ_and_no_pos_occ H).
+    pose proof (H1 := not_bsvar_occur_impl_no_neg_occ_and_no_pos_occ _ _ H).
     now apply andb_true_iff in H1.
   Qed.
 
@@ -504,7 +500,7 @@ Section syntax.
     no_negative_occurrence_db_b n phi.
   Proof.
     intros H.
-    pose proof (H1 := not_bsvar_occur_impl_no_neg_occ_and_no_pos_occ H).
+    pose proof (H1 := not_bsvar_occur_impl_no_neg_occ_and_no_pos_occ _ _ H).
     now apply andb_true_iff in H1.
   Qed.
 
@@ -637,7 +633,7 @@ Section with_signature.
   Definition evar_quantify_ctx (x : evar) (n : db_index) (C : PatternCtx) : PatternCtx :=
     match decide (x = pcEvar C)  with
     | left _ => C
-    | right pf => @Build_PatternCtx Σ (pcEvar C) ((pcPattern C)^{{evar: x ↦ n}})
+    | right pf => Build_PatternCtx (pcEvar C) ((pcPattern C)^{{evar: x ↦ n}})
     end.
 
   Lemma is_linear_context_evar_quantify (x : evar) (n : db_index) (C : PatternCtx) :
@@ -671,7 +667,7 @@ Section with_signature.
   Qed.
 
   Definition svar_quantify_ctx (X : svar) (n : db_index) (C : PatternCtx) : PatternCtx :=
-    @Build_PatternCtx Σ (pcEvar C) ((pcPattern C)^{{svar: X ↦ n}}).
+    Build_PatternCtx (pcEvar C) ((pcPattern C)^{{svar: X ↦ n}}).
 
   Lemma is_linear_context_svar_quantify (X : svar) (n : db_index) (C : PatternCtx) :
     is_linear_context C ->

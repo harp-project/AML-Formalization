@@ -1,7 +1,4 @@
 From Coq Require Import ssreflect ssrfun ssrbool.
-Set Implicit Arguments.
-Unset Strict Implicit.
-Unset Printing Implicit Defensive.
 
 From stdpp Require Import base tactics sets.
 
@@ -25,47 +22,47 @@ Section lemmas.
   Open Scope ml_scope.
 
   Lemma evar_is_fresh_in_free_evar_subst x phi psi:
-  evar_is_fresh_in x psi ->
-  evar_is_fresh_in x (phi^[[evar: x ↦ psi]]).
+    evar_is_fresh_in x psi ->
+    evar_is_fresh_in x (phi^[[evar: x ↦ psi]]).
   Proof.
-  move: x psi. induction phi; intros y psi H; unfold evar_is_fresh_in; simpl; try set_solver.
-  case_match; auto. set_solver.
+    move: x psi. induction phi; intros y psi H; unfold evar_is_fresh_in; simpl; try set_solver.
+    case_match; auto. set_solver.
   Qed.
 
   Lemma evar_is_fresh_in_evar_quantify x n phi:
     evar_is_fresh_in x (phi^{{evar: x ↦ n}}).
   Proof.
-  move: x n. induction phi; intros y m; unfold evar_is_fresh_in; simpl; try set_solver.
-  case_match; auto; set_solver.
+    move: x n. induction phi; intros y m; unfold evar_is_fresh_in; simpl; try set_solver.
+    case_match; auto; set_solver.
   Qed.
 
   Lemma svar_is_fresh_in_free_evar_subst X phi psi:
-  svar_is_fresh_in X psi ->
-  svar_is_fresh_in X (phi^[[svar: X ↦ psi]]).
+    svar_is_fresh_in X psi ->
+    svar_is_fresh_in X (phi^[[svar: X ↦ psi]]).
   Proof.
-  move: X psi. induction phi; intros y psi H; unfold svar_is_fresh_in; simpl; try set_solver.
-  case_match; auto. set_solver.
+    move: X psi. induction phi; intros y psi H; unfold svar_is_fresh_in; simpl; try set_solver.
+    case_match; auto. set_solver.
   Qed.
 
   Lemma svar_is_fresh_in_svar_quantify X n phi:
-  svar_is_fresh_in X (phi^{{svar: X ↦ n}}).
+    svar_is_fresh_in X (phi^{{svar: X ↦ n}}).
   Proof.
-  move: X n. induction phi; intros Y m; unfold svar_is_fresh_in; simpl; try set_solver.
-  case_match; auto; set_solver.
+    move: X n. induction phi; intros Y m; unfold svar_is_fresh_in; simpl; try set_solver.
+    case_match; auto; set_solver.
   Qed.
 
   (*If phi is a closed body, then (ex, phi) is closed too*)
   Corollary wfc_body_to_wfc_ex phi:
-  wfc_body_ex phi ->
-  well_formed_closed (patt_exists phi) = true.
+    wfc_body_ex phi ->
+    well_formed_closed (patt_exists phi) = true.
   Proof.
-  intros WFE. unfold wfc_body_ex in WFE. unfold well_formed_closed. simpl.
-  unfold well_formed_closed in WFE.
-  pose proof (Htmp := WFE (fresh_evar phi) ltac:(apply set_evar_fresh_is_fresh)).
-  destruct_and!.
-  split_and.
-  2: { rewrite -> wfc_ex_aux_body_iff. eassumption. }
-  eapply wfc_mu_aux_body_ex_imp2. eassumption.
+    intros WFE. unfold wfc_body_ex in WFE. unfold well_formed_closed. simpl.
+    unfold well_formed_closed in WFE.
+    pose proof (Htmp := WFE (fresh_evar phi) ltac:(apply set_evar_fresh_is_fresh)).
+    destruct_and!.
+    split_and.
+    2: { rewrite -> wfc_ex_aux_body_iff. eassumption. }
+    eapply wfc_mu_aux_body_ex_imp2. eassumption.
   Qed.
 
   (* Lemmas about wfc_ex and wfc_mu *)
@@ -344,13 +341,15 @@ Section lemmas.
   - cbn. case_match; done.
   - simpl. unfold evar_open in *. simpl. 
     rewrite -> (IHsz phi1), -> (IHsz phi2); try lia; try assumption. reflexivity.
-    apply (evar_is_fresh_in_app_r Hfresh1). simpl in Hfresh2.
-    apply (evar_is_fresh_in_app_r Hfresh2). apply (evar_is_fresh_in_app_l Hfresh1).
-    apply (evar_is_fresh_in_app_l Hfresh2).
+    apply (evar_is_fresh_in_app_r _ _ _ Hfresh1). simpl in Hfresh2.
+    apply (evar_is_fresh_in_app_r _ _ _ Hfresh2).
+    apply (evar_is_fresh_in_app_l _ _ _ Hfresh1).
+    apply (evar_is_fresh_in_app_l _ _ _ Hfresh2).
   - simpl. unfold evar_open in *. simpl. rewrite -> (IHsz phi1), -> (IHsz phi2); try lia; try assumption. reflexivity.
-    apply (evar_is_fresh_in_imp_r Hfresh1). simpl in Hfresh2.
-    apply (evar_is_fresh_in_imp_r Hfresh2). apply (evar_is_fresh_in_app_l Hfresh1).
-    apply (evar_is_fresh_in_imp_l Hfresh2).
+    apply (evar_is_fresh_in_imp_r _ _ _ Hfresh1). simpl in Hfresh2.
+    apply (evar_is_fresh_in_imp_r _ _ _ Hfresh2).
+    apply (evar_is_fresh_in_app_l _ _ _ Hfresh1).
+    apply (evar_is_fresh_in_imp_l _ _ _ Hfresh2).
   - simpl. unfold evar_open in *. simpl. rewrite -> IHsz. reflexivity.
     lia. assumption.
     apply evar_is_fresh_in_exists in Hfresh1. assumption.
@@ -470,7 +469,7 @@ Section lemmas.
     well_formed_closed_mu_aux q 0 ->
     no_negative_occurrence_db_b n p ->
     no_negative_occurrence_db_b n (p^[[evar: x ↦ q]])
-    with
+  with
     free_evar_subst_preserves_no_positive_occurrence x p q n:
     well_formed_closed_mu_aux q 0 ->
     no_positive_occurrence_db_b n p ->
@@ -522,7 +521,7 @@ Section lemmas.
     rewrite wfpq. simpl in *.*)
     unfold well_formed_closed in wfcq. destruct_and!.
     pose proof (H1' := @well_formed_closed_mu_aux_ind Σ q 0 n2 ltac:(lia) H).
-    pose proof (H2' := wfc_impl_no_neg_pos_occ H1').
+    pose proof (H2' := wfc_impl_no_neg_pos_occ _ _ H1').
     destruct_and!.
     
     split_and!; auto.

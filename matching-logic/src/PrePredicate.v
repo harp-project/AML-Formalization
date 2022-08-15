@@ -1,7 +1,4 @@
 From Coq Require Import ssreflect ssrfun ssrbool.
-Set Implicit Arguments.
-Unset Strict Implicit.
-Unset Printing Implicit Defensive.
 
 From Coq.Logic Require Import FunctionalExtensionality PropExtensionality Classical_Pred_Type Classical_Prop.
 From Coq.micromega Require Import Lia.
@@ -1056,7 +1053,7 @@ Section with_signature.
     T_pre_predicate Γ ϕ.
   Proof.
     intros H M HΓ.
-    apply (@M_pre_pre_predicate_impl_M_pre_predicate k).
+    apply (M_pre_pre_predicate_impl_M_pre_predicate k).
     apply H.
     exact HΓ.
   Qed.

@@ -1,7 +1,4 @@
 From Coq Require Import ssreflect ssrfun ssrbool.
-Set Implicit Arguments.
-Unset Strict Implicit.
-Unset Printing Implicit Defensive.
 
 From stdpp Require Import base.
 
@@ -17,6 +14,7 @@ From MatchingLogic
 Require Import
     Pattern
     Substitution
+    IndexManipulation
 .
 
 Import MatchingLogic.Substitution.Notations.
@@ -34,7 +32,7 @@ Section with_signature.
   - How the substitutions work for variables (both set and element, bound and free)
 *)
 
-  Record SpecificSubst (A : Type) : Type := {
+  Record SpecificSubst {A : Type} : Type := {
       increase_ex : A -> A;
       increase_mu : A -> A;
       on_fevar : A -> evar -> Pattern;
@@ -48,7 +46,7 @@ Section with_signature.
     information for the binders and the variables defined in `SpeificSubst`.
    *)
 
-  Fixpoint apply_subst {A : Type} (s : SpecificSubst A) (st : A) (phi : Pattern) :=
+  Fixpoint apply_subst {A : Type} (s : SpecificSubst) (st : A) (phi : Pattern) :=
     match phi with
     | patt_free_evar x => on_fevar s st x
     | patt_free_svar X => on_fsvar s st X
@@ -65,8 +63,8 @@ Section with_signature.
   (** For substitutions that can be described with the previous definition,
       we can instantiate the following type class: *)
 
-  Class PatternMorphism (A : Type) (f : A -> Pattern -> Pattern) := {
-      spec_data : SpecificSubst A ;
+  Class PatternMorphism {A : Type} (f : A -> Pattern -> Pattern) := {
+      spec_data : SpecificSubst ;
       correctness : forall a (phi : Pattern), f a phi = apply_subst spec_data a phi
   }.
 
@@ -311,19 +309,7 @@ Class SBinder (binder : Pattern -> Pattern) := {
         f a (binder phi) = binder (f (increase_mu spec_data a) phi) ;
 }.
 
-
-(** Next, we define the substitution simplification record: *)
-
-Definition mlSimpl' :=
-(
-  @binary_morphism,
-  @unary_morphism,
-  @nullary_morphism,
-  @ebinder_morphism,
-  @sbinder_morphism
-).
-
-(** Finally, we define instances for the primitives of matching logic: *)
+(** Next, we define instances for the primitives of matching logic: *)
 
 #[global]
 Program Instance EBinder_exists : EBinder patt_exists := {}.
@@ -380,5 +366,171 @@ Defined.
 Next Obligation.
   auto.
 Defined.
+
+Class SwappableEx {A : Type} (f : A -> Pattern -> Pattern) (g : Pattern -> Pattern)
+  (m : PatternMorphism f) :=
+{
+  ezero_increase : forall a,
+    apply_subst spec_data (increase_ex spec_data a) (patt_bound_evar 0) = patt_bound_evar 0 ;
+  eswap : forall phi a,
+    apply_subst spec_data (increase_ex spec_data a) (g phi) =
+    g (apply_subst spec_data a phi) ;
+}.
+
+#[global]
+Program Instance Bevar_subst_swaps_ex_nesting (ψ : Pattern) (p : well_formed_closed ψ) :
+  @SwappableEx _ (bevar_subst ψ) nest_ex (Bevar_subst_morphism ψ).
+Next Obligation.
+  intros. rewrite <- correctness. reflexivity.
+Defined.
+Next Obligation.
+  intros ψ WFψ phi a.
+  do 2 rewrite <- correctness.
+  unfold nest_ex. rewrite <- nest_ex_gt; auto. 2: lia.
+  rewrite Nat.add_comm. reflexivity.
+Defined.
+
+#[global]
+Program Instance Bsvar_subst_swaps_ex_nesting (ψ : Pattern) (p : well_formed_closed ψ) :
+  @SwappableEx _ (bsvar_subst ψ) nest_ex (Bsvar_subst_morphism ψ).
+Next Obligation.
+  intros. rewrite <- correctness. reflexivity.
+Defined.
+Next Obligation.
+  intros ψ WFψ phi a.
+  do 2 rewrite <- correctness.
+  unfold nest_ex.
+  rewrite bsvar_subst_nest_ex_aux_comm; auto.
+  apply andb_true_iff in WFψ. apply WFψ.
+Defined.
+
+#[global]
+Program Instance Fevar_subst_swaps_nesting (ψ : Pattern) (p : well_formed_closed ψ) :
+  @SwappableEx _ (free_evar_subst ψ) nest_ex (Free_evar_subst_morphism ψ).
+Next Obligation.
+  intros. rewrite <- correctness. reflexivity.
+Defined.
+Next Obligation.
+  intros ψ WFψ phi a.
+  do 2 rewrite <- correctness.
+  unfold nest_ex.
+  rewrite nest_ex_free_evar_subst; auto.
+  apply andb_true_iff in WFψ. apply WFψ.
+Defined.
+
+#[global]
+Program Instance Fsvar_subst_swaps_nesting (ψ : Pattern) (p : well_formed_closed ψ) :
+  @SwappableEx _ (free_svar_subst ψ) nest_ex (Free_svar_subst_morphism ψ).
+Next Obligation.
+  intros. rewrite <- correctness. reflexivity.
+Defined.
+Next Obligation.
+  intros ψ WFψ phi a.
+  do 2 rewrite <- correctness.
+  unfold nest_ex.
+  rewrite nest_ex_free_svar_subst; auto.
+  apply andb_true_iff in WFψ. apply WFψ.
+Defined.
+
+#[global]
+Program Instance Evar_quantify_swaps_ex_nesting (x : evar) :
+  @SwappableEx _ (evar_quantify x) nest_ex (Evar_quantify_morphism x).
+Next Obligation.
+  intros. rewrite <- correctness. reflexivity.
+Defined.
+Next Obligation.
+  intros ψ phi a.
+  do 2 rewrite <- correctness.
+  unfold nest_ex. rewrite <- nest_ex_gt_evar_quantify; auto. 2: lia.
+  rewrite Nat.add_comm. reflexivity.
+Defined.
+
+#[global]
+Program Instance Svar_quantify_swaps_ex_nesting (X : svar) :
+  @SwappableEx _ (svar_quantify X) nest_ex (Svar_quantify_morphism X).
+Next Obligation.
+  intros. rewrite <- correctness. reflexivity.
+Defined.
+Next Obligation.
+  intros ψ phi a.
+  do 2 rewrite <- correctness.
+  unfold nest_ex. now rewrite nest_ex_svar_quantify.
+Defined.
+
+#[global]
+Program Instance Evar_open_swaps_ex_nesting (x : evar) :
+  @SwappableEx _ (evar_open x) nest_ex (Evar_open_morphism x).
+Next Obligation.
+  intros. rewrite <- correctness. reflexivity.
+Defined.
+Next Obligation.
+  (* TODO: here type class inference fails without the explicit parameters *)
+  intros. rewrite (@eswap _ _ _ _ (Bevar_subst_swaps_ex_nesting (patt_free_evar x) _)); auto.
+Defined.
+
+#[global]
+Program Instance Svar_open_swaps_ex_nesting (X : svar) :
+  @SwappableEx _ (svar_open X) nest_ex (Svar_open_morphism X).
+Next Obligation.
+  intros. rewrite <- correctness. reflexivity.
+Defined.
+Next Obligation.
+  (* TODO: here type class inference fails without the explicit parameters *)
+  intros. rewrite (@eswap _ _ _ _ (Bsvar_subst_swaps_ex_nesting (patt_free_svar X) _)); auto.
+Defined.
+
+(* TODO: mu operations:
+
+Class SwappableMu {A : Type} (f : A -> Pattern -> Pattern) (g : Pattern -> Pattern)
+  (m : PatternMorphism f) :=
+{
+  szero_increase : forall a,
+    apply_subst spec_data (increase_mu spec_data a) (patt_bound_svar 0) = patt_bound_svar 0 ;
+  sswap_f_g : forall phi a,
+    apply_subst spec_data (increase_mu spec_data a) (g phi) =
+    g (apply_subst spec_data a phi) ;
+}.
+
+#[global]
+Program Instance Bsvar_subst_swaps_nesting (ψ : Pattern) (p : well_formed_closed ψ) :
+  @SwappableMu _ (bsvar_subst ψ) nest_mu (Bsvar_subst_morphism ψ).
+Next Obligation.
+  intros. rewrite <- correctness. reflexivity.
+Defined.
+Next Obligation.
+  intros ψ WFψ phi a.
+  do 2 rewrite <- correctness.
+  unfold nest_mu. rewrite <- nest_mu_gt; auto. 2: lia.
+  rewrite Nat.add_comm. reflexivity.
+Defined. *)
+
+Class ESortedBinder (binder : Pattern -> Pattern -> Pattern) (g : Pattern -> Pattern) := {
+    esorted_binder_morphism :
+      forall {A : Type} (f : A -> Pattern -> Pattern)
+         (f_morph : PatternMorphism f)
+         (f_swap : SwappableEx f g f_morph) (s phi : Pattern) a,
+      f a (binder s phi) = binder (f a s) (f (increase_ex spec_data a) phi) ;
+}.
+
+Class SSortedBinder (binder : Pattern -> Pattern -> Pattern) (g : Pattern -> Pattern) := {
+    ssorted_binder_morphism :
+      forall {A : Type} (f : A -> Pattern -> Pattern)
+         (f_morph : PatternMorphism f)
+         (f_swap : SwappableEx f g f_morph) (s phi : Pattern) a,
+      f a (binder s phi) = binder (f a s) (f (increase_mu spec_data a) phi) ;
+}.
+
+(** Next, we define the substitution simplification record: *)
+
+Definition mlSimpl' :=
+(
+  @binary_morphism,
+  @unary_morphism,
+  @nullary_morphism,
+  @ebinder_morphism,
+  @sbinder_morphism,
+  @esorted_binder_morphism,
+  @ssorted_binder_morphism
+).
 
 End with_signature.

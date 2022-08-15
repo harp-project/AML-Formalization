@@ -1,7 +1,4 @@
 From Coq Require Import ssreflect ssrfun ssrbool.
-Set Implicit Arguments.
-Unset Strict Implicit.
-Unset Printing Implicit Defensive.
 
 From Ltac2 Require Import Ltac2.
 
@@ -80,7 +77,7 @@ Definition MLGoal_from_goal
   {Σ : Signature} (Γ : Theory) (goal : Pattern) (pi : ProofInfo)
   :
   MLGoal
-  := @mkMLGoal Σ Γ nil goal pi.
+  := mkMLGoal Σ Γ nil goal pi.
 
 Coercion of_MLGoal {Σ : Signature} (MG : MLGoal) : Type :=
   well_formed (mlConclusion MG) ->
@@ -93,28 +90,28 @@ Coercion of_MLGoal {Σ : Signature} (MG : MLGoal) : Type :=
   (* This is useful only for printing. 
      0x2c75 was used for the ⊢ to avoid collision *)
   Notation "G 'Ⱶ' g 'using' pi "
-  := (@mkMLGoal _ G [] g pi)
+  := (mkMLGoal _ G [] g pi)
   (at level 95,
   no associativity,
   format "G  'Ⱶ' '//' g '//' 'using'  pi '//'",
   only printing).
 
   Notation "G 'Ⱶ' g"
-  := (@mkMLGoal _ G [] g AnyReasoning)
+  := (mkMLGoal _ G [] g AnyReasoning)
   (at level 95,
   no associativity,
   format "G  'Ⱶ' '//'  g '//'",
   only printing).
 
   Notation "G 'Ⱶ' l -------------------------------------- g 'using' pi "
-  := (@mkMLGoal _ G l g pi)
+  := (mkMLGoal _ G l g pi)
   (at level 95,
   no associativity,
   format "G  'Ⱶ' '//' l -------------------------------------- '//' g '//' 'using'  pi '//'",
   only printing).
 
   Notation "G 'Ⱶ' l -------------------------------------- g"
-  := (@mkMLGoal _ G l g AnyReasoning)
+  := (mkMLGoal _ G l g AnyReasoning)
   (at level 95,
   no associativity,
   format "G  'Ⱶ' '//' l -------------------------------------- '//' g '//'",
@@ -134,7 +131,7 @@ Ltac fromMLGoal := unfold of_MLGoal; simpl; intros _ _.
 Ltac solve_pim_simple := constructor; simpl;[(set_solver)|(set_solver)|(reflexivity)|(apply reflexivity)].
 
 
-Lemma useBasicReasoning {Σ : Signature} (Γ : Theory) (ϕ : Pattern) (i : ProofInfo) :
+Lemma useBasicReasoning {Σ : Signature} {Γ : Theory} {ϕ : Pattern} (i : ProofInfo) :
   Γ ⊢i ϕ using BasicReasoning ->
   Γ ⊢i ϕ using i.
 Proof.
@@ -153,8 +150,8 @@ Defined.
 
 Lemma mlUseBasicReasoning
   {Σ : Signature} (Γ : Theory) (l : hypotheses) (g : Pattern) (i : ProofInfo) :
-  @mkMLGoal Σ Γ l g BasicReasoning ->
-  @mkMLGoal Σ Γ l g i.
+  mkMLGoal Σ Γ l g BasicReasoning ->
+  mkMLGoal Σ Γ l g i.
 Proof.
   intros H wf1 wf2.
   specialize (H wf1 wf2).
@@ -166,11 +163,245 @@ Defined.
 Ltac useBasicReasoning :=
   unfold ProofSystem.derives;
   lazymatch goal with
-  | [ |- of_MLGoal (@mkMLGoal _ _ _ _ _) ] => apply mlUseBasicReasoning
+  | [ |- of_MLGoal (mkMLGoal _ _ _ _ _) ] => apply mlUseBasicReasoning
   | [ |- _ ⊢i _ using _ ] => apply useBasicReasoning
   end.
 
-  
+
+Tactic Notation "remember_constraint" "as" ident(i') :=
+    match goal with
+    | [|- (_ ⊢i _ using ?constraint)] => remember constraint as i'
+    end.
+
+Lemma MP {Σ : Signature} {Γ : Theory} {ϕ₁ ϕ₂ : Pattern} {i : ProofInfo} :
+  Γ ⊢i ϕ₁ using i ->
+  Γ ⊢i (ϕ₁ ---> ϕ₂) using i ->
+  Γ ⊢i ϕ₂ using i.
+Proof.
+  intros H1 H2.
+  unshelve (eexists).
+  {
+    eapply (ProofSystem.Modus_ponens _ _ _).
+    { apply H1. }
+    { apply H2. }
+  }
+  {
+    abstract(
+      simpl;
+      destruct H1 as [pf1 Hpf1];
+      destruct H2 as [pf2 Hpf2];
+      destruct Hpf1,Hpf2;
+      constructor; simpl;
+      [set_solver|set_solver|(destruct (uses_kt pf1),(uses_kt pf2); simpl in *; congruence)|set_solver]
+    ).
+  }
+Defined.
+
+Lemma P1 {Σ : Signature} (Γ : Theory) (ϕ ψ : Pattern) :
+  well_formed ϕ ->
+  well_formed ψ ->
+  Γ ⊢i ϕ ---> ψ ---> ϕ 
+  using BasicReasoning.
+Proof.
+  intros wfϕ wfψ.
+  unshelve (eexists).
+  { apply ProofSystem.P1. exact wfϕ. exact wfψ. }
+  { abstract(solve_pim_simple). }
+Defined.
+
+Lemma P2 {Σ : Signature} (Γ : Theory) (ϕ ψ ξ : Pattern) :
+  well_formed ϕ ->
+  well_formed ψ ->
+  well_formed ξ ->
+  Γ ⊢i (ϕ ---> ψ ---> ξ) ---> (ϕ ---> ψ) ---> (ϕ ---> ξ)
+  using BasicReasoning.
+Proof.
+  intros wfϕ wfψ wfξ.
+  unshelve (eexists).
+  { apply ProofSystem.P2. exact wfϕ. exact wfψ. exact wfξ. }
+  { abstract (solve_pim_simple). }
+Defined.
+
+Lemma P3 {Σ : Signature} (Γ : Theory) (ϕ : Pattern) :
+  well_formed ϕ ->
+  Γ ⊢i (((ϕ ---> ⊥) ---> ⊥) ---> ϕ)
+  using BasicReasoning.
+Proof.
+  intros wfϕ.
+  unshelve (eexists).
+  { apply ProofSystem.P3. exact wfϕ. }
+  { abstract ( solve_pim_simple ). }
+Defined.
+
+  Lemma A_impl_A {Σ : Signature} (Γ : Theory) (A : Pattern)  :
+    (well_formed A) ->
+    Γ ⊢i (A ---> A)
+    using BasicReasoning.
+  Proof. 
+    intros WFA.
+    pose proof (_1 := P2 Γ A (A ---> A) A ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
+    pose proof (_2 := P1 Γ A (A ---> A) ltac:(wf_auto2) ltac:(wf_auto2)).
+    pose proof (_3 := @MP _ _ _ _ BasicReasoning _2 _1).
+    pose proof (_4 := P1 Γ A A ltac:(wf_auto2) ltac:(wf_auto2)).
+    pose proof (_5 := MP _4 _3).
+    exact _5.
+  Defined.
+
+  Lemma pile_evs_svs_kt_back {Σ : Signature} evs1 evs2 svs1 svs2 kt1 kt2 fp1 fp2:
+  ProofInfoLe
+    ( (ExGen := evs1, SVSubst := svs1, KT := kt1, FP := fp1))
+    ( (ExGen := evs2, SVSubst := svs2, KT := kt2, FP := fp2)) ->
+    evs1 ⊆ evs2 /\ svs1 ⊆ svs2 /\ kt1 ==> kt2 /\ fp1 ⊆ fp2.
+  Proof.
+    intros pile.
+    repeat split.
+    {
+      destruct pile as [pile].
+      rewrite elem_of_subseteq.
+      intros x Hx.
+      remember (fresh_evar (patt_free_evar x)) as y.
+      pose (pf1 := A_impl_A ∅ (patt_free_evar y) ltac:(wf_auto2)).
+      pose (pf2 := ProofSystem.Ex_gen ∅ (patt_free_evar y) (patt_free_evar y) x ltac:(wf_auto2) ltac:(wf_auto2) (proj1_sig pf1) ltac:(simpl; rewrite elem_of_singleton; solve_fresh_neq)).
+      specialize (pile ∅ _ pf2).
+      feed specialize pile.
+      {
+        constructor.
+        { simpl. clear -Hx. set_solver. }
+        { simpl. clear. set_solver. }
+        { simpl. reflexivity. }
+        { simpl. set_solver. }
+      }
+      destruct pile as [Hm2 Hm3 Hm4 Hm5].
+      simpl in *.
+      clear -Hm2.
+      set_solver.
+    }
+    {
+      destruct pile as [pile].
+      rewrite elem_of_subseteq.
+      intros X HX.
+      pose (pf1 := A_impl_A ∅ (patt_free_svar X) ltac:(wf_auto2)).
+      pose (pf2 := ProofSystem.Svar_subst ∅ (patt_free_svar X ---> patt_free_svar X) patt_bott X ltac:(wf_auto2) ltac:(wf_auto2) (proj1_sig pf1)).
+      specialize (pile ∅ _ pf2).
+      feed specialize pile.
+      {
+        constructor; simpl.
+        { clear. set_solver. }
+        { clear -HX. set_solver. }
+        { reflexivity. }
+        { set_solver. }
+      }
+      destruct pile as [Hp2 Hp3 Hp4].
+      simpl in *.
+      clear -Hp3.
+      set_solver.
+    }
+    {
+      destruct pile as [pile].
+      pose (pf1 := A_impl_A ∅ patt_bott ltac:(wf_auto2)).
+      pose (pf2 := ProofSystem.Knaster_tarski ∅ (patt_bound_svar 0) patt_bott ltac:(wf_auto2) (proj1_sig pf1)).
+      destruct kt1.
+      2: { simpl. reflexivity. }
+      specialize (pile ∅ _ pf2).
+      feed specialize pile.
+      {
+        constructor; simpl.
+        { clear. set_solver. }
+        { clear. set_solver. }
+        { reflexivity. }
+        { set_solver. }
+      }
+      destruct pile as [Hp2 Hp3 Hp4].
+      simpl in Hp4.
+      rewrite Hp4.
+      reflexivity.
+    }
+    {
+      destruct pile as [pile].
+      rewrite elem_of_subseteq.
+      intros (*p*) [p wfp] Hp.
+      (*assert (wfp : well_formed p) by admit.*)
+      pose (pf1 := A_impl_A ∅ patt_bott ltac:(wf_auto2)).
+      pose (pf2 := Framing_left ∅ patt_bott patt_bott p wfp (proj1_sig pf1)).
+      pose (pf3 := Framing_right ∅ patt_bott patt_bott p wfp (proj1_sig pf1)).
+      pose proof (pile1 := pile ∅ _ pf2).
+      pose proof (pile2 := pile ∅ _ pf3).
+      clear pile.
+      feed specialize pile1.
+      {
+        constructor; simpl.
+        { clear; set_solver. }
+        { clear; set_solver. }
+        { reflexivity. }
+        { simpl. set_solver. }
+      }
+      feed specialize pile2.
+      {
+        constructor; simpl.
+        { clear; set_solver. }
+        { clear; set_solver. }
+        { reflexivity. }
+        { simpl. set_solver. }
+      }
+      destruct pile1, pile2. simpl in *.
+      rewrite elem_of_subseteq in pwi_pf_fp0.
+      setoid_rewrite elem_of_gset_to_coGset in pwi_pf_fp0.
+      specialize (pwi_pf_fp0 (exist _ p wfp) ltac:(set_solver)).
+      exact pwi_pf_fp0.
+    }
+  Qed.
+
+Lemma useGenericReasoning  {Σ : Signature} (Γ : Theory) (ϕ : Pattern) evs svs kt fp i:
+  (ProofInfoLe ((ExGen := evs, SVSubst := svs, KT := kt, FP := fp)) i) ->
+  Γ ⊢i ϕ using ((ExGen := evs, SVSubst := svs, KT := kt, FP := fp)) ->
+  Γ ⊢i ϕ using i.
+Proof.
+  intros pile [pf Hpf].
+  exists pf.
+  destruct Hpf as [Hpf2 Hpf3 Hpf4 Hpf5].
+  simpl in *.
+  destruct i.
+  pose proof (Htmp := pile_evs_svs_kt_back).
+  specialize (Htmp evs pi_generalized_evars svs pi_substituted_svars kt pi_uses_kt fp pi_framing_patterns pile).
+  destruct Htmp as [Hevs [Hsvs [Hkt Hfp] ] ].
+  constructor; simpl.
+  { clear -Hpf2 Hevs. set_solver. }
+  { clear -Hpf3 Hsvs. set_solver. }
+  { unfold implb in *. repeat case_match; try reflexivity; try assumption. inversion Hpf4. }
+  { clear -Hpf5 Hfp. set_solver.  }
+Defined.
+
+Lemma useGenericReasoning'  {Σ : Signature} (Γ : Theory) (ϕ : Pattern) i' i:
+  (ProofInfoLe i' i) ->
+  Γ ⊢i ϕ using i' ->
+  Γ ⊢i ϕ using i.
+Proof.
+  intros H.
+  destruct i'.
+  apply useGenericReasoning.
+  exact H.
+Qed.
+
+Lemma mlUseGenericReasoning
+  {Σ : Signature} (Γ : Theory) (l : hypotheses) (g : Pattern) (i i' : ProofInfo) :
+  ProofInfoLe i i' ->
+  mkMLGoal Σ Γ l g i ->
+  mkMLGoal Σ Γ l g i'.
+Proof.
+  intros pile H wf1 wf2.
+  specialize (H wf1 wf2).
+  simpl in *.
+  destruct i.
+  eapply useGenericReasoning.
+  { apply pile. }
+  exact H.
+Defined.
+
+Tactic Notation "gapply" uconstr(pf) := eapply useGenericReasoning;[|eapply pf].
+
+Tactic Notation "gapply" uconstr(pf) "in" ident(H) :=
+  eapply useGenericReasoning in H;[|apply pf].
+
 
 (* Extracts well-formedness assumptions about (local) goal and (local) hypotheses. *)
 Tactic Notation "mlExtractWF" ident(wfl) ident(wfg) :=
@@ -252,8 +483,8 @@ Proof.
 Defined.
 
 Lemma cast_proof_ml_hyps {Σ : Signature} Γ hyps hyps' (e : patterns_of hyps = patterns_of hyps') goal (i : ProofInfo) :
-  @mkMLGoal Σ Γ hyps goal i ->
-  @mkMLGoal Σ Γ hyps' goal i.
+  mkMLGoal Σ Γ hyps goal i ->
+  mkMLGoal Σ Γ hyps' goal i.
 Proof.
   unfold of_MLGoal. simpl. intros H.
   intros wfg wfhyps'.
@@ -266,8 +497,8 @@ Proof.
 Defined.
 
 Lemma cast_proof_ml_goal {Σ : Signature} Γ hyps goal goal' (e : goal = goal') (i : ProofInfo):
-  @mkMLGoal Σ Γ hyps goal i ->
-  @mkMLGoal Σ Γ hyps goal' i .
+  mkMLGoal Σ Γ hyps goal i ->
+  mkMLGoal Σ Γ hyps goal' i .
 Proof.
   unfold of_MLGoal. simpl. intros H.
   intros wfgoal' wfhyps.
@@ -282,8 +513,8 @@ Defined.
 
 Lemma MLGoal_intro {Σ : Signature} (Γ : Theory) (l : hypotheses) (name : string) (x g : Pattern)
   (i : ProofInfo) :
-  @mkMLGoal Σ Γ (l ++ [mkNH name x]) g i ->
-  @mkMLGoal Σ Γ l (x ---> g) i.
+  mkMLGoal _ Γ (l ++ [mkNH _ name x]) g i ->
+  mkMLGoal _ Γ l (x ---> g) i.
 Proof.
   intros H.
   unfold of_MLGoal in H. simpl in H.
@@ -295,24 +526,24 @@ Proof.
     rewrite map_app map_app foldr_app; simpl;
     apply well_formed_imp_proj1 in wfxig; rewrite wfxig; simpl; exact wfl).
   }
-  unshelve (eapply (cast_proof' _ H)).
+  unshelve (eapply (cast_proof' _ _ _ _ _ H)).
   { unfold patterns_of. rewrite map_app foldr_app. simpl. reflexivity. }
 Defined.
 
 Ltac simplLocalContext :=
   match goal with
-    | [ |- @of_MLGoal ?Sgm (@mkMLGoal ?Sgm ?Ctx ?l ?g ?i) ]
+    | [ |- @of_MLGoal ?Sgm (mkMLGoal ?Sgm ?Ctx ?l ?g ?i) ]
       => eapply cast_proof_ml_hyps;[(rewrite {1}[l]/app; reflexivity)|]
   end.
 
 Ltac _getHypNames :=
   lazymatch goal with
-  | [ |- of_MLGoal (@mkMLGoal _ _ ?l _ _) ] => eval lazy in (names_of l)
+  | [ |- of_MLGoal (mkMLGoal _ _ ?l _ _) ] => eval lazy in (names_of l)
   end.
 
 Tactic Notation "_failIfUsed" constr(name) :=
   lazymatch goal with
-  | [ |- of_MLGoal (@mkMLGoal _ _ ?l _ _) ] =>
+  | [ |- of_MLGoal (mkMLGoal _ _ ?l _ _) ] =>
     lazymatch (eval cbv in (find_hyp name l)) with
     | Some _ => fail "The name" name "is already used"
     | _ => idtac
@@ -335,7 +566,7 @@ Proof.
   toMLGoal.
   { wf_auto2. }
   match goal with
-  | [ |- of_MLGoal (@mkMLGoal Σ Γ [] (p ---> p) BasicReasoning) ] => idtac
+  | [ |- of_MLGoal (mkMLGoal Σ Γ [] (p ---> p) BasicReasoning) ] => idtac
   | _ => fail
   end.
   fromMLGoal.
@@ -356,8 +587,8 @@ Proof.
 Abort.
 
 Lemma MLGoal_revertLast {Σ : Signature} (Γ : Theory) (l : hypotheses) (x g : Pattern) (n : string) i :
-@mkMLGoal Σ Γ l (x ---> g) i ->
-@mkMLGoal Σ Γ (l ++ [mkNH n x]) g i.
+mkMLGoal Σ Γ l (x ---> g) i ->
+mkMLGoal Σ Γ (l ++ [mkNH _ n x]) g i.
 Proof.
 intros H.
 unfold of_MLGoal in H. simpl in H.
@@ -387,7 +618,7 @@ Defined.
 #[global]
 Ltac mlRevertLast :=
 match goal with
-| |- @of_MLGoal ?Sgm (@mkMLGoal ?Sgm ?Ctx ?l ?g ?i)
+| |- @of_MLGoal ?Sgm (mkMLGoal ?Sgm ?Ctx ?l ?g ?i)
 => eapply cast_proof_ml_hyps;
    [(rewrite -[l](take_drop (length l - 1)); rewrite [take _ _]/=; rewrite [drop _ _]/=; reflexivity)|];
    apply MLGoal_revertLast
@@ -491,9 +722,6 @@ eapply pile_trans.
 apply pile_fp_subseteq. apply Hfp.
 Qed.
 
-
-
-
 Lemma pile_any {Σ : Signature} i:
   ProofInfoLe i AnyReasoning.
 Proof.
@@ -506,6 +734,10 @@ Proof.
   { clear. set_solver. }
 Qed.
 
+Tactic Notation "aapply" uconstr(pf)
+:= gapply pf; try apply pile_any.
+
+Ltac try_solve_pile := try (solve [(apply pile_evs_svs_kt; auto; try set_solver)]).
 
 
 Lemma pile_basic_generic {Σ : Signature} eg svs kt fp:
@@ -560,7 +792,7 @@ Ltac2 _mlReshapeHypsByName (name' : constr) :=
 .
 
 Tactic Notation "_mlReshapeHypsBack" :=
-  let hyps := fresh "hyps" in rewrite [hyps in @mkMLGoal _ _ hyps _]/app
+  let hyps := fresh "hyps" in rewrite [hyps in mkMLGoal _ _ hyps _]/app
 .
 
 Ltac2 _mlReshapeHypsBack () :=

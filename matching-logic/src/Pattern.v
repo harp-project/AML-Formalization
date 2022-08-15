@@ -1,7 +1,4 @@
 From Coq Require Import ssreflect ssrfun ssrbool.
-Set Implicit Arguments.
-Unset Strict Implicit.
-Unset Printing Implicit Defensive.
 
 From stdpp Require Import countable infinite.
 From stdpp Require Import pmap gmap mapset fin_sets propset.
@@ -711,8 +708,8 @@ Pattern.wf (l₁ ++ h :: l₂) ->
 Pattern.wf (l₁ ++ l₂).
 Proof.
 intros H.
-pose proof (wfl₁hl₂_proj_l₁ H).
-pose proof (wfl₁hl₂_proj_l₂ H).
+pose proof (wfl₁hl₂_proj_l₁ _ _ _ H).
+pose proof (wfl₁hl₂_proj_l₂ _ _ _ H).
 apply wf_app; assumption.
 Qed.
 

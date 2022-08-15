@@ -63,7 +63,7 @@ Section isomorphism.
   Qed.
 
   Polymorphic Cumulative
-  Record ModelIsomorphism {Σ : Signature} (M₁ M₂ : Model) : Type := mkModelIsomorphism
+  Record ModelIsomorphism {Σ : Signature} {M₁ M₂ : Model} : Type := mkModelIsomorphism
       {
           mi_f : (Domain M₁) -> (Domain M₂) ;
           mi_inj :> Inj (=) (=) mi_f ;
@@ -75,9 +75,9 @@ Section isomorphism.
       }.
 
   Definition isom {Σ : Signature} : relation Model :=
-      λ M₁ M₂, ∃ (r : ModelIsomorphism M₁ M₂), True.
+      λ M₁ M₂, ∃ (r : @ModelIsomorphism _ M₁ M₂), True.
 
-  Definition ModelIsomorphism_refl {Σ : Signature} (M : Model) : ModelIsomorphism M M.
+  Definition ModelIsomorphism_refl {Σ : Signature} (M : Model) : @ModelIsomorphism _ M M.
   Proof.
       exists Datatypes.id.
       {
@@ -102,8 +102,8 @@ Section isomorphism.
       }
   Defined.
 
-  Definition ModelIsomorphism_sym {Σ : Signature} (M₁ M₂ : Model) (i : ModelIsomorphism M₁ M₂)
-  : ModelIsomorphism M₂ M₁.
+  Definition ModelIsomorphism_sym {Σ : Signature} (M₁ M₂ : Model) (i : @ModelIsomorphism _ M₁ M₂)
+  : @ModelIsomorphism _ M₂ M₁.
   Proof.
       destruct i. destruct mi_surj0.
       exists surj'_inv0.
@@ -215,9 +215,9 @@ Section isomorphism.
   Defined.
 
   Program Definition ModelIsomorphism_trans {Σ : Signature} (M₁ M₂ M₃ : Model)
-      (i : ModelIsomorphism M₁ M₂)
-      (j : ModelIsomorphism M₂ M₃)
-      : ModelIsomorphism M₁ M₃
+      (i : @ModelIsomorphism _ M₁ M₂)
+      (j : @ModelIsomorphism _ M₂ M₃)
+      : @ModelIsomorphism _ M₁ M₃
       :=
       {|
           mi_f := (mi_f j) ∘ (mi_f i)
@@ -280,7 +280,7 @@ Section isomorphism.
   Instance ModelIsomorphism_sym_cancel
       {Σ : Signature}
       (M₁ M₂ : Model)
-      (i : ModelIsomorphism M₁ M₂)
+      (i : @ModelIsomorphism _M₁ M₂)
       :
       Cancel (=) (mi_f i) (mi_f (ModelIsomorphism_sym i)).
   Proof.
@@ -294,7 +294,7 @@ Section isomorphism.
   Lemma fmap_app_ext {Σ : Signature} (M : Model) (X Y : propset (Domain M))
       (B : Type) (f : (Domain M) -> B)
       :
-      f <$> app_ext X Y ≡ {[ e | ∃ le re : M, le ∈ X ∧ re ∈ Y ∧ e ∈ (f <$> (app_interp le re)) ]}.
+      f <$> app_ext X Y ≡ {[ e | ∃ le re : M, le ∈ X ∧ re ∈ Y ∧ e ∈ (f <$> (app_interp _ le re)) ]}.
   Proof.
       unfold fmap at 1.
       with_strategy transparent [propset_fmap] unfold propset_fmap at 1.
@@ -352,7 +352,7 @@ Section isomorphism.
   Theorem isomorphism_preserves_semantics
       {Σ : Signature}
       (M₁ M₂ : Model)
-      (i : ModelIsomorphism M₁ M₂)
+      (i : @ModelIsomorphism _ M₁ M₂)
       :
       forall (ϕ : Pattern) (ρ : @Valuation _ M₁),
           ((mi_f i) <$> (@eval Σ M₁ ρ ϕ))
@@ -410,7 +410,7 @@ Section isomorphism.
               (* patt_app ϕ1 ϕ2 *)
               do 2 rewrite eval_app_simpl.
               rewrite fmap_app_ext.
-              
+
               simpl in Hsz.
               rewrite set_equiv_subseteq.
               do 2 rewrite elem_of_subseteq.

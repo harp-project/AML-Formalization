@@ -9,6 +9,7 @@ src/Signature.v
 src/Pattern.v
 src/Substitution.v
 src/Freshness.v
+src/IndexManipulation.v
 src/SyntacticConstruct.v
 src/ApplicationContext.v
 src/PatternContext.v
@@ -18,7 +19,6 @@ src/SyntaxLemmas/FreshnessApplicationCtx.v
 src/SyntaxLemmas/ApplicationCtxSubstitution.v
 src/Syntax.v
 src/wftactics.v
-src/IndexManipulation.v
 src/NamedAxioms.v
 
 src/Semantics.v

@@ -142,17 +142,17 @@ Section soundness.
         destruct H0. 
         {
           unfold fresh_evar. simpl. unfold evar_is_fresh_in.
-          pose(@set_evar_fresh_is_fresh' Σ (free_evars psi ∪ free_evars phi)).
+          pose(set_evar_fresh_is_fresh' (free_evars psi ∪ free_evars phi)).
           apply not_elem_of_union in n. destruct n. assumption.
         }
         unfold well_formed,well_formed_closed in *. simpl in *.
         destruct_and!.
         assumption.
       + split; try assumption.
-        erewrite -> (@eval_fresh_evar_open Σ m) in Hext_re. exact Hext_re.
+        erewrite -> (eval_fresh_evar_open) in Hext_re. exact Hext_re.
         apply set_evar_fresh_is_fresh.
         {
-          pose(@set_evar_fresh_is_fresh' Σ (free_evars psi ∪ free_evars phi)).
+          pose(set_evar_fresh_is_fresh' (free_evars psi ∪ free_evars phi)).
           apply not_elem_of_union in n. destruct n. assumption.
         }
   Qed.
