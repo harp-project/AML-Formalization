@@ -11,5 +11,6 @@ Module Notations.
   Export MatchingLogic.Syntax.Notations
          MatchingLogic.Substitution.Notations
          MatchingLogic.DerivedOperators_Syntax.Notations
-         MatchingLogic.ProofSystem.Notations.
+         MatchingLogic.ProofSystem.Notations
+         MatchingLogic.ApplicationContext.Notations.
 End Notations.

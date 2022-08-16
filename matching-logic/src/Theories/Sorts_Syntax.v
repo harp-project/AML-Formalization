@@ -1,7 +1,4 @@
 From Coq Require Import ssreflect ssrfun ssrbool.
-Set Implicit Arguments.
-Unset Strict Implicit.
-Unset Printing Implicit Defensive.
 
 Require Import Setoid.
 From Coq Require Import Unicode.Utf8.
@@ -77,9 +74,9 @@ Section sorts.
   Next Obligation.
     repeat rewrite correctness.
     cbn.
-    rewrite (@asd _ _ nest_ex _ f_swap).
+    rewrite (@eswap _ _ _ nest_ex _ f_swap).
     replace (on_bevar spec_data (increase_ex spec_data a) 0) with b0. reflexivity.
-    reflexivity.
+    now rewrite ezero_increase.
   Defined.
 
   Definition patt_forall_of_sort (sort phi : Pattern) : Pattern :=
@@ -87,6 +84,16 @@ Section sorts.
 
   Local Notation "'all' s ,  phi" := 
     (patt_forall_of_sort s phi) (at level 70) : ml_scope.
+
+  #[global]
+  Program Instance sorted_forall_binder : ESortedBinder patt_forall_of_sort nest_ex := {}.
+  Next Obligation.
+    repeat rewrite correctness.
+    cbn.
+    rewrite (@eswap _ _ _ nest_ex _ f_swap).
+    replace (on_bevar spec_data (increase_ex spec_data a) 0) with b0. reflexivity.
+    now rewrite ezero_increase.
+  Defined.
 
   (* TODO patt_forall_of_sort and patt_exists_of_sorts are duals - a lemma *)
 

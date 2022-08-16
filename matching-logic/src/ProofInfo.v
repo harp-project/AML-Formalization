@@ -602,4 +602,17 @@ Proof.
     exact Hpf.
 Qed.
 
+  Lemma useAnyReasoning {Σ : Signature} {Γ ϕ i}:
+    Γ ⊢i ϕ using i ->
+    Γ ⊢i ϕ using AnyReasoning.
+  Proof.
+    intros H.
+    {
+      destruct i.
+      eapply useGenericReasoning.
+      { apply pile_any. }
+      apply H.
+    }
+  Qed.
+
 Close Scope ml_scope.

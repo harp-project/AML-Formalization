@@ -371,7 +371,7 @@ Class SwappableEx {A : Type} (f : A -> Pattern -> Pattern) (g : Pattern -> Patte
   (m : PatternMorphism f) :=
 {
   ezero_increase : forall a,
-    apply_subst spec_data (increase_ex spec_data a) (patt_bound_evar 0) = patt_bound_evar 0 ;
+    on_bevar spec_data (increase_ex spec_data a) 0 = patt_bound_evar 0 ;
   eswap : forall phi a,
     apply_subst spec_data (increase_ex spec_data a) (g phi) =
     g (apply_subst spec_data a phi) ;
@@ -381,7 +381,7 @@ Class SwappableEx {A : Type} (f : A -> Pattern -> Pattern) (g : Pattern -> Patte
 Program Instance Bevar_subst_swaps_ex_nesting (ψ : Pattern) (p : well_formed_closed ψ) :
   @SwappableEx _ (bevar_subst ψ) nest_ex (Bevar_subst_morphism ψ).
 Next Obligation.
-  intros. rewrite <- correctness. reflexivity.
+  intros. reflexivity.
 Defined.
 Next Obligation.
   intros ψ WFψ phi a.
@@ -394,7 +394,7 @@ Defined.
 Program Instance Bsvar_subst_swaps_ex_nesting (ψ : Pattern) (p : well_formed_closed ψ) :
   @SwappableEx _ (bsvar_subst ψ) nest_ex (Bsvar_subst_morphism ψ).
 Next Obligation.
-  intros. rewrite <- correctness. reflexivity.
+  intros. reflexivity.
 Defined.
 Next Obligation.
   intros ψ WFψ phi a.
@@ -408,7 +408,7 @@ Defined.
 Program Instance Fevar_subst_swaps_nesting (ψ : Pattern) (p : well_formed_closed ψ) :
   @SwappableEx _ (free_evar_subst ψ) nest_ex (Free_evar_subst_morphism ψ).
 Next Obligation.
-  intros. rewrite <- correctness. reflexivity.
+  intros. reflexivity.
 Defined.
 Next Obligation.
   intros ψ WFψ phi a.
@@ -422,7 +422,7 @@ Defined.
 Program Instance Fsvar_subst_swaps_nesting (ψ : Pattern) (p : well_formed_closed ψ) :
   @SwappableEx _ (free_svar_subst ψ) nest_ex (Free_svar_subst_morphism ψ).
 Next Obligation.
-  intros. rewrite <- correctness. reflexivity.
+  intros. reflexivity.
 Defined.
 Next Obligation.
   intros ψ WFψ phi a.
@@ -436,7 +436,7 @@ Defined.
 Program Instance Evar_quantify_swaps_ex_nesting (x : evar) :
   @SwappableEx _ (evar_quantify x) nest_ex (Evar_quantify_morphism x).
 Next Obligation.
-  intros. rewrite <- correctness. reflexivity.
+  intros. reflexivity.
 Defined.
 Next Obligation.
   intros ψ phi a.
@@ -449,7 +449,7 @@ Defined.
 Program Instance Svar_quantify_swaps_ex_nesting (X : svar) :
   @SwappableEx _ (svar_quantify X) nest_ex (Svar_quantify_morphism X).
 Next Obligation.
-  intros. rewrite <- correctness. reflexivity.
+  intros. reflexivity.
 Defined.
 Next Obligation.
   intros ψ phi a.
@@ -461,7 +461,7 @@ Defined.
 Program Instance Evar_open_swaps_ex_nesting (x : evar) :
   @SwappableEx _ (evar_open x) nest_ex (Evar_open_morphism x).
 Next Obligation.
-  intros. rewrite <- correctness. reflexivity.
+  intros. reflexivity.
 Defined.
 Next Obligation.
   (* TODO: here type class inference fails without the explicit parameters *)
@@ -472,7 +472,7 @@ Defined.
 Program Instance Svar_open_swaps_ex_nesting (X : svar) :
   @SwappableEx _ (svar_open X) nest_ex (Svar_open_morphism X).
 Next Obligation.
-  intros. rewrite <- correctness. reflexivity.
+  intros. reflexivity.
 Defined.
 Next Obligation.
   (* TODO: here type class inference fails without the explicit parameters *)

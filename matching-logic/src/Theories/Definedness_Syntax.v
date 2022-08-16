@@ -1,10 +1,10 @@
-(* In this module we define the definedness symbol and use it to build derived notions
+(**
+  * Definedness
+
+   In this module we define the definedness symbol and use it to build derived notions
    like totality and equality.
  *)
 From Coq Require Import ssreflect ssrfun ssrbool.
-Set Implicit Arguments.
-Unset Strict Implicit.
-Unset Printing Implicit Defensive.
 
 From Coq Require Import String Setoid.
 Require Import Coq.Program.Equality.
@@ -111,7 +111,7 @@ Section definedness.
 
   #[local]
    Hint Resolve well_formed_total : core.
-  
+
   Lemma well_formed_equal (phi1 phi2 : Pattern) :
     well_formed phi1 = true ->
     well_formed phi2 = true ->

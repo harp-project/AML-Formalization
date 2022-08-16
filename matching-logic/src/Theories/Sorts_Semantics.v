@@ -1,7 +1,4 @@
 From Coq Require Import ssreflect ssrfun ssrbool.
-Set Implicit Arguments.
-Unset Strict Implicit.
-Unset Printing Implicit Defensive.
 
 Require Import Setoid.
 From Coq Require Import Unicode.Utf8.
@@ -11,22 +8,16 @@ From Coq.Classes Require Import Morphisms_Prop.
 From stdpp Require Import base sets.
 
 From MatchingLogic Require Import
-    Syntax
-    Semantics
-    DerivedOperators_Syntax
-    DerivedOperators_Semantics
+    Logic
     Utils.extralibrary
     Theories.Definedness_Syntax
     Theories.Definedness_Semantics
     Theories.Sorts_Syntax.
 
-Import MatchingLogic.Syntax.Notations.
-Import MatchingLogic.Substitution.Notations.
-Import MatchingLogic.Syntax.BoundVarSugar.
-Import MatchingLogic.Semantics.Notations.
-Import MatchingLogic.IndexManipulation.
+
+Import MatchingLogic.Logic.Notations.
 Import MatchingLogic.DerivedOperators_Syntax.Notations.
-Import MatchingLogic.Substitution.Notations.
+Import MatchingLogic.Semantics.Notations.
 
 Section with_model.
     Context
@@ -36,14 +27,14 @@ Section with_model.
     Hypothesis M_satisfies_theory : M ⊨ᵀ Definedness_Syntax.theory.
 
     Local Definition sym (s : Symbols) : Pattern :=
-    patt_sym (inj s).
+      patt_sym (inj s).
 
     Definition Mpatt_inhabitant_set m := app_ext (sym_interp M (inj inhabitant)) {[m]}.
 
     (* ϕ is expected to be a sort pattern *)
     Definition Minterp_inhabitant (ϕ : Pattern) (ρ : @Valuation Σ M)
       := @eval Σ M ρ (patt_app (sym inhabitant) ϕ).
-    
+
     Lemma eval_forall_of_sort_predicate s ϕ ρ:
       let x := fresh_evar ϕ in
       M_predicate M (evar_open 0 x ϕ) ->

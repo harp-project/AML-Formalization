@@ -207,22 +207,6 @@ Section FOL_helpers.
   Arguments Prop_bott_left _ (_%ml) _ : clear implicits.
   Arguments Prop_bott_right _ (_%ml) _ : clear implicits.
 
-
-  Lemma useAnyReasoning Γ ϕ i:
-    Γ ⊢i ϕ using i ->
-    Γ ⊢i ϕ using AnyReasoning.
-  Proof.
-    intros H.
-    {
-      destruct i.
-      eapply useGenericReasoning.
-      { apply pile_any. }
-      apply H.
-    }
-  Qed.
-
-
-
   Fixpoint frames_of_AC (C : Application_context)
     : coWfpSet :=
   match C with

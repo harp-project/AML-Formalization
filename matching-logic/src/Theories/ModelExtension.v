@@ -1,7 +1,4 @@
 From Coq Require Import ssreflect ssrfun ssrbool.
-Set Implicit Arguments.
-Unset Strict Implicit.
-Unset Printing Implicit Defensive.
 
 Require Import Logic.Classical_Prop Coq.Logic.FunctionalExtensionality.
 
@@ -51,7 +48,7 @@ Section with_syntax.
 
     Definition is_not_core_symbol (s : symbols) : Prop
         := ~ is_core_symbol s.
-    
+
     Instance is_not_core_symbol_dec (s : symbols) : Decision (is_not_core_symbol s).
     Proof. solve_decision. Defined.
 
