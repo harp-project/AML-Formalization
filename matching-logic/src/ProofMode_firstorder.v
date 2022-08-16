@@ -14,6 +14,7 @@ From MatchingLogic Require Import
     ProofSystem
     IndexManipulation
     wftactics
+    ProofInfo
     ProofMode_base
     ProofMode_propositional
 .
@@ -38,34 +39,6 @@ Section with_signature.
   Open Scope ml_scope.
   Open Scope string_scope.
   Open Scope list_scope.
-
-  Lemma pile_impl_allows_gen_x x gpi svs kt fp:
-    ProofInfoLe ( (ExGen := {[x]}, SVSubst := svs, KT := kt, FP := fp)) ( gpi) ->
-    x ∈ pi_generalized_evars gpi.
-  Proof.
-    intros [H].
-    pose (H1 := @A_impl_A Σ ∅ patt_bott ltac:(wf_auto2)).
-    pose (H2 := @prf_add_assumption Σ ∅ (patt_free_evar x) (patt_bott ---> patt_bott) BasicReasoning ltac:(wf_auto2) ltac:(wf_auto2) H1).
-    pose (H3 := @ProofSystem.Ex_gen Σ ∅ (patt_free_evar x) (patt_bott ---> patt_bott) x ltac:(wf_auto2) ltac:(wf_auto2) (proj1_sig H2) ltac:(simpl; set_solver)).
-    pose proof (H' := H ∅ _ H3).
-    feed specialize H'.
-    {
-      constructor; simpl.
-      {
-        clear. set_solver.
-      }
-      {
-        clear. set_solver.
-      }
-      {
-        reflexivity.
-      }
-      {
-        clear. set_solver.
-      }
-    }
-    inversion H'. simpl in *. clear -pwi_pf_ge. set_solver.
-  Qed.
 
   Lemma Ex_gen (Γ : Theory) (ϕ₁ ϕ₂ : Pattern) (x : evar) (i : ProofInfo)
       {pile : ProofInfoLe (
@@ -189,7 +162,7 @@ Section with_signature.
     mlApply "0".
     mlIntro.
     mlApply "2".
-    pose proof (Htmp := @Ex_quan Γ ((!ϕ)^{{evar: x ↦ 0}}) x).
+    pose proof (Htmp := Ex_quan Γ ((!ϕ)^{{evar: x ↦ 0}}) x).
     rewrite /instantiate in Htmp.
     rewrite bevar_subst_evar_quantify_free_evar in Htmp.
     {
@@ -211,7 +184,7 @@ Section with_signature.
     Γ ⊢i (exists_quantify x ϕ₁) ---> (exists_quantify x ϕ₂) using i.
   Proof.
     intros H.
-    pose proof (Hwf := @proved_impl_wf Σ Γ _ (proj1_sig H)).
+    pose proof (Hwf := proved_impl_wf Γ _ (proj1_sig H)).
     assert (wfϕ₁: well_formed ϕ₁ = true) by wf_auto2.
     assert (wfϕ₂: well_formed ϕ₂ = true) by wf_auto2.
     apply Ex_gen.
@@ -284,7 +257,7 @@ Section with_signature.
     Γ ⊢i (ex , P) ---> Q using i.
   Proof.
   intros Hx HwfcP H.
-  unshelve (eapply (@cast_proof' Σ Γ _ _ _ _ H)).
+  unshelve (eapply (cast_proof' Γ _ _ _ _ H)).
   abstract (
     unfold exists_quantify;
     rewrite -> evar_quantify_evar_open by assumption;
@@ -299,7 +272,7 @@ Section with_signature.
     Γ ⊢i P ---> ex, Q using i.
   Proof.
   intros Hx HwfcP H.
-  unshelve (eapply (@cast_proof' Σ Γ _ _ _ _ H)).
+  unshelve (eapply (cast_proof' Γ _ _ _ _ H)).
   abstract (
     unfold exists_quantify;
     rewrite -> evar_quantify_evar_open by assumption;
@@ -331,7 +304,7 @@ Section with_signature.
     apply Ex_gen.
     { apply pile_refl. }
     { wf_auto2. }
-    
+
     apply lhs_to_and.
     { wf_auto2. }
     { wf_auto2. }
@@ -398,7 +371,7 @@ Section with_signature.
       remember (fresh_evar (ϕ₁ and ϕ₂)) as x.
       eapply cast_proof'.
       {
-        rewrite -[ϕ₁ and ϕ₂](@evar_quantify_evar_open Σ x 0).
+        rewrite -[ϕ₁ and ϕ₂](evar_quantify_evar_open x 0).
         { subst x. apply set_evar_fresh_is_fresh. }
         { cbn. split_and!; auto. wf_auto. wf_auto2. }
         reflexivity.
@@ -448,12 +421,12 @@ Section with_signature.
   Proof.
     intros Hfr pile Himp.
     pose proof (Hwf := proved_impl_wf _ _ (proj1_sig Himp)).
-    pose proof (wfϕ₁ := well_formed_imp_proj1 Hwf).
-    pose proof (wfϕ₂ := well_formed_imp_proj2 Hwf).
+    pose proof (wfϕ₁ := well_formed_imp_proj1 _ _ Hwf).
+    pose proof (wfϕ₂ := well_formed_imp_proj2 _ _ Hwf).
     toMLGoal.
     { wf_auto2. }
     mlIntro.
-    mlApplyMetaRaw (@useBasicReasoning Σ Γ _ _ (@not_not_intro Σ Γ ϕ₁ ltac:(wf_auto2))) in "0".
+    mlApplyMetaRaw (useBasicReasoning _ (not_not_intro Γ ϕ₁ ltac:(wf_auto2))) in "0".
     fromMLGoal.
     apply modus_tollens.
 
@@ -476,7 +449,7 @@ Section with_signature.
     Γ ⊢i (all, ϕ^{{evar: x ↦ 0}}) ---> ϕ using i.
   Proof.
     intros wfϕ pile.
-    pose proof (Htmp := @forall_variable_substitution Γ ϕ x wfϕ).
+    pose proof (Htmp := forall_variable_substitution Γ ϕ x wfϕ).
     eapply useGenericReasoning. apply pile. apply Htmp.
   Defined.
 
@@ -512,7 +485,7 @@ Section with_signature.
   Proof.
     intros wfϕ₁ wfϕ₂ pile H.
     remember (fresh_evar (ϕ₁ ---> ϕ₂)) as x.
-    apply (@strip_exists_quantify_l Γ x).
+    apply (strip_exists_quantify_l Γ x).
     { subst x.
       eapply evar_is_fresh_in_richer'.
       2: { apply set_evar_fresh_is_fresh'. }
@@ -530,7 +503,7 @@ Section with_signature.
 
     eapply cast_proof'.
     {
-      rewrite -[HERE in evar_open _ _ _ ---> HERE](@evar_open_not_occur Σ 0 x ϕ₂).
+      rewrite -[HERE in evar_open _ _ _ ---> HERE](evar_open_not_occur 0 x ϕ₂).
       {
         wf_auto2.
       }
@@ -570,8 +543,8 @@ Section with_signature.
     evar_is_fresh_in_list x (patterns_of l) ->
     ProofInfoLe ( (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)) i ->
     bevar_occur ϕ₁ 0 = false ->
-    @mkMLGoal Σ Γ (mkNH n ϕ₁::l) g i -> 
-    @mkMLGoal Σ Γ (mkNH n (exists_quantify x ϕ₁)::l) g i.
+    mkMLGoal Σ Γ (mkNH _ n ϕ₁::l) g i -> 
+    mkMLGoal Σ Γ (mkNH _ n (exists_quantify x ϕ₁)::l) g i.
   Proof.
     intros xfrg xfrl pile Hno0 H.
     mlExtractWF H1 H2.
@@ -609,7 +582,7 @@ Section with_signature.
     { wf_auto2. }
     mlIntro.
     remember (evar_fresh (elements (free_evars ϕ₁ ∪ free_evars ϕ₂ ∪ free_evars (ex, ϕ₃)))) as x.
-    rewrite -[ϕ₁](@evar_quantify_evar_open Σ x 0).
+    rewrite -[ϕ₁](evar_quantify_evar_open x 0).
     { subst x.
       eapply evar_is_fresh_in_richer'. 2: apply set_evar_fresh_is_fresh'. clear. set_solver.
     }
@@ -643,8 +616,8 @@ Section with_signature.
   Lemma MLGoal_IntroVar : forall Γ l g i x,
     x ∉ free_evars g ->
     ProofInfoLe ( (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)) i ->
-    @mkMLGoal Σ Γ l (g^{evar: 0 ↦ x}) i ->
-    @mkMLGoal Σ Γ l (all , g) i.
+    mkMLGoal Σ Γ l (g^{evar: 0 ↦ x}) i ->
+    mkMLGoal Σ Γ l (all , g) i.
   Proof.
     (*Search derives_using foldr.*)
     unfold of_MLGoal. simpl. intros Γ l g i x xN PI H wf1 wf2.
@@ -652,7 +625,7 @@ Section with_signature.
     eapply prf_weaken_conclusion_iter_meta_meta. 5: apply H.
     all: try wf_auto2.
     toMLGoal. wf_auto2. mlIntro "H". mlIntro "H0".
-    epose proof (@Ex_gen Γ (! g^{evar: 0 ↦ x}) ⊥ x i _ _ _).
+    epose proof (Ex_gen Γ (! g^{evar: 0 ↦ x}) ⊥ x i _ _).
     mlApplyMeta H0. unfold exists_quantify. simpl.
     rewrite evar_quantify_evar_open; auto.
     apply andb_true_iff in wf1 as [_ wf1].

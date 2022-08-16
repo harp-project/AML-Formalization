@@ -1,6 +1,7 @@
 From MatchingLogic Require Export
   Logic
-  ProofMode_base 
+  ProofMode_base
+  ProofInfo
   ProofMode_propositional
   ProofMode_firstorder
   ProofMode_fixpoint

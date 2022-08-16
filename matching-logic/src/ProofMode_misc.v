@@ -14,16 +14,16 @@ From MatchingLogic Require Import Syntax DerivedOperators_Syntax ProofSystem Ind
 From stdpp Require Import list tactics fin_sets coGset gmap sets.
 
 From MatchingLogic.Utils Require Import stdpp_ext.
-
 Import extralibrary.
-
 From MatchingLogic Require Import Logic
+  ProofInfo
   ProofMode_base 
   ProofMode_propositional
   ProofMode_firstorder
   ProofMode_fixpoint
   ProofMode_reshaper
 .
+
 Import MatchingLogic.Logic.Notations.
 
 Set Default Proof Mode "Classic".
@@ -35,24 +35,6 @@ Open Scope list_scope.
 Section FOL_helpers.
 
   Context {Σ : Signature}.
-
-
-
-  Lemma liftPi (Γ : Theory) (ϕ : Pattern) (i₁ i₂ : ProofInfo)
-    {pile : ProofInfoLe i₁ i₂}
-    :
-    Γ ⊢i ϕ using i₁ ->
-    Γ ⊢i ϕ using i₂.
-  Proof.
-      intros [pf Hpf].
-      apply pile in Hpf.
-      exists pf.
-      exact Hpf.
-  Qed.
-
-
-
-
 
   Lemma Framing_left (Γ : Theory) (ϕ₁ ϕ₂ ψ : Pattern) (i : ProofInfo)
     (wfψ : well_formed ψ)
@@ -80,7 +62,7 @@ Section FOL_helpers.
       {
         assumption.
       }
-      { 
+      {
         destruct i.
         simpl in *.
         apply pile_evs_svs_kt_back in pile.
@@ -245,8 +227,8 @@ Section FOL_helpers.
     : coWfpSet :=
   match C with
   | box => ∅
-  | (@ctx_app_l _ C' p wfp) => {[(exist _ p wfp)]} ∪ (frames_of_AC C')
-  | (@ctx_app_r _ p C' wfp) => {[(exist _ p wfp)]} ∪ (frames_of_AC C')
+  | ctx_app_l C' p wfp => {[(exist _ p wfp)]} ∪ (frames_of_AC C')
+  | ctx_app_r p C' wfp => {[(exist _ p wfp)]} ∪ (frames_of_AC C')
   end.
 
 
@@ -259,7 +241,7 @@ Section FOL_helpers.
     move: foC HeqfoC.
     induction C; intros foC HeqfoC; simpl in *.
     - apply useBasicReasoning.
-      apply false_implies_everything.
+      apply bot_elim.
       wf_auto2.
     - eapply syllogism_meta.
       5: { apply useBasicReasoning. apply (Prop_bott_left Γ p ltac:(wf_auto2)). }
@@ -270,8 +252,8 @@ Section FOL_helpers.
             eapply pile_evs_svs_kt.
             { apply reflexivity. }
             { apply reflexivity. }
-            { reflexivity. }      
-            { clear. set_solver. }      
+            { reflexivity. }
+            { clear. set_solver. }
            }
            eapply useGenericReasoning.
            2: apply IHC.
@@ -292,8 +274,8 @@ Section FOL_helpers.
                  eapply pile_evs_svs_kt.
                  { apply reflexivity. }
                  { apply reflexivity. }
-                 { reflexivity. }      
-                 { clear. set_solver. }      
+                 { reflexivity. }
+                 { clear. set_solver. }
                 }
                 eapply useGenericReasoning.
                 2: apply IHC.
@@ -301,7 +283,7 @@ Section FOL_helpers.
                 apply pile_evs_svs_kt.
                 { apply reflexivity. }
                 { apply reflexivity. }
-                { reflexivity. }      
+                { reflexivity. }
                 { clear. set_solver. }
            }
            all: wf_auto2.
@@ -318,7 +300,7 @@ Section FOL_helpers.
   Proof.
     intros H.
     pose proof H as [pf _].
-    pose proof (HWF := @proved_impl_wf _ _ _ pf).
+    pose proof (HWF := proved_impl_wf _ _ pf).
     assert (wfA: well_formed A) by wf_auto2.
     assert (wfB: well_formed B) by wf_auto2.
     clear pf HWF.
@@ -363,19 +345,17 @@ Section FOL_helpers.
   Proof.
     intros WFA H.
 
-    epose proof (ANNA := @A_implies_not_not_A_alt Σ  Γ _ i _ H).
+    epose proof (ANNA := A_implies_not_not_A_alt Γ _ i _ H).
     replace (! (! A)) with ((! A) ---> Bot) in ANNA by reflexivity.
-    epose proof (EF := @Framing _ C (! A) Bot _ _ ANNA).
+    epose proof (EF := Framing _ C (! A) Bot _ ANNA).
     epose proof (PB := Prop_bot Γ C).
     apply liftPi with (i₂ := i) in PB. 2: apply _.
-    epose (TRANS := @syllogism_meta _ _ _ _ _ _ _ _ _ EF PB).
+    epose (TRANS := syllogism_meta _ _ _ EF PB).
     apply TRANS.
 
     Unshelve.
     all: wf_auto2.
   Defined.
-
-
 
   Lemma ctx_bot_prop (Γ : Theory) (C : Application_context) (A : Pattern) 
     (i : ProofInfo)
@@ -386,16 +366,14 @@ Section FOL_helpers.
     Γ ⊢i (subst_ctx C A ---> Bot) using i.
   Proof.
     intros WFA H.
-    epose proof (FR := @Framing Γ C A Bot _ _ H).
-    epose proof (BPR := @Prop_bot Γ C).
+    epose proof (FR := Framing Γ C A Bot _ H).
+    epose proof (BPR := Prop_bot Γ C).
     apply liftPi with (i₂ := i) in BPR. 2: apply _.
-    epose proof (TRANS := @syllogism_meta _ _ _ _ _ _ _ _ _ FR BPR).
+    epose proof (TRANS := syllogism_meta _ _ _ FR BPR).
     exact TRANS.
     Unshelve.
     all: wf_auto2.
   Defined.
-
-
 
 End FOL_helpers.
 
@@ -660,7 +638,7 @@ Proof.
       pose proof (Hwf' := Hwf).
       unfold well_formed in Hwf. simpl in Hwf.
       apply andb_prop in Hwf. destruct Hwf as [Hwfp Hwfc].
-      apply (@wp_sctx _ AC p) in Hwfp. rewrite Hwfp. simpl. clear Hwfp.
+      apply (wp_sctx AC p) in Hwfp. rewrite Hwfp. simpl. clear Hwfp.
       unfold well_formed_closed. unfold well_formed_closed in Hwfc. simpl in Hwfc. simpl.
       split_and!.
       + apply wcmu_sctx. destruct_and!. assumption.
@@ -698,8 +676,8 @@ Proof.
       destruct_and!.
       split_and!; auto.
     }
-    
-    
+
+
     (* TODO automate this. The problem is that [well_formed_app] and others do not have [= true];
        that is why [auto] does not work. But [auto] is not suitable for this anyway.
        A better way would be to create some `simpl_well_formed` tuple, that might use the type class
@@ -739,7 +717,7 @@ Proof.
       2: { try_solve_pile. }
       eapply syllogism_meta. 5: eapply IH2.
       1-3: wf_auto2.
-      
+
       apply Ex_gen; auto.
       { try_solve_pile. }
       1: {
@@ -749,11 +727,11 @@ Proof.
         unfold evar_is_fresh_in in Hx. simpl in Hx. clear -Hx.
         set_solver.
       }
-      
+
       (* TODO have some nice implicit parameters *)
-      gapply (@Framing_left _ _ _ _ _ _ Prf).
-      2: apply pile_refl.
-      1: try_solve_pile.
+      gapply (Framing_left _ _ _ _ _ Prf).
+      apply pile_refl.
+      Unshelve. 2: { try_solve_pile. }
       unfold evar_open.
       rewrite subst_ctx_bevar_subst.
       unfold exists_quantify. simpl.
@@ -768,7 +746,7 @@ Proof.
       pose proof (Hwf' := Hwf).
       unfold well_formed in Hwf. simpl in Hwf.
       apply andb_prop in Hwf. destruct Hwf as [Hwfp Hwfc].
-      apply (@wp_sctx _ AC p) in Hwfp. rewrite Hwfp. simpl. clear Hwfp.
+      apply (wp_sctx AC p) in Hwfp. rewrite Hwfp. simpl. clear Hwfp.
       unfold well_formed_closed. unfold well_formed_closed in Hwfc. simpl in Hwfc. simpl.
       split_and!.
       + apply wcmu_sctx. destruct_and!. assumption.
@@ -825,7 +803,7 @@ Proof.
     apply pf_iff_split; auto.
     + pose proof (H := IH1).
       change constraint in IH1.
-      apply (@Framing_right _ _ _ _ _ _ Prf) in IH1.
+      apply Framing_right with (wfψ := Prf) in IH1.
       2: try_solve_pile.
       eapply syllogism_meta. 4: apply IH1.
       1-3: wf_auto2.
@@ -838,9 +816,10 @@ Proof.
     + clear IH1.
 
       change constraint in IH2.
-      eapply (@Framing_right _ _ _ _ _ _ Prf) in IH2.
+      eapply (Framing_right _ _ _ _ _ Prf) in IH2.
       eapply syllogism_meta. 5: eapply IH2.
       1-3: wf_auto2.
+      Unshelve.
       2: { try_solve_pile. }
 
       apply Ex_gen; auto.
@@ -853,8 +832,8 @@ Proof.
         set_solver.
       }
 
-      eapply (@Framing_right _ _ _ _ _ _ Prf).
-      { try_solve_pile. }
+      eapply (Framing_right _ _ _ _ _ Prf). Unshelve.
+      2: { try_solve_pile. }
       {
       unfold evar_open.
       rewrite subst_ctx_bevar_subst.
@@ -876,7 +855,7 @@ Lemma pf_evar_open_free_evar_subst_equiv_sides {Σ : Signature} Γ x n ϕ p q E 
   Γ ⊢i ϕ^[[evar: E ↦ p]]^{evar: n ↦ x} <---> ϕ^[[evar: E ↦ q]]^{evar: n ↦ x} using i.
 Proof.
   intros Hx wfp wfq H.
-  unshelve (eapply (@cast_proof' Σ Γ _ _ _ _ H)).
+  unshelve (eapply (cast_proof' Γ _ _ _ _ H)).
   rewrite -> evar_open_free_evar_subst_swap by assumption.
   rewrite -> evar_open_free_evar_subst_swap by assumption.
   reflexivity.
@@ -890,7 +869,7 @@ Lemma pf_iff_free_evar_subst_svar_open_to_bsvar_subst_free_evar_subst {Σ : Sign
       ϕ^[[evar: E ↦ q]]^[svar: 0 ↦ patt_free_svar X] using i.
 Proof.
   intros wfp wfq H.
-  unshelve (eapply (@cast_proof' _ _ _ _ _ _ H)).
+  unshelve (eapply (cast_proof' _ _ _ _ _ H)).
 
   abstract (
     unfold svar_open in H;
@@ -912,7 +891,7 @@ Lemma pf_iff_mu_remove_svar_quantify_svar_open {Σ : Signature} Γ ϕ p q E X i 
   Γ ⊢i (mu , ϕ^[[evar: E ↦ p]]) <---> (mu , ϕ^[[evar: E ↦ q]]) using i.
 Proof.
   intros wfp' wfq' Xfrp Xfrq H.
-  unshelve (eapply (@cast_proof' _ _ _ _ _ _ H)).
+  unshelve (eapply (cast_proof' _ _ _ _ _ H)).
   abstract (
     rewrite -{1}[ϕ^[[evar: E ↦ p]]](@svar_quantify_svar_open _ X 0); [assumption| auto | auto];
     rewrite -{1}[ϕ^[[evar: E ↦ q]]](@svar_quantify_svar_open _ X 0); [assumption| auto | auto];
@@ -1385,10 +1364,10 @@ Qed.
     2: { exact HxneqE. }
     2: { exact wfp. }
     2: { exact wfq. }
-    unshelve (epose proof (IH1 := @pf_iff_proj1 Σ Γ _ _ _ _ _ IH)).
+    unshelve (epose proof (IH1 := pf_iff_proj1 Γ _ _ _ _ _ IH)).
     { abstract (wf_auto2). }
     { abstract (wf_auto2). }
-    unshelve (epose proof (IH2 := @pf_iff_proj2 Σ Γ _ _ _ _ _ IH)).
+    unshelve (epose proof (IH2 := pf_iff_proj2 Γ _ _ _ _ _ IH)).
     { abstract (wf_auto2). }
     { abstract (wf_auto2). }
 
@@ -1436,8 +1415,8 @@ Qed.
         {
           abstract (
             simpl;
-            pose proof (Htmp1 := @set_evar_fresh_is_fresh' _ EvS);
-            pose proof (Htmp2 := @free_evars_free_evar_subst Σ ψ q E);   
+            pose proof (Htmp1 := set_evar_fresh_is_fresh' EvS);
+            pose proof (Htmp2 := free_evars_free_evar_subst ψ q E);
             set_solver
           ).
         }
@@ -1496,8 +1475,8 @@ Qed.
         {
           abstract (
             simpl;
-            pose proof (Htmp1 := @set_evar_fresh_is_fresh' _ EvS);
-            pose proof (Htmp := @free_evars_free_evar_subst Σ ψ p E);
+            pose proof (Htmp1 := set_evar_fresh_is_fresh' EvS);
+            pose proof (Htmp := free_evars_free_evar_subst ψ p E);
             set_solver
           ).
         }
@@ -1505,8 +1484,8 @@ Qed.
       {
         abstract (
           simpl;
-          pose proof (Htmp1 := @set_evar_fresh_is_fresh' _ EvS);
-          pose proof (Htmp := @free_evars_free_evar_subst Σ ψ q E);
+          pose proof (Htmp1 := set_evar_fresh_is_fresh' EvS);
+          pose proof (Htmp := free_evars_free_evar_subst ψ q E);
           set_solver
         ).
       }
@@ -1585,32 +1564,32 @@ End FOL_helpers.
 
   Ltac pi_set_solver := set_solver by (try pi_assumption).
 
-  Section FOL_helpers.
+Section FOL_helpers.
 
   Context {Σ : Signature}.
 
   Lemma frames_on_the_way_to_hole'_app_1 EvS SvS E ψ1 ψ2 p q wfψ1 wfψ wfp wfq :
-  (@frames_on_the_way_to_hole' Σ EvS SvS E ψ1 p q wfψ1 wfp wfq)
-  ⊆
-  (@frames_on_the_way_to_hole' Σ EvS SvS E (ψ1 $ ψ2) p q wfψ wfp wfq).
+    (@frames_on_the_way_to_hole' Σ EvS SvS E ψ1 p q wfψ1 wfp wfq)
+    ⊆
+    (@frames_on_the_way_to_hole' Σ EvS SvS E (ψ1 $ ψ2) p q wfψ wfp wfq).
   Proof.
     simp frames_on_the_way_to_hole'.
     pi_set_solver.
   Qed.
 
   Lemma frames_on_the_way_to_hole'_app_2 EvS SvS E ψ1 ψ2 p q wfψ2 wfψ wfp wfq:
-  (@frames_on_the_way_to_hole' Σ EvS SvS E ψ2 p q wfψ2 wfp wfq)
-  ⊆
-  (@frames_on_the_way_to_hole' Σ EvS SvS E (ψ1 $ ψ2) p q wfψ wfp wfq).
+    (@frames_on_the_way_to_hole' Σ EvS SvS E ψ2 p q wfψ2 wfp wfq)
+    ⊆
+    (@frames_on_the_way_to_hole' Σ EvS SvS E (ψ1 $ ψ2) p q wfψ wfp wfq).
   Proof.
     simp frames_on_the_way_to_hole'.
     pi_set_solver.
   Qed.
 
   Lemma frames_on_the_way_to_hole'_imp_1 EvS SvS E ψ1 ψ2 p q wfψ1 wfψ wfp wfq :
-  (@frames_on_the_way_to_hole' Σ EvS SvS E ψ1 p q wfψ1 wfp wfq)
-  ⊆
-  (@frames_on_the_way_to_hole' Σ EvS SvS E (ψ1 ---> ψ2) p q wfψ wfp wfq).
+    (@frames_on_the_way_to_hole' Σ EvS SvS E ψ1 p q wfψ1 wfp wfq)
+    ⊆
+    (@frames_on_the_way_to_hole' Σ EvS SvS E (ψ1 ---> ψ2) p q wfψ wfp wfq).
   Proof.
     simp frames_on_the_way_to_hole'.
     (*unfold frames_on_the_way_to_hole'_unfold_clause_7.*)
@@ -1618,9 +1597,9 @@ End FOL_helpers.
   Qed.
 
   Lemma frames_on_the_way_to_hole'_imp_2 EvS SvS E ψ1 ψ2 p q wfψ2 wfψ wfp wfq:
-  (@frames_on_the_way_to_hole' Σ EvS SvS E ψ2 p q wfψ2 wfp wfq)
-  ⊆
-  (@frames_on_the_way_to_hole' Σ EvS SvS E (ψ1 ---> ψ2) p q wfψ wfp wfq).
+    (@frames_on_the_way_to_hole' Σ EvS SvS E ψ2 p q wfψ2 wfp wfq)
+    ⊆
+    (@frames_on_the_way_to_hole' Σ EvS SvS E (ψ1 ---> ψ2) p q wfψ wfp wfq).
   Proof.
     simp frames_on_the_way_to_hole'.
     pi_set_solver.
@@ -1635,20 +1614,20 @@ End FOL_helpers.
       ExGen := ∅, 
       SVSubst := ∅, 
       KT := false, 
-      FP := {[(exist _ (ψ1^[[evar: E ↦ p]]) (well_formed_free_evar_subst_0 E wfp wfψ1))
-            ;(exist _ (ψ1^[[evar: E ↦ q]]) (well_formed_free_evar_subst_0 E wfq wfψ1))
-            ;(exist _ (ψ2^[[evar: E ↦ p]]) (well_formed_free_evar_subst_0 E wfp wfψ2))
-            ;(exist _ (ψ2^[[evar: E ↦ q]]) (well_formed_free_evar_subst_0 E wfq wfψ2))
+      FP := {[(exist _ (ψ1^[[evar: E ↦ p]]) (well_formed_free_evar_subst_0 E _ _ wfp wfψ1))
+            ;(exist _ (ψ1^[[evar: E ↦ q]]) (well_formed_free_evar_subst_0 E _ _ wfq wfψ1))
+            ;(exist _ (ψ2^[[evar: E ↦ p]]) (well_formed_free_evar_subst_0 E _ _ wfp wfψ2))
+            ;(exist _ (ψ2^[[evar: E ↦ q]]) (well_formed_free_evar_subst_0 E _ _ wfq wfψ2))
             ]} )) i )
     (pf₁: Γ ⊢i ψ1^[[evar: E ↦ p]] <---> ψ1^[[evar: E ↦ q]] using i)
     (pf₂: Γ ⊢i ψ2^[[evar: E ↦ p]] <---> ψ2^[[evar: E ↦ q]] using i)
     :
     (Γ ⊢i (ψ1^[[evar: E ↦ p]]) $ (ψ2^[[evar: E ↦ p]]) <---> (ψ1^[[evar: E ↦ q]]) $ (ψ2^[[evar: E ↦ q]]) using i).
   Proof.
-    remember (well_formed_free_evar_subst_0 E wfp wfψ1) as Hwf1.
-    remember (well_formed_free_evar_subst_0 E wfq wfψ1) as Hwf2.
-    remember (well_formed_free_evar_subst_0 E wfp wfψ2) as Hwf3.
-    remember (well_formed_free_evar_subst_0 E wfq wfψ2) as Hwf4.
+    remember (well_formed_free_evar_subst_0 E _ _ wfp wfψ1) as Hwf1.
+    remember (well_formed_free_evar_subst_0 E _ _ wfq wfψ1) as Hwf2.
+    remember (well_formed_free_evar_subst_0 E _ _ wfp wfψ2) as Hwf3.
+    remember (well_formed_free_evar_subst_0 E _ _ wfq wfψ2) as Hwf4.
 
     eapply pf_iff_equiv_trans.
     5: { 
@@ -1754,12 +1733,12 @@ End FOL_helpers.
     .
     induction sz; intros ψ wfψ Hsz EvS SvS pile
       p_sub_EvS q_sub_EvS E_in_EvS ψ_sub_EvS p_sub_SvS q_sub_SvS ψ_sub_SvS.
-    abstract (destruct ψ; simpl in Hsz; lia).  
+    abstract (destruct ψ; simpl in Hsz; lia).
 
     lazymatch type of pile with
     | ProofInfoLe ?st _ => set (i' := st) in *
     end.
-  
+
     destruct (decide (E ∈ free_evars ψ)) as [HEinψ|HEnotinψ].
     2: {
       eapply cast_proof'.
@@ -1904,23 +1883,23 @@ End FOL_helpers.
       {
         simp frames_on_the_way_to_hole'.
         (* This should be automatable! *)
-        remember (well_formed_free_evar_subst_0 E wfp wfψ1) as wf1.
-        remember (well_formed_free_evar_subst_0 E wfp wfψ2) as wf2.
-        remember (well_formed_free_evar_subst_0 E wfq wfψ1) as wf3.
-        remember (well_formed_free_evar_subst_0 E wfq wfψ2) as wf4.
-        remember (frames_on_the_way_to_hole' EvS SvS E
-        (frames_on_the_way_to_hole'_obligation_5 wfψ)
-        (frames_on_the_way_to_hole'_obligation_6 wfp)
-        (frames_on_the_way_to_hole'_obligation_7 wfq) ∪
-      frames_on_the_way_to_hole' EvS SvS E
-        (frames_on_the_way_to_hole'_obligation_9 wfψ)
-        (frames_on_the_way_to_hole'_obligation_10 wfp)
-        (frames_on_the_way_to_hole'_obligation_11 wfq))
+        remember (well_formed_free_evar_subst_0 E _ _ wfp wfψ1) as wf1.
+        remember (well_formed_free_evar_subst_0 E _ _ wfp wfψ2) as wf2.
+        remember (well_formed_free_evar_subst_0 E _ _ wfq wfψ1) as wf3.
+        remember (well_formed_free_evar_subst_0 E _ _ wfq wfψ2) as wf4.
+        remember (frames_on_the_way_to_hole' EvS SvS E _ _ _
+        (frames_on_the_way_to_hole'_obligation_5 _ _ wfψ)
+        (frames_on_the_way_to_hole'_obligation_6 _ wfp)
+        (frames_on_the_way_to_hole'_obligation_7 _ wfq) ∪
+      frames_on_the_way_to_hole' EvS SvS E _ _ _
+        (frames_on_the_way_to_hole'_obligation_9 _ _ wfψ)
+        (frames_on_the_way_to_hole'_obligation_10 _ wfp)
+        (frames_on_the_way_to_hole'_obligation_11 _ wfq))
         as rest.
-        remember (frames_on_the_way_to_hole'_obligation_1 E wfψ wfp) as wf1'.
-        remember (frames_on_the_way_to_hole'_obligation_2 E wfψ wfp) as wf2'.
-        remember (frames_on_the_way_to_hole'_obligation_3 E wfψ wfq) as wf3'.
-        remember (frames_on_the_way_to_hole'_obligation_4 E wfψ wfq) as wf4'.
+        remember (frames_on_the_way_to_hole'_obligation_1 E _ _ _ wfψ wfp) as wf1'.
+        remember (frames_on_the_way_to_hole'_obligation_2 E _ _ _ wfψ wfp) as wf2'.
+        remember (frames_on_the_way_to_hole'_obligation_3 E _ _ _ wfψ wfq) as wf3'.
+        remember (frames_on_the_way_to_hole'_obligation_4 E _ _ _ wfψ wfq) as wf4'.
         clear.
         remember (ψ1^[[evar: E ↦ p]]) as A.
         remember (ψ1^[[evar: E ↦ q]]) as B.
@@ -1964,7 +1943,7 @@ End FOL_helpers.
           |(apply frames_on_the_way_to_hole'_imp_1)
           ]
         ).
-        
+
       }
       { exact p_sub_EvS. }
       { exact q_sub_EvS. }
@@ -2031,7 +2010,7 @@ End FOL_helpers.
       { apply pf₂. }
     }
     {
-      pose proof (frx := @set_evar_fresh_is_fresh' Σ EvS).
+      pose proof (frx := set_evar_fresh_is_fresh' EvS).
       remember (evar_fresh (elements EvS)) as x.
 
       (* there used to be a destruct on whether E is in psi *)
@@ -2121,7 +2100,7 @@ End FOL_helpers.
       }
     }
     {
-      pose proof (frX := @set_svar_fresh_is_fresh' Σ SvS).
+      pose proof (frX := set_svar_fresh_is_fresh' SvS).
       remember (svar_fresh (elements SvS)) as X.
 
       simpl in HEinψ.
@@ -2210,10 +2189,10 @@ End FOL_helpers.
       3: { clear -wfq. abstract (wf_auto2). }
       2: { clear -wfp. abstract (wf_auto2). }
 
-      unshelve (epose proof (IH1 := @pf_iff_proj1 _ _ _ _ _ _ _ IH)).
+      unshelve (epose proof (IH1 := pf_iff_proj1 _ _ _ _ _ _ IH)).
       { clear -wfψ wfp. abstract (wf_auto2). }
       { clear -wfψ wfq. abstract (wf_auto2). }
-      unshelve (epose proof (IH2 := @pf_iff_proj2 _ _ _ _ _ _ _ IH)).
+      unshelve (epose proof (IH2 := pf_iff_proj2 _ _ _ _ _ _ IH)).
       { clear -wfψ wfp. abstract (wf_auto2). }
       { clear -wfψ wfq. abstract (wf_auto2). }
 
@@ -2231,7 +2210,7 @@ End FOL_helpers.
               clear -ψ_sub_SvS p_sub_SvS frX wfψ wfp;
               wf_auto2;
               simpl in *;
-              pose proof (Htmp := @free_svars_free_evar_subst Σ ψ E p);
+              pose proof (Htmp := free_svars_free_evar_subst ψ E p);
               clear -Htmp ψ_sub_SvS p_sub_SvS frX;
               set_solver
             ).
@@ -2241,7 +2220,7 @@ End FOL_helpers.
               clear -ψ_sub_SvS q_sub_SvS frX wfψ wfq;
               wf_auto2;
               simpl in *;
-              pose proof (Htmp := @free_svars_free_evar_subst Σ ψ E q);
+              pose proof (Htmp := free_svars_free_evar_subst ψ E q);
               clear -Htmp ψ_sub_SvS q_sub_SvS frX;
               set_solver
             ).
@@ -2278,7 +2257,7 @@ End FOL_helpers.
             abstract (
               clear -ψ_sub_SvS q_sub_SvS frX wfψ wfq;
               wf_auto2; simpl in *;
-              pose proof (Htmp := @free_svars_free_evar_subst Σ ψ E q);
+              pose proof (Htmp := free_svars_free_evar_subst ψ E q);
               clear -Htmp ψ_sub_SvS q_sub_SvS frX;
               set_solver
             ).
@@ -2287,7 +2266,7 @@ End FOL_helpers.
             abstract (
               clear -ψ_sub_SvS p_sub_SvS frX wfψ wfp;
               wf_auto2; simpl in *;
-              pose proof (Htmp := @free_svars_free_evar_subst Σ ψ E p);
+              pose proof (Htmp := free_svars_free_evar_subst ψ E p);
               clear -Htmp ψ_sub_SvS p_sub_SvS frX;
               set_solver
             ).
@@ -2323,7 +2302,7 @@ End FOL_helpers.
             abstract (rewrite svar_quantify_svar_open;wf_auto2).
           }
           abstract (
-            pose proof (Htmp := @free_svars_free_evar_subst Σ ψ E p);
+            pose proof (Htmp := free_svars_free_evar_subst ψ E p);
             clear -H Htmp frX ψ_sub_SvS p_sub_SvS;
             set_solver
           ).
@@ -2336,7 +2315,7 @@ End FOL_helpers.
             abstract (rewrite svar_quantify_svar_open; wf_auto2).
           }
           abstract (
-            pose proof (Htmp := @free_svars_free_evar_subst Σ ψ E q);
+            pose proof (Htmp := free_svars_free_evar_subst ψ E q);
             clear -H Htmp frX ψ_sub_SvS q_sub_SvS;
             set_solver
           ).
@@ -2352,14 +2331,14 @@ End FOL_helpers.
       }
       {
         abstract (
-          pose proof (Htmp := @free_svars_free_evar_subst Σ ψ E p);
+          pose proof (Htmp := free_svars_free_evar_subst ψ E p);
           clear -H Htmp frX ψ_sub_SvS p_sub_SvS;
           set_solver
         ).
       }
       {
         abstract (
-          pose proof (Htmp := @free_svars_free_evar_subst Σ ψ E q);
+          pose proof (Htmp := free_svars_free_evar_subst ψ E q);
           clear -H Htmp frX ψ_sub_SvS q_sub_SvS;
           set_solver
         ).
@@ -2395,7 +2374,7 @@ End FOL_helpers.
     assert (well_formed q) by (abstract (wf_auto2)).
     destruct C as [E ψ]. simpl in *.
     unfold emplace. simpl.
-    eapply @eq_prf_equiv_congruence
+    eapply eq_prf_equiv_congruence
     with (EvS := (free_evars ψ ∪ free_evars p ∪ free_evars q ∪ {[E]}))
          (SvS := (free_svars ψ ∪ free_svars p ∪ free_svars q))
          (exdepth := 0)
@@ -2499,7 +2478,7 @@ Lemma MLGoal_rewriteIff
   {Σ : Signature} (Γ : Theory) (p q : Pattern) (C : PatternCtx) l (gpi : ProofInfo)
   (wfC : PC_wf C)
   (pf : Γ ⊢i p <---> q using ( gpi)) :
-  @mkMLGoal Σ Γ l (emplace C q) ( gpi) ->
+  mkMLGoal Σ Γ l (emplace C q) ( gpi) ->
   (ProofInfoLe
   (
      (ExGen := list_to_set
@@ -2522,10 +2501,10 @@ Lemma MLGoal_rewriteIff
              then false
              else true
              ),
-      FP := gset_to_coGset (@frames_on_the_way_to_hole' Σ (free_evars (pcPattern C) ∪ free_evars p ∪ free_evars q ∪ {[pcEvar C]}) (free_svars (pcPattern C) ∪ free_svars p ∪ free_svars q) (pcEvar C) (pcPattern C) p q wfC (@extract_wfp Σ Γ p q ( gpi) pf) (@extract_wfq Σ Γ p q ( gpi) pf))
+      FP := gset_to_coGset (@frames_on_the_way_to_hole' Σ (free_evars (pcPattern C) ∪ free_evars p ∪ free_evars q ∪ {[pcEvar C]}) (free_svars (pcPattern C) ∪ free_svars p ∪ free_svars q) (pcEvar C) (pcPattern C) p q wfC (extract_wfp Γ p q ( gpi) pf) (extract_wfq Γ p q ( gpi) pf))
       ))
       ( gpi)) ->
-  @mkMLGoal Σ Γ l (emplace C p) ( gpi).
+  mkMLGoal Σ Γ l (emplace C p) ( gpi).
 Proof.
   rename pf into Hpiffq.
   intros H pile.
@@ -2551,8 +2530,8 @@ Proof.
   4: assumption.
   1: apply H.
   1: {
-    pose proof (@proved_impl_wf _ _ _ (proj1_sig H)).
-    wf_auto2.  
+    pose proof (proved_impl_wf _ _ (proj1_sig H)).
+    wf_auto2.
   }
   exact pile.
 Defined.
@@ -2905,9 +2884,9 @@ Abort.
 #[local]
 Ltac rfindContradictionTo a ll k :=
   match ll with
-    | ((mkNH ?name (! a)) :: ?m) =>
+    | ((mkNH _ ?name (! a)) :: ?m) =>
         mlApply name; mlExactn k
-    | ((mkNH _ _) :: ?m) => 
+    | ((mkNH _ _ _) :: ?m) => 
         rfindContradictionTo a m k
     | _ => fail
   end.
@@ -2915,7 +2894,7 @@ Ltac rfindContradictionTo a ll k :=
 #[local]
 Ltac findContradiction l k:=
     match l with
-       | ((mkNH _ ?a) :: ?m) => 
+       | ((mkNH _ _ ?a) :: ?m) => 
              match goal with
                 | [ |- @of_MLGoal ?Sgm (@mkMLGoal ?Sgm ?Ctx ?ll ?g ?i) ] 
                   =>
@@ -2941,11 +2920,11 @@ Ltac findContradiction_start :=
 #[local]
 Ltac breakHyps l :=
   match l with
-  | ((mkNH ?name (?x and ?y)) :: ?m) => 
+  | ((mkNH _ ?name (?x and ?y)) :: ?m) => 
       mlDestructAnd name
-  | ((mkNH ?name (?x or ?y)) :: ?m) => 
+  | ((mkNH _ ?name (?x or ?y)) :: ?m) => 
       mlDestructOr name
-  | ((mkNH ?name ?x) :: ?m)  =>
+  | ((mkNH _ ?name ?x) :: ?m)  =>
       breakHyps m
   end.
 
@@ -2956,7 +2935,7 @@ Ltac mlTautoBreak := repeat match goal with
     lazymatch g with
       | (⊥) =>
               breakHyps l
-      | _ => mlApplyMetaRaw (@useBasicReasoning _ _ _ i (@false_implies_everything _ _ g _))
+      | _ => mlApplyMetaRaw (@useBasicReasoning _ _ _ i (@bot_elim _ _ g _))
     end
 end.
 

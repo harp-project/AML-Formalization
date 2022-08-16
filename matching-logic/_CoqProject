@@ -35,6 +35,7 @@ src/StringSignature.v
 src/Logic.v
 
 src/ProofMode_base.v
+src/ProofInfo.v
 src/ProofMode_propositional.v
 src/ProofMode_firstorder.v
 src/ProofMode_fixpoint.v
