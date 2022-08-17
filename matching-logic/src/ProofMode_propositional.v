@@ -9,11 +9,8 @@ From Equations Require Import Equations.
 Require Import Coq.Program.Tactics.
 
 From MatchingLogic Require Import
-    Syntax
+    Logic
     DerivedOperators_Syntax
-    ProofSystem
-    IndexManipulation
-    wftactics
     ProofMode_base
     ProofInfo
 .
@@ -25,9 +22,8 @@ From MatchingLogic.Utils Require Import stdpp_ext.
 Import extralibrary.
 
 Import
-  MatchingLogic.Syntax.Notations
+  MatchingLogic.Logic.Notations
   MatchingLogic.DerivedOperators_Syntax.Notations
-  MatchingLogic.ProofSystem.Notations
 .
 
 Set Default Proof Mode "Classic".

@@ -5,6 +5,7 @@ From MatchingLogic Require Export Syntax
                                   StringSignature
                                   wftactics
                                   DerivedOperators_Syntax
+                                  DerivedOperators_Semantics
                                   NamedAxioms.
 
 Module Notations.
@@ -13,4 +14,5 @@ Module Notations.
          MatchingLogic.DerivedOperators_Syntax.Notations
          MatchingLogic.ProofSystem.Notations
          MatchingLogic.ApplicationContext.Notations.
+  Export Syntax.BoundVarSugar.
 End Notations.

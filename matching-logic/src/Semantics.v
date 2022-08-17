@@ -2363,9 +2363,6 @@ End semantics.
 
 
 Module Notations.
-  Declare Scope ml_scope.
-  Delimit Scope ml_scope with ml.
-
   Notation "M ⊨ᴹ phi" := (satisfies_model M phi) (left associativity, at level 50) : ml_scope.
   (* FIXME this should not be called `satisfies` *)
   Notation "G ⊨ phi" := (satisfies G phi) (left associativity, at level 50) : ml_scope.

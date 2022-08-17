@@ -195,6 +195,9 @@ Tactic Notation "mlSimpl" :=
 Tactic Notation "mlSimpl" "in" hyp(H) :=
   repeat (rewrite mlSimpl' in H); try rewrite [increase_ex _ _]/= in H; try rewrite [increase_mu _ _]/= in H.
 
+Tactic Notation "mlSortedSimpl" := simpl_sorted_quantification; try rewrite [increase_mu]/=.
+Tactic Notation "mlSortedSimpl" "in" hyp(H) := simpl_sorted_quantification H; try rewrite [increase_mu]/=.
+
 (* Test: *)
 (* Import MatchingLogic.Substitution.Notations.
 Open Scope ml_scope.

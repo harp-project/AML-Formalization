@@ -522,8 +522,6 @@ Section syntax.
 End syntax.
 
 Module Notations.
-  Declare Scope ml_scope.
-  Delimit Scope ml_scope with ml.
   (* TODO: change Bot and Top to unicode symbols *)
   (* TODO: this associativity is wrong! However, stdpp disallows defining it otherwise. We could use @ instead, associated to the left *)
   Notation "a $ b" := (patt_app a b) (at level 65, right associativity) : ml_scope.
