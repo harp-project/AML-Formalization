@@ -770,7 +770,7 @@ Section with_model.
         unfold Minterp_inhabitant in Hinh.
         replace m with (evar_valuation (update_evar_val x m ρ) x) in Hinh.
         2: { apply update_evar_val_same. }
-        rewrite -(@eval_free_evar_independent _ _ ρ x m) in Hinh.
+        rewrite -(eval_free_evar_independent ρ x m) in Hinh.
         {
           eapply evar_is_fresh_in_richer.
           2: { subst. apply set_evar_fresh_is_fresh. }
@@ -806,7 +806,7 @@ Section with_model.
         2: { apply update_evar_val_same. }
         unfold nest_ex. rewrite nest_ex_same.
         unfold Minterp_inhabitant in Hinh.
-        rewrite -(@eval_free_evar_independent _ _ ρ x m) in Hinh.
+        rewrite -(eval_free_evar_independent ρ x m) in Hinh.
         {
           eapply evar_is_fresh_in_richer.
           2: { subst. apply set_evar_fresh_is_fresh. }
@@ -851,7 +851,7 @@ Section with_model.
         unfold Minterp_inhabitant in Hinh.
         replace m with (evar_valuation (update_evar_val x m ρ) x) in Hinh.
         2: { apply update_evar_val_same. }
-        rewrite -(@eval_free_evar_independent _ _ ρ x m) in Hinh.
+        rewrite -(eval_free_evar_independent ρ x m) in Hinh.
         {
           eapply evar_is_fresh_in_richer.
           2: { subst. apply set_evar_fresh_is_fresh. }
@@ -891,7 +891,7 @@ Section with_model.
         2: { apply update_evar_val_same. }
         unfold nest_ex. rewrite nest_ex_same.
         unfold Minterp_inhabitant in Hinh.
-        rewrite -(@eval_free_evar_independent _ _ ρ x m) in Hinh.
+        rewrite -(eval_free_evar_independent ρ x m) in Hinh.
         {
           eapply evar_is_fresh_in_richer.
           2: { subst. apply set_evar_fresh_is_fresh. }

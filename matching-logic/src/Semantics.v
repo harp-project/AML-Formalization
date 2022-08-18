@@ -633,11 +633,11 @@ Section with_explicit_model.
 
   Lemma satisfies_theory_iff_satisfies_named_axioms {Σ : Signature} NAs M:
     satisfies_theory M (theory_of_NamedAxioms NAs) <->
-    forall (n : NAName NAs), satisfies_model M (NAAxiom n).
+    forall (n : NAName NAs), satisfies_model M (NAAxiom _ n).
   Proof.
     split.
     - intros. unfold satisfies_theory in H.
-      specialize (H (NAAxiom n)). apply H.
+      specialize (H (NAAxiom _ n)). apply H.
       unfold In. unfold theory_of_NamedAxioms.
       exists n. auto.
     - intros H.

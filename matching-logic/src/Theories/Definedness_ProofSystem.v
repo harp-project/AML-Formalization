@@ -49,7 +49,7 @@ Lemma phi_impl_total_phi_meta Γ ϕ i:
   Γ ⊢i ϕ using i ->
   Γ ⊢i ⌊ ϕ ⌋ using i.
 Proof.
-  intros wfϕ pile Hϕ. Search patt_imp derives_using.
+  intros wfϕ pile Hϕ.
   pose proof (ANNA := A_implies_not_not_A_ctx Γ (ϕ) AC_patt_defined).
   apply ANNA.
   { simpl.
@@ -125,8 +125,8 @@ Proof.
   apply universal_generalization with (x := ev_x) in S1'.
   3: { wf_auto2. }
   2: { eapply pile_trans;[|apply pile_refl]. try_solve_pile. }
-  replace (evar_quantify ev_x 0 (patt_defined p_x))
-    with (evar_quantify x 0 ⌈ patt_free_evar x ⌉) in S1'.
+  replace ((patt_defined p_x)^{{evar: ev_x ↦ 0}})
+    with (⌈ patt_free_evar x ⌉^{{evar: x ↦ 0}}) in S1'.
   2: { simpl. repeat case_match; auto; contradiction. }
   eapply MP.
   2: { eapply useGenericReasoning with (evs := {[x]}) (svs := ∅) (kt := false)(fp := ∅).
@@ -197,10 +197,10 @@ Proof.
   assert (S1'' : Γ ⊢i ⌈ patt_free_evar x' ⌉ using i).
   {
     (* For some reason, Coq cannot infer the implicit argument 'syntax' automatically *)
-    replace (evar_quantify ev_x 0 (patt_defined p_x))
-      with (evar_quantify x' 0 ⌈ patt_free_evar x' ⌉) in S1'.
+    replace ((patt_defined p_x)^{{evar: ev_x ↦ 0}})
+      with (⌈ patt_free_evar x' ⌉^{{evar: x' ↦ 0}}) in S1'.
     2: { simpl. repeat case_match; auto; contradiction. }
-        
+
     eapply MP.
     { apply S1'. }
     eapply useGenericReasoning.
@@ -338,7 +338,7 @@ Proof.
       { clear. set_solver. }
     }
     simpl in S8.
-    
+
     rewrite evar_quantify_subst_ctx in S8;[assumption|].
 
     simpl in S8.
@@ -352,7 +352,7 @@ Proof.
     unfold patt_forall in S9.
     unfold patt_not in S9 at 1.
 
-    assert (Heq: evar_quantify x' 0 (subst_ctx AC (patt_free_evar x' and ϕ)) = subst_ctx AC (b0 and ϕ)).
+    assert (Heq: (subst_ctx AC (patt_free_evar x' and ϕ))^{{evar: x' ↦ 0}} = subst_ctx AC (b0 and ϕ)).
     {
       rewrite evar_quantify_subst_ctx;[assumption|].
       f_equal.
@@ -404,13 +404,13 @@ Proof.
   assert (S12: Γ ⊢i ϕ ---> ex, (b0 and ϕ) using i).
   {
 
-    assert(well_formed (ex , (evar_quantify x' 0 (patt_free_evar x') and ϕ))).
+    assert(well_formed (ex , ((patt_free_evar x')^{{evar: x' ↦ 0}} and ϕ))).
     {
       unfold well_formed,well_formed_closed in *. simpl in *.
       destruct_and!. split_and!; auto.
       all: repeat case_match; auto.
     }
-    
+
     assert(Htmp: Γ ⊢i ((ex, b0) and ϕ ---> (ex, (b0 and ϕ))) using i).
     {
       toMLGoal.
@@ -418,7 +418,7 @@ Proof.
       mlIntro.
       mlDestructAnd "0".
       fromMLGoal.
-      replace b0 with (evar_quantify x' 0 (patt_free_evar x')).
+      replace b0 with ((patt_free_evar x')^{{evar: x' ↦ 0}}).
       2: { simpl. case_match;[reflexivity|congruence]. }
       apply Ex_gen.
       2: { simpl. case_match;[|congruence]. simpl.
@@ -1368,17 +1368,17 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
     intros pile wfϕ HΓ H.
 
     remember (fresh_evar ϕ) as x.
-    assert(S1: Γ ⊢i all, ((patt_bound_evar 0) ∈ml (evar_quantify x 0 ϕ)) using i).
+    assert(S1: Γ ⊢i all, ((patt_bound_evar 0) ∈ml (ϕ^{{evar: x ↦ 0}})) using i).
     {
       rewrite evar_quantify_fresh.
       { subst x.  apply set_evar_fresh_is_fresh'. }
       assumption.
     }
-    
-    assert(S2: Γ ⊢i (all, ((patt_bound_evar 0) ∈ml (evar_quantify x 0 ϕ))) ---> (patt_free_evar x ∈ml ϕ) using i).
+
+    assert(S2: Γ ⊢i (all, ((patt_bound_evar 0) ∈ml (ϕ^{{evar: x ↦ 0}}))) ---> (patt_free_evar x ∈ml ϕ) using i).
     {
-      replace (b0 ∈ml evar_quantify x 0 ϕ)
-        with (evar_quantify x 0 (patt_free_evar x ∈ml ϕ))
+      replace (b0 ∈ml ϕ^{{evar: x ↦ 0}})
+        with ((patt_free_evar x ∈ml ϕ)^{{evar: x ↦ 0}})
       .
       2: {
         simpl. case_match;[|congruence]. reflexivity.
@@ -1394,8 +1394,8 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
       { clear. set_solver. }
     }
 
-    assert(well_formed (all , b0 ∈ml evar_quantify x 0 ϕ)) by wf_auto2.
-    
+    assert(well_formed (all , b0 ∈ml ϕ^{{evar: x ↦ 0}})) by wf_auto2.
+
     assert(S3: Γ ⊢i patt_free_evar x ∈ml ϕ using i).
     {
       eapply MP. 2: apply S2.
@@ -1485,7 +1485,7 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
       simpl in S8.
       case_match; [|congruence].
       
-      replace b0 with (evar_quantify x 0 (patt_free_evar x)).
+      replace b0 with ((patt_free_evar x)^{{evar: x ↦ 0}}).
       2: { simpl. case_match; [|congruence]. reflexivity. }
       
       apply Ex_gen.
@@ -3371,7 +3371,7 @@ Proof.
   }
 
   unfold exists_quantify.
-  pose proof (Htmp := membership_exists Γ x (evar_quantify y 0 ⌈ patt_free_evar y and ϕ ⌉)).
+  pose proof (Htmp := membership_exists Γ x (⌈ patt_free_evar y and ϕ ⌉^{{evar: y ↦ 0}})).
   specialize (Htmp HΓ).
   feed specialize Htmp.
   { 

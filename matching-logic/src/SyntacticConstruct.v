@@ -419,7 +419,6 @@ Program Instance Bevar_subst_swaps_ex_nesting (ψ : Pattern) (p : well_formed_cl
 Next Obligation.
   intros ψ WFψ phi a.
   do 2 rewrite <- correctness.
-  Search nest_ex_aux bevar_subst.
   unfold nest_ex. rewrite <- nest_ex_gt; auto. 2: lia.
   rewrite Nat.add_comm. reflexivity.
 Defined.

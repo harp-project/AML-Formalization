@@ -1,7 +1,4 @@
 From Coq Require Import ssreflect ssrfun ssrbool.
-Set Implicit Arguments.
-Unset Strict Implicit.
-Unset Printing Implicit Defensive.
 
 From Ltac2 Require Import Ltac2.
 
@@ -36,6 +33,7 @@ Close Scope equations_scope. (* Because of [!] *)
 
 Import Notations.
 Open Scope ml_scope.
+Open Scope string_scope.
 
 Lemma overlapping_variables_equal {Σ : Signature} {syntax : Syntax} :
   forall x y Γ,
@@ -67,8 +65,8 @@ Proof.
     mlRewrite MH at 1. fold AnyReasoning.
     (* TODO: it is increadibly inconvienient to define concrete contexts *)
     unshelve (epose proof (MH1 := @Singleton_ctx _ Γ 
-           (⌈_⌉ $r □)
-           (⌈_⌉ $r □) pX y ltac:(wf_auto2))). 1-2: wf_auto2.
+           (⌈_⌉ $ᵣ □)
+           (⌈_⌉ $ᵣ □) pX y ltac:(wf_auto2))). 1-2: wf_auto2.
     rewrite -HeqpY in MH1.
     apply useAnyReasoning in MH1. simpl in MH1.
     (* TODO: having mlExactMeta would help here *)
@@ -86,10 +84,13 @@ Proof.
     pose proof (MH1 := @patt_and_comm _ Γ pY pX ltac:(wf_auto2) ltac:(wf_auto2)).
     mlRevertLast. apply useAnyReasoning in MH1. mlRewrite MH1 at 1.
     unshelve (epose proof (@Singleton_ctx _ Γ 
-           (⌈_⌉ $r □)
-           (⌈_⌉ $r □) pY x ltac:(wf_auto2)) as MH2). 1-2: wf_auto2.
+           (⌈_⌉ $ᵣ □)
+           (⌈_⌉ $ᵣ □) pY x ltac:(wf_auto2)) as MH2). 1-2: wf_auto2.
     rewrite -HeqpX in MH2.
     apply useAnyReasoning in MH2.
     mlIntro "H1". mlIntro "H2".
     mlApplyMeta MH2. simpl. mlSplitAnd. mlExact "H1". mlExact "H2".
 Defined.
+
+Close Scope ml_scope.
+Close Scope string_scope.

@@ -119,7 +119,7 @@ Section with_signature.
     Qed.
 
     Lemma svar_quantify_forall n X ϕ :
-      svar_quantify X n (patt_forall ϕ) = patt_forall (svar_quantify X n ϕ).
+      (patt_forall ϕ)^{{svar: X ↦ n}} = patt_forall (ϕ^{{svar: X ↦ n}}).
     Proof. simpl. unfold patt_forall. unfold patt_not. reflexivity. Qed.
 
     (** We define the simplification class instances for the derived operators: *)

@@ -1,7 +1,4 @@
 From Coq Require Import ssreflect ssrfun ssrbool.
-Set Implicit Arguments.
-Unset Strict Implicit.
-Unset Printing Implicit Defensive.
 
 Require Import Coq.Setoids.Setoid Coq.Classes.Morphisms Coq.Relations.Relations.
 Require Import Logic.IndefiniteDescription Coq.Logic.FunctionalExtensionality.
@@ -263,14 +260,14 @@ Section isomorphism.
           (* Symmetric *)
           unfold Symmetric.
           intros M1 M2 [j _].
-          exists (ModelIsomorphism_sym j).
+          exists (ModelIsomorphism_sym _ _ j).
           exact I.
       }
       {
           (* Transitive *)
           unfold Transitive.
           intros M1 M2 M3 [i _] [j _].
-          exists (ModelIsomorphism_trans i j).
+          exists (ModelIsomorphism_trans _ _ _ i j).
           exact I.
       }
   Qed.
@@ -502,7 +499,7 @@ Section isomorphism.
                   }
               }
               {
-                  pose (j := ModelIsomorphism_sym i).
+                  pose (j := ModelIsomorphism_sym _ _ i).
                   rewrite elem_of_subseteq.
                   intros x Hx.
                   rewrite elem_of_PropSet.

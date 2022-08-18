@@ -644,7 +644,7 @@ Section with_signature.
     - assumption.
     - destruct C. simpl in *.
       rename pcEvar into pcEvar0. rename pcPattern into pcPattern0.
-      assert (count_evar_occurrences pcEvar0 (evar_quantify x n pcPattern0)
+      assert (count_evar_occurrences pcEvar0 (pcPattern0^{{evar: x ↦ n}})
               = count_evar_occurrences pcEvar0 pcPattern0).
       {
         clear Hlin.
@@ -674,7 +674,7 @@ Section with_signature.
     intros Hlin. unfold svar_quantify_ctx. unfold is_linear_context in *.
     destruct C. simpl in *.
     rename pcEvar into pcEvar0. rename pcPattern into pcPattern0.
-    assert (count_evar_occurrences pcEvar0 (svar_quantify X n pcPattern0)
+    assert (count_evar_occurrences pcEvar0 (pcPattern0^{{svar: X ↦ n}})
             = count_evar_occurrences pcEvar0 pcPattern0).
     {
       clear Hlin.
@@ -724,13 +724,13 @@ Section with_signature.
     - simpl. simpl in Hx.
       rewrite IHAC.
       { set_solver. }
-      rewrite [evar_quantify x n p]evar_quantify_fresh.
+      rewrite [p^{{evar: x ↦ n}}]evar_quantify_fresh.
       unfold evar_is_fresh_in. set_solver.
       reflexivity.
     - simpl. simpl in Hx.
       rewrite IHAC.
       { set_solver. }
-      rewrite [evar_quantify x n p]evar_quantify_fresh.
+      rewrite [p^{{evar: x ↦ n}}]evar_quantify_fresh.
       unfold evar_is_fresh_in. set_solver.
       reflexivity.
   Qed.
@@ -877,7 +877,7 @@ Section with_signature.
   Proof.
     induction ψ; intros H; cbn; auto.
     * simpl in H. case_match; auto.
-    * Search bsvar_occur. *)
+    * *)
 
   Lemma nno_free_svar_subst dbi ϕ ψ X:
     well_formed_closed_mu_aux ψ dbi ->

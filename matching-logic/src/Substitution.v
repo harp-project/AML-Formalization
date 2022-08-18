@@ -2337,7 +2337,6 @@ Proof.
   rewrite (IHp (S k)); reflexivity.
 Qed.
 
-Check fold_left.
 Definition bcmcloseex
     (l : list (prod db_index evar))
     (ϕ : Pattern) : Pattern

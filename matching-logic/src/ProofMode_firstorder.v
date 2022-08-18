@@ -122,13 +122,13 @@ Section with_signature.
     ProofInfoLe ( (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)) i ->
     well_formed ϕ ->
     Γ ⊢i ϕ using i ->
-    Γ ⊢i patt_forall (evar_quantify x 0 ϕ) using i.
+    Γ ⊢i patt_forall (ϕ^{{evar: x ↦ 0}}) using i.
   Proof.
     intros pile wfϕ Hϕ.
     unfold patt_forall.
     unfold patt_not at 1.
-    replace (! evar_quantify x 0 ϕ)
-      with (evar_quantify x 0 (! ϕ))
+    replace (! ϕ^{{evar: x ↦ 0}})
+      with ((! ϕ)^{{evar: x ↦ 0}})
       by reflexivity.
     apply Ex_gen.
     { exact pile. }
@@ -143,14 +143,14 @@ Section with_signature.
 
   Lemma forall_variable_substitution Γ ϕ x:
     well_formed ϕ ->
-    Γ ⊢i (all, evar_quantify x 0 ϕ) ---> ϕ
+    Γ ⊢i (all, ϕ^{{evar: x ↦ 0}}) ---> ϕ
     using ( (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)).
   Proof.
     intros wfϕ.
 
     unfold patt_forall.
-    replace (! evar_quantify x 0 ϕ)
-      with (evar_quantify x 0 (! ϕ))
+    replace (! ϕ^{{evar: x ↦ 0}})
+      with ((! ϕ)^{{evar: x ↦ 0}})
       by reflexivity.
     apply double_neg_elim_meta.
     { wf_auto2. }
@@ -204,7 +204,7 @@ Section with_signature.
      *)
     eapply (cast_proof').
     {
-      replace ϕ₂ with (instantiate (ex, evar_quantify x 0 ϕ₂) (patt_free_evar x)) at 1.
+      replace ϕ₂ with (instantiate (ex, ϕ₂^{{evar: x ↦ 0}}) (patt_free_evar x)) at 1.
       2: { unfold instantiate.
          rewrite bevar_subst_evar_quantify_free_evar.
          now do 2 apply andb_true_iff in wfϕ₂ as [_ wfϕ₂].
@@ -417,7 +417,7 @@ Section with_signature.
     evar_is_fresh_in x ϕ₁ ->
     ProofInfoLe ( (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)) i ->
     Γ ⊢i ϕ₁ ---> ϕ₂ using i ->
-    Γ ⊢i ϕ₁ ---> all, (evar_quantify x 0 ϕ₂) using i.
+    Γ ⊢i ϕ₁ ---> all, (ϕ₂^{{evar: x ↦ 0}}) using i.
   Proof.
     intros Hfr pile Himp.
     pose proof (Hwf := proved_impl_wf _ _ (proj1_sig Himp)).
@@ -432,8 +432,8 @@ Section with_signature.
 
     eapply cast_proof'.
     {
-      replace (! evar_quantify x 0 ϕ₂)
-              with (evar_quantify x 0 (! ϕ₂))
+      replace (! ϕ₂^{{evar: x ↦ 0}})
+              with ((! ϕ₂)^{{evar: x ↦ 0}})
                    by reflexivity.
       reflexivity.
     }
@@ -604,13 +604,11 @@ Section with_signature.
       using (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅).
   Proof.
     intros Γ φ x y WF xNy Hy.
-    (*Search derives_using patt_exists.*)
     apply Ex_gen. apply pile_refl.
     apply evar_is_fresh_in_free_evar_subst. unfold evar_is_fresh_in. set_solver.
-    (*Search free_evar_subst derives_using.*)
     toMLGoal. wf_auto2.
     mlIntro "H".
-    mlAssert ("H0" : (all , evar_quantify x 0 φ)). wf_auto2.
+    mlAssert ("H0" : (all , φ^{{evar: x ↦ 0}})). wf_auto2.
   Abort.
 
   Lemma MLGoal_IntroVar : forall Γ l g i x,
@@ -619,9 +617,7 @@ Section with_signature.
     mkMLGoal Σ Γ l (g^{evar: 0 ↦ x}) i ->
     mkMLGoal Σ Γ l (all , g) i.
   Proof.
-    (*Search derives_using foldr.*)
     unfold of_MLGoal. simpl. intros Γ l g i x xN PI H wf1 wf2.
-    (*Search derives_using foldr.*)
     eapply prf_weaken_conclusion_iter_meta_meta. 5: apply H.
     all: try wf_auto2.
     toMLGoal. wf_auto2. mlIntro "H". mlIntro "H0".
