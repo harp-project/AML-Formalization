@@ -1,14 +1,9 @@
 From MatchingLogic Require Export Logic 
                                   Theories.Definedness_Syntax
                                   Theories.Definedness_ProofSystem
-                                  DerivedOperators_Syntax
-                                  Theories.Sorts_Syntax
-                                  Theories.Sorts_ProofSystem
-                                  NamedAxioms
                                   ProofMode
-                                  wftactics
                                   .
-Import MatchingLogic.Syntax.Notations MatchingLogic.DerivedOperators_Syntax.Notations.
+Import MatchingLogic.Logic.Notations MatchingLogic.DerivedOperators_Syntax.Notations.
 From Coq Require Import ssreflect ssrfun ssrbool.
 Require Export Coq.Program.Wf 
                Lia 
@@ -709,6 +704,7 @@ Section FOL_ML_correspondence.
     repeat decide equality.
     apply Σ_funcs.
     apply Σ_preds.
+    destruct d,d0. left. auto.
   Defined.
 
   Instance Symbols_countable : Countable Symbols.
@@ -949,11 +945,13 @@ Section FOL_ML_correspondence.
     do 2 rewrite andb_true_r. auto.
   Qed.
 
+  Open Scope ml_scope.
+
   Lemma well_formed_closed_ex_list n : forall start m, m > n ->
     is_true (well_formed_closed_ex_aux start m) ->
     is_true (well_formed_closed_ex_aux
      (List.fold_left
-        (λ (Acc : Pattern) (x : nat), (Acc $ patt_bound_evar x)%ml)
+        (λ (Acc : Pattern) (x : nat), (Acc $ patt_bound_evar x))
         (make_list1 n) start )
      m).
   Proof.
@@ -1026,7 +1024,7 @@ Section FOL_ML_correspondence.
   Theorem ax_wf :
     forall F, is_true (well_formed (axiom F)).
   Proof.
-    
+
     unfold axiom. intros F.
     break_match_goal.
     - unfold Definedness_Syntax.axiom. destruct name. simpl. constructor.
@@ -1038,7 +1036,7 @@ Section FOL_ML_correspondence.
           simpl. auto.  all: now simpl.
         * apply well_formed_closed_ex_prefix. simpl. rewrite well_formed_closed_ex_list.
           simpl. auto. lia. all: now simpl.
-          
+
     - unfold well_formed, well_formed_closed. apply andb_true_intro. split.
       + apply well_formed_positive_prefix. simpl. rewrite well_formed_positive_list0. auto.
         auto.
@@ -1055,7 +1053,7 @@ Section FOL_ML_correspondence.
   Next Obligation.
     intros name. apply ax_wf.
   Qed.
-  
+
   Definition base_FOL_theory : Theory := theory_of_NamedAxioms named_axioms.
 
   Definition from_FOL_theory (Γ : list form) : Theory :=
@@ -1088,8 +1086,8 @@ Section FOL_ML_correspondence.
     pose proof (have_base_FOL_theory Γ).
     set_solver.
   Qed.
-  
-  
+
+
   Notation "Γ ⊢_FOL form" := (Hilbert_proof_sys Γ form) (at level 50).
   Notation "Γ ⊢_ML form" := (@ProofSystem.derives _ Γ form) (at level 50).
 
@@ -1130,10 +1128,10 @@ Section FOL_ML_correspondence.
 
   (** This is boiler-plate *)
   Corollary bevar_subst_fold : forall n0 (v : @vec term n0) start x n,
-    bevar_subst (fold_left (λ (Acc : Pattern) (t : term), (Acc $ convert_term t)%ml)
-     start v) x n =
-  (fold_left (λ (Acc : Pattern) (t : term), (Acc $ bevar_subst (convert_term t) x n)%ml)
-     (bevar_subst start x n) v).
+    (fold_left (λ (Acc : Pattern) (t : term), (Acc $ convert_term t))
+     start v)^[evar: n ↦ x] =
+  (fold_left (λ (Acc : Pattern) (t : term), (Acc $ (convert_term t)^[evar: n ↦ x]))
+     (start^[evar: n ↦ x]) v).
   Proof.
     induction v; intros.
     * simpl. auto.
@@ -1142,7 +1140,7 @@ Section FOL_ML_correspondence.
 
   Theorem quantify_term_correspondence :
     forall t n x, convert_term (quantify_term t x n) = 
-                  evar_quantify x n (convert_term t).
+                  (convert_term t)^{{evar: x ↦ n}}.
   Proof.
     induction t; intros n x'; auto; cbn.
     * now destruct (decide (x' = x)).
@@ -1162,7 +1160,7 @@ Section FOL_ML_correspondence.
 
   Theorem quantify_form_correspondence :
     forall φ n x, convert_form (quantify_form φ x n) = 
-                  evar_quantify x n (convert_form φ).
+                  (convert_form φ)^{{evar: x ↦ n}}.
   Proof.
     induction φ; intros n x'; auto; cbn.
     * remember (@patt_sym sig (sym_pred P)) as start.
@@ -1226,13 +1224,13 @@ Section FOL_ML_correspondence.
   Theorem bevar_subst_corr_term :
     forall b t n, wf_term t n -> wf_term b (S n) ->
                   convert_term (bsubst_term b t n) = 
-                  bevar_subst (convert_term b) (convert_term t) n.
+                  (convert_term b)^[evar: n ↦ convert_term t].
   Proof.
     induction b; intros t n H H0; auto.
     * simpl. now repeat (case_match; simpl).
     * simpl. remember (@patt_sym sig (sym_fun F)) as start.
       rewrite fold_left_map.
-      assert (start = bevar_subst start (convert_term t) n) by now rewrite Heqstart.
+      assert (start = start^[evar: n ↦ convert_term t]) by now rewrite Heqstart.
       clear Heqstart. simpl in H0.
       generalize dependent start.
       induction v; intros; simpl; auto.
@@ -1243,25 +1241,25 @@ Section FOL_ML_correspondence.
         2: constructor.
         apply closed_ex_term_FOL_ML in Wf2 as Wf2'. apply closed_ex_term_FOL_ML in H as H'; auto.
         apply bevar_subst_closed_ex with (ψ := convert_term t) in Wf2'; auto.
-        rewrite -> (bevar_subst_not_occur _ Wf2'); auto.
+        rewrite -> (bevar_subst_not_occur _ _ _ Wf2'); auto.
       - do 2 rewrite bevar_subst_fold.
         simpl. simpl in H0. apply andb_true_iff in H0 as [Wf1 Wf2].
         apply closed_ex_term_FOL_ML in Wf2 as Wf2'. apply closed_ex_term_FOL_ML in H as H'; auto.
         apply bevar_subst_closed_ex with (ψ := convert_term t) in Wf2'; auto.
-        erewrite IH. rewrite -> (bevar_subst_not_occur _ Wf2'); auto.
+        erewrite IH. rewrite -> (bevar_subst_not_occur _ _ _ Wf2'); auto.
         constructor. auto. auto.
   Qed.
 
   Theorem bevar_subst_corr_form :
     forall φ t n, wf_term t n -> wf_form φ (S n) ->
                   convert_form (bsubst_form φ t n) = 
-                  bevar_subst (convert_form φ) (convert_term t) n.
+                  (convert_form φ)^[evar: n ↦ convert_term t].
   Proof.
     induction φ; intros t n H H0; auto.
     * simpl.
       remember (@patt_sym sig (sym_pred P)) as start.
       rewrite fold_left_map.
-      assert (start = bevar_subst start (convert_term t) n) by now rewrite Heqstart.
+      assert (start = start^[evar: n ↦ convert_term t]) by now rewrite Heqstart.
       clear Heqstart. revert H.
       generalize dependent start. simpl in H0.
       induction v; intros; simpl; auto.
@@ -1271,13 +1269,13 @@ Section FOL_ML_correspondence.
         rewrite bevar_subst_corr_term; auto.
         apply closed_ex_term_FOL_ML in Wf2 as Wf2'. apply closed_ex_term_FOL_ML in H as H'; auto.
         apply bevar_subst_closed_ex with (ψ := convert_term t) in Wf2'; auto. simpl.
-        rewrite -> (bevar_subst_not_occur (convert_term t) Wf2'), <- H1; auto.
+        rewrite -> (bevar_subst_not_occur _ (convert_term t) _ Wf2'), <- H1; auto.
       - auto.
       - do 2 rewrite bevar_subst_fold. simpl in H0. apply andb_true_iff in H0 as [Wf1 Wf2].
         simpl. erewrite bevar_subst_corr_term, <- H1.
         apply closed_ex_term_FOL_ML in Wf2 as Wf2'. apply closed_ex_term_FOL_ML in H as H'; auto.
         apply bevar_subst_closed_ex with (ψ := convert_term t) in Wf2'; auto. simpl.
-        rewrite -> (bevar_subst_not_occur (convert_term t) Wf2'); auto.
+        rewrite -> (bevar_subst_not_occur _ (convert_term t) _ Wf2'); auto.
         auto. auto.
     * simpl. apply andb_true_iff in H0. rewrite -> IHφ1, -> IHφ2; auto; apply H0. 
     * simpl. rewrite IHφ. auto. eapply wf_increase_term. apply H. lia. auto. auto.
@@ -1293,24 +1291,23 @@ Section FOL_ML_correspondence.
   Qed.
 
   Lemma add_forall_prefix_subst : forall n φ ψ m,
-    bevar_subst (add_forall_prefix n φ) ψ m = add_forall_prefix n (bevar_subst φ ψ (m + n)).
+    (add_forall_prefix n φ)^[evar: m ↦ ψ] = add_forall_prefix n (φ^[evar: n+m ↦ ψ]).
   Proof.
     induction n; intros.
     * cbn. auto.
-    * simpl. rewrite -> IHn, -> Nat.add_succ_comm. auto.
+    * simpl. rewrite -> IHn. rewrite<- Nat.add_succ_comm. auto.
   Qed.
 
   Lemma subst_make_list : forall n m ψ start, m > n ->
-    bevar_subst
-       (List.fold_left
-          (λ (Acc : Pattern) (x : nat),
-             (Acc $ patt_bound_evar x)%ml) 
-          (make_list1 n) start)
-       ψ m =
     (List.fold_left
           (λ (Acc : Pattern) (x : nat),
              (Acc $ patt_bound_evar x)%ml) 
-          (make_list1 n) (bevar_subst start ψ m)).
+          (make_list1 n) start)^[evar: m ↦ ψ]
+      =
+    (List.fold_left
+          (λ (Acc : Pattern) (x : nat),
+             (Acc $ patt_bound_evar x)%ml) 
+          (make_list1 n) (start^[evar: m ↦ ψ])).
   Proof.
     induction n; intros; cbn; auto.
     rewrite IHn. lia. cbn. break_match_goal; auto. lia. lia.
@@ -1348,9 +1345,9 @@ Section FOL_ML_correspondence.
   Proof.
     induction t using term_rect; intros.
     * simpl.
-      pose proof (@Ex_quan _ (from_FOL_theory Γ) (patt_equal (patt_free_evar x) (patt_bound_evar 0)) x ltac:(wf_auto2)). unfold instantiate in H0.
+      pose proof (Ex_quan (from_FOL_theory Γ) (patt_equal (patt_free_evar x) (patt_bound_evar 0)) x ltac:(wf_auto2)). unfold instantiate in H0.
       simpl in H0. eapply MP.
-      epose proof (@patt_equal_refl _ _ (patt_free_evar x) (from_FOL_theory Γ) _).
+      epose proof (patt_equal_refl (patt_free_evar x) (from_FOL_theory Γ) _).
       gapply H1. apply pile_any.
       gapply H0. apply pile_any.
     * simpl in H. inversion H.
@@ -1358,7 +1355,7 @@ Section FOL_ML_correspondence.
         gapply hypothesis. apply pile_any. apply ax_wf. apply ax_in.
       } simpl in H1, H0.
       simpl. remember (@patt_sym sig (sym_fun F)) as start.
-      assert (forall n ψ, bevar_subst start ψ n = start) as HIND. 
+      assert (forall n ψ, start^[evar: n ↦ ψ] = start) as HIND. 
         { intros. rewrite Heqstart. auto. }
       assert (is_true (mu_free start)) as HMUF. { rewrite Heqstart. constructor. }
       assert (is_true (well_formed start)) as WFS. { rewrite Heqstart. auto. }
@@ -1375,7 +1372,7 @@ Section FOL_ML_correspondence.
                    (λ (Acc : Pattern) (x : nat), (Acc $ patt_bound_evar x)%ml)
                    (make_list1 n) (start $ patt_bound_evar (S n))%ml)
                 BoundVarSugar.b0)) as A.
-        pose proof (@forall_functional_subst _ _ A (convert_term h) (from_FOL_theory Γ)).
+        pose proof (forall_functional_subst A (convert_term h) (from_FOL_theory Γ)).
         assert (mu_free A). {
           rewrite HeqA. clear H HIND H1 HeqA E1 E2 H0 h v Γ A F WFS.
           generalize dependent start. induction n; simpl.
@@ -1421,20 +1418,20 @@ Section FOL_ML_correspondence.
         simpl in H0.
         rewrite -> HeqA, -> add_forall_prefix_subst in H0.
         simpl Nat.add in H0.
-        replace (bevar_subst
+        replace (
               (ex ,
-               @patt_equal sig definedness_syntax
+               patt_equal
                  (List.fold_left
                     (λ (Acc : Pattern) (x : nat),
                        (Acc $ patt_bound_evar x)%ml) 
-                    (make_list1 n) (start $ patt_bound_evar (S n))%ml)
-                 BoundVarSugar.b0) (convert_term h) n) with
+                    (make_list1 n) (start $ patt_bound_evar (S n)))
+                 BoundVarSugar.b0)^[evar: n ↦ convert_term h]) with
              ((ex ,
-               @patt_equal sig definedness_syntax
-                 (bevar_subst (List.fold_left
+               patt_equal
+                 ((List.fold_left
                     (λ (Acc : Pattern) (x : nat),
                        (Acc $ patt_bound_evar x)%ml) 
-                    (make_list1 n) (start $ patt_bound_evar (S n))%ml) (convert_term h) (S n))
+                    (make_list1 n) (start $ patt_bound_evar (S n)))^[evar: S n ↦ convert_term h])
                  BoundVarSugar.b0)) in H by auto.
         simpl in H0.
         rewrite subst_make_list in H0. lia.
@@ -1480,7 +1477,7 @@ Section FOL_ML_correspondence.
     * eapply MP. exact IHIH1. exact IHIH2.
     * simpl. unfold is_true in *.
       epose proof (term_functionality t Γ i0).
-      pose proof (@exists_functional_subst _ _ (convert_form φ) (convert_term t) (from_FOL_theory Γ)).
+      pose proof (exists_functional_subst (convert_form φ) (convert_term t) (from_FOL_theory Γ)).
       simpl in H0. rewrite bevar_subst_corr_form; auto.
       eapply and_impl_patt2. 4: exact H. 4: apply H0.
       all: unfold well_formed, well_formed_closed in *; simpl in *.
@@ -1495,7 +1492,7 @@ Section FOL_ML_correspondence.
       all: try apply well_formed_positive_bevar_subst; auto using form_mu_free.
       all: try apply positive_form_FOL_ML.
       all: try apply positive_term_FOL_ML.
-      all: try apply bevar_subst_closed_mu.      
+      all: try apply bevar_subst_closed_mu.
       all: try eapply closed_form_FOL_ML; try eassumption.
       all: try eapply closed_mu_term_FOL_ML; try eassumption.
       all: try apply bevar_subst_closed_ex; try apply closed_ex_form_FOL_ML; try assumption.
