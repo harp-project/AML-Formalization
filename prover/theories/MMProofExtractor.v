@@ -104,13 +104,13 @@ Module MetaMath.
     match x with
     | tc c => Constant_toString c
     end.
-    
+
   Definition Label_toString (x : Label) : string :=
     match x with
     | lbl s => s
     end.
-  
-  
+
+
   Definition FloatingStmt_toString (x : FloatingStmt) : string :=
     match x with
     | fs l t var => append
@@ -145,9 +145,9 @@ Module MetaMath.
       | hs_floating f => FloatingStmt_toString f
       | hs_essential e => EssentialStmt_toString e
       end.
-    
 
-    
+
+
     Definition AxiomStmt_toString (x : AxiomStmt) : string :=
     match x with
     | axs l t lms => append

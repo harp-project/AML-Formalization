@@ -10,20 +10,14 @@ From stdpp Require Import base option.
 
 From MatchingLogic Require Import
      Utils.wflexprod
-     Syntax
-     Semantics
-     DerivedOperators_Syntax
-     ProofSystem
+     extralibrary
+     Logic
      ProofMode
-     Utils.extralibrary
-     IndexManipulation
 .
 
 
 Import
-  MatchingLogic.Syntax.Notations
-  MatchingLogic.DerivedOperators_Syntax.Notations
-  MatchingLogic.ProofSystem.Notations
+  MatchingLogic.Logic.Notations
 .
 
 
@@ -103,7 +97,7 @@ Section ml_tauto.
   Qed.
 
   Equations match_or (p : Pattern)
-    : ({ p1 : Pattern & {p2 : Pattern & p = patt_or p1 p2}}) + (forall p1 p2, p <> patt_or p1 p2)
+    : ({ p1 : Pattern & {p2 : Pattern & p = patt_or p1 p2} }) + (forall p1 p2, p <> patt_or p1 p2)
     :=
       match_or (p1 ---> p2) with match_not p1 => {
         | inl (existT p1' e) => inl _
@@ -119,13 +113,13 @@ Section ml_tauto.
     unfold patt_or.
     assert (p1 <> patt_not p0). auto.
     congruence.
-  Defined.  
+  Defined.
 
   Lemma match_or_patt_or p1 p2: is_inl (match_or (patt_or p1 p2)).
   Proof. reflexivity. Qed.
 
   Equations?  match_and (p : Pattern)
-    : ({ p1 : Pattern & {p2 : Pattern & p = patt_and p1 p2}}) + (forall p1 p2, p <> patt_and p1 p2)
+    : ({ p1 : Pattern & {p2 : Pattern & p = patt_and p1 p2} }) + (forall p1 p2, p <> patt_and p1 p2)
     :=
       match_and p with match_not p => {
         | inr _ := inr _ ;
@@ -138,7 +132,7 @@ Section ml_tauto.
                     | inl (existT np2 enp2) := inl _
                   }
               }
-          }                                        
+          }
       }.
   Proof.
     - subst. eapply existT. eapply existT. reflexivity.
@@ -162,7 +156,7 @@ Section ml_tauto.
   Qed.
 
   Equations match_imp (p : Pattern)
-    : ({ p1 : Pattern & {p2 : Pattern & p = patt_imp p1 p2}}) + (forall p1 p2, p <> patt_imp p1 p2)
+    : ({ p1 : Pattern & {p2 : Pattern & p = patt_imp p1 p2} }) + (forall p1 p2, p <> patt_imp p1 p2)
     :=
       match_imp (p1 ---> p2) := inl _ ;
       match_imp _ := inr _.
@@ -181,7 +175,7 @@ Section ml_tauto.
       match_bott _ := inr _.
   Solve Obligations with Tactics.program_simplify; CoreTactics.equations_simpl.
   Next Obligation. reflexivity. Defined.
-  
+
 
   Equations negate (p : Pattern) : Pattern by wf p (Pattern_subterm Σ) :=
     negate p with match_and p => {
@@ -209,7 +203,7 @@ Section ml_tauto.
     reflexivity.
   Qed.
 
-  
+
   (* This is an alternative function measuring the size of a pattern.
      The advantage is that the result is never zero, and therefore
      when doing induction on the size' of a pattern, the base cases are all trivially
@@ -372,7 +366,7 @@ Section ml_tauto.
       apply (Modus_ponens_alt _ _ _ Hctx); auto 20
     .
 
-    
+
     move: p Hwfp Hsz.
     induction sz; intros p Hwfp Hsz; destruct p; simpl in Hsz; try lia;
       funelim (negate _); try inversion e; subst;
@@ -432,22 +426,22 @@ Section ml_tauto.
 
       assert (Hcount_np2': count_evar_occurrences star (negate p2') = 0).
       { rewrite negate_count_evar_occurrences. apply Hcount_p2'. }
-      
+
       unfold patt_iff. unfold patt_iff in Heqstar.
-      
+
       assert (Step1: (Γ ⊢
                                 ((! (! p1' or ! p2' ---> ⊥) ---> (! p1') or negate p2')
                                    and (negate p1' or negate p2' ---> ! (! p1' or ! p2' ---> ⊥)))
-                                   
+
                      ->
                      (Γ ⊢ ((! (! p1' or ! p2' ---> ⊥) ---> negate p1' or negate p2')
                                              and (negate p1' or negate p2' ---> ! (! p1' or ! p2' ---> ⊥)))
-                                             
+
                     ))
              ).
       {
         intros BigH.
-        
+
 
         make_step
           Γ
@@ -501,7 +495,7 @@ Section ml_tauto.
           ((! (! p1' or ! p2' ---> ⊥) ---> ! p1' or ! p2')
              and ((patt_free_evar star) or negate p2' ---> ! (! p1' or ! p2' ---> ⊥)))
           (rewrite ?Hcount_p1' ?Hcount_p2' ?Hcount_np1' ?Hcount_np2')
-        .          
+        .
       }
       apply Step3. clear Step3.
 
@@ -524,7 +518,7 @@ Section ml_tauto.
           ((! (! p1' or ! p2' ---> ⊥) ---> ! p1' or ! p2')
              and (! p1' or (patt_free_evar star) ---> ! (! p1' or ! p2' ---> ⊥)))
           (rewrite ?Hcount_p1' ?Hcount_p2' ?Hcount_np1' ?Hcount_np2')
-        .          
+        . 
       }
       apply Step4. clear Step4.
 
@@ -589,7 +583,7 @@ Section ml_tauto.
 
       assert (Hcount_np2': count_evar_occurrences star (negate p2') = 0).
       { rewrite negate_count_evar_occurrences. apply Hcount_p2'. }
-      
+
       unfold patt_iff. unfold patt_iff in Heqstar.
 
       assert (Step1: (Γ ⊢
@@ -599,7 +593,7 @@ Section ml_tauto.
                       (Γ ⊢
                                 ((! (! p1' ---> p2') ---> negate p1' and negate p2')
                                    and (negate p1' and negate p2' ---> ! (! p1' ---> p2'))) )
-                                
+
              ).
       {
         intros BigH.
@@ -623,7 +617,7 @@ Section ml_tauto.
                       (Γ ⊢
                                 ((! (! p1' ---> p2') ---> ! p1' and negate p2')
                                    and (negate p1' and negate p2' ---> ! (! p1' ---> p2'))) )
-                                
+
              ).
       {
         intros BigH.
@@ -647,7 +641,7 @@ Section ml_tauto.
                       (Γ ⊢
                                 ((! (! p1' ---> p2') ---> ! p1' and ! p2')
                                    and (negate p1' and negate p2' ---> ! (! p1' ---> p2'))) )
-                                
+
              ).
       {
         intros BigH.
@@ -671,7 +665,7 @@ Section ml_tauto.
                       (Γ ⊢
                                 ((! (! p1' ---> p2') ---> ! p1' and ! p2')
                                    and (! p1' and negate p2' ---> ! (! p1' ---> p2')))  )
-                                
+
              ).
       {
         intros BigH.
@@ -775,7 +769,7 @@ Section ml_tauto.
                      ->
                      (Γ ⊢ ((! (p1 ---> p2) ---> p1 and ! p2)
                                              and (p1 and negate p2 ---> ! (p1 ---> p2)))  )
-                       
+
              ).
       {
         intros BigH.
@@ -797,7 +791,7 @@ Section ml_tauto.
 
   Lemma negate_is_bot p:
     negate p = patt_bott ->
-    p = (! patt_bott)%ml.
+    p = (! patt_bott).
   Proof.
     intros H.
     funelim (negate p); try inversion e; subst; try discriminate.
@@ -931,7 +925,7 @@ Section ml_tauto.
     - solve_match_impossibilities.
   Qed.
    *)
-  
+
   Lemma and_or_imp_size_negate p:
     and_or_imp_size (negate p) = and_or_imp_size p.
   Proof.
@@ -1053,8 +1047,8 @@ Section ml_tauto.
       pose proof (Hszp2 := max_negation_size_lt p2).
       simpl. lia.
     }
-  Qed.  
-  
+  Qed.
+
   Definition aoisz_mns_lexprod' :=
     @lexprod'
       nat
@@ -1070,7 +1064,6 @@ Section ml_tauto.
     - apply well_founded_ltof.
   Defined.
 
-  Check aoisz_mns_lexprod'.
   Definition aoisz_mns_lexprod p q :=
     aoisz_mns_lexprod'
       (and_or_imp_size p, max_negation_size p)
@@ -1082,7 +1075,7 @@ Section ml_tauto.
     apply (wf_inverse_image _ _ _ (fun x => (and_or_imp_size x, max_negation_size x))).
     apply wf_aoisz_mns_lexprod'.
   Defined.
-  
+
 
   Instance wf_aoisz_mns_lexprod_ins : WellFounded aoisz_mns_lexprod.
   Proof.
@@ -1113,7 +1106,7 @@ Section ml_tauto.
                       | inl e := pp_and (pp_atomic ap wfap) (pp_natomic ap wfap) ;
                       | inr _ := pp_atomic p wfp
                     }
-                }                 
+                }
             }
         }
     }.
@@ -1142,7 +1135,7 @@ Section ml_tauto.
       apply andb_prop in wf2. destruct wf2 as [wf21 wf22].
       unfold well_formed,well_formed_closed.
       destruct_and!. split_and!; assumption.
-      
+
     - subst. clear abstract'.
       unfold aoisz_mns_lexprod.
       unfold aoisz_mns_lexprod'.
@@ -1158,7 +1151,7 @@ Section ml_tauto.
       apply andb_prop in wf2. destruct wf2 as [wf21 wf22].
       unfold well_formed,well_formed_closed.
       destruct_and!. split_and!; assumption.
-      
+
     - subst. clear abstract'.
       unfold aoisz_mns_lexprod.
       unfold aoisz_mns_lexprod'.
@@ -1263,7 +1256,7 @@ Section ml_tauto.
              clear n n0.
              funelim (max_negation_size (! p1' or ! p2')); try inversion e; subst;
                solve_match_impossibilities.
-             
+
              clear.
              pose proof (Hsznp1' := max_negation_size_not p1').
              pose proof (Hsznp2' := max_negation_size_not p2').
@@ -1310,7 +1303,7 @@ Section ml_tauto.
              rewrite n0 n1. clear n0 n1.
              funelim (max_negation_size (! p1' and ! p2')); try inversion e; subst;
                solve_match_impossibilities.
-             
+
              clear.
              pose proof (Hsznp1' := max_negation_size_not p1').
              pose proof (Hsznp2' := max_negation_size_not p2').
@@ -1381,7 +1374,7 @@ Section ml_tauto.
       apply andb_prop in wf2. destruct wf2 as [wf21 wf22].
       unfold well_formed,well_formed_closed.
       destruct_and!. split_and!; assumption.
-      
+
     - subst.
       clear abstract'.
       apply left_lex'.
@@ -1409,7 +1402,6 @@ Section ml_tauto.
     destruct wf'p as [wf'p1 wf'p2]. destruct wf'c as [wf'c1 wf'c2].
     unfold well_formed, well_formed_closed.
     destruct_and!. split_and!; assumption.
-    
   Qed.
 
   Lemma wf_and_proj2 p q:
@@ -1426,7 +1418,6 @@ Section ml_tauto.
     destruct wf'p as [wf'p1 wf'p2]. destruct wf'c as [wf'c1 wf'c2].
     unfold well_formed, well_formed_closed.
     destruct_and!. split_and!; assumption.
-    
   Qed.
 
 
@@ -1472,7 +1463,7 @@ Section ml_tauto.
     rewrite !andbT in wfp.
     exact wfp.
   Qed.
-  
+
   Lemma wf_imp_proj1 p q:
     well_formed (p ---> q) ->
     well_formed p.
@@ -1503,9 +1494,9 @@ Section ml_tauto.
     destruct_and!. split_and!; assumption.
   Qed.
 
-  
+
   #[local] Hint Resolve pp_flatten_well_formed : core.
-  
+
   Lemma abstract'_correct Γ ap ϕ
     (wfap : well_formed ap)
     (wfϕ : well_formed ϕ):
@@ -1572,6 +1563,5 @@ Section ml_tauto.
       useBasicReasoning.
       apply pf_iff_equiv_refl; auto.
   Qed.
-      
-  
+
 End ml_tauto.

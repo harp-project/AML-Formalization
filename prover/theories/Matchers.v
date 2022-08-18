@@ -61,7 +61,7 @@ Next Obligation.
   unfold patt_or.
   assert (p1 <> patt_not p0). auto.
   congruence.
-Defined.  
+Defined.
 
 Lemma match_or_patt_or  {Σ : Signature} p1 p2: is_inl (match_or (patt_or p1 p2)).
 Proof. reflexivity. Qed.
@@ -80,7 +80,7 @@ Equations?  match_and {Σ : Signature} (p : Pattern)
           | inl (existT np2 enp2) := inl _
           }
         }
-      }                                        
+      }
     }.
 Proof.
   - subst. eapply existT. eapply existT. reflexivity.
