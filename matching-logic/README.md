@@ -21,6 +21,7 @@ Second, we have things related to matching logic syntax.
 - [`Pattern.v`](src/Pattern.v) - matching logic patterns and their well-formedness constraints
 - [`Freshness.v`](src/Freshness.v) - fresh variable generation and related lemmas and tactics
 - [`Substitution.v`](src/Substitution.v) - all kinds of substitutions and related lemmas
+- [`IndexManipulation.v`](src/IndexManipulation.v) - operations and theorems about manipulating dangling de Bruijn indices
 - [`ApplicationContext.v`](src/ApplicationContext.v) - application contexts (contexts consisting only of applications)
 - [`PatternContext.v`](src/PatternContext.v) - generic, pattern-based contexts
 - [`SyntacticConstruct.v`](src/SyntacticConstruct.v) - type classes for extending the syntax and defining syntactic sugar
@@ -32,7 +33,7 @@ Second, we have things related to matching logic syntax.
   - [`PatternCtxApplicationCtx.v`](src/SyntaxLemmas/PatternCtxApplicationCtx.v) - lemmas about conversion between generic pattern contexts and application contexts
 - [`Syntax.v`](src/Syntax.v) - remaining stuff about syntax
 - [`DerivedOperators_Syntax.v`](src/DerivedOperators_Syntax.v) - syntax of basic derived operators (e.g., `and`, `nu`, ...)
-- [`wftactics.v`](src/wftactics.v) - tactics for reasoning about well-formedness of patterns
+- [`wftactics.v`](src/wftactics.v) - tactics for reasoning about well-formedness of patterns, and simplifying patterns
 
 Third, we have things related to matching logic semantics.
 - [`Semantics.v`](src/Semantics.v) - definitions of models and semantics
@@ -42,10 +43,19 @@ Third, we have things related to matching logic semantics.
 - [`FixpointReasoning.v`](src/FixpointReasoning.v) - additional content on reasoning about the semantics of fixpoint patterns
 - [`ModelIsomorphism.v`](src/ModelIsomorphism.v) - definition of model isomorphisms; proof that model isomorphism preserves the semantics of patterns
 
+The entire syntax and semantics of the logic can be used by importing [`Logic.v`](src/Logic.v), which exports the previous modules.
+
 Fourth, things related to matching logic proof system.
 - [`ProofSystem.v`](src/ProofSystem.v) - the definition of the proof system and its basic properties
 - [`ProofSystemSoundness.v`](src/ProofSystemSoundness.v) - soundness of the proof system, connecting it with the semantics
-- [`ProofMode.v`](src/ProofMode.v) - support for formal reasoning using the proof system
+- [`ProofMode_base.v`](src/ProofMode_base.v) - describes the notations of the matching logic proof mode
+- [`ProofInfo.v`](src/ProofInfo.v) - includes theorems for reasoning about static proof information
+- [`ProofMode_propositional.v`](src/ProofMode_propositional.v) - includes theorems about the validity of propositional patterns
+- [`ProofMode_firstorder.v`](src/ProofMode_firstorder.v) - includes theorems about the validity of first-order patterns
+- [`ProofMode_fixpoint.v`](src/ProofMode_fixpoint.v) - includes theorems about the validity of fixpoint patterns
+- [`ProofMode_reshaper.v`](src/ProofMode_reshaper.v) - includes theorems about the reordering of implications
+- [`ProofMode_misc.v`](src/ProofMode_misc.v) - includes theorems about the validity of other kinds of patterns
+- [`ProofMode.v`](src/ProofMode.v) - collects the utilities of the proof mode
 
 Fifth, matching logic theories.
 - [`Theories/`](src/Theories/)
