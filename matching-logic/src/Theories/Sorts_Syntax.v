@@ -49,7 +49,7 @@ Section sorts.
   #[global]
   Program Instance Unary_inhabitant_set : Unary patt_inhabitant_set := {}.
   Next Obligation.
-    repeat rewrite correctness. reflexivity.
+    repeat rewrite pm_correctness. reflexivity.
   Defined.
 
   Definition patt_sorted_neg (sort phi : Pattern) : Pattern :=
@@ -58,7 +58,7 @@ Section sorts.
   #[global]
   Program Instance Binary_sorted_neg : Binary patt_sorted_neg := {}.
   Next Obligation.
-    repeat rewrite correctness. reflexivity.
+    repeat rewrite pm_correctness. reflexivity.
   Defined.
   Next Obligation.
     wf_auto2.
@@ -72,11 +72,11 @@ Section sorts.
   #[global]
   Program Instance sorted_exists_binder : ESortedBinder patt_exists_of_sort nest_ex := {}.
   Next Obligation.
-    repeat rewrite correctness.
+    repeat rewrite pm_correctness.
     cbn.
     rewrite (@eswap _ _ _ nest_ex _ f_swap).
-    replace (on_bevar spec_data (increase_ex spec_data a) 0) with b0. reflexivity.
-    now rewrite ezero_increase.
+    replace (on_bevar pm_spec_data (increase_ex pm_spec_data a) 0) with b0. reflexivity.
+    now rewrite pm_ezero_increase.
   Defined.
 
   Definition patt_forall_of_sort (sort phi : Pattern) : Pattern :=
@@ -88,11 +88,11 @@ Section sorts.
   #[global]
   Program Instance sorted_forall_binder : ESortedBinder patt_forall_of_sort nest_ex := {}.
   Next Obligation.
-    repeat rewrite correctness.
+    repeat rewrite pm_correctness.
     cbn.
     rewrite (@eswap _ _ _ nest_ex _ f_swap).
-    replace (on_bevar spec_data (increase_ex spec_data a) 0) with b0. reflexivity.
-    now rewrite ezero_increase.
+    replace (on_bevar pm_spec_data (increase_ex pm_spec_data a) 0) with b0. reflexivity.
+    now rewrite pm_ezero_increase.
   Defined.
 
   (* TODO patt_forall_of_sort and patt_exists_of_sorts are duals - a lemma *)

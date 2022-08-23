@@ -64,12 +64,12 @@ Section with_signature.
       we can instantiate the following type class: *)
 
   Class PatternMorphism {A : Type} (f : A -> Pattern -> Pattern) := {
-      spec_data : SpecificSubst ;
-      ezero_increase : forall a,
-        on_bevar spec_data (increase_ex spec_data a) 0 = patt_bound_evar 0 ;
-      szero_increase : forall a,
-        on_bsvar spec_data (increase_mu spec_data a) 0 = patt_bound_svar 0 ;
-      correctness : forall a (phi : Pattern), f a phi = apply_subst spec_data a phi
+      pm_spec_data : SpecificSubst ;
+      pm_ezero_increase : forall a,
+        on_bevar pm_spec_data (increase_ex pm_spec_data a) 0 = patt_bound_evar 0 ;
+      pm_szero_increase : forall a,
+        on_bsvar pm_spec_data (increase_mu pm_spec_data a) 0 = patt_bound_svar 0 ;
+      pm_correctness : forall a (phi : Pattern), f a phi = apply_subst pm_spec_data a phi
   }.
 
   (** Variable quantifications are such morphisms: *)
@@ -77,7 +77,7 @@ Section with_signature.
   #[global]
   Program Instance Evar_quantify_morphism (x' : evar) :
      PatternMorphism (evar_quantify x') := {
-    spec_data := {|
+    pm_spec_data := {|
       increase_ex := fun x => S x ;
       increase_mu := id ;
       on_fevar := fun level x => if decide (x' = x)
@@ -107,7 +107,7 @@ Section with_signature.
   #[global]
   Program Instance Svar_quantify_morphism (x' : svar) :
      PatternMorphism (svar_quantify x') := {
-    spec_data := {|
+    pm_spec_data := {|
       increase_ex := id;
       increase_mu := fun x => S x ;
       on_fevar := fun _ X => patt_free_evar X;
@@ -136,7 +136,7 @@ Section with_signature.
   #[global]
   Program Instance Bevar_subst_morphism (ψ : Pattern) :
      PatternMorphism (bevar_subst ψ) := {
-    spec_data := {|
+    pm_spec_data := {|
       increase_ex := fun x => S x ;
       increase_mu := id ;
       on_fevar := fun _ x => patt_free_evar x;
@@ -168,7 +168,7 @@ Section with_signature.
   #[global]
   Program Instance Bsvar_subst_morphism (ψ : Pattern) :
      PatternMorphism (bsvar_subst ψ) := {
-    spec_data := {|
+    pm_spec_data := {|
       increase_ex := id ;
       increase_mu := fun x => S x ;
       on_fevar := fun _ x => patt_free_evar x;
@@ -200,7 +200,7 @@ Section with_signature.
   #[global]
   Program Instance Evar_open_morphism (x : evar) :
      PatternMorphism (evar_open x) := {
-    spec_data := {|
+    pm_spec_data := {|
       increase_ex := fun x => S x ;
       increase_mu := id ;
       on_fevar := fun _ x => patt_free_evar x;
@@ -221,13 +221,13 @@ Section with_signature.
     cbn. reflexivity.
   Defined.
   Next Obligation.
-    unfold evar_open. intros. rewrite correctness. auto.
+    unfold evar_open. intros. rewrite pm_correctness. auto.
   Defined.
 
   #[global]
   Program Instance Svar_open_morphism (X : svar) :
      PatternMorphism (svar_open X) := {
-    spec_data := {|
+    pm_spec_data := {|
       increase_ex := id ;
       increase_mu := fun x => S x ;
       on_fevar := fun _ x => patt_free_evar x;
@@ -248,13 +248,13 @@ Section with_signature.
     cbn. reflexivity.
   Defined.
   Next Obligation.
-    unfold svar_open. intros. rewrite correctness. auto.
+    unfold svar_open. intros. rewrite pm_correctness. auto.
   Defined.
 
   #[global]
   Program Instance Free_evar_subst_morphism (ψ : Pattern) :
      PatternMorphism (free_evar_subst ψ) := {
-    spec_data := {|
+    pm_spec_data := {|
       increase_ex := id ;
       increase_mu := id ;
       on_fevar := fun x x' => if decide (x = x') then ψ else patt_free_evar x';
@@ -281,7 +281,7 @@ Section with_signature.
   #[global]
   Program Instance Free_svar_subst_morphism (ψ : Pattern) :
      PatternMorphism (free_svar_subst ψ) := {
-    spec_data := {|
+    pm_spec_data := {|
       increase_ex := id ;
       increase_mu := id ;
       on_fevar := fun _ x => patt_free_evar x ;
@@ -338,13 +338,13 @@ Class Nullary (nullary : Pattern) := {
 Class EBinder (binder : Pattern -> Pattern) := {
     ebinder_morphism :
       forall {A : Type} (f : A -> Pattern -> Pattern) (f_morph : PatternMorphism f) (phi : Pattern) a,
-        f a (binder phi) = binder (f (increase_ex spec_data a) phi) ;
+        f a (binder phi) = binder (f (increase_ex pm_spec_data a) phi) ;
 }.
 
 Class SBinder (binder : Pattern -> Pattern) := {
     sbinder_morphism :
       forall {A : Type} (f : A -> Pattern -> Pattern) (f_morph : PatternMorphism f) (phi : Pattern) a,
-        f a (binder phi) = binder (f (increase_mu spec_data a) phi) ;
+        f a (binder phi) = binder (f (increase_mu pm_spec_data a) phi) ;
 }.
 
 (** Next, we define instances for the primitives of matching logic: *)
@@ -352,21 +352,21 @@ Class SBinder (binder : Pattern -> Pattern) := {
 #[global]
 Program Instance EBinder_exists : EBinder patt_exists := {}.
 Next Obligation.
-  intros A f m φ a. repeat rewrite correctness.
+  intros A f m φ a. repeat rewrite pm_correctness.
   simpl. reflexivity.
 Defined.
 
 #[global]
 Program Instance SBinder_mu : SBinder patt_mu := {}.
 Next Obligation.
-  intros A f m φ a. repeat rewrite correctness.
+  intros A f m φ a. repeat rewrite pm_correctness.
   simpl. reflexivity.
 Defined.
 
 #[global]
 Program Instance Binary_imp : Binary patt_imp := {}.
 Next Obligation.
-  intros A f m φ1 φ2 a. repeat rewrite correctness.
+  intros A f m φ1 φ2 a. repeat rewrite pm_correctness.
   simpl. reflexivity.
 Defined.
 Next Obligation.
@@ -377,7 +377,7 @@ Defined.
 #[global]
 Program Instance Binary_app : Binary patt_app := {}.
 Next Obligation.
-  intros A f m φ1 φ2 a. repeat rewrite correctness.
+  intros A f m φ1 φ2 a. repeat rewrite pm_correctness.
   simpl. reflexivity.
 Defined.
 Next Obligation.
@@ -388,7 +388,7 @@ Defined.
 #[global]
 Program Instance Nullary_bott : Nullary patt_bott := {}.
 Next Obligation.
-  intros A f m a. repeat rewrite correctness.
+  intros A f m a. repeat rewrite pm_correctness.
   simpl. reflexivity.
 Defined.
 Next Obligation.
@@ -398,7 +398,7 @@ Defined.
 #[global]
 Program Instance Nullary_sym s : Nullary (patt_sym s) := {}.
 Next Obligation.
-  intros A s f m a. repeat rewrite correctness.
+  intros A s f m a. repeat rewrite pm_correctness.
   simpl. reflexivity.
 Defined.
 Next Obligation.
@@ -409,8 +409,8 @@ Class SwappableEx {A : Type} (f : A -> Pattern -> Pattern) (g : Pattern -> Patte
   (m : PatternMorphism f) :=
 {
   eswap : forall phi a,
-    apply_subst spec_data (increase_ex spec_data a) (g phi) =
-    g (apply_subst spec_data a phi) ;
+    apply_subst pm_spec_data (increase_ex pm_spec_data a) (g phi) =
+    g (apply_subst pm_spec_data a phi) ;
 }.
 
 #[global]
@@ -418,7 +418,7 @@ Program Instance Bevar_subst_swaps_ex_nesting (ψ : Pattern) (p : well_formed_cl
   SwappableEx _ nest_ex (Bevar_subst_morphism ψ).
 Next Obligation.
   intros ψ WFψ phi a.
-  do 2 rewrite <- correctness.
+  do 2 rewrite <- pm_correctness.
   unfold nest_ex. rewrite <- nest_ex_gt; auto. 2: lia.
   rewrite Nat.add_comm. reflexivity.
 Defined.
@@ -428,7 +428,7 @@ Program Instance Bsvar_subst_swaps_ex_nesting (ψ : Pattern) (p : well_formed_cl
   SwappableEx _ nest_ex (Bsvar_subst_morphism ψ).
 Next Obligation.
   intros ψ WFψ phi a.
-  do 2 rewrite <- correctness.
+  do 2 rewrite <- pm_correctness.
   unfold nest_ex.
   rewrite bsvar_subst_nest_ex_aux_comm; auto.
   apply andb_true_iff in WFψ. apply WFψ.
@@ -439,7 +439,7 @@ Program Instance Fevar_subst_swaps_ex_nesting (ψ : Pattern) (p : well_formed_cl
   SwappableEx _ nest_ex (Free_evar_subst_morphism ψ).
 Next Obligation.
   intros ψ WFψ phi a.
-  do 2 rewrite <- correctness.
+  do 2 rewrite <- pm_correctness.
   unfold nest_ex.
   rewrite nest_ex_free_evar_subst; auto.
   apply andb_true_iff in WFψ. apply WFψ.
@@ -450,7 +450,7 @@ Program Instance Fsvar_subst_swaps_ex_nesting (ψ : Pattern) (p : well_formed_cl
   SwappableEx _ nest_ex (Free_svar_subst_morphism ψ).
 Next Obligation.
   intros ψ WFψ phi a.
-  do 2 rewrite <- correctness.
+  do 2 rewrite <- pm_correctness.
   unfold nest_ex.
   rewrite nest_ex_free_svar_subst; auto.
   apply andb_true_iff in WFψ. apply WFψ.
@@ -461,7 +461,7 @@ Program Instance Evar_quantify_swaps_ex_nesting (x : evar) :
   SwappableEx _ nest_ex (Evar_quantify_morphism x).
 Next Obligation.
   intros ψ phi a.
-  do 2 rewrite <- correctness.
+  do 2 rewrite <- pm_correctness.
   unfold nest_ex. rewrite <- nest_ex_gt_evar_quantify; auto. 2: lia.
   rewrite Nat.add_comm. reflexivity.
 Defined.
@@ -471,7 +471,7 @@ Program Instance Svar_quantify_swaps_ex_nesting (X : svar) :
   SwappableEx _ nest_ex (Svar_quantify_morphism X).
 Next Obligation.
   intros ψ phi a.
-  do 2 rewrite <- correctness.
+  do 2 rewrite <- pm_correctness.
   unfold nest_ex. now rewrite nest_ex_svar_quantify.
 Defined.
 
@@ -522,7 +522,7 @@ Class ESortedBinder (binder : Pattern -> Pattern -> Pattern) (g : Pattern -> Pat
       forall {A : Type} (f : A -> Pattern -> Pattern)
          (f_morph : PatternMorphism f)
          (f_swap : SwappableEx f g f_morph) (s phi : Pattern) a,
-      f a (binder s phi) = binder (f a s) (f (increase_ex spec_data a) phi) ;
+      f a (binder s phi) = binder (f a s) (f (increase_ex pm_spec_data a) phi) ;
 }.
 
 Class SSortedBinder (binder : Pattern -> Pattern -> Pattern) (g : Pattern -> Pattern) := {
@@ -530,7 +530,7 @@ Class SSortedBinder (binder : Pattern -> Pattern -> Pattern) (g : Pattern -> Pat
       forall {A : Type} (f : A -> Pattern -> Pattern)
          (f_morph : PatternMorphism f)
          (f_swap : SwappableEx f g f_morph) (s phi : Pattern) a,
-      f a (binder s phi) = binder (f a s) (f (increase_mu spec_data a) phi) ;
+      f a (binder s phi) = binder (f a s) (f (increase_mu pm_spec_data a) phi) ;
 }.
 
 (** Next, we define the substitution simplification record: *)
@@ -637,10 +637,10 @@ Tactic Notation "mlSimpl" "in" hyp(H) :=
   Program Instance sorted_forall_binder : ESortedBinder patt_forall_of_sort nest_ex := {}.
   Next Obligation.
      intros.
-     repeat rewrite correctness.
+     repeat rewrite pm_correctness.
     cbn.
     rewrite eswap.
-    now rewrite ezero_increase.
+    now rewrite pm_ezero_increase.
   Defined.
 
 Goal forall s ψ x, (* well_formed_closed ψ -> *)

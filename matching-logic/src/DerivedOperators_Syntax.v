@@ -128,7 +128,7 @@ Section with_signature.
      Program Instance Unary_not : Unary patt_not := {}.
      Next Obligation.
        intros A f m φ a.
-       unfold patt_not. repeat rewrite correctness.
+       unfold patt_not. repeat rewrite pm_correctness.
        simpl. reflexivity.
      Defined.
      Next Obligation.
@@ -139,7 +139,7 @@ Section with_signature.
      Program Instance NVNullary_top : Nullary patt_top := {}.
      Next Obligation.
        intros A f m φ.
-       unfold patt_top. repeat rewrite correctness.
+       unfold patt_top. repeat rewrite pm_correctness.
        simpl. reflexivity.
      Defined.
      Next Obligation.
@@ -150,7 +150,7 @@ Section with_signature.
      Program Instance Binary_or : Binary patt_or := {}.
      Next Obligation.
        intros A f m φ1 φ2 a.
-       unfold patt_or. repeat rewrite correctness.
+       unfold patt_or. repeat rewrite pm_correctness.
        simpl. reflexivity.
      Defined.
      Next Obligation.
@@ -161,7 +161,7 @@ Section with_signature.
      Program Instance Binary_and : Binary patt_and := {}.
      Next Obligation.
        intros A f m φ1 φ2 a.
-       unfold patt_and. repeat rewrite correctness.
+       unfold patt_and. repeat rewrite pm_correctness.
        simpl. reflexivity.
      Defined.
      Next Obligation.
@@ -172,7 +172,7 @@ Section with_signature.
      Program Instance Binary_iff : Binary patt_iff := {}.
      Next Obligation.
        intros A f m φ1 φ2 a.
-       unfold patt_iff. repeat rewrite correctness.
+       unfold patt_iff. repeat rewrite pm_correctness.
        simpl. reflexivity.
      Defined.
      Next Obligation.
@@ -183,7 +183,7 @@ Section with_signature.
      Program Instance EBinder_forall : EBinder patt_forall := {}.
      Next Obligation.
        intros A f m φ a.
-       unfold patt_not. repeat rewrite correctness.
+       unfold patt_not. repeat rewrite pm_correctness.
        simpl. reflexivity.
      Defined.
 

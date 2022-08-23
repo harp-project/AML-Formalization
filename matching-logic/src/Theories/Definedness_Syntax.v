@@ -170,35 +170,35 @@ Section definedness.
   #[global]
   Program Instance Unary_defined : Unary patt_defined := {}.
   Next Obligation.
-    unfold patt_defined. repeat rewrite correctness.
+    unfold patt_defined. repeat rewrite pm_correctness.
     simpl. reflexivity.
   Defined.
 
   #[global]
   Program Instance Unary_total : Unary patt_total := {}.
   Next Obligation.
-    unfold patt_total. repeat rewrite correctness.
+    unfold patt_total. repeat rewrite pm_correctness.
     simpl. reflexivity.
   Defined.
 
   #[global]
   Program Instance Binary_equal : Binary patt_equal := {}.
   Next Obligation.
-    unfold patt_equal. repeat rewrite correctness.
+    unfold patt_equal. repeat rewrite pm_correctness.
     simpl. reflexivity.
   Defined.
 
   #[global]
   Program Instance Binary_subseteq : Binary patt_subseteq := {}.
   Next Obligation.
-    unfold patt_subseteq. repeat rewrite correctness.
+    unfold patt_subseteq. repeat rewrite pm_correctness.
     simpl. reflexivity.
   Defined.
 
   #[global]
   Program Instance Binary_in : Binary patt_in := {}.
   Next Obligation.
-    unfold patt_in. repeat rewrite correctness.
+    unfold patt_in. repeat rewrite pm_correctness.
     simpl. reflexivity.
   Defined.
 
