@@ -1,0 +1,130 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link href="coqdoc.css" rel="stylesheet" type="text/css" />
+<title>ApplicationContext</title>
+</head>
+
+<body>
+
+<div id="page">
+
+<div id="header">
+</div>
+
+<div id="main">
+
+<h1 class="libtitle">File ApplicationContext</h1>
+
+<div class="code">
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">ssreflect</span> <span class="id" title="var">ssrfun</span> <span class="id" title="var">ssrbool</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">stdpp</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">base</span> <span class="id" title="var">tactics</span> <span class="id" title="var">sets</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">MatchingLogic.Utils</span><br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">extralibrary</span><br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">MatchingLogic</span><br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Signature</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Pattern</span><br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Section</span> <span class="id" title="var">with_signature</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Context</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>}.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">(*&nbsp;TODO&nbsp;make&nbsp;Set&nbsp;?&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Inductive</span> <span class="id" title="var">Application_context</span> : <span class="id" title="keyword">Type</span> :=<br/>
+&nbsp;&nbsp;| <span class="id" title="var">box</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">ctx_app_l</span> (<span class="id" title="var">cc</span> : <span class="id" title="var">Application_context</span>) (<span class="id" title="var">p</span> : <span class="id" title="var">Pattern</span>) (<span class="id" title="var">Prf</span> : <span class="id" title="var">well_formed</span> <span class="id" title="var">p</span>)<br/>
+&nbsp;&nbsp;| <span class="id" title="var">ctx_app_r</span> (<span class="id" title="var">p</span> : <span class="id" title="var">Pattern</span>) (<span class="id" title="var">cc</span> : <span class="id" title="var">Application_context</span>) (<span class="id" title="var">Prf</span> : <span class="id" title="var">well_formed</span> <span class="id" title="var">p</span>)<br/>
+&nbsp;&nbsp;.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Fixpoint</span> <span class="id" title="var">AC_free_evars</span> (<span class="id" title="var">AC</span> : <span class="id" title="var">Application_context</span>) : <span class="id" title="var">EVarSet</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">AC</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">box</span> ⇒ ∅<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| @<span class="id" title="var">ctx_app_l</span> <span class="id" title="var">cc</span> <span class="id" title="var">p</span> <span class="id" title="var">_</span> ⇒ <span class="id" title="var">free_evars</span> <span class="id" title="var">p</span> ∪ <span class="id" title="var">AC_free_evars</span> <span class="id" title="var">cc</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| @<span class="id" title="var">ctx_app_r</span> <span class="id" title="var">p</span> <span class="id" title="var">cc</span> <span class="id" title="var">_</span> ⇒ <span class="id" title="var">free_evars</span> <span class="id" title="var">p</span> ∪ <span class="id" title="var">AC_free_evars</span> <span class="id" title="var">cc</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Fixpoint</span> <span class="id" title="var">subst_ctx</span> (<span class="id" title="var">C</span> : <span class="id" title="var">Application_context</span>) (<span class="id" title="var">p</span> : <span class="id" title="var">Pattern</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;: <span class="id" title="var">Pattern</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">C</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">box</span> ⇒ <span class="id" title="var">p</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| @<span class="id" title="var">ctx_app_l</span> <span class="id" title="var">C'</span> <span class="id" title="var">p'</span> <span class="id" title="var">prf</span> ⇒ <span class="id" title="var">patt_app</span> (<span class="id" title="var">subst_ctx</span> <span class="id" title="var">C'</span> <span class="id" title="var">p</span>) <span class="id" title="var">p'</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| @<span class="id" title="var">ctx_app_r</span> <span class="id" title="var">p'</span> <span class="id" title="var">C'</span> <span class="id" title="var">prf</span> ⇒ <span class="id" title="var">patt_app</span> <span class="id" title="var">p'</span> (<span class="id" title="var">subst_ctx</span> <span class="id" title="var">C'</span> <span class="id" title="var">p</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="comment">(*&nbsp;TODO&nbsp;rewrite&nbsp;using&nbsp;wc_sctx&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">wf_sctx</span> (<span class="id" title="var">C</span> : <span class="id" title="var">Application_context</span>) (<span class="id" title="var">A</span> : <span class="id" title="var">Pattern</span>) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed</span> <span class="id" title="var">A</span> = <span class="id" title="var">true</span> → <span class="id" title="var">well_formed</span> (<span class="id" title="var">subst_ctx</span> <span class="id" title="var">C</span> <span class="id" title="var">A</span>) = <span class="id" title="var">true</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">wp_sctx</span> (<span class="id" title="var">C</span> : <span class="id" title="var">Application_context</span>) (<span class="id" title="var">A</span> : <span class="id" title="var">Pattern</span>) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_positive</span> <span class="id" title="var">A</span> = <span class="id" title="var">true</span> → <span class="id" title="var">well_formed_positive</span> (<span class="id" title="var">subst_ctx</span> <span class="id" title="var">C</span> <span class="id" title="var">A</span>) = <span class="id" title="var">true</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">wcex_sctx</span> (<span class="id" title="var">C</span> : <span class="id" title="var">Application_context</span>) (<span class="id" title="var">A</span> : <span class="id" title="var">Pattern</span>) <span class="id" title="var">idx1</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_closed_ex_aux</span> <span class="id" title="var">A</span> <span class="id" title="var">idx1</span> = <span class="id" title="var">true</span> → <span class="id" title="var">well_formed_closed_ex_aux</span> (<span class="id" title="var">subst_ctx</span> <span class="id" title="var">C</span> <span class="id" title="var">A</span>) <span class="id" title="var">idx1</span> = <span class="id" title="var">true</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">wcmu_sctx</span> (<span class="id" title="var">C</span> : <span class="id" title="var">Application_context</span>) (<span class="id" title="var">A</span> : <span class="id" title="var">Pattern</span>) <span class="id" title="var">idx1</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_closed_mu_aux</span> <span class="id" title="var">A</span> <span class="id" title="var">idx1</span> = <span class="id" title="var">true</span> → <span class="id" title="var">well_formed_closed_mu_aux</span> (<span class="id" title="var">subst_ctx</span> <span class="id" title="var">C</span> <span class="id" title="var">A</span>) <span class="id" title="var">idx1</span> = <span class="id" title="var">true</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Fixpoint</span> <span class="id" title="var">free_evars_ctx</span> (<span class="id" title="var">C</span> : <span class="id" title="var">Application_context</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;: (<span class="id" title="var">EVarSet</span>) :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">C</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">box</span> ⇒ <span class="id" title="var">empty</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| @<span class="id" title="var">ctx_app_l</span> <span class="id" title="var">cc</span> <span class="id" title="var">p</span> <span class="id" title="var">prf</span> ⇒ <span class="id" title="var">union</span> (<span class="id" title="var">free_evars_ctx</span> <span class="id" title="var">cc</span>) (<span class="id" title="var">free_evars</span> <span class="id" title="var">p</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| @<span class="id" title="var">ctx_app_r</span> <span class="id" title="var">p</span> <span class="id" title="var">cc</span> <span class="id" title="var">prf</span> ⇒ <span class="id" title="var">union</span> (<span class="id" title="var">free_evars</span> <span class="id" title="var">p</span>) (<span class="id" title="var">free_evars_ctx</span> <span class="id" title="var">cc</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">ApplicationContext2Pattern</span> (<span class="id" title="var">boxvar</span> : <span class="id" title="tactic">evar</span>) (<span class="id" title="var">AC</span> : <span class="id" title="var">Application_context</span>) :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">subst_ctx</span> <span class="id" title="var">AC</span> (<span class="id" title="var">patt_free_evar</span> <span class="id" title="var">boxvar</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">ApplicationContext2Pattern_one_occ</span> (<span class="id" title="var">AC</span> : <span class="id" title="var">Application_context</span>) (<span class="id" title="var">boxvar</span> : <span class="id" title="tactic">evar</span>):<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">boxvar</span> ∉ <span class="id" title="var">free_evars_ctx</span> <span class="id" title="var">AC</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">count_evar_occurrences</span> <span class="id" title="var">boxvar</span> (<span class="id" title="var">ApplicationContext2Pattern</span> <span class="id" title="var">boxvar</span> <span class="id" title="var">AC</span>) = 1.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">End</span> <span class="id" title="var">with_signature</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Module</span> <span class="id" title="var">Notations</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Notation</span> &quot;□" := <span class="id" title="var">box</span>.<br/>
+<span class="id" title="keyword">Notation</span> &quot;p '$ₗ' C" := (@<span class="id" title="var">ctx_app_l</span> <span class="id" title="var">_</span> <span class="id" title="var">p</span> <span class="id" title="var">C</span> <span class="id" title="var">_</span>) (<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 65).<br/>
+<span class="id" title="keyword">Notation</span> &quot;C '$ᵣ' p" := (@<span class="id" title="var">ctx_app_r</span> <span class="id" title="var">_</span> <span class="id" title="var">C</span> <span class="id" title="var">p</span> <span class="id" title="var">_</span>) (<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 65).<br/>
+<span class="id" title="keyword">Notation</span> &quot;C .[ □ ↦ p ]" := (<span class="id" title="var">subst_ctx</span> <span class="id" title="var">C</span> <span class="id" title="var">p</span>)<br/>
+&nbsp;&nbsp;&nbsp;(<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 2, <span class="id" title="var">format</span> "C .[ □ ↦ p ]").<br/>
+
+<br/>
+<span class="id" title="keyword">End</span> <span class="id" title="var">Notations</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">free_evars_subst_ctx</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} <span class="id" title="var">AC</span> <span class="id" title="var">ϕ</span>:<br/>
+<span class="id" title="var">free_evars</span> (<span class="id" title="var">subst_ctx</span> <span class="id" title="var">AC</span> <span class="id" title="var">ϕ</span>) = <span class="id" title="var">AC_free_evars</span> <span class="id" title="var">AC</span> ∪ <span class="id" title="var">free_evars</span> <span class="id" title="var">ϕ</span>.<br/>
+</div>
+<hr/>This page has been generated by <a href="http://coq.inria.fr/">coqdoc</a>
+</div>
+
+</div>
+
+</body>
+</html>

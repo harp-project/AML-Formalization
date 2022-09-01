@@ -1,0 +1,307 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link href="coqdoc.css" rel="stylesheet" type="text/css" />
+<title>OpmlSignature</title>
+</head>
+
+<body>
+
+<div id="page">
+
+<div id="header">
+</div>
+
+<div id="main">
+
+<h1 class="libtitle">File OpmlSignature</h1>
+
+<div class="code">
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">ssreflect</span> <span class="id" title="var">ssrfun</span> <span class="id" title="var">ssrbool</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq.Classes</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">RelationClasses</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">stdpp</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">countable</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">infinite</span><br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Class</span> <span class="id" title="var">OPMLSorts</span> := {<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">opml_sort</span> : <span class="id" title="keyword">Set</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">opml_sort_eqdec</span> :: <span class="id" title="var">EqDecision</span> <span class="id" title="var">opml_sort</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">opml_sort_countable</span> :: <span class="id" title="var">Countable</span> <span class="id" title="var">opml_sort</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">opml_subsort</span> : <span class="id" title="var">relation</span> <span class="id" title="var">opml_sort</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">opml_subsort_po</span> :: <span class="id" title="var">PartialOrder</span> <span class="id" title="var">opml_subsort</span>;<br/>
+}.<br/>
+
+<br/>
+<span class="id" title="keyword">Class</span> <span class="id" title="var">OPMLVariables</span> {<span class="id" title="var">Ss</span> : <span class="id" title="var">OPMLSorts</span>} := <span class="id" title="var">mkOPMLVariables</span> {<br/>
+&nbsp;&nbsp;<span class="id" title="var">opml_evar</span> : <span class="id" title="var">opml_sort</span> → <span class="id" title="keyword">Set</span>;<br/>
+&nbsp;&nbsp;<span class="id" title="var">opml_svar</span> : <span class="id" title="var">opml_sort</span> → <span class="id" title="keyword">Set</span>;<br/>
+&nbsp;&nbsp;<span class="id" title="var">opml_evar_eqdec</span> :: <span class="id" title="keyword">∀</span> <span class="id" title="var">s</span>, <span class="id" title="var">EqDecision</span> (<span class="id" title="var">opml_evar</span> <span class="id" title="var">s</span>);<br/>
+&nbsp;&nbsp;<span class="id" title="var">opml_evar_countable</span> :: <span class="id" title="keyword">∀</span> <span class="id" title="var">s</span>, <span class="id" title="var">Countable</span> (<span class="id" title="var">opml_evar</span> <span class="id" title="var">s</span>);<br/>
+&nbsp;&nbsp;<span class="id" title="var">opml_evar_infinite</span> :: <span class="id" title="keyword">∀</span> <span class="id" title="var">s</span>, <span class="id" title="var">Infinite</span> (<span class="id" title="var">opml_evar</span> <span class="id" title="var">s</span>);<br/>
+&nbsp;&nbsp;<span class="id" title="var">opml_svar_eqdec</span> :: <span class="id" title="keyword">∀</span> <span class="id" title="var">s</span>, <span class="id" title="var">EqDecision</span> (<span class="id" title="var">opml_svar</span> <span class="id" title="var">s</span>);<br/>
+&nbsp;&nbsp;<span class="id" title="var">opml_svar_countable</span> :: <span class="id" title="keyword">∀</span> <span class="id" title="var">s</span>, <span class="id" title="var">Countable</span> (<span class="id" title="var">opml_svar</span> <span class="id" title="var">s</span>);<br/>
+&nbsp;&nbsp;<span class="id" title="var">opml_svar_infinite</span> :: <span class="id" title="keyword">∀</span> <span class="id" title="var">s</span>, <span class="id" title="var">Infinite</span> (<span class="id" title="var">opml_svar</span> <span class="id" title="var">s</span>);<br/>
+}.<br/>
+
+<br/>
+<span class="id" title="keyword">Class</span> <span class="id" title="var">OPMLSymbols</span> {<span class="id" title="var">Ss</span> : <span class="id" title="var">OPMLSorts</span>} := {<br/>
+&nbsp;&nbsp;<span class="id" title="var">opml_symbol</span> : <span class="id" title="keyword">Set</span>;<br/>
+&nbsp;&nbsp;<span class="id" title="var">opml_sym_eqdec</span> :: <span class="id" title="var">EqDecision</span> <span class="id" title="var">opml_symbol</span>;<br/>
+&nbsp;&nbsp;<span class="id" title="var">opml_sym_countable</span> :: <span class="id" title="var">Countable</span> <span class="id" title="var">opml_symbol</span>;<br/>
+<br/>
+&nbsp;&nbsp;<span class="id" title="var">opml_arg_sorts</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">opml_symbol</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">list</span> <span class="id" title="var">opml_sort</span> ;<br/>
+&nbsp;&nbsp;<br/>
+&nbsp;&nbsp;<span class="id" title="var">opml_ret_sort</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">opml_symbol</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">opml_sort</span> ;<br/>
+}.<br/>
+
+<br/>
+<span class="id" title="keyword">Class</span> <span class="id" title="var">OPMLSignature</span> := {<br/>
+&nbsp;&nbsp;<span class="id" title="var">opml_sorts</span> :: <span class="id" title="var">OPMLSorts</span> ;<br/>
+&nbsp;&nbsp;<span class="id" title="var">opml_variables</span> :: <span class="id" title="var">OPMLVariables</span>;<br/>
+&nbsp;&nbsp;<span class="id" title="var">opml_symbols</span> :: <span class="id" title="var">OPMLSymbols</span>;<br/>
+}.<br/>
+
+<br/>
+<span class="id" title="keyword">Record</span> <span class="id" title="var">OPMLSignatureMorphism</span> (<span class="id" title="var">Σ1</span> <span class="id" title="var">Σ2</span> : <span class="id" title="var">OPMLSignature</span>) := {<br/>
+&nbsp;&nbsp;<span class="id" title="var">osm_sorts</span> : @<span class="id" title="var">opml_sort</span> (@<span class="id" title="var">opml_sorts</span> <span class="id" title="var">Σ1</span>) → @<span class="id" title="var">opml_sort</span> (@<span class="id" title="var">opml_sorts</span> <span class="id" title="var">Σ2</span>) ;<br/>
+&nbsp;&nbsp;<br/>
+&nbsp;&nbsp;<span class="id" title="var">osm_evars</span> : <span class="id" title="keyword">∀</span> (<span class="id" title="var">s</span> : @<span class="id" title="var">opml_sort</span> (@<span class="id" title="var">opml_sorts</span> <span class="id" title="var">Σ1</span>)),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;@<span class="id" title="var">opml_evar</span> (@<span class="id" title="var">opml_sorts</span> <span class="id" title="var">Σ1</span>) (@<span class="id" title="var">opml_variables</span> <span class="id" title="var">Σ1</span>) <span class="id" title="var">s</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;@<span class="id" title="var">opml_evar</span> (@<span class="id" title="var">opml_sorts</span> <span class="id" title="var">Σ2</span>) (@<span class="id" title="var">opml_variables</span> <span class="id" title="var">Σ2</span>) (<span class="id" title="var">osm_sorts</span> <span class="id" title="var">s</span>);<br/>
+&nbsp;&nbsp;<br/>
+&nbsp;&nbsp;<span class="id" title="var">osm_svars</span> : <span class="id" title="keyword">∀</span> (<span class="id" title="var">s</span> : @<span class="id" title="var">opml_sort</span> (@<span class="id" title="var">opml_sorts</span> <span class="id" title="var">Σ1</span>)),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;@<span class="id" title="var">opml_svar</span> (@<span class="id" title="var">opml_sorts</span> <span class="id" title="var">Σ1</span>) (@<span class="id" title="var">opml_variables</span> <span class="id" title="var">Σ1</span>) <span class="id" title="var">s</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;@<span class="id" title="var">opml_svar</span> (@<span class="id" title="var">opml_sorts</span> <span class="id" title="var">Σ2</span>) (@<span class="id" title="var">opml_variables</span> <span class="id" title="var">Σ2</span>) (<span class="id" title="var">osm_sorts</span> <span class="id" title="var">s</span>);<br/>
+}.<br/>
+
+<br/>
+<span class="id" title="keyword">Record</span> <span class="id" title="var">OPMLSignatureExtension</span><br/>
+&nbsp;&nbsp;{<span class="id" title="var">_sorts</span> : <span class="id" title="var">OPMLSorts</span>}<br/>
+&nbsp;&nbsp;{<span class="id" title="var">_vars</span> : <span class="id" title="var">OPMLVariables</span>} <br/>
+:= {<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">ose_new_sort</span> : <span class="id" title="keyword">Set</span> ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">ose_new_sort_eqdec</span> :: <span class="id" title="var">EqDecision</span> <span class="id" title="var">ose_new_sort</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">ose_new_sort_countable</span> :: <span class="id" title="var">Countable</span> <span class="id" title="var">ose_new_sort</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">ose_new_subsort</span> : <span class="id" title="var">relation</span> <span class="id" title="var">ose_new_sort</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">ose_new_subsort_po</span> :: <span class="id" title="var">PartialOrder</span> <span class="id" title="var">ose_new_subsort</span>;<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">ose_new_evar</span> : <span class="id" title="var">ose_new_sort</span> → <span class="id" title="keyword">Set</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">ose_new_svar</span> : <span class="id" title="var">ose_new_sort</span> → <span class="id" title="keyword">Set</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">ose_new_evar_eqdec</span> :: <span class="id" title="keyword">∀</span> <span class="id" title="var">s</span>, <span class="id" title="var">EqDecision</span> (<span class="id" title="var">ose_new_evar</span> <span class="id" title="var">s</span>);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">ose_new_evar_countable</span> :: <span class="id" title="keyword">∀</span> <span class="id" title="var">s</span>, <span class="id" title="var">Countable</span> (<span class="id" title="var">ose_new_evar</span> <span class="id" title="var">s</span>);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">ose_new_evar_infinite</span> :: <span class="id" title="keyword">∀</span> <span class="id" title="var">s</span>, <span class="id" title="var">Infinite</span> (<span class="id" title="var">ose_new_evar</span> <span class="id" title="var">s</span>);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">ose_new_svar_eqdec</span> :: <span class="id" title="keyword">∀</span> <span class="id" title="var">s</span>, <span class="id" title="var">EqDecision</span> (<span class="id" title="var">ose_new_svar</span> <span class="id" title="var">s</span>);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">ose_new_svar_countable</span> :: <span class="id" title="keyword">∀</span> <span class="id" title="var">s</span>, <span class="id" title="var">Countable</span> (<span class="id" title="var">ose_new_svar</span> <span class="id" title="var">s</span>);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">ose_new_svar_infinite</span> :: <span class="id" title="keyword">∀</span> <span class="id" title="var">s</span>, <span class="id" title="var">Infinite</span> (<span class="id" title="var">ose_new_svar</span> <span class="id" title="var">s</span>);<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">(*&nbsp;We&nbsp;will&nbsp;ignore&nbsp;subsorting&nbsp;for&nbsp;now&nbsp;*)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">ose_new_symbol</span> : <span class="id" title="keyword">Set</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">ose_new_sym_eqdec</span> :: <span class="id" title="var">EqDecision</span> <span class="id" title="var">ose_new_symbol</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">ose_new_sym_countable</span> :: <span class="id" title="var">Countable</span> <span class="id" title="var">ose_new_symbol</span>;<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">ose_new_arg_sorts</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">ose_new_symbol</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">list</span> (<span class="id" title="var">ose_new_sort</span>+<span class="id" title="var">opml_sort</span>)%<span class="id" title="keyword">type</span> ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">ose_new_ret_sort</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">ose_new_symbol</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">ose_new_sort</span>+<span class="id" title="var">opml_sort</span>)%<span class="id" title="keyword">type</span> ;<br/>
+}.<br/>
+
+<br/>
+<span class="id" title="keyword">Program Definition</span> <span class="id" title="var">opml_signature_extend</span><br/>
+&nbsp;&nbsp;(<span class="id" title="var">Σ</span> : <span class="id" title="var">OPMLSignature</span>)<br/>
+&nbsp;&nbsp;(<span class="id" title="var">X</span> : <span class="id" title="var">OPMLSignatureExtension</span>)<br/>
+&nbsp;&nbsp;: <span class="id" title="var">OPMLSignature</span><br/>
+:= {|<br/>
+&nbsp;&nbsp;<span class="id" title="var">OpmlSignature.opml_sorts</span> := {|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">opml_sort</span> := ((<span class="id" title="var">ose_new_sort</span> <span class="id" title="var">X</span>)+(@<span class="id" title="var">opml_sort</span> (@<span class="id" title="var">opml_sorts</span> <span class="id" title="var">Σ</span>)))%<span class="id" title="keyword">type</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">opml_subsort</span> := <span class="id" title="keyword">fun</span> <span class="id" title="var">x</span> <span class="id" title="var">y</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">x</span>,<span class="id" title="var">y</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">inl</span> <span class="id" title="var">x'</span>, <span class="id" title="var">inl</span> <span class="id" title="var">y'</span> ⇒ <span class="id" title="var">ose_new_subsort</span> <span class="id" title="var">X</span> <span class="id" title="var">x'</span> <span class="id" title="var">y'</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">inr</span> <span class="id" title="var">x'</span>, <span class="id" title="var">inr</span> <span class="id" title="var">y'</span> ⇒ @<span class="id" title="var">opml_subsort</span> (@<span class="id" title="var">opml_sorts</span> <span class="id" title="var">Σ</span>) <span class="id" title="var">x'</span> <span class="id" title="var">y'</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">_</span>,<span class="id" title="var">_</span> ⇒ <span class="id" title="var">False</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;;<br/>
+&nbsp;&nbsp;|};<br/>
+&nbsp;&nbsp;<span class="id" title="var">opml_variables</span> := @<span class="id" title="var">mkOPMLVariables</span> (<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">(*&nbsp;This&nbsp;is&nbsp;an&nbsp;ugly&nbsp;copy-paste&nbsp;but&nbsp;I&nbsp;do&nbsp;not&nbsp;know&nbsp;how&nbsp;to&nbsp;access&nbsp;the&nbsp;above-defined&nbsp;opml_sorts.&nbsp;*)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">opml_sort</span> := ((<span class="id" title="var">ose_new_sort</span> <span class="id" title="var">X</span>)+(@<span class="id" title="var">opml_sort</span> (@<span class="id" title="var">opml_sorts</span> <span class="id" title="var">Σ</span>)))%<span class="id" title="keyword">type</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;|})<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="keyword">fun</span> (<span class="id" title="var">s</span> : ((<span class="id" title="var">ose_new_sort</span> <span class="id" title="var">X</span>)+(@<span class="id" title="var">opml_sort</span> (@<span class="id" title="var">opml_sorts</span> <span class="id" title="var">Σ</span>)))%<span class="id" title="keyword">type</span>) ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">s</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">inl</span> <span class="id" title="var">s0</span> ⇒ <span class="id" title="var">ose_new_evar</span> <span class="id" title="var">X</span> <span class="id" title="var">s0</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">inr</span> <span class="id" title="var">s0</span> ⇒ @<span class="id" title="var">opml_evar</span> (@<span class="id" title="var">opml_sorts</span> <span class="id" title="var">Σ</span>) (@<span class="id" title="var">opml_variables</span> <span class="id" title="var">Σ</span>) <span class="id" title="var">s0</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="keyword">fun</span> (<span class="id" title="var">s</span> : ((<span class="id" title="var">ose_new_sort</span> <span class="id" title="var">X</span>)+(@<span class="id" title="var">opml_sort</span> (@<span class="id" title="var">opml_sorts</span> <span class="id" title="var">Σ</span>)))%<span class="id" title="keyword">type</span>) ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">s</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">inl</span> <span class="id" title="var">s0</span> ⇒ <span class="id" title="var">ose_new_svar</span> <span class="id" title="var">X</span> <span class="id" title="var">s0</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">inr</span> <span class="id" title="var">s0</span> ⇒ @<span class="id" title="var">opml_svar</span> (@<span class="id" title="var">opml_sorts</span> <span class="id" title="var">Σ</span>) (@<span class="id" title="var">opml_variables</span> <span class="id" title="var">Σ</span>) <span class="id" title="var">s0</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">_</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">_</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">_</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">_</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">_</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">_</span><br/>
+&nbsp;&nbsp;;<br/>
+&nbsp;&nbsp;<span class="id" title="var">opml_symbols</span> := {|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">opml_symbol</span> := ((<span class="id" title="var">ose_new_symbol</span> <span class="id" title="var">X</span>)+(@<span class="id" title="var">opml_symbol</span> (@<span class="id" title="var">opml_sorts</span> <span class="id" title="var">Σ</span>) (@<span class="id" title="var">opml_symbols</span> <span class="id" title="var">Σ</span>)))%<span class="id" title="keyword">type</span> ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">opml_sym_eqdec</span> := <span class="id" title="var">_</span> ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">opml_sym_countable</span> := <span class="id" title="var">_</span> ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">opml_arg_sorts</span> := <span class="id" title="keyword">fun</span> <span class="id" title="var">s</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">s</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">inl</span> <span class="id" title="var">s'</span> ⇒ <span class="id" title="var">ose_new_arg_sorts</span> <span class="id" title="var">X</span> <span class="id" title="var">s'</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">inr</span> <span class="id" title="var">s'</span> ⇒ <span class="id" title="keyword">let</span> <span class="id" title="var">l</span> := @<span class="id" title="var">opml_arg_sorts</span> (@<span class="id" title="var">opml_sorts</span> <span class="id" title="var">Σ</span>) (@<span class="id" title="var">opml_symbols</span> <span class="id" title="var">Σ</span>) <span class="id" title="var">s'</span> <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">inr</span> &lt;$&gt; <span class="id" title="var">l</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">opml_ret_sort</span> := <span class="id" title="keyword">fun</span> <span class="id" title="var">s</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">s</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">inl</span> <span class="id" title="var">s'</span> ⇒ <span class="id" title="var">ose_new_ret_sort</span> <span class="id" title="var">X</span> <span class="id" title="var">s'</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">inr</span> <span class="id" title="var">s'</span> ⇒ <span class="id" title="keyword">let</span> <span class="id" title="var">ss</span> := @<span class="id" title="var">opml_ret_sort</span> (@<span class="id" title="var">opml_sorts</span> <span class="id" title="var">Σ</span>) (@<span class="id" title="var">opml_symbols</span> <span class="id" title="var">Σ</span>) <span class="id" title="var">s'</span> <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">inr</span> <span class="id" title="var">ss</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;;<br/>
+&nbsp;&nbsp;|};<br/>
+|}.<br/>
+<span class="comment">(*Next&nbsp;Obligation.<br/>
+&nbsp;&nbsp;intros.&nbsp;apply&nbsp;_.<br/>
+Defined.<br/>
+Next&nbsp;Obligation.<br/>
+&nbsp;&nbsp;intros.<br/>
+&nbsp;&nbsp;apply&nbsp;sum_countable.<br/>
+Defined.<br/>
+*)</span><br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">opml_signature_extend_morphism</span><br/>
+&nbsp;&nbsp;(<span class="id" title="var">Σ</span> : <span class="id" title="var">OPMLSignature</span>)<br/>
+&nbsp;&nbsp;(<span class="id" title="var">X</span> : <span class="id" title="var">OPMLSignatureExtension</span>)<br/>
+&nbsp;&nbsp;: <span class="id" title="var">OPMLSignatureMorphism</span> <span class="id" title="var">Σ</span> (<span class="id" title="var">opml_signature_extend</span> <span class="id" title="var">Σ</span> <span class="id" title="var">X</span>)<br/>
+:= <br/>
+&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">Σ_sort</span> := @<span class="id" title="var">opml_sort</span> (@<span class="id" title="var">opml_sorts</span> <span class="id" title="var">Σ</span>) <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">Σ_evar</span> := @<span class="id" title="var">opml_evar</span> (@<span class="id" title="var">opml_sorts</span> <span class="id" title="var">Σ</span>) (@<span class="id" title="var">opml_variables</span> <span class="id" title="var">Σ</span>) <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">Σ_svar</span> := @<span class="id" title="var">opml_svar</span> (@<span class="id" title="var">opml_sorts</span> <span class="id" title="var">Σ</span>) (@<span class="id" title="var">opml_variables</span> <span class="id" title="var">Σ</span>) <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">Σ'</span> := (<span class="id" title="var">opml_signature_extend</span> <span class="id" title="var">Σ</span> <span class="id" title="var">X</span>) <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">Σ'_sort</span> := (@<span class="id" title="var">opml_sort</span> (@<span class="id" title="var">opml_sorts</span> (<span class="id" title="var">Σ'</span>))) <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">Σ'_evar</span> := @<span class="id" title="var">opml_evar</span> (@<span class="id" title="var">opml_sorts</span> <span class="id" title="var">Σ'</span>) (@<span class="id" title="var">opml_variables</span> <span class="id" title="var">Σ'</span>) <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">Σ'_svar</span> := @<span class="id" title="var">opml_svar</span> (@<span class="id" title="var">opml_sorts</span> <span class="id" title="var">Σ'</span>) (@<span class="id" title="var">opml_variables</span> <span class="id" title="var">Σ'</span>) <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;{|<br/>
+&nbsp;&nbsp;<span class="id" title="var">osm_sorts</span> := <span class="id" title="keyword">fun</span> <span class="id" title="var">s</span> ⇒ (<span class="id" title="var">inr</span> <span class="id" title="var">s</span>):<span class="id" title="var">Σ'_sort</span> ;<br/>
+&nbsp;&nbsp;<span class="id" title="var">osm_evars</span> := <span class="id" title="keyword">fun</span> (<span class="id" title="var">s</span> : <span class="id" title="var">Σ_sort</span>) (<span class="id" title="var">x</span> : <span class="id" title="var">Σ_evar</span> <span class="id" title="var">s</span>) ⇒ (<span class="id" title="var">x</span>):(<span class="id" title="var">Σ'_evar</span> (<span class="id" title="var">inr</span> <span class="id" title="var">s</span>)) ;<br/>
+&nbsp;&nbsp;<span class="id" title="var">osm_svars</span> := <span class="id" title="keyword">fun</span> (<span class="id" title="var">s</span> : <span class="id" title="var">Σ_sort</span>) (<span class="id" title="var">x</span> : <span class="id" title="var">Σ_svar</span> <span class="id" title="var">s</span>) ⇒ (<span class="id" title="var">x</span>):(<span class="id" title="var">Σ'_svar</span> (<span class="id" title="var">inr</span> <span class="id" title="var">s</span>)) ;<br/>
+|}<br/>
+.<br/>
+
+<br/>
+<span class="comment">(*<br/>
+Definition&nbsp;SignatureFamilyT&nbsp;:&nbsp;Type&nbsp;:=&nbsp;forall&nbsp;(I&nbsp;:&nbsp;Type),&nbsp;I&nbsp;-&gt;&nbsp;OPMLSignature.<br/>
+<br/>
+*)</span><br/>
+
+<br/>
+<span class="id" title="keyword">Program Definition</span> <span class="id" title="var">signature_union</span> (<span class="id" title="var">Σ1</span> <span class="id" title="var">Σ2</span> : <span class="id" title="var">OPMLSignature</span>) : <span class="id" title="var">OPMLSignature</span> := {|<br/>
+&nbsp;&nbsp;<span class="id" title="var">opml_sorts</span> := {|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">opml_sort</span> := ((@<span class="id" title="var">opml_sort</span> (@<span class="id" title="var">opml_sorts</span> <span class="id" title="var">Σ1</span>))+(@<span class="id" title="var">opml_sort</span> (@<span class="id" title="var">opml_sorts</span> <span class="id" title="var">Σ2</span>)))%<span class="id" title="keyword">type</span> ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">opml_sort_eqdec</span> := <span class="id" title="var">_</span> ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">opml_sort_countable</span> := <span class="id" title="var">_</span> ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">opml_subsort</span> := <span class="id" title="keyword">fun</span> <span class="id" title="var">s1</span> <span class="id" title="var">s2</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">s1</span>, <span class="id" title="var">s2</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">inl</span> <span class="id" title="var">s1'</span>, <span class="id" title="var">inl</span> <span class="id" title="var">s2'</span> ⇒ @<span class="id" title="var">opml_subsort</span> (@<span class="id" title="var">opml_sorts</span> <span class="id" title="var">Σ1</span>) <span class="id" title="var">s1'</span> <span class="id" title="var">s2'</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">inr</span> <span class="id" title="var">s1'</span>, <span class="id" title="var">inr</span> <span class="id" title="var">s2'</span> ⇒ @<span class="id" title="var">opml_subsort</span> (@<span class="id" title="var">opml_sorts</span> <span class="id" title="var">Σ2</span>) <span class="id" title="var">s1'</span> <span class="id" title="var">s2'</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">_</span>, <span class="id" title="var">_</span> ⇒ <span class="id" title="var">False</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span> ;<br/>
+&nbsp;&nbsp;|} ;<br/>
+&nbsp;&nbsp;<span class="id" title="var">opml_variables</span> := @<span class="id" title="var">mkOPMLVariables</span> <span class="id" title="var">_</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="keyword">fun</span> <span class="id" title="var">s</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">s</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">inl</span> <span class="id" title="var">s0</span> ⇒ @<span class="id" title="var">opml_evar</span> (@<span class="id" title="var">opml_sorts</span> <span class="id" title="var">Σ1</span>) (@<span class="id" title="var">opml_variables</span> <span class="id" title="var">Σ1</span>) <span class="id" title="var">s0</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">inr</span> <span class="id" title="var">s0</span> ⇒ @<span class="id" title="var">opml_evar</span> (@<span class="id" title="var">opml_sorts</span> <span class="id" title="var">Σ2</span>) (@<span class="id" title="var">opml_variables</span> <span class="id" title="var">Σ2</span>) <span class="id" title="var">s0</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="keyword">fun</span> <span class="id" title="var">s</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">s</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">inl</span> <span class="id" title="var">s0</span> ⇒ @<span class="id" title="var">opml_svar</span> (@<span class="id" title="var">opml_sorts</span> <span class="id" title="var">Σ1</span>) (@<span class="id" title="var">opml_variables</span> <span class="id" title="var">Σ1</span>) <span class="id" title="var">s0</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">inr</span> <span class="id" title="var">s0</span> ⇒ @<span class="id" title="var">opml_svar</span> (@<span class="id" title="var">opml_sorts</span> <span class="id" title="var">Σ2</span>) (@<span class="id" title="var">opml_variables</span> <span class="id" title="var">Σ2</span>) <span class="id" title="var">s0</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">_</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">_</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">_</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">_</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">_</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">_</span><br/>
+&nbsp;&nbsp;;<br/>
+&nbsp;&nbsp;<br/>
+&nbsp;&nbsp;<span class="id" title="var">opml_symbols</span> := {|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">opml_symbol</span> := (((@<span class="id" title="var">opml_symbol</span> (@<span class="id" title="var">opml_sorts</span> <span class="id" title="var">Σ1</span>) (@<span class="id" title="var">opml_symbols</span> <span class="id" title="var">Σ1</span>)))+(@<span class="id" title="var">opml_symbol</span> (@<span class="id" title="var">opml_sorts</span> <span class="id" title="var">Σ2</span>) (@<span class="id" title="var">opml_symbols</span> <span class="id" title="var">Σ2</span>)))%<span class="id" title="keyword">type</span> ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">opml_sym_eqdec</span> := <span class="id" title="var">_</span> ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">opml_sym_countable</span> := <span class="id" title="var">_</span> ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">opml_arg_sorts</span> := <span class="id" title="keyword">fun</span> <span class="id" title="var">s</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">s</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">inl</span> <span class="id" title="var">s'</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">l</span> := @<span class="id" title="var">opml_arg_sorts</span> (@<span class="id" title="var">opml_sorts</span> <span class="id" title="var">Σ1</span>) (@<span class="id" title="var">opml_symbols</span> <span class="id" title="var">Σ1</span>) <span class="id" title="var">s'</span> <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">inl</span> &lt;$&gt; <span class="id" title="var">l</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">inr</span> <span class="id" title="var">s'</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">l</span> := @<span class="id" title="var">opml_arg_sorts</span> (@<span class="id" title="var">opml_sorts</span> <span class="id" title="var">Σ2</span>) (@<span class="id" title="var">opml_symbols</span> <span class="id" title="var">Σ2</span>) <span class="id" title="var">s'</span> <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">inr</span> &lt;$&gt; <span class="id" title="var">l</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">opml_ret_sort</span> := <span class="id" title="keyword">fun</span> <span class="id" title="var">s</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">s</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">inl</span> <span class="id" title="var">s'</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">ss</span> := @<span class="id" title="var">opml_ret_sort</span> (@<span class="id" title="var">opml_sorts</span> <span class="id" title="var">Σ1</span>) (@<span class="id" title="var">opml_symbols</span> <span class="id" title="var">Σ1</span>) <span class="id" title="var">s'</span> <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">inl</span> <span class="id" title="var">ss</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">inr</span> <span class="id" title="var">s'</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">ss</span> := @<span class="id" title="var">opml_ret_sort</span> (@<span class="id" title="var">opml_sorts</span> <span class="id" title="var">Σ2</span>) (@<span class="id" title="var">opml_symbols</span> <span class="id" title="var">Σ2</span>) <span class="id" title="var">s'</span> <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">inr</span> <span class="id" title="var">ss</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;;<br/>
+&nbsp;&nbsp;|};<br/>
+|}.<br/>
+
+<br/>
+<span class="id" title="keyword">Program Definition</span> <span class="id" title="var">signature_union_morphism_left</span><br/>
+&nbsp;&nbsp;(<span class="id" title="var">Σ1</span> <span class="id" title="var">Σ2</span> : <span class="id" title="var">OPMLSignature</span>)<br/>
+&nbsp;&nbsp;: <span class="id" title="var">OPMLSignatureMorphism</span> <span class="id" title="var">Σ1</span> (<span class="id" title="var">signature_union</span> <span class="id" title="var">Σ1</span> <span class="id" title="var">Σ2</span>)<br/>
+:= {|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">osm_sorts</span> := <span class="id" title="keyword">fun</span> <span class="id" title="var">s</span> ⇒ (<span class="id" title="var">inl</span> <span class="id" title="var">s</span>);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">osm_evars</span> := <span class="id" title="keyword">fun</span> <span class="id" title="var">s</span> <span class="id" title="var">x</span> ⇒ <span class="id" title="var">x</span> ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">osm_svars</span> := <span class="id" title="keyword">fun</span> <span class="id" title="var">s</span> <span class="id" title="var">x</span> ⇒ <span class="id" title="var">x</span> ;<br/>
+|}.<br/>
+
+<br/>
+<span class="id" title="keyword">Program Definition</span> <span class="id" title="var">signature_union_morphism_right</span><br/>
+&nbsp;&nbsp;(<span class="id" title="var">Σ1</span> <span class="id" title="var">Σ2</span> : <span class="id" title="var">OPMLSignature</span>)<br/>
+&nbsp;&nbsp;: <span class="id" title="var">OPMLSignatureMorphism</span> <span class="id" title="var">Σ2</span> (<span class="id" title="var">signature_union</span> <span class="id" title="var">Σ1</span> <span class="id" title="var">Σ2</span>)<br/>
+:= {|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">osm_sorts</span> := <span class="id" title="keyword">fun</span> <span class="id" title="var">s</span> ⇒ (<span class="id" title="var">inr</span> <span class="id" title="var">s</span>);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">osm_evars</span> := <span class="id" title="keyword">fun</span> <span class="id" title="var">s</span> <span class="id" title="var">x</span> ⇒ <span class="id" title="var">x</span> ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">osm_svars</span> := <span class="id" title="keyword">fun</span> <span class="id" title="var">s</span> <span class="id" title="var">x</span> ⇒ <span class="id" title="var">x</span> ;<br/>
+|}.<br/>
+
+<br/>
+</div>
+<hr/>This page has been generated by <a href="http://coq.inria.fr/">coqdoc</a>
+</div>
+
+</div>
+
+</body>
+</html>

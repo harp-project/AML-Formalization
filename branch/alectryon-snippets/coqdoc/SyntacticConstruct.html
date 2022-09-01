@@ -1,0 +1,215 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link href="coqdoc.css" rel="stylesheet" type="text/css" />
+<title>SyntacticConstruct</title>
+</head>
+
+<body>
+
+<div id="page">
+
+<div id="header">
+</div>
+
+<div id="main">
+
+<h1 class="libtitle">File SyntacticConstruct</h1>
+
+<div class="code">
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">ssreflect</span> <span class="id" title="var">ssrfun</span> <span class="id" title="var">ssrbool</span>.<br/>
+<span class="id" title="keyword">Set Implicit Arguments</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">stdpp</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">base</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">MatchingLogic.Utils</span><br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">extralibrary</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">stdpp_ext</span><br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">MatchingLogic</span><br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Pattern</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Substitution</span><br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Section</span> <span class="id" title="var">with_signature</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Context</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>}.<br/>
+
+<br/>
+<span class="comment">(*&nbsp;Every&nbsp;syntactic&nbsp;construct&nbsp;has&nbsp;a&nbsp;category&nbsp;(unary&nbsp;operator,&nbsp;binder&nbsp;etc),<br/>
+&nbsp;&nbsp;&nbsp;and&nbsp;has&nbsp;to&nbsp;have&nbsp;certain&nbsp;properties&nbsp;about&nbsp;well-formedness<br/>
+&nbsp;&nbsp;&nbsp;and&nbsp;substitution.<br/>
+*)</span><br/>
+
+<br/>
+<span class="id" title="keyword">Class</span> <span class="id" title="var">EBinder</span> (<span class="id" title="var">ebinder</span> : <span class="id" title="var">Pattern</span> → <span class="id" title="var">Pattern</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">fevo</span>: <span class="id" title="var">db_index</span> → <span class="id" title="var">Pattern</span> → <span class="id" title="var">Pattern</span> → <span class="id" title="var">Pattern</span> )<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">fsvo</span>: <span class="id" title="var">db_index</span> → <span class="id" title="var">Pattern</span> → <span class="id" title="var">Pattern</span> → <span class="id" title="var">Pattern</span> ) :=<br/>
+{<br/>
+<span class="id" title="var">ebinder_bevar_subst</span> :<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">∀</span> ψ,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_closed</span> ψ →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> <span class="id" title="var">n</span> <span class="id" title="var">ϕ</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">bevar_subst</span> (<span class="id" title="var">ebinder</span> <span class="id" title="var">ϕ</span>) ψ <span class="id" title="var">n</span> = <span class="id" title="var">fevo</span> <span class="id" title="var">n</span> ψ <span class="id" title="var">ϕ</span> ;<br/>
+<span class="id" title="var">ebinder_bsvar_subst</span> :<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">∀</span> ψ,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_closed</span> ψ →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> <span class="id" title="var">n</span> <span class="id" title="var">ϕ</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">bsvar_subst</span> (<span class="id" title="var">ebinder</span> <span class="id" title="var">ϕ</span>) ψ <span class="id" title="var">n</span> = <span class="id" title="var">fsvo</span> <span class="id" title="var">n</span> ψ <span class="id" title="var">ϕ</span> ;<br/>
+}.<br/>
+
+<br/>
+<span class="id" title="keyword">Class</span> <span class="id" title="var">SBinder</span> (<span class="id" title="var">sbinder</span> : <span class="id" title="var">Pattern</span> → <span class="id" title="var">Pattern</span>) :=<br/>
+{<br/>
+<span class="id" title="var">sbinder_bevar_subst</span> :<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">∀</span> ψ,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_closed</span> ψ →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> <span class="id" title="var">n</span> <span class="id" title="var">ϕ</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">bevar_subst</span> (<span class="id" title="var">sbinder</span> <span class="id" title="var">ϕ</span>) ψ <span class="id" title="var">n</span> = <span class="id" title="var">sbinder</span> (<span class="id" title="var">bevar_subst</span> <span class="id" title="var">ϕ</span> ψ <span class="id" title="var">n</span>) ;<br/>
+<span class="id" title="var">sbinder_bsvar_subst</span> :<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">∀</span> ψ,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_closed</span> ψ →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> <span class="id" title="var">n</span> <span class="id" title="var">ϕ</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">bsvar_subst</span> (<span class="id" title="var">sbinder</span> <span class="id" title="var">ϕ</span>) ψ <span class="id" title="var">n</span> = <span class="id" title="var">sbinder</span> (<span class="id" title="var">bsvar_subst</span> <span class="id" title="var">ϕ</span> ψ (<span class="id" title="var">S</span> <span class="id" title="var">n</span>)) ;<br/>
+}.<br/>
+
+<br/>
+<span class="comment">(*&nbsp;Non-variable&nbsp;nullary&nbsp;operation&nbsp;*)</span><br/>
+<span class="id" title="keyword">Class</span> <span class="id" title="var">NVNullary</span> (<span class="id" title="var">nvnullary</span> : <span class="id" title="var">Pattern</span>) :=<br/>
+{<br/>
+<span class="id" title="var">nvnullary_bevar_subst</span> :<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">∀</span> ψ,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_closed</span> ψ →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> <span class="id" title="var">n</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">bevar_subst</span> <span class="id" title="var">nvnullary</span> ψ <span class="id" title="var">n</span> = <span class="id" title="var">nvnullary</span> ;<br/>
+<span class="id" title="var">nvnullary_bsvar_subst</span> :<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">∀</span> ψ,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_closed</span> ψ →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> <span class="id" title="var">n</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">bevar_subst</span> <span class="id" title="var">nvnullary</span> ψ <span class="id" title="var">n</span> = <span class="id" title="var">nvnullary</span> ;<br/>
+<br/>
+<span class="id" title="var">nvnullary_wf</span> : <span class="id" title="var">well_formed</span> <span class="id" title="var">nvnullary</span> = <span class="id" title="var">true</span> ;<br/>
+}.<br/>
+
+<br/>
+<span class="id" title="keyword">Class</span> <span class="id" title="var">Unary</span> (<span class="id" title="var">patt</span> : <span class="id" title="var">Pattern</span> → <span class="id" title="var">Pattern</span>) :=<br/>
+{<br/>
+<span class="id" title="var">unary_bevar_subst</span> :<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">∀</span> ψ,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_closed</span> ψ →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> <span class="id" title="var">n</span> <span class="id" title="var">ϕ</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">bevar_subst</span> (<span class="id" title="var">patt</span> <span class="id" title="var">ϕ</span>) ψ <span class="id" title="var">n</span> = <span class="id" title="var">patt</span> (<span class="id" title="var">bevar_subst</span> <span class="id" title="var">ϕ</span> ψ <span class="id" title="var">n</span>) ;<br/>
+<span class="id" title="var">unary_bsvar_subst</span> :<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">∀</span> ψ,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_closed</span> ψ →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> <span class="id" title="var">n</span> <span class="id" title="var">ϕ</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">bsvar_subst</span> (<span class="id" title="var">patt</span> <span class="id" title="var">ϕ</span>) ψ <span class="id" title="var">n</span> = <span class="id" title="var">patt</span> (<span class="id" title="var">bsvar_subst</span> <span class="id" title="var">ϕ</span> ψ <span class="id" title="var">n</span>) ;<br/>
+<br/>
+<span class="id" title="var">unary_wf</span> : <span class="id" title="keyword">∀</span> ψ, <span class="id" title="var">well_formed</span> ψ → <span class="id" title="var">well_formed</span> (<span class="id" title="var">patt</span> ψ) ;<br/>
+}.<br/>
+
+<br/>
+<span class="id" title="keyword">Class</span> <span class="id" title="var">Binary</span> (<span class="id" title="var">binary</span> : <span class="id" title="var">Pattern</span> → <span class="id" title="var">Pattern</span> → <span class="id" title="var">Pattern</span>) :=<br/>
+{<br/>
+<span class="id" title="var">binary_bevar_subst</span> :<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">∀</span> ψ,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_closed</span> ψ →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> <span class="id" title="var">n</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">bevar_subst</span> (<span class="id" title="var">binary</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span>) ψ <span class="id" title="var">n</span> = <span class="id" title="var">binary</span> (<span class="id" title="var">bevar_subst</span> <span class="id" title="var">ϕ₁</span> ψ <span class="id" title="var">n</span>) (<span class="id" title="var">bevar_subst</span> <span class="id" title="var">ϕ₂</span> ψ <span class="id" title="var">n</span>) ;<br/>
+<span class="id" title="var">binary_bsvar_subst</span> :<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">∀</span> ψ,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_closed</span> ψ →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> <span class="id" title="var">n</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">bsvar_subst</span> (<span class="id" title="var">binary</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span>) ψ <span class="id" title="var">n</span> = <span class="id" title="var">binary</span> (<span class="id" title="var">bsvar_subst</span> <span class="id" title="var">ϕ₁</span> ψ <span class="id" title="var">n</span>) (<span class="id" title="var">bsvar_subst</span> <span class="id" title="var">ϕ₂</span> ψ <span class="id" title="var">n</span>) ;<br/>
+<br/>
+<span class="id" title="var">binary_wf</span> : <span class="id" title="keyword">∀</span> ψ1 ψ2, <span class="id" title="var">well_formed</span> ψ1 → <span class="id" title="var">well_formed</span> ψ2 → <span class="id" title="var">well_formed</span> (<span class="id" title="var">binary</span> ψ1 ψ2) ;<br/>
+}.<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">simpl_bevar_subst'</span> :=<br/>
+(@<span class="id" title="var">ebinder_bevar_subst</span>,<br/>
+&nbsp;@<span class="id" title="var">sbinder_bevar_subst</span>,<br/>
+&nbsp;@<span class="id" title="var">nvnullary_bevar_subst</span>,<br/>
+&nbsp;@<span class="id" title="var">unary_bevar_subst</span>,<br/>
+&nbsp;@<span class="id" title="var">binary_bevar_subst</span><br/>
+).<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">simpl_bsvar_subst'</span> :=<br/>
+(@<span class="id" title="var">ebinder_bsvar_subst</span>,<br/>
+&nbsp;@<span class="id" title="var">sbinder_bsvar_subst</span>,<br/>
+&nbsp;@<span class="id" title="var">nvnullary_bsvar_subst</span>,<br/>
+&nbsp;@<span class="id" title="var">unary_bsvar_subst</span>,<br/>
+&nbsp;@<span class="id" title="var">binary_bsvar_subst</span><br/>
+).<br/>
+
+<br/>
+#[<span class="id" title="var">global</span>]<br/>
+<span class="id" title="keyword">Instance</span> <span class="id" title="var">EBinder_exists</span> : <span class="id" title="var">EBinder</span> <span class="id" title="var">patt_exists</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> :=<br/>
+{|<br/>
+<span class="id" title="var">ebinder_bevar_subst</span> := <span class="id" title="var">bevar_subst_exists</span> ;<br/>
+<span class="id" title="var">ebinder_bsvar_subst</span> := <span class="id" title="var">bsvar_subst_exists</span> ;<br/>
+|}.<br/>
+
+<br/>
+#[<span class="id" title="var">global</span>]<br/>
+<span class="id" title="keyword">Instance</span> <span class="id" title="var">SBinder_mu</span> : <span class="id" title="var">SBinder</span> <span class="id" title="var">patt_mu</span> :=<br/>
+{|<br/>
+<span class="id" title="var">sbinder_bevar_subst</span> := <span class="id" title="var">bevar_subst_mu</span> ;<br/>
+<span class="id" title="var">sbinder_bsvar_subst</span> := <span class="id" title="var">bsvar_subst_mu</span> ;<br/>
+|}.<br/>
+
+<br/>
+#[<span class="id" title="var">global</span>]<br/>
+<span class="id" title="var">Program</span> <span class="id" title="keyword">Instance</span> <span class="id" title="var">NVNullary_bott</span> : <span class="id" title="var">NVNullary</span> <span class="id" title="var">patt_bott</span> :=<br/>
+{|<br/>
+<span class="id" title="var">nvnullary_bevar_subst</span> := <span class="id" title="var">bevar_subst_bott</span> ;<br/>
+<span class="id" title="var">nvnullary_bsvar_subst</span> := <span class="id" title="var">bsvar_subst_bott</span> ;<br/>
+<span class="id" title="var">nvnullary_wf</span> := <span class="id" title="var">well_formed_bott</span> ;<br/>
+|}.<br/>
+
+<br/>
+#[<span class="id" title="var">global</span>]<br/>
+<span class="id" title="keyword">Instance</span> <span class="id" title="var">NVNullary_sym</span> <span class="id" title="var">s</span> : <span class="id" title="var">NVNullary</span> (<span class="id" title="var">patt_sym</span> <span class="id" title="var">s</span>) :=<br/>
+{|<br/>
+<span class="id" title="var">nvnullary_bevar_subst</span> := <span class="id" title="var">λ</span> ψ (<span class="id" title="var">wfc</span>ψ : <span class="id" title="var">well_formed_closed</span> ψ) <span class="id" title="var">n</span>, @<span class="id" title="var">bevar_subst_sym</span> <span class="id" title="var">Σ</span> ψ <span class="id" title="var">wfc</span>ψ <span class="id" title="var">n</span> <span class="id" title="var">s</span> ;<br/>
+<span class="id" title="var">nvnullary_bsvar_subst</span> := <span class="id" title="var">λ</span> ψ (<span class="id" title="var">wfc</span>ψ : <span class="id" title="var">well_formed_closed</span> ψ) <span class="id" title="var">n</span>, @<span class="id" title="var">bsvar_subst_sym</span> <span class="id" title="var">Σ</span> ψ <span class="id" title="var">wfc</span>ψ <span class="id" title="var">n</span> <span class="id" title="var">s</span>;<br/>
+<span class="id" title="var">nvnullary_wf</span> := (<span class="id" title="var">well_formed_sym</span> <span class="id" title="var">s</span>) ;<br/>
+|}.<br/>
+
+<br/>
+#[<span class="id" title="var">global</span>]<br/>
+<span class="id" title="keyword">Instance</span> <span class="id" title="var">Binary_app</span> : <span class="id" title="var">Binary</span> <span class="id" title="var">patt_app</span> :=<br/>
+{|<br/>
+<span class="id" title="var">binary_bevar_subst</span> := <span class="id" title="var">bevar_subst_app</span> ;<br/>
+<span class="id" title="var">binary_bsvar_subst</span> := <span class="id" title="var">bsvar_subst_app</span> ;<br/>
+<span class="id" title="var">binary_wf</span> := <span class="id" title="var">well_formed_app</span> ;<br/>
+|}.<br/>
+
+<br/>
+#[<span class="id" title="var">global</span>]<br/>
+<span class="id" title="keyword">Instance</span> <span class="id" title="var">Binary_imp</span> : <span class="id" title="var">Binary</span> <span class="id" title="var">patt_imp</span> :=<br/>
+{|<br/>
+<span class="id" title="var">binary_bevar_subst</span> := <span class="id" title="var">bevar_subst_imp</span> ;<br/>
+<span class="id" title="var">binary_bsvar_subst</span> := <span class="id" title="var">bsvar_subst_imp</span> ;<br/>
+<span class="id" title="var">binary_wf</span> := <span class="id" title="var">well_formed_imp</span> ;<br/>
+|}.<br/>
+
+<br/>
+<span class="id" title="keyword">End</span> <span class="id" title="var">with_signature</span>.<br/>
+</div>
+<hr/>This page has been generated by <a href="http://coq.inria.fr/">coqdoc</a>
+</div>
+
+</div>
+
+</body>
+</html>

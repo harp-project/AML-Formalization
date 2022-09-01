@@ -1,0 +1,292 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link href="coqdoc.css" rel="stylesheet" type="text/css" />
+<title>ProofInfo</title>
+</head>
+
+<body>
+
+<div id="page">
+
+<div id="header">
+</div>
+
+<div id="main">
+
+<h1 class="libtitle">File ProofInfo</h1>
+
+<div class="code">
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">ssreflect</span> <span class="id" title="var">ssrfun</span> <span class="id" title="var">ssrbool</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Ltac2</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Ltac2</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Ensembles</span> <span class="id" title="var">Bool</span> <span class="id" title="var">String</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq.Logic</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">FunctionalExtensionality</span> <span class="id" title="var">Eqdep_dec</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="keyword">Equations</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="keyword">Equations</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Coq.Program.Tactics</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">MatchingLogic</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="keyword">Syntax</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">ProofSystem</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">wftactics</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">ProofMode_base</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">stdpp</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">list</span> <span class="id" title="var">tactics</span> <span class="id" title="var">fin_sets</span> <span class="id" title="var">coGset</span> <span class="id" title="var">gmap</span> <span class="id" title="var">sets</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">MatchingLogic.Utils</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">stdpp_ext</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Import</span> <span class="id" title="var">extralibrary</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Import</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">MatchingLogic.Syntax.Notations</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">MatchingLogic.DerivedOperators_Syntax.Notations</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">MatchingLogic.ProofSystem.Notations</span><br/>
+.<br/>
+
+<br/>
+
+<br/>
+<span class="id" title="keyword">Open</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">ml_scope</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Ltac</span> <span class="id" title="var">solve_pim_simple</span> := <span class="id" title="tactic">constructor</span>; <span class="id" title="tactic">simpl</span>;[(<span class="id" title="var">set_solver</span>)|(<span class="id" title="var">set_solver</span>)|(<span class="id" title="tactic">reflexivity</span>)|(<span class="id" title="tactic">apply</span> <span class="id" title="tactic">reflexivity</span>)].<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">useBasicReasoning</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} {<span class="id" title="var">Γ</span> : <span class="id" title="var">Theory</span>} {<span class="id" title="var">ϕ</span> : <span class="id" title="var">Pattern</span>} (<span class="id" title="var">i</span> : <span class="id" title="var">ProofInfo</span>) :<br/>
+&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢<span class="id" title="var">i</span> <span class="id" title="var">ϕ</span> <span class="id" title="keyword">using</span> <span class="id" title="var">BasicReasoning</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢<span class="id" title="var">i</span> <span class="id" title="var">ϕ</span> <span class="id" title="keyword">using</span> <span class="id" title="var">i</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">mlUseBasicReasoning</span><br/>
+&nbsp;&nbsp;{<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} (<span class="id" title="var">Γ</span> : <span class="id" title="var">Theory</span>) (<span class="id" title="var">l</span> : <span class="id" title="var">hypotheses</span>) (<span class="id" title="var">g</span> : <span class="id" title="var">Pattern</span>) (<span class="id" title="var">i</span> : <span class="id" title="var">ProofInfo</span>) :<br/>
+&nbsp;&nbsp;<span class="id" title="var">mkMLGoal</span> <span class="id" title="var">Σ</span> <span class="id" title="var">Γ</span> <span class="id" title="var">l</span> <span class="id" title="var">g</span> <span class="id" title="var">BasicReasoning</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">mkMLGoal</span> <span class="id" title="var">Σ</span> <span class="id" title="var">Γ</span> <span class="id" title="var">l</span> <span class="id" title="var">g</span> <span class="id" title="var">i</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Ltac</span> <span class="id" title="var">useBasicReasoning</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">unfold</span> <span class="id" title="var">ProofSystem.derives</span>;<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">lazymatch</span> <span class="id" title="keyword">goal</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;| [ |- <span class="id" title="var">of_MLGoal</span> (<span class="id" title="var">mkMLGoal</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span>) ] ⇒ <span class="id" title="tactic">apply</span> <span class="id" title="var">mlUseBasicReasoning</span><br/>
+&nbsp;&nbsp;| [ |- <span class="id" title="var">_</span> ⊢<span class="id" title="var">i</span> <span class="id" title="var">_</span> <span class="id" title="keyword">using</span> <span class="id" title="var">_</span> ] ⇒ <span class="id" title="tactic">apply</span> <span class="id" title="var">useBasicReasoning</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Tactic Notation</span> "remember_constraint" "as" <span class="id" title="var">ident</span>(<span class="id" title="var">i'</span>) :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="keyword">goal</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| [|- (<span class="id" title="var">_</span> ⊢<span class="id" title="var">i</span> <span class="id" title="var">_</span> <span class="id" title="keyword">using</span> ?<span class="id" title="var">constraint</span>)] ⇒ <span class="id" title="var">remember</span> <span class="id" title="var">constraint</span> <span class="id" title="keyword">as</span> <span class="id" title="var">i'</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">MP</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} {<span class="id" title="var">Γ</span> : <span class="id" title="var">Theory</span>} {<span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span> : <span class="id" title="var">Pattern</span>} {<span class="id" title="var">i</span> : <span class="id" title="var">ProofInfo</span>} :<br/>
+&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢<span class="id" title="var">i</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="keyword">using</span> <span class="id" title="var">i</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢<span class="id" title="var">i</span> (<span class="id" title="var">ϕ₁</span> ---&gt; <span class="id" title="var">ϕ₂</span>) <span class="id" title="keyword">using</span> <span class="id" title="var">i</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢<span class="id" title="var">i</span> <span class="id" title="var">ϕ₂</span> <span class="id" title="keyword">using</span> <span class="id" title="var">i</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">P1</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} (<span class="id" title="var">Γ</span> : <span class="id" title="var">Theory</span>) (<span class="id" title="var">ϕ</span> ψ : <span class="id" title="var">Pattern</span>) :<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed</span> <span class="id" title="var">ϕ</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed</span> ψ →<br/>
+&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢<span class="id" title="var">i</span> <span class="id" title="var">ϕ</span> ---&gt; ψ ---&gt; <span class="id" title="var">ϕ</span> <br/>
+&nbsp;&nbsp;<span class="id" title="keyword">using</span> <span class="id" title="var">BasicReasoning</span>.<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">P2</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} (<span class="id" title="var">Γ</span> : <span class="id" title="var">Theory</span>) (<span class="id" title="var">ϕ</span> ψ <span class="id" title="var">ξ</span> : <span class="id" title="var">Pattern</span>) :<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed</span> <span class="id" title="var">ϕ</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed</span> ψ →<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed</span> <span class="id" title="var">ξ</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢<span class="id" title="var">i</span> (<span class="id" title="var">ϕ</span> ---&gt; ψ ---&gt; <span class="id" title="var">ξ</span>) ---&gt; (<span class="id" title="var">ϕ</span> ---&gt; ψ) ---&gt; (<span class="id" title="var">ϕ</span> ---&gt; <span class="id" title="var">ξ</span>)<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">using</span> <span class="id" title="var">BasicReasoning</span>.<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">P3</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} (<span class="id" title="var">Γ</span> : <span class="id" title="var">Theory</span>) (<span class="id" title="var">ϕ</span> : <span class="id" title="var">Pattern</span>) :<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed</span> <span class="id" title="var">ϕ</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢<span class="id" title="var">i</span> (((<span class="id" title="var">ϕ</span> ---&gt; ⊥) ---&gt; ⊥) ---&gt; <span class="id" title="var">ϕ</span>)<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">using</span> <span class="id" title="var">BasicReasoning</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">A_impl_A</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} (<span class="id" title="var">Γ</span> : <span class="id" title="var">Theory</span>) (<span class="id" title="var">A</span> : <span class="id" title="var">Pattern</span>)  :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">well_formed</span> <span class="id" title="var">A</span>) →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢<span class="id" title="var">i</span> (<span class="id" title="var">A</span> ---&gt; <span class="id" title="var">A</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">using</span> <span class="id" title="var">BasicReasoning</span>.<br/>
+ 
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">pile_evs_svs_kt_back</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} <span class="id" title="var">evs1</span> <span class="id" title="var">evs2</span> <span class="id" title="var">svs1</span> <span class="id" title="var">svs2</span> <span class="id" title="var">kt1</span> <span class="id" title="var">kt2</span> <span class="id" title="var">fp1</span> <span class="id" title="var">fp2</span>:<br/>
+&nbsp;&nbsp;<span class="id" title="var">ProofInfoLe</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;( (<span class="id" title="var">ExGen</span> := <span class="id" title="var">evs1</span>, <span class="id" title="var">SVSubst</span> := <span class="id" title="var">svs1</span>, <span class="id" title="var">KT</span> := <span class="id" title="var">kt1</span>, <span class="id" title="var">FP</span> := <span class="id" title="var">fp1</span>))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;( (<span class="id" title="var">ExGen</span> := <span class="id" title="var">evs2</span>, <span class="id" title="var">SVSubst</span> := <span class="id" title="var">svs2</span>, <span class="id" title="var">KT</span> := <span class="id" title="var">kt2</span>, <span class="id" title="var">FP</span> := <span class="id" title="var">fp2</span>)) →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">evs1</span> ⊆ <span class="id" title="var">evs2</span> ∧ <span class="id" title="var">svs1</span> ⊆ <span class="id" title="var">svs2</span> ∧ <span class="id" title="var">kt1</span> ==&gt; <span class="id" title="var">kt2</span> ∧ <span class="id" title="var">fp1</span> ⊆ <span class="id" title="var">fp2</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">useGenericReasoning</span>  {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} (<span class="id" title="var">Γ</span> : <span class="id" title="var">Theory</span>) (<span class="id" title="var">ϕ</span> : <span class="id" title="var">Pattern</span>) <span class="id" title="var">evs</span> <span class="id" title="var">svs</span> <span class="id" title="var">kt</span> <span class="id" title="var">fp</span> <span class="id" title="var">i</span>:<br/>
+&nbsp;&nbsp;(<span class="id" title="var">ProofInfoLe</span> ((<span class="id" title="var">ExGen</span> := <span class="id" title="var">evs</span>, <span class="id" title="var">SVSubst</span> := <span class="id" title="var">svs</span>, <span class="id" title="var">KT</span> := <span class="id" title="var">kt</span>, <span class="id" title="var">FP</span> := <span class="id" title="var">fp</span>)) <span class="id" title="var">i</span>) →<br/>
+&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢<span class="id" title="var">i</span> <span class="id" title="var">ϕ</span> <span class="id" title="keyword">using</span> ((<span class="id" title="var">ExGen</span> := <span class="id" title="var">evs</span>, <span class="id" title="var">SVSubst</span> := <span class="id" title="var">svs</span>, <span class="id" title="var">KT</span> := <span class="id" title="var">kt</span>, <span class="id" title="var">FP</span> := <span class="id" title="var">fp</span>)) →<br/>
+&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢<span class="id" title="var">i</span> <span class="id" title="var">ϕ</span> <span class="id" title="keyword">using</span> <span class="id" title="var">i</span>.<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">useGenericReasoning'</span>  {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} (<span class="id" title="var">Γ</span> : <span class="id" title="var">Theory</span>) (<span class="id" title="var">ϕ</span> : <span class="id" title="var">Pattern</span>) <span class="id" title="var">i'</span> <span class="id" title="var">i</span>:<br/>
+&nbsp;&nbsp;(<span class="id" title="var">ProofInfoLe</span> <span class="id" title="var">i'</span> <span class="id" title="var">i</span>) →<br/>
+&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢<span class="id" title="var">i</span> <span class="id" title="var">ϕ</span> <span class="id" title="keyword">using</span> <span class="id" title="var">i'</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢<span class="id" title="var">i</span> <span class="id" title="var">ϕ</span> <span class="id" title="keyword">using</span> <span class="id" title="var">i</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">mlUseGenericReasoning</span><br/>
+&nbsp;&nbsp;{<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} (<span class="id" title="var">Γ</span> : <span class="id" title="var">Theory</span>) (<span class="id" title="var">l</span> : <span class="id" title="var">hypotheses</span>) (<span class="id" title="var">g</span> : <span class="id" title="var">Pattern</span>) (<span class="id" title="var">i</span> <span class="id" title="var">i'</span> : <span class="id" title="var">ProofInfo</span>) :<br/>
+&nbsp;&nbsp;<span class="id" title="var">ProofInfoLe</span> <span class="id" title="var">i</span> <span class="id" title="var">i'</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">mkMLGoal</span> <span class="id" title="var">Σ</span> <span class="id" title="var">Γ</span> <span class="id" title="var">l</span> <span class="id" title="var">g</span> <span class="id" title="var">i</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">mkMLGoal</span> <span class="id" title="var">Σ</span> <span class="id" title="var">Γ</span> <span class="id" title="var">l</span> <span class="id" title="var">g</span> <span class="id" title="var">i'</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Tactic Notation</span> "gapply" <span class="id" title="var">uconstr</span>(<span class="id" title="var">pf</span>) := <span class="id" title="tactic">eapply</span> <span class="id" title="var">useGenericReasoning</span>;[|<span class="id" title="tactic">eapply</span> <span class="id" title="var">pf</span>].<br/>
+
+<br/>
+<span class="id" title="keyword">Tactic Notation</span> "gapply" <span class="id" title="var">uconstr</span>(<span class="id" title="var">pf</span>) "in" <span class="id" title="var">ident</span>(<span class="id" title="var">H</span>) :=<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">eapply</span> <span class="id" title="var">useGenericReasoning</span> <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>;[|<span class="id" title="tactic">apply</span> <span class="id" title="var">pf</span>].<br/>
+
+<br/>
+<span class="comment">(*&nbsp;Extracts&nbsp;well-formedness&nbsp;assumptions&nbsp;about&nbsp;(local)&nbsp;goal&nbsp;and&nbsp;(local)&nbsp;hypotheses.&nbsp;*)</span><br/>
+<span class="id" title="keyword">Tactic Notation</span> "mlExtractWF" <span class="id" title="var">ident</span>(<span class="id" title="var">wfl</span>) <span class="id" title="var">ident</span>(<span class="id" title="var">wfg</span>) :=<br/>
+<span class="id" title="keyword">match</span> <span class="id" title="keyword">goal</span> <span class="id" title="keyword">with</span><br/>
+| [ |- ?<span class="id" title="var">g</span> ] ⇒<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">wfl'</span> := <span class="id" title="tactic">fresh</span> "wfl'" <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">wfg'</span> := <span class="id" title="tactic">fresh</span> "wfg'" <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;<span class="id" title="tactic">intros</span> <span class="id" title="var">wfg'</span> <span class="id" title="var">wfl'</span>;<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">pose</span> <span class="id" title="var">proof</span> (<span class="id" title="var">wfl</span> := <span class="id" title="var">wfl'</span>);<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">pose</span> <span class="id" title="var">proof</span> (<span class="id" title="var">wfg</span> := <span class="id" title="var">wfg'</span>);<br/>
+&nbsp;&nbsp;<span class="id" title="var">revert</span> <span class="id" title="var">wfg'</span> <span class="id" title="var">wfl'</span>;<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">fold</span> <span class="id" title="var">g</span>;<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> /<span class="id" title="var">mlConclusion</span> <span class="id" title="tactic">in</span> <span class="id" title="var">wfg</span>;<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> /<span class="id" title="var">mlHypotheses</span> <span class="id" title="tactic">in</span> <span class="id" title="var">wfl</span><br/>
+<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">pile_evs_subseteq</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} <span class="id" title="var">evs1</span> <span class="id" title="var">evs2</span> <span class="id" title="var">svs</span> <span class="id" title="var">kt</span> <span class="id" title="var">fp</span>:<br/>
+&nbsp;&nbsp;<span class="id" title="var">evs1</span> ⊆ <span class="id" title="var">evs2</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">ProofInfoLe</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;((<span class="id" title="var">ExGen</span> := <span class="id" title="var">evs1</span>, <span class="id" title="var">SVSubst</span> := <span class="id" title="var">svs</span>, <span class="id" title="var">KT</span> := <span class="id" title="var">kt</span>, <span class="id" title="var">FP</span> := <span class="id" title="var">fp</span>))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;((<span class="id" title="var">ExGen</span> := <span class="id" title="var">evs2</span>, <span class="id" title="var">SVSubst</span> := <span class="id" title="var">svs</span>, <span class="id" title="var">KT</span> := <span class="id" title="var">kt</span>, <span class="id" title="var">FP</span> := <span class="id" title="var">fp</span>)).<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">pile_svs_subseteq</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} <span class="id" title="var">evs</span> <span class="id" title="var">svs1</span> <span class="id" title="var">svs2</span> <span class="id" title="var">kt</span> <span class="id" title="var">fp</span>:<br/>
+&nbsp;&nbsp;<span class="id" title="var">svs1</span> ⊆ <span class="id" title="var">svs2</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">ProofInfoLe</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;( (<span class="id" title="var">ExGen</span> := <span class="id" title="var">evs</span>, <span class="id" title="var">SVSubst</span> := <span class="id" title="var">svs1</span>, <span class="id" title="var">KT</span> := <span class="id" title="var">kt</span>, <span class="id" title="var">FP</span> := <span class="id" title="var">fp</span>))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;( (<span class="id" title="var">ExGen</span> := <span class="id" title="var">evs</span>, <span class="id" title="var">SVSubst</span> := <span class="id" title="var">svs2</span>, <span class="id" title="var">KT</span> := <span class="id" title="var">kt</span>, <span class="id" title="var">FP</span> := <span class="id" title="var">fp</span>)).<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">pile_kt_impl</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} <span class="id" title="var">evs</span> <span class="id" title="var">svs</span> <span class="id" title="var">kt1</span> <span class="id" title="var">kt2</span> <span class="id" title="var">fp</span>:<br/>
+&nbsp;&nbsp;<span class="id" title="var">kt1</span> ==&gt; <span class="id" title="var">kt2</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">ProofInfoLe</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;((<span class="id" title="var">ExGen</span> := <span class="id" title="var">evs</span>, <span class="id" title="var">SVSubst</span> := <span class="id" title="var">svs</span>, <span class="id" title="var">KT</span> := <span class="id" title="var">kt1</span>, <span class="id" title="var">FP</span> := <span class="id" title="var">fp</span>))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;((<span class="id" title="var">ExGen</span> := <span class="id" title="var">evs</span>, <span class="id" title="var">SVSubst</span> := <span class="id" title="var">svs</span>, <span class="id" title="var">KT</span> := <span class="id" title="var">kt2</span>, <span class="id" title="var">FP</span> := <span class="id" title="var">fp</span>)).<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">pile_fp_subseteq</span>  {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} <span class="id" title="var">evs</span> <span class="id" title="var">svs</span> <span class="id" title="var">kt</span> <span class="id" title="var">fp1</span> <span class="id" title="var">fp2</span>:<br/>
+&nbsp;&nbsp;<span class="id" title="var">fp1</span> ⊆ <span class="id" title="var">fp2</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">ProofInfoLe</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;((<span class="id" title="var">ExGen</span> := <span class="id" title="var">evs</span>, <span class="id" title="var">SVSubst</span> := <span class="id" title="var">svs</span>, <span class="id" title="var">KT</span> := <span class="id" title="var">kt</span>, <span class="id" title="var">FP</span> := <span class="id" title="var">fp1</span>))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;((<span class="id" title="var">ExGen</span> := <span class="id" title="var">evs</span>, <span class="id" title="var">SVSubst</span> := <span class="id" title="var">svs</span>, <span class="id" title="var">KT</span> := <span class="id" title="var">kt</span>, <span class="id" title="var">FP</span> := <span class="id" title="var">fp2</span>)).<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">pile_evs_svs_kt</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} <span class="id" title="var">evs1</span> <span class="id" title="var">evs2</span> <span class="id" title="var">svs1</span> <span class="id" title="var">svs2</span> <span class="id" title="var">kt1</span> <span class="id" title="var">kt2</span> <span class="id" title="var">fp1</span> <span class="id" title="var">fp2</span>:<br/>
+&nbsp;&nbsp;<span class="id" title="var">evs1</span> ⊆ <span class="id" title="var">evs2</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">svs1</span> ⊆ <span class="id" title="var">svs2</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">kt1</span> ==&gt; <span class="id" title="var">kt2</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">fp1</span> ⊆ <span class="id" title="var">fp2</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">ProofInfoLe</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;((<span class="id" title="var">ExGen</span> := <span class="id" title="var">evs1</span>, <span class="id" title="var">SVSubst</span> := <span class="id" title="var">svs1</span>, <span class="id" title="var">KT</span> := <span class="id" title="var">kt1</span>, <span class="id" title="var">FP</span> := <span class="id" title="var">fp1</span>))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;((<span class="id" title="var">ExGen</span> := <span class="id" title="var">evs2</span>, <span class="id" title="var">SVSubst</span> := <span class="id" title="var">svs2</span>, <span class="id" title="var">KT</span> := <span class="id" title="var">kt2</span>, <span class="id" title="var">FP</span> := <span class="id" title="var">fp2</span>)).<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">pile_any</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} <span class="id" title="var">i</span>:<br/>
+&nbsp;&nbsp;<span class="id" title="var">ProofInfoLe</span> <span class="id" title="var">i</span> <span class="id" title="var">AnyReasoning</span>.<br/>
+<span class="id" title="keyword">Tactic Notation</span> "aapply" <span class="id" title="var">uconstr</span>(<span class="id" title="var">pf</span>)<br/>
+:= <span class="id" title="var">gapply</span> <span class="id" title="var">pf</span>; <span class="id" title="tactic">try</span> <span class="id" title="tactic">apply</span> <span class="id" title="var">pile_any</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Ltac</span> <span class="id" title="var">try_solve_pile</span> := <span class="id" title="tactic">try</span> (<span class="id" title="tactic">solve</span> [(<span class="id" title="tactic">apply</span> <span class="id" title="var">pile_evs_svs_kt</span>; <span class="id" title="tactic">auto</span>; <span class="id" title="tactic">try</span> <span class="id" title="tactic">apply</span> <span class="id" title="var">empty_subseteq</span>; <span class="id" title="tactic">try</span> <span class="id" title="tactic">apply</span> <span class="id" title="var">top_subseteq</span>; <span class="id" title="tactic">try</span> <span class="id" title="var">set_solver</span>)]).<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">pile_basic_generic</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} <span class="id" title="var">eg</span> <span class="id" title="var">svs</span> <span class="id" title="var">kt</span> <span class="id" title="var">fp</span>:<br/>
+&nbsp;&nbsp;<span class="id" title="var">ProofInfoLe</span> <span class="id" title="var">BasicReasoning</span> ( (<span class="id" title="var">ExGen</span> := <span class="id" title="var">eg</span>, <span class="id" title="var">SVSubst</span> := <span class="id" title="var">svs</span>, <span class="id" title="var">KT</span> := <span class="id" title="var">kt</span>, <span class="id" title="var">FP</span> := <span class="id" title="var">fp</span>)).<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">pile_basic_generic'</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} <span class="id" title="var">i</span>:<br/>
+<span class="id" title="var">ProofInfoLe</span> <span class="id" title="var">BasicReasoning</span> <span class="id" title="var">i</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Tactic Notation</span> "_mlReshapeHypsByIdx" <span class="id" title="keyword">constr</span>(<span class="id" title="var">n</span>) :=<br/>
+&nbsp;&nbsp;<span class="id" title="var">unshelve</span> (<span class="id" title="tactic">eapply</span> (@<span class="id" title="var">cast_proof_ml_hyps</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span>));<br/>
+&nbsp;&nbsp;[<span class="id" title="var">shelve</span>|(<span class="id" title="tactic">apply</span> <span class="id" title="tactic">f_equal</span>; <span class="id" title="tactic">rewrite</span> &lt;- (<span class="id" title="var">firstn_skipn</span> <span class="id" title="var">n</span>); <span class="id" title="tactic">rewrite</span> /<span class="id" title="var">firstn</span>; <span class="id" title="tactic">rewrite</span> /<span class="id" title="var">skipn</span>; <span class="id" title="tactic">reflexivity</span>)|<span class="id" title="tactic">idtac</span>]<br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Tactic Notation</span> "_mlReshapeHypsByName" <span class="id" title="keyword">constr</span>(<span class="id" title="var">n</span>) :=<br/>
+&nbsp;&nbsp;<span class="id" title="var">unshelve</span> (<span class="id" title="tactic">eapply</span> (@<span class="id" title="var">cast_proof_ml_hyps</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span>));<br/>
+&nbsp;&nbsp;[<span class="id" title="var">shelve</span>|(<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <span class="id" title="tactic">f_equal</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">lazymatch</span> <span class="id" title="keyword">goal</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| [|- <span class="id" title="var">_</span> = ?<span class="id" title="var">l</span>] ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">lazymatch</span> (<span class="id" title="tactic">eval</span> <span class="id" title="tactic">cbv</span> <span class="id" title="tactic">in</span> (<span class="id" title="var">find_hyp</span> <span class="id" title="var">n</span> <span class="id" title="var">l</span>)) <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">Some</span> (?<span class="id" title="var">n</span>, <span class="id" title="var">_</span>) ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> &lt;- (<span class="id" title="var">firstn_skipn</span> <span class="id" title="var">n</span>);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> /<span class="id" title="var">firstn</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> /<span class="id" title="var">skipn</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">reflexivity</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;)<br/>
+&nbsp;&nbsp;|<span class="id" title="tactic">idtac</span>]<br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Ltac</span>2 <span class="id" title="var">_mlReshapeHypsByName</span> (<span class="id" title="var">name'</span> : <span class="id" title="keyword">constr</span>) :=<br/>
+&nbsp;&nbsp;<span class="id" title="var">ltac1</span>:(<span class="id" title="var">name''</span> |- <span class="id" title="var">_mlReshapeHypsByName</span> <span class="id" title="var">name''</span>) (<span class="id" title="var">Ltac1.of_constr</span> <span class="id" title="var">name'</span>)<br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Tactic Notation</span> "_mlReshapeHypsBack" :=<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">hyps</span> := <span class="id" title="tactic">fresh</span> "hyps" <span class="id" title="tactic">in</span> <span class="id" title="tactic">rewrite</span> [<span class="id" title="var">hyps</span> <span class="id" title="tactic">in</span> <span class="id" title="var">mkMLGoal</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">hyps</span> <span class="id" title="var">_</span>]/<span class="id" title="var">app</span><br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Ltac</span>2 <span class="id" title="var">_mlReshapeHypsBack</span> () :=<br/>
+&nbsp;&nbsp;<span class="id" title="var">ltac1</span>:(<span class="id" title="var">_mlReshapeHypsBack</span>)<br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">prf_add_assumption</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} <span class="id" title="var">Γ</span> <span class="id" title="var">a</span> <span class="id" title="var">b</span> <span class="id" title="var">i</span> :<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed</span> <span class="id" title="var">a</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed</span> <span class="id" title="var">b</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢<span class="id" title="var">i</span> <span class="id" title="var">b</span> <span class="id" title="keyword">using</span> <span class="id" title="var">i</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢<span class="id" title="var">i</span> (<span class="id" title="var">a</span> ---&gt; <span class="id" title="var">b</span>) <span class="id" title="keyword">using</span> <span class="id" title="var">i</span>.<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">pile_impl_allows_gen_x</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} <span class="id" title="var">x</span> <span class="id" title="var">gpi</span> <span class="id" title="var">svs</span> <span class="id" title="var">kt</span> <span class="id" title="var">fp</span>:<br/>
+&nbsp;&nbsp;<span class="id" title="var">ProofInfoLe</span> ( (<span class="id" title="var">ExGen</span> := {[<span class="id" title="var">x</span>]}, <span class="id" title="var">SVSubst</span> := <span class="id" title="var">svs</span>, <span class="id" title="var">KT</span> := <span class="id" title="var">kt</span>, <span class="id" title="var">FP</span> := <span class="id" title="var">fp</span>)) ( <span class="id" title="var">gpi</span>) →<br/>
+&nbsp;&nbsp;<span class="id" title="var">x</span> ∈ <span class="id" title="var">pi_generalized_evars</span> <span class="id" title="var">gpi</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">pile_impl_uses_kt</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} <span class="id" title="var">gpi</span> <span class="id" title="var">evs</span> <span class="id" title="var">svs</span> <span class="id" title="var">fp</span>:<br/>
+&nbsp;&nbsp;<span class="id" title="var">ProofInfoLe</span> ( (<span class="id" title="var">ExGen</span> := <span class="id" title="var">evs</span>, <span class="id" title="var">SVSubst</span> := <span class="id" title="var">svs</span>, <span class="id" title="var">KT</span> := <span class="id" title="var">true</span>, <span class="id" title="var">FP</span> := <span class="id" title="var">fp</span>)) ( <span class="id" title="var">gpi</span>) →<br/>
+&nbsp;&nbsp;<span class="id" title="var">pi_uses_kt</span> <span class="id" title="var">gpi</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">pile_impl_allows_svsubst_X</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} <span class="id" title="var">gpi</span> <span class="id" title="var">evs</span> <span class="id" title="var">X</span> <span class="id" title="var">kt</span> <span class="id" title="var">fp</span>:<br/>
+&nbsp;&nbsp;<span class="id" title="var">ProofInfoLe</span> ( (<span class="id" title="var">ExGen</span> := <span class="id" title="var">evs</span>, <span class="id" title="var">SVSubst</span> := {[<span class="id" title="var">X</span>]}, <span class="id" title="var">KT</span> := <span class="id" title="var">kt</span>, <span class="id" title="var">FP</span> := <span class="id" title="var">fp</span>)) ( <span class="id" title="var">gpi</span>) →<br/>
+&nbsp;&nbsp;<span class="id" title="var">X</span> ∈ <span class="id" title="var">pi_substituted_svars</span> <span class="id" title="var">gpi</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">liftPi</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} (<span class="id" title="var">Γ</span> : <span class="id" title="var">Theory</span>) (<span class="id" title="var">ϕ</span> : <span class="id" title="var">Pattern</span>) (<span class="id" title="var">i₁</span> <span class="id" title="var">i₂</span> : <span class="id" title="var">ProofInfo</span>)<br/>
+&nbsp;&nbsp;{<span class="id" title="var">pile</span> : <span class="id" title="var">ProofInfoLe</span> <span class="id" title="var">i₁</span> <span class="id" title="var">i₂</span>}<br/>
+&nbsp;&nbsp;:<br/>
+&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢<span class="id" title="var">i</span> <span class="id" title="var">ϕ</span> <span class="id" title="keyword">using</span> <span class="id" title="var">i₁</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢<span class="id" title="var">i</span> <span class="id" title="var">ϕ</span> <span class="id" title="keyword">using</span> <span class="id" title="var">i₂</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">useAnyReasoning</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} {<span class="id" title="var">Γ</span> <span class="id" title="var">ϕ</span> <span class="id" title="var">i</span>}:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢<span class="id" title="var">i</span> <span class="id" title="var">ϕ</span> <span class="id" title="keyword">using</span> <span class="id" title="var">i</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢<span class="id" title="var">i</span> <span class="id" title="var">ϕ</span> <span class="id" title="keyword">using</span> <span class="id" title="var">AnyReasoning</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Close</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">ml_scope</span>.<br/>
+</div>
+<hr/>This page has been generated by <a href="http://coq.inria.fr/">coqdoc</a>
+</div>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,395 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link href="coqdoc.css" rel="stylesheet" type="text/css" />
+<title>DeductionTheorem</title>
+</head>
+
+<body>
+
+<div id="page">
+
+<div id="header">
+</div>
+
+<div id="main">
+
+<h1 class="libtitle">File DeductionTheorem</h1>
+
+<div class="code">
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">ssreflect</span> <span class="id" title="var">ssrfun</span> <span class="id" title="var">ssrbool</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Ltac2</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Ltac2</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Equations.Prop.Equations</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">String</span> <span class="id" title="var">Setoid</span> <span class="id" title="var">Btauto</span>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Coq.Program.Equality</span>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Coq.Logic.Classical_Prop</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq.Logic</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">FunctionalExtensionality</span> <span class="id" title="var">Eqdep_dec</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq.Classes</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Morphisms_Prop</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq.Unicode</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Utf8</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq.micromega</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Lia</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">stdpp</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">base</span> <span class="id" title="var">fin_sets</span> <span class="id" title="var">sets</span> <span class="id" title="var">propset</span> <span class="id" title="var">proof_irrel</span> <span class="id" title="var">option</span> <span class="id" title="var">list</span> <span class="id" title="var">coGset</span> <span class="id" title="var">finite</span> <span class="id" title="var">infinite</span> <span class="id" title="var">gmap</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">MatchingLogic</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">Logic</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">DerivedOperators_Syntax</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">ProofMode.MLPM</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">FreshnessManager</span><br/>
+.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">MatchingLogic.Theories</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Definedness_Syntax</span> <span class="id" title="var">Definedness_ProofSystem</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">MatchingLogic.Utils</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">stdpp_ext</span>.<br/>
+<span class="id" title="keyword">Import</span> <span class="id" title="var">extralibrary</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Import</span> <span class="id" title="var">MatchingLogic.Logic.Notations</span>.<br/>
+<span class="id" title="keyword">Import</span> <span class="id" title="var">MatchingLogic.DerivedOperators_Syntax.Notations</span>.<br/>
+
+<br/>
+
+<br/>
+<span class="id" title="keyword">Import</span> <span class="id" title="var">Notations</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Open</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">ml_scope</span>.<br/>
+<span class="id" title="keyword">Open</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">string_scope</span>.<br/>
+<span class="id" title="keyword">Open</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">list_scope</span>.<br/>
+
+<br/>
+<span class="comment">(*&nbsp;TODO:&nbsp;These&nbsp;3&nbsp;lemmas&nbsp;are&nbsp;used&nbsp;only&nbsp;here&nbsp;as&nbsp;is,&nbsp;but&nbsp;maybe&nbsp;it&nbsp;should&nbsp;be&nbsp;somewhere&nbsp;else?&nbsp;*)</span><br/>
+<span class="id" title="keyword">Local Lemma</span> <span class="id" title="var">impl_ctx_impl</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} <span class="id" title="var">Γ</span> <span class="id" title="var">ctx</span> <span class="id" title="var">ϕ</span> ψ <span class="id" title="var">i</span> :<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed</span> <span class="id" title="var">ϕ</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed</span> ψ →<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed</span> (<span class="id" title="var">pcPattern</span> <span class="id" title="var">ctx</span>) →<br/>
+&nbsp;&nbsp;<span class="id" title="var">ProofInfoLe</span> <span class="id" title="var">AnyReasoning</span> <span class="id" title="var">i</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢<span class="id" title="var">i</span> <span class="id" title="var">ϕ</span> ---&gt; ψ <span class="id" title="keyword">using</span> <span class="id" title="var">i</span> →<br/>
+&nbsp;&nbsp;(<span class="id" title="var">is_positive_context</span> <span class="id" title="var">ctx</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢<span class="id" title="var">i</span> (<span class="id" title="var">emplace</span> <span class="id" title="var">ctx</span> <span class="id" title="var">ϕ</span>) ---&gt; (<span class="id" title="var">emplace</span> <span class="id" title="var">ctx</span> ψ) <span class="id" title="keyword">using</span> <span class="id" title="var">i</span>)<br/>
+&nbsp;&nbsp;×<br/>
+&nbsp;&nbsp;(<span class="id" title="var">is_negative_context</span> <span class="id" title="var">ctx</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢<span class="id" title="var">i</span> (<span class="id" title="var">emplace</span> <span class="id" title="var">ctx</span> ψ) ---&gt; (<span class="id" title="var">emplace</span> <span class="id" title="var">ctx</span> <span class="id" title="var">ϕ</span>) <span class="id" title="keyword">using</span> <span class="id" title="var">i</span>).<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">impl_ctx_impl_pos</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} <span class="id" title="var">Γ</span> <span class="id" title="var">ctx</span> <span class="id" title="var">ϕ</span> ψ <span class="id" title="var">i</span> :<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed</span> <span class="id" title="var">ϕ</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed</span> ψ →<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed</span> (<span class="id" title="var">pcPattern</span> <span class="id" title="var">ctx</span>) →<br/>
+&nbsp;&nbsp;<span class="id" title="var">is_positive_context</span> <span class="id" title="var">ctx</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">ProofInfoLe</span> <span class="id" title="var">AnyReasoning</span> <span class="id" title="var">i</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢<span class="id" title="var">i</span> <span class="id" title="var">ϕ</span> ---&gt; ψ <span class="id" title="keyword">using</span> <span class="id" title="var">i</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢<span class="id" title="var">i</span> (<span class="id" title="var">emplace</span> <span class="id" title="var">ctx</span> <span class="id" title="var">ϕ</span>) ---&gt; (<span class="id" title="var">emplace</span> <span class="id" title="var">ctx</span> ψ) <span class="id" title="keyword">using</span> <span class="id" title="var">i</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">impl_ctx_impl_neg</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} <span class="id" title="var">Γ</span> <span class="id" title="var">ctx</span> <span class="id" title="var">ϕ</span> ψ <span class="id" title="var">i</span> :<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed</span> <span class="id" title="var">ϕ</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed</span> ψ →<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed</span> (<span class="id" title="var">pcPattern</span> <span class="id" title="var">ctx</span>) →<br/>
+&nbsp;&nbsp;<span class="id" title="var">is_negative_context</span> <span class="id" title="var">ctx</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">ProofInfoLe</span> <span class="id" title="var">AnyReasoning</span> <span class="id" title="var">i</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢<span class="id" title="var">i</span> <span class="id" title="var">ϕ</span> ---&gt; ψ <span class="id" title="keyword">using</span> <span class="id" title="var">i</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢<span class="id" title="var">i</span> (<span class="id" title="var">emplace</span> <span class="id" title="var">ctx</span> ψ) ---&gt; (<span class="id" title="var">emplace</span> <span class="id" title="var">ctx</span> <span class="id" title="var">ϕ</span>) <span class="id" title="keyword">using</span> <span class="id" title="var">i</span>.<br/>
+
+<br/>
+<span class="comment">(*&nbsp;Lemma&nbsp;88&nbsp;in&nbsp;in&nbsp;the&nbsp;matching&nbsp;mu&nbsp;logic&nbsp;paper.*)</span><br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">pred_and_ctx_and</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} {<span class="id" title="var">syntax</span> : <span class="id" title="keyword">Syntax</span>} <span class="id" title="var">Γ</span> <span class="id" title="var">ctx</span> <span class="id" title="var">ϕ</span> ψ:<br/>
+&nbsp;&nbsp;<span class="id" title="var">Definedness_Syntax.theory</span> ⊆ <span class="id" title="var">Γ</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed</span> <span class="id" title="var">ϕ</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed</span> ψ →<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed</span> (<span class="id" title="var">pcPattern</span> <span class="id" title="var">ctx</span>) →<br/>
+&nbsp;&nbsp;<span class="id" title="var">mu_in_evar_path</span> (<span class="id" title="var">pcEvar</span> <span class="id" title="var">ctx</span>) (<span class="id" title="var">pcPattern</span> <span class="id" title="var">ctx</span>) 0 = <span class="id" title="var">false</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢ <span class="id" title="var">is_predicate_pattern</span> ψ →<br/>
+&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢ ψ <span class="id" title="var">and</span> (<span class="id" title="var">emplace</span> <span class="id" title="var">ctx</span> <span class="id" title="var">ϕ</span>) &lt;---&gt; ψ <span class="id" title="var">and</span> (<span class="id" title="var">emplace</span> <span class="id" title="var">ctx</span> (ψ <span class="id" title="var">and</span> <span class="id" title="var">ϕ</span>)).<br/>
+
+<br/>
+<span class="comment">(*&nbsp;Lemma&nbsp;89&nbsp;*)</span><br/>
+<span class="comment">(*&nbsp;TODO:&nbsp;it&nbsp;is&nbsp;worth&nbsp;splitting&nbsp;this&nbsp;theorem,&nbsp;since&nbsp;the&nbsp;---&gt;&nbsp;direction&nbsp;requires<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;fewer&nbsp;side&nbsp;conditions&nbsp;*)</span><br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">mu_and_predicate_propagation</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} {<span class="id" title="var">syntax</span> : <span class="id" title="keyword">Syntax</span>} <span class="id" title="var">Γ</span> <span class="id" title="var">ϕ</span> ψ :<br/>
+&nbsp;&nbsp;<span class="id" title="var">Definedness_Syntax.theory</span> ⊆ <span class="id" title="var">Γ</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed</span> (<span class="id" title="var">mu</span>, <span class="id" title="var">ϕ</span>) →<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed</span> ψ →<br/>
+&nbsp;&nbsp;<span class="comment">(*&nbsp;"Let&nbsp;X&nbsp;be&nbsp;a&nbsp;set&nbsp;variable&nbsp;that&nbsp;does&nbsp;not&nbsp;occur&nbsp;under&nbsp;any&nbsp;µ-binder&nbsp;in&nbsp;ϕ"&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">bound_svar_is_banned_under_mus</span> <span class="id" title="var">ϕ</span> 0 0 →<br/>
+&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢ <span class="id" title="var">is_predicate_pattern</span> ψ →<br/>
+&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢ (<span class="id" title="var">mu</span>, (ψ <span class="id" title="var">and</span> <span class="id" title="var">ϕ</span>)) &lt;---&gt; (ψ <span class="id" title="var">and</span> (<span class="id" title="var">mu</span>, <span class="id" title="var">ϕ</span>)).<br/>
+
+<br/>
+<span class="id" title="keyword">Theorem</span> <span class="id" title="var">deduction_theorem</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} {<span class="id" title="var">syntax</span> : <span class="id" title="keyword">Syntax</span>} <span class="id" title="var">Γ</span> <span class="id" title="var">ϕ</span> ψ<br/>
+&nbsp;&nbsp;(<span class="id" title="var">gpi</span> : <span class="id" title="var">ProofInfo</span>)<br/>
+&nbsp;&nbsp;(<span class="id" title="var">pf</span> : <span class="id" title="var">Γ</span> ∪ {[ ψ ]} ⊢<span class="id" title="var">i</span> <span class="id" title="var">ϕ</span> <span class="id" title="keyword">using</span> <span class="id" title="var">gpi</span>) :<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed</span> <span class="id" title="var">ϕ</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed</span> ψ →<br/>
+&nbsp;&nbsp;<span class="id" title="var">theory</span> ⊆ <span class="id" title="var">Γ</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">pi_generalized_evars</span> <span class="id" title="var">gpi</span> ## (<span class="id" title="var">gset_to_coGset</span> (<span class="id" title="var">free_evars</span> ψ)) →<br/>
+&nbsp;&nbsp;<span class="id" title="var">pi_substituted_svars</span> <span class="id" title="var">gpi</span> ## (<span class="id" title="var">gset_to_coGset</span> (<span class="id" title="var">free_svars</span> ψ)) →<br/>
+&nbsp;&nbsp;<span class="id" title="var">pi_uses_advanced_kt</span> <span class="id" title="var">gpi</span> = <span class="id" title="var">false</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢<span class="id" title="var">i</span> ⌊ ψ ⌋ ---&gt; <span class="id" title="var">ϕ</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">using</span> <span class="id" title="var">AnyReasoning</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">MLGoal_deduct'</span><br/>
+&nbsp;&nbsp;{<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>}<br/>
+&nbsp;&nbsp;{<span class="id" title="var">syntax</span> : <span class="id" title="keyword">Syntax</span>}<br/>
+&nbsp;&nbsp;(<span class="id" title="var">Γ</span> : <span class="id" title="var">Theory</span>)<br/>
+&nbsp;&nbsp;(<span class="id" title="var">l</span> : <span class="id" title="var">hypotheses</span>)<br/>
+&nbsp;&nbsp;<span class="id" title="var">name</span><br/>
+&nbsp;&nbsp;(ψ <span class="id" title="var">g</span> : <span class="id" title="var">Pattern</span>)<br/>
+&nbsp;&nbsp;(<span class="id" title="var">C</span> : <span class="id" title="var">PatternCtx</span>)<br/>
+&nbsp;&nbsp;(<span class="id" title="var">i</span> : <span class="id" title="var">ProofInfo</span>)<br/>
+&nbsp;&nbsp;:<br/>
+&nbsp;&nbsp;<span class="id" title="var">theory</span> ⊆ <span class="id" title="var">Γ</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">pi_generalized_evars</span> <span class="id" title="var">i</span> ## <span class="id" title="var">gset_to_coGset</span> (<span class="id" title="var">free_evars</span> ψ) →<br/>
+&nbsp;&nbsp;<span class="id" title="var">pi_substituted_svars</span> <span class="id" title="var">i</span> ## <span class="id" title="var">gset_to_coGset</span> (<span class="id" title="var">free_svars</span> ψ) →<br/>
+&nbsp;&nbsp;<span class="id" title="var">pi_uses_advanced_kt</span> <span class="id" title="var">i</span> = <span class="id" title="var">false</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">mkMLGoal</span> <span class="id" title="var">Σ</span> (<span class="id" title="var">Γ</span> ∪ {[ψ]}) <span class="id" title="var">l</span> <span class="id" title="var">g</span> <span class="id" title="var">i</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">mkMLGoal</span> <span class="id" title="var">Σ</span> <span class="id" title="var">Γ</span> ((<span class="id" title="var">mkNH</span> <span class="id" title="var">_</span> <span class="id" title="var">name</span> ⌊ ψ ⌋) :: <span class="id" title="var">l</span>) <span class="id" title="var">g</span> <span class="id" title="var">AnyReasoning</span> .<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">MLGoal_deduct</span><br/>
+&nbsp;&nbsp;{<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>}<br/>
+&nbsp;&nbsp;{<span class="id" title="var">syntax</span> : <span class="id" title="keyword">Syntax</span>}<br/>
+&nbsp;&nbsp;(<span class="id" title="var">Γ</span> : <span class="id" title="var">Theory</span>)<br/>
+&nbsp;&nbsp;(<span class="id" title="var">l₁</span> <span class="id" title="var">l₂</span> : <span class="id" title="var">hypotheses</span>)<br/>
+&nbsp;&nbsp;<span class="id" title="var">name</span><br/>
+&nbsp;&nbsp;(ψ <span class="id" title="var">g</span> : <span class="id" title="var">Pattern</span>)<br/>
+&nbsp;&nbsp;:<br/>
+&nbsp;&nbsp;<span class="id" title="var">theory</span> ⊆ <span class="id" title="var">Γ</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">mkMLGoal</span> <span class="id" title="var">Σ</span> (<span class="id" title="var">Γ</span> ∪ {[ψ]}) (<span class="id" title="var">l₁</span> ++ <span class="id" title="var">l₂</span>) <span class="id" title="var">g</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;((<span class="id" title="var">ExGen</span> := ⊤ ∖ <span class="id" title="var">gset_to_coGset</span> (<span class="id" title="var">free_evars</span> ψ), <span class="id" title="var">SVSubst</span> := ⊤ ∖ <span class="id" title="var">gset_to_coGset</span> (<span class="id" title="var">free_svars</span> ψ), <span class="id" title="var">KT</span> := <span class="id" title="var">true</span>, <span class="id" title="var">AKT</span> := <span class="id" title="var">false</span>)) →<br/>
+&nbsp;&nbsp;<span class="id" title="var">mkMLGoal</span> <span class="id" title="var">Σ</span> <span class="id" title="var">Γ</span> (<span class="id" title="var">l₁</span> ++ (<span class="id" title="var">mkNH</span> <span class="id" title="var">_</span> <span class="id" title="var">name</span> ⌊ ψ ⌋) :: <span class="id" title="var">l₂</span>) <span class="id" title="var">g</span> <span class="id" title="var">AnyReasoning</span> .<br/>
+
+<br/>
+<span class="id" title="keyword">Tactic Notation</span> "mlDeduct" <span class="id" title="keyword">constr</span>(<span class="id" title="var">name</span>) :=<br/>
+&nbsp;&nbsp;<span class="id" title="var">_ensureProofMode</span>;<br/>
+&nbsp;&nbsp;<span class="id" title="var">_mlReshapeHypsByName</span> <span class="id" title="var">name</span>;<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <span class="id" title="var">MLGoal_deduct</span>;<br/>
+&nbsp;&nbsp;[<span class="id" title="tactic">try</span> <span class="id" title="tactic">assumption</span>|<span class="id" title="var">_mlReshapeHypsBack</span>]<br/>
+.<br/>
+
+<br/>
+#[<span class="id" title="var">local</span>]<br/>
+<span class="id" title="keyword">Example</span> <span class="id" title="var">ex_deduct</span><br/>
+&nbsp;&nbsp;{<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} {<span class="id" title="var">syntax</span> : <span class="id" title="keyword">Syntax</span>} (<span class="id" title="var">Γ</span> : <span class="id" title="var">Theory</span>) (<span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span> <span class="id" title="var">ϕ₃</span> : <span class="id" title="var">Pattern</span>)<br/>
+&nbsp;&nbsp;: <br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed</span> <span class="id" title="var">ϕ₁</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed</span> <span class="id" title="var">ϕ₂</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed</span> <span class="id" title="var">ϕ₃</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">theory</span> ⊆ <span class="id" title="var">Γ</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢ <span class="id" title="var">ϕ₁</span> ---&gt; ⌊ <span class="id" title="var">ϕ₂</span> ⌋ ---&gt; <span class="id" title="var">ϕ₃</span> ---&gt; <span class="id" title="var">ϕ₂</span><br/>
+.<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">equality_elimination</span><br/>
+&nbsp;&nbsp;{<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>}<br/>
+&nbsp;&nbsp;{<span class="id" title="var">sy</span> : <span class="id" title="var">Definedness_Syntax.Syntax</span>}<br/>
+&nbsp;&nbsp;<span class="id" title="var">Γ</span> φ1 φ2 <span class="id" title="var">C</span> <br/>
+&nbsp;&nbsp;(<span class="id" title="var">HΓ</span> : <span class="id" title="var">theory</span> ⊆ <span class="id" title="var">Γ</span>)<br/>
+&nbsp;&nbsp;(<span class="id" title="var">WF1</span> : <span class="id" title="var">well_formed</span> φ1)<br/>
+&nbsp;&nbsp;(<span class="id" title="var">WF2</span> :  <span class="id" title="var">well_formed</span> φ2)<br/>
+&nbsp;&nbsp;(<span class="id" title="var">WFC</span> : <span class="id" title="var">PC_wf</span> <span class="id" title="var">C</span>)<br/>
+&nbsp;&nbsp;(<span class="id" title="var">Hmu</span> : <span class="id" title="var">pattern_kt_well_formed</span> (<span class="id" title="var">pcPattern</span> <span class="id" title="var">C</span>))<br/>
+&nbsp;&nbsp;<br/>
+ :<br/>
+&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢<span class="id" title="var">i</span> (φ1 =<span class="id" title="var">ml</span> φ2) ---&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">emplace</span> <span class="id" title="var">C</span> φ1) ---&gt; (<span class="id" title="var">emplace</span> <span class="id" title="var">C</span> φ2)<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">using</span> <span class="id" title="var">AnyReasoning</span>.<br/>
+</div>
+
+<div class="doc">
+C is the context pattern, and y is the context variable from now on 
+</div>
+<div class="code">
+</div>
+
+<div class="doc">
+size-based induction on the context 
+</div>
+<div class="code">
+</div>
+
+<div class="doc">
+C = x 
+</div>
+<div class="code">
+</div>
+
+<div class="doc">
+C = □ (the context's hole) 
+</div>
+<div class="code">
+</div>
+
+<div class="doc">
+C = x ≠ □ 
+</div>
+<div class="code">
+</div>
+
+<div class="doc">
+C = X 
+</div>
+<div class="code">
+</div>
+
+<div class="doc">
+C is a bound element variable --- C is not well-formed 
+</div>
+<div class="code">
+</div>
+
+<div class="doc">
+C is a bound set variable --- C is not well-formed 
+</div>
+<div class="code">
+</div>
+
+<div class="doc">
+C = σ 
+</div>
+<div class="code">
+</div>
+
+<div class="doc">
+C = C₁ ⋅ C₂ 
+</div>
+<div class="code">
+</div>
+
+<div class="doc">
+side conditions 
+</div>
+<div class="code">
+</div>
+
+<div class="doc">
+side conditions 
+</div>
+<div class="code">
+</div>
+
+<div class="doc">
+solving the side conditions from above 
+</div>
+<div class="code">
+</div>
+
+<div class="doc">
+C = ⊥ 
+</div>
+<div class="code">
+</div>
+
+<div class="doc">
+C = C₁ ---&gt; C₂ 
+</div>
+<div class="code">
+</div>
+
+<div class="doc">
+C = ∃x.C 
+</div>
+<div class="code">
+</div>
+
+<div class="doc">
+<i>-s are side conditions 
+<div class="paragraph"> </div>
+
+ swapping substitutions 
+</div>
+<div class="code">
+</div>
+
+<div class="doc">
+C = μX.C 
+</div>
+<div class="code">
+</div>
+
+<div class="doc">
+      Γ ⊢ φ1 = φ2 ∧ (μX.C<span class="inlinecode"><span class="id" title="var">y</span>↦φ1</span>) ↔ μX.φ1 = φ2 ∧ C<span class="inlinecode"><span class="id" title="var">y</span>↦φ1</span>
+    
+</div>
+<div class="code">
+</div>
+
+<div class="doc">
+This theorem uses Ex-Gen for some fresh x, y, z for which we
+          generate concrete variables above 
+</div>
+<div class="code">
+</div>
+
+<div class="doc">
+        Γ ⊢ φ1 → φ2
+<hr/>
+
+      Γ ⊢ (μX.φ1) → μX.φ2
+    
+</div>
+<div class="code">
+</div>
+
+<div class="doc">
+Proof of the premise of monotonicity of μ 
+</div>
+<div class="code">
+</div>
+
+<div class="doc">
+Substiutions do not affect the equality, since they do not contain μ's
+        bound variable 
+      
+</div>
+<div class="code">
+</div>
+
+<div class="doc">
+Swapping the substitutions 
+</div>
+<div class="code">
+</div>
+
+<div class="doc">
+size-based induction is needed to make this `apply` 
+</div>
+<div class="code">
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">pattern_kt_well_formed_free_evar_subst</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>}:<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">∀</span> φ ψ <span class="id" title="var">x</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">pattern_kt_well_formed</span> φ →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">pattern_kt_well_formed</span> ψ →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed</span> ψ →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">pattern_kt_well_formed</span> (<span class="id" title="var">free_evar_subst</span> ψ <span class="id" title="var">x</span> φ).<br/>
+
+<br/>
+<span class="id" title="keyword">Corollary</span> <span class="id" title="var">equality_elimination_eq</span><br/>
+&nbsp;&nbsp;{<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>}<br/>
+&nbsp;&nbsp;{<span class="id" title="var">sy</span> : <span class="id" title="var">Definedness_Syntax.Syntax</span>}<br/>
+&nbsp;&nbsp;<span class="id" title="var">Γ</span> φ1 φ2 <span class="id" title="var">C</span><br/>
+&nbsp;&nbsp;(<span class="id" title="var">HΓ</span> : <span class="id" title="var">theory</span> ⊆ <span class="id" title="var">Γ</span>)<br/>
+&nbsp;&nbsp;(<span class="id" title="var">WF1</span> : <span class="id" title="var">well_formed</span> φ1)<br/>
+&nbsp;&nbsp;(<span class="id" title="var">WF2</span> :  <span class="id" title="var">well_formed</span> φ2)<br/>
+&nbsp;&nbsp;(<span class="id" title="var">WFC</span> : <span class="id" title="var">PC_wf</span> <span class="id" title="var">C</span>)<br/>
+&nbsp;&nbsp;(<span class="id" title="var">Hmu</span> : <span class="id" title="var">pattern_kt_well_formed</span> (<span class="id" title="var">pcPattern</span> <span class="id" title="var">C</span>))<br/>
+&nbsp;&nbsp;(<span class="id" title="var">Htechnical</span> : <span class="id" title="var">pattern_kt_well_formed</span> φ1) :<br/>
+&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢<span class="id" title="var">i</span> (φ1 =<span class="id" title="var">ml</span> φ2) ---&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">emplace</span> <span class="id" title="var">C</span> φ1) =<span class="id" title="var">ml</span> (<span class="id" title="var">emplace</span> <span class="id" title="var">C</span> φ2)<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">using</span> <span class="id" title="var">AnyReasoning</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Close</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">ml_scope</span>.<br/>
+<span class="id" title="keyword">Close</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">string_scope</span>.<br/>
+<span class="id" title="keyword">Close</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">list_scope</span>.<br/>
+</div>
+<hr/>This page has been generated by <a href="http://coq.inria.fr/">coqdoc</a>
+</div>
+
+</div>
+
+</body>
+</html>

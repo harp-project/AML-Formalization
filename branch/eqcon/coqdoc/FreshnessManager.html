@@ -1,0 +1,483 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link href="coqdoc.css" rel="stylesheet" type="text/css" />
+<title>FreshnessManager</title>
+</head>
+
+<body>
+
+<div id="page">
+
+<div id="header">
+</div>
+
+<div id="main">
+
+<h1 class="libtitle">File FreshnessManager</h1>
+
+<div class="code">
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">ssreflect</span> <span class="id" title="var">ssrfun</span> <span class="id" title="var">ssrbool</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Ltac2</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Ltac2</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">stdpp</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">base</span> <span class="id" title="var">gmap</span> <span class="id" title="var">sets</span> <span class="id" title="var">list</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">MatchingLogic.Utils</span><br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">extralibrary</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">stdpp_ext</span><br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">MatchingLogic</span><br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Syntax</span><br/>
+.<br/>
+
+<br/>
+
+<br/>
+<span class="id" title="keyword">Record</span> <span class="id" title="var">FreshnessManager</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">avoided_patterns</span> : <span class="id" title="var">list</span> <span class="id" title="var">Pattern</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">avoided_evars</span> : <span class="id" title="var">list</span> <span class="id" title="tactic">evar</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">avoided_svars</span> : <span class="id" title="var">list</span> <span class="id" title="var">svar</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">fm_evars</span> : <span class="id" title="var">list</span> <span class="id" title="tactic">evar</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">fm_svars</span> : <span class="id" title="var">list</span> <span class="id" title="var">svar</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;:= <span class="id" title="var">mkFreshnessManager</span> {<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">fm_avoids_evar</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> (<span class="id" title="var">i</span> <span class="id" title="var">j</span> : <span class="id" title="var">nat</span>) (<span class="id" title="var">x</span> <span class="id" title="var">y</span> : <span class="id" title="tactic">evar</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">avoided_evars</span> !! <span class="id" title="var">i</span> = <span class="id" title="var">Some</span> <span class="id" title="var">x</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">fm_evars</span> !! <span class="id" title="var">j</span> = <span class="id" title="var">Some</span> <span class="id" title="var">y</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">x</span> ≠ <span class="id" title="var">y</span> ;<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">fm_avoids_svar</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> (<span class="id" title="var">i</span> <span class="id" title="var">j</span> : <span class="id" title="var">nat</span>) (<span class="id" title="var">X</span> <span class="id" title="var">Y</span> : <span class="id" title="var">svar</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">avoided_svars</span> !! <span class="id" title="var">i</span> = <span class="id" title="var">Some</span> <span class="id" title="var">X</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">fm_svars</span> !! <span class="id" title="var">j</span> = <span class="id" title="var">Some</span> <span class="id" title="var">Y</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">X</span> ≠ <span class="id" title="var">Y</span> ;<br/>
+<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">fm_evars_nodup</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> (<span class="id" title="var">i</span> <span class="id" title="var">j</span> : <span class="id" title="var">nat</span>) (<span class="id" title="var">x</span> <span class="id" title="var">y</span> : <span class="id" title="tactic">evar</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">fm_evars</span> !! <span class="id" title="var">i</span> = <span class="id" title="var">Some</span> <span class="id" title="var">x</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">fm_evars</span> !! <span class="id" title="var">j</span> = <span class="id" title="var">Some</span> <span class="id" title="var">y</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">i</span> ≠ <span class="id" title="var">j</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">x</span> ≠ <span class="id" title="var">y</span> ;<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">fm_svars_nodup</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> (<span class="id" title="var">i</span> <span class="id" title="var">j</span> : <span class="id" title="var">nat</span>) (<span class="id" title="var">X</span> <span class="id" title="var">Y</span> : <span class="id" title="var">svar</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">fm_svars</span> !! <span class="id" title="var">i</span> = <span class="id" title="var">Some</span> <span class="id" title="var">X</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">fm_svars</span> !! <span class="id" title="var">j</span> = <span class="id" title="var">Some</span> <span class="id" title="var">Y</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">i</span> ≠ <span class="id" title="var">j</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">X</span> ≠ <span class="id" title="var">Y</span> ;<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">fm_evars_fresh</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> (<span class="id" title="var">i</span> <span class="id" title="var">j</span> : <span class="id" title="var">nat</span>) (<span class="id" title="var">x</span> : <span class="id" title="tactic">evar</span>) (<span class="id" title="var">ϕ</span> : <span class="id" title="var">Pattern</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">fm_evars</span> !! <span class="id" title="var">i</span> = <span class="id" title="var">Some</span> <span class="id" title="var">x</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">avoided_patterns</span> !! <span class="id" title="var">j</span> = <span class="id" title="var">Some</span> <span class="id" title="var">ϕ</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">evar_is_fresh_in</span> <span class="id" title="var">x</span> <span class="id" title="var">ϕ</span> ;<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">fm_svars_fresh</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> (<span class="id" title="var">i</span> <span class="id" title="var">j</span> : <span class="id" title="var">nat</span>) (<span class="id" title="var">X</span> : <span class="id" title="var">svar</span>) (<span class="id" title="var">ϕ</span> : <span class="id" title="var">Pattern</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">fm_svars</span> !! <span class="id" title="var">i</span> = <span class="id" title="var">Some</span> <span class="id" title="var">X</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">avoided_patterns</span> !! <span class="id" title="var">j</span> = <span class="id" title="var">Some</span> <span class="id" title="var">ϕ</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">svar_is_fresh_in</span> <span class="id" title="var">X</span> <span class="id" title="var">ϕ</span> ;<br/>
+}.<br/>
+
+<br/>
+<span class="comment">(*&nbsp;Maybe&nbsp;it&nbsp;is&nbsp;better&nbsp;to&nbsp;show&nbsp;everything,&nbsp;for&nbsp;debugging&nbsp;reasons&nbsp;*)</span><br/>
+<span class="comment">(*&nbsp;Notation&nbsp;"FreshMan()"&nbsp;:=&nbsp;(@FreshnessManager&nbsp;_&nbsp;_&nbsp;_&nbsp;_&nbsp;_&nbsp;_)&nbsp;:&nbsp;ml_scope.&nbsp;*)</span><br/>
+
+<br/>
+<span class="id" title="keyword">Program Definition</span> <span class="id" title="var">EmptyFreshMan</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} <span class="id" title="var">ps</span> <span class="id" title="var">aevs</span> <span class="id" title="var">asvs</span> : <span class="id" title="var">FreshnessManager</span> <span class="id" title="var">ps</span> <span class="id" title="var">aevs</span> <span class="id" title="var">asvs</span> [] []<br/>
+:= @<span class="id" title="var">mkFreshnessManager</span> <span class="id" title="var">Σ</span> <span class="id" title="var">ps</span> <span class="id" title="var">aevs</span> <span class="id" title="var">asvs</span> [] [] <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Ltac</span>2 <span class="id" title="var">_is_pattern_hyp</span> (<span class="id" title="var">i</span>, <span class="id" title="var">value</span>, <span class="id" title="keyword">type</span>) : <span class="id" title="var">bool</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">lazy_match</span>! <span class="id" title="keyword">type</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| @<span class="id" title="var">Pattern</span> <span class="id" title="var">_</span> ⇒ <span class="id" title="var">true</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">_</span> ⇒ <span class="id" title="var">false</span> <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Ltac</span>2 <span class="id" title="var">_project_name</span> (<span class="id" title="var">i</span>, <span class="id" title="var">_</span>, <span class="id" title="var">_</span>) : <span class="id" title="var">ident</span> := <span class="id" title="var">i</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Ltac</span>2 <span class="id" title="var">_gather_patterns_from_context</span> () : <span class="id" title="keyword">constr</span> <span class="id" title="var">list</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">hs</span> := (<span class="id" title="var">Control.hyps</span> ())<span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">phs</span> := <span class="id" title="var">List.filter</span> <span class="id" title="var">_is_pattern_hyp</span> <span class="id" title="var">hs</span> <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">names</span> := <span class="id" title="var">List.map</span> <span class="id" title="var">_project_name</span> <span class="id" title="var">phs</span> <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">filtered</span> := <span class="id" title="var">names</span> <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">List.map</span> <span class="id" title="var">Control.hyp</span> <span class="id" title="var">filtered</span>)<br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Ltac</span>2 <span class="id" title="keyword">rec</span> <span class="id" title="var">_patterns_to_list</span> (<span class="id" title="var">ps</span> : <span class="id" title="keyword">constr</span> <span class="id" title="var">list</span>) : <span class="id" title="keyword">constr</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">ps</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| [] ⇒ <span class="id" title="keyword">constr</span>:(@<span class="id" title="var">nil</span> (@<span class="id" title="var">Pattern</span> <span class="id" title="var">_</span>))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">x</span>::<span class="id" title="var">xs</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">r</span> := (<span class="id" title="var">_patterns_to_list</span> <span class="id" title="var">xs</span>) <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">rs</span> := <span class="id" title="keyword">constr</span>:($<span class="id" title="var">x</span>::$<span class="id" title="var">r</span>) <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">rs</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Ltac</span>2 <span class="id" title="var">_is_evar_hyp</span> (<span class="id" title="var">i</span>, <span class="id" title="var">value</span>, <span class="id" title="keyword">type</span>) : <span class="id" title="var">bool</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">lazy_match</span>! <span class="id" title="keyword">type</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| @<span class="id" title="tactic">evar</span> <span class="id" title="var">_</span> ⇒ <span class="id" title="var">true</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">_</span> ⇒ <span class="id" title="var">false</span> <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Ltac</span>2 <span class="id" title="var">_gather_evars_from_context</span> () : <span class="id" title="keyword">constr</span> <span class="id" title="var">list</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">hs</span> := (<span class="id" title="var">Control.hyps</span> ())<span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">phs</span> := <span class="id" title="var">List.filter</span> <span class="id" title="var">_is_evar_hyp</span> <span class="id" title="var">hs</span> <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">names</span> := <span class="id" title="var">List.map</span> <span class="id" title="var">_project_name</span> <span class="id" title="var">phs</span> <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">filtered</span> := <span class="id" title="var">names</span> <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">List.map</span> <span class="id" title="var">Control.hyp</span> <span class="id" title="var">filtered</span>)<br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Ltac</span>2 <span class="id" title="keyword">rec</span> <span class="id" title="var">_evars_to_list</span> (<span class="id" title="var">ps</span> : <span class="id" title="keyword">constr</span> <span class="id" title="var">list</span>) : <span class="id" title="keyword">constr</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">ps</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| [] ⇒ <span class="id" title="keyword">constr</span>:(@<span class="id" title="var">nil</span> (@<span class="id" title="tactic">evar</span> <span class="id" title="var">_</span>))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">x</span>::<span class="id" title="var">xs</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">r</span> := (<span class="id" title="var">_evars_to_list</span> <span class="id" title="var">xs</span>) <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">rs</span> := <span class="id" title="keyword">constr</span>:($<span class="id" title="var">x</span>::$<span class="id" title="var">r</span>) <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">rs</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Ltac</span>2 <span class="id" title="var">_is_svar_hyp</span> (<span class="id" title="var">i</span>, <span class="id" title="var">value</span>, <span class="id" title="keyword">type</span>) : <span class="id" title="var">bool</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">lazy_match</span>! <span class="id" title="keyword">type</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| @<span class="id" title="var">svar</span> <span class="id" title="var">_</span> ⇒ <span class="id" title="var">true</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">_</span> ⇒ <span class="id" title="var">false</span> <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Ltac</span>2 <span class="id" title="var">_gather_svars_from_context</span> () : <span class="id" title="keyword">constr</span> <span class="id" title="var">list</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">hs</span> := (<span class="id" title="var">Control.hyps</span> ())<span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">phs</span> := <span class="id" title="var">List.filter</span> <span class="id" title="var">_is_svar_hyp</span> <span class="id" title="var">hs</span> <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">names</span> := <span class="id" title="var">List.map</span> <span class="id" title="var">_project_name</span> <span class="id" title="var">phs</span> <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">filtered</span> := <span class="id" title="var">names</span> <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">List.map</span> <span class="id" title="var">Control.hyp</span> <span class="id" title="var">filtered</span>)<br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Ltac</span>2 <span class="id" title="keyword">rec</span> <span class="id" title="var">_svars_to_list</span> (<span class="id" title="var">ps</span> : <span class="id" title="keyword">constr</span> <span class="id" title="var">list</span>) : <span class="id" title="keyword">constr</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">ps</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| [] ⇒ <span class="id" title="keyword">constr</span>:(@<span class="id" title="var">nil</span> (@<span class="id" title="var">svar</span> <span class="id" title="var">_</span>))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">x</span>::<span class="id" title="var">xs</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">r</span> := (<span class="id" title="var">_svars_to_list</span> <span class="id" title="var">xs</span>) <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">rs</span> := <span class="id" title="keyword">constr</span>:($<span class="id" title="var">x</span>::$<span class="id" title="var">r</span>) <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">rs</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Ltac</span>2 <span class="id" title="var">_fm_new</span> () :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">ps</span> := <span class="id" title="var">_patterns_to_list</span> (<span class="id" title="var">_gather_patterns_from_context</span> ()) <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">aevs</span> := <span class="id" title="var">_evars_to_list</span> (<span class="id" title="var">_gather_evars_from_context</span> ()) <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">asvs</span> := <span class="id" title="var">_svars_to_list</span> (<span class="id" title="var">_gather_svars_from_context</span> ()) <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">fm</span> := <span class="id" title="keyword">constr</span>:(@<span class="id" title="var">EmptyFreshMan</span> <span class="id" title="var">_</span> $<span class="id" title="var">ps</span> $<span class="id" title="var">aevs</span> $<span class="id" title="var">asvs</span>) <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">set</span> $<span class="id" title="var">fm</span> <span class="id" title="keyword">as</span> <span class="id" title="var">FM</span><br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Ltac</span> <span class="id" title="var">_fm_new</span> := <span class="id" title="var">ltac2</span>:(<span class="id" title="var">_fm_new</span> ()).<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">FreshMan_fresh_evar</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">avoided_patterns</span> : <span class="id" title="var">list</span> <span class="id" title="var">Pattern</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">aevs</span> : <span class="id" title="var">list</span> <span class="id" title="tactic">evar</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">asvs</span> : <span class="id" title="var">list</span> <span class="id" title="var">svar</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">fm_evars</span> : <span class="id" title="var">list</span> <span class="id" title="tactic">evar</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">fm_svars</span> : <span class="id" title="var">list</span> <span class="id" title="var">svar</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">FM</span> : <span class="id" title="var">FreshnessManager</span> <span class="id" title="var">avoided_patterns</span> <span class="id" title="var">aevs</span> <span class="id" title="var">asvs</span> <span class="id" title="var">fm_evars</span> <span class="id" title="var">fm_svars</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{ <span class="id" title="var">x</span> : <span class="id" title="tactic">evar</span> &amp; (<span class="id" title="var">FreshnessManager</span> <span class="id" title="var">avoided_patterns</span> <span class="id" title="var">aevs</span> <span class="id" title="var">asvs</span> (<span class="id" title="var">x</span>::<span class="id" title="var">fm_evars</span>) <span class="id" title="var">fm_svars</span>)}<br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">FreshMan_fresh_svar</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">avoided_patterns</span> : <span class="id" title="var">list</span> <span class="id" title="var">Pattern</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">aevs</span> : <span class="id" title="var">list</span> <span class="id" title="tactic">evar</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">asvs</span> : <span class="id" title="var">list</span> <span class="id" title="var">svar</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">fm_evars</span> : <span class="id" title="var">list</span> <span class="id" title="tactic">evar</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">fm_svars</span> : <span class="id" title="var">list</span> <span class="id" title="var">svar</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">FM</span> : <span class="id" title="var">FreshnessManager</span> <span class="id" title="var">avoided_patterns</span> <span class="id" title="var">aevs</span> <span class="id" title="var">asvs</span> <span class="id" title="var">fm_evars</span> <span class="id" title="var">fm_svars</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{ <span class="id" title="var">X</span> : <span class="id" title="var">svar</span> &amp; (<span class="id" title="var">FreshnessManager</span> <span class="id" title="var">avoided_patterns</span> <span class="id" title="var">aevs</span> <span class="id" title="var">asvs</span> <span class="id" title="var">fm_evars</span> (<span class="id" title="var">X</span>::<span class="id" title="var">fm_svars</span>))}<br/>
+.<br/>
+<span class="id" title="keyword">Ltac</span> <span class="id" title="var">_ensure_fm</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">lazymatch</span> <span class="id" title="keyword">goal</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| [ <span class="id" title="var">FM</span> : <span class="id" title="var">FreshnessManager</span> ?<span class="id" title="var">ps</span> ?<span class="id" title="var">aevs</span> ?<span class="id" title="var">asvs</span> ?<span class="id" title="var">evs</span> ?<span class="id" title="var">svs</span> |- <span class="id" title="var">_</span>] ⇒ <span class="id" title="tactic">idtac</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">_</span> ⇒ <span class="id" title="var">_fm_new</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+.<br/>
+<span class="id" title="keyword">Tactic Notation</span> "mlFreshEvar" "as" <span class="id" title="var">ident</span>(<span class="id" title="var">X</span>) :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">_ensure_fm</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">lazymatch</span> <span class="id" title="keyword">goal</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| [ <span class="id" title="var">FM</span> : <span class="id" title="var">FreshnessManager</span> ?<span class="id" title="var">ps</span> ?<span class="id" title="var">aevs</span> ?<span class="id" title="var">asvs</span> ?<span class="id" title="var">evs</span> ?<span class="id" title="var">svs</span> |- <span class="id" title="var">_</span>] ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <span class="id" title="var">FreshMan_fresh_evar</span> <span class="id" title="tactic">in</span> <span class="id" title="var">FM</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">destruct</span> <span class="id" title="var">FM</span> <span class="id" title="keyword">as</span> [<span class="id" title="var">X</span> <span class="id" title="var">FM</span>]<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Tactic Notation</span> "mlFreshSvar" "as" <span class="id" title="var">ident</span>(<span class="id" title="var">X</span>) :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">_ensure_fm</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">lazymatch</span> <span class="id" title="keyword">goal</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| [ <span class="id" title="var">FM</span> : <span class="id" title="var">FreshnessManager</span> ?<span class="id" title="var">ps</span> ?<span class="id" title="var">aevs</span> ?<span class="id" title="var">asvs</span> ?<span class="id" title="var">evs</span> ?<span class="id" title="var">svs</span> |- <span class="id" title="var">_</span>] ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <span class="id" title="var">FreshMan_fresh_svar</span> <span class="id" title="tactic">in</span> <span class="id" title="var">FM</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">destruct</span> <span class="id" title="var">FM</span> <span class="id" title="keyword">as</span> [<span class="id" title="var">X</span> <span class="id" title="var">FM</span>]<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Ltac</span>2 <span class="id" title="keyword">rec</span> <span class="id" title="var">index_of</span> (<span class="id" title="var">x</span>: <span class="id" title="keyword">constr</span>) (<span class="id" title="var">l</span> : <span class="id" title="keyword">constr</span>) : <span class="id" title="keyword">constr</span><br/>
+:=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">lazy_match</span>! <span class="id" title="var">l</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| (?<span class="id" title="var">y</span>)::(?<span class="id" title="var">ys</span>) ⇒ <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="keyword">if</span> <span class="id" title="var">Constr.equal</span> <span class="id" title="var">x</span> <span class="id" title="var">y</span> <span class="id" title="keyword">then</span> <span class="id" title="keyword">constr</span>:(0) <span class="id" title="keyword">else</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">idx</span> := <span class="id" title="var">index_of</span> <span class="id" title="var">x</span> <span class="id" title="var">ys</span> <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">constr</span>:(<span class="id" title="var">S</span> $<span class="id" title="var">idx</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">_</span> ⇒ <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Message.print</span> (<span class="id" title="var">Message.of_constr</span> <span class="id" title="var">x</span>);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Control.backtrack_tactic_failure</span> "Not found"<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+.<br/>
+<span class="comment">(*<br/>
+Ltac2&nbsp;_is_subterm_of&nbsp;(x&nbsp;:&nbsp;constr)&nbsp;(y&nbsp;:&nbsp;constr)&nbsp;:&nbsp;bool<br/>
+:=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;match!&nbsp;y&nbsp;with<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;context&nbsp;<span class="inlinecode"></span> <span class="inlinecode">?<span class="id" title="var">z</span></span> <span class="inlinecode"></span>&nbsp;=&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(if&nbsp;(Constr.equal&nbsp;x&nbsp;z)&nbsp;then&nbsp;()&nbsp;else&nbsp;Message.print&nbsp;(Message.of_string&nbsp;"failing");&nbsp;fail);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Message.print&nbsp;(Message.of_constr&nbsp;x);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Message.print&nbsp;(Message.of_constr&nbsp;z);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;true<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;_&nbsp;=&gt;&nbsp;false<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;end<br/>
+.<br/>
+*)</span><br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">FreshMan_export_vars_inclusion</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">ap</span> : <span class="id" title="var">Pattern</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">avoided_patterns</span> : <span class="id" title="var">list</span> <span class="id" title="var">Pattern</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">aevs</span> : <span class="id" title="var">list</span> <span class="id" title="tactic">evar</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">asvs</span> : <span class="id" title="var">list</span> <span class="id" title="var">svar</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">fm_evars</span> : <span class="id" title="var">list</span> <span class="id" title="tactic">evar</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">fm_svars</span> : <span class="id" title="var">list</span> <span class="id" title="var">svar</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">FM</span> : <span class="id" title="var">FreshnessManager</span> (<span class="id" title="var">ap</span>::<span class="id" title="var">avoided_patterns</span>) <span class="id" title="var">aevs</span> <span class="id" title="var">asvs</span> <span class="id" title="var">fm_evars</span> <span class="id" title="var">fm_svars</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">fm_evars</span> ## <span class="id" title="var">elements</span> (<span class="id" title="var">free_evars</span> <span class="id" title="var">ap</span>)) ∧<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">fm_svars</span> ## <span class="id" title="var">elements</span> (<span class="id" title="var">free_svars</span> <span class="id" title="var">ap</span>)) ∧<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">FreshnessManager</span> <span class="id" title="var">avoided_patterns</span> <span class="id" title="var">aevs</span> <span class="id" title="var">asvs</span> <span class="id" title="var">fm_evars</span> <span class="id" title="var">fm_svars</span><br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">FreshMan_export_evars_nodup</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">x</span> : <span class="id" title="tactic">evar</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">avoided_patterns</span> : <span class="id" title="var">list</span> <span class="id" title="var">Pattern</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">aevs</span> : <span class="id" title="var">list</span> <span class="id" title="tactic">evar</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">asvs</span> : <span class="id" title="var">list</span> <span class="id" title="var">svar</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">fm_evars</span> : <span class="id" title="var">list</span> <span class="id" title="tactic">evar</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">fm_svars</span> : <span class="id" title="var">list</span> <span class="id" title="var">svar</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">FM</span> : <span class="id" title="var">FreshnessManager</span> <span class="id" title="var">avoided_patterns</span> <span class="id" title="var">aevs</span> <span class="id" title="var">asvs</span> (<span class="id" title="var">x</span>::<span class="id" title="var">fm_evars</span>) <span class="id" title="var">fm_svars</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">x</span> ∉ <span class="id" title="var">fm_evars</span> ∧<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">x</span> ∉ <span class="id" title="var">aevs</span> ∧<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">FreshnessManager</span> <span class="id" title="var">avoided_patterns</span> <span class="id" title="var">aevs</span> <span class="id" title="var">asvs</span> <span class="id" title="var">fm_evars</span> <span class="id" title="var">fm_svars</span><br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">FreshMan_export_svars_nodup</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">X</span> : <span class="id" title="var">svar</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">avoided_patterns</span> : <span class="id" title="var">list</span> <span class="id" title="var">Pattern</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">aevs</span> : <span class="id" title="var">list</span> <span class="id" title="tactic">evar</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">asvs</span> : <span class="id" title="var">list</span> <span class="id" title="var">svar</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">fm_evars</span> : <span class="id" title="var">list</span> <span class="id" title="tactic">evar</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">fm_svars</span> : <span class="id" title="var">list</span> <span class="id" title="var">svar</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">FM</span> : <span class="id" title="var">FreshnessManager</span> <span class="id" title="var">avoided_patterns</span> <span class="id" title="var">aevs</span> <span class="id" title="var">asvs</span> <span class="id" title="var">fm_evars</span> (<span class="id" title="var">X</span>::<span class="id" title="var">fm_svars</span>))    :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">X</span> ∉ <span class="id" title="var">fm_svars</span> ∧<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">X</span> ∉ <span class="id" title="var">asvs</span> ∧<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">FreshnessManager</span> <span class="id" title="var">avoided_patterns</span> <span class="id" title="var">aevs</span> <span class="id" title="var">asvs</span> <span class="id" title="var">fm_evars</span> <span class="id" title="var">fm_svars</span><br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Ltac</span>2 <span class="id" title="keyword">rec</span> <span class="id" title="var">_fm_export_everything</span> () :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">lazy_match</span>! <span class="id" title="keyword">goal</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| [ <span class="id" title="var">fm</span> : (<span class="id" title="var">FreshnessManager</span> ?<span class="id" title="var">ps</span> ?<span class="id" title="var">aevs</span> ?<span class="id" title="var">asvs</span> ?<span class="id" title="var">evs</span> ?<span class="id" title="var">svs</span>) |- <span class="id" title="var">_</span>]<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">clear</span> -$<span class="id" title="var">fm</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">repeat</span> (<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">lazy_match</span>! <span class="id" title="keyword">goal</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| [ <span class="id" title="var">fm</span> : (<span class="id" title="var">FreshnessManager</span> ?<span class="id" title="var">ps</span> ?<span class="id" title="var">aevs</span> ?<span class="id" title="var">asvs</span> ?<span class="id" title="var">evs</span> ?<span class="id" title="var">svs</span>) |- <span class="id" title="var">_</span>]<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <span class="id" title="var">FreshMan_export_vars_inclusion</span> <span class="id" title="tactic">in</span> $<span class="id" title="var">fm</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">h</span> := <span class="id" title="var">Control.hyp</span> <span class="id" title="var">fm</span> <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">destruct</span> $<span class="id" title="var">h</span> <span class="id" title="keyword">as</span> [? [? <span class="id" title="var">fm</span>]]<br/>
+    <span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">repeat</span> (<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">lazy_match</span>! <span class="id" title="keyword">goal</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| [ <span class="id" title="var">fm</span> : (<span class="id" title="var">FreshnessManager</span> ?<span class="id" title="var">ps</span> ?<span class="id" title="var">aevs</span> ?<span class="id" title="var">asvs</span> ?<span class="id" title="var">evs</span> ?<span class="id" title="var">svs</span>) |- <span class="id" title="var">_</span>]<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <span class="id" title="var">FreshMan_export_evars_nodup</span> <span class="id" title="tactic">in</span> $<span class="id" title="var">fm</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">h</span> := <span class="id" title="var">Control.hyp</span> <span class="id" title="var">fm</span> <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">destruct</span> $<span class="id" title="var">h</span> <span class="id" title="keyword">as</span> [? [? <span class="id" title="var">fm</span>]]<br/>
+    <span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">repeat</span> (<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">lazy_match</span>! <span class="id" title="keyword">goal</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| [ <span class="id" title="var">fm</span> : (<span class="id" title="var">FreshnessManager</span> ?<span class="id" title="var">ps</span> ?<span class="id" title="var">aevs</span> ?<span class="id" title="var">asvs</span> ?<span class="id" title="var">evs</span> ?<span class="id" title="var">svs</span>) |- <span class="id" title="var">_</span>]<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <span class="id" title="var">FreshMan_export_svars_nodup</span> <span class="id" title="tactic">in</span> $<span class="id" title="var">fm</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">h</span> := <span class="id" title="var">Control.hyp</span> <span class="id" title="var">fm</span> <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">destruct</span> $<span class="id" title="var">h</span> <span class="id" title="keyword">as</span> [? [? <span class="id" title="var">fm</span>]]<br/>
+    <span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">lazy_match</span>! <span class="id" title="keyword">goal</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| [ <span class="id" title="var">fm</span> : (<span class="id" title="var">FreshnessManager</span> ?<span class="id" title="var">ps</span> ?<span class="id" title="var">aevs</span> ?<span class="id" title="var">asvs</span> ?<span class="id" title="var">evs</span> ?<span class="id" title="var">svs</span>) |- <span class="id" title="var">_</span>]<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">clear</span> <span class="id" title="var">fm</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">free_evars_of_list_unfold</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">ϕ</span> : <span class="id" title="var">Pattern</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">ϕs</span> : <span class="id" title="var">list</span> <span class="id" title="var">Pattern</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">x</span> : <span class="id" title="tactic">evar</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">x</span> ∉ <span class="id" title="var">free_evars</span> <span class="id" title="var">ϕ</span> ∧ <span class="id" title="var">x</span> ∉ <span class="id" title="var">free_evars_of_list</span> <span class="id" title="var">ϕs</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">x</span> ∉ <span class="id" title="var">free_evars_of_list</span> (<span class="id" title="var">ϕ</span>::<span class="id" title="var">ϕs</span>)<br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Ltac</span>2 <span class="id" title="var">fm_solve</span> () :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">unfold</span> <span class="id" title="var">evar_is_fresh_in</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">unfold</span> <span class="id" title="var">svar_is_fresh_in</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">(*&nbsp;we&nbsp;cannot&nbsp;do&nbsp;lazy_match&nbsp;because&nbsp;we&nbsp;need&nbsp;to&nbsp;try&nbsp;the&nbsp;variant&nbsp;for&nbsp;avoided&nbsp;variables&nbsp;as&nbsp;well&nbsp;as&nbsp;the&nbsp;variant&nbsp;for&nbsp;fresh&nbsp;variables,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;and&nbsp;we&nbsp;do&nbsp;not&nbsp;have&nbsp;a&nbsp;way&nbsp;how&nbsp;to&nbsp;decide&nbsp;in&nbsp;advance.&nbsp;Although,&nbsp;maybe&nbsp;we&nbsp;could&nbsp;try&nbsp;finding&nbsp;the&nbsp;evar&nbsp;in&nbsp;the&nbsp;avoided&nbsp;variables,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;and&nbsp;branch&nbsp;on&nbsp;whether&nbsp;it&nbsp;succeeds&nbsp;or&nbsp;not.&nbsp;This&nbsp;is&nbsp;an&nbsp;idea&nbsp;for&nbsp;later&nbsp;refactoring&nbsp;:)*)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span>! <span class="id" title="keyword">goal</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">(*&nbsp;evar,&nbsp;x&nbsp;==&nbsp;avoided,&nbsp;y&nbsp;==&nbsp;fresh&nbsp;*)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| [ <span class="id" title="var">fm</span> : (<span class="id" title="var">FreshnessManager</span> ?<span class="id" title="var">ps</span> ?<span class="id" title="var">aevs</span> ?<span class="id" title="var">asvs</span> ?<span class="id" title="var">evs</span> ?<span class="id" title="var">svs</span>) |- (<span class="id" title="var">not</span> (@<span class="id" title="var">eq</span> <span class="id" title="tactic">evar</span> ?<span class="id" title="var">x</span> ?<span class="id" title="var">y</span>))] ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">i</span> := (<span class="id" title="var">index_of</span> <span class="id" title="var">x</span> <span class="id" title="var">aevs</span>) <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">j</span> := (<span class="id" title="var">index_of</span> <span class="id" title="var">y</span> <span class="id" title="var">evs</span>) <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">fmt</span> := (<span class="id" title="var">Control.hyp</span> <span class="id" title="var">fm</span>) <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">pf</span> := <span class="id" title="keyword">constr</span>:(<span class="id" title="var">fm_avoids_evar</span> $<span class="id" title="var">ps</span> $<span class="id" title="var">aevs</span> $<span class="id" title="var">asvs</span> $<span class="id" title="var">evs</span> $<span class="id" title="var">svs</span> $<span class="id" title="var">fmt</span> $<span class="id" title="var">i</span> $<span class="id" title="var">j</span> $<span class="id" title="var">x</span> $<span class="id" title="var">y</span>) <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> $<span class="id" title="var">pf</span> &gt; [<span class="id" title="tactic">reflexivity</span>|<span class="id" title="tactic">reflexivity</span>]<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">(*&nbsp;evar,&nbsp;x&nbsp;==&nbsp;fresh,&nbsp;y&nbsp;==&nbsp;avoided&nbsp;*)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| [ <span class="id" title="var">fm</span> : (<span class="id" title="var">FreshnessManager</span> ?<span class="id" title="var">ps</span> ?<span class="id" title="var">aevs</span> ?<span class="id" title="var">asvs</span> ?<span class="id" title="var">evs</span> ?<span class="id" title="var">svs</span>) |- (<span class="id" title="var">not</span> (@<span class="id" title="var">eq</span> <span class="id" title="tactic">evar</span> ?<span class="id" title="var">x</span> ?<span class="id" title="var">y</span>))] ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">i</span> := (<span class="id" title="var">index_of</span> <span class="id" title="var">x</span> <span class="id" title="var">evs</span>) <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">j</span> := (<span class="id" title="var">index_of</span> <span class="id" title="var">y</span> <span class="id" title="var">aevs</span>) <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">fmt</span> := (<span class="id" title="var">Control.hyp</span> <span class="id" title="var">fm</span>) <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">pf</span> := <span class="id" title="keyword">constr</span>:(<span class="id" title="var">fm_avoids_evar</span> $<span class="id" title="var">ps</span> $<span class="id" title="var">aevs</span> $<span class="id" title="var">asvs</span> $<span class="id" title="var">evs</span> $<span class="id" title="var">svs</span> $<span class="id" title="var">fmt</span> $<span class="id" title="var">j</span> $<span class="id" title="var">i</span> $<span class="id" title="var">y</span> $<span class="id" title="var">x</span>) <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <span class="id" title="var">nesym</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> $<span class="id" title="var">pf</span> &gt; [<span class="id" title="tactic">reflexivity</span>|<span class="id" title="tactic">reflexivity</span>]<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">(*&nbsp;evar,&nbsp;x&nbsp;==&nbsp;fresh,&nbsp;y&nbsp;==&nbsp;fresh&nbsp;*)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| [ <span class="id" title="var">fm</span> : (<span class="id" title="var">FreshnessManager</span> ?<span class="id" title="var">ps</span> ?<span class="id" title="var">aevs</span> ?<span class="id" title="var">asvs</span> ?<span class="id" title="var">evs</span> ?<span class="id" title="var">svs</span>) |- (<span class="id" title="var">not</span> (@<span class="id" title="var">eq</span> <span class="id" title="tactic">evar</span> ?<span class="id" title="var">x</span> ?<span class="id" title="var">y</span>))] ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">i</span> := (<span class="id" title="var">index_of</span> <span class="id" title="var">x</span> <span class="id" title="var">evs</span>) <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">j</span> := (<span class="id" title="var">index_of</span> <span class="id" title="var">y</span> <span class="id" title="var">evs</span>) <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">fmt</span> := (<span class="id" title="var">Control.hyp</span> <span class="id" title="var">fm</span>) <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">pf</span> := <span class="id" title="keyword">constr</span>:(<span class="id" title="var">fm_evars_nodup</span> $<span class="id" title="var">ps</span> $<span class="id" title="var">aevs</span> $<span class="id" title="var">asvs</span> $<span class="id" title="var">evs</span> $<span class="id" title="var">svs</span> $<span class="id" title="var">fmt</span> $<span class="id" title="var">i</span> $<span class="id" title="var">j</span> $<span class="id" title="var">x</span> $<span class="id" title="var">y</span>) <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> $<span class="id" title="var">pf</span> &gt; [<span class="id" title="tactic">reflexivity</span>|<span class="id" title="tactic">reflexivity</span>|<span class="id" title="var">ltac1</span>:(<span class="id" title="var">lia</span>)]<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">(*&nbsp;svar,&nbsp;x&nbsp;==&nbsp;avoided,&nbsp;y&nbsp;==&nbsp;fresh&nbsp;*)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| [ <span class="id" title="var">fm</span> : (<span class="id" title="var">FreshnessManager</span> ?<span class="id" title="var">ps</span> ?<span class="id" title="var">aevs</span> ?<span class="id" title="var">asvs</span> ?<span class="id" title="var">evs</span> ?<span class="id" title="var">svs</span>) |- (<span class="id" title="var">not</span> (@<span class="id" title="var">eq</span> <span class="id" title="var">svar</span> ?<span class="id" title="var">x</span> ?<span class="id" title="var">y</span>))] ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">i</span> := (<span class="id" title="var">index_of</span> <span class="id" title="var">x</span> <span class="id" title="var">asvs</span>) <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">j</span> := (<span class="id" title="var">index_of</span> <span class="id" title="var">y</span> <span class="id" title="var">svs</span>) <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">fmt</span> := (<span class="id" title="var">Control.hyp</span> <span class="id" title="var">fm</span>) <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">pf</span> := <span class="id" title="keyword">constr</span>:(<span class="id" title="var">fm_avoids_svar</span> $<span class="id" title="var">ps</span> $<span class="id" title="var">aevs</span> $<span class="id" title="var">asvs</span> $<span class="id" title="var">evs</span> $<span class="id" title="var">svs</span> $<span class="id" title="var">fmt</span> $<span class="id" title="var">i</span> $<span class="id" title="var">j</span> $<span class="id" title="var">x</span> $<span class="id" title="var">y</span>) <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> $<span class="id" title="var">pf</span> &gt; [<span class="id" title="tactic">reflexivity</span>|<span class="id" title="tactic">reflexivity</span>]<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">(*&nbsp;svar,&nbsp;x&nbsp;==&nbsp;fresh,&nbsp;y&nbsp;==&nbsp;avoided&nbsp;*)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| [ <span class="id" title="var">fm</span> : (<span class="id" title="var">FreshnessManager</span> ?<span class="id" title="var">ps</span> ?<span class="id" title="var">aevs</span> ?<span class="id" title="var">asvs</span> ?<span class="id" title="var">evs</span> ?<span class="id" title="var">svs</span>) |- (<span class="id" title="var">not</span> (@<span class="id" title="var">eq</span> <span class="id" title="var">svar</span> ?<span class="id" title="var">x</span> ?<span class="id" title="var">y</span>))] ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">i</span> := (<span class="id" title="var">index_of</span> <span class="id" title="var">x</span> <span class="id" title="var">svs</span>) <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">j</span> := (<span class="id" title="var">index_of</span> <span class="id" title="var">y</span> <span class="id" title="var">asvs</span>) <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">fmt</span> := (<span class="id" title="var">Control.hyp</span> <span class="id" title="var">fm</span>) <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">pf</span> := <span class="id" title="keyword">constr</span>:(<span class="id" title="var">fm_avoids_svar</span> $<span class="id" title="var">ps</span> $<span class="id" title="var">aevs</span> $<span class="id" title="var">asvs</span> $<span class="id" title="var">evs</span> $<span class="id" title="var">svs</span> $<span class="id" title="var">fmt</span> $<span class="id" title="var">j</span> $<span class="id" title="var">i</span> $<span class="id" title="var">y</span> $<span class="id" title="var">x</span>) <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <span class="id" title="var">nesym</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> $<span class="id" title="var">pf</span> &gt; [<span class="id" title="tactic">reflexivity</span>|<span class="id" title="tactic">reflexivity</span>]<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">(*&nbsp;x&nbsp;==&nbsp;fresh,&nbsp;y&nbsp;==&nbsp;fresh&nbsp;*)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| [ <span class="id" title="var">fm</span> : (<span class="id" title="var">FreshnessManager</span> ?<span class="id" title="var">ps</span> ?<span class="id" title="var">aevs</span> ?<span class="id" title="var">asvs</span> ?<span class="id" title="var">evs</span> ?<span class="id" title="var">svs</span>) |- (<span class="id" title="var">not</span> (@<span class="id" title="var">eq</span> <span class="id" title="var">svar</span> ?<span class="id" title="var">x</span> ?<span class="id" title="var">y</span>))] ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">i</span> := (<span class="id" title="var">index_of</span> <span class="id" title="var">x</span> <span class="id" title="var">svs</span>) <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">j</span> := (<span class="id" title="var">index_of</span> <span class="id" title="var">y</span> <span class="id" title="var">svs</span>) <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">fmt</span> := (<span class="id" title="var">Control.hyp</span> <span class="id" title="var">fm</span>) <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">pf</span> := <span class="id" title="keyword">constr</span>:(<span class="id" title="var">fm_svars_nodup</span> $<span class="id" title="var">ps</span> $<span class="id" title="var">aevs</span> $<span class="id" title="var">asvs</span> $<span class="id" title="var">evs</span> $<span class="id" title="var">svs</span> $<span class="id" title="var">fmt</span> $<span class="id" title="var">i</span> $<span class="id" title="var">j</span> $<span class="id" title="var">x</span> $<span class="id" title="var">y</span>) <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> $<span class="id" title="var">pf</span> &gt; [<span class="id" title="tactic">reflexivity</span>|<span class="id" title="tactic">reflexivity</span>|<span class="id" title="var">ltac1</span>:(<span class="id" title="var">lia</span>)]<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| [ <span class="id" title="var">fm</span> : (<span class="id" title="var">FreshnessManager</span> ?<span class="id" title="var">ps</span> ?<span class="id" title="var">aevs</span> ?<span class="id" title="var">asvs</span> ?<span class="id" title="var">evs</span> ?<span class="id" title="var">svs</span>) |- (<span class="id" title="var">not</span> (@<span class="id" title="var">elem_of</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> ?<span class="id" title="var">x</span> <span class="id" title="var">_</span>))] ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">(*&nbsp;This&nbsp;might&nbsp;not&nbsp;be&nbsp;the&nbsp;most&nbsp;scalable&nbsp;approach,&nbsp;but&nbsp;it&nbsp;works&nbsp;for&nbsp;now.&nbsp;*)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">_fm_export_everything</span> ();<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">cbn</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">ltac1</span>:(<span class="id" title="tactic">pose</span> <span class="id" title="var">proof</span> (<span class="id" title="var">free_evars_bevar_subst</span>);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">pose</span> <span class="id" title="var">proof</span> (<span class="id" title="var">free_svars_bsvar_subst</span>);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">pose</span> <span class="id" title="var">proof</span> <span class="id" title="var">free_evars_free_evar_subst</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">subst</span>; (<span class="id" title="var">solve_fresh</span> + <span class="id" title="var">set_solver</span>))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| [ <span class="id" title="var">fm</span> : (<span class="id" title="var">FreshnessManager</span> ?<span class="id" title="var">ps</span> ?<span class="id" title="var">aevs</span> ?<span class="id" title="var">asvs</span> ?<span class="id" title="var">evs</span> ?<span class="id" title="var">svs</span>) |- (<span class="id" title="var">not</span> (@<span class="id" title="var">elem_of</span> <span class="id" title="tactic">evar</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> ?<span class="id" title="var">x</span> (<span class="id" title="var">free_evars_of_list</span> ?<span class="id" title="var">phis</span>)))] ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">(*&nbsp;This&nbsp;might&nbsp;not&nbsp;be&nbsp;the&nbsp;most&nbsp;scalable&nbsp;approach,&nbsp;but&nbsp;it&nbsp;works&nbsp;for&nbsp;now.&nbsp;*)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">_fm_export_everything</span> (); <span class="id" title="var">cbn</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">repeat</span> (<span class="id" title="tactic">apply</span> <span class="id" title="var">free_evars_of_list_unfold</span>; <span class="id" title="tactic">split</span>);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">ltac1</span>:(<span class="id" title="tactic">pose</span> <span class="id" title="var">proof</span> (<span class="id" title="var">free_evars_bevar_subst</span>); <span class="id" title="tactic">subst</span>; <span class="id" title="var">set_solver</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| [ <span class="id" title="var">_</span> : <span class="id" title="var">_</span> |- <span class="id" title="var">_</span>] ⇒ <span class="id" title="var">Message.print</span> (<span class="id" title="var">Message.of_string</span> "fm_solve() failed")<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Ltac</span> <span class="id" title="var">fm_solve</span> := <span class="id" title="var">ltac2</span>:(<span class="id" title="var">fm_solve</span> ()).<br/>
+
+<br/>
+#[<span class="id" title="var">local</span>]<br/>
+<span class="id" title="keyword">Example</span> <span class="id" title="var">freshman_usage_1</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">x0</span> <span class="id" title="var">y0</span> : <span class="id" title="tactic">evar</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">X0</span> <span class="id" title="var">Y0</span> : <span class="id" title="var">svar</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span> <span class="id" title="var">ϕq</span> <span class="id" title="var">ϕw</span> <span class="id" title="var">ϕe</span> <span class="id" title="var">ϕr</span> <span class="id" title="var">ϕt</span> <span class="id" title="var">ϕy</span> <span class="id" title="var">ϕu</span> <span class="id" title="var">ϕi</span> <span class="id" title="var">ϕo</span> <span class="id" title="var">ϕp</span> : <span class="id" title="var">Pattern</span>) <span class="comment">(*&nbsp;Just&nbsp;a&nbsp;bunch&nbsp;of&nbsp;patterns&nbsp;to&nbsp;test&nbsp;scalability*)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;: <span class="id" title="var">True</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Import</span> <span class="id" title="var">MatchingLogic.Substitution.Notations</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">MatchingLogic.Syntax.Notations</span>.<br/>
+<span class="id" title="keyword">Open</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">ml_scope</span>.<br/>
+
+<br/>
+#[<span class="id" title="var">local</span>]<br/>
+<span class="id" title="keyword">Example</span> <span class="id" title="var">freshman_usage_2</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">x0</span> <span class="id" title="var">y0</span> : <span class="id" title="tactic">evar</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">X0</span> <span class="id" title="var">Y0</span> : <span class="id" title="var">svar</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span> : <span class="id" title="var">Pattern</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">Hwf1</span> : <span class="id" title="var">well_formed</span> <span class="id" title="var">ϕ₁</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">Hwf2</span> : <span class="id" title="var">well_formed</span> (<span class="id" title="var">patt_exists</span> <span class="id" title="var">ϕ₂</span>))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;: <span class="id" title="tactic">∃</span> <span class="id" title="var">x</span>, <span class="id" title="var">x</span> ∉ <span class="id" title="var">free_evars</span> (<span class="id" title="var">ϕ₂</span>^[<span class="id" title="tactic">evar</span>: 0 ↦ <span class="id" title="var">ϕ₁</span>]).<br/>
+
+<br/>
+<span class="id" title="keyword">Close</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">ml_scope</span>.<br/>
+</div>
+<hr/>This page has been generated by <a href="http://coq.inria.fr/">coqdoc</a>
+</div>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,167 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link href="coqdoc.css" rel="stylesheet" type="text/css" />
+<title>RecursiveSymbol</title>
+</head>
+
+<body>
+
+<div id="page">
+
+<div id="header">
+</div>
+
+<div id="main">
+
+<h1 class="libtitle">File RecursiveSymbol</h1>
+
+<div class="code">
+<span class="id" title="keyword">From</span> <span class="id" title="var">MatchingLogic</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Export</span> <span class="id" title="var">ProductSortWithLookup</span>.<br/>
+<span class="id" title="keyword">Import</span> <span class="id" title="var">MatchingLogic.Logic.Notations</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">MatchingLogic.Theories.Definedness_Syntax.Notations</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">MatchingLogic.Theories.Sorts_Syntax.Notations</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">MatchingLogic.Theories.ProductSort.Notations</span>.<br/>
+
+<br/>
+
+<br/>
+<span class="id" title="keyword">Delimit</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">ml_scope</span> <span class="id" title="keyword">with</span> <span class="id" title="var">ml</span>. <span class="comment">(*&nbsp;TODO&nbsp;move&nbsp;this&nbsp;somewhere&nbsp;else&nbsp;*)</span><br/>
+
+<br/>
+<span class="id" title="keyword">Section</span> <span class="id" title="var">rs</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Context</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{<span class="id" title="var">sorts_syntax</span> : <span class="id" title="var">Sorts_Syntax.Syntax</span>} <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">apply_connective</span> (<span class="id" title="var">connective</span> <span class="id" title="var">arg1</span> <span class="id" title="var">arg2</span> : <span class="id" title="var">Pattern</span>) : <span class="id" title="var">Pattern</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;:= (<span class="id" title="var">connective</span> ⋅ <span class="id" title="var">arg1</span> ⋅ <span class="id" title="var">arg2</span>)%<span class="id" title="var">ml</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">chain_patterns</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">connective</span> : <span class="id" title="var">Pattern</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">ps</span> : <span class="id" title="var">list</span> <span class="id" title="var">Pattern</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">last</span> : <span class="id" title="var">Pattern</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: <span class="id" title="var">Pattern</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;:=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">fold_right</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">apply_connective</span> <span class="id" title="var">connective</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">last</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">ps</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;#[<span class="id" title="var">local</span>] <span class="id" title="keyword">Example</span> <span class="id" title="var">chain_1_patterns</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">chain_patterns</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(⊥%<span class="id" title="var">ml</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[]<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">b0</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= <span class="id" title="var">b0</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;.<br/>
+ 
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;#[<span class="id" title="var">local</span>] <span class="id" title="keyword">Example</span> <span class="id" title="var">chain_2_patterns</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">chain_patterns</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(⊥%<span class="id" title="var">ml</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[<span class="id" title="var">b0</span>]<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">b1</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= (⊥ ⋅ <span class="id" title="var">b0</span> ⋅ <span class="id" title="var">b1</span>)%<span class="id" title="var">ml</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;.<br/>
+ 
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;#[<span class="id" title="var">local</span>] <span class="id" title="keyword">Example</span> <span class="id" title="var">chain_3_patterns</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">chain_patterns</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(⊥%<span class="id" title="var">ml</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[<span class="id" title="var">b0</span>;<span class="id" title="var">b1</span>]<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">b2</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= (⊥ ⋅ <span class="id" title="var">b0</span> ⋅ (⊥ ⋅ <span class="id" title="var">b1</span> ⋅ <span class="id" title="var">b2</span>))%<span class="id" title="var">ml</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;.<br/>
+ 
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;#[<span class="id" title="var">local</span>] <span class="id" title="keyword">Example</span> <span class="id" title="var">chain_4_patterns</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">chain_patterns</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(⊥%<span class="id" title="var">ml</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[<span class="id" title="var">b0</span>;<span class="id" title="var">b1</span>;<span class="id" title="var">b2</span>]<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">b3</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= (⊥ ⋅ <span class="id" title="var">b0</span> ⋅ (⊥ ⋅ <span class="id" title="var">b1</span> ⋅ (⊥ ⋅ <span class="id" title="var">b2</span> ⋅ <span class="id" title="var">b3</span>)))%<span class="id" title="var">ml</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;.<br/>
+ 
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Context</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">param_sort</span> : <span class="id" title="var">list</span> <span class="id" title="var">Pattern</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">ret_sort</span> : <span class="id" title="var">Pattern</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">(*<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;This&nbsp;is&nbsp;going&nbsp;to&nbsp;be&nbsp;tricky.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;We&nbsp;need&nbsp;to&nbsp;define&nbsp;those&nbsp;three&nbsp;operations&nbsp;on&nbsp;lists&nbsp;of&nbsp;things:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(1)&nbsp;s1&nbsp;⊗&nbsp;·&nbsp;·&nbsp;·&nbsp;⊗&nbsp;sn&nbsp;⊗&nbsp;t&nbsp;≡&nbsp;s1&nbsp;⊗&nbsp;(s2&nbsp;⊗&nbsp;(·&nbsp;·&nbsp;·&nbsp;⊗&nbsp;(sn&nbsp;⊗&nbsp;t)&nbsp;.&nbsp;.&nbsp;.&nbsp;))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(2)&nbsp;⟨ϕ1,&nbsp;.&nbsp;.&nbsp;.&nbsp;,&nbsp;ϕn,&nbsp;ϕ⟩&nbsp;≡&nbsp;⟨ϕ1,&nbsp;⟨.&nbsp;.&nbsp;.&nbsp;,&nbsp;⟨ϕn,&nbsp;ϕ⟩&nbsp;.&nbsp;.&nbsp;.⟩⟩<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(3)&nbsp;ψ(ϕ1,&nbsp;.&nbsp;.&nbsp;.&nbsp;,&nbsp;ϕn&nbsp;)&nbsp;≡&nbsp;ψ(ϕ1&nbsp;)&nbsp;.&nbsp;.&nbsp;.&nbsp;(ϕn&nbsp;).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Therefore,&nbsp;we&nbsp;need&nbsp;to&nbsp;have&nbsp;syntax&nbsp;for<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;sn&nbsp;⊗&nbsp;t,&nbsp;sn-1&nbsp;⊗&nbsp;sn&nbsp;⊗&nbsp;t,&nbsp;etc.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;By&nbsp;"syntax",&nbsp;we&nbsp;mean<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;`ProductSort.Syntax&nbsp;s1&nbsp;s2`.<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;What&nbsp;sorts&nbsp;do&nbsp;we&nbsp;need?<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Case&nbsp;length(param_sort)=0:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;`ret_sort`<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Case&nbsp;length(param_sort)=1:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;`ret_sort`<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;`param_sort!!0&nbsp;⊗&nbsp;ret_sort`<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Case&nbsp;length(param_sort)=2:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;`ret_sort`<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;`param_sort!!1&nbsp;⊗&nbsp;ret_sort`<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;`param_sort!!0&nbsp;⊗&nbsp;(param_sort!!1&nbsp;⊗&nbsp;ret_sort)`<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Case&nbsp;length(param_sort)=3:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;`ret_sort`<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;`param_sort!!2&nbsp;⊗&nbsp;ret_sort`<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;`param_sort!!1&nbsp;⊗&nbsp;(param_sort!!2&nbsp;⊗&nbsp;ret_sort)`<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;`param_sort!!0&nbsp;⊗&nbsp;(param_sort!!1&nbsp;⊗&nbsp;(param_sort!!2&nbsp;⊗&nbsp;ret_sort))`<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Let&nbsp;n=3.&nbsp;We&nbsp;need&nbsp;the&nbsp;user&nbsp;to&nbsp;provide&nbsp;us&nbsp;with&nbsp;something&nbsp;like<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;*)</span><br/>
+
+<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">(*<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;Definition&nbsp;partial_sort_applications&nbsp;:&nbsp;list&nbsp;Pattern&nbsp;:=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;fold_right&nbsp;(fun&nbsp;b&nbsp;a&nbsp;=&gt;&nbsp;a)&nbsp;ret_sort&nbsp;param_sort<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;Print&nbsp;fold_right.<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;Inductive&nbsp;Syntaxes&nbsp;:=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;sxs_leaf<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(s_right&nbsp;:&nbsp;Pattern)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;sxs_step<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(s_left&nbsp;:&nbsp;Pattern)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(s_right&nbsp;:&nbsp;Pattern)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(syntax:&nbsp;ProductSortWithLookup.Syntax&nbsp;s_left&nbsp;s_right)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(next&nbsp;:&nbsp;Syntaxes)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;.<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;Definition&nbsp;sxs_right&nbsp;(sxs&nbsp;:&nbsp;Syntaxes)&nbsp;:&nbsp;Pattern&nbsp;:=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;match&nbsp;sxs&nbsp;with<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;sxs_leaf&nbsp;s_right&nbsp;=&gt;&nbsp;s_right<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;sxs_step&nbsp;s_left&nbsp;s_right&nbsp;syntax&nbsp;next&nbsp;=&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(mlProd(s_left,&nbsp;s_right))*)</span><br/>
+<span class="id" title="keyword">End</span> <span class="id" title="var">rs</span>.<br/>
+</div>
+<hr/>This page has been generated by <a href="http://coq.inria.fr/">coqdoc</a>
+</div>
+
+</div>
+
+</body>
+</html>

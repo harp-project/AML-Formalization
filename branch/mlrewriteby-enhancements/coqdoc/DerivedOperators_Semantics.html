@@ -1,0 +1,278 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link href="coqdoc.css" rel="stylesheet" type="text/css" />
+<title>DerivedOperators_Semantics</title>
+</head>
+
+<body>
+
+<div id="page">
+
+<div id="header">
+</div>
+
+<div id="main">
+
+<h1 class="libtitle">File DerivedOperators_Semantics</h1>
+
+<div class="code">
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">ssreflect</span> <span class="id" title="var">ssrfun</span> <span class="id" title="var">ssrbool</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="var">Setoid</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">stdpp</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">base</span> <span class="id" title="var">sets</span> <span class="id" title="var">propset</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Logic.Classical_Prop</span> <span class="id" title="var">Logic.FunctionalExtensionality</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">MatchingLogic.Utils</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Lattice</span> <span class="id" title="var">stdpp_ext</span> <span class="id" title="var">extralibrary</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">MatchingLogic</span><br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Syntax</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">Semantics</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">IndexManipulation</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">PrePredicate</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">DerivedOperators_Syntax</span><br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Import</span> <span class="id" title="var">MatchingLogic.Syntax.Notations</span>.<br/>
+<span class="id" title="keyword">Import</span> <span class="id" title="var">MatchingLogic.Substitution.Notations</span>.<br/>
+<span class="id" title="keyword">Import</span> <span class="id" title="var">MatchingLogic.DerivedOperators_Syntax.Notations</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Section</span> <span class="id" title="var">with_signature</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Context</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>}.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Open</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">ml_scope</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Section</span> <span class="id" title="var">with_model</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Context</span> {<span class="id" title="var">M</span> : <span class="id" title="var">Model</span>}.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">eval_not_simpl</span> : <span class="id" title="keyword">∀</span> (ρ : <span class="id" title="var">Valuation</span>) (<span class="id" title="var">phi</span> : <span class="id" title="var">Pattern</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;@<span class="id" title="tactic">eval</span> <span class="id" title="var">Σ</span> <span class="id" title="var">M</span> ρ (<span class="id" title="var">patt_not</span> <span class="id" title="var">phi</span>) = ⊤ ∖ (<span class="id" title="tactic">eval</span> ρ <span class="id" title="var">phi</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">eval_or_simpl</span> : <span class="id" title="keyword">∀</span> (ρ : <span class="id" title="var">Valuation</span>) (<span class="id" title="var">phi1</span> <span class="id" title="var">phi2</span> : <span class="id" title="var">Pattern</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">eval</span> ρ (<span class="id" title="var">patt_or</span> <span class="id" title="var">phi1</span> <span class="id" title="var">phi2</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= (<span class="id" title="tactic">eval</span> ρ <span class="id" title="var">phi1</span>) ∪ (@<span class="id" title="tactic">eval</span> <span class="id" title="var">_</span> <span class="id" title="var">M</span> ρ <span class="id" title="var">phi2</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">eval_or_comm</span> : <span class="id" title="keyword">∀</span> (ρ : <span class="id" title="var">Valuation</span>) (<span class="id" title="var">phi1</span> <span class="id" title="var">phi2</span> : <span class="id" title="var">Pattern</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;@<span class="id" title="tactic">eval</span> <span class="id" title="var">Σ</span> <span class="id" title="var">M</span> ρ (<span class="id" title="var">patt_or</span> <span class="id" title="var">phi1</span> <span class="id" title="var">phi2</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= <span class="id" title="tactic">eval</span> ρ (<span class="id" title="var">patt_or</span> <span class="id" title="var">phi2</span> <span class="id" title="var">phi1</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">eval_and_simpl</span> : <span class="id" title="keyword">∀</span> (ρ : <span class="id" title="var">Valuation</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">phi1</span> <span class="id" title="var">phi2</span> : <span class="id" title="var">Pattern</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">eval</span> ρ (<span class="id" title="var">patt_and</span> <span class="id" title="var">phi1</span> <span class="id" title="var">phi2</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= (<span class="id" title="tactic">eval</span> ρ <span class="id" title="var">phi1</span>) ∩ (@<span class="id" title="tactic">eval</span> <span class="id" title="var">_</span> <span class="id" title="var">M</span> ρ <span class="id" title="var">phi2</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">eval_and_comm</span> : <span class="id" title="keyword">∀</span> (ρ : <span class="id" title="var">Valuation</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">phi1</span> <span class="id" title="var">phi2</span> : <span class="id" title="var">Pattern</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;@<span class="id" title="tactic">eval</span> <span class="id" title="var">Σ</span> <span class="id" title="var">M</span> ρ (<span class="id" title="var">patt_and</span> <span class="id" title="var">phi1</span> <span class="id" title="var">phi2</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= <span class="id" title="tactic">eval</span> ρ (<span class="id" title="var">patt_and</span> <span class="id" title="var">phi2</span> <span class="id" title="var">phi1</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">eval_top_simpl</span> : <span class="id" title="keyword">∀</span> (ρ : <span class="id" title="var">Valuation</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;@<span class="id" title="tactic">eval</span> <span class="id" title="var">Σ</span> <span class="id" title="var">M</span> ρ <span class="id" title="var">patt_top</span> = ⊤.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">(*&nbsp;TODO&nbsp;prove.&nbsp;Maybe&nbsp;some&nbsp;de-morgan&nbsp;laws&nbsp;could&nbsp;be&nbsp;helpful&nbsp;in&nbsp;proving&nbsp;this?&nbsp;*)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">eval_iff_or</span> : <span class="id" title="keyword">∀</span> (ρ : <span class="id" title="var">Valuation</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">phi1</span> <span class="id" title="var">phi2</span> : <span class="id" title="var">Pattern</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;@<span class="id" title="tactic">eval</span> <span class="id" title="var">Σ</span> <span class="id" title="var">M</span> ρ (<span class="id" title="var">patt_iff</span> <span class="id" title="var">phi1</span> <span class="id" title="var">phi2</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= <span class="id" title="tactic">eval</span> ρ (<span class="id" title="var">patt_or</span> (<span class="id" title="var">patt_and</span> <span class="id" title="var">phi1</span> <span class="id" title="var">phi2</span>) (<span class="id" title="var">patt_and</span> (<span class="id" title="var">patt_not</span> <span class="id" title="var">phi1</span>) (<span class="id" title="var">patt_not</span> <span class="id" title="var">phi2</span>))).<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">eval_iff_comm</span> : <span class="id" title="keyword">∀</span> (ρ : <span class="id" title="var">Valuation</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">phi1</span> <span class="id" title="var">phi2</span> : <span class="id" title="var">Pattern</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;@<span class="id" title="tactic">eval</span> <span class="id" title="var">Σ</span> <span class="id" title="var">M</span> ρ (<span class="id" title="var">patt_iff</span> <span class="id" title="var">phi1</span> <span class="id" title="var">phi2</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= <span class="id" title="tactic">eval</span> ρ (<span class="id" title="var">patt_iff</span> <span class="id" title="var">phi2</span> <span class="id" title="var">phi1</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">(*&nbsp;TODO:&nbsp;forall,&nbsp;nu&nbsp;*)</span><br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">eval_iff_simpl</span> ρ <span class="id" title="var">phi1</span> <span class="id" title="var">phi2</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;@<span class="id" title="tactic">eval</span> <span class="id" title="var">Σ</span> <span class="id" title="var">M</span> ρ (<span class="id" title="var">patt_iff</span> <span class="id" title="var">phi1</span> <span class="id" title="var">phi2</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;= (⊤ ∖ <span class="id" title="tactic">eval</span> ρ <span class="id" title="var">phi1</span> ∪ <span class="id" title="tactic">eval</span> ρ <span class="id" title="var">phi2</span>) ∩ (⊤ ∖ <span class="id" title="tactic">eval</span> ρ <span class="id" title="var">phi2</span> ∪ <span class="id" title="tactic">eval</span> ρ <span class="id" title="var">phi1</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">(*&nbsp;if&nbsp;eval&nbsp;(phi1&nbsp;---&gt;&nbsp;phi2)&nbsp;=&nbsp;Full_set,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;then&nbsp;eval&nbsp;phi1&nbsp;subset&nbsp;eval&nbsp;phi2<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;*)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">eval_iff_subset</span> (ρ : <span class="id" title="var">Valuation</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">phi1</span> : <span class="id" title="var">Pattern</span>) (<span class="id" title="var">phi2</span> : <span class="id" title="var">Pattern</span>) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">eval</span> ρ (<span class="id" title="var">phi1</span> ---&gt; <span class="id" title="var">phi2</span>)%<span class="id" title="var">ml</span> = ⊤ ↔<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="tactic">eval</span> ρ <span class="id" title="var">phi1</span>) ⊆<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(@<span class="id" title="tactic">eval</span> <span class="id" title="var">_</span> <span class="id" title="var">M</span> ρ <span class="id" title="var">phi2</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">M_predicate_not</span> <span class="id" title="var">ϕ</span> : <span class="id" title="var">M_predicate</span> <span class="id" title="var">M</span> <span class="id" title="var">ϕ</span> → <span class="id" title="var">M_predicate</span> <span class="id" title="var">M</span> (<span class="id" title="var">patt_not</span> <span class="id" title="var">ϕ</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Hint Resolve</span> <span class="id" title="var">M_predicate_not</span> : <span class="id" title="var">core</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">M_predicate_or</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span> : <span class="id" title="var">M_predicate</span> <span class="id" title="var">M</span> <span class="id" title="var">ϕ₁</span> → <span class="id" title="var">M_predicate</span> <span class="id" title="var">M</span> <span class="id" title="var">ϕ₂</span> → <span class="id" title="var">M_predicate</span> <span class="id" title="var">M</span> (<span class="id" title="var">patt_or</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Hint Resolve</span> <span class="id" title="var">M_predicate_or</span> : <span class="id" title="var">core</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">M_predicate_and</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span> : <span class="id" title="var">M_predicate</span> <span class="id" title="var">M</span> <span class="id" title="var">ϕ₁</span> → <span class="id" title="var">M_predicate</span> <span class="id" title="var">M</span> <span class="id" title="var">ϕ₂</span> → <span class="id" title="var">M_predicate</span> <span class="id" title="var">M</span> (<span class="id" title="var">patt_and</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Hint Resolve</span> <span class="id" title="var">M_predicate_and</span> : <span class="id" title="var">core</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">M_predicate_top</span> : <span class="id" title="var">M_predicate</span> <span class="id" title="var">M</span> <span class="id" title="var">patt_top</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Hint Resolve</span> <span class="id" title="var">M_predicate_top</span> : <span class="id" title="var">core</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">M_predicate_forall</span> <span class="id" title="var">ϕ</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">x</span> := <span class="id" title="var">fresh_evar</span> <span class="id" title="var">ϕ</span> <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">M_predicate</span> <span class="id" title="var">M</span> (<span class="id" title="var">ϕ</span>^{<span class="id" title="tactic">evar</span>: 0 ↦ <span class="id" title="var">x</span>}) → <span class="id" title="var">M_predicate</span> <span class="id" title="var">M</span> (<span class="id" title="var">patt_forall</span> <span class="id" title="var">ϕ</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Hint Resolve</span> <span class="id" title="var">M_predicate_forall</span> : <span class="id" title="var">core</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">M_predicate_iff</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">M_predicate</span> <span class="id" title="var">M</span> <span class="id" title="var">ϕ₁</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">M_predicate</span> <span class="id" title="var">M</span> <span class="id" title="var">ϕ₂</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">M_predicate</span> <span class="id" title="var">M</span> (<span class="id" title="var">patt_iff</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Hint Resolve</span> <span class="id" title="var">M_predicate_iff</span> : <span class="id" title="var">core</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">M_pre_predicate_not</span> <span class="id" title="var">ϕ</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">M_pre_predicate</span> <span class="id" title="var">M</span> <span class="id" title="var">ϕ</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">M_pre_predicate</span> <span class="id" title="var">M</span> (<span class="id" title="var">patt_not</span> <span class="id" title="var">ϕ</span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">M_pre_predicate_or</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">M_pre_predicate</span> <span class="id" title="var">M</span> <span class="id" title="var">ϕ₁</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">M_pre_predicate</span> <span class="id" title="var">M</span> <span class="id" title="var">ϕ₂</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">M_pre_predicate</span> <span class="id" title="var">M</span> (<span class="id" title="var">patt_or</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">M_pre_predicate_and</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">M_pre_predicate</span> <span class="id" title="var">M</span> <span class="id" title="var">ϕ₁</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">M_pre_predicate</span> <span class="id" title="var">M</span> <span class="id" title="var">ϕ₂</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">M_pre_predicate</span> <span class="id" title="var">M</span> (<span class="id" title="var">patt_and</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">eval_set_builder</span> <span class="id" title="var">ϕ</span> ρ :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">x</span> := <span class="id" title="var">fresh_evar</span> <span class="id" title="var">ϕ</span> <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">M_predicate</span> <span class="id" title="var">M</span> (<span class="id" title="var">ϕ</span>^{<span class="id" title="tactic">evar</span>: 0 ↦ <span class="id" title="var">x</span>}) →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="tactic">eval</span> ρ (<span class="id" title="var">patt_exists</span> (<span class="id" title="var">patt_and</span> (<span class="id" title="var">patt_bound_evar</span> 0) <span class="id" title="var">ϕ</span>)))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= <span class="id" title="var">PropSet</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="keyword">fun</span> <span class="id" title="var">m</span> : (<span class="id" title="var">Domain</span> <span class="id" title="var">M</span>) ⇒ <span class="id" title="tactic">eval</span> (<span class="id" title="var">update_evar_val</span> <span class="id" title="var">x</span> <span class="id" title="var">m</span> ρ) (<span class="id" title="var">ϕ</span>^{<span class="id" title="tactic">evar</span>: 0 ↦ <span class="id" title="var">x</span>}) = ⊤).<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">eval_forall_predicate</span> <span class="id" title="var">ϕ</span> ρ :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">x</span> := <span class="id" title="var">fresh_evar</span> <span class="id" title="var">ϕ</span> <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">M_predicate</span> <span class="id" title="var">M</span> (<span class="id" title="var">ϕ</span>^{<span class="id" title="tactic">evar</span>: 0 ↦ <span class="id" title="var">x</span>}) →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">eval</span> ρ (<span class="id" title="var">patt_forall</span> <span class="id" title="var">ϕ</span>) = ⊤ ↔<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;∀ (<span class="id" title="var">m</span> : <span class="id" title="var">Domain</span> <span class="id" title="var">M</span>), <span class="id" title="tactic">eval</span> (<span class="id" title="var">update_evar_val</span> <span class="id" title="var">x</span> <span class="id" title="var">m</span> ρ) (<span class="id" title="var">ϕ</span>^{<span class="id" title="tactic">evar</span>: 0 ↦ <span class="id" title="var">x</span>}) = ⊤.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">eval_and_full</span> ρ <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;@<span class="id" title="tactic">eval</span> <span class="id" title="var">Σ</span> <span class="id" title="var">M</span> ρ (<span class="id" title="var">patt_and</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span>) = ⊤<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;↔ (@<span class="id" title="tactic">eval</span> <span class="id" title="var">Σ</span> <span class="id" title="var">M</span> ρ <span class="id" title="var">ϕ₁</span> = ⊤<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;∧ @<span class="id" title="tactic">eval</span> <span class="id" title="var">Σ</span> <span class="id" title="var">M</span> ρ <span class="id" title="var">ϕ₂</span> = ⊤).<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">eval_predicate_not</span> ρ <span class="id" title="var">ϕ</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">M_predicate</span> <span class="id" title="var">M</span> <span class="id" title="var">ϕ</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">eval</span> ρ (<span class="id" title="var">patt_not</span> <span class="id" title="var">ϕ</span>) = ⊤<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;↔ @<span class="id" title="tactic">eval</span> <span class="id" title="var">Σ</span> <span class="id" title="var">M</span> ρ <span class="id" title="var">ϕ</span> ≠ ⊤.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">End</span> <span class="id" title="var">with_model</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">T_predicate_not</span> <span class="id" title="var">Γ</span> <span class="id" title="var">ϕ</span> : <span class="id" title="var">T_predicate</span> <span class="id" title="var">Γ</span> <span class="id" title="var">ϕ</span> → <span class="id" title="var">T_predicate</span> <span class="id" title="var">Γ</span> (<span class="id" title="var">patt_not</span> <span class="id" title="var">ϕ</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Hint Resolve</span> <span class="id" title="var">T_predicate_not</span> : <span class="id" title="var">core</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">T_predicate_or</span> <span class="id" title="var">Γ</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span> : <span class="id" title="var">T_predicate</span> <span class="id" title="var">Γ</span> <span class="id" title="var">ϕ₁</span> → <span class="id" title="var">T_predicate</span> <span class="id" title="var">Γ</span> <span class="id" title="var">ϕ₂</span> → <span class="id" title="var">T_predicate</span> <span class="id" title="var">Γ</span> (<span class="id" title="var">patt_or</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Hint Resolve</span> <span class="id" title="var">T_predicate_or</span> : <span class="id" title="var">core</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">T_predicate_and</span> <span class="id" title="var">Γ</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span> : <span class="id" title="var">T_predicate</span> <span class="id" title="var">Γ</span> <span class="id" title="var">ϕ₁</span> → <span class="id" title="var">T_predicate</span> <span class="id" title="var">Γ</span> <span class="id" title="var">ϕ₂</span> → <span class="id" title="var">T_predicate</span> <span class="id" title="var">Γ</span> (<span class="id" title="var">patt_and</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Hint Resolve</span> <span class="id" title="var">T_predicate_or</span> : <span class="id" title="var">core</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">bcmcloseex_not</span> (<span class="id" title="var">l</span> : <span class="id" title="var">list</span> (<span class="id" title="var">db_index</span> × <span class="id" title="tactic">evar</span>)) (<span class="id" title="var">p</span> : <span class="id" title="var">Pattern</span>):<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">bcmcloseex</span> <span class="id" title="var">l</span> (<span class="id" title="var">patt_not</span> <span class="id" title="var">p</span>) = <span class="id" title="var">patt_not</span> (<span class="id" title="var">bcmcloseex</span> <span class="id" title="var">l</span> <span class="id" title="var">p</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">bcmcloseex_all</span> (<span class="id" title="var">l</span> : <span class="id" title="var">list</span> (<span class="id" title="var">db_index</span> × <span class="id" title="tactic">evar</span>)) (<span class="id" title="var">q</span> : <span class="id" title="var">Pattern</span>) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">bcmcloseex</span> <span class="id" title="var">l</span> (<span class="id" title="var">all</span> , <span class="id" title="var">q</span>)%<span class="id" title="var">ml</span> =<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">all</span> , <span class="id" title="var">bcmcloseex</span> (<span class="id" title="var">map</span> (<span class="id" title="var">λ</span> <span class="id" title="var">p</span> : <span class="id" title="var">nat</span> × <span class="id" title="tactic">evar</span>, (<span class="id" title="var">S</span> <span class="id" title="var">p</span>.1, <span class="id" title="var">p</span>.2)) <span class="id" title="var">l</span>) <span class="id" title="var">q</span>)%<span class="id" title="var">ml</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">M_pre_pre_predicate_forall</span> (<span class="id" title="var">k</span> : <span class="id" title="var">db_index</span>) <span class="id" title="var">M</span> <span class="id" title="var">ϕ</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">M_pre_pre_predicate</span> (<span class="id" title="var">S</span> <span class="id" title="var">k</span>) <span class="id" title="var">M</span> <span class="id" title="var">ϕ</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">M_pre_pre_predicate</span> <span class="id" title="var">k</span> <span class="id" title="var">M</span> (<span class="id" title="var">patt_forall</span> <span class="id" title="var">ϕ</span>).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">M_pre_predicate_forall</span> <span class="id" title="var">M</span> <span class="id" title="var">ϕ</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">M_pre_predicate</span> <span class="id" title="var">M</span> <span class="id" title="var">ϕ</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">M_pre_predicate</span> <span class="id" title="var">M</span> (<span class="id" title="var">patt_forall</span> <span class="id" title="var">ϕ</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">eval_all_simpl</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">M</span> : <span class="id" title="var">Model</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(ρ : <span class="id" title="var">Valuation</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">ϕ</span> : <span class="id" title="var">Pattern</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">eval</span> ρ (<span class="id" title="var">patt_forall</span> <span class="id" title="var">ϕ</span>) =<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="keyword">let</span> <span class="id" title="var">x</span> := <span class="id" title="var">fresh_evar</span> <span class="id" title="var">ϕ</span> <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">propset_fa_intersection</span> (<span class="id" title="var">λ</span> <span class="id" title="var">e</span> : <span class="id" title="var">Domain</span> <span class="id" title="var">M</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;@<span class="id" title="tactic">eval</span> <span class="id" title="var">_</span> <span class="id" title="var">M</span> (<span class="id" title="var">update_evar_val</span> <span class="id" title="var">x</span> <span class="id" title="var">e</span> ρ) (<span class="id" title="var">ϕ</span>^{<span class="id" title="tactic">evar</span>: 0 ↦ <span class="id" title="var">x</span>})<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;).<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">challenge</span> : <span class="id" title="keyword">∀</span> (<span class="id" title="var">M</span> : <span class="id" title="var">Model</span>) ρ φ,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;@<span class="id" title="tactic">eval</span> <span class="id" title="var">_</span> <span class="id" title="var">M</span> ρ (<span class="id" title="var">patt_exists</span> (<span class="id" title="var">patt_and</span> (<span class="id" title="var">patt_bound_evar</span> 0) φ) ---&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">patt_forall</span> ((<span class="id" title="var">patt_bound_evar</span> 0) ---&gt; φ))) = ⊤.<br/>
+
+<br/>
+<span class="id" title="keyword">End</span> <span class="id" title="var">with_signature</span>.<br/>
+
+<br/>
+<span class="comment">(*&nbsp;TODO&nbsp;make&nbsp;these&nbsp;a&nbsp;separate&nbsp;hintdb.&nbsp;*)</span><br/>
+#[<span class="id" title="var">export</span>]<br/>
+<span class="id" title="keyword">Hint</span> <span class="id" title="keyword">Resolve</span> <span class="id" title="var">M_predicate_not</span> : <span class="id" title="var">core</span>.<br/>
+#[<span class="id" title="var">export</span>]<br/>
+<span class="id" title="keyword">Hint</span> <span class="id" title="keyword">Resolve</span> <span class="id" title="var">M_predicate_or</span> : <span class="id" title="var">core</span>.<br/>
+#[<span class="id" title="var">export</span>]<br/>
+<span class="id" title="keyword">Hint</span> <span class="id" title="keyword">Resolve</span> <span class="id" title="var">M_predicate_and</span> : <span class="id" title="var">core</span>.<br/>
+#[<span class="id" title="var">export</span>]<br/>
+<span class="id" title="keyword">Hint</span> <span class="id" title="keyword">Resolve</span> <span class="id" title="var">M_predicate_top</span> : <span class="id" title="var">core</span>.<br/>
+#[<span class="id" title="var">export</span>]<br/>
+<span class="id" title="keyword">Hint</span> <span class="id" title="keyword">Resolve</span> <span class="id" title="var">M_predicate_forall</span> : <span class="id" title="var">core</span>.<br/>
+#[<span class="id" title="var">export</span>]<br/>
+<span class="id" title="keyword">Hint</span> <span class="id" title="keyword">Resolve</span> <span class="id" title="var">M_predicate_iff</span> : <span class="id" title="var">core</span>.<br/>
+#[<span class="id" title="var">export</span>]<br/>
+<span class="id" title="keyword">Hint</span> <span class="id" title="keyword">Resolve</span> <span class="id" title="var">T_predicate_not</span> : <span class="id" title="var">core</span>.<br/>
+#[<span class="id" title="var">export</span>]<br/>
+<span class="id" title="keyword">Hint</span> <span class="id" title="keyword">Resolve</span> <span class="id" title="var">T_predicate_or</span> : <span class="id" title="var">core</span>.<br/>
+#[<span class="id" title="var">export</span>]<br/>
+<span class="id" title="keyword">Hint</span> <span class="id" title="keyword">Resolve</span> <span class="id" title="var">T_predicate_or</span> : <span class="id" title="var">core</span>.<br/>
+</div>
+<hr/>This page has been generated by <a href="http://coq.inria.fr/">coqdoc</a>
+</div>
+
+</div>
+
+</body>
+</html>

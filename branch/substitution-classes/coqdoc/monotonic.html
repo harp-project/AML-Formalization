@@ -1,0 +1,183 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link href="coqdoc.css" rel="stylesheet" type="text/css" />
+<title>monotonic</title>
+</head>
+
+<body>
+
+<div id="page">
+
+<div id="header">
+</div>
+
+<div id="main">
+
+<h1 class="libtitle">File monotonic</h1>
+
+<div class="code">
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">ssreflect</span> <span class="id" title="var">ssrfun</span> <span class="id" title="var">ssrbool</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Ensembles</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">stdpp</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">base</span> <span class="id" title="var">fin_sets</span> <span class="id" title="var">sets</span> <span class="id" title="var">propset</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">MatchingLogic.Utils</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Lattice</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">MatchingLogic</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="keyword">Syntax</span> <span class="id" title="var">Semantics</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Import</span> <span class="id" title="var">MatchingLogic.Syntax.Notations</span>.<br/>
+<span class="id" title="keyword">Import</span> <span class="id" title="var">MatchingLogic.Substitution.Notations</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Section</span> <span class="id" title="var">monotonic</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Open</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">ml_scope</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Context</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>}.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="comment">(*&nbsp;Definitions&nbsp;and&nbsp;lemmas&nbsp;inside&nbsp;this&nbsp;section&nbsp;are&nbsp;useful&nbsp;for&nbsp;proving&nbsp;`is_monotonic`,<br/>
+&nbsp;&nbsp;&nbsp;but&nbsp;they&nbsp;are&nbsp;probably&nbsp;not&nbsp;usefull&nbsp;for&nbsp;any&nbsp;other&nbsp;purpose.&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Section</span> <span class="id" title="var">respects_blacklist</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">(*&nbsp;Bp&nbsp;-&nbsp;Blacklist&nbsp;of&nbsp;Positive&nbsp;Occurrence&nbsp;-&nbsp;these&nbsp;variables&nbsp;can&nbsp;occur&nbsp;only&nbsp;negatively.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Bn&nbsp;-&nbsp;Blacklist&nbsp;of&nbsp;Negative&nbsp;Occurrence&nbsp;-&nbsp;these&nbsp;variables&nbsp;can&nbsp;occur&nbsp;only&nbsp;positively&nbsp;*)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">respects_blacklist</span> (<span class="id" title="var">phi</span> : <span class="id" title="var">Pattern</span>) (<span class="id" title="var">Bp</span> <span class="id" title="var">Bn</span> : <span class="id" title="var">Ensemble</span> <span class="id" title="var">svar</span>) : <span class="id" title="keyword">Prop</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> (<span class="id" title="var">var</span> : <span class="id" title="var">svar</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">Bp</span> <span class="id" title="var">var</span> → <span class="id" title="var">svar_has_positive_occurrence</span> <span class="id" title="var">var</span> <span class="id" title="var">phi</span> = <span class="id" title="var">false</span>) ∧ (<span class="id" title="var">Bn</span> <span class="id" title="var">var</span> → @<span class="id" title="var">svar_has_negative_occurrence</span> <span class="id" title="var">Σ</span> <span class="id" title="var">var</span> <span class="id" title="var">phi</span> = <span class="id" title="var">false</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">respects_blacklist_app</span> : <span class="id" title="keyword">∀</span> (<span class="id" title="var">phi1</span> <span class="id" title="var">phi2</span> : <span class="id" title="var">Pattern</span>) (<span class="id" title="var">Bp</span> <span class="id" title="var">Bn</span> : <span class="id" title="var">Ensemble</span> <span class="id" title="var">svar</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">respects_blacklist</span> <span class="id" title="var">phi1</span> <span class="id" title="var">Bp</span> <span class="id" title="var">Bn</span> → <span class="id" title="var">respects_blacklist</span> <span class="id" title="var">phi2</span> <span class="id" title="var">Bp</span> <span class="id" title="var">Bn</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">respects_blacklist</span> (<span class="id" title="var">phi1</span> $ <span class="id" title="var">phi2</span>)%<span class="id" title="var">ml</span> <span class="id" title="var">Bp</span> <span class="id" title="var">Bn</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">respects_blacklist_app_1</span> : <span class="id" title="keyword">∀</span> (<span class="id" title="var">phi1</span> <span class="id" title="var">phi2</span> : <span class="id" title="var">Pattern</span>) (<span class="id" title="var">Bp</span> <span class="id" title="var">Bn</span> : <span class="id" title="var">Ensemble</span> <span class="id" title="var">svar</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">respects_blacklist</span> (<span class="id" title="var">phi1</span> $ <span class="id" title="var">phi2</span>)%<span class="id" title="var">ml</span> <span class="id" title="var">Bp</span> <span class="id" title="var">Bn</span> → <span class="id" title="var">respects_blacklist</span> <span class="id" title="var">phi1</span> <span class="id" title="var">Bp</span> <span class="id" title="var">Bn</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">(*&nbsp;This&nbsp;proof&nbsp;is&nbsp;the&nbsp;same&nbsp;as&nbsp;for&nbsp;app_1&nbsp;*)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">respects_blacklist_app_2</span> : <span class="id" title="keyword">∀</span> (<span class="id" title="var">phi1</span> <span class="id" title="var">phi2</span> : <span class="id" title="var">Pattern</span>) (<span class="id" title="var">Bp</span> <span class="id" title="var">Bn</span> : <span class="id" title="var">Ensemble</span> <span class="id" title="var">svar</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">respects_blacklist</span> (<span class="id" title="var">phi1</span> $ <span class="id" title="var">phi2</span>) <span class="id" title="var">Bp</span> <span class="id" title="var">Bn</span> → <span class="id" title="var">respects_blacklist</span> <span class="id" title="var">phi2</span> <span class="id" title="var">Bp</span> <span class="id" title="var">Bn</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">respects_blacklist_impl</span> : <span class="id" title="keyword">∀</span> (<span class="id" title="var">phi1</span> <span class="id" title="var">phi2</span> : <span class="id" title="var">Pattern</span>) (<span class="id" title="var">Bp</span> <span class="id" title="var">Bn</span> : <span class="id" title="var">Ensemble</span> <span class="id" title="var">svar</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">respects_blacklist</span> <span class="id" title="var">phi1</span> <span class="id" title="var">Bn</span> <span class="id" title="var">Bp</span> → <span class="id" title="var">respects_blacklist</span> <span class="id" title="var">phi2</span> <span class="id" title="var">Bp</span> <span class="id" title="var">Bn</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">respects_blacklist</span> (<span class="id" title="var">phi1</span> ---&gt; <span class="id" title="var">phi2</span>) <span class="id" title="var">Bp</span> <span class="id" title="var">Bn</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">respects_blacklist_impl_1</span> : <span class="id" title="keyword">∀</span> (<span class="id" title="var">phi1</span> <span class="id" title="var">phi2</span> : <span class="id" title="var">Pattern</span>) (<span class="id" title="var">Bp</span> <span class="id" title="var">Bn</span> : <span class="id" title="var">Ensemble</span> <span class="id" title="var">svar</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">respects_blacklist</span> (<span class="id" title="var">phi1</span> ---&gt; <span class="id" title="var">phi2</span>) <span class="id" title="var">Bp</span> <span class="id" title="var">Bn</span> → <span class="id" title="var">respects_blacklist</span> <span class="id" title="var">phi1</span> <span class="id" title="var">Bn</span> <span class="id" title="var">Bp</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">respects_blacklist_impl_2</span> : <span class="id" title="keyword">∀</span> (<span class="id" title="var">phi1</span> <span class="id" title="var">phi2</span> : <span class="id" title="var">Pattern</span>) (<span class="id" title="var">Bp</span> <span class="id" title="var">Bn</span> : <span class="id" title="var">Ensemble</span> <span class="id" title="var">svar</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">respects_blacklist</span> (<span class="id" title="var">phi1</span> ---&gt; <span class="id" title="var">phi2</span>) <span class="id" title="var">Bp</span> <span class="id" title="var">Bn</span> → <span class="id" title="var">respects_blacklist</span> <span class="id" title="var">phi2</span> <span class="id" title="var">Bp</span> <span class="id" title="var">Bn</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">respects_blacklist_ex</span> : <span class="id" title="keyword">∀</span> (<span class="id" title="var">phi</span> : <span class="id" title="var">Pattern</span>) (<span class="id" title="var">Bp</span> <span class="id" title="var">Bn</span> : <span class="id" title="var">Ensemble</span> <span class="id" title="var">svar</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">respects_blacklist</span> (<span class="id" title="var">patt_exists</span> <span class="id" title="var">phi</span>) <span class="id" title="var">Bp</span> <span class="id" title="var">Bn</span> → <span class="id" title="var">respects_blacklist</span> <span class="id" title="var">phi</span> <span class="id" title="var">Bp</span> <span class="id" title="var">Bn</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">respects_blacklist_ex'</span> : <span class="id" title="keyword">∀</span> (<span class="id" title="var">phi</span> : <span class="id" title="var">Pattern</span>) (<span class="id" title="var">Bp</span> <span class="id" title="var">Bn</span> : <span class="id" title="var">Ensemble</span> <span class="id" title="var">svar</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">respects_blacklist</span> <span class="id" title="var">phi</span> <span class="id" title="var">Bp</span> <span class="id" title="var">Bn</span> → <span class="id" title="var">respects_blacklist</span> (<span class="id" title="var">patt_exists</span> <span class="id" title="var">phi</span>) <span class="id" title="var">Bp</span> <span class="id" title="var">Bn</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">respects_blacklist_mu</span> : <span class="id" title="keyword">∀</span> (<span class="id" title="var">phi</span> : <span class="id" title="var">Pattern</span>) (<span class="id" title="var">Bp</span> <span class="id" title="var">Bn</span> : <span class="id" title="var">Ensemble</span> <span class="id" title="var">svar</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">respects_blacklist</span> (<span class="id" title="var">patt_mu</span> <span class="id" title="var">phi</span>) <span class="id" title="var">Bp</span> <span class="id" title="var">Bn</span> → <span class="id" title="var">respects_blacklist</span> <span class="id" title="var">phi</span> <span class="id" title="var">Bp</span> <span class="id" title="var">Bn</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">respects_blacklist_mu'</span> : <span class="id" title="keyword">∀</span> (<span class="id" title="var">phi</span> : <span class="id" title="var">Pattern</span>) (<span class="id" title="var">Bp</span> <span class="id" title="var">Bn</span> : <span class="id" title="var">Ensemble</span> <span class="id" title="var">svar</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">respects_blacklist</span> <span class="id" title="var">phi</span> <span class="id" title="var">Bp</span> <span class="id" title="var">Bn</span> → <span class="id" title="var">respects_blacklist</span> (<span class="id" title="var">patt_mu</span> <span class="id" title="var">phi</span>) <span class="id" title="var">Bp</span> <span class="id" title="var">Bn</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">respects_blacklist_union</span> : <span class="id" title="keyword">∀</span> (<span class="id" title="var">phi</span> : <span class="id" title="var">Pattern</span>) (<span class="id" title="var">Bp1</span> <span class="id" title="var">Bn1</span> <span class="id" title="var">Bp2</span> <span class="id" title="var">Bn2</span> : <span class="id" title="var">Ensemble</span> <span class="id" title="var">svar</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">respects_blacklist</span> <span class="id" title="var">phi</span> <span class="id" title="var">Bp1</span> <span class="id" title="var">Bn1</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">respects_blacklist</span> <span class="id" title="var">phi</span> <span class="id" title="var">Bp2</span> <span class="id" title="var">Bn2</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">respects_blacklist</span> <span class="id" title="var">phi</span> (<span class="id" title="var">Ensembles.Union</span> <span class="id" title="var">svar</span> <span class="id" title="var">Bp1</span> <span class="id" title="var">Bp2</span>) (<span class="id" title="var">Ensembles.Union</span> <span class="id" title="var">svar</span> <span class="id" title="var">Bn1</span> <span class="id" title="var">Bn2</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">positive_occurrence_respects_blacklist_svar_open</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> (<span class="id" title="var">phi</span> : <span class="id" title="var">Pattern</span>) (<span class="id" title="var">dbi</span> : <span class="id" title="var">db_index</span>) (<span class="id" title="var">X</span> : <span class="id" title="var">svar</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">no_negative_occurrence_db_b</span> <span class="id" title="var">dbi</span> <span class="id" title="var">phi</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">X</span> ∉ (<span class="id" title="var">free_svars</span> <span class="id" title="var">phi</span>) →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">respects_blacklist</span> (<span class="id" title="var">phi</span>^{<span class="id" title="var">svar</span>: <span class="id" title="var">dbi</span> ↦ <span class="id" title="var">X</span>}) (<span class="id" title="var">Empty_set</span> <span class="id" title="var">svar</span>) (<span class="id" title="var">Ensembles.Singleton</span> <span class="id" title="var">svar</span> <span class="id" title="var">X</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">mu_wellformed_respects_blacklist</span> : <span class="id" title="keyword">∀</span> (<span class="id" title="var">phi</span> : <span class="id" title="var">Pattern</span>) (<span class="id" title="var">X</span> : <span class="id" title="var">svar</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_positive</span> (<span class="id" title="var">patt_mu</span> <span class="id" title="var">phi</span>) →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">svar_is_fresh_in</span> <span class="id" title="var">X</span> <span class="id" title="var">phi</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">respects_blacklist</span> (<span class="id" title="var">phi</span>^{<span class="id" title="var">svar</span>: 0 ↦ <span class="id" title="var">X</span>}) (<span class="id" title="var">Empty_set</span> <span class="id" title="var">svar</span>) (<span class="id" title="var">Ensembles.Singleton</span> <span class="id" title="var">svar</span> <span class="id" title="var">X</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">(*<br/>
+Lemma&nbsp;respects_blacklist_ex'&nbsp;:&nbsp;forall&nbsp;(phi&nbsp;:&nbsp;Pattern)&nbsp;(Bp&nbsp;Bn&nbsp;:&nbsp;Ensemble&nbsp;svar),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;respects_blacklist&nbsp;()<br/>
+respects_blacklist&nbsp;(evar_open&nbsp;0&nbsp;(evar_fresh&nbsp;variables&nbsp;(free_evars&nbsp;phi))&nbsp;phi)&nbsp;Bp&nbsp;B<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;*)</span><br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">evar_open_respects_blacklist</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> (<span class="id" title="var">phi</span> : <span class="id" title="var">Pattern</span>) (<span class="id" title="var">Bp</span> <span class="id" title="var">Bn</span> : <span class="id" title="var">Ensemble</span> <span class="id" title="var">svar</span>) (<span class="id" title="var">x</span> : <span class="id" title="tactic">evar</span>) (<span class="id" title="var">n</span> : <span class="id" title="var">nat</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">respects_blacklist</span> <span class="id" title="var">phi</span> <span class="id" title="var">Bp</span> <span class="id" title="var">Bn</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">respects_blacklist</span> (<span class="id" title="var">phi</span>^{<span class="id" title="tactic">evar</span>: <span class="id" title="var">n</span> ↦ <span class="id" title="var">x</span>}) <span class="id" title="var">Bp</span> <span class="id" title="var">Bn</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">End</span> <span class="id" title="var">respects_blacklist</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="comment">(*&nbsp;From&nbsp;the&nbsp;following&nbsp;section,&nbsp;`update_svar_val_comm`,&nbsp;`update_svar_shadow`<br/>
+&nbsp;&nbsp;&nbsp;and&nbsp;`is_monotonic`&nbsp;may&nbsp;be&nbsp;generally&nbsp;useful.<br/>
+&nbsp;&nbsp;&nbsp;The&nbsp;lemma&nbsp;`respects_blacklist_implies_monotonic`&nbsp;is&nbsp;only&nbsp;a&nbsp;technical&nbsp;lemma&nbsp;for&nbsp;proving&nbsp;`is_monotonic`,<br/>
+&nbsp;&nbsp;&nbsp;which&nbsp;is&nbsp;the&nbsp;main&nbsp;lemma&nbsp;of&nbsp;the&nbsp;section.<br/>
+&nbsp;&nbsp;&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Section</span> <span class="id" title="var">with_model</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Context</span> {<span class="id" title="var">M</span> : <span class="id" title="var">Model</span>}.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Let</span> <span class="id" title="var">A</span> := <span class="id" title="var">propset</span> (<span class="id" title="var">Domain</span> <span class="id" title="var">M</span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Let</span> <span class="id" title="var">OS</span> := <span class="id" title="var">PropsetOrderedSet</span> (<span class="id" title="var">Domain</span> <span class="id" title="var">M</span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Let</span> <span class="id" title="var">L</span> := <span class="id" title="var">PowersetLattice</span> (<span class="id" title="var">Domain</span> <span class="id" title="var">M</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">respects_blacklist_implies_monotonic</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> (<span class="id" title="var">n</span> : <span class="id" title="var">nat</span>) (<span class="id" title="var">phi</span> : <span class="id" title="var">Pattern</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">le</span> (<span class="id" title="var">size</span> <span class="id" title="var">phi</span>) <span class="id" title="var">n</span> → <span class="id" title="var">well_formed_positive</span> <span class="id" title="var">phi</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> (<span class="id" title="var">Bp</span> <span class="id" title="var">Bn</span> : <span class="id" title="var">Ensemble</span> <span class="id" title="var">svar</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">respects_blacklist</span> <span class="id" title="var">phi</span> <span class="id" title="var">Bp</span> <span class="id" title="var">Bn</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> (ρ : @<span class="id" title="var">Valuation</span> <span class="id" title="var">_</span> <span class="id" title="var">M</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">X</span> : <span class="id" title="var">svar</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">Bp</span> <span class="id" title="var">X</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;@<span class="id" title="var">AntiMonotonicFunction</span> <span class="id" title="var">A</span> <span class="id" title="var">OS</span> (<span class="id" title="keyword">fun</span> (<span class="id" title="var">S</span> : <span class="id" title="var">propset</span> (<span class="id" title="var">Domain</span> <span class="id" title="var">M</span>)) ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(@<span class="id" title="tactic">eval</span> <span class="id" title="var">Σ</span> <span class="id" title="var">M</span> (<span class="id" title="var">update_svar_val</span> <span class="id" title="var">X</span> <span class="id" title="var">S</span> ρ) <span class="id" title="var">phi</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;) ∧<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">Bn</span> <span class="id" title="var">X</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;@<span class="id" title="var">MonotonicFunction</span> <span class="id" title="var">A</span> <span class="id" title="var">OS</span> (<span class="id" title="keyword">fun</span> <span class="id" title="var">S</span> : <span class="id" title="var">propset</span> (<span class="id" title="var">Domain</span> <span class="id" title="var">M</span>) ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(@<span class="id" title="tactic">eval</span> <span class="id" title="var">Σ</span> <span class="id" title="var">M</span> (<span class="id" title="var">update_svar_val</span> <span class="id" title="var">X</span> <span class="id" title="var">S</span> ρ) <span class="id" title="var">phi</span>))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Arguments</span> <span class="id" title="var">LeastFixpointOf</span> : <span class="id" title="tactic">simpl</span> <span class="id" title="var">never</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Arguments</span> <span class="id" title="var">leq</span> : <span class="id" title="tactic">simpl</span> <span class="id" title="var">never</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Arguments</span> <span class="id" title="var">LeastFixpointOf</span> : <span class="id" title="tactic">simpl</span> <span class="id" title="var">never</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Arguments</span> <span class="id" title="var">leq</span> : <span class="id" title="tactic">simpl</span> <span class="id" title="var">never</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">is_monotonic</span> : <span class="id" title="keyword">∀</span> (<span class="id" title="var">phi</span> : <span class="id" title="var">Pattern</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">X</span> : <span class="id" title="var">svar</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(ρ : <span class="id" title="var">Valuation</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_positive</span> (<span class="id" title="var">mu</span>, <span class="id" title="var">phi</span>) →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">svar_is_fresh_in</span> <span class="id" title="var">X</span> <span class="id" title="var">phi</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;@<span class="id" title="var">MonotonicFunction</span> <span class="id" title="var">A</span> <span class="id" title="var">OS</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="keyword">fun</span> <span class="id" title="var">S</span> : <span class="id" title="var">propset</span> (<span class="id" title="var">Domain</span> <span class="id" title="var">M</span>) ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(@<span class="id" title="tactic">eval</span> <span class="id" title="var">Σ</span> <span class="id" title="var">M</span> (<span class="id" title="var">update_svar_val</span> <span class="id" title="var">X</span> <span class="id" title="var">S</span> ρ)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">phi</span>^{<span class="id" title="var">svar</span>: 0 ↦ <span class="id" title="var">X</span>}))).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">End</span> <span class="id" title="var">with_model</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">End</span> <span class="id" title="var">monotonic</span>.<br/>
+</div>
+<hr/>This page has been generated by <a href="http://coq.inria.fr/">coqdoc</a>
+</div>
+
+</div>
+
+</body>
+</html>

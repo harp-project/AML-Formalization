@@ -1,0 +1,92 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link href="coqdoc.css" rel="stylesheet" type="text/css" />
+<title>OpmlAmlRelSpec</title>
+</head>
+
+<body>
+
+<div id="page">
+
+<div id="header">
+</div>
+
+<div id="main">
+
+<h1 class="libtitle">File OpmlAmlRelSpec</h1>
+
+<div class="code">
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">ssreflect</span> <span class="id" title="var">ssrfun</span> <span class="id" title="var">ssrbool</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">stdpp</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">base</span> <span class="id" title="var">list</span> <span class="id" title="var">list_numbers</span> <span class="id" title="var">propset</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">MatchingLogic</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Signature</span> <span class="id" title="var">Semantics</span> <span class="id" title="var">ModelIsomorphism</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">MatchingLogic.OPML</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">OpmlSignature</span> <span class="id" title="var">OpmlModel</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Record</span> <span class="id" title="var">OpmlAmlSigRel</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<span class="id" title="var">Σo</span> : <span class="id" title="var">OPMLSignature</span>} {<span class="id" title="var">Σa</span> : <span class="id" title="var">Signature</span>} := {<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">oasr_sym</span> : <span class="id" title="var">opml_symbol</span> → <span class="id" title="var">symbols</span> ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">oasr_sym_inj</span> : <span class="id" title="var">Inj</span> (=) (=) <span class="id" title="var">oasr_sym</span> ;<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">oasr_no_junk</span> : <span class="id" title="var">symbols</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">oasr_no_junk_distinct</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> <span class="id" title="var">s</span>, <span class="id" title="var">oasr_sym</span> <span class="id" title="var">s</span> ≠ <span class="id" title="var">oasr_no_junk</span> ;<br/>
+<br/>
+}.<br/>
+
+<br/>
+<span class="id" title="keyword">Record</span> <span class="id" title="var">OpmlAmlModRel</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<span class="id" title="var">Σo</span> : <span class="id" title="var">OPMLSignature</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<span class="id" title="var">Σa</span> : <span class="id" title="var">Signature</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">Mo</span> : <span class="id" title="var">OPMLModel</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">Ma</span> : <span class="id" title="var">Model</span>)<br/>
+:= {<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">oamr_sig</span> : <span class="id" title="var">OpmlAmlSigRel</span> ;<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">oamr_ele</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">om_unified_carrier</span> <span class="id" title="var">Mo</span> → <span class="id" title="var">Domain</span> <span class="id" title="var">Ma</span> ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">oamr_ele_inj</span> : <span class="id" title="var">Inj</span> (=) (=) <span class="id" title="var">oamr_ele</span> ;<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">(*&nbsp;The&nbsp;'no_junk'&nbsp;symbol&nbsp;is&nbsp;interpreted&nbsp;as&nbsp;all&nbsp;the&nbsp;'original'&nbsp;(OPML)&nbsp;model&nbsp;elements.&nbsp;*)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">oamr_no_junk</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> (<span class="id" title="var">ma</span> : <span class="id" title="var">Domain</span> <span class="id" title="var">Ma</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;((<span class="id" title="var">ma</span> ∈ (<span class="id" title="var">sym_interp</span> <span class="id" title="var">Ma</span> (<span class="id" title="var">oasr_no_junk</span> <span class="id" title="var">oamr_sig</span>)))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;↔ <span class="id" title="tactic">∃</span> (<span class="id" title="var">mo</span> : <span class="id" title="var">om_unified_carrier</span> <span class="id" title="var">Mo</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">ma</span> = <span class="id" title="var">oamr_ele</span> <span class="id" title="var">mo</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;;    <br/>
+<br/>
+}.<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">OpmlAmlModRel_preserves_isom</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<span class="id" title="var">Σo</span> : <span class="id" title="var">OPMLSignature</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<span class="id" title="var">Σa</span> : <span class="id" title="var">Signature</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">Mo</span> : <span class="id" title="var">OPMLModel</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">Ma</span> : <span class="id" title="var">Model</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">r</span> : <span class="id" title="var">OpmlAmlModRel</span> <span class="id" title="var">Mo</span> <span class="id" title="var">Ma</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;:=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> <span class="id" title="var">Mo'</span> <span class="id" title="var">Ma'</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">OPMLModelIsomorphism</span> <span class="id" title="var">Mo</span> <span class="id" title="var">Mo'</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;@<span class="id" title="var">ModelIsomorphism</span> <span class="id" title="var">_</span> <span class="id" title="var">Ma</span> <span class="id" title="var">Ma'</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">OpmlAmlModRel</span> <span class="id" title="var">Mo'</span> <span class="id" title="var">Ma'</span><br/>
+.<br/>
+
+<br/>
+</div>
+<hr/>This page has been generated by <a href="http://coq.inria.fr/">coqdoc</a>
+</div>
+
+</div>
+
+</body>
+</html>

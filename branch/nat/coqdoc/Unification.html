@@ -1,0 +1,383 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link href="coqdoc.css" rel="stylesheet" type="text/css" />
+<title>Unification</title>
+</head>
+
+<body>
+
+<div id="page">
+
+<div id="header">
+</div>
+
+<div id="main">
+
+<h1 class="libtitle">File Unification</h1>
+
+<div class="code">
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">ssreflect</span> <span class="id" title="var">ssrfun</span> <span class="id" title="var">ssrbool</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Ltac2</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Ltac2</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Equations.Prop.Equations</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">String</span> <span class="id" title="var">Ensembles</span> <span class="id" title="var">Setoid</span>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Coq.Program.Equality</span>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Coq.Logic.Classical_Prop</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq.Logic</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">FunctionalExtensionality</span> <span class="id" title="var">Eqdep_dec</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq.Classes</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Morphisms_Prop</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq.Unicode</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Utf8</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq.micromega</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Lia</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">MatchingLogic</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">BasicProofSystemLemmas</span> <span class="id" title="var">Logic</span> <span class="id" title="var">ProofMode</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">MatchingLogic.Theories</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Definedness_Syntax</span> <span class="id" title="var">Definedness_ProofSystem</span> <span class="id" title="var">FOEquality_ProofSystem</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">MatchingLogic.Utils</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">stdpp_ext</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">MatchingLogic.wftactics</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">stdpp</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">base</span> <span class="id" title="var">fin_sets</span> <span class="id" title="var">sets</span> <span class="id" title="var">propset</span> <span class="id" title="var">proof_irrel</span> <span class="id" title="var">option</span> <span class="id" title="var">list</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Import</span> <span class="id" title="var">extralibrary</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Import</span> <span class="id" title="var">MatchingLogic.Logic.Notations</span>.<br/>
+<span class="id" title="keyword">Import</span> <span class="id" title="var">MatchingLogic.Theories.Definedness_Syntax.Notations</span>.<br/>
+
+<br/>
+
+<br/>
+<span class="id" title="keyword">Close</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">equations_scope</span>. <span class="comment">(*&nbsp;Because&nbsp;of&nbsp;<span class="inlinecode">!</span>&nbsp;*)</span><br/>
+
+<br/>
+<span class="id" title="keyword">Open</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">ml_scope</span>.<br/>
+<span class="id" title="keyword">Open</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">string_scope</span>.<br/>
+<span class="id" title="keyword">Open</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">list_scope</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Section</span> <span class="id" title="var">ProofSystemTheorems</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Context</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<span class="id" title="var">syntax</span> : <span class="id" title="keyword">Syntax</span>}.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">Prop₃_left</span>: <span class="id" title="keyword">∀</span> <span class="id" title="var">Γ</span> φ φ',<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">theory</span> ⊆ <span class="id" title="var">Γ</span> → <span class="id" title="var">mu_free</span> φ →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed</span> φ → <span class="id" title="var">well_formed</span> φ' →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢ (φ <span class="id" title="var">and</span> (φ' =<span class="id" title="var">ml</span> φ)) ---&gt; (φ <span class="id" title="var">and</span> φ').<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">functional_pattern_defined</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> <span class="id" title="var">Γ</span> φ, <span class="id" title="var">theory</span> ⊆ <span class="id" title="var">Γ</span> → <span class="id" title="var">well_formed</span> φ →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢ (<span class="id" title="var">ex</span> , (φ =<span class="id" title="var">ml</span> <span class="id" title="var">b0</span>)) ---&gt; ⌈ φ ⌉.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">membership_equal_equal</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> <span class="id" title="var">Γ</span> φ φ',<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">theory</span> ⊆ <span class="id" title="var">Γ</span> → <span class="id" title="var">mu_free</span> φ' →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed</span> φ → <span class="id" title="var">well_formed</span> φ' →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢ (<span class="id" title="var">ex</span> , (φ =<span class="id" title="var">ml</span> <span class="id" title="var">b0</span>))  →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢ (<span class="id" title="var">ex</span> , (φ' =<span class="id" title="var">ml</span> <span class="id" title="var">b0</span>))  →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢ (φ ∈<span class="id" title="var">ml</span> φ') =<span class="id" title="var">ml</span> (φ =<span class="id" title="var">ml</span> φ') .<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">Prop₃_right</span> : <span class="id" title="keyword">∀</span> <span class="id" title="var">Γ</span> φ φ',<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">theory</span> ⊆ <span class="id" title="var">Γ</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed</span> φ → <span class="id" title="var">well_formed</span> φ' → <span class="id" title="var">mu_free</span> φ' →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢ (<span class="id" title="var">ex</span> , (φ =<span class="id" title="var">ml</span> <span class="id" title="var">b0</span>))  →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢ (<span class="id" title="var">ex</span> , (φ' =<span class="id" title="var">ml</span> <span class="id" title="var">b0</span>))  →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢ (φ <span class="id" title="var">and</span> φ') ---&gt; (φ <span class="id" title="var">and</span> (φ =<span class="id" title="var">ml</span> φ')) .<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Corollary</span> <span class="id" title="var">delete</span> : <span class="id" title="keyword">∀</span> φ φ' <span class="id" title="var">Γ</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed</span> φ → <span class="id" title="var">well_formed</span> φ'<br/>
+&nbsp;&nbsp;→<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢ φ <span class="id" title="var">and</span> φ' =<span class="id" title="var">ml</span> φ' ---&gt; φ<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">free_evar_subst_id</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> φ <span class="id" title="var">x</span>, φ^[[<span class="id" title="tactic">evar</span>: <span class="id" title="var">x</span> ↦ <span class="id" title="var">patt_free_evar</span> <span class="id" title="var">x</span>]] = φ.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Theorem</span> <span class="id" title="var">elimination</span> : <span class="id" title="keyword">∀</span> φ φ' <span class="id" title="var">x</span> <span class="id" title="var">Γ</span>, <span class="id" title="var">x</span> ∉ <span class="id" title="var">free_evars</span> φ →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">theory</span> ⊆ <span class="id" title="var">Γ</span> → <span class="id" title="var">mu_free</span> φ →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_closed_ex_aux</span> φ 1 →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_closed_mu_aux</span> φ 0 →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed</span> φ' →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢ φ^[<span class="id" title="tactic">evar</span>: 0 ↦ <span class="id" title="var">patt_free_evar</span> <span class="id" title="var">x</span>] <span class="id" title="var">and</span> φ' =<span class="id" title="var">ml</span> <span class="id" title="var">patt_free_evar</span> <span class="id" title="var">x</span> ---&gt; <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;φ^[<span class="id" title="tactic">evar</span>: 0 ↦ φ'] <span class="id" title="var">and</span> φ' =<span class="id" title="var">ml</span> <span class="id" title="var">patt_free_evar</span> <span class="id" title="var">x</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Theorem</span> <span class="id" title="var">elimination_reverse</span> : <span class="id" title="keyword">∀</span> φ φ' <span class="id" title="var">x</span> <span class="id" title="var">Γ</span>, <span class="id" title="var">x</span> ∉ <span class="id" title="var">free_evars</span> φ →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">theory</span> ⊆ <span class="id" title="var">Γ</span> → <span class="id" title="var">mu_free</span> φ →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_closed_ex_aux</span> φ 1 →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_closed_mu_aux</span> φ 0 →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed</span> φ' →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢ φ^[<span class="id" title="tactic">evar</span>: 0 ↦ φ'] <span class="id" title="var">and</span> φ' =<span class="id" title="var">ml</span> <span class="id" title="var">patt_free_evar</span> <span class="id" title="var">x</span> ---&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;φ^[<span class="id" title="tactic">evar</span>: 0 ↦ <span class="id" title="var">patt_free_evar</span> <span class="id" title="var">x</span>] <span class="id" title="var">and</span> φ' =<span class="id" title="var">ml</span> <span class="id" title="var">patt_free_evar</span> <span class="id" title="var">x</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+     Should be a consequence of the injectivity axiom:
+
+<div class="paragraph"> </div>
+
+      f(x₁,...,xₙ) = f(x₁',...,xₙ') → x₁ = x₁' ∧ ... ∧ xₙ = xₙ'
+
+<div class="paragraph"> </div>
+
+     The question is, why can we assume this axiom?
+  
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="comment">(*&nbsp;TODO&nbsp;move&nbsp;this&nbsp;definition&nbsp;to&nbsp;a&nbsp;more&nbsp;general&nbsp;place.&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">application_chain</span> (φ : <span class="id" title="var">Pattern</span>) (φ<span class="id" title="var">s</span> : <span class="id" title="var">list</span> <span class="id" title="var">Pattern</span>) : <span class="id" title="var">Pattern</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">fold_left</span> (<span class="id" title="keyword">fun</span> <span class="id" title="var">Acc</span> φ ⇒ <span class="id" title="var">patt_app</span> <span class="id" title="var">Acc</span> φ) φ<span class="id" title="var">s</span> φ.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Theorem</span> <span class="id" title="var">application_equal</span> : <span class="id" title="keyword">∀</span> φ<span class="id" title="var">s</span> ψ φ'<span class="id" title="var">s</span> <span class="id" title="var">Γ</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">length</span> φ<span class="id" title="var">s</span> = <span class="id" title="var">length</span> φ'<span class="id" title="var">s</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed</span> ψ → <span class="comment">(*&nbsp;Forall&nbsp;well_formed&nbsp;φs&nbsp;-&gt;&nbsp;Forall&nbsp;well_formed&nbsp;φ's&nbsp;*)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="keyword">∀</span> <span class="id" title="var">i</span>, <span class="id" title="var">i</span> &lt; <span class="id" title="var">length</span> φ<span class="id" title="var">s</span> → <span class="id" title="var">well_formed</span> (<span class="id" title="var">nth</span> <span class="id" title="var">i</span> φ<span class="id" title="var">s</span> ⊥)) →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="keyword">∀</span> <span class="id" title="var">i</span>, <span class="id" title="var">i</span> &lt; <span class="id" title="var">length</span> φ'<span class="id" title="var">s</span> → <span class="id" title="var">well_formed</span> (<span class="id" title="var">nth</span> <span class="id" title="var">i</span> φ'<span class="id" title="var">s</span> ⊥))<br/>
+&nbsp;&nbsp;→<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢ <span class="id" title="var">application_chain</span> ψ φ<span class="id" title="var">s</span> =<span class="id" title="var">ml</span> <span class="id" title="var">application_chain</span> ψ φ'<span class="id" title="var">s</span> ---&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">fold_right</span> (<span class="id" title="keyword">fun</span> '(<span class="id" title="var">x</span>, <span class="id" title="var">y</span>) <span class="id" title="var">Acc</span> ⇒ <span class="id" title="var">Acc</span> <span class="id" title="var">and</span> <span class="id" title="var">x</span> =<span class="id" title="var">ml</span> <span class="id" title="var">y</span>) <span class="id" title="var">Top</span> (<span class="id" title="var">zip</span> φ<span class="id" title="var">s</span> φ'<span class="id" title="var">s</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;.<br/>
+
+<br/>
+<span class="id" title="keyword">End</span> <span class="id" title="var">ProofSystemTheorems</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Section</span> <span class="id" title="var">UnificationProcedure</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Context</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} {<span class="id" title="var">ΣS</span> : <span class="id" title="keyword">Syntax</span>}.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="comment">(*&nbsp;Fixpoint&nbsp;apps_r&nbsp;(C&nbsp;:&nbsp;Application_context)&nbsp;:&nbsp;bool&nbsp;:=<br/>
+&nbsp;&nbsp;match&nbsp;C&nbsp;with<br/>
+&nbsp;&nbsp;&nbsp;|&nbsp;box&nbsp;=&gt;&nbsp;true<br/>
+&nbsp;&nbsp;&nbsp;|&nbsp;ctx_app_l&nbsp;cc&nbsp;p&nbsp;=&gt;&nbsp;apps_r&nbsp;cc<br/>
+&nbsp;&nbsp;&nbsp;|&nbsp;ctx_app_r&nbsp;p&nbsp;cc&nbsp;=&gt;&nbsp;false<br/>
+&nbsp;&nbsp;end.&nbsp;*)</span><br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Based on https://www.cs.bu.edu/fac/snyder/publications/UnifChapter.pdf 
+</div>
+<div class="code">
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">Unification_problem</span> : <span class="id" title="keyword">Set</span> := <span class="id" title="var">list</span> (<span class="id" title="var">Pattern</span> × <span class="id" title="var">Pattern</span>) × <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">list</span> (<span class="id" title="tactic">evar</span> × <span class="id" title="var">Pattern</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Fixpoint</span> <span class="id" title="var">get_apps</span> (<span class="id" title="var">p</span> : <span class="id" title="var">Pattern</span>) : <span class="id" title="var">option</span> (<span class="id" title="var">symbols</span> × <span class="id" title="var">list</span> <span class="id" title="var">Pattern</span>) :=<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">p</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">patt_app</span> <span class="id" title="var">p1</span> <span class="id" title="var">p2</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">get_apps</span> <span class="id" title="var">p1</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">Some</span> (<span class="id" title="var">s</span>, <span class="id" title="var">ps</span>) ⇒ <span class="id" title="var">Some</span> (<span class="id" title="var">s</span>, <span class="id" title="var">ps</span> ++ [<span class="id" title="var">p2</span>])<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">None</span> ⇒ <span class="id" title="var">None</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">patt_sym</span> <span class="id" title="var">s</span> ⇒ <span class="id" title="var">Some</span> (<span class="id" title="var">s</span>, [])<br/>
+&nbsp;&nbsp;| <span class="id" title="var">_</span> ⇒ <span class="id" title="var">None</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">u_remove</span> := <span class="id" title="var">remove</span> (<span class="id" title="var">prod_eqdec</span> <span class="id" title="var">Pattern_eqdec</span> <span class="id" title="var">Pattern_eqdec</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">subst_ziplist</span> (<span class="id" title="var">x</span> : <span class="id" title="tactic">evar</span>) (<span class="id" title="var">p</span> : <span class="id" title="var">Pattern</span>) <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;: <span class="id" title="var">list</span> (<span class="id" title="var">Pattern</span> × <span class="id" title="var">Pattern</span>) → <span class="id" title="var">list</span> (<span class="id" title="var">Pattern</span> × <span class="id" title="var">Pattern</span>) :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">map</span> (<span class="id" title="keyword">fun</span> '(<span class="id" title="var">p1</span>, <span class="id" title="var">p2</span>) ⇒ ( <span class="id" title="var">p1</span>^[[<span class="id" title="tactic">evar</span>: <span class="id" title="var">x</span> ↦ <span class="id" title="var">p</span>]] , <span class="id" title="var">p2</span>^[[<span class="id" title="tactic">evar</span>: <span class="id" title="var">x</span> ↦ <span class="id" title="var">p</span>]] )).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">subst_list</span> (<span class="id" title="var">x</span> : <span class="id" title="tactic">evar</span>) (<span class="id" title="var">p</span> : <span class="id" title="var">Pattern</span>) <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;: <span class="id" title="var">list</span> (<span class="id" title="tactic">evar</span> × <span class="id" title="var">Pattern</span>) → <span class="id" title="var">list</span> (<span class="id" title="tactic">evar</span> × <span class="id" title="var">Pattern</span>) :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">map</span> (<span class="id" title="keyword">fun</span> '(<span class="id" title="var">y</span>, <span class="id" title="var">p2</span>) ⇒ ( <span class="id" title="var">y</span> , <span class="id" title="var">p2</span>^[[<span class="id" title="tactic">evar</span>: <span class="id" title="var">x</span> ↦ <span class="id" title="var">p</span>]] )).<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Reserved Notation</span> &quot;u ===&gt; u'" (<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 80).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Inductive</span> <span class="id" title="var">unify_step</span> : <span class="id" title="var">Unification_problem</span> → <span class="id" title="var">option</span> <span class="id" title="var">Unification_problem</span> → <span class="id" title="keyword">Set</span> :=<br/>
+&nbsp;&nbsp;<span class="comment">(*&nbsp;trivial/delete&nbsp;*)</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">u_trivial</span> <span class="id" title="var">t</span> <span class="id" title="var">U</span> <span class="id" title="var">S</span> <span class="id" title="var">U'</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">U</span> ++ (<span class="id" title="var">t</span>, <span class="id" title="var">t</span>)::<span class="id" title="var">U'</span>, <span class="id" title="var">S</span>) ===&gt; <span class="id" title="var">Some</span> (<span class="id" title="var">U</span> ++ <span class="id" title="var">U'</span>, <span class="id" title="var">S</span>)<br/>
+&nbsp;&nbsp;<span class="comment">(*&nbsp;decomposition&nbsp;*)</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">u_decompose</span> <span class="id" title="var">U</span> <span class="id" title="var">U'</span> <span class="id" title="var">S</span> <span class="id" title="var">t1</span> <span class="id" title="var">t2</span> <span class="id" title="var">f</span> <span class="id" title="var">ps</span> <span class="id" title="var">ps'</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">get_apps</span> <span class="id" title="var">t1</span> = <span class="id" title="var">Some</span> (<span class="id" title="var">f</span>, <span class="id" title="var">ps</span>) → <span class="id" title="var">get_apps</span> <span class="id" title="var">t2</span> = <span class="id" title="var">Some</span> (<span class="id" title="var">f</span>, <span class="id" title="var">ps'</span>) →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">length</span> <span class="id" title="var">ps</span> = <span class="id" title="var">length</span> <span class="id" title="var">ps'</span><br/>
+&nbsp;&nbsp;&nbsp;→<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">U</span> ++ (<span class="id" title="var">t1</span>, <span class="id" title="var">t2</span>)::<span class="id" title="var">U'</span>, <span class="id" title="var">S</span>) ===&gt; <span class="id" title="var">Some</span> (<span class="id" title="var">zip</span> <span class="id" title="var">ps</span> <span class="id" title="var">ps'</span> ++ <span class="id" title="var">U</span> ++ <span class="id" title="var">U'</span>, <span class="id" title="var">S</span>)<br/>
+&nbsp;&nbsp;<span class="comment">(*&nbsp;symbol_clash&nbsp;*)</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">u_clash</span> <span class="id" title="var">U</span> <span class="id" title="var">U'</span> <span class="id" title="var">S</span> <span class="id" title="var">t1</span> <span class="id" title="var">t2</span> <span class="id" title="var">f</span> <span class="id" title="var">g</span> <span class="id" title="var">ps</span> <span class="id" title="var">ps'</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">get_apps</span> <span class="id" title="var">t1</span> = <span class="id" title="var">Some</span> (<span class="id" title="var">f</span>, <span class="id" title="var">ps</span>) → <span class="id" title="var">get_apps</span> <span class="id" title="var">t2</span> = <span class="id" title="var">Some</span> (<span class="id" title="var">g</span>, <span class="id" title="var">ps'</span>) →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">f</span> ≠ <span class="id" title="var">g</span><br/>
+&nbsp;&nbsp;&nbsp;→<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">U</span> ++ (<span class="id" title="var">t1</span>, <span class="id" title="var">t2</span>)::<span class="id" title="var">U'</span>, <span class="id" title="var">S</span>) ===&gt; <span class="id" title="var">None</span><br/>
+&nbsp;&nbsp;<span class="comment">(*&nbsp;orient&nbsp;*)</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">u_orient</span> <span class="id" title="var">U</span> <span class="id" title="var">U'</span> <span class="id" title="var">S</span> <span class="id" title="var">t</span> <span class="id" title="var">x</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">U</span> ++ (<span class="id" title="var">t</span>, <span class="id" title="var">patt_free_evar</span> <span class="id" title="var">x</span>)::<span class="id" title="var">U'</span>, <span class="id" title="var">S</span>) ===&gt; <span class="id" title="var">Some</span> (<span class="id" title="var">U</span> ++ (<span class="id" title="var">patt_free_evar</span> <span class="id" title="var">x</span>, <span class="id" title="var">t</span>)::<span class="id" title="var">U'</span>, <span class="id" title="var">S</span>)<br/>
+&nbsp;&nbsp;<span class="comment">(*&nbsp;occurs&nbsp;check&nbsp;*)</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">u_check</span> <span class="id" title="var">U</span> <span class="id" title="var">U'</span> <span class="id" title="var">S</span> <span class="id" title="var">x</span> <span class="id" title="var">t</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">x</span> ∈ <span class="id" title="var">free_evars</span> <span class="id" title="var">t</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">patt_free_evar</span> <span class="id" title="var">x</span> ≠ <span class="id" title="var">t</span><br/>
+&nbsp;&nbsp;&nbsp;→<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">U</span> ++ (<span class="id" title="var">t</span>, <span class="id" title="var">patt_free_evar</span> <span class="id" title="var">x</span>)::<span class="id" title="var">U'</span>, <span class="id" title="var">S</span>) ===&gt; <span class="id" title="var">None</span><br/>
+&nbsp;&nbsp;<span class="comment">(*&nbsp;elimination&nbsp;*)</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">u_elim</span> <span class="id" title="var">U</span> <span class="id" title="var">U'</span> <span class="id" title="var">S</span> <span class="id" title="var">x</span> <span class="id" title="var">t</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">x</span> ∉ <span class="id" title="var">free_evars</span> <span class="id" title="var">t</span><br/>
+&nbsp;&nbsp;&nbsp;→<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">U</span> ++ (<span class="id" title="var">patt_free_evar</span> <span class="id" title="var">x</span>, <span class="id" title="var">t</span>)::<span class="id" title="var">U'</span>, <span class="id" title="var">S</span>) ===&gt; <span class="id" title="var">Some</span> (<span class="id" title="var">subst_ziplist</span> <span class="id" title="var">x</span> <span class="id" title="var">t</span> (<span class="id" title="var">U</span> ++ <span class="id" title="var">U'</span>), <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">x</span>, <span class="id" title="var">t</span>) :: <span class="id" title="var">subst_list</span> <span class="id" title="var">x</span> <span class="id" title="var">t</span> <span class="id" title="var">S</span>)<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">where</span> &quot;u ===&gt; u'" := (<span class="id" title="var">unify_step</span> <span class="id" title="var">u</span> <span class="id" title="var">u'</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">eq_pats</span> := (<span class="id" title="keyword">fun</span> '(<span class="id" title="var">p1</span>, <span class="id" title="var">p2</span>) ⇒ <span class="id" title="var">p1</span> =<span class="id" title="var">ml</span> <span class="id" title="var">p2</span>).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">eq_vars</span> := (<span class="id" title="keyword">fun</span> '(<span class="id" title="var">x</span>, <span class="id" title="var">p2</span>) ⇒ <span class="id" title="var">patt_free_evar</span> <span class="id" title="var">x</span> =<span class="id" title="var">ml</span> <span class="id" title="var">p2</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">unification_to_pattern</span> (<span class="id" title="var">u</span> : <span class="id" title="var">Unification_problem</span>) : <span class="id" title="var">Pattern</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">u</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| (<span class="id" title="var">Us</span>, <span class="id" title="var">Ss</span>) ⇒ <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">foldr</span> <span class="id" title="var">patt_and</span> <span class="id" title="var">Top</span> (<span class="id" title="var">map</span> <span class="id" title="var">eq_pats</span> <span class="id" title="var">Us</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">and</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">foldr</span> <span class="id" title="var">patt_and</span> <span class="id" title="var">Top</span> (<span class="id" title="var">map</span> <span class="id" title="var">eq_vars</span> <span class="id" title="var">Ss</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">wf_unification</span> (<span class="id" title="var">u</span> : <span class="id" title="var">Unification_problem</span>) :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">wf</span> (<span class="id" title="var">map</span> <span class="id" title="var">fst</span> <span class="id" title="var">u</span>.1) &amp;&amp; <span class="id" title="keyword">wf</span> (<span class="id" title="var">map</span> <span class="id" title="var">snd</span> <span class="id" title="var">u</span>.1) &amp;&amp; <span class="id" title="keyword">wf</span> (<span class="id" title="var">map</span> <span class="id" title="var">snd</span> <span class="id" title="var">u</span>.2).<br/>
+
+<br/>
+<span class="comment">(*&nbsp;&nbsp;&nbsp;Theorem&nbsp;foldr_equiv&nbsp;:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;forall&nbsp;l&nbsp;p&nbsp;l'&nbsp;p0,&nbsp;well_formed&nbsp;p&nbsp;-&gt;&nbsp;well_formed&nbsp;(foldr&nbsp;patt_and&nbsp;p0&nbsp;l)&nbsp;-&gt;&nbsp;well_formed&nbsp;(foldr&nbsp;patt_and&nbsp;p0&nbsp;l')&nbsp;-&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;forall&nbsp;Γ,&nbsp;Γ&nbsp;⊢&nbsp;foldr&nbsp;patt_and&nbsp;p0&nbsp;(l&nbsp;++&nbsp;p::l')&nbsp;&lt;---&gt;&nbsp;foldr&nbsp;patt_and&nbsp;p0&nbsp;(p::l&nbsp;++&nbsp;l').<br/>
+&nbsp;&nbsp;Proof.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;intros&nbsp;l.&nbsp;induction&nbsp;l;&nbsp;intros&nbsp;p&nbsp;l'&nbsp;p0&nbsp;WFp&nbsp;WFl&nbsp;WFl'&nbsp;Γ.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;simpl.&nbsp;useBasicReasoning.&nbsp;apply&nbsp;pf_iff_equiv_refl.&nbsp;wf_auto2.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;*&nbsp;simpl.<br/>
+&nbsp;&nbsp;Admitted.&nbsp;*)</span><br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Theorem</span> <span class="id" title="var">wf_unify_step</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> <span class="id" title="var">u</span> <span class="id" title="var">u'</span> : <span class="id" title="var">Unification_problem</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">u</span> ===&gt; <span class="id" title="var">Some</span> <span class="id" title="var">u'</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">wf_unification</span> <span class="id" title="var">u</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">wf_unification</span> <span class="id" title="var">u'</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Theorem</span> <span class="id" title="var">wf_unify_pattern</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> <span class="id" title="var">u</span>, <span class="id" title="var">wf_unification</span> <span class="id" title="var">u</span> → <span class="id" title="var">well_formed</span> (<span class="id" title="var">unification_to_pattern</span> <span class="id" title="var">u</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Theorem</span> <span class="id" title="var">foldr_last_element</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> <span class="id" title="var">Γ</span> <span class="id" title="var">xs</span> <span class="id" title="var">x</span> <span class="id" title="var">y</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed</span> <span class="id" title="var">x</span> → <span class="id" title="var">well_formed</span> <span class="id" title="var">y</span> → <span class="id" title="keyword">wf</span> <span class="id" title="var">xs</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢<span class="id" title="var">i</span> <span class="id" title="var">foldr</span> <span class="id" title="var">patt_and</span> (<span class="id" title="var">x</span> <span class="id" title="var">and</span> <span class="id" title="var">y</span>) <span class="id" title="var">xs</span> &lt;---&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;((<span class="id" title="var">foldr</span> <span class="id" title="var">patt_and</span> <span class="id" title="var">y</span> <span class="id" title="var">xs</span>) <span class="id" title="var">and</span> <span class="id" title="var">x</span>) <span class="id" title="keyword">using</span> <span class="id" title="var">AnyReasoning</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Theorem</span> <span class="id" title="var">unification_soundness</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> <span class="id" title="var">u</span> <span class="id" title="var">u'</span> : <span class="id" title="var">Unification_problem</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">u</span> ===&gt; <span class="id" title="var">Some</span> <span class="id" title="var">u'</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">wf_unification</span> <span class="id" title="var">u</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> <span class="id" title="var">Γ</span>, <span class="id" title="var">theory</span> ⊆ <span class="id" title="var">Γ</span> → <span class="id" title="var">Γ</span> ⊢ <span class="id" title="var">unification_to_pattern</span> <span class="id" title="var">u</span> ---&gt; <span class="id" title="var">unification_to_pattern</span> <span class="id" title="var">u'</span> .<br/>
+
+<br/>
+<span class="comment">(*&nbsp;<span class="comment">(*&nbsp;&nbsp;&nbsp;Axiom&nbsp;f&nbsp;:&nbsp;symbols.<br/>
+&nbsp;&nbsp;Compute&nbsp;(get_apps&nbsp;(patt_sym&nbsp;f&nbsp;&nbsp;⊤&nbsp;*)</span><br/>
+&nbsp;&nbsp;Fixpoint&nbsp;unify_step1&nbsp;(u&nbsp;:&nbsp;Unification_problem)&nbsp;:&nbsp;option&nbsp;Unification_problem&nbsp;:=<br/>
+&nbsp;&nbsp;match&nbsp;u&nbsp;with<br/>
+&nbsp;&nbsp;|&nbsp;<span class="inlinecode"></span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&gt;&nbsp;Some&nbsp;<span class="inlinecode"></span><br/>
+&nbsp;&nbsp;|&nbsp;(t1,&nbsp;t2)::xs&nbsp;=&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;match&nbsp;unify_step1&nbsp;xs&nbsp;with<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;None&nbsp;=&gt;&nbsp;None<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;Some&nbsp;xs'&nbsp;=&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;match&nbsp;decide&nbsp;(t1&nbsp;=&nbsp;t2)&nbsp;with<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;left&nbsp;_&nbsp;=&gt;&nbsp;Some&nbsp;xs'&nbsp;<span class="comment">(*&nbsp;delete&nbsp;*)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;right&nbsp;_&nbsp;=&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;match&nbsp;get_apps&nbsp;t1,&nbsp;get_apps&nbsp;t2&nbsp;with<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;Some&nbsp;(s,&nbsp;ps),&nbsp;Some&nbsp;(s',&nbsp;ps')&nbsp;=&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;match&nbsp;decide&nbsp;(s&nbsp;=&nbsp;s')&nbsp;with<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;left&nbsp;_&nbsp;=&gt;&nbsp;Some&nbsp;(xs'&nbsp;++&nbsp;zip&nbsp;ps&nbsp;ps')&nbsp;<span class="comment">(*&nbsp;decomposition&nbsp;*)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;right&nbsp;_&nbsp;=&gt;&nbsp;None&nbsp;<span class="comment">(*&nbsp;symbol&nbsp;clash&nbsp;*)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;_,&nbsp;_&nbsp;=&gt;&nbsp;Some&nbsp;xs'<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;end<br/>
+&nbsp;&nbsp;end.&nbsp;*)</span><br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">is_free_evar</span> (<span class="id" title="var">p</span> : <span class="id" title="var">Pattern</span>) : <span class="id" title="var">bool</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">p</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">patt_free_evar</span> <span class="id" title="var">_</span> ⇒ <span class="id" title="var">true</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">_</span> ⇒ <span class="id" title="var">false</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">swap_if</span> {<span class="id" title="var">A</span> : <span class="id" title="keyword">Type</span>} (<span class="id" title="var">P</span> : <span class="id" title="var">A</span> → <span class="id" title="var">bool</span>) (<span class="id" title="var">p</span> : <span class="id" title="var">A</span> × <span class="id" title="var">A</span>): <span class="id" title="var">A</span> × <span class="id" title="var">A</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">p</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;| (<span class="id" title="var">p1</span>, <span class="id" title="var">p2</span>) ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">P</span> <span class="id" title="var">p1</span>, <span class="id" title="var">P</span> <span class="id" title="var">p2</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">true</span>, <span class="id" title="var">_</span> ⇒ (<span class="id" title="var">p1</span>, <span class="id" title="var">p2</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">_</span>, <span class="id" title="var">true</span> ⇒ (<span class="id" title="var">p2</span>, <span class="id" title="var">p1</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">_</span>, <span class="id" title="var">_</span>    ⇒ (<span class="id" title="var">p1</span>, <span class="id" title="var">p2</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="comment">(*&nbsp;<span class="comment">(*&nbsp;orient&nbsp;*)</span><br/>
+&nbsp;&nbsp;Definition&nbsp;unify_step2&nbsp;(u&nbsp;:&nbsp;Unification_problem)&nbsp;:&nbsp;Unification_problem&nbsp;:=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;map&nbsp;(swap_if&nbsp;is_free_evar)&nbsp;u.<br/>
+<br/>
+&nbsp;&nbsp;<span class="comment">(*&nbsp;occurs_check&nbsp;*)</span><br/>
+&nbsp;&nbsp;Fixpoint&nbsp;unify_step3&nbsp;(u&nbsp;:&nbsp;Unification_problem)&nbsp;:&nbsp;option&nbsp;Unification_problem&nbsp;:=<br/>
+&nbsp;&nbsp;match&nbsp;u&nbsp;with<br/>
+&nbsp;&nbsp;|&nbsp;<span class="inlinecode"></span>&nbsp;=&gt;&nbsp;Some&nbsp;<span class="inlinecode"></span><br/>
+&nbsp;&nbsp;|&nbsp;(p1,&nbsp;p2)::xs&nbsp;=&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;match&nbsp;unify_step3&nbsp;xs&nbsp;with<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;Some&nbsp;xs'&nbsp;=&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;match&nbsp;p1&nbsp;with<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;patt_free_evar&nbsp;x&nbsp;=&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;match&nbsp;decide&nbsp;(x&nbsp;∈&nbsp;free_evars&nbsp;p2)&nbsp;with<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;left&nbsp;_&nbsp;=&gt;&nbsp;None<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;right&nbsp;_&nbsp;=&gt;&nbsp;Some&nbsp;((p1,&nbsp;p2)::xs')<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;_&nbsp;=&gt;&nbsp;Some&nbsp;((p1,&nbsp;p2)::xs')<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;None&nbsp;=&gt;&nbsp;None<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;end<br/>
+&nbsp;&nbsp;end.<br/>
+<br/>
+&nbsp;&nbsp;<span class="comment">(*&nbsp;1x&nbsp;elimination&nbsp;*)</span><br/>
+&nbsp;&nbsp;Fixpoint&nbsp;unify_step3&nbsp;(u&nbsp;:&nbsp;Unification_problem)&nbsp;:&nbsp;Unification_problem&nbsp;:=<br/>
+&nbsp;&nbsp;match&nbsp;u&nbsp;with<br/>
+&nbsp;&nbsp;|&nbsp;<span class="inlinecode"></span>&nbsp;=&gt;&nbsp;<span class="inlinecode"></span><br/>
+&nbsp;&nbsp;|&nbsp;(patt_free_evar&nbsp;x,&nbsp;p2)::xs&nbsp;=&gt;&nbsp;<br/>
+&nbsp;&nbsp;|&nbsp;(p1,&nbsp;p2)::xs&nbsp;=&gt;&nbsp;unify_step3&nbsp;xs<br/>
+&nbsp;&nbsp;end.&nbsp;*)</span><br/>
+
+<br/>
+<span class="id" title="keyword">End</span> <span class="id" title="var">UnificationProcedure</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Close</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">ml_scope</span>.<br/>
+<span class="id" title="keyword">Close</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">string_scope</span>.<br/>
+<span class="id" title="keyword">Close</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">list_scope</span>.<br/>
+</div>
+<hr/>This page has been generated by <a href="http://coq.inria.fr/">coqdoc</a>
+</div>
+
+</div>
+
+</body>
+</html>

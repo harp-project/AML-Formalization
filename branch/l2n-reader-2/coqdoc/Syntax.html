@@ -1,0 +1,657 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link href="coqdoc.css" rel="stylesheet" type="text/css" />
+<title>Syntax</title>
+</head>
+
+<body>
+
+<div id="page">
+
+<div id="header">
+</div>
+
+<div id="main">
+
+<h1 class="libtitle">File Syntax</h1>
+
+<div class="code">
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">ssreflect</span> <span class="id" title="var">ssrfun</span> <span class="id" title="var">ssrbool</span>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Setoid</span>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">List</span>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Ensembles</span>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Coq.Strings.String</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Logic.Classical_Prop</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">stdpp</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">countable</span> <span class="id" title="var">infinite</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">stdpp</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">pmap</span> <span class="id" title="var">gmap</span> <span class="id" title="var">mapset</span> <span class="id" title="var">fin_sets</span> <span class="id" title="var">propset</span>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">stdpp_ext</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">extralibrary</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">MatchingLogic</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Export</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">Signature</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">Pattern</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">Substitution</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">Freshness</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">SyntacticConstruct</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">PatternContext</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">ApplicationContext</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">SyntaxLemmas.FreshnessSubstitution</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">SyntaxLemmas.PatternCtxApplicationCtx</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">SyntaxLemmas.FreshnessApplicationCtx</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">SyntaxLemmas.ApplicationCtxSubstitution</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">wftactics</span><br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Import</span> <span class="id" title="var">MatchingLogic.Substitution.Notations</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Close</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">boolean_if_scope</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Section</span> <span class="id" title="var">syntax</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Context</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>}.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Open</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">ml_scope</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Inductive</span> <span class="id" title="var">is_subformula_of_ind</span> : <span class="id" title="var">Pattern</span> → <span class="id" title="var">Pattern</span> → <span class="id" title="keyword">Prop</span> :=<br/>
+&nbsp;&nbsp;| <span class="id" title="var">sub_eq</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span> : <span class="id" title="var">ϕ₁</span> = <span class="id" title="var">ϕ₂</span> → <span class="id" title="var">is_subformula_of_ind</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">sub_app_l</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span> <span class="id" title="var">ϕ₃</span> : <span class="id" title="var">is_subformula_of_ind</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span> → <span class="id" title="var">is_subformula_of_ind</span> <span class="id" title="var">ϕ₁</span> (<span class="id" title="var">patt_app</span> <span class="id" title="var">ϕ₂</span> <span class="id" title="var">ϕ₃</span>)<br/>
+&nbsp;&nbsp;| <span class="id" title="var">sub_app_r</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span> <span class="id" title="var">ϕ₃</span> : <span class="id" title="var">is_subformula_of_ind</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₃</span> → <span class="id" title="var">is_subformula_of_ind</span> <span class="id" title="var">ϕ₁</span> (<span class="id" title="var">patt_app</span> <span class="id" title="var">ϕ₂</span> <span class="id" title="var">ϕ₃</span>)<br/>
+&nbsp;&nbsp;| <span class="id" title="var">sub_imp_l</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span> <span class="id" title="var">ϕ₃</span> : <span class="id" title="var">is_subformula_of_ind</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span> → <span class="id" title="var">is_subformula_of_ind</span> <span class="id" title="var">ϕ₁</span> (<span class="id" title="var">patt_imp</span> <span class="id" title="var">ϕ₂</span> <span class="id" title="var">ϕ₃</span>)<br/>
+&nbsp;&nbsp;| <span class="id" title="var">sub_imp_r</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span> <span class="id" title="var">ϕ₃</span> : <span class="id" title="var">is_subformula_of_ind</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₃</span> → <span class="id" title="var">is_subformula_of_ind</span> <span class="id" title="var">ϕ₁</span> (<span class="id" title="var">patt_imp</span> <span class="id" title="var">ϕ₂</span> <span class="id" title="var">ϕ₃</span>)<br/>
+&nbsp;&nbsp;| <span class="id" title="var">sub_exists</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span> : <span class="id" title="var">is_subformula_of_ind</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span> → <span class="id" title="var">is_subformula_of_ind</span> <span class="id" title="var">ϕ₁</span> (<span class="id" title="var">patt_exists</span> <span class="id" title="var">ϕ₂</span>)<br/>
+&nbsp;&nbsp;| <span class="id" title="var">sub_mu</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span> : <span class="id" title="var">is_subformula_of_ind</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span> → <span class="id" title="var">is_subformula_of_ind</span> <span class="id" title="var">ϕ₁</span> (<span class="id" title="var">patt_mu</span> <span class="id" title="var">ϕ₂</span>)<br/>
+&nbsp;&nbsp;.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Fixpoint</span> <span class="id" title="var">is_subformula_of</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span> : <span class="id" title="var">bool</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">decide_rel</span> (=) <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;|| <span class="id" title="keyword">match</span> <span class="id" title="var">ϕ₂</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_app</span> <span class="id" title="var">l</span> <span class="id" title="var">r</span> | <span class="id" title="var">patt_imp</span> <span class="id" title="var">l</span> <span class="id" title="var">r</span> ⇒ <span class="id" title="var">is_subformula_of</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">l</span> || <span class="id" title="var">is_subformula_of</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">r</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_exists</span> <span class="id" title="var">phi</span> | <span class="id" title="var">patt_mu</span> <span class="id" title="var">phi</span> ⇒ <span class="id" title="var">is_subformula_of</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">phi</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">_</span> ⇒ <span class="id" title="var">false</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">is_subformula_of_P</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span> : <span class="id" title="var">reflect</span> (<span class="id" title="var">is_subformula_of_ind</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span>) (<span class="id" title="var">is_subformula_of</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">is_subformula_of_refl</span> <span class="id" title="var">ϕ</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">is_subformula_of</span> <span class="id" title="var">ϕ</span> <span class="id" title="var">ϕ</span> = <span class="id" title="var">true</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">bsvar_subst_contains_subformula</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span> <span class="id" title="var">dbi</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">bsvar_occur</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">dbi</span> = <span class="id" title="var">true</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">is_subformula_of_ind</span> <span class="id" title="var">ϕ₂</span> (<span class="id" title="var">ϕ₁</span>^[<span class="id" title="var">svar</span>: <span class="id" title="var">dbi</span> ↦ <span class="id" title="var">ϕ₂</span>]).<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">bevar_subst_contains_subformula</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span> <span class="id" title="var">dbi</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">bevar_occur</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">dbi</span> = <span class="id" title="var">true</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">is_subformula_of_ind</span> <span class="id" title="var">ϕ₂</span> (<span class="id" title="var">ϕ₁</span>^[<span class="id" title="tactic">evar</span>: <span class="id" title="var">dbi</span> ↦ <span class="id" title="var">ϕ₂</span>]).<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">free_evars_subformula</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">is_subformula_of_ind</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span> → <span class="id" title="var">free_evars</span> <span class="id" title="var">ϕ₁</span> ⊆ <span class="id" title="var">free_evars</span> <span class="id" title="var">ϕ₂</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Corollary</span> <span class="id" title="var">evar_fresh_in_subformula</span> <span class="id" title="var">x</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">is_subformula_of_ind</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">evar_is_fresh_in</span> <span class="id" title="var">x</span> <span class="id" title="var">ϕ₂</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">evar_is_fresh_in</span> <span class="id" title="var">x</span> <span class="id" title="var">ϕ₁</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Corollary</span> <span class="id" title="var">evar_fresh_in_subformula'</span> <span class="id" title="var">x</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">is_subformula_of</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">evar_is_fresh_in</span> <span class="id" title="var">x</span> <span class="id" title="var">ϕ₂</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">evar_is_fresh_in</span> <span class="id" title="var">x</span> <span class="id" title="var">ϕ₁</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">free_svars_subformula</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">is_subformula_of_ind</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span> → <span class="id" title="var">free_svars</span> <span class="id" title="var">ϕ₁</span> ⊆ <span class="id" title="var">free_svars</span> <span class="id" title="var">ϕ₂</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Corollary</span> <span class="id" title="var">svar_fresh_in_subformula</span> <span class="id" title="var">x</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">is_subformula_of_ind</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">svar_is_fresh_in</span> <span class="id" title="var">x</span> <span class="id" title="var">ϕ₂</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">svar_is_fresh_in</span> <span class="id" title="var">x</span> <span class="id" title="var">ϕ₁</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">free_evars_bsvar_subst</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span> <span class="id" title="var">dbi</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">free_evars</span> (<span class="id" title="var">ϕ₁</span>^[<span class="id" title="var">svar</span>: <span class="id" title="var">dbi</span> ↦ <span class="id" title="var">ϕ₂</span>]) ⊆ <span class="id" title="var">free_evars</span> <span class="id" title="var">ϕ₁</span> ∪ <span class="id" title="var">free_evars</span> <span class="id" title="var">ϕ₂</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">free_svars_bevar_subst</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span> <span class="id" title="var">dbi</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">free_svars</span> (<span class="id" title="var">ϕ₁</span>^[<span class="id" title="tactic">evar</span>: <span class="id" title="var">dbi</span> ↦ <span class="id" title="var">ϕ₂</span>]) ⊆ <span class="id" title="var">free_svars</span> <span class="id" title="var">ϕ₁</span> ∪ <span class="id" title="var">free_svars</span> <span class="id" title="var">ϕ₂</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">free_evars_bsvar_subst_1</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span> <span class="id" title="var">dbi</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">free_evars</span> <span class="id" title="var">ϕ₁</span> ⊆ <span class="id" title="var">free_evars</span> (<span class="id" title="var">ϕ₁</span>^[<span class="id" title="var">svar</span>: <span class="id" title="var">dbi</span> ↦ <span class="id" title="var">ϕ₂</span>]).<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">free_svars_bevar_subst_1</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span> <span class="id" title="var">dbi</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">free_svars</span> <span class="id" title="var">ϕ₁</span> ⊆ <span class="id" title="var">free_svars</span> (<span class="id" title="var">ϕ₁</span>^[<span class="id" title="tactic">evar</span>: <span class="id" title="var">dbi</span> ↦ <span class="id" title="var">ϕ₂</span>]).<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Corollary</span> <span class="id" title="var">free_evars_bsvar_subst_eq</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span> <span class="id" title="var">dbi</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">bsvar_occur</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">dbi</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">free_evars</span> (<span class="id" title="var">ϕ₁</span>^[<span class="id" title="var">svar</span>: <span class="id" title="var">dbi</span> ↦ <span class="id" title="var">ϕ₂</span>]) = <span class="id" title="var">free_evars</span> <span class="id" title="var">ϕ₁</span> ∪ <span class="id" title="var">free_evars</span> <span class="id" title="var">ϕ₂</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Corollary</span> <span class="id" title="var">free_svars_bevar_subst_eq</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span> <span class="id" title="var">dbi</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">bevar_occur</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">dbi</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">free_svars</span> (<span class="id" title="var">ϕ₁</span>^[<span class="id" title="tactic">evar</span>: <span class="id" title="var">dbi</span> ↦ <span class="id" title="var">ϕ₂</span>]) = <span class="id" title="var">free_svars</span> <span class="id" title="var">ϕ₁</span> ∪ <span class="id" title="var">free_svars</span> <span class="id" title="var">ϕ₂</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">wfc_mu_aux_implies_not_bsvar_occur</span> <span class="id" title="var">phi</span> <span class="id" title="var">ns</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_closed_mu_aux</span> <span class="id" title="var">phi</span> <span class="id" title="var">ns</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">bsvar_occur</span> <span class="id" title="var">phi</span> <span class="id" title="var">ns</span> = <span class="id" title="var">false</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">wfc_ex_aux_implies_not_bevar_occur</span> <span class="id" title="var">phi</span> <span class="id" title="var">ne</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_closed_ex_aux</span> <span class="id" title="var">phi</span> <span class="id" title="var">ne</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">bevar_occur</span> <span class="id" title="var">phi</span> <span class="id" title="var">ne</span> = <span class="id" title="var">false</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Corollary</span> <span class="id" title="var">wfc_mu_implies_not_bsvar_occur</span> <span class="id" title="var">phi</span> <span class="id" title="var">n</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_closed_mu_aux</span> <span class="id" title="var">phi</span> 0 →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;¬ <span class="id" title="var">bsvar_occur</span> <span class="id" title="var">phi</span> <span class="id" title="var">n</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">wfc_ex_implies_not_bevar_occur</span> <span class="id" title="var">phi</span> <span class="id" title="var">n</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_closed_ex_aux</span> <span class="id" title="var">phi</span> 0 →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">bevar_occur</span> <span class="id" title="var">phi</span> <span class="id" title="var">n</span> = <span class="id" title="var">false</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">not_bsvar_occur_bsvar_subst</span> <span class="id" title="var">phi</span> <span class="id" title="var">psi</span> <span class="id" title="var">n</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_closed_mu_aux</span> <span class="id" title="var">psi</span> 0 → <span class="id" title="var">well_formed_closed_mu_aux</span> <span class="id" title="var">phi</span> <span class="id" title="var">n</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;¬ <span class="id" title="var">bsvar_occur</span> (<span class="id" title="var">phi</span>^[<span class="id" title="var">svar</span>: <span class="id" title="var">n</span> ↦ <span class="id" title="var">psi</span>]) <span class="id" title="var">n</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">not_bsvar_occur_impl_no_neg_occ_and_no_pos_occ</span> <span class="id" title="var">phi</span> <span class="id" title="var">n</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;¬ <span class="id" title="var">bsvar_occur</span> <span class="id" title="var">phi</span> <span class="id" title="var">n</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">no_negative_occurrence_db_b</span> <span class="id" title="var">n</span> <span class="id" title="var">phi</span> &amp;&amp; <span class="id" title="var">no_positive_occurrence_db_b</span> <span class="id" title="var">n</span> <span class="id" title="var">phi</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Corollary</span> <span class="id" title="var">not_bsvar_occur_impl_pos_occ_db</span> <span class="id" title="var">phi</span> <span class="id" title="var">n</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;¬ <span class="id" title="var">bsvar_occur</span> <span class="id" title="var">phi</span> <span class="id" title="var">n</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">no_positive_occurrence_db_b</span> <span class="id" title="var">n</span> <span class="id" title="var">phi</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Corollary</span> <span class="id" title="var">not_bsvar_occur_impl_neg_occ_db</span> <span class="id" title="var">phi</span> <span class="id" title="var">n</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;¬ <span class="id" title="var">bsvar_occur</span> <span class="id" title="var">phi</span> <span class="id" title="var">n</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">no_negative_occurrence_db_b</span> <span class="id" title="var">n</span> <span class="id" title="var">phi</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">x_eq_fresh_impl_x_notin_free_evars</span> <span class="id" title="var">x</span> <span class="id" title="var">ϕ</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">x</span> = <span class="id" title="var">fresh_evar</span> <span class="id" title="var">ϕ</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">x</span> ∉ <span class="id" title="var">free_evars</span> <span class="id" title="var">ϕ</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Hint Resolve</span> <span class="id" title="var">x_eq_fresh_impl_x_notin_free_evars</span> : <span class="id" title="var">core</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">End</span> <span class="id" title="var">syntax</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Module</span> <span class="id" title="var">Notations</span>.<br/>
+&nbsp;&nbsp;<span class="comment">(*&nbsp;TODO:&nbsp;change&nbsp;Bot&nbsp;and&nbsp;Top&nbsp;to&nbsp;unicode&nbsp;symbols&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="comment">(*&nbsp;TODO:&nbsp;this&nbsp;associativity&nbsp;is&nbsp;wrong!&nbsp;However,&nbsp;stdpp&nbsp;disallows&nbsp;defining&nbsp;it&nbsp;otherwise.&nbsp;We&nbsp;could&nbsp;use&nbsp;@&nbsp;instead,&nbsp;associated&nbsp;to&nbsp;the&nbsp;left&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Notation</span> &quot;a $ b" := (<span class="id" title="var">patt_app</span> <span class="id" title="var">a</span> <span class="id" title="var">b</span>) (<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 65, <span class="id" title="tactic">right</span> <span class="id" title="keyword">associativity</span>) : <span class="id" title="var">ml_scope</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Notation</span> &quot;'Bot'" := <span class="id" title="var">patt_bott</span> : <span class="id" title="var">ml_scope</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Notation</span> &quot;⊥" := <span class="id" title="var">patt_bott</span> : <span class="id" title="var">ml_scope</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Notation</span> &quot;a ---&gt; b"  := (<span class="id" title="var">patt_imp</span> <span class="id" title="var">a</span> <span class="id" title="var">b</span>) (<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 75, <span class="id" title="tactic">right</span> <span class="id" title="keyword">associativity</span>) : <span class="id" title="var">ml_scope</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Notation</span> &quot;'ex' , phi" := (<span class="id" title="var">patt_exists</span> <span class="id" title="var">phi</span>) (<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 80) : <span class="id" title="var">ml_scope</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Notation</span> &quot;'mu' , phi" := (<span class="id" title="var">patt_mu</span> <span class="id" title="var">phi</span>) (<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 80) : <span class="id" title="var">ml_scope</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="comment">(*Notation&nbsp;"AC&nbsp;<span class="inlinecode"></span> <span class="inlinecode"><span class="id" title="var">p</span></span> <span class="inlinecode"></span>"&nbsp;:=&nbsp;(subst_ctx&nbsp;AC&nbsp;p)&nbsp;(at&nbsp;level&nbsp;90)&nbsp;:&nbsp;ml_scope.*)</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Notation</span> &quot;C [ p ]" := (<span class="id" title="var">emplace</span> <span class="id" title="var">C</span> <span class="id" title="var">p</span>) (<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 90) : <span class="id" title="var">ml_scope</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">End</span> <span class="id" title="var">Notations</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Module</span> <span class="id" title="var">BoundVarSugar</span>.<br/>
+&nbsp;&nbsp;<span class="comment">(*&nbsp;Element&nbsp;variables&nbsp;-&nbsp;bound&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Notation</span> <span class="id" title="var">b0</span> := (<span class="id" title="var">patt_bound_evar</span> 0).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Notation</span> <span class="id" title="var">b1</span> := (<span class="id" title="var">patt_bound_evar</span> 1).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Notation</span> <span class="id" title="var">b2</span> := (<span class="id" title="var">patt_bound_evar</span> 2).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Notation</span> <span class="id" title="var">b3</span> := (<span class="id" title="var">patt_bound_evar</span> 3).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Notation</span> <span class="id" title="var">b4</span> := (<span class="id" title="var">patt_bound_evar</span> 4).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Notation</span> <span class="id" title="var">b5</span> := (<span class="id" title="var">patt_bound_evar</span> 5).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Notation</span> <span class="id" title="var">b6</span> := (<span class="id" title="var">patt_bound_evar</span> 6).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Notation</span> <span class="id" title="var">b7</span> := (<span class="id" title="var">patt_bound_evar</span> 7).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Notation</span> <span class="id" title="var">b8</span> := (<span class="id" title="var">patt_bound_evar</span> 8).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Notation</span> <span class="id" title="var">b9</span> := (<span class="id" title="var">patt_bound_evar</span> 9).<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Notation</span> <span class="id" title="var">B0</span> := (<span class="id" title="var">patt_bound_svar</span> 0).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Notation</span> <span class="id" title="var">B1</span> := (<span class="id" title="var">patt_bound_svar</span> 1).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Notation</span> <span class="id" title="var">B2</span> := (<span class="id" title="var">patt_bound_svar</span> 2).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Notation</span> <span class="id" title="var">B3</span> := (<span class="id" title="var">patt_bound_svar</span> 3).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Notation</span> <span class="id" title="var">B4</span> := (<span class="id" title="var">patt_bound_svar</span> 4).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Notation</span> <span class="id" title="var">B5</span> := (<span class="id" title="var">patt_bound_svar</span> 5).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Notation</span> <span class="id" title="var">B6</span> := (<span class="id" title="var">patt_bound_svar</span> 6).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Notation</span> <span class="id" title="var">B7</span> := (<span class="id" title="var">patt_bound_svar</span> 7).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Notation</span> <span class="id" title="var">B8</span> := (<span class="id" title="var">patt_bound_svar</span> 8).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Notation</span> <span class="id" title="var">B9</span> := (<span class="id" title="var">patt_bound_svar</span> 9).<br/>
+
+<br/>
+<span class="id" title="keyword">End</span> <span class="id" title="var">BoundVarSugar</span>.<br/>
+
+<br/>
+#[<span class="id" title="var">export</span>]<br/>
+&nbsp;<span class="id" title="keyword">Hint</span> <span class="id" title="keyword">Resolve</span><br/>
+&nbsp;<span class="id" title="var">evar_is_fresh_in_richer</span><br/>
+&nbsp;<span class="id" title="var">set_evar_fresh_is_fresh</span><br/>
+&nbsp;<span class="id" title="var">set_svar_fresh_is_fresh</span><br/>
+&nbsp;<span class="id" title="var">x_eq_fresh_impl_x_notin_free_evars</span><br/>
+&nbsp;&nbsp;: <span class="id" title="var">core</span>.<br/>
+
+<br/>
+#[<span class="id" title="var">export</span>]<br/>
+&nbsp;<span class="id" title="keyword">Hint</span> <span class="id" title="keyword">Extern</span> 0 (<span class="id" title="var">is_true</span> (@<span class="id" title="var">well_formed</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span>)) ⇒ <span class="id" title="tactic">unfold</span> <span class="id" title="var">is_true</span> : <span class="id" title="var">core</span>.<br/>
+
+<br/>
+#[<span class="id" title="var">export</span>]<br/>
+&nbsp;<span class="id" title="keyword">Hint</span> <span class="id" title="keyword">Resolve</span> <span class="id" title="var">well_formed_bott</span> : <span class="id" title="var">core</span>.<br/>
+
+<br/>
+#[<span class="id" title="var">export</span>]<br/>
+&nbsp;<span class="id" title="keyword">Hint</span> <span class="id" title="keyword">Resolve</span> <span class="id" title="var">well_formed_imp</span> : <span class="id" title="var">core</span>.<br/>
+
+<br/>
+#[<span class="id" title="var">export</span>]<br/>
+&nbsp;<span class="id" title="keyword">Hint</span> <span class="id" title="keyword">Resolve</span> <span class="id" title="var">well_formed_app</span> : <span class="id" title="var">core</span>.<br/>
+
+<br/>
+#[<span class="id" title="var">export</span>]<br/>
+&nbsp;<span class="id" title="keyword">Hint</span> <span class="id" title="keyword">Resolve</span> <span class="id" title="var">wf_sctx</span> : <span class="id" title="var">core</span>.<br/>
+
+<br/>
+#[<span class="id" title="var">export</span>]<br/>
+&nbsp;<span class="id" title="keyword">Hint</span> <span class="id" title="keyword">Resolve</span> <span class="id" title="var">well_formed_ex_app</span> : <span class="id" title="var">core</span>.<br/>
+
+<br/>
+#[<span class="id" title="var">export</span>]<br/>
+&nbsp;<span class="id" title="keyword">Hint</span> <span class="id" title="keyword">Resolve</span> <span class="id" title="var">well_formed_impl_well_formed_ex</span> : <span class="id" title="var">core</span>.<br/>
+
+<br/>
+#[<span class="id" title="var">export</span>]<br/>
+&nbsp;<span class="id" title="keyword">Hint</span> <span class="id" title="keyword">Resolve</span> <span class="id" title="var">well_formed_free_evar_subst</span> : <span class="id" title="var">core</span>.<br/>
+
+<br/>
+#[<span class="id" title="var">export</span>]<br/>
+&nbsp;<span class="id" title="keyword">Hint</span> <span class="id" title="keyword">Resolve</span> <span class="id" title="var">well_formed_free_evar_subst_0</span> : <span class="id" title="var">core</span>.<br/>
+
+<br/>
+#[<span class="id" title="var">export</span>]<br/>
+&nbsp;<span class="id" title="keyword">Hint</span> <span class="id" title="keyword">Resolve</span> &lt;- <span class="id" title="var">evar_is_fresh_in_exists</span> : <span class="id" title="var">core</span>.<br/>
+
+<br/>
+#[<span class="id" title="var">export</span>]<br/>
+&nbsp;<span class="id" title="keyword">Hint</span> <span class="id" title="keyword">Resolve</span> <span class="id" title="var">evar_is_fresh_in_evar_quantify</span> : <span class="id" title="var">core</span>.<br/>
+
+<br/>
+<span class="comment">(*&nbsp;Tactics&nbsp;for&nbsp;resolving&nbsp;goals&nbsp;involving&nbsp;sets&nbsp;*)</span><br/>
+<span class="comment">(*<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;eauto&nbsp;5&nbsp;using&nbsp;@sets.elem_of_union_l,&nbsp;@sets.elem_of_union_r&nbsp;with&nbsp;typeclass_instances.<br/>
+&nbsp;*)</span><br/>
+<span class="comment">(*<br/>
+&nbsp;&nbsp;eauto&nbsp;depth&nbsp;using&nbsp;@sets.union_subseteq_l,&nbsp;@sets.union_subseteq_r<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;with&nbsp;typeclass_instances.<br/>
+&nbsp;*)</span><br/>
+
+<br/>
+<span class="comment">(*<br/>
+[export]
+ Hint Extern 10 (free_evars _ ⊆ free_evars _) => solve_free_evars_inclusion : core.
+ *)</span><br/>
+
+<br/>
+#[<span class="id" title="var">export</span>]<br/>
+&nbsp;<span class="id" title="keyword">Hint</span> <span class="id" title="keyword">Resolve</span> <span class="id" title="var">wf_imp_wfc</span> : <span class="id" title="var">core</span>.<br/>
+
+<br/>
+#[<span class="id" title="var">export</span>]<br/>
+&nbsp;<span class="id" title="keyword">Hint</span> <span class="id" title="keyword">Resolve</span> <span class="id" title="var">wfc_ex_implies_not_bevar_occur</span> : <span class="id" title="var">core</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Section</span> <span class="id" title="var">with_signature</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Context</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>}.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Open</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">ml_scope</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">evar_quantify_ctx</span> (<span class="id" title="var">x</span> : <span class="id" title="tactic">evar</span>) (<span class="id" title="var">n</span> : <span class="id" title="var">db_index</span>) (<span class="id" title="var">C</span> : <span class="id" title="var">PatternCtx</span>) : <span class="id" title="var">PatternCtx</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">decide</span> (<span class="id" title="var">x</span> = <span class="id" title="var">pcEvar</span> <span class="id" title="var">C</span>)  <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="tactic">left</span> <span class="id" title="var">_</span> ⇒ <span class="id" title="var">C</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="tactic">right</span> <span class="id" title="var">pf</span> ⇒ <span class="id" title="var">Build_PatternCtx</span> (<span class="id" title="var">pcEvar</span> <span class="id" title="var">C</span>) ((<span class="id" title="var">pcPattern</span> <span class="id" title="var">C</span>)^{{<span class="id" title="tactic">evar</span>: <span class="id" title="var">x</span> ↦ <span class="id" title="var">n</span>}})<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">is_linear_context_evar_quantify</span> (<span class="id" title="var">x</span> : <span class="id" title="tactic">evar</span>) (<span class="id" title="var">n</span> : <span class="id" title="var">db_index</span>) (<span class="id" title="var">C</span> : <span class="id" title="var">PatternCtx</span>) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">is_linear_context</span> <span class="id" title="var">C</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">is_linear_context</span> (<span class="id" title="var">evar_quantify_ctx</span> <span class="id" title="var">x</span> <span class="id" title="var">n</span> <span class="id" title="var">C</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">svar_quantify_ctx</span> (<span class="id" title="var">X</span> : <span class="id" title="var">svar</span>) (<span class="id" title="var">n</span> : <span class="id" title="var">db_index</span>) (<span class="id" title="var">C</span> : <span class="id" title="var">PatternCtx</span>) : <span class="id" title="var">PatternCtx</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Build_PatternCtx</span> (<span class="id" title="var">pcEvar</span> <span class="id" title="var">C</span>) ((<span class="id" title="var">pcPattern</span> <span class="id" title="var">C</span>)^{{<span class="id" title="var">svar</span>: <span class="id" title="var">X</span> ↦ <span class="id" title="var">n</span>}}).<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">is_linear_context_svar_quantify</span> (<span class="id" title="var">X</span> : <span class="id" title="var">svar</span>) (<span class="id" title="var">n</span> : <span class="id" title="var">db_index</span>) (<span class="id" title="var">C</span> : <span class="id" title="var">PatternCtx</span>) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">is_linear_context</span> <span class="id" title="var">C</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">is_linear_context</span> (<span class="id" title="var">svar_quantify_ctx</span> <span class="id" title="var">X</span> <span class="id" title="var">n</span> <span class="id" title="var">C</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">svar_quantify_free_evar_subst</span> ψ <span class="id" title="var">ϕ</span> <span class="id" title="var">x</span> <span class="id" title="var">X</span> <span class="id" title="var">n</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;ψ^[[<span class="id" title="tactic">evar</span>: <span class="id" title="var">x</span> ↦ <span class="id" title="var">ϕ</span>]]^{{<span class="id" title="var">svar</span>: <span class="id" title="var">X</span> ↦ <span class="id" title="var">n</span>}} =<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;ψ^{{<span class="id" title="var">svar</span>: <span class="id" title="var">X</span> ↦ <span class="id" title="var">n</span>}}^[[<span class="id" title="tactic">evar</span>: <span class="id" title="var">x</span> ↦ <span class="id" title="var">ϕ</span>^{{<span class="id" title="var">svar</span>: <span class="id" title="var">X</span> ↦ <span class="id" title="var">n</span>}}]].<br/>
+<span class="comment">(*&nbsp;OOPS,&nbsp;does&nbsp;not&nbsp;hold.&nbsp;The&nbsp;problem&nbsp;is&nbsp;that&nbsp;<span class="inlinecode"><span class="id" title="var">free_evar_subst'</span></span>&nbsp;does&nbsp;not&nbsp;wrap&nbsp;the&nbsp;target<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;in&nbsp;nest_mu.&nbsp;*)</span><br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">svar_quantify_emplace</span> <span class="id" title="var">X</span> <span class="id" title="var">n</span> <span class="id" title="var">C</span> <span class="id" title="var">ϕ</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">emplace</span> <span class="id" title="var">C</span> <span class="id" title="var">ϕ</span>)^{{<span class="id" title="var">svar</span>: <span class="id" title="var">X</span> ↦ <span class="id" title="var">n</span>}} = <span class="id" title="var">emplace</span> (<span class="id" title="var">svar_quantify_ctx</span> <span class="id" title="var">X</span> <span class="id" title="var">n</span> <span class="id" title="var">C</span>) (<span class="id" title="var">ϕ</span>^{{<span class="id" title="var">svar</span>: <span class="id" title="var">X</span> ↦ <span class="id" title="var">n</span>}}).<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">evar_quantify_subst_ctx</span> <span class="id" title="var">x</span> <span class="id" title="var">n</span> <span class="id" title="var">AC</span> <span class="id" title="var">ϕ</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">x</span> ∉ <span class="id" title="var">AC_free_evars</span> <span class="id" title="var">AC</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">subst_ctx</span> <span class="id" title="var">AC</span> <span class="id" title="var">ϕ</span>)^{{<span class="id" title="tactic">evar</span>: <span class="id" title="var">x</span> ↦ <span class="id" title="var">n</span>}} = <span class="id" title="var">subst_ctx</span> <span class="id" title="var">AC</span> (<span class="id" title="var">ϕ</span>^{{<span class="id" title="tactic">evar</span>: <span class="id" title="var">x</span> ↦ <span class="id" title="var">n</span>}}).<br/>
+
+<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">wfp_free_svar_subst</span> <span class="id" title="var">ϕ</span> ψ <span class="id" title="var">X</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_closed_mu_aux</span> ψ 0 →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_positive</span> ψ = <span class="id" title="var">true</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_positive</span> <span class="id" title="var">ϕ</span> = <span class="id" title="var">true</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">svar_has_negative_occurrence</span> <span class="id" title="var">X</span> <span class="id" title="var">ϕ</span> = <span class="id" title="var">false</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_positive</span> (<span class="id" title="var">ϕ</span>^[[<span class="id" title="var">svar</span>: <span class="id" title="var">X</span> ↦ ψ]]) = <span class="id" title="var">true</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">with</span> <span class="id" title="var">wfp_neg_free_svar_subst</span> <span class="id" title="var">ϕ</span> ψ <span class="id" title="var">X</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_closed_mu_aux</span> ψ 0 →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_positive</span> ψ = <span class="id" title="var">true</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_positive</span> <span class="id" title="var">ϕ</span> = <span class="id" title="var">true</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">svar_has_positive_occurrence</span> <span class="id" title="var">X</span> <span class="id" title="var">ϕ</span> = <span class="id" title="var">false</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_positive</span> (<span class="id" title="var">ϕ</span>^[[<span class="id" title="var">svar</span>: <span class="id" title="var">X</span> ↦ ψ]]) = <span class="id" title="var">true</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">count_evar_occurrences_bevar_subst</span> <span class="id" title="var">pcEvar</span> <span class="id" title="var">ϕ</span> ψ <span class="id" title="var">k</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">count_evar_occurrences</span> <span class="id" title="var">pcEvar</span> ψ = 0 →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">count_evar_occurrences</span> <span class="id" title="var">pcEvar</span> (<span class="id" title="var">ϕ</span>^[<span class="id" title="tactic">evar</span>: <span class="id" title="var">k</span> ↦ ψ]) = <span class="id" title="var">count_evar_occurrences</span> <span class="id" title="var">pcEvar</span> <span class="id" title="var">ϕ</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">count_evar_occurrences_evar_open</span> <span class="id" title="var">pcEvar</span> <span class="id" title="var">ϕ</span> <span class="id" title="var">x</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">pcEvar</span> ≠ <span class="id" title="var">x</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">count_evar_occurrences</span> <span class="id" title="var">pcEvar</span> (<span class="id" title="var">ϕ</span>^{<span class="id" title="tactic">evar</span>: 0 ↦ <span class="id" title="var">x</span>}) = <span class="id" title="var">count_evar_occurrences</span> <span class="id" title="var">pcEvar</span> <span class="id" title="var">ϕ</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">count_evar_occurrences_svar_open</span> <span class="id" title="var">x</span> <span class="id" title="var">dbi</span> <span class="id" title="var">ϕ</span> ψ:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">count_evar_occurrences</span> <span class="id" title="var">x</span> ψ = 0 →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">count_evar_occurrences</span> <span class="id" title="var">x</span> (<span class="id" title="var">ϕ</span>^[<span class="id" title="var">svar</span>: <span class="id" title="var">dbi</span> ↦ ψ]) = <span class="id" title="var">count_evar_occurrences</span> <span class="id" title="var">x</span> <span class="id" title="var">ϕ</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">free_evar_subst_bsvar_subst</span> <span class="id" title="var">ϕ</span> ψ <span class="id" title="var">ξ</span> <span class="id" title="var">x</span> <span class="id" title="var">dbi</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_closed_mu_aux</span> <span class="id" title="var">ξ</span> 0 →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">evar_is_fresh_in</span> <span class="id" title="var">x</span> ψ →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">ϕ</span>^[<span class="id" title="var">svar</span>: <span class="id" title="var">dbi</span> ↦ ψ])^[[<span class="id" title="tactic">evar</span>:<span class="id" title="var">x</span> ↦ <span class="id" title="var">ξ</span>]]<br/>
+    = (<span class="id" title="var">ϕ</span>^[[<span class="id" title="tactic">evar</span>:<span class="id" title="var">x</span> ↦ <span class="id" title="var">ξ</span>]])^[<span class="id" title="var">svar</span>: <span class="id" title="var">dbi</span> ↦ ψ].<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">wf_svar_open_from_wf_mu</span> <span class="id" title="var">X</span> <span class="id" title="var">ϕ</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed</span> (<span class="id" title="var">patt_mu</span> <span class="id" title="var">ϕ</span>) →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed</span> (<span class="id" title="var">ϕ</span>^{<span class="id" title="var">svar</span>: 0 ↦ <span class="id" title="var">X</span>}).<br/>
+ 
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">wfcex_after_subst_impl_wfcex_before</span> <span class="id" title="var">ϕ</span> ψ <span class="id" title="var">x</span> <span class="id" title="var">dbi</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_closed_ex_aux</span> (<span class="id" title="var">ϕ</span>^[[<span class="id" title="tactic">evar</span>:<span class="id" title="var">x</span> ↦ ψ]]) <span class="id" title="var">dbi</span> = <span class="id" title="var">true</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_closed_ex_aux</span> <span class="id" title="var">ϕ</span> <span class="id" title="var">dbi</span> = <span class="id" title="var">true</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">wfcmu_after_subst_impl_wfcmu_before</span> <span class="id" title="var">ϕ</span> ψ <span class="id" title="var">x</span> <span class="id" title="var">dbi</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_closed_mu_aux</span> (<span class="id" title="var">ϕ</span>^[[<span class="id" title="tactic">evar</span>:<span class="id" title="var">x</span> ↦ ψ]]) <span class="id" title="var">dbi</span> = <span class="id" title="var">true</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_closed_mu_aux</span> <span class="id" title="var">ϕ</span> <span class="id" title="var">dbi</span> = <span class="id" title="var">true</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">nno_after_subst_impl_nno_before</span> <span class="id" title="var">ϕ</span> ψ <span class="id" title="var">x</span> <span class="id" title="var">dbi</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">no_negative_occurrence_db_b</span> <span class="id" title="var">dbi</span> (<span class="id" title="var">ϕ</span>^[[<span class="id" title="tactic">evar</span>:<span class="id" title="var">x</span> ↦ ψ]]) = <span class="id" title="var">true</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">no_negative_occurrence_db_b</span> <span class="id" title="var">dbi</span> <span class="id" title="var">ϕ</span> = <span class="id" title="var">true</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">with</span> <span class="id" title="var">npo_after_subst_impl_npo_before</span> <span class="id" title="var">ϕ</span> ψ <span class="id" title="var">x</span> <span class="id" title="var">dbi</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">no_positive_occurrence_db_b</span> <span class="id" title="var">dbi</span> (<span class="id" title="var">ϕ</span>^[[<span class="id" title="tactic">evar</span>:<span class="id" title="var">x</span> ↦ ψ]]) = <span class="id" title="var">true</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">no_positive_occurrence_db_b</span> <span class="id" title="var">dbi</span> <span class="id" title="var">ϕ</span> = <span class="id" title="var">true</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">wfp_after_subst_impl_wfp_before</span> <span class="id" title="var">ϕ</span> ψ <span class="id" title="var">x</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_positive</span> (<span class="id" title="var">ϕ</span>^[[<span class="id" title="tactic">evar</span>:<span class="id" title="var">x</span> ↦ ψ]]) = <span class="id" title="var">true</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_positive</span> <span class="id" title="var">ϕ</span> = <span class="id" title="var">true</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">wf_after_subst_impl_wf_before</span> <span class="id" title="var">ϕ</span> ψ <span class="id" title="var">x</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed</span> (<span class="id" title="var">ϕ</span>^[[<span class="id" title="tactic">evar</span>:<span class="id" title="var">x</span> ↦ ψ]]) = <span class="id" title="var">true</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed</span> <span class="id" title="var">ϕ</span> = <span class="id" title="var">true</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">wf_emplaced_impl_wf_context</span> (<span class="id" title="var">C</span> : <span class="id" title="var">PatternCtx</span>) (ψ : <span class="id" title="var">Pattern</span>) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed</span> (<span class="id" title="var">emplace</span> <span class="id" title="var">C</span> ψ) = <span class="id" title="var">true</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">PC_wf</span> <span class="id" title="var">C</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Global Instance</span> <span class="id" title="var">evar_is_fresh_in_dec</span> (<span class="id" title="var">x</span> : <span class="id" title="tactic">evar</span>) (<span class="id" title="var">p</span> : <span class="id" title="var">Pattern</span>) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Decision</span> (<span class="id" title="var">evar_is_fresh_in</span> <span class="id" title="var">x</span> <span class="id" title="var">p</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">evar_is_fresh_in_list</span> (<span class="id" title="var">x</span> : <span class="id" title="tactic">evar</span>) (<span class="id" title="var">l</span> : <span class="id" title="var">list</span> <span class="id" title="var">Pattern</span>) :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Forall</span> (<span class="id" title="var">evar_is_fresh_in</span> <span class="id" title="var">x</span>) <span class="id" title="var">l</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Global Instance</span> <span class="id" title="var">evar_is_fresh_in_list_dec</span> (<span class="id" title="var">x</span> : <span class="id" title="tactic">evar</span>) (<span class="id" title="var">l</span> : <span class="id" title="var">list</span> <span class="id" title="var">Pattern</span>) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Decision</span> (<span class="id" title="var">evar_is_fresh_in_list</span> <span class="id" title="var">x</span> <span class="id" title="var">l</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">evar_fresh_in_foldr</span> <span class="id" title="var">x</span> <span class="id" title="var">g</span> <span class="id" title="var">l</span>:<br/>
+&nbsp;&nbsp;<span class="id" title="var">evar_is_fresh_in</span> <span class="id" title="var">x</span> (<span class="id" title="var">foldr</span> <span class="id" title="var">patt_imp</span> <span class="id" title="var">g</span> <span class="id" title="var">l</span>) ↔ <span class="id" title="var">evar_is_fresh_in</span> <span class="id" title="var">x</span> <span class="id" title="var">g</span> ∧ <span class="id" title="var">evar_is_fresh_in_list</span> <span class="id" title="var">x</span> <span class="id" title="var">l</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Global Instance</span> <span class="id" title="var">svar_is_fresh_in_dec</span> (<span class="id" title="var">X</span> : <span class="id" title="var">svar</span>) (<span class="id" title="var">p</span> : <span class="id" title="var">Pattern</span>) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Decision</span> (<span class="id" title="var">svar_is_fresh_in</span> <span class="id" title="var">X</span> <span class="id" title="var">p</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">svar_is_fresh_in_list</span> (<span class="id" title="var">X</span> : <span class="id" title="var">svar</span>) (<span class="id" title="var">l</span> : <span class="id" title="var">list</span> <span class="id" title="var">Pattern</span>) :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Forall</span> (<span class="id" title="var">svar_is_fresh_in</span> <span class="id" title="var">X</span>) <span class="id" title="var">l</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Global Instance</span> <span class="id" title="var">svar_is_fresh_in_list_dec</span> (<span class="id" title="var">X</span> : <span class="id" title="var">svar</span>) (<span class="id" title="var">l</span> : <span class="id" title="var">list</span> <span class="id" title="var">Pattern</span>) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Decision</span> (<span class="id" title="var">svar_is_fresh_in_list</span> <span class="id" title="var">X</span> <span class="id" title="var">l</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">wfc_ex_lower</span> <span class="id" title="var">ϕ</span> <span class="id" title="var">n</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">bevar_occur</span> <span class="id" title="var">ϕ</span> <span class="id" title="var">n</span> = <span class="id" title="var">false</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_closed_ex_aux</span> <span class="id" title="var">ϕ</span> (<span class="id" title="var">S</span> <span class="id" title="var">n</span>) = <span class="id" title="var">true</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_closed_ex_aux</span> <span class="id" title="var">ϕ</span> <span class="id" title="var">n</span> = <span class="id" title="var">true</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">wfc_mu_lower</span> <span class="id" title="var">ϕ</span> <span class="id" title="var">n</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">bsvar_occur</span> <span class="id" title="var">ϕ</span> <span class="id" title="var">n</span> = <span class="id" title="var">false</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_closed_mu_aux</span> <span class="id" title="var">ϕ</span> (<span class="id" title="var">S</span> <span class="id" title="var">n</span>) = <span class="id" title="var">true</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_closed_mu_aux</span> <span class="id" title="var">ϕ</span> <span class="id" title="var">n</span> = <span class="id" title="var">true</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">wf_ex_quan_impl_wf</span> (<span class="id" title="var">x</span> : <span class="id" title="tactic">evar</span>) (<span class="id" title="var">ϕ</span> : <span class="id" title="var">Pattern</span>):<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">bevar_occur</span> <span class="id" title="var">ϕ</span> 0 = <span class="id" title="var">false</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed</span> (<span class="id" title="var">exists_quantify</span> <span class="id" title="var">x</span> <span class="id" title="var">ϕ</span>) = <span class="id" title="var">true</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed</span> <span class="id" title="var">ϕ</span> = <span class="id" title="var">true</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">bevar_occur_evar_open_2</span> <span class="id" title="var">dbi</span> <span class="id" title="var">x</span> <span class="id" title="var">ϕ</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_closed_ex_aux</span> <span class="id" title="var">ϕ</span> <span class="id" title="var">dbi</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">bevar_occur</span> (<span class="id" title="var">ϕ</span>^{<span class="id" title="tactic">evar</span>: <span class="id" title="var">dbi</span> ↦ <span class="id" title="var">x</span>}) <span class="id" title="var">dbi</span> = <span class="id" title="var">false</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">bsvar_occur_svar_open_2</span> <span class="id" title="var">dbi</span> <span class="id" title="var">X</span> <span class="id" title="var">ϕ</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_closed_mu_aux</span> <span class="id" title="var">ϕ</span> <span class="id" title="var">dbi</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">bsvar_occur</span> (<span class="id" title="var">ϕ</span>^{<span class="id" title="var">svar</span>: <span class="id" title="var">dbi</span> ↦ <span class="id" title="var">X</span>}) <span class="id" title="var">dbi</span> = <span class="id" title="var">false</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">svar_has_negative_occurrence_free_evar_subst</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">ϕ</span> ψ: <span class="id" title="var">Pattern</span>) (<span class="id" title="var">x</span> : <span class="id" title="tactic">evar</span>) (<span class="id" title="var">X</span> : <span class="id" title="var">svar</span>) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">svar_is_fresh_in</span> <span class="id" title="var">X</span> ψ →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">svar_has_negative_occurrence</span> <span class="id" title="var">X</span> <span class="id" title="var">ϕ</span>^[[<span class="id" title="tactic">evar</span>:<span class="id" title="var">x</span>↦ψ]] = <span class="id" title="var">svar_has_negative_occurrence</span> <span class="id" title="var">X</span> <span class="id" title="var">ϕ</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">with</span> <span class="id" title="var">svar_has_positive_occurrence_free_evar_subst</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">ϕ</span> ψ: <span class="id" title="var">Pattern</span>) (<span class="id" title="var">x</span> : <span class="id" title="tactic">evar</span>) (<span class="id" title="var">X</span> : <span class="id" title="var">svar</span>) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">svar_is_fresh_in</span> <span class="id" title="var">X</span> ψ →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">svar_has_positive_occurrence</span> <span class="id" title="var">X</span> <span class="id" title="var">ϕ</span>^[[<span class="id" title="tactic">evar</span>:<span class="id" title="var">x</span>↦ψ]] = <span class="id" title="var">svar_has_positive_occurrence</span> <span class="id" title="var">X</span> <span class="id" title="var">ϕ</span><br/>
+&nbsp;&nbsp;.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Fixpoint</span> <span class="id" title="var">maximal_mu_depth_to</span> (<span class="id" title="var">depth</span> : <span class="id" title="var">nat</span>) (<span class="id" title="var">E</span> : <span class="id" title="tactic">evar</span>) (ψ : <span class="id" title="var">Pattern</span>) : <span class="id" title="var">nat</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> ψ <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_bott</span> ⇒ 0<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_sym</span> <span class="id" title="var">_</span> ⇒ 0<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_bound_evar</span> <span class="id" title="var">_</span> ⇒ 0<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_bound_svar</span> <span class="id" title="var">_</span> ⇒ 0<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_free_svar</span> <span class="id" title="var">_</span> ⇒ 0<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_free_evar</span> <span class="id" title="var">E'</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> (<span class="id" title="var">decide</span> (<span class="id" title="var">E'</span> = <span class="id" title="var">E</span>)) <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="tactic">left</span> <span class="id" title="var">_</span> ⇒ <span class="id" title="var">depth</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="tactic">right</span> <span class="id" title="var">_</span> ⇒ 0<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_imp</span> ψ<span class="id" title="var">₁</span> ψ<span class="id" title="var">₂</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;⇒ <span class="id" title="var">Nat.max</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">maximal_mu_depth_to</span> <span class="id" title="var">depth</span> <span class="id" title="var">E</span> ψ<span class="id" title="var">₁</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">maximal_mu_depth_to</span> <span class="id" title="var">depth</span> <span class="id" title="var">E</span> ψ<span class="id" title="var">₂</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_app</span> ψ<span class="id" title="var">₁</span> ψ<span class="id" title="var">₂</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;⇒ <span class="id" title="var">Nat.max</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">maximal_mu_depth_to</span> <span class="id" title="var">depth</span> <span class="id" title="var">E</span> ψ<span class="id" title="var">₁</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">maximal_mu_depth_to</span> <span class="id" title="var">depth</span> <span class="id" title="var">E</span> ψ<span class="id" title="var">₂</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_exists</span> ψ' ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">maximal_mu_depth_to</span> <span class="id" title="var">depth</span> <span class="id" title="var">E</span> ψ'<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_mu</span> ψ' ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">maximal_mu_depth_to</span> (<span class="id" title="var">S</span> <span class="id" title="var">depth</span>) <span class="id" title="var">E</span> ψ'<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">maximal_mu_depth_to_svar_open</span> <span class="id" title="var">depth</span> <span class="id" title="var">E</span> <span class="id" title="var">n</span> <span class="id" title="var">X</span> ψ:<br/>
+&nbsp;&nbsp;<span class="id" title="var">maximal_mu_depth_to</span> <span class="id" title="var">depth</span> <span class="id" title="var">E</span> (ψ^{<span class="id" title="var">svar</span>: <span class="id" title="var">n</span> ↦ <span class="id" title="var">X</span>})<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;= <span class="id" title="var">maximal_mu_depth_to</span> <span class="id" title="var">depth</span> <span class="id" title="var">E</span> ψ.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">evar_open_mu_depth</span> <span class="id" title="var">depth</span> <span class="id" title="var">E</span> <span class="id" title="var">n</span> <span class="id" title="var">x</span> ψ:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">E</span> ≠ <span class="id" title="var">x</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">maximal_mu_depth_to</span> <span class="id" title="var">depth</span> <span class="id" title="var">E</span> (ψ^{<span class="id" title="tactic">evar</span>: <span class="id" title="var">n</span> ↦ <span class="id" title="var">x</span>})<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;= <span class="id" title="var">maximal_mu_depth_to</span> <span class="id" title="var">depth</span> <span class="id" title="var">E</span> ψ.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">svar_open_mu_depth</span> <span class="id" title="var">depth</span> <span class="id" title="var">E</span> <span class="id" title="var">n</span> <span class="id" title="var">X</span> ψ:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">maximal_mu_depth_to</span> <span class="id" title="var">depth</span> <span class="id" title="var">E</span> (ψ^{<span class="id" title="var">svar</span>: <span class="id" title="var">n</span> ↦ <span class="id" title="var">X</span>})<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;= <span class="id" title="var">maximal_mu_depth_to</span> <span class="id" title="var">depth</span> <span class="id" title="var">E</span> ψ.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">maximal_mu_depth_to_0</span> <span class="id" title="var">E</span> ψ <span class="id" title="var">depth</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">E</span> ∉ <span class="id" title="var">free_evars</span> ψ →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">maximal_mu_depth_to</span> <span class="id" title="var">depth</span> <span class="id" title="var">E</span> ψ = 0.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">maximal_mu_depth_to_S</span> <span class="id" title="var">E</span> ψ <span class="id" title="var">depth</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">E</span> ∈ <span class="id" title="var">free_evars</span> ψ →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">maximal_mu_depth_to</span> (<span class="id" title="var">S</span> <span class="id" title="var">depth</span>) <span class="id" title="var">E</span> ψ<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;= <span class="id" title="var">S</span> (<span class="id" title="var">maximal_mu_depth_to</span> <span class="id" title="var">depth</span> <span class="id" title="var">E</span> ψ).<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">mu_in_evar_path</span> <span class="id" title="var">E</span> ψ <span class="id" title="var">sdepth</span><br/>
+&nbsp;&nbsp;:= <span class="id" title="var">negb</span> (<span class="id" title="var">Nat.eqb</span> 0 (<span class="id" title="var">maximal_mu_depth_to</span> <span class="id" title="var">sdepth</span> <span class="id" title="var">E</span> ψ)).<br/>
+
+<br/>
+<span class="id" title="keyword">End</span> <span class="id" title="var">with_signature</span>.<br/>
+
+<br/>
+<span class="comment">(*&nbsp;TODO&nbsp;remove&nbsp;these&nbsp;hints&nbsp;*)</span><br/>
+
+<br/>
+#[<span class="id" title="var">export</span>]<br/>
+&nbsp;<span class="id" title="keyword">Hint</span> <span class="id" title="keyword">Resolve</span> <span class="id" title="var">well_formed_positive_svar_quantify</span> : <span class="id" title="var">core</span>.<br/>
+
+<br/>
+#[<span class="id" title="var">export</span>]<br/>
+&nbsp;<span class="id" title="keyword">Hint</span> <span class="id" title="keyword">Resolve</span> <span class="id" title="var">no_positive_occurrence_svar_quantify</span> : <span class="id" title="var">core</span>.<br/>
+
+<br/>
+#[<span class="id" title="var">export</span>]<br/>
+&nbsp;<span class="id" title="keyword">Hint</span> <span class="id" title="keyword">Resolve</span> <span class="id" title="var">no_negative_occurrence_svar_quantify</span> : <span class="id" title="var">core</span>.<br/>
+
+<br/>
+#[<span class="id" title="var">export</span>]<br/>
+&nbsp;<span class="id" title="keyword">Hint</span> <span class="id" title="keyword">Resolve</span> <span class="id" title="var">wfc_impl_no_neg_occ</span> : <span class="id" title="var">core</span>.<br/>
+
+<br/>
+#[<span class="id" title="var">export</span>]<br/>
+&nbsp;<span class="id" title="keyword">Hint</span> <span class="id" title="keyword">Resolve</span> <span class="id" title="var">wfp_free_svar_subst</span> : <span class="id" title="var">core</span>.<br/>
+
+<br/>
+#[<span class="id" title="var">export</span>]<br/>
+&nbsp;<span class="id" title="keyword">Hint</span> <span class="id" title="keyword">Resolve</span> <span class="id" title="var">wfp_neg_free_svar_subst</span> : <span class="id" title="var">core</span>.<br/>
+
+<br/>
+#[<span class="id" title="var">export</span>]<br/>
+&nbsp;<span class="id" title="keyword">Hint</span> <span class="id" title="keyword">Resolve</span> <span class="id" title="var">svar_quantify_closed_ex</span> : <span class="id" title="var">core</span>.<br/>
+
+<br/>
+#[<span class="id" title="var">export</span>]<br/>
+&nbsp;<span class="id" title="keyword">Hint</span> <span class="id" title="keyword">Resolve</span> <span class="id" title="var">svar_quantify_closed_mu</span> : <span class="id" title="var">core</span>.<br/>
+
+<br/>
+#[<span class="id" title="var">export</span>]<br/>
+&nbsp;<span class="id" title="keyword">Hint</span> <span class="id" title="keyword">Resolve</span> <span class="id" title="var">evar_quantify_positive</span> : <span class="id" title="var">core</span>.<br/>
+
+<br/>
+#[<span class="id" title="var">export</span>]<br/>
+&nbsp;<span class="id" title="keyword">Hint</span> <span class="id" title="keyword">Resolve</span> <span class="id" title="var">evar_quantify_closed_mu</span> : <span class="id" title="var">core</span>.<br/>
+
+<br/>
+#[<span class="id" title="var">export</span>]<br/>
+&nbsp;<span class="id" title="keyword">Hint</span> <span class="id" title="keyword">Resolve</span> <span class="id" title="var">evar_quantify_closed_ex</span> : <span class="id" title="var">core</span>.<br/>
+
+<br/>
+#[<span class="id" title="var">export</span>]<br/>
+&nbsp;<span class="id" title="keyword">Hint</span> <span class="id" title="keyword">Resolve</span> <span class="id" title="var">wfp_evar_open</span> : <span class="id" title="var">core</span>.<br/>
+
+<br/>
+#[<span class="id" title="var">export</span>]<br/>
+&nbsp;<span class="id" title="keyword">Hint</span> <span class="id" title="keyword">Resolve</span> <span class="id" title="var">wfc_mu_aux_body_ex_imp1</span> : <span class="id" title="var">core</span>.<br/>
+
+<br/>
+#[<span class="id" title="var">export</span>]<br/>
+&nbsp;<span class="id" title="keyword">Hint</span> <span class="id" title="keyword">Resolve</span> <span class="id" title="var">wfc_ex_aux_body_ex_imp1</span> : <span class="id" title="var">core</span>.<br/>
+
+<br/>
+#[<span class="id" title="var">export</span>]<br/>
+<span class="id" title="keyword">Hint</span> <span class="id" title="keyword">Resolve</span> <span class="id" title="var">bevar_subst_positive_2</span> : <span class="id" title="var">core</span>.<br/>
+
+<br/>
+#[<span class="id" title="var">export</span>]<br/>
+<span class="id" title="keyword">Hint</span> <span class="id" title="keyword">Resolve</span> <span class="id" title="var">wfc_mu_aux_bevar_subst</span> : <span class="id" title="var">core</span>.<br/>
+
+<br/>
+#[<span class="id" title="var">export</span>]<br/>
+<span class="id" title="keyword">Hint</span> <span class="id" title="keyword">Resolve</span> <span class="id" title="var">wfc_ex_aux_bevar_subst</span> : <span class="id" title="var">core</span>.<br/>
+
+<br/>
+#[<span class="id" title="var">export</span>]<br/>
+<span class="id" title="keyword">Hint</span> <span class="id" title="keyword">Resolve</span> <span class="id" title="var">wfp_svar_open</span> : <span class="id" title="var">core</span>.<br/>
+
+<br/>
+#[<span class="id" title="var">export</span>]<br/>
+&nbsp;<span class="id" title="keyword">Hint</span> <span class="id" title="keyword">Resolve</span> <span class="id" title="var">wfc_mu_free_evar_subst</span> : <span class="id" title="var">core</span>.<br/>
+</div>
+<hr/>This page has been generated by <a href="http://coq.inria.fr/">coqdoc</a>
+</div>
+
+</div>
+
+</body>
+</html>
