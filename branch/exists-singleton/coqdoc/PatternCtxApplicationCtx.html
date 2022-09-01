@@ -1,0 +1,158 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link href="coqdoc.css" rel="stylesheet" type="text/css" />
+<title>PatternCtxApplicationCtx</title>
+</head>
+
+<body>
+
+<div id="page">
+
+<div id="header">
+</div>
+
+<div id="main">
+
+<h1 class="libtitle">File PatternCtxApplicationCtx</h1>
+
+<div class="code">
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">ProofIrrelevance</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">MatchingLogic</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Export</span> <span class="id" title="var">SyntaxLemmas.ApplicationCtxSubstitution</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">PatternContext</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Freshness</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Section</span> <span class="id" title="var">with_signature</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Context</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>}.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Program Definition</span> <span class="id" title="var">ApplicationContext2PatternCtx'</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">boxvar</span> : <span class="id" title="tactic">evar</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">AC</span> : <span class="id" title="var">Application_context</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">pf</span> : <span class="id" title="var">boxvar</span> ∉ <span class="id" title="var">free_evars_ctx</span> <span class="id" title="var">AC</span>)<br/>
+: <span class="id" title="var">PatternCtx</span> :=<br/>
+{|<br/>
+<span class="id" title="var">pcEvar</span> := <span class="id" title="var">boxvar</span>;<br/>
+<span class="id" title="var">pcPattern</span> := <span class="id" title="var">ApplicationContext2Pattern</span> <span class="id" title="var">boxvar</span> <span class="id" title="var">AC</span>;<br/>
+|}.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">AC2PC'_wf</span> <span class="id" title="var">boxvar</span> <span class="id" title="var">AC</span> <span class="id" title="var">pf</span>: <span class="id" title="var">PC_wf</span> (@<span class="id" title="var">ApplicationContext2PatternCtx'</span> <span class="id" title="var">boxvar</span> <span class="id" title="var">AC</span> <span class="id" title="var">pf</span>).<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">ApplicationContext2PatternCtx</span> (<span class="id" title="var">AC</span> : <span class="id" title="var">Application_context</span>) : <span class="id" title="var">PatternCtx</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">boxvar</span> := (<span class="id" title="var">evar_fresh</span> (<span class="id" title="var">elements</span> (<span class="id" title="var">free_evars_ctx</span> <span class="id" title="var">AC</span>))) <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">ApplicationContext2PatternCtx'</span> <span class="id" title="var">boxvar</span> <span class="id" title="var">AC</span> (@<span class="id" title="var">set_evar_fresh_is_fresh'</span> <span class="id" title="var">Σ</span> <span class="id" title="var">_</span>).<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">AC2PC_wf</span> <span class="id" title="var">AC</span>: <span class="id" title="var">PC_wf</span> (<span class="id" title="var">ApplicationContext2PatternCtx</span> <span class="id" title="var">AC</span>).<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">is_application</span> (<span class="id" title="var">p</span> : <span class="id" title="var">Pattern</span>) : <span class="id" title="var">bool</span> :=<br/>
+<span class="id" title="keyword">match</span> <span class="id" title="var">p</span> <span class="id" title="keyword">with</span><br/>
+| <span class="id" title="var">patt_app</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> ⇒ <span class="id" title="var">true</span><br/>
+| <span class="id" title="var">_</span> ⇒ <span class="id" title="var">false</span><br/>
+<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">is_free_evar</span> (<span class="id" title="var">p</span> : <span class="id" title="var">Pattern</span>) : <span class="id" title="var">bool</span> :=<br/>
+<span class="id" title="keyword">match</span> <span class="id" title="var">p</span> <span class="id" title="keyword">with</span><br/>
+| <span class="id" title="var">patt_free_evar</span> <span class="id" title="var">_</span> ⇒ <span class="id" title="var">true</span><br/>
+| <span class="id" title="var">_</span> ⇒ <span class="id" title="var">false</span><br/>
+<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">is_application_or_free_evar</span> (<span class="id" title="var">p</span> : <span class="id" title="var">Pattern</span>) : <span class="id" title="var">bool</span> :=<br/>
+<span class="id" title="var">is_application</span> <span class="id" title="var">p</span> || <span class="id" title="var">is_free_evar</span> <span class="id" title="var">p</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">ApplicationContext2PatternCtx_is_application</span> (<span class="id" title="var">AC</span> : <span class="id" title="var">Application_context</span>) :<br/>
+<span class="id" title="keyword">let</span> <span class="id" title="var">p</span> := <span class="id" title="var">pcPattern</span> (<span class="id" title="var">ApplicationContext2PatternCtx</span> <span class="id" title="var">AC</span>) <span class="id" title="tactic">in</span><br/>
+<span class="id" title="var">is_application_or_free_evar</span> <span class="id" title="var">p</span> = <span class="id" title="var">true</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">is_application_or_free_evar_x</span> (<span class="id" title="var">x</span> : <span class="id" title="tactic">evar</span>) (<span class="id" title="var">p</span> : <span class="id" title="var">Pattern</span>)  : <span class="id" title="var">bool</span> :=<br/>
+<span class="id" title="var">is_application</span> <span class="id" title="var">p</span> ||<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="keyword">match</span> <span class="id" title="var">p</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_free_evar</span> <span class="id" title="var">x'</span> ⇒ <span class="id" title="keyword">if</span> <span class="id" title="var">decide</span> (<span class="id" title="var">x'</span> = <span class="id" title="var">x</span>) <span class="id" title="keyword">is</span> <span class="id" title="tactic">left</span> <span class="id" title="var">_</span> <span class="id" title="keyword">then</span> <span class="id" title="var">true</span> <span class="id" title="keyword">else</span> <span class="id" title="var">false</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">_</span> ⇒ <span class="id" title="var">false</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span>).<br/>
+
+<br/>
+<span class="id" title="keyword">Fixpoint</span> <span class="id" title="var">PatternCtx2ApplicationContext'</span><br/>
+&nbsp;&nbsp;(<span class="id" title="var">box_evar</span> : <span class="id" title="tactic">evar</span>)<br/>
+&nbsp;&nbsp;(<span class="id" title="var">p</span> : <span class="id" title="var">Pattern</span>)<br/>
+&nbsp;&nbsp;(<span class="id" title="keyword">wf</span> : <span class="id" title="var">well_formed</span> <span class="id" title="var">p</span>)<br/>
+: <span class="id" title="var">Application_context</span> :=<br/>
+(<span class="id" title="keyword">match</span> <span class="id" title="var">p</span> <span class="id" title="keyword">as</span> <span class="id" title="var">q</span> <span class="id" title="keyword">return</span> <span class="id" title="var">well_formed</span> <span class="id" title="var">q</span> → <span class="id" title="var">Application_context</span> <span class="id" title="keyword">with</span><br/>
+| <span class="id" title="var">patt_app</span> <span class="id" title="var">p1</span> <span class="id" title="var">p2</span> ⇒<br/>
+<span class="id" title="keyword">fun</span> <span class="id" title="keyword">wf</span> ⇒<br/>
+<span class="id" title="keyword">if</span> <span class="id" title="var">decide</span> (<span class="id" title="var">box_evar</span> ∉ <span class="id" title="var">free_evars</span> <span class="id" title="var">p1</span>) <span class="id" title="keyword">is</span> <span class="id" title="tactic">left</span> <span class="id" title="var">_</span> <span class="id" title="keyword">then</span><br/>
+@<span class="id" title="var">ctx_app_r</span> <span class="id" title="var">Σ</span> <span class="id" title="var">p1</span> (@<span class="id" title="var">PatternCtx2ApplicationContext'</span> <span class="id" title="var">box_evar</span> <span class="id" title="var">p2</span> (<span class="id" title="var">well_formed_app_2</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="keyword">wf</span>)) (<span class="id" title="var">well_formed_app_1</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="keyword">wf</span>)<br/>
+<span class="id" title="keyword">else</span> <span class="id" title="keyword">if</span> <span class="id" title="var">decide</span>  (<span class="id" title="var">box_evar</span> ∉ <span class="id" title="var">free_evars</span> <span class="id" title="var">p2</span>) <span class="id" title="keyword">is</span> <span class="id" title="tactic">left</span> <span class="id" title="var">_</span> <span class="id" title="keyword">then</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;@<span class="id" title="var">ctx_app_l</span> <span class="id" title="var">Σ</span> (@<span class="id" title="var">PatternCtx2ApplicationContext'</span> <span class="id" title="var">box_evar</span> <span class="id" title="var">p1</span> (<span class="id" title="var">well_formed_app_1</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="keyword">wf</span>)) <span class="id" title="var">p2</span> (<span class="id" title="var">well_formed_app_2</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="keyword">wf</span>)<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">else</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">box</span><br/>
+| <span class="id" title="var">_</span> ⇒ <span class="id" title="keyword">fun</span> <span class="id" title="var">_</span> ⇒ <span class="id" title="var">box</span><br/>
+<span class="id" title="keyword">end</span><br/>
+) <span class="id" title="keyword">wf</span><br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">PatternCtx2ApplicationContext</span> (<span class="id" title="var">C</span> : <span class="id" title="var">PatternCtx</span>) (<span class="id" title="var">pf</span>: <span class="id" title="var">PC_wf</span> <span class="id" title="var">C</span>) : <br/>
+&nbsp;&nbsp;<span class="id" title="var">Application_context</span> :=<br/>
+&nbsp;&nbsp;@<span class="id" title="var">PatternCtx2ApplicationContext'</span> (<span class="id" title="var">pcEvar</span> <span class="id" title="var">C</span>) (<span class="id" title="var">pcPattern</span> <span class="id" title="var">C</span>) <span class="id" title="var">pf</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">count_evar_occurrences_subst_ctx</span> <span class="id" title="var">AC</span> <span class="id" title="var">x</span>:<br/>
+&nbsp;&nbsp;<span class="id" title="var">x</span> ∉ <span class="id" title="var">free_evars_ctx</span> <span class="id" title="var">AC</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">count_evar_occurrences</span> <span class="id" title="var">x</span> (<span class="id" title="var">subst_ctx</span> <span class="id" title="var">AC</span> (<span class="id" title="var">patt_free_evar</span> <span class="id" title="var">x</span>)) = 1.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">ApplicationContext2PatternCtx2ApplicationContext'</span><br/>
+&nbsp;&nbsp;(<span class="id" title="var">boxvar</span> : <span class="id" title="tactic">evar</span>)<br/>
+&nbsp;&nbsp;(<span class="id" title="var">AC</span> : <span class="id" title="var">Application_context</span>)<br/>
+&nbsp;&nbsp;(<span class="id" title="var">Hnotin</span>: <span class="id" title="var">boxvar</span> ∉ <span class="id" title="var">free_evars_ctx</span> <span class="id" title="var">AC</span>) :<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">C</span> : <span class="id" title="var">PatternCtx</span> := <span class="id" title="var">ApplicationContext2PatternCtx'</span> <span class="id" title="var">boxvar</span> <span class="id" title="var">AC</span> <span class="id" title="var">Hnotin</span> <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">pf</span> := <span class="id" title="var">AC2PC'_wf</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">Hnotin</span> <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">PatternCtx2ApplicationContext'</span> <span class="id" title="var">boxvar</span> <span class="id" title="var">_</span> <span class="id" title="var">pf</span> = <span class="id" title="var">AC</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">ApplicationContext2PatternCtx2ApplicationContext</span> (<span class="id" title="var">AC</span> : <span class="id" title="var">Application_context</span>) :<br/>
+&nbsp;&nbsp;<span class="id" title="var">PatternCtx2ApplicationContext</span> <span class="id" title="var">_</span> (<span class="id" title="var">AC2PC_wf</span> <span class="id" title="var">AC</span>) = <span class="id" title="var">AC</span>.<br/>
+
+<br/>
+<span class="comment">(*&nbsp;TODO:&nbsp;This&nbsp;needs&nbsp;to&nbsp;use&nbsp;count_evar_occurrences,&nbsp;because&nbsp;the&nbsp;prover&nbsp;depends&nbsp;on&nbsp;it&nbsp;*)</span><br/>
+<span class="id" title="keyword">Fixpoint</span> <span class="id" title="var">is_implicative_context'</span> (<span class="id" title="var">box_evar</span> : <span class="id" title="tactic">evar</span>) (<span class="id" title="var">phi</span> : <span class="id" title="var">Pattern</span>) : <span class="id" title="var">bool</span> :=<br/>
+<span class="id" title="keyword">match</span> <span class="id" title="var">phi</span> <span class="id" title="keyword">with</span><br/>
+| <span class="id" title="var">patt_bott</span> ⇒ <span class="id" title="var">true</span><br/>
+| <span class="id" title="var">patt_free_evar</span> <span class="id" title="var">_</span> ⇒ <span class="id" title="var">true</span><br/>
+| <span class="id" title="var">patt_imp</span> <span class="id" title="var">phi1</span> <span class="id" title="var">phi2</span> ⇒<br/>
+(<span class="id" title="keyword">if</span> <span class="id" title="var">decide</span>(<span class="id" title="var">count_evar_occurrences</span> <span class="id" title="var">box_evar</span> <span class="id" title="var">phi1</span> ≠ 0) <span class="id" title="keyword">is</span> <span class="id" title="tactic">left</span> <span class="id" title="var">_</span><br/>
+<span class="id" title="keyword">then</span> <span class="id" title="var">is_implicative_context'</span> <span class="id" title="var">box_evar</span> <span class="id" title="var">phi1</span> <span class="id" title="keyword">else</span> <span class="id" title="var">true</span>) &amp;&amp;<br/>
+(<span class="id" title="keyword">if</span> <span class="id" title="var">decide</span>(<span class="id" title="var">count_evar_occurrences</span> <span class="id" title="var">box_evar</span> <span class="id" title="var">phi2</span> ≠ 0) <span class="id" title="keyword">is</span> <span class="id" title="tactic">left</span> <span class="id" title="var">_</span><br/>
+<span class="id" title="keyword">then</span> <span class="id" title="var">is_implicative_context'</span> <span class="id" title="var">box_evar</span> <span class="id" title="var">phi2</span> <span class="id" title="keyword">else</span> <span class="id" title="var">true</span>)<br/>
+| <span class="id" title="var">_</span> ⇒ <span class="id" title="var">false</span><br/>
+<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">is_implicative_context</span> (<span class="id" title="var">C</span> : <span class="id" title="var">PatternCtx</span>) :=<br/>
+&nbsp;&nbsp;<span class="id" title="var">is_implicative_context'</span> (<span class="id" title="var">pcEvar</span> <span class="id" title="var">C</span>) (<span class="id" title="var">pcPattern</span> <span class="id" title="var">C</span>).<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">emplace_subst_ctx</span> <span class="id" title="var">AC</span> <span class="id" title="var">ϕ</span>:<br/>
+&nbsp;&nbsp;<span class="id" title="var">emplace</span> (<span class="id" title="var">ApplicationContext2PatternCtx</span> <span class="id" title="var">AC</span>) <span class="id" title="var">ϕ</span> = <span class="id" title="var">subst_ctx</span> <span class="id" title="var">AC</span> <span class="id" title="var">ϕ</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">End</span> <span class="id" title="var">with_signature</span>.<br/>
+</div>
+<hr/>This page has been generated by <a href="http://coq.inria.fr/">coqdoc</a>
+</div>
+
+</div>
+
+</body>
+</html>
