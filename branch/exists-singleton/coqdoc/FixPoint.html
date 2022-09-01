@@ -1,0 +1,74 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link href="coqdoc.css" rel="stylesheet" type="text/css" />
+<title>FixPoint</title>
+</head>
+
+<body>
+
+<div id="page">
+
+<div id="header">
+</div>
+
+<div id="main">
+
+<h1 class="libtitle">File FixPoint</h1>
+
+<div class="code">
+<span class="id" title="keyword">From</span> <span class="id" title="var">MatchingLogic</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Export</span> <span class="id" title="var">FreshnessManager</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">MatchingLogic.ProofMode</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Export</span> <span class="id" title="var">Firstorder</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Import</span> <span class="id" title="var">MatchingLogic.Logic.Notations</span>.<br/>
+
+<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">mu_monotone_quantify</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} <span class="id" title="var">Γ</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span> <span class="id" title="var">X</span> (<span class="id" title="var">i</span> : <span class="id" title="var">ProofInfo</span>):<br/>
+&nbsp;&nbsp;<span class="id" title="var">ProofInfoLe</span> ( (<span class="id" title="var">ExGen</span> := ∅, <span class="id" title="var">SVSubst</span> := {[<span class="id" title="var">X</span>]}, <span class="id" title="var">KT</span> := <span class="id" title="var">true</span>, <span class="id" title="var">AKT</span> := ~~ <span class="id" title="var">bound_svar_is_banned_under_mus</span> <span class="id" title="var">ϕ₁</span>^{{<span class="id" title="var">svar</span>:<span class="id" title="var">X</span>↦0}} 0 0)) <span class="id" title="var">i</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">svar_has_negative_occurrence</span> <span class="id" title="var">X</span> <span class="id" title="var">ϕ₁</span> = <span class="id" title="var">false</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">svar_has_negative_occurrence</span> <span class="id" title="var">X</span> <span class="id" title="var">ϕ₂</span> = <span class="id" title="var">false</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢<span class="id" title="var">i</span> <span class="id" title="var">ϕ₁</span> ---&gt; <span class="id" title="var">ϕ₂</span> <span class="id" title="keyword">using</span> <span class="id" title="var">i</span>→<br/>
+&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢<span class="id" title="var">i</span> (<span class="id" title="var">patt_mu</span> (<span class="id" title="var">ϕ₁</span>^{{<span class="id" title="var">svar</span>: <span class="id" title="var">X</span> ↦ 0}})) ---&gt; (<span class="id" title="var">patt_mu</span> (<span class="id" title="var">ϕ₂</span>^{{<span class="id" title="var">svar</span>: <span class="id" title="var">X</span> ↦ 0}}))<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">using</span> <span class="id" title="var">i</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">mu_monotone</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} <span class="id" title="var">Γ</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span> <span class="id" title="var">X</span> (<span class="id" title="var">i</span> : <span class="id" title="var">ProofInfo</span>):<br/>
+&nbsp;&nbsp;<span class="id" title="var">ProofInfoLe</span> ( (<span class="id" title="var">ExGen</span> := ∅, <span class="id" title="var">SVSubst</span> := {[<span class="id" title="var">X</span>]}, <span class="id" title="var">KT</span> := <span class="id" title="var">true</span>, <span class="id" title="var">AKT</span> := ~~ <span class="id" title="var">bound_svar_is_banned_under_mus</span> <span class="id" title="var">ϕ₁</span> 0 0)) <span class="id" title="var">i</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed</span> (<span class="id" title="var">patt_mu</span> <span class="id" title="var">ϕ₁</span>) →<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed</span> (<span class="id" title="var">patt_mu</span> <span class="id" title="var">ϕ₂</span>) →<br/>
+&nbsp;&nbsp;<span class="id" title="var">X</span> ∉ <span class="id" title="var">free_svars</span> <span class="id" title="var">ϕ₁</span> ∪ <span class="id" title="var">free_svars</span> <span class="id" title="var">ϕ₂</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢<span class="id" title="var">i</span> <span class="id" title="var">ϕ₁</span>^{<span class="id" title="var">svar</span>:0↦<span class="id" title="var">X</span>} ---&gt; <span class="id" title="var">ϕ₂</span>^{<span class="id" title="var">svar</span>:0↦<span class="id" title="var">X</span>} <span class="id" title="keyword">using</span> <span class="id" title="var">i</span>→<br/>
+&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢<span class="id" title="var">i</span> (<span class="id" title="var">patt_mu</span> <span class="id" title="var">ϕ₁</span>) ---&gt; (<span class="id" title="var">patt_mu</span> <span class="id" title="var">ϕ₂</span>)<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">using</span> <span class="id" title="var">i</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">mu_iff_quantify</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} <span class="id" title="var">Γ</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span> <span class="id" title="var">X</span> (<span class="id" title="var">i</span> : <span class="id" title="var">ProofInfo</span>):<br/>
+&nbsp;&nbsp;<span class="id" title="var">ProofInfoLe</span> ( (<span class="id" title="var">ExGen</span> := ∅, <span class="id" title="var">SVSubst</span> := {[<span class="id" title="var">X</span>]}, <span class="id" title="var">KT</span> := <span class="id" title="var">true</span>, <span class="id" title="var">AKT</span> := <span class="id" title="var">true</span>)) <span class="id" title="var">i</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">svar_has_negative_occurrence</span> <span class="id" title="var">X</span> <span class="id" title="var">ϕ₁</span> = <span class="id" title="var">false</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">svar_has_negative_occurrence</span> <span class="id" title="var">X</span> <span class="id" title="var">ϕ₂</span> = <span class="id" title="var">false</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢<span class="id" title="var">i</span> <span class="id" title="var">ϕ₁</span> &lt;---&gt; <span class="id" title="var">ϕ₂</span> <span class="id" title="keyword">using</span> <span class="id" title="var">i</span>→<br/>
+&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢<span class="id" title="var">i</span> (<span class="id" title="var">patt_mu</span> (<span class="id" title="var">ϕ₁</span>^{{<span class="id" title="var">svar</span>: <span class="id" title="var">X</span> ↦ 0}})) &lt;---&gt; (<span class="id" title="var">patt_mu</span> (<span class="id" title="var">ϕ₂</span>^{{<span class="id" title="var">svar</span>: <span class="id" title="var">X</span> ↦ 0}}))<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">using</span> <span class="id" title="var">i</span>.<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">move_mu_under_implication</span><br/>
+&nbsp;&nbsp;{<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>}<br/>
+&nbsp;&nbsp;<span class="id" title="var">Γ</span> φ ψ :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed</span> φ →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed</span> (<span class="id" title="var">mu</span> , ψ) →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢<span class="id" title="var">i</span> φ ---&gt; (<span class="id" title="var">mu</span> , ψ) ---&gt; <span class="id" title="var">mu</span> , (φ ---&gt; ψ) <span class="id" title="keyword">using</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">ExGen</span> := ∅,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">SVSubst</span> := ∅,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">KT</span> := <span class="id" title="var">true</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">AKT</span> := ~~ <span class="id" title="var">bound_svar_is_banned_under_mus</span> ψ 0 0).<br/>
+</div>
+<hr/>This page has been generated by <a href="http://coq.inria.fr/">coqdoc</a>
+</div>
+
+</div>
+
+</body>
+</html>

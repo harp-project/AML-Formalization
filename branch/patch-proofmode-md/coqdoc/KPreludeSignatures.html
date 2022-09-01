@@ -1,0 +1,212 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link href="coqdoc.css" rel="stylesheet" type="text/css" />
+<title>KPreludeSignatures</title>
+</head>
+
+<body>
+
+<div id="page">
+
+<div id="header">
+</div>
+
+<div id="main">
+
+<h1 class="libtitle">File KPreludeSignatures</h1>
+
+<div class="code">
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">stdpp</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Export</span> <span class="id" title="var">finite</span> <span class="id" title="var">strings</span>.<br/>
+<span class="comment">(*&nbsp;This&nbsp;is&nbsp;unset&nbsp;by&nbsp;stdpp.&nbsp;We&nbsp;need&nbsp;to&nbsp;set&nbsp;it&nbsp;again.*)</span><br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">MatchingLogic.OPML</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Export</span> <span class="id" title="var">OpmlSignature</span>.<br/>
+
+<br/>
+#[<span class="id" title="var">global</span>]<br/>
+<span class="id" title="keyword">Instance</span> <span class="id" title="var">eq_partial_order</span> (<span class="id" title="var">A</span> : <span class="id" title="keyword">Type</span>) : <span class="id" title="var">PartialOrder</span> (@<span class="id" title="var">eq</span> <span class="id" title="var">A</span>).<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">Identity_relation</span> (<span class="id" title="var">A</span> : <span class="id" title="keyword">Type</span>) : <span class="id" title="var">relation</span> <span class="id" title="var">A</span> := <span class="id" title="keyword">fun</span> <span class="id" title="var">x</span> <span class="id" title="var">y</span> ⇒ <span class="id" title="var">x</span> = <span class="id" title="var">y</span>.<br/>
+
+<br/>
+#[<span class="id" title="var">global</span>]<br/>
+<span class="id" title="keyword">Instance</span> <span class="id" title="var">Identity_relation_partial_order</span> (<span class="id" title="var">A</span> : <span class="id" title="keyword">Type</span>) : <span class="id" title="var">PartialOrder</span> (<span class="id" title="var">Identity_relation</span> <span class="id" title="var">A</span>).<br/>
+
+<br/>
+<span class="id" title="keyword">Module</span> <span class="id" title="var">bool_syntax</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Inductive</span> <span class="id" title="var">Sorts_t</span> : <span class="id" title="keyword">Set</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">SortBool</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;#[<span class="id" title="var">global</span>]<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Instance</span> <span class="id" title="var">Sorts_eqdec</span> : <span class="id" title="var">EqDecision</span> <span class="id" title="var">Sorts_t</span>.<br/>
+ 
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;#[<span class="id" title="var">global</span>]<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Program</span> <span class="id" title="keyword">Instance</span> <span class="id" title="var">Sorts_finite</span> : <span class="id" title="var">Finite</span> <span class="id" title="var">Sorts_t</span> := {|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">enum</span> := [<span class="id" title="var">SortBool</span>] ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;|}.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Program Definition</span> <span class="id" title="var">Sorts</span> : <span class="id" title="var">OPMLSorts</span> := {|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">opml_sort</span> := <span class="id" title="var">Sorts_t</span> ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">opml_subsort</span> := <span class="id" title="var">eq</span> ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;|}.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Inductive</span> <span class="id" title="var">Symbols_t</span> : <span class="id" title="keyword">Set</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">btrue</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">bfalse</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;#[<span class="id" title="var">global</span>]<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Instance</span> <span class="id" title="var">Symbols_t_eqdec</span> : <span class="id" title="var">EqDecision</span> <span class="id" title="var">Symbols_t</span>.<br/>
+ 
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;#[<span class="id" title="var">global</span>]<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Program</span> <span class="id" title="keyword">Instance</span> <span class="id" title="var">Symbols_t_finite</span> : <span class="id" title="var">Finite</span> <span class="id" title="var">Symbols_t</span> := {|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">enum</span> := [<span class="id" title="var">btrue</span>;<span class="id" title="var">bfalse</span>]<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;|}.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">Vars</span> : @<span class="id" title="var">OPMLVariables</span> <span class="id" title="var">Sorts</span> := {|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">opml_evar</span> := <span class="id" title="keyword">fun</span> <span class="id" title="var">s</span> ⇒ <span class="id" title="var">string</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">opml_svar</span> := <span class="id" title="keyword">fun</span> <span class="id" title="var">s</span> ⇒ <span class="id" title="var">string</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;|}.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">Symbols_t_arg_sorts</span> (<span class="id" title="var">s</span> : <span class="id" title="var">Symbols_t</span>) : <span class="id" title="var">list</span> (@<span class="id" title="var">opml_sort</span> <span class="id" title="var">Sorts</span>) :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">s</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">btrue</span> ⇒ []<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">bfalse</span> ⇒ []<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">Symbols_t_return_sort</span> (<span class="id" title="var">s</span> : <span class="id" title="var">Symbols_t</span>) : @<span class="id" title="var">opml_sort</span> <span class="id" title="var">Sorts</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">s</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">btrue</span> ⇒ <span class="id" title="var">SortBool</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">bfalse</span> ⇒ <span class="id" title="var">SortBool</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span> <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">Symbols</span> : @<span class="id" title="var">OPMLSymbols</span> <span class="id" title="var">Sorts</span> := {|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">opml_symbol</span> := <span class="id" title="var">Symbols_t</span> ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">opml_arg_sorts</span> := <span class="id" title="var">Symbols_t_arg_sorts</span> ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">opml_ret_sort</span> := <span class="id" title="var">Symbols_t_return_sort</span> ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;|}.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;#[<span class="id" title="var">global</span>]<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Instance</span> <span class="id" title="var">Σ</span> : <span class="id" title="var">OPMLSignature</span> := {|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">opml_sorts</span> := <span class="id" title="var">Sorts</span> ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">opml_variables</span> := <span class="id" title="var">Vars</span> ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">opml_symbols</span> := <span class="id" title="var">Symbols</span> ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;|}.<br/>
+
+<br/>
+<span class="id" title="keyword">End</span> <span class="id" title="var">bool_syntax</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Module</span> <span class="id" title="var">bool_common</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Inductive</span> <span class="id" title="var">Symbols_t</span> : <span class="id" title="keyword">Set</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">notBool</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">andBool</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">andThenBool</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">xorBool</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">orBool</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">orElseBool</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">impliesBool</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">equalsBool</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">notEqualsBool</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;#[<span class="id" title="var">global</span>]<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Instance</span> <span class="id" title="var">Symbols_t_eqdec</span> : <span class="id" title="var">EqDecision</span> <span class="id" title="var">Symbols_t</span>.<br/>
+ 
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;#[<span class="id" title="var">global</span>]<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Program</span> <span class="id" title="keyword">Instance</span> <span class="id" title="var">Symbols_t_finite</span> : <span class="id" title="var">Finite</span> <span class="id" title="var">Symbols_t</span> := {|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">enum</span> := [<span class="id" title="var">notBool</span>;<span class="id" title="var">andBool</span>;<span class="id" title="var">andThenBool</span>;<span class="id" title="var">xorBool</span>;<span class="id" title="var">orBool</span>;<span class="id" title="var">orElseBool</span>;<span class="id" title="var">impliesBool</span>;<span class="id" title="var">equalsBool</span>;<span class="id" title="var">notEqualsBool</span>]<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;|}.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">extension_of_bool</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: @<span class="id" title="var">OPMLSignatureExtension</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(@<span class="id" title="var">opml_sorts</span> <span class="id" title="var">bool_syntax.Σ</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(@<span class="id" title="var">opml_variables</span> <span class="id" title="var">bool_syntax.Σ</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;:= {|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">ose_new_sort</span> := <span class="id" title="var">Empty_set</span> ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">ose_new_sort_eqdec</span> := <span class="id" title="var">_</span> ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">ose_new_sort_countable</span> := <span class="id" title="var">_</span> ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">ose_new_subsort</span> := <span class="id" title="var">Identity_relation</span> <span class="id" title="var">Empty_set</span> ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">ose_new_subsort_po</span> := <span class="id" title="var">_</span> ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">ose_new_evar</span> := <span class="id" title="keyword">fun</span> <span class="id" title="var">_</span> ⇒ <span class="id" title="var">string</span> ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">ose_new_evar_eqdec</span> := <span class="id" title="keyword">fun</span> <span class="id" title="var">_</span> ⇒ <span class="id" title="var">_</span> ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">ose_new_evar_countable</span> := <span class="id" title="keyword">fun</span> <span class="id" title="var">_</span> ⇒ <span class="id" title="var">_</span> ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">ose_new_svar</span> := <span class="id" title="keyword">fun</span> <span class="id" title="var">_</span> ⇒ <span class="id" title="var">string</span> ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">ose_new_svar_eqdec</span> := <span class="id" title="keyword">fun</span> <span class="id" title="var">_</span> ⇒ <span class="id" title="var">_</span> ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">ose_new_svar_countable</span> := <span class="id" title="keyword">fun</span> <span class="id" title="var">_</span> ⇒ <span class="id" title="var">_</span> ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">ose_new_symbol</span> := <span class="id" title="var">Symbols_t</span> ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">ose_new_sym_eqdec</span> := <span class="id" title="var">_</span> ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">ose_new_sym_countable</span> := <span class="id" title="var">_</span> ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">ose_new_arg_sorts</span> := <span class="id" title="keyword">fun</span> <span class="id" title="var">s</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">s</span> <span class="id" title="keyword">return</span> <span class="id" title="var">list</span> (<span class="id" title="var">Empty_set</span> + <span class="id" title="var">bool_syntax.Sorts_t</span>) <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">notBool</span> ⇒ [<span class="id" title="var">inr</span> <span class="id" title="var">bool_syntax.SortBool</span>]<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">andBool</span> ⇒ [<span class="id" title="var">inr</span> <span class="id" title="var">bool_syntax.SortBool</span>;<span class="id" title="var">inr</span> <span class="id" title="var">bool_syntax.SortBool</span>]<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">andThenBool</span> ⇒ [<span class="id" title="var">inr</span> <span class="id" title="var">bool_syntax.SortBool</span>;<span class="id" title="var">inr</span> <span class="id" title="var">bool_syntax.SortBool</span>]<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">xorBool</span> ⇒ [<span class="id" title="var">inr</span> <span class="id" title="var">bool_syntax.SortBool</span>;<span class="id" title="var">inr</span> <span class="id" title="var">bool_syntax.SortBool</span>]<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">orBool</span> ⇒ [<span class="id" title="var">inr</span> <span class="id" title="var">bool_syntax.SortBool</span>;<span class="id" title="var">inr</span> <span class="id" title="var">bool_syntax.SortBool</span>]<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">orElseBool</span> ⇒ [<span class="id" title="var">inr</span> <span class="id" title="var">bool_syntax.SortBool</span>;<span class="id" title="var">inr</span> <span class="id" title="var">bool_syntax.SortBool</span>]<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">impliesBool</span> ⇒ [<span class="id" title="var">inr</span> <span class="id" title="var">bool_syntax.SortBool</span>;<span class="id" title="var">inr</span> <span class="id" title="var">bool_syntax.SortBool</span>]<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">equalsBool</span> ⇒ [<span class="id" title="var">inr</span> <span class="id" title="var">bool_syntax.SortBool</span>;<span class="id" title="var">inr</span> <span class="id" title="var">bool_syntax.SortBool</span>]<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">notEqualsBool</span> ⇒ [<span class="id" title="var">inr</span> <span class="id" title="var">bool_syntax.SortBool</span>;<span class="id" title="var">inr</span> <span class="id" title="var">bool_syntax.SortBool</span>]<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">ose_new_ret_sort</span> := <span class="id" title="keyword">fun</span> <span class="id" title="var">s</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">s</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">notBool</span> ⇒ <span class="id" title="var">inr</span> <span class="id" title="var">bool_syntax.SortBool</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">andBool</span> ⇒ <span class="id" title="var">inr</span> <span class="id" title="var">bool_syntax.SortBool</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">andThenBool</span> ⇒ <span class="id" title="var">inr</span> <span class="id" title="var">bool_syntax.SortBool</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">xorBool</span> ⇒ <span class="id" title="var">inr</span> <span class="id" title="var">bool_syntax.SortBool</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">orBool</span> ⇒ <span class="id" title="var">inr</span> <span class="id" title="var">bool_syntax.SortBool</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">orElseBool</span> ⇒ <span class="id" title="var">inr</span> <span class="id" title="var">bool_syntax.SortBool</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">impliesBool</span> ⇒ <span class="id" title="var">inr</span> <span class="id" title="var">bool_syntax.SortBool</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">equalsBool</span> ⇒ <span class="id" title="var">inr</span> <span class="id" title="var">bool_syntax.SortBool</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">notEqualsBool</span> ⇒ <span class="id" title="var">inr</span> <span class="id" title="var">bool_syntax.SortBool</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;|}.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">Σ</span> : <span class="id" title="var">OPMLSignature</span> := <span class="id" title="var">opml_signature_extend</span> <span class="id" title="var">bool_syntax.Σ</span> <span class="id" title="var">extension_of_bool</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">bool_syntax_to_this</span> : <span class="id" title="var">OPMLSignatureMorphism</span> <span class="id" title="var">bool_syntax.Σ</span> <span class="id" title="var">Σ</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:= <span class="id" title="var">opml_signature_extend_morphism</span> <span class="id" title="var">bool_syntax.Σ</span> <span class="id" title="var">extension_of_bool</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;.<br/>
+
+<br/>
+<span class="id" title="keyword">End</span> <span class="id" title="var">bool_common</span>.<br/>
+
+<br/>
+</div>
+<hr/>This page has been generated by <a href="http://coq.inria.fr/">coqdoc</a>
+</div>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,215 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link href="coqdoc.css" rel="stylesheet" type="text/css" />
+<title>TEST_proofmode_proof_size</title>
+</head>
+
+<body>
+
+<div id="page">
+
+<div id="header">
+</div>
+
+<div id="main">
+
+<h1 class="libtitle">File TEST_proofmode_proof_size</h1>
+
+<div class="code">
+<span class="id" title="keyword">From</span> <span class="id" title="var">MatchingLogic</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Logic</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">ProofMode.MLPM</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Definedness_Syntax</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">String</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Import</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">MatchingLogic.Logic.Notations</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">MatchingLogic.DerivedOperators_Syntax.Notations</span><br/>
+.<br/>
+
+<br/>
+
+<br/>
+<span class="comment">(*&nbsp;Iterated&nbsp;congruence&nbsp;lemma&nbsp;proved&nbsp;without&nbsp;induction&nbsp;*)</span><br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">prf_equiv_congruence_iter_no_ind</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} (<span class="id" title="var">Γ</span> : <span class="id" title="var">Theory</span>) (<span class="id" title="var">p</span> <span class="id" title="var">q</span> : <span class="id" title="var">Pattern</span>) (<span class="id" title="var">C</span> : <span class="id" title="var">PatternCtx</span>) <span class="id" title="var">l</span><br/>
+&nbsp;&nbsp;(<span class="id" title="var">wfp</span> : <span class="id" title="var">well_formed</span> <span class="id" title="var">p</span>)<br/>
+&nbsp;&nbsp;(<span class="id" title="var">wfq</span> : <span class="id" title="var">well_formed</span> <span class="id" title="var">q</span>)<br/>
+&nbsp;&nbsp;(<span class="id" title="var">wfC</span> : <span class="id" title="var">PC_wf</span> <span class="id" title="var">C</span>)<br/>
+&nbsp;&nbsp;(<span class="id" title="var">VarsC</span> : <span class="id" title="var">pcEvar</span> <span class="id" title="var">C</span> ∉ <span class="id" title="var">free_evars_of_list</span> <span class="id" title="var">l</span>)<br/>
+&nbsp;&nbsp;(<span class="id" title="var">gpi</span> : <span class="id" title="var">ProofInfo</span>)<br/>
+&nbsp;&nbsp;(<span class="id" title="var">pile</span> : <span class="id" title="var">ProofInfoLe</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">ExGen</span> := <span class="id" title="var">list_to_set</span> (<span class="id" title="var">evar_fresh_seq</span> (<span class="id" title="var">free_evars</span> (<span class="id" title="var">foldr</span> <span class="id" title="var">patt_imp</span> (<span class="id" title="var">pcPattern</span> <span class="id" title="var">C</span>) <span class="id" title="var">l</span>) ∪ <span class="id" title="var">free_evars</span> <span class="id" title="var">p</span> ∪ <span class="id" title="var">free_evars</span> <span class="id" title="var">q</span> ∪ {[<span class="id" title="var">pcEvar</span> <span class="id" title="var">C</span>]}) (<span class="id" title="var">maximal_exists_depth_to</span> 0 (<span class="id" title="var">pcEvar</span> <span class="id" title="var">C</span>) (<span class="id" title="var">pcPattern</span> <span class="id" title="var">C</span>))),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">SVSubst</span> := <span class="id" title="var">list_to_set</span> (<span class="id" title="var">svar_fresh_seq</span> (<span class="id" title="var">free_svars</span> (<span class="id" title="var">foldr</span> <span class="id" title="var">patt_imp</span> (<span class="id" title="var">pcPattern</span> <span class="id" title="var">C</span>) <span class="id" title="var">l</span>) ∪<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">free_svars</span> <span class="id" title="var">p</span> ∪ <span class="id" title="var">free_svars</span> <span class="id" title="var">q</span>) (<span class="id" title="var">maximal_mu_depth_to</span> 0 (<span class="id" title="var">pcEvar</span> <span class="id" title="var">C</span>) (<span class="id" title="var">pcPattern</span> <span class="id" title="var">C</span>))),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">KT</span> := <span class="id" title="var">mu_in_evar_path</span> (<span class="id" title="var">pcEvar</span> <span class="id" title="var">C</span>) (<span class="id" title="var">pcPattern</span> <span class="id" title="var">C</span>) 0,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">AKT</span> := <span class="id" title="var">mu_in_evar_path</span> (<span class="id" title="var">pcEvar</span> <span class="id" title="var">C</span>) (<span class="id" title="var">pcPattern</span> <span class="id" title="var">C</span>) 0<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">gpi</span><br/>
+&nbsp;&nbsp;):<br/>
+&nbsp;&nbsp;<span class="id" title="var">Pattern.wf</span> <span class="id" title="var">l</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢<span class="id" title="var">i</span> <span class="id" title="var">p</span> &lt;---&gt; <span class="id" title="var">q</span> <span class="id" title="keyword">using</span> ( <span class="id" title="var">gpi</span>) →<br/>
+&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢<span class="id" title="var">i</span> (<span class="id" title="var">foldr</span> <span class="id" title="var">patt_imp</span> (<span class="id" title="var">emplace</span> <span class="id" title="var">C</span> <span class="id" title="var">p</span>) <span class="id" title="var">l</span>) &lt;---&gt; (<span class="id" title="var">foldr</span> <span class="id" title="var">patt_imp</span> (<span class="id" title="var">emplace</span> <span class="id" title="var">C</span> <span class="id" title="var">q</span>) <span class="id" title="var">l</span>) <span class="id" title="keyword">using</span>  <span class="id" title="var">gpi</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Fixpoint</span> <span class="id" title="var">proof_size</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} {φ : <span class="id" title="var">Pattern</span>} {<span class="id" title="var">Γ</span>}<br/>
+&nbsp;&nbsp;&nbsp;(<span class="id" title="var">pf</span> : <span class="id" title="var">ML_proof_system</span> <span class="id" title="var">Γ</span> φ) : <span class="id" title="var">nat</span> :=<br/>
+<span class="id" title="keyword">match</span> <span class="id" title="var">pf</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;| <span class="id" title="var">Modus_ponens</span> <span class="id" title="var">_</span> <span class="id" title="var">phi1</span> <span class="id" title="var">phi2</span> <span class="id" title="var">x</span> <span class="id" title="var">x0</span> ⇒ 1 + <span class="id" title="var">proof_size</span> <span class="id" title="var">x</span> + <span class="id" title="var">proof_size</span> <span class="id" title="var">x0</span><br/>
+&nbsp;| <span class="id" title="var">ProofSystem.Ex_gen</span> <span class="id" title="var">_</span> <span class="id" title="var">phi1</span> <span class="id" title="var">phi2</span> <span class="id" title="var">x</span> <span class="id" title="var">x0</span> <span class="id" title="var">x1</span> <span class="id" title="var">x2</span> <span class="id" title="var">x3</span> ⇒ 1 + <span class="id" title="var">proof_size</span> <span class="id" title="var">x2</span><br/>
+&nbsp;| <span class="id" title="var">ProofSystem.Framing_left</span> <span class="id" title="var">_</span> <span class="id" title="var">phi1</span> <span class="id" title="var">phi2</span> <span class="id" title="var">psi</span> <span class="id" title="var">x</span> <span class="id" title="var">x0</span> ⇒ 1 + <span class="id" title="var">proof_size</span> <span class="id" title="var">x0</span><br/>
+&nbsp;| <span class="id" title="var">ProofSystem.Framing_right</span> <span class="id" title="var">_</span> <span class="id" title="var">phi1</span> <span class="id" title="var">phi2</span> <span class="id" title="var">psi</span> <span class="id" title="var">x</span> <span class="id" title="var">x0</span> ⇒ 1 + <span class="id" title="var">proof_size</span> <span class="id" title="var">x0</span><br/>
+&nbsp;| <span class="id" title="var">ProofSystem.Svar_subst</span> <span class="id" title="var">_</span> <span class="id" title="var">phi</span> <span class="id" title="var">psi</span> <span class="id" title="var">X</span> <span class="id" title="var">x</span> <span class="id" title="var">x0</span> <span class="id" title="var">x1</span> ⇒ 1 + <span class="id" title="var">proof_size</span> <span class="id" title="var">x1</span><br/>
+&nbsp;| <span class="id" title="var">ProofSystem.Knaster_tarski</span> <span class="id" title="var">_</span> <span class="id" title="var">phi</span> <span class="id" title="var">psi</span> <span class="id" title="var">x</span> <span class="id" title="var">x0</span> ⇒ 1 + <span class="id" title="var">proof_size</span> <span class="id" title="var">x0</span><br/>
+&nbsp;| <span class="id" title="var">ProofSystem.Existence</span> <span class="id" title="var">_</span> ⇒ 1<br/>
+&nbsp;| <span class="id" title="var">_</span> ⇒ 1<br/>
+<span class="id" title="keyword">end</span>.<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">proof_size_info</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} {φ <span class="id" title="var">Γ</span> <span class="id" title="var">i</span>} (<span class="id" title="var">pf</span> : <span class="id" title="var">derives_using</span> <span class="id" title="var">Γ</span> φ <span class="id" title="var">i</span>) : <span class="id" title="var">nat</span> :=<br/>
+<span class="id" title="keyword">match</span> <span class="id" title="var">pf</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;| <span class="id" title="var">exist</span> <span class="id" title="var">_</span> <span class="id" title="var">x</span> <span class="id" title="var">x0</span> ⇒ <span class="id" title="var">proof_size</span> <span class="id" title="var">x</span><br/>
+<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Section</span> <span class="id" title="tactic">compute</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Inductive</span> <span class="id" title="var">Symbols</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">sym_import_definedness</span> (<span class="id" title="var">d</span> : <span class="id" title="var">Definedness_Syntax.Symbols</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">Zero</span> | <span class="id" title="var">Succ</span> <span class="comment">(*&nbsp;constructors&nbsp;for&nbsp;Nats&nbsp;*)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">TT</span> | <span class="id" title="var">FF</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">even</span><br/>
+&nbsp;&nbsp;.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Instance</span> <span class="id" title="var">Symbols_eqdec</span> : <span class="id" title="var">EqDecision</span> <span class="id" title="var">Symbols</span>.<br/>
+ 
+<br/>
+&nbsp;&nbsp;#[<span class="id" title="var">local</span>]<br/>
+&nbsp;&nbsp;<span class="id" title="var">Program</span> <span class="id" title="keyword">Instance</span> <span class="id" title="var">Symbols_fin</span> : <span class="id" title="var">Finite</span> <span class="id" title="var">Symbols</span> :=<br/>
+&nbsp;&nbsp;{|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">enum</span> := [<span class="id" title="var">Zero</span>; <span class="id" title="var">Succ</span>; <span class="id" title="var">TT</span> ; <span class="id" title="var">FF</span>; <span class="id" title="var">even</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">sym_import_definedness</span> <span class="id" title="var">Definedness_Syntax.def_sym</span>] ;<br/>
+&nbsp;&nbsp;|}.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Instance</span> <span class="id" title="var">signature</span> : <span class="id" title="var">Signature</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{| <span class="id" title="var">variables</span> := <span class="id" title="var">StringMLVariables</span> ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">ml_symbols</span> := {|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">symbols</span> := <span class="id" title="var">Symbols</span> ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|} ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;|}.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Instance</span> <span class="id" title="var">definedness_syntax</span> : <span class="id" title="var">Definedness_Syntax.Syntax</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Definedness_Syntax.sym_inj</span> := <span class="id" title="var">sym_import_definedness</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;|}.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Open</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">string_scope</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Open</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">ml_scope</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Let</span> <span class="id" title="var">Z</span> := <span class="id" title="var">patt_free_evar</span> "Z".<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Let</span> <span class="id" title="var">X</span> := <span class="id" title="var">patt_free_evar</span> "X".<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Let</span> <span class="id" title="var">Y</span> := <span class="id" title="var">patt_free_evar</span> "Y".<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Let</span> <span class="id" title="var">sym_even</span> := <span class="id" title="var">patt_sym</span> <span class="id" title="var">even</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Let</span> <span class="id" title="var">sym_succ</span> := <span class="id" title="var">patt_sym</span> <span class="id" title="var">Succ</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Let</span> <span class="id" title="var">sym_zero</span> := <span class="id" title="var">patt_sym</span> <span class="id" title="var">Zero</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Let</span> <span class="id" title="var">sym_tt</span> := <span class="id" title="var">patt_sym</span> <span class="id" title="var">TT</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Let</span> <span class="id" title="var">sym_ff</span> := <span class="id" title="var">patt_sym</span> <span class="id" title="var">FF</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">(*&nbsp;axioms&nbsp;*)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">defined</span> : <span class="id" title="var">Pattern</span> := <span class="id" title="var">Definedness_Syntax.axiom</span> <span class="id" title="var">AxDefinedness</span>.<br/>
+
+<br/>
+<span class="comment">(*&nbsp;rewrite&nbsp;example&nbsp;*)</span><br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">ex2_pm1</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} (<span class="id" title="var">A</span> <span class="id" title="var">B</span> <span class="id" title="var">C</span> <span class="id" title="var">D</span> : <span class="id" title="var">Pattern</span>) (<span class="id" title="var">Γ</span> : <span class="id" title="var">Theory</span>) :<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed</span> (<span class="id" title="var">A</span> ---&gt; <span class="id" title="var">B</span> ---&gt; <span class="id" title="var">C</span> ---&gt; <span class="id" title="var">D</span>) = <span class="id" title="var">true</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢ ((<span class="id" title="var">B</span> ⋅ <span class="id" title="var">C</span>) &lt;---&gt; <span class="id" title="var">D</span>) →<br/>
+&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢ <span class="id" title="var">A</span> ---&gt; ((<span class="id" title="var">A</span> ⋅ (<span class="id" title="var">B</span> ⋅ <span class="id" title="var">C</span>)) ---&gt; (<span class="id" title="var">A</span> ⋅ <span class="id" title="var">D</span>))<br/>
+.<br/>
+
+<br/>
+<span class="comment">(*&nbsp;example&nbsp;with&nbsp;the&nbsp;induction-based&nbsp;iterated&nbsp;congruence&nbsp;lemma&nbsp;for&nbsp;a&nbsp;smaller&nbsp;context&nbsp;*)</span><br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">ex2_pm2</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} (<span class="id" title="var">A</span> <span class="id" title="var">B</span> <span class="id" title="var">C</span> <span class="id" title="var">D</span> : <span class="id" title="var">Pattern</span>) (<span class="id" title="var">Γ</span> : <span class="id" title="var">Theory</span>) :<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed</span> (<span class="id" title="var">A</span> ---&gt; <span class="id" title="var">B</span> ---&gt; <span class="id" title="var">C</span> ---&gt; <span class="id" title="var">D</span>) = <span class="id" title="var">true</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢ ((<span class="id" title="var">B</span> ⋅ <span class="id" title="var">C</span>) &lt;---&gt; <span class="id" title="var">D</span>) →<br/>
+&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢ <span class="id" title="var">A</span> ---&gt; ((<span class="id" title="var">A</span> ⋅ (<span class="id" title="var">B</span> ⋅ <span class="id" title="var">C</span>)) ---&gt; (<span class="id" title="var">A</span> ⋅ <span class="id" title="var">D</span>))<br/>
+.<br/>
+
+<br/>
+<span class="comment">(*&nbsp;example&nbsp;with&nbsp;the&nbsp;complex&nbsp;context-based&nbsp;iterated&nbsp;congruence&nbsp;lemma&nbsp;for&nbsp;a&nbsp;smaller&nbsp;context&nbsp;*)</span><br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">ex2_pm3</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} (<span class="id" title="var">A</span> <span class="id" title="var">B</span> <span class="id" title="var">C</span> <span class="id" title="var">D</span> : <span class="id" title="var">Pattern</span>) (<span class="id" title="var">Γ</span> : <span class="id" title="var">Theory</span>) :<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed</span> (<span class="id" title="var">A</span> ---&gt; <span class="id" title="var">B</span> ---&gt; <span class="id" title="var">C</span> ---&gt; <span class="id" title="var">D</span>) = <span class="id" title="var">true</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢ ((<span class="id" title="var">B</span> ⋅ <span class="id" title="var">C</span>) &lt;---&gt; <span class="id" title="var">D</span>) →<br/>
+&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢ <span class="id" title="var">A</span> ---&gt; ((<span class="id" title="var">A</span> ⋅ (<span class="id" title="var">B</span> ⋅ <span class="id" title="var">C</span>)) ---&gt; (<span class="id" title="var">A</span> ⋅ <span class="id" title="var">D</span>))<br/>
+.<br/>
+
+<br/>
+<span class="comment">(*&nbsp;example&nbsp;with&nbsp;the&nbsp;congruence&nbsp;lemma&nbsp;for&nbsp;a&nbsp;smaller&nbsp;context&nbsp;*)</span><br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">ex2_pm4</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} (<span class="id" title="var">A</span> <span class="id" title="var">B</span> <span class="id" title="var">C</span> <span class="id" title="var">D</span> : <span class="id" title="var">Pattern</span>) (<span class="id" title="var">Γ</span> : <span class="id" title="var">Theory</span>) :<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed</span> (<span class="id" title="var">A</span> ---&gt; <span class="id" title="var">B</span> ---&gt; <span class="id" title="var">C</span> ---&gt; <span class="id" title="var">D</span>) = <span class="id" title="var">true</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢ ((<span class="id" title="var">B</span> ⋅ <span class="id" title="var">C</span>) &lt;---&gt; <span class="id" title="var">D</span>) →<br/>
+&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢ <span class="id" title="var">A</span> ---&gt; ((<span class="id" title="var">A</span> ⋅ (<span class="id" title="var">B</span> ⋅ <span class="id" title="var">C</span>)) ---&gt; (<span class="id" title="var">A</span> ⋅ <span class="id" title="var">D</span>))<br/>
+.<br/>
+
+<br/>
+<span class="comment">(*&nbsp;These&nbsp;should&nbsp;reflect&nbsp;the&nbsp;idea&nbsp;of&nbsp;mlRewrite:&nbsp;*)</span><br/>
+<span class="comment">(*&nbsp;Numbers&nbsp;should&nbsp;be&nbsp;similar&nbsp;as&nbsp;for&nbsp;mlRewrite&nbsp;*)</span><br/>
+<span class="comment">(*&nbsp;example&nbsp;with&nbsp;the&nbsp;induction-based&nbsp;iterated&nbsp;congruence&nbsp;lemma&nbsp;for&nbsp;a&nbsp;bigger&nbsp;context&nbsp;*)</span><br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">ex3_pm2</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} (<span class="id" title="var">A</span> <span class="id" title="var">B</span> <span class="id" title="var">C</span> <span class="id" title="var">D</span> : <span class="id" title="var">Pattern</span>) (<span class="id" title="var">Γ</span> : <span class="id" title="var">Theory</span>) :<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed</span> (<span class="id" title="var">A</span> ---&gt; <span class="id" title="var">B</span> ---&gt; <span class="id" title="var">C</span> ---&gt; <span class="id" title="var">D</span>) = <span class="id" title="var">true</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢ ((<span class="id" title="var">B</span> ⋅ <span class="id" title="var">C</span>) &lt;---&gt; <span class="id" title="var">D</span>) →<br/>
+&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢ <span class="id" title="var">A</span> ---&gt; ((<span class="id" title="var">A</span> ⋅ (<span class="id" title="var">B</span> ⋅ <span class="id" title="var">C</span>)) ---&gt; (<span class="id" title="var">A</span> ⋅ <span class="id" title="var">D</span>))<br/>
+.<br/>
+
+<br/>
+<span class="comment">(*&nbsp;example&nbsp;with&nbsp;the&nbsp;complex&nbsp;context-based&nbsp;iterated&nbsp;congruence&nbsp;lemma&nbsp;for&nbsp;a&nbsp;bigger&nbsp;context&nbsp;*)</span><br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">ex3_pm3</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} (<span class="id" title="var">A</span> <span class="id" title="var">B</span> <span class="id" title="var">C</span> <span class="id" title="var">D</span> : <span class="id" title="var">Pattern</span>) (<span class="id" title="var">Γ</span> : <span class="id" title="var">Theory</span>) :<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed</span> (<span class="id" title="var">A</span> ---&gt; <span class="id" title="var">B</span> ---&gt; <span class="id" title="var">C</span> ---&gt; <span class="id" title="var">D</span>) = <span class="id" title="var">true</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢ ((<span class="id" title="var">B</span> ⋅ <span class="id" title="var">C</span>) &lt;---&gt; <span class="id" title="var">D</span>) →<br/>
+&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢ <span class="id" title="var">A</span> ---&gt; ((<span class="id" title="var">A</span> ⋅ (<span class="id" title="var">B</span> ⋅ <span class="id" title="var">C</span>)) ---&gt; (<span class="id" title="var">A</span> ⋅ <span class="id" title="var">D</span>))<br/>
+.<br/>
+
+<br/>
+<span class="comment">(*&nbsp;Numbers&nbsp;should&nbsp;be&nbsp;similar&nbsp;as&nbsp;for&nbsp;mlRewrite&nbsp;*)</span><br/>
+<span class="comment">(*&nbsp;example&nbsp;with&nbsp;the&nbsp;congruence&nbsp;lemma&nbsp;for&nbsp;a&nbsp;big&nbsp;context&nbsp;*)</span><br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">ex3_pm4</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} (<span class="id" title="var">A</span> <span class="id" title="var">B</span> <span class="id" title="var">C</span> <span class="id" title="var">D</span> : <span class="id" title="var">Pattern</span>) (<span class="id" title="var">Γ</span> : <span class="id" title="var">Theory</span>) :<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed</span> (<span class="id" title="var">A</span> ---&gt; <span class="id" title="var">B</span> ---&gt; <span class="id" title="var">C</span> ---&gt; <span class="id" title="var">D</span>) = <span class="id" title="var">true</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢ ((<span class="id" title="var">B</span> ⋅ <span class="id" title="var">C</span>) &lt;---&gt; <span class="id" title="var">D</span>) →<br/>
+&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢ <span class="id" title="var">A</span> ---&gt; ((<span class="id" title="var">A</span> ⋅ (<span class="id" title="var">B</span> ⋅ <span class="id" title="var">C</span>)) ---&gt; (<span class="id" title="var">A</span> ⋅ <span class="id" title="var">D</span>))<br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">premise</span> :<br/>
+∅ ⊢ <span class="id" title="var">Y</span> ⋅ <span class="id" title="var">Z</span> &lt;---&gt; <span class="id" title="var">Y</span> ⋅ <span class="id" title="var">Z</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">proof_pm1</span> : <span class="id" title="var">nat</span> := <span class="id" title="var">proof_size_info</span> (<span class="id" title="var">ex2_pm1</span> <span class="id" title="var">X</span> <span class="id" title="var">Y</span> <span class="id" title="var">Z</span> (<span class="id" title="var">Y</span> ⋅ <span class="id" title="var">Z</span>) ∅ <span class="id" title="keyword">ltac</span>:(<span class="id" title="var">wf_auto2</span>) <span class="id" title="var">premise</span>).<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">proof_pm2</span> : <span class="id" title="var">nat</span> := <span class="id" title="var">proof_size_info</span> (<span class="id" title="var">ex2_pm2</span> <span class="id" title="var">X</span> <span class="id" title="var">Y</span> <span class="id" title="var">Z</span> (<span class="id" title="var">Y</span> ⋅ <span class="id" title="var">Z</span>) ∅ <span class="id" title="keyword">ltac</span>:(<span class="id" title="var">wf_auto2</span>) <span class="id" title="var">premise</span>).<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">proof_pm3</span> : <span class="id" title="var">nat</span> := <span class="id" title="var">proof_size_info</span> (<span class="id" title="var">ex2_pm3</span> <span class="id" title="var">X</span> <span class="id" title="var">Y</span> <span class="id" title="var">Z</span> (<span class="id" title="var">Y</span> ⋅ <span class="id" title="var">Z</span>) ∅ <span class="id" title="keyword">ltac</span>:(<span class="id" title="var">wf_auto2</span>) <span class="id" title="var">premise</span>).<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">proof_pm4</span> : <span class="id" title="var">nat</span> := <span class="id" title="var">proof_size_info</span> (<span class="id" title="var">ex2_pm4</span> <span class="id" title="var">X</span> <span class="id" title="var">Y</span> <span class="id" title="var">Z</span> (<span class="id" title="var">Y</span> ⋅ <span class="id" title="var">Z</span>) ∅ <span class="id" title="keyword">ltac</span>:(<span class="id" title="var">wf_auto2</span>) <span class="id" title="var">premise</span>).<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">proof2_pm2</span> : <span class="id" title="var">nat</span> := <span class="id" title="var">proof_size_info</span> (<span class="id" title="var">ex3_pm2</span> <span class="id" title="var">X</span> <span class="id" title="var">Y</span> <span class="id" title="var">Z</span> (<span class="id" title="var">Y</span> ⋅ <span class="id" title="var">Z</span>) ∅ <span class="id" title="keyword">ltac</span>:(<span class="id" title="var">wf_auto2</span>) <span class="id" title="var">premise</span>).<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">proof2_pm3</span> : <span class="id" title="var">nat</span> := <span class="id" title="var">proof_size_info</span> (<span class="id" title="var">ex3_pm3</span> <span class="id" title="var">X</span> <span class="id" title="var">Y</span> <span class="id" title="var">Z</span> (<span class="id" title="var">Y</span> ⋅ <span class="id" title="var">Z</span>) ∅ <span class="id" title="keyword">ltac</span>:(<span class="id" title="var">wf_auto2</span>) <span class="id" title="var">premise</span>).<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">proof2_pm4</span> : <span class="id" title="var">nat</span> := <span class="id" title="var">proof_size_info</span> (<span class="id" title="var">ex3_pm4</span> <span class="id" title="var">X</span> <span class="id" title="var">Y</span> <span class="id" title="var">Z</span> (<span class="id" title="var">Y</span> ⋅ <span class="id" title="var">Z</span>) ∅ <span class="id" title="keyword">ltac</span>:(<span class="id" title="var">wf_auto2</span>) <span class="id" title="var">premise</span>).<br/>
+
+<br/>
+<span class="id" title="keyword">End</span> <span class="id" title="tactic">compute</span>.<br/>
+<span class="comment">(*<br/>
+Extraction&nbsp;Language&nbsp;Haskell.<br/>
+<br/>
+From&nbsp;Coq&nbsp;Require&nbsp;Extraction.<br/>
+Require&nbsp;Import&nbsp;ExtrHaskellBasic.<br/>
+Require&nbsp;Import&nbsp;ExtrHaskellString.<br/>
+Extraction&nbsp;"Test.hs"&nbsp;proof_pm1&nbsp;proof_pm3&nbsp;&nbsp;proof_pm2&nbsp;&nbsp;proof_pm4<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;proof2_pm3&nbsp;proof2_pm2&nbsp;proof2_pm4.<br/>
+*)</span></div>
+<hr/>This page has been generated by <a href="http://coq.inria.fr/">coqdoc</a>
+</div>
+
+</div>
+
+</body>
+</html>
