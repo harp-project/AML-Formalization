@@ -1,0 +1,195 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link href="coqdoc.css" rel="stylesheet" type="text/css" />
+<title>Sorts_Syntax</title>
+</head>
+
+<body>
+
+<div id="page">
+
+<div id="header">
+</div>
+
+<div id="main">
+
+<h1 class="libtitle">File Sorts_Syntax</h1>
+
+<div class="code">
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">ssreflect</span> <span class="id" title="var">ssrfun</span> <span class="id" title="var">ssrbool</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Setoid</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Unicode.Utf8</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq.Logic</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Classical_Prop</span> <span class="id" title="var">FunctionalExtensionality</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq.Classes</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Morphisms_Prop</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">stdpp</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">base</span> <span class="id" title="var">sets</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">MatchingLogic</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Export</span> <span class="id" title="var">Logic</span>.<br/>
+<span class="id" title="keyword">Import</span> <span class="id" title="var">MatchingLogic.Logic.Notations</span>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Export</span> <span class="id" title="var">MatchingLogic.Theories.Definedness_Syntax</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Import</span> <span class="id" title="var">MatchingLogic.Theories.Definedness_Syntax.Notations</span>.<br/>
+<span class="id" title="keyword">Import</span> <span class="id" title="var">BoundVarSugar</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Inductive</span> <span class="id" title="var">Symbols</span> := <span class="id" title="var">inhabitant</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Global Instance</span> <span class="id" title="var">Symbols_eqdec</span> : <span class="id" title="var">EqDecision</span> <span class="id" title="var">Symbols</span>.<br/>
+  
+<br/>
+<span class="id" title="keyword">Section</span> <span class="id" title="var">sorts_syntax</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Open</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">ml_scope</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Context</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>}.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Class</span> <span class="id" title="keyword">Syntax</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{ <span class="id" title="var">inj</span> : <span class="id" title="var">Symbols</span> → <span class="id" title="var">symbols</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">imported_definedness</span> : <span class="id" title="var">Definedness_Syntax.Syntax</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;}.<br/>
+
+<br/>
+&nbsp;&nbsp;#[<span class="id" title="var">global</span>] <span class="id" title="var">Existing</span> <span class="id" title="keyword">Instance</span> <span class="id" title="var">imported_definedness</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Context</span> {<span class="id" title="var">self</span> : <span class="id" title="keyword">Syntax</span>}.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Local Definition</span> <span class="id" title="var">sym</span> (<span class="id" title="var">s</span> : <span class="id" title="var">Symbols</span>) : <span class="id" title="var">Pattern</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">patt_sym</span> (<span class="id" title="var">inj</span> <span class="id" title="var">s</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Example</span> <span class="id" title="var">test_pattern_1</span> := <span class="id" title="var">patt_equal</span> (<span class="id" title="var">sym</span> <span class="id" title="var">inhabitant</span>) (<span class="id" title="var">sym</span> <span class="id" title="var">inhabitant</span>).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">patt_inhabitant_set</span>(<span class="id" title="var">phi</span> : <span class="id" title="var">Pattern</span>) : <span class="id" title="var">Pattern</span> := <span class="id" title="var">sym</span> <span class="id" title="var">inhabitant</span> $ <span class="id" title="var">phi</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">patt_element_of</span> (φ ψ : <span class="id" title="var">Pattern</span>) := ⌈ φ <span class="id" title="var">and</span> ψ ⌉.<br/>
+
+<br/>
+<span class="id" title="keyword">End</span> <span class="id" title="var">sorts_syntax</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Section</span> <span class="id" title="var">sorts</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Context</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>}.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Context</span> {<span class="id" title="var">self</span> : <span class="id" title="keyword">Syntax</span>}.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Open</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">ml_scope</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Local Notation</span> &quot;〚 phi 〛" := (<span class="id" title="var">patt_inhabitant_set</span> <span class="id" title="var">phi</span>) (<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 0) : <span class="id" title="var">ml_scope</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Obligation</span> <span class="id" title="keyword">Tactic</span> := <span class="id" title="tactic">idtac</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;#[<span class="id" title="var">global</span>]<br/>
+&nbsp;&nbsp;<span class="id" title="var">Program</span> <span class="id" title="keyword">Instance</span> <span class="id" title="var">Unary_inhabitant_set</span> : <span class="id" title="var">Unary</span> <span class="id" title="var">patt_inhabitant_set</span> := {}.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">patt_sorted_neg</span> (<span class="id" title="var">sort</span> <span class="id" title="var">phi</span> : <span class="id" title="var">Pattern</span>) : <span class="id" title="var">Pattern</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;〚<span class="id" title="var">sort</span>〛 <span class="id" title="var">and</span> ! <span class="id" title="var">phi</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;#[<span class="id" title="var">global</span>]<br/>
+&nbsp;&nbsp;<span class="id" title="var">Program</span> <span class="id" title="keyword">Instance</span> <span class="id" title="var">Binary_sorted_neg</span> : <span class="id" title="var">Binary</span> <span class="id" title="var">patt_sorted_neg</span> := {}.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">patt_exists_of_sort</span> (<span class="id" title="var">sort</span> <span class="id" title="var">phi</span> : <span class="id" title="var">Pattern</span>) : <span class="id" title="var">Pattern</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">ex</span> , ((<span class="id" title="var">b0</span> ∈<span class="id" title="var">ml</span> 〚<span class="id" title="var">nest_ex</span> <span class="id" title="var">sort</span>〛) <span class="id" title="var">and</span> <span class="id" title="var">phi</span>).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Local Notation</span> &quot;'ex' s ,  phi" := <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">patt_exists_of_sort</span> <span class="id" title="var">s</span> <span class="id" title="var">phi</span>) (<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 70) : <span class="id" title="var">ml_scope</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;#[<span class="id" title="var">global</span>]<br/>
+&nbsp;&nbsp;<span class="id" title="var">Program</span> <span class="id" title="keyword">Instance</span> <span class="id" title="var">sorted_exists_binder</span> : <span class="id" title="var">ESortedBinder</span> <span class="id" title="var">patt_exists_of_sort</span> <span class="id" title="var">nest_ex</span> := {}.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">patt_forall_of_sort</span> (<span class="id" title="var">sort</span> <span class="id" title="var">phi</span> : <span class="id" title="var">Pattern</span>) : <span class="id" title="var">Pattern</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">all</span> , ((<span class="id" title="var">b0</span> ∈<span class="id" title="var">ml</span> 〚<span class="id" title="var">nest_ex</span> <span class="id" title="var">sort</span>〛) ---&gt; <span class="id" title="var">phi</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Local Notation</span> &quot;'all' s ,  phi" := <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">patt_forall_of_sort</span> <span class="id" title="var">s</span> <span class="id" title="var">phi</span>) (<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 70) : <span class="id" title="var">ml_scope</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;#[<span class="id" title="var">global</span>]<br/>
+&nbsp;&nbsp;<span class="id" title="var">Program</span> <span class="id" title="keyword">Instance</span> <span class="id" title="var">sorted_forall_binder</span> : <span class="id" title="var">ESortedBinder</span> <span class="id" title="var">patt_forall_of_sort</span> <span class="id" title="var">nest_ex</span> := {}.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="comment">(*&nbsp;TODO&nbsp;patt_forall_of_sort&nbsp;and&nbsp;patt_exists_of_sort&nbsp;are&nbsp;duals&nbsp;-&nbsp;a&nbsp;lemma&nbsp;*)</span><br/>
+
+<br/>
+&nbsp;&nbsp;<span class="comment">(*&nbsp;TODO&nbsp;a&nbsp;lemma&nbsp;about&nbsp;patt_forall_of_sort&nbsp;*)</span><br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">patt_total_function</span>(<span class="id" title="var">phi</span> <span class="id" title="var">from</span> <span class="id" title="var">to</span> : <span class="id" title="var">Pattern</span>) : <span class="id" title="var">Pattern</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">all</span> <span class="id" title="var">from</span> , (<span class="id" title="var">ex</span> (<span class="id" title="var">nest_ex</span> <span class="id" title="var">to</span>) , ((<span class="id" title="var">nest_ex</span> (<span class="id" title="var">nest_ex</span> <span class="id" title="var">phi</span>) $ <span class="id" title="var">b1</span>) =<span class="id" title="var">ml</span> <span class="id" title="var">b0</span>)).<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">patt_partial_function</span>(<span class="id" title="var">phi</span> <span class="id" title="var">from</span> <span class="id" title="var">to</span> : <span class="id" title="var">Pattern</span>) : <span class="id" title="var">Pattern</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">all</span> <span class="id" title="var">from</span> , (<span class="id" title="var">ex</span> (<span class="id" title="var">nest_ex</span> <span class="id" title="var">to</span>), ((<span class="id" title="var">nest_ex</span> (<span class="id" title="var">nest_ex</span> <span class="id" title="var">phi</span>) $ <span class="id" title="var">b1</span>) ⊆<span class="id" title="var">ml</span> <span class="id" title="var">b0</span>)).<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="comment">(*&nbsp;Assuming&nbsp;`f`&nbsp;is&nbsp;a&nbsp;total&nbsp;function,&nbsp;says&nbsp;it&nbsp;is&nbsp;injective&nbsp;on&nbsp;given&nbsp;domain.&nbsp;Does&nbsp;not&nbsp;quite&nbsp;work&nbsp;for&nbsp;partial&nbsp;functions.&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">patt_total_function_injective</span> <span class="id" title="var">f</span> <span class="id" title="var">from</span> : <span class="id" title="var">Pattern</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">all</span> <span class="id" title="var">from</span> , (<span class="id" title="var">all</span> (<span class="id" title="var">nest_ex</span> <span class="id" title="var">from</span>) , <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(((<span class="id" title="var">nest_ex</span> (<span class="id" title="var">nest_ex</span> <span class="id" title="var">f</span>) $ <span class="id" title="var">b1</span>) =<span class="id" title="var">ml</span> (<span class="id" title="var">nest_ex</span> (<span class="id" title="var">nest_ex</span> <span class="id" title="var">f</span>) $ <span class="id" title="var">b0</span>)) ---&gt; <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">b1</span> =<span class="id" title="var">ml</span> <span class="id" title="var">b0</span>))).<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="comment">(*&nbsp;Assuming&nbsp;`f`&nbsp;is&nbsp;a&nbsp;partial&nbsp;function,&nbsp;says&nbsp;it&nbsp;is&nbsp;injective&nbsp;on&nbsp;given&nbsp;domain.&nbsp;Works&nbsp;for&nbsp;total&nbsp;functions,&nbsp;too.&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">patt_partial_function_injective</span> <span class="id" title="var">f</span> <span class="id" title="var">from</span> : <span class="id" title="var">Pattern</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">all</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">from</span> ,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">all</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">nest_ex</span> <span class="id" title="var">from</span>) ,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;! ((<span class="id" title="var">nest_ex</span> (<span class="id" title="var">nest_ex</span> <span class="id" title="var">f</span>) $ <span class="id" title="var">b1</span>) =<span class="id" title="var">ml</span> ⊥ )<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;---&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;((<span class="id" title="var">nest_ex</span> (<span class="id" title="var">nest_ex</span> <span class="id" title="var">f</span>) $ <span class="id" title="var">b1</span>) =<span class="id" title="var">ml</span> (<span class="id" title="var">nest_ex</span> (<span class="id" title="var">nest_ex</span> <span class="id" title="var">f</span>) $ <span class="id" title="var">b0</span>))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;---&gt; (<span class="id" title="var">b1</span> =<span class="id" title="var">ml</span> <span class="id" title="var">b0</span>))).<br/>
+
+<br/>
+<span class="id" title="keyword">End</span> <span class="id" title="var">sorts</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Section</span> <span class="id" title="var">sorts</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Context</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>}.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Context</span> {<span class="id" title="var">self</span> : <span class="id" title="keyword">Syntax</span>}.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Open</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">ml_scope</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">patt_total_binary_function</span>(<span class="id" title="var">phi</span> <span class="id" title="var">from1</span> <span class="id" title="var">from2</span> <span class="id" title="var">to</span> : <span class="id" title="var">Pattern</span>)<br/>
+&nbsp;&nbsp;: <span class="id" title="var">Pattern</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">patt_forall_of_sort</span> <span class="id" title="var">from1</span> (<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">patt_forall_of_sort</span> (<span class="id" title="var">nest_ex</span> <span class="id" title="var">from2</span>) (<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">patt_exists_of_sort</span> (<span class="id" title="var">nest_ex</span> (<span class="id" title="var">nest_ex</span> <span class="id" title="var">to</span>)) (<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(((<span class="id" title="var">nest_ex</span> (<span class="id" title="var">nest_ex</span> (<span class="id" title="var">nest_ex</span> <span class="id" title="var">phi</span>)) $ <span class="id" title="var">b2</span>) $ <span class="id" title="var">b1</span>) =<span class="id" title="var">ml</span> <span class="id" title="var">b0</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;)<br/>
+&nbsp;&nbsp;.<br/>
+<span class="id" title="keyword">End</span> <span class="id" title="var">sorts</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Module</span> <span class="id" title="var">Notations</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Notation</span> &quot;〚 phi 〛" := (<span class="id" title="var">patt_inhabitant_set</span> <span class="id" title="var">phi</span>) (<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 0) : <span class="id" title="var">ml_scope</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Notation</span> &quot;'all' s ,  phi" := (<span class="id" title="var">patt_forall_of_sort</span> <span class="id" title="var">s</span> <span class="id" title="var">phi</span>) (<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 80) : <span class="id" title="var">ml_scope</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Notation</span> &quot;'ex' s ,  phi" := (<span class="id" title="var">patt_exists_of_sort</span> <span class="id" title="var">s</span> <span class="id" title="var">phi</span>) (<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 80) : <span class="id" title="var">ml_scope</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Notation</span> &quot;phi :ml s1 × s2 -&gt; s3" :=  (<span class="id" title="var">patt_total_binary_function</span> <span class="id" title="var">phi</span> <span class="id" title="var">s1</span> <span class="id" title="var">s2</span> <span class="id" title="var">s3</span>) (<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 70) : <span class="id" title="var">ml_scope</span>.<br/>
+<span class="id" title="keyword">End</span> <span class="id" title="var">Notations</span>.<br/>
+
+<br/>
+</div>
+<hr/>This page has been generated by <a href="http://coq.inria.fr/">coqdoc</a>
+</div>
+
+</div>
+
+</body>
+</html>

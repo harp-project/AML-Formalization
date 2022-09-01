@@ -1,0 +1,145 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link href="coqdoc.css" rel="stylesheet" type="text/css" />
+<title>Nat_Syntax</title>
+</head>
+
+<body>
+
+<div id="page">
+
+<div id="header">
+</div>
+
+<div id="main">
+
+<h1 class="libtitle">File Nat_Syntax</h1>
+
+<div class="code">
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">ssreflect</span> <span class="id" title="var">ssrfun</span> <span class="id" title="var">ssrbool</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Ltac2</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Ltac2</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">String</span> <span class="id" title="var">Ensembles</span> <span class="id" title="var">Setoid</span>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Coq.Program.Equality</span>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Coq.Logic.Classical_Prop</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq.Logic</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">FunctionalExtensionality</span> <span class="id" title="var">Eqdep_dec</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq.Classes</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Morphisms_Prop</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq.Unicode</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Utf8</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq.micromega</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Lia</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">MatchingLogic</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Logic</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">MatchingLogic.Theories</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Definedness_Syntax</span> <span class="id" title="var">Definedness_ProofSystem</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">MatchingLogic.Utils</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">stdpp_ext</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">MatchingLogic.wftactics</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">stdpp</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">base</span> <span class="id" title="var">fin_sets</span> <span class="id" title="var">sets</span> <span class="id" title="var">propset</span> <span class="id" title="var">proof_irrel</span> <span class="id" title="var">option</span> <span class="id" title="var">list</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Import</span> <span class="id" title="var">extralibrary</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Import</span> <span class="id" title="var">MatchingLogic.Logic.Notations</span>.<br/>
+<span class="id" title="keyword">Import</span> <span class="id" title="var">MatchingLogic.Theories.Definedness_Syntax.Notations</span>.<br/>
+
+<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">MatchingLogic</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">Theories.DeductionTheorem</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">Theories.Sorts_Syntax</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">FOEquality_ProofSystem</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">Sorts_ProofSystem</span><br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Import</span> <span class="id" title="var">MatchingLogic.Theories.Sorts_Syntax.Notations</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Open</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">ml_scope</span>.<br/>
+<span class="id" title="keyword">Open</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">string_scope</span>.<br/>
+<span class="id" title="keyword">Open</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">list_scope</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Section</span> <span class="id" title="var">nat_syntax</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Context</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>}.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Inductive</span> <span class="id" title="var">Symbols</span> := <span class="id" title="var">sNat</span> | <span class="id" title="var">sZero</span> | <span class="id" title="var">sSucc</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Class</span> <span class="id" title="keyword">Syntax</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{ <span class="id" title="var">inj</span> : <span class="id" title="var">Symbols</span> → <span class="id" title="var">symbols</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">imported_sorts</span> : <span class="id" title="var">Sorts_Syntax.Syntax</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;}.<br/>
+
+<br/>
+&nbsp;&nbsp;#[<span class="id" title="var">global</span>] <span class="id" title="var">Existing</span> <span class="id" title="keyword">Instance</span> <span class="id" title="var">imported_sorts</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Context</span> {<span class="id" title="var">self</span> : <span class="id" title="keyword">Syntax</span>}.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">Nat</span> := <span class="id" title="var">patt_sym</span> (<span class="id" title="var">inj</span> <span class="id" title="var">sNat</span>).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">Zero</span> := <span class="id" title="var">patt_sym</span> (<span class="id" title="var">inj</span> <span class="id" title="var">sZero</span>).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">Succ</span> := <span class="id" title="var">patt_sym</span> (<span class="id" title="var">inj</span> <span class="id" title="var">sSucc</span>).<br/>
+
+<br/>
+<span class="id" title="keyword">End</span> <span class="id" title="var">nat_syntax</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Section</span> <span class="id" title="var">nat</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Context</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<span class="id" title="var">syntax</span> : <span class="id" title="keyword">Syntax</span>}<br/>
+&nbsp;&nbsp;.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Inductive</span> <span class="id" title="var">AxiomName</span> := <br/>
+&nbsp;&nbsp;| <span class="id" title="var">AxFun1</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">AxFun2</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">AxNoConfusion1</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">AxNoConfusion2</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">AxInductiveDomain</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">axiom</span> (<span class="id" title="var">name</span> : <span class="id" title="var">AxiomName</span>) : <span class="id" title="var">Pattern</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">name</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">AxFun1</span> ⇒ <span class="id" title="var">ex</span> <span class="id" title="var">Nat</span> , <span class="id" title="var">Zero</span> =<span class="id" title="var">ml</span> <span class="id" title="var">b0</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">AxFun2</span> ⇒ <span class="id" title="var">all</span> <span class="id" title="var">Nat</span>, <span class="id" title="var">ex</span> <span class="id" title="var">Nat</span>, <span class="id" title="var">Succ</span> $ <span class="id" title="var">b1</span> =<span class="id" title="var">ml</span> <span class="id" title="var">b0</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">AxNoConfusion1</span> ⇒ <span class="id" title="var">all</span> <span class="id" title="var">Nat</span>, !(<span class="id" title="var">Zero</span> =<span class="id" title="var">ml</span> <span class="id" title="var">Succ</span> $ <span class="id" title="var">b0</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">AxNoConfusion2</span> ⇒ <span class="id" title="var">all</span> <span class="id" title="var">Nat</span>, <span class="id" title="var">all</span> <span class="id" title="var">Nat</span>, (<span class="id" title="var">Succ</span> $ <span class="id" title="var">b1</span> =<span class="id" title="var">ml</span> <span class="id" title="var">Succ</span> $ <span class="id" title="var">b0</span> ---&gt; <span class="id" title="var">b1</span> =<span class="id" title="var">ml</span> <span class="id" title="var">b0</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">AxInductiveDomain</span> ⇒ 〚 <span class="id" title="var">Nat</span> 〛 =<span class="id" title="var">ml</span> <span class="id" title="var">mu</span> , <span class="id" title="var">Zero</span> <span class="id" title="var">or</span> <span class="id" title="var">Succ</span> $ <span class="id" title="var">B0</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Program Definition</span> <span class="id" title="var">named_axioms</span> : <span class="id" title="var">NamedAxioms</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">NAName</span> := <span class="id" title="var">AxiomName</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">NAAxiom</span> := <span class="id" title="var">axiom</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;|}.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">theory</span> := <span class="id" title="var">Definedness_Syntax.theory</span> ∪ <span class="id" title="var">theory_of_NamedAxioms</span> <span class="id" title="var">named_axioms</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">End</span> <span class="id" title="var">nat</span>.<br/>
+</div>
+<hr/>This page has been generated by <a href="http://coq.inria.fr/">coqdoc</a>
+</div>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,158 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link href="coqdoc.css" rel="stylesheet" type="text/css" />
+<title>ModelIsomorphism</title>
+</head>
+
+<body>
+
+<div id="page">
+
+<div id="header">
+</div>
+
+<div id="main">
+
+<h1 class="libtitle">File ModelIsomorphism</h1>
+
+<div class="code">
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">ssreflect</span> <span class="id" title="var">ssrfun</span> <span class="id" title="var">ssrbool</span>.<br/>
+<span class="id" title="keyword">Set Implicit Arguments</span>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Coq.Setoids.Setoid</span> <span class="id" title="var">Coq.Classes.Morphisms</span> <span class="id" title="var">Coq.Relations.Relations</span>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Logic.IndefiniteDescription</span> <span class="id" title="var">Coq.Logic.FunctionalExtensionality</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">stdpp</span><br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">base</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">decidable</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">propset</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">sets</span><br/>
+.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">MatchingLogic</span><br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Utils.stdpp_ext</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Utils.extralibrary</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Pattern</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Syntax</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Semantics</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">monotonic</span><br/>
+.<br/>
+<span class="id" title="keyword">Class</span> <span class="id" title="var">Surj'</span> {<span class="id" title="var">A</span> <span class="id" title="var">B</span>} (<span class="id" title="var">R</span> : <span class="id" title="var">relation</span> <span class="id" title="var">B</span>) (<span class="id" title="var">f</span> : <span class="id" title="var">A</span> → <span class="id" title="var">B</span>) : <span class="id" title="keyword">Type</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">surj'_inv</span> : <span class="id" title="var">B</span> → <span class="id" title="var">A</span> ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">surj'_pf</span>: ∀ (<span class="id" title="var">b</span> : <span class="id" title="var">B</span>), <span class="id" title="var">R</span> (<span class="id" title="var">f</span> (<span class="id" title="var">surj'_inv</span> <span class="id" title="var">b</span>)) <span class="id" title="var">b</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;}.<br/>
+
+<br/>
+#[<span class="id" title="var">export</span>]<br/>
+<span class="id" title="keyword">Instance</span> <span class="id" title="var">surj_surj'</span> {<span class="id" title="var">A</span> <span class="id" title="var">B</span>} (<span class="id" title="var">R</span> : <span class="id" title="var">relation</span> <span class="id" title="var">B</span>) (<span class="id" title="var">f</span> : <span class="id" title="var">A</span> → <span class="id" title="var">B</span>) {<span class="id" title="var">_</span> : @<span class="id" title="var">Surj'</span> <span class="id" title="var">A</span> <span class="id" title="var">B</span> <span class="id" title="var">R</span> <span class="id" title="var">f</span>} : <span class="id" title="var">Surj</span> <span class="id" title="var">R</span> <span class="id" title="var">f</span>.<br/>
+
+<br/>
+#[<span class="id" title="var">export</span>]<br/>
+<span class="id" title="keyword">Instance</span> <span class="id" title="var">surj'_id</span> {<span class="id" title="var">A</span>} : @<span class="id" title="var">Surj'</span> <span class="id" title="var">A</span> <span class="id" title="var">A</span> (=) <span class="id" title="var">Datatypes.id</span>.<br/>
+
+<br/>
+#[<span class="id" title="var">export</span>]<br/>
+<span class="id" title="keyword">Instance</span> <span class="id" title="var">compose_surj'</span> {<span class="id" title="var">A</span> <span class="id" title="var">B</span> <span class="id" title="var">C</span>} <span class="id" title="var">R</span> (<span class="id" title="var">f</span> : <span class="id" title="var">A</span> → <span class="id" title="var">B</span>) (<span class="id" title="var">g</span> : <span class="id" title="var">B</span> → <span class="id" title="var">C</span>) :<br/>
+&nbsp;&nbsp;<span class="id" title="var">Surj'</span> (=) <span class="id" title="var">f</span> → <span class="id" title="var">Surj'</span> <span class="id" title="var">R</span> <span class="id" title="var">g</span> → <span class="id" title="var">Surj'</span> <span class="id" title="var">R</span> (<span class="id" title="var">g</span> ∘ <span class="id" title="var">f</span>).<br/>
+
+<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">isom</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} : <span class="id" title="var">relation</span> <span class="id" title="var">Model</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">λ</span> <span class="id" title="var">M₁</span> <span class="id" title="var">M₂</span>, ∃ (<span class="id" title="var">r</span> : <span class="id" title="var">ModelIsomorphism</span> <span class="id" title="var">M₁</span> <span class="id" title="var">M₂</span>), <span class="id" title="var">True</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">ModelIsomorphism_refl</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} (<span class="id" title="var">M</span> : <span class="id" title="var">Model</span>) : <span class="id" title="var">ModelIsomorphism</span> <span class="id" title="var">M</span> <span class="id" title="var">M</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">ModelIsomorphism_sym</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} (<span class="id" title="var">M₁</span> <span class="id" title="var">M₂</span> : <span class="id" title="var">Model</span>) (<span class="id" title="var">i</span> : <span class="id" title="var">ModelIsomorphism</span> <span class="id" title="var">M₁</span> <span class="id" title="var">M₂</span>)<br/>
+: <span class="id" title="var">ModelIsomorphism</span> <span class="id" title="var">M₂</span> <span class="id" title="var">M₁</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Program Definition</span> <span class="id" title="var">ModelIsomorphism_trans</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} (<span class="id" title="var">M₁</span> <span class="id" title="var">M₂</span> <span class="id" title="var">M₃</span> : <span class="id" title="var">Model</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">i</span> : <span class="id" title="var">ModelIsomorphism</span> <span class="id" title="var">M₁</span> <span class="id" title="var">M₂</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">j</span> : <span class="id" title="var">ModelIsomorphism</span> <span class="id" title="var">M₂</span> <span class="id" title="var">M₃</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;: <span class="id" title="var">ModelIsomorphism</span> <span class="id" title="var">M₁</span> <span class="id" title="var">M₃</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;:=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">mi_f</span> := (<span class="id" title="var">mi_f</span> <span class="id" title="var">j</span>) ∘ (<span class="id" title="var">mi_f</span> <span class="id" title="var">i</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;|}.<br/>
+
+<br/>
+#[<span class="id" title="var">global</span>]<br/>
+<span class="id" title="keyword">Instance</span> <span class="id" title="var">ModelIsomorphism_equiv</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} : <span class="id" title="var">Equivalence</span> <span class="id" title="var">isom</span>.<br/>
+
+<br/>
+<span class="comment">(*<br/>
+[global]
+Instance ModelIsomorphism_sym_cancel
+    {Σ : Signature}
+    (M₁ M₂ : Model)
+    (i : ModelIsomorphism M₁ M₂)
+    :
+    Cancel (=) (mi_f i) (mi_f (ModelIsomorphism_sym i)).
+Proof.
+    unfold Cancel.
+    intros x.
+    unfold ModelIsomorphism_sym.
+    simpl.
+Qed.
+*)</span><br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">fmap_app_ext</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} (<span class="id" title="var">M</span> : <span class="id" title="var">Model</span>) (<span class="id" title="var">X</span> <span class="id" title="var">Y</span> : <span class="id" title="var">propset</span> (<span class="id" title="var">Domain</span> <span class="id" title="var">M</span>))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">B</span> : <span class="id" title="keyword">Type</span>) (<span class="id" title="var">f</span> : (<span class="id" title="var">Domain</span> <span class="id" title="var">M</span>) → <span class="id" title="var">B</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">f</span> &lt;$&gt; <span class="id" title="var">app_ext</span> <span class="id" title="var">X</span> <span class="id" title="var">Y</span> ≡ {[ <span class="id" title="var">e</span> | ∃ <span class="id" title="var">le</span> <span class="id" title="var">re</span> : <span class="id" title="var">M</span>, <span class="id" title="var">le</span> ∈ <span class="id" title="var">X</span> ∧ <span class="id" title="var">re</span> ∈ <span class="id" title="var">Y</span> ∧ <span class="id" title="var">e</span> ∈ (<span class="id" title="var">f</span> &lt;$&gt; (<span class="id" title="var">app_interp</span> <span class="id" title="var">le</span> <span class="id" title="var">re</span>)) ]}.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">update_evar_val_compose</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} (<span class="id" title="var">M₁</span> <span class="id" title="var">M₂</span> : <span class="id" title="var">Model</span>) (ρ : @<span class="id" title="var">Valuation</span> <span class="id" title="var">Σ</span> <span class="id" title="var">M₁</span>) (<span class="id" title="var">x</span> : <span class="id" title="tactic">evar</span>) (<span class="id" title="var">m</span> : <span class="id" title="var">Domain</span> <span class="id" title="var">M₁</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">f</span> : <span class="id" title="var">Domain</span> <span class="id" title="var">M₁</span> → <span class="id" title="var">Domain</span> <span class="id" title="var">M₂</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">update_evar_val</span> <span class="id" title="var">x</span> (<span class="id" title="var">f</span> <span class="id" title="var">m</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">evar_valuation</span> := <span class="id" title="var">f</span> ∘ <span class="id" title="var">evar_valuation</span> ρ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">svar_valuation</span> := <span class="id" title="var">λ</span> <span class="id" title="var">X</span> : <span class="id" title="var">svar</span>, <span class="id" title="var">f</span> &lt;$&gt; <span class="id" title="var">svar_valuation</span> ρ <span class="id" title="var">X</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|})<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">evar_valuation</span> := <span class="id" title="var">f</span> ∘ <span class="id" title="var">evar_valuation</span> (<span class="id" title="var">update_evar_val</span> <span class="id" title="var">x</span> <span class="id" title="var">m</span> ρ);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">svar_valuation</span> := <span class="id" title="var">λ</span> <span class="id" title="var">X</span> : <span class="id" title="var">svar</span>, <span class="id" title="var">f</span> &lt;$&gt; <span class="id" title="var">svar_valuation</span> (<span class="id" title="var">update_evar_val</span> <span class="id" title="var">x</span> <span class="id" title="var">m</span> ρ) <span class="id" title="var">X</span> ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;|}.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">update_svar_val_compose</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} (<span class="id" title="var">M₁</span> <span class="id" title="var">M₂</span> : <span class="id" title="var">Model</span>) (ρ : @<span class="id" title="var">Valuation</span> <span class="id" title="var">Σ</span> <span class="id" title="var">M₁</span>) (<span class="id" title="var">X</span> : <span class="id" title="var">svar</span>) (<span class="id" title="var">ms</span> : <span class="id" title="var">propset</span> (<span class="id" title="var">Domain</span> <span class="id" title="var">M₁</span>))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">f</span> : <span class="id" title="var">Domain</span> <span class="id" title="var">M₁</span> → <span class="id" title="var">Domain</span> <span class="id" title="var">M₂</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">update_svar_val</span> <span class="id" title="var">X</span> (<span class="id" title="var">f</span> &lt;$&gt; <span class="id" title="var">ms</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{| <span class="id" title="var">evar_valuation</span> := <span class="id" title="var">f</span> ∘ <span class="id" title="var">evar_valuation</span> ρ ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">svar_valuation</span> := <span class="id" title="var">λ</span> <span class="id" title="var">X</span> : <span class="id" title="var">svar</span>, (<span class="id" title="var">f</span> &lt;$&gt; (<span class="id" title="var">svar_valuation</span> ρ <span class="id" title="var">X</span>)) ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;|})<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">evar_valuation</span> := <span class="id" title="var">f</span> ∘ <span class="id" title="var">evar_valuation</span> (<span class="id" title="var">update_svar_val</span> <span class="id" title="var">X</span> <span class="id" title="var">ms</span> ρ) ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">svar_valuation</span> := <span class="id" title="var">λ</span> <span class="id" title="var">Y</span> : <span class="id" title="var">svar</span>, <span class="id" title="var">f</span> &lt;$&gt; (<span class="id" title="var">svar_valuation</span> (<span class="id" title="var">update_svar_val</span> <span class="id" title="var">X</span> <span class="id" title="var">ms</span> ρ) <span class="id" title="var">Y</span>) ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;|}.<br/>
+
+<br/>
+<span class="id" title="keyword">Theorem</span> <span class="id" title="var">isomorphism_preserves_semantics</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">M₁</span> <span class="id" title="var">M₂</span> : <span class="id" title="var">Model</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">i</span> : <span class="id" title="var">ModelIsomorphism</span> <span class="id" title="var">M₁</span> <span class="id" title="var">M₂</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> (<span class="id" title="var">ϕ</span> : <span class="id" title="var">Pattern</span>) (ρ : @<span class="id" title="var">Valuation</span> <span class="id" title="var">_</span> <span class="id" title="var">M₁</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;((<span class="id" title="var">mi_f</span> <span class="id" title="var">i</span>) &lt;$&gt; (@<span class="id" title="tactic">eval</span> <span class="id" title="var">Σ</span> <span class="id" title="var">M₁</span> ρ <span class="id" title="var">ϕ</span>))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;≡@{<span class="id" title="var">propset</span> (<span class="id" title="var">Domain</span> <span class="id" title="var">M₂</span>)} (@<span class="id" title="tactic">eval</span> <span class="id" title="var">Σ</span> <span class="id" title="var">M₂</span> (<span class="id" title="var">mkValuation</span> ((<span class="id" title="var">mi_f</span> <span class="id" title="var">i</span>) ∘ (<span class="id" title="var">evar_valuation</span> ρ)) (<span class="id" title="var">λ</span> <span class="id" title="var">X</span>, (<span class="id" title="var">mi_f</span> <span class="id" title="var">i</span>) &lt;$&gt; (<span class="id" title="var">svar_valuation</span> ρ <span class="id" title="var">X</span>))) <span class="id" title="var">ϕ</span>).<br/>
+</div>
+<hr/>This page has been generated by <a href="http://coq.inria.fr/">coqdoc</a>
+</div>
+
+</div>
+
+</body>
+</html>
