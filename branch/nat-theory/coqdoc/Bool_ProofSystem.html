@@ -1,0 +1,155 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link href="coqdoc.css" rel="stylesheet" type="text/css" />
+<title>Bool_ProofSystem</title>
+</head>
+
+<body>
+
+<div id="page">
+
+<div id="header">
+</div>
+
+<div id="main">
+
+<h1 class="libtitle">File Bool_ProofSystem</h1>
+
+<div class="code">
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">ssreflect</span> <span class="id" title="var">ssrfun</span> <span class="id" title="var">ssrbool</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Ltac2</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Ltac2</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">String</span> <span class="id" title="var">Ensembles</span> <span class="id" title="var">Setoid</span>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Coq.Program.Equality</span>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Coq.Logic.Classical_Prop</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq.Logic</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">FunctionalExtensionality</span> <span class="id" title="var">Eqdep_dec</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq.Classes</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Morphisms_Prop</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq.Unicode</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Utf8</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq.micromega</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Lia</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">MatchingLogic</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Export</span> <span class="id" title="var">Logic</span> <span class="id" title="var">ProofMode.MLPM</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">MatchingLogic.Theories</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Export</span> <span class="id" title="var">Definedness_Syntax</span> <span class="id" title="var">Definedness_ProofSystem</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">MatchingLogic.Utils</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Export</span> <span class="id" title="var">stdpp_ext</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Export</span> <span class="id" title="var">MatchingLogic.wftactics</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">stdpp</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">base</span> <span class="id" title="var">fin_sets</span> <span class="id" title="var">sets</span> <span class="id" title="var">propset</span> <span class="id" title="var">proof_irrel</span> <span class="id" title="var">option</span> <span class="id" title="var">list</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Import</span> <span class="id" title="var">extralibrary</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Import</span> <span class="id" title="var">MatchingLogic.Logic.Notations</span>.<br/>
+<span class="id" title="keyword">Import</span> <span class="id" title="var">MatchingLogic.Theories.Definedness_Syntax.Notations</span>.<br/>
+
+<br/>
+
+<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">MatchingLogic.Theories.DeductionTheorem</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="var">MatchingLogic.Theories.Sorts_Syntax</span>.<br/>
+<span class="id" title="keyword">Export</span> <span class="id" title="var">MatchingLogic.Theories.Sorts_Syntax.Notations</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">ssreflect</span> <span class="id" title="var">ssrfun</span> <span class="id" title="var">ssrbool</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Setoid</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Unicode.Utf8</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq.Logic</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Classical_Prop</span> <span class="id" title="var">FunctionalExtensionality</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq.Classes</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Morphisms_Prop</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">stdpp</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">base</span> <span class="id" title="var">sets</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">MatchingLogic</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Logic</span> <span class="id" title="var">MLPM</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">MatchingLogic.Theories</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Definedness_ProofSystem</span> <span class="id" title="var">Sorts_ProofSystem</span> <span class="id" title="var">FOEquality_ProofSystem</span>.<br/>
+<span class="id" title="keyword">Import</span> <span class="id" title="var">MatchingLogic.Logic.Notations</span>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">MatchingLogic.Theories.Bool_Syntax</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Import</span> <span class="id" title="var">MatchingLogic.Theories.Definedness_Syntax.Notations</span>.<br/>
+<span class="id" title="keyword">Import</span> <span class="id" title="var">MatchingLogic.Theories.Bool_Syntax.Notations</span>.<br/>
+
+<br/>
+
+<br/>
+<span class="id" title="keyword">Section</span> <span class="id" title="var">bools</span>.<br/>
+<span class="id" title="keyword">Context</span><br/>
+&nbsp;&nbsp;{ <span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>}<br/>
+&nbsp;&nbsp;{ <span class="id" title="var">syntax</span> : <span class="id" title="keyword">Syntax</span>}.<br/>
+
+<br/>
+<span class="id" title="keyword">Open</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">ml_scope</span>.<br/>
+<span class="id" title="keyword">Open</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">string_scope</span>.<br/>
+<span class="id" title="keyword">Open</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">list_scope</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">use_bool_axiom</span> <span class="id" title="var">ax</span> <span class="id" title="var">Γ</span> : <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Bool_Syntax.theory</span> ⊆ <span class="id" title="var">Γ</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢ <span class="id" title="var">axiom</span> <span class="id" title="var">ax</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">functional_pattern_defined</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> <span class="id" title="var">Γ</span> φ, <span class="id" title="var">Definedness_Syntax.theory</span> ⊆ <span class="id" title="var">Γ</span> → <span class="id" title="var">well_formed</span> φ →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢ (<span class="id" title="var">ex</span> , (φ =<span class="id" title="var">ml</span> <span class="id" title="var">b0</span>)) ---&gt; ⌈ φ ⌉.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">membership_equal_equal</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> <span class="id" title="var">Γ</span> φ φ',<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Definedness_Syntax.theory</span> ⊆ <span class="id" title="var">Γ</span> → <span class="id" title="var">mu_free</span> φ' →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed</span> φ → <span class="id" title="var">well_formed</span> φ' →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢ (<span class="id" title="var">ex</span> , (φ =<span class="id" title="var">ml</span> <span class="id" title="var">b0</span>))  →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢ (<span class="id" title="var">ex</span> , (φ' =<span class="id" title="var">ml</span> <span class="id" title="var">b0</span>))  →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢ (φ ∈<span class="id" title="var">ml</span> φ') =<span class="id" title="var">ml</span> (φ =<span class="id" title="var">ml</span> φ') .<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Theorem</span> <span class="id" title="var">double_neg</span> : <span class="id" title="keyword">∀</span> <span class="id" title="var">Γ</span> , <span class="id" title="var">theory</span> ⊆ <span class="id" title="var">Γ</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢ <span class="id" title="var">all</span> <span class="id" title="var">mlBool</span>,   (!<span class="id" title="var">b</span> !<span class="id" title="var">b</span> <span class="id" title="var">b0</span>) =<span class="id" title="var">ml</span> <span class="id" title="var">b0</span>.<br/>
+<span class="id" title="keyword">Search</span> <span class="id" title="var">patt_equal</span> <span class="id" title="var">derives_using</span>. <span class="id" title="keyword">Search</span> <span class="id" title="var">patt_equal</span> <span class="id" title="var">derives_using</span>. 
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Theorem</span> <span class="id" title="var">true_andBool</span> : <span class="id" title="keyword">∀</span> <span class="id" title="var">Γ</span> , <span class="id" title="var">theory</span> ⊆ <span class="id" title="var">Γ</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢ <span class="id" title="var">all</span> <span class="id" title="var">mlBool</span>,  <span class="id" title="var">b0</span> &amp;&amp;<span class="id" title="var">ml</span> <span class="id" title="var">mlTrue</span> =<span class="id" title="var">ml</span> <span class="id" title="var">b0</span>.<br/>
+
+<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Theorem</span> <span class="id" title="var">false_andBool</span> : <span class="id" title="keyword">∀</span> <span class="id" title="var">Γ</span> , <span class="id" title="var">theory</span> ⊆ <span class="id" title="var">Γ</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢ <span class="id" title="var">all</span> <span class="id" title="var">mlBool</span>,  <span class="id" title="var">b0</span> &amp;&amp;<span class="id" title="var">ml</span> <span class="id" title="var">mlFalse</span> =<span class="id" title="var">ml</span> <span class="id" title="var">mlFalse</span>.<br/>
+
+<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Theorem</span> <span class="id" title="var">comm_andBool</span> : <span class="id" title="keyword">∀</span> <span class="id" title="var">Γ</span> , <span class="id" title="var">theory</span> ⊆ <span class="id" title="var">Γ</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢ <span class="id" title="var">all</span> <span class="id" title="var">mlBool</span>, <span class="id" title="var">all</span> <span class="id" title="var">mlBool</span>, <span class="id" title="var">b0</span> &amp;&amp;<span class="id" title="var">ml</span> <span class="id" title="var">b1</span> =<span class="id" title="var">ml</span> <span class="id" title="var">b1</span> &amp;&amp;<span class="id" title="var">ml</span> <span class="id" title="var">b0</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Theorem</span> <span class="id" title="var">true_andThenBool</span> : <span class="id" title="keyword">∀</span> <span class="id" title="var">Γ</span> , <span class="id" title="var">theory</span> ⊆ <span class="id" title="var">Γ</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢ <span class="id" title="var">all</span> <span class="id" title="var">mlBool</span>,  <span class="id" title="var">b0</span> <span class="id" title="var">andThen</span> <span class="id" title="var">mlTrue</span> =<span class="id" title="var">ml</span> <span class="id" title="var">b0</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Theorem</span> <span class="id" title="var">false_andThenBool</span> : <span class="id" title="keyword">∀</span> <span class="id" title="var">Γ</span> , <span class="id" title="var">theory</span> ⊆ <span class="id" title="var">Γ</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢ <span class="id" title="var">all</span>,  <span class="id" title="var">b0</span> <span class="id" title="var">andThen</span> <span class="id" title="var">mlFalse</span> =<span class="id" title="var">ml</span> <span class="id" title="var">mlFalse</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">End</span> <span class="id" title="var">bools</span>.<br/>
+<span class="id" title="keyword">Close</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">ml_scope</span>.<br/>
+<span class="id" title="keyword">Close</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">string_scope</span>.<br/>
+<span class="id" title="keyword">Close</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">list_scope</span>.<br/>
+</div>
+<hr/>This page has been generated by <a href="http://coq.inria.fr/">coqdoc</a>
+</div>
+
+</div>
+
+</body>
+</html>

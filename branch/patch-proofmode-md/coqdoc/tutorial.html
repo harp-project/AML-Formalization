@@ -1,0 +1,153 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link href="coqdoc.css" rel="stylesheet" type="text/css" />
+<title>tutorial</title>
+</head>
+
+<body>
+
+<div id="page">
+
+<div id="header">
+</div>
+
+<div id="main">
+
+<h1 class="libtitle">File tutorial</h1>
+
+<div class="code">
+
+<br/>
+<span class="comment">(*&nbsp;What&nbsp;follows&nbsp;is&nbsp;a&nbsp;minimal&nbsp;example&nbsp;of&nbsp;how&nbsp;to&nbsp;use&nbsp;the&nbsp;ProofMode.&nbsp;*)</span><br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">MatchingLogic</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">ProofMode.MLPM</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Definedness_ProofSystem</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Import</span> <span class="id" title="var">MatchingLogic.Logic.Notations</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">MatchingLogic.Theories.Definedness_Syntax.Notations</span>.<br/>
+
+<br/>
+
+<br/>
+<span class="id" title="keyword">Open</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">string_scope</span>.<br/>
+<span class="id" title="keyword">Open</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">list_scope</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Section</span> <span class="id" title="var">tutorial</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Context</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{<span class="id" title="var">Γ</span> : <span class="id" title="var">Theory</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">ϕ</span> : <span class="id" title="var">Pattern</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">wfϕ</span> : <span class="id" title="var">well_formed</span> <span class="id" title="var">ϕ</span>).<br/>
+
+<br/>
+<span class="comment">(*&nbsp;Below&nbsp;we&nbsp;prove&nbsp;that&nbsp;in&nbsp;matching&nbsp;logic,&nbsp;ϕ&nbsp;-&gt;&nbsp;ϕ&nbsp;for&nbsp;any&nbsp;pattern&nbsp;ϕ.&nbsp;*)</span><br/>
+<span class="id" title="keyword">Example</span> <span class="id" title="var">phi_implies_phi</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢ <span class="id" title="var">ϕ</span> ---&gt; <span class="id" title="var">ϕ</span>.<br/>
+
+<br/>
+<span class="comment">(*&nbsp;We&nbsp;can&nbsp;also&nbsp;work&nbsp;with&nbsp;conjunction&nbsp;and&nbsp;disjunction.&nbsp;*)</span><br/>
+
+<br/>
+<span class="id" title="keyword">Context</span> (<span class="id" title="var">ϕ₁</span> : <span class="id" title="var">Pattern</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">wfϕ₁</span> : <span class="id" title="var">well_formed</span> <span class="id" title="var">ϕ₁</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">ϕ₂</span> : <span class="id" title="var">Pattern</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">wfϕ₂</span> : <span class="id" title="var">well_formed</span> <span class="id" title="var">ϕ₂</span>).<br/>
+
+<br/>
+<span class="id" title="keyword">Example</span> <span class="id" title="var">and_or</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢ <span class="id" title="var">ϕ₁</span> <span class="id" title="var">and</span> <span class="id" title="var">ϕ₂</span> ---&gt; <span class="id" title="var">ϕ₁</span> <span class="id" title="var">or</span> <span class="id" title="var">ϕ₂</span><br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Context</span> (<span class="id" title="var">ϕ₃</span> : <span class="id" title="var">Pattern</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">wfϕ₃</span> : <span class="id" title="var">well_formed</span> <span class="id" title="var">ϕ₃</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">ϕ₄</span> : <span class="id" title="var">Pattern</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">wfϕ₄</span> : <span class="id" title="var">well_formed</span> <span class="id" title="var">ϕ₄</span>).<br/>
+
+<br/>
+<span class="id" title="keyword">Example</span> <span class="id" title="var">use_rewrite</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢ <span class="id" title="var">ϕ₁</span> &lt;---&gt; <span class="id" title="var">ϕ₂</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">(*&nbsp;The&nbsp;<span class="inlinecode">⋅</span>&nbsp;operator&nbsp;is&nbsp;an&nbsp;application.&nbsp;*)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢ (<span class="id" title="var">ϕ₃</span> ⋅ <span class="id" title="var">ϕ₁</span> ⋅ <span class="id" title="var">ϕ₄</span>) &lt;---&gt; (<span class="id" title="var">ϕ₃</span> ⋅ <span class="id" title="var">ϕ₂</span> ⋅ <span class="id" title="var">ϕ₄</span>)<br/>
+.<br/>
+
+<br/>
+<span class="comment">(*&nbsp;We&nbsp;can&nbsp;also&nbsp;use&nbsp;definedness&nbsp;and&nbsp;equality.<br/>
+&nbsp;&nbsp;&nbsp;To&nbsp;do&nbsp;so,&nbsp;we&nbsp;have&nbsp;to&nbsp;assume&nbsp;that&nbsp;the&nbsp;signature&nbsp;contains&nbsp;a&nbsp;definedness&nbsp;symbol,<br/>
+&nbsp;&nbsp;&nbsp;and&nbsp;the&nbsp;theory&nbsp;a&nbsp;definedness&nbsp;axiom.<br/>
+&nbsp;&nbsp;&nbsp;Otherwise,&nbsp;the&nbsp;signature&nbsp;and&nbsp;axiom&nbsp;can&nbsp;be&nbsp;arbitrary.<br/>
+*)</span><br/>
+
+<br/>
+<span class="comment">(*&nbsp;Obviously,&nbsp;without&nbsp;the&nbsp;definedness&nbsp;symbol,&nbsp;we&nbsp;cannot&nbsp;use&nbsp;equality.&nbsp;*)</span><br/>
+
+<br/>
+<span class="comment">(*&nbsp;The&nbsp;typeclass&nbsp;<span class="inlinecode"><span class="id" title="var">Definedness_Syntax.Syntax</span></span>&nbsp;ensures&nbsp;the&nbsp;presence&nbsp;of&nbsp;the&nbsp;definedness&nbsp;symbol<br/>
+&nbsp;&nbsp;&nbsp;in&nbsp;the&nbsp;(implicit)&nbsp;signature&nbsp;Σ.<br/>
+&nbsp;*)</span><br/>
+<span class="id" title="keyword">Context</span> {<span class="id" title="var">syntax</span> : <span class="id" title="var">Definedness_Syntax.Syntax</span>}.<br/>
+
+<br/>
+<span class="id" title="keyword">Example</span> <span class="id" title="var">use_rewriteBy</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢ (<span class="id" title="var">ϕ₁</span> ⋅ <span class="id" title="var">ϕ₄</span> =<span class="id" title="var">ml</span> <span class="id" title="var">ϕ₂</span> ⋅ <span class="id" title="var">ϕ₄</span>) ---&gt; (<span class="id" title="var">ϕ₁</span> =<span class="id" title="var">ml</span> <span class="id" title="var">ϕ₂</span>) ---&gt; ((<span class="id" title="var">ϕ₃</span> ⋅ (<span class="id" title="var">ϕ₁</span> ⋅ <span class="id" title="var">ϕ₄</span>)) &lt;---&gt; (<span class="id" title="var">ϕ₃</span> ⋅ (<span class="id" title="var">ϕ₂</span> ⋅ <span class="id" title="var">ϕ₄</span>)))<br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Context</span> {<span class="id" title="var">HΓ</span> : <span class="id" title="var">Definedness_Syntax.theory</span> ⊆ <span class="id" title="var">Γ</span>}.<br/>
+
+<br/>
+<span class="id" title="keyword">Example</span> <span class="id" title="var">use_rewriteBy</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢ (<span class="id" title="var">ϕ₁</span> ⋅ <span class="id" title="var">ϕ₄</span> =<span class="id" title="var">ml</span> <span class="id" title="var">ϕ₂</span> ⋅ <span class="id" title="var">ϕ₄</span> ) ---&gt; (<span class="id" title="var">ϕ₁</span> =<span class="id" title="var">ml</span> <span class="id" title="var">ϕ₂</span>) ---&gt; ((<span class="id" title="var">ϕ₃</span> ⋅ (<span class="id" title="var">ϕ₁</span> ⋅ <span class="id" title="var">ϕ₄</span>)) &lt;---&gt; (<span class="id" title="var">ϕ₃</span> ⋅ (<span class="id" title="var">ϕ₂</span> ⋅ <span class="id" title="var">ϕ₄</span>)))<br/>
+.<br/>
+
+<br/>
+<span class="comment">(*<br/>
+&nbsp;&nbsp;&nbsp;We&nbsp;now&nbsp;demonstrate&nbsp;how&nbsp;to&nbsp;use&nbsp;local&nbsp;hypotheses&nbsp;that&nbsp;are&nbsp;implications.<br/>
+*)</span><br/>
+<span class="id" title="keyword">Example</span> <span class="id" title="var">use_mlApply</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢ (<span class="id" title="var">ϕ₁</span> ---&gt; <span class="id" title="var">ϕ₂</span> ⋅ <span class="id" title="var">ϕ₃</span>) ---&gt; (<span class="id" title="var">ϕ₂</span> ⋅ <span class="id" title="var">ϕ₃</span> ---&gt; <span class="id" title="var">ϕ₃</span>) ---&gt; (<span class="id" title="var">ϕ₁</span> ---&gt; <span class="id" title="var">ϕ₃</span>).<br/>
+
+<br/>
+<span class="id" title="keyword">Context</span> (ψ : <span class="id" title="var">Pattern</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="keyword">wf</span>ψ : <span class="id" title="var">well_formed</span> (<span class="id" title="var">ex</span>, ψ)).<br/>
+
+<br/>
+<span class="comment">(*<br/>
+&nbsp;&nbsp;&nbsp;What&nbsp;if&nbsp;we&nbsp;have&nbsp;a&nbsp;matching&nbsp;logic&nbsp;implication&nbsp;in&nbsp;a&nbsp;Coq&nbsp;hypothesis<br/>
+&nbsp;&nbsp;&nbsp;or&nbsp;in&nbsp;a&nbsp;lemma?&nbsp;There&nbsp;is&nbsp;`mlApplyMeta`&nbsp;for&nbsp;that.<br/>
+*)</span><br/>
+<span class="id" title="keyword">Example</span> <span class="id" title="var">use_mlApplyMeta</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢ <span class="id" title="var">ϕ₁</span> ---&gt; ((<span class="id" title="var">ex</span>, ψ) ⋅ <span class="id" title="var">ϕ₂</span>) ---&gt; <span class="id" title="var">ϕ₃</span> ---&gt; (<span class="id" title="var">ex</span>, (ψ ⋅ <span class="id" title="var">ϕ₂</span>)).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Check</span> <span class="id" title="var">Prop_ex_left</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">(*<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Prop_ex_left<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:&nbsp;∀&nbsp;(Γ&nbsp;:&nbsp;Theory)&nbsp;(ϕ&nbsp;ψ&nbsp;:&nbsp;Pattern),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;well_formed&nbsp;(ex&nbsp;,&nbsp;ϕ)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→&nbsp;well_formed&nbsp;ψ<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→&nbsp;Γ&nbsp;⊢i&nbsp;(ex&nbsp;,&nbsp;ϕ)&nbsp;⋅&nbsp;ψ&nbsp;---&gt;&nbsp;(ex&nbsp;,&nbsp;ϕ&nbsp;⋅&nbsp;ψ)&nbsp;using&nbsp;BasicReasoning<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;*)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">(*&nbsp;Did&nbsp;you&nbsp;notice&nbsp;that&nbsp;<span class="inlinecode"><span class="id" title="var">mlApplyMeta</span></span>&nbsp;automatically&nbsp;instantiated<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;all&nbsp;the&nbsp;preconditions&nbsp;of&nbsp;the&nbsp;lemma?<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;That&nbsp;is,&nbsp;without&nbsp;some&nbsp;magic&nbsp;happening&nbsp;on&nbsp;the&nbsp;background,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;one&nbsp;would&nbsp;need&nbsp;to&nbsp;manualy&nbsp;specify&nbsp;them,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;and&nbsp;solve&nbsp;the&nbsp;well-formedness&nbsp;subgoals.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;*)</span><br/>
+<span class="id" title="keyword">Defined</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">End</span> <span class="id" title="var">tutorial</span>.<br/>
+</div>
+<hr/>This page has been generated by <a href="http://coq.inria.fr/">coqdoc</a>
+</div>
+
+</div>
+
+</body>
+</html>

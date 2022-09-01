@@ -1,0 +1,76 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link href="coqdoc.css" rel="stylesheet" type="text/css" />
+<title>NamedAxioms</title>
+</head>
+
+<body>
+
+<div id="page">
+
+<div id="header">
+</div>
+
+<div id="main">
+
+<h1 class="libtitle">File NamedAxioms</h1>
+
+<div class="code">
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">ssreflect</span> <span class="id" title="var">ssrfun</span> <span class="id" title="var">ssrbool</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">stdpp</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">propset</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">MatchingLogic</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="keyword">Syntax</span>.<br/>
+
+<br/>
+<span class="comment">(*&nbsp;TODO:&nbsp;set?&nbsp;*)</span><br/>
+<span class="comment">(*&nbsp;TODO:&nbsp;well-formedness&nbsp;*)</span><br/>
+<span class="id" title="keyword">Record</span> <span class="id" title="var">NamedAxioms</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} :=<br/>
+{<br/>
+&nbsp;&nbsp;<span class="id" title="var">NAName</span> : <span class="id" title="keyword">Type</span>;<br/>
+&nbsp;&nbsp;<span class="id" title="var">NAAxiom</span> : <span class="id" title="var">NAName</span> → <span class="id" title="var">Pattern</span> ;<br/>
+&nbsp;&nbsp;<span class="id" title="var">NAwf</span> : <span class="id" title="keyword">∀</span> (<span class="id" title="var">name</span> : <span class="id" title="var">NAName</span>), <span class="id" title="var">well_formed</span> (<span class="id" title="var">NAAxiom</span> <span class="id" title="var">name</span>) ;<br/>
+}.<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">theory_of_NamedAxioms</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} (<span class="id" title="var">NAs</span> : <span class="id" title="var">NamedAxioms</span>) : <span class="id" title="var">Theory</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="var">PropSet</span> (<span class="id" title="keyword">fun</span> <span class="id" title="var">p</span> ⇒ <span class="id" title="tactic">∃</span> (<span class="id" title="var">n</span> : <span class="id" title="var">NAName</span> <span class="id" title="var">NAs</span>), <span class="id" title="var">p</span> = <span class="id" title="var">NAAxiom</span> <span class="id" title="var">_</span> <span class="id" title="var">n</span>).<br/>
+
+<br/>
+
+<br/>
+<span class="comment">(*&nbsp;TODO:&nbsp;do&nbsp;we&nbsp;want&nbsp;to&nbsp;make&nbsp;this&nbsp;a&nbsp;type&nbsp;class?&nbsp;*)</span><br/>
+<span class="id" title="keyword">Record</span> <span class="id" title="var">NamedAxiomsIncluded</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>}  (<span class="id" title="var">NA₁</span> <span class="id" title="var">NA₂</span> : <span class="id" title="var">NamedAxioms</span>) :=<br/>
+&nbsp;&nbsp;{ <span class="id" title="var">NAIinj</span> : <span class="id" title="var">NAName</span> <span class="id" title="var">NA₁</span> → <span class="id" title="var">NAName</span> <span class="id" title="var">NA₂</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">NAIax</span> : <span class="id" title="keyword">∀</span> (<span class="id" title="var">n</span> : <span class="id" title="var">NAName</span> <span class="id" title="var">NA₁</span>), <span class="id" title="var">NAAxiom</span> <span class="id" title="var">_</span> <span class="id" title="var">n</span> = <span class="id" title="var">NAAxiom</span> <span class="id" title="var">_</span> (<span class="id" title="var">NAIinj</span> <span class="id" title="var">n</span>);<br/>
+&nbsp;&nbsp;}.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">NamedAxiomsIncluded_impl_TheoryIncluded</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} <span class="id" title="var">NA₁</span> <span class="id" title="var">NA₂</span>:<br/>
+&nbsp;&nbsp;<span class="id" title="var">NamedAxiomsIncluded</span> <span class="id" title="var">NA₁</span> <span class="id" title="var">NA₂</span> →<br/>
+&nbsp;&nbsp;(<span class="id" title="var">theory_of_NamedAxioms</span> <span class="id" title="var">NA₁</span>) ⊆ (<span class="id" title="var">theory_of_NamedAxioms</span> <span class="id" title="var">NA₂</span>).<br/>
+
+<br/>
+<span class="id" title="keyword">Program Definition</span> <span class="id" title="var">NamedAxiomsIncluded_refl</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} <span class="id" title="var">NA</span> : <span class="id" title="var">NamedAxiomsIncluded</span> <span class="id" title="var">NA</span> <span class="id" title="var">NA</span> :=<br/>
+&nbsp;&nbsp;{| <span class="id" title="var">NAIinj</span> := <span class="id" title="var">λ</span> <span class="id" title="var">n</span>, <span class="id" title="var">n</span>; |}.<br/>
+<span class="comment">(*&nbsp;TODO&nbsp;make&nbsp;it&nbsp;a&nbsp;stdpp&nbsp;preorder&nbsp;&nbsp;*)</span><br/>
+
+<br/>
+<span class="id" title="keyword">Program Definition</span> <span class="id" title="var">NamedAxiomsIncluded_compose</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} <span class="id" title="var">NA₁</span> <span class="id" title="var">NA₂</span> <span class="id" title="var">NA₃</span> :<br/>
+&nbsp;&nbsp;<span class="id" title="var">NamedAxiomsIncluded</span> <span class="id" title="var">NA₁</span> <span class="id" title="var">NA₂</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">NamedAxiomsIncluded</span> <span class="id" title="var">NA₂</span> <span class="id" title="var">NA₃</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">NamedAxiomsIncluded</span> <span class="id" title="var">NA₁</span> <span class="id" title="var">NA₃</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="var">λ</span> <span class="id" title="var">HI₁</span> <span class="id" title="var">HI₂</span>, {| <span class="id" title="var">NAIinj</span> := <span class="id" title="var">λ</span> <span class="id" title="var">n</span>, <span class="id" title="var">NAIinj</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">HI₂</span> (<span class="id" title="var">NAIinj</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">HI₁</span> <span class="id" title="var">n</span>);  |}.<br/>
+</div>
+<hr/>This page has been generated by <a href="http://coq.inria.fr/">coqdoc</a>
+</div>
+
+</div>
+
+</body>
+</html>

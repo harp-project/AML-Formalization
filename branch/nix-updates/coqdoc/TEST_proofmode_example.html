@@ -1,0 +1,83 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link href="coqdoc.css" rel="stylesheet" type="text/css" />
+<title>TEST_proofmode_example</title>
+</head>
+
+<body>
+
+<div id="page">
+
+<div id="header">
+</div>
+
+<div id="main">
+
+<h1 class="libtitle">File TEST_proofmode_example</h1>
+
+<div class="code">
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">ssreflect</span> <span class="id" title="var">ssrfun</span> <span class="id" title="var">ssrbool</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Ltac2</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Ltac2</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Equations.Prop.Equations</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">String</span> <span class="id" title="var">Ensembles</span> <span class="id" title="var">Setoid</span>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Coq.Program.Equality</span>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Coq.Logic.Classical_Prop</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq.Logic</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">FunctionalExtensionality</span> <span class="id" title="var">Eqdep_dec</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq.Classes</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Morphisms_Prop</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq.Unicode</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Utf8</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq.micromega</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Lia</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">MatchingLogic</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="keyword">Syntax</span> <span class="id" title="var">NamedAxioms</span> <span class="id" title="var">DerivedOperators_Syntax</span> <span class="id" title="var">ProofSystem</span> <span class="id" title="var">ProofMode.MLPM</span> <span class="id" title="var">IndexManipulation</span> <span class="id" title="var">Substitution</span> <span class="id" title="var">ApplicationContext</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">MatchingLogic.Theories</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Definedness_Syntax</span> <span class="id" title="var">Definedness_ProofSystem</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">MatchingLogic.Utils</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">stdpp_ext</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">MatchingLogic.wftactics</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">stdpp</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">base</span> <span class="id" title="var">fin_sets</span> <span class="id" title="var">sets</span> <span class="id" title="var">propset</span> <span class="id" title="var">proof_irrel</span> <span class="id" title="var">option</span> <span class="id" title="var">list</span> <span class="id" title="var">coGset</span> <span class="id" title="var">finite</span> <span class="id" title="var">infinite</span> <span class="id" title="var">gmap</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Import</span> <span class="id" title="var">MatchingLogic.Syntax.Notations</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">MatchingLogic.DerivedOperators_Syntax.Notations</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">MatchingLogic.Syntax.BoundVarSugar</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">MatchingLogic.Theories.Definedness_Syntax.Notations</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">MatchingLogic.ApplicationContext.Notations</span>.<br/>
+
+<br/>
+
+<br/>
+<span class="id" title="keyword">Close</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">equations_scope</span>. <span class="comment">(*&nbsp;Because&nbsp;of&nbsp;<span class="inlinecode">!</span>&nbsp;*)</span><br/>
+
+<br/>
+<span class="id" title="keyword">Import</span> <span class="id" title="var">Notations</span>.<br/>
+<span class="id" title="keyword">Open</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">ml_scope</span>.<br/>
+<span class="id" title="keyword">Open</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">string_scope</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">overlapping_variables_equal</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} {<span class="id" title="var">syntax</span> : <span class="id" title="keyword">Syntax</span>} :<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">∀</span> <span class="id" title="var">x</span> <span class="id" title="var">y</span> <span class="id" title="var">Γ</span>,<br/>
+&nbsp;&nbsp;<span class="id" title="var">theory</span> ⊆ <span class="id" title="var">Γ</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢ <span class="id" title="var">overlaps_with</span> (<span class="id" title="var">patt_free_evar</span> <span class="id" title="var">y</span>) (<span class="id" title="var">patt_free_evar</span> <span class="id" title="var">x</span>) ---&gt; <span class="id" title="var">patt_free_evar</span> <span class="id" title="var">y</span> =<span class="id" title="var">ml</span> <span class="id" title="var">patt_free_evar</span> <span class="id" title="var">x</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Close</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">ml_scope</span>.<br/>
+<span class="id" title="keyword">Close</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">string_scope</span>.<br/>
+</div>
+<hr/>This page has been generated by <a href="http://coq.inria.fr/">coqdoc</a>
+</div>
+
+</div>
+
+</body>
+</html>

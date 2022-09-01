@@ -1,0 +1,307 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link href="coqdoc.css" rel="stylesheet" type="text/css" />
+<title>TEST_LocallyNameless</title>
+</head>
+
+<body>
+
+<div id="page">
+
+<div id="header">
+</div>
+
+<div id="main">
+
+<h1 class="libtitle">File TEST_LocallyNameless</h1>
+
+<div class="code">
+<span class="id" title="keyword">From</span> <span class="id" title="var">MatchingLogic.Theories</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Definedness_Semantics</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Sorts_Syntax</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Definedness_ProofSystem</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">MatchingLogic.Utils</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">stdpp_ext</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Import</span> <span class="id" title="var">MatchingLogic.Logic.Notations</span>.<br/>
+<span class="id" title="keyword">Import</span> <span class="id" title="var">MatchingLogic.Theories.Definedness_Syntax.Notations</span>.<br/>
+<span class="id" title="keyword">Import</span> <span class="id" title="var">MatchingLogic.Semantics.Notations</span>.<br/>
+<span class="id" title="keyword">Import</span> <span class="id" title="var">MatchingLogic.DerivedOperators_Syntax.Notations</span>.<br/>
+
+<br/>
+<span class="comment">(*&nbsp;In&nbsp;this&nbsp;module&nbsp;we&nbsp;show&nbsp;how&nbsp;to&nbsp;define&nbsp;a&nbsp;signature&nbsp;and&nbsp;build&nbsp;patterns&nbsp;*)</span><br/>
+<span class="id" title="keyword">Module</span> <span class="id" title="var">test_1</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Open</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">ml_scope</span>.<br/>
+&nbsp;&nbsp;<span class="comment">(*&nbsp;We&nbsp;have&nbsp;three&nbsp;symbols&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Inductive</span> <span class="id" title="var">Symbols</span> := <span class="id" title="var">ctor</span>| <span class="id" title="var">p</span> | <span class="id" title="var">f</span> .<br/>
+
+<br/>
+&nbsp;&nbsp;#[<span class="id" title="var">local</span>]<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Instance</span> <span class="id" title="var">Symbols_eqdec</span> : <span class="id" title="var">EqDecision</span> <span class="id" title="var">Symbols</span>.<br/>
+ 
+<br/>
+&nbsp;&nbsp;#[<span class="id" title="var">local</span>]<br/>
+&nbsp;&nbsp;<span class="id" title="var">Program</span> <span class="id" title="keyword">Instance</span> <span class="id" title="var">Symbols_fin</span> : <span class="id" title="var">Finite</span> <span class="id" title="var">Symbols</span> :=<br/>
+&nbsp;&nbsp;{|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">enum</span> := [<span class="id" title="var">ctor</span>;<span class="id" title="var">p</span>;<span class="id" title="var">f</span>]<br/>
+&nbsp;&nbsp;|}.<br/>
+
+<br/>
+&nbsp;&nbsp;#[<span class="id" title="var">local</span>]<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Instance</span> <span class="id" title="var">signature</span> : <span class="id" title="var">Signature</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{| <span class="id" title="var">variables</span> := <span class="id" title="var">StringMLVariables</span> ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">ml_symbols</span> := {|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">symbols</span> := <span class="id" title="var">Symbols</span> ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|} ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;|}.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="comment">(*&nbsp;Example&nbsp;patterns&nbsp;*)</span><br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">a_symbol</span> : <span class="id" title="var">Pattern</span> := <span class="id" title="var">patt_sym</span> <span class="id" title="var">ctor</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Open</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">string_scope</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">A</span> : <span class="id" title="var">Pattern</span> := (<span class="id" title="var">patt_free_svar</span> "A").<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">B</span> : <span class="id" title="var">Pattern</span> := (<span class="id" title="var">patt_free_svar</span> "B").<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">C</span> : <span class="id" title="var">Pattern</span> := (<span class="id" title="var">patt_free_svar</span> "C").<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">D</span> : <span class="id" title="var">Pattern</span> := (<span class="id" title="var">patt_free_svar</span> "D").<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">a</span> : <span class="id" title="var">Pattern</span> := (<span class="id" title="var">patt_free_evar</span> "a").<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">b</span> : <span class="id" title="var">Pattern</span> := (<span class="id" title="var">patt_free_evar</span> "b").<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">c</span> : <span class="id" title="var">Pattern</span> := (<span class="id" title="var">patt_free_evar</span> "c").<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">d</span> : <span class="id" title="var">Pattern</span> := (<span class="id" title="var">patt_free_evar</span> "d").<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">more</span> : <span class="id" title="var">Pattern</span> := <span class="id" title="var">A</span> <span class="id" title="var">or</span> ! <span class="id" title="var">A</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Example</span> <span class="id" title="var">e1</span> <span class="id" title="var">X</span>: <span class="id" title="var">more</span>^{<span class="id" title="tactic">evar</span>: 0 ↦ <span class="id" title="var">X</span>} = <span class="id" title="var">more</span>.<br/>
+ 
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">complex</span> : <span class="id" title="var">Pattern</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">a</span> ---&gt; (<span class="id" title="var">b</span> ---&gt; !<span class="id" title="var">C</span>) ⋅ <span class="id" title="var">ex</span> , <span class="id" title="var">D</span> ⋅ ⊥ <span class="id" title="var">and</span> <span class="id" title="var">Top</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">custom_constructor</span> := <span class="id" title="var">patt_sym</span> <span class="id" title="var">ctor</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="comment">(*&nbsp;p&nbsp;x1&nbsp;x2&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">predicate</span> : <span class="id" title="var">Pattern</span> := <span class="id" title="var">patt_sym</span> (<span class="id" title="var">ctor</span>) ⋅ (<span class="id" title="var">patt_free_evar</span> "x1") ⋅ (<span class="id" title="var">patt_free_evar</span> "x2").<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="comment">(*&nbsp;f&nbsp;x&nbsp;(mu&nbsp;y&nbsp;.&nbsp;y)&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">function</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">patt_sym</span> <span class="id" title="var">f</span>) ⋅ (<span class="id" title="var">patt_free_evar</span> "x") ⋅ (<span class="id" title="var">mu</span> , (<span class="id" title="var">patt_bound_svar</span> 0)).<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="comment">(*&nbsp;forall&nbsp;x,&nbsp;x&nbsp;/\&nbsp;y&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">free_and_bound</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">all</span> , (<span class="id" title="var">patt_bound_evar</span> 0) <span class="id" title="var">and</span> (<span class="id" title="var">patt_free_evar</span> "y").<br/>
+&nbsp;&nbsp;<span class="comment">(*&nbsp;End&nbsp;of&nbsp;examples.&nbsp;*)</span><br/>
+
+<br/>
+<span class="id" title="keyword">End</span> <span class="id" title="var">test_1</span>.<br/>
+
+<br/>
+<span class="comment">(*&nbsp;Here&nbsp;we&nbsp;show&nbsp;how&nbsp;to&nbsp;use&nbsp;the&nbsp;Definedness&nbsp;module.&nbsp;*)</span><br/>
+<span class="id" title="keyword">Module</span> <span class="id" title="var">test_2</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Section</span> <span class="id" title="var">test_2</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">(*&nbsp;We&nbsp;must&nbsp;include&nbsp;all&nbsp;the&nbsp;symbols&nbsp;from&nbsp;the&nbsp;Definedness&nbsp;module&nbsp;into&nbsp;our&nbsp;signature.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;We&nbsp;do&nbsp;this&nbsp;by&nbsp;defining&nbsp;a&nbsp;constructor&nbsp;`sym_import_definedness&nbsp;:&nbsp;Definedness.Symbols&nbsp;-&gt;&nbsp;Symbols`.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;And&nbsp;we&nbsp;also&nbsp;define&nbsp;a&nbsp;bunch&nbsp;of&nbsp;other&nbsp;symbols.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;*)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Inductive</span> <span class="id" title="var">Symbols</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">sym_import_definedness</span> (<span class="id" title="var">d</span> : <span class="id" title="var">Definedness_Syntax.Symbols</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">sym_import_sorts</span> (<span class="id" title="var">s</span> : <span class="id" title="var">Sorts_Syntax.Symbols</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">sym_SortNat</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">sym_zero</span> | <span class="id" title="var">sym_succ</span> <span class="comment">(*&nbsp;constructors&nbsp;for&nbsp;Nats&nbsp;*)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">sym_c</span> <span class="comment">(*&nbsp;some&nbsp;constant&nbsp;that&nbsp;we&nbsp;make&nbsp;functional&nbsp;*)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Instance</span> <span class="id" title="var">Symbols_eqdec</span> : <span class="id" title="var">EqDecision</span> <span class="id" title="var">Symbols</span>.<br/>
+ 
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;#[<span class="id" title="var">local</span>]<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Program</span> <span class="id" title="keyword">Instance</span> <span class="id" title="var">Symbols_fin</span> : <span class="id" title="var">Finite</span> <span class="id" title="var">Symbols</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">enum</span> := [<span class="id" title="var">sym_c</span>; <span class="id" title="var">sym_zero</span>; <span class="id" title="var">sym_succ</span>; <span class="id" title="var">sym_SortNat</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">sym_import_sorts</span> <span class="id" title="var">Sorts_Syntax.sym_inh</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">sym_import_sorts</span> <span class="id" title="var">Sorts_Syntax.sym_sorts</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">sym_import_definedness</span> <span class="id" title="var">Definedness_Syntax.def_sym</span>] ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;|}.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Instance</span> <span class="id" title="var">signature</span> : <span class="id" title="var">Signature</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{| <span class="id" title="var">variables</span> := <span class="id" title="var">StringMLVariables</span> ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">ml_symbols</span> := {|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">symbols</span> := <span class="id" title="var">Symbols</span> ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|} ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|}.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Instance</span> <span class="id" title="var">definedness_syntax</span> : <span class="id" title="var">Definedness_Syntax.Syntax</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Definedness_Syntax.sym_inj</span> := <span class="id" title="var">sym_import_definedness</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|}.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Instance</span> <span class="id" title="var">sorts_syntax</span> : <span class="id" title="var">Sorts_Syntax.Syntax</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Sorts_Syntax.sym_inj</span> := <span class="id" title="var">sym_import_sorts</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Sorts_Syntax.imported_definedness</span> := <span class="id" title="var">definedness_syntax</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|}.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Example</span> <span class="id" title="var">test_pattern_0</span> : <span class="id" title="var">Pattern</span> := <span class="id" title="var">patt_sym</span> <span class="id" title="var">sym_c</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Example</span> <span class="id" title="var">test_pattern_1</span> : <span class="id" title="var">Pattern</span> := @<span class="id" title="var">patt_defined</span> <span class="id" title="var">signature</span> <span class="id" title="var">definedness_syntax</span> (<span class="id" title="var">patt_sym</span> <span class="id" title="var">sym_c</span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Example</span> <span class="id" title="var">test_pattern_2</span> : <span class="id" title="var">Pattern</span> := <span class="id" title="var">patt_defined</span> (<span class="id" title="var">patt_sym</span> <span class="id" title="var">sym_c</span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Example</span> <span class="id" title="var">test_pattern_3</span> <span class="id" title="var">s</span> : <span class="id" title="var">Pattern</span> := <span class="id" title="var">patt_equal</span> (<span class="id" title="var">patt_sym</span> <span class="id" title="var">s</span>) (<span class="id" title="var">patt_sym</span> <span class="id" title="var">s</span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Example</span> <span class="id" title="var">test_pattern_4</span> : <span class="id" title="var">Pattern</span> := <span class="id" title="var">patt_defined</span> (<span class="id" title="var">patt_sym</span> <span class="id" title="var">sym_c</span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Example</span> <span class="id" title="var">test_pattern_5</span> : <span class="id" title="var">Pattern</span> := <span class="id" title="var">patt_equal</span> (<span class="id" title="var">patt_inhabitant_set</span> (<span class="id" title="var">patt_sym</span> <span class="id" title="var">sym_SortNat</span>)) (<span class="id" title="var">patt_sym</span> <span class="id" title="var">sym_zero</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Example</span> <span class="id" title="var">test_pattern_3_open</span> <span class="id" title="var">s</span> <span class="id" title="var">x</span> : (<span class="id" title="var">test_pattern_3</span> <span class="id" title="var">s</span>)^{<span class="id" title="tactic">evar</span>: 0 ↦ <span class="id" title="var">x</span>} = (<span class="id" title="var">test_pattern_3</span> <span class="id" title="var">s</span>).<br/>
+ 
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Inductive</span> <span class="id" title="var">CustomElements</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">m_def</span> <span class="comment">(*&nbsp;interprets&nbsp;the&nbsp;definedness&nbsp;symbol&nbsp;*)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">m_succ</span> <span class="comment">(*&nbsp;the&nbsp;successor&nbsp;function&nbsp;on&nbsp;nats&nbsp;*)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">m_some_element</span> <span class="comment">(*&nbsp;just&nbsp;some&nbsp;element&nbsp;so&nbsp;that&nbsp;things&nbsp;do&nbsp;not&nbsp;get&nbsp;boring&nbsp;*)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Instance</span> <span class="id" title="var">CustomElements_eqdec</span> : <span class="id" title="var">EqDecision</span> <span class="id" title="var">CustomElements</span>.<br/>
+ 
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Inductive</span> <span class="id" title="var">domain</span> : <span class="id" title="keyword">Set</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">dom_nat</span> (<span class="id" title="var">n</span>:<span class="id" title="var">nat</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">dom_custom</span> (<span class="id" title="var">c</span>:<span class="id" title="var">CustomElements</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Instance</span> <span class="id" title="var">domain_inhabited</span> : <span class="id" title="var">Inhabited</span> <span class="id" title="var">domain</span> := <span class="id" title="var">populate</span> (<span class="id" title="var">dom_nat</span> 0).<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Instance</span> <span class="id" title="var">domain_eqdec</span> : <span class="id" title="var">EqDecision</span> <span class="id" title="var">domain</span>.<br/>
+ 
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">my_sym_interp</span>(<span class="id" title="var">s</span>: <span class="id" title="var">Symbols</span>) : <span class="id" title="var">propset</span> <span class="id" title="var">domain</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">s</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">sym_import_definedness</span> <span class="id" title="var">s_def</span> ⇒ {[ (<span class="id" title="var">dom_custom</span> <span class="id" title="var">m_def</span>) ]}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">sym_zero</span> ⇒ {[ (<span class="id" title="var">dom_nat</span> 0) ]}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">sym_succ</span> ⇒ {[ (<span class="id" title="var">dom_custom</span> <span class="id" title="var">m_succ</span>) ]}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">_</span> ⇒ ∅<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">my_app_interp</span>(<span class="id" title="var">m1</span> <span class="id" title="var">m2</span> : <span class="id" title="var">domain</span>) : <span class="id" title="var">propset</span> <span class="id" title="var">domain</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">m1</span>, <span class="id" title="var">m1</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">dom_custom</span> <span class="id" title="var">m_def</span>, <span class="id" title="var">_</span> ⇒ ⊤ <span class="comment">(*&nbsp;definedness&nbsp;*)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">dom_custom</span> <span class="id" title="var">m_succ</span>, <span class="id" title="var">dom_nat</span> <span class="id" title="var">n</span> ⇒ {[ (<span class="id" title="var">dom_nat</span> (<span class="id" title="var">n</span>+1)) ]}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">_</span>, <span class="id" title="var">_</span> ⇒ ∅<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">M1</span> : <span class="id" title="var">Model</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{| <span class="id" title="var">Domain</span> := <span class="id" title="var">domain</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">sym_interp</span> := <span class="id" title="var">my_sym_interp</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">app_interp</span> := <span class="id" title="var">my_app_interp</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|}.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">(*&nbsp;FIXME:&nbsp;Otherwise,&nbsp;when&nbsp;I&nbsp;do&nbsp;<span class="inlinecode"><span class="id" title="tactic">simpl</span></span>,&nbsp;Coq&nbsp;replaces&nbsp;<span class="inlinecode"><span class="id" title="var">Domain</span></span> <span class="inlinecode"><span class="id" title="var">M1</span></span>&nbsp;with&nbsp;<span class="inlinecode"><span class="id" title="var">domain</span></span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;and&nbsp;that&nbsp;breaks&nbsp;typeclass&nbsp;search;&nbsp;namely,&nbsp;simple&nbsp;apply&nbsp;propset_leibniz_equiv.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;*)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Arguments</span> <span class="id" title="var">Domain</span> : <span class="id" title="tactic">simpl</span> <span class="id" title="var">never</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">(*&nbsp;TODO&nbsp;a&nbsp;tactic&nbsp;that&nbsp;solves&nbsp;this,&nbsp;or&nbsp;a&nbsp;parameterized&nbsp;lemma.&nbsp;*)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">M1_satisfies_definedness1</span> : @<span class="id" title="var">satisfies_model</span> <span class="id" title="var">signature</span> <span class="id" title="var">M1</span> (<span class="id" title="var">Definedness_Syntax.axiom</span> <span class="id" title="var">Definedness_Syntax.AxDefinedness</span>).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">End</span> <span class="id" title="var">test_2</span>.<br/>
+<span class="id" title="keyword">End</span> <span class="id" title="var">test_2</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Module</span> <span class="id" title="var">test_3</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Section</span> <span class="id" title="var">test_3</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Inductive</span> <span class="id" title="var">Symbols</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">sym_import_definedness</span> (<span class="id" title="var">d</span> : <span class="id" title="var">Definedness_Syntax.Symbols</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">Zero</span> | <span class="id" title="var">Succ</span> <span class="comment">(*&nbsp;constructors&nbsp;for&nbsp;Nats&nbsp;*)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">TT</span> | <span class="id" title="var">FF</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">even</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Instance</span> <span class="id" title="var">Symbols_eqdec</span> : <span class="id" title="var">EqDecision</span> <span class="id" title="var">Symbols</span>.<br/>
+ 
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;#[<span class="id" title="var">local</span>]<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Program</span> <span class="id" title="keyword">Instance</span> <span class="id" title="var">Symbols_fin</span> : <span class="id" title="var">Finite</span> <span class="id" title="var">Symbols</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">enum</span> := [<span class="id" title="var">Zero</span>; <span class="id" title="var">Succ</span>; <span class="id" title="var">TT</span> ; <span class="id" title="var">FF</span>; <span class="id" title="var">even</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">sym_import_definedness</span> <span class="id" title="var">Definedness_Syntax.def_sym</span>] ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;|}.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Instance</span> <span class="id" title="var">signature</span> : <span class="id" title="var">Signature</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{| <span class="id" title="var">variables</span> := <span class="id" title="var">StringMLVariables</span> ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">ml_symbols</span> := {|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">symbols</span> := <span class="id" title="var">Symbols</span> ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|} ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|}.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Instance</span> <span class="id" title="var">definedness_syntax</span> : <span class="id" title="var">Definedness_Syntax.Syntax</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Definedness_Syntax.sym_inj</span> := <span class="id" title="var">sym_import_definedness</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|}.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Open</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">string_scope</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Let</span> <span class="id" title="var">X0</span> := <span class="id" title="var">patt_free_evar</span> "X0".<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Let</span> <span class="id" title="var">X</span> := <span class="id" title="var">patt_free_evar</span> "X".<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Let</span> <span class="id" title="var">sym_even</span> := <span class="id" title="var">patt_sym</span> <span class="id" title="var">even</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Let</span> <span class="id" title="var">sym_succ</span> := <span class="id" title="var">patt_sym</span> <span class="id" title="var">Succ</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Let</span> <span class="id" title="var">sym_zero</span> := <span class="id" title="var">patt_sym</span> <span class="id" title="var">Zero</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Let</span> <span class="id" title="var">sym_tt</span> := <span class="id" title="var">patt_sym</span> <span class="id" title="var">TT</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Let</span> <span class="id" title="var">sym_ff</span> := <span class="id" title="var">patt_sym</span> <span class="id" title="var">FF</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">(*&nbsp;axioms&nbsp;*)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">defined</span> : <span class="id" title="var">Pattern</span> := <span class="id" title="var">Definedness_Syntax.axiom</span> <span class="id" title="var">AxDefinedness</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">ruleA</span> : <span class="id" title="var">Pattern</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">X0</span> ∈<span class="id" title="var">ml</span> <span class="id" title="var">sym_succ</span> ⋅ <span class="id" title="var">sym_succ</span> ⋅ <span class="id" title="var">X</span> ---&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">sym_even</span> ⋅ <span class="id" title="var">X0</span> =<span class="id" title="var">ml</span> <span class="id" title="var">patt_sym</span> <span class="id" title="var">even</span> ⋅ <span class="id" title="var">X</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">ruleB</span> : <span class="id" title="var">Pattern</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">X0</span> ∈<span class="id" title="var">ml</span> <span class="id" title="var">sym_succ</span> ⋅ <span class="id" title="var">sym_zero</span> ---&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">sym_even</span> ⋅ <span class="id" title="var">X0</span> =<span class="id" title="var">ml</span> <span class="id" title="var">sym_ff</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">ruleC</span> : <span class="id" title="var">Pattern</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">X0</span> ∈<span class="id" title="var">ml</span> <span class="id" title="var">sym_zero</span> ---&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">sym_even</span> ⋅ <span class="id" title="var">X0</span> =<span class="id" title="var">ml</span> <span class="id" title="var">sym_tt</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Let</span> <span class="id" title="var">Γ</span>ₙₐₜ : <span class="id" title="var">Theory</span> := {[ <span class="id" title="var">defined</span>; <span class="id" title="var">ruleA</span>; <span class="id" title="var">ruleB</span>; <span class="id" title="var">ruleC</span> ]}.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Theorem</span> <span class="id" title="var">def_theory</span> : <span class="id" title="var">theory</span> ⊆ <span class="id" title="var">Γ</span>ₙₐₜ.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Theorem</span> <span class="id" title="var">example</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Γ</span>ₙₐₜ ⊢<span class="id" title="var">i</span> <span class="id" title="var">sym_tt</span> ∈<span class="id" title="var">ml</span> <span class="id" title="var">sym_even</span> ⋅ (<span class="id" title="var">sym_succ</span> ⋅ (<span class="id" title="var">sym_succ</span> ⋅ (<span class="id" title="var">sym_succ</span> ⋅ (<span class="id" title="var">sym_succ</span> ⋅ <span class="id" title="var">sym_zero</span>)))) <span class="id" title="keyword">using</span> <span class="id" title="var">AnyReasoning</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">End</span> <span class="id" title="var">test_3</span>.<br/>
+<span class="id" title="keyword">End</span> <span class="id" title="var">test_3</span>.<br/>
+
+<br/>
+</div>
+<hr/>This page has been generated by <a href="http://coq.inria.fr/">coqdoc</a>
+</div>
+
+</div>
+
+</body>
+</html>

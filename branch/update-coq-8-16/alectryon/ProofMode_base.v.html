@@ -1,0 +1,1116 @@
+<!DOCTYPE html>
+<html class="alectryon-standalone"><head><title>ProofMode_base.v</title><meta charset="utf-8"><meta content="Alectryon" name="generator"><meta name="viewport" content="width=device-width, initial-scale=1"><link href="alectryon.css" rel="stylesheet"><link href="pygments.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/IBM-type/0.5.4/css/ibm-type.min.css" integrity="sha512-sky5cf9Ts6FY1kstGOBHSybfKqdHR41M0Ldb0BjNiv3ifltoQIsg0zIaQ+wwdwgQ0w9vKFW7Js50lxH9vqNSSw==" crossorigin="anonymous" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/firacode/5.2.0/fira_code.min.css" integrity="sha512-MbysAYimH1hH2xYzkkMHB6MqxBqfP0megxsCLknbYqHVwXTCg9IqHbk+ZP/vnhO8UEW6PaXAkKe2vQ+SWACxxA==" crossorigin="anonymous" /><script src="alectryon.js"></script></head><body><article class="alectryon-root alectryon-centered"><div class="alectryon-banner">Built with <a href="https://github.com/cpitclaudel/alectryon/">Alectryon</a>, running Coq+SerAPI v8.16.0+0.16.0. Bubbles (<span class="alectryon-bubble"></span>) indicate interactive fragments: hover for details, tap to reveal contents. Use <kbd>Ctrl+↑</kbd> <kbd>Ctrl+↓</kbd> to navigate, <kbd>Ctrl+🖱️</kbd> to focus. On Mac, use <kbd>⌘</kbd> instead of <kbd>Ctrl</kbd>.</div><pre class="alectryon-io highlight"><!-- Generator: Alectryon --><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">From</span> Coq <span class="kn">Require Import</span> ssreflect ssrfun ssrbool.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">From</span> <span class="kn">Ltac2</span> <span class="kn">Require Import</span> <span class="kn">Ltac2</span>.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">From</span> Coq <span class="kn">Require Import</span> Ensembles Bool String.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">From</span> Coq.Logic <span class="kn">Require Import</span> FunctionalExtensionality Eqdep_dec.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">From</span> <span class="kn">Equations</span> <span class="nf">Require</span> <span class="nv">Import</span> <span class="nv">Equations</span>.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Require Import</span> Coq.Program.Tactics.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">From</span> MatchingLogic <span class="kn">Require Import</span> Syntax DerivedOperators_Syntax ProofSystem IndexManipulation wftactics.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk0" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk0"><span class="kn">From</span> stdpp <span class="kn">Require Import</span> list tactics fin_sets coGset gmap sets.</label><small class="alectryon-output"><div><div class="alectryon-messages"><blockquote class="alectryon-message">New coercion path [Is_true] : bool &gt;-&gt; <span class="kt">Sortclass</span> <span class="kr">is</span> ambiguous <span class="kr">with</span> existing 
+[is_true] : bool &gt;-&gt; <span class="kt">Sortclass</span>.
+[ambiguous-paths,typechecker]</blockquote><blockquote class="alectryon-message">New coercion path [Is_true] : bool &gt;-&gt; <span class="kt">Sortclass</span> <span class="kr">is</span> ambiguous <span class="kr">with</span> existing 
+[is_true] : bool &gt;-&gt; <span class="kt">Sortclass</span>.
+[ambiguous-paths,typechecker]</blockquote><blockquote class="alectryon-message">New coercion path [Is_true] : bool &gt;-&gt; <span class="kt">Sortclass</span> <span class="kr">is</span> ambiguous <span class="kr">with</span> existing 
+[is_true] : bool &gt;-&gt; <span class="kt">Sortclass</span>.
+[ambiguous-paths,typechecker]</blockquote><blockquote class="alectryon-message">New coercion path [Is_true] : bool &gt;-&gt; <span class="kt">Sortclass</span> <span class="kr">is</span> ambiguous <span class="kr">with</span> existing 
+[is_true] : bool &gt;-&gt; <span class="kt">Sortclass</span>.
+[ambiguous-paths,typechecker]</blockquote><blockquote class="alectryon-message">New coercion path [Is_true] : bool &gt;-&gt; <span class="kt">Sortclass</span> <span class="kr">is</span> ambiguous <span class="kr">with</span> existing 
+[is_true] : bool &gt;-&gt; <span class="kt">Sortclass</span>.
+[ambiguous-paths,typechecker]</blockquote><blockquote class="alectryon-message">New coercion path [Is_true] : bool &gt;-&gt; <span class="kt">Sortclass</span> <span class="kr">is</span> ambiguous <span class="kr">with</span> existing 
+[is_true] : bool &gt;-&gt; <span class="kt">Sortclass</span>.
+[ambiguous-paths,typechecker]</blockquote></div></div></small><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">From</span> MatchingLogic.Utils <span class="kn">Require Import</span> stdpp_ext.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Import</span> extralibrary.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Import</span>
+  MatchingLogic.Syntax.Notations
+  MatchingLogic.DerivedOperators_Syntax.Notations
+  MatchingLogic.ProofSystem.Notations
+.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+<span class="c">(* Exports *)</span>
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Export</span> MatchingLogic.ProofSystem.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kt">Set</span> Default <span class="kn">Proof</span> Mode <span class="s2">&quot;Classic&quot;</span>.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Open Scope</span> ml_scope.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Record</span> <span class="nf">named_hypothesis</span> {<span class="nv">Σ</span> : Signature} := mkNH
+  {
+    nh_name : string;
+    nh_patt : Pattern;
+  }.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Notation</span> <span class="s2">&quot;N ∶ P&quot;</span> :=
+  (@mkNH _ N P)
+  (<span class="kn">at level</span> <span class="mi">100</span>, <span class="kn">no associativity</span>, <span class="kn">format</span> <span class="s2">&quot;N  &#39;∶&#39;  P&quot;</span>, <span class="kn">only printing</span>).</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Definition</span> <span class="nf">hypotheses</span> {<span class="nv">Σ</span> : Signature} := list named_hypothesis.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Notation</span> <span class="s2">&quot;&quot;</span> :=
+  (@nil named_hypothesis)
+  (<span class="kn">at level</span> <span class="mi">100</span>, <span class="kn">left associativity</span>, <span class="kn">only printing</span>) : ml_scope.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp"><span class="c">(*TODO: Ensure that this does not add parentheses*)</span>
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Notation</span> <span class="s2">&quot;x ,&quot;</span> :=
+  (@cons named_hypothesis x nil)
+  (<span class="kn">at level</span> <span class="mi">100</span>, <span class="kn">left associativity</span>, <span class="kn">format</span> <span class="s2">&quot;x &#39;,&#39; &#39;//&#39;&quot;</span>, <span class="kn">only printing</span>) : ml_scope.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Notation</span> <span class="s2">&quot;x , y , .. , z ,&quot;</span> :=
+  (@cons named_hypothesis x (cons y .. (cons z nil) ..))
+  (<span class="kn">at level</span> <span class="mi">100</span>, <span class="kn">left associativity</span>, <span class="kn">format</span> <span class="s2">&quot;x &#39;,&#39; &#39;//&#39; y &#39;,&#39; &#39;//&#39; .. &#39;,&#39; &#39;//&#39; z &#39;,&#39; &#39;//&#39;&quot;</span>, <span class="kn">only printing</span>) : ml_scope.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Definition</span> <span class="nf">names_of</span> {<span class="nv">Σ</span> : Signature} (<span class="nv">h</span> : hypotheses) : list string := map nh_name h.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Definition</span> <span class="nf">patterns_of</span> {<span class="nv">Σ</span> : Signature} (<span class="nv">h</span> : hypotheses) : list Pattern := map nh_patt h.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Definition</span> <span class="nf">has_name</span> {<span class="nv">Σ</span> : Signature} (<span class="nv">n</span> : string) (<span class="nv">nh</span> : named_hypothesis) : <span class="kt">Prop</span>
+:= nh_name nh = n.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk1" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk1">#[<span class="kn">global</span>]
+<span class="kn">Instance</span> <span class="nf">has_name_dec</span> {<span class="nv">Σ</span> : Signature} <span class="nv">n</span> <span class="nv">nh</span> : Decision (has_name n nh).</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>n</var><span class="hyp-type"><b>: </b><span>string</span></span></span><br><span><var>nh</var><span class="hyp-type"><b>: </b><span>named_hypothesis</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">Decision (has_name n nh)</div></blockquote></div></div></small><span class="alectryon-wsp">
+</span></span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk2" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk2"><span class="kn">Proof</span>.</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>n</var><span class="hyp-type"><b>: </b><span>string</span></span></span><br><span><var>nh</var><span class="hyp-type"><b>: </b><span>named_hypothesis</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">Decision (has_name n nh)</div></blockquote></div></div></small><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">  </span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk3" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk3"><span class="nb">unfold</span> has_name.</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>n</var><span class="hyp-type"><b>: </b><span>string</span></span></span><br><span><var>nh</var><span class="hyp-type"><b>: </b><span>named_hypothesis</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">Decision (nh_name nh = n)</div></blockquote></div></div></small><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">  </span><span class="alectryon-sentence"><span class="alectryon-input">solve_decision.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Defined</span>.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Definition</span> <span class="nf">find_hyp</span> {<span class="nv">Σ</span> : Signature} (<span class="nv">name</span> : string) (<span class="nv">hyps</span> : hypotheses) : option (nat * named_hypothesis)%type
+:= stdpp.list.list_find (has_name name) hyps.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Record</span> <span class="nf">MLGoal</span> {<span class="nv">Σ</span> : Signature} : <span class="kt">Type</span> := mkMLGoal
+  { mlTheory : Theory;
+    mlHypotheses: hypotheses;
+    mlConclusion : Pattern ;
+    mlInfo : ProofSystem.ProofInfo ;
+  }.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Definition</span> <span class="nf">MLGoal_from_goal</span>
+  {<span class="nv">Σ</span> : Signature} (<span class="nv">Γ</span> : Theory) (<span class="nv">goal</span> : Pattern) (<span class="nv">pi</span> : ProofInfo)
+  :
+  MLGoal
+  := mkMLGoal Σ Γ nil goal pi.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Coercion</span> <span class="nf">of_MLGoal</span> {Σ : Signature} (MG : MLGoal) : <span class="kt">Type</span> :=
+  well_formed (mlConclusion MG) -&gt;
+  Pattern.<span class="kn">wf</span> (patterns_of (mlHypotheses MG)) -&gt;
+  (mlTheory MG) ⊢i (fold_right patt_imp (mlConclusion MG) (patterns_of (mlHypotheses MG)))
+  <span class="nb">using</span> (mlInfo MG).</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+
+
+  <span class="c">(* This is useful only for printing. </span>
+<span class="c">     0x2c75 was used for the ⊢ to avoid collision *)</span>
+</span><span class="alectryon-wsp">  </span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Notation</span> <span class="s2">&quot;G &#39;Ⱶ&#39; g &#39;using&#39; pi &quot;</span>
+  := (mkMLGoal _ G [] g pi)
+  (<span class="kn">at level</span> <span class="mi">95</span>,
+  <span class="kn">no associativity</span>,
+  <span class="kn">format</span> <span class="s2">&quot;G  &#39;Ⱶ&#39; &#39;//&#39; g &#39;//&#39; &#39;using&#39;  pi &#39;//&#39;&quot;</span>,
+  <span class="kn">only printing</span>).</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-wsp">  </span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Notation</span> <span class="s2">&quot;G &#39;Ⱶ&#39; g&quot;</span>
+  := (mkMLGoal _ G [] g AnyReasoning)
+  (<span class="kn">at level</span> <span class="mi">95</span>,
+  <span class="kn">no associativity</span>,
+  <span class="kn">format</span> <span class="s2">&quot;G  &#39;Ⱶ&#39; &#39;//&#39;  g &#39;//&#39;&quot;</span>,
+  <span class="kn">only printing</span>).</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-wsp">  </span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Notation</span> <span class="s2">&quot;G &#39;Ⱶ&#39; l -------------------------------------- g &#39;using&#39; pi &quot;</span>
+  := (mkMLGoal _ G l g pi)
+  (<span class="kn">at level</span> <span class="mi">95</span>,
+  <span class="kn">no associativity</span>,
+  <span class="kn">format</span> <span class="s2">&quot;G  &#39;Ⱶ&#39; &#39;//&#39; l -------------------------------------- &#39;//&#39; g &#39;//&#39; &#39;using&#39;  pi &#39;//&#39;&quot;</span>,
+  <span class="kn">only printing</span>).</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-wsp">  </span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Notation</span> <span class="s2">&quot;G &#39;Ⱶ&#39; l -------------------------------------- g&quot;</span>
+  := (mkMLGoal _ G l g AnyReasoning)
+  (<span class="kn">at level</span> <span class="mi">95</span>,
+  <span class="kn">no associativity</span>,
+  <span class="kn">format</span> <span class="s2">&quot;G  &#39;Ⱶ&#39; &#39;//&#39; l -------------------------------------- &#39;//&#39; g &#39;//&#39;&quot;</span>,
+  <span class="kn">only printing</span>).</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Ltac</span> <span class="nf">toMLGoal</span> :=
+  <span class="nb">unfold</span> ProofSystem.derives;
+  <span class="kr">lazymatch goal with</span>
+  | [ |- <span class="nl">?G</span> ⊢i <span class="nl">?phi</span> <span class="nb">using</span> <span class="nl">?pi</span>]
+    =&gt; <span class="nb">cut</span> (of_MLGoal (MLGoal_from_goal G phi pi));
+       <span class="nb">unfold</span> MLGoal_from_goal;
+       [(<span class="nb">unfold</span> of_MLGoal; <span class="nb">simpl</span>; <span class="kr">let</span> <span class="nv">H</span> := <span class="kp">fresh</span> <span class="s2">&quot;H&quot;</span> <span class="kr">in</span> <span class="nb">intros</span> H; <span class="nb">apply</span> H; <span class="nb">clear</span> H; [|<span class="bp">reflexivity</span>])|]
+  <span class="kr">end</span>.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Ltac</span> <span class="nf">fromMLGoal</span> := <span class="nb">unfold</span> of_MLGoal; <span class="nb">simpl</span>; <span class="nb">intros</span> _ _.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk4" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk4"><span class="kn">Lemma</span> <span class="nf">cast_proof&#39;</span> {<span class="nv">Σ</span> : Signature} (<span class="nv">Γ</span> : Theory) (<span class="nv">ϕ</span> <span class="nv">ψ</span> : Pattern) (<span class="nv">i</span> : ProofInfo) (<span class="nv">e</span> : ψ = ϕ) :
+  Γ ⊢i ϕ <span class="nb">using</span> i -&gt;
+  Γ ⊢i ψ <span class="nb">using</span> i.</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>ϕ, ψ</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>e</var><span class="hyp-type"><b>: </b><span>ψ = ϕ</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">Γ ⊢i ϕ <span class="nb">using</span> i → Γ ⊢i ψ <span class="nb">using</span> i</div></blockquote></div></div></small><span class="alectryon-wsp">
+</span></span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk5" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk5"><span class="kn">Proof</span>.</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>ϕ, ψ</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>e</var><span class="hyp-type"><b>: </b><span>ψ = ϕ</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">Γ ⊢i ϕ <span class="nb">using</span> i → Γ ⊢i ψ <span class="nb">using</span> i</div></blockquote></div></div></small><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">  </span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk6" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk6"><span class="nb">intros</span> [pf Hpf].</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>ϕ, ψ</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>e</var><span class="hyp-type"><b>: </b><span>ψ = ϕ</span></span></span><br><span><var>pf</var><span class="hyp-type"><b>: </b><span>ML_proof_system Γ ϕ</span></span></span><br><span><var>Hpf</var><span class="hyp-type"><b>: </b><span>ProofInfoMeaning Γ ϕ pf i</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">Γ ⊢i ψ <span class="nb">using</span> i</div></blockquote></div></div></small><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">  </span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk7" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk7"><span class="nb">unshelve</span> (<span class="nb">eexists</span>).</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>ϕ, ψ</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>e</var><span class="hyp-type"><b>: </b><span>ψ = ϕ</span></span></span><br><span><var>pf</var><span class="hyp-type"><b>: </b><span>ML_proof_system Γ ϕ</span></span></span><br><span><var>Hpf</var><span class="hyp-type"><b>: </b><span>ProofInfoMeaning Γ ϕ pf i</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">ML_proof_system Γ ψ</div></blockquote><div class="alectryon-extra-goals"><input class="alectryon-extra-goal-toggle" id="ProofMode-base-v-chk8" style="display: none" type="checkbox"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>ϕ, ψ</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>e</var><span class="hyp-type"><b>: </b><span>ψ = ϕ</span></span></span><br><span><var>pf</var><span class="hyp-type"><b>: </b><span>ML_proof_system Γ ϕ</span></span></span><br><span><var>Hpf</var><span class="hyp-type"><b>: </b><span>ProofInfoMeaning Γ ϕ pf i</span></span></span><br></div><label class="goal-separator" for="ProofMode-base-v-chk8"><hr></label><div class="goal-conclusion">ProofInfoMeaning Γ ψ <span class="nl">?pf</span> i</div></blockquote></div></div></div></small><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">  </span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk9" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk9">{</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>ϕ, ψ</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>e</var><span class="hyp-type"><b>: </b><span>ψ = ϕ</span></span></span><br><span><var>pf</var><span class="hyp-type"><b>: </b><span>ML_proof_system Γ ϕ</span></span></span><br><span><var>Hpf</var><span class="hyp-type"><b>: </b><span>ProofInfoMeaning Γ ϕ pf i</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">ML_proof_system Γ ψ</div></blockquote></div></div></small><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">    </span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chka" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chka"><span class="nb">apply</span> (cast_proof e).</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>ϕ, ψ</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>e</var><span class="hyp-type"><b>: </b><span>ψ = ϕ</span></span></span><br><span><var>pf</var><span class="hyp-type"><b>: </b><span>ML_proof_system Γ ϕ</span></span></span><br><span><var>Hpf</var><span class="hyp-type"><b>: </b><span>ProofInfoMeaning Γ ϕ pf i</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">ML_proof_system Γ ϕ</div></blockquote></div></div></small><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">    </span><span class="alectryon-sentence"><span class="alectryon-input"><span class="bp">exact</span> pf.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">  </span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chkb" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chkb">}</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>ϕ, ψ</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>e</var><span class="hyp-type"><b>: </b><span>ψ = ϕ</span></span></span><br><span><var>pf</var><span class="hyp-type"><b>: </b><span>ML_proof_system Γ ϕ</span></span></span><br><span><var>Hpf</var><span class="hyp-type"><b>: </b><span>ProofInfoMeaning Γ ϕ pf i</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">ProofInfoMeaning Γ ψ (cast_proof e pf) i</div></blockquote></div></div></small><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">  </span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chkc" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chkc">{</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>ϕ, ψ</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>e</var><span class="hyp-type"><b>: </b><span>ψ = ϕ</span></span></span><br><span><var>pf</var><span class="hyp-type"><b>: </b><span>ML_proof_system Γ ϕ</span></span></span><br><span><var>Hpf</var><span class="hyp-type"><b>: </b><span>ProofInfoMeaning Γ ϕ pf i</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">ProofInfoMeaning Γ ψ (cast_proof e pf) i</div></blockquote></div></div></small><span class="alectryon-wsp"> </span></span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kp">abstract</span>(
+    <span class="nb">destruct</span> Hpf <span class="kr">as</span> [Hpf2 Hpf3 Hpf4];
+    <span class="nb">constructor</span>; [
+    (
+      <span class="nb">rewrite</span> elem_of_subseteq <span class="kr">in</span> Hpf2;
+      <span class="nb">rewrite</span> elem_of_subseteq;
+      <span class="nb">intros</span> x Hx;
+      <span class="nb">specialize</span> (Hpf2 x);
+      <span class="nb">apply</span> Hpf2; <span class="nb">clear</span> Hpf2;
+      <span class="nb">rewrite</span> elem_of_gset_to_coGset <span class="kr">in</span> Hx;
+      <span class="nb">rewrite</span> uses_of_ex_gen_correct <span class="kr">in</span> Hx;
+      <span class="nb">rewrite</span> elem_of_gset_to_coGset;
+      <span class="nb">rewrite</span> uses_of_ex_gen_correct;
+      <span class="nb">rewrite</span> indifferent_to_cast_uses_ex_gen <span class="kr">in</span> Hx;
+      <span class="bp">exact</span> Hx
+    )|
+    (
+      <span class="nb">rewrite</span> elem_of_subseteq <span class="kr">in</span> Hpf3;
+      <span class="nb">rewrite</span> elem_of_subseteq;
+      <span class="nb">intros</span> x Hx;
+      <span class="nb">specialize</span> (Hpf3 x);
+      <span class="nb">apply</span> Hpf3; <span class="nb">clear</span> Hpf3;
+      <span class="nb">rewrite</span> elem_of_gset_to_coGset <span class="kr">in</span> Hx;
+      <span class="nb">rewrite</span> uses_of_svar_subst_correct <span class="kr">in</span> Hx;
+      <span class="nb">rewrite</span> elem_of_gset_to_coGset;
+      <span class="nb">rewrite</span> uses_of_svar_subst_correct;
+      <span class="nb">rewrite</span> indifferent_to_cast_uses_svar_subst <span class="kr">in</span> Hx;
+      <span class="bp">exact</span> Hx
+    )|
+    (
+      <span class="nb">rewrite</span> indifferent_to_cast_uses_kt;
+      <span class="nb">apply</span> Hpf4
+    )
+    ]).</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">  </span><span class="alectryon-sentence"><span class="alectryon-input">}</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Defined</span>.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chkd" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chkd"><span class="kn">Lemma</span> <span class="nf">cast_proof_ml_hyps</span> {<span class="nv">Σ</span> : Signature} <span class="nv">Γ</span> <span class="nv">hyps</span> <span class="nv">hyps&#39;</span> (<span class="nv">e</span> : patterns_of hyps = patterns_of hyps&#39;) <span class="nv">goal</span> (<span class="nv">i</span> : ProofInfo) :
+  mkMLGoal Σ Γ hyps goal i -&gt;
+  mkMLGoal Σ Γ hyps&#39; goal i.</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>hyps, hyps'</var><span class="hyp-type"><b>: </b><span>hypotheses</span></span></span><br><span><var>e</var><span class="hyp-type"><b>: </b><span>patterns_of hyps = patterns_of hyps&#39;</span></span></span><br><span><var>goal</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">Γ Ⱶ
+hyps--------------------------------------
+goal
+<span class="nb">using</span> i
+
+→ Γ Ⱶ
+hyps&#39;--------------------------------------
+goal
+<span class="nb">using</span> i
+</div></blockquote></div></div></small><span class="alectryon-wsp">
+</span></span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chke" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chke"><span class="kn">Proof</span>.</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>hyps, hyps'</var><span class="hyp-type"><b>: </b><span>hypotheses</span></span></span><br><span><var>e</var><span class="hyp-type"><b>: </b><span>patterns_of hyps = patterns_of hyps&#39;</span></span></span><br><span><var>goal</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">Γ Ⱶ
+hyps--------------------------------------
+goal
+<span class="nb">using</span> i
+
+→ Γ Ⱶ
+hyps&#39;--------------------------------------
+goal
+<span class="nb">using</span> i
+</div></blockquote></div></div></small><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">  </span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chkf" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chkf"><span class="nb">unfold</span> of_MLGoal.</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>hyps, hyps'</var><span class="hyp-type"><b>: </b><span>hypotheses</span></span></span><br><span><var>e</var><span class="hyp-type"><b>: </b><span>patterns_of hyps = patterns_of hyps&#39;</span></span></span><br><span><var>goal</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">(well_formed
+   (mlConclusion
+      (Γ Ⱶ
+       hyps--------------------------------------
+       goal
+       <span class="nb">using</span> i
+       ))
+ → Pattern.<span class="kn">wf</span>
+     (patterns_of
+        (mlHypotheses
+           (Γ Ⱶ
+            hyps--------------------------------------
+            goal
+            <span class="nb">using</span> i
+            )))
+   → mlTheory
+       (Γ Ⱶ
+        hyps--------------------------------------
+        goal
+        <span class="nb">using</span> i
+        )
+     ⊢i foldr patt_imp
+          (mlConclusion
+             (Γ Ⱶ
+              hyps--------------------------------------
+              goal
+              <span class="nb">using</span> i
+              ))
+          (patterns_of
+             (mlHypotheses
+                (Γ Ⱶ
+                 hyps--------------------------------------
+                 goal
+                 <span class="nb">using</span> i
+                 )))
+     <span class="nb">using</span> mlInfo
+             (Γ Ⱶ
+              hyps--------------------------------------
+              goal
+              <span class="nb">using</span> i
+              ))
+→ well_formed
+    (mlConclusion
+       (Γ Ⱶ
+        hyps&#39;--------------------------------------
+        goal
+        <span class="nb">using</span> i
+        ))
+  → Pattern.<span class="kn">wf</span>
+      (patterns_of
+         (mlHypotheses
+            (Γ Ⱶ
+             hyps&#39;--------------------------------------
+             goal
+             <span class="nb">using</span> i
+             )))
+    → mlTheory
+        (Γ Ⱶ
+         hyps&#39;--------------------------------------
+         goal
+         <span class="nb">using</span> i
+         )
+      ⊢i foldr patt_imp
+           (mlConclusion
+              (Γ Ⱶ
+               hyps&#39;--------------------------------------
+               goal
+               <span class="nb">using</span> i
+               ))
+           (patterns_of
+              (mlHypotheses
+                 (Γ Ⱶ
+                  hyps&#39;--------------------------------------
+                  goal
+                  <span class="nb">using</span> i
+                  )))
+      <span class="nb">using</span> mlInfo
+              (Γ Ⱶ
+               hyps&#39;--------------------------------------
+               goal
+               <span class="nb">using</span> i
+               )</div></blockquote></div></div></small><span class="alectryon-wsp"> </span></span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk10" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk10"><span class="nb">simpl</span>.</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>hyps, hyps'</var><span class="hyp-type"><b>: </b><span>hypotheses</span></span></span><br><span><var>e</var><span class="hyp-type"><b>: </b><span>patterns_of hyps = patterns_of hyps&#39;</span></span></span><br><span><var>goal</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">(well_formed goal
+ → Pattern.<span class="kn">wf</span> (patterns_of hyps)
+   → Γ ⊢i foldr patt_imp goal (patterns_of hyps)
+     <span class="nb">using</span> i)
+→ well_formed goal
+  → Pattern.<span class="kn">wf</span> (patterns_of hyps&#39;)
+    → Γ ⊢i foldr patt_imp goal (patterns_of hyps&#39;)
+      <span class="nb">using</span> i</div></blockquote></div></div></small><span class="alectryon-wsp"> </span></span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk11" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk11"><span class="nb">intros</span> H.</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>hyps, hyps'</var><span class="hyp-type"><b>: </b><span>hypotheses</span></span></span><br><span><var>e</var><span class="hyp-type"><b>: </b><span>patterns_of hyps = patterns_of hyps&#39;</span></span></span><br><span><var>goal</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>H</var><span class="hyp-type"><b>: </b><span>well_formed goal
+→ Pattern.<span class="kn">wf</span> (patterns_of hyps)
+  → Γ ⊢i foldr patt_imp goal (patterns_of hyps)
+    <span class="nb">using</span> i</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">well_formed goal
+→ Pattern.<span class="kn">wf</span> (patterns_of hyps&#39;)
+  → Γ ⊢i foldr patt_imp goal (patterns_of hyps&#39;)
+    <span class="nb">using</span> i</div></blockquote></div></div></small><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">  </span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk12" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk12"><span class="nb">intros</span> wfg wfhyps&#39;.</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>hyps, hyps'</var><span class="hyp-type"><b>: </b><span>hypotheses</span></span></span><br><span><var>e</var><span class="hyp-type"><b>: </b><span>patterns_of hyps = patterns_of hyps&#39;</span></span></span><br><span><var>goal</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>H</var><span class="hyp-type"><b>: </b><span>well_formed goal
+→ Pattern.<span class="kn">wf</span> (patterns_of hyps)
+  → Γ ⊢i foldr patt_imp goal (patterns_of hyps)
+    <span class="nb">using</span> i</span></span></span><br><span><var>wfg</var><span class="hyp-type"><b>: </b><span>well_formed goal</span></span></span><br><span><var>wfhyps'</var><span class="hyp-type"><b>: </b><span>Pattern.<span class="kn">wf</span> (patterns_of hyps&#39;)</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">Γ ⊢i foldr patt_imp goal (patterns_of hyps&#39;) <span class="nb">using</span> i</div></blockquote></div></div></small><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">  </span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk13" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk13">feed <span class="nb">specialize</span> H.</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>hyps, hyps'</var><span class="hyp-type"><b>: </b><span>hypotheses</span></span></span><br><span><var>e</var><span class="hyp-type"><b>: </b><span>patterns_of hyps = patterns_of hyps&#39;</span></span></span><br><span><var>goal</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>H</var><span class="hyp-type"><b>: </b><span>well_formed goal
+→ Pattern.<span class="kn">wf</span> (patterns_of hyps)
+  → Γ ⊢i foldr patt_imp goal (patterns_of hyps)
+    <span class="nb">using</span> i</span></span></span><br><span><var>wfg</var><span class="hyp-type"><b>: </b><span>well_formed goal</span></span></span><br><span><var>wfhyps'</var><span class="hyp-type"><b>: </b><span>Pattern.<span class="kn">wf</span> (patterns_of hyps&#39;)</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">well_formed goal</div></blockquote><div class="alectryon-extra-goals"><input class="alectryon-extra-goal-toggle" id="ProofMode-base-v-chk14" style="display: none" type="checkbox"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>hyps, hyps'</var><span class="hyp-type"><b>: </b><span>hypotheses</span></span></span><br><span><var>e</var><span class="hyp-type"><b>: </b><span>patterns_of hyps = patterns_of hyps&#39;</span></span></span><br><span><var>goal</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>H</var><span class="hyp-type"><b>: </b><span>well_formed goal
+→ Pattern.<span class="kn">wf</span> (patterns_of hyps)
+  → Γ ⊢i foldr patt_imp goal (patterns_of hyps)
+    <span class="nb">using</span> i</span></span></span><br><span><var>wfg</var><span class="hyp-type"><b>: </b><span>well_formed goal</span></span></span><br><span><var>wfhyps'</var><span class="hyp-type"><b>: </b><span>Pattern.<span class="kn">wf</span> (patterns_of hyps&#39;)</span></span></span><br></div><label class="goal-separator" for="ProofMode-base-v-chk14"><hr></label><div class="goal-conclusion">Pattern.<span class="kn">wf</span> (patterns_of hyps)</div></blockquote><input class="alectryon-extra-goal-toggle" id="ProofMode-base-v-chk15" style="display: none" type="checkbox"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>hyps, hyps'</var><span class="hyp-type"><b>: </b><span>hypotheses</span></span></span><br><span><var>e</var><span class="hyp-type"><b>: </b><span>patterns_of hyps = patterns_of hyps&#39;</span></span></span><br><span><var>goal</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>H</var><span class="hyp-type"><b>: </b><span>Γ ⊢i foldr patt_imp goal (patterns_of hyps)
+<span class="nb">using</span> i</span></span></span><br><span><var>wfg</var><span class="hyp-type"><b>: </b><span>well_formed goal</span></span></span><br><span><var>wfhyps'</var><span class="hyp-type"><b>: </b><span>Pattern.<span class="kn">wf</span> (patterns_of hyps&#39;)</span></span></span><br></div><label class="goal-separator" for="ProofMode-base-v-chk15"><hr></label><div class="goal-conclusion">Γ ⊢i foldr patt_imp goal (patterns_of hyps&#39;) <span class="nb">using</span> i</div></blockquote></div></div></div></small><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">  </span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk16" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk16">{</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>hyps, hyps'</var><span class="hyp-type"><b>: </b><span>hypotheses</span></span></span><br><span><var>e</var><span class="hyp-type"><b>: </b><span>patterns_of hyps = patterns_of hyps&#39;</span></span></span><br><span><var>goal</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>H</var><span class="hyp-type"><b>: </b><span>well_formed goal
+→ Pattern.<span class="kn">wf</span> (patterns_of hyps)
+  → Γ ⊢i foldr patt_imp goal (patterns_of hyps)
+    <span class="nb">using</span> i</span></span></span><br><span><var>wfg</var><span class="hyp-type"><b>: </b><span>well_formed goal</span></span></span><br><span><var>wfhyps'</var><span class="hyp-type"><b>: </b><span>Pattern.<span class="kn">wf</span> (patterns_of hyps&#39;)</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">well_formed goal</div></blockquote></div></div></small><span class="alectryon-wsp"> </span></span><span class="alectryon-sentence"><span class="alectryon-input"><span class="bp">exact</span> wfg.</span><span class="alectryon-wsp"> </span></span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk17" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk17">}</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>hyps, hyps'</var><span class="hyp-type"><b>: </b><span>hypotheses</span></span></span><br><span><var>e</var><span class="hyp-type"><b>: </b><span>patterns_of hyps = patterns_of hyps&#39;</span></span></span><br><span><var>goal</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>H</var><span class="hyp-type"><b>: </b><span>well_formed goal
+→ Pattern.<span class="kn">wf</span> (patterns_of hyps)
+  → Γ ⊢i foldr patt_imp goal (patterns_of hyps)
+    <span class="nb">using</span> i</span></span></span><br><span><var>wfg</var><span class="hyp-type"><b>: </b><span>well_formed goal</span></span></span><br><span><var>wfhyps'</var><span class="hyp-type"><b>: </b><span>Pattern.<span class="kn">wf</span> (patterns_of hyps&#39;)</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">Pattern.<span class="kn">wf</span> (patterns_of hyps)</div></blockquote><div class="alectryon-extra-goals"><input class="alectryon-extra-goal-toggle" id="ProofMode-base-v-chk18" style="display: none" type="checkbox"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>hyps, hyps'</var><span class="hyp-type"><b>: </b><span>hypotheses</span></span></span><br><span><var>e</var><span class="hyp-type"><b>: </b><span>patterns_of hyps = patterns_of hyps&#39;</span></span></span><br><span><var>goal</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>H</var><span class="hyp-type"><b>: </b><span>Γ ⊢i foldr patt_imp goal (patterns_of hyps)
+<span class="nb">using</span> i</span></span></span><br><span><var>wfg</var><span class="hyp-type"><b>: </b><span>well_formed goal</span></span></span><br><span><var>wfhyps'</var><span class="hyp-type"><b>: </b><span>Pattern.<span class="kn">wf</span> (patterns_of hyps&#39;)</span></span></span><br></div><label class="goal-separator" for="ProofMode-base-v-chk18"><hr></label><div class="goal-conclusion">Γ ⊢i foldr patt_imp goal (patterns_of hyps&#39;) <span class="nb">using</span> i</div></blockquote></div></div></div></small><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">  </span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk19" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk19">{</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>hyps, hyps'</var><span class="hyp-type"><b>: </b><span>hypotheses</span></span></span><br><span><var>e</var><span class="hyp-type"><b>: </b><span>patterns_of hyps = patterns_of hyps&#39;</span></span></span><br><span><var>goal</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>H</var><span class="hyp-type"><b>: </b><span>well_formed goal
+→ Pattern.<span class="kn">wf</span> (patterns_of hyps)
+  → Γ ⊢i foldr patt_imp goal (patterns_of hyps)
+    <span class="nb">using</span> i</span></span></span><br><span><var>wfg</var><span class="hyp-type"><b>: </b><span>well_formed goal</span></span></span><br><span><var>wfhyps'</var><span class="hyp-type"><b>: </b><span>Pattern.<span class="kn">wf</span> (patterns_of hyps&#39;)</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">Pattern.<span class="kn">wf</span> (patterns_of hyps)</div></blockquote></div></div></small><span class="alectryon-wsp"> </span></span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk1a" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk1a"><span class="nb">rewrite</span> e.</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>hyps, hyps'</var><span class="hyp-type"><b>: </b><span>hypotheses</span></span></span><br><span><var>e</var><span class="hyp-type"><b>: </b><span>patterns_of hyps = patterns_of hyps&#39;</span></span></span><br><span><var>goal</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>H</var><span class="hyp-type"><b>: </b><span>well_formed goal
+→ Pattern.<span class="kn">wf</span> (patterns_of hyps)
+  → Γ ⊢i foldr patt_imp goal (patterns_of hyps)
+    <span class="nb">using</span> i</span></span></span><br><span><var>wfg</var><span class="hyp-type"><b>: </b><span>well_formed goal</span></span></span><br><span><var>wfhyps'</var><span class="hyp-type"><b>: </b><span>Pattern.<span class="kn">wf</span> (patterns_of hyps&#39;)</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">Pattern.<span class="kn">wf</span> (patterns_of hyps&#39;)</div></blockquote></div></div></small><span class="alectryon-wsp"> </span></span><span class="alectryon-sentence"><span class="alectryon-input"><span class="bp">exact</span> wfhyps&#39;.</span><span class="alectryon-wsp"> </span></span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk1b" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk1b">}</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>hyps, hyps'</var><span class="hyp-type"><b>: </b><span>hypotheses</span></span></span><br><span><var>e</var><span class="hyp-type"><b>: </b><span>patterns_of hyps = patterns_of hyps&#39;</span></span></span><br><span><var>goal</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>H</var><span class="hyp-type"><b>: </b><span>Γ ⊢i foldr patt_imp goal (patterns_of hyps)
+<span class="nb">using</span> i</span></span></span><br><span><var>wfg</var><span class="hyp-type"><b>: </b><span>well_formed goal</span></span></span><br><span><var>wfhyps'</var><span class="hyp-type"><b>: </b><span>Pattern.<span class="kn">wf</span> (patterns_of hyps&#39;)</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">Γ ⊢i foldr patt_imp goal (patterns_of hyps&#39;) <span class="nb">using</span> i</div></blockquote></div></div></small><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">  </span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk1c" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk1c"><span class="nb">unshelve</span> (<span class="nb">eapply</span> (@cast_proof&#39; Σ Γ _ _ i _ H)).</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>hyps, hyps'</var><span class="hyp-type"><b>: </b><span>hypotheses</span></span></span><br><span><var>e</var><span class="hyp-type"><b>: </b><span>patterns_of hyps = patterns_of hyps&#39;</span></span></span><br><span><var>goal</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>H</var><span class="hyp-type"><b>: </b><span>Γ ⊢i foldr patt_imp goal (patterns_of hyps)
+<span class="nb">using</span> i</span></span></span><br><span><var>wfg</var><span class="hyp-type"><b>: </b><span>well_formed goal</span></span></span><br><span><var>wfhyps'</var><span class="hyp-type"><b>: </b><span>Pattern.<span class="kn">wf</span> (patterns_of hyps&#39;)</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">foldr patt_imp goal (patterns_of hyps&#39;) =
+foldr patt_imp goal (patterns_of hyps)</div></blockquote></div></div></small><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">  </span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk1d" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk1d"><span class="nb">rewrite</span> e.</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>hyps, hyps'</var><span class="hyp-type"><b>: </b><span>hypotheses</span></span></span><br><span><var>e</var><span class="hyp-type"><b>: </b><span>patterns_of hyps = patterns_of hyps&#39;</span></span></span><br><span><var>goal</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>H</var><span class="hyp-type"><b>: </b><span>Γ ⊢i foldr patt_imp goal (patterns_of hyps)
+<span class="nb">using</span> i</span></span></span><br><span><var>wfg</var><span class="hyp-type"><b>: </b><span>well_formed goal</span></span></span><br><span><var>wfhyps'</var><span class="hyp-type"><b>: </b><span>Pattern.<span class="kn">wf</span> (patterns_of hyps&#39;)</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">foldr patt_imp goal (patterns_of hyps&#39;) =
+foldr patt_imp goal (patterns_of hyps&#39;)</div></blockquote></div></div></small><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">  </span><span class="alectryon-sentence"><span class="alectryon-input"><span class="bp">reflexivity</span>.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Defined</span>.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk1e" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk1e"><span class="kn">Lemma</span> <span class="nf">cast_proof_ml_goal</span> {<span class="nv">Σ</span> : Signature} <span class="nv">Γ</span> <span class="nv">hyps</span> <span class="nv">goal</span> <span class="nv">goal&#39;</span> (<span class="nv">e</span> : goal = goal&#39;) (<span class="nv">i</span> : ProofInfo):
+  mkMLGoal Σ Γ hyps goal i -&gt;
+  mkMLGoal Σ Γ hyps goal&#39; i .</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>hyps</var><span class="hyp-type"><b>: </b><span>hypotheses</span></span></span><br><span><var>goal, goal'</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>e</var><span class="hyp-type"><b>: </b><span>goal = goal&#39;</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">Γ Ⱶ
+hyps--------------------------------------
+goal
+<span class="nb">using</span> i
+
+→ Γ Ⱶ
+hyps--------------------------------------
+goal&#39;
+<span class="nb">using</span> i
+</div></blockquote></div></div></small><span class="alectryon-wsp">
+</span></span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk1f" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk1f"><span class="kn">Proof</span>.</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>hyps</var><span class="hyp-type"><b>: </b><span>hypotheses</span></span></span><br><span><var>goal, goal'</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>e</var><span class="hyp-type"><b>: </b><span>goal = goal&#39;</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">Γ Ⱶ
+hyps--------------------------------------
+goal
+<span class="nb">using</span> i
+
+→ Γ Ⱶ
+hyps--------------------------------------
+goal&#39;
+<span class="nb">using</span> i
+</div></blockquote></div></div></small><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">  </span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk20" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk20"><span class="nb">unfold</span> of_MLGoal.</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>hyps</var><span class="hyp-type"><b>: </b><span>hypotheses</span></span></span><br><span><var>goal, goal'</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>e</var><span class="hyp-type"><b>: </b><span>goal = goal&#39;</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">(well_formed
+   (mlConclusion
+      (Γ Ⱶ
+       hyps--------------------------------------
+       goal
+       <span class="nb">using</span> i
+       ))
+ → Pattern.<span class="kn">wf</span>
+     (patterns_of
+        (mlHypotheses
+           (Γ Ⱶ
+            hyps--------------------------------------
+            goal
+            <span class="nb">using</span> i
+            )))
+   → mlTheory
+       (Γ Ⱶ
+        hyps--------------------------------------
+        goal
+        <span class="nb">using</span> i
+        )
+     ⊢i foldr patt_imp
+          (mlConclusion
+             (Γ Ⱶ
+              hyps--------------------------------------
+              goal
+              <span class="nb">using</span> i
+              ))
+          (patterns_of
+             (mlHypotheses
+                (Γ Ⱶ
+                 hyps--------------------------------------
+                 goal
+                 <span class="nb">using</span> i
+                 )))
+     <span class="nb">using</span> mlInfo
+             (Γ Ⱶ
+              hyps--------------------------------------
+              goal
+              <span class="nb">using</span> i
+              ))
+→ well_formed
+    (mlConclusion
+       (Γ Ⱶ
+        hyps--------------------------------------
+        goal&#39;
+        <span class="nb">using</span> i
+        ))
+  → Pattern.<span class="kn">wf</span>
+      (patterns_of
+         (mlHypotheses
+            (Γ Ⱶ
+             hyps--------------------------------------
+             goal&#39;
+             <span class="nb">using</span> i
+             )))
+    → mlTheory
+        (Γ Ⱶ
+         hyps--------------------------------------
+         goal&#39;
+         <span class="nb">using</span> i
+         )
+      ⊢i foldr patt_imp
+           (mlConclusion
+              (Γ Ⱶ
+               hyps--------------------------------------
+               goal&#39;
+               <span class="nb">using</span> i
+               ))
+           (patterns_of
+              (mlHypotheses
+                 (Γ Ⱶ
+                  hyps--------------------------------------
+                  goal&#39;
+                  <span class="nb">using</span> i
+                  )))
+      <span class="nb">using</span> mlInfo
+              (Γ Ⱶ
+               hyps--------------------------------------
+               goal&#39;
+               <span class="nb">using</span> i
+               )</div></blockquote></div></div></small><span class="alectryon-wsp"> </span></span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk21" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk21"><span class="nb">simpl</span>.</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>hyps</var><span class="hyp-type"><b>: </b><span>hypotheses</span></span></span><br><span><var>goal, goal'</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>e</var><span class="hyp-type"><b>: </b><span>goal = goal&#39;</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">(well_formed goal
+ → Pattern.<span class="kn">wf</span> (patterns_of hyps)
+   → Γ ⊢i foldr patt_imp goal (patterns_of hyps)
+     <span class="nb">using</span> i)
+→ well_formed goal&#39;
+  → Pattern.<span class="kn">wf</span> (patterns_of hyps)
+    → Γ ⊢i foldr patt_imp goal&#39; (patterns_of hyps)
+      <span class="nb">using</span> i</div></blockquote></div></div></small><span class="alectryon-wsp"> </span></span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk22" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk22"><span class="nb">intros</span> H.</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>hyps</var><span class="hyp-type"><b>: </b><span>hypotheses</span></span></span><br><span><var>goal, goal'</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>e</var><span class="hyp-type"><b>: </b><span>goal = goal&#39;</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>H</var><span class="hyp-type"><b>: </b><span>well_formed goal
+→ Pattern.<span class="kn">wf</span> (patterns_of hyps)
+  → Γ ⊢i foldr patt_imp goal (patterns_of hyps)
+    <span class="nb">using</span> i</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">well_formed goal&#39;
+→ Pattern.<span class="kn">wf</span> (patterns_of hyps)
+  → Γ ⊢i foldr patt_imp goal&#39; (patterns_of hyps)
+    <span class="nb">using</span> i</div></blockquote></div></div></small><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">  </span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk23" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk23"><span class="nb">intros</span> wfgoal&#39; wfhyps.</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>hyps</var><span class="hyp-type"><b>: </b><span>hypotheses</span></span></span><br><span><var>goal, goal'</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>e</var><span class="hyp-type"><b>: </b><span>goal = goal&#39;</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>H</var><span class="hyp-type"><b>: </b><span>well_formed goal
+→ Pattern.<span class="kn">wf</span> (patterns_of hyps)
+  → Γ ⊢i foldr patt_imp goal (patterns_of hyps)
+    <span class="nb">using</span> i</span></span></span><br><span><var>wfgoal'</var><span class="hyp-type"><b>: </b><span>well_formed goal&#39;</span></span></span><br><span><var>wfhyps</var><span class="hyp-type"><b>: </b><span>Pattern.<span class="kn">wf</span> (patterns_of hyps)</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">Γ ⊢i foldr patt_imp goal&#39; (patterns_of hyps) <span class="nb">using</span> i</div></blockquote></div></div></small><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">  </span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk24" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk24">feed <span class="nb">specialize</span> H.</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>hyps</var><span class="hyp-type"><b>: </b><span>hypotheses</span></span></span><br><span><var>goal, goal'</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>e</var><span class="hyp-type"><b>: </b><span>goal = goal&#39;</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>H</var><span class="hyp-type"><b>: </b><span>well_formed goal
+→ Pattern.<span class="kn">wf</span> (patterns_of hyps)
+  → Γ ⊢i foldr patt_imp goal (patterns_of hyps)
+    <span class="nb">using</span> i</span></span></span><br><span><var>wfgoal'</var><span class="hyp-type"><b>: </b><span>well_formed goal&#39;</span></span></span><br><span><var>wfhyps</var><span class="hyp-type"><b>: </b><span>Pattern.<span class="kn">wf</span> (patterns_of hyps)</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">well_formed goal</div></blockquote><div class="alectryon-extra-goals"><input class="alectryon-extra-goal-toggle" id="ProofMode-base-v-chk25" style="display: none" type="checkbox"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>hyps</var><span class="hyp-type"><b>: </b><span>hypotheses</span></span></span><br><span><var>goal, goal'</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>e</var><span class="hyp-type"><b>: </b><span>goal = goal&#39;</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>H</var><span class="hyp-type"><b>: </b><span>well_formed goal
+→ Pattern.<span class="kn">wf</span> (patterns_of hyps)
+  → Γ ⊢i foldr patt_imp goal (patterns_of hyps)
+    <span class="nb">using</span> i</span></span></span><br><span><var>wfgoal'</var><span class="hyp-type"><b>: </b><span>well_formed goal&#39;</span></span></span><br><span><var>wfhyps</var><span class="hyp-type"><b>: </b><span>Pattern.<span class="kn">wf</span> (patterns_of hyps)</span></span></span><br></div><label class="goal-separator" for="ProofMode-base-v-chk25"><hr></label><div class="goal-conclusion">Pattern.<span class="kn">wf</span> (patterns_of hyps)</div></blockquote><input class="alectryon-extra-goal-toggle" id="ProofMode-base-v-chk26" style="display: none" type="checkbox"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>hyps</var><span class="hyp-type"><b>: </b><span>hypotheses</span></span></span><br><span><var>goal, goal'</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>e</var><span class="hyp-type"><b>: </b><span>goal = goal&#39;</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>H</var><span class="hyp-type"><b>: </b><span>Γ ⊢i foldr patt_imp goal (patterns_of hyps)
+<span class="nb">using</span> i</span></span></span><br><span><var>wfgoal'</var><span class="hyp-type"><b>: </b><span>well_formed goal&#39;</span></span></span><br><span><var>wfhyps</var><span class="hyp-type"><b>: </b><span>Pattern.<span class="kn">wf</span> (patterns_of hyps)</span></span></span><br></div><label class="goal-separator" for="ProofMode-base-v-chk26"><hr></label><div class="goal-conclusion">Γ ⊢i foldr patt_imp goal&#39; (patterns_of hyps) <span class="nb">using</span> i</div></blockquote></div></div></div></small><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">  </span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk27" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk27">{</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>hyps</var><span class="hyp-type"><b>: </b><span>hypotheses</span></span></span><br><span><var>goal, goal'</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>e</var><span class="hyp-type"><b>: </b><span>goal = goal&#39;</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>H</var><span class="hyp-type"><b>: </b><span>well_formed goal
+→ Pattern.<span class="kn">wf</span> (patterns_of hyps)
+  → Γ ⊢i foldr patt_imp goal (patterns_of hyps)
+    <span class="nb">using</span> i</span></span></span><br><span><var>wfgoal'</var><span class="hyp-type"><b>: </b><span>well_formed goal&#39;</span></span></span><br><span><var>wfhyps</var><span class="hyp-type"><b>: </b><span>Pattern.<span class="kn">wf</span> (patterns_of hyps)</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">well_formed goal</div></blockquote></div></div></small><span class="alectryon-wsp"> </span></span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk28" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk28"><span class="nb">rewrite</span> e.</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>hyps</var><span class="hyp-type"><b>: </b><span>hypotheses</span></span></span><br><span><var>goal, goal'</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>e</var><span class="hyp-type"><b>: </b><span>goal = goal&#39;</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>H</var><span class="hyp-type"><b>: </b><span>well_formed goal
+→ Pattern.<span class="kn">wf</span> (patterns_of hyps)
+  → Γ ⊢i foldr patt_imp goal (patterns_of hyps)
+    <span class="nb">using</span> i</span></span></span><br><span><var>wfgoal'</var><span class="hyp-type"><b>: </b><span>well_formed goal&#39;</span></span></span><br><span><var>wfhyps</var><span class="hyp-type"><b>: </b><span>Pattern.<span class="kn">wf</span> (patterns_of hyps)</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">well_formed goal&#39;</div></blockquote></div></div></small><span class="alectryon-wsp"> </span></span><span class="alectryon-sentence"><span class="alectryon-input"><span class="bp">exact</span> wfgoal&#39;.</span><span class="alectryon-wsp"> </span></span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk29" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk29">}</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>hyps</var><span class="hyp-type"><b>: </b><span>hypotheses</span></span></span><br><span><var>goal, goal'</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>e</var><span class="hyp-type"><b>: </b><span>goal = goal&#39;</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>H</var><span class="hyp-type"><b>: </b><span>well_formed goal
+→ Pattern.<span class="kn">wf</span> (patterns_of hyps)
+  → Γ ⊢i foldr patt_imp goal (patterns_of hyps)
+    <span class="nb">using</span> i</span></span></span><br><span><var>wfgoal'</var><span class="hyp-type"><b>: </b><span>well_formed goal&#39;</span></span></span><br><span><var>wfhyps</var><span class="hyp-type"><b>: </b><span>Pattern.<span class="kn">wf</span> (patterns_of hyps)</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">Pattern.<span class="kn">wf</span> (patterns_of hyps)</div></blockquote><div class="alectryon-extra-goals"><input class="alectryon-extra-goal-toggle" id="ProofMode-base-v-chk2a" style="display: none" type="checkbox"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>hyps</var><span class="hyp-type"><b>: </b><span>hypotheses</span></span></span><br><span><var>goal, goal'</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>e</var><span class="hyp-type"><b>: </b><span>goal = goal&#39;</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>H</var><span class="hyp-type"><b>: </b><span>Γ ⊢i foldr patt_imp goal (patterns_of hyps)
+<span class="nb">using</span> i</span></span></span><br><span><var>wfgoal'</var><span class="hyp-type"><b>: </b><span>well_formed goal&#39;</span></span></span><br><span><var>wfhyps</var><span class="hyp-type"><b>: </b><span>Pattern.<span class="kn">wf</span> (patterns_of hyps)</span></span></span><br></div><label class="goal-separator" for="ProofMode-base-v-chk2a"><hr></label><div class="goal-conclusion">Γ ⊢i foldr patt_imp goal&#39; (patterns_of hyps) <span class="nb">using</span> i</div></blockquote></div></div></div></small><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">  </span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk2b" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk2b">{</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>hyps</var><span class="hyp-type"><b>: </b><span>hypotheses</span></span></span><br><span><var>goal, goal'</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>e</var><span class="hyp-type"><b>: </b><span>goal = goal&#39;</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>H</var><span class="hyp-type"><b>: </b><span>well_formed goal
+→ Pattern.<span class="kn">wf</span> (patterns_of hyps)
+  → Γ ⊢i foldr patt_imp goal (patterns_of hyps)
+    <span class="nb">using</span> i</span></span></span><br><span><var>wfgoal'</var><span class="hyp-type"><b>: </b><span>well_formed goal&#39;</span></span></span><br><span><var>wfhyps</var><span class="hyp-type"><b>: </b><span>Pattern.<span class="kn">wf</span> (patterns_of hyps)</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">Pattern.<span class="kn">wf</span> (patterns_of hyps)</div></blockquote></div></div></small><span class="alectryon-wsp"> </span></span><span class="alectryon-sentence"><span class="alectryon-input"><span class="bp">exact</span> wfhyps.</span><span class="alectryon-wsp"> </span></span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk2c" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk2c">}</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>hyps</var><span class="hyp-type"><b>: </b><span>hypotheses</span></span></span><br><span><var>goal, goal'</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>e</var><span class="hyp-type"><b>: </b><span>goal = goal&#39;</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>H</var><span class="hyp-type"><b>: </b><span>Γ ⊢i foldr patt_imp goal (patterns_of hyps)
+<span class="nb">using</span> i</span></span></span><br><span><var>wfgoal'</var><span class="hyp-type"><b>: </b><span>well_formed goal&#39;</span></span></span><br><span><var>wfhyps</var><span class="hyp-type"><b>: </b><span>Pattern.<span class="kn">wf</span> (patterns_of hyps)</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">Γ ⊢i foldr patt_imp goal&#39; (patterns_of hyps) <span class="nb">using</span> i</div></blockquote></div></div></small><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">  </span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk2d" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk2d"><span class="nb">unshelve</span> (<span class="nb">eapply</span> (@cast_proof&#39; Σ Γ _ _ i _ H)).</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>hyps</var><span class="hyp-type"><b>: </b><span>hypotheses</span></span></span><br><span><var>goal, goal'</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>e</var><span class="hyp-type"><b>: </b><span>goal = goal&#39;</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>H</var><span class="hyp-type"><b>: </b><span>Γ ⊢i foldr patt_imp goal (patterns_of hyps)
+<span class="nb">using</span> i</span></span></span><br><span><var>wfgoal'</var><span class="hyp-type"><b>: </b><span>well_formed goal&#39;</span></span></span><br><span><var>wfhyps</var><span class="hyp-type"><b>: </b><span>Pattern.<span class="kn">wf</span> (patterns_of hyps)</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">foldr patt_imp goal&#39; (patterns_of hyps) =
+foldr patt_imp goal (patterns_of hyps)</div></blockquote></div></div></small><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">  </span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk2e" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk2e"><span class="nb">rewrite</span> e.</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>hyps</var><span class="hyp-type"><b>: </b><span>hypotheses</span></span></span><br><span><var>goal, goal'</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>e</var><span class="hyp-type"><b>: </b><span>goal = goal&#39;</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>H</var><span class="hyp-type"><b>: </b><span>Γ ⊢i foldr patt_imp goal (patterns_of hyps)
+<span class="nb">using</span> i</span></span></span><br><span><var>wfgoal'</var><span class="hyp-type"><b>: </b><span>well_formed goal&#39;</span></span></span><br><span><var>wfhyps</var><span class="hyp-type"><b>: </b><span>Pattern.<span class="kn">wf</span> (patterns_of hyps)</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">foldr patt_imp goal&#39; (patterns_of hyps) =
+foldr patt_imp goal&#39; (patterns_of hyps)</div></blockquote></div></div></small><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">  </span><span class="alectryon-sentence"><span class="alectryon-input"><span class="bp">reflexivity</span>.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Defined</span>.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+
+</span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk2f" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk2f"><span class="kn">Lemma</span> <span class="nf">MLGoal_intro</span> {<span class="nv">Σ</span> : Signature} (<span class="nv">Γ</span> : Theory) (<span class="nv">l</span> : hypotheses) (<span class="nv">name</span> : string) (<span class="nv">x</span> <span class="nv">g</span> : Pattern)
+  (<span class="nv">i</span> : ProofInfo) :
+  mkMLGoal _ Γ (l ++ [mkNH _ name x]) g i -&gt;
+  mkMLGoal _ Γ l (x ---&gt; g) i.</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>l</var><span class="hyp-type"><b>: </b><span>hypotheses</span></span></span><br><span><var>name</var><span class="hyp-type"><b>: </b><span>string</span></span></span><br><span><var>x, g</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">Γ Ⱶ
+l ++ (name ∶ x,
+      )--------------------------------------
+g
+<span class="nb">using</span> i
+
+→ Γ Ⱶ
+l--------------------------------------
+x ---&gt; g
+<span class="nb">using</span> i
+</div></blockquote></div></div></small><span class="alectryon-wsp">
+</span></span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk30" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk30"><span class="kn">Proof</span>.</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>l</var><span class="hyp-type"><b>: </b><span>hypotheses</span></span></span><br><span><var>name</var><span class="hyp-type"><b>: </b><span>string</span></span></span><br><span><var>x, g</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">Γ Ⱶ
+l ++ (name ∶ x,
+      )--------------------------------------
+g
+<span class="nb">using</span> i
+
+→ Γ Ⱶ
+l--------------------------------------
+x ---&gt; g
+<span class="nb">using</span> i
+</div></blockquote></div></div></small><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">  </span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk31" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk31"><span class="nb">intros</span> H.</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>l</var><span class="hyp-type"><b>: </b><span>hypotheses</span></span></span><br><span><var>name</var><span class="hyp-type"><b>: </b><span>string</span></span></span><br><span><var>x, g</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>H</var><span class="hyp-type"><b>: </b><span>Γ Ⱶ
+l ++ (name ∶ x,
+      )--------------------------------------
+g
+<span class="nb">using</span> i
+</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">Γ Ⱶ
+l--------------------------------------
+x ---&gt; g
+<span class="nb">using</span> i
+</div></blockquote></div></div></small><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">  </span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk32" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk32"><span class="nb">unfold</span> of_MLGoal <span class="kr">in</span> H.</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>l</var><span class="hyp-type"><b>: </b><span>hypotheses</span></span></span><br><span><var>name</var><span class="hyp-type"><b>: </b><span>string</span></span></span><br><span><var>x, g</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>H</var><span class="hyp-type"><b>: </b><span>well_formed
+  (mlConclusion
+     (Γ Ⱶ
+      l ++ (name ∶ x,
+            )--------------------------------------
+      g
+      <span class="nb">using</span> i
+      ))
+→ Pattern.<span class="kn">wf</span>
+    (patterns_of
+       (mlHypotheses
+          (Γ Ⱶ
+           l ++ (name ∶ x,
+                 )--------------------------------------
+           g
+           <span class="nb">using</span> i
+           )))
+  → mlTheory
+      (Γ Ⱶ
+       l ++ (name ∶ x,
+             )--------------------------------------
+       g
+       <span class="nb">using</span> i
+       )
+    ⊢i foldr patt_imp
+         (mlConclusion
+            (Γ Ⱶ
+             l ++ (name ∶ x,
+                   )--------------------------------------
+             g
+             <span class="nb">using</span> i
+             ))
+         (patterns_of
+            (mlHypotheses
+               (Γ Ⱶ
+                l ++ (name ∶ x,
+                      )--------------------------------------
+                g
+                <span class="nb">using</span> i
+                )))
+    <span class="nb">using</span> mlInfo
+            (Γ Ⱶ
+             l ++ (name ∶ x,
+                   )--------------------------------------
+             g
+             <span class="nb">using</span> i
+             )</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">Γ Ⱶ
+l--------------------------------------
+x ---&gt; g
+<span class="nb">using</span> i
+</div></blockquote></div></div></small><span class="alectryon-wsp"> </span></span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk33" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk33"><span class="nb">simpl</span> <span class="kr">in</span> H.</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>l</var><span class="hyp-type"><b>: </b><span>hypotheses</span></span></span><br><span><var>name</var><span class="hyp-type"><b>: </b><span>string</span></span></span><br><span><var>x, g</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>H</var><span class="hyp-type"><b>: </b><span>well_formed g
+→ Pattern.<span class="kn">wf</span> (patterns_of (l ++ (name ∶ x,
+                        )))
+  → Γ
+    ⊢i foldr patt_imp g
+         (patterns_of (l ++ (name ∶ x,
+                        ))) <span class="nb">using</span> i</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">Γ Ⱶ
+l--------------------------------------
+x ---&gt; g
+<span class="nb">using</span> i
+</div></blockquote></div></div></small><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">  </span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk34" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk34"><span class="nb">unfold</span> of_MLGoal.</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>l</var><span class="hyp-type"><b>: </b><span>hypotheses</span></span></span><br><span><var>name</var><span class="hyp-type"><b>: </b><span>string</span></span></span><br><span><var>x, g</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>H</var><span class="hyp-type"><b>: </b><span>well_formed g
+→ Pattern.<span class="kn">wf</span> (patterns_of (l ++ (name ∶ x,
+                        )))
+  → Γ
+    ⊢i foldr patt_imp g
+         (patterns_of (l ++ (name ∶ x,
+                        ))) <span class="nb">using</span> i</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">well_formed
+  (mlConclusion
+     (Γ Ⱶ
+      l--------------------------------------
+      x ---&gt; g
+      <span class="nb">using</span> i
+      ))
+→ Pattern.<span class="kn">wf</span>
+    (patterns_of
+       (mlHypotheses
+          (Γ Ⱶ
+           l--------------------------------------
+           x ---&gt; g
+           <span class="nb">using</span> i
+           )))
+  → mlTheory
+      (Γ Ⱶ
+       l--------------------------------------
+       x ---&gt; g
+       <span class="nb">using</span> i
+       )
+    ⊢i foldr patt_imp
+         (mlConclusion
+            (Γ Ⱶ
+             l--------------------------------------
+             x ---&gt; g
+             <span class="nb">using</span> i
+             ))
+         (patterns_of
+            (mlHypotheses
+               (Γ Ⱶ
+                l--------------------------------------
+                x ---&gt; g
+                <span class="nb">using</span> i
+                )))
+    <span class="nb">using</span> mlInfo
+            (Γ Ⱶ
+             l--------------------------------------
+             x ---&gt; g
+             <span class="nb">using</span> i
+             )</div></blockquote></div></div></small><span class="alectryon-wsp"> </span></span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk35" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk35"><span class="nb">simpl</span>.</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>l</var><span class="hyp-type"><b>: </b><span>hypotheses</span></span></span><br><span><var>name</var><span class="hyp-type"><b>: </b><span>string</span></span></span><br><span><var>x, g</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>H</var><span class="hyp-type"><b>: </b><span>well_formed g
+→ Pattern.<span class="kn">wf</span> (patterns_of (l ++ (name ∶ x,
+                        )))
+  → Γ
+    ⊢i foldr patt_imp g
+         (patterns_of (l ++ (name ∶ x,
+                        ))) <span class="nb">using</span> i</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">well_formed (x ---&gt; g)
+→ Pattern.<span class="kn">wf</span> (patterns_of l)
+  → Γ ⊢i foldr patt_imp (x ---&gt; g) (patterns_of l)
+    <span class="nb">using</span> i</div></blockquote></div></div></small><span class="alectryon-wsp"> </span></span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk36" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk36"><span class="nb">intros</span> wfxig wfl.</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>l</var><span class="hyp-type"><b>: </b><span>hypotheses</span></span></span><br><span><var>name</var><span class="hyp-type"><b>: </b><span>string</span></span></span><br><span><var>x, g</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>H</var><span class="hyp-type"><b>: </b><span>well_formed g
+→ Pattern.<span class="kn">wf</span> (patterns_of (l ++ (name ∶ x,
+                        )))
+  → Γ
+    ⊢i foldr patt_imp g
+         (patterns_of (l ++ (name ∶ x,
+                        ))) <span class="nb">using</span> i</span></span></span><br><span><var>wfxig</var><span class="hyp-type"><b>: </b><span>well_formed (x ---&gt; g)</span></span></span><br><span><var>wfl</var><span class="hyp-type"><b>: </b><span>Pattern.<span class="kn">wf</span> (patterns_of l)</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">Γ ⊢i foldr patt_imp (x ---&gt; g) (patterns_of l) <span class="nb">using</span> i</div></blockquote></div></div></small><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-wsp">  </span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk37" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk37">feed <span class="nb">specialize</span> H.</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>l</var><span class="hyp-type"><b>: </b><span>hypotheses</span></span></span><br><span><var>name</var><span class="hyp-type"><b>: </b><span>string</span></span></span><br><span><var>x, g</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>H</var><span class="hyp-type"><b>: </b><span>well_formed g
+→ Pattern.<span class="kn">wf</span> (patterns_of (l ++ (name ∶ x,
+                        )))
+  → Γ
+    ⊢i foldr patt_imp g
+         (patterns_of (l ++ (name ∶ x,
+                        ))) <span class="nb">using</span> i</span></span></span><br><span><var>wfxig</var><span class="hyp-type"><b>: </b><span>well_formed (x ---&gt; g)</span></span></span><br><span><var>wfl</var><span class="hyp-type"><b>: </b><span>Pattern.<span class="kn">wf</span> (patterns_of l)</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">well_formed g</div></blockquote><div class="alectryon-extra-goals"><input class="alectryon-extra-goal-toggle" id="ProofMode-base-v-chk38" style="display: none" type="checkbox"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>l</var><span class="hyp-type"><b>: </b><span>hypotheses</span></span></span><br><span><var>name</var><span class="hyp-type"><b>: </b><span>string</span></span></span><br><span><var>x, g</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>H</var><span class="hyp-type"><b>: </b><span>well_formed g
+→ Pattern.<span class="kn">wf</span> (patterns_of (l ++ (name ∶ x,
+                        )))
+  → Γ
+    ⊢i foldr patt_imp g
+         (patterns_of (l ++ (name ∶ x,
+                        ))) <span class="nb">using</span> i</span></span></span><br><span><var>wfxig</var><span class="hyp-type"><b>: </b><span>well_formed (x ---&gt; g)</span></span></span><br><span><var>wfl</var><span class="hyp-type"><b>: </b><span>Pattern.<span class="kn">wf</span> (patterns_of l)</span></span></span><br></div><label class="goal-separator" for="ProofMode-base-v-chk38"><hr></label><div class="goal-conclusion">Pattern.<span class="kn">wf</span> (patterns_of (l ++ (name ∶ x,
+                        )))</div></blockquote><input class="alectryon-extra-goal-toggle" id="ProofMode-base-v-chk39" style="display: none" type="checkbox"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>l</var><span class="hyp-type"><b>: </b><span>hypotheses</span></span></span><br><span><var>name</var><span class="hyp-type"><b>: </b><span>string</span></span></span><br><span><var>x, g</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>H</var><span class="hyp-type"><b>: </b><span>Γ
+⊢i foldr patt_imp g
+     (patterns_of (l ++ (name ∶ x,
+                        ))) <span class="nb">using</span> i</span></span></span><br><span><var>wfxig</var><span class="hyp-type"><b>: </b><span>well_formed (x ---&gt; g)</span></span></span><br><span><var>wfl</var><span class="hyp-type"><b>: </b><span>Pattern.<span class="kn">wf</span> (patterns_of l)</span></span></span><br></div><label class="goal-separator" for="ProofMode-base-v-chk39"><hr></label><div class="goal-conclusion">Γ ⊢i foldr patt_imp (x ---&gt; g) (patterns_of l) <span class="nb">using</span> i</div></blockquote></div></div></div></small><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">  </span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk3a" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk3a">{</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>l</var><span class="hyp-type"><b>: </b><span>hypotheses</span></span></span><br><span><var>name</var><span class="hyp-type"><b>: </b><span>string</span></span></span><br><span><var>x, g</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>H</var><span class="hyp-type"><b>: </b><span>well_formed g
+→ Pattern.<span class="kn">wf</span> (patterns_of (l ++ (name ∶ x,
+                        )))
+  → Γ
+    ⊢i foldr patt_imp g
+         (patterns_of (l ++ (name ∶ x,
+                        ))) <span class="nb">using</span> i</span></span></span><br><span><var>wfxig</var><span class="hyp-type"><b>: </b><span>well_formed (x ---&gt; g)</span></span></span><br><span><var>wfl</var><span class="hyp-type"><b>: </b><span>Pattern.<span class="kn">wf</span> (patterns_of l)</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">well_formed g</div></blockquote></div></div></small><span class="alectryon-wsp"> </span></span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kp">abstract</span> (<span class="nb">apply</span> well_formed_imp_proj2 <span class="kr">in</span> wfxig; <span class="bp">exact</span> wfxig).</span><span class="alectryon-wsp"> </span></span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk3b" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk3b">}</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>l</var><span class="hyp-type"><b>: </b><span>hypotheses</span></span></span><br><span><var>name</var><span class="hyp-type"><b>: </b><span>string</span></span></span><br><span><var>x, g</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>H</var><span class="hyp-type"><b>: </b><span>well_formed g
+→ Pattern.<span class="kn">wf</span> (patterns_of (l ++ (name ∶ x,
+                        )))
+  → Γ
+    ⊢i foldr patt_imp g
+         (patterns_of (l ++ (name ∶ x,
+                        ))) <span class="nb">using</span> i</span></span></span><br><span><var>wfxig</var><span class="hyp-type"><b>: </b><span>well_formed (x ---&gt; g)</span></span></span><br><span><var>wfl</var><span class="hyp-type"><b>: </b><span>Pattern.<span class="kn">wf</span> (patterns_of l)</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">Pattern.<span class="kn">wf</span> (patterns_of (l ++ (name ∶ x,
+                               )))</div></blockquote><div class="alectryon-extra-goals"><input class="alectryon-extra-goal-toggle" id="ProofMode-base-v-chk3c" style="display: none" type="checkbox"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>l</var><span class="hyp-type"><b>: </b><span>hypotheses</span></span></span><br><span><var>name</var><span class="hyp-type"><b>: </b><span>string</span></span></span><br><span><var>x, g</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>H</var><span class="hyp-type"><b>: </b><span>Γ
+⊢i foldr patt_imp g
+     (patterns_of (l ++ (name ∶ x,
+                        ))) <span class="nb">using</span> i</span></span></span><br><span><var>wfxig</var><span class="hyp-type"><b>: </b><span>well_formed (x ---&gt; g)</span></span></span><br><span><var>wfl</var><span class="hyp-type"><b>: </b><span>Pattern.<span class="kn">wf</span> (patterns_of l)</span></span></span><br></div><label class="goal-separator" for="ProofMode-base-v-chk3c"><hr></label><div class="goal-conclusion">Γ ⊢i foldr patt_imp (x ---&gt; g) (patterns_of l) <span class="nb">using</span> i</div></blockquote></div></div></div></small><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">  </span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk3d" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk3d">{</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>l</var><span class="hyp-type"><b>: </b><span>hypotheses</span></span></span><br><span><var>name</var><span class="hyp-type"><b>: </b><span>string</span></span></span><br><span><var>x, g</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>H</var><span class="hyp-type"><b>: </b><span>well_formed g
+→ Pattern.<span class="kn">wf</span> (patterns_of (l ++ (name ∶ x,
+                        )))
+  → Γ
+    ⊢i foldr patt_imp g
+         (patterns_of (l ++ (name ∶ x,
+                        ))) <span class="nb">using</span> i</span></span></span><br><span><var>wfxig</var><span class="hyp-type"><b>: </b><span>well_formed (x ---&gt; g)</span></span></span><br><span><var>wfl</var><span class="hyp-type"><b>: </b><span>Pattern.<span class="kn">wf</span> (patterns_of l)</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">Pattern.<span class="kn">wf</span> (patterns_of (l ++ (name ∶ x,
+                               )))</div></blockquote></div></div></small><span class="alectryon-wsp"> </span></span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kp">abstract</span> (<span class="nb">unfold</span> Pattern.<span class="kn">wf</span> <span class="kr">in</span> *; <span class="nb">unfold</span> patterns_of;
+    <span class="nb">rewrite</span> map_app map_app foldr_app; <span class="nb">simpl</span>;
+    <span class="nb">apply</span> well_formed_imp_proj1 <span class="kr">in</span> wfxig; <span class="nb">rewrite</span> wfxig; <span class="nb">simpl</span>; <span class="bp">exact</span> wfl).</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">  </span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk3e" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk3e">}</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>l</var><span class="hyp-type"><b>: </b><span>hypotheses</span></span></span><br><span><var>name</var><span class="hyp-type"><b>: </b><span>string</span></span></span><br><span><var>x, g</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>H</var><span class="hyp-type"><b>: </b><span>Γ
+⊢i foldr patt_imp g
+     (patterns_of (l ++ (name ∶ x,
+                        ))) <span class="nb">using</span> i</span></span></span><br><span><var>wfxig</var><span class="hyp-type"><b>: </b><span>well_formed (x ---&gt; g)</span></span></span><br><span><var>wfl</var><span class="hyp-type"><b>: </b><span>Pattern.<span class="kn">wf</span> (patterns_of l)</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">Γ ⊢i foldr patt_imp (x ---&gt; g) (patterns_of l) <span class="nb">using</span> i</div></blockquote></div></div></small><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">  </span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk3f" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk3f"><span class="nb">unshelve</span> (<span class="nb">eapply</span> (cast_proof&#39; _ _ _ _ _ H)).</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>l</var><span class="hyp-type"><b>: </b><span>hypotheses</span></span></span><br><span><var>name</var><span class="hyp-type"><b>: </b><span>string</span></span></span><br><span><var>x, g</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>H</var><span class="hyp-type"><b>: </b><span>Γ
+⊢i foldr patt_imp g
+     (patterns_of (l ++ (name ∶ x,
+                        ))) <span class="nb">using</span> i</span></span></span><br><span><var>wfxig</var><span class="hyp-type"><b>: </b><span>well_formed (x ---&gt; g)</span></span></span><br><span><var>wfl</var><span class="hyp-type"><b>: </b><span>Pattern.<span class="kn">wf</span> (patterns_of l)</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">foldr patt_imp (x ---&gt; g) (patterns_of l) =
+foldr patt_imp g (patterns_of (l ++ (name ∶ x,
+                                     )))</div></blockquote></div></div></small><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">  </span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk40" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk40">{</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>l</var><span class="hyp-type"><b>: </b><span>hypotheses</span></span></span><br><span><var>name</var><span class="hyp-type"><b>: </b><span>string</span></span></span><br><span><var>x, g</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>H</var><span class="hyp-type"><b>: </b><span>Γ
+⊢i foldr patt_imp g
+     (patterns_of (l ++ (name ∶ x,
+                        ))) <span class="nb">using</span> i</span></span></span><br><span><var>wfxig</var><span class="hyp-type"><b>: </b><span>well_formed (x ---&gt; g)</span></span></span><br><span><var>wfl</var><span class="hyp-type"><b>: </b><span>Pattern.<span class="kn">wf</span> (patterns_of l)</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">foldr patt_imp (x ---&gt; g) (patterns_of l) =
+foldr patt_imp g (patterns_of (l ++ (name ∶ x,
+                                     )))</div></blockquote></div></div></small><span class="alectryon-wsp"> </span></span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk41" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk41"><span class="nb">unfold</span> patterns_of.</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>l</var><span class="hyp-type"><b>: </b><span>hypotheses</span></span></span><br><span><var>name</var><span class="hyp-type"><b>: </b><span>string</span></span></span><br><span><var>x, g</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>H</var><span class="hyp-type"><b>: </b><span>Γ
+⊢i foldr patt_imp g
+     (patterns_of (l ++ (name ∶ x,
+                        ))) <span class="nb">using</span> i</span></span></span><br><span><var>wfxig</var><span class="hyp-type"><b>: </b><span>well_formed (x ---&gt; g)</span></span></span><br><span><var>wfl</var><span class="hyp-type"><b>: </b><span>Pattern.<span class="kn">wf</span> (patterns_of l)</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">foldr patt_imp (x ---&gt; g) (map nh_patt l) =
+foldr patt_imp g (map nh_patt (l ++ (name ∶ x,
+                                     )))</div></blockquote></div></div></small><span class="alectryon-wsp"> </span></span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk42" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk42"><span class="nb">rewrite</span> map_app foldr_app.</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>l</var><span class="hyp-type"><b>: </b><span>hypotheses</span></span></span><br><span><var>name</var><span class="hyp-type"><b>: </b><span>string</span></span></span><br><span><var>x, g</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>H</var><span class="hyp-type"><b>: </b><span>Γ
+⊢i foldr patt_imp g
+     (patterns_of (l ++ (name ∶ x,
+                        ))) <span class="nb">using</span> i</span></span></span><br><span><var>wfxig</var><span class="hyp-type"><b>: </b><span>well_formed (x ---&gt; g)</span></span></span><br><span><var>wfl</var><span class="hyp-type"><b>: </b><span>Pattern.<span class="kn">wf</span> (patterns_of l)</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">foldr patt_imp (x ---&gt; g) (map nh_patt l) =
+foldr patt_imp
+  (foldr patt_imp g (map nh_patt (name ∶ x,
+                                  ))) (map nh_patt l)</div></blockquote></div></div></small><span class="alectryon-wsp"> </span></span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk43" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk43"><span class="nb">simpl</span>.</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>l</var><span class="hyp-type"><b>: </b><span>hypotheses</span></span></span><br><span><var>name</var><span class="hyp-type"><b>: </b><span>string</span></span></span><br><span><var>x, g</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>H</var><span class="hyp-type"><b>: </b><span>Γ
+⊢i foldr patt_imp g
+     (patterns_of (l ++ (name ∶ x,
+                        ))) <span class="nb">using</span> i</span></span></span><br><span><var>wfxig</var><span class="hyp-type"><b>: </b><span>well_formed (x ---&gt; g)</span></span></span><br><span><var>wfl</var><span class="hyp-type"><b>: </b><span>Pattern.<span class="kn">wf</span> (patterns_of l)</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">foldr patt_imp (x ---&gt; g) (map nh_patt l) =
+foldr patt_imp (x ---&gt; g) (map nh_patt l)</div></blockquote></div></div></small><span class="alectryon-wsp"> </span></span><span class="alectryon-sentence"><span class="alectryon-input"><span class="bp">reflexivity</span>.</span><span class="alectryon-wsp"> </span></span><span class="alectryon-sentence"><span class="alectryon-input">}</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Defined</span>.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Ltac</span> <span class="nf">simplLocalContext</span> :=
+  <span class="kr">match goal with</span>
+    | [ |- @of_MLGoal <span class="nl">?Sgm</span> (mkMLGoal <span class="nl">?Sgm</span> <span class="nl">?Ctx</span> <span class="nl">?l</span> <span class="nl">?g</span> <span class="nl">?i</span>) ]
+      =&gt; <span class="nb">eapply</span> cast_proof_ml_hyps;[(<span class="nb">rewrite</span> {<span class="mi">1</span>}[l]/app; <span class="bp">reflexivity</span>)|]
+  <span class="kr">end</span>.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Ltac</span> <span class="nf">_getHypNames</span> :=
+  <span class="kr">lazymatch goal with</span>
+  | [ |- of_MLGoal (mkMLGoal _ _ <span class="nl">?l</span> _ _) ] =&gt; <span class="kp">eval</span> <span class="nb">lazy</span> <span class="kr">in</span> (names_of l)
+  <span class="kr">end</span>.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Tactic Notation</span> <span class="s2">&quot;_failIfUsed&quot;</span> <span class="kp">constr</span>(name) :=
+  <span class="kr">lazymatch goal with</span>
+  | [ |- of_MLGoal (mkMLGoal _ _ <span class="nl">?l</span> _ _) ] =&gt;
+    <span class="kr">lazymatch</span> (<span class="kp">eval</span> <span class="nb">cbv</span> <span class="kr">in</span> (find_hyp name l)) <span class="kr">with</span>
+    | Some _ =&gt; <span class="kp">fail</span> <span class="s2">&quot;The name&quot;</span> name <span class="s2">&quot;is already used&quot;</span>
+    | _ =&gt; <span class="kp">idtac</span>
+    <span class="kr">end</span>
+  <span class="kr">end</span>.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Ltac</span> <span class="nf">_enterProofMode</span> :=
+  toMLGoal;[wf_auto2|]
+.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Ltac</span> <span class="nf">_ensureProofMode</span> :=
+  <span class="kr">lazymatch goal with</span>
+  | [ |- of_MLGoal (mkMLGoal _ _ _ _ _)] =&gt; <span class="kp">idtac</span>
+  | _ =&gt; _enterProofMode
+  <span class="kr">end</span>
+.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Tactic Notation</span> <span class="s2">&quot;mlIntro&quot;</span> <span class="kp">constr</span>(name&#39;) :=
+  _ensureProofMode;
+  _failIfUsed name&#39;;
+  <span class="nb">apply</span> MLGoal_intro <span class="kr">with</span> (name := name&#39;);
+  simplLocalContext
+.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Tactic Notation</span> <span class="s2">&quot;mlIntro&quot;</span> :=
+  _ensureProofMode;
+  <span class="kr">let</span> <span class="nv">hyps</span> := _getHypNames <span class="kr">in</span>
+  <span class="kr">let</span> <span class="nv">name&#39;</span> := <span class="kp">eval</span> <span class="nb">cbv</span> <span class="kr">in</span> (<span class="kp">fresh</span> hyps) <span class="kr">in</span>
+  mlIntro name&#39;
+.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk44" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk44"><span class="kn">Local Example</span> <span class="nf">ex_toMLGoal</span> {<span class="nv">Σ</span> : Signature} <span class="nv">Γ</span> (<span class="nv">p</span> : Pattern) :
+  well_formed p -&gt;
+  Γ ⊢i p ---&gt; p <span class="nb">using</span> BasicReasoning.</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>p</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">well_formed p → Γ ⊢i p ---&gt; p <span class="nb">using</span> BasicReasoning</div></blockquote></div></div></small><span class="alectryon-wsp">
+</span></span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk45" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk45"><span class="kn">Proof</span>.</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>p</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">well_formed p → Γ ⊢i p ---&gt; p <span class="nb">using</span> BasicReasoning</div></blockquote></div></div></small><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">  </span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk46" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk46"><span class="nb">intros</span> wfp.</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>p</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>wfp</var><span class="hyp-type"><b>: </b><span>well_formed p</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">Γ ⊢i p ---&gt; p <span class="nb">using</span> BasicReasoning</div></blockquote></div></div></small><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">  </span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk47" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk47">toMLGoal.</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>p</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>wfp</var><span class="hyp-type"><b>: </b><span>well_formed p</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">well_formed (p ---&gt; p)</div></blockquote><div class="alectryon-extra-goals"><input class="alectryon-extra-goal-toggle" id="ProofMode-base-v-chk48" style="display: none" type="checkbox"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>p</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>wfp</var><span class="hyp-type"><b>: </b><span>well_formed p</span></span></span><br></div><label class="goal-separator" for="ProofMode-base-v-chk48"><hr></label><div class="goal-conclusion">Γ Ⱶ
+p ---&gt; p
+<span class="nb">using</span> BasicReasoning
+</div></blockquote></div></div></div></small><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">  </span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk49" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk49">{</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>p</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>wfp</var><span class="hyp-type"><b>: </b><span>well_formed p</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">well_formed (p ---&gt; p)</div></blockquote></div></div></small><span class="alectryon-wsp"> </span></span><span class="alectryon-sentence"><span class="alectryon-input">wf_auto2.</span><span class="alectryon-wsp"> </span></span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk4a" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk4a">}</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>p</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>wfp</var><span class="hyp-type"><b>: </b><span>well_formed p</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">Γ Ⱶ
+p ---&gt; p
+<span class="nb">using</span> BasicReasoning
+</div></blockquote></div></div></small><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">  </span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk4b" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk4b"><span class="kr">match goal with</span>
+  | [ |- of_MLGoal (mkMLGoal Σ Γ [] (p ---&gt; p) BasicReasoning) ] =&gt; <span class="kp">idtac</span>
+  | _ =&gt; <span class="kp">fail</span>
+  <span class="kr">end</span>.</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>p</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>wfp</var><span class="hyp-type"><b>: </b><span>well_formed p</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">Γ Ⱶ
+p ---&gt; p
+<span class="nb">using</span> BasicReasoning
+</div></blockquote></div></div></small><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">  </span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk4c" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk4c">fromMLGoal.</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>p</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>wfp</var><span class="hyp-type"><b>: </b><span>well_formed p</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">Γ ⊢i p ---&gt; p <span class="nb">using</span> BasicReasoning</div></blockquote></div></div></small><span class="alectryon-wsp">
+</span></span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Abort</span>.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk4d" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk4d"><span class="kn">Local Example</span> <span class="nf">ex_mlIntro</span> {<span class="nv">Σ</span> : Signature} <span class="nv">Γ</span> <span class="nv">a</span> (<span class="nv">i</span> : ProofInfo) :
+  well_formed a -&gt;
+  Γ ⊢i a ---&gt; a ---&gt; a ---&gt; a ---&gt; a <span class="nb">using</span> i.</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>a</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">well_formed a
+→ Γ ⊢i a ---&gt; a ---&gt; a ---&gt; a ---&gt; a <span class="nb">using</span> i</div></blockquote></div></div></small><span class="alectryon-wsp">
+</span></span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk4e" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk4e"><span class="kn">Proof</span>.</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>a</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">well_formed a
+→ Γ ⊢i a ---&gt; a ---&gt; a ---&gt; a ---&gt; a <span class="nb">using</span> i</div></blockquote></div></div></small><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">  </span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk4f" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk4f"><span class="nb">intros</span> wfa.</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>a</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>wfa</var><span class="hyp-type"><b>: </b><span>well_formed a</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">Γ ⊢i a ---&gt; a ---&gt; a ---&gt; a ---&gt; a <span class="nb">using</span> i</div></blockquote></div></div></small><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">  <span class="c">(* This happens automatically *)</span>
+  <span class="c">(*</span>
+<span class="c">  toMLGoal.</span>
+<span class="c">  { wf_auto2. }</span>
+<span class="c">  *)</span>
+  
+</span><span class="alectryon-wsp">  </span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk50" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk50">mlIntro <span class="s2">&quot;h&quot;</span>%string.</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>a</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>wfa</var><span class="hyp-type"><b>: </b><span>well_formed a</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">Γ Ⱶ
+<span class="s2">&quot;h&quot;</span> ∶ a,
+--------------------------------------
+a ---&gt; a ---&gt; a ---&gt; a
+<span class="nb">using</span> i
+</div></blockquote></div></div></small><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">  </span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk51" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk51"><span class="kn">Fail</span> mlIntro <span class="s2">&quot;h&quot;</span>%string.</label><small class="alectryon-output"><div><div class="alectryon-messages"><blockquote class="alectryon-message">The command has indeed failed <span class="kr">with</span> message:
+Tactic failure: The name <span class="s2">&quot;h&quot;</span>%string <span class="kr">is</span> already used.</blockquote></div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>a</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>wfa</var><span class="hyp-type"><b>: </b><span>well_formed a</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">Γ Ⱶ
+<span class="s2">&quot;h&quot;</span> ∶ a,
+--------------------------------------
+a ---&gt; a ---&gt; a ---&gt; a
+<span class="nb">using</span> i
+</div></blockquote></div></div></small><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">  </span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk52" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk52">mlIntro <span class="s2">&quot;h&#39;&quot;</span>%string.</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>a</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>wfa</var><span class="hyp-type"><b>: </b><span>well_formed a</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">Γ Ⱶ
+<span class="s2">&quot;h&quot;</span> ∶ a,
+<span class="s2">&quot;h&#39;&quot;</span> ∶ a,
+--------------------------------------
+a ---&gt; a ---&gt; a
+<span class="nb">using</span> i
+</div></blockquote></div></div></small><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">  </span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk53" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk53"><span class="kp">do</span> <span class="mi">2</span> mlIntro.</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>a</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>wfa</var><span class="hyp-type"><b>: </b><span>well_formed a</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">Γ Ⱶ
+<span class="s2">&quot;h&quot;</span> ∶ a,
+<span class="s2">&quot;h&#39;&quot;</span> ∶ a,
+<span class="s2">&quot;0&quot;</span> ∶ a,
+<span class="s2">&quot;1&quot;</span> ∶ a,
+--------------------------------------
+a
+<span class="nb">using</span> i
+</div></blockquote></div></div></small><span class="alectryon-wsp">
+</span></span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Abort</span>.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk54" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk54"><span class="kn">Lemma</span> <span class="nf">MLGoal_revertLast</span> {<span class="nv">Σ</span> : Signature} (<span class="nv">Γ</span> : Theory) (<span class="nv">l</span> : hypotheses) (<span class="nv">x</span> <span class="nv">g</span> : Pattern) (<span class="nv">n</span> : string) <span class="nv">i</span> :
+  mkMLGoal Σ Γ l (x ---&gt; g) i -&gt;
+  mkMLGoal Σ Γ (l ++ [mkNH _ n x]) g i.</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>l</var><span class="hyp-type"><b>: </b><span>hypotheses</span></span></span><br><span><var>x, g</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>n</var><span class="hyp-type"><b>: </b><span>string</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">Γ Ⱶ
+l--------------------------------------
+x ---&gt; g
+<span class="nb">using</span> i
+
+→ Γ Ⱶ
+l ++ (n ∶ x,
+      )--------------------------------------
+g
+<span class="nb">using</span> i
+</div></blockquote></div></div></small><span class="alectryon-wsp">
+</span></span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk55" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk55"><span class="kn">Proof</span>.</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>l</var><span class="hyp-type"><b>: </b><span>hypotheses</span></span></span><br><span><var>x, g</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>n</var><span class="hyp-type"><b>: </b><span>string</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">Γ Ⱶ
+l--------------------------------------
+x ---&gt; g
+<span class="nb">using</span> i
+
+→ Γ Ⱶ
+l ++ (n ∶ x,
+      )--------------------------------------
+g
+<span class="nb">using</span> i
+</div></blockquote></div></div></small><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">  </span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk56" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk56"><span class="nb">intros</span> H.</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>l</var><span class="hyp-type"><b>: </b><span>hypotheses</span></span></span><br><span><var>x, g</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>n</var><span class="hyp-type"><b>: </b><span>string</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>H</var><span class="hyp-type"><b>: </b><span>Γ Ⱶ
+l--------------------------------------
+x ---&gt; g
+<span class="nb">using</span> i
+</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">Γ Ⱶ
+l ++ (n ∶ x,
+      )--------------------------------------
+g
+<span class="nb">using</span> i
+</div></blockquote></div></div></small><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">  </span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk57" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk57"><span class="nb">unfold</span> of_MLGoal <span class="kr">in</span> H.</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>l</var><span class="hyp-type"><b>: </b><span>hypotheses</span></span></span><br><span><var>x, g</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>n</var><span class="hyp-type"><b>: </b><span>string</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>H</var><span class="hyp-type"><b>: </b><span>well_formed
+  (mlConclusion
+     (Γ Ⱶ
+      l--------------------------------------
+      x ---&gt; g
+      <span class="nb">using</span> i
+      ))
+→ Pattern.<span class="kn">wf</span>
+    (patterns_of
+       (mlHypotheses
+          (Γ Ⱶ
+           l--------------------------------------
+           x ---&gt; g
+           <span class="nb">using</span> i
+           )))
+  → mlTheory
+      (Γ Ⱶ
+       l--------------------------------------
+       x ---&gt; g
+       <span class="nb">using</span> i
+       )
+    ⊢i foldr patt_imp
+         (mlConclusion
+            (Γ Ⱶ
+             l--------------------------------------
+             x ---&gt; g
+             <span class="nb">using</span> i
+             ))
+         (patterns_of
+            (mlHypotheses
+               (Γ Ⱶ
+                l--------------------------------------
+                x ---&gt; g
+                <span class="nb">using</span> i
+                )))
+    <span class="nb">using</span> mlInfo
+            (Γ Ⱶ
+             l--------------------------------------
+             x ---&gt; g
+             <span class="nb">using</span> i
+             )</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">Γ Ⱶ
+l ++ (n ∶ x,
+      )--------------------------------------
+g
+<span class="nb">using</span> i
+</div></blockquote></div></div></small><span class="alectryon-wsp"> </span></span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk58" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk58"><span class="nb">simpl</span> <span class="kr">in</span> H.</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>l</var><span class="hyp-type"><b>: </b><span>hypotheses</span></span></span><br><span><var>x, g</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>n</var><span class="hyp-type"><b>: </b><span>string</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>H</var><span class="hyp-type"><b>: </b><span>well_formed (x ---&gt; g)
+→ Pattern.<span class="kn">wf</span> (patterns_of l)
+  → Γ ⊢i foldr patt_imp (x ---&gt; g) (patterns_of l)
+    <span class="nb">using</span> i</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">Γ Ⱶ
+l ++ (n ∶ x,
+      )--------------------------------------
+g
+<span class="nb">using</span> i
+</div></blockquote></div></div></small><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">  </span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk59" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk59"><span class="nb">unfold</span> of_MLGoal.</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>l</var><span class="hyp-type"><b>: </b><span>hypotheses</span></span></span><br><span><var>x, g</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>n</var><span class="hyp-type"><b>: </b><span>string</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>H</var><span class="hyp-type"><b>: </b><span>well_formed (x ---&gt; g)
+→ Pattern.<span class="kn">wf</span> (patterns_of l)
+  → Γ ⊢i foldr patt_imp (x ---&gt; g) (patterns_of l)
+    <span class="nb">using</span> i</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">well_formed
+  (mlConclusion
+     (Γ Ⱶ
+      l ++ (n ∶ x,
+            )--------------------------------------
+      g
+      <span class="nb">using</span> i
+      ))
+→ Pattern.<span class="kn">wf</span>
+    (patterns_of
+       (mlHypotheses
+          (Γ Ⱶ
+           l ++ (n ∶ x,
+                 )--------------------------------------
+           g
+           <span class="nb">using</span> i
+           )))
+  → mlTheory
+      (Γ Ⱶ
+       l ++ (n ∶ x,
+             )--------------------------------------
+       g
+       <span class="nb">using</span> i
+       )
+    ⊢i foldr patt_imp
+         (mlConclusion
+            (Γ Ⱶ
+             l ++ (n ∶ x,
+                   )--------------------------------------
+             g
+             <span class="nb">using</span> i
+             ))
+         (patterns_of
+            (mlHypotheses
+               (Γ Ⱶ
+                l ++ (n ∶ x,
+                      )--------------------------------------
+                g
+                <span class="nb">using</span> i
+                )))
+    <span class="nb">using</span> mlInfo
+            (Γ Ⱶ
+             l ++ (n ∶ x,
+                   )--------------------------------------
+             g
+             <span class="nb">using</span> i
+             )</div></blockquote></div></div></small><span class="alectryon-wsp"> </span></span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk5a" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk5a"><span class="nb">simpl</span>.</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>l</var><span class="hyp-type"><b>: </b><span>hypotheses</span></span></span><br><span><var>x, g</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>n</var><span class="hyp-type"><b>: </b><span>string</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>H</var><span class="hyp-type"><b>: </b><span>well_formed (x ---&gt; g)
+→ Pattern.<span class="kn">wf</span> (patterns_of l)
+  → Γ ⊢i foldr patt_imp (x ---&gt; g) (patterns_of l)
+    <span class="nb">using</span> i</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">well_formed g
+→ Pattern.<span class="kn">wf</span> (patterns_of (l ++ (n ∶ x,
+                                 )))
+  → Γ
+    ⊢i foldr patt_imp g (patterns_of (l ++ (n ∶ x,
+                                            )))
+    <span class="nb">using</span> i</div></blockquote></div></div></small><span class="alectryon-wsp"> </span></span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk5b" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk5b"><span class="nb">intros</span> wfxig wfl.</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>l</var><span class="hyp-type"><b>: </b><span>hypotheses</span></span></span><br><span><var>x, g</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>n</var><span class="hyp-type"><b>: </b><span>string</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>H</var><span class="hyp-type"><b>: </b><span>well_formed (x ---&gt; g)
+→ Pattern.<span class="kn">wf</span> (patterns_of l)
+  → Γ ⊢i foldr patt_imp (x ---&gt; g) (patterns_of l)
+    <span class="nb">using</span> i</span></span></span><br><span><var>wfxig</var><span class="hyp-type"><b>: </b><span>well_formed g</span></span></span><br><span><var>wfl</var><span class="hyp-type"><b>: </b><span>Pattern.<span class="kn">wf</span> (patterns_of (l ++ (n ∶ x,
+                       )))</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">Γ ⊢i foldr patt_imp g (patterns_of (l ++ (n ∶ x,
+                                          ))) <span class="nb">using</span> i</div></blockquote></div></div></small><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-wsp">  </span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk5c" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk5c"><span class="nb">unfold</span> patterns_of <span class="kr">in</span> wfl.</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>l</var><span class="hyp-type"><b>: </b><span>hypotheses</span></span></span><br><span><var>x, g</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>n</var><span class="hyp-type"><b>: </b><span>string</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>H</var><span class="hyp-type"><b>: </b><span>well_formed (x ---&gt; g)
+→ Pattern.<span class="kn">wf</span> (patterns_of l)
+  → Γ ⊢i foldr patt_imp (x ---&gt; g) (patterns_of l)
+    <span class="nb">using</span> i</span></span></span><br><span><var>wfxig</var><span class="hyp-type"><b>: </b><span>well_formed g</span></span></span><br><span><var>wfl</var><span class="hyp-type"><b>: </b><span>Pattern.<span class="kn">wf</span> (map nh_patt (l ++ (n ∶ x,
+                       )))</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">Γ ⊢i foldr patt_imp g (patterns_of (l ++ (n ∶ x,
+                                          ))) <span class="nb">using</span> i</div></blockquote></div></div></small><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">  </span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk5d" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk5d"><span class="nb">rewrite</span> map_app <span class="kr">in</span> wfl.</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>l</var><span class="hyp-type"><b>: </b><span>hypotheses</span></span></span><br><span><var>x, g</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>n</var><span class="hyp-type"><b>: </b><span>string</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>H</var><span class="hyp-type"><b>: </b><span>well_formed (x ---&gt; g)
+→ Pattern.<span class="kn">wf</span> (patterns_of l)
+  → Γ ⊢i foldr patt_imp (x ---&gt; g) (patterns_of l)
+    <span class="nb">using</span> i</span></span></span><br><span><var>wfxig</var><span class="hyp-type"><b>: </b><span>well_formed g</span></span></span><br><span><var>wfl</var><span class="hyp-type"><b>: </b><span>Pattern.<span class="kn">wf</span>
+  (map nh_patt l ++ map nh_patt (n ∶ x,
+                       ))</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">Γ ⊢i foldr patt_imp g (patterns_of (l ++ (n ∶ x,
+                                          ))) <span class="nb">using</span> i</div></blockquote></div></div></small><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">  </span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk5e" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk5e">feed <span class="nb">specialize</span> H.</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>l</var><span class="hyp-type"><b>: </b><span>hypotheses</span></span></span><br><span><var>x, g</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>n</var><span class="hyp-type"><b>: </b><span>string</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>H</var><span class="hyp-type"><b>: </b><span>well_formed (x ---&gt; g)
+→ Pattern.<span class="kn">wf</span> (patterns_of l)
+  → Γ ⊢i foldr patt_imp (x ---&gt; g) (patterns_of l)
+    <span class="nb">using</span> i</span></span></span><br><span><var>wfxig</var><span class="hyp-type"><b>: </b><span>well_formed g</span></span></span><br><span><var>wfl</var><span class="hyp-type"><b>: </b><span>Pattern.<span class="kn">wf</span>
+  (map nh_patt l ++ map nh_patt (n ∶ x,
+                       ))</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">well_formed (x ---&gt; g)</div></blockquote><div class="alectryon-extra-goals"><input class="alectryon-extra-goal-toggle" id="ProofMode-base-v-chk5f" style="display: none" type="checkbox"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>l</var><span class="hyp-type"><b>: </b><span>hypotheses</span></span></span><br><span><var>x, g</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>n</var><span class="hyp-type"><b>: </b><span>string</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>H</var><span class="hyp-type"><b>: </b><span>well_formed (x ---&gt; g)
+→ Pattern.<span class="kn">wf</span> (patterns_of l)
+  → Γ ⊢i foldr patt_imp (x ---&gt; g) (patterns_of l)
+    <span class="nb">using</span> i</span></span></span><br><span><var>wfxig</var><span class="hyp-type"><b>: </b><span>well_formed g</span></span></span><br><span><var>wfl</var><span class="hyp-type"><b>: </b><span>Pattern.<span class="kn">wf</span>
+  (map nh_patt l ++ map nh_patt (n ∶ x,
+                       ))</span></span></span><br></div><label class="goal-separator" for="ProofMode-base-v-chk5f"><hr></label><div class="goal-conclusion">Pattern.<span class="kn">wf</span> (patterns_of l)</div></blockquote><input class="alectryon-extra-goal-toggle" id="ProofMode-base-v-chk60" style="display: none" type="checkbox"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>l</var><span class="hyp-type"><b>: </b><span>hypotheses</span></span></span><br><span><var>x, g</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>n</var><span class="hyp-type"><b>: </b><span>string</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>H</var><span class="hyp-type"><b>: </b><span>Γ ⊢i foldr patt_imp (x ---&gt; g) (patterns_of l)
+<span class="nb">using</span> i</span></span></span><br><span><var>wfxig</var><span class="hyp-type"><b>: </b><span>well_formed g</span></span></span><br><span><var>wfl</var><span class="hyp-type"><b>: </b><span>Pattern.<span class="kn">wf</span>
+  (map nh_patt l ++ map nh_patt (n ∶ x,
+                       ))</span></span></span><br></div><label class="goal-separator" for="ProofMode-base-v-chk60"><hr></label><div class="goal-conclusion">Γ ⊢i foldr patt_imp g (patterns_of (l ++ (n ∶ x,
+                       ))) <span class="nb">using</span> i</div></blockquote></div></div></div></small><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">  </span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk61" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk61">{</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>l</var><span class="hyp-type"><b>: </b><span>hypotheses</span></span></span><br><span><var>x, g</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>n</var><span class="hyp-type"><b>: </b><span>string</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>H</var><span class="hyp-type"><b>: </b><span>well_formed (x ---&gt; g)
+→ Pattern.<span class="kn">wf</span> (patterns_of l)
+  → Γ ⊢i foldr patt_imp (x ---&gt; g) (patterns_of l)
+    <span class="nb">using</span> i</span></span></span><br><span><var>wfxig</var><span class="hyp-type"><b>: </b><span>well_formed g</span></span></span><br><span><var>wfl</var><span class="hyp-type"><b>: </b><span>Pattern.<span class="kn">wf</span>
+  (map nh_patt l ++ map nh_patt (n ∶ x,
+                       ))</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">well_formed (x ---&gt; g)</div></blockquote></div></div></small><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">    </span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kp">abstract</span> (
+        <span class="nb">apply</span> wfapp_proj_2 <span class="kr">in</span> wfl;
+        <span class="nb">unfold</span> Pattern.<span class="kn">wf</span> <span class="kr">in</span> wfl;
+        <span class="nb">simpl</span> <span class="kr">in</span> wfl;
+        <span class="nb">rewrite</span> andbT <span class="kr">in</span> wfl;
+        wf_auto2
+      ).</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">  </span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk62" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk62">}</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>l</var><span class="hyp-type"><b>: </b><span>hypotheses</span></span></span><br><span><var>x, g</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>n</var><span class="hyp-type"><b>: </b><span>string</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>H</var><span class="hyp-type"><b>: </b><span>well_formed (x ---&gt; g)
+→ Pattern.<span class="kn">wf</span> (patterns_of l)
+  → Γ ⊢i foldr patt_imp (x ---&gt; g) (patterns_of l)
+    <span class="nb">using</span> i</span></span></span><br><span><var>wfxig</var><span class="hyp-type"><b>: </b><span>well_formed g</span></span></span><br><span><var>wfl</var><span class="hyp-type"><b>: </b><span>Pattern.<span class="kn">wf</span>
+  (map nh_patt l ++ map nh_patt (n ∶ x,
+                       ))</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">Pattern.<span class="kn">wf</span> (patterns_of l)</div></blockquote><div class="alectryon-extra-goals"><input class="alectryon-extra-goal-toggle" id="ProofMode-base-v-chk63" style="display: none" type="checkbox"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>l</var><span class="hyp-type"><b>: </b><span>hypotheses</span></span></span><br><span><var>x, g</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>n</var><span class="hyp-type"><b>: </b><span>string</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>H</var><span class="hyp-type"><b>: </b><span>Γ ⊢i foldr patt_imp (x ---&gt; g) (patterns_of l)
+<span class="nb">using</span> i</span></span></span><br><span><var>wfxig</var><span class="hyp-type"><b>: </b><span>well_formed g</span></span></span><br><span><var>wfl</var><span class="hyp-type"><b>: </b><span>Pattern.<span class="kn">wf</span>
+  (map nh_patt l ++ map nh_patt (n ∶ x,
+                       ))</span></span></span><br></div><label class="goal-separator" for="ProofMode-base-v-chk63"><hr></label><div class="goal-conclusion">Γ ⊢i foldr patt_imp g (patterns_of (l ++ (n ∶ x,
+                       ))) <span class="nb">using</span> i</div></blockquote></div></div></div></small><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">  </span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk64" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk64">{</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>l</var><span class="hyp-type"><b>: </b><span>hypotheses</span></span></span><br><span><var>x, g</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>n</var><span class="hyp-type"><b>: </b><span>string</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>H</var><span class="hyp-type"><b>: </b><span>well_formed (x ---&gt; g)
+→ Pattern.<span class="kn">wf</span> (patterns_of l)
+  → Γ ⊢i foldr patt_imp (x ---&gt; g) (patterns_of l)
+    <span class="nb">using</span> i</span></span></span><br><span><var>wfxig</var><span class="hyp-type"><b>: </b><span>well_formed g</span></span></span><br><span><var>wfl</var><span class="hyp-type"><b>: </b><span>Pattern.<span class="kn">wf</span>
+  (map nh_patt l ++ map nh_patt (n ∶ x,
+                       ))</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">Pattern.<span class="kn">wf</span> (patterns_of l)</div></blockquote></div></div></small><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">    </span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kp">abstract</span> (<span class="nb">apply</span> wfapp_proj_1 <span class="kr">in</span> wfl; <span class="bp">exact</span> wfl).</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">  </span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk65" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk65">}</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>l</var><span class="hyp-type"><b>: </b><span>hypotheses</span></span></span><br><span><var>x, g</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>n</var><span class="hyp-type"><b>: </b><span>string</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>H</var><span class="hyp-type"><b>: </b><span>Γ ⊢i foldr patt_imp (x ---&gt; g) (patterns_of l)
+<span class="nb">using</span> i</span></span></span><br><span><var>wfxig</var><span class="hyp-type"><b>: </b><span>well_formed g</span></span></span><br><span><var>wfl</var><span class="hyp-type"><b>: </b><span>Pattern.<span class="kn">wf</span>
+  (map nh_patt l ++ map nh_patt (n ∶ x,
+                       ))</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">Γ ⊢i foldr patt_imp g (patterns_of (l ++ (n ∶ x,
+                                          ))) <span class="nb">using</span> i</div></blockquote></div></div></small><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-wsp">  </span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk66" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk66"><span class="nb">eapply</span> cast_proof&#39;.</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>l</var><span class="hyp-type"><b>: </b><span>hypotheses</span></span></span><br><span><var>x, g</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>n</var><span class="hyp-type"><b>: </b><span>string</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>H</var><span class="hyp-type"><b>: </b><span>Γ ⊢i foldr patt_imp (x ---&gt; g) (patterns_of l)
+<span class="nb">using</span> i</span></span></span><br><span><var>wfxig</var><span class="hyp-type"><b>: </b><span>well_formed g</span></span></span><br><span><var>wfl</var><span class="hyp-type"><b>: </b><span>Pattern.<span class="kn">wf</span>
+  (map nh_patt l ++ map nh_patt (n ∶ x,
+                       ))</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">foldr patt_imp g (patterns_of (l ++ (n ∶ x,
+                                     ))) = <span class="nl">?ϕ</span></div></blockquote><div class="alectryon-extra-goals"><input class="alectryon-extra-goal-toggle" id="ProofMode-base-v-chk67" style="display: none" type="checkbox"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>l</var><span class="hyp-type"><b>: </b><span>hypotheses</span></span></span><br><span><var>x, g</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>n</var><span class="hyp-type"><b>: </b><span>string</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>H</var><span class="hyp-type"><b>: </b><span>Γ ⊢i foldr patt_imp (x ---&gt; g) (patterns_of l)
+<span class="nb">using</span> i</span></span></span><br><span><var>wfxig</var><span class="hyp-type"><b>: </b><span>well_formed g</span></span></span><br><span><var>wfl</var><span class="hyp-type"><b>: </b><span>Pattern.<span class="kn">wf</span>
+  (map nh_patt l ++ map nh_patt (n ∶ x,
+                       ))</span></span></span><br></div><label class="goal-separator" for="ProofMode-base-v-chk67"><hr></label><div class="goal-conclusion">Γ ⊢i <span class="nl">?ϕ</span> <span class="nb">using</span> i</div></blockquote></div></div></div></small><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">  </span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk68" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk68">{</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>l</var><span class="hyp-type"><b>: </b><span>hypotheses</span></span></span><br><span><var>x, g</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>n</var><span class="hyp-type"><b>: </b><span>string</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>H</var><span class="hyp-type"><b>: </b><span>Γ ⊢i foldr patt_imp (x ---&gt; g) (patterns_of l)
+<span class="nb">using</span> i</span></span></span><br><span><var>wfxig</var><span class="hyp-type"><b>: </b><span>well_formed g</span></span></span><br><span><var>wfl</var><span class="hyp-type"><b>: </b><span>Pattern.<span class="kn">wf</span>
+  (map nh_patt l ++ map nh_patt (n ∶ x,
+                       ))</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">foldr patt_imp g (patterns_of (l ++ (n ∶ x,
+                                     ))) = <span class="nl">?ϕ</span></div></blockquote></div></div></small><span class="alectryon-wsp"> </span></span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk69" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk69"><span class="nb">unfold</span> patterns_of.</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>l</var><span class="hyp-type"><b>: </b><span>hypotheses</span></span></span><br><span><var>x, g</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>n</var><span class="hyp-type"><b>: </b><span>string</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>H</var><span class="hyp-type"><b>: </b><span>Γ ⊢i foldr patt_imp (x ---&gt; g) (patterns_of l)
+<span class="nb">using</span> i</span></span></span><br><span><var>wfxig</var><span class="hyp-type"><b>: </b><span>well_formed g</span></span></span><br><span><var>wfl</var><span class="hyp-type"><b>: </b><span>Pattern.<span class="kn">wf</span>
+  (map nh_patt l ++ map nh_patt (n ∶ x,
+                       ))</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">foldr patt_imp g (map nh_patt (l ++ (n ∶ x,
+                                     ))) = <span class="nl">?ϕ</span></div></blockquote></div></div></small><span class="alectryon-wsp"> </span></span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk6a" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk6a"><span class="nb">rewrite</span> map_app.</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>l</var><span class="hyp-type"><b>: </b><span>hypotheses</span></span></span><br><span><var>x, g</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>n</var><span class="hyp-type"><b>: </b><span>string</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>H</var><span class="hyp-type"><b>: </b><span>Γ ⊢i foldr patt_imp (x ---&gt; g) (patterns_of l)
+<span class="nb">using</span> i</span></span></span><br><span><var>wfxig</var><span class="hyp-type"><b>: </b><span>well_formed g</span></span></span><br><span><var>wfl</var><span class="hyp-type"><b>: </b><span>Pattern.<span class="kn">wf</span>
+  (map nh_patt l ++ map nh_patt (n ∶ x,
+                       ))</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">foldr patt_imp g
+  (map nh_patt l ++ map nh_patt (n ∶ x,
+                                 )) = <span class="nl">?ϕ</span></div></blockquote></div></div></small><span class="alectryon-wsp">  </span></span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk6b" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk6b"><span class="nb">rewrite</span> foldr_app.</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>l</var><span class="hyp-type"><b>: </b><span>hypotheses</span></span></span><br><span><var>x, g</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>n</var><span class="hyp-type"><b>: </b><span>string</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>H</var><span class="hyp-type"><b>: </b><span>Γ ⊢i foldr patt_imp (x ---&gt; g) (patterns_of l)
+<span class="nb">using</span> i</span></span></span><br><span><var>wfxig</var><span class="hyp-type"><b>: </b><span>well_formed g</span></span></span><br><span><var>wfl</var><span class="hyp-type"><b>: </b><span>Pattern.<span class="kn">wf</span>
+  (map nh_patt l ++ map nh_patt (n ∶ x,
+                       ))</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">foldr patt_imp
+  (foldr patt_imp g (map nh_patt (n ∶ x,
+                                  ))) (map nh_patt l) =
+<span class="nl">?ϕ</span></div></blockquote></div></div></small><span class="alectryon-wsp"> </span></span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk6c" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk6c"><span class="nb">simpl</span>.</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>l</var><span class="hyp-type"><b>: </b><span>hypotheses</span></span></span><br><span><var>x, g</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>n</var><span class="hyp-type"><b>: </b><span>string</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>H</var><span class="hyp-type"><b>: </b><span>Γ ⊢i foldr patt_imp (x ---&gt; g) (patterns_of l)
+<span class="nb">using</span> i</span></span></span><br><span><var>wfxig</var><span class="hyp-type"><b>: </b><span>well_formed g</span></span></span><br><span><var>wfl</var><span class="hyp-type"><b>: </b><span>Pattern.<span class="kn">wf</span>
+  (map nh_patt l ++ map nh_patt (n ∶ x,
+                       ))</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">foldr patt_imp (x ---&gt; g) (map nh_patt l) = <span class="nl">?ϕ</span></div></blockquote></div></div></small><span class="alectryon-wsp"> </span></span><span class="alectryon-sentence"><span class="alectryon-input"><span class="bp">reflexivity</span>.</span><span class="alectryon-wsp"> </span></span><span class="alectryon-sentence"><input class="alectryon-toggle" id="ProofMode-base-v-chk6d" style="display: none" type="checkbox"><label class="alectryon-input" for="ProofMode-base-v-chk6d">}</label><small class="alectryon-output"><div><div class="alectryon-goals"><blockquote class="alectryon-goal"><div class="goal-hyps"><span><var>Σ</var><span class="hyp-type"><b>: </b><span>Signature</span></span></span><br><span><var>Γ</var><span class="hyp-type"><b>: </b><span>Theory</span></span></span><br><span><var>l</var><span class="hyp-type"><b>: </b><span>hypotheses</span></span></span><br><span><var>x, g</var><span class="hyp-type"><b>: </b><span>Pattern</span></span></span><br><span><var>n</var><span class="hyp-type"><b>: </b><span>string</span></span></span><br><span><var>i</var><span class="hyp-type"><b>: </b><span>ProofInfo</span></span></span><br><span><var>H</var><span class="hyp-type"><b>: </b><span>Γ ⊢i foldr patt_imp (x ---&gt; g) (patterns_of l)
+<span class="nb">using</span> i</span></span></span><br><span><var>wfxig</var><span class="hyp-type"><b>: </b><span>well_formed g</span></span></span><br><span><var>wfl</var><span class="hyp-type"><b>: </b><span>Pattern.<span class="kn">wf</span>
+  (map nh_patt l ++ map nh_patt (n ∶ x,
+                       ))</span></span></span><br></div><span class="goal-separator"><hr></span><div class="goal-conclusion">Γ ⊢i foldr patt_imp (x ---&gt; g) (map nh_patt l) <span class="nb">using</span> i</div></blockquote></div></div></small><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">  </span><span class="alectryon-sentence"><span class="alectryon-input"><span class="bp">exact</span> H.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Defined</span>.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input">#[<span class="kn">global</span>]
+<span class="kn">Ltac</span> <span class="nf">mlRevertLast</span> :=
+<span class="kr">match goal with</span>
+| |- @of_MLGoal <span class="nl">?Sgm</span> (mkMLGoal <span class="nl">?Sgm</span> <span class="nl">?Ctx</span> <span class="nl">?l</span> <span class="nl">?g</span> <span class="nl">?i</span>)
+=&gt; <span class="nb">eapply</span> cast_proof_ml_hyps;
+   [(<span class="nb">rewrite</span> -[l](take_drop (length l - <span class="mi">1</span>)); <span class="nb">rewrite</span> [take _ _]/=; <span class="nb">rewrite</span> [drop _ _]/=; <span class="bp">reflexivity</span>)|];
+   <span class="nb">apply</span> MLGoal_revertLast
+<span class="kr">end</span>.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Close Scope</span> ml_scope.</span></span></pre></article></body></html>

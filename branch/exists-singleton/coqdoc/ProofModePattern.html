@@ -1,0 +1,651 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link href="coqdoc.css" rel="stylesheet" type="text/css" />
+<title>ProofModePattern</title>
+</head>
+
+<body>
+
+<div id="page">
+
+<div id="header">
+</div>
+
+<div id="main">
+
+<h1 class="libtitle">File ProofModePattern</h1>
+
+<div class="code">
+<span class="id" title="keyword">From</span> <span class="id" title="keyword">Equations</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="keyword">Equations</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">MatchingLogic</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Export</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Signature</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Pattern</span><br/>
+.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">stdpp</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Export</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">strings</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">stringmap</span><br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">String</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Equations</span>? <span class="id" title="var">list_map_pfin</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<span class="id" title="var">A</span> <span class="id" title="var">B</span> : <span class="id" title="keyword">Type</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">l</span> : <span class="id" title="var">list</span> <span class="id" title="var">A</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">f</span> : <span class="id" title="keyword">∀</span> (<span class="id" title="var">x</span> : <span class="id" title="var">A</span>) (<span class="id" title="var">pf</span>: <span class="id" title="var">x</span> ∈ <span class="id" title="var">l</span>), <span class="id" title="var">B</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;: <span class="id" title="var">list</span> <span class="id" title="var">B</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">list_map_pfin</span> [] <span class="id" title="var">_</span> := [] ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">list_map_pfin</span> (<span class="id" title="var">x</span>::<span class="id" title="var">xs</span>) <span class="id" title="var">f</span> := (<span class="id" title="var">f</span> <span class="id" title="var">x</span> <span class="id" title="var">_</span>)::(<span class="id" title="var">list_map_pfin</span> <span class="id" title="var">xs</span> (<span class="id" title="keyword">fun</span> <span class="id" title="var">x</span> <span class="id" title="var">H</span> ⇒ <span class="id" title="var">f</span> <span class="id" title="var">x</span> <span class="id" title="var">_</span>)) .<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">list_map_pfin_spec</span> {<span class="id" title="var">A</span> <span class="id" title="var">B</span> : <span class="id" title="keyword">Type</span>} (<span class="id" title="var">f</span> : <span class="id" title="var">A</span> → <span class="id" title="var">B</span>) (<span class="id" title="var">l</span> : <span class="id" title="var">list</span> <span class="id" title="var">A</span>) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">list_map_pfin</span> <span class="id" title="var">l</span> (<span class="id" title="keyword">fun</span> (<span class="id" title="var">x</span> : <span class="id" title="var">A</span>) (<span class="id" title="var">_</span> : <span class="id" title="var">x</span> ∈ <span class="id" title="var">l</span>) ⇒ <span class="id" title="var">f</span> <span class="id" title="var">x</span>) = <span class="id" title="var">List.map</span> <span class="id" title="var">f</span> <span class="id" title="var">l</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">length_list_map_pfin</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<span class="id" title="var">A</span> <span class="id" title="var">B</span> : <span class="id" title="keyword">Type</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">l</span> : <span class="id" title="var">list</span> <span class="id" title="var">A</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">f</span> : <span class="id" title="keyword">∀</span> (<span class="id" title="var">x</span> : <span class="id" title="var">A</span>) (<span class="id" title="var">pf</span>: <span class="id" title="var">x</span> ∈ <span class="id" title="var">l</span>), <span class="id" title="var">B</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">List.length</span> (<span class="id" title="var">list_map_pfin</span> <span class="id" title="var">l</span> <span class="id" title="var">f</span>) = <span class="id" title="var">List.length</span> <span class="id" title="var">l</span><br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">VarName</span> := <span class="id" title="var">string</span>.<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">EVarName</span> := <span class="id" title="var">VarName</span>.<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">SVarName</span> := <span class="id" title="var">VarName</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">incr_values</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">vm</span> : <span class="id" title="var">gmap</span> <span class="id" title="var">VarName</span> <span class="id" title="var">nat</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;: <span class="id" title="var">gmap</span> <span class="id" title="var">VarName</span> <span class="id" title="var">nat</span><br/>
+:= <span class="id" title="var">fmap</span> (<span class="id" title="keyword">fun</span> <span class="id" title="var">n</span> ⇒ <span class="id" title="var">S</span> <span class="id" title="var">n</span>) <span class="id" title="var">vm</span>.<br/>
+
+<br/>
+<span class="comment">(*<br/>
+&nbsp;&nbsp;Represents&nbsp;a&nbsp;context&nbsp;in&nbsp;which&nbsp;a&nbsp;pattern&nbsp;is&nbsp;well-defined.<br/>
+&nbsp;&nbsp;In&nbsp;particular,&nbsp;`pc_evm`&nbsp;is&nbsp;the&nbsp;set&nbsp;of&nbsp;element&nbsp;variables&nbsp;in&nbsp;context.<br/>
+*)</span><br/>
+<span class="id" title="keyword">Record</span> <span class="id" title="var">PContext</span> := <span class="id" title="var">mkPContext</span> {<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">pc_evm</span> : <span class="id" title="var">gmap</span> <span class="id" title="var">EVarName</span> <span class="id" title="var">nat</span> ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">pc_svm</span> : <span class="id" title="var">gmap</span> <span class="id" title="var">SVarName</span> <span class="id" title="var">nat</span> ;<br/>
+}.<br/>
+
+<br/>
+<span class="comment">(*Compute&nbsp;(fresh_string&nbsp;"X"&nbsp;(&lt;<span class="inlinecode">&quot;<span class="id" title="var">X</span>&quot;</span> <span class="inlinecode">:=</span> <span class="inlinecode">1</span>&gt;∅)).*)</span><br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">this_or_fresh</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">this</span> : <span class="id" title="var">VarName</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">g</span> : <span class="id" title="var">gmap</span> <span class="id" title="var">VarName</span> <span class="id" title="var">nat</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;: <span class="id" title="var">VarName</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;:=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">fresh_string</span> <span class="id" title="var">this</span> <span class="id" title="var">g</span><br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">this_or_fresh_fresh</span> <span class="id" title="var">this</span> <span class="id" title="var">g</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">g</span> !! (<span class="id" title="var">this_or_fresh</span> <span class="id" title="var">this</span> <span class="id" title="var">g</span>) = <span class="id" title="var">None</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">renaming_function</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">new_key</span> <span class="id" title="var">old_key</span> <span class="id" title="var">some_key</span> : <span class="id" title="var">VarName</span>) : <span class="id" title="var">VarName</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> (<span class="id" title="var">decide</span> (<span class="id" title="var">some_key</span> = <span class="id" title="var">old_key</span>)) <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="tactic">left</span> <span class="id" title="var">_</span> ⇒ <span class="id" title="var">new_key</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="tactic">right</span> <span class="id" title="var">_</span> ⇒ <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> (<span class="id" title="var">decide</span> (<span class="id" title="var">some_key</span> = <span class="id" title="var">new_key</span>)) <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="tactic">left</span> <span class="id" title="var">_</span> ⇒ <span class="id" title="var">old_key</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="tactic">right</span> <span class="id" title="var">_</span> ⇒ <span class="id" title="var">some_key</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span> <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+#[<span class="id" title="var">global</span>]<br/>
+<span class="id" title="keyword">Instance</span> <span class="id" title="var">renaming_function_injective</span> <span class="id" title="var">new_name</span> <span class="id" title="var">old_name</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Inj</span> <span class="id" title="var">eq</span> <span class="id" title="var">eq</span> (<span class="id" title="var">renaming_function</span> <span class="id" title="var">new_name</span> <span class="id" title="var">old_name</span>).<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">update_key</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">new_key</span> <span class="id" title="var">old_key</span> : <span class="id" title="var">VarName</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">m</span> : <span class="id" title="var">gmap</span> <span class="id" title="var">VarName</span> <span class="id" title="var">nat</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;: <span class="id" title="var">gmap</span> <span class="id" title="var">VarName</span> <span class="id" title="var">nat</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;:= <span class="id" title="var">kmap</span> (<span class="id" title="var">renaming_function</span> <span class="id" title="var">new_key</span> <span class="id" title="var">old_key</span>) <span class="id" title="var">m</span><br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">update_evm_key</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">new_key</span> <span class="id" title="var">old_key</span> : <span class="id" title="var">EVarName</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">pctx</span> : <span class="id" title="var">PContext</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;: <span class="id" title="var">PContext</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;:= <span class="id" title="var">mkPContext</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">update_key</span> <span class="id" title="var">new_key</span> <span class="id" title="var">old_key</span> (<span class="id" title="var">pc_evm</span> <span class="id" title="var">pctx</span>))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">pc_svm</span> <span class="id" title="var">pctx</span>)<br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">update_svm_key</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">new_key</span> <span class="id" title="var">old_key</span> : <span class="id" title="var">SVarName</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">pctx</span> : <span class="id" title="var">PContext</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;: <span class="id" title="var">PContext</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;:= <span class="id" title="var">mkPContext</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">pc_evm</span> <span class="id" title="var">pctx</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">update_key</span> <span class="id" title="var">new_key</span> <span class="id" title="var">old_key</span> (<span class="id" title="var">pc_svm</span> <span class="id" title="var">pctx</span>))<br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">max_value</span> (<span class="id" title="var">d</span> : <span class="id" title="var">nat</span>) (<span class="id" title="var">m</span> : <span class="id" title="var">gmap</span> <span class="id" title="var">VarName</span> <span class="id" title="var">nat</span>) : <span class="id" title="var">nat</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">map_fold</span> (<span class="id" title="keyword">fun</span> <span class="id" title="var">k</span> <span class="id" title="var">v</span> <span class="id" title="var">r</span> ⇒ <span class="id" title="var">Nat.max</span> <span class="id" title="var">v</span> <span class="id" title="var">r</span>) <span class="id" title="var">d</span> <span class="id" title="var">m</span><br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">max_value_kmap</span> (<span class="id" title="var">f</span> : <span class="id" title="var">VarName</span> → <span class="id" title="var">VarName</span>) {<span class="id" title="var">injF</span> : <span class="id" title="var">Inj</span> <span class="id" title="var">eq</span> <span class="id" title="var">eq</span> <span class="id" title="var">f</span>} (<span class="id" title="var">d</span> : <span class="id" title="var">nat</span>) (<span class="id" title="var">m</span> : <span class="id" title="var">gmap</span> <span class="id" title="var">VarName</span> <span class="id" title="var">nat</span>):<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">max_value</span> <span class="id" title="var">d</span> (<span class="id" title="var">kmap</span> <span class="id" title="var">f</span> <span class="id" title="var">m</span>) = <span class="id" title="var">max_value</span> <span class="id" title="var">d</span> <span class="id" title="var">m</span><br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">max_value_in_leq</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">m</span> : <span class="id" title="var">gmap</span> <span class="id" title="var">VarName</span> <span class="id" title="var">nat</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">d</span> : <span class="id" title="var">nat</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">name</span> : <span class="id" title="var">VarName</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">m</span> !! <span class="id" title="var">name</span> = <span class="id" title="var">Some</span> <span class="id" title="var">d</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">d</span> ≤ <span class="id" title="var">max_value</span> 0 <span class="id" title="var">m</span><br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">boundary_value</span> (<span class="id" title="var">m</span> : <span class="id" title="var">gmap</span> <span class="id" title="var">VarName</span> <span class="id" title="var">nat</span>) : <span class="id" title="var">nat</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> (<span class="id" title="var">decide</span> (<span class="id" title="var">m</span> = ∅)) <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="tactic">left</span> <span class="id" title="var">_</span> ⇒ 0<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="tactic">right</span> <span class="id" title="var">_</span> ⇒     <span class="id" title="var">S</span> (<span class="id" title="var">max_value</span> 0 <span class="id" title="var">m</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">pc_add_ename</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">ctx</span> : <span class="id" title="var">PContext</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">name</span> : <span class="id" title="var">EVarName</span>) :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">mkPContext</span> ((&lt;[<span class="id" title="var">name</span> := 0]&gt;(<span class="id" title="var">incr_values</span> (<span class="id" title="var">pc_evm</span> <span class="id" title="var">ctx</span>)))) (<span class="id" title="var">pc_svm</span> <span class="id" title="var">ctx</span>)<br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">pc_add_sname</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">ctx</span> : <span class="id" title="var">PContext</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">name</span> : <span class="id" title="var">SVarName</span>) :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">mkPContext</span> (<span class="id" title="var">pc_evm</span> <span class="id" title="var">ctx</span>) ((&lt;[<span class="id" title="var">name</span> := 0]&gt;(<span class="id" title="var">incr_values</span> (<span class="id" title="var">pc_svm</span> <span class="id" title="var">ctx</span>))))<br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Record</span> <span class="id" title="var">Pattern_in_context</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} := <span class="id" title="var">mkPIC</span> {<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">pic_pic</span>: <span class="id" title="var">PContext</span> → <span class="id" title="var">Pattern</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">pic_wf</span> : <span class="id" title="keyword">∀</span> (<span class="id" title="var">pc</span> : <span class="id" title="var">PContext</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">phi</span> := <span class="id" title="var">pic_pic</span> <span class="id" title="var">pc</span> <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_positive</span> <span class="id" title="var">phi</span> ∧ <span class="comment">(*&nbsp;TODO&nbsp;no_negative,&nbsp;no_positive_occurrence*)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_closed_ex_aux</span> <span class="id" title="var">phi</span> (<span class="id" title="var">boundary_value</span> (<span class="id" title="var">pc_evm</span> <span class="id" title="var">pc</span>)) ∧<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_closed_mu_aux</span> <span class="id" title="var">phi</span> (<span class="id" title="var">boundary_value</span> (<span class="id" title="var">pc_svm</span> <span class="id" title="var">pc</span>)) ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;}<br/>
+.<br/>
+
+<br/>
+<span class="comment">(*<br/>
+&nbsp;So&nbsp;what&nbsp;notations&nbsp;we&nbsp;want&nbsp;to&nbsp;support?<br/>
+&nbsp;¬ϕ&nbsp;≡&nbsp;ϕ&nbsp;---&gt;&nbsp;⊥<br/>
+&nbsp;ϕ₁&nbsp;\/&nbsp;ϕ₂&nbsp;≡&nbsp;¬ϕ₁&nbsp;---&gt;&nbsp;ϕ₂<br/>
+&nbsp;∀&nbsp;x.&nbsp;ϕ&nbsp;≡&nbsp;¬&nbsp;∃&nbsp;x.&nbsp;¬&nbsp;ϕ<br/>
+&nbsp;So,&nbsp;a&nbsp;notation&nbsp;is&nbsp;parametric&nbsp;in<br/>
+&nbsp;(1)&nbsp;how&nbsp;many&nbsp;patterns&nbsp;it&nbsp;takes&nbsp;as&nbsp;an&nbsp;argument.<br/>
+&nbsp;(2)&nbsp;how&nbsp;many&nbsp;element&nbsp;variables&nbsp;it&nbsp;binds<br/>
+&nbsp;(3)&nbsp;how&nbsp;many&nbsp;set&nbsp;variables&nbsp;it&nbsp;binds.<br/>
+*)</span><br/>
+<span class="id" title="keyword">Record</span> <span class="id" title="var">MLConstruct</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">mlc_arity</span> : <span class="id" title="var">nat</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">mlc_ebinder_arity</span> : <span class="id" title="var">nat</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">mlc_sbinder_arity</span> : <span class="id" title="var">nat</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} := {<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">(*mlc_level&nbsp;:&nbsp;nat&nbsp;;*)</span><br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">mlc_expand</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">list</span> <span class="id" title="var">Pattern_in_context</span> → <span class="comment">(*&nbsp;patterns&nbsp;*)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">list</span> <span class="id" title="var">EVarName</span> → <span class="comment">(*&nbsp;bound&nbsp;evars*)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">list</span> <span class="id" title="var">SVarName</span> → <span class="comment">(*&nbsp;bound&nbsp;svars*)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">option</span> <span class="id" title="var">Pattern_in_context</span> ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">mlc_expand_almost_total</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">args</span> : <span class="id" title="var">list</span> <span class="id" title="var">Pattern_in_context</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">ebinders</span> : <span class="id" title="var">list</span> <span class="id" title="var">EVarName</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">sbinders</span> : <span class="id" title="var">list</span> <span class="id" title="var">SVarName</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">List.length</span> <span class="id" title="var">args</span> = <span class="id" title="var">mlc_arity</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">List.length</span> <span class="id" title="var">ebinders</span> = <span class="id" title="var">mlc_ebinder_arity</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">List.length</span> <span class="id" title="var">sbinders</span> = <span class="id" title="var">mlc_sbinder_arity</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">∃</span> <span class="id" title="var">ϕ_in_context</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">mlc_expand</span> <span class="id" title="var">args</span> <span class="id" title="var">ebinders</span> <span class="id" title="var">sbinders</span> = <span class="id" title="var">Some</span> <span class="id" title="var">ϕ_in_context</span>  ;<br/>
+}.<br/>
+
+<br/>
+<span class="id" title="keyword">Section</span> <span class="id" title="var">sec</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Context</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Inductive</span> <span class="id" title="var">PMPattern</span> : <span class="id" title="keyword">Set</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">pmpatt_inj</span> (<span class="id" title="var">ln</span> : <span class="id" title="var">Pattern</span>) (<span class="id" title="var">wfpf</span> : <span class="id" title="var">Pattern.well_formed</span> <span class="id" title="var">ln</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">pmpatt_construct</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{<span class="id" title="var">a</span> <span class="id" title="var">ea</span> <span class="id" title="var">sa</span> : <span class="id" title="var">nat</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">construct</span> : <span class="id" title="var">MLConstruct</span> <span class="id" title="var">a</span> <span class="id" title="var">ea</span> <span class="id" title="var">sa</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">args</span> : <span class="id" title="var">vec</span> <span class="id" title="var">PMPattern</span> <span class="id" title="var">a</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">bound_evars</span> : <span class="id" title="var">vec</span> <span class="id" title="var">EVarName</span> <span class="id" title="var">ea</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">bound_svars</span> : <span class="id" title="var">vec</span> <span class="id" title="var">SVarName</span> <span class="id" title="var">sa</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Equations</span> <span class="id" title="var">PMPattern_size</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">ϕ</span> : <span class="id" title="var">PMPattern</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: <span class="id" title="var">nat</span> := {<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">PMPattern_size</span> (<span class="id" title="var">pmpatt_inj</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span>) := 1 ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">PMPattern_size</span> (<span class="id" title="var">pmpatt_construct</span> <span class="id" title="var">_</span> <span class="id" title="var">args</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span>) :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">S</span> (@<span class="id" title="var">PMPattern_size_vec</span> <span class="id" title="var">_</span> <span class="id" title="var">args</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">where</span> <span class="id" title="var">PMPattern_size_vec</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{<span class="id" title="var">arity</span> : <span class="id" title="var">nat</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">v</span> : <span class="id" title="var">vec</span> <span class="id" title="var">PMPattern</span> <span class="id" title="var">arity</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: <span class="id" title="var">nat</span> := {<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;@<span class="id" title="var">PMPattern_size_vec</span> <span class="id" title="var">_</span> <span class="id" title="var">vnil</span> := 1 ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;@<span class="id" title="var">PMPattern_size_vec</span> <span class="id" title="var">_</span> (<span class="id" title="var">vcons</span> <span class="id" title="var">x</span> <span class="id" title="var">xs</span>) :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">PMPattern_size</span> <span class="id" title="var">x</span> + <span class="id" title="var">PMPattern_size_vec</span> <span class="id" title="var">xs</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">PMPattern_size_clause_2_PMPattern_size_vec_spec</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">ar1</span> <span class="id" title="var">ea1</span> <span class="id" title="var">sa1</span> : <span class="id" title="var">nat</span>) (<span class="id" title="var">con</span> : <span class="id" title="var">MLConstruct</span> <span class="id" title="var">ar1</span> <span class="id" title="var">ea1</span> <span class="id" title="var">sa1</span>) <span class="id" title="var">a</span> <span class="id" title="var">e</span> <span class="id" title="var">s</span> <span class="id" title="var">ar</span> <span class="id" title="var">args'</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;@<span class="id" title="var">PMPattern_size_clause_2_PMPattern_size_vec</span> <span class="id" title="var">PMPattern_size</span> <span class="id" title="var">ar1</span> <span class="id" title="var">ea1</span> <span class="id" title="var">sa1</span> <span class="id" title="var">con</span> <span class="id" title="var">a</span> <span class="id" title="var">e</span> <span class="id" title="var">s</span>  <span class="id" title="var">ar</span> <span class="id" title="var">args'</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= <span class="id" title="var">S</span> (<span class="id" title="var">list_sum</span> (<span class="id" title="var">fmap</span> (<span class="id" title="keyword">fun</span> <span class="id" title="var">p</span> ⇒ <span class="id" title="var">PMPattern_size</span> <span class="id" title="var">p</span>) (<span class="id" title="var">vec_to_list</span> <span class="id" title="var">args'</span>)))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Equations</span> <span class="id" title="var">eq_apply_4</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<span class="id" title="var">T1</span> <span class="id" title="var">T2</span> <span class="id" title="var">T3</span> <span class="id" title="var">T4</span> <span class="id" title="var">R</span> : <span class="id" title="keyword">Type</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">f</span>: <span class="id" title="var">T1</span> → <span class="id" title="var">T2</span> → <span class="id" title="var">T3</span> → <span class="id" title="var">T4</span> → <span class="id" title="var">R</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">arg1</span> : <span class="id" title="var">T1</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">arg2</span> : <span class="id" title="var">T2</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">arg3</span> : <span class="id" title="var">T3</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">arg4</span> : <span class="id" title="var">T4</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<span class="id" title="var">r</span> : <span class="id" title="var">R</span> &amp; <span class="id" title="var">r</span> = <span class="id" title="var">f</span> <span class="id" title="var">arg1</span> <span class="id" title="var">arg2</span> <span class="id" title="var">arg3</span> <span class="id" title="var">arg4</span>} :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">eq_apply_4</span> <span class="id" title="var">f</span> <span class="id" title="var">arg1</span> <span class="id" title="var">arg2</span> <span class="id" title="var">arg3</span> <span class="id" title="var">arg4</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:= <span class="id" title="var">existT</span> (<span class="id" title="var">f</span> <span class="id" title="var">arg1</span> <span class="id" title="var">arg2</span> <span class="id" title="var">arg3</span> <span class="id" title="var">arg4</span>) (@<span class="id" title="var">eq_refl</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span>) .<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">eq_apply_5</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{<span class="id" title="var">T1</span> <span class="id" title="var">T2</span> <span class="id" title="var">T3</span> <span class="id" title="var">T4</span> <span class="id" title="var">T5</span> <span class="id" title="var">R</span> : <span class="id" title="keyword">Type</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">f</span>: <span class="id" title="var">T1</span> → <span class="id" title="var">T2</span> → <span class="id" title="var">T3</span> → <span class="id" title="var">T4</span> → <span class="id" title="var">T5</span> → <span class="id" title="var">R</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">arg1</span> : <span class="id" title="var">T1</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">arg2</span> : <span class="id" title="var">T2</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">arg3</span> : <span class="id" title="var">T3</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">arg4</span> : <span class="id" title="var">T4</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">arg5</span> : <span class="id" title="var">T5</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{<span class="id" title="var">r</span> : <span class="id" title="var">R</span> &amp; <span class="id" title="var">r</span> = <span class="id" title="var">f</span> <span class="id" title="var">arg1</span> <span class="id" title="var">arg2</span> <span class="id" title="var">arg3</span> <span class="id" title="var">arg4</span> <span class="id" title="var">arg5</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">eq_apply_7</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<span class="id" title="var">T1</span> <span class="id" title="var">T2</span> <span class="id" title="var">T3</span> <span class="id" title="var">T4</span> <span class="id" title="var">T5</span> <span class="id" title="var">T6</span> <span class="id" title="var">T7</span> <span class="id" title="var">R</span> : <span class="id" title="keyword">Type</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">f</span>: <span class="id" title="var">T1</span> → <span class="id" title="var">T2</span> → <span class="id" title="var">T3</span> → <span class="id" title="var">T4</span> → <span class="id" title="var">T5</span> → <span class="id" title="var">T6</span> → <span class="id" title="var">T7</span> → <span class="id" title="var">R</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">arg1</span> : <span class="id" title="var">T1</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">arg2</span> : <span class="id" title="var">T2</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">arg3</span> : <span class="id" title="var">T3</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">arg4</span> : <span class="id" title="var">T4</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">arg5</span> : <span class="id" title="var">T5</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">arg6</span> : <span class="id" title="var">T6</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">arg7</span> : <span class="id" title="var">T7</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<span class="id" title="var">r</span> : <span class="id" title="var">R</span> &amp; <span class="id" title="var">r</span> = <span class="id" title="var">f</span> <span class="id" title="var">arg1</span> <span class="id" title="var">arg2</span> <span class="id" title="var">arg3</span> <span class="id" title="var">arg4</span> <span class="id" title="var">arg5</span> <span class="id" title="var">arg6</span> <span class="id" title="var">arg7</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Program Definition</span> <span class="id" title="var">expand_total</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{<span class="id" title="var">ar</span> <span class="id" title="var">ea</span> <span class="id" title="var">sa</span> : <span class="id" title="var">nat</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">construct</span> : @<span class="id" title="var">MLConstruct</span> <span class="id" title="var">ar</span> <span class="id" title="var">ea</span> <span class="id" title="var">sa</span> <span class="id" title="var">Σ</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">args</span> : <span class="id" title="var">vec</span> <span class="id" title="var">PMPattern</span> <span class="id" title="var">ar</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">bevars</span> : <span class="id" title="var">vec</span> <span class="id" title="var">EVarName</span> <span class="id" title="var">ea</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">bsvars</span> : <span class="id" title="var">vec</span> <span class="id" title="var">SVarName</span> <span class="id" title="var">sa</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">f</span> : <span class="id" title="keyword">∀</span> (<span class="id" title="var">p</span> : <span class="id" title="var">PMPattern</span>), <span class="id" title="var">p</span> ∈ (<span class="id" title="var">vec_to_list</span> <span class="id" title="var">args</span>) → <span class="id" title="var">Pattern_in_context</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: <span class="id" title="var">Pattern_in_context</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> (<span class="id" title="var">eq_apply_4</span> (<span class="id" title="var">mlc_expand</span> <span class="id" title="var">ar</span> <span class="id" title="var">ea</span> <span class="id" title="var">sa</span>) <span class="id" title="var">construct</span> (<span class="id" title="var">list_map_pfin</span> (<span class="id" title="var">vec_to_list</span> <span class="id" title="var">args</span>) (<span class="id" title="keyword">fun</span> <span class="id" title="var">p</span> ⇒ <span class="id" title="keyword">fun</span> <span class="id" title="var">pf</span> ⇒ <span class="id" title="var">f</span> <span class="id" title="var">p</span> <span class="id" title="var">pf</span>)) <span class="id" title="var">bevars</span> <span class="id" title="var">bsvars</span>) <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">existT</span> <span class="id" title="var">None</span> <span class="id" title="var">Hcontra</span> ⇒ @<span class="id" title="var">False_rec</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">existT</span> (<span class="id" title="var">Some</span> <span class="id" title="var">phi</span>) <span class="id" title="var">_</span> ⇒ <span class="id" title="var">phi</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Equations</span>? <span class="id" title="var">PMPattern_to_ln</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">ϕ</span> : <span class="id" title="var">PMPattern</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;: <span class="id" title="var">Pattern_in_context</span> <span class="id" title="tactic">by</span> <span class="id" title="keyword">wf</span> (<span class="id" title="var">PMPattern_size</span> <span class="id" title="var">ϕ</span>) <span class="id" title="var">lt</span> := {<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">PMPattern_to_ln</span> (<span class="id" title="var">pmpatt_inj</span> <span class="id" title="var">ln</span> <span class="id" title="var">_</span>) := <span class="id" title="var">mkPIC</span> <span class="id" title="var">_</span> (<span class="id" title="keyword">fun</span> <span class="id" title="var">_</span> ⇒ <span class="id" title="var">ln</span> ) <span class="id" title="var">_</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">PMPattern_to_ln</span> (<span class="id" title="var">pmpatt_construct</span> <span class="id" title="var">construct</span> <span class="id" title="var">args</span> <span class="id" title="var">bevars</span> <span class="id" title="var">bsvars</span>) :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">expand_total</span> <span class="id" title="var">construct</span> <span class="id" title="var">args</span> <span class="id" title="var">bevars</span> <span class="id" title="var">bsvars</span> (<span class="id" title="keyword">fun</span> <span class="id" title="var">p</span> <span class="id" title="var">pf</span> ⇒ <span class="id" title="var">PMPattern_to_ln</span> <span class="id" title="var">p</span>)            <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Program Definition</span> <span class="id" title="var">mlc_sym</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">s</span> : <span class="id" title="var">symbols</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: <span class="id" title="var">MLConstruct</span> 0 0 0 := {|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">mlc_expand</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">fun</span> <span class="id" title="var">_</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">fun</span> <span class="id" title="var">_</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">fun</span> <span class="id" title="var">_</span> ⇒ <span class="id" title="var">Some</span> (<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">mkPIC</span> <span class="id" title="var">_</span> (<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">fun</span> <span class="id" title="var">_</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">patt_sym</span> <span class="id" title="var">s</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;) (<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">fun</span> <span class="id" title="var">_</span> ⇒ <span class="id" title="var">_</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Program Definition</span> <span class="id" title="var">mlc_bott</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: <span class="id" title="var">MLConstruct</span> 0 0 0 := {|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">mlc_expand</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">fun</span> <span class="id" title="var">_</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">fun</span> <span class="id" title="var">_</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">fun</span> <span class="id" title="var">_</span> ⇒ <span class="id" title="var">Some</span>(<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">mkPIC</span> <span class="id" title="var">_</span> (<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">fun</span> <span class="id" title="var">_</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">patt_bott</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)  (<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">fun</span> <span class="id" title="var">_</span> ⇒ <span class="id" title="var">_</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Program Definition</span> <span class="id" title="var">mlc_evar</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">name</span> : <span class="id" title="var">EVarName</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: <span class="id" title="var">MLConstruct</span> 0 0 0 := {|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">mlc_expand</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">fun</span> <span class="id" title="var">_</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">fun</span> <span class="id" title="var">_</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">fun</span> <span class="id" title="var">_</span> ⇒ <span class="id" title="var">Some</span> (<span class="id" title="var">mkPIC</span> <span class="id" title="var">_</span> (<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">fun</span> <span class="id" title="var">ctx</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> (<span class="id" title="var">pc_evm</span> <span class="id" title="var">ctx</span>) !! <span class="id" title="var">name</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">Some</span> <span class="id" title="var">n</span> ⇒ <span class="id" title="var">patt_bound_evar</span> <span class="id" title="var">n</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">None</span> ⇒ <span class="id" title="var">patt_free_evar</span> (<span class="id" title="var">string2evar</span> <span class="id" title="var">name</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;) <span class="id" title="var">_</span> )<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">wfp_update_evm_key</span> <span class="id" title="var">ϕic</span> <span class="id" title="var">new_name</span> <span class="id" title="var">old_name</span> <span class="id" title="var">pc</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_positive</span> (<span class="id" title="var">pic_pic</span> <span class="id" title="var">ϕic</span> <span class="id" title="var">pc</span>) = <span class="id" title="var">true</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_positive</span> (<span class="id" title="var">pic_pic</span> <span class="id" title="var">ϕic</span> (<span class="id" title="var">update_evm_key</span> <span class="id" title="var">new_name</span> <span class="id" title="var">old_name</span> <span class="id" title="var">pc</span>)) = <span class="id" title="var">true</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">wfp_update_svm_key</span> <span class="id" title="var">ϕic</span> <span class="id" title="var">new_name</span> <span class="id" title="var">old_name</span> <span class="id" title="var">pc</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_positive</span> (<span class="id" title="var">pic_pic</span> <span class="id" title="var">ϕic</span> <span class="id" title="var">pc</span>) = <span class="id" title="var">true</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_positive</span> (<span class="id" title="var">pic_pic</span> <span class="id" title="var">ϕic</span> (<span class="id" title="var">update_svm_key</span> <span class="id" title="var">new_name</span> <span class="id" title="var">old_name</span> <span class="id" title="var">pc</span>)) = <span class="id" title="var">true</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">boundary_value_update_key</span> <span class="id" title="var">new_name</span> <span class="id" title="var">old_name</span> <span class="id" title="var">store</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">boundary_value</span> (<span class="id" title="var">update_key</span> <span class="id" title="var">new_name</span> <span class="id" title="var">old_name</span> <span class="id" title="var">store</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= <span class="id" title="var">boundary_value</span> <span class="id" title="var">store</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">wfcex_update_evm_key</span> <span class="id" title="var">ϕic</span> <span class="id" title="var">new_name</span> <span class="id" title="var">old_name</span> <span class="id" title="var">pc</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_closed_ex_aux</span> (<span class="id" title="var">pic_pic</span> <span class="id" title="var">ϕic</span> <span class="id" title="var">pc</span>) (<span class="id" title="var">boundary_value</span> (<span class="id" title="var">pc_evm</span> <span class="id" title="var">pc</span>)) = <span class="id" title="var">true</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_closed_ex_aux</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">pic_pic</span> <span class="id" title="var">ϕic</span> (<span class="id" title="var">update_evm_key</span> <span class="id" title="var">new_name</span> <span class="id" title="var">old_name</span> <span class="id" title="var">pc</span>))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">boundary_value</span> (<span class="id" title="var">pc_evm</span> <span class="id" title="var">pc</span>)) = <span class="id" title="var">true</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">wfcmu_update_svm_key</span> <span class="id" title="var">ϕic</span> <span class="id" title="var">new_name</span> <span class="id" title="var">old_name</span> <span class="id" title="var">pc</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_closed_mu_aux</span> (<span class="id" title="var">pic_pic</span> <span class="id" title="var">ϕic</span> <span class="id" title="var">pc</span>) (<span class="id" title="var">boundary_value</span> (<span class="id" title="var">pc_svm</span> <span class="id" title="var">pc</span>)) = <span class="id" title="var">true</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_closed_mu_aux</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">pic_pic</span> <span class="id" title="var">ϕic</span> (<span class="id" title="var">update_svm_key</span> <span class="id" title="var">new_name</span> <span class="id" title="var">old_name</span> <span class="id" title="var">pc</span>))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">boundary_value</span> (<span class="id" title="var">pc_svm</span> <span class="id" title="var">pc</span>)) = <span class="id" title="var">true</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Program Definition</span> <span class="id" title="var">mlc_evar_rename</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">new_name</span> <span class="id" title="var">old_name</span> : <span class="id" title="var">EVarName</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;: <span class="id" title="var">MLConstruct</span> 1 0 0 := {|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">mlc_expand</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">fun</span> <span class="id" title="var">ps</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">ps</span> !! 0 <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">None</span> ⇒ <span class="id" title="var">None</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">Some</span> <span class="id" title="var">ϕ_in_context</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Some</span> ( <span class="id" title="var">mkPIC</span> <span class="id" title="var">_</span> (<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">fun</span> <span class="id" title="var">ctx</span> : <span class="id" title="var">PContext</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">new_ctx</span> := <span class="id" title="var">update_evm_key</span> <span class="id" title="var">new_name</span> <span class="id" title="var">old_name</span> <span class="id" title="var">ctx</span> <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">pic_pic</span> <span class="id" title="var">ϕ_in_context</span> <span class="id" title="var">new_ctx</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;) <span class="id" title="var">_</span> )<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;|}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Program Definition</span> <span class="id" title="var">mlc_svar_rename</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">new_name</span> <span class="id" title="var">old_name</span> : <span class="id" title="var">SVarName</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;: <span class="id" title="var">MLConstruct</span> 1 0 0 := {|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">mlc_expand</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">fun</span> <span class="id" title="var">ps</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">ps</span> !! 0 <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">None</span> ⇒ <span class="id" title="var">None</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">Some</span> <span class="id" title="var">ϕ_in_context</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Some</span> ( <span class="id" title="var">mkPIC</span> <span class="id" title="var">_</span> (<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">fun</span> <span class="id" title="var">ctx</span> : <span class="id" title="var">PContext</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">new_ctx</span> := <span class="id" title="var">update_svm_key</span> <span class="id" title="var">new_name</span> <span class="id" title="var">old_name</span> <span class="id" title="var">ctx</span> <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">pic_pic</span> <span class="id" title="var">ϕ_in_context</span> <span class="id" title="var">new_ctx</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;) <span class="id" title="var">_</span> )<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;|}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Program Definition</span> <span class="id" title="var">mlc_svar</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">name</span> : <span class="id" title="var">SVarName</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: <span class="id" title="var">MLConstruct</span> 0 0 0:= {|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">mlc_expand</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">fun</span> <span class="id" title="var">_</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">fun</span> <span class="id" title="var">_</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">fun</span> <span class="id" title="var">_</span> ⇒ <span class="id" title="var">Some</span> (<span class="id" title="var">mkPIC</span> <span class="id" title="var">_</span> (<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">fun</span> <span class="id" title="var">ctx</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> (<span class="id" title="var">pc_svm</span> <span class="id" title="var">ctx</span>) !! <span class="id" title="var">name</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">Some</span> <span class="id" title="var">n</span> ⇒ <span class="id" title="var">patt_bound_svar</span> <span class="id" title="var">n</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">None</span> ⇒ <span class="id" title="var">patt_free_svar</span> (<span class="id" title="var">string2svar</span> <span class="id" title="var">name</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;) <span class="id" title="var">_</span> )<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Program Definition</span> <span class="id" title="var">mlc_app</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: <span class="id" title="var">MLConstruct</span> 2 0 0 := {|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">mlc_expand</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">fun</span> <span class="id" title="var">ps</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">fun</span> <span class="id" title="var">_</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">fun</span> <span class="id" title="var">_</span> ⇒ <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">ps</span> !! 0 <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">None</span> ⇒ <span class="id" title="var">None</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">Some</span> <span class="id" title="var">ϕ₁</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">ps</span> !! 1 <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">None</span> ⇒ <span class="id" title="var">None</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">Some</span> <span class="id" title="var">ϕ₂</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Some</span> (<span class="id" title="var">mkPIC</span> <span class="id" title="var">_</span> (<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">fun</span> <span class="id" title="var">ctx</span> ⇒ <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">patt_app</span> (<span class="id" title="var">pic_pic</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ctx</span>) (<span class="id" title="var">pic_pic</span> <span class="id" title="var">ϕ₂</span> <span class="id" title="var">ctx</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;) <span class="id" title="var">_</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Program Definition</span> <span class="id" title="var">mlc_imp</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: <span class="id" title="var">MLConstruct</span> 2 0 0 := {|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">mlc_expand</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">fun</span> <span class="id" title="var">ps</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">fun</span> <span class="id" title="var">_</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">fun</span> <span class="id" title="var">_</span> ⇒ <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">ps</span> !! 0 <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">None</span> ⇒ <span class="id" title="var">None</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">Some</span> <span class="id" title="var">ϕ₁</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">ps</span> !! 1 <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">None</span> ⇒ <span class="id" title="var">None</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">Some</span> <span class="id" title="var">ϕ₂</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Some</span> ( <span class="id" title="var">mkPIC</span> <span class="id" title="var">_</span> (<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">fun</span> <span class="id" title="var">ctx</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">patt_imp</span> (<span class="id" title="var">pic_pic</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ctx</span>) (<span class="id" title="var">pic_pic</span> <span class="id" title="var">ϕ₂</span> <span class="id" title="var">ctx</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;) <span class="id" title="var">_</span> )<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">S_max_list</span> (<span class="id" title="var">l</span> : <span class="id" title="var">list</span> <span class="id" title="var">nat</span>) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">S</span> (<span class="id" title="var">max_list</span> <span class="id" title="var">l</span>) = <span class="id" title="keyword">match</span> <span class="id" title="var">l</span> <span class="id" title="keyword">with</span> [] ⇒ 1 | <span class="id" title="var">_</span> ⇒ <span class="id" title="var">max_list</span> (<span class="id" title="var">S</span> &lt;$&gt; <span class="id" title="var">l</span>) <span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">map_fold_fmap</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">X</span> : <span class="id" title="keyword">Type</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">g</span>: <span class="id" title="var">VarName</span> → <span class="id" title="var">nat</span> → <span class="id" title="var">X</span> → <span class="id" title="var">X</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">gcom</span>: <span class="id" title="keyword">∀</span> <span class="id" title="var">j1</span> <span class="id" title="var">z1</span> <span class="id" title="var">j2</span> <span class="id" title="var">z2</span> <span class="id" title="var">y</span>, <span class="id" title="var">g</span> <span class="id" title="var">j1</span> <span class="id" title="var">z1</span> (<span class="id" title="var">g</span> <span class="id" title="var">j2</span> <span class="id" title="var">z2</span> <span class="id" title="var">y</span>) = <span class="id" title="var">g</span> <span class="id" title="var">j2</span> <span class="id" title="var">z2</span> (<span class="id" title="var">g</span> <span class="id" title="var">j1</span> <span class="id" title="var">z1</span> <span class="id" title="var">y</span>))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">f</span> : <span class="id" title="var">nat</span> → <span class="id" title="var">nat</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">m</span> : <span class="id" title="var">gmap</span> <span class="id" title="var">VarName</span> <span class="id" title="var">nat</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">x</span> : <span class="id" title="var">X</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: <span class="id" title="var">map_fold</span> <span class="id" title="var">g</span> <span class="id" title="var">x</span> (<span class="id" title="var">f</span> &lt;$&gt; <span class="id" title="var">m</span>) = <span class="id" title="var">map_fold</span> (<span class="id" title="keyword">fun</span> <span class="id" title="var">vn</span> <span class="id" title="var">n</span> <span class="id" title="var">x</span> ⇒ <span class="id" title="var">g</span> <span class="id" title="var">vn</span> (<span class="id" title="var">f</span> <span class="id" title="var">n</span>) <span class="id" title="var">x</span>) <span class="id" title="var">x</span> <span class="id" title="var">m</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Instance</span> <span class="id" title="var">pred_S_cancel</span> : <span class="id" title="var">Cancel</span> (=) <span class="id" title="var">Nat.pred</span> <span class="id" title="var">S</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">map_fold_compose</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">X</span> : <span class="id" title="keyword">Type</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">g</span>: <span class="id" title="var">VarName</span> → <span class="id" title="var">nat</span> → <span class="id" title="var">X</span> → <span class="id" title="var">X</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">f</span> <span class="id" title="var">finv</span> : <span class="id" title="var">X</span> → <span class="id" title="var">X</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{<span class="id" title="var">f_finv_cancel</span> : <span class="id" title="var">Cancel</span> (=) <span class="id" title="var">finv</span> <span class="id" title="var">f</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">gcom</span>: <span class="id" title="keyword">∀</span> <span class="id" title="var">j1</span> <span class="id" title="var">z1</span> <span class="id" title="var">j2</span> <span class="id" title="var">z2</span> <span class="id" title="var">y</span>, <span class="id" title="var">g</span> <span class="id" title="var">j1</span> <span class="id" title="var">z1</span> (<span class="id" title="var">g</span> <span class="id" title="var">j2</span> <span class="id" title="var">z2</span> <span class="id" title="var">y</span>) = <span class="id" title="var">g</span> <span class="id" title="var">j2</span> <span class="id" title="var">z2</span> (<span class="id" title="var">g</span> <span class="id" title="var">j1</span> <span class="id" title="var">z1</span> <span class="id" title="var">y</span>))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">fgcom</span>: <span class="id" title="keyword">∀</span> <span class="id" title="var">j1</span> <span class="id" title="var">z1</span> <span class="id" title="var">j2</span> <span class="id" title="var">z2</span> <span class="id" title="var">y</span>, <span class="id" title="var">f</span> (<span class="id" title="var">g</span> <span class="id" title="var">j1</span> <span class="id" title="var">z1</span> ((<span class="id" title="var">g</span> <span class="id" title="var">j2</span> <span class="id" title="var">z2</span> <span class="id" title="var">y</span>))) = <span class="id" title="var">f</span> (<span class="id" title="var">g</span> <span class="id" title="var">j2</span> <span class="id" title="var">z2</span> ((<span class="id" title="var">g</span> <span class="id" title="var">j1</span> <span class="id" title="var">z1</span> <span class="id" title="var">y</span>))))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">m</span> : <span class="id" title="var">gmap</span> <span class="id" title="var">VarName</span> <span class="id" title="var">nat</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">x</span> : <span class="id" title="var">X</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: <span class="id" title="var">f</span> (<span class="id" title="var">map_fold</span> <span class="id" title="var">g</span> <span class="id" title="var">x</span> <span class="id" title="var">m</span>) = <span class="id" title="var">map_fold</span> (<span class="id" title="keyword">fun</span> <span class="id" title="var">vn</span> <span class="id" title="var">n</span> <span class="id" title="var">x</span> ⇒ <span class="id" title="var">f</span> (<span class="id" title="var">g</span> <span class="id" title="var">vn</span> <span class="id" title="var">n</span> (<span class="id" title="var">finv</span> <span class="id" title="var">x</span>))) (<span class="id" title="var">f</span> <span class="id" title="var">x</span>) <span class="id" title="var">m</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">max_helper_lemma</span> <span class="id" title="var">v</span> <span class="id" title="var">m</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">v</span> `<span class="id" title="var">max</span>` <span class="id" title="var">map_fold</span> (<span class="id" title="var">λ</span> (<span class="id" title="var">_</span> : <span class="id" title="var">VarName</span>) (<span class="id" title="var">v0</span> <span class="id" title="var">r</span> : <span class="id" title="var">nat</span>), <span class="id" title="var">v0</span> `<span class="id" title="var">max</span>` <span class="id" title="var">r</span>) 0 <span class="id" title="var">m</span> =<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">v</span> `<span class="id" title="var">max</span>` <span class="id" title="var">map_fold</span> (<span class="id" title="var">λ</span> (<span class="id" title="var">_</span> : <span class="id" title="var">VarName</span>) (<span class="id" title="var">v0</span> <span class="id" title="var">r</span> : <span class="id" title="var">nat</span>), <span class="id" title="var">v0</span> `<span class="id" title="var">max</span>` <span class="id" title="var">r</span>) <span class="id" title="var">v</span> <span class="id" title="var">m</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">max_value_in_param</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">m</span> : <span class="id" title="var">gmap</span> <span class="id" title="var">VarName</span> <span class="id" title="var">nat</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">name</span> : <span class="id" title="var">VarName</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">v</span> : <span class="id" title="var">nat</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">m</span> !! <span class="id" title="var">name</span> = <span class="id" title="var">Some</span> <span class="id" title="var">v</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">max_value</span> 0 <span class="id" title="var">m</span> = <span class="id" title="var">max_value</span> <span class="id" title="var">v</span> <span class="id" title="var">m</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">boundary_value_incr_values</span> <span class="id" title="var">m</span> <span class="id" title="var">name</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">m</span> !! <span class="id" title="var">name</span> = <span class="id" title="var">None</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">boundary_value</span> (&lt;[<span class="id" title="var">name</span>:=0]&gt;(<span class="id" title="var">incr_values</span> <span class="id" title="var">m</span>))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= <span class="id" title="var">S</span> (<span class="id" title="var">boundary_value</span> <span class="id" title="var">m</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Program Definition</span> <span class="id" title="var">mlc_exists</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: <span class="id" title="var">MLConstruct</span> 1 1 0 := {|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">mlc_expand</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">fun</span> <span class="id" title="var">ps</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">fun</span> <span class="id" title="var">evs</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">fun</span> <span class="id" title="var">_</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">ps</span> !! 0 <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">None</span> ⇒ <span class="id" title="var">None</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">Some</span> <span class="id" title="var">ϕ_in_context</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">evs</span> !! 0 <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">None</span> ⇒ <span class="id" title="var">None</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">Some</span> <span class="id" title="var">name</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Some</span> ( <span class="id" title="var">mkPIC</span> <span class="id" title="var">_</span> (<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">fun</span> <span class="id" title="var">ctx</span> : <span class="id" title="var">PContext</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">name'</span> := <span class="id" title="var">this_or_fresh</span> <span class="id" title="var">name</span> (<span class="id" title="var">pc_evm</span> <span class="id" title="var">ctx</span>) <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">ctx'</span> := <span class="id" title="var">pc_add_ename</span> <span class="id" title="var">ctx</span> <span class="id" title="var">name'</span> <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">ϕ</span> := <span class="id" title="var">pic_pic</span> <span class="id" title="var">ϕ_in_context</span> <span class="id" title="var">ctx'</span> <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">patt_exists</span> <span class="id" title="var">ϕ</span> <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;) <span class="id" title="var">_</span> )<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Program Definition</span> <span class="id" title="var">mlc_mu</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: <span class="id" title="var">MLConstruct</span> 1 0 1 := {|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">mlc_expand</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">fun</span> <span class="id" title="var">ps</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">fun</span> <span class="id" title="var">_</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">fun</span> <span class="id" title="var">svs</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">ps</span> !! 0 <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">None</span> ⇒ <span class="id" title="var">None</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">Some</span> <span class="id" title="var">ϕ_in_context</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">svs</span> !! 0 <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">None</span> ⇒ <span class="id" title="var">None</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">Some</span> <span class="id" title="var">name</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Some</span> ( <span class="id" title="var">mkPIC</span> <span class="id" title="var">_</span> (<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">fun</span> <span class="id" title="var">ctx</span> : <span class="id" title="var">PContext</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">name'</span> := <span class="id" title="var">this_or_fresh</span> <span class="id" title="var">name</span> (<span class="id" title="var">pc_svm</span> <span class="id" title="var">ctx</span>) <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">ctx'</span> := <span class="id" title="var">pc_add_sname</span> <span class="id" title="var">ctx</span> <span class="id" title="var">name'</span> <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">ϕ</span> := <span class="id" title="var">pic_pic</span> <span class="id" title="var">ϕ_in_context</span> <span class="id" title="var">ctx'</span> <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">patt_mu</span> <span class="id" title="var">ϕ</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;) <span class="id" title="var">_</span> )<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;.<br/>
+
+<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Section</span> <span class="id" title="var">examples</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Context</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{<span class="id" title="var">s1</span> : <span class="id" title="var">symbols</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Local Example</span> <span class="id" title="var">ex_1</span> : <span class="id" title="var">PMPattern</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">pmpatt_construct</span> (<span class="id" title="var">mlc_sym</span> <span class="id" title="var">s1</span>) <span class="id" title="var">vnil</span> <span class="id" title="var">vnil</span> <span class="id" title="var">vnil</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Local Example</span> <span class="id" title="var">Ex_2</span> : <span class="id" title="var">PMPattern</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">pmpatt_construct</span> (<span class="id" title="var">mlc_imp</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[# <span class="id" title="var">ex_1</span>; <span class="id" title="var">ex_1</span>] <span class="id" title="var">vnil</span> <span class="id" title="var">vnil</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">End</span> <span class="id" title="var">examples</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">End</span> <span class="id" title="var">sec</span>.<br/>
+</div>
+<hr/>This page has been generated by <a href="http://coq.inria.fr/">coqdoc</a>
+</div>
+
+</div>
+
+</body>
+</html>

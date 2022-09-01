@@ -1,0 +1,204 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link href="coqdoc.css" rel="stylesheet" type="text/css" />
+<title>ContextualImplication</title>
+</head>
+
+<body>
+
+<div id="page">
+
+<div id="header">
+</div>
+
+<div id="main">
+
+<h1 class="libtitle">File ContextualImplication</h1>
+
+<div class="code">
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">ssreflect</span> <span class="id" title="var">ssrfun</span> <span class="id" title="var">ssrbool</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Ltac2</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Ltac2</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Equations.Prop.Equations</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">String</span> <span class="id" title="var">Ensembles</span> <span class="id" title="var">Setoid</span> <span class="id" title="var">Btauto</span>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Coq.Program.Equality</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq.Classes</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Morphisms_Prop</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq.Unicode</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Utf8</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq.micromega</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Lia</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">stdpp</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">base</span> <span class="id" title="var">fin_sets</span> <span class="id" title="var">sets</span> <span class="id" title="var">propset</span> <span class="id" title="var">proof_irrel</span> <span class="id" title="var">option</span> <span class="id" title="var">list</span> <span class="id" title="var">coGset</span> <span class="id" title="var">finite</span> <span class="id" title="var">infinite</span> <span class="id" title="var">gmap</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">MatchingLogic</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">Logic</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">DerivedOperators_Syntax</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">ProofMode.MLPM</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">FreshnessManager</span><br/>
+.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">MatchingLogic.Theories</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Definedness_Syntax</span> <span class="id" title="var">Definedness_ProofSystem</span> <span class="id" title="var">DeductionTheorem</span> <span class="id" title="var">Subseteq_ProofSystem</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">MatchingLogic.Utils</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">stdpp_ext</span>.<br/>
+<span class="id" title="keyword">Import</span> <span class="id" title="var">extralibrary</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Import</span> <span class="id" title="var">MatchingLogic.Logic.Notations</span>.<br/>
+<span class="id" title="keyword">Import</span> <span class="id" title="var">MatchingLogic.DerivedOperators_Syntax.Notations</span>.<br/>
+<span class="id" title="keyword">Import</span> <span class="id" title="var">MatchingLogic.Syntax.BoundVarSugar</span>.<br/>
+
+<br/>
+
+<br/>
+<span class="id" title="keyword">Import</span> <span class="id" title="var">Notations</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Open</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">ml_scope</span>.<br/>
+<span class="id" title="keyword">Open</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">string_scope</span>.<br/>
+<span class="id" title="keyword">Open</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">list_scope</span>.<br/>
+
+<br/>
+<span class="comment">(*&nbsp;TODO&nbsp;split&nbsp;this&nbsp;file&nbsp;into&nbsp;syntax&nbsp;/&nbsp;proof&nbsp;system&nbsp;parts*)</span><br/>
+
+<br/>
+<span class="id" title="keyword">Record</span> <span class="id" title="var">StructureContext</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} := <span class="id" title="var">mkStructureContext</span> {<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">sc_ac</span> : <span class="id" title="var">Application_context</span> ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">sc_pred</span> : <span class="id" title="var">Pattern</span> ;<br/>
+}.<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">sc_valid</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<span class="id" title="var">definedness_syntax</span> : <span class="id" title="var">Definedness_Syntax.Syntax</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">Γ</span> : <span class="id" title="var">Theory</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">SC</span> : <span class="id" title="var">StructureContext</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;:= <span class="id" title="var">Γ</span> ⊢ (<span class="id" title="var">sc_pred</span> <span class="id" title="var">SC</span>)<br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">sc_plug</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<span class="id" title="var">definedness_syntax</span> : <span class="id" title="var">Definedness_Syntax.Syntax</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">SC</span> : <span class="id" title="var">StructureContext</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">ϕ</span> : <span class="id" title="var">Pattern</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;: <span class="id" title="var">Pattern</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;:= <span class="id" title="var">patt_and</span> (<span class="id" title="var">subst_ctx</span> (<span class="id" title="var">sc_ac</span> <span class="id" title="var">SC</span>) <span class="id" title="var">ϕ</span>) (<span class="id" title="var">sc_pred</span> <span class="id" title="var">SC</span>)<br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">sc2pctx</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<span class="id" title="var">definedness_syntax</span> : <span class="id" title="var">Definedness_Syntax.Syntax</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">SC</span> : <span class="id" title="var">StructureContext</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;: <span class="id" title="var">PatternCtx</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;:= <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">boxvar</span> := (<span class="id" title="var">evar_fresh_s</span> ((<span class="id" title="var">free_evars_ctx</span> (<span class="id" title="var">sc_ac</span> <span class="id" title="var">SC</span>)) ∪ (<span class="id" title="var">free_evars</span> (<span class="id" title="var">sc_pred</span> <span class="id" title="var">SC</span>)))) <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{| <span class="id" title="var">pcEvar</span> := <span class="id" title="var">boxvar</span> ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">pcPattern</span> := (<span class="id" title="var">ApplicationContext2Pattern</span> <span class="id" title="var">boxvar</span> (<span class="id" title="var">sc_ac</span> <span class="id" title="var">SC</span>)) <span class="id" title="var">and</span> (<span class="id" title="var">sc_pred</span> <span class="id" title="var">SC</span>) ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;|}<br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">patt_set_builder</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(ψ : <span class="id" title="var">Pattern</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;: <span class="id" title="var">Pattern</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;:= <span class="id" title="var">patt_exists</span> (<span class="id" title="var">patt_and</span> (<span class="id" title="var">patt_bound_evar</span> 0) ψ)<br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">set_builder_full_1</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<span class="id" title="var">definedness_syntax</span> : <span class="id" title="var">Definedness_Syntax.Syntax</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">Γ</span> : <span class="id" title="var">Theory</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">ϕ</span> : <span class="id" title="var">Pattern</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Definedness_Syntax.theory</span> ⊆ <span class="id" title="var">Γ</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed</span> <span class="id" title="var">ϕ</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢ <span class="id" title="var">ϕ</span> ---&gt; (<span class="id" title="var">patt_set_builder</span> ((<span class="id" title="var">patt_bound_evar</span> 0) ∈<span class="id" title="var">ml</span> <span class="id" title="var">ϕ</span>))<br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">set_builder_full_2</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<span class="id" title="var">definedness_syntax</span> : <span class="id" title="var">Definedness_Syntax.Syntax</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">Γ</span> : <span class="id" title="var">Theory</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">ϕ</span> : <span class="id" title="var">Pattern</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Definedness_Syntax.theory</span> ⊆ <span class="id" title="var">Γ</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed</span> <span class="id" title="var">ϕ</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢ (<span class="id" title="var">patt_set_builder</span> ((<span class="id" title="var">patt_bound_evar</span> 0) ∈<span class="id" title="var">ml</span> <span class="id" title="var">ϕ</span>)) ---&gt; <span class="id" title="var">ϕ</span><br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">set_builder_full_iff</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<span class="id" title="var">definedness_syntax</span> : <span class="id" title="var">Definedness_Syntax.Syntax</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">Γ</span> : <span class="id" title="var">Theory</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">ϕ</span> : <span class="id" title="var">Pattern</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Definedness_Syntax.theory</span> ⊆ <span class="id" title="var">Γ</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed</span> <span class="id" title="var">ϕ</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢ (<span class="id" title="var">ϕ</span>) &lt;---&gt; (<span class="id" title="var">patt_set_builder</span> ((<span class="id" title="var">patt_bound_evar</span> 0) ∈<span class="id" title="var">ml</span> <span class="id" title="var">ϕ</span>))<br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">set_builder_full</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<span class="id" title="var">definedness_syntax</span> : <span class="id" title="var">Definedness_Syntax.Syntax</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">Γ</span> : <span class="id" title="var">Theory</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">ϕ</span> : <span class="id" title="var">Pattern</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Definedness_Syntax.theory</span> ⊆ <span class="id" title="var">Γ</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed</span> <span class="id" title="var">ϕ</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢ (<span class="id" title="var">ϕ</span>) =<span class="id" title="var">ml</span> (<span class="id" title="var">patt_set_builder</span> ((<span class="id" title="var">patt_bound_evar</span> 0) ∈<span class="id" title="var">ml</span> <span class="id" title="var">ϕ</span>))<br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">contextual_implication</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<span class="id" title="var">definedness_syntax</span> : <span class="id" title="var">Definedness_Syntax.Syntax</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">SC</span> : <span class="id" title="var">StructureContext</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(ψ : <span class="id" title="var">Pattern</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;:= <span class="id" title="var">patt_set_builder</span> (<span class="id" title="var">patt_subseteq</span> (<span class="id" title="var">sc_plug</span> <span class="id" title="var">SC</span> (<span class="id" title="var">patt_bound_evar</span> 0)) ψ)<br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">wrap_unwrap_helper</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<span class="id" title="var">definedness_syntax</span> : <span class="id" title="var">Definedness_Syntax.Syntax</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">Γ</span> : <span class="id" title="var">Theory</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">SC</span> : <span class="id" title="var">StructureContext</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Definedness_Syntax.theory</span> ⊆ <span class="id" title="var">Γ</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">sc_valid</span> <span class="id" title="var">Γ</span> <span class="id" title="var">SC</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="keyword">∀</span> (<span class="id" title="var">ϕ</span> ψ : <span class="id" title="var">Pattern</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed</span> <span class="id" title="var">ϕ</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed</span> ψ →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢ <span class="id" title="var">is_predicate_pattern</span> ψ →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢ (<span class="id" title="var">sc_plug</span> <span class="id" title="var">SC</span> (<span class="id" title="var">ϕ</span> <span class="id" title="var">and</span> ψ)) =<span class="id" title="var">ml</span> ((<span class="id" title="var">sc_plug</span> <span class="id" title="var">SC</span> <span class="id" title="var">ϕ</span>) <span class="id" title="var">and</span> ψ)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;) →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">(*&nbsp;FIXME&nbsp;I&nbsp;didn't&nbsp;understood&nbsp;from&nbsp;the&nbsp;paper&nbsp;whether&nbsp;ϕ&nbsp;is&nbsp;quantified&nbsp;here,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;or&nbsp;whether&nbsp;it&nbsp;is&nbsp;the&nbsp;same&nbsp;as&nbsp;in&nbsp;the&nbsp;conclusion.&nbsp;*)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="keyword">∀</span> (<span class="id" title="var">ϕ</span>: <span class="id" title="var">Pattern</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed</span> (<span class="id" title="var">patt_exists</span> <span class="id" title="var">ϕ</span>) →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢ (<span class="id" title="var">sc_plug</span> <span class="id" title="var">SC</span> (<span class="id" title="var">patt_exists</span> <span class="id" title="var">ϕ</span>)) =<span class="id" title="var">ml</span> <span class="id" title="var">patt_exists</span> (<span class="id" title="var">sc_plug</span> <span class="id" title="var">SC</span> <span class="id" title="var">ϕ</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;) →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> (<span class="id" title="var">ϕ</span> : <span class="id" title="var">Pattern</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed</span> <span class="id" title="var">ϕ</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢ (<span class="id" title="var">sc_plug</span> <span class="id" title="var">SC</span> <span class="id" title="var">ϕ</span>) =<span class="id" title="var">ml</span> (<span class="id" title="var">ϕ</span> ---&gt; (<span class="id" title="var">contextual_implication</span> <span class="id" title="var">SC</span> <span class="id" title="var">ϕ</span>))<br/>
+.<br/>
+</div>
+<hr/>This page has been generated by <a href="http://coq.inria.fr/">coqdoc</a>
+</div>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,516 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link href="coqdoc.css" rel="stylesheet" type="text/css" />
+<title>Pattern</title>
+</head>
+
+<body>
+
+<div id="page">
+
+<div id="header">
+</div>
+
+<div id="main">
+
+<h1 class="libtitle">File Pattern</h1>
+
+<div class="code">
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">ssreflect</span> <span class="id" title="var">ssrfun</span> <span class="id" title="var">ssrbool</span>.<br/>
+<span class="id" title="keyword">Set Implicit Arguments</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">stdpp</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">countable</span> <span class="id" title="var">infinite</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">stdpp</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">pmap</span> <span class="id" title="var">gmap</span> <span class="id" title="var">mapset</span> <span class="id" title="var">fin_sets</span> <span class="id" title="var">propset</span>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">stdpp_ext</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">extralibrary</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">MatchingLogic</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Export</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Signature</span>.<br/>
+
+<br/>
+<span class="comment">(*&nbsp;TODO&nbsp;have&nbsp;different&nbsp;type&nbsp;for&nbsp;element&nbsp;variable&nbsp;and&nbsp;for&nbsp;set&nbsp;variable&nbsp;index&nbsp;*)</span><br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">db_index</span> := <span class="id" title="var">nat</span>.<br/>
+
+<br/>
+<span class="comment">(*&nbsp;begin&nbsp;snippet&nbsp;Pattern&nbsp;*)</span><br/>
+<span class="id" title="keyword">Inductive</span> <span class="id" title="var">Pattern</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} : <span class="id" title="keyword">Set</span> :=<br/>
+| <span class="id" title="var">patt_free_evar</span> (<span class="id" title="var">x</span> : <span class="id" title="tactic">evar</span>)<br/>
+| <span class="id" title="var">patt_free_svar</span> (<span class="id" title="var">x</span> : <span class="id" title="var">svar</span>)<br/>
+| <span class="id" title="var">patt_bound_evar</span> (<span class="id" title="var">n</span> : <span class="id" title="var">db_index</span>)<br/>
+| <span class="id" title="var">patt_bound_svar</span> (<span class="id" title="var">n</span> : <span class="id" title="var">db_index</span>)<br/>
+| <span class="id" title="var">patt_sym</span> (<span class="id" title="var">sigma</span> : <span class="id" title="var">symbols</span>) :  <span class="id" title="var">Pattern</span><br/>
+| <span class="id" title="var">patt_app</span> (<span class="id" title="var">phi1</span> <span class="id" title="var">phi2</span> : <span class="id" title="var">Pattern</span>)<br/>
+| <span class="id" title="var">patt_bott</span><br/>
+| <span class="id" title="var">patt_imp</span> (<span class="id" title="var">phi1</span> <span class="id" title="var">phi2</span> : <span class="id" title="var">Pattern</span>)<br/>
+| <span class="id" title="var">patt_exists</span> (<span class="id" title="var">phi</span> : <span class="id" title="var">Pattern</span>)<br/>
+| <span class="id" title="var">patt_mu</span> (<span class="id" title="var">phi</span> : <span class="id" title="var">Pattern</span>)<br/>
+.<br/>
+<span class="comment">(*&nbsp;end&nbsp;snippet&nbsp;Pattern&nbsp;*)</span><br/>
+
+<br/>
+ 
+<br/>
+<span class="id" title="keyword">Global Instance</span> <span class="id" title="var">Pattern_countable</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} (<span class="id" title="var">sc</span> : <span class="id" title="var">Countable</span> <span class="id" title="var">symbols</span>) : <span class="id" title="var">Countable</span> <span class="id" title="var">Pattern</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Section</span> <span class="id" title="var">syntax</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Context</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>}.<br/>
+
+<br/>
+<span class="id" title="keyword">Fixpoint</span> <span class="id" title="var">size</span> (<span class="id" title="var">p</span> : <span class="id" title="var">Pattern</span>) : <span class="id" title="var">nat</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">p</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_app</span> <span class="id" title="var">ls</span> <span class="id" title="var">rs</span> ⇒ 1 + (<span class="id" title="var">size</span> <span class="id" title="var">ls</span>) + (<span class="id" title="var">size</span> <span class="id" title="var">rs</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_imp</span> <span class="id" title="var">ls</span> <span class="id" title="var">rs</span> ⇒ 1 + (<span class="id" title="var">size</span> <span class="id" title="var">ls</span>) + (<span class="id" title="var">size</span> <span class="id" title="var">rs</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_exists</span> <span class="id" title="var">p'</span> ⇒ 1 + <span class="id" title="var">size</span> <span class="id" title="var">p'</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_mu</span> <span class="id" title="var">p'</span> ⇒ 1 + <span class="id" title="var">size</span> <span class="id" title="var">p'</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">_</span> ⇒ 0<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Fixpoint</span> <span class="id" title="var">size'</span> (<span class="id" title="var">p</span> : <span class="id" title="var">Pattern</span>) : <span class="id" title="var">nat</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">p</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_app</span> <span class="id" title="var">ls</span> <span class="id" title="var">rs</span> ⇒ 1 + (<span class="id" title="var">size'</span> <span class="id" title="var">ls</span>) + (<span class="id" title="var">size'</span> <span class="id" title="var">rs</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_imp</span> <span class="id" title="var">ls</span> <span class="id" title="var">rs</span> ⇒ 1 + (<span class="id" title="var">size'</span> <span class="id" title="var">ls</span>) + (<span class="id" title="var">size'</span> <span class="id" title="var">rs</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_exists</span> <span class="id" title="var">p'</span> ⇒ 1 + <span class="id" title="var">size'</span> <span class="id" title="var">p'</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_mu</span> <span class="id" title="var">p'</span> ⇒ 1 + <span class="id" title="var">size'</span> <span class="id" title="var">p'</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">_</span> ⇒ 1<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+The free names of a type are defined as follow.  Notice the
+  <span class="inlinecode"><span class="id" title="tactic">∃</span></span> and <span class="inlinecode"><span class="id" title="var">mu</span></span> cases: they do not bind any name. 
+</div>
+<div class="code">
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">EVarSet</span> := <span class="id" title="var">gset</span> <span class="id" title="tactic">evar</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">SVarSet</span> := <span class="id" title="var">gset</span> <span class="id" title="var">svar</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Fixpoint</span> <span class="id" title="var">free_evars</span> (<span class="id" title="var">phi</span> : <span class="id" title="var">Pattern</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;: <span class="id" title="var">EVarSet</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">phi</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_free_evar</span> <span class="id" title="var">x</span> ⇒ <span class="id" title="var">singleton</span> <span class="id" title="var">x</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_free_svar</span> <span class="id" title="var">X</span> ⇒ <span class="id" title="var">empty</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_bound_evar</span> <span class="id" title="var">x</span> ⇒ <span class="id" title="var">empty</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_bound_svar</span> <span class="id" title="var">X</span> ⇒ <span class="id" title="var">empty</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_sym</span> <span class="id" title="var">sigma</span> ⇒ <span class="id" title="var">empty</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_app</span> <span class="id" title="var">phi1</span> <span class="id" title="var">phi2</span> ⇒ <span class="id" title="var">union</span> (<span class="id" title="var">free_evars</span> <span class="id" title="var">phi1</span>) (<span class="id" title="var">free_evars</span> <span class="id" title="var">phi2</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_bott</span> ⇒ <span class="id" title="var">empty</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_imp</span> <span class="id" title="var">phi1</span> <span class="id" title="var">phi2</span> ⇒ <span class="id" title="var">union</span> (<span class="id" title="var">free_evars</span> <span class="id" title="var">phi1</span>) (<span class="id" title="var">free_evars</span> <span class="id" title="var">phi2</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_exists</span> <span class="id" title="var">phi</span> ⇒ <span class="id" title="var">free_evars</span> <span class="id" title="var">phi</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_mu</span> <span class="id" title="var">phi</span> ⇒ <span class="id" title="var">free_evars</span> <span class="id" title="var">phi</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Fixpoint</span> <span class="id" title="var">free_svars</span> (<span class="id" title="var">phi</span> : <span class="id" title="var">Pattern</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;: <span class="id" title="var">SVarSet</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">phi</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_free_evar</span> <span class="id" title="var">x</span> ⇒ <span class="id" title="var">empty</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_free_svar</span> <span class="id" title="var">X</span> ⇒ <span class="id" title="var">singleton</span> <span class="id" title="var">X</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_bound_evar</span> <span class="id" title="var">x</span> ⇒ <span class="id" title="var">empty</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_bound_svar</span> <span class="id" title="var">X</span> ⇒ <span class="id" title="var">empty</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_sym</span> <span class="id" title="var">sigma</span> ⇒ <span class="id" title="var">empty</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_app</span> <span class="id" title="var">phi1</span> <span class="id" title="var">phi2</span> ⇒ <span class="id" title="var">union</span> (<span class="id" title="var">free_svars</span> <span class="id" title="var">phi1</span>) (<span class="id" title="var">free_svars</span> <span class="id" title="var">phi2</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_bott</span> ⇒ <span class="id" title="var">empty</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_imp</span> <span class="id" title="var">phi1</span> <span class="id" title="var">phi2</span> ⇒ <span class="id" title="var">union</span> (<span class="id" title="var">free_svars</span> <span class="id" title="var">phi1</span>) (<span class="id" title="var">free_svars</span> <span class="id" title="var">phi2</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_exists</span> <span class="id" title="var">phi</span> ⇒ <span class="id" title="var">free_svars</span> <span class="id" title="var">phi</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_mu</span> <span class="id" title="var">phi</span> ⇒ <span class="id" title="var">free_svars</span> <span class="id" title="var">phi</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="comment">(*&nbsp;for&nbsp;bound&nbsp;set&nbsp;variables&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Fixpoint</span> <span class="id" title="var">no_negative_occurrence_db_b</span> (<span class="id" title="var">dbi</span> : <span class="id" title="var">db_index</span>) (<span class="id" title="var">ϕ</span> : <span class="id" title="var">Pattern</span>) : <span class="id" title="var">bool</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">ϕ</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_free_evar</span> <span class="id" title="var">_</span> | <span class="id" title="var">patt_free_svar</span> <span class="id" title="var">_</span> | <span class="id" title="var">patt_bound_evar</span> <span class="id" title="var">_</span> | <span class="id" title="var">patt_sym</span> <span class="id" title="var">_</span> | <span class="id" title="var">patt_bott</span> ⇒ <span class="id" title="var">true</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_bound_svar</span> <span class="id" title="var">n</span> ⇒ <span class="id" title="var">true</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_app</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span> ⇒ <span class="id" title="var">no_negative_occurrence_db_b</span> <span class="id" title="var">dbi</span> <span class="id" title="var">ϕ₁</span> &amp;&amp; <span class="id" title="var">no_negative_occurrence_db_b</span> <span class="id" title="var">dbi</span> <span class="id" title="var">ϕ₂</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_imp</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span> ⇒ <span class="id" title="var">no_positive_occurrence_db_b</span> <span class="id" title="var">dbi</span> <span class="id" title="var">ϕ₁</span> &amp;&amp; <span class="id" title="var">no_negative_occurrence_db_b</span> <span class="id" title="var">dbi</span> <span class="id" title="var">ϕ₂</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_exists</span> <span class="id" title="var">ϕ'</span> ⇒ <span class="id" title="var">no_negative_occurrence_db_b</span> <span class="id" title="var">dbi</span> <span class="id" title="var">ϕ'</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_mu</span> <span class="id" title="var">ϕ'</span> ⇒ <span class="id" title="var">no_negative_occurrence_db_b</span> (<span class="id" title="var">S</span> <span class="id" title="var">dbi</span>) <span class="id" title="var">ϕ'</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">no_positive_occurrence_db_b</span> (<span class="id" title="var">dbi</span> : <span class="id" title="var">db_index</span>) (<span class="id" title="var">ϕ</span> : <span class="id" title="var">Pattern</span>) : <span class="id" title="var">bool</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">ϕ</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_free_evar</span> <span class="id" title="var">_</span> | <span class="id" title="var">patt_free_svar</span> <span class="id" title="var">_</span> | <span class="id" title="var">patt_bound_evar</span> <span class="id" title="var">_</span> | <span class="id" title="var">patt_sym</span> <span class="id" title="var">_</span> | <span class="id" title="var">patt_bott</span> ⇒ <span class="id" title="var">true</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_bound_svar</span> <span class="id" title="var">n</span> ⇒ <span class="id" title="keyword">if</span> <span class="id" title="var">decide</span> (<span class="id" title="var">n</span> = <span class="id" title="var">dbi</span>) <span class="id" title="keyword">is</span> <span class="id" title="tactic">left</span> <span class="id" title="var">_</span> <span class="id" title="keyword">then</span> <span class="id" title="var">false</span> <span class="id" title="keyword">else</span> <span class="id" title="var">true</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_app</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span> ⇒ <span class="id" title="var">no_positive_occurrence_db_b</span> <span class="id" title="var">dbi</span> <span class="id" title="var">ϕ₁</span> &amp;&amp; <span class="id" title="var">no_positive_occurrence_db_b</span> <span class="id" title="var">dbi</span> <span class="id" title="var">ϕ₂</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_imp</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span> ⇒ <span class="id" title="var">no_negative_occurrence_db_b</span> <span class="id" title="var">dbi</span> <span class="id" title="var">ϕ₁</span> &amp;&amp; <span class="id" title="var">no_positive_occurrence_db_b</span> <span class="id" title="var">dbi</span> <span class="id" title="var">ϕ₂</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_exists</span> <span class="id" title="var">ϕ'</span> ⇒ <span class="id" title="var">no_positive_occurrence_db_b</span> <span class="id" title="var">dbi</span> <span class="id" title="var">ϕ'</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_mu</span> <span class="id" title="var">ϕ'</span> ⇒ <span class="id" title="var">no_positive_occurrence_db_b</span> (<span class="id" title="var">S</span> <span class="id" title="var">dbi</span>) <span class="id" title="var">ϕ'</span>                                  <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="comment">(*&nbsp;for&nbsp;free&nbsp;element&nbsp;variables&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Fixpoint</span> <span class="id" title="var">evar_has_positive_occurrence</span> (<span class="id" title="var">x</span> : <span class="id" title="tactic">evar</span>) (<span class="id" title="var">ϕ</span> : <span class="id" title="var">Pattern</span>) : <span class="id" title="var">bool</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">ϕ</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_free_evar</span> <span class="id" title="var">x'</span> ⇒ <span class="id" title="keyword">if</span> <span class="id" title="var">decide</span> (<span class="id" title="var">x</span> = <span class="id" title="var">x'</span>) <span class="id" title="keyword">is</span> <span class="id" title="tactic">left</span> <span class="id" title="var">_</span> <span class="id" title="keyword">then</span> <span class="id" title="var">true</span> <span class="id" title="keyword">else</span> <span class="id" title="var">false</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_free_svar</span> <span class="id" title="var">_</span> | <span class="id" title="var">patt_bound_evar</span> <span class="id" title="var">_</span> | <span class="id" title="var">patt_bound_svar</span> <span class="id" title="var">_</span> | <span class="id" title="var">patt_sym</span> <span class="id" title="var">_</span> | <span class="id" title="var">patt_bott</span> ⇒ <span class="id" title="var">false</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_app</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span> ⇒ <span class="id" title="var">evar_has_positive_occurrence</span> <span class="id" title="var">x</span> <span class="id" title="var">ϕ₁</span> || <span class="id" title="var">evar_has_positive_occurrence</span> <span class="id" title="var">x</span> <span class="id" title="var">ϕ₂</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_imp</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span> ⇒ <span class="id" title="var">evar_has_negative_occurrence</span> <span class="id" title="var">x</span> <span class="id" title="var">ϕ₁</span> || <span class="id" title="var">evar_has_positive_occurrence</span> <span class="id" title="var">x</span> <span class="id" title="var">ϕ₂</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_exists</span> <span class="id" title="var">ϕ'</span> ⇒ <span class="id" title="var">evar_has_positive_occurrence</span> <span class="id" title="var">x</span> <span class="id" title="var">ϕ'</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_mu</span> <span class="id" title="var">ϕ'</span> ⇒ <span class="id" title="var">evar_has_positive_occurrence</span> <span class="id" title="var">x</span> <span class="id" title="var">ϕ'</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">evar_has_negative_occurrence</span> (<span class="id" title="var">x</span> : <span class="id" title="tactic">evar</span>) (<span class="id" title="var">ϕ</span> : <span class="id" title="var">Pattern</span>) : <span class="id" title="var">bool</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">ϕ</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_free_evar</span> <span class="id" title="var">_</span> | <span class="id" title="var">patt_free_svar</span> <span class="id" title="var">_</span> | <span class="id" title="var">patt_bound_evar</span> <span class="id" title="var">_</span> | <span class="id" title="var">patt_bound_svar</span> <span class="id" title="var">_</span> | <span class="id" title="var">patt_sym</span> <span class="id" title="var">_</span> | <span class="id" title="var">patt_bott</span> ⇒ <span class="id" title="var">false</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_app</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span> ⇒ <span class="id" title="var">evar_has_negative_occurrence</span> <span class="id" title="var">x</span> <span class="id" title="var">ϕ₁</span> || <span class="id" title="var">evar_has_negative_occurrence</span> <span class="id" title="var">x</span> <span class="id" title="var">ϕ₂</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_imp</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span> ⇒ <span class="id" title="var">evar_has_positive_occurrence</span> <span class="id" title="var">x</span> <span class="id" title="var">ϕ₁</span> || <span class="id" title="var">evar_has_negative_occurrence</span> <span class="id" title="var">x</span> <span class="id" title="var">ϕ₂</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_exists</span> <span class="id" title="var">ϕ'</span> ⇒ <span class="id" title="var">evar_has_negative_occurrence</span> <span class="id" title="var">x</span> <span class="id" title="var">ϕ'</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_mu</span> <span class="id" title="var">ϕ'</span> ⇒ <span class="id" title="var">evar_has_negative_occurrence</span> <span class="id" title="var">x</span> <span class="id" title="var">ϕ'</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="comment">(*&nbsp;for&nbsp;free&nbsp;set&nbsp;variables&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Fixpoint</span> <span class="id" title="var">svar_has_positive_occurrence</span> (<span class="id" title="var">X</span> : <span class="id" title="var">svar</span>) (<span class="id" title="var">ϕ</span> : <span class="id" title="var">Pattern</span>) : <span class="id" title="var">bool</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">ϕ</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_free_svar</span> <span class="id" title="var">X'</span> ⇒ <span class="id" title="keyword">if</span> <span class="id" title="var">decide</span> (<span class="id" title="var">X</span> = <span class="id" title="var">X'</span>) <span class="id" title="keyword">is</span> <span class="id" title="tactic">left</span> <span class="id" title="var">_</span> <span class="id" title="keyword">then</span> <span class="id" title="var">true</span> <span class="id" title="keyword">else</span> <span class="id" title="var">false</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_free_evar</span> <span class="id" title="var">_</span> | <span class="id" title="var">patt_bound_evar</span> <span class="id" title="var">_</span> | <span class="id" title="var">patt_bound_svar</span> <span class="id" title="var">_</span> | <span class="id" title="var">patt_sym</span> <span class="id" title="var">_</span> | <span class="id" title="var">patt_bott</span> ⇒ <span class="id" title="var">false</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_app</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span> ⇒ <span class="id" title="var">svar_has_positive_occurrence</span> <span class="id" title="var">X</span> <span class="id" title="var">ϕ₁</span> || <span class="id" title="var">svar_has_positive_occurrence</span> <span class="id" title="var">X</span> <span class="id" title="var">ϕ₂</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_imp</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span> ⇒ <span class="id" title="var">svar_has_negative_occurrence</span> <span class="id" title="var">X</span> <span class="id" title="var">ϕ₁</span> || <span class="id" title="var">svar_has_positive_occurrence</span> <span class="id" title="var">X</span> <span class="id" title="var">ϕ₂</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_exists</span> <span class="id" title="var">ϕ'</span> ⇒ <span class="id" title="var">svar_has_positive_occurrence</span> <span class="id" title="var">X</span> <span class="id" title="var">ϕ'</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_mu</span> <span class="id" title="var">ϕ'</span> ⇒ <span class="id" title="var">svar_has_positive_occurrence</span> <span class="id" title="var">X</span> <span class="id" title="var">ϕ'</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">svar_has_negative_occurrence</span> (<span class="id" title="var">X</span> : <span class="id" title="var">svar</span>) (<span class="id" title="var">ϕ</span> : <span class="id" title="var">Pattern</span>) : <span class="id" title="var">bool</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">ϕ</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_free_evar</span> <span class="id" title="var">_</span> | <span class="id" title="var">patt_free_svar</span> <span class="id" title="var">_</span> | <span class="id" title="var">patt_bound_evar</span> <span class="id" title="var">_</span> | <span class="id" title="var">patt_bound_svar</span> <span class="id" title="var">_</span> | <span class="id" title="var">patt_sym</span> <span class="id" title="var">_</span> | <span class="id" title="var">patt_bott</span> ⇒ <span class="id" title="var">false</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_app</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span> ⇒ <span class="id" title="var">svar_has_negative_occurrence</span> <span class="id" title="var">X</span> <span class="id" title="var">ϕ₁</span> || <span class="id" title="var">svar_has_negative_occurrence</span> <span class="id" title="var">X</span> <span class="id" title="var">ϕ₂</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_imp</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span> ⇒ <span class="id" title="var">svar_has_positive_occurrence</span> <span class="id" title="var">X</span> <span class="id" title="var">ϕ₁</span> || <span class="id" title="var">svar_has_negative_occurrence</span> <span class="id" title="var">X</span> <span class="id" title="var">ϕ₂</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_exists</span> <span class="id" title="var">ϕ'</span> ⇒ <span class="id" title="var">svar_has_negative_occurrence</span> <span class="id" title="var">X</span> <span class="id" title="var">ϕ'</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_mu</span> <span class="id" title="var">ϕ'</span> ⇒ <span class="id" title="var">svar_has_negative_occurrence</span> <span class="id" title="var">X</span> <span class="id" title="var">ϕ'</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Fixpoint</span> <span class="id" title="var">well_formed_positive</span> (<span class="id" title="var">phi</span> : <span class="id" title="var">Pattern</span>) : <span class="id" title="var">bool</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">phi</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_free_evar</span> <span class="id" title="var">_</span> ⇒ <span class="id" title="var">true</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_free_svar</span> <span class="id" title="var">_</span> ⇒ <span class="id" title="var">true</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_bound_evar</span> <span class="id" title="var">_</span> ⇒ <span class="id" title="var">true</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_bound_svar</span> <span class="id" title="var">_</span> ⇒ <span class="id" title="var">true</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_sym</span> <span class="id" title="var">_</span> ⇒ <span class="id" title="var">true</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_app</span> <span class="id" title="var">psi1</span> <span class="id" title="var">psi2</span> ⇒ <span class="id" title="var">well_formed_positive</span> <span class="id" title="var">psi1</span> &amp;&amp; <span class="id" title="var">well_formed_positive</span> <span class="id" title="var">psi2</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_bott</span> ⇒ <span class="id" title="var">true</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_imp</span> <span class="id" title="var">psi1</span> <span class="id" title="var">psi2</span> ⇒ <span class="id" title="var">well_formed_positive</span> <span class="id" title="var">psi1</span> &amp;&amp; <span class="id" title="var">well_formed_positive</span> <span class="id" title="var">psi2</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_exists</span> <span class="id" title="var">psi</span> ⇒ <span class="id" title="var">well_formed_positive</span> <span class="id" title="var">psi</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_mu</span> <span class="id" title="var">psi</span> ⇒ <span class="id" title="var">no_negative_occurrence_db_b</span> 0 <span class="id" title="var">psi</span> &amp;&amp; <span class="id" title="var">well_formed_positive</span> <span class="id" title="var">psi</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Fixpoint</span> <span class="id" title="var">well_formed_closed_mu_aux</span> (<span class="id" title="var">phi</span> : <span class="id" title="var">Pattern</span>) (<span class="id" title="var">max_ind_svar</span> : <span class="id" title="var">db_index</span>) : <span class="id" title="var">bool</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">phi</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_free_evar</span> <span class="id" title="var">_</span> ⇒ <span class="id" title="var">true</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_free_svar</span> <span class="id" title="var">_</span> ⇒ <span class="id" title="var">true</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_bound_evar</span> <span class="id" title="var">n</span> ⇒ <span class="id" title="var">true</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_bound_svar</span> <span class="id" title="var">n</span> ⇒ <span class="id" title="keyword">if</span> <span class="id" title="var">decide</span> (<span class="id" title="var">n</span> &lt; <span class="id" title="var">max_ind_svar</span>) <span class="id" title="keyword">is</span> <span class="id" title="tactic">left</span> <span class="id" title="var">_</span> <span class="id" title="keyword">then</span> <span class="id" title="var">true</span> <span class="id" title="keyword">else</span> <span class="id" title="var">false</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_sym</span> <span class="id" title="var">_</span> ⇒ <span class="id" title="var">true</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_app</span> <span class="id" title="var">psi1</span> <span class="id" title="var">psi2</span> ⇒ <span class="id" title="var">well_formed_closed_mu_aux</span> <span class="id" title="var">psi1</span> <span class="id" title="var">max_ind_svar</span> &amp;&amp;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_closed_mu_aux</span> <span class="id" title="var">psi2</span> <span class="id" title="var">max_ind_svar</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_bott</span> ⇒ <span class="id" title="var">true</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_imp</span> <span class="id" title="var">psi1</span> <span class="id" title="var">psi2</span> ⇒ <span class="id" title="var">well_formed_closed_mu_aux</span> <span class="id" title="var">psi1</span> <span class="id" title="var">max_ind_svar</span> &amp;&amp;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_closed_mu_aux</span> <span class="id" title="var">psi2</span> <span class="id" title="var">max_ind_svar</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_exists</span> <span class="id" title="var">psi</span> ⇒ <span class="id" title="var">well_formed_closed_mu_aux</span> <span class="id" title="var">psi</span> <span class="id" title="var">max_ind_svar</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_mu</span> <span class="id" title="var">psi</span> ⇒ <span class="id" title="var">well_formed_closed_mu_aux</span> <span class="id" title="var">psi</span> (<span class="id" title="var">S</span> <span class="id" title="var">max_ind_svar</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Fixpoint</span> <span class="id" title="var">well_formed_closed_ex_aux</span> (<span class="id" title="var">phi</span> : <span class="id" title="var">Pattern</span>) (<span class="id" title="var">max_ind_evar</span> : <span class="id" title="var">db_index</span>) : <span class="id" title="var">bool</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">phi</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_free_evar</span> <span class="id" title="var">_</span> ⇒ <span class="id" title="var">true</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_free_svar</span> <span class="id" title="var">_</span> ⇒ <span class="id" title="var">true</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_bound_evar</span> <span class="id" title="var">n</span> ⇒ <span class="id" title="keyword">if</span> <span class="id" title="var">decide</span> (<span class="id" title="var">n</span> &lt; <span class="id" title="var">max_ind_evar</span>) <span class="id" title="keyword">is</span> <span class="id" title="tactic">left</span> <span class="id" title="var">_</span> <span class="id" title="keyword">then</span> <span class="id" title="var">true</span> <span class="id" title="keyword">else</span> <span class="id" title="var">false</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_bound_svar</span> <span class="id" title="var">n</span> ⇒ <span class="id" title="var">true</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_sym</span> <span class="id" title="var">_</span> ⇒ <span class="id" title="var">true</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_app</span> <span class="id" title="var">psi1</span> <span class="id" title="var">psi2</span> ⇒ <span class="id" title="var">well_formed_closed_ex_aux</span> <span class="id" title="var">psi1</span> <span class="id" title="var">max_ind_evar</span> &amp;&amp;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_closed_ex_aux</span> <span class="id" title="var">psi2</span> <span class="id" title="var">max_ind_evar</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_bott</span> ⇒ <span class="id" title="var">true</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_imp</span> <span class="id" title="var">psi1</span> <span class="id" title="var">psi2</span> ⇒ <span class="id" title="var">well_formed_closed_ex_aux</span> <span class="id" title="var">psi1</span> <span class="id" title="var">max_ind_evar</span> &amp;&amp;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_closed_ex_aux</span> <span class="id" title="var">psi2</span> <span class="id" title="var">max_ind_evar</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_exists</span> <span class="id" title="var">psi</span> ⇒ <span class="id" title="var">well_formed_closed_ex_aux</span> <span class="id" title="var">psi</span> (<span class="id" title="var">S</span> <span class="id" title="var">max_ind_evar</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_mu</span> <span class="id" title="var">psi</span> ⇒ <span class="id" title="var">well_formed_closed_ex_aux</span> <span class="id" title="var">psi</span> <span class="id" title="var">max_ind_evar</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">well_formed_closed</span> (<span class="id" title="var">phi</span> : <span class="id" title="var">Pattern</span>) : <span class="id" title="var">bool</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;:= <span class="id" title="var">well_formed_closed_mu_aux</span> <span class="id" title="var">phi</span> 0 &amp;&amp; <span class="id" title="var">well_formed_closed_ex_aux</span> <span class="id" title="var">phi</span> 0.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">well_formed_closed_ex_aux_ind</span> (<span class="id" title="var">phi</span> : <span class="id" title="var">Pattern</span>) (<span class="id" title="var">ind_evar1</span> <span class="id" title="var">ind_evar2</span> : <span class="id" title="var">db_index</span>) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">ind_evar1</span> ≤ <span class="id" title="var">ind_evar2</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_closed_ex_aux</span> <span class="id" title="var">phi</span> <span class="id" title="var">ind_evar1</span> = <span class="id" title="var">true</span>→<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_closed_ex_aux</span> <span class="id" title="var">phi</span> <span class="id" title="var">ind_evar2</span> = <span class="id" title="var">true</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">well_formed_closed_mu_aux_ind</span> (<span class="id" title="var">phi</span> : <span class="id" title="var">Pattern</span>) (<span class="id" title="var">ind_svar1</span> <span class="id" title="var">ind_svar2</span> : <span class="id" title="var">db_index</span>) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">ind_svar1</span> ≤ <span class="id" title="var">ind_svar2</span>  →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_closed_mu_aux</span> <span class="id" title="var">phi</span> <span class="id" title="var">ind_svar1</span> = <span class="id" title="var">true</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_closed_mu_aux</span> <span class="id" title="var">phi</span> <span class="id" title="var">ind_svar2</span> = <span class="id" title="var">true</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">well_formed</span> (<span class="id" title="var">phi</span> : <span class="id" title="var">Pattern</span>) := <span class="id" title="var">well_formed_positive</span> <span class="id" title="var">phi</span> &amp;&amp; <span class="id" title="var">well_formed_closed</span> <span class="id" title="var">phi</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">well_formed_bott</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed</span> <span class="id" title="var">patt_bott</span>.<br/>
+ 
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">well_formed_sym</span> <span class="id" title="var">s</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed</span> (<span class="id" title="var">patt_sym</span> <span class="id" title="var">s</span>).<br/>
+ 
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">well_formed_imp</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span>:<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed</span> <span class="id" title="var">ϕ₁</span> = <span class="id" title="var">true</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed</span> <span class="id" title="var">ϕ₂</span> = <span class="id" title="var">true</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed</span> (<span class="id" title="var">patt_imp</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span>) = <span class="id" title="var">true</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">well_formed_app</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span>:<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed</span> <span class="id" title="var">ϕ₁</span> = <span class="id" title="var">true</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed</span> <span class="id" title="var">ϕ₂</span> = <span class="id" title="var">true</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed</span> (<span class="id" title="var">patt_app</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span>) = <span class="id" title="var">true</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">well_formed_ex_app</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span>:<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed</span> (<span class="id" title="var">patt_exists</span> <span class="id" title="var">ϕ₁</span>) = <span class="id" title="var">true</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed</span> (<span class="id" title="var">patt_exists</span> <span class="id" title="var">ϕ₂</span>) = <span class="id" title="var">true</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed</span> (<span class="id" title="var">patt_exists</span> (<span class="id" title="var">patt_app</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span>)) = <span class="id" title="var">true</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">well_formed_impl_well_formed_ex</span> <span class="id" title="var">ϕ</span>:<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed</span> <span class="id" title="var">ϕ</span> = <span class="id" title="var">true</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed</span> (<span class="id" title="var">patt_exists</span> <span class="id" title="var">ϕ</span>) = <span class="id" title="var">true</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="comment">(*&nbsp;TODO:&nbsp;why&nbsp;is&nbsp;this&nbsp;Private?&nbsp;It&nbsp;can&nbsp;be&nbsp;useful&nbsp;for&nbsp;not&nbsp;only&nbsp;0&nbsp;dbi&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">Private_wfc_impl_no_neg_pos_occ</span> <span class="id" title="var">psi</span> <span class="id" title="var">maxsvar</span> <span class="id" title="var">dbi</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_closed_mu_aux</span> <span class="id" title="var">psi</span> <span class="id" title="var">maxsvar</span> = <span class="id" title="var">true</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">maxsvar</span> ≤ <span class="id" title="var">dbi</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">no_negative_occurrence_db_b</span> <span class="id" title="var">dbi</span> <span class="id" title="var">psi</span> = <span class="id" title="var">true</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;∧ <span class="id" title="var">no_positive_occurrence_db_b</span> <span class="id" title="var">dbi</span> <span class="id" title="var">psi</span> = <span class="id" title="var">true</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Corollary</span> <span class="id" title="var">wfc_impl_no_neg_occ</span> <span class="id" title="var">psi</span> <span class="id" title="var">dbi</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_closed_mu_aux</span> <span class="id" title="var">psi</span> 0 = <span class="id" title="var">true</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">no_negative_occurrence_db_b</span> <span class="id" title="var">dbi</span> <span class="id" title="var">psi</span> = <span class="id" title="var">true</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Corollary</span> <span class="id" title="var">wfc_impl_no_pos_occ</span> <span class="id" title="var">psi</span> <span class="id" title="var">dbi</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_closed_mu_aux</span> <span class="id" title="var">psi</span> 0 = <span class="id" title="var">true</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">no_positive_occurrence_db_b</span> <span class="id" title="var">dbi</span> <span class="id" title="var">psi</span> = <span class="id" title="var">true</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">well_formed_app_1</span> : <span class="id" title="keyword">∀</span> (<span class="id" title="var">phi1</span> <span class="id" title="var">phi2</span> : <span class="id" title="var">Pattern</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed</span> (<span class="id" title="var">patt_app</span> <span class="id" title="var">phi1</span> <span class="id" title="var">phi2</span>) → <span class="id" title="var">well_formed</span> <span class="id" title="var">phi1</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">well_formed_app_2</span> : <span class="id" title="keyword">∀</span> (<span class="id" title="var">phi1</span> <span class="id" title="var">phi2</span> : <span class="id" title="var">Pattern</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed</span> (<span class="id" title="var">patt_app</span> <span class="id" title="var">phi1</span> <span class="id" title="var">phi2</span>) → <span class="id" title="var">well_formed</span> <span class="id" title="var">phi2</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">free_svars_exists</span> : <span class="id" title="keyword">∀</span> (<span class="id" title="var">ϕ</span> : <span class="id" title="var">Pattern</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">free_svars</span> (<span class="id" title="var">patt_exists</span> <span class="id" title="var">ϕ</span>) = <span class="id" title="var">free_svars</span> <span class="id" title="var">ϕ</span>.<br/>
+ 
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Fixpoint</span> <span class="id" title="var">count_evar_occurrences</span> (<span class="id" title="var">x</span> : <span class="id" title="tactic">evar</span>) (<span class="id" title="var">p</span> : <span class="id" title="var">Pattern</span>) :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">p</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_free_evar</span> <span class="id" title="var">x'</span> ⇒ <span class="id" title="keyword">if</span> <span class="id" title="var">decide</span> (<span class="id" title="var">x'</span> = <span class="id" title="var">x</span>) <span class="id" title="keyword">is</span> <span class="id" title="tactic">left</span> <span class="id" title="var">_</span> <span class="id" title="keyword">then</span> 1 <span class="id" title="keyword">else</span> 0 <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_free_svar</span> <span class="id" title="var">_</span> ⇒ 0<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_bound_evar</span> <span class="id" title="var">_</span> ⇒ 0<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_bound_svar</span> <span class="id" title="var">_</span> ⇒ 0<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_sym</span> <span class="id" title="var">_</span> ⇒ 0<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_app</span> <span class="id" title="var">phi1</span> <span class="id" title="var">phi2</span> ⇒ <span class="id" title="var">count_evar_occurrences</span> <span class="id" title="var">x</span> <span class="id" title="var">phi1</span> + <span class="id" title="var">count_evar_occurrences</span> <span class="id" title="var">x</span> <span class="id" title="var">phi2</span> <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_bott</span> ⇒ 0<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_imp</span> <span class="id" title="var">phi1</span> <span class="id" title="var">phi2</span> ⇒ <span class="id" title="var">count_evar_occurrences</span> <span class="id" title="var">x</span> <span class="id" title="var">phi1</span> + <span class="id" title="var">count_evar_occurrences</span> <span class="id" title="var">x</span> <span class="id" title="var">phi2</span> <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_exists</span> <span class="id" title="var">phi'</span> ⇒ <span class="id" title="var">count_evar_occurrences</span> <span class="id" title="var">x</span> <span class="id" title="var">phi'</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_mu</span> <span class="id" title="var">phi'</span> ⇒ <span class="id" title="var">count_evar_occurrences</span> <span class="id" title="var">x</span> <span class="id" title="var">phi'</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">count_evar_occurrences_0</span> (<span class="id" title="var">x</span> : <span class="id" title="tactic">evar</span>) (<span class="id" title="var">p</span> : <span class="id" title="var">Pattern</span>) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">x</span> ∉ <span class="id" title="var">free_evars</span> <span class="id" title="var">p</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">count_evar_occurrences</span> <span class="id" title="var">x</span> <span class="id" title="var">p</span> = 0.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">wfc_impl_no_neg_pos_occ</span> <span class="id" title="var">p</span> <span class="id" title="var">m</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_closed_mu_aux</span> <span class="id" title="var">p</span> <span class="id" title="var">m</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">no_negative_occurrence_db_b</span> <span class="id" title="var">m</span> <span class="id" title="var">p</span> &amp;&amp; <span class="id" title="var">no_positive_occurrence_db_b</span> <span class="id" title="var">m</span> <span class="id" title="var">p</span>) = <span class="id" title="var">true</span>.<br/>
+
+<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Fixpoint</span> <span class="id" title="var">mu_free</span> (<span class="id" title="var">p</span> : <span class="id" title="var">Pattern</span>) : <span class="id" title="var">bool</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">p</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_free_evar</span> <span class="id" title="var">x</span> ⇒ <span class="id" title="var">true</span><br/>
+&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_free_svar</span> <span class="id" title="var">x</span> ⇒ <span class="id" title="var">true</span><br/>
+&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_bound_evar</span> <span class="id" title="var">n</span> ⇒ <span class="id" title="var">true</span><br/>
+&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_bound_svar</span> <span class="id" title="var">n</span> ⇒ <span class="id" title="var">true</span><br/>
+&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_sym</span> <span class="id" title="var">sigma</span> ⇒ <span class="id" title="var">true</span><br/>
+&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_app</span> <span class="id" title="var">phi1</span> <span class="id" title="var">phi2</span> ⇒ <span class="id" title="var">mu_free</span> <span class="id" title="var">phi1</span> &amp;&amp; <span class="id" title="var">mu_free</span> <span class="id" title="var">phi2</span><br/>
+&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_bott</span> ⇒ <span class="id" title="var">true</span><br/>
+&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_imp</span> <span class="id" title="var">phi1</span> <span class="id" title="var">phi2</span> ⇒ <span class="id" title="var">mu_free</span> <span class="id" title="var">phi1</span> &amp;&amp; <span class="id" title="var">mu_free</span> <span class="id" title="var">phi2</span><br/>
+&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_exists</span> <span class="id" title="var">phi</span> ⇒ <span class="id" title="var">mu_free</span> <span class="id" title="var">phi</span><br/>
+&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_mu</span> <span class="id" title="var">phi</span> ⇒ <span class="id" title="var">false</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="comment">(*&nbsp;Fragment&nbsp;of&nbsp;matching&nbsp;logic&nbsp;without&nbsp;set&nbsp;variables&nbsp;and&nbsp;mu&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Fixpoint</span> <span class="id" title="var">set_free</span> (<span class="id" title="var">p</span> : <span class="id" title="var">Pattern</span>) : <span class="id" title="var">bool</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">p</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_free_evar</span> <span class="id" title="var">x</span> ⇒ <span class="id" title="var">true</span><br/>
+&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_free_svar</span> <span class="id" title="var">x</span> ⇒ <span class="id" title="var">false</span><br/>
+&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_bound_evar</span> <span class="id" title="var">n</span> ⇒ <span class="id" title="var">true</span><br/>
+&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_bound_svar</span> <span class="id" title="var">n</span> ⇒ <span class="id" title="var">false</span><br/>
+&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_sym</span> <span class="id" title="var">sigma</span> ⇒ <span class="id" title="var">true</span><br/>
+&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_app</span> <span class="id" title="var">phi1</span> <span class="id" title="var">phi2</span> ⇒ <span class="id" title="var">set_free</span> <span class="id" title="var">phi1</span> &amp;&amp; <span class="id" title="var">set_free</span> <span class="id" title="var">phi2</span><br/>
+&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_bott</span> ⇒ <span class="id" title="var">true</span><br/>
+&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_imp</span> <span class="id" title="var">phi1</span> <span class="id" title="var">phi2</span> ⇒ <span class="id" title="var">set_free</span> <span class="id" title="var">phi1</span> &amp;&amp; <span class="id" title="var">set_free</span> <span class="id" title="var">phi2</span><br/>
+&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_exists</span> <span class="id" title="var">phi</span> ⇒ <span class="id" title="var">set_free</span> <span class="id" title="var">phi</span><br/>
+&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_mu</span> <span class="id" title="var">phi</span> ⇒ <span class="id" title="var">false</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">set_free_implies_mu_free</span> <span class="id" title="var">p</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">set_free</span> <span class="id" title="var">p</span> = <span class="id" title="var">true</span> → <span class="id" title="var">mu_free</span> <span class="id" title="var">p</span> = <span class="id" title="var">true</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Theorem</span> <span class="id" title="var">mu_free_wfp</span> φ :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">mu_free</span> φ → <span class="id" title="var">well_formed_positive</span> φ.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">wf_imp_wfc</span> <span class="id" title="var">ϕ</span>:<br/>
+<span class="id" title="var">well_formed</span> <span class="id" title="var">ϕ</span> → <span class="id" title="var">well_formed_closed</span> <span class="id" title="var">ϕ</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">evar_is_fresh_in</span> <span class="id" title="var">x</span> <span class="id" title="var">ϕ</span> := <span class="id" title="var">x</span> ∉ <span class="id" title="var">free_evars</span> <span class="id" title="var">ϕ</span>.<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">svar_is_fresh_in</span> <span class="id" title="var">x</span> <span class="id" title="var">ϕ</span> := <span class="id" title="var">x</span> ∉ <span class="id" title="var">free_svars</span> <span class="id" title="var">ϕ</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">End</span> <span class="id" title="var">syntax</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">well_formed_app_proj1</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} <span class="id" title="var">p</span> <span class="id" title="var">q</span>:<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed</span> (<span class="id" title="var">patt_app</span> <span class="id" title="var">p</span> <span class="id" title="var">q</span>) →<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed</span> <span class="id" title="var">p</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">well_formed_app_proj2</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} <span class="id" title="var">p</span> <span class="id" title="var">q</span>:<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed</span> (<span class="id" title="var">patt_app</span> <span class="id" title="var">p</span> <span class="id" title="var">q</span>) →<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed</span> <span class="id" title="var">q</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">well_formed_imp_proj1</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} <span class="id" title="var">p</span> <span class="id" title="var">q</span>:<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed</span> (<span class="id" title="var">patt_imp</span> <span class="id" title="var">p</span> <span class="id" title="var">q</span>) →<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed</span> <span class="id" title="var">p</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">well_formed_imp_proj2</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} <span class="id" title="var">p</span> <span class="id" title="var">q</span>:<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed</span> (<span class="id" title="var">patt_imp</span> <span class="id" title="var">p</span> <span class="id" title="var">q</span>) →<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed</span> <span class="id" title="var">q</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="keyword">wf</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} (<span class="id" title="var">l</span> : <span class="id" title="var">list</span> <span class="id" title="var">Pattern</span>) := <span class="id" title="var">fold_right</span> <span class="id" title="var">andb</span> <span class="id" title="var">true</span> (<span class="id" title="var">map</span> <span class="id" title="var">well_formed</span> <span class="id" title="var">l</span>).<br/>
+
+<br/>
+<span class="comment">(*&nbsp;TODO:&nbsp;maybe&nbsp;generalize&nbsp;to&nbsp;any&nbsp;connective?&nbsp;*)</span><br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">well_formed_foldr</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} <span class="id" title="var">g</span> <span class="id" title="var">xs</span> :<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed</span> <span class="id" title="var">g</span> = <span class="id" title="var">true</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">wf</span> <span class="id" title="var">xs</span> = <span class="id" title="var">true</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed</span> (<span class="id" title="var">foldr</span> <span class="id" title="var">patt_imp</span> <span class="id" title="var">g</span> <span class="id" title="var">xs</span>) = <span class="id" title="var">true</span>.<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">wf_take</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} <span class="id" title="var">n</span> <span class="id" title="var">xs</span> :<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">wf</span> <span class="id" title="var">xs</span> = <span class="id" title="var">true</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">wf</span> (<span class="id" title="var">take</span> <span class="id" title="var">n</span> <span class="id" title="var">xs</span>) = <span class="id" title="var">true</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">wf_drop</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} <span class="id" title="var">n</span> <span class="id" title="var">xs</span>:<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">wf</span> <span class="id" title="var">xs</span> = <span class="id" title="var">true</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">wf</span> (<span class="id" title="var">drop</span> <span class="id" title="var">n</span> <span class="id" title="var">xs</span>) = <span class="id" title="var">true</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">wf_insert</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} <span class="id" title="var">n</span> <span class="id" title="var">p</span> <span class="id" title="var">xs</span>:<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">wf</span> <span class="id" title="var">xs</span> = <span class="id" title="var">true</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed</span> <span class="id" title="var">p</span> = <span class="id" title="var">true</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">wf</span> (&lt;[<span class="id" title="var">n</span> := <span class="id" title="var">p</span>]&gt; <span class="id" title="var">xs</span>) = <span class="id" title="var">true</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">wf_tail'</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} <span class="id" title="var">p</span> <span class="id" title="var">xs</span>:<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">wf</span> (<span class="id" title="var">p</span> :: <span class="id" title="var">xs</span>) = <span class="id" title="var">true</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">wf</span> <span class="id" title="var">xs</span> = <span class="id" title="var">true</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">wf_cons</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} <span class="id" title="var">x</span> <span class="id" title="var">xs</span>:<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed</span> <span class="id" title="var">x</span> = <span class="id" title="var">true</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">wf</span> <span class="id" title="var">xs</span> = <span class="id" title="var">true</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">wf</span> (<span class="id" title="var">x</span> :: <span class="id" title="var">xs</span>) = <span class="id" title="var">true</span>.<br/>
+
+<br/>
+&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">wf_app</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} <span class="id" title="var">xs</span> <span class="id" title="var">ys</span>:<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">wf</span> <span class="id" title="var">xs</span> = <span class="id" title="var">true</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">wf</span> <span class="id" title="var">ys</span> = <span class="id" title="var">true</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">wf</span> (<span class="id" title="var">xs</span> ++ <span class="id" title="var">ys</span>) = <span class="id" title="var">true</span>.<br/>
+
+<br/>
+<span class="comment">(*&nbsp;TODO&nbsp;move&nbsp;somewhere&nbsp;else&nbsp;*)</span><br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">wfapp_proj_1</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} <span class="id" title="var">l₁</span> <span class="id" title="var">l₂</span>:<br/>
+<span class="id" title="keyword">wf</span> (<span class="id" title="var">l₁</span> ++ <span class="id" title="var">l₂</span>) = <span class="id" title="var">true</span> →<br/>
+<span class="id" title="keyword">wf</span> <span class="id" title="var">l₁</span> = <span class="id" title="var">true</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">wfapp_proj_2</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} <span class="id" title="var">l₁</span> <span class="id" title="var">l₂</span>:<br/>
+<span class="id" title="keyword">wf</span> (<span class="id" title="var">l₁</span> ++ <span class="id" title="var">l₂</span>) = <span class="id" title="var">true</span> →<br/>
+<span class="id" title="keyword">wf</span> <span class="id" title="var">l₂</span> = <span class="id" title="var">true</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">wfl₁hl₂_proj_l₁</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} <span class="id" title="var">l₁</span> <span class="id" title="var">h</span> <span class="id" title="var">l₂</span>:<br/>
+<span class="id" title="keyword">wf</span> (<span class="id" title="var">l₁</span> ++ <span class="id" title="var">h</span> :: <span class="id" title="var">l₂</span>) →<br/>
+<span class="id" title="keyword">wf</span> <span class="id" title="var">l₁</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">wfl₁hl₂_proj_h</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} <span class="id" title="var">l₁</span> <span class="id" title="var">h</span> <span class="id" title="var">l₂</span>:<br/>
+<span class="id" title="keyword">wf</span> (<span class="id" title="var">l₁</span> ++ <span class="id" title="var">h</span> :: <span class="id" title="var">l₂</span>) →<br/>
+<span class="id" title="var">well_formed</span> <span class="id" title="var">h</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">wfl₁hl₂_proj_l₂</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} <span class="id" title="var">l₁</span> <span class="id" title="var">h</span> <span class="id" title="var">l₂</span>:<br/>
+<span class="id" title="keyword">wf</span> (<span class="id" title="var">l₁</span> ++ <span class="id" title="var">h</span> :: <span class="id" title="var">l₂</span>) →<br/>
+<span class="id" title="keyword">wf</span> <span class="id" title="var">l₂</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">wfl₁hl₂_proj_l₁l₂</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} <span class="id" title="var">l₁</span> <span class="id" title="var">h</span> <span class="id" title="var">l₂</span>:<br/>
+<span class="id" title="keyword">wf</span> (<span class="id" title="var">l₁</span> ++ <span class="id" title="var">h</span> :: <span class="id" title="var">l₂</span>) →<br/>
+<span class="id" title="keyword">wf</span> (<span class="id" title="var">l₁</span> ++ <span class="id" title="var">l₂</span>).<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">wfPattern</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} := {<span class="id" title="var">p</span> : <span class="id" title="var">Pattern</span> | <span class="id" title="var">well_formed</span> <span class="id" title="var">p</span> = <span class="id" title="var">true</span>}.<br/>
+
+<br/>
+<span class="id" title="keyword">Global Instance</span> <span class="id" title="var">wfPattern_eqdec</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} : <span class="id" title="var">EqDecision</span> <span class="id" title="var">wfPattern</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Global Instance</span> <span class="id" title="var">wfPattern_countable</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} : <span class="id" title="var">Countable</span> <span class="id" title="var">wfPattern</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Global Instance</span> <span class="id" title="var">Pattern_infinite</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} :<br/>
+&nbsp;&nbsp;<span class="id" title="var">Infinite</span> <span class="id" title="var">Pattern</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Global Instance</span> <span class="id" title="var">wfPattern_infinite</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} :<br/>
+&nbsp;&nbsp;<span class="id" title="var">Infinite</span> <span class="id" title="var">wfPattern</span>.<br/>
+</div>
+<hr/>This page has been generated by <a href="http://coq.inria.fr/">coqdoc</a>
+</div>
+
+</div>
+
+</body>
+</html>

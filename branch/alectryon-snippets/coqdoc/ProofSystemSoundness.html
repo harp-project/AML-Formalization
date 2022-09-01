@@ -1,0 +1,95 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link href="coqdoc.css" rel="stylesheet" type="text/css" />
+<title>ProofSystemSoundness</title>
+</head>
+
+<body>
+
+<div id="page">
+
+<div id="header">
+</div>
+
+<div id="main">
+
+<h1 class="libtitle">File ProofSystemSoundness</h1>
+
+<div class="code">
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">ssreflect</span> <span class="id" title="var">ssrfun</span> <span class="id" title="var">ssrbool</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Logic.Classical_Prop</span> <span class="id" title="var">Logic.Eqdep_dec</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">MatchingLogic.Utils</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">stdpp_ext</span> <span class="id" title="var">Lattice</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">MatchingLogic</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="keyword">Syntax</span> <span class="id" title="var">NamedAxioms</span> <span class="id" title="var">DerivedOperators_Syntax</span> <span class="id" title="var">DerivedOperators_Semantics</span> <span class="id" title="var">monotonic</span> <span class="id" title="var">wftactics</span> <span class="id" title="var">ProofSystem</span> <span class="id" title="var">Semantics</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">stdpp</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">base</span> <span class="id" title="var">fin_sets</span> <span class="id" title="var">sets</span> <span class="id" title="var">propset</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">MatchingLogic.Utils</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">extralibrary</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Import</span> <span class="id" title="var">MatchingLogic.Syntax.Notations</span>.<br/>
+<span class="id" title="keyword">Import</span> <span class="id" title="var">MatchingLogic.Semantics.Notations</span>.<br/>
+<span class="id" title="keyword">Import</span> <span class="id" title="var">MatchingLogic.DerivedOperators_Syntax.Notations</span>.<br/>
+<span class="id" title="keyword">Import</span> <span class="id" title="var">MatchingLogic.ProofSystem.Notations_private</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Section</span> <span class="id" title="var">soundness</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Open</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">ml_scope</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Context</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>}.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="comment">(*&nbsp;soundness&nbsp;for&nbsp;prop_ex_right&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">proof_rule_prop_ex_right_sound</span> {<span class="id" title="var">m</span> : <span class="id" title="var">Model</span>} (<span class="id" title="var">theory</span> : <span class="id" title="var">Theory</span>) (<span class="id" title="var">phi</span> <span class="id" title="var">psi</span> : <span class="id" title="var">Pattern</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(ρ : @<span class="id" title="var">Valuation</span> <span class="id" title="var">Σ</span> <span class="id" title="var">m</span>):<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">well_formed</span> (<span class="id" title="var">patt_imp</span> (<span class="id" title="var">patt_app</span> (<span class="id" title="var">patt_exists</span> <span class="id" title="var">phi</span>) <span class="id" title="var">psi</span>) (<span class="id" title="var">patt_exists</span> (<span class="id" title="var">patt_app</span> <span class="id" title="var">phi</span> <span class="id" title="var">psi</span>)))) →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">well_formed</span> (<span class="id" title="var">ex</span>, <span class="id" title="var">phi</span>)%<span class="id" title="var">ml</span>) → (@<span class="id" title="var">well_formed</span> <span class="id" title="var">Σ</span> <span class="id" title="var">psi</span>) →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(∀ <span class="id" title="var">axiom</span> : <span class="id" title="var">Pattern</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">axiom</span> ∈ <span class="id" title="var">theory</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ ∀ (ρ : @<span class="id" title="var">Valuation</span> <span class="id" title="var">Σ</span> <span class="id" title="var">m</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">eval</span> ρ <span class="id" title="var">axiom</span> = ⊤) →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">eval</span> ρ ((<span class="id" title="var">ex</span> , <span class="id" title="var">phi</span>) $ <span class="id" title="var">psi</span> ---&gt; <span class="id" title="var">ex</span> , <span class="id" title="var">phi</span> $ <span class="id" title="var">psi</span>)%<span class="id" title="var">ml</span> = ⊤.<br/>
+
+<br/>
+<span class="comment">(*&nbsp;soundness&nbsp;for&nbsp;prop_ex_left&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">proof_rule_prop_ex_left_sound</span> {<span class="id" title="var">m</span> : <span class="id" title="var">Model</span>} (<span class="id" title="var">theory</span> : <span class="id" title="var">Theory</span>) (<span class="id" title="var">phi</span> <span class="id" title="var">psi</span> : <span class="id" title="var">Pattern</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(ρ : @<span class="id" title="var">Valuation</span> <span class="id" title="var">Σ</span> <span class="id" title="var">m</span>):<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">well_formed</span> (<span class="id" title="var">patt_imp</span> (<span class="id" title="var">patt_app</span> <span class="id" title="var">psi</span> (<span class="id" title="var">patt_exists</span> <span class="id" title="var">phi</span>)) (<span class="id" title="var">patt_exists</span> (<span class="id" title="var">patt_app</span> <span class="id" title="var">psi</span> <span class="id" title="var">phi</span>)))) →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">well_formed</span> (<span class="id" title="var">ex</span>, <span class="id" title="var">phi</span>)%<span class="id" title="var">ml</span>) → (@<span class="id" title="var">well_formed</span> <span class="id" title="var">Σ</span> <span class="id" title="var">psi</span>) →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(∀ <span class="id" title="var">axiom</span> : <span class="id" title="var">Pattern</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">axiom</span> ∈ <span class="id" title="var">theory</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ ∀ (ρ : @<span class="id" title="var">Valuation</span> <span class="id" title="var">Σ</span> <span class="id" title="var">m</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">eval</span> ρ <span class="id" title="var">axiom</span> = ⊤) →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">eval</span> ρ (<span class="id" title="var">psi</span> $ (<span class="id" title="var">ex</span> , <span class="id" title="var">phi</span>) ---&gt; <span class="id" title="var">ex</span> , <span class="id" title="var">psi</span> $ <span class="id" title="var">phi</span>)%<span class="id" title="var">ml</span> = ⊤.<br/>
+
+<br/>
+<span class="comment">(*&nbsp;free_svar_subst&nbsp;maintains&nbsp;soundness&nbsp;*)</span><br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">proof_rule_set_var_subst_sound</span> {<span class="id" title="var">m</span> : <span class="id" title="var">Model</span>}: ∀ <span class="id" title="var">phi</span> <span class="id" title="var">psi</span>,<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed_closed</span> <span class="id" title="var">phi</span> → <span class="id" title="var">well_formed</span> <span class="id" title="var">psi</span> →<br/>
+&nbsp;&nbsp;(∀ (ρ : @<span class="id" title="var">Valuation</span> <span class="id" title="var">Σ</span> <span class="id" title="var">m</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">eval</span> ρ <span class="id" title="var">phi</span> = ⊤)<br/>
+&nbsp;&nbsp;→<br/>
+&nbsp;&nbsp;∀ <span class="id" title="var">X</span> ρ,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;@<span class="id" title="tactic">eval</span> <span class="id" title="var">Σ</span> <span class="id" title="var">m</span> ρ (<span class="id" title="var">free_svar_subst</span> <span class="id" title="var">phi</span> <span class="id" title="var">psi</span> <span class="id" title="var">X</span>) = ⊤.<br/>
+
+<br/>
+<span class="comment">(*&nbsp;Soundness&nbsp;theorem&nbsp;*)</span><br/>
+<span class="id" title="keyword">Theorem</span> <span class="id" title="var">Soundness</span> :<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">∀</span> <span class="id" title="var">phi</span> : <span class="id" title="var">Pattern</span>, <span class="id" title="keyword">∀</span> <span class="id" title="var">theory</span> : <span class="id" title="var">Theory</span>,<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed</span> <span class="id" title="var">phi</span> → (<span class="id" title="var">theory</span> ⊢<span class="id" title="var">r</span> <span class="id" title="var">phi</span>) → (<span class="id" title="var">theory</span> ⊨ <span class="id" title="var">phi</span>).<br/>
+
+<br/>
+<span class="id" title="keyword">End</span> <span class="id" title="var">soundness</span>.<br/>
+</div>
+<hr/>This page has been generated by <a href="http://coq.inria.fr/">coqdoc</a>
+</div>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,367 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link href="coqdoc.css" rel="stylesheet" type="text/css" />
+<title>stdpp_ext</title>
+</head>
+
+<body>
+
+<div id="page">
+
+<div id="header">
+</div>
+
+<div id="main">
+
+<h1 class="libtitle">File stdpp_ext</h1>
+
+<div class="code">
+<span class="comment">(*&nbsp;Extensions&nbsp;to&nbsp;the&nbsp;stdpp&nbsp;library&nbsp;*)</span><br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">ssreflect</span> <span class="id" title="var">ssrfun</span> <span class="id" title="var">ssrbool</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq.Logic</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Classical_Prop</span> <span class="id" title="var">Classical_Pred_Type</span> <span class="id" title="var">Eqdep_dec</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">stdpp</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">pmap</span> <span class="id" title="var">gmap</span> <span class="id" title="var">mapset</span> <span class="id" title="var">fin_sets</span> <span class="id" title="var">sets</span> <span class="id" title="var">list</span> <span class="id" title="var">propset</span> <span class="id" title="var">coGset</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">decide_eq_same</span> (<span class="id" title="var">A</span> : <span class="id" title="keyword">Type</span>) {<span class="id" title="var">dec</span> : <span class="id" title="keyword">∀</span> (<span class="id" title="var">t1</span> <span class="id" title="var">t2</span> : <span class="id" title="var">A</span>), <span class="id" title="var">Decision</span> (<span class="id" title="var">t1</span> = <span class="id" title="var">t2</span>)} <span class="id" title="var">t</span>:<br/>
+&nbsp;&nbsp;<span class="id" title="var">decide</span> (<span class="id" title="var">t</span> = <span class="id" title="var">t</span>) = <span class="id" title="tactic">left</span> <span class="id" title="var">erefl</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">pmap_to_list_lookup</span> {<span class="id" title="var">A</span>} (<span class="id" title="var">M</span> : <span class="id" title="var">Pmap</span> <span class="id" title="var">A</span>) (<span class="id" title="var">i</span> : <span class="id" title="var">positive</span>) (<span class="id" title="var">x</span> : <span class="id" title="var">A</span>)<br/>
+&nbsp;&nbsp;: (<span class="id" title="var">i</span>,<span class="id" title="var">x</span>) ∈ (<span class="id" title="var">map_to_list</span> <span class="id" title="var">M</span>) ↔ <span class="id" title="var">lookup</span> <span class="id" title="var">i</span> <span class="id" title="var">M</span> = <span class="id" title="var">Some</span> <span class="id" title="var">x</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">gmap_to_list_lookup</span> `{<span class="id" title="var">Countable</span> <span class="id" title="var">K</span>} {<span class="id" title="var">A</span>} (<span class="id" title="var">M</span> : <span class="id" title="var">gmap</span> <span class="id" title="var">K</span> <span class="id" title="var">A</span>) (<span class="id" title="var">k</span> : <span class="id" title="var">K</span>) (<span class="id" title="var">a</span> : <span class="id" title="var">A</span>): ((<span class="id" title="var">k</span>,<span class="id" title="var">a</span>) ∈ (<span class="id" title="var">gmap_to_list</span> <span class="id" title="var">M</span>)) ↔ (<span class="id" title="var">M</span> !! <span class="id" title="var">k</span> = <span class="id" title="var">Some</span> <span class="id" title="var">a</span>).<br/>
+
+<br/>
+#[<span class="id" title="var">global</span>]<br/>
+<span class="id" title="var">Program</span> <span class="id" title="keyword">Instance</span> <span class="id" title="var">inj_unit_r</span> {<span class="id" title="var">K</span>} : @<span class="id" title="var">Inj</span> (<span class="id" title="var">K</span> × ()) <span class="id" title="var">K</span> (@<span class="id" title="var">eq</span> (<span class="id" title="var">K</span> × ())) (@<span class="id" title="var">eq</span> <span class="id" title="var">K</span>) (@<span class="id" title="var">fst</span> <span class="id" title="var">K</span> ()).<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">gset_to_list_elem_of</span> `{<span class="id" title="var">Countable</span> <span class="id" title="var">K</span>} (<span class="id" title="var">S</span> : <span class="id" title="var">gset</span> <span class="id" title="var">K</span>) (<span class="id" title="var">k</span> : <span class="id" title="var">K</span>) : <span class="id" title="var">k</span> ∈ (<span class="id" title="var">mapset_elements</span> <span class="id" title="var">S</span>) ↔ <span class="id" title="var">k</span> ∈ <span class="id" title="var">S</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">mapset_elements_to_set</span> `{<span class="id" title="var">Countable</span> <span class="id" title="var">K</span>} (<span class="id" title="var">X</span> : <span class="id" title="var">gset</span> <span class="id" title="var">K</span>) : <span class="id" title="var">list_to_set</span> (<span class="id" title="var">mapset_elements</span> <span class="id" title="var">X</span>) = <span class="id" title="var">X</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">rev_tail_rev_app</span> <span class="id" title="var">A</span> (<span class="id" title="var">l</span> : <span class="id" title="var">list</span> <span class="id" title="var">A</span>) (<span class="id" title="var">a</span> : <span class="id" title="var">A</span>) :<br/>
+&nbsp;&nbsp;<span class="id" title="var">l</span> ≠ [] → <span class="id" title="var">rev</span> (<span class="id" title="var">tail</span> (<span class="id" title="var">l</span> ++ [<span class="id" title="var">a</span>])) = <span class="id" title="var">a</span> :: <span class="id" title="var">rev</span> (<span class="id" title="var">tail</span> <span class="id" title="var">l</span>).<br/>
+
+<br/>
+<span class="comment">(*&nbsp;<span class="inlinecode">1,2,3,4,5</span>&nbsp;-&gt;&nbsp;<span class="inlinecode">5,4,3,2,1</span>&nbsp;-&gt;&nbsp;<span class="inlinecode">4,3,2,1</span>&nbsp;-&gt;&nbsp;<span class="inlinecode">1,2,3,4</span>&nbsp;*)</span><br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">rev_tail_rev_app_last</span> <span class="id" title="var">A</span> (<span class="id" title="var">l</span> : <span class="id" title="var">list</span> <span class="id" title="var">A</span>) (<span class="id" title="var">xlast</span> : <span class="id" title="var">A</span>):<br/>
+&nbsp;&nbsp;<span class="id" title="var">stdpp.list.last</span> <span class="id" title="var">l</span> = <span class="id" title="var">Some</span> <span class="id" title="var">xlast</span> →<br/>
+&nbsp;&nbsp;(<span class="id" title="var">rev</span> (<span class="id" title="var">tail</span> (<span class="id" title="var">rev</span> <span class="id" title="var">l</span>)) ++ [<span class="id" title="var">xlast</span>]) = <span class="id" title="var">l</span>.<br/>
+ 
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">length_tail_zero</span> <span class="id" title="var">A</span> <span class="id" title="var">l</span>: @<span class="id" title="var">length</span> <span class="id" title="var">A</span> (<span class="id" title="var">tail</span> <span class="id" title="var">l</span>) = 0 ↔ (@<span class="id" title="var">length</span> <span class="id" title="var">A</span> <span class="id" title="var">l</span> = 0 ∨ @<span class="id" title="var">length</span> <span class="id" title="var">A</span> <span class="id" title="var">l</span> = 1).<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">hd_error_app</span> <span class="id" title="var">A</span> (<span class="id" title="var">a</span> <span class="id" title="var">b</span> : <span class="id" title="var">A</span>) (<span class="id" title="var">l</span> : <span class="id" title="var">list</span> <span class="id" title="var">A</span>) :<br/>
+&nbsp;&nbsp;<span class="id" title="var">hd_error</span> ((<span class="id" title="var">l</span> ++ [<span class="id" title="var">a</span>]) ++ [<span class="id" title="var">b</span>]) = <span class="id" title="var">hd_error</span> (<span class="id" title="var">l</span> ++ [<span class="id" title="var">a</span>]).<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">last_rev_head</span> <span class="id" title="var">A</span> (<span class="id" title="var">l</span> : <span class="id" title="var">list</span> <span class="id" title="var">A</span>) (<span class="id" title="var">x</span> : <span class="id" title="var">A</span>) : <span class="id" title="var">stdpp.list.last</span> (<span class="id" title="var">x</span> :: <span class="id" title="var">l</span>) = <span class="id" title="var">hd_error</span> (<span class="id" title="var">rev</span> <span class="id" title="var">l</span> ++ [<span class="id" title="var">x</span>]).<br/>
+
+<br/>
+<span class="comment">(*&nbsp;The&nbsp;same&nbsp;lemma&nbsp;for&nbsp;stdpp's&nbsp;`reverse&nbsp;*)</span><br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">last_reverse_head</span> <span class="id" title="var">A</span> (<span class="id" title="var">l</span> : <span class="id" title="var">list</span> <span class="id" title="var">A</span>) (<span class="id" title="var">x</span> : <span class="id" title="var">A</span>) : <span class="id" title="var">stdpp.list.last</span> (<span class="id" title="var">x</span> :: <span class="id" title="var">l</span>) = <span class="id" title="var">hd_error</span> (<span class="id" title="var">reverse</span> <span class="id" title="var">l</span> ++ [<span class="id" title="var">x</span>]).<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">hd_error_lookup</span> <span class="id" title="var">A</span> (<span class="id" title="var">l</span> : <span class="id" title="var">list</span> <span class="id" title="var">A</span>) :<br/>
+&nbsp;&nbsp;<span class="id" title="var">l</span> !! 0 = <span class="id" title="var">hd_error</span> <span class="id" title="var">l</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">list_len_slice</span> <span class="id" title="var">A</span> (<span class="id" title="var">l1</span> <span class="id" title="var">l2</span> : <span class="id" title="var">list</span> <span class="id" title="var">A</span>) (<span class="id" title="var">a</span> <span class="id" title="var">b</span> : <span class="id" title="var">A</span>) :<br/>
+&nbsp;&nbsp;<span class="id" title="var">a</span> :: <span class="id" title="var">l1</span> = <span class="id" title="var">l2</span> ++ [<span class="id" title="var">b</span>] → <span class="id" title="var">length</span> <span class="id" title="var">l1</span> = <span class="id" title="var">length</span> <span class="id" title="var">l2</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Fixpoint</span> <span class="id" title="var">skip_eq</span> {<span class="id" title="var">A</span>} {<span class="id" title="var">eqdec</span>: <span class="id" title="var">EqDecision</span> <span class="id" title="var">A</span>} (<span class="id" title="var">l</span> : <span class="id" title="var">list</span> (<span class="id" title="var">A</span> × <span class="id" title="var">A</span>)) :=<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">l</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">nil</span> ⇒ <span class="id" title="var">nil</span><br/>
+&nbsp;&nbsp;| (<span class="id" title="var">x</span>,<span class="id" title="var">y</span>) :: <span class="id" title="var">xs</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> (<span class="id" title="var">decide</span> (<span class="id" title="var">x</span>=<span class="id" title="var">y</span>)) <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="tactic">left</span> <span class="id" title="var">_</span> ⇒ @<span class="id" title="var">skip_eq</span> <span class="id" title="var">_</span> <span class="id" title="var">eqdec</span> <span class="id" title="var">xs</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="tactic">right</span> <span class="id" title="var">_</span> ⇒ <span class="id" title="var">l</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">skip_eq_head_not_eq</span> {<span class="id" title="var">A</span>} {<span class="id" title="var">eqdec</span>: <span class="id" title="var">EqDecision</span> <span class="id" title="var">A</span>} (<span class="id" title="var">l</span> : <span class="id" title="var">list</span> (<span class="id" title="var">A</span> × <span class="id" title="var">A</span>)) :<br/>
+&nbsp;&nbsp;∀ <span class="id" title="var">x</span> <span class="id" title="var">y</span>, <span class="id" title="var">hd_error</span> (<span class="id" title="var">skip_eq</span> <span class="id" title="var">l</span>) = <span class="id" title="var">Some</span> (<span class="id" title="var">x</span>,<span class="id" title="var">y</span>) → <span class="id" title="var">x</span> ≠ <span class="id" title="var">y</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">tail_skip_eq</span> {<span class="id" title="var">A</span>} {<span class="id" title="var">eqdec</span>: <span class="id" title="var">EqDecision</span> <span class="id" title="var">A</span>} (<span class="id" title="var">l</span> : <span class="id" title="var">list</span> (<span class="id" title="var">A</span> × <span class="id" title="var">A</span>)) :=<br/>
+&nbsp;&nbsp;<span class="id" title="var">reverse</span> (<span class="id" title="var">skip_eq</span> (<span class="id" title="var">reverse</span> <span class="id" title="var">l</span>)).<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">tail_skip_eq_last_not_eq</span> {<span class="id" title="var">A</span>} {<span class="id" title="var">eqdec</span>: <span class="id" title="var">EqDecision</span> <span class="id" title="var">A</span>} (<span class="id" title="var">l</span> : <span class="id" title="var">list</span> (<span class="id" title="var">A</span> × <span class="id" title="var">A</span>)) :<br/>
+&nbsp;&nbsp;∀ <span class="id" title="var">x</span> <span class="id" title="var">y</span>, <span class="id" title="var">stdpp.list.last</span> (<span class="id" title="var">tail_skip_eq</span> <span class="id" title="var">l</span>) = <span class="id" title="var">Some</span> (<span class="id" title="var">x</span>, <span class="id" title="var">y</span>) → <span class="id" title="var">x</span> ≠ <span class="id" title="var">y</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Fixpoint</span> <span class="id" title="var">common_length</span> {<span class="id" title="var">A</span>} {<span class="id" title="var">eqdec</span>: <span class="id" title="var">EqDecision</span> <span class="id" title="var">A</span>} (<span class="id" title="var">l₁</span> <span class="id" title="var">l₂</span> : <span class="id" title="var">list</span> <span class="id" title="var">A</span>) :=<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">l₁</span>,<span class="id" title="var">l₂</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">nil</span>,<span class="id" title="var">nil</span> ⇒ 0<br/>
+&nbsp;&nbsp;| <span class="id" title="var">nil</span>,<span class="id" title="var">_</span> ⇒ 0<br/>
+&nbsp;&nbsp;| <span class="id" title="var">_</span>,<span class="id" title="var">nil</span> ⇒ 0<br/>
+&nbsp;&nbsp;| (<span class="id" title="var">x</span>::<span class="id" title="var">xs</span>),(<span class="id" title="var">y</span>::<span class="id" title="var">ys</span>) ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> (<span class="id" title="var">decide</span> (<span class="id" title="var">x</span>=<span class="id" title="var">y</span>)) <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="tactic">left</span> <span class="id" title="var">_</span> ⇒ <span class="id" title="var">S</span> (@<span class="id" title="var">common_length</span> <span class="id" title="var">_</span> <span class="id" title="var">eqdec</span> <span class="id" title="var">xs</span> <span class="id" title="var">ys</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="tactic">right</span> <span class="id" title="var">_</span> ⇒ 0<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">common_length_l_nil</span> {<span class="id" title="var">A</span>} {<span class="id" title="var">eqdec</span>: <span class="id" title="var">EqDecision</span> <span class="id" title="var">A</span>} (<span class="id" title="var">l₁</span> : <span class="id" title="var">list</span> <span class="id" title="var">A</span>) :<br/>
+&nbsp;&nbsp;<span class="id" title="var">common_length</span> <span class="id" title="var">l₁</span> <span class="id" title="var">nil</span> = 0.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">common_length_sym</span> {<span class="id" title="var">A</span>} {<span class="id" title="var">eqdec</span>: <span class="id" title="var">EqDecision</span> <span class="id" title="var">A</span>} (<span class="id" title="var">l₁</span> <span class="id" title="var">l₂</span> : <span class="id" title="var">list</span> <span class="id" title="var">A</span>) :<br/>
+&nbsp;&nbsp;<span class="id" title="var">common_length</span> <span class="id" title="var">l₁</span> <span class="id" title="var">l₂</span> = <span class="id" title="var">common_length</span> <span class="id" title="var">l₂</span> <span class="id" title="var">l₁</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">common_length_rev</span> {<span class="id" title="var">A</span>} {<span class="id" title="var">eqdec</span>: <span class="id" title="var">EqDecision</span> <span class="id" title="var">A</span>} (<span class="id" title="var">x</span> <span class="id" title="var">y</span> : <span class="id" title="var">A</span>) (<span class="id" title="var">xs</span> <span class="id" title="var">ys</span> : <span class="id" title="var">list</span> <span class="id" title="var">A</span>) :<br/>
+&nbsp;&nbsp;<span class="id" title="var">common_length</span> (<span class="id" title="var">reverse</span> (<span class="id" title="var">x</span>::<span class="id" title="var">xs</span>)) (<span class="id" title="var">y</span>::<span class="id" title="var">ys</span>) =<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">match</span> (<span class="id" title="var">decide</span> ((<span class="id" title="var">stdpp.list.last</span> (<span class="id" title="var">x</span>::<span class="id" title="var">xs</span>)) = <span class="id" title="var">Some</span> <span class="id" title="var">y</span>)) <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;| <span class="id" title="tactic">left</span> <span class="id" title="var">_</span> ⇒ <span class="id" title="var">S</span> (<span class="id" title="var">common_length</span> (<span class="id" title="var">reverse</span> (<span class="id" title="var">tail</span> (<span class="id" title="var">reverse</span> (<span class="id" title="var">x</span>::<span class="id" title="var">xs</span>)))) <span class="id" title="var">ys</span>)<br/>
+&nbsp;&nbsp;| <span class="id" title="tactic">right</span> <span class="id" title="var">_</span> ⇒ 0<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">last_app_singleton</span> {<span class="id" title="var">A</span>} (<span class="id" title="var">m</span> : <span class="id" title="var">A</span>) (<span class="id" title="var">l</span> : <span class="id" title="var">list</span> <span class="id" title="var">A</span>) :<br/>
+&nbsp;&nbsp;<span class="id" title="var">stdpp.list.last</span> (<span class="id" title="var">l</span> ++ [<span class="id" title="var">m</span>]) = <span class="id" title="var">Some</span> <span class="id" title="var">m</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">rev_reverse</span> {<span class="id" title="var">A</span>} (<span class="id" title="var">l</span> : <span class="id" title="var">list</span> <span class="id" title="var">A</span>) :<br/>
+&nbsp;&nbsp;<span class="id" title="var">rev</span> <span class="id" title="var">l</span> = <span class="id" title="var">reverse</span> <span class="id" title="var">l</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">forall_zip_flip</span> {<span class="id" title="var">A</span> <span class="id" title="var">B</span> : <span class="id" title="keyword">Type</span>} (<span class="id" title="var">f</span> : <span class="id" title="var">A</span> → <span class="id" title="var">B</span> → <span class="id" title="keyword">Prop</span>) (<span class="id" title="var">xs</span> : <span class="id" title="var">list</span> <span class="id" title="var">A</span>) (<span class="id" title="var">ys</span>: <span class="id" title="var">list</span> <span class="id" title="var">B</span>) :<br/>
+&nbsp;&nbsp;<span class="id" title="var">Forall</span> (<span class="id" title="var">uncurry</span> <span class="id" title="var">f</span>) (<span class="id" title="var">zip</span> <span class="id" title="var">xs</span> <span class="id" title="var">ys</span>) ↔ <span class="id" title="var">Forall</span> (<span class="id" title="var">uncurry</span> (<span class="id" title="var">flip</span> <span class="id" title="var">f</span>)) (<span class="id" title="var">zip</span> <span class="id" title="var">ys</span> <span class="id" title="var">xs</span>).<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">tail_app_nonempty</span> {<span class="id" title="var">A</span> : <span class="id" title="keyword">Type</span>} (<span class="id" title="var">x</span> : <span class="id" title="var">A</span>) (<span class="id" title="var">xs</span> <span class="id" title="var">ys</span> : <span class="id" title="var">list</span> <span class="id" title="var">A</span>) :<br/>
+&nbsp;&nbsp;<span class="id" title="var">tail</span> ((<span class="id" title="var">x</span>::<span class="id" title="var">xs</span>) ++ <span class="id" title="var">ys</span>) = (<span class="id" title="var">tail</span> (<span class="id" title="var">x</span>::<span class="id" title="var">xs</span>)) ++ <span class="id" title="var">ys</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">tail_app_nonempty'</span> {<span class="id" title="var">A</span> : <span class="id" title="keyword">Type</span>} (<span class="id" title="var">xs</span> <span class="id" title="var">ys</span> : <span class="id" title="var">list</span> <span class="id" title="var">A</span>) :<br/>
+&nbsp;&nbsp;<span class="id" title="var">length</span> <span class="id" title="var">xs</span> ≥ 1 →<br/>
+&nbsp;&nbsp;<span class="id" title="var">tail</span> (<span class="id" title="var">xs</span> ++ <span class="id" title="var">ys</span>) = (<span class="id" title="var">tail</span> <span class="id" title="var">xs</span>) ++ <span class="id" title="var">ys</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">length_tail</span> {<span class="id" title="var">A</span> : <span class="id" title="keyword">Type</span>} (<span class="id" title="var">l</span> : <span class="id" title="var">list</span> <span class="id" title="var">A</span>) :<br/>
+&nbsp;&nbsp;<span class="id" title="var">length</span> (<span class="id" title="var">tail</span> <span class="id" title="var">l</span>) = <span class="id" title="var">length</span> <span class="id" title="var">l</span> - 1.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">reverse_zip_tail_r</span> {<span class="id" title="var">A</span> : <span class="id" title="keyword">Type</span>} (<span class="id" title="var">m</span> : <span class="id" title="var">A</span>) (<span class="id" title="var">l</span> : <span class="id" title="var">list</span> <span class="id" title="var">A</span>) :<br/>
+&nbsp;&nbsp;<span class="id" title="var">reverse</span> (<span class="id" title="var">zip</span> (<span class="id" title="var">m</span> :: <span class="id" title="var">l</span>) (<span class="id" title="var">tail</span> (<span class="id" title="var">m</span> :: <span class="id" title="var">l</span>)))<br/>
+&nbsp;&nbsp;= <span class="id" title="var">zip</span> (<span class="id" title="var">tail</span> (<span class="id" title="var">reverse</span> (<span class="id" title="var">m</span> :: <span class="id" title="var">l</span>))) (<span class="id" title="var">reverse</span> (<span class="id" title="var">m</span> :: <span class="id" title="var">l</span>)).<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">Forall_zip_flip_reverse</span> {<span class="id" title="var">A</span> : <span class="id" title="keyword">Type</span>} (<span class="id" title="var">f</span> : <span class="id" title="var">A</span> → <span class="id" title="var">A</span> → <span class="id" title="keyword">Prop</span>) (<span class="id" title="var">m</span> : <span class="id" title="var">A</span>) (<span class="id" title="var">l</span> : <span class="id" title="var">list</span> <span class="id" title="var">A</span>) :<br/>
+&nbsp;&nbsp;<span class="id" title="var">Forall</span> (<span class="id" title="var">uncurry</span> <span class="id" title="var">f</span>) (<span class="id" title="var">zip</span> (<span class="id" title="var">m</span>::<span class="id" title="var">l</span>) (<span class="id" title="var">tail</span> (<span class="id" title="var">m</span>::<span class="id" title="var">l</span>)))<br/>
+&nbsp;&nbsp;↔<br/>
+&nbsp;&nbsp;<span class="id" title="var">Forall</span> (<span class="id" title="var">uncurry</span> (<span class="id" title="var">flip</span> <span class="id" title="var">f</span>)) (<span class="id" title="var">zip</span> (<span class="id" title="var">reverse</span> (<span class="id" title="var">m</span>::<span class="id" title="var">l</span>)) (<span class="id" title="var">tail</span> (<span class="id" title="var">reverse</span> (<span class="id" title="var">m</span>::<span class="id" title="var">l</span>)))).<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">Forall_drop</span> {<span class="id" title="var">A</span> : <span class="id" title="keyword">Type</span>} (<span class="id" title="var">P</span> : <span class="id" title="var">A</span> → <span class="id" title="keyword">Prop</span>) (<span class="id" title="var">n</span> : <span class="id" title="var">nat</span>) (<span class="id" title="var">l</span> : <span class="id" title="var">list</span> <span class="id" title="var">A</span>) :<br/>
+&nbsp;&nbsp;<span class="id" title="var">Forall</span> <span class="id" title="var">P</span> <span class="id" title="var">l</span> → <span class="id" title="var">Forall</span> <span class="id" title="var">P</span> (<span class="id" title="var">drop</span> <span class="id" title="var">n</span> <span class="id" title="var">l</span>).<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">last_drop</span> {<span class="id" title="var">A</span> : <span class="id" title="keyword">Type</span>} (<span class="id" title="var">l</span> : <span class="id" title="var">list</span> <span class="id" title="var">A</span>) (<span class="id" title="var">n</span> : <span class="id" title="var">nat</span>) (<span class="id" title="var">x</span> : <span class="id" title="var">A</span>) :<br/>
+&nbsp;&nbsp;<span class="id" title="var">stdpp.list.last</span> <span class="id" title="var">l</span> = <span class="id" title="var">Some</span> <span class="id" title="var">x</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">n</span> &lt; <span class="id" title="var">length</span> <span class="id" title="var">l</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">stdpp.list.last</span> (<span class="id" title="var">drop</span> <span class="id" title="var">n</span> <span class="id" title="var">l</span>) = <span class="id" title="var">Some</span> <span class="id" title="var">x</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">tail_drop</span> {<span class="id" title="var">A</span> : <span class="id" title="keyword">Type</span>} (<span class="id" title="var">l</span> : <span class="id" title="var">list</span> <span class="id" title="var">A</span>) (<span class="id" title="var">n</span> : <span class="id" title="var">nat</span>) :<br/>
+&nbsp;&nbsp;<span class="id" title="var">tail</span> (<span class="id" title="var">drop</span> <span class="id" title="var">n</span> <span class="id" title="var">l</span>) = <span class="id" title="var">drop</span> (<span class="id" title="var">S</span> <span class="id" title="var">n</span>) <span class="id" title="var">l</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">drop_tail</span> {<span class="id" title="var">A</span> : <span class="id" title="keyword">Type</span>} (<span class="id" title="var">l</span> : <span class="id" title="var">list</span> <span class="id" title="var">A</span>) (<span class="id" title="var">n</span> : <span class="id" title="var">nat</span>) :<br/>
+&nbsp;&nbsp;<span class="id" title="var">drop</span> <span class="id" title="var">n</span> (<span class="id" title="var">tail</span> <span class="id" title="var">l</span>) = <span class="id" title="var">drop</span> (<span class="id" title="var">S</span> <span class="id" title="var">n</span>) <span class="id" title="var">l</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">tail_drop_comm</span> {<span class="id" title="var">A</span> : <span class="id" title="keyword">Type</span>} (<span class="id" title="var">l</span> : <span class="id" title="var">list</span> <span class="id" title="var">A</span>) (<span class="id" title="var">n</span> : <span class="id" title="var">nat</span>) :<br/>
+&nbsp;&nbsp;<span class="id" title="var">tail</span> (<span class="id" title="var">drop</span> <span class="id" title="var">n</span> <span class="id" title="var">l</span>) = <span class="id" title="var">drop</span> <span class="id" title="var">n</span> (<span class="id" title="var">tail</span> <span class="id" title="var">l</span>).<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">hd_drop_lookup</span> {<span class="id" title="var">A</span> : <span class="id" title="keyword">Type</span>} (<span class="id" title="var">l</span> : <span class="id" title="var">list</span> <span class="id" title="var">A</span>) (<span class="id" title="var">n</span> : <span class="id" title="var">nat</span>) (<span class="id" title="var">m</span> : <span class="id" title="var">A</span>) :<br/>
+&nbsp;&nbsp;<span class="id" title="var">l</span> !! <span class="id" title="var">n</span> = <span class="id" title="var">Some</span> <span class="id" title="var">m</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">hd_error</span> (<span class="id" title="var">drop</span> <span class="id" title="var">n</span> <span class="id" title="var">l</span>) = <span class="id" title="var">Some</span> <span class="id" title="var">m</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">list_ex_elem</span> {<span class="id" title="var">A</span> : <span class="id" title="keyword">Type</span>} (<span class="id" title="var">l</span> : <span class="id" title="var">list</span> <span class="id" title="var">A</span>) (<span class="id" title="var">n</span> : <span class="id" title="var">nat</span>) :<br/>
+&nbsp;&nbsp;<span class="id" title="var">n</span> &lt; <span class="id" title="var">length</span> <span class="id" title="var">l</span> → <span class="id" title="tactic">∃</span> <span class="id" title="var">x</span>, <span class="id" title="var">l</span>!!<span class="id" title="var">n</span> = <span class="id" title="var">Some</span> <span class="id" title="var">x</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">list_last_length</span> {<span class="id" title="var">A</span> : <span class="id" title="keyword">Type</span>} (<span class="id" title="var">l</span> : <span class="id" title="var">list</span> <span class="id" title="var">A</span>):<br/>
+&nbsp;&nbsp;<span class="id" title="var">stdpp.list.last</span> <span class="id" title="var">l</span> = <span class="id" title="var">l</span> !! (<span class="id" title="var">length</span> <span class="id" title="var">l</span> - 1).<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">equal_up_to_common_length</span> {<span class="id" title="var">A</span> : <span class="id" title="keyword">Type</span>} {<span class="id" title="var">eqdec</span>: <span class="id" title="var">EqDecision</span> <span class="id" title="var">A</span>} (<span class="id" title="var">l₁</span> <span class="id" title="var">l₂</span> : <span class="id" title="var">list</span> <span class="id" title="var">A</span>) :<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">∀</span> (<span class="id" title="var">n</span>:<span class="id" title="var">nat</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">n</span> &lt; <span class="id" title="var">common_length</span> <span class="id" title="var">l₁</span> <span class="id" title="var">l₂</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">l₁</span> !! <span class="id" title="var">n</span> = <span class="id" title="var">l₂</span> !! <span class="id" title="var">n</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">last_tail</span> {<span class="id" title="var">A</span> : <span class="id" title="keyword">Type</span>} (<span class="id" title="var">l</span> : <span class="id" title="var">list</span> <span class="id" title="var">A</span>) (<span class="id" title="var">lst</span> <span class="id" title="var">m</span> : <span class="id" title="var">A</span>) :<br/>
+&nbsp;&nbsp;<span class="id" title="var">stdpp.list.last</span> <span class="id" title="var">l</span> = <span class="id" title="var">Some</span> <span class="id" title="var">lst</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">head</span> (<span class="id" title="var">tail</span> <span class="id" title="var">l</span>) = <span class="id" title="var">Some</span> <span class="id" title="var">m</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">stdpp.list.last</span> (<span class="id" title="var">tail</span> <span class="id" title="var">l</span>) = <span class="id" title="var">Some</span> <span class="id" title="var">lst</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">tail_zip_with</span> {<span class="id" title="var">A</span> <span class="id" title="var">B</span> <span class="id" title="var">C</span> : <span class="id" title="keyword">Type</span>} (<span class="id" title="var">f</span> : <span class="id" title="var">A</span> → <span class="id" title="var">B</span> → <span class="id" title="var">C</span>) (<span class="id" title="var">l₁</span> : <span class="id" title="var">list</span> <span class="id" title="var">A</span>) (<span class="id" title="var">l₂</span> : <span class="id" title="var">list</span> <span class="id" title="var">B</span>) :<br/>
+&nbsp;&nbsp;<span class="id" title="var">tail</span> (<span class="id" title="var">zip_with</span> <span class="id" title="var">f</span> <span class="id" title="var">l₁</span> <span class="id" title="var">l₂</span>) = <span class="id" title="var">zip_with</span> <span class="id" title="var">f</span> (<span class="id" title="var">tail</span> <span class="id" title="var">l₁</span>) (<span class="id" title="var">tail</span> <span class="id" title="var">l₂</span>).<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">tail_zip</span> {<span class="id" title="var">A</span> : <span class="id" title="keyword">Type</span>} (<span class="id" title="var">l₁</span> <span class="id" title="var">l₂</span> : <span class="id" title="var">list</span> <span class="id" title="var">A</span>) :<br/>
+&nbsp;&nbsp;<span class="id" title="var">tail</span> (<span class="id" title="var">zip</span> <span class="id" title="var">l₁</span> <span class="id" title="var">l₂</span>) = <span class="id" title="var">zip</span> (<span class="id" title="var">tail</span> <span class="id" title="var">l₁</span>) (<span class="id" title="var">tail</span> <span class="id" title="var">l₂</span>).<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">common_length_impl_eq</span> {<span class="id" title="var">A</span> : <span class="id" title="keyword">Type</span>} {<span class="id" title="var">eqdec</span>: <span class="id" title="var">EqDecision</span> <span class="id" title="var">A</span>} (<span class="id" title="var">l₁</span> <span class="id" title="var">l₂</span> : <span class="id" title="var">list</span> <span class="id" title="var">A</span>) :<br/>
+&nbsp;&nbsp;<span class="id" title="var">length</span> <span class="id" title="var">l₁</span> = <span class="id" title="var">length</span> <span class="id" title="var">l₂</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">common_length</span> <span class="id" title="var">l₁</span> <span class="id" title="var">l₂</span> = <span class="id" title="var">length</span> <span class="id" title="var">l₂</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">l₁</span> = <span class="id" title="var">l₂</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">not_elem_of_larger_impl_not_elem_of</span> {<span class="id" title="var">A</span> <span class="id" title="var">C</span> : <span class="id" title="keyword">Type</span>} {<span class="id" title="var">H</span> : <span class="id" title="var">ElemOf</span> <span class="id" title="var">A</span> <span class="id" title="var">C</span>} (<span class="id" title="var">x</span> : <span class="id" title="var">A</span>) (<span class="id" title="var">S</span> <span class="id" title="var">B</span> : <span class="id" title="var">C</span>) :<br/>
+&nbsp;&nbsp;<span class="id" title="var">S</span> ⊆ <span class="id" title="var">B</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">x</span> ∉ <span class="id" title="var">B</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">x</span> ∉ <span class="id" title="var">S</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Tactic Notation</span> "solve_set_inclusion" <span class="id" title="var">int_or_var</span>(<span class="id" title="var">depth</span>) :=<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <span class="id" title="var">elem_of_subseteq</span>;<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">x</span> := <span class="id" title="tactic">fresh</span> "x" <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">H</span> := <span class="id" title="tactic">fresh</span> "Hxin" <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;<span class="comment">(*&nbsp;TODO:&nbsp;maybe&nbsp;we&nbsp;need&nbsp;something&nbsp;like:&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="comment">(*rewrite&nbsp;-!union_assoc_L.*)</span><br/>
+&nbsp;&nbsp;<span class="comment">(*&nbsp;We&nbsp;may&nbsp;also&nbsp;want&nbsp;to&nbsp;remove&nbsp;duplicates,&nbsp;at&nbsp;least&nbsp;those&nbsp;that&nbsp;are&nbsp;neighbors&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="id" title="tactic">intros</span> <span class="id" title="var">x</span> <span class="id" title="var">H</span>;<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">repeat</span> (<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">H</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| ?<span class="id" title="var">L</span> ∧ ?<span class="id" title="var">R</span> ⇒ <span class="id" title="tactic">fail</span> "Not implemented: destruct H"<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">_</span> ⇒ <span class="id" title="tactic">eauto</span> <span class="id" title="var">depth</span> <span class="id" title="keyword">using</span> @<span class="id" title="var">sets.elem_of_union_l</span>, @<span class="id" title="var">sets.elem_of_union_r</span> <span class="id" title="keyword">with</span> <span class="id" title="var">typeclass_instances</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;).<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">map_take</span> {<span class="id" title="var">A</span> <span class="id" title="var">B</span> : <span class="id" title="keyword">Type</span>} (<span class="id" title="var">f</span> : <span class="id" title="var">A</span> → <span class="id" title="var">B</span>) (<span class="id" title="var">l</span> : <span class="id" title="var">list</span> <span class="id" title="var">A</span>) (<span class="id" title="var">n</span> : <span class="id" title="var">nat</span>) :<br/>
+&nbsp;&nbsp;<span class="id" title="var">map</span> <span class="id" title="var">f</span> (<span class="id" title="var">take</span> <span class="id" title="var">n</span> <span class="id" title="var">l</span>) = <span class="id" title="var">take</span> <span class="id" title="var">n</span> (<span class="id" title="var">map</span> <span class="id" title="var">f</span> <span class="id" title="var">l</span>).<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">map_drop</span> {<span class="id" title="var">A</span> <span class="id" title="var">B</span> : <span class="id" title="keyword">Type</span>} (<span class="id" title="var">f</span> : <span class="id" title="var">A</span> → <span class="id" title="var">B</span>) (<span class="id" title="var">l</span> : <span class="id" title="var">list</span> <span class="id" title="var">A</span>) (<span class="id" title="var">n</span> : <span class="id" title="var">nat</span>) :<br/>
+&nbsp;&nbsp;<span class="id" title="var">map</span> <span class="id" title="var">f</span> (<span class="id" title="var">drop</span> <span class="id" title="var">n</span> <span class="id" title="var">l</span>) = <span class="id" title="var">drop</span> <span class="id" title="var">n</span> (<span class="id" title="var">map</span> <span class="id" title="var">f</span> <span class="id" title="var">l</span>).<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">foldr_andb_true_take</span> <span class="id" title="var">n</span> <span class="id" title="var">l</span>:<br/>
+&nbsp;&nbsp;<span class="id" title="var">foldr</span> <span class="id" title="var">andb</span> <span class="id" title="var">true</span> <span class="id" title="var">l</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">foldr</span> <span class="id" title="var">andb</span> <span class="id" title="var">true</span> (<span class="id" title="var">take</span> <span class="id" title="var">n</span> <span class="id" title="var">l</span>).<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">foldr_andb_true_drop</span> <span class="id" title="var">n</span> <span class="id" title="var">l</span>:<br/>
+&nbsp;&nbsp;<span class="id" title="var">foldr</span> <span class="id" title="var">andb</span> <span class="id" title="var">true</span> <span class="id" title="var">l</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">foldr</span> <span class="id" title="var">andb</span> <span class="id" title="var">true</span> (<span class="id" title="var">drop</span> <span class="id" title="var">n</span> <span class="id" title="var">l</span>).<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">propset_fa_union</span> {<span class="id" title="var">T</span> <span class="id" title="var">C</span> : <span class="id" title="keyword">Type</span>} (<span class="id" title="var">f</span> : <span class="id" title="var">C</span> → <span class="id" title="var">propset</span> <span class="id" title="var">T</span>) : <span class="id" title="var">propset</span> <span class="id" title="var">T</span><br/>
+&nbsp;&nbsp;:= <span class="id" title="var">PropSet</span> (<span class="id" title="keyword">fun</span> (<span class="id" title="var">x</span> : <span class="id" title="var">T</span>) ⇒ <span class="id" title="tactic">∃</span> (<span class="id" title="var">c</span> : <span class="id" title="var">C</span>), <span class="id" title="var">x</span> ∈ <span class="id" title="var">f</span> <span class="id" title="var">c</span>).<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">propset_fa_union_same</span> {<span class="id" title="var">T</span> <span class="id" title="var">C</span> : <span class="id" title="keyword">Type</span>} {<span class="id" title="var">LE</span> : <span class="id" title="var">LeibnizEquiv</span> (<span class="id" title="var">propset</span> <span class="id" title="var">T</span>)} (<span class="id" title="var">f</span> <span class="id" title="var">f'</span> : <span class="id" title="var">C</span> → <span class="id" title="var">propset</span> <span class="id" title="var">T</span>):<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="keyword">∀</span> <span class="id" title="var">c</span>, (<span class="id" title="var">f</span> <span class="id" title="var">c</span>) = (<span class="id" title="var">f'</span> <span class="id" title="var">c</span>)) →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">propset_fa_union</span> <span class="id" title="var">f</span>) = (<span class="id" title="var">propset_fa_union</span> <span class="id" title="var">f'</span>).<br/>
+
+<br/>
+<span class="id" title="keyword">Global Instance</span> <span class="id" title="var">propset_fa_union_proper</span> {<span class="id" title="var">T</span> <span class="id" title="var">C</span> : <span class="id" title="keyword">Type</span>}<br/>
+: <span class="id" title="var">Proper</span> (<span class="id" title="var">pointwise_relation</span> <span class="id" title="var">C</span> (≡) ==&gt; (≡)) (@<span class="id" title="var">propset_fa_union</span> <span class="id" title="var">T</span> <span class="id" title="var">C</span>).<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">propset_fa_union_empty</span> {<span class="id" title="var">T</span> <span class="id" title="var">C</span> : <span class="id" title="keyword">Type</span>} {<span class="id" title="var">LE</span> : <span class="id" title="var">LeibnizEquiv</span> (<span class="id" title="var">propset</span> <span class="id" title="var">T</span>)} (<span class="id" title="var">f</span> : <span class="id" title="var">C</span> → <span class="id" title="var">propset</span> <span class="id" title="var">T</span>) :<br/>
+&nbsp;&nbsp;(<span class="id" title="var">propset_fa_union</span> <span class="id" title="var">f</span> = ∅) ↔ (∀ (<span class="id" title="var">c</span> : <span class="id" title="var">C</span>), (<span class="id" title="var">f</span> <span class="id" title="var">c</span>) = ∅).<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">propset_fa_union_full</span> {<span class="id" title="var">T</span> <span class="id" title="var">C</span> : <span class="id" title="keyword">Type</span>} {<span class="id" title="var">LE</span> : <span class="id" title="var">LeibnizEquiv</span> (<span class="id" title="var">propset</span> <span class="id" title="var">T</span>)} (<span class="id" title="var">f</span> : <span class="id" title="var">C</span> → <span class="id" title="var">propset</span> <span class="id" title="var">T</span>) :<br/>
+&nbsp;&nbsp;(<span class="id" title="var">propset_fa_union</span> <span class="id" title="var">f</span> = ⊤) ↔ (∀ (<span class="id" title="var">t</span> : <span class="id" title="var">T</span>), ∃ (<span class="id" title="var">c</span> : <span class="id" title="var">C</span>), <span class="id" title="var">t</span> ∈ (<span class="id" title="var">f</span> <span class="id" title="var">c</span>)).<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">propset_fa_union_included</span> : <span class="id" title="keyword">∀</span> <span class="id" title="var">T</span> <span class="id" title="var">C</span> : <span class="id" title="keyword">Type</span>, <span class="id" title="keyword">∀</span> <span class="id" title="var">f</span> <span class="id" title="var">f'</span> : <span class="id" title="var">C</span> → <span class="id" title="var">propset</span> <span class="id" title="var">T</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="keyword">∀</span> <span class="id" title="var">c</span>, (<span class="id" title="var">f</span> <span class="id" title="var">c</span>) ⊆ (<span class="id" title="var">f'</span> <span class="id" title="var">c</span>)) →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">propset_fa_union</span> <span class="id" title="var">f</span>) ⊆ (<span class="id" title="var">propset_fa_union</span> <span class="id" title="var">f'</span>).<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">propset_fa_intersection</span> {<span class="id" title="var">T</span> <span class="id" title="var">C</span> : <span class="id" title="keyword">Type</span>} (<span class="id" title="var">f</span> : <span class="id" title="var">C</span> → <span class="id" title="var">propset</span> <span class="id" title="var">T</span>) : <span class="id" title="var">propset</span> <span class="id" title="var">T</span><br/>
+&nbsp;&nbsp;:= <span class="id" title="var">PropSet</span> (<span class="id" title="keyword">fun</span> (<span class="id" title="var">x</span> : <span class="id" title="var">T</span>) ⇒ <span class="id" title="keyword">∀</span> (<span class="id" title="var">c</span> : <span class="id" title="var">C</span>), <span class="id" title="var">x</span> ∈ <span class="id" title="var">f</span> <span class="id" title="var">c</span>).<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">propset_fa_intersection_empty</span> {<span class="id" title="var">T</span> <span class="id" title="var">C</span> : <span class="id" title="keyword">Type</span>} {<span class="id" title="var">INH</span> : <span class="id" title="var">Inhabited</span> <span class="id" title="var">C</span>} {<span class="id" title="var">LE</span> : <span class="id" title="var">LeibnizEquiv</span> (<span class="id" title="var">propset</span> <span class="id" title="var">T</span>)} (<span class="id" title="var">f</span> : <span class="id" title="var">C</span> → <span class="id" title="var">propset</span> <span class="id" title="var">T</span>) :<br/>
+&nbsp;&nbsp;(<span class="id" title="var">propset_fa_intersection</span> <span class="id" title="var">f</span> = ∅) ↔ (∀ (<span class="id" title="var">t</span> : <span class="id" title="var">T</span>), ∃ (<span class="id" title="var">c</span> : <span class="id" title="var">C</span>), <span class="id" title="var">t</span> ∉ (<span class="id" title="var">f</span> <span class="id" title="var">c</span>)).<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">propset_fa_intersection_full</span> {<span class="id" title="var">T</span> <span class="id" title="var">C</span> : <span class="id" title="keyword">Type</span>} {<span class="id" title="var">LE</span> : <span class="id" title="var">LeibnizEquiv</span> (<span class="id" title="var">propset</span> <span class="id" title="var">T</span>)} (<span class="id" title="var">f</span> : <span class="id" title="var">C</span> → <span class="id" title="var">propset</span> <span class="id" title="var">T</span>) :<br/>
+&nbsp;&nbsp;(<span class="id" title="var">propset_fa_intersection</span> <span class="id" title="var">f</span> = ⊤) ↔ (∀ (<span class="id" title="var">c</span> : <span class="id" title="var">C</span>), (<span class="id" title="var">f</span> <span class="id" title="var">c</span>) = ⊤).<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">Not_Empty_Contains_Elements</span> {<span class="id" title="var">T</span> : <span class="id" title="keyword">Type</span>} {<span class="id" title="var">LE</span> : <span class="id" title="var">LeibnizEquiv</span> (<span class="id" title="var">propset</span> <span class="id" title="var">T</span>)} (<span class="id" title="var">S</span> : <span class="id" title="var">propset</span> <span class="id" title="var">T</span>):<br/>
+&nbsp;&nbsp;<span class="id" title="var">S</span> ≠ ∅ → <span class="id" title="tactic">∃</span> <span class="id" title="var">x</span> : <span class="id" title="var">T</span>, <span class="id" title="var">x</span> ∈ <span class="id" title="var">S</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">Contains_Elements_Not_Empty</span> {<span class="id" title="var">T</span> : <span class="id" title="keyword">Type</span>} (<span class="id" title="var">S</span> : <span class="id" title="var">propset</span> <span class="id" title="var">T</span>):<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="tactic">∃</span> <span class="id" title="var">x</span> : <span class="id" title="var">T</span>, <span class="id" title="var">x</span> ∈ <span class="id" title="var">S</span>) → <span class="id" title="var">S</span> ≠ ∅.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">Not_Empty_iff_Contains_Elements</span> {<span class="id" title="var">T</span> : <span class="id" title="keyword">Type</span>} {<span class="id" title="var">LE</span> : <span class="id" title="var">LeibnizEquiv</span> (<span class="id" title="var">propset</span> <span class="id" title="var">T</span>)} (<span class="id" title="var">S</span> : <span class="id" title="var">propset</span> <span class="id" title="var">T</span>):<br/>
+&nbsp;&nbsp;<span class="id" title="var">S</span> ≠ ∅ ↔<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">∃</span> <span class="id" title="var">x</span> : <span class="id" title="var">T</span>, <span class="id" title="var">x</span> ∈ <span class="id" title="var">S</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">Compl_Compl_propset</span> {<span class="id" title="var">T</span> : <span class="id" title="keyword">Type</span>} {<span class="id" title="var">LE</span> : <span class="id" title="var">LeibnizEquiv</span> (<span class="id" title="var">propset</span> <span class="id" title="var">T</span>)} (<span class="id" title="var">A</span> : <span class="id" title="var">propset</span> <span class="id" title="var">T</span>):<br/>
+&nbsp;&nbsp;(⊤ ∖ (⊤ ∖ <span class="id" title="var">A</span>)) = <span class="id" title="var">A</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">Compl_Union_Compl_Inters_propset_alt</span> {<span class="id" title="var">T</span> : <span class="id" title="keyword">Type</span>} {<span class="id" title="var">LE</span> : <span class="id" title="var">LeibnizEquiv</span> (<span class="id" title="var">propset</span> <span class="id" title="var">T</span>)} (<span class="id" title="var">L</span> <span class="id" title="var">R</span> : <span class="id" title="var">propset</span> <span class="id" title="var">T</span>):<br/>
+&nbsp;&nbsp;(⊤ ∖ ((⊤ ∖ <span class="id" title="var">L</span>) ∪ (⊤ ∖ <span class="id" title="var">R</span>))) = (<span class="id" title="var">L</span> ∩ <span class="id" title="var">R</span>).<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">complement_full_iff_empty</span> {<span class="id" title="var">T</span> : <span class="id" title="keyword">Type</span>} {<span class="id" title="var">LE</span> : <span class="id" title="var">LeibnizEquiv</span> (<span class="id" title="var">propset</span> <span class="id" title="var">T</span>)} (<span class="id" title="var">A</span> : <span class="id" title="var">propset</span> <span class="id" title="var">T</span>):<br/>
+&nbsp;&nbsp;(⊤ ∖ <span class="id" title="var">A</span> = ⊤) ↔ (<span class="id" title="var">A</span> = ∅).<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">complement_empty_iff_full</span> {<span class="id" title="var">T</span> : <span class="id" title="keyword">Type</span>} {<span class="id" title="var">LE</span> : <span class="id" title="var">LeibnizEquiv</span> (<span class="id" title="var">propset</span> <span class="id" title="var">T</span>)} (<span class="id" title="var">A</span> : <span class="id" title="var">propset</span> <span class="id" title="var">T</span>):<br/>
+&nbsp;&nbsp;(⊤ ∖ <span class="id" title="var">A</span> = ∅) ↔ (<span class="id" title="var">A</span> = ⊤).<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">intersection_full_iff_both_full</span> {<span class="id" title="var">T</span> : <span class="id" title="keyword">Type</span>} {<span class="id" title="var">LE</span> : <span class="id" title="var">LeibnizEquiv</span> (<span class="id" title="var">propset</span> <span class="id" title="var">T</span>)} (<span class="id" title="var">L</span> <span class="id" title="var">R</span> : <span class="id" title="var">propset</span> <span class="id" title="var">T</span>):<br/>
+&nbsp;&nbsp;(<span class="id" title="var">L</span> ∩ <span class="id" title="var">R</span> = ⊤) ↔ (<span class="id" title="var">L</span> = ⊤ ∧ <span class="id" title="var">R</span> = ⊤).<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">union_with_complement</span> {<span class="id" title="var">T</span> : <span class="id" title="keyword">Type</span>} {<span class="id" title="var">LE</span> : <span class="id" title="var">LeibnizEquiv</span> (<span class="id" title="var">propset</span> <span class="id" title="var">T</span>)} (<span class="id" title="var">X</span> : <span class="id" title="var">propset</span> <span class="id" title="var">T</span>):<br/>
+&nbsp;&nbsp;(⊤ ∖ <span class="id" title="var">X</span>) ∪ <span class="id" title="var">X</span> = ⊤.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">elem_of_compl</span> {<span class="id" title="var">T</span> : <span class="id" title="keyword">Type</span>} {<span class="id" title="var">LE</span> : <span class="id" title="var">LeibnizEquiv</span> (<span class="id" title="var">propset</span> <span class="id" title="var">T</span>)} (<span class="id" title="var">X</span> : <span class="id" title="var">propset</span> <span class="id" title="var">T</span>) (<span class="id" title="var">x</span> : <span class="id" title="var">T</span>):<br/>
+&nbsp;&nbsp;(<span class="id" title="var">x</span> ∈ (⊤ ∖ <span class="id" title="var">X</span>)) ↔ (<span class="id" title="var">x</span> ∉ <span class="id" title="var">X</span>).<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">elem_of_singleton_sym</span><br/>
+&nbsp;&nbsp;{<span class="id" title="var">A</span> <span class="id" title="var">C</span> : <span class="id" title="keyword">Type</span>} {<span class="id" title="var">H</span> : <span class="id" title="var">ElemOf</span> <span class="id" title="var">A</span> <span class="id" title="var">C</span>} {<span class="id" title="var">H0</span> : <span class="id" title="var">Empty</span> <span class="id" title="var">C</span>} {<span class="id" title="var">H1</span> : <span class="id" title="var">Singleton</span> <span class="id" title="var">A</span> <span class="id" title="var">C</span>} <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{<span class="id" title="var">H2</span> : <span class="id" title="var">Union</span> <span class="id" title="var">C</span>} {<span class="id" title="var">H3</span> :  <span class="id" title="var">SemiSet</span> <span class="id" title="var">A</span> <span class="id" title="var">C</span>} : <br/>
+&nbsp;&nbsp;<span class="id" title="keyword">∀</span> (<span class="id" title="var">x</span> <span class="id" title="var">y</span> : <span class="id" title="var">A</span>), <span class="id" title="var">x</span> ∈ (@<span class="id" title="var">singleton</span> <span class="id" title="var">A</span> <span class="id" title="var">C</span> <span class="id" title="var">H1</span> <span class="id" title="var">y</span>) ↔ <span class="id" title="var">y</span> ∈ (@<span class="id" title="var">singleton</span> <span class="id" title="var">A</span> <span class="id" title="var">C</span> <span class="id" title="var">H1</span> <span class="id" title="var">x</span>).<br/>
+
+<br/>
+<span class="id" title="keyword">Global Instance</span> <span class="id" title="var">set_unfold_gset_to_coGset</span><br/>
+&nbsp;&nbsp;{<span class="id" title="var">A</span> : <span class="id" title="keyword">Type</span>} {<span class="id" title="var">_eqA</span> : <span class="id" title="var">EqDecision</span> <span class="id" title="var">A</span>} {<span class="id" title="var">_cntA</span> : <span class="id" title="var">Countable</span> <span class="id" title="var">A</span>} (<span class="id" title="var">x</span> : <span class="id" title="var">A</span>) (<span class="id" title="var">X</span> : @<span class="id" title="var">gmap.gset</span> <span class="id" title="var">A</span> <span class="id" title="var">_eqA</span> <span class="id" title="var">_cntA</span>) <span class="id" title="var">P</span><br/>
+&nbsp;&nbsp;:<br/>
+&nbsp;&nbsp;<span class="id" title="var">SetUnfoldElemOf</span> <span class="id" title="var">x</span> <span class="id" title="var">X</span> <span class="id" title="var">P</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">SetUnfoldElemOf</span> <span class="id" title="var">x</span> (<span class="id" title="var">gset_to_coGset</span> <span class="id" title="var">X</span>) <span class="id" title="var">P</span>.<br/>
+</div>
+<hr/>This page has been generated by <a href="http://coq.inria.fr/">coqdoc</a>
+</div>
+
+</div>
+
+</body>
+</html>

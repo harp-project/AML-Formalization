@@ -1,0 +1,310 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link href="coqdoc.css" rel="stylesheet" type="text/css" />
+<title>IndexManipulation</title>
+</head>
+
+<body>
+
+<div id="page">
+
+<div id="header">
+</div>
+
+<div id="main">
+
+<h1 class="libtitle">File IndexManipulation</h1>
+
+<div class="code">
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">ssreflect</span> <span class="id" title="var">ssrfun</span> <span class="id" title="var">ssrbool</span>.<br/>
+<span class="id" title="keyword">Set Implicit Arguments</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq.Logic</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">FunctionalExtensionality</span> <span class="id" title="var">PropExtensionality</span> <span class="id" title="var">Classical_Pred_Type</span> <span class="id" title="var">Classical_Prop</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq.micromega</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Lia</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq.Program</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Wf</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">stdpp</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">base</span> <span class="id" title="var">fin_sets</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">stdpp</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">pmap</span> <span class="id" title="var">gmap</span> <span class="id" title="var">mapset</span> <span class="id" title="var">fin_sets</span> <span class="id" title="var">sets</span> <span class="id" title="var">propset</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">MatchingLogic.Utils</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">stdpp_ext</span> <span class="id" title="var">extralibrary</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">MatchingLogic</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="keyword">Syntax</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Import</span> <span class="id" title="var">MatchingLogic.Syntax.Notations</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Section</span> <span class="id" title="var">index_manipulation</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Context</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>}.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Fixpoint</span> <span class="id" title="var">nest_ex_aux</span> <span class="id" title="keyword">level</span> <span class="id" title="var">more</span> <span class="id" title="var">ϕ</span> {<span class="id" title="keyword">struct</span> <span class="id" title="var">ϕ</span>} : <span class="id" title="var">Pattern</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">ϕ</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_free_evar</span> <span class="id" title="var">_</span> ⇒ <span class="id" title="var">ϕ</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_free_svar</span> <span class="id" title="var">_</span> ⇒ <span class="id" title="var">ϕ</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_bound_evar</span> <span class="id" title="var">n</span> ⇒ <span class="id" title="var">patt_bound_evar</span> (<span class="id" title="keyword">if</span> <span class="id" title="var">decide</span> (<span class="id" title="var">n</span> &lt; <span class="id" title="keyword">level</span>) <span class="id" title="keyword">is</span> <span class="id" title="tactic">left</span> <span class="id" title="var">_</span> <span class="id" title="keyword">then</span> <span class="id" title="var">n</span> <span class="id" title="keyword">else</span> <span class="id" title="var">n</span> + <span class="id" title="var">more</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_bound_svar</span> <span class="id" title="var">_</span> ⇒ <span class="id" title="var">ϕ</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_sym</span> <span class="id" title="var">_</span> ⇒ <span class="id" title="var">ϕ</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_bott</span> ⇒ <span class="id" title="var">ϕ</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_app</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span> ⇒ <span class="id" title="var">patt_app</span> (<span class="id" title="var">nest_ex_aux</span> <span class="id" title="keyword">level</span> <span class="id" title="var">more</span> <span class="id" title="var">ϕ₁</span>) (<span class="id" title="var">nest_ex_aux</span> <span class="id" title="keyword">level</span> <span class="id" title="var">more</span> <span class="id" title="var">ϕ₂</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_imp</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span> ⇒ <span class="id" title="var">patt_imp</span> (<span class="id" title="var">nest_ex_aux</span> <span class="id" title="keyword">level</span> <span class="id" title="var">more</span> <span class="id" title="var">ϕ₁</span>) (<span class="id" title="var">nest_ex_aux</span> <span class="id" title="keyword">level</span> <span class="id" title="var">more</span> <span class="id" title="var">ϕ₂</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_exists</span> <span class="id" title="var">ϕ'</span> ⇒ <span class="id" title="var">patt_exists</span> (<span class="id" title="var">nest_ex_aux</span> (<span class="id" title="var">S</span> <span class="id" title="keyword">level</span>) <span class="id" title="var">more</span> <span class="id" title="var">ϕ'</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_mu</span> <span class="id" title="var">ϕ'</span> ⇒ <span class="id" title="var">patt_mu</span> (<span class="id" title="var">nest_ex_aux</span> <span class="id" title="keyword">level</span> <span class="id" title="var">more</span> <span class="id" title="var">ϕ'</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Fixpoint</span> <span class="id" title="var">nest_mu_aux</span> <span class="id" title="keyword">level</span> <span class="id" title="var">more</span> <span class="id" title="var">ϕ</span> {<span class="id" title="keyword">struct</span> <span class="id" title="var">ϕ</span>} : <span class="id" title="var">Pattern</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">ϕ</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_free_evar</span> <span class="id" title="var">_</span> ⇒ <span class="id" title="var">ϕ</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_free_svar</span> <span class="id" title="var">_</span> ⇒ <span class="id" title="var">ϕ</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_bound_evar</span> <span class="id" title="var">_</span> ⇒ <span class="id" title="var">ϕ</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_bound_svar</span> <span class="id" title="var">n</span> ⇒ <span class="id" title="var">patt_bound_svar</span> (<span class="id" title="keyword">if</span> <span class="id" title="var">decide</span> (<span class="id" title="var">n</span> &lt; <span class="id" title="keyword">level</span>) <span class="id" title="keyword">is</span> <span class="id" title="tactic">left</span> <span class="id" title="var">_</span> <span class="id" title="keyword">then</span> <span class="id" title="var">n</span> <span class="id" title="keyword">else</span> <span class="id" title="var">n</span> + <span class="id" title="var">more</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_sym</span> <span class="id" title="var">_</span> ⇒ <span class="id" title="var">ϕ</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_bott</span> ⇒ <span class="id" title="var">ϕ</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_app</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span> ⇒ <span class="id" title="var">patt_app</span> (<span class="id" title="var">nest_mu_aux</span> <span class="id" title="keyword">level</span> <span class="id" title="var">more</span> <span class="id" title="var">ϕ₁</span>) (<span class="id" title="var">nest_mu_aux</span> <span class="id" title="keyword">level</span> <span class="id" title="var">more</span> <span class="id" title="var">ϕ₂</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_imp</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span> ⇒ <span class="id" title="var">patt_imp</span> (<span class="id" title="var">nest_mu_aux</span> <span class="id" title="keyword">level</span> <span class="id" title="var">more</span> <span class="id" title="var">ϕ₁</span>) (<span class="id" title="var">nest_mu_aux</span> <span class="id" title="keyword">level</span> <span class="id" title="var">more</span> <span class="id" title="var">ϕ₂</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_exists</span> <span class="id" title="var">ϕ'</span> ⇒ <span class="id" title="var">patt_exists</span> (<span class="id" title="var">nest_mu_aux</span> <span class="id" title="keyword">level</span> <span class="id" title="var">more</span> <span class="id" title="var">ϕ'</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_mu</span> <span class="id" title="var">ϕ'</span> ⇒ <span class="id" title="var">patt_mu</span> (<span class="id" title="var">nest_mu_aux</span> (<span class="id" title="var">S</span> <span class="id" title="keyword">level</span>) <span class="id" title="var">more</span> <span class="id" title="var">ϕ'</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">nest_ex</span> <span class="id" title="var">ϕ</span> := <span class="id" title="var">nest_ex_aux</span> 0 1 <span class="id" title="var">ϕ</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">nest_mu</span> <span class="id" title="var">ϕ</span> := <span class="id" title="var">nest_mu_aux</span> 0 1 <span class="id" title="var">ϕ</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">bevar_occur_nest_ex</span> <span class="id" title="var">dbi</span> <span class="id" title="var">more</span> φ:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> <span class="id" title="var">x</span>, <span class="id" title="var">x</span> ≥ <span class="id" title="var">dbi</span> → <span class="id" title="var">x</span> &lt; <span class="id" title="var">dbi</span> + <span class="id" title="var">more</span> → <span class="id" title="var">bevar_occur</span> (<span class="id" title="var">nest_ex_aux</span> <span class="id" title="var">dbi</span> <span class="id" title="var">more</span> φ) <span class="id" title="var">x</span> = <span class="id" title="var">false</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">bsvar_occur_nest_mu</span> <span class="id" title="var">dbi</span> <span class="id" title="var">more</span> φ:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> <span class="id" title="var">x</span>, <span class="id" title="var">x</span> ≥ <span class="id" title="var">dbi</span> → <span class="id" title="var">x</span> &lt; <span class="id" title="var">dbi</span> + <span class="id" title="var">more</span> → <span class="id" title="var">bsvar_occur</span> (<span class="id" title="var">nest_mu_aux</span> <span class="id" title="var">dbi</span> <span class="id" title="var">more</span> φ) <span class="id" title="var">x</span> = <span class="id" title="var">false</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Corollary</span> <span class="id" title="var">not_bevar_occur_level_nest_ex_aux</span> <span class="id" title="keyword">level</span> <span class="id" title="var">more</span> <span class="id" title="var">ϕ</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">more</span> &gt; 0 →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">bevar_occur</span> (<span class="id" title="var">nest_ex_aux</span> <span class="id" title="keyword">level</span> <span class="id" title="var">more</span> <span class="id" title="var">ϕ</span>) <span class="id" title="keyword">level</span> = <span class="id" title="var">false</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Corollary</span> <span class="id" title="var">not_bsvar_occur_level_nest_mu_aux</span> <span class="id" title="keyword">level</span> <span class="id" title="var">more</span> <span class="id" title="var">ϕ</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">more</span> &gt; 0 →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">bsvar_occur</span> (<span class="id" title="var">nest_mu_aux</span> <span class="id" title="keyword">level</span> <span class="id" title="var">more</span> <span class="id" title="var">ϕ</span>) <span class="id" title="keyword">level</span> = <span class="id" title="var">false</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Corollary</span> <span class="id" title="var">not_bevar_occur_0_nest_ex</span> <span class="id" title="var">ϕ</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">bevar_occur</span> (<span class="id" title="var">nest_ex</span> <span class="id" title="var">ϕ</span>) 0 = <span class="id" title="var">false</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Corollary</span> <span class="id" title="var">not_bsvar_occur_0_nest_mu</span> <span class="id" title="var">ϕ</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">bsvar_occur</span> (<span class="id" title="var">nest_mu</span> <span class="id" title="var">ϕ</span>) 0 = <span class="id" title="var">false</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">nest_ex_aux_wfcex</span> <span class="id" title="keyword">level</span> <span class="id" title="var">more</span> <span class="id" title="var">ϕ</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_closed_ex_aux</span> <span class="id" title="var">ϕ</span> <span class="id" title="keyword">level</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">nest_ex_aux</span> <span class="id" title="keyword">level</span> <span class="id" title="var">more</span> <span class="id" title="var">ϕ</span> = <span class="id" title="var">ϕ</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">nest_mu_aux_wfcmu</span> <span class="id" title="keyword">level</span> <span class="id" title="var">more</span> <span class="id" title="var">ϕ</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_closed_mu_aux</span> <span class="id" title="var">ϕ</span> <span class="id" title="keyword">level</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">nest_mu_aux</span> <span class="id" title="keyword">level</span> <span class="id" title="var">more</span> <span class="id" title="var">ϕ</span> = <span class="id" title="var">ϕ</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">nest_ex_gt</span> : <span class="id" title="keyword">∀</span> φ <span class="id" title="var">dbi</span> <span class="id" title="var">dbi2</span> ψ <span class="id" title="var">more</span>, <span class="id" title="var">dbi2</span> ≥ <span class="id" title="var">dbi</span> → <span class="id" title="var">well_formed_closed</span> ψ →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">bevar_subst</span> (<span class="id" title="var">nest_ex_aux</span> <span class="id" title="var">dbi</span> <span class="id" title="var">more</span> φ) ψ (<span class="id" title="var">dbi2</span> + <span class="id" title="var">more</span>) = <span class="id" title="var">nest_ex_aux</span> <span class="id" title="var">dbi</span> <span class="id" title="var">more</span> (<span class="id" title="var">bevar_subst</span> φ ψ <span class="id" title="var">dbi2</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">nest_mu_gt</span> : <span class="id" title="keyword">∀</span> φ <span class="id" title="var">dbi</span> <span class="id" title="var">dbi2</span> ψ <span class="id" title="var">more</span>, <span class="id" title="var">dbi2</span> ≥ <span class="id" title="var">dbi</span> → <span class="id" title="var">well_formed_closed</span> ψ →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">bsvar_subst</span> (<span class="id" title="var">nest_mu_aux</span> <span class="id" title="var">dbi</span> <span class="id" title="var">more</span> φ) ψ (<span class="id" title="var">dbi2</span> + <span class="id" title="var">more</span>) = <span class="id" title="var">nest_mu_aux</span> <span class="id" title="var">dbi</span> <span class="id" title="var">more</span> (<span class="id" title="var">bsvar_subst</span> φ ψ <span class="id" title="var">dbi2</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">nest_ex_same_general</span> : <span class="id" title="keyword">∀</span> φ <span class="id" title="var">dbi</span> ψ <span class="id" title="var">more</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> <span class="id" title="var">x</span>,  <span class="id" title="var">x</span> ≥ <span class="id" title="var">dbi</span> → <span class="id" title="var">x</span> &lt; <span class="id" title="var">dbi</span> + <span class="id" title="var">more</span> → <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">bevar_subst</span> (<span class="id" title="var">nest_ex_aux</span> <span class="id" title="var">dbi</span> <span class="id" title="var">more</span> φ) ψ <span class="id" title="var">x</span> = <span class="id" title="var">nest_ex_aux</span> <span class="id" title="var">dbi</span> (<span class="id" title="var">pred</span> <span class="id" title="var">more</span>) φ.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">nest_mu_same_general</span> : <span class="id" title="keyword">∀</span> φ <span class="id" title="var">dbi</span> ψ <span class="id" title="var">more</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> <span class="id" title="var">x</span>,  <span class="id" title="var">x</span> ≥ <span class="id" title="var">dbi</span> → <span class="id" title="var">x</span> &lt; <span class="id" title="var">dbi</span> + <span class="id" title="var">more</span> → <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">bsvar_subst</span> (<span class="id" title="var">nest_mu_aux</span> <span class="id" title="var">dbi</span> <span class="id" title="var">more</span> φ) ψ <span class="id" title="var">x</span> = <span class="id" title="var">nest_mu_aux</span> <span class="id" title="var">dbi</span> (<span class="id" title="var">pred</span> <span class="id" title="var">more</span>) φ.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">nest_mu_aux_0</span> <span class="id" title="keyword">level</span> <span class="id" title="var">p</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">nest_mu_aux</span> <span class="id" title="keyword">level</span> 0 <span class="id" title="var">p</span> = <span class="id" title="var">p</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">nest_ex_aux_0</span> <span class="id" title="keyword">level</span> <span class="id" title="var">p</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">nest_ex_aux</span> <span class="id" title="keyword">level</span> 0 <span class="id" title="var">p</span> = <span class="id" title="var">p</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Corollary</span> <span class="id" title="var">nest_ex_same</span> : <span class="id" title="keyword">∀</span> φ <span class="id" title="var">dbi</span> ψ,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">bevar_subst</span> (<span class="id" title="var">nest_ex_aux</span> <span class="id" title="var">dbi</span> 1 φ) ψ <span class="id" title="var">dbi</span> = φ.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Corollary</span> <span class="id" title="var">nest_mu_same</span> : <span class="id" title="keyword">∀</span> φ <span class="id" title="var">dbi</span> ψ,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">bsvar_subst</span> (<span class="id" title="var">nest_mu_aux</span> <span class="id" title="var">dbi</span> 1 φ) ψ <span class="id" title="var">dbi</span> = φ.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">fuse_nest_ex</span> <span class="id" title="var">n</span> <span class="id" title="var">more</span> <span class="id" title="var">more'</span> <span class="id" title="var">p</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> <span class="id" title="var">x</span>, <span class="id" title="var">x</span> ≤ <span class="id" title="var">more</span> → <span class="id" title="var">nest_ex_aux</span> (<span class="id" title="var">n</span> + <span class="id" title="var">x</span>) <span class="id" title="var">more'</span> (<span class="id" title="var">nest_ex_aux</span> <span class="id" title="var">n</span> <span class="id" title="var">more</span> <span class="id" title="var">p</span>) = <span class="id" title="var">nest_ex_aux</span> <span class="id" title="var">n</span> (<span class="id" title="var">more</span> + <span class="id" title="var">more'</span>) <span class="id" title="var">p</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">fuse_nest_mu</span> <span class="id" title="var">n</span> <span class="id" title="var">more</span> <span class="id" title="var">more'</span> <span class="id" title="var">p</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> <span class="id" title="var">x</span>, <span class="id" title="var">x</span> ≤ <span class="id" title="var">more</span> → <span class="id" title="var">nest_mu_aux</span> (<span class="id" title="var">n</span> + <span class="id" title="var">x</span>) <span class="id" title="var">more'</span> (<span class="id" title="var">nest_mu_aux</span> <span class="id" title="var">n</span> <span class="id" title="var">more</span> <span class="id" title="var">p</span>) = <span class="id" title="var">nest_mu_aux</span> <span class="id" title="var">n</span> (<span class="id" title="var">more</span> + <span class="id" title="var">more'</span>) <span class="id" title="var">p</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Corollary</span> <span class="id" title="var">fuse_nest_ex_same</span> <span class="id" title="var">n</span> <span class="id" title="var">more</span> <span class="id" title="var">more'</span> <span class="id" title="var">p</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">nest_ex_aux</span> <span class="id" title="var">n</span> <span class="id" title="var">more'</span> (<span class="id" title="var">nest_ex_aux</span> <span class="id" title="var">n</span> <span class="id" title="var">more</span> <span class="id" title="var">p</span>) = <span class="id" title="var">nest_ex_aux</span> <span class="id" title="var">n</span> (<span class="id" title="var">more</span> + <span class="id" title="var">more'</span>) <span class="id" title="var">p</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Corollary</span> <span class="id" title="var">fuse_nest_mu_same</span> <span class="id" title="var">n</span> <span class="id" title="var">more</span> <span class="id" title="var">more'</span> <span class="id" title="var">p</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">nest_mu_aux</span> <span class="id" title="var">n</span> <span class="id" title="var">more'</span> (<span class="id" title="var">nest_mu_aux</span> <span class="id" title="var">n</span> <span class="id" title="var">more</span> <span class="id" title="var">p</span>) = <span class="id" title="var">nest_mu_aux</span> <span class="id" title="var">n</span> (<span class="id" title="var">more</span> + <span class="id" title="var">more'</span>) <span class="id" title="var">p</span>.<br/>
+
+<br/>
+&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">bsvar_subst_nest_ex_aux_comm</span> <span class="id" title="keyword">level</span> <span class="id" title="var">more</span> <span class="id" title="var">ϕ</span> <span class="id" title="var">dbi</span> ψ:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_closed_ex_aux</span> ψ <span class="id" title="keyword">level</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">bsvar_subst</span> (<span class="id" title="var">nest_ex_aux</span> <span class="id" title="keyword">level</span> <span class="id" title="var">more</span> <span class="id" title="var">ϕ</span>) ψ <span class="id" title="var">dbi</span> = <span class="id" title="var">nest_ex_aux</span> <span class="id" title="keyword">level</span> <span class="id" title="var">more</span> (<span class="id" title="var">bsvar_subst</span> <span class="id" title="var">ϕ</span> ψ <span class="id" title="var">dbi</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">svar_open_nest_ex_aux_comm</span> <span class="id" title="keyword">level</span> <span class="id" title="var">more</span> <span class="id" title="var">ϕ</span> <span class="id" title="var">dbi</span> <span class="id" title="var">X</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">svar_open</span> <span class="id" title="var">dbi</span> <span class="id" title="var">X</span> (<span class="id" title="var">nest_ex_aux</span> <span class="id" title="keyword">level</span> <span class="id" title="var">more</span> <span class="id" title="var">ϕ</span>) = <span class="id" title="var">nest_ex_aux</span> <span class="id" title="keyword">level</span> <span class="id" title="var">more</span> (<span class="id" title="var">svar_open</span> <span class="id" title="var">dbi</span> <span class="id" title="var">X</span> <span class="id" title="var">ϕ</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">bevar_subst_nest_mu_aux_comm</span> <span class="id" title="keyword">level</span> <span class="id" title="var">more</span> <span class="id" title="var">ϕ</span> <span class="id" title="var">dbi</span> ψ:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_closed_mu_aux</span> ψ <span class="id" title="keyword">level</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">bevar_subst</span> (<span class="id" title="var">nest_mu_aux</span> <span class="id" title="keyword">level</span> <span class="id" title="var">more</span> <span class="id" title="var">ϕ</span>) ψ <span class="id" title="var">dbi</span> = <span class="id" title="var">nest_mu_aux</span> <span class="id" title="keyword">level</span> <span class="id" title="var">more</span> (<span class="id" title="var">bevar_subst</span> <span class="id" title="var">ϕ</span> ψ <span class="id" title="var">dbi</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">evar_open_nest_mu_aux_comm</span> <span class="id" title="keyword">level</span> <span class="id" title="var">more</span> <span class="id" title="var">ϕ</span> <span class="id" title="var">dbi</span> <span class="id" title="var">X</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">evar_open</span> <span class="id" title="var">dbi</span> <span class="id" title="var">X</span> (<span class="id" title="var">nest_mu_aux</span> <span class="id" title="keyword">level</span> <span class="id" title="var">more</span> <span class="id" title="var">ϕ</span>) = <span class="id" title="var">nest_mu_aux</span> <span class="id" title="keyword">level</span> <span class="id" title="var">more</span> (<span class="id" title="var">evar_open</span> <span class="id" title="var">dbi</span> <span class="id" title="var">X</span> <span class="id" title="var">ϕ</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">free_svars_nest_ex_aux</span> <span class="id" title="var">dbi</span> <span class="id" title="var">more</span> <span class="id" title="var">ϕ</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">free_svars</span> (<span class="id" title="var">nest_ex_aux</span> <span class="id" title="var">dbi</span> <span class="id" title="var">more</span> <span class="id" title="var">ϕ</span>) = <span class="id" title="var">free_svars</span> <span class="id" title="var">ϕ</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">free_evars_nest_mu_aux</span> <span class="id" title="var">dbi</span> <span class="id" title="var">more</span> <span class="id" title="var">ϕ</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">free_evars</span> (<span class="id" title="var">nest_mu_aux</span> <span class="id" title="var">dbi</span> <span class="id" title="var">more</span> <span class="id" title="var">ϕ</span>) = <span class="id" title="var">free_evars</span> <span class="id" title="var">ϕ</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">free_evars_nest_ex_aux</span> <span class="id" title="var">dbi</span> <span class="id" title="var">more</span> <span class="id" title="var">ϕ</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">free_evars</span> (<span class="id" title="var">nest_ex_aux</span> <span class="id" title="var">dbi</span> <span class="id" title="var">more</span> <span class="id" title="var">ϕ</span>) = <span class="id" title="var">free_evars</span> <span class="id" title="var">ϕ</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Corollary</span> <span class="id" title="var">free_evars_nest_ex</span> <span class="id" title="var">ϕ</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">free_evars</span> (<span class="id" title="var">nest_ex</span> <span class="id" title="var">ϕ</span>) = <span class="id" title="var">free_evars</span> <span class="id" title="var">ϕ</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">free_svars_nest_mu_aux</span> <span class="id" title="var">dbi</span> <span class="id" title="var">more</span> <span class="id" title="var">ϕ</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">free_svars</span> (<span class="id" title="var">nest_mu_aux</span> <span class="id" title="var">dbi</span> <span class="id" title="var">more</span> <span class="id" title="var">ϕ</span>) = <span class="id" title="var">free_svars</span> <span class="id" title="var">ϕ</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Corollary</span> <span class="id" title="var">free_svars_nest_mu</span> <span class="id" title="var">ϕ</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">free_svars</span> (<span class="id" title="var">nest_mu</span> <span class="id" title="var">ϕ</span>) = <span class="id" title="var">free_svars</span> <span class="id" title="var">ϕ</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Corollary</span> <span class="id" title="var">fresh_svar_nest_ex_aux</span> <span class="id" title="var">dbi</span> <span class="id" title="var">more</span> <span class="id" title="var">ϕ</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">fresh_svar</span> (<span class="id" title="var">nest_ex_aux</span> <span class="id" title="var">dbi</span> <span class="id" title="var">more</span> <span class="id" title="var">ϕ</span>) = <span class="id" title="var">fresh_svar</span> <span class="id" title="var">ϕ</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Corollary</span> <span class="id" title="var">fresh_evar_nest_mu_aux</span> <span class="id" title="var">dbi</span> <span class="id" title="var">more</span> <span class="id" title="var">ϕ</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">fresh_evar</span> (<span class="id" title="var">nest_mu_aux</span> <span class="id" title="var">dbi</span> <span class="id" title="var">more</span> <span class="id" title="var">ϕ</span>) = <span class="id" title="var">fresh_evar</span> <span class="id" title="var">ϕ</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Corollary</span> <span class="id" title="var">fresh_evar_nest_ex_aux</span> <span class="id" title="var">dbi</span> <span class="id" title="var">more</span> <span class="id" title="var">ϕ</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">fresh_evar</span> (<span class="id" title="var">nest_ex_aux</span> <span class="id" title="var">dbi</span> <span class="id" title="var">more</span> <span class="id" title="var">ϕ</span>) = <span class="id" title="var">fresh_evar</span> <span class="id" title="var">ϕ</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Corollary</span> <span class="id" title="var">fresh_svar_nest_mu_aux</span> <span class="id" title="var">dbi</span> <span class="id" title="var">more</span> <span class="id" title="var">ϕ</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">fresh_svar</span> (<span class="id" title="var">nest_mu_aux</span> <span class="id" title="var">dbi</span> <span class="id" title="var">more</span> <span class="id" title="var">ϕ</span>) = <span class="id" title="var">fresh_svar</span> <span class="id" title="var">ϕ</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Corollary</span> <span class="id" title="var">svar_open_nest_ex_comm</span> <span class="id" title="var">ϕ</span> <span class="id" title="var">dbi</span> <span class="id" title="var">X</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">svar_open</span> <span class="id" title="var">dbi</span> <span class="id" title="var">X</span> (<span class="id" title="var">nest_ex</span> <span class="id" title="var">ϕ</span>) = <span class="id" title="var">nest_ex</span> (<span class="id" title="var">svar_open</span> <span class="id" title="var">dbi</span> <span class="id" title="var">X</span> <span class="id" title="var">ϕ</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Corollary</span> <span class="id" title="var">evar_open_nest_mu_comm</span> <span class="id" title="var">ϕ</span> <span class="id" title="var">dbi</span> <span class="id" title="var">X</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">evar_open</span> <span class="id" title="var">dbi</span> <span class="id" title="var">X</span> (<span class="id" title="var">nest_mu</span> <span class="id" title="var">ϕ</span>) = <span class="id" title="var">nest_mu</span> (<span class="id" title="var">evar_open</span> <span class="id" title="var">dbi</span> <span class="id" title="var">X</span> <span class="id" title="var">ϕ</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">wfc_mu_nest_mu</span> <span class="id" title="var">psi</span> <span class="id" title="keyword">level</span> <span class="id" title="var">level'</span> <span class="id" title="var">more</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_closed_mu_aux</span> <span class="id" title="var">psi</span> <span class="id" title="keyword">level</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_closed_mu_aux</span> (<span class="id" title="var">nest_mu_aux</span> <span class="id" title="var">level'</span> <span class="id" title="var">more</span> <span class="id" title="var">psi</span>) (<span class="id" title="keyword">level</span>+<span class="id" title="var">more</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">Private_positive_negative_occurrence_db_nest_mu_aux</span> <span class="id" title="var">dbi</span> <span class="id" title="keyword">level</span> <span class="id" title="var">more</span> <span class="id" title="var">ϕ</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">no_negative_occurrence_db_b</span> <span class="id" title="var">dbi</span> (<span class="id" title="var">nest_mu_aux</span> <span class="id" title="keyword">level</span> <span class="id" title="var">more</span> <span class="id" title="var">ϕ</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= <span class="id" title="keyword">if</span> <span class="id" title="var">decide</span> (<span class="id" title="var">dbi</span> &lt; <span class="id" title="keyword">level</span>) <span class="id" title="keyword">is</span> <span class="id" title="tactic">left</span> <span class="id" title="var">_</span> <span class="id" title="keyword">then</span> <span class="id" title="var">no_negative_occurrence_db_b</span> <span class="id" title="var">dbi</span> <span class="id" title="var">ϕ</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">else</span> <span class="id" title="keyword">if</span> <span class="id" title="var">decide</span> (<span class="id" title="var">dbi</span> &lt; <span class="id" title="keyword">level</span> + <span class="id" title="var">more</span>) <span class="id" title="keyword">is</span> <span class="id" title="tactic">left</span> <span class="id" title="var">_</span> <span class="id" title="keyword">then</span> <span class="id" title="var">true</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">else</span> <span class="id" title="var">no_negative_occurrence_db_b</span> (<span class="id" title="var">dbi</span>-<span class="id" title="var">more</span>) <span class="id" title="var">ϕ</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;) ∧ (<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">no_positive_occurrence_db_b</span> <span class="id" title="var">dbi</span> (<span class="id" title="var">nest_mu_aux</span> <span class="id" title="keyword">level</span> <span class="id" title="var">more</span> <span class="id" title="var">ϕ</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= <span class="id" title="keyword">if</span> <span class="id" title="var">decide</span> (<span class="id" title="var">dbi</span> &lt; <span class="id" title="keyword">level</span>) <span class="id" title="keyword">is</span> <span class="id" title="tactic">left</span> <span class="id" title="var">_</span> <span class="id" title="keyword">then</span> <span class="id" title="var">no_positive_occurrence_db_b</span> <span class="id" title="var">dbi</span> <span class="id" title="var">ϕ</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">else</span> <span class="id" title="keyword">if</span> <span class="id" title="var">decide</span> (<span class="id" title="var">dbi</span> &lt; <span class="id" title="keyword">level</span> + <span class="id" title="var">more</span>) <span class="id" title="keyword">is</span> <span class="id" title="tactic">left</span> <span class="id" title="var">_</span> <span class="id" title="keyword">then</span> <span class="id" title="var">true</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">else</span> <span class="id" title="var">no_positive_occurrence_db_b</span> (<span class="id" title="var">dbi</span>-<span class="id" title="var">more</span>) <span class="id" title="var">ϕ</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;).<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">no_negative_occurrence_db_nest_mu_aux</span> <span class="id" title="var">dbi</span> <span class="id" title="keyword">level</span> <span class="id" title="var">more</span> <span class="id" title="var">ϕ</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">no_negative_occurrence_db_b</span> <span class="id" title="var">dbi</span> (<span class="id" title="var">nest_mu_aux</span> <span class="id" title="keyword">level</span> <span class="id" title="var">more</span> <span class="id" title="var">ϕ</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= <span class="id" title="keyword">if</span> <span class="id" title="var">decide</span> (<span class="id" title="var">dbi</span> &lt; <span class="id" title="keyword">level</span>) <span class="id" title="keyword">is</span> <span class="id" title="tactic">left</span> <span class="id" title="var">_</span> <span class="id" title="keyword">then</span> <span class="id" title="var">no_negative_occurrence_db_b</span> <span class="id" title="var">dbi</span> <span class="id" title="var">ϕ</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">else</span> <span class="id" title="keyword">if</span> <span class="id" title="var">decide</span> (<span class="id" title="var">dbi</span> &lt; <span class="id" title="keyword">level</span> + <span class="id" title="var">more</span>) <span class="id" title="keyword">is</span> <span class="id" title="tactic">left</span> <span class="id" title="var">_</span> <span class="id" title="keyword">then</span> <span class="id" title="var">true</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">else</span> <span class="id" title="var">no_negative_occurrence_db_b</span> (<span class="id" title="var">dbi</span>-<span class="id" title="var">more</span>) <span class="id" title="var">ϕ</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">no_positive_occurrence_db_nest_mu_aux</span> <span class="id" title="var">dbi</span> <span class="id" title="keyword">level</span> <span class="id" title="var">more</span> <span class="id" title="var">ϕ</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">no_positive_occurrence_db_b</span> <span class="id" title="var">dbi</span> (<span class="id" title="var">nest_mu_aux</span> <span class="id" title="keyword">level</span> <span class="id" title="var">more</span> <span class="id" title="var">ϕ</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= <span class="id" title="keyword">if</span> <span class="id" title="var">decide</span> (<span class="id" title="var">dbi</span> &lt; <span class="id" title="keyword">level</span>) <span class="id" title="keyword">is</span> <span class="id" title="tactic">left</span> <span class="id" title="var">_</span> <span class="id" title="keyword">then</span> <span class="id" title="var">no_positive_occurrence_db_b</span> <span class="id" title="var">dbi</span> <span class="id" title="var">ϕ</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">else</span> <span class="id" title="keyword">if</span> <span class="id" title="var">decide</span> (<span class="id" title="var">dbi</span> &lt; <span class="id" title="keyword">level</span> + <span class="id" title="var">more</span>) <span class="id" title="keyword">is</span> <span class="id" title="tactic">left</span> <span class="id" title="var">_</span> <span class="id" title="keyword">then</span> <span class="id" title="var">true</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">else</span> <span class="id" title="var">no_positive_occurrence_db_b</span> (<span class="id" title="var">dbi</span>-<span class="id" title="var">more</span>) <span class="id" title="var">ϕ</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">well_formed_positive_nest_mu_aux</span> <span class="id" title="keyword">level</span> <span class="id" title="var">more</span> <span class="id" title="var">ϕ</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_positive</span> (<span class="id" title="var">nest_mu_aux</span> <span class="id" title="keyword">level</span> <span class="id" title="var">more</span> <span class="id" title="var">ϕ</span>) = <span class="id" title="var">well_formed_positive</span> <span class="id" title="var">ϕ</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">simpl_free_evars</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(@<span class="id" title="var">left_id_L</span> <span class="id" title="var">EVarSet</span>  ∅ (@<span class="id" title="var">union</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span>)),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(@<span class="id" title="var">right_id_L</span> <span class="id" title="var">EVarSet</span> ∅ (@<span class="id" title="var">union</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span>)),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;@<span class="id" title="var">free_evars_nest_ex_aux</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;@<span class="id" title="var">nest_ex_same</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;@<span class="id" title="var">free_evars_nest_ex</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">simpl_free_svars</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(@<span class="id" title="var">left_id_L</span> <span class="id" title="var">SVarSet</span>  ∅ (@<span class="id" title="var">union</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span>)),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(@<span class="id" title="var">right_id_L</span> <span class="id" title="var">SVarSet</span> ∅ (@<span class="id" title="var">union</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span>)),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;@<span class="id" title="var">free_svars_nest_mu_aux</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;@<span class="id" title="var">nest_mu_same</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;@<span class="id" title="var">free_svars_nest_mu</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;).<br/>
+
+<br/>
+<span class="id" title="keyword">End</span> <span class="id" title="var">index_manipulation</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Tactic Notation</span> "solve_free_evars_inclusion" <span class="id" title="var">int_or_var</span>(<span class="id" title="var">depth</span>) :=<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">simpl</span>;<br/>
+&nbsp;&nbsp;(<span class="id" title="tactic">do</span> ? [<span class="id" title="tactic">rewrite</span> <span class="id" title="var">simpl_free_evars</span>/=]) ;<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">auto</span>;<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">clear</span>;<br/>
+&nbsp;&nbsp;<span class="id" title="var">set_solver</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Tactic Notation</span> "solve_free_svars_inclusion" <span class="id" title="var">int_or_var</span>(<span class="id" title="var">depth</span>) :=<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">simpl</span>;<br/>
+&nbsp;&nbsp;(<span class="id" title="tactic">do</span> ? [<span class="id" title="tactic">rewrite</span> <span class="id" title="var">simpl_free_svars</span>/=]) ;<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">auto</span>;<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">clear</span>;<br/>
+&nbsp;&nbsp;<span class="id" title="var">set_solver</span>.<br/>
+</div>
+<hr/>This page has been generated by <a href="http://coq.inria.fr/">coqdoc</a>
+</div>
+
+</div>
+
+</body>
+</html>

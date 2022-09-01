@@ -1,0 +1,359 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link href="coqdoc.css" rel="stylesheet" type="text/css" />
+<title>PrePredicate</title>
+</head>
+
+<body>
+
+<div id="page">
+
+<div id="header">
+</div>
+
+<div id="main">
+
+<h1 class="libtitle">File PrePredicate</h1>
+
+<div class="code">
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">ssreflect</span> <span class="id" title="var">ssrfun</span> <span class="id" title="var">ssrbool</span>.<br/>
+<span class="id" title="keyword">Set Implicit Arguments</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq.Logic</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">FunctionalExtensionality</span> <span class="id" title="var">PropExtensionality</span> <span class="id" title="var">Classical_Pred_Type</span> <span class="id" title="var">Classical_Prop</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq.micromega</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Lia</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq.Program</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Wf</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="keyword">Equations</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="keyword">Equations</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">stdpp</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">base</span> <span class="id" title="var">fin_sets</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">stdpp</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">pmap</span> <span class="id" title="var">gmap</span> <span class="id" title="var">mapset</span> <span class="id" title="var">fin_sets</span> <span class="id" title="var">sets</span> <span class="id" title="var">propset</span> <span class="id" title="var">list_numbers</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">MatchingLogic.Utils</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Lattice</span> <span class="id" title="var">stdpp_ext</span> <span class="id" title="var">extralibrary</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">MatchingLogic</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Syntax</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">Freshness</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">NamedAxioms</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">IndexManipulation</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">Semantics</span><br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Import</span> <span class="id" title="var">MatchingLogic.Syntax.Notations</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Inductive</span> <span class="id" title="var">closure_increasing</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} : (<span class="id" title="var">list</span> (<span class="id" title="var">prod</span> <span class="id" title="var">db_index</span> <span class="id" title="tactic">evar</span>)) → <span class="id" title="keyword">Prop</span> :=<br/>
+| <span class="id" title="var">ci_nil</span> : <span class="id" title="var">closure_increasing</span> []<br/>
+| <span class="id" title="var">ci_single</span><br/>
+&nbsp;&nbsp;(<span class="id" title="var">k0</span> : <span class="id" title="var">db_index</span>)<br/>
+&nbsp;&nbsp;(<span class="id" title="var">x0</span> : <span class="id" title="tactic">evar</span>) :<br/>
+&nbsp;&nbsp;<span class="id" title="var">closure_increasing</span> [(<span class="id" title="var">k0</span>,<span class="id" title="var">x0</span>)]<br/>
+| <span class="id" title="var">ci_cons</span><br/>
+&nbsp;&nbsp;(<span class="id" title="var">k0</span> <span class="id" title="var">k1</span> : <span class="id" title="var">db_index</span>)<br/>
+&nbsp;&nbsp;(<span class="id" title="var">x0</span> <span class="id" title="var">x1</span> : <span class="id" title="tactic">evar</span>)<br/>
+&nbsp;&nbsp;(<span class="id" title="var">l</span> : <span class="id" title="var">list</span> (<span class="id" title="var">prod</span> <span class="id" title="var">db_index</span> <span class="id" title="tactic">evar</span>)) :<br/>
+&nbsp;&nbsp;<span class="id" title="var">k0</span> ≤ <span class="id" title="var">k1</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">closure_increasing</span> ((<span class="id" title="var">k1</span>,<span class="id" title="var">x1</span>)::<span class="id" title="var">l</span>) →<br/>
+&nbsp;&nbsp;<span class="id" title="var">closure_increasing</span> ((<span class="id" title="var">k0</span>,<span class="id" title="var">x0</span>)::(<span class="id" title="var">k1</span>,<span class="id" title="var">x1</span>)::<span class="id" title="var">l</span>)<br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">M_pre_pre_predicate</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} (<span class="id" title="var">k</span> : <span class="id" title="var">db_index</span>) (<span class="id" title="var">M</span> : <span class="id" title="var">Model</span>) (<span class="id" title="var">ϕ</span> : <span class="id" title="var">Pattern</span>) : <span class="id" title="keyword">Prop</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> (<span class="id" title="var">l</span> : <span class="id" title="var">list</span> (<span class="id" title="var">prod</span> <span class="id" title="var">db_index</span> <span class="id" title="tactic">evar</span>)),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Forall</span> (<span class="id" title="var">λ</span> <span class="id" title="var">p</span>, <span class="id" title="var">p</span>.1 ≤ <span class="id" title="var">k</span>) <span class="id" title="var">l</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">closure_increasing</span> <span class="id" title="var">l</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_closed_ex_aux</span> (<span class="id" title="var">bcmcloseex</span> <span class="id" title="var">l</span> <span class="id" title="var">ϕ</span>) 0 →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">M_predicate</span> <span class="id" title="var">M</span> (<span class="id" title="var">bcmcloseex</span> <span class="id" title="var">l</span> <span class="id" title="var">ϕ</span>).<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">pre_predicate_S</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} (<span class="id" title="var">k</span> : <span class="id" title="var">db_index</span>) (<span class="id" title="var">M</span> : <span class="id" title="var">Model</span>) (<span class="id" title="var">ϕ</span> : <span class="id" title="var">Pattern</span>) :<br/>
+&nbsp;&nbsp;<span class="id" title="var">M_pre_pre_predicate</span> (<span class="id" title="var">S</span> <span class="id" title="var">k</span>) <span class="id" title="var">M</span> <span class="id" title="var">ϕ</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">M_pre_pre_predicate</span> <span class="id" title="var">k</span> <span class="id" title="var">M</span> <span class="id" title="var">ϕ</span>.<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">closing_list_weight</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} (<span class="id" title="var">l</span> : <span class="id" title="var">list</span> (<span class="id" title="var">prod</span> <span class="id" title="var">db_index</span> <span class="id" title="tactic">evar</span>)) : <span class="id" title="var">nat</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="var">sum_list_with</span> <span class="id" title="var">fst</span> <span class="id" title="var">l</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">drop_weight</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} (<span class="id" title="var">dummy_x</span> : <span class="id" title="tactic">evar</span>) (<span class="id" title="var">idx</span> : <span class="id" title="var">nat</span>) (<span class="id" title="var">l</span> : <span class="id" title="var">list</span> (<span class="id" title="var">prod</span> <span class="id" title="var">db_index</span> <span class="id" title="tactic">evar</span>)) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">closing_list_weight</span> <span class="id" title="var">l</span> ≥ <span class="id" title="var">closing_list_weight</span> (<span class="id" title="var">drop</span> <span class="id" title="var">idx</span> <span class="id" title="var">l</span>).<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">closure_increasing_map_pred</span><br/>
+&nbsp;&nbsp;{<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>}<br/>
+&nbsp;&nbsp;(<span class="id" title="var">l</span> : <span class="id" title="var">list</span> (<span class="id" title="var">prod</span> <span class="id" title="var">db_index</span> <span class="id" title="tactic">evar</span>))<br/>
+&nbsp;&nbsp;:<br/>
+&nbsp;&nbsp;<span class="id" title="var">Forall</span> (<span class="id" title="var">λ</span> <span class="id" title="var">p</span>, <span class="id" title="var">p</span>.1 &gt; 0) <span class="id" title="var">l</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">closure_increasing</span> <span class="id" title="var">l</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">closure_increasing</span> (<span class="id" title="var">map</span> (<span class="id" title="var">λ</span> <span class="id" title="var">p</span>, (<span class="id" title="var">Nat.pred</span> <span class="id" title="var">p</span>.1, <span class="id" title="var">p</span>.2)) <span class="id" title="var">l</span>).<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">closure_increasing_map_S</span><br/>
+&nbsp;&nbsp;{<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>}<br/>
+&nbsp;&nbsp;(<span class="id" title="var">l</span> : <span class="id" title="var">list</span> (<span class="id" title="var">prod</span> <span class="id" title="var">db_index</span> <span class="id" title="tactic">evar</span>))<br/>
+&nbsp;&nbsp;:<br/>
+&nbsp;&nbsp;<span class="id" title="var">closure_increasing</span> <span class="id" title="var">l</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">closure_increasing</span> (<span class="id" title="var">map</span> (<span class="id" title="var">λ</span> <span class="id" title="var">p</span>, (<span class="id" title="var">S</span> <span class="id" title="var">p</span>.1, <span class="id" title="var">p</span>.2)) <span class="id" title="var">l</span>).<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">lower_closing_list</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} (<span class="id" title="var">x</span> : <span class="id" title="tactic">evar</span>) (<span class="id" title="var">l</span> : <span class="id" title="var">list</span> (<span class="id" title="var">prod</span> <span class="id" title="var">db_index</span> <span class="id" title="tactic">evar</span>))<br/>
+:= (0,<span class="id" title="var">x</span>)::(<span class="id" title="var">map</span> (<span class="id" title="var">λ</span> <span class="id" title="var">p</span>, (<span class="id" title="var">Nat.pred</span> <span class="id" title="var">p</span>.1, <span class="id" title="var">p</span>.2)) <span class="id" title="var">l</span>).<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">closure_increasing_lower_closing_list</span><br/>
+&nbsp;&nbsp;{<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>}<br/>
+&nbsp;&nbsp;(<span class="id" title="var">dummy_x</span> : <span class="id" title="tactic">evar</span>)<br/>
+&nbsp;&nbsp;(<span class="id" title="var">l</span> : <span class="id" title="var">list</span> (<span class="id" title="var">prod</span> <span class="id" title="var">db_index</span> <span class="id" title="tactic">evar</span>))<br/>
+&nbsp;&nbsp;:<br/>
+&nbsp;&nbsp;<span class="id" title="var">closure_increasing</span> <span class="id" title="var">l</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">closure_increasing</span> (<span class="id" title="var">lower_closing_list</span> <span class="id" title="var">dummy_x</span> <span class="id" title="var">l</span>).<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">lower_closing_list_weight</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} (<span class="id" title="var">x</span> : <span class="id" title="tactic">evar</span>) (<span class="id" title="var">l</span> : <span class="id" title="var">list</span> (<span class="id" title="var">prod</span> <span class="id" title="var">db_index</span> <span class="id" title="tactic">evar</span>)) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">closing_list_weight</span> <span class="id" title="var">l</span> ≥ <span class="id" title="var">closing_list_weight</span> (<span class="id" title="var">lower_closing_list</span> <span class="id" title="var">x</span> <span class="id" title="var">l</span>).<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">lower_closing_list_same</span><br/>
+&nbsp;&nbsp;{<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>}<br/>
+&nbsp;&nbsp;(<span class="id" title="var">x</span> : <span class="id" title="tactic">evar</span>)<br/>
+&nbsp;&nbsp;(<span class="id" title="var">l</span> : <span class="id" title="var">list</span> (<span class="id" title="var">prod</span> <span class="id" title="var">db_index</span> <span class="id" title="tactic">evar</span>))<br/>
+&nbsp;&nbsp;(<span class="id" title="var">ϕ</span> : <span class="id" title="var">Pattern</span>)<br/>
+&nbsp;&nbsp;:<br/>
+&nbsp;&nbsp;<span class="id" title="var">bevar_occur</span> <span class="id" title="var">ϕ</span> 0 = <span class="id" title="var">false</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">Forall</span> (<span class="id" title="var">λ</span> <span class="id" title="var">p</span>, <span class="id" title="var">p</span>.1 &gt; 0) <span class="id" title="var">l</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed_closed_ex_aux</span> (<span class="id" title="var">bcmcloseex</span> <span class="id" title="var">l</span> <span class="id" title="var">ϕ</span>) 0 →<br/>
+&nbsp;&nbsp;<span class="id" title="var">bcmcloseex</span> (<span class="id" title="var">lower_closing_list</span> <span class="id" title="var">x</span> <span class="id" title="var">l</span>) <span class="id" title="var">ϕ</span> = <span class="id" title="var">bcmcloseex</span> <span class="id" title="var">l</span> <span class="id" title="var">ϕ</span>.<br/>
+
+<br/>
+<span class="comment">(*<br/>
+Fixpoint&nbsp;lower_closing_list_iter&nbsp;{Σ&nbsp;:&nbsp;Signature}&nbsp;(k&nbsp;:&nbsp;nat)&nbsp;(x&nbsp;:&nbsp;evar)&nbsp;(l&nbsp;:&nbsp;list&nbsp;(prod&nbsp;db_index&nbsp;evar))<br/>
+:=<br/>
+match&nbsp;k&nbsp;with<br/>
+|&nbsp;0&nbsp;=&gt;&nbsp;l<br/>
+|&nbsp;(S&nbsp;k')&nbsp;=&gt;&nbsp;lower_closing_list_iter&nbsp;k'&nbsp;x&nbsp;(lower_closing_list&nbsp;x&nbsp;l)<br/>
+end.<br/>
+<br/>
+Lemma&nbsp;lower_closing_list_iter_same<br/>
+&nbsp;&nbsp;{Σ&nbsp;:&nbsp;Signature}<br/>
+&nbsp;&nbsp;(k&nbsp;:&nbsp;nat)<br/>
+&nbsp;&nbsp;(x&nbsp;:&nbsp;evar)<br/>
+&nbsp;&nbsp;(l&nbsp;:&nbsp;list&nbsp;(prod&nbsp;db_index&nbsp;evar))<br/>
+&nbsp;&nbsp;(ϕ&nbsp;:&nbsp;Pattern)<br/>
+:<br/>
+&nbsp;&nbsp;bcmcloseex&nbsp;(lower_closing_list_iter&nbsp;k&nbsp;x&nbsp;l)&nbsp;ϕ&nbsp;=&nbsp;bcmcloseex&nbsp;l&nbsp;ϕ.<br/>
+Proof.&nbsp;Abort.<br/>
+*)</span><br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">list_find_dep</span> {<span class="id" title="var">A</span>} <span class="id" title="var">P</span> `{∀ <span class="id" title="var">x</span>, <span class="id" title="var">Decision</span> (<span class="id" title="var">P</span> <span class="id" title="var">x</span>)} (<span class="id" title="var">l</span> : <span class="id" title="var">list</span> <span class="id" title="var">A</span>) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;({<span class="id" title="var">p</span> : (<span class="id" title="var">nat</span>×<span class="id" title="var">A</span>)%<span class="id" title="keyword">type</span> &amp; (<span class="id" title="var">l</span> !! <span class="id" title="var">p</span>.1 = <span class="id" title="var">Some</span> <span class="id" title="var">p</span>.2 ∧ <span class="id" title="var">P</span> <span class="id" title="var">p</span>.2 ∧ ∀ <span class="id" title="var">j</span> <span class="id" title="var">y</span>, <span class="id" title="var">l</span> !! <span class="id" title="var">j</span> = <span class="id" title="var">Some</span> <span class="id" title="var">y</span> → <span class="id" title="var">j</span> &lt; <span class="id" title="var">p</span>.1 → ¬<span class="id" title="var">P</span> <span class="id" title="var">y</span>) }<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;+ (<span class="id" title="var">Forall</span> (<span class="id" title="var">λ</span> <span class="id" title="var">x</span>, ¬<span class="id" title="var">P</span> <span class="id" title="var">x</span>) <span class="id" title="var">l</span>))%<span class="id" title="keyword">type</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Equations</span>? <span class="id" title="var">make_zero_list</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">dummy_x</span> : <span class="id" title="tactic">evar</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">l</span> : <span class="id" title="var">list</span> (<span class="id" title="var">prod</span> <span class="id" title="var">db_index</span> <span class="id" title="tactic">evar</span>))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;: (<span class="id" title="var">list</span> (<span class="id" title="var">prod</span> <span class="id" title="var">db_index</span> <span class="id" title="tactic">evar</span>))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">by</span> <span class="id" title="keyword">wf</span> (<span class="id" title="var">closing_list_weight</span> <span class="id" title="var">l</span>) <span class="id" title="var">lt</span><br/>
+:=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">make_zero_list</span> <span class="id" title="var">dummy_x</span> <span class="id" title="var">l</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">with</span> (@<span class="id" title="var">list_find_dep</span> <span class="id" title="var">_</span> (<span class="id" title="var">λ</span> <span class="id" title="var">p</span>, <span class="id" title="var">p</span>.1 ≠ 0) <span class="id" title="var">_</span> <span class="id" title="var">l</span>) ⇒ {<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">inr</span> <span class="id" title="var">_</span> ⇒ <span class="id" title="var">l</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">inl</span> (<span class="id" title="var">existT</span> <span class="id" title="var">p</span> <span class="id" title="var">pf</span>) ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">idx</span> := <span class="id" title="var">p</span>.1 <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">firstn</span> <span class="id" title="var">idx</span> <span class="id" title="var">l</span>) ++ (<span class="id" title="var">make_zero_list</span> <span class="id" title="var">dummy_x</span> (<span class="id" title="var">lower_closing_list</span> <span class="id" title="var">dummy_x</span> (<span class="id" title="var">skipn</span> <span class="id" title="var">idx</span> <span class="id" title="var">l</span>)))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">make_zero_list_zeroes</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} (<span class="id" title="var">dummy_x</span> : <span class="id" title="tactic">evar</span>) (<span class="id" title="var">l</span> : <span class="id" title="var">list</span> (<span class="id" title="var">prod</span> <span class="id" title="var">db_index</span> <span class="id" title="tactic">evar</span>)) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">Forall</span> (<span class="id" title="var">λ</span> <span class="id" title="var">p</span>, <span class="id" title="var">p</span>.1 = 0) (<span class="id" title="var">make_zero_list</span> <span class="id" title="var">dummy_x</span> <span class="id" title="var">l</span>)).<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">closure_increasing_app_proj1</span><br/>
+&nbsp;&nbsp;{<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>}<br/>
+&nbsp;&nbsp;(<span class="id" title="var">l₁</span> <span class="id" title="var">l₂</span> : <span class="id" title="var">list</span> (<span class="id" title="var">prod</span> <span class="id" title="var">db_index</span> <span class="id" title="tactic">evar</span>))<br/>
+&nbsp;&nbsp;:<br/>
+&nbsp;&nbsp;<span class="id" title="var">closure_increasing</span> (<span class="id" title="var">l₁</span> ++ <span class="id" title="var">l₂</span>) →<br/>
+&nbsp;&nbsp;<span class="id" title="var">closure_increasing</span> <span class="id" title="var">l₁</span>.<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">closure_increasing_app_proj2</span><br/>
+&nbsp;&nbsp;{<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>}<br/>
+&nbsp;&nbsp;(<span class="id" title="var">l₁</span> <span class="id" title="var">l₂</span> : <span class="id" title="var">list</span> (<span class="id" title="var">prod</span> <span class="id" title="var">db_index</span> <span class="id" title="tactic">evar</span>))<br/>
+&nbsp;&nbsp;:<br/>
+&nbsp;&nbsp;<span class="id" title="var">closure_increasing</span> (<span class="id" title="var">l₁</span> ++ <span class="id" title="var">l₂</span>) →<br/>
+&nbsp;&nbsp;<span class="id" title="var">closure_increasing</span> <span class="id" title="var">l₂</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">wfc_ex_aux_evar_open_change_evar</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} <span class="id" title="var">x</span> <span class="id" title="var">x'</span> <span class="id" title="var">dbi</span> <span class="id" title="var">ϕ</span>:<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed_closed_ex_aux</span> (<span class="id" title="var">evar_open</span> <span class="id" title="var">dbi</span> <span class="id" title="var">x</span> <span class="id" title="var">ϕ</span>) <span class="id" title="var">dbi</span> =<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed_closed_ex_aux</span> (<span class="id" title="var">evar_open</span> <span class="id" title="var">dbi</span> <span class="id" title="var">x'</span> <span class="id" title="var">ϕ</span>) <span class="id" title="var">dbi</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">wfcexaux_bcmcloseex_evar_open_change_evar</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} <span class="id" title="var">l</span> <span class="id" title="var">x</span> <span class="id" title="var">x'</span> <span class="id" title="var">dbi</span> <span class="id" title="var">dbi'</span> <span class="id" title="var">ϕ</span>:<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed_closed_ex_aux</span> (<span class="id" title="var">bcmcloseex</span> <span class="id" title="var">l</span> (<span class="id" title="var">evar_open</span> <span class="id" title="var">dbi</span> <span class="id" title="var">x</span> <span class="id" title="var">ϕ</span>)) <span class="id" title="var">dbi'</span><br/>
+&nbsp;&nbsp;= <span class="id" title="var">well_formed_closed_ex_aux</span> (<span class="id" title="var">bcmcloseex</span> <span class="id" title="var">l</span> (<span class="id" title="var">evar_open</span> <span class="id" title="var">dbi</span> <span class="id" title="var">x'</span> <span class="id" title="var">ϕ</span>)) <span class="id" title="var">dbi'</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">wfcexaux_bcmcloseex_lower_closing_list</span><br/>
+&nbsp;&nbsp;{<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>}<br/>
+&nbsp;&nbsp;(<span class="id" title="var">dummy_x</span> : <span class="id" title="tactic">evar</span>)<br/>
+&nbsp;&nbsp;(<span class="id" title="var">l</span> : <span class="id" title="var">list</span> (<span class="id" title="var">prod</span> <span class="id" title="var">db_index</span> <span class="id" title="tactic">evar</span>))<br/>
+&nbsp;&nbsp;(<span class="id" title="var">ϕ</span> : <span class="id" title="var">Pattern</span>)<br/>
+&nbsp;&nbsp;:<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed_closed_ex_aux</span> (<span class="id" title="var">bcmcloseex</span> <span class="id" title="var">l</span> <span class="id" title="var">ϕ</span>) 0 = <span class="id" title="var">true</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed_closed_ex_aux</span> (<span class="id" title="var">bcmcloseex</span> (<span class="id" title="var">lower_closing_list</span> <span class="id" title="var">dummy_x</span> <span class="id" title="var">l</span>) <span class="id" title="var">ϕ</span>) 0 = <span class="id" title="var">true</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">wfcexaux_bcmcloseex_evar_open_change_evar_2</span><br/>
+&nbsp;&nbsp;{<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>}<br/>
+&nbsp;&nbsp;<span class="id" title="var">l</span> <span class="id" title="var">ϕ</span> <span class="id" title="var">dbi</span> (<span class="id" title="var">f</span> : <span class="id" title="var">prod</span> <span class="id" title="var">db_index</span> <span class="id" title="tactic">evar</span> → <span class="id" title="tactic">evar</span>):<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed_closed_ex_aux</span> (<span class="id" title="var">bcmcloseex</span> (<span class="id" title="var">map</span> (<span class="id" title="var">λ</span> <span class="id" title="var">p</span>, (<span class="id" title="var">p</span>.1, (<span class="id" title="var">f</span> <span class="id" title="var">p</span>))) <span class="id" title="var">l</span>) <span class="id" title="var">ϕ</span>) <span class="id" title="var">dbi</span><br/>
+&nbsp;&nbsp;= <span class="id" title="var">well_formed_closed_ex_aux</span> (<span class="id" title="var">bcmcloseex</span> <span class="id" title="var">l</span> <span class="id" title="var">ϕ</span>) <span class="id" title="var">dbi</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">wfcex_and_increasing_first_not_k_impl_wfcex</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">l</span> : <span class="id" title="var">list</span> (<span class="id" title="var">prod</span> <span class="id" title="var">db_index</span> <span class="id" title="tactic">evar</span>))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">k</span> : <span class="id" title="var">db_index</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">ϕ</span> : <span class="id" title="var">Pattern</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">closure_increasing</span> <span class="id" title="var">l</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="keyword">∀</span> <span class="id" title="var">p</span>, <span class="id" title="var">l</span> !! 0 = <span class="id" title="var">Some</span> <span class="id" title="var">p</span> → <span class="id" title="var">p</span>.1 &gt; <span class="id" title="var">k</span>) →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_closed_ex_aux</span> (<span class="id" title="var">bcmcloseex</span> <span class="id" title="var">l</span> <span class="id" title="var">ϕ</span>) <span class="id" title="var">k</span> = <span class="id" title="var">true</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">bevar_occur</span> <span class="id" title="var">ϕ</span> <span class="id" title="var">k</span> = <span class="id" title="var">false</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">wfcexaux_bcmcloseex_take_lower_drop</span><br/>
+&nbsp;&nbsp;{<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>}<br/>
+&nbsp;&nbsp;(<span class="id" title="var">dummy_x</span> : <span class="id" title="tactic">evar</span>)<br/>
+&nbsp;&nbsp;(<span class="id" title="var">l</span> : <span class="id" title="var">list</span> (<span class="id" title="var">db_index</span> × <span class="id" title="tactic">evar</span>))<br/>
+&nbsp;&nbsp;(<span class="id" title="var">idx</span> : <span class="id" title="var">nat</span>)<br/>
+&nbsp;&nbsp;(<span class="id" title="var">ϕ</span> : <span class="id" title="var">Pattern</span>) :<br/>
+&nbsp;&nbsp;(∀ (<span class="id" title="var">j</span> : <span class="id" title="var">nat</span>) (<span class="id" title="var">y</span> : <span class="id" title="var">nat</span> × <span class="id" title="tactic">evar</span>), <span class="id" title="var">l</span> !! <span class="id" title="var">j</span> = <span class="id" title="var">Some</span> <span class="id" title="var">y</span> → <span class="id" title="var">j</span> &lt; <span class="id" title="var">idx</span> → ¬ <span class="id" title="var">y</span>.1 ≠ 0) →<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed_closed_ex_aux</span> (<span class="id" title="var">bcmcloseex</span> <span class="id" title="var">l</span> <span class="id" title="var">ϕ</span>) 0 →<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed_closed_ex_aux</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">bcmcloseex</span> (<span class="id" title="var">take</span> <span class="id" title="var">idx</span> <span class="id" title="var">l</span> ++ <span class="id" title="var">lower_closing_list</span> <span class="id" title="var">dummy_x</span> (<span class="id" title="var">drop</span> <span class="id" title="var">idx</span> <span class="id" title="var">l</span>)) <span class="id" title="var">ϕ</span>) 0.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">closure_increasing_tail</span><br/>
+&nbsp;&nbsp;{<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>}<br/>
+&nbsp;&nbsp;<span class="id" title="var">p</span> <span class="id" title="var">l</span><br/>
+&nbsp;&nbsp;:<br/>
+&nbsp;&nbsp;<span class="id" title="var">closure_increasing</span> (<span class="id" title="var">p</span> :: <span class="id" title="var">l</span>) →<br/>
+&nbsp;&nbsp;<span class="id" title="var">closure_increasing</span> <span class="id" title="var">l</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">bcmcloseex_take_lower_drop</span><br/>
+&nbsp;&nbsp;{<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>}<br/>
+&nbsp;&nbsp;(<span class="id" title="var">dummy_x</span> : <span class="id" title="tactic">evar</span>)<br/>
+&nbsp;&nbsp;(<span class="id" title="var">l</span> : <span class="id" title="var">list</span> (<span class="id" title="var">db_index</span> × <span class="id" title="tactic">evar</span>))<br/>
+&nbsp;&nbsp;(<span class="id" title="var">idx</span> : <span class="id" title="var">nat</span>)<br/>
+&nbsp;&nbsp;(<span class="id" title="var">ϕ</span> : <span class="id" title="var">Pattern</span>)<br/>
+&nbsp;&nbsp;(<span class="id" title="var">x</span> : <span class="id" title="var">nat</span> × <span class="id" title="tactic">evar</span>)<br/>
+&nbsp;&nbsp;:<br/>
+&nbsp;&nbsp;<span class="id" title="var">closure_increasing</span> <span class="id" title="var">l</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed_closed_ex_aux</span> (<span class="id" title="var">bcmcloseex</span> <span class="id" title="var">l</span> <span class="id" title="var">ϕ</span>) 0 = <span class="id" title="var">true</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">l</span> !! <span class="id" title="var">idx</span> = <span class="id" title="var">Some</span> <span class="id" title="var">x</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">x</span>.1 ≠ 0 →<br/>
+&nbsp;&nbsp;(∀ (<span class="id" title="var">j</span> : <span class="id" title="var">nat</span>) (<span class="id" title="var">y</span> : <span class="id" title="var">nat</span> × <span class="id" title="tactic">evar</span>), <span class="id" title="var">l</span> !! <span class="id" title="var">j</span> = <span class="id" title="var">Some</span> <span class="id" title="var">y</span> → <span class="id" title="var">j</span> &lt; <span class="id" title="var">idx</span> → ¬ <span class="id" title="var">y</span>.1 ≠ 0) →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">bcmcloseex</span> (<span class="id" title="var">take</span> <span class="id" title="var">idx</span> <span class="id" title="var">l</span> ++ <span class="id" title="var">lower_closing_list</span> <span class="id" title="var">dummy_x</span> (<span class="id" title="var">drop</span> <span class="id" title="var">idx</span> <span class="id" title="var">l</span>)) <span class="id" title="var">ϕ</span>) = (<span class="id" title="var">bcmcloseex</span> <span class="id" title="var">l</span> <span class="id" title="var">ϕ</span>).<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">make_zero_list_equiv</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} (<span class="id" title="var">dummy_x</span> : <span class="id" title="tactic">evar</span>) (<span class="id" title="var">l</span> : <span class="id" title="var">list</span> (<span class="id" title="var">prod</span> <span class="id" title="var">db_index</span> <span class="id" title="tactic">evar</span>)) <span class="id" title="var">ϕ</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">closure_increasing</span> <span class="id" title="var">l</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_closed_ex_aux</span> (<span class="id" title="var">bcmcloseex</span> <span class="id" title="var">l</span> <span class="id" title="var">ϕ</span>) 0 →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">bcmcloseex</span> (<span class="id" title="var">make_zero_list</span> <span class="id" title="var">dummy_x</span> <span class="id" title="var">l</span>) <span class="id" title="var">ϕ</span> = <span class="id" title="var">bcmcloseex</span> <span class="id" title="var">l</span> <span class="id" title="var">ϕ</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">pre_predicate_0</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} (<span class="id" title="var">k</span> : <span class="id" title="var">db_index</span>) (<span class="id" title="var">M</span> : <span class="id" title="var">Model</span>) (<span class="id" title="var">ϕ</span> : <span class="id" title="var">Pattern</span>) :<br/>
+&nbsp;&nbsp;<span class="id" title="var">M_pre_pre_predicate</span> 0 <span class="id" title="var">M</span> <span class="id" title="var">ϕ</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">M_pre_pre_predicate</span> <span class="id" title="var">k</span> <span class="id" title="var">M</span> <span class="id" title="var">ϕ</span>.<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">closed_M_pre_pre_predicate_is_M_predicate</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} (<span class="id" title="var">k</span> : <span class="id" title="var">db_index</span>) (<span class="id" title="var">M</span> : <span class="id" title="var">Model</span>) (<span class="id" title="var">ϕ</span> : <span class="id" title="var">Pattern</span>) :<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed_closed_ex_aux</span> <span class="id" title="var">ϕ</span> 0 →<br/>
+&nbsp;&nbsp;<span class="id" title="var">M_pre_pre_predicate</span> <span class="id" title="var">k</span> <span class="id" title="var">M</span> <span class="id" title="var">ϕ</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">M_predicate</span> <span class="id" title="var">M</span> <span class="id" title="var">ϕ</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">M_pre_pre_predicate_bott</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} (<span class="id" title="var">k</span> : <span class="id" title="var">db_index</span>) (<span class="id" title="var">M</span> : <span class="id" title="var">Model</span>) :<br/>
+&nbsp;&nbsp;<span class="id" title="var">M_pre_pre_predicate</span> <span class="id" title="var">k</span> <span class="id" title="var">M</span> <span class="id" title="var">patt_bott</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">M_pre_pre_predicate_imp</span><br/>
+&nbsp;&nbsp;{<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} (<span class="id" title="var">k</span> : <span class="id" title="var">db_index</span>) (<span class="id" title="var">M</span> : <span class="id" title="var">Model</span>) (<span class="id" title="var">p</span> <span class="id" title="var">q</span> : <span class="id" title="var">Pattern</span>) :<br/>
+&nbsp;&nbsp;<span class="id" title="var">M_pre_pre_predicate</span> <span class="id" title="var">k</span> <span class="id" title="var">M</span> <span class="id" title="var">p</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">M_pre_pre_predicate</span> <span class="id" title="var">k</span> <span class="id" title="var">M</span> <span class="id" title="var">q</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">M_pre_pre_predicate</span> <span class="id" title="var">k</span> <span class="id" title="var">M</span> (<span class="id" title="var">patt_imp</span> <span class="id" title="var">p</span> <span class="id" title="var">q</span>).<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">bcmcloseex_propagate_last_zero</span><br/>
+&nbsp;&nbsp;{<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>}<br/>
+&nbsp;&nbsp;<span class="id" title="var">l</span> <span class="id" title="var">x</span> <span class="id" title="var">ϕ</span><br/>
+&nbsp;&nbsp;:<br/>
+&nbsp;&nbsp;<span class="id" title="var">bcmcloseex</span> (<span class="id" title="var">map</span> (<span class="id" title="var">λ</span> <span class="id" title="var">p</span> : <span class="id" title="var">nat</span> × <span class="id" title="tactic">evar</span>, (<span class="id" title="var">S</span> <span class="id" title="var">p</span>.1, <span class="id" title="var">p</span>.2)) <span class="id" title="var">l</span> ++ [(0, <span class="id" title="var">x</span>)]) <span class="id" title="var">ϕ</span><br/>
+&nbsp;&nbsp;= <span class="id" title="var">bcmcloseex</span> ((0,<span class="id" title="var">x</span>)::<span class="id" title="var">l</span>) <span class="id" title="var">ϕ</span>.<br/>
+
+<br/>
+<span class="comment">(*<br/>
+Lemma&nbsp;M_predicate_evar_open&nbsp;{Σ&nbsp;:&nbsp;Signature}&nbsp;(k&nbsp;:&nbsp;db_index)&nbsp;M&nbsp;ϕ&nbsp;x&nbsp;:<br/>
+&nbsp;&nbsp;M_predicate&nbsp;M&nbsp;(evar_open&nbsp;0&nbsp;x)<br/>
+*)</span><br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">M_pre_pre_predicate_exists</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} (<span class="id" title="var">k</span> : <span class="id" title="var">db_index</span>) <span class="id" title="var">M</span> <span class="id" title="var">ϕ</span> :<br/>
+&nbsp;&nbsp;<span class="id" title="var">M_pre_pre_predicate</span> (<span class="id" title="var">S</span> <span class="id" title="var">k</span>) <span class="id" title="var">M</span> <span class="id" title="var">ϕ</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">M_pre_pre_predicate</span> <span class="id" title="var">k</span> <span class="id" title="var">M</span> (<span class="id" title="var">patt_exists</span> <span class="id" title="var">ϕ</span>).<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">M_pre_predicate</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} (<span class="id" title="var">M</span> : <span class="id" title="var">Model</span>) (<span class="id" title="var">ϕ</span> : <span class="id" title="var">Pattern</span>) : <span class="id" title="keyword">Prop</span><br/>
+:= <span class="id" title="keyword">∀</span> <span class="id" title="var">k</span>, <span class="id" title="var">M_pre_pre_predicate</span> <span class="id" title="var">k</span> <span class="id" title="var">M</span> <span class="id" title="var">ϕ</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">M_pre_pre_predicate_impl_M_pre_predicate</span><br/>
+&nbsp;&nbsp;{<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} (<span class="id" title="var">k</span> : <span class="id" title="var">nat</span>) (<span class="id" title="var">M</span> : <span class="id" title="var">Model</span>) (<span class="id" title="var">ϕ</span> : <span class="id" title="var">Pattern</span>)<br/>
+&nbsp;&nbsp;:<br/>
+&nbsp;&nbsp;<span class="id" title="var">M_pre_pre_predicate</span> <span class="id" title="var">k</span> <span class="id" title="var">M</span> <span class="id" title="var">ϕ</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">M_pre_predicate</span> <span class="id" title="var">M</span> <span class="id" title="var">ϕ</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">T_pre_pre_predicate</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} <span class="id" title="var">k</span> <span class="id" title="var">Γ</span> <span class="id" title="var">ϕ</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">∀</span> <span class="id" title="var">M</span>, <span class="id" title="var">satisfies_theory</span> <span class="id" title="var">M</span> <span class="id" title="var">Γ</span> → <span class="id" title="var">M_pre_pre_predicate</span> <span class="id" title="var">k</span> <span class="id" title="var">M</span> <span class="id" title="var">ϕ</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">T_pre_predicate</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} <span class="id" title="var">Γ</span> <span class="id" title="var">ϕ</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">∀</span> <span class="id" title="var">M</span>, <span class="id" title="var">satisfies_theory</span> <span class="id" title="var">M</span> <span class="id" title="var">Γ</span> → <span class="id" title="var">M_pre_predicate</span> <span class="id" title="var">M</span> <span class="id" title="var">ϕ</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">T_pre_pre_predicate_impl_T_pre_predicate</span><br/>
+&nbsp;&nbsp;{<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} <span class="id" title="var">k</span> <span class="id" title="var">Γ</span> <span class="id" title="var">ϕ</span>:<br/>
+&nbsp;&nbsp;<span class="id" title="var">T_pre_pre_predicate</span> <span class="id" title="var">k</span> <span class="id" title="var">Γ</span> <span class="id" title="var">ϕ</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">T_pre_predicate</span> <span class="id" title="var">Γ</span> <span class="id" title="var">ϕ</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">M_pre_predicate_imp</span><br/>
+&nbsp;&nbsp;{<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} (<span class="id" title="var">M</span> : <span class="id" title="var">Model</span>) (<span class="id" title="var">p</span> <span class="id" title="var">q</span> : <span class="id" title="var">Pattern</span>) :<br/>
+&nbsp;&nbsp;<span class="id" title="var">M_pre_predicate</span> <span class="id" title="var">M</span> <span class="id" title="var">p</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">M_pre_predicate</span> <span class="id" title="var">M</span> <span class="id" title="var">q</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">M_pre_predicate</span> <span class="id" title="var">M</span> (<span class="id" title="var">patt_imp</span> <span class="id" title="var">p</span> <span class="id" title="var">q</span>).<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">M_pre_predicate_bott</span><br/>
+&nbsp;&nbsp;{<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} (<span class="id" title="var">M</span> : <span class="id" title="var">Model</span>) :<br/>
+&nbsp;&nbsp;<span class="id" title="var">M_pre_predicate</span> <span class="id" title="var">M</span> <span class="id" title="var">patt_bott</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">M_pre_predicate_exists</span><br/>
+&nbsp;&nbsp;{<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} (<span class="id" title="var">M</span> : <span class="id" title="var">Model</span>) (<span class="id" title="var">p</span> : <span class="id" title="var">Pattern</span>) :<br/>
+&nbsp;&nbsp;<span class="id" title="var">M_pre_predicate</span> <span class="id" title="var">M</span> <span class="id" title="var">p</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">M_pre_predicate</span> <span class="id" title="var">M</span> (<span class="id" title="var">patt_exists</span> <span class="id" title="var">p</span>).<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">M_pre_predicate_evar_open</span><br/>
+&nbsp;&nbsp;{<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} (<span class="id" title="var">M</span> : <span class="id" title="var">Model</span>) (<span class="id" title="var">ϕ</span> : <span class="id" title="var">Pattern</span>) (<span class="id" title="var">x</span> : <span class="id" title="tactic">evar</span>) :<br/>
+&nbsp;&nbsp;<span class="id" title="var">M_pre_predicate</span> <span class="id" title="var">M</span> <span class="id" title="var">ϕ</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">M_pre_predicate</span> <span class="id" title="var">M</span> (<span class="id" title="var">evar_open</span> 0 <span class="id" title="var">x</span> <span class="id" title="var">ϕ</span>).<br/>
+</div>
+<hr/>This page has been generated by <a href="http://coq.inria.fr/">coqdoc</a>
+</div>
+
+</div>
+
+</body>
+</html>

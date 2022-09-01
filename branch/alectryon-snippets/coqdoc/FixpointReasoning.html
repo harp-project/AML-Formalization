@@ -1,0 +1,292 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link href="coqdoc.css" rel="stylesheet" type="text/css" />
+<title>FixpointReasoning</title>
+</head>
+
+<body>
+
+<div id="page">
+
+<div id="header">
+</div>
+
+<div id="main">
+
+<h1 class="libtitle">File FixpointReasoning</h1>
+
+<div class="code">
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">ssreflect</span> <span class="id" title="var">ssrfun</span> <span class="id" title="var">ssrbool</span>.<br/>
+<span class="id" title="keyword">Set Implicit Arguments</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Setoid</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Ensembles</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq.Logic</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">FunctionalExtensionality</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq.Logic</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">PropExtensionality</span> <span class="id" title="var">ClassicalFacts</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">stdpp</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">base</span> <span class="id" title="var">list</span> <span class="id" title="var">sets</span> <span class="id" title="var">propset</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">MatchingLogic</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Syntax</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">Semantics</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">DerivedOperators_Syntax</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">DerivedOperators_Semantics</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">monotonic</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">Utils.Lattice</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">Utils.stdpp_ext</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">IndexManipulation</span><br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Import</span> <span class="id" title="var">MatchingLogic.Syntax.Notations</span>.<br/>
+<span class="id" title="keyword">Import</span> <span class="id" title="var">MatchingLogic.DerivedOperators_Syntax.Notations</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Section</span> <span class="id" title="var">with_signature</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Context</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>}.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">eval_mu_lfp_fixpoint</span> <span class="id" title="var">M</span> ρ <span class="id" title="var">ϕ</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_positive</span> (<span class="id" title="var">patt_mu</span> <span class="id" title="var">ϕ</span>) →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">X</span> := <span class="id" title="var">fresh_svar</span> <span class="id" title="var">ϕ</span> <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">F</span> := <span class="id" title="var">Fassoc</span> ρ (<span class="id" title="var">svar_open</span> 0 <span class="id" title="var">X</span> <span class="id" title="var">ϕ</span>) <span class="id" title="var">X</span> <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">Sfix</span> := @<span class="id" title="tactic">eval</span> <span class="id" title="var">Σ</span> <span class="id" title="var">M</span> ρ (<span class="id" title="var">patt_mu</span> <span class="id" title="var">ϕ</span>) <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">F</span> <span class="id" title="var">Sfix</span> = <span class="id" title="var">Sfix</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">eval_mu_lfp_least</span> <span class="id" title="var">M</span> ρ <span class="id" title="var">ϕ</span> <span class="id" title="var">S</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_positive</span> (<span class="id" title="var">patt_mu</span> <span class="id" title="var">ϕ</span>) →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">X</span> := <span class="id" title="var">fresh_svar</span> <span class="id" title="var">ϕ</span> <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">F</span> := <span class="id" title="var">Fassoc</span> ρ (<span class="id" title="var">svar_open</span> 0 <span class="id" title="var">X</span> <span class="id" title="var">ϕ</span>) <span class="id" title="var">X</span> <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">Sfix</span> := @<span class="id" title="tactic">eval</span> <span class="id" title="var">Σ</span> <span class="id" title="var">M</span> ρ (<span class="id" title="var">patt_mu</span> <span class="id" title="var">ϕ</span>) <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">F</span> <span class="id" title="var">S</span>) ⊆ <span class="id" title="var">S</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Sfix</span> ⊆ <span class="id" title="var">S</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">eval_mu_if_lfp</span> <span class="id" title="var">M</span> ρ <span class="id" title="var">ϕ</span> <span class="id" title="var">Sfix</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_positive</span> (<span class="id" title="var">patt_mu</span> <span class="id" title="var">ϕ</span>) →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">X</span> := <span class="id" title="var">fresh_svar</span> <span class="id" title="var">ϕ</span> <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">F</span> := <span class="id" title="var">Fassoc</span> ρ (<span class="id" title="var">svar_open</span> 0 <span class="id" title="var">X</span> <span class="id" title="var">ϕ</span>) <span class="id" title="var">X</span> <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">F</span> <span class="id" title="var">Sfix</span>) ⊆ <span class="id" title="var">Sfix</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(∀ <span class="id" title="var">S</span>, (<span class="id" title="var">F</span> <span class="id" title="var">S</span>) ⊆ <span class="id" title="var">S</span> → <span class="id" title="var">Sfix</span> ⊆ <span class="id" title="var">S</span>) →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Sfix</span> = @<span class="id" title="tactic">eval</span> <span class="id" title="var">Σ</span> <span class="id" title="var">M</span> ρ (<span class="id" title="var">patt_mu</span> <span class="id" title="var">ϕ</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">eval_mu_lfp_iff</span> <span class="id" title="var">M</span> ρ <span class="id" title="var">ϕ</span> <span class="id" title="var">Sfix</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_positive</span> (<span class="id" title="var">patt_mu</span> <span class="id" title="var">ϕ</span>) →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">X</span> := <span class="id" title="var">fresh_svar</span> <span class="id" title="var">ϕ</span> <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">F</span> := <span class="id" title="var">Fassoc</span> ρ (<span class="id" title="var">svar_open</span> 0 <span class="id" title="var">X</span> <span class="id" title="var">ϕ</span>) <span class="id" title="var">X</span> <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">F</span> <span class="id" title="var">Sfix</span>) ⊆ <span class="id" title="var">Sfix</span> ∧<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(∀ <span class="id" title="var">S</span>, (<span class="id" title="var">F</span> <span class="id" title="var">S</span>) ⊆ <span class="id" title="var">S</span> → <span class="id" title="var">Sfix</span> ⊆ <span class="id" title="var">S</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;) ↔ <span class="id" title="var">Sfix</span> = @<span class="id" title="tactic">eval</span> <span class="id" title="var">Σ</span> <span class="id" title="var">M</span> ρ (<span class="id" title="var">patt_mu</span> <span class="id" title="var">ϕ</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="comment">(*&nbsp;mu&nbsp;X.&nbsp;base&nbsp;\/&nbsp;step&nbsp;X&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="comment">(*&nbsp;<span class="inlinecode"><span class="id" title="var">Nats</span></span>&nbsp;=&nbsp;mu&nbsp;X.&nbsp;0&nbsp;\/&nbsp;succ&nbsp;X&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="comment">(*&nbsp;<span class="inlinecode"><span class="id" title="var">Nats</span></span>&nbsp;=&nbsp;\{&nbsp;x&nbsp;|&nbsp;\ex&nbsp;x0,x1,..x_n&nbsp;.&nbsp;x0&nbsp;\in&nbsp;0&nbsp;/\&nbsp;x(i+1)&nbsp;\in&nbsp;succ&nbsp;xi&nbsp;}*)</span><br/>
+&nbsp;&nbsp;<span class="comment">(*&nbsp;&nbsp;0,&nbsp;1,&nbsp;2,...&nbsp;x*)</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Section</span> <span class="id" title="var">inductive_generation</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Context</span> (<span class="id" title="var">base</span> <span class="id" title="var">step</span> : <span class="id" title="var">Pattern</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Let</span> <span class="id" title="var">patt_ind_gen_body</span> := (<span class="id" title="var">patt_or</span> (<span class="id" title="var">nest_mu</span> <span class="id" title="var">base</span>) (<span class="id" title="var">patt_app</span> (<span class="id" title="var">nest_mu</span> <span class="id" title="var">step</span>) (<span class="id" title="var">patt_bound_svar</span> 0))).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Let</span> <span class="id" title="var">patt_ind_gen_simple_body</span> := (<span class="id" title="var">patt_or</span> <span class="id" title="var">base</span> (<span class="id" title="var">patt_app</span> <span class="id" title="var">step</span> (<span class="id" title="var">patt_free_svar</span> (<span class="id" title="var">fresh_svar</span> <span class="id" title="var">patt_ind_gen_body</span>)))).<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">patt_ind_gen</span> := <span class="id" title="var">patt_mu</span> <span class="id" title="var">patt_ind_gen_body</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Hypothesis</span> (<span class="id" title="var">Hwfpbase</span> : <span class="id" title="var">well_formed_positive</span> <span class="id" title="var">base</span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Hypothesis</span> (<span class="id" title="var">Hwfpstep</span> : <span class="id" title="var">well_formed_positive</span> <span class="id" title="var">step</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">patt_ind_gen_wfp</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_positive</span> <span class="id" title="var">patt_ind_gen</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">svar_open_patt_ind_gen_body_simpl</span> <span class="id" title="var">M</span> ρ <span class="id" title="var">X</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">svar_is_fresh_in</span> <span class="id" title="var">X</span> <span class="id" title="var">patt_ind_gen_body</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;@<span class="id" title="tactic">eval</span> <span class="id" title="var">Σ</span> <span class="id" title="var">M</span> ρ (<span class="id" title="var">svar_open</span> 0 <span class="id" title="var">X</span> <span class="id" title="var">patt_ind_gen_body</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= @<span class="id" title="tactic">eval</span> <span class="id" title="var">Σ</span> <span class="id" title="var">M</span> ρ (<span class="id" title="var">patt_or</span> <span class="id" title="var">base</span> (<span class="id" title="var">patt_app</span> <span class="id" title="var">step</span> (<span class="id" title="var">patt_free_svar</span> <span class="id" title="var">X</span>))).<br/>
+
+<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Section</span> <span class="id" title="var">with_eval</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Context</span> (<span class="id" title="var">M</span> : @<span class="id" title="var">Model</span> <span class="id" title="var">Σ</span>).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Context</span> (ρ : @<span class="id" title="var">Valuation</span> <span class="id" title="var">Σ</span> <span class="id" title="var">M</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Let</span> <span class="id" title="var">F</span> := <span class="id" title="keyword">let</span> <span class="id" title="var">X</span> := <span class="id" title="var">fresh_svar</span> <span class="id" title="var">patt_ind_gen_body</span> <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;@<span class="id" title="var">Fassoc</span> <span class="id" title="var">Σ</span> <span class="id" title="var">M</span> ρ (<span class="id" title="var">svar_open</span> 0 <span class="id" title="var">X</span> <span class="id" title="var">patt_ind_gen_body</span>) <span class="id" title="var">X</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">(*<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Lemma&nbsp;svar_open_patt_ind_gen_body_assoc&nbsp;S:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;let&nbsp;X&nbsp;:=&nbsp;fresh_svar&nbsp;patt_ind_gen_body&nbsp;in<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;eval&nbsp;ρₑ&nbsp;(update_svar_val&nbsp;X&nbsp;S&nbsp;ρₛ)&nbsp;(svar_open&nbsp;0&nbsp;X&nbsp;patt_ind_gen_body)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=&nbsp;F&nbsp;S.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Proof.&nbsp;reflexivity.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">(*<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;cbv&nbsp;zeta.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;rewrite&nbsp;svar_open_patt_ind_gen_body_simpl.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{&nbsp;apply&nbsp;set_svar_fresh_is_fresh.&nbsp;}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;subst&nbsp;F.&nbsp;unfold&nbsp;Fassoc.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;rewrite&nbsp;svar_open_patt_ind_gen_body_simpl.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{&nbsp;apply&nbsp;set_svar_fresh_is_fresh.&nbsp;&nbsp;}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;reflexivity.*)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Qed.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;*)</span><br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">(*&nbsp;I&nbsp;can&nbsp;imagine&nbsp;this&nbsp;lemma&nbsp;to&nbsp;be&nbsp;proven&nbsp;automatically.&nbsp;*)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">F_interp</span>: <span class="id" title="var">F</span> = <span class="id" title="var">λ</span> <span class="id" title="var">A</span>, (<span class="id" title="tactic">eval</span> ρ <span class="id" title="var">base</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;∪ (<span class="id" title="var">app_ext</span> (<span class="id" title="tactic">eval</span> ρ <span class="id" title="var">step</span>) <span class="id" title="var">A</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">is_witnessing_sequence_old</span> (<span class="id" title="var">m</span> : <span class="id" title="var">Domain</span> <span class="id" title="var">M</span>) (<span class="id" title="var">l</span> : <span class="id" title="var">list</span> (<span class="id" title="var">Domain</span> <span class="id" title="var">M</span>)) :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">last</span> <span class="id" title="var">l</span> = <span class="id" title="var">Some</span> <span class="id" title="var">m</span>) ∧<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="keyword">match</span> <span class="id" title="var">l</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| [] ⇒ <span class="id" title="var">False</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">m₀</span>::<span class="id" title="var">ms</span> ⇒ (<span class="id" title="var">m₀</span> ∈ @<span class="id" title="tactic">eval</span> <span class="id" title="var">Σ</span> <span class="id" title="var">M</span> ρ <span class="id" title="var">base</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;∧  (@<span class="id" title="var">Forall</span> <span class="id" title="var">_</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">λ</span> (<span class="id" title="var">x</span> : (<span class="id" title="var">Domain</span> <span class="id" title="var">M</span>) × (<span class="id" title="var">Domain</span> <span class="id" title="var">M</span>)),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> (<span class="id" title="var">old</span>, <span class="id" title="var">new</span>) := <span class="id" title="var">x</span> <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">new</span> ∈ <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">app_ext</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(@<span class="id" title="tactic">eval</span> <span class="id" title="var">Σ</span> <span class="id" title="var">M</span> ρ <span class="id" title="var">step</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{[ <span class="id" title="var">old</span> ]}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">zip</span> (<span class="id" title="var">m₀</span>::<span class="id" title="var">ms</span>) <span class="id" title="var">ms</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">is_witnessing_sequence</span> (<span class="id" title="var">m</span> : <span class="id" title="var">Domain</span> <span class="id" title="var">M</span>) (<span class="id" title="var">l</span> : <span class="id" title="var">list</span> (<span class="id" title="var">Domain</span> <span class="id" title="var">M</span>)) :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(∃ <span class="id" title="var">lst</span>, <span class="id" title="var">last</span> <span class="id" title="var">l</span> = <span class="id" title="var">Some</span> <span class="id" title="var">lst</span> ∧ <span class="id" title="var">lst</span> ∈ @<span class="id" title="tactic">eval</span> <span class="id" title="var">Σ</span> <span class="id" title="var">M</span> ρ <span class="id" title="var">base</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;∧<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">hd_error</span> <span class="id" title="var">l</span> = <span class="id" title="var">Some</span> <span class="id" title="var">m</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;∧<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;((@<span class="id" title="var">Forall</span> <span class="id" title="var">_</span> (<span class="id" title="var">uncurry</span> (<span class="id" title="var">λ</span> <span class="id" title="var">new</span> <span class="id" title="var">old</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">new</span> ∈<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">app_ext</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(@<span class="id" title="tactic">eval</span> <span class="id" title="var">Σ</span> <span class="id" title="var">M</span> ρ <span class="id" title="var">step</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{[<span class="id" title="var">old</span>]}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">zip</span> <span class="id" title="var">l</span> (<span class="id" title="var">tail</span> <span class="id" title="var">l</span>))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)).<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">(*&nbsp;If&nbsp;we&nbsp;have&nbsp;a&nbsp;witnessing&nbsp;sequence&nbsp;x₁&nbsp;x₂&nbsp;...&nbsp;xₙ&nbsp;xₙ₊₁&nbsp;...&nbsp;xlast<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;and&nbsp;xₙ&nbsp;matches&nbsp;`base`,&nbsp;then&nbsp;xₙ&nbsp;xₙ₊₁&nbsp;is&nbsp;a&nbsp;witnessing&nbsp;sequence,&nbsp;too.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;*)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">witnessing_sequence_middle</span> (<span class="id" title="var">m</span> : <span class="id" title="var">Domain</span> <span class="id" title="var">M</span>) (<span class="id" title="var">l</span> : <span class="id" title="var">list</span> (<span class="id" title="var">Domain</span> <span class="id" title="var">M</span>)) (<span class="id" title="var">n</span> : <span class="id" title="var">nat</span>) (<span class="id" title="var">m'</span> : <span class="id" title="var">Domain</span> <span class="id" title="var">M</span>) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">is_witnessing_sequence</span> <span class="id" title="var">m</span> <span class="id" title="var">l</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">l</span> !! <span class="id" title="var">n</span> = <span class="id" title="var">Some</span> <span class="id" title="var">m'</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">m'</span> ∈ @<span class="id" title="tactic">eval</span> <span class="id" title="var">Σ</span> <span class="id" title="var">M</span> ρ <span class="id" title="var">base</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">is_witnessing_sequence</span> <span class="id" title="var">m'</span> (<span class="id" title="var">drop</span> <span class="id" title="var">n</span> <span class="id" title="var">l</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">witnessing_sequence_tail</span> (<span class="id" title="var">m</span> : <span class="id" title="var">Domain</span> <span class="id" title="var">M</span>) (<span class="id" title="var">l</span> : <span class="id" title="var">list</span> (<span class="id" title="var">Domain</span> <span class="id" title="var">M</span>)) (<span class="id" title="var">m'</span> : <span class="id" title="var">Domain</span> <span class="id" title="var">M</span>) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">is_witnessing_sequence</span> <span class="id" title="var">m</span> <span class="id" title="var">l</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">head</span> (<span class="id" title="var">tail</span> <span class="id" title="var">l</span>) = <span class="id" title="var">Some</span> <span class="id" title="var">m'</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">is_witnessing_sequence</span> <span class="id" title="var">m'</span> (<span class="id" title="var">tail</span> <span class="id" title="var">l</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">is_witnessing_sequence_iff_is_witnessing_sequence_old_reverse</span> (<span class="id" title="var">m</span> : <span class="id" title="var">Domain</span> <span class="id" title="var">M</span>) (<span class="id" title="var">l</span> : <span class="id" title="var">list</span> (<span class="id" title="var">Domain</span> <span class="id" title="var">M</span>)) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">is_witnessing_sequence</span> <span class="id" title="var">m</span> <span class="id" title="var">l</span> ↔ <span class="id" title="var">is_witnessing_sequence_old</span> <span class="id" title="var">m</span> (<span class="id" title="var">reverse</span> <span class="id" title="var">l</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">witnessing_sequence_extend</span> (<span class="id" title="var">m</span> <span class="id" title="var">m'</span> : <span class="id" title="var">Domain</span> <span class="id" title="var">M</span>) (<span class="id" title="var">l</span> : <span class="id" title="var">list</span> (<span class="id" title="var">Domain</span> <span class="id" title="var">M</span>)) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">is_witnessing_sequence</span> <span class="id" title="var">m</span> <span class="id" title="var">l</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;∧ (∃ <span class="id" title="var">step'</span>, <span class="id" title="var">step'</span> ∈ <span class="id" title="tactic">eval</span> ρ <span class="id" title="var">step</span> ∧ <span class="id" title="var">m'</span> ∈ <span class="id" title="var">app_interp</span> <span class="id" title="var">step'</span> <span class="id" title="var">m</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;) ↔ (<span class="id" title="var">is_witnessing_sequence</span> <span class="id" title="var">m'</span> (<span class="id" title="var">m'</span>::<span class="id" title="var">l</span>) ∧ <span class="id" title="var">l</span> ≠ []).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">witnessing_sequence_old_extend</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">m</span> <span class="id" title="var">x</span> <span class="id" title="var">m'</span> : <span class="id" title="var">Domain</span> <span class="id" title="var">M</span>) (<span class="id" title="var">l</span> : <span class="id" title="var">list</span> (<span class="id" title="var">Domain</span> <span class="id" title="var">M</span>)):<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">is_witnessing_sequence_old</span> <span class="id" title="var">m</span> (<span class="id" title="var">x</span>::<span class="id" title="var">l</span>) ∧<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;∃ <span class="id" title="var">step'</span>, (<span class="id" title="var">step'</span> ∈ <span class="id" title="tactic">eval</span> ρ <span class="id" title="var">step</span> ∧<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">m'</span> ∈ <span class="id" title="var">app_interp</span> <span class="id" title="var">step'</span> <span class="id" title="var">m</span>)) ↔<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">last</span> (<span class="id" title="var">x</span>::<span class="id" title="var">l</span>) = <span class="id" title="var">Some</span> <span class="id" title="var">m</span> ∧ <span class="id" title="var">is_witnessing_sequence_old</span> <span class="id" title="var">m'</span> ((<span class="id" title="var">x</span>::<span class="id" title="var">l</span>) ++ [<span class="id" title="var">m'</span>])).<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">witnessed_elements_old</span> : <span class="id" title="var">propset</span> (<span class="id" title="var">Domain</span> <span class="id" title="var">M</span>) :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">PropSet</span> (<span class="id" title="var">λ</span> <span class="id" title="var">m</span>, ∃ <span class="id" title="var">l</span>, <span class="id" title="var">is_witnessing_sequence_old</span> <span class="id" title="var">m</span> <span class="id" title="var">l</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">witnessed_elements_old_prefixpoint</span> : (<span class="id" title="var">F</span> <span class="id" title="var">witnessed_elements_old</span>) ⊆ <span class="id" title="var">witnessed_elements_old</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">interp_included_in_witnessed_elements_old</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(@<span class="id" title="tactic">eval</span> <span class="id" title="var">Σ</span> <span class="id" title="var">M</span> ρ <span class="id" title="var">patt_ind_gen</span>) ⊆ <span class="id" title="var">witnessed_elements_old</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">eval_patt_ind_gen_fix</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">Sfix</span> := <span class="id" title="tactic">eval</span> ρ <span class="id" title="var">patt_ind_gen</span> <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">F</span> <span class="id" title="var">Sfix</span> = <span class="id" title="var">Sfix</span>.<br/>
+
+<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">witnessed_elements_old_of_max_len</span> <span class="id" title="var">len</span> : <span class="id" title="var">propset</span> (<span class="id" title="var">Domain</span> <span class="id" title="var">M</span>) :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">PropSet</span> (<span class="id" title="var">λ</span> <span class="id" title="var">m</span>, ∃ <span class="id" title="var">l</span>, <span class="id" title="var">is_witnessing_sequence_old</span> <span class="id" title="var">m</span> <span class="id" title="var">l</span> ∧ <span class="id" title="var">length</span> <span class="id" title="var">l</span> ≤ <span class="id" title="var">len</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">witnessed_elements_old_of_max_len_included_in_interp</span> <span class="id" title="var">len</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">witnessed_elements_old_of_max_len</span> (<span class="id" title="var">S</span> <span class="id" title="var">len</span>)) ⊆ (@<span class="id" title="tactic">eval</span> <span class="id" title="var">Σ</span> <span class="id" title="var">M</span> ρ <span class="id" title="var">patt_ind_gen</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">witnessed_elements_old_included_in_interp</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">witnessed_elements_old</span> ⊆ (@<span class="id" title="tactic">eval</span> <span class="id" title="var">Σ</span> <span class="id" title="var">M</span> ρ <span class="id" title="var">patt_ind_gen</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">witnessed_elements</span> : <span class="id" title="var">propset</span> (<span class="id" title="var">Domain</span> <span class="id" title="var">M</span>) :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">PropSet</span> (<span class="id" title="var">λ</span> <span class="id" title="var">m</span>, ∃ <span class="id" title="var">l</span>, <span class="id" title="var">is_witnessing_sequence</span> <span class="id" title="var">m</span> <span class="id" title="var">l</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">witnessed_elements_old_eq_witnessed_elements</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">witnessed_elements_old</span> = <span class="id" title="var">witnessed_elements</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">patt_ind_gen_simpl</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;@<span class="id" title="tactic">eval</span> <span class="id" title="var">Σ</span> <span class="id" title="var">M</span> ρ <span class="id" title="var">patt_ind_gen</span> = <span class="id" title="var">witnessed_elements</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Section</span> <span class="id" title="var">injective</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Hypothesis</span> (<span class="id" title="var">Domain_eq_dec</span> : <span class="id" title="var">EqDecision</span> (<span class="id" title="var">Domain</span> <span class="id" title="var">M</span>)).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Hypothesis</span> (<span class="id" title="var">Hstep_total_function</span> : @<span class="id" title="var">is_total_function</span> <span class="id" title="var">_</span> <span class="id" title="var">M</span> <span class="id" title="var">step</span> <span class="id" title="var">witnessed_elements</span> <span class="id" title="var">witnessed_elements</span> ρ).<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Hypothesis</span> (<span class="id" title="var">Hstep_injective</span> : @<span class="id" title="var">total_function_is_injective</span> <span class="id" title="var">_</span> <span class="id" title="var">M</span> <span class="id" title="var">step</span> <span class="id" title="var">witnessed_elements</span> ρ).<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Hypothesis</span> (<span class="id" title="var">Hbase_step_no_confusion</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: (<span class="id" title="tactic">eval</span> ρ <span class="id" title="var">base</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;∩ (<span class="id" title="var">app_ext</span> (<span class="id" title="tactic">eval</span> ρ <span class="id" title="var">step</span>) <span class="id" title="var">witnessed_elements</span>) = ∅).<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">witnessed_elements_unique_seq</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;∀ <span class="id" title="var">m</span> <span class="id" title="var">l₁</span> <span class="id" title="var">l₂</span>, <span class="id" title="var">is_witnessing_sequence</span> <span class="id" title="var">m</span> <span class="id" title="var">l₁</span> → <span class="id" title="var">is_witnessing_sequence</span> <span class="id" title="var">m</span> <span class="id" title="var">l₂</span> → <span class="id" title="var">l₁</span> = <span class="id" title="var">l₂</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">End</span> <span class="id" title="var">injective</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">End</span> <span class="id" title="var">with_eval</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">End</span> <span class="id" title="var">inductive_generation</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">End</span> <span class="id" title="var">with_signature</span>.<br/>
+</div>
+<hr/>This page has been generated by <a href="http://coq.inria.fr/">coqdoc</a>
+</div>
+
+</div>
+
+</body>
+</html>

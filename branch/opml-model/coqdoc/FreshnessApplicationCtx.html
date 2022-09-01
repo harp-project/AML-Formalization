@@ -1,0 +1,64 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link href="coqdoc.css" rel="stylesheet" type="text/css" />
+<title>FreshnessApplicationCtx</title>
+</head>
+
+<body>
+
+<div id="page">
+
+<div id="header">
+</div>
+
+<div id="main">
+
+<h1 class="libtitle">File FreshnessApplicationCtx</h1>
+
+<div class="code">
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">ssreflect</span> <span class="id" title="var">ssrfun</span> <span class="id" title="var">ssrbool</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">stdpp</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">base</span> <span class="id" title="var">tactics</span> <span class="id" title="var">sets</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">MatchingLogic.Utils</span><br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">extralibrary</span><br/>
+.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">MatchingLogic</span><br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Signature</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Pattern</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Substitution</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Freshness</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">ApplicationContext</span><br/>
+.<br/>
+<span class="id" title="keyword">Import</span> <span class="id" title="var">Substitution.Notations</span>.<br/>
+<span class="id" title="keyword">Section</span> <span class="id" title="var">lemmas</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Context</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>}.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Open</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">ml_scope</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">evar_is_fresh_in_subst_ctx</span> <span class="id" title="var">x</span> <span class="id" title="var">AC</span> <span class="id" title="var">p</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">evar_is_fresh_in</span> <span class="id" title="var">x</span> (<span class="id" title="var">subst_ctx</span> <span class="id" title="var">AC</span> <span class="id" title="var">p</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;↔ (<span class="id" title="var">evar_is_fresh_in</span> <span class="id" title="var">x</span> <span class="id" title="var">p</span> ∧ <span class="id" title="var">x</span> ∉ <span class="id" title="var">AC_free_evars</span> <span class="id" title="var">AC</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">wf_ex_eq_sctx_eo</span> <span class="id" title="var">AC</span> <span class="id" title="var">x</span> <span class="id" title="var">p</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed</span> (<span class="id" title="var">patt_exists</span> <span class="id" title="var">p</span>) = <span class="id" title="var">true</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed</span> (<span class="id" title="var">patt_exists</span> ((<span class="id" title="var">subst_ctx</span> <span class="id" title="var">AC</span> (<span class="id" title="var">p</span>^{<span class="id" title="tactic">evar</span>: 0 ↦ <span class="id" title="var">x</span>}))^{{<span class="id" title="tactic">evar</span>: <span class="id" title="var">x</span> ↦ 0}})) = <span class="id" title="var">true</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">subst_ctx_bevar_subst</span> <span class="id" title="var">AC</span> <span class="id" title="var">p</span> <span class="id" title="var">q</span> <span class="id" title="var">n</span>:<br/>
+&nbsp;&nbsp;<span class="id" title="var">subst_ctx</span> <span class="id" title="var">AC</span> (<span class="id" title="var">p</span>^[<span class="id" title="tactic">evar</span>: <span class="id" title="var">n</span> ↦ <span class="id" title="var">q</span>]) = (<span class="id" title="var">subst_ctx</span> <span class="id" title="var">AC</span> <span class="id" title="var">p</span>)^[<span class="id" title="tactic">evar</span>: <span class="id" title="var">n</span> ↦ <span class="id" title="var">q</span>].<br/>
+
+<br/>
+<span class="id" title="keyword">End</span> <span class="id" title="var">lemmas</span>.<br/>
+</div>
+<hr/>This page has been generated by <a href="http://coq.inria.fr/">coqdoc</a>
+</div>
+
+</div>
+
+</body>
+</html>

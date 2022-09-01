@@ -1,0 +1,24 @@
+\begin{alectryon}
+  \begin{txt}
+  \end{txt}
+  \sep
+  \begin{sentence}
+    \begin{input}
+      \PY{k+kn}{Inductive}~\PY{n+nf}{Pattern}~\PY{o}{\PYZob{}}\PY{n+nv}{Σ}~\PY{o}{:}~\PY{n}{Signature}\PY{o}{\PYZcb{}}~\PY{o}{:}~\PY{k+kt}{Set}~\PY{o}{:=}\nl
+      \PY{o}{|}~\PY{n}{patt\PYZus{}free\PYZus{}evar}~\PY{o}{(}\PY{n}{x}~\PY{o}{:}~\PY{n+nb}{evar}\PY{o}{)}\nl
+      \PY{o}{|}~\PY{n}{patt\PYZus{}free\PYZus{}svar}~\PY{o}{(}\PY{n}{x}~\PY{o}{:}~\PY{n}{svar}\PY{o}{)}\nl
+      \PY{o}{|}~\PY{n}{patt\PYZus{}bound\PYZus{}evar}~\PY{o}{(}\PY{n}{n}~\PY{o}{:}~\PY{n}{db\PYZus{}index}\PY{o}{)}\nl
+      \PY{o}{|}~\PY{n}{patt\PYZus{}bound\PYZus{}svar}~\PY{o}{(}\PY{n}{n}~\PY{o}{:}~\PY{n}{db\PYZus{}index}\PY{o}{)}\nl
+      \PY{o}{|}~\PY{n}{patt\PYZus{}sym}~\PY{o}{(}\PY{n}{sigma}~\PY{o}{:}~\PY{n}{symbols}\PY{o}{)}~\PY{o}{:}~~\PY{n}{Pattern}\nl
+      \PY{o}{|}~\PY{n}{patt\PYZus{}app}~\PY{o}{(}\PY{n}{phi1}~\PY{n}{phi2}~\PY{o}{:}~\PY{n}{Pattern}\PY{o}{)}\nl
+      \PY{o}{|}~\PY{n}{patt\PYZus{}bott}\nl
+      \PY{o}{|}~\PY{n}{patt\PYZus{}imp}~\PY{o}{(}\PY{n}{phi1}~\PY{n}{phi2}~\PY{o}{:}~\PY{n}{Pattern}\PY{o}{)}\nl
+      \PY{o}{|}~\PY{n}{patt\PYZus{}exists}~\PY{o}{(}\PY{n}{phi}~\PY{o}{:}~\PY{n}{Pattern}\PY{o}{)}\nl
+      \PY{o}{|}~\PY{n}{patt\PYZus{}mu}~\PY{o}{(}\PY{n}{phi}~\PY{o}{:}~\PY{n}{Pattern}\PY{o}{)}\nl
+      \PY{o}{.}\nl
+    \end{input}
+  \end{sentence}
+  \sep
+  \begin{txt}
+  \end{txt}
+\end{alectryon}

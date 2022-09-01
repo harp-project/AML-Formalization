@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html class="alectryon-standalone"><head><title>SyntacticConstruct.v</title><meta charset="utf-8"><meta content="Alectryon" name="generator"><meta name="viewport" content="width=device-width, initial-scale=1"><link href="alectryon.css" rel="stylesheet"><link href="pygments.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/IBM-type/0.5.4/css/ibm-type.min.css" integrity="sha512-sky5cf9Ts6FY1kstGOBHSybfKqdHR41M0Ldb0BjNiv3ifltoQIsg0zIaQ+wwdwgQ0w9vKFW7Js50lxH9vqNSSw==" crossorigin="anonymous" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/firacode/5.2.0/fira_code.min.css" integrity="sha512-MbysAYimH1hH2xYzkkMHB6MqxBqfP0megxsCLknbYqHVwXTCg9IqHbk+ZP/vnhO8UEW6PaXAkKe2vQ+SWACxxA==" crossorigin="anonymous" /><script src="alectryon.js"></script></head><body><article class="alectryon-root alectryon-centered"><div class="alectryon-banner">Built with <a href="https://github.com/cpitclaudel/alectryon/">Alectryon</a>, running Coq+SerAPI v8.15.0+0.15.0. Bubbles (<span class="alectryon-bubble"></span>) indicate interactive fragments: hover for details, tap to reveal contents. Use <kbd>Ctrl+↑</kbd> <kbd>Ctrl+↓</kbd> to navigate, <kbd>Ctrl+🖱️</kbd> to focus. On Mac, use <kbd>⌘</kbd> instead of <kbd>Ctrl</kbd>.</div><pre class="alectryon-io highlight"><!-- Generator: Alectryon --><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">From</span> Coq <span class="kn">Require Import</span> ssreflect ssrfun ssrbool.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Set Implicit Arguments</span>.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Unset Strict Implicit</span>.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Unset Printing Implicit Defensive</span>.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><input class="alectryon-toggle" id="SyntacticConstruct-v-chk0" style="display: none" type="checkbox"><label class="alectryon-input" for="SyntacticConstruct-v-chk0"><span class="kn">From</span> stdpp <span class="kn">Require Import</span> base.</label><small class="alectryon-output"><div><div class="alectryon-messages"><blockquote class="alectryon-message">New coercion path [Is_true] : bool &gt;-&gt; <span class="kt">Sortclass</span> <span class="kr">is</span> ambiguous <span class="kr">with</span> existing 
+[is_true] : bool &gt;-&gt; <span class="kt">Sortclass</span>.
+[ambiguous-paths,typechecker]</blockquote></div></div></small><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">From</span> MatchingLogic.Utils
+<span class="kn">Require Import</span>
+    extralibrary
+    stdpp_ext
+.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">From</span> MatchingLogic
+<span class="kn">Require Import</span>
+    Pattern
+    Substitution
+.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Section</span> <span class="nf">with_signature</span>.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">    </span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Context</span> {<span class="nv">Σ</span> : Signature}.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+
+<span class="c">(* Every syntactic construct has a category (unary operator, binder etc),</span>
+<span class="c">   and has to have certain properties about well-formedness</span>
+<span class="c">   and substitution.</span>
+<span class="c">*)</span>
+
+
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Class</span> <span class="nf">EBinder</span> (<span class="nv">ebinder</span> : Pattern -&gt; Pattern)
+    (<span class="nv">fevo</span>: db_index -&gt; Pattern -&gt; Pattern -&gt; Pattern )
+    (<span class="nv">fsvo</span>: db_index -&gt; Pattern -&gt; Pattern -&gt; Pattern ) :=
+{
+ebinder_bevar_subst :
+  <span class="kr">forall</span> <span class="nv">ψ</span>,
+    well_formed_closed ψ -&gt;
+    <span class="kr">forall</span> <span class="nv">n</span> <span class="nv">ϕ</span>,
+      bevar_subst (ebinder ϕ) ψ n = fevo n ψ ϕ ;
+ebinder_bsvar_subst :
+  <span class="kr">forall</span> <span class="nv">ψ</span>,
+    well_formed_closed ψ -&gt;
+    <span class="kr">forall</span> <span class="nv">n</span> <span class="nv">ϕ</span>,
+      bsvar_subst (ebinder ϕ) ψ n = fsvo n ψ ϕ ;
+}.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Class</span> <span class="nf">SBinder</span> (<span class="nv">sbinder</span> : Pattern -&gt; Pattern) :=
+{
+sbinder_bevar_subst :
+  <span class="kr">forall</span> <span class="nv">ψ</span>,
+    well_formed_closed ψ -&gt;
+    <span class="kr">forall</span> <span class="nv">n</span> <span class="nv">ϕ</span>,
+      bevar_subst (sbinder ϕ) ψ n = sbinder (bevar_subst ϕ ψ n) ;
+sbinder_bsvar_subst :
+  <span class="kr">forall</span> <span class="nv">ψ</span>,
+    well_formed_closed ψ -&gt;
+    <span class="kr">forall</span> <span class="nv">n</span> <span class="nv">ϕ</span>,
+      bsvar_subst (sbinder ϕ) ψ n = sbinder (bsvar_subst ϕ ψ (S n)) ;
+}.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+<span class="c">(* Non-variable nullary operation *)</span>
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Class</span> <span class="nf">NVNullary</span> (<span class="nv">nvnullary</span> : Pattern) :=
+{
+nvnullary_bevar_subst :
+  <span class="kr">forall</span> <span class="nv">ψ</span>,
+    well_formed_closed ψ -&gt;
+    <span class="kr">forall</span> <span class="nv">n</span>,
+      bevar_subst nvnullary ψ n = nvnullary ;
+nvnullary_bsvar_subst :
+  <span class="kr">forall</span> <span class="nv">ψ</span>,
+    well_formed_closed ψ -&gt;
+    <span class="kr">forall</span> <span class="nv">n</span>,
+      bevar_subst nvnullary ψ n = nvnullary ;
+
+nvnullary_wf : well_formed nvnullary = true ;
+}.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Class</span> <span class="nf">Unary</span> (<span class="nv">patt</span> : Pattern -&gt; Pattern) :=
+{
+unary_bevar_subst :
+  <span class="kr">forall</span> <span class="nv">ψ</span>,
+    well_formed_closed ψ -&gt;
+    <span class="kr">forall</span> <span class="nv">n</span> <span class="nv">ϕ</span>,
+      bevar_subst (patt ϕ) ψ n = patt (bevar_subst ϕ ψ n) ;
+unary_bsvar_subst :
+  <span class="kr">forall</span> <span class="nv">ψ</span>,
+    well_formed_closed ψ -&gt;
+    <span class="kr">forall</span> <span class="nv">n</span> <span class="nv">ϕ</span>,
+      bsvar_subst (patt ϕ) ψ n = patt (bsvar_subst ϕ ψ n) ;
+
+unary_wf : <span class="kr">forall</span> <span class="nv">ψ</span>, well_formed ψ -&gt; well_formed (patt ψ) ;
+}.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Class</span> <span class="nf">Binary</span> (<span class="nv">binary</span> : Pattern -&gt; Pattern -&gt; Pattern) :=
+{
+binary_bevar_subst :
+  <span class="kr">forall</span> <span class="nv">ψ</span>,
+    well_formed_closed ψ -&gt;
+    <span class="kr">forall</span> <span class="nv">n</span> <span class="nv">ϕ₁</span> <span class="nv">ϕ₂</span>,
+      bevar_subst (binary ϕ₁ ϕ₂) ψ n = binary (bevar_subst ϕ₁ ψ n) (bevar_subst ϕ₂ ψ n) ;
+binary_bsvar_subst :
+  <span class="kr">forall</span> <span class="nv">ψ</span>,
+    well_formed_closed ψ -&gt;
+    <span class="kr">forall</span> <span class="nv">n</span> <span class="nv">ϕ₁</span> <span class="nv">ϕ₂</span>,
+      bsvar_subst (binary ϕ₁ ϕ₂) ψ n = binary (bsvar_subst ϕ₁ ψ n) (bsvar_subst ϕ₂ ψ n) ;
+
+binary_wf : <span class="kr">forall</span> <span class="nv">ψ1</span> <span class="nv">ψ2</span>, well_formed ψ1 -&gt; well_formed ψ2 -&gt; well_formed (binary ψ1 ψ2) ;
+}.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Definition</span> <span class="nf">simpl_bevar_subst&#39;</span> :=
+(@ebinder_bevar_subst,
+ @sbinder_bevar_subst,
+ @nvnullary_bevar_subst,
+ @unary_bevar_subst,
+ @binary_bevar_subst
+).</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Definition</span> <span class="nf">simpl_bsvar_subst&#39;</span> :=
+(@ebinder_bsvar_subst,
+ @sbinder_bsvar_subst,
+ @nvnullary_bsvar_subst,
+ @unary_bsvar_subst,
+ @binary_bsvar_subst
+).</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input">#[<span class="kn">global</span>]
+<span class="kn">Instance</span> <span class="nf">EBinder_exists</span> : EBinder patt_exists _ _ :=
+{|
+ebinder_bevar_subst := bevar_subst_exists ;
+ebinder_bsvar_subst := bsvar_subst_exists ;
+|}.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input">#[<span class="kn">global</span>]
+<span class="kn">Instance</span> <span class="nf">SBinder_mu</span> : SBinder patt_mu :=
+{|
+sbinder_bevar_subst := bevar_subst_mu ;
+sbinder_bsvar_subst := bsvar_subst_mu ;
+|}.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+
+</span><span class="alectryon-sentence"><span class="alectryon-input">#[<span class="kn">global</span>]
+<span class="kn">Program Instance</span> <span class="nf">NVNullary_bott</span> : NVNullary patt_bott :=
+{|
+nvnullary_bevar_subst := bevar_subst_bott ;
+nvnullary_bsvar_subst := bsvar_subst_bott ;
+nvnullary_wf := well_formed_bott ;
+|}.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input">#[<span class="kn">global</span>]
+<span class="kn">Instance</span> <span class="nf">NVNullary_sym</span> <span class="nv">s</span> : NVNullary (patt_sym s) :=
+{|
+nvnullary_bevar_subst := <span class="kr">λ</span> <span class="nv">ψ</span> (<span class="nv">wfcψ</span> : well_formed_closed ψ) <span class="nv">n</span>, @bevar_subst_sym Σ ψ wfcψ n s ;
+nvnullary_bsvar_subst := <span class="kr">λ</span> <span class="nv">ψ</span> (<span class="nv">wfcψ</span> : well_formed_closed ψ) <span class="nv">n</span>, @bsvar_subst_sym Σ ψ wfcψ n s;
+nvnullary_wf := (well_formed_sym s) ;
+|}.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input">#[<span class="kn">global</span>]
+<span class="kn">Instance</span> <span class="nf">Binary_app</span> : Binary patt_app :=
+{|
+binary_bevar_subst := bevar_subst_app ;
+binary_bsvar_subst := bsvar_subst_app ;
+binary_wf := well_formed_app ;
+|}.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input">#[<span class="kn">global</span>]
+<span class="kn">Instance</span> <span class="nf">Binary_imp</span> : Binary patt_imp :=
+{|
+binary_bevar_subst := bevar_subst_imp ;
+binary_bsvar_subst := bsvar_subst_imp ;
+binary_wf := well_formed_imp ;
+|}.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">End</span> <span class="nf">with_signature</span>.</span></span></pre></article></body></html>

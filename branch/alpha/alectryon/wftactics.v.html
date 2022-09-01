@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html class="alectryon-standalone"><head><title>wftactics.v</title><meta charset="utf-8"><meta content="Alectryon" name="generator"><meta name="viewport" content="width=device-width, initial-scale=1"><link href="alectryon.css" rel="stylesheet"><link href="pygments.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/IBM-type/0.5.4/css/ibm-type.min.css" integrity="sha512-sky5cf9Ts6FY1kstGOBHSybfKqdHR41M0Ldb0BjNiv3ifltoQIsg0zIaQ+wwdwgQ0w9vKFW7Js50lxH9vqNSSw==" crossorigin="anonymous" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/firacode/5.2.0/fira_code.min.css" integrity="sha512-MbysAYimH1hH2xYzkkMHB6MqxBqfP0megxsCLknbYqHVwXTCg9IqHbk+ZP/vnhO8UEW6PaXAkKe2vQ+SWACxxA==" crossorigin="anonymous" /><script src="alectryon.js"></script></head><body><article class="alectryon-root alectryon-centered"><div class="alectryon-banner">Built with <a href="https://github.com/cpitclaudel/alectryon/">Alectryon</a>, running Coq+SerAPI v8.15.0+0.15.0. Bubbles (<span class="alectryon-bubble"></span>) indicate interactive fragments: hover for details, tap to reveal contents. Use <kbd>Ctrl+↑</kbd> <kbd>Ctrl+↓</kbd> to navigate, <kbd>Ctrl+🖱️</kbd> to focus. On Mac, use <kbd>⌘</kbd> instead of <kbd>Ctrl</kbd>.</div><pre class="alectryon-io highlight"><!-- Generator: Alectryon --><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">From</span> Coq <span class="kn">Require Import</span> ssreflect ssrfun ssrbool.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><input class="alectryon-toggle" id="wftactics-v-chk0" style="display: none" type="checkbox"><label class="alectryon-input" for="wftactics-v-chk0"><span class="kn">From</span> stdpp <span class="kn">Require Import</span> countable infinite.</label><small class="alectryon-output"><div><div class="alectryon-messages"><blockquote class="alectryon-message">New coercion path [Is_true] : bool &gt;-&gt; <span class="kt">Sortclass</span> <span class="kr">is</span> ambiguous <span class="kr">with</span> existing 
+[is_true] : bool &gt;-&gt; <span class="kt">Sortclass</span>.
+[ambiguous-paths,typechecker]</blockquote></div></div></small><span class="alectryon-wsp">
+</span></span><span class="alectryon-sentence"><input class="alectryon-toggle" id="wftactics-v-chk1" style="display: none" type="checkbox"><label class="alectryon-input" for="wftactics-v-chk1"><span class="kn">From</span> stdpp <span class="kn">Require Import</span> pmap gmap mapset fin_sets propset.</label><small class="alectryon-output"><div><div class="alectryon-messages"><blockquote class="alectryon-message">New coercion path [Is_true] : bool &gt;-&gt; <span class="kt">Sortclass</span> <span class="kr">is</span> ambiguous <span class="kr">with</span> existing 
+[is_true] : bool &gt;-&gt; <span class="kt">Sortclass</span>.
+[ambiguous-paths,typechecker]</blockquote></div></div></small><span class="alectryon-wsp">
+</span></span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Require Import</span> stdpp_ext.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">From</span> MatchingLogic
+<span class="kn">Require Import</span>
+  Utils.extralibrary
+  Pattern
+  Substitution
+  ApplicationContext
+  SyntaxLemmas.FreshnessSubstitution
+  SyntacticConstruct
+.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Tactic Notation</span> <span class="s2">&quot;wf_auto&quot;</span> int_or_var(n)
+  := <span class="nb">auto</span> n; <span class="nb">unfold</span> well_formed, well_formed_closed <span class="kr">in</span> *; destruct_and?; <span class="nb">simpl</span> <span class="kr">in</span> *; split_and?; <span class="nb">auto</span> n.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Tactic Notation</span> <span class="s2">&quot;wf_auto&quot;</span> := wf_auto <span class="mi">5</span>.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Ltac</span> <span class="nf">wf_auto2</span> := <span class="nb">unfold</span> is_true <span class="kr">in</span> *;
+<span class="kp">repeat</span> (<span class="kp">try</span> <span class="bp">assumption</span>; <span class="kp">try</span> <span class="bp">reflexivity</span>; <span class="kp">try</span> (<span class="kp">solve</span> [wf_auto]); <span class="c">(* TODO: get rid of [wf_auto] *)</span>
+<span class="nb">apply</span> nullary_wf || <span class="nb">apply</span> unary_wf || <span class="nb">apply</span> binary_wf ||
+<span class="kr">match goal with</span>
+| [ |- (<span class="kr">forall</span> <span class="nv">_</span>, _) ]
+  =&gt; <span class="nb">intro</span>
+
+| [ |- size&#39; (evar_open _ _ _) &lt; _ ]
+  =&gt; <span class="nb">rewrite</span> evar_open_size&#39;
+
+| [ |- size&#39; (svar_open _ _ _) &lt; _ ]
+  =&gt; <span class="nb">rewrite</span> svar_open_size&#39;
+
+| [ |- size&#39; _ &lt; size&#39; (patt_app _ _) ]
+  =&gt; <span class="nb">simpl</span>; <span class="bp">lia</span>
+
+| [ |- size&#39; _ &lt; size&#39; (patt_imp _ _) ]
+  =&gt; <span class="nb">simpl</span>; <span class="bp">lia</span>
+
+| [ |- size&#39; _ &lt; size&#39; (patt_exists _) ]
+  =&gt; <span class="nb">simpl</span>; <span class="bp">lia</span>
+
+| [ |- well_formed (foldr patt_imp <span class="nl">?g</span> <span class="nl">?xs</span>) = true ]
+  =&gt; <span class="nb">apply</span> well_formed_foldr
+
+| [ |- <span class="kn">wf</span> (take <span class="nl">?n</span> <span class="nl">?xs</span>) = true ]
+  =&gt; <span class="nb">apply</span> wf_take
+
+| [ |- <span class="kn">wf</span> (drop <span class="nl">?n</span> <span class="nl">?xs</span>) = true ]
+  =&gt; <span class="nb">apply</span> wf_drop
+
+| [ |- <span class="kn">wf</span> (&lt;[<span class="nl">?n</span> := <span class="nl">?p</span>]&gt; <span class="nl">?xs</span>) = true ]
+  =&gt; <span class="nb">apply</span> wf_insert
+
+| [ |- <span class="kn">wf</span> (<span class="nl">?x</span> :: <span class="nl">?xs</span>) = true ]
+  =&gt; <span class="nb">apply</span> wf_cons
+
+| [ |- <span class="kn">wf</span> (<span class="nl">?xs</span> ++ <span class="nl">?ys</span>) = true ]
+  =&gt; <span class="nb">apply</span> wf_app
+
+| [ |- well_formed (patt_free_evar _) = true]
+  =&gt; <span class="bp">reflexivity</span>
+
+| [ |- well_formed (patt_free_svar _) = true]
+  =&gt; <span class="bp">reflexivity</span>
+
+| [ H : well_formed (patt_app <span class="nl">?p</span> <span class="nl">?q</span>) = true |- _]
+  =&gt; <span class="nb">assert</span> (well_formed p = true);
+    [<span class="nb">eapply</span> well_formed_app_proj1; <span class="bp">eassumption</span>|];
+    <span class="nb">assert</span> ( well_formed q = true);
+    [<span class="nb">eapply</span> well_formed_app_proj2; <span class="bp">eassumption</span>|];
+    <span class="nb">clear</span> H
+
+| [ H : well_formed (patt_imp <span class="nl">?p</span> <span class="nl">?q</span>) = true |- _]
+  =&gt; <span class="nb">assert</span> (well_formed p = true);
+    [<span class="nb">eapply</span> well_formed_imp_proj1; <span class="bp">eassumption</span>|];
+    <span class="nb">assert</span> ( well_formed q = true);
+    [<span class="nb">eapply</span> well_formed_imp_proj2; <span class="bp">eassumption</span>|];
+    <span class="nb">clear</span> H
+
+| [ |- well_formed (free_evar_subst <span class="nl">?phi</span> <span class="nl">?p</span> <span class="nl">?E</span>) = true ]
+  =&gt; <span class="nb">apply</span> well_formed_free_evar_subst
+
+| [ |- <span class="nl">?x</span> ∉ <span class="nl">?E</span> ]
+  =&gt; <span class="kp">progress</span> <span class="nb">simpl</span>
+
+| [ |- <span class="nl">?x</span> ∉ free_evars (free_evar_subst _ _ _) ]
+  =&gt; <span class="nb">eapply</span> not_elem_of_larger_impl_not_elem_of;
+     [<span class="nb">apply</span> free_evars_free_evar_subst|]
+
+| [frx: <span class="nl">?x</span> ∉ _ |- <span class="nl">?x</span> &lt;&gt; <span class="nl">?E</span> ]
+  =&gt; <span class="nb">clear</span> -frx; set_solver
+
+| [frx: <span class="nl">?x</span> ∉ _ |- <span class="nl">?x</span> ∉ <span class="nl">?E</span> ]
+  =&gt; <span class="nb">clear</span> -frx; set_solver
+
+| [ |- well_formed (evar_open _ _ _) = true]
+  =&gt; <span class="nb">apply</span> wf_evar_open_from_wf_ex
+
+| [ |- well_formed (@subst_ctx _ _ _) = true]
+  =&gt; <span class="nb">apply</span> wf_sctx
+
+  <span class="c">(* fallback *)</span>
+| [ |- well_formed _ = true]
+  =&gt; <span class="nb">unfold</span> well_formed, well_formed_closed <span class="kr">in</span> *; <span class="nb">simpl</span> <span class="kr">in</span> *;
+     destruct_and?; split_and?
+
+| [ |- well_formed_positive (free_evar_subst _ _ _) = true ]
+  =&gt; <span class="nb">apply</span> wfp_free_evar_subst
+
+| [H: well_formed_positive (patt_exists _) = true |- _]
+  =&gt; <span class="nb">simpl</span> <span class="kr">in</span> H
+
+| [H: well_formed_closed_mu_aux (patt_exists _) _ = true |- _]
+  =&gt; <span class="nb">simpl</span> <span class="kr">in</span> H
+
+| [H: well_formed_closed_ex_aux (patt_exists _) _ = true |- _]
+  =&gt; <span class="nb">simpl</span> <span class="kr">in</span> H
+
+| [ |- well_formed_closed_mu_aux (free_evar_subst _ _ _) _ = true]
+  =&gt; <span class="nb">apply</span> wfc_mu_free_evar_subst
+
+| [ |- well_formed_closed_ex_aux (free_evar_subst _ _ _) _ = true]
+  =&gt; <span class="nb">apply</span> wfc_ex_free_evar_subst_2; <span class="nb">simpl</span>
+
+| [ |- well_formed_positive (bsvar_subst _ _ _) = true ]
+  =&gt; <span class="nb">apply</span> wfp_bsvar_subst
+
+| [ |- well_formed_positive _ = true ]
+  =&gt; <span class="kp">progress</span> (<span class="nb">simpl</span>; split_and?)
+
+| [ |- no_negative_occurrence_db_b _ (free_evar_subst _ _ _) = true ]
+  =&gt; <span class="nb">apply</span> free_evar_subst_preserves_no_negative_occurrence
+
+| [ |- well_formed_closed_mu_aux (bsvar_subst _ _ _) _ = true ]
+  =&gt; <span class="nb">apply</span> wfc_mu_aux_bsvar_subst
+
+| [ |- well_formed_closed_ex_aux (bsvar_subst _ _ _) _ = true ]
+  =&gt; <span class="nb">apply</span> wfc_ex_aux_bsvar_subst
+
+| [ |- svar_has_negative_occurrence _ (svar_open _ _ _) = false] =&gt;
+  <span class="nb">unfold</span> svar_open; <span class="nb">apply</span> svar_hno_bsvar_subst
+
+|[ |- <span class="kp">context</span> C [ svar_quantify _ _ (svar_open _ _ _) ] ]
+  =&gt; <span class="nb">rewrite</span> svar_quantify_svar_open
+
+| [ |- well_formed_closed_mu_aux (svar_open _ _ _) _ = true] =&gt;
+  <span class="nb">unfold</span> svar_open; <span class="nb">apply</span> wfc_mu_aux_bsvar_subst
+
+| [ |- well_formed_closed_ex_aux (svar_open _ _ _) _ = true] =&gt;
+  <span class="nb">unfold</span> svar_open; <span class="nb">apply</span> wfc_ex_aux_bsvar_subst
+
+| [ |- no_negative_occurrence_db_b _ _ = true ]
+  =&gt; <span class="kp">solve</span> [<span class="nb">unfold</span> well_formed <span class="kr">in</span> *; <span class="nb">simpl</span> <span class="kr">in</span> *; destruct_and!; <span class="bp">assumption</span>]
+
+| [ |- no_negative_occurrence_db_b _ (free_evar_subst _ _ _) = true ]
+  =&gt; <span class="nb">apply</span> free_evar_subst_preserves_no_negative_occurrence
+
+<span class="c">(* last option for [svar_has_negative_occurrence] *)</span>
+| [ |- svar_has_negative_occurrence _ _ = false ]
+  =&gt; <span class="nb">apply</span> svar_hno_false_if_fresh
+
+| [ |- svar_is_fresh_in _ _ ]
+  =&gt; <span class="nb">unfold</span> svar_is_fresh_in
+
+  <span class="c">(* last option for well_formed_closed_ex_aux: try decreasing n *)</span>
+| [ |- well_formed_closed_ex_aux <span class="nl">?p</span> (S <span class="nl">?n</span>) = true ]
+  =&gt; <span class="nb">eapply</span> well_formed_closed_ex_aux_ind <span class="kr">with</span> (ind_evar1 := n);[<span class="bp">lia</span>|]
+
+  <span class="c">(* last option for well_formed_closed_mu_aux: try decreasing n *)</span>
+| [ |- well_formed_closed_mu_aux <span class="nl">?p</span> (S <span class="nl">?n</span>) = true ]
+  =&gt; <span class="nb">eapply</span> well_formed_closed_mu_aux_ind <span class="kr">with</span> (ind_svar1 := n);[<span class="bp">lia</span>|]
+
+<span class="kr">end</span>; <span class="nb">unfold</span> is_true <span class="kr">in</span> *
+).</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Ltac</span> <span class="nf">try_wfauto2</span> :=
+<span class="kr">lazymatch goal with</span>
+| [|- is_true (well_formed _)] =&gt; wf_auto2
+| [|- well_formed _ = true ] =&gt; wf_auto2
+| [|- is_true (well_formed_closed _)] =&gt; wf_auto2
+| [|- well_formed_closed _ = true ] =&gt; wf_auto2
+| [|- is_true (<span class="kn">wf</span> _)] =&gt; wf_auto2
+| [|- <span class="kn">wf</span> _ = true ] =&gt; wf_auto2
+| _ =&gt; <span class="kp">idtac</span>
+<span class="kr">end</span>.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Tactic Notation</span> <span class="s2">&quot;mlSimpl&quot;</span> :=
+  <span class="kp">repeat</span> (<span class="nb">rewrite</span> mlSimpl&#39;); <span class="kp">try</span> <span class="nb">rewrite</span> [increase_ex _ _]/=; <span class="kp">try</span> <span class="nb">rewrite</span> [increase_mu]/=.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Tactic Notation</span> <span class="s2">&quot;mlSimpl&quot;</span> <span class="s2">&quot;in&quot;</span> hyp(H) :=
+  <span class="kp">repeat</span> (<span class="nb">rewrite</span> mlSimpl&#39; <span class="kr">in</span> H); <span class="kp">try</span> <span class="nb">rewrite</span> [increase_ex _ _]/= <span class="kr">in</span> H; <span class="kp">try</span> <span class="nb">rewrite</span> [increase_mu _ _]/= <span class="kr">in</span> H.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Tactic Notation</span> <span class="s2">&quot;mlSortedSimpl&quot;</span> := simpl_sorted_quantification; <span class="kp">try</span> <span class="nb">rewrite</span> [increase_mu]/=.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Tactic Notation</span> <span class="s2">&quot;mlSortedSimpl&quot;</span> <span class="s2">&quot;in&quot;</span> hyp(H) := simpl_sorted_quantification H; <span class="kp">try</span> <span class="nb">rewrite</span> [increase_mu]/=.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span></pre></article></body></html>
