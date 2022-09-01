@@ -1,0 +1,379 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link href="coqdoc.css" rel="stylesheet" type="text/css" />
+<title>Basics</title>
+</head>
+
+<body>
+
+<div id="page">
+
+<div id="header">
+</div>
+
+<div id="main">
+
+<h1 class="libtitle">File Basics</h1>
+
+<div class="code">
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">ssreflect</span> <span class="id" title="var">ssrfun</span> <span class="id" title="var">ssrbool</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Ltac2</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Ltac2</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Ensembles</span> <span class="id" title="var">Bool</span> <span class="id" title="var">String</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq.Logic</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">FunctionalExtensionality</span> <span class="id" title="var">Eqdep_dec</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="keyword">Equations</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="keyword">Equations</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Coq.Program.Tactics</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">MatchingLogic</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Syntax</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">DerivedOperators_Syntax</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">ProofSystem</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">IndexManipulation</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">ProofInfo</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">wftactics</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">Experimental.ProofModePattern</span><br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">stdpp</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">list</span> <span class="id" title="var">tactics</span> <span class="id" title="var">fin_sets</span> <span class="id" title="var">coGset</span> <span class="id" title="var">gmap</span> <span class="id" title="var">sets</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">MatchingLogic.Utils</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">stdpp_ext</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Import</span> <span class="id" title="var">extralibrary</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Import</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">MatchingLogic.Syntax.Notations</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">MatchingLogic.DerivedOperators_Syntax.Notations</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">MatchingLogic.ProofSystem.Notations_private</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">MatchingLogic.ProofInfo.Notations</span><br/>
+.<br/>
+
+<br/>
+
+<br/>
+<span class="id" title="keyword">Open</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">ml_scope</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Record</span> <span class="id" title="var">named_hypothesis</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} := <span class="id" title="var">mkNH</span><br/>
+&nbsp;&nbsp;{<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">nh_name</span> : <span class="id" title="var">string</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">nh_patt</span> : <span class="id" title="var">Pattern</span>; <span class="comment">(*&nbsp;PMPattern&nbsp;*)</span><br/>
+&nbsp;&nbsp;}.<br/>
+
+<br/>
+<span class="id" title="keyword">Notation</span> &quot;N ∶ P" :=<br/>
+&nbsp;&nbsp;(@<span class="id" title="var">mkNH</span> <span class="id" title="var">_</span> <span class="id" title="var">N</span> <span class="id" title="var">P</span>)<br/>
+&nbsp;&nbsp;(<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 100, <span class="id" title="keyword">no</span> <span class="id" title="keyword">associativity</span>, <span class="id" title="var">format</span> "N  '∶'  P", <span class="id" title="var">only</span> <span class="id" title="var">printing</span>).<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">hypotheses</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} := <span class="id" title="var">list</span> <span class="id" title="var">named_hypothesis</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Notation</span> &quot;" :=<br/>
+&nbsp;&nbsp;(@<span class="id" title="var">nil</span> <span class="id" title="var">named_hypothesis</span>)<br/>
+&nbsp;&nbsp;(<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 100, <span class="id" title="tactic">left</span> <span class="id" title="keyword">associativity</span>, <span class="id" title="var">only</span> <span class="id" title="var">printing</span>) : <span class="id" title="var">ml_scope</span>.<br/>
+<span class="comment">(*TODO:&nbsp;Ensure&nbsp;that&nbsp;this&nbsp;does&nbsp;not&nbsp;add&nbsp;parentheses*)</span><br/>
+<span class="id" title="keyword">Notation</span> &quot;x ," :=<br/>
+&nbsp;&nbsp;(@<span class="id" title="var">cons</span> <span class="id" title="var">named_hypothesis</span> <span class="id" title="var">x</span> <span class="id" title="var">nil</span>)<br/>
+&nbsp;&nbsp;(<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 100, <span class="id" title="tactic">left</span> <span class="id" title="keyword">associativity</span>, <span class="id" title="var">format</span> "x ',' '//'", <span class="id" title="var">only</span> <span class="id" title="var">printing</span>) : <span class="id" title="var">ml_scope</span>.<br/>
+<span class="id" title="keyword">Notation</span> &quot;x , y , .. , z ," :=<br/>
+&nbsp;&nbsp;(@<span class="id" title="var">cons</span> <span class="id" title="var">named_hypothesis</span> <span class="id" title="var">x</span> (<span class="id" title="var">cons</span> <span class="id" title="var">y</span> .. (<span class="id" title="var">cons</span> <span class="id" title="var">z</span> <span class="id" title="var">nil</span>) ..))<br/>
+&nbsp;&nbsp;(<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 100, <span class="id" title="tactic">left</span> <span class="id" title="keyword">associativity</span>, <span class="id" title="var">format</span> "x ',' '//' y ',' '//' .. ',' '//' z ',' '//'", <span class="id" title="var">only</span> <span class="id" title="var">printing</span>) : <span class="id" title="var">ml_scope</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">names_of</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} (<span class="id" title="var">h</span> : <span class="id" title="var">hypotheses</span>) : <span class="id" title="var">list</span> <span class="id" title="var">string</span> := <span class="id" title="var">map</span> <span class="id" title="var">nh_name</span> <span class="id" title="var">h</span>.<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">patterns_of</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} (<span class="id" title="var">h</span> : <span class="id" title="var">hypotheses</span>) : <span class="id" title="var">list</span> <span class="id" title="var">Pattern</span> <span class="comment">(*PMPattern*)</span> := <span class="id" title="var">map</span> <span class="id" title="var">nh_patt</span> <span class="id" title="var">h</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">has_name</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} (<span class="id" title="var">n</span> : <span class="id" title="var">string</span>) (<span class="id" title="var">nh</span> : <span class="id" title="var">named_hypothesis</span>) : <span class="id" title="keyword">Prop</span><br/>
+:= <span class="id" title="var">nh_name</span> <span class="id" title="var">nh</span> = <span class="id" title="var">n</span>.<br/>
+
+<br/>
+#[<span class="id" title="var">global</span>]<br/>
+<span class="id" title="keyword">Instance</span> <span class="id" title="var">has_name_dec</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} <span class="id" title="var">n</span> <span class="id" title="var">nh</span> : <span class="id" title="var">Decision</span> (<span class="id" title="var">has_name</span> <span class="id" title="var">n</span> <span class="id" title="var">nh</span>).<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">find_hyp</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} (<span class="id" title="var">name</span> : <span class="id" title="var">string</span>) (<span class="id" title="var">hyps</span> : <span class="id" title="var">hypotheses</span>) : <span class="id" title="var">option</span> (<span class="id" title="var">nat</span> × <span class="id" title="var">named_hypothesis</span>)%<span class="id" title="keyword">type</span><br/>
+:= <span class="id" title="var">stdpp.list.list_find</span> (<span class="id" title="var">has_name</span> <span class="id" title="var">name</span>) <span class="id" title="var">hyps</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Record</span> <span class="id" title="var">MLGoal</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} : <span class="id" title="keyword">Type</span> := <span class="id" title="var">mkMLGoal</span><br/>
+&nbsp;&nbsp;{ <span class="id" title="var">mlTheory</span> : <span class="id" title="var">Theory</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">mlHypotheses</span>: <span class="id" title="var">hypotheses</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">mlConclusion</span> : <span class="id" title="var">Pattern</span> ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">mlInfo</span> : <span class="id" title="var">ProofInfo</span> ;<br/>
+&nbsp;&nbsp;}.<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">MLGoal_from_goal</span><br/>
+&nbsp;&nbsp;{<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} (<span class="id" title="var">Γ</span> : <span class="id" title="var">Theory</span>) (<span class="id" title="keyword">goal</span> : <span class="id" title="var">Pattern</span>) (<span class="id" title="var">pi</span> : <span class="id" title="var">ProofInfo</span>)<br/>
+&nbsp;&nbsp;:<br/>
+&nbsp;&nbsp;<span class="id" title="var">MLGoal</span><br/>
+&nbsp;&nbsp;:= <span class="id" title="var">mkMLGoal</span> <span class="id" title="var">Σ</span> <span class="id" title="var">Γ</span> <span class="id" title="var">nil</span> <span class="id" title="keyword">goal</span> <span class="id" title="var">pi</span>.<br/>
+
+<br/>
+<span class="comment">(*<br/>
+Lemma&nbsp;wf_pmp_to_ln<br/>
+&nbsp;&nbsp;{Σ&nbsp;:&nbsp;Signature}<br/>
+&nbsp;&nbsp;(ϕ&nbsp;:&nbsp;PMPattern)<br/>
+&nbsp;&nbsp;:<br/>
+&nbsp;&nbsp;Pattern.well_formed&nbsp;(PMPattern_to_ln&nbsp;ϕ)<br/>
+.<br/>
+*)</span><br/>
+
+<br/>
+<span class="id" title="keyword">Coercion</span> <span class="id" title="var">of_MLGoal</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} (<span class="id" title="var">MG</span> : <span class="id" title="var">MLGoal</span>) : <span class="id" title="keyword">Type</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed</span> (<span class="id" title="var">mlConclusion</span> <span class="id" title="var">MG</span>) →<br/>
+&nbsp;&nbsp;<span class="id" title="var">Pattern.wf</span> (<span class="id" title="var">patterns_of</span> (<span class="id" title="var">mlHypotheses</span> <span class="id" title="var">MG</span>)) →<br/>
+&nbsp;&nbsp;(<span class="id" title="var">mlTheory</span> <span class="id" title="var">MG</span>) ⊢<span class="id" title="var">i</span> (<span class="id" title="var">fold_right</span> <span class="id" title="var">patt_imp</span> (<span class="id" title="var">mlConclusion</span> <span class="id" title="var">MG</span>) (<span class="id" title="var">patterns_of</span> (<span class="id" title="var">mlHypotheses</span> <span class="id" title="var">MG</span>)))<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">using</span> (<span class="id" title="var">mlInfo</span> <span class="id" title="var">MG</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="comment">(*&nbsp;This&nbsp;is&nbsp;useful&nbsp;only&nbsp;for&nbsp;printing.&nbsp;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;0x2c75&nbsp;was&nbsp;used&nbsp;for&nbsp;the&nbsp;⊢&nbsp;to&nbsp;avoid&nbsp;collision&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Notation</span> &quot;G 'Ⱶ' g 'using' pi "<br/>
+&nbsp;&nbsp;:= (<span class="id" title="var">mkMLGoal</span> <span class="id" title="var">_</span> <span class="id" title="var">G</span> [] <span class="id" title="var">g</span> <span class="id" title="var">pi</span>)<br/>
+&nbsp;&nbsp;(<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 95,<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">no</span> <span class="id" title="keyword">associativity</span>,<br/>
+&nbsp;&nbsp;<span class="id" title="var">format</span> "G  'Ⱶ' '//' g '//' 'using'  pi '//'",<br/>
+&nbsp;&nbsp;<span class="id" title="var">only</span> <span class="id" title="var">printing</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Notation</span> &quot;G 'Ⱶ' g"<br/>
+&nbsp;&nbsp;:= (<span class="id" title="var">mkMLGoal</span> <span class="id" title="var">_</span> <span class="id" title="var">G</span> [] <span class="id" title="var">g</span> <span class="id" title="var">AnyReasoning</span>)<br/>
+&nbsp;&nbsp;(<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 95,<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">no</span> <span class="id" title="keyword">associativity</span>,<br/>
+&nbsp;&nbsp;<span class="id" title="var">format</span> "G  'Ⱶ' '//'  g '//'",<br/>
+&nbsp;&nbsp;<span class="id" title="var">only</span> <span class="id" title="var">printing</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Notation</span> &quot;G 'Ⱶ' l -------------------------------------- g 'using' pi "<br/>
+&nbsp;&nbsp;:= (<span class="id" title="var">mkMLGoal</span> <span class="id" title="var">_</span> <span class="id" title="var">G</span> <span class="id" title="var">l</span> <span class="id" title="var">g</span> <span class="id" title="var">pi</span>)<br/>
+&nbsp;&nbsp;(<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 95,<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">no</span> <span class="id" title="keyword">associativity</span>,<br/>
+&nbsp;&nbsp;<span class="id" title="var">format</span> "G  'Ⱶ' '//' l -------------------------------------- '//' g '//' 'using'  pi '//'",<br/>
+&nbsp;&nbsp;<span class="id" title="var">only</span> <span class="id" title="var">printing</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Notation</span> &quot;G 'Ⱶ' l -------------------------------------- g"<br/>
+&nbsp;&nbsp;:= (<span class="id" title="var">mkMLGoal</span> <span class="id" title="var">_</span> <span class="id" title="var">G</span> <span class="id" title="var">l</span> <span class="id" title="var">g</span> <span class="id" title="var">AnyReasoning</span>)<br/>
+&nbsp;&nbsp;(<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 95,<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">no</span> <span class="id" title="keyword">associativity</span>,<br/>
+&nbsp;&nbsp;<span class="id" title="var">format</span> "G  'Ⱶ' '//' l -------------------------------------- '//' g '//'",<br/>
+&nbsp;&nbsp;<span class="id" title="var">only</span> <span class="id" title="var">printing</span>).<br/>
+
+<br/>
+<span class="id" title="keyword">Ltac</span> <span class="id" title="var">toMLGoal</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">unfold</span> <span class="id" title="var">derives</span>;<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">lazymatch</span> <span class="id" title="keyword">goal</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;| [ |- ?<span class="id" title="var">G</span> ⊢<span class="id" title="var">i</span> ?<span class="id" title="var">phi</span> <span class="id" title="keyword">using</span> ?<span class="id" title="var">pi</span>]<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;⇒ <span class="id" title="tactic">cut</span> (<span class="id" title="var">of_MLGoal</span> (<span class="id" title="var">MLGoal_from_goal</span> <span class="id" title="var">G</span> <span class="id" title="var">phi</span> <span class="id" title="var">pi</span>));<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">unfold</span> <span class="id" title="var">MLGoal_from_goal</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[(<span class="id" title="tactic">unfold</span> <span class="id" title="var">of_MLGoal</span>; <span class="id" title="tactic">simpl</span>; <span class="id" title="keyword">let</span> <span class="id" title="var">H</span> := <span class="id" title="tactic">fresh</span> "H" <span class="id" title="tactic">in</span> <span class="id" title="tactic">intros</span> <span class="id" title="var">H</span>; <span class="id" title="tactic">apply</span> <span class="id" title="var">H</span>; <span class="id" title="tactic">clear</span> <span class="id" title="var">H</span>; [|<span class="id" title="tactic">reflexivity</span>])|]<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Ltac</span> <span class="id" title="var">fromMLGoal</span> := <span class="id" title="tactic">unfold</span> <span class="id" title="var">of_MLGoal</span>; <span class="id" title="tactic">simpl</span>; <span class="id" title="tactic">intros</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">mlUseBasicReasoning</span><br/>
+&nbsp;&nbsp;{<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} (<span class="id" title="var">Γ</span> : <span class="id" title="var">Theory</span>) (<span class="id" title="var">l</span> : <span class="id" title="var">hypotheses</span>) (<span class="id" title="var">g</span> : <span class="id" title="var">Pattern</span>) (<span class="id" title="var">i</span> : <span class="id" title="var">ProofInfo</span>) :<br/>
+&nbsp;&nbsp;<span class="id" title="var">mkMLGoal</span> <span class="id" title="var">Σ</span> <span class="id" title="var">Γ</span> <span class="id" title="var">l</span> <span class="id" title="var">g</span> <span class="id" title="var">BasicReasoning</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">mkMLGoal</span> <span class="id" title="var">Σ</span> <span class="id" title="var">Γ</span> <span class="id" title="var">l</span> <span class="id" title="var">g</span> <span class="id" title="var">i</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Ltac</span> <span class="id" title="var">useBasicReasoning</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">unfold</span> <span class="id" title="var">derives</span>;<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">lazymatch</span> <span class="id" title="keyword">goal</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;| [ |- <span class="id" title="var">of_MLGoal</span> (<span class="id" title="var">mkMLGoal</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span>) ] ⇒ <span class="id" title="tactic">apply</span> <span class="id" title="var">mlUseBasicReasoning</span><br/>
+&nbsp;&nbsp;| [ |- <span class="id" title="var">_</span> ⊢<span class="id" title="var">i</span> <span class="id" title="var">_</span> <span class="id" title="keyword">using</span> <span class="id" title="var">_</span> ] ⇒ <span class="id" title="tactic">apply</span> <span class="id" title="var">useBasicReasoning</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">mlUseGenericReasoning</span><br/>
+&nbsp;&nbsp;{<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} (<span class="id" title="var">Γ</span> : <span class="id" title="var">Theory</span>) (<span class="id" title="var">l</span> : <span class="id" title="var">hypotheses</span>) (<span class="id" title="var">g</span> : <span class="id" title="var">Pattern</span>) (<span class="id" title="var">i</span> <span class="id" title="var">i'</span> : <span class="id" title="var">ProofInfo</span>) :<br/>
+&nbsp;&nbsp;<span class="id" title="var">ProofInfoLe</span> <span class="id" title="var">i</span> <span class="id" title="var">i'</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">mkMLGoal</span> <span class="id" title="var">Σ</span> <span class="id" title="var">Γ</span> <span class="id" title="var">l</span> <span class="id" title="var">g</span> <span class="id" title="var">i</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">mkMLGoal</span> <span class="id" title="var">Σ</span> <span class="id" title="var">Γ</span> <span class="id" title="var">l</span> <span class="id" title="var">g</span> <span class="id" title="var">i'</span>.<br/>
+
+<br/>
+<span class="comment">(*&nbsp;Extracts&nbsp;well-formedness&nbsp;assumptions&nbsp;about&nbsp;(local)&nbsp;goal&nbsp;and&nbsp;(local)&nbsp;hypotheses.&nbsp;*)</span><br/>
+<span class="id" title="keyword">Tactic Notation</span> "mlExtractWF" <span class="id" title="var">ident</span>(<span class="id" title="var">wfl</span>) <span class="id" title="var">ident</span>(<span class="id" title="var">wfg</span>) :=<br/>
+<span class="id" title="keyword">match</span> <span class="id" title="keyword">goal</span> <span class="id" title="keyword">with</span><br/>
+| [ |- ?<span class="id" title="var">g</span> ] ⇒<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">wfl'</span> := <span class="id" title="tactic">fresh</span> "wfl'" <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">wfg'</span> := <span class="id" title="tactic">fresh</span> "wfg'" <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;<span class="id" title="tactic">intros</span> <span class="id" title="var">wfg'</span> <span class="id" title="var">wfl'</span>;<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">pose</span> <span class="id" title="var">proof</span> (<span class="id" title="var">wfl</span> := <span class="id" title="var">wfl'</span>);<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">pose</span> <span class="id" title="var">proof</span> (<span class="id" title="var">wfg</span> := <span class="id" title="var">wfg'</span>);<br/>
+&nbsp;&nbsp;<span class="id" title="var">revert</span> <span class="id" title="var">wfg'</span> <span class="id" title="var">wfl'</span>;<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">fold</span> <span class="id" title="var">g</span>;<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> /<span class="id" title="var">mlConclusion</span> <span class="id" title="tactic">in</span> <span class="id" title="var">wfg</span>;<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> /<span class="id" title="var">mlHypotheses</span> <span class="id" title="tactic">in</span> <span class="id" title="var">wfl</span><br/>
+<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Local Example</span> <span class="id" title="var">ex_extractWfAssumptions</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} <span class="id" title="var">Γ</span> (<span class="id" title="var">p</span> : <span class="id" title="var">Pattern</span>) :<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed</span> <span class="id" title="var">p</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢<span class="id" title="var">i</span> <span class="id" title="var">p</span> ---&gt; <span class="id" title="var">p</span> <span class="id" title="keyword">using</span> <span class="id" title="var">BasicReasoning</span>.<br/>
+
+<br/>
+<span class="comment">(*&nbsp;We&nbsp;no&nbsp;longer&nbsp;have&nbsp;the&nbsp;original&nbsp;`cast_proof`&nbsp;thing;<br/>
+&nbsp;&nbsp;&nbsp;however,&nbsp;something&nbsp;we&nbsp;may&nbsp;want&nbsp;to&nbsp;rewrite&nbsp;only&nbsp;in&nbsp;the&nbsp;local&nbsp;hypotheses<br/>
+&nbsp;&nbsp;&nbsp;part&nbsp;of&nbsp;a&nbsp;goal,&nbsp;for&nbsp;which&nbsp;a&nbsp;lemma&nbsp;like&nbsp;this&nbsp;is&nbsp;useful.<br/>
+*)</span><br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">cast_proof_ml_hyps</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} <span class="id" title="var">Γ</span> <span class="id" title="var">hyps</span> <span class="id" title="var">hyps'</span> (<span class="id" title="var">e</span> : <span class="id" title="var">patterns_of</span> <span class="id" title="var">hyps</span> = <span class="id" title="var">patterns_of</span> <span class="id" title="var">hyps'</span>) <span class="id" title="keyword">goal</span> (<span class="id" title="var">i</span> : <span class="id" title="var">ProofInfo</span>) :<br/>
+&nbsp;&nbsp;<span class="id" title="var">mkMLGoal</span> <span class="id" title="var">Σ</span> <span class="id" title="var">Γ</span> <span class="id" title="var">hyps</span> <span class="id" title="keyword">goal</span> <span class="id" title="var">i</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">mkMLGoal</span> <span class="id" title="var">Σ</span> <span class="id" title="var">Γ</span> <span class="id" title="var">hyps'</span> <span class="id" title="keyword">goal</span> <span class="id" title="var">i</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Tactic Notation</span> "_mlReshapeHypsByIdx" <span class="id" title="keyword">constr</span>(<span class="id" title="var">n</span>) :=<br/>
+&nbsp;&nbsp;<span class="id" title="var">unshelve</span> (<span class="id" title="tactic">eapply</span> (@<span class="id" title="var">cast_proof_ml_hyps</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span>));<br/>
+&nbsp;&nbsp;[<span class="id" title="var">shelve</span>|(<span class="id" title="tactic">apply</span> <span class="id" title="tactic">f_equal</span>; <span class="id" title="tactic">rewrite</span> &lt;- (<span class="id" title="var">firstn_skipn</span> <span class="id" title="var">n</span>); <span class="id" title="tactic">rewrite</span> /<span class="id" title="var">firstn</span>; <span class="id" title="tactic">rewrite</span> /<span class="id" title="var">skipn</span>; <span class="id" title="tactic">reflexivity</span>)|<span class="id" title="tactic">idtac</span>]<br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Tactic Notation</span> "_mlReshapeHypsByName" <span class="id" title="keyword">constr</span>(<span class="id" title="var">n</span>) :=<br/>
+&nbsp;&nbsp;<span class="id" title="var">unshelve</span> (<span class="id" title="tactic">eapply</span> (@<span class="id" title="var">cast_proof_ml_hyps</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span>));<br/>
+&nbsp;&nbsp;[<span class="id" title="var">shelve</span>|(<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <span class="id" title="tactic">f_equal</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">lazymatch</span> <span class="id" title="keyword">goal</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| [|- <span class="id" title="var">_</span> = ?<span class="id" title="var">l</span>] ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">lazymatch</span> (<span class="id" title="tactic">eval</span> <span class="id" title="tactic">cbv</span> <span class="id" title="tactic">in</span> (<span class="id" title="var">find_hyp</span> <span class="id" title="var">n</span> <span class="id" title="var">l</span>)) <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">Some</span> (?<span class="id" title="var">n</span>, <span class="id" title="var">_</span>) ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> &lt;- (<span class="id" title="var">firstn_skipn</span> <span class="id" title="var">n</span>);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> /<span class="id" title="var">firstn</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> /<span class="id" title="var">skipn</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">reflexivity</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;)<br/>
+&nbsp;&nbsp;|<span class="id" title="tactic">idtac</span>]<br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Ltac</span>2 <span class="id" title="var">_mlReshapeHypsByName</span> (<span class="id" title="var">name'</span> : <span class="id" title="keyword">constr</span>) :=<br/>
+&nbsp;&nbsp;<span class="id" title="var">ltac1</span>:(<span class="id" title="var">name''</span> |- <span class="id" title="var">_mlReshapeHypsByName</span> <span class="id" title="var">name''</span>) (<span class="id" title="var">Ltac1.of_constr</span> <span class="id" title="var">name'</span>)<br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Tactic Notation</span> "_mlReshapeHypsBack" :=<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">hyps</span> := <span class="id" title="tactic">fresh</span> "hyps" <span class="id" title="tactic">in</span> <span class="id" title="tactic">rewrite</span> [<span class="id" title="var">hyps</span> <span class="id" title="tactic">in</span> <span class="id" title="var">mkMLGoal</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">hyps</span> <span class="id" title="var">_</span>]/<span class="id" title="var">app</span><br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Ltac</span>2 <span class="id" title="var">_mlReshapeHypsBack</span> () :=<br/>
+&nbsp;&nbsp;<span class="id" title="var">ltac1</span>:(<span class="id" title="var">_mlReshapeHypsBack</span>)<br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">MLGoal_intro</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} (<span class="id" title="var">Γ</span> : <span class="id" title="var">Theory</span>) (<span class="id" title="var">l</span> : <span class="id" title="var">hypotheses</span>) (<span class="id" title="var">name</span> : <span class="id" title="var">string</span>) (<span class="id" title="var">x</span> <span class="id" title="var">g</span> : <span class="id" title="var">Pattern</span>)<br/>
+&nbsp;&nbsp;(<span class="id" title="var">i</span> : <span class="id" title="var">ProofInfo</span>) :<br/>
+&nbsp;&nbsp;<span class="id" title="var">mkMLGoal</span> <span class="id" title="var">_</span> <span class="id" title="var">Γ</span> (<span class="id" title="var">l</span> ++ [<span class="id" title="var">mkNH</span> <span class="id" title="var">_</span> <span class="id" title="var">name</span> <span class="id" title="var">x</span>]) <span class="id" title="var">g</span> <span class="id" title="var">i</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">mkMLGoal</span> <span class="id" title="var">_</span> <span class="id" title="var">Γ</span> <span class="id" title="var">l</span> (<span class="id" title="var">x</span> ---&gt; <span class="id" title="var">g</span>) <span class="id" title="var">i</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Ltac</span> <span class="id" title="var">simplLocalContext</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="keyword">goal</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| [ |- @<span class="id" title="var">of_MLGoal</span> ?<span class="id" title="var">Sgm</span> (<span class="id" title="var">mkMLGoal</span> ?<span class="id" title="var">Sgm</span> ?<span class="id" title="var">Ctx</span> ?<span class="id" title="var">l</span> ?<span class="id" title="var">g</span> ?<span class="id" title="var">i</span>) ]<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;⇒ <span class="id" title="tactic">rewrite</span> {1}[<span class="id" title="var">l</span>]/<span class="id" title="var">app</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Ltac</span> <span class="id" title="var">_getHypNames</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">lazymatch</span> <span class="id" title="keyword">goal</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;| [ |- <span class="id" title="var">of_MLGoal</span> (<span class="id" title="var">mkMLGoal</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> ?<span class="id" title="var">l</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span>) ] ⇒ <span class="id" title="tactic">eval</span> <span class="id" title="tactic">lazy</span> <span class="id" title="tactic">in</span> (<span class="id" title="var">names_of</span> <span class="id" title="var">l</span>)<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Tactic Notation</span> "_failIfUsed" <span class="id" title="keyword">constr</span>(<span class="id" title="var">name</span>) :=<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">lazymatch</span> <span class="id" title="keyword">goal</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;| [ |- <span class="id" title="var">of_MLGoal</span> (<span class="id" title="var">mkMLGoal</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> ?<span class="id" title="var">l</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span>) ] ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">lazymatch</span> (<span class="id" title="tactic">eval</span> <span class="id" title="tactic">cbv</span> <span class="id" title="tactic">in</span> (<span class="id" title="var">find_hyp</span> <span class="id" title="var">name</span> <span class="id" title="var">l</span>)) <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">Some</span> <span class="id" title="var">_</span> ⇒ <span class="id" title="tactic">fail</span> "The name" <span class="id" title="var">name</span> "is already used"<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">_</span> ⇒ <span class="id" title="tactic">idtac</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Ltac</span> <span class="id" title="var">_enterProofMode</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="var">toMLGoal</span>;[<span class="id" title="var">wf_auto2</span>|]<br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Ltac</span> <span class="id" title="var">_ensureProofMode</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">lazymatch</span> <span class="id" title="keyword">goal</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;| [ |- <span class="id" title="var">of_MLGoal</span> (<span class="id" title="var">mkMLGoal</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span>)] ⇒ <span class="id" title="tactic">idtac</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">_</span> ⇒ <span class="id" title="var">_enterProofMode</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Tactic Notation</span> "mlIntro" <span class="id" title="keyword">constr</span>(<span class="id" title="var">name'</span>) :=<br/>
+&nbsp;&nbsp;<span class="id" title="var">_ensureProofMode</span>;<br/>
+&nbsp;&nbsp;<span class="id" title="var">_failIfUsed</span> <span class="id" title="var">name'</span>;<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <span class="id" title="var">MLGoal_intro</span> <span class="id" title="keyword">with</span> (<span class="id" title="var">name</span> := <span class="id" title="var">name'</span>);<br/>
+&nbsp;&nbsp;<span class="id" title="var">simplLocalContext</span><br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Tactic Notation</span> "mlIntro" :=<br/>
+&nbsp;&nbsp;<span class="id" title="var">_ensureProofMode</span>;<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">hyps</span> := <span class="id" title="var">_getHypNames</span> <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">name'</span> := <span class="id" title="tactic">eval</span> <span class="id" title="tactic">cbv</span> <span class="id" title="tactic">in</span> (<span class="id" title="tactic">fresh</span> <span class="id" title="var">hyps</span>) <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">mlIntro</span> <span class="id" title="var">name'</span><br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Local Example</span> <span class="id" title="var">ex_toMLGoal</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} <span class="id" title="var">Γ</span> (<span class="id" title="var">p</span> : <span class="id" title="var">Pattern</span>) :<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed</span> <span class="id" title="var">p</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢<span class="id" title="var">i</span> <span class="id" title="var">p</span> ---&gt; <span class="id" title="var">p</span> <span class="id" title="keyword">using</span> <span class="id" title="var">BasicReasoning</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Local Example</span> <span class="id" title="var">ex_mlIntro</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} <span class="id" title="var">Γ</span> <span class="id" title="var">a</span> (<span class="id" title="var">i</span> : <span class="id" title="var">ProofInfo</span>) :<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed</span> <span class="id" title="var">a</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢<span class="id" title="var">i</span> <span class="id" title="var">a</span> ---&gt; <span class="id" title="var">a</span> ---&gt; <span class="id" title="var">a</span> ---&gt; <span class="id" title="var">a</span> ---&gt; <span class="id" title="var">a</span> <span class="id" title="keyword">using</span> <span class="id" title="var">i</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">MLGoal_revertLast</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} (<span class="id" title="var">Γ</span> : <span class="id" title="var">Theory</span>) (<span class="id" title="var">l</span> : <span class="id" title="var">hypotheses</span>) (<span class="id" title="var">x</span> <span class="id" title="var">g</span> : <span class="id" title="var">Pattern</span>) (<span class="id" title="var">n</span> : <span class="id" title="var">string</span>) <span class="id" title="var">i</span> :<br/>
+&nbsp;&nbsp;<span class="id" title="var">mkMLGoal</span> <span class="id" title="var">Σ</span> <span class="id" title="var">Γ</span> <span class="id" title="var">l</span> (<span class="id" title="var">x</span> ---&gt; <span class="id" title="var">g</span>) <span class="id" title="var">i</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">mkMLGoal</span> <span class="id" title="var">Σ</span> <span class="id" title="var">Γ</span> (<span class="id" title="var">l</span> ++ [<span class="id" title="var">mkNH</span> <span class="id" title="var">_</span> <span class="id" title="var">n</span> <span class="id" title="var">x</span>]) <span class="id" title="var">g</span> <span class="id" title="var">i</span>.<br/>
+
+<br/>
+<span class="comment">(*&nbsp;Just&nbsp;a&nbsp;conveniece&nbsp;*)</span><br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">cast_proof'</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} (<span class="id" title="var">Γ</span> : <span class="id" title="var">Theory</span>) (<span class="id" title="var">ϕ</span> ψ : <span class="id" title="var">Pattern</span>) (<span class="id" title="var">i</span> : <span class="id" title="var">ProofInfo</span>) (<span class="id" title="var">e</span> : ψ = <span class="id" title="var">ϕ</span>) :<br/>
+&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢<span class="id" title="var">i</span> <span class="id" title="var">ϕ</span> <span class="id" title="keyword">using</span> <span class="id" title="var">i</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢<span class="id" title="var">i</span> ψ <span class="id" title="keyword">using</span> <span class="id" title="var">i</span>.<br/>
+
+<br/>
+#[<span class="id" title="var">global</span>]<br/>
+<span class="id" title="keyword">Ltac</span> <span class="id" title="var">mlRevertLast</span> :=<br/>
+<span class="id" title="keyword">match</span> <span class="id" title="keyword">goal</span> <span class="id" title="keyword">with</span><br/>
+| |- @<span class="id" title="var">of_MLGoal</span> ?<span class="id" title="var">Sgm</span> (<span class="id" title="var">mkMLGoal</span> ?<span class="id" title="var">Sgm</span> ?<span class="id" title="var">Ctx</span> ?<span class="id" title="var">l</span> ?<span class="id" title="var">g</span> ?<span class="id" title="var">i</span>)<br/>
+⇒ <span class="id" title="tactic">eapply</span> <span class="id" title="var">cast_proof_ml_hyps</span>;<br/>
+&nbsp;&nbsp;&nbsp;[(<span class="id" title="tactic">rewrite</span> -[<span class="id" title="var">l</span>](<span class="id" title="var">take_drop</span> (<span class="id" title="var">length</span> <span class="id" title="var">l</span> - 1)); <span class="id" title="tactic">rewrite</span> [<span class="id" title="var">take</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span>]/=; <span class="id" title="tactic">rewrite</span> [<span class="id" title="var">drop</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span>]/=; <span class="id" title="tactic">reflexivity</span>)|];<br/>
+&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <span class="id" title="var">MLGoal_revertLast</span><br/>
+<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Close</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">ml_scope</span>.<br/>
+</div>
+<hr/>This page has been generated by <a href="http://coq.inria.fr/">coqdoc</a>
+</div>
+
+</div>
+
+</body>
+</html>

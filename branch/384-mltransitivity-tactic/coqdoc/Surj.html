@@ -1,0 +1,67 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link href="coqdoc.css" rel="stylesheet" type="text/css" />
+<title>Surj</title>
+</head>
+
+<body>
+
+<div id="page">
+
+<div id="header">
+</div>
+
+<div id="main">
+
+<h1 class="libtitle">File Surj</h1>
+
+<div class="code">
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">ssreflect</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">ssrfun</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">ssrbool</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Coq.Setoids.Setoid</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Coq.Classes.Morphisms</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Coq.Relations.Relations</span>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Logic.IndefiniteDescription</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Coq.Logic.FunctionalExtensionality</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">stdpp</span><br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">base</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">decidable</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">propset</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">sets</span><br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Class</span> <span class="id" title="var">Surj'</span> {<span class="id" title="var">A</span> <span class="id" title="var">B</span>} (<span class="id" title="var">R</span> : <span class="id" title="var">relation</span> <span class="id" title="var">B</span>) (<span class="id" title="var">f</span> : <span class="id" title="var">A</span> → <span class="id" title="var">B</span>) : <span class="id" title="keyword">Type</span> := {<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">surj'_inv</span> : <span class="id" title="var">B</span> → <span class="id" title="var">A</span> ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">surj'_pf</span>: ∀ (<span class="id" title="var">b</span> : <span class="id" title="var">B</span>), <span class="id" title="var">R</span> (<span class="id" title="var">f</span> (<span class="id" title="var">surj'_inv</span> <span class="id" title="var">b</span>)) <span class="id" title="var">b</span><br/>
+}.<br/>
+
+<br/>
+#[<span class="id" title="var">export</span>]<br/>
+<span class="id" title="keyword">Instance</span> <span class="id" title="var">surj_surj'</span> {<span class="id" title="var">A</span> <span class="id" title="var">B</span>} (<span class="id" title="var">R</span> : <span class="id" title="var">relation</span> <span class="id" title="var">B</span>) (<span class="id" title="var">f</span> : <span class="id" title="var">A</span> → <span class="id" title="var">B</span>) {<span class="id" title="var">_</span> : @<span class="id" title="var">Surj'</span> <span class="id" title="var">A</span> <span class="id" title="var">B</span> <span class="id" title="var">R</span> <span class="id" title="var">f</span>} : <span class="id" title="var">Surj</span> <span class="id" title="var">R</span> <span class="id" title="var">f</span>.<br/>
+
+<br/>
+#[<span class="id" title="var">export</span>]<br/>
+<span class="id" title="keyword">Instance</span> <span class="id" title="var">surj'_id</span> {<span class="id" title="var">A</span>} : @<span class="id" title="var">Surj'</span> <span class="id" title="var">A</span> <span class="id" title="var">A</span> (=) <span class="id" title="var">Datatypes.id</span>.<br/>
+
+<br/>
+#[<span class="id" title="var">export</span>]<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Instance</span> <span class="id" title="var">compose_surj'</span> {<span class="id" title="var">A</span> <span class="id" title="var">B</span> <span class="id" title="var">C</span>} <span class="id" title="var">R</span> (<span class="id" title="var">f</span> : <span class="id" title="var">A</span> → <span class="id" title="var">B</span>) (<span class="id" title="var">g</span> : <span class="id" title="var">B</span> → <span class="id" title="var">C</span>) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Surj'</span> (=) <span class="id" title="var">f</span> → <span class="id" title="var">Surj'</span> <span class="id" title="var">R</span> <span class="id" title="var">g</span> → <span class="id" title="var">Surj'</span> <span class="id" title="var">R</span> (<span class="id" title="var">g</span> ∘ <span class="id" title="var">f</span>).<br/>
+</div>
+<hr/>This page has been generated by <a href="http://coq.inria.fr/">coqdoc</a>
+</div>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,450 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link href="coqdoc.css" rel="stylesheet" type="text/css" />
+<title>Freshness</title>
+</head>
+
+<body>
+
+<div id="page">
+
+<div id="header">
+</div>
+
+<div id="main">
+
+<h1 class="libtitle">File Freshness</h1>
+
+<div class="code">
+<span class="id" title="keyword">From</span> <span class="id" title="var">MatchingLogic</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Export</span> <span class="id" title="var">Pattern</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Section</span> <span class="id" title="var">freshness</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Context</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>}.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="comment">(*&nbsp;fresh&nbsp;variables&nbsp;*)</span><br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">evar_fresh</span> (<span class="id" title="var">l</span> : <span class="id" title="var">list</span> <span class="id" title="tactic">evar</span>) : <span class="id" title="tactic">evar</span> := <span class="id" title="tactic">fresh</span> <span class="id" title="var">l</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">svar_fresh</span> (<span class="id" title="var">l</span> : <span class="id" title="var">list</span> <span class="id" title="var">svar</span>) : <span class="id" title="var">svar</span> := <span class="id" title="tactic">fresh</span> <span class="id" title="var">l</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">evar_fresh_s</span> (<span class="id" title="var">s</span> : <span class="id" title="var">EVarSet</span>) : <span class="id" title="tactic">evar</span> := <span class="id" title="var">evar_fresh</span> (<span class="id" title="var">elements</span> <span class="id" title="var">s</span>).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">svar_fresh_s</span> (<span class="id" title="var">s</span> : <span class="id" title="var">SVarSet</span>) : <span class="id" title="var">svar</span> := <span class="id" title="var">svar_fresh</span> (<span class="id" title="var">elements</span> <span class="id" title="var">s</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">fresh_evar</span> <span class="id" title="var">ϕ</span> := <span class="id" title="var">evar_fresh_s</span> (<span class="id" title="var">free_evars</span> <span class="id" title="var">ϕ</span>).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">fresh_svar</span> <span class="id" title="var">ϕ</span> := <span class="id" title="var">svar_fresh_s</span> (<span class="id" title="var">free_svars</span> <span class="id" title="var">ϕ</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="comment">(*&nbsp;Lemmas&nbsp;about&nbsp;fresh&nbsp;variables&nbsp;*)</span><br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">set_evar_fresh_is_fresh''</span> (<span class="id" title="var">S</span> : <span class="id" title="var">list</span> <span class="id" title="tactic">evar</span>) : (<span class="id" title="var">evar_fresh</span> <span class="id" title="var">S</span>) ∉ <span class="id" title="var">S</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">set_evar_fresh_is_fresh'</span> (<span class="id" title="var">S</span> : <span class="id" title="var">EVarSet</span>) : <span class="id" title="var">evar_fresh</span> (<span class="id" title="var">elements</span> <span class="id" title="var">S</span>) ∉ <span class="id" title="var">S</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">set_evar_fresh_is_fresh</span> <span class="id" title="var">ϕ</span> : <span class="id" title="var">evar_is_fresh_in</span> (<span class="id" title="var">fresh_evar</span> <span class="id" title="var">ϕ</span>) <span class="id" title="var">ϕ</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Hint Resolve</span> <span class="id" title="var">set_evar_fresh_is_fresh</span> : <span class="id" title="var">core</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">set_svar_fresh_is_fresh''</span> (<span class="id" title="var">S</span> : <span class="id" title="var">list</span> <span class="id" title="var">svar</span>) : (<span class="id" title="var">svar_fresh</span> <span class="id" title="var">S</span>) ∉ <span class="id" title="var">S</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">set_svar_fresh_is_fresh'</span> (<span class="id" title="var">S</span> : <span class="id" title="var">SVarSet</span>) : <span class="id" title="var">svar_fresh</span> (<span class="id" title="var">elements</span> <span class="id" title="var">S</span>) ∉ <span class="id" title="var">S</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">set_svar_fresh_is_fresh</span> <span class="id" title="var">ϕ</span> : <span class="id" title="var">svar_is_fresh_in</span> (<span class="id" title="var">fresh_svar</span> <span class="id" title="var">ϕ</span>) <span class="id" title="var">ϕ</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Hint Resolve</span> <span class="id" title="var">set_svar_fresh_is_fresh</span> : <span class="id" title="var">core</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">evar_is_fresh_in_richer'</span> <span class="id" title="var">x</span> <span class="id" title="var">ϕ</span> <span class="id" title="var">B</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">free_evars</span> <span class="id" title="var">ϕ</span> ⊆ <span class="id" title="var">B</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">x</span> ∉ <span class="id" title="var">B</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">evar_is_fresh_in</span> <span class="id" title="var">x</span> <span class="id" title="var">ϕ</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">evar_is_fresh_in_richer</span> <span class="id" title="var">x</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">free_evars</span> <span class="id" title="var">ϕ₁</span> ⊆ <span class="id" title="var">free_evars</span> <span class="id" title="var">ϕ₂</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">evar_is_fresh_in</span> <span class="id" title="var">x</span> <span class="id" title="var">ϕ₂</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">evar_is_fresh_in</span> <span class="id" title="var">x</span> <span class="id" title="var">ϕ₁</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">svar_is_fresh_in_richer'</span> <span class="id" title="var">X</span> <span class="id" title="var">ϕ</span> <span class="id" title="var">B</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">free_svars</span> <span class="id" title="var">ϕ</span> ⊆ <span class="id" title="var">B</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">X</span> ∉ <span class="id" title="var">B</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">svar_is_fresh_in</span> <span class="id" title="var">X</span> <span class="id" title="var">ϕ</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">svar_is_fresh_in_richer</span> <span class="id" title="var">X</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">free_svars</span> <span class="id" title="var">ϕ₁</span> ⊆ <span class="id" title="var">free_svars</span> <span class="id" title="var">ϕ₂</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">svar_is_fresh_in</span> <span class="id" title="var">X</span> <span class="id" title="var">ϕ₂</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">svar_is_fresh_in</span> <span class="id" title="var">X</span> <span class="id" title="var">ϕ₁</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="comment">(*<br/>
+&nbsp;&nbsp;Lemma&nbsp;fresh_neq_fresh_l&nbsp;ϕ₁&nbsp;ϕ₂&nbsp;:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">(*~&nbsp;evar_is_fresh_in&nbsp;(fresh_evar&nbsp;ϕ₁)&nbsp;ϕ₂&nbsp;-&gt;*)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;free_evars&nbsp;ϕ₁&nbsp;⊈<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;fresh_evar&nbsp;ϕ₁&nbsp;≠&nbsp;fresh_evar&nbsp;ϕ₂.<br/>
+&nbsp;&nbsp;Proof.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;intros&nbsp;H.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;unfold&nbsp;fresh_evar&nbsp;at&nbsp;2.<br/>
+&nbsp;&nbsp;&nbsp;*)</span><br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Hint Resolve</span> <span class="id" title="var">evar_is_fresh_in_richer</span> : <span class="id" title="var">core</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">not_free_implies_positive_negative_occurrence</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> (<span class="id" title="var">phi</span> : <span class="id" title="var">Pattern</span>) (<span class="id" title="var">X</span> : <span class="id" title="var">svar</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">X</span> ∉ (<span class="id" title="var">free_svars</span> <span class="id" title="var">phi</span>) →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">svar_has_positive_occurrence</span> <span class="id" title="var">X</span> <span class="id" title="var">phi</span> = <span class="id" title="var">false</span> ∧ <span class="id" title="var">svar_has_negative_occurrence</span> <span class="id" title="var">X</span> <span class="id" title="var">phi</span> = <span class="id" title="var">false</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Corollary</span> <span class="id" title="var">evar_is_fresh_in_app_l</span> <span class="id" title="var">x</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">evar_is_fresh_in</span> <span class="id" title="var">x</span> (<span class="id" title="var">patt_app</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span>) → <span class="id" title="var">evar_is_fresh_in</span> <span class="id" title="var">x</span> <span class="id" title="var">ϕ₁</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Corollary</span> <span class="id" title="var">svar_is_fresh_in_app_l</span> <span class="id" title="var">X</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">svar_is_fresh_in</span> <span class="id" title="var">X</span> (<span class="id" title="var">patt_app</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span>) → <span class="id" title="var">svar_is_fresh_in</span> <span class="id" title="var">X</span> <span class="id" title="var">ϕ₁</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="comment">(*Hint&nbsp;Resolve&nbsp;evar_is_fresh_in_app_l&nbsp;:&nbsp;core.*)</span><br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Corollary</span> <span class="id" title="var">evar_is_fresh_in_app_r</span> <span class="id" title="var">x</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">evar_is_fresh_in</span> <span class="id" title="var">x</span> (<span class="id" title="var">patt_app</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span>) → <span class="id" title="var">evar_is_fresh_in</span> <span class="id" title="var">x</span> <span class="id" title="var">ϕ₂</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Corollary</span> <span class="id" title="var">svar_is_fresh_in_app_r</span> <span class="id" title="var">X</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">svar_is_fresh_in</span> <span class="id" title="var">X</span> (<span class="id" title="var">patt_app</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span>) → <span class="id" title="var">svar_is_fresh_in</span> <span class="id" title="var">X</span> <span class="id" title="var">ϕ₂</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">evar_is_fresh_in_app</span> <span class="id" title="var">x</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">evar_is_fresh_in</span> <span class="id" title="var">x</span> (<span class="id" title="var">patt_app</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;↔ (<span class="id" title="var">evar_is_fresh_in</span> <span class="id" title="var">x</span> <span class="id" title="var">ϕ₁</span> ∧ <span class="id" title="var">evar_is_fresh_in</span> <span class="id" title="var">x</span> <span class="id" title="var">ϕ₂</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">svar_is_fresh_in_app</span> <span class="id" title="var">X</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">svar_is_fresh_in</span> <span class="id" title="var">X</span> (<span class="id" title="var">patt_app</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;↔ (<span class="id" title="var">svar_is_fresh_in</span> <span class="id" title="var">X</span> <span class="id" title="var">ϕ₁</span> ∧ <span class="id" title="var">svar_is_fresh_in</span> <span class="id" title="var">X</span> <span class="id" title="var">ϕ₂</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="comment">(*Hint&nbsp;Resolve&nbsp;evar_is_fresh_in_app_r&nbsp;:&nbsp;core.*)</span><br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Corollary</span> <span class="id" title="var">evar_is_fresh_in_imp_l</span> <span class="id" title="var">x</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">evar_is_fresh_in</span> <span class="id" title="var">x</span> (<span class="id" title="var">patt_imp</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span>) → <span class="id" title="var">evar_is_fresh_in</span> <span class="id" title="var">x</span> <span class="id" title="var">ϕ₁</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Corollary</span> <span class="id" title="var">svar_is_fresh_in_imp_l</span> <span class="id" title="var">X</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">svar_is_fresh_in</span> <span class="id" title="var">X</span> (<span class="id" title="var">patt_imp</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span>) → <span class="id" title="var">svar_is_fresh_in</span> <span class="id" title="var">X</span> <span class="id" title="var">ϕ₁</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="comment">(*Hint&nbsp;Resolve&nbsp;evar_is_fresh_in_imp_l&nbsp;:&nbsp;core.*)</span><br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Corollary</span> <span class="id" title="var">evar_is_fresh_in_imp_r</span> <span class="id" title="var">x</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">evar_is_fresh_in</span> <span class="id" title="var">x</span> (<span class="id" title="var">patt_imp</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span>) → <span class="id" title="var">evar_is_fresh_in</span> <span class="id" title="var">x</span> <span class="id" title="var">ϕ₂</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Corollary</span> <span class="id" title="var">svar_is_fresh_in_imp_r</span> <span class="id" title="var">X</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">svar_is_fresh_in</span> <span class="id" title="var">X</span> (<span class="id" title="var">patt_imp</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span>) → <span class="id" title="var">svar_is_fresh_in</span> <span class="id" title="var">X</span> <span class="id" title="var">ϕ₂</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">evar_is_fresh_in_imp</span> <span class="id" title="var">x</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">evar_is_fresh_in</span> <span class="id" title="var">x</span> (<span class="id" title="var">patt_imp</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;↔ (<span class="id" title="var">evar_is_fresh_in</span> <span class="id" title="var">x</span> <span class="id" title="var">ϕ₁</span> ∧ <span class="id" title="var">evar_is_fresh_in</span> <span class="id" title="var">x</span> <span class="id" title="var">ϕ₂</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">svar_is_fresh_in_imp</span> <span class="id" title="var">X</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">svar_is_fresh_in</span> <span class="id" title="var">X</span> (<span class="id" title="var">patt_imp</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;↔ (<span class="id" title="var">svar_is_fresh_in</span> <span class="id" title="var">X</span> <span class="id" title="var">ϕ₁</span> ∧ <span class="id" title="var">svar_is_fresh_in</span> <span class="id" title="var">X</span> <span class="id" title="var">ϕ₂</span>).<br/>
+
+<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="comment">(*Hint&nbsp;Resolve&nbsp;evar_is_fresh_in_imp_r&nbsp;:&nbsp;core.*)</span><br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Corollary</span> <span class="id" title="var">evar_is_fresh_in_exists</span> <span class="id" title="var">x</span> <span class="id" title="var">ϕ</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">evar_is_fresh_in</span> <span class="id" title="var">x</span> (<span class="id" title="var">patt_exists</span> <span class="id" title="var">ϕ</span>) ↔ <span class="id" title="var">evar_is_fresh_in</span> <span class="id" title="var">x</span> <span class="id" title="var">ϕ</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="comment">(*Hint&nbsp;Resolve&nbsp;evar_is_fresh_in_exists&nbsp;:&nbsp;core.*)</span><br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Corollary</span> <span class="id" title="var">evar_is_fresh_in_mu</span> <span class="id" title="var">x</span> <span class="id" title="var">ϕ</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">evar_is_fresh_in</span> <span class="id" title="var">x</span> (<span class="id" title="var">patt_mu</span> <span class="id" title="var">ϕ</span>) ↔ <span class="id" title="var">evar_is_fresh_in</span> <span class="id" title="var">x</span> <span class="id" title="var">ϕ</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="comment">(*Hint&nbsp;Resolve&nbsp;evar_is_fresh_in_mu&nbsp;:&nbsp;core.*)</span><br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Corollary</span> <span class="id" title="var">svar_is_fresh_in_exists</span> <span class="id" title="var">x</span> <span class="id" title="var">ϕ</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">svar_is_fresh_in</span> <span class="id" title="var">x</span> (<span class="id" title="var">patt_exists</span> <span class="id" title="var">ϕ</span>) ↔ <span class="id" title="var">svar_is_fresh_in</span> <span class="id" title="var">x</span> <span class="id" title="var">ϕ</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Corollary</span> <span class="id" title="var">svar_is_fresh_in_mu</span> <span class="id" title="var">x</span> <span class="id" title="var">ϕ</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">svar_is_fresh_in</span> <span class="id" title="var">x</span> (<span class="id" title="var">patt_mu</span> <span class="id" title="var">ϕ</span>) ↔ <span class="id" title="var">svar_is_fresh_in</span> <span class="id" title="var">x</span> <span class="id" title="var">ϕ</span>.<br/>
+
+<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">X_eq_fresh_impl_X_notin_free_svars</span> <span class="id" title="var">X</span> <span class="id" title="var">ϕ</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">X</span> = <span class="id" title="var">fresh_svar</span> <span class="id" title="var">ϕ</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">X</span> ∉ <span class="id" title="var">free_svars</span> <span class="id" title="var">ϕ</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">X_eq_evar_fresh_impl_X_notin_S</span> <span class="id" title="var">X</span> (<span class="id" title="var">S</span>:<span class="id" title="var">EVarSet</span>):<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">X</span> = <span class="id" title="var">evar_fresh</span> (<span class="id" title="var">elements</span> <span class="id" title="var">S</span>) →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">X</span> ∉ <span class="id" title="var">S</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">X_eq_svar_fresh_impl_X_notin_S</span> <span class="id" title="var">X</span> (<span class="id" title="var">S</span>:<span class="id" title="var">SVarSet</span>):<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">X</span> = <span class="id" title="var">svar_fresh</span> (<span class="id" title="var">elements</span> <span class="id" title="var">S</span>) →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">X</span> ∉ <span class="id" title="var">S</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Hint Resolve</span> <span class="id" title="var">X_eq_fresh_impl_X_notin_free_svars</span> : <span class="id" title="var">core</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">simpl_free_evars</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(@<span class="id" title="var">left_id_L</span> <span class="id" title="var">EVarSet</span>  ∅ (@<span class="id" title="var">union</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span>)),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(@<span class="id" title="var">right_id_L</span> <span class="id" title="var">EVarSet</span> ∅ (@<span class="id" title="var">union</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span>))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;).<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">simpl_free_svars</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(@<span class="id" title="var">left_id_L</span> <span class="id" title="var">SVarSet</span>  ∅ (@<span class="id" title="var">union</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span>)),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(@<span class="id" title="var">right_id_L</span> <span class="id" title="var">SVarSet</span> ∅ (@<span class="id" title="var">union</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span>))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;).<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">x_eq_fresh_impl_x_notin_free_evars</span> <span class="id" title="var">x</span> <span class="id" title="var">ϕ</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">x</span> = <span class="id" title="var">fresh_evar</span> <span class="id" title="var">ϕ</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">x</span> ∉ <span class="id" title="var">free_evars</span> <span class="id" title="var">ϕ</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Hint Resolve</span> <span class="id" title="var">x_eq_fresh_impl_x_notin_free_evars</span> : <span class="id" title="var">core</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">End</span> <span class="id" title="var">freshness</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Ltac</span> <span class="id" title="var">remember_fresh_svars</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">unfold</span> <span class="id" title="var">fresh_svar</span>,<span class="id" title="var">svar_fresh_s</span> <span class="id" title="tactic">in</span> *;<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">repeat</span>(<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="keyword">goal</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| |- <span class="id" title="keyword">context</span> <span class="id" title="var">G</span> [<span class="id" title="var">svar_fresh</span> ?<span class="id" title="var">Y</span>] ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="keyword">goal</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">H</span>: ?<span class="id" title="var">X</span> = <span class="id" title="var">svar_fresh</span> <span class="id" title="var">Y</span> |- <span class="id" title="var">_</span> ⇒ <span class="id" title="tactic">fail</span> 2<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">_</span> ⇒ <span class="id" title="var">remember</span> (<span class="id" title="var">svar_fresh</span> <span class="id" title="var">Y</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">H1</span>: <span class="id" title="keyword">context</span> <span class="id" title="var">G</span> [<span class="id" title="var">svar_fresh</span> ?<span class="id" title="var">Y</span>] |- <span class="id" title="var">_</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="keyword">goal</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">H2</span>: ?<span class="id" title="var">X</span> = <span class="id" title="var">svar_fresh</span> <span class="id" title="var">Y</span> |- <span class="id" title="var">_</span> ⇒ <span class="id" title="tactic">fail</span> 2<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">_</span> ⇒ <span class="id" title="var">remember</span> (<span class="id" title="var">svar_fresh</span> <span class="id" title="var">Y</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;).<br/>
+
+<br/>
+<span class="id" title="keyword">Ltac</span> <span class="id" title="var">remember_fresh_evars</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">unfold</span> <span class="id" title="var">fresh_evar</span>,<span class="id" title="var">evar_fresh_s</span> <span class="id" title="tactic">in</span> *;<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">repeat</span>(<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="keyword">goal</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| |- <span class="id" title="keyword">context</span> <span class="id" title="var">G</span> [<span class="id" title="var">evar_fresh</span> ?<span class="id" title="var">Y</span>] ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="keyword">goal</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">H</span>: ?<span class="id" title="var">X</span> = <span class="id" title="var">evar_fresh</span> <span class="id" title="var">Y</span> |- <span class="id" title="var">_</span> ⇒ <span class="id" title="tactic">fail</span> 2<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">_</span> ⇒ <span class="id" title="var">remember</span> (<span class="id" title="var">evar_fresh</span> <span class="id" title="var">Y</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">H1</span>: <span class="id" title="keyword">context</span> <span class="id" title="var">G</span> [<span class="id" title="var">evar_fresh</span> ?<span class="id" title="var">Y</span>] |- <span class="id" title="var">_</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="keyword">goal</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">H2</span>: ?<span class="id" title="var">X</span> = <span class="id" title="var">evar_fresh</span> <span class="id" title="var">Y</span> |- <span class="id" title="var">_</span> ⇒ <span class="id" title="tactic">fail</span> 2<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">_</span> ⇒ <span class="id" title="var">remember</span> (<span class="id" title="var">evar_fresh</span> <span class="id" title="var">Y</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;).<br/>
+
+<br/>
+<span class="comment">(*&nbsp;assumes&nbsp;a&nbsp;goal&nbsp;`x₁&nbsp;≠&nbsp;x₂`&nbsp;and&nbsp;a&nbsp;hypothesis&nbsp;of&nbsp;the&nbsp;shape&nbsp;`x₁&nbsp;=&nbsp;fresh_evar&nbsp;...`<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;or&nbsp;`x₂&nbsp;=&nbsp;fresh_evar&nbsp;...`<br/>
+&nbsp;*)</span><br/>
+<span class="id" title="keyword">Ltac</span> <span class="id" title="var">solve_fresh_neq'</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">repeat</span> (<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="keyword">goal</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">Heq</span>: (<span class="id" title="var">eq</span> ?<span class="id" title="var">x</span> ?<span class="id" title="var">t</span>) |- <span class="id" title="var">not</span> (<span class="id" title="var">eq</span> ?<span class="id" title="var">x</span> ?<span class="id" title="var">y</span>) ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">pose</span> <span class="id" title="var">proof</span> (<span class="id" title="var">X_eq_evar_fresh_impl_X_notin_S</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">Heq</span>); <span class="id" title="tactic">clear</span> <span class="id" title="tactic">dependent</span> <span class="id" title="var">Heq</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">Heq</span>: (<span class="id" title="var">eq</span> ?<span class="id" title="var">x</span> ?<span class="id" title="var">t</span>) |- <span class="id" title="var">not</span> (<span class="id" title="var">eq</span> ?<span class="id" title="var">y</span> ?<span class="id" title="var">x</span>) ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">pose</span> <span class="id" title="var">proof</span> (<span class="id" title="var">X_eq_evar_fresh_impl_X_notin_S</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">Heq</span>); <span class="id" title="tactic">clear</span> <span class="id" title="tactic">dependent</span> <span class="id" title="var">Heq</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;);<br/>
+&nbsp;&nbsp;(<span class="id" title="tactic">idtac</span> + <span class="id" title="tactic">apply</span> <span class="id" title="var">nesym</span>);<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="keyword">goal</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">H</span>: <span class="id" title="var">not</span> (<span class="id" title="var">elem_of</span> ?<span class="id" title="var">x</span> ?<span class="id" title="var">S</span>) |- <span class="id" title="var">not</span> (<span class="id" title="var">eq</span> ?<span class="id" title="var">x</span> ?<span class="id" title="var">y</span>) ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">simpl</span> <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="tactic">do</span> ? <span class="id" title="tactic">rewrite</span> <span class="id" title="var">simpl_free_evars</span>/= <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">auto</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> -?<span class="id" title="var">union_assoc_L</span> <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">repeat</span> (<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="keyword">goal</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">H</span>: (<span class="id" title="var">not</span> (<span class="id" title="var">elem_of</span> ?<span class="id" title="var">x</span> (<span class="id" title="var">singleton</span> ?<span class="id" title="var">y</span>))) |- <span class="id" title="var">_</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <span class="id" title="var">not_elem_of_singleton_1</span> <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">first</span> [ <span class="id" title="tactic">exact</span> <span class="id" title="var">H</span> | <span class="id" title="tactic">clear</span> <span class="id" title="tactic">dependent</span> <span class="id" title="var">H</span>]<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">H</span>: (<span class="id" title="var">not</span> (<span class="id" title="var">elem_of</span> ?<span class="id" title="var">x</span> (<span class="id" title="var">union</span> ?<span class="id" title="var">l</span> ?<span class="id" title="var">r</span>))) |- <span class="id" title="var">_</span> ⇒ (<span class="id" title="tactic">apply</span> <span class="id" title="var">not_elem_of_union</span> <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>; <span class="id" title="tactic">destruct</span> <span class="id" title="var">H</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">fail</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Ltac</span> <span class="id" title="var">solve_fresh_neq</span> :=   <span class="id" title="tactic">subst</span>; <span class="id" title="var">remember_fresh_evars</span>; <span class="id" title="var">solve_fresh_neq'</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Ltac</span> <span class="id" title="var">solve_fresh_svar_neq</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">subst</span>; <span class="id" title="var">remember_fresh_svars</span>;<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">repeat</span> (<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="keyword">goal</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">Heq</span>: (<span class="id" title="var">eq</span> ?<span class="id" title="var">x</span> ?<span class="id" title="var">t</span>) |- <span class="id" title="var">not</span> (<span class="id" title="var">eq</span> ?<span class="id" title="var">x</span> ?<span class="id" title="var">y</span>) ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">pose</span> <span class="id" title="var">proof</span> (<span class="id" title="var">X_eq_svar_fresh_impl_X_notin_S</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">Heq</span>); <span class="id" title="tactic">clear</span> <span class="id" title="tactic">dependent</span> <span class="id" title="var">Heq</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">Heq</span>: (<span class="id" title="var">eq</span> ?<span class="id" title="var">x</span> ?<span class="id" title="var">t</span>) |- <span class="id" title="var">not</span> (<span class="id" title="var">eq</span> ?<span class="id" title="var">y</span> ?<span class="id" title="var">x</span>) ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">pose</span> <span class="id" title="var">proof</span> (<span class="id" title="var">X_eq_svar_fresh_impl_X_notin_S</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">Heq</span>); <span class="id" title="tactic">clear</span> <span class="id" title="tactic">dependent</span> <span class="id" title="var">Heq</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;);<br/>
+&nbsp;&nbsp;(<span class="id" title="tactic">idtac</span> + <span class="id" title="tactic">apply</span> <span class="id" title="var">nesym</span>);<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="keyword">goal</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">H</span>: <span class="id" title="var">not</span> (<span class="id" title="var">elem_of</span> ?<span class="id" title="var">x</span> ?<span class="id" title="var">S</span>) |- <span class="id" title="var">not</span> (<span class="id" title="var">eq</span> ?<span class="id" title="var">x</span> ?<span class="id" title="var">y</span>) ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">simpl</span> <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="tactic">do</span> ? <span class="id" title="tactic">rewrite</span> <span class="id" title="var">simpl_free_svars</span>/= <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">auto</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> -?<span class="id" title="var">union_assoc_L</span> <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">repeat</span> (<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="keyword">goal</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">H</span>: (<span class="id" title="var">not</span> (<span class="id" title="var">elem_of</span> ?<span class="id" title="var">x</span> (<span class="id" title="var">singleton</span> ?<span class="id" title="var">y</span>))) |- <span class="id" title="var">_</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <span class="id" title="var">not_elem_of_singleton_1</span> <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">first</span> [ <span class="id" title="tactic">exact</span> <span class="id" title="var">H</span> | <span class="id" title="tactic">clear</span> <span class="id" title="tactic">dependent</span> <span class="id" title="var">H</span>]<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">H</span>: (<span class="id" title="var">not</span> (<span class="id" title="var">elem_of</span> ?<span class="id" title="var">x</span> (<span class="id" title="var">union</span> ?<span class="id" title="var">l</span> ?<span class="id" title="var">r</span>))) |- <span class="id" title="var">_</span> ⇒ (<span class="id" title="tactic">apply</span> <span class="id" title="var">not_elem_of_union</span> <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>; <span class="id" title="tactic">destruct</span> <span class="id" title="var">H</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">fail</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">evar_fresh_dep</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} (<span class="id" title="var">S</span> : <span class="id" title="var">EVarSet</span>) : {<span class="id" title="var">x</span> : <span class="id" title="tactic">evar</span> &amp; <span class="id" title="var">x</span> ∉ <span class="id" title="var">S</span>} :=<br/>
+&nbsp;&nbsp;@<span class="id" title="var">existT</span> <span class="id" title="tactic">evar</span> (<span class="id" title="keyword">fun</span> <span class="id" title="var">x</span> ⇒ <span class="id" title="var">x</span> ∉ <span class="id" title="var">S</span>) (<span class="id" title="var">evar_fresh_s</span> <span class="id" title="var">S</span>) (<span class="id" title="var">set_evar_fresh_is_fresh'</span> <span class="id" title="var">S</span>).<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">svar_fresh_dep</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} (<span class="id" title="var">S</span> : <span class="id" title="var">SVarSet</span>) : {<span class="id" title="var">X</span> : <span class="id" title="var">svar</span> &amp; <span class="id" title="var">X</span> ∉ <span class="id" title="var">S</span>} :=<br/>
+&nbsp;&nbsp;@<span class="id" title="var">existT</span> <span class="id" title="var">svar</span> (<span class="id" title="keyword">fun</span> <span class="id" title="var">x</span> ⇒ <span class="id" title="var">x</span> ∉ <span class="id" title="var">S</span>) (<span class="id" title="var">svar_fresh_s</span> <span class="id" title="var">S</span>) (<span class="id" title="var">set_svar_fresh_is_fresh'</span> <span class="id" title="var">S</span>).<br/>
+
+<br/>
+<span class="id" title="keyword">Fixpoint</span> <span class="id" title="var">evar_fresh_seq</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} (<span class="id" title="var">avoid</span> : <span class="id" title="var">EVarSet</span>) (<span class="id" title="var">n</span> : <span class="id" title="var">nat</span>) : <span class="id" title="var">list</span> <span class="id" title="tactic">evar</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">n</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;| 0 ⇒ []<br/>
+&nbsp;&nbsp;| <span class="id" title="var">S</span> <span class="id" title="var">n'</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">x</span> := (<span class="id" title="var">evar_fresh_s</span> <span class="id" title="var">avoid</span>) <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">x</span> :: <span class="id" title="var">evar_fresh_seq</span> ({[<span class="id" title="var">x</span>]} ∪ <span class="id" title="var">avoid</span>) (<span class="id" title="var">n'</span>)<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Fixpoint</span> <span class="id" title="var">svar_fresh_seq</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} (<span class="id" title="var">avoid</span> : <span class="id" title="var">SVarSet</span>) (<span class="id" title="var">n</span> : <span class="id" title="var">nat</span>) : <span class="id" title="var">list</span> <span class="id" title="var">svar</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">n</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;| 0 ⇒ []<br/>
+&nbsp;&nbsp;&nbsp;| <span class="id" title="var">S</span> <span class="id" title="var">n'</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">X</span> := (<span class="id" title="var">svar_fresh_s</span> <span class="id" title="var">avoid</span>) <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">X</span> :: <span class="id" title="var">svar_fresh_seq</span> ({[<span class="id" title="var">X</span>]} ∪ <span class="id" title="var">avoid</span>) (<span class="id" title="var">n'</span>)<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">evar_fresh_seq_disj</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} <span class="id" title="var">S</span> <span class="id" title="var">n</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">list_to_set</span> (<span class="id" title="var">evar_fresh_seq</span> <span class="id" title="var">S</span> <span class="id" title="var">n</span>) ## <span class="id" title="var">S</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">svar_fresh_seq_disj</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} <span class="id" title="var">S</span> <span class="id" title="var">n</span>:<br/>
+&nbsp;&nbsp;<span class="id" title="var">list_to_set</span> (<span class="id" title="var">svar_fresh_seq</span> <span class="id" title="var">S</span> <span class="id" title="var">n</span>) ## <span class="id" title="var">S</span>.<br/>
+</div>
+
+<div class="doc">
+Note: we cannot reuse NoDup, until the proof system is 
+    formalised as `... -&gt; Set`. 
+</div>
+<div class="code">
+<span class="id" title="keyword">Fixpoint</span> <span class="id" title="var">no_dups</span> {<span class="id" title="var">A</span> : <span class="id" title="keyword">Set</span>} {<span class="id" title="var">eqdec</span> : <span class="id" title="var">EqDecision</span> <span class="id" title="var">A</span>} (<span class="id" title="var">l</span> : <span class="id" title="var">list</span> <span class="id" title="var">A</span>) :=<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">l</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;| [] ⇒ <span class="id" title="var">True</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">x</span>::<span class="id" title="var">xs</span> ⇒ <span class="id" title="var">x</span> ∉ <span class="id" title="var">xs</span> ∧ <span class="id" title="var">no_dups</span> <span class="id" title="var">xs</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">no_dups_NoDup</span> :<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">∀</span> {<span class="id" title="var">A</span> : <span class="id" title="keyword">Set</span>} {<span class="id" title="var">eqdec</span> : <span class="id" title="var">EqDecision</span> <span class="id" title="var">A</span>} (<span class="id" title="var">l</span> : <span class="id" title="var">list</span> <span class="id" title="var">A</span>), <span class="id" title="var">no_dups</span> <span class="id" title="var">l</span> ↔ <span class="id" title="var">NoDup</span> <span class="id" title="var">l</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Class</span> <span class="id" title="var">fresh_evars</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} (<span class="id" title="var">l</span> : <span class="id" title="var">list</span> <span class="id" title="tactic">evar</span>) (<span class="id" title="var">s</span> : <span class="id" title="var">EVarSet</span>) :=<br/>
+{<br/>
+&nbsp;&nbsp;<span class="id" title="var">evar_duplicates</span> : <span class="id" title="var">no_dups</span> <span class="id" title="var">l</span>;<br/>
+&nbsp;&nbsp;<span class="id" title="var">all_evars_fresh</span> : <span class="id" title="keyword">∀</span> <span class="id" title="var">x</span>, <span class="id" title="var">x</span> ∈ <span class="id" title="var">l</span> → <span class="id" title="var">x</span> ∉ <span class="id" title="var">s</span>;<br/>
+}.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">fresh_evars_bigger</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} {<span class="id" title="var">el</span> <span class="id" title="var">s</span>} <span class="id" title="var">s'</span> :<br/>
+&nbsp;&nbsp;<span class="id" title="var">fresh_evars</span> <span class="id" title="var">el</span> <span class="id" title="var">s</span> → <span class="id" title="var">s'</span> ⊆ <span class="id" title="var">s</span> → <span class="id" title="var">fresh_evars</span> <span class="id" title="var">el</span> <span class="id" title="var">s'</span>.<br/>
+ 
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">less_fresh_evars</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} {<span class="id" title="var">x</span> <span class="id" title="var">el</span> <span class="id" title="var">s</span>} :<br/>
+&nbsp;&nbsp;<span class="id" title="var">fresh_evars</span> (<span class="id" title="var">x</span>::<span class="id" title="var">el</span>) <span class="id" title="var">s</span> → <span class="id" title="var">fresh_evars</span> <span class="id" title="var">el</span> <span class="id" title="var">s</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Class</span> <span class="id" title="var">fresh_svars</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} (<span class="id" title="var">l</span> : <span class="id" title="var">list</span> <span class="id" title="var">svar</span>) (<span class="id" title="var">s</span> : <span class="id" title="var">SVarSet</span>) :=<br/>
+{<br/>
+&nbsp;&nbsp;<span class="id" title="var">svar_duplicates</span> : <span class="id" title="var">no_dups</span> <span class="id" title="var">l</span>;<br/>
+&nbsp;&nbsp;<span class="id" title="var">all_svars_fresh</span> : <span class="id" title="keyword">∀</span> <span class="id" title="var">X</span>, <span class="id" title="var">X</span> ∈ <span class="id" title="var">l</span> → <span class="id" title="var">X</span> ∉ <span class="id" title="var">s</span>;<br/>
+}.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">fresh_svars_bigger</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} {<span class="id" title="var">sl</span> <span class="id" title="var">s</span>} <span class="id" title="var">s'</span> :<br/>
+&nbsp;&nbsp;<span class="id" title="var">fresh_svars</span> <span class="id" title="var">sl</span> <span class="id" title="var">s</span> → <span class="id" title="var">s'</span> ⊆ <span class="id" title="var">s</span> → <span class="id" title="var">fresh_svars</span> <span class="id" title="var">sl</span> <span class="id" title="var">s'</span>.<br/>
+ 
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">less_fresh_svars</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} {<span class="id" title="var">X</span> <span class="id" title="var">sl</span> <span class="id" title="var">s</span>} :<br/>
+&nbsp;&nbsp;<span class="id" title="var">fresh_evars</span> (<span class="id" title="var">X</span>::<span class="id" title="var">sl</span>) <span class="id" title="var">s</span> → <span class="id" title="var">fresh_evars</span> <span class="id" title="var">sl</span> <span class="id" title="var">s</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Ltac</span> <span class="id" title="var">solve_fresh</span> :=<br/>
+&nbsp;&nbsp;(<span class="id" title="tactic">eapply</span> <span class="id" title="var">not_elem_of_larger_impl_not_elem_of</span>;<br/>
+&nbsp;&nbsp;[|<span class="id" title="tactic">apply</span> <span class="id" title="var">x_eq_fresh_impl_x_notin_free_evars</span>; <span class="id" title="tactic">reflexivity</span>];<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">simpl</span>; <span class="id" title="tactic">clear</span>; <span class="id" title="var">set_solver</span>) +<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">by</span> (<span class="id" title="tactic">unfold</span> <span class="id" title="var">evar_is_fresh_in</span>;<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">eapply</span> <span class="id" title="var">evar_is_fresh_in_richer'</span>; [|<span class="id" title="tactic">apply</span> <span class="id" title="var">set_evar_fresh_is_fresh'</span>];<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">clear</span>; <span class="id" title="var">set_solver</span>).<br/>
+
+<br/>
+<span class="id" title="keyword">Ltac</span> <span class="id" title="var">solve_sfresh</span> :=<br/>
+&nbsp;&nbsp;(<span class="id" title="tactic">eapply</span> <span class="id" title="var">not_elem_of_larger_impl_not_elem_of</span>;<br/>
+&nbsp;&nbsp;[|<span class="id" title="tactic">apply</span> <span class="id" title="var">X_eq_fresh_impl_X_notin_free_svars</span>; <span class="id" title="tactic">reflexivity</span>];<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">simpl</span>; <span class="id" title="tactic">clear</span>; <span class="id" title="var">set_solver</span>) +<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">by</span> (<span class="id" title="tactic">unfold</span> <span class="id" title="var">svar_is_fresh_in</span>;<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">eapply</span> <span class="id" title="var">svar_is_fresh_in_richer'</span>; [|<span class="id" title="tactic">apply</span> <span class="id" title="var">set_svar_fresh_is_fresh'</span>];<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">clear</span>; <span class="id" title="var">set_solver</span>).<br/>
+</div>
+<hr/>This page has been generated by <a href="http://coq.inria.fr/">coqdoc</a>
+</div>
+
+</div>
+
+</body>
+</html>

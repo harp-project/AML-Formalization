@@ -1,0 +1,202 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link href="coqdoc.css" rel="stylesheet" type="text/css" />
+<title>ProductSort</title>
+</head>
+
+<body>
+
+<div id="page">
+
+<div id="header">
+</div>
+
+<div id="main">
+
+<h1 class="libtitle">File ProductSort</h1>
+
+<div class="code">
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">ssreflect</span> <span class="id" title="var">ssrfun</span> <span class="id" title="var">ssrbool</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Unicode.Utf8</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">stdpp</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">base</span> <span class="id" title="var">sets</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">MatchingLogic</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Logic</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Theories.Sorts_Syntax</span><br/>
+.<br/>
+<span class="id" title="keyword">Import</span> <span class="id" title="var">BoundVarSugar</span>.<br/>
+<span class="id" title="keyword">Import</span> <span class="id" title="var">Definedness_Syntax.Notations</span>.<br/>
+<span class="id" title="keyword">Inductive</span> <span class="id" title="var">Symbols</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} (<span class="id" title="var">s1</span> <span class="id" title="var">s2</span> : <span class="id" title="var">Pattern</span>) :=<br/>
+| <span class="id" title="var">ml_prod</span><br/>
+| <span class="id" title="var">ml_pair</span><br/>
+| <span class="id" title="var">ml_proj1</span><br/>
+| <span class="id" title="var">ml_proj2</span><br/>
+.<br/>
+
+<br/>
+#[<span class="id" title="var">global</span>]<br/>
+<span class="id" title="keyword">Instance</span> <span class="id" title="var">Symbols_eqdec</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} <span class="id" title="var">s1</span> <span class="id" title="var">s2</span> : <span class="id" title="var">EqDecision</span> (<span class="id" title="var">Symbols</span> <span class="id" title="var">s1</span> <span class="id" title="var">s2</span>).<br/>
+ 
+<br/>
+<span class="id" title="keyword">Class</span> <span class="id" title="keyword">Syntax</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} (<span class="id" title="var">s1</span> <span class="id" title="var">s2</span> : <span class="id" title="var">Pattern</span>) :=<br/>
+{<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">imported_sorts</span> : <span class="id" title="var">Sorts_Syntax.Syntax</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">inj</span>: <span class="id" title="var">Symbols</span> <span class="id" title="var">s1</span> <span class="id" title="var">s2</span> → <span class="id" title="var">symbols</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">inj_inj</span>: <span class="id" title="var">Inj</span> (=) (=) <span class="id" title="var">inj</span>;<br/>
+}.<br/>
+
+<br/>
+#[<span class="id" title="var">global</span>] <span class="id" title="var">Existing</span> <span class="id" title="keyword">Instance</span> <span class="id" title="var">imported_sorts</span>.<br/>
+#[<span class="id" title="var">global</span>] <span class="id" title="var">Existing</span> <span class="id" title="keyword">Instance</span> <span class="id" title="var">inj_inj</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Section</span> <span class="id" title="var">sorts</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Context</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">s1</span> <span class="id" title="var">s2</span> : <span class="id" title="var">Pattern</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">wfs1</span> : <span class="id" title="var">well_formed</span> <span class="id" title="var">s1</span> = <span class="id" title="var">true</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">wfs2</span> : <span class="id" title="var">well_formed</span> <span class="id" title="var">s2</span> = <span class="id" title="var">true</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{<span class="id" title="var">syntax</span> : <span class="id" title="keyword">Syntax</span> <span class="id" title="var">s1</span> <span class="id" title="var">s2</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Import</span> <span class="id" title="var">Notations</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Open</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">ml_scope</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Delimit</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">ml_scope</span> <span class="id" title="keyword">with</span> <span class="id" title="var">ml</span>. <span class="comment">(*&nbsp;TODO&nbsp;move&nbsp;this&nbsp;somewhere&nbsp;else&nbsp;*)</span><br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Local Notation</span> &quot;'(' phi1 ',ml' phi2 ')'" := <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">patt_app</span> (<span class="id" title="var">patt_app</span> (<span class="id" title="var">patt_sym</span> (<span class="id" title="var">inj</span> (<span class="id" title="var">ml_pair</span> <span class="id" title="var">s1</span> <span class="id" title="var">s2</span>))) <span class="id" title="var">phi1</span>) <span class="id" title="var">phi2</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: <span class="id" title="var">ml_scope</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Local Notation</span> &quot;'(' phi ').ml1'" := <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">patt_app</span> (<span class="id" title="var">patt_sym</span> (<span class="id" title="var">inj</span> (<span class="id" title="var">ml_proj1</span> <span class="id" title="var">s1</span> <span class="id" title="var">s2</span>))) <span class="id" title="var">phi</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: <span class="id" title="var">ml_scope</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Local Notation</span> &quot;'(' phi ').ml2'" := <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">patt_app</span> (<span class="id" title="var">patt_sym</span> (<span class="id" title="var">inj</span> (<span class="id" title="var">ml_proj2</span> <span class="id" title="var">s1</span> <span class="id" title="var">s2</span>))) <span class="id" title="var">phi</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: <span class="id" title="var">ml_scope</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Inductive</span> <span class="id" title="var">AxiomName</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">AxPair</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">AxProjLeft</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">AxProjRight</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">AxInj</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">InversePairProja1</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">InversePairProja2</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">InversePairProjb</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Arguments</span> <span class="id" title="var">patt_forall_of_sort</span> {<span class="id" title="var">Σ</span> <span class="id" title="var">self</span>} <span class="id" title="var">sort</span> <span class="id" title="var">phi</span>%<span class="id" title="var">ml_scope</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">axiom</span> (<span class="id" title="var">name</span> : <span class="id" title="var">AxiomName</span>) : <span class="id" title="var">Pattern</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">name</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">AxPair</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">patt_total_binary_function</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">patt_sym</span> (<span class="id" title="var">inj</span> (<span class="id" title="var">ml_pair</span> <span class="id" title="var">s1</span> <span class="id" title="var">s2</span>)))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">s1</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">s2</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">patt_sym</span> (<span class="id" title="var">inj</span> (<span class="id" title="var">ml_prod</span> <span class="id" title="var">s1</span> <span class="id" title="var">s2</span>)))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">AxProjLeft</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">patt_total_function</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">patt_sym</span> (<span class="id" title="var">inj</span> (<span class="id" title="var">ml_proj1</span> <span class="id" title="var">s1</span> <span class="id" title="var">s2</span>)))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">patt_sym</span> (<span class="id" title="var">inj</span> (<span class="id" title="var">ml_prod</span> <span class="id" title="var">s1</span> <span class="id" title="var">s2</span>)))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">s1</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">AxProjRight</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">patt_total_function</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">patt_sym</span> (<span class="id" title="var">inj</span> (<span class="id" title="var">ml_proj1</span> <span class="id" title="var">s1</span> <span class="id" title="var">s2</span>)))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">patt_sym</span> (<span class="id" title="var">inj</span> (<span class="id" title="var">ml_prod</span> <span class="id" title="var">s1</span> <span class="id" title="var">s2</span>)))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">s2</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">AxInj</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">patt_forall_of_sort</span> <span class="id" title="var">s1</span> (<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">patt_forall_of_sort</span> <span class="id" title="var">s1</span> (<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">patt_forall_of_sort</span> <span class="id" title="var">s2</span> (<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">patt_forall_of_sort</span> <span class="id" title="var">s2</span> (<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">patt_imp</span> (<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;( <span class="id" title="var">b3</span> ,<span class="id" title="var">ml</span> <span class="id" title="var">b1</span> ) =<span class="id" title="var">ml</span> ( <span class="id" title="var">b2</span> ,<span class="id" title="var">ml</span> <span class="id" title="var">b0</span> )%<span class="id" title="var">ml</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;) (<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">patt_and</span> (<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">b3</span> =<span class="id" title="var">ml</span> <span class="id" title="var">b2</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;) (<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">b1</span> =<span class="id" title="var">ml</span> <span class="id" title="var">b0</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">InversePairProja1</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">patt_forall_of_sort</span> <span class="id" title="var">s1</span> (<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">patt_forall_of_sort</span> <span class="id" title="var">s2</span> (<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;( ( <span class="id" title="var">b1</span> ,<span class="id" title="var">ml</span> <span class="id" title="var">b0</span> ) ).<span class="id" title="var">ml1</span>  =<span class="id" title="var">ml</span> <span class="id" title="var">b1</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">InversePairProja2</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">patt_forall_of_sort</span> <span class="id" title="var">s1</span> (<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">patt_forall_of_sort</span> <span class="id" title="var">s2</span> (<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;( ( <span class="id" title="var">b1</span> ,<span class="id" title="var">ml</span> <span class="id" title="var">b0</span> ) ).<span class="id" title="var">ml2</span>  =<span class="id" title="var">ml</span> <span class="id" title="var">b0</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">InversePairProjb</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">patt_forall_of_sort</span> (<span class="id" title="var">patt_sym</span> (<span class="id" title="var">inj</span> (<span class="id" title="var">ml_prod</span> <span class="id" title="var">s1</span> <span class="id" title="var">s2</span>))) (<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;( (<span class="id" title="var">b0</span>).<span class="id" title="var">ml1</span> ,<span class="id" title="var">ml</span> (<span class="id" title="var">b0</span>).<span class="id" title="var">ml2</span> ) =<span class="id" title="var">ml</span> <span class="id" title="var">b0</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Program Definition</span> <span class="id" title="var">named_axioms</span> : <span class="id" title="var">NamedAxioms</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{| <span class="id" title="var">NAName</span> := <span class="id" title="var">AxiomName</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">NAAxiom</span> := <span class="id" title="var">axiom</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;|}.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">Γprod</span> := <span class="id" title="var">theory_of_NamedAxioms</span> <span class="id" title="var">named_axioms</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">End</span> <span class="id" title="var">sorts</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Module</span> <span class="id" title="var">Notations</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Notation</span> &quot;'mlProd' '(' s1 ',' s2 ')'"<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:= (<span class="id" title="var">patt_sym</span> (<span class="id" title="var">inj</span> (<span class="id" title="var">ml_prod</span> <span class="id" title="var">s1</span> <span class="id" title="var">s2</span>)))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: <span class="id" title="var">ml_scope</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Notation</span> &quot;'mlPair' '{' s1 ',' s2 '}' '(' phi1 ',' phi2 ')'" := <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">patt_app</span> (<span class="id" title="var">patt_app</span> (<span class="id" title="var">patt_sym</span> (<span class="id" title="var">inj</span> (<span class="id" title="var">ml_pair</span> <span class="id" title="var">s1</span> <span class="id" title="var">s2</span>))) <span class="id" title="var">phi1</span>) <span class="id" title="var">phi2</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: <span class="id" title="var">ml_scope</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Notation</span> &quot;'mlProj1' '{' s1 ',' s2 '}' '(' phi ')'" := <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">patt_app</span> (<span class="id" title="var">patt_sym</span> (<span class="id" title="var">inj</span> (<span class="id" title="var">ml_proj1</span> <span class="id" title="var">s1</span> <span class="id" title="var">s2</span>))) <span class="id" title="var">phi</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: <span class="id" title="var">ml_scope</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Notation</span> &quot;'mlProj2' '{' s1 ',' s2 '}' '(' phi ')'" := <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">patt_app</span> (<span class="id" title="var">patt_sym</span> (<span class="id" title="var">inj</span> (<span class="id" title="var">ml_proj2</span> <span class="id" title="var">s1</span> <span class="id" title="var">s2</span>))) <span class="id" title="var">phi</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: <span class="id" title="var">ml_scope</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;.<br/>
+
+<br/>
+<span class="id" title="keyword">End</span> <span class="id" title="var">Notations</span>.<br/>
+</div>
+<hr/>This page has been generated by <a href="http://coq.inria.fr/">coqdoc</a>
+</div>
+
+</div>
+
+</body>
+</html>
