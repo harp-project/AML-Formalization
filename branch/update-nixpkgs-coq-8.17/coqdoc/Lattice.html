@@ -1,0 +1,266 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link href="coqdoc.css" rel="stylesheet" type="text/css" />
+<title>Lattice</title>
+</head>
+
+<body>
+
+<div id="page">
+
+<div id="header">
+</div>
+
+<div id="main">
+
+<h1 class="libtitle">File Lattice</h1>
+
+<div class="code">
+<span class="id" title="keyword">From</span> <span class="id" title="var">stdpp</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">base</span> <span class="id" title="var">sets</span> <span class="id" title="var">propset</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">MatchingLogic.Utils</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">stdpp_ext</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Class</span> <span class="id" title="var">OrderedSet</span> <span class="id" title="var">A</span> : <span class="id" title="keyword">Type</span> :=<br/>
+&nbsp;&nbsp;{ <span class="id" title="var">leq</span> : <span class="id" title="var">relation</span> <span class="id" title="var">A</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">leq_order</span> : <span class="id" title="var">order</span> <span class="id" title="var">A</span> <span class="id" title="var">leq</span>;<br/>
+&nbsp;&nbsp;}.<br/>
+
+<br/>
+<span class="id" title="keyword">Program Definition</span> <span class="id" title="var">OrderedSet_dual</span> {<span class="id" title="var">A</span> : <span class="id" title="keyword">Type</span>} (<span class="id" title="var">OS</span> : <span class="id" title="var">OrderedSet</span> <span class="id" title="var">A</span>) : <span class="id" title="var">OrderedSet</span> <span class="id" title="var">A</span> :=<br/>
+&nbsp;&nbsp;{| <span class="id" title="var">leq</span> := <span class="id" title="keyword">fun</span> <span class="id" title="var">x</span> <span class="id" title="var">y</span> ⇒ @<span class="id" title="var">leq</span> <span class="id" title="var">A</span> <span class="id" title="var">OS</span> <span class="id" title="var">y</span> <span class="id" title="var">x</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">leq_order</span> := {| <span class="id" title="var">ord_refl</span> := <span class="id" title="var">_</span>; <span class="id" title="var">ord_trans</span> := <span class="id" title="var">_</span>; <span class="id" title="var">ord_antisym</span> := <span class="id" title="var">_</span>; |};<br/>
+&nbsp;&nbsp;|}.<br/>
+
+<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">upperBound</span> {<span class="id" title="var">A</span> : <span class="id" title="keyword">Type</span>} {<span class="id" title="var">OS</span> : <span class="id" title="var">OrderedSet</span> <span class="id" title="var">A</span>} (<span class="id" title="var">X</span>: <span class="id" title="var">propset</span> <span class="id" title="var">A</span>) (<span class="id" title="var">ub</span>: <span class="id" title="var">A</span>) : <span class="id" title="keyword">Prop</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">∀</span> (<span class="id" title="var">x</span>: <span class="id" title="var">A</span>), <span class="id" title="var">x</span> ∈ <span class="id" title="var">X</span> → <span class="id" title="var">leq</span> <span class="id" title="var">x</span> <span class="id" title="var">ub</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">leastUpperBound</span> {<span class="id" title="var">A</span> : <span class="id" title="keyword">Type</span>} {<span class="id" title="var">OS</span> : <span class="id" title="var">OrderedSet</span> <span class="id" title="var">A</span>} (<span class="id" title="var">X</span>: <span class="id" title="var">propset</span> <span class="id" title="var">A</span>) (<span class="id" title="var">lub</span>: <span class="id" title="var">A</span>) : <span class="id" title="keyword">Prop</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="var">upperBound</span> <span class="id" title="var">X</span> <span class="id" title="var">lub</span> ∧<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">∀</span> (<span class="id" title="var">ub</span> : <span class="id" title="var">A</span>), <span class="id" title="var">upperBound</span> <span class="id" title="var">X</span> <span class="id" title="var">ub</span> → <span class="id" title="var">leq</span> <span class="id" title="var">lub</span> <span class="id" title="var">ub</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">lowerBound</span> {<span class="id" title="var">A</span> : <span class="id" title="keyword">Type</span>} {<span class="id" title="var">OS</span> : <span class="id" title="var">OrderedSet</span> <span class="id" title="var">A</span>} (<span class="id" title="var">X</span>: <span class="id" title="var">propset</span> <span class="id" title="var">A</span>) (<span class="id" title="var">lb</span>: <span class="id" title="var">A</span>) : <span class="id" title="keyword">Prop</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">∀</span> (<span class="id" title="var">x</span> : <span class="id" title="var">A</span>), <span class="id" title="var">x</span> ∈ <span class="id" title="var">X</span> → <span class="id" title="var">leq</span> <span class="id" title="var">lb</span> <span class="id" title="var">x</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">greatestLowerBound</span> {<span class="id" title="var">A</span> : <span class="id" title="keyword">Type</span>} {<span class="id" title="var">OS</span> : <span class="id" title="var">OrderedSet</span> <span class="id" title="var">A</span>} (<span class="id" title="var">X</span> : <span class="id" title="var">propset</span> <span class="id" title="var">A</span>) (<span class="id" title="var">glb</span> : <span class="id" title="var">A</span>) : <span class="id" title="keyword">Prop</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="var">lowerBound</span> <span class="id" title="var">X</span> <span class="id" title="var">glb</span> ∧<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">∀</span> (<span class="id" title="var">lb</span> : <span class="id" title="var">A</span>), <span class="id" title="var">lowerBound</span> <span class="id" title="var">X</span> <span class="id" title="var">lb</span> → <span class="id" title="var">leq</span> <span class="id" title="var">lb</span> <span class="id" title="var">glb</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">upperBoundsOf</span> {<span class="id" title="var">A</span> : <span class="id" title="keyword">Type</span>} {<span class="id" title="var">OS</span> : <span class="id" title="var">OrderedSet</span> <span class="id" title="var">A</span>} (<span class="id" title="var">X</span> : <span class="id" title="var">propset</span> <span class="id" title="var">A</span>) : <span class="id" title="var">propset</span> <span class="id" title="var">A</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="var">PropSet</span> (<span class="id" title="keyword">fun</span> <span class="id" title="var">x</span> ⇒ <span class="id" title="var">upperBound</span> <span class="id" title="var">X</span> <span class="id" title="var">x</span>).<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">lowerBoundsOf</span> {<span class="id" title="var">A</span> : <span class="id" title="keyword">Type</span>} {<span class="id" title="var">OS</span> : <span class="id" title="var">OrderedSet</span> <span class="id" title="var">A</span>} (<span class="id" title="var">X</span> : <span class="id" title="var">propset</span> <span class="id" title="var">A</span>) : <span class="id" title="var">propset</span> <span class="id" title="var">A</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="var">PropSet</span> (<span class="id" title="keyword">fun</span> <span class="id" title="var">x</span> ⇒ <span class="id" title="var">lowerBound</span> <span class="id" title="var">X</span> <span class="id" title="var">x</span>).<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">isMeet</span> {<span class="id" title="var">A</span> : <span class="id" title="keyword">Type</span>} {<span class="id" title="var">OS</span> : <span class="id" title="var">OrderedSet</span> <span class="id" title="var">A</span>} (<span class="id" title="var">meet</span> : <span class="id" title="var">propset</span> <span class="id" title="var">A</span> → <span class="id" title="var">A</span>) : <span class="id" title="keyword">Prop</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">∀</span> (<span class="id" title="var">X</span> : <span class="id" title="var">propset</span> <span class="id" title="var">A</span>), <span class="id" title="var">greatestLowerBound</span> <span class="id" title="var">X</span> (<span class="id" title="var">meet</span> <span class="id" title="var">X</span>).<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">isJoin</span> {<span class="id" title="var">A</span> : <span class="id" title="keyword">Type</span>} {<span class="id" title="var">OS</span> : <span class="id" title="var">OrderedSet</span> <span class="id" title="var">A</span>} (<span class="id" title="var">join</span> : <span class="id" title="var">propset</span> <span class="id" title="var">A</span> → <span class="id" title="var">A</span>) : <span class="id" title="keyword">Prop</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">∀</span> (<span class="id" title="var">X</span> : <span class="id" title="var">propset</span> <span class="id" title="var">A</span>), <span class="id" title="var">leastUpperBound</span> <span class="id" title="var">X</span> (<span class="id" title="var">join</span> <span class="id" title="var">X</span>).<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">joinFromMeet</span> {<span class="id" title="var">A</span> : <span class="id" title="keyword">Type</span>} {<span class="id" title="var">OS</span> : <span class="id" title="var">OrderedSet</span> <span class="id" title="var">A</span>} (<span class="id" title="var">meet</span> : <span class="id" title="var">propset</span> <span class="id" title="var">A</span> → <span class="id" title="var">A</span>)<br/>
+&nbsp;&nbsp;: <span class="id" title="var">propset</span> <span class="id" title="var">A</span> → <span class="id" title="var">A</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">fun</span> <span class="id" title="var">X</span> ⇒ <span class="id" title="var">meet</span> (<span class="id" title="var">upperBoundsOf</span> <span class="id" title="var">X</span>).<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">joinFromMeet_lub</span>: <span class="id" title="keyword">∀</span> (<span class="id" title="var">A</span> : <span class="id" title="keyword">Type</span>) (<span class="id" title="var">OS</span> : <span class="id" title="var">OrderedSet</span> <span class="id" title="var">A</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">meet</span> : <span class="id" title="var">propset</span> <span class="id" title="var">A</span> → <span class="id" title="var">A</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">isMeet</span> <span class="id" title="var">meet</span> → <span class="id" title="var">isJoin</span> (<span class="id" title="var">joinFromMeet</span> <span class="id" title="var">meet</span>).<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">meetFromJoin</span> {<span class="id" title="var">A</span> : <span class="id" title="keyword">Type</span>} {<span class="id" title="var">OS</span> : <span class="id" title="var">OrderedSet</span> <span class="id" title="var">A</span>} (<span class="id" title="var">join</span> : <span class="id" title="var">propset</span> <span class="id" title="var">A</span> → <span class="id" title="var">A</span>)<br/>
+&nbsp;&nbsp;&nbsp;: <span class="id" title="var">propset</span> <span class="id" title="var">A</span> → <span class="id" title="var">A</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">fun</span> <span class="id" title="var">X</span> ⇒ <span class="id" title="var">join</span> (<span class="id" title="var">lowerBoundsOf</span> <span class="id" title="var">X</span>).<br/>
+
+<br/>
+<span class="comment">(*&nbsp;Exactly&nbsp;a&nbsp;dual&nbsp;of&nbsp;joinFromMeet_lub.&nbsp;But&nbsp;there&nbsp;should&nbsp;be&nbsp;some&nbsp;way&nbsp;to&nbsp;avoid&nbsp;duplication.&nbsp;*)</span><br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">meetFromJoin_glb</span>: <span class="id" title="keyword">∀</span> (<span class="id" title="var">A</span> : <span class="id" title="keyword">Type</span>) (<span class="id" title="var">OS</span> : <span class="id" title="var">OrderedSet</span> <span class="id" title="var">A</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">join</span> : <span class="id" title="var">propset</span> <span class="id" title="var">A</span> → <span class="id" title="var">A</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">isJoin</span> <span class="id" title="var">join</span> → <span class="id" title="var">isMeet</span> (<span class="id" title="var">meetFromJoin</span> <span class="id" title="var">join</span>).<br/>
+
+<br/>
+<span class="id" title="keyword">Class</span> <span class="id" title="var">CompleteLattice</span> <span class="id" title="var">A</span> `{<span class="id" title="var">OrderedSet</span> <span class="id" title="var">A</span>} :=<br/>
+&nbsp;&nbsp;{<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">meet</span> : <span class="id" title="var">propset</span> <span class="id" title="var">A</span> → <span class="id" title="var">A</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">join</span> : <span class="id" title="var">propset</span> <span class="id" title="var">A</span> → <span class="id" title="var">A</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">meet_isMeet</span> : <span class="id" title="var">isMeet</span> <span class="id" title="var">meet</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">join_isJoin</span> : <span class="id" title="var">isJoin</span> <span class="id" title="var">join</span>;<br/>
+&nbsp;&nbsp;}.<br/>
+
+<br/>
+<span class="id" title="keyword">Program Definition</span> <span class="id" title="var">CompleteLattice_dual</span> {<span class="id" title="var">A</span> : <span class="id" title="keyword">Type</span>} {<span class="id" title="var">OS</span> : <span class="id" title="var">OrderedSet</span> <span class="id" title="var">A</span>} (<span class="id" title="var">CL</span> : <span class="id" title="var">CompleteLattice</span> <span class="id" title="var">A</span>)<br/>
+&nbsp;&nbsp;: @<span class="id" title="var">CompleteLattice</span> <span class="id" title="var">A</span> (@<span class="id" title="var">OrderedSet_dual</span> <span class="id" title="var">A</span> <span class="id" title="var">OS</span>) :=<br/>
+&nbsp;&nbsp;{| <span class="id" title="var">meet</span> := <span class="id" title="var">join</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">join</span> := <span class="id" title="var">meet</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">meet_isMeet</span> := <span class="id" title="var">_</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">join_isJoin</span> := <span class="id" title="var">_</span><br/>
+&nbsp;&nbsp;|}.<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">MonotonicFunction</span> {<span class="id" title="var">A</span> : <span class="id" title="keyword">Type</span>} {<span class="id" title="var">OS</span> : <span class="id" title="var">OrderedSet</span> <span class="id" title="var">A</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">f</span> : <span class="id" title="var">A</span> → <span class="id" title="var">A</span>) :=<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">∀</span> (<span class="id" title="var">x</span> <span class="id" title="var">y</span> : <span class="id" title="var">A</span>), <span class="id" title="var">leq</span> <span class="id" title="var">x</span> <span class="id" title="var">y</span> → <span class="id" title="var">leq</span> (<span class="id" title="var">f</span> <span class="id" title="var">x</span>) (<span class="id" title="var">f</span> <span class="id" title="var">y</span>).<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">AntiMonotonicFunction</span> {<span class="id" title="var">A</span> : <span class="id" title="keyword">Type</span>} {<span class="id" title="var">OS</span> : <span class="id" title="var">OrderedSet</span> <span class="id" title="var">A</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">f</span> : <span class="id" title="var">A</span> → <span class="id" title="var">A</span>) :=<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">∀</span> (<span class="id" title="var">x</span> <span class="id" title="var">y</span> : <span class="id" title="var">A</span>), <span class="id" title="var">leq</span> <span class="id" title="var">x</span> <span class="id" title="var">y</span> → <span class="id" title="var">leq</span> (<span class="id" title="var">f</span> <span class="id" title="var">y</span>) (<span class="id" title="var">f</span> <span class="id" title="var">x</span>).<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">MonotonicFunction_dual</span> {<span class="id" title="var">A</span> : <span class="id" title="keyword">Type</span>} :<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">∀</span> (<span class="id" title="var">OS</span> : <span class="id" title="var">OrderedSet</span> <span class="id" title="var">A</span>) (<span class="id" title="var">f</span> : <span class="id" title="var">A</span> → <span class="id" title="var">A</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;@<span class="id" title="var">MonotonicFunction</span> <span class="id" title="var">A</span> <span class="id" title="var">OS</span> <span class="id" title="var">f</span> → @<span class="id" title="var">MonotonicFunction</span> <span class="id" title="var">A</span> (<span class="id" title="var">OrderedSet_dual</span> <span class="id" title="var">OS</span>) <span class="id" title="var">f</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">PrefixpointsOf</span> {<span class="id" title="var">A</span> : <span class="id" title="keyword">Type</span>} {<span class="id" title="var">OS</span> : <span class="id" title="var">OrderedSet</span> <span class="id" title="var">A</span>} (<span class="id" title="var">f</span> : <span class="id" title="var">A</span> → <span class="id" title="var">A</span>) : <span class="id" title="var">propset</span> <span class="id" title="var">A</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="var">PropSet</span> (<span class="id" title="keyword">fun</span> <span class="id" title="var">x</span> ⇒ <span class="id" title="var">leq</span> (<span class="id" title="var">f</span> <span class="id" title="var">x</span>) <span class="id" title="var">x</span>).<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">LeastFixpointOf</span> {<span class="id" title="var">A</span> : <span class="id" title="keyword">Type</span>} {<span class="id" title="var">OS</span> : <span class="id" title="var">OrderedSet</span> <span class="id" title="var">A</span>} {<span class="id" title="var">L</span> : <span class="id" title="var">CompleteLattice</span> <span class="id" title="var">A</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">f</span> : <span class="id" title="var">A</span> → <span class="id" title="var">A</span>) : <span class="id" title="var">A</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="var">meet</span> (<span class="id" title="var">PrefixpointsOf</span> <span class="id" title="var">f</span>).<br/>
+
+<br/>
+<span class="id" title="keyword">Arguments</span> <span class="id" title="var">LeastFixpointOf</span> : <span class="id" title="tactic">simpl</span> <span class="id" title="var">never</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">PostfixpointsOf</span> {<span class="id" title="var">A</span> : <span class="id" title="keyword">Type</span>} {<span class="id" title="var">OS</span> : <span class="id" title="var">OrderedSet</span> <span class="id" title="var">A</span>} (<span class="id" title="var">f</span> : <span class="id" title="var">A</span> → <span class="id" title="var">A</span>) : <span class="id" title="var">propset</span> <span class="id" title="var">A</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="var">PropSet</span> (<span class="id" title="keyword">fun</span> <span class="id" title="var">x</span> ⇒ <span class="id" title="var">leq</span> <span class="id" title="var">x</span> (<span class="id" title="var">f</span> <span class="id" title="var">x</span>)).<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">GreatestFixpointOf</span> {<span class="id" title="var">A</span> : <span class="id" title="keyword">Type</span>} {<span class="id" title="var">OS</span> : <span class="id" title="var">OrderedSet</span> <span class="id" title="var">A</span>} {<span class="id" title="var">L</span> : <span class="id" title="var">CompleteLattice</span> <span class="id" title="var">A</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">f</span> : <span class="id" title="var">A</span> → <span class="id" title="var">A</span>) : <span class="id" title="var">A</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="var">join</span> (<span class="id" title="var">PostfixpointsOf</span> <span class="id" title="var">f</span>).<br/>
+
+<br/>
+<span class="id" title="keyword">Arguments</span> <span class="id" title="var">GreatestFixpointOf</span> : <span class="id" title="tactic">simpl</span> <span class="id" title="var">never</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">PrefixpointsOfDualArePostfixpoints</span> {<span class="id" title="var">A</span> : <span class="id" title="keyword">Type</span>} :<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">∀</span> (<span class="id" title="var">OS</span> : <span class="id" title="var">OrderedSet</span> <span class="id" title="var">A</span>) (<span class="id" title="var">f</span> : <span class="id" title="var">A</span> → <span class="id" title="var">A</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;@<span class="id" title="var">PrefixpointsOf</span> <span class="id" title="var">A</span> (@<span class="id" title="var">OrderedSet_dual</span> <span class="id" title="var">A</span> <span class="id" title="var">OS</span>) = @<span class="id" title="var">PostfixpointsOf</span> <span class="id" title="var">A</span> <span class="id" title="var">OS</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">PostfixpointsOfDualArePrefixpoints</span> {<span class="id" title="var">A</span> : <span class="id" title="keyword">Type</span>} :<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">∀</span> (<span class="id" title="var">OS</span> : <span class="id" title="var">OrderedSet</span> <span class="id" title="var">A</span>) (<span class="id" title="var">f</span> : <span class="id" title="var">A</span> → <span class="id" title="var">A</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;@<span class="id" title="var">PostfixpointsOf</span> <span class="id" title="var">A</span> (@<span class="id" title="var">OrderedSet_dual</span> <span class="id" title="var">A</span> <span class="id" title="var">OS</span>) = @<span class="id" title="var">PrefixpointsOf</span> <span class="id" title="var">A</span> <span class="id" title="var">OS</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">GreatestFixpointOnDualIsLeastFixpoint</span> {<span class="id" title="var">A</span> : <span class="id" title="keyword">Type</span>} :<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">∀</span> (<span class="id" title="var">OS</span> : <span class="id" title="var">OrderedSet</span> <span class="id" title="var">A</span>) (<span class="id" title="var">L</span> : <span class="id" title="var">CompleteLattice</span> <span class="id" title="var">A</span>) (<span class="id" title="var">f</span> : <span class="id" title="var">A</span> → <span class="id" title="var">A</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;@<span class="id" title="var">GreatestFixpointOf</span> <span class="id" title="var">A</span> (@<span class="id" title="var">OrderedSet_dual</span> <span class="id" title="var">A</span> <span class="id" title="var">OS</span>) (@<span class="id" title="var">CompleteLattice_dual</span> <span class="id" title="var">A</span> <span class="id" title="var">OS</span> <span class="id" title="var">L</span>) <span class="id" title="var">f</span> = <span class="id" title="var">LeastFixpointOf</span> <span class="id" title="var">f</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Proposition</span> <span class="id" title="var">GreatestFixpoint_greaterThanPostfixpoint</span>:<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">∀</span> (<span class="id" title="var">A</span> : <span class="id" title="keyword">Type</span>) (<span class="id" title="var">OS</span> : <span class="id" title="var">OrderedSet</span> <span class="id" title="var">A</span>) (<span class="id" title="var">L</span> : <span class="id" title="var">CompleteLattice</span> <span class="id" title="var">A</span>) (<span class="id" title="var">f</span> : <span class="id" title="var">A</span> → <span class="id" title="var">A</span>) (<span class="id" title="var">x</span> : <span class="id" title="var">A</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">leq</span> <span class="id" title="var">x</span> (<span class="id" title="var">f</span> <span class="id" title="var">x</span>) → <span class="id" title="var">leq</span> <span class="id" title="var">x</span> (<span class="id" title="var">GreatestFixpointOf</span> <span class="id" title="var">f</span>).<br/>
+
+<br/>
+<span class="id" title="keyword">Proposition</span> <span class="id" title="var">GreatestFixpoint_GreaterThanFixpoint</span> :<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">∀</span> (<span class="id" title="var">A</span> : <span class="id" title="keyword">Type</span>) (<span class="id" title="var">OS</span> : <span class="id" title="var">OrderedSet</span> <span class="id" title="var">A</span>) (<span class="id" title="var">L</span> : <span class="id" title="var">CompleteLattice</span> <span class="id" title="var">A</span>) (<span class="id" title="var">f</span> : <span class="id" title="var">A</span> → <span class="id" title="var">A</span>) (<span class="id" title="var">x</span> : <span class="id" title="var">A</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">x</span> = (<span class="id" title="var">f</span> <span class="id" title="var">x</span>) → <span class="id" title="var">leq</span> <span class="id" title="var">x</span> (<span class="id" title="var">GreatestFixpointOf</span> <span class="id" title="var">f</span>).<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">isFixpoint</span> {<span class="id" title="var">A</span> : <span class="id" title="keyword">Type</span>} (<span class="id" title="var">f</span> : <span class="id" title="var">A</span> → <span class="id" title="var">A</span>) (<span class="id" title="var">p</span> : <span class="id" title="var">A</span>) : <span class="id" title="keyword">Prop</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="var">f</span> <span class="id" title="var">p</span> = <span class="id" title="var">p</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Theorem</span> <span class="id" title="var">GreatestFixpoint_fixpoint</span>:<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">∀</span> (<span class="id" title="var">A</span> : <span class="id" title="keyword">Type</span>) (<span class="id" title="var">OS</span> : <span class="id" title="var">OrderedSet</span> <span class="id" title="var">A</span>) (<span class="id" title="var">L</span> : <span class="id" title="var">CompleteLattice</span> <span class="id" title="var">A</span>) (<span class="id" title="var">f</span> : <span class="id" title="var">A</span> → <span class="id" title="var">A</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">MonotonicFunction</span> <span class="id" title="var">f</span> → <span class="id" title="var">isFixpoint</span> <span class="id" title="var">f</span> (@<span class="id" title="var">GreatestFixpointOf</span> <span class="id" title="var">A</span> <span class="id" title="var">OS</span> <span class="id" title="var">L</span> <span class="id" title="var">f</span>).<br/>
+
+<br/>
+<span class="id" title="keyword">Theorem</span> <span class="id" title="var">LeastFixpoint_fixpoint</span>:<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">∀</span> (<span class="id" title="var">A</span> : <span class="id" title="keyword">Type</span>) (<span class="id" title="var">OS</span> : <span class="id" title="var">OrderedSet</span> <span class="id" title="var">A</span>) (<span class="id" title="var">L</span> : <span class="id" title="var">CompleteLattice</span> <span class="id" title="var">A</span>) (<span class="id" title="var">f</span> : <span class="id" title="var">A</span> → <span class="id" title="var">A</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">MonotonicFunction</span> <span class="id" title="var">f</span> → <span class="id" title="var">isFixpoint</span> <span class="id" title="var">f</span> (@<span class="id" title="var">LeastFixpointOf</span> <span class="id" title="var">A</span> <span class="id" title="var">OS</span> <span class="id" title="var">L</span> <span class="id" title="var">f</span>).<br/>
+
+<br/>
+<span class="id" title="keyword">Proposition</span> <span class="id" title="var">LeastFixpoint_LesserThanPrefixpoint</span>:<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">∀</span> (<span class="id" title="var">A</span> : <span class="id" title="keyword">Type</span>) (<span class="id" title="var">OS</span> : <span class="id" title="var">OrderedSet</span> <span class="id" title="var">A</span>) (<span class="id" title="var">L</span> : <span class="id" title="var">CompleteLattice</span> <span class="id" title="var">A</span>) (<span class="id" title="var">f</span> : <span class="id" title="var">A</span> → <span class="id" title="var">A</span>) (<span class="id" title="var">x</span> : <span class="id" title="var">A</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">leq</span> (<span class="id" title="var">f</span> <span class="id" title="var">x</span>) <span class="id" title="var">x</span> → <span class="id" title="var">leq</span> (<span class="id" title="var">LeastFixpointOf</span> <span class="id" title="var">f</span>) <span class="id" title="var">x</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Proposition</span> <span class="id" title="var">LeastFixpoint_LesserThanFixpoint</span> :<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">∀</span> (<span class="id" title="var">A</span> : <span class="id" title="keyword">Type</span>) (<span class="id" title="var">OS</span> : <span class="id" title="var">OrderedSet</span> <span class="id" title="var">A</span>) (<span class="id" title="var">L</span> : <span class="id" title="var">CompleteLattice</span> <span class="id" title="var">A</span>) (<span class="id" title="var">f</span> : <span class="id" title="var">A</span> → <span class="id" title="var">A</span>) (<span class="id" title="var">x</span> : <span class="id" title="var">A</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">x</span> = (<span class="id" title="var">f</span> <span class="id" title="var">x</span>) → <span class="id" title="var">leq</span> (<span class="id" title="var">LeastFixpointOf</span> <span class="id" title="var">f</span>) <span class="id" title="var">x</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Proposition</span> <span class="id" title="var">LeastFixpoint_unique</span> :<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">∀</span> (<span class="id" title="var">A</span> : <span class="id" title="keyword">Type</span>) (<span class="id" title="var">OS</span> : <span class="id" title="var">OrderedSet</span> <span class="id" title="var">A</span>) (<span class="id" title="var">L</span> : <span class="id" title="var">CompleteLattice</span> <span class="id" title="var">A</span>) (<span class="id" title="var">f</span> : <span class="id" title="var">A</span> → <span class="id" title="var">A</span>) (<span class="id" title="var">Sfix</span> : <span class="id" title="var">A</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">leq</span> (<span class="id" title="var">f</span> <span class="id" title="var">Sfix</span>) <span class="id" title="var">Sfix</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="keyword">∀</span> <span class="id" title="var">x</span>, <span class="id" title="var">leq</span> (<span class="id" title="var">f</span> <span class="id" title="var">x</span>) <span class="id" title="var">x</span> → <span class="id" title="var">leq</span> <span class="id" title="var">Sfix</span> <span class="id" title="var">x</span>) →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Sfix</span> = <span class="id" title="var">LeastFixpointOf</span> <span class="id" title="var">f</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Proposition</span> <span class="id" title="var">LeastFixpoint_unique_2</span> :<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">∀</span> (<span class="id" title="var">A</span> : <span class="id" title="keyword">Type</span>) (<span class="id" title="var">OS</span> : <span class="id" title="var">OrderedSet</span> <span class="id" title="var">A</span>) (<span class="id" title="var">L</span> : <span class="id" title="var">CompleteLattice</span> <span class="id" title="var">A</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">f</span> : <span class="id" title="var">A</span> → <span class="id" title="var">A</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">Sfix</span> : <span class="id" title="var">A</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">MonotonicFunction</span> <span class="id" title="var">f</span>) →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">f</span> <span class="id" title="var">Sfix</span>) = <span class="id" title="var">Sfix</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="keyword">∀</span> <span class="id" title="var">x</span>, (<span class="id" title="var">f</span> <span class="id" title="var">x</span>) = <span class="id" title="var">x</span> → <span class="id" title="var">leq</span> <span class="id" title="var">Sfix</span> <span class="id" title="var">x</span>) →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Sfix</span> = <span class="id" title="var">LeastFixpointOf</span> <span class="id" title="var">f</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">lfp_preserves_order</span> {<span class="id" title="var">A</span> : <span class="id" title="keyword">Type</span>} (<span class="id" title="var">OS</span> : <span class="id" title="var">OrderedSet</span> <span class="id" title="var">A</span>) (<span class="id" title="var">L</span> : <span class="id" title="var">CompleteLattice</span> <span class="id" title="var">A</span>) (<span class="id" title="var">f</span> <span class="id" title="var">g</span> : <span class="id" title="var">A</span> → <span class="id" title="var">A</span>) :<br/>
+&nbsp;&nbsp;<span class="id" title="var">MonotonicFunction</span> <span class="id" title="var">f</span> → <span class="id" title="var">MonotonicFunction</span> <span class="id" title="var">g</span> →<br/>
+&nbsp;&nbsp;(<span class="id" title="keyword">∀</span> (<span class="id" title="var">x</span> : <span class="id" title="var">A</span>), <span class="id" title="var">leq</span> (<span class="id" title="var">f</span> <span class="id" title="var">x</span>) (<span class="id" title="var">g</span> <span class="id" title="var">x</span>)) →<br/>
+&nbsp;&nbsp;<span class="id" title="var">leq</span> (<span class="id" title="var">LeastFixpointOf</span> <span class="id" title="var">f</span>) (<span class="id" title="var">LeastFixpointOf</span> <span class="id" title="var">g</span>).<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Logic.FunctionalExtensionality</span> <span class="id" title="var">Logic.PropExtensionality</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Section</span> <span class="id" title="var">propset_lattice</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Variable</span> <span class="id" title="var">U</span> : <span class="id" title="keyword">Type</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Program Definition</span> <span class="id" title="var">PropsetOrderedSet</span> : <span class="id" title="var">OrderedSet</span> (<span class="id" title="var">propset</span> <span class="id" title="var">U</span>) :=<br/>
+&nbsp;&nbsp;{| <span class="id" title="var">leq</span> := <span class="id" title="var">subseteq</span>;<br/>
+&nbsp;&nbsp;|}.<br/>
+
+<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">propset_Meet</span> (<span class="id" title="var">ee</span> : <span class="id" title="var">propset</span> (<span class="id" title="var">propset</span> <span class="id" title="var">U</span>)) : <span class="id" title="var">propset</span> <span class="id" title="var">U</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">PropSet</span> (<span class="id" title="keyword">fun</span> <span class="id" title="var">m</span> ⇒ <span class="id" title="keyword">∀</span> <span class="id" title="var">e</span> : <span class="id" title="var">propset</span> <span class="id" title="var">U</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">e</span> ∈ <span class="id" title="var">ee</span> → <span class="id" title="var">m</span> ∈ <span class="id" title="var">e</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">propset_Meet_is_meet</span> : @<span class="id" title="var">isMeet</span> (<span class="id" title="var">propset</span> <span class="id" title="var">U</span>) <span class="id" title="var">PropsetOrderedSet</span> <span class="id" title="var">propset_Meet</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">PowersetLattice</span> : <span class="id" title="var">CompleteLattice</span> (<span class="id" title="var">propset</span> <span class="id" title="var">U</span>) :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{| <span class="id" title="var">meet</span> := <span class="id" title="var">propset_Meet</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">join</span> := <span class="id" title="var">joinFromMeet</span> <span class="id" title="var">propset_Meet</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">meet_isMeet</span> := <span class="id" title="var">propset_Meet_is_meet</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">join_isJoin</span> := <span class="id" title="var">joinFromMeet_lub</span> (<span class="id" title="var">propset</span> <span class="id" title="var">U</span>) <span class="id" title="var">PropsetOrderedSet</span> <span class="id" title="var">propset_Meet</span> <span class="id" title="var">propset_Meet_is_meet</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;|}.<br/>
+
+<br/>
+<span class="id" title="keyword">End</span> <span class="id" title="var">propset_lattice</span>.<br/>
+
+<br/>
+
+<br/>
+</div>
+<hr/>This page has been generated by <a href="http://coq.inria.fr/">coqdoc</a>
+</div>
+
+</div>
+
+</body>
+</html>
