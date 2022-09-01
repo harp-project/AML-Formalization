@@ -1,0 +1,428 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link href="coqdoc.css" rel="stylesheet" type="text/css" />
+<title>DefaultModels</title>
+</head>
+
+<body>
+
+<div id="page">
+
+<div id="header">
+</div>
+
+<div id="main">
+
+<h1 class="libtitle">File DefaultModels</h1>
+
+<div class="code">
+<span class="id" title="keyword">From</span> <span class="id" title="keyword">Equations</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="keyword">Equations</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">MatchingLogic</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Logic</span>.<br/>
+<span class="id" title="keyword">Import</span> <span class="id" title="var">MatchingLogic.Logic.Notations</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">MatchingLogic.Utils</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Lattice</span> <span class="id" title="var">stdpp_ext</span> <span class="id" title="var">extralibrary</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">stdpp</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">base</span> <span class="id" title="var">propset</span> <span class="id" title="var">countable</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Import</span> <span class="id" title="var">extralibrary</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">MatchingLogic.Theories</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Definedness_Syntax</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Sorts_Syntax</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Bool_Syntax</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Definedness_Semantics</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Sorts_Semantics</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Bool_Semantics</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Nat_Syntax</span><br/>
+.<br/>
+<span class="id" title="keyword">Import</span> <span class="id" title="var">Definedness_Syntax.Notations</span>.<br/>
+<span class="id" title="keyword">Import</span> <span class="id" title="var">MatchingLogic.Semantics.Notations</span>.<br/>
+
+<br/>
+
+<br/>
+<span class="id" title="keyword">Open</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">ml_scope</span>.<br/>
+<span class="id" title="keyword">Open</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">list_scope</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Section</span> <span class="id" title="var">Definedness</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Context</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} {<span class="id" title="var">M</span> : <span class="id" title="var">Model</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{<span class="id" title="var">string_vars</span> : <span class="id" title="var">variables</span> = <span class="id" title="var">StringMLVariables</span>}.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Instance</span> <span class="id" title="var">definedness_Σ</span> : <span class="id" title="var">Signature</span> := {<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">variables</span> := <span class="id" title="var">StringMLVariables</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">ml_symbols</span> := <span class="id" title="var">Build_MLSymbols</span> (@<span class="id" title="var">symbols</span> (@<span class="id" title="var">ml_symbols</span> <span class="id" title="var">Σ</span>) + <span class="id" title="var">Definedness_Syntax.Symbols</span>) <span class="id" title="var">_</span> <span class="id" title="var">_</span>;<br/>
+&nbsp;&nbsp;}.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Instance</span> <span class="id" title="var">definedness_syntax</span> : <span class="id" title="var">Definedness_Syntax.Syntax</span> := {<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">inj</span> := <span class="id" title="var">inr</span>;<br/>
+&nbsp;&nbsp;}.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">definedness_carrier</span> : <span class="id" title="keyword">Type</span> := <span class="id" title="var">Domain</span> <span class="id" title="var">M</span> + <span class="id" title="var">unit</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">definedness_sym_interp</span> (<span class="id" title="var">m</span> : @<span class="id" title="var">symbols</span> (@<span class="id" title="var">ml_symbols</span> <span class="id" title="var">Σ</span>) + <span class="id" title="var">Definedness_Syntax.Symbols</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;: <span class="id" title="var">propset</span> <span class="id" title="var">definedness_carrier</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">m</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">inl</span> <span class="id" title="var">x</span> ⇒ <span class="id" title="var">inl</span> &lt;$&gt; (<span class="id" title="var">sym_interp</span> <span class="id" title="var">M</span> <span class="id" title="var">x</span>)<br/>
+&nbsp;&nbsp;| <span class="id" title="var">inr</span> <span class="id" title="var">x</span> ⇒ {[ <span class="id" title="var">inr</span> () ]}<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">definedness_app_interp</span> (<span class="id" title="var">m1</span> <span class="id" title="var">m2</span> : <span class="id" title="var">definedness_carrier</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;: <span class="id" title="var">propset</span> <span class="id" title="var">definedness_carrier</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">m1</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">inr</span> () ⇒ ⊤<br/>
+&nbsp;&nbsp;| <span class="id" title="var">inl</span> <span class="id" title="var">x1</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">m2</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">inl</span> <span class="id" title="var">x2</span> ⇒ <span class="id" title="var">inl</span> &lt;$&gt; <span class="id" title="var">app_interp</span> <span class="id" title="var">M</span> <span class="id" title="var">x1</span> <span class="id" title="var">x2</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">inr</span> () ⇒ ∅<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">DefinednessModel</span> : <span class="id" title="var">Model</span> := {|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Domain</span> := <span class="id" title="var">definedness_carrier</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">app_interp</span> := <span class="id" title="var">definedness_app_interp</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">sym_interp</span> := <span class="id" title="var">definedness_sym_interp</span>;<br/>
+&nbsp;&nbsp;|}.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Theorem</span> <span class="id" title="var">DefinednessModel_satisfies_theory</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">DefinednessModel</span> ⊨ᵀ <span class="id" title="var">Definedness_Syntax.theory</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">End</span> <span class="id" title="var">Definedness</span>.<br/>
+
+<br/>
+<span class="comment">(*&nbsp;This&nbsp;is&nbsp;independent&nbsp;of&nbsp;ModelExtension.v,&nbsp;but&nbsp;it&nbsp;is&nbsp;very&nbsp;similar&nbsp;to&nbsp;it&nbsp;*)</span><br/>
+<span class="id" title="keyword">Section</span> <span class="id" title="var">Sorts</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Context</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} {<span class="id" title="var">M</span> : <span class="id" title="var">Model</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{<span class="id" title="var">string_vars</span> : <span class="id" title="var">variables</span> = <span class="id" title="var">StringMLVariables</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{<span class="id" title="var">sort_interp</span> : <span class="id" title="var">Domain</span> <span class="id" title="var">M</span> → <span class="id" title="var">propset</span> <span class="id" title="var">M</span>}.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Instance</span> <span class="id" title="var">sorts_Σ</span> : <span class="id" title="var">Signature</span> := {<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">variables</span> := <span class="id" title="var">StringMLVariables</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">ml_symbols</span> := <span class="id" title="var">Build_MLSymbols</span> (@<span class="id" title="var">symbols</span> (@<span class="id" title="var">ml_symbols</span> (<span class="id" title="var">definedness_Σ</span>)) + <span class="id" title="var">Sorts_Syntax.Symbols</span>) <span class="id" title="var">_</span> <span class="id" title="var">_</span>;<br/>
+&nbsp;&nbsp;}.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Instance</span> <span class="id" title="var">sorts_syntax</span> : @<span class="id" title="var">Sorts_Syntax.Syntax</span> <span class="id" title="var">sorts_Σ</span> := {<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">inj</span> := <span class="id" title="var">inr</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">imported_definedness</span> := {|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Definedness_Syntax.inj</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">λ</span> <span class="id" title="var">x</span> : <span class="id" title="var">Definedness_Syntax.Symbols</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">x</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">definedness</span> ⇒ <span class="id" title="var">inl</span> (<span class="id" title="var">inr</span> <span class="id" title="var">definedness</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|};<br/>
+&nbsp;&nbsp;}.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">sorts_carrier</span> : <span class="id" title="keyword">Type</span> := <span class="id" title="var">Domain</span> (@<span class="id" title="var">DefinednessModel</span> <span class="id" title="var">Σ</span> <span class="id" title="var">M</span>) + <span class="id" title="var">unit</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">sorts_sym_interp</span> (<span class="id" title="var">m</span> : @<span class="id" title="var">symbols</span> (@<span class="id" title="var">ml_symbols</span> (@<span class="id" title="var">definedness_Σ</span> <span class="id" title="var">Σ</span>)) + <span class="id" title="var">Sorts_Syntax.Symbols</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;: <span class="id" title="var">propset</span> <span class="id" title="var">sorts_carrier</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">m</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">inl</span> <span class="id" title="var">x</span> ⇒ <span class="id" title="var">inl</span> &lt;$&gt; (<span class="id" title="var">sym_interp</span> (@<span class="id" title="var">DefinednessModel</span> <span class="id" title="var">Σ</span> <span class="id" title="var">M</span>) <span class="id" title="var">x</span>)<br/>
+&nbsp;&nbsp;| <span class="id" title="var">inr</span> <span class="id" title="var">x</span> ⇒ {[ <span class="id" title="var">inr</span> () ]}<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">sorts_app_interp</span> (<span class="id" title="var">m1</span> <span class="id" title="var">m2</span> : <span class="id" title="var">sorts_carrier</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;: <span class="id" title="var">propset</span> <span class="id" title="var">sorts_carrier</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">m1</span>, <span class="id" title="var">m2</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">inr</span> (), <span class="id" title="var">inr</span> ()       ⇒ ∅ <span class="comment">(*&nbsp;inh&nbsp;*)</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">inr</span> (), <span class="id" title="var">inl</span> (<span class="id" title="var">inr</span> ()) ⇒ ∅ <span class="comment">(*&nbsp;inh&nbsp;*)</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">inr</span> (), <span class="id" title="var">inl</span> (<span class="id" title="var">inl</span> <span class="id" title="var">x</span>)  ⇒   <span class="comment">(*&nbsp;inh&nbsp;*)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">inl</span> ∘ <span class="id" title="var">inl</span>) &lt;$&gt; (<span class="id" title="var">sort_interp</span> <span class="id" title="var">x</span>)<br/>
+&nbsp;&nbsp;| <span class="id" title="var">inl</span> (<span class="id" title="var">inr</span> <span class="id" title="var">_</span>), <span class="id" title="var">inr</span> <span class="id" title="var">_</span>   ⇒ ⊤ <span class="comment">(*&nbsp;⌈&nbsp;⌉&nbsp;*)</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">inl</span> (<span class="id" title="var">inr</span> <span class="id" title="var">_</span>), <span class="id" title="var">inl</span> <span class="id" title="var">_</span>   ⇒ ⊤ <span class="comment">(*&nbsp;⌈&nbsp;⌉&nbsp;*)</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">inl</span> (<span class="id" title="var">inl</span> <span class="id" title="var">_</span>), <span class="id" title="var">inr</span> <span class="id" title="var">_</span>   ⇒ ∅ <span class="comment">(*&nbsp;x&nbsp;*)</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">inl</span> <span class="id" title="var">x1</span>, <span class="id" title="var">inl</span> <span class="id" title="var">x2</span>       ⇒   <span class="comment">(*&nbsp;x&nbsp;*)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">inl</span> &lt;$&gt; <span class="id" title="var">app_interp</span> <span class="id" title="var">DefinednessModel</span> <span class="id" title="var">x1</span> <span class="id" title="var">x2</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">SortsModel</span> : <span class="id" title="var">Model</span> := {|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Domain</span> := <span class="id" title="var">sorts_carrier</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">app_interp</span> := <span class="id" title="var">sorts_app_interp</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">sym_interp</span> := <span class="id" title="var">sorts_sym_interp</span>;<br/>
+&nbsp;&nbsp;|}.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Theorem</span> <span class="id" title="var">SortsModel_satisfies_theory</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">SortsModel</span> ⊨ᵀ <span class="id" title="var">Definedness_Syntax.theory</span>.<br/>
+<span class="id" title="keyword">End</span> <span class="id" title="var">Sorts</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Ltac</span> <span class="id" title="var">eval_simpl</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">try</span> <span class="id" title="var">simp</span> <span class="id" title="tactic">eval</span>;<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">try</span> <span class="id" title="tactic">rewrite</span> <span class="id" title="var">eval_not_simpl</span>;<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">try</span> <span class="id" title="tactic">rewrite</span> <span class="id" title="var">eval_and_simpl</span>;<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">try</span> <span class="id" title="tactic">rewrite</span> <span class="id" title="var">eval_or_simpl</span>;<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">try</span> <span class="id" title="tactic">rewrite</span> <span class="id" title="var">eval_top_simpl</span>;<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">try</span> <span class="id" title="tactic">rewrite</span> <span class="id" title="var">eval_iff_simpl</span>;<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">try</span> <span class="id" title="tactic">rewrite</span> <span class="id" title="var">eval_all_simpl</span>;<br/>
+<span class="comment">(*&nbsp;&nbsp;TODO:&nbsp;&nbsp;&nbsp;try&nbsp;rewrite&nbsp;eval_nu_simpl;&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="id" title="tactic">try</span> <span class="id" title="var">unshelve</span> (<span class="id" title="var">erewrite</span> <span class="id" title="var">eval_forall_of_sort</span>);<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">try</span> <span class="id" title="var">unshelve</span> (<span class="id" title="var">erewrite</span> <span class="id" title="var">eval_exists_of_sort</span>);<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">try</span> <span class="id" title="tactic">apply</span> <span class="id" title="var">propset_fa_union_full</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Ltac</span> <span class="id" title="var">eval_simpl_in</span> <span class="id" title="var">H</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">try</span> <span class="id" title="var">simp</span> <span class="id" title="tactic">eval</span> <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>;<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">try</span> <span class="id" title="tactic">rewrite</span> <span class="id" title="var">eval_not_simpl</span> <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>;<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">try</span> <span class="id" title="tactic">rewrite</span> <span class="id" title="var">eval_and_simpl</span> <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>;<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">try</span> <span class="id" title="tactic">rewrite</span> <span class="id" title="var">eval_or_simpl</span> <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>;<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">try</span> <span class="id" title="tactic">rewrite</span> <span class="id" title="var">eval_top_simpl</span> <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>;<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">try</span> <span class="id" title="tactic">rewrite</span> <span class="id" title="var">eval_iff_simpl</span> <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>;<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">try</span> <span class="id" title="tactic">rewrite</span> <span class="id" title="var">eval_all_simpl</span> <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>;<br/>
+<span class="comment">(*&nbsp;&nbsp;TODO:&nbsp;&nbsp;&nbsp;try&nbsp;rewrite&nbsp;eval_nu_simpl;&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="id" title="tactic">try</span> <span class="id" title="var">unshelve</span> (<span class="id" title="var">erewrite</span> <span class="id" title="var">eval_forall_of_sort</span> <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>);<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">try</span> <span class="id" title="var">unshelve</span> (<span class="id" title="var">erewrite</span> <span class="id" title="var">eval_exists_of_sort</span> <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>);<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">try</span> <span class="id" title="tactic">apply</span> <span class="id" title="var">propset_fa_union_full</span> <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Section</span> <span class="id" title="var">Bool</span>.<br/>
+&nbsp;&nbsp;<span class="comment">(*&nbsp;NOTE&nbsp;-&nbsp;INVESTIGATE:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;When&nbsp;we&nbsp;automatically&nbsp;generate&nbsp;carriers,&nbsp;should&nbsp;the&nbsp;partial<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;operations&nbsp;use&nbsp;Coq&nbsp;standard&nbsp;types,&nbsp;or&nbsp;use&nbsp;the&nbsp;generated&nbsp;core<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;symbols?<br/>
+&nbsp;&nbsp;&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Inductive</span> <span class="id" title="var">bool_carrier</span> :=<br/>
+&nbsp;&nbsp;| <span class="id" title="var">coreBoolSym</span> (<span class="id" title="var">s</span> : <span class="id" title="var">Bool_Syntax.Symbols</span>)<br/>
+&nbsp;&nbsp;| <span class="id" title="var">partialAnd</span> (<span class="id" title="var">b</span> : <span class="id" title="var">bool</span>)<br/>
+&nbsp;&nbsp;| <span class="id" title="var">partialAndThen</span> (<span class="id" title="var">b</span> : <span class="id" title="var">option</span> <span class="id" title="var">bool</span>)<br/>
+&nbsp;&nbsp;| <span class="id" title="var">defBool</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">inhBool</span><br/>
+&nbsp;&nbsp;.<br/>
+
+<br/>
+&nbsp;&nbsp;#[<span class="id" title="var">global</span>]<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Instance</span> <span class="id" title="var">bool_carrier_EqDec</span> : <span class="id" title="var">EqDecision</span> <span class="id" title="var">bool_carrier</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;#[<span class="id" title="var">global</span>]<br/>
+&nbsp;&nbsp;<span class="id" title="var">Program</span> <span class="id" title="keyword">Instance</span> <span class="id" title="var">bool_carrier_finite</span> : <span class="id" title="var">finite.Finite</span> <span class="id" title="var">bool_carrier</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Global Instance</span> <span class="id" title="var">bool_carrier_countable</span> : <span class="id" title="var">countable.Countable</span> <span class="id" title="var">bool_carrier</span>.<br/>
+ 
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Instance</span> <span class="id" title="var">bools_Σ</span> : <span class="id" title="var">Signature</span> := {<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">variables</span> := <span class="id" title="var">StringMLVariables</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">ml_symbols</span> := <span class="id" title="var">Build_MLSymbols</span> <span class="id" title="var">bool_carrier</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span>;<br/>
+&nbsp;&nbsp;}.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Program Instance</span> <span class="id" title="var">bool_syntax</span> : @<span class="id" title="var">Bool_Syntax.Syntax</span> <span class="id" title="var">bools_Σ</span> := {<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">inj</span> := <span class="id" title="var">coreBoolSym</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">imported_sorts</span> := {|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Sorts_Syntax.inj</span> := <span class="id" title="keyword">fun</span> <span class="id" title="var">x</span> ⇒ <span class="id" title="var">inhBool</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">imported_definedness</span> := {|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Definedness_Syntax.inj</span> := <span class="id" title="keyword">fun</span> <span class="id" title="var">x</span> ⇒ <span class="id" title="var">defBool</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|};<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;|};<br/>
+&nbsp;&nbsp;}.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">bool_sym_interp</span> (<span class="id" title="var">m</span> : <span class="id" title="var">symbols</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;: <span class="id" title="var">propset</span> <span class="id" title="var">bool_carrier</span> := {[ <span class="id" title="var">m</span> ]}.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">bool_app_interp</span> (<span class="id" title="var">m1</span> <span class="id" title="var">m2</span> : <span class="id" title="var">bool_carrier</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;: <span class="id" title="var">propset</span> <span class="id" title="var">bool_carrier</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">m1</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;| <span class="id" title="var">coreBoolSym</span> <span class="id" title="var">sAnd</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">m2</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">coreBoolSym</span> <span class="id" title="var">sTrue</span> ⇒ {[ <span class="id" title="var">partialAnd</span> <span class="id" title="var">true</span> ]}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">coreBoolSym</span> <span class="id" title="var">sFalse</span> ⇒ {[ <span class="id" title="var">partialAnd</span> <span class="id" title="var">false</span> ]}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">_</span> ⇒ ∅<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;&nbsp;| <span class="id" title="var">coreBoolSym</span> <span class="id" title="var">sAndThen</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">m2</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">coreBoolSym</span> <span class="id" title="var">sTrue</span> ⇒ {[ <span class="id" title="var">partialAndThen</span> (<span class="id" title="var">Some</span> <span class="id" title="var">true</span>) ]}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">coreBoolSym</span> <span class="id" title="var">sFalse</span> ⇒ {[ <span class="id" title="var">partialAndThen</span> (<span class="id" title="var">Some</span> <span class="id" title="var">false</span>) ]}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">_</span> ⇒ {[ <span class="id" title="var">partialAndThen</span> <span class="id" title="var">None</span> ]}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;&nbsp;| <span class="id" title="var">coreBoolSym</span> <span class="id" title="var">sNeg</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">m2</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">coreBoolSym</span> <span class="id" title="var">sTrue</span> ⇒ {[ <span class="id" title="var">coreBoolSym</span> <span class="id" title="var">sFalse</span> ]}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">coreBoolSym</span> <span class="id" title="var">sFalse</span> ⇒ {[ <span class="id" title="var">coreBoolSym</span> <span class="id" title="var">sTrue</span> ]}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">_</span> ⇒ ∅<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;&nbsp;| <span class="id" title="var">coreBoolSym</span> <span class="id" title="var">_</span> ⇒ ∅<br/>
+&nbsp;&nbsp;&nbsp;| <span class="id" title="var">partialAnd</span> <span class="id" title="var">false</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">m2</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">coreBoolSym</span> <span class="id" title="var">sTrue</span> ⇒ {[ <span class="id" title="var">coreBoolSym</span> <span class="id" title="var">sFalse</span> ]}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">coreBoolSym</span> <span class="id" title="var">sFalse</span> ⇒ {[ <span class="id" title="var">coreBoolSym</span> <span class="id" title="var">sFalse</span> ]}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">_</span> ⇒ ∅<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;&nbsp;| <span class="id" title="var">partialAnd</span> <span class="id" title="var">true</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">m2</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">coreBoolSym</span> <span class="id" title="var">sTrue</span> ⇒ {[ <span class="id" title="var">coreBoolSym</span> <span class="id" title="var">sTrue</span> ]}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">coreBoolSym</span> <span class="id" title="var">sFalse</span> ⇒ {[ <span class="id" title="var">coreBoolSym</span> <span class="id" title="var">sFalse</span> ]}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">_</span> ⇒ ∅<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;&nbsp;| <span class="id" title="var">partialAndThen</span> (<span class="id" title="var">Some</span> <span class="id" title="var">false</span>) ⇒ {[ <span class="id" title="var">coreBoolSym</span> <span class="id" title="var">sFalse</span> ]}<br/>
+&nbsp;&nbsp;&nbsp;| <span class="id" title="var">partialAndThen</span> (<span class="id" title="var">Some</span> <span class="id" title="var">true</span>) ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">m2</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">coreBoolSym</span> <span class="id" title="var">sTrue</span> ⇒ {[ <span class="id" title="var">coreBoolSym</span> <span class="id" title="var">sTrue</span> ]}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">coreBoolSym</span> <span class="id" title="var">sFalse</span> ⇒ {[ <span class="id" title="var">coreBoolSym</span> <span class="id" title="var">sFalse</span> ]}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">_</span> ⇒ ∅<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;&nbsp;| <span class="id" title="var">partialAndThen</span> <span class="id" title="var">None</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">m2</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">coreBoolSym</span> <span class="id" title="var">sFalse</span> ⇒ {[ <span class="id" title="var">coreBoolSym</span> <span class="id" title="var">sFalse</span> ]}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">_</span> ⇒ ∅<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;&nbsp;<span class="comment">(**)</span><br/>
+&nbsp;&nbsp;&nbsp;| <span class="id" title="var">defBool</span> ⇒ ⊤<br/>
+&nbsp;&nbsp;&nbsp;| <span class="id" title="var">inhBool</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">m2</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">coreBoolSym</span> <span class="id" title="var">sBool</span> ⇒ {[ <span class="id" title="var">coreBoolSym</span> <span class="id" title="var">sFalse</span>; <span class="id" title="var">coreBoolSym</span> <span class="id" title="var">sTrue</span> ]}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">_</span> ⇒ ∅<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Global Instance</span> <span class="id" title="var">bool_carrier_inhabited</span> : <span class="id" title="var">Inhabited</span> <span class="id" title="var">bool_carrier</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Program Definition</span> <span class="id" title="var">BoolModel</span> : <span class="id" title="var">Model</span> := {|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Domain</span> := <span class="id" title="var">bool_carrier</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">app_interp</span> := <span class="id" title="var">bool_app_interp</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">sym_interp</span> := <span class="id" title="var">bool_sym_interp</span>;<br/>
+&nbsp;&nbsp;|}.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Theorem</span> <span class="id" title="var">indec_bool</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;∀ ρ <span class="id" title="var">s</span> (<span class="id" title="var">m</span> : <span class="id" title="var">BoolModel</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Decision</span> (<span class="id" title="var">m</span> ∈ <span class="id" title="var">Minterp_inhabitant</span> (<span class="id" title="var">patt_sym</span> <span class="id" title="var">s</span>) ρ).<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Hint Resolve</span> <span class="id" title="var">propset_leibniz_equiv</span> : <span class="id" title="var">core</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Theorem</span> <span class="id" title="var">BoolModel_satisfies_theory</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">BoolModel</span> ⊨ᵀ <span class="id" title="var">Bool_Syntax.theory</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">End</span> <span class="id" title="var">Bool</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Section</span> <span class="id" title="var">Nat</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Inductive</span> <span class="id" title="var">nat_carrier</span> :=<br/>
+&nbsp;&nbsp;| <span class="id" title="var">coreNatSym</span> (<span class="id" title="var">s</span> : <span class="id" title="var">Nat_Syntax.Symbols</span>)<br/>
+&nbsp;&nbsp;| <span class="id" title="var">partialAdd</span> (<span class="id" title="var">s</span> : <span class="id" title="var">nat</span>)<br/>
+&nbsp;&nbsp;| <span class="id" title="var">natVal</span> (<span class="id" title="var">n</span> : <span class="id" title="var">nat</span>)<br/>
+&nbsp;&nbsp;| <span class="id" title="var">defNat</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">inhNat</span><br/>
+&nbsp;&nbsp;.<br/>
+
+<br/>
+&nbsp;&nbsp;#[<span class="id" title="var">global</span>]<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Instance</span> <span class="id" title="var">nat_carrier_EqDec</span> : <span class="id" title="var">EqDecision</span> <span class="id" title="var">nat_carrier</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Global Instance</span> <span class="id" title="var">nat_carrier_countable</span> : <span class="id" title="var">countable.Countable</span> <span class="id" title="var">nat_carrier</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Instance</span> <span class="id" title="var">nat_Σ</span> : <span class="id" title="var">Signature</span> := {<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">variables</span> := <span class="id" title="var">StringMLVariables</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">ml_symbols</span> := <span class="id" title="var">Build_MLSymbols</span> <span class="id" title="var">nat_carrier</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span>;<br/>
+&nbsp;&nbsp;}.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Program Instance</span> <span class="id" title="var">nat_syntax</span> : @<span class="id" title="var">Nat_Syntax.Syntax</span> <span class="id" title="var">nat_Σ</span> := {<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">inj</span> := <span class="id" title="var">coreNatSym</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">imported_sorts</span> := {|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Sorts_Syntax.inj</span> := <span class="id" title="keyword">fun</span> <span class="id" title="var">x</span> ⇒ <span class="id" title="var">inhNat</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">imported_definedness</span> := {|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Definedness_Syntax.inj</span> := <span class="id" title="keyword">fun</span> <span class="id" title="var">x</span> ⇒ <span class="id" title="var">defNat</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|};<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;|};<br/>
+&nbsp;&nbsp;}.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">nat_sym_interp</span> (<span class="id" title="var">m</span> : <span class="id" title="var">symbols</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;: <span class="id" title="var">propset</span> <span class="id" title="var">nat_carrier</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">m</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">coreNatSym</span> <span class="id" title="var">sZero</span> ⇒ {[ <span class="id" title="var">natVal</span> 0 ]}<br/>
+&nbsp;&nbsp;| <span class="id" title="var">x</span> ⇒ {[ <span class="id" title="var">x</span> ]}<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">nat_app_interp</span> (<span class="id" title="var">m1</span> <span class="id" title="var">m2</span> : <span class="id" title="var">nat_carrier</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;: <span class="id" title="var">propset</span> <span class="id" title="var">nat_carrier</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">m1</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;| <span class="id" title="var">coreNatSym</span> <span class="id" title="var">sSucc</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">m2</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">natVal</span> <span class="id" title="var">n</span> ⇒ {[ <span class="id" title="var">natVal</span> (<span class="id" title="var">S</span> <span class="id" title="var">n</span>) ]}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">_</span> ⇒ ∅<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;&nbsp;| <span class="id" title="var">coreNatSym</span> <span class="id" title="var">sAddNat</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">m2</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">natVal</span> <span class="id" title="var">n</span> ⇒ {[ <span class="id" title="var">partialAdd</span> <span class="id" title="var">n</span> ]}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">_</span> ⇒ ∅<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;&nbsp;| <span class="id" title="var">coreNatSym</span> <span class="id" title="var">_</span> ⇒ ∅<br/>
+&nbsp;&nbsp;&nbsp;| <span class="id" title="var">partialAdd</span> <span class="id" title="var">n</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">m2</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">natVal</span> <span class="id" title="var">m</span> ⇒ {[ <span class="id" title="var">natVal</span> (<span class="id" title="var">n</span> + <span class="id" title="var">m</span>) ]}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">_</span> ⇒ ∅<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;&nbsp;<span class="comment">(**)</span><br/>
+&nbsp;&nbsp;&nbsp;| <span class="id" title="var">natVal</span> <span class="id" title="var">_</span> ⇒ ∅<br/>
+&nbsp;&nbsp;&nbsp;| <span class="id" title="var">defNat</span> ⇒ ⊤<br/>
+&nbsp;&nbsp;&nbsp;| <span class="id" title="var">inhNat</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">m2</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">coreNatSym</span> <span class="id" title="var">sNat</span> ⇒ {[ <span class="id" title="var">m</span> | <span class="id" title="tactic">∃</span> <span class="id" title="var">n</span>, <span class="id" title="var">m</span> = <span class="id" title="var">natVal</span> <span class="id" title="var">n</span> ]}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">_</span> ⇒ ∅<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Global Instance</span> <span class="id" title="var">nat_carrier_inhabited</span> : <span class="id" title="var">Inhabited</span> <span class="id" title="var">nat_carrier</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Program Definition</span> <span class="id" title="var">NatModel</span> : <span class="id" title="var">Model</span> := {|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Domain</span> := <span class="id" title="var">nat_carrier</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">app_interp</span> := <span class="id" title="var">nat_app_interp</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">sym_interp</span> := <span class="id" title="var">nat_sym_interp</span>;<br/>
+&nbsp;&nbsp;|}.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Theorem</span> <span class="id" title="var">indec_nat</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;∀ ρ <span class="id" title="var">s</span> (<span class="id" title="var">m</span> : <span class="id" title="var">NatModel</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Decision</span> (<span class="id" title="var">m</span> ∈ <span class="id" title="var">Minterp_inhabitant</span> (<span class="id" title="var">patt_sym</span> <span class="id" title="var">s</span>) ρ).<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Hint Resolve</span> <span class="id" title="var">propset_leibniz_equiv</span> : <span class="id" title="var">core</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Theorem</span> <span class="id" title="var">NatModel_satisfies_theory</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">NatModel</span> ⊨ᵀ <span class="id" title="var">Nat_Syntax.theory</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">End</span> <span class="id" title="var">Nat</span>.<br/>
+
+<br/>
+</div>
+<hr/>This page has been generated by <a href="http://coq.inria.fr/">coqdoc</a>
+</div>
+
+</div>
+
+</body>
+</html>

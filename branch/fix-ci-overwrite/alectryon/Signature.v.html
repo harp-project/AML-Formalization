@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html class="alectryon-standalone"><head><title>Signature.v</title><meta charset="utf-8"><meta content="Alectryon" name="generator"><meta name="viewport" content="width=device-width, initial-scale=1"><link href="alectryon.css" rel="stylesheet"><link href="pygments.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/IBM-type/0.5.4/css/ibm-type.min.css" integrity="sha512-sky5cf9Ts6FY1kstGOBHSybfKqdHR41M0Ldb0BjNiv3ifltoQIsg0zIaQ+wwdwgQ0w9vKFW7Js50lxH9vqNSSw==" crossorigin="anonymous" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/firacode/5.2.0/fira_code.min.css" integrity="sha512-MbysAYimH1hH2xYzkkMHB6MqxBqfP0megxsCLknbYqHVwXTCg9IqHbk+ZP/vnhO8UEW6PaXAkKe2vQ+SWACxxA==" crossorigin="anonymous" /><script src="alectryon.js"></script></head><body><article class="alectryon-root alectryon-centered"><div class="alectryon-banner">Built with <a href="https://github.com/cpitclaudel/alectryon/">Alectryon</a>, running Coq+SerAPI v8.15.0+0.15.0. Bubbles (<span class="alectryon-bubble"></span>) indicate interactive fragments: hover for details, tap to reveal contents. Use <kbd>Ctrl+↑</kbd> <kbd>Ctrl+↓</kbd> to navigate, <kbd>Ctrl+🖱️</kbd> to focus. On Mac, use <kbd>⌘</kbd> instead of <kbd>Ctrl</kbd>.</div><pre class="alectryon-io highlight"><!-- Generator: Alectryon --><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">From</span> Coq <span class="kn">Require Import</span> ssreflect ssrfun ssrbool.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Set Implicit Arguments</span>.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Unset Strict Implicit</span>.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Unset Printing Implicit Defensive</span>.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><input class="alectryon-toggle" id="Signature-v-chk0" style="display: none" type="checkbox"><label class="alectryon-input" for="Signature-v-chk0"><span class="kn">From</span> stdpp <span class="kn">Require Import</span> countable infinite.</label><small class="alectryon-output"><div><div class="alectryon-messages"><blockquote class="alectryon-message">New coercion path [Is_true] : bool &gt;-&gt; <span class="kt">Sortclass</span> <span class="kr">is</span> ambiguous <span class="kr">with</span> existing 
+[is_true] : bool &gt;-&gt; <span class="kt">Sortclass</span>.
+[ambiguous-paths,typechecker]</blockquote></div></div></small><span class="alectryon-wsp">
+</span></span><span class="alectryon-sentence"><input class="alectryon-toggle" id="Signature-v-chk1" style="display: none" type="checkbox"><label class="alectryon-input" for="Signature-v-chk1"><span class="kn">From</span> stdpp <span class="kn">Require Import</span> pmap gmap mapset fin_sets propset.</label><small class="alectryon-output"><div><div class="alectryon-messages"><blockquote class="alectryon-message">New coercion path [Is_true] : bool &gt;-&gt; <span class="kt">Sortclass</span> <span class="kr">is</span> ambiguous <span class="kr">with</span> existing 
+[is_true] : bool &gt;-&gt; <span class="kt">Sortclass</span>.
+[ambiguous-paths,typechecker]</blockquote></div></div></small><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Class</span> <span class="nf">MLVariables</span> := {
+  <span class="nb">evar</span> : <span class="kt">Set</span>;
+  svar : <span class="kt">Set</span>;
+  evar_eqdec :&gt; EqDecision <span class="nb">evar</span>;
+  evar_countable :&gt; Countable <span class="nb">evar</span>;
+  evar_infinite :&gt; Infinite <span class="nb">evar</span>;
+  svar_eqdec :&gt; EqDecision svar;
+  svar_countable :&gt; Countable svar;
+  svar_infinite :&gt; Infinite svar;
+}.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Class</span> <span class="nf">Signature</span> := {
+  variables :&gt; MLVariables;
+  symbols : <span class="kt">Set</span>;
+  sym_eqdec :&gt; EqDecision symbols;
+  sym_countable :&gt; Countable symbols;
+}.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+<span class="c">(* Later we will define signature morphisms in some file *)</span>
+</span></pre></article></body></html>

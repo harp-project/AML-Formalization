@@ -1,0 +1,546 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link href="coqdoc.css" rel="stylesheet" type="text/css" />
+<title>wftactics</title>
+</head>
+
+<body>
+
+<div id="page">
+
+<div id="header">
+</div>
+
+<div id="main">
+
+<h1 class="libtitle">File wftactics</h1>
+
+<div class="code">
+<span class="id" title="keyword">From</span> <span class="id" title="var">LibHyps</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">LibHyps</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">ssreflect</span> <span class="id" title="var">ssrfun</span> <span class="id" title="var">ssrbool</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Ltac2</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Ltac2</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Btauto</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">stdpp</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">countable</span> <span class="id" title="var">infinite</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">stdpp</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">pmap</span> <span class="id" title="var">gmap</span> <span class="id" title="var">mapset</span> <span class="id" title="var">fin_sets</span> <span class="id" title="var">propset</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">stdpp_ext</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">MatchingLogic</span><br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">Utils.extralibrary</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">Pattern</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">Substitution</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">ApplicationContext</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">SyntaxLemmas.FreshnessSubstitution</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">SyntacticConstruct</span><br/>
+.<br/>
+
+<br/>
+
+<br/>
+<span class="comment">(*&nbsp;This&nbsp;hook&nbsp;is&nbsp;specifically&nbsp;intended&nbsp;to&nbsp;be&nbsp;filled&nbsp;with&nbsp;a&nbsp;tactic&nbsp;which<br/>
+&nbsp;&nbsp;&nbsp;transforms&nbsp;provability&nbsp;hypotheses&nbsp;into&nbsp;well_formedness&nbsp;hypotheses.<br/>
+&nbsp;&nbsp;&nbsp;We&nbsp;call&nbsp;it&nbsp;early,&nbsp;before&nbsp;any&nbsp;goal&nbsp;splitting&nbsp;is&nbsp;done,<br/>
+&nbsp;&nbsp;&nbsp;so&nbsp;that&nbsp;it&nbsp;is&nbsp;not&nbsp;called&nbsp;for&nbsp;all&nbsp;the&nbsp;subgoals&nbsp;again&nbsp;and&nbsp;again.<br/>
+&nbsp;*)</span><br/>
+&nbsp;<span class="id" title="keyword">Ltac</span>2 <span class="id" title="var">mutable</span> <span class="id" title="var">proved_hook_wfauto</span><br/>
+&nbsp;:= (<span class="id" title="keyword">fun</span> () ⇒ () <span class="comment">(*&nbsp;Message.print&nbsp;(Message.of_string&nbsp;"hook_wfauto&nbsp;base")&nbsp;*)</span>).<br/>
+
+<br/>
+&nbsp;<span class="comment">(*&nbsp;We&nbsp;give&nbsp;a&nbsp;name&nbsp;to&nbsp;the&nbsp;wrapper&nbsp;so&nbsp;that&nbsp;it&nbsp;is&nbsp;shown&nbsp;in&nbsp;the&nbsp;profile&nbsp;(when&nbsp;profiling).&nbsp;*)</span><br/>
+&nbsp;<span class="id" title="keyword">Ltac</span> <span class="id" title="var">proved_hook_wfauto</span> := <span class="id" title="var">ltac2</span>:(|- <span class="id" title="var">proved_hook_wfauto</span> ()).<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">wfToWfxySimplifications</span> := (<br/>
+&nbsp;&nbsp;@<span class="id" title="var">wf_wfxy00</span>,<br/>
+&nbsp;&nbsp;@<span class="id" title="var">wf_lwf_xy</span><br/>
+).<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">wfxySimplifications</span> := (<br/>
+&nbsp;&nbsp;@<span class="id" title="var">binary_wfxy</span>,<br/>
+&nbsp;&nbsp;@<span class="id" title="var">unary_wfxy</span>,<br/>
+&nbsp;&nbsp;@<span class="id" title="var">nullary_wfxy</span>,<br/>
+&nbsp;&nbsp;@<span class="id" title="var">lwf_xy_app</span>,<br/>
+&nbsp;&nbsp;@<span class="id" title="var">lwf_xy_cons</span>,<br/>
+&nbsp;&nbsp;@<span class="id" title="var">well_formed_xy_foldr_binary</span><br/>
+).<br/>
+
+<br/>
+<span class="id" title="keyword">Ltac</span> <span class="id" title="var">simplifyWfxyHyp</span> <span class="id" title="var">H</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">unfold</span> <span class="id" title="var">is_true</span> <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>;<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">lazymatch</span> <span class="id" title="keyword">type</span> <span class="id" title="keyword">of</span> <span class="id" title="var">H</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">well_formed</span> <span class="id" title="var">_</span> = <span class="id" title="var">true</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;⇒ <span class="id" title="tactic">apply</span> <span class="id" title="var">wf_wfxy00_decompose</span> <span class="id" title="tactic">in</span> <span class="id" title="var">H</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">Pattern.wf</span> <span class="id" title="var">_</span> = <span class="id" title="var">true</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;⇒ <span class="id" title="tactic">apply</span> <span class="id" title="var">wf_lwf_xy_decompose</span> <span class="id" title="tactic">in</span> <span class="id" title="var">H</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">_</span> ⇒ <span class="id" title="tactic">idtac</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">end</span>;<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">try</span> <span class="id" title="keyword">lazymatch</span> <span class="id" title="keyword">type</span> <span class="id" title="keyword">of</span> <span class="id" title="var">H</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">well_formed_xy</span> ?<span class="id" title="var">m</span> ?<span class="id" title="var">n</span> (<span class="id" title="var">foldr</span> ?<span class="id" title="var">binary</span> ?<span class="id" title="var">g</span> ?<span class="id" title="var">xs</span>) = <span class="id" title="var">true</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;⇒ <span class="id" title="tactic">apply</span> (<span class="id" title="var">well_formed_xy_foldr_binary_decompose</span> <span class="id" title="var">_</span>) <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">H1</span> := <span class="id" title="tactic">fresh</span> "H1" <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">H2</span> := <span class="id" title="tactic">fresh</span> "H2" <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">destruct</span> <span class="id" title="var">H</span> <span class="id" title="keyword">as</span> [<span class="id" title="var">H1</span> <span class="id" title="var">H2</span>];<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">simplifyWfxyHyp</span> <span class="id" title="var">H1</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">simplifyWfxyHyp</span> <span class="id" title="var">H2</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">lwf_xy</span> ?<span class="id" title="var">m</span> ?<span class="id" title="var">n</span> (?<span class="id" title="var">x</span>::?<span class="id" title="var">xs</span>) = <span class="id" title="var">true</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;⇒ <span class="id" title="tactic">apply</span> <span class="id" title="var">lwf_xy_cons_decompose</span> <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">H1</span> := <span class="id" title="tactic">fresh</span> "H1" <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">H2</span> := <span class="id" title="tactic">fresh</span> "H2" <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">destruct</span> <span class="id" title="var">H</span> <span class="id" title="keyword">as</span> [<span class="id" title="var">H1</span> <span class="id" title="var">H2</span>];<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">simplifyWfxyHyp</span> <span class="id" title="var">H1</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">simplifyWfxyHyp</span> <span class="id" title="var">H2</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">lwf_xy</span> ?<span class="id" title="var">m</span> ?<span class="id" title="var">n</span> (?<span class="id" title="var">xs</span> ++ ?<span class="id" title="var">ys</span>) = <span class="id" title="var">true</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;⇒ <span class="id" title="tactic">apply</span> <span class="id" title="var">lwf_xy_app_decompose</span> <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">H1</span> := <span class="id" title="tactic">fresh</span> "H1" <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">H2</span> := <span class="id" title="tactic">fresh</span> "H2" <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">destruct</span> <span class="id" title="var">H</span> <span class="id" title="keyword">as</span> [<span class="id" title="var">H1</span> <span class="id" title="var">H2</span>];<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">simplifyWfxyHyp</span> <span class="id" title="var">H1</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">simplifyWfxyHyp</span> <span class="id" title="var">H2</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">well_formed_xy</span> ?<span class="id" title="var">x</span> ?<span class="id" title="var">y</span> (?<span class="id" title="var">binary</span> ?ψ1 ?ψ2) = <span class="id" title="var">true</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;⇒ <span class="id" title="tactic">apply</span> (<span class="id" title="var">binary_wfxy_decompose</span> <span class="id" title="var">_</span>) <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">H1</span> := <span class="id" title="tactic">fresh</span> "H1" <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">H2</span> := <span class="id" title="tactic">fresh</span> "H2" <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">destruct</span> <span class="id" title="var">H</span> <span class="id" title="keyword">as</span> [<span class="id" title="var">H1</span> <span class="id" title="var">H2</span>];<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">simplifyWfxyHyp</span> <span class="id" title="var">H1</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">simplifyWfxyHyp</span> <span class="id" title="var">H2</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">well_formed_xy</span> ?<span class="id" title="var">x</span> ?<span class="id" title="var">y</span> (?<span class="id" title="var">unary</span> ?ψ1) = <span class="id" title="var">true</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;⇒ <span class="id" title="tactic">apply</span> (<span class="id" title="var">unary_wfxy_decompose</span> <span class="id" title="var">_</span>) <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">simplifyWfxyHyp</span> <span class="id" title="var">H</span><br/>
+&nbsp;&nbsp;<span class="comment">(*&nbsp;No&nbsp;point&nbsp;in&nbsp;simplifying&nbsp;these&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="comment">(*<br/>
+&nbsp;&nbsp;|&nbsp;well_formed_xy&nbsp;?x&nbsp;?y&nbsp;?nullary&nbsp;=&nbsp;true<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;=&gt;&nbsp;apply&nbsp;nullary_wfxy&nbsp;in&nbsp;H<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;*)</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">_</span> ⇒ <span class="id" title="tactic">idtac</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Ltac</span> <span class="id" title="var">compositeSimplifyAllWfHyps</span> :=<br/>
+&nbsp;&nbsp;<span class="comment">(*proved_hook_wfauto;*)</span><br/>
+&nbsp;&nbsp;(<span class="id" title="var">onAllHyps</span> <span class="id" title="var">simplifyWfxyHyp</span>)<br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Ltac</span> <span class="id" title="var">compoundDecomposeWfGoal</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> ?<span class="id" title="var">wfToWfxySimplifications</span>;<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> ?<span class="id" title="var">wfxySimplifications</span>;<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">lazymatch</span> <span class="id" title="keyword">goal</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;| [ |- ?<span class="id" title="var">g</span>] ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">split_and</span>?;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">lazymatch</span> <span class="id" title="keyword">goal</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| [ |- ?<span class="id" title="var">g'</span>] ⇒ <span class="id" title="tactic">idtac</span> <span class="comment">(*"Goal&nbsp;"&nbsp;g'&nbsp;"&nbsp;from&nbsp;"&nbsp;g&nbsp;"."*)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Ltac</span> <span class="id" title="var">propagateTrueInHyps</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">repeat</span> (<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="keyword">goal</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| [<span class="id" title="var">H</span>: <span class="id" title="var">_</span> |- <span class="id" title="var">_</span>] ⇒ (<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> !(<span class="id" title="var">andb_true_r</span>,<span class="id" title="var">andb_true_l</span>) <span class="id" title="tactic">in</span> <span class="id" title="var">H</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;)<br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Ltac</span> <span class="id" title="var">propagateTrueInGoal</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> !(<span class="id" title="var">andb_true_r</span>,<span class="id" title="var">andb_true_l</span>)<br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Ltac</span> <span class="id" title="var">clear_all_impls</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">repeat</span> (<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="keyword">goal</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| [ <span class="id" title="var">H</span> : <span class="id" title="keyword">∀</span> <span class="id" title="var">_</span>, <span class="id" title="var">_</span> |- <span class="id" title="var">_</span>] ⇒ <span class="id" title="tactic">clear</span> <span class="id" title="var">H</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;).<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Ltac</span> <span class="id" title="var">wf_auto2_decompose_hyps</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">proved_hook_wfauto</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">unfold</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">is_true</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">evar_open</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">svar_open</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">in</span> *;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">simpl</span> <span class="id" title="tactic">in</span> ×<br/>
+&nbsp;&nbsp;.<br/>
+
+<br/>
+<span class="id" title="keyword">Ltac</span> <span class="id" title="var">solve_size</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">repeat</span> (<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="keyword">goal</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;| [ |- <span class="id" title="var">size'</span> (<span class="id" title="var">evar_open</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span>) &lt; <span class="id" title="var">_</span> ]<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;⇒ <span class="id" title="tactic">rewrite</span> <span class="id" title="var">evar_open_size'</span><br/>
+<br/>
+&nbsp;&nbsp;| [ |- <span class="id" title="var">size'</span> (<span class="id" title="var">svar_open</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span>) &lt; <span class="id" title="var">_</span> ]<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;⇒ <span class="id" title="tactic">rewrite</span> <span class="id" title="var">svar_open_size'</span><br/>
+<br/>
+&nbsp;&nbsp;| [ |- <span class="id" title="var">size'</span> <span class="id" title="var">_</span> &lt; <span class="id" title="var">size'</span> (<span class="id" title="var">patt_app</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span>) ]<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;⇒ <span class="id" title="tactic">simpl</span>; <span class="id" title="var">lia</span><br/>
+<br/>
+&nbsp;&nbsp;| [ |- <span class="id" title="var">size'</span> <span class="id" title="var">_</span> &lt; <span class="id" title="var">size'</span> (<span class="id" title="var">patt_imp</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span>) ]<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;⇒ <span class="id" title="tactic">simpl</span>; <span class="id" title="var">lia</span><br/>
+<br/>
+&nbsp;&nbsp;| [ |- <span class="id" title="var">size'</span> <span class="id" title="var">_</span> &lt; <span class="id" title="var">size'</span> (<span class="id" title="var">patt_exists</span> <span class="id" title="var">_</span>) ]<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;⇒ <span class="id" title="tactic">simpl</span>; <span class="id" title="var">lia</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;)<br/>
+.<br/>
+<span class="id" title="keyword">Ltac</span> <span class="id" title="var">wf_auto2_fast_done</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">try</span> <span class="id" title="var">solve_size</span>;<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">try</span> <span class="id" title="tactic">assumption</span>;<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">try</span> <span class="id" title="tactic">reflexivity</span>;<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">try</span> <span class="id" title="tactic">congruence</span>;<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">try</span> <span class="id" title="var">btauto</span><br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Ltac</span> <span class="id" title="var">wf_auto2_composite_step</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">unfold</span> <span class="id" title="var">is_true</span>;<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">simpl</span>;<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">first</span> [<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">split</span> |<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <span class="id" title="var">wf_wfxy00_compose</span> |<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <span class="id" title="var">wf_lwf_xy_compose</span> |<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <span class="id" title="var">free_evar_subst_preserves_no_negative_occurrence</span> |<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <span class="id" title="var">wf_sctx</span> |<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <span class="id" title="var">well_formed_xy_free_evar_subst</span> |<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> (<span class="id" title="var">well_formed_xy_foldr_binary_compose</span> <span class="id" title="var">_</span>) |<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <span class="id" title="var">lwf_xy_cons_compose</span> |<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <span class="id" title="var">lwf_xy_app_compose</span> |<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> (<span class="id" title="var">binary_wfxy_compose</span> <span class="id" title="var">_</span>) |<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> (<span class="id" title="var">unary_wfxy_compose</span> <span class="id" title="var">_</span>) |<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> (<span class="id" title="var">nullary_wfxy</span> <span class="id" title="var">_</span>) |<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <span class="id" title="var">wf_evar_open_from_wf_ex</span> |<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <span class="id" title="var">wf_sctx</span><br/>
+&nbsp;&nbsp;];<br/>
+&nbsp;&nbsp;<span class="id" title="var">wf_auto2_fast_done</span><br/>
+&nbsp;&nbsp;<span class="comment">(*compoundDecomposeWfGoal*)</span><br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">wfPositiveSimplifications</span> := (<br/>
+&nbsp;&nbsp;@<span class="id" title="var">well_formed_positive_foldr_binary</span>,<br/>
+&nbsp;&nbsp;@<span class="id" title="var">nullary_wfp</span>,<br/>
+&nbsp;&nbsp;@<span class="id" title="var">unary_wfp</span>,<br/>
+&nbsp;&nbsp;@<span class="id" title="var">binary_wfp</span>,<br/>
+&nbsp;&nbsp;@<span class="id" title="var">wfp_evar_quan</span><br/>
+).<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">wfCexSimplifications</span> := (<br/>
+&nbsp;&nbsp;@<span class="id" title="var">well_formed_cex_foldr_binary</span>,<br/>
+&nbsp;&nbsp;@<span class="id" title="var">nullary_wfcex</span>,<br/>
+&nbsp;&nbsp;@<span class="id" title="var">unary_wfcex</span>,<br/>
+&nbsp;&nbsp;@<span class="id" title="var">binary_wfcex</span><br/>
+).<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">wfCmuSimplifications</span> := (<br/>
+&nbsp;&nbsp;@<span class="id" title="var">well_formed_cmu_foldr_binary</span>,<br/>
+&nbsp;&nbsp;@<span class="id" title="var">nullary_wfcmu</span>,<br/>
+&nbsp;&nbsp;@<span class="id" title="var">unary_wfcmu</span>,<br/>
+&nbsp;&nbsp;@<span class="id" title="var">binary_wfcmu</span>,<br/>
+&nbsp;&nbsp;@<span class="id" title="var">wfcmu_evar_quan</span><br/>
+).<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">wfSimplifications</span> := (<br/>
+&nbsp;&nbsp;@<span class="id" title="var">wf_corr</span>,<br/>
+&nbsp;&nbsp;@<span class="id" title="var">andb_true_r</span><br/>
+).<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">lwfPositiveSimplifications</span> := (<br/>
+&nbsp;&nbsp;@<span class="id" title="var">lwf_positive_cons</span>,<br/>
+&nbsp;&nbsp;@<span class="id" title="var">lwf_positive_app</span><br/>
+).<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">lwfCmuSimplifications</span> := (<br/>
+&nbsp;&nbsp;@<span class="id" title="var">lwf_cmu_cons</span>,<br/>
+&nbsp;&nbsp;@<span class="id" title="var">lwf_cmu_app</span><br/>
+).<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">lwfCexSimplifications</span> := (<br/>
+&nbsp;&nbsp;@<span class="id" title="var">lwf_cex_cons</span>,<br/>
+&nbsp;&nbsp;@<span class="id" title="var">lwf_cex_app</span><br/>
+).<br/>
+
+<br/>
+<span class="id" title="keyword">Ltac</span>2 <span class="id" title="var">mutable</span> <span class="id" title="var">simplify_wf_hyp_part_hook</span><br/>
+:= (<span class="id" title="keyword">fun</span> (<span class="id" title="var">h</span> : <span class="id" title="var">ident</span>) ⇒ () ).<br/>
+
+<br/>
+<span class="id" title="keyword">Ltac</span> <span class="id" title="var">_simplify_wf_hyp_part_hook</span> <span class="id" title="var">H</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">tac</span> := <span class="id" title="var">ltac2</span>:(<span class="id" title="var">h</span> |- <span class="id" title="var">simplify_wf_hyp_part_hook</span> (<span class="id" title="var">Option.get</span> (<span class="id" title="var">Ltac1.to_ident</span> <span class="id" title="var">h</span>))) <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">tac</span> <span class="id" title="var">H</span><br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Tactic Notation</span> "simplify_wf_hyp_part_hook" <span class="id" title="var">ident</span>(<span class="id" title="var">H</span>) :=<br/>
+&nbsp;&nbsp;<span class="id" title="var">_simplify_wf_hyp_part_hook</span> <span class="id" title="var">H</span><br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Ltac</span>2 <span class="id" title="var">mutable</span> <span class="id" title="var">simplify_wf_goal_hook</span><br/>
+:= (<span class="id" title="keyword">fun</span> () ⇒ () ).<br/>
+
+<br/>
+<span class="id" title="keyword">Ltac</span> <span class="id" title="var">_simplify_wf_goal_hook</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="var">ltac2</span>:(<span class="id" title="var">simplify_wf_goal_hook</span> ())<br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Tactic Notation</span> "simplify_wf_goal_hook" :=<br/>
+&nbsp;&nbsp;<span class="id" title="var">_simplify_wf_goal_hook</span><br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Ltac</span> <span class="id" title="var">partsDecomposeWfGoal</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> -?<span class="id" title="var">wfxy00_wf</span>;<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> ?(<span class="id" title="var">wfPositiveSimplifications</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">wfCexSimplifications</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">wfCmuSimplifications</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">wfSimplifications</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">lwfPositiveSimplifications</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">lwfCmuSimplifications</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">lwfCexSimplifications</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">lwf_xy_decompose</span>);<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">try</span> <span class="id" title="var">simplify_wf_goal_hook</span><br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Ltac</span> <span class="id" title="var">simplifyWfHypParts</span> <span class="id" title="var">H</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">t</span> := <span class="id" title="keyword">type</span> <span class="id" title="keyword">of</span> <span class="id" title="var">H</span> <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;<span class="comment">(*&nbsp;idtac&nbsp;"SimplifyWfHypParts&nbsp;"&nbsp;H&nbsp;"&nbsp;("&nbsp;t&nbsp;")";&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="id" title="tactic">first</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;[ (<span class="id" title="tactic">progress</span> (<span class="id" title="var">simplify_wf_hyp_part_hook</span> <span class="id" title="var">H</span>; <span class="id" title="var">destruct_andb</span>? <span class="id" title="var">H</span>))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| (<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">lazymatch</span> <span class="id" title="keyword">type</span> <span class="id" title="keyword">of</span> <span class="id" title="var">H</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">well_formed_positive</span> (<span class="id" title="var">bevar_subst</span> (<span class="id" title="var">patt_free_evar</span> <span class="id" title="var">_</span>) <span class="id" title="var">_</span> <span class="id" title="var">_</span>) = <span class="id" title="var">true</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;⇒ <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <span class="id" title="var">evar_open_positive</span> <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>; <span class="id" title="var">simplifyWfHypParts</span> <span class="id" title="var">H</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">well_formed_closed_ex_aux</span> (<span class="id" title="var">bevar_subst</span> (<span class="id" title="var">patt_free_evar</span> <span class="id" title="var">_</span>) ?<span class="id" title="var">n</span> <span class="id" title="var">_</span>) ?<span class="id" title="var">n</span> = <span class="id" title="var">true</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <span class="id" title="var">wfc_ex_aux_body_ex_imp2</span> <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>; <span class="id" title="var">simplifyWfHypParts</span> <span class="id" title="var">H</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">well_formed_closed_mu_aux</span> (<span class="id" title="var">bevar_subst</span> (<span class="id" title="var">patt_free_evar</span> <span class="id" title="var">_</span>) <span class="id" title="var">_</span> <span class="id" title="var">_</span>) <span class="id" title="var">_</span> = <span class="id" title="var">true</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <span class="id" title="var">wfc_mu_aux_body_ex_imp2</span> <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>; <span class="id" title="var">simplifyWfHypParts</span> <span class="id" title="var">H</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">well_formed_positive</span> <span class="id" title="var">_</span> = <span class="id" title="var">true</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> ?<span class="id" title="var">wfPositiveSimplifications</span> <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">destruct_andb</span>? <span class="id" title="var">H</span><br/>
+&nbsp;&nbsp;<span class="comment">(*&nbsp;We&nbsp;are&nbsp;doing&nbsp;lazymatch,&nbsp;so&nbsp;this&nbsp;has&nbsp;to&nbsp;be&nbsp;before&nbsp;the&nbsp;general&nbsp;case*)</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">well_formed_closed_ex_aux</span> (<span class="id" title="var">bevar_subst</span> (<span class="id" title="var">patt_free_evar</span> ?<span class="id" title="var">x</span>) ?<span class="id" title="var">k</span> ?<span class="id" title="var">p</span>) ?<span class="id" title="var">k</span> = <span class="id" title="var">true</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <span class="id" title="var">wfc_ex_aux_S_bevar_subst_fe</span> <span class="id" title="tactic">in</span> <span class="id" title="var">H</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">well_formed_closed_ex_aux</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> = <span class="id" title="var">true</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> ?<span class="id" title="var">wfCexSimplifications</span> <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">destruct_andb</span>? <span class="id" title="var">H</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">well_formed_closed_mu_aux</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> = <span class="id" title="var">true</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> ?<span class="id" title="var">wfCmuSimplifications</span> <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">destruct_andb</span>? <span class="id" title="var">H</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">Pattern.wf</span> <span class="id" title="var">_</span> = <span class="id" title="var">true</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> <span class="id" title="var">wf_corr</span> <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">destruct_andb</span>? <span class="id" title="var">H</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">lwf_positive</span> <span class="id" title="var">_</span> = <span class="id" title="var">true</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> ?<span class="id" title="var">lwfPositiveSimplifications</span> <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">destruct_andb</span>? <span class="id" title="var">H</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">lwf_cmu</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> = <span class="id" title="var">true</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> ?<span class="id" title="var">lwfCmuSimplifications</span> <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">destruct_andb</span>? <span class="id" title="var">H</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">lwf_cex</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> = <span class="id" title="var">true</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> ?<span class="id" title="var">lwfCexSimplifications</span> <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">destruct_andb</span>? <span class="id" title="var">H</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">lwf_xy</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> = <span class="id" title="var">true</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">rewrite</span> <span class="id" title="var">lwf_xy_decompose</span> <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">destruct_andb</span>? <span class="id" title="var">H</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">_</span> ⇒ <span class="id" title="tactic">idtac</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;)]<br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Ltac</span> <span class="id" title="var">toBeRunOnAllHypsParts</span> <span class="id" title="var">h</span> := <span class="id" title="var">simplifyWfHypParts</span> <span class="id" title="var">h</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Ltac</span> <span class="id" title="var">simplifyAllWfHypsParts</span> :=<br/>
+&nbsp;&nbsp;(<span class="id" title="var">onAllHyps</span> <span class="id" title="var">toBeRunOnAllHypsParts</span>) ;{ <span class="id" title="var">toBeRunOnAllHypsParts</span> }<br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Ltac</span> <span class="id" title="var">decomposeWfHypsIntoParts</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="var">simplifyAllWfHypsParts</span><br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Ltac</span> <span class="id" title="var">wf_auto2_unfolds</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">unfold</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">is_true</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_closed</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_xy</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">evar_open</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">svar_open</span><span class="comment">(*,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;free_evar_subst,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;free_evar_subst*)</span><br/>
+&nbsp;&nbsp;<span class="id" title="tactic">in</span> ×<br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Ltac</span> <span class="id" title="var">wf_auto2_decompose_hyps_parts</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="var">proved_hook_wfauto</span>;<br/>
+&nbsp;&nbsp;<span class="id" title="var">wf_auto2_unfolds</span>;<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">simpl</span> <span class="id" title="tactic">in</span> *;<br/>
+&nbsp;&nbsp;<span class="id" title="var">destruct_andb</span>?;<br/>
+&nbsp;&nbsp;<span class="id" title="var">decomposeWfHypsIntoParts</span><br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Ltac</span> <span class="id" title="var">wf_auto2_step_parts</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="var">wf_auto2_unfolds</span>;<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">try</span> <span class="id" title="var">partsDecomposeWfGoal</span>;<br/>
+&nbsp;&nbsp;<span class="id" title="var">cbn</span> <span class="id" title="tactic">in</span> *; <span class="id" title="tactic">subst</span>; <span class="id" title="var">cbn</span> <span class="id" title="tactic">in</span> *;<br/>
+&nbsp;&nbsp;<span class="id" title="var">split_and</span>?;<br/>
+&nbsp;&nbsp;<span class="id" title="var">wf_auto2_fast_done</span>;<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">try</span> <span class="id" title="keyword">lazymatch</span> <span class="id" title="keyword">goal</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;| [<span class="id" title="var">MF</span> : <span class="id" title="var">mu_free</span> ?<span class="id" title="var">p</span> = <span class="id" title="var">true</span> |- <span class="id" title="var">well_formed_positive</span> (<span class="id" title="var">bevar_subst</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> ?<span class="id" title="var">p</span>) = <span class="id" title="var">true</span>]<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;⇒ <span class="id" title="tactic">apply</span> <span class="id" title="var">bevar_subst_positive</span>; <span class="id" title="tactic">solve</span> <span class="id" title="var">wf_auto2_step_parts</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">end</span>;<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">try</span> <span class="id" title="tactic">first</span> [<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <span class="id" title="var">wfp_free_evar_subst</span> |<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <span class="id" title="var">wfc_ex_free_evar_subst_2</span> |<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <span class="id" title="var">wfc_mu_free_evar_subst</span> |<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <span class="id" title="var">svar_hno_bsvar_subst</span> |<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <span class="id" title="var">svar_hno_false_if_fresh</span> |<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <span class="id" title="var">well_formed_positive_svar_quantify</span> |<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <span class="id" title="var">free_evar_subst_preserves_no_negative_occurrence</span> |<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <span class="id" title="var">no_negative_occurrence_svar_quantify</span> |<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <span class="id" title="var">bevar_subst_closed_mu</span>|<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <span class="id" title="var">bevar_subst_closed_ex</span>|<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <span class="id" title="var">bevar_subst_positive_2</span>|<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <span class="id" title="var">evar_quantify_closed_ex</span>|<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <span class="id" title="var">svar_quantify_closed_ex</span>|<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <span class="id" title="var">evar_quantify_closed_mu</span>|<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <span class="id" title="var">svar_quantify_closed_mu</span>|<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <span class="id" title="var">wfp_free_svar_subst_1</span>|<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <span class="id" title="var">wfc_mu_free_svar_subst</span>|<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <span class="id" title="var">wfc_ex_free_svar_subst</span>|<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <span class="id" title="var">wp_sctx</span>|<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <span class="id" title="var">wcmu_sctx</span>|<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <span class="id" title="var">wcex_sctx</span>|<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <span class="id" title="var">wfp_bsvar_subst</span>|<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <span class="id" title="var">wfc_mu_aux_bsvar_subst</span>|<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <span class="id" title="var">wfc_ex_aux_bsvar_subst</span><br/>
+&nbsp;&nbsp;];<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">try</span> (<span class="id" title="keyword">lazymatch</span> <span class="id" title="keyword">goal</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;| [ <span class="id" title="var">H</span> : <span class="id" title="var">well_formed_closed_mu_aux</span> ?<span class="id" title="var">p</span> 0 = <span class="id" title="var">true</span> |- <span class="id" title="var">no_negative_occurrence_db_b</span> <span class="id" title="var">_</span> ?<span class="id" title="var">p</span> = <span class="id" title="var">true</span>]<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;⇒ <span class="id" title="tactic">apply</span> <span class="id" title="var">wfc_impl_no_neg_occ</span>; <span class="id" title="tactic">apply</span> <span class="id" title="var">H</span><br/>
+<br/>
+&nbsp;&nbsp;| [ <span class="id" title="var">H</span> : <span class="id" title="var">well_formed_closed_mu_aux</span> ?<span class="id" title="var">p</span> 0 = <span class="id" title="var">true</span> |- <span class="id" title="var">no_positive_occurrence_db_b</span> <span class="id" title="var">_</span> ?<span class="id" title="var">p</span> = <span class="id" title="var">true</span>]<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;⇒ <span class="id" title="tactic">apply</span> <span class="id" title="var">wfc_impl_no_pos_occ</span>; <span class="id" title="tactic">apply</span> <span class="id" title="var">H</span><br/>
+<br/>
+&nbsp;&nbsp;| [ <span class="id" title="var">H</span> : <span class="id" title="var">well_formed_closed_ex_aux</span> ?<span class="id" title="var">p</span> <span class="id" title="var">_</span> = <span class="id" title="var">true</span> |- <span class="id" title="var">well_formed_closed_ex_aux</span> ?<span class="id" title="var">p</span> (<span class="id" title="var">S</span> ?<span class="id" title="var">n</span>) = <span class="id" title="var">true</span> ]<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;⇒ <span class="id" title="tactic">eapply</span> <span class="id" title="var">well_formed_closed_ex_aux_ind</span>;[|<span class="id" title="tactic">apply</span> <span class="id" title="var">H</span>]; <span class="id" title="var">lia</span><br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">(*&nbsp;last&nbsp;option&nbsp;for&nbsp;well_formed_closed_mu_aux:&nbsp;try&nbsp;decreasing&nbsp;n&nbsp;*)</span><br/>
+&nbsp;&nbsp;| [ <span class="id" title="var">H</span> : <span class="id" title="var">well_formed_closed_mu_aux</span> ?<span class="id" title="var">p</span> <span class="id" title="var">_</span> = <span class="id" title="var">true</span> |- <span class="id" title="var">well_formed_closed_mu_aux</span> ?<span class="id" title="var">p</span> (<span class="id" title="var">S</span> ?<span class="id" title="var">n</span>) = <span class="id" title="var">true</span> ]<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;⇒ <span class="id" title="tactic">eapply</span> <span class="id" title="var">well_formed_closed_mu_aux_ind</span>;[|<span class="id" title="tactic">apply</span> <span class="id" title="var">H</span>]; <span class="id" title="var">lia</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">end</span>)<br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Ltac</span> <span class="id" title="var">wf_auto2_fast</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="var">wf_auto2_fast_done</span>;<br/>
+&nbsp;&nbsp;<span class="id" title="var">compositeSimplifyAllWfHyps</span>;<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">repeat</span> <span class="id" title="var">wf_auto2_composite_step</span><br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Ltac</span> <span class="id" title="var">print_hyps</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">try</span> <span class="id" title="keyword">match</span> <span class="id" title="keyword">goal</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;| [<span class="id" title="var">H</span> : ?<span class="id" title="var">t</span> |- <span class="id" title="var">_</span>] ⇒ <span class="id" title="tactic">idtac</span> <span class="id" title="var">t</span>; <span class="id" title="tactic">fail</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Ltac</span> <span class="id" title="var">wf_auto2_fallback</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="keyword">goal</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;| [ |- ?<span class="id" title="var">G</span> ] ⇒ <span class="id" title="tactic">idtac</span> <span class="comment">(*"Falling&nbsp;back&nbsp;on&nbsp;"&nbsp;G*)</span> <span class="comment">(*;&nbsp;print_hyps*)</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">end</span>;<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">repeat</span> <span class="id" title="var">wf_auto2_decompose_hyps_parts</span>;<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">repeat</span> <span class="id" title="var">wf_auto2_step_parts</span><br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Ltac</span> <span class="id" title="var">wf_auto2</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">try</span> <span class="id" title="tactic">reflexivity</span>; <span class="comment">(*&nbsp;this&nbsp;generates&nbsp;a&nbsp;simple&nbsp;proof:&nbsp;just&nbsp;eq_refl*)</span><br/>
+&nbsp;&nbsp;<span class="id" title="tactic">subst</span>;<br/>
+&nbsp;&nbsp;<span class="id" title="var">proved_hook_wfauto</span>;<br/>
+&nbsp;&nbsp;<span class="id" title="var">clear_all_impls</span>;<br/>
+&nbsp;&nbsp;<span class="comment">(*clear_others;*)</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">wf_auto2_fast</span>;<br/>
+&nbsp;&nbsp;<span class="id" title="var">wf_auto2_fallback</span><br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Ltac</span> <span class="id" title="var">try_wfauto2</span> :=<br/>
+<span class="id" title="keyword">lazymatch</span> <span class="id" title="keyword">goal</span> <span class="id" title="keyword">with</span><br/>
+| [|- <span class="id" title="var">is_true</span> (<span class="id" title="var">well_formed</span> <span class="id" title="var">_</span>)] ⇒ <span class="id" title="var">wf_auto2</span><br/>
+| [|- <span class="id" title="var">well_formed</span> <span class="id" title="var">_</span> = <span class="id" title="var">true</span> ] ⇒ <span class="id" title="var">wf_auto2</span><br/>
+| [|- <span class="id" title="var">is_true</span> (<span class="id" title="var">well_formed_closed</span> <span class="id" title="var">_</span>)] ⇒ <span class="id" title="var">wf_auto2</span><br/>
+| [|- <span class="id" title="var">well_formed_closed</span> <span class="id" title="var">_</span> = <span class="id" title="var">true</span> ] ⇒ <span class="id" title="var">wf_auto2</span><br/>
+| [|- <span class="id" title="var">is_true</span> (<span class="id" title="keyword">wf</span> <span class="id" title="var">_</span>)] ⇒ <span class="id" title="var">wf_auto2</span><br/>
+| [|- <span class="id" title="keyword">wf</span> <span class="id" title="var">_</span> = <span class="id" title="var">true</span> ] ⇒ <span class="id" title="var">wf_auto2</span><br/>
+| <span class="id" title="var">_</span> ⇒ <span class="id" title="tactic">idtac</span><br/>
+<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Tactic Notation</span> "mlSimpl" :=<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">repeat</span> (<span class="id" title="tactic">rewrite</span> <span class="id" title="var">mlSimpl'</span>); <span class="id" title="tactic">try</span> <span class="id" title="tactic">rewrite</span> [<span class="id" title="var">increase_ex</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span>]/=; <span class="id" title="tactic">try</span> <span class="id" title="tactic">rewrite</span> [<span class="id" title="var">increase_mu</span>]/=.<br/>
+
+<br/>
+<span class="id" title="keyword">Tactic Notation</span> "mlSimpl" "in" <span class="id" title="var">hyp</span>(<span class="id" title="var">H</span>) :=<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">repeat</span> (<span class="id" title="tactic">rewrite</span> <span class="id" title="var">mlSimpl'</span> <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>); <span class="id" title="tactic">try</span> <span class="id" title="tactic">rewrite</span> [<span class="id" title="var">increase_ex</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span>]/= <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>; <span class="id" title="tactic">try</span> <span class="id" title="tactic">rewrite</span> [<span class="id" title="var">increase_mu</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span>]/= <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Tactic Notation</span> "mlSortedSimpl" := <span class="id" title="var">simpl_sorted_quantification</span>; <span class="id" title="tactic">try</span> <span class="id" title="tactic">rewrite</span> [<span class="id" title="var">increase_mu</span>]/=.<br/>
+<span class="id" title="keyword">Tactic Notation</span> "mlSortedSimpl" "in" <span class="id" title="var">hyp</span>(<span class="id" title="var">H</span>) := <span class="id" title="var">simpl_sorted_quantification</span> <span class="id" title="var">H</span>; <span class="id" title="tactic">try</span> <span class="id" title="tactic">rewrite</span> [<span class="id" title="var">increase_mu</span>]/=.<br/>
+
+<br/>
+</div>
+<hr/>This page has been generated by <a href="http://coq.inria.fr/">coqdoc</a>
+</div>
+
+</div>
+
+</body>
+</html>

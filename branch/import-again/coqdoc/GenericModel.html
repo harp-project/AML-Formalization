@@ -1,0 +1,289 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link href="coqdoc.css" rel="stylesheet" type="text/css" />
+<title>GenericModel</title>
+</head>
+
+<body>
+
+<div id="page">
+
+<div id="header">
+</div>
+
+<div id="main">
+
+<h1 class="libtitle">File GenericModel</h1>
+
+<div class="code">
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">ssreflect</span> <span class="id" title="var">ssrfun</span> <span class="id" title="var">ssrbool</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">stdpp</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">base</span> <span class="id" title="var">list</span> <span class="id" title="var">list_numbers</span> <span class="id" title="var">propset</span>.<br/>
+<span class="comment">(*&nbsp;This&nbsp;is&nbsp;unset&nbsp;by&nbsp;stdpp.&nbsp;We&nbsp;need&nbsp;to&nbsp;set&nbsp;it&nbsp;again.*)</span><br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="keyword">Equations</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="keyword">Equations</span>.<br/>
+<span class="comment">(*&nbsp;Set&nbsp;Equations&nbsp;Transparent.&nbsp;*)</span><br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">MatchingLogic.OPML</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">OpmlSignature</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">OpmlModel</span><br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">UnifiedCarrierInfo</span> := <span class="id" title="keyword">Type</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">UnifiedCarrierFunctor</span> : <span class="id" title="keyword">Type</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;:= <span class="id" title="keyword">Type</span> → <span class="id" title="var">UnifiedCarrierInfo</span><br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">UnifiedCarrierCtorFamily</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">UCF</span> : <span class="id" title="var">UnifiedCarrierFunctor</span>) (<span class="id" title="var">A</span> : <span class="id" title="keyword">Type</span>)<br/>
+: <span class="id" title="keyword">Type</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;:= (<span class="id" title="var">nat</span>*(<span class="id" title="var">list</span> <span class="id" title="var">A</span>))%<span class="id" title="keyword">type</span> → <span class="comment">(*&nbsp;Choose&nbsp;a&nbsp;particuar&nbsp;constructor&nbsp;from&nbsp;the&nbsp;family,&nbsp;and&nbsp;arguments&nbsp;of&nbsp;the&nbsp;constructor&nbsp;from&nbsp;the&nbsp;underlying&nbsp;type&nbsp;*)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">option</span> (<span class="id" title="var">UCF</span> <span class="id" title="var">A</span>) <span class="comment">(*&nbsp;maybe&nbsp;return&nbsp;something,&nbsp;and&nbsp;maybe&nbsp;not&nbsp;*)</span><br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">is_monotone</span> (<span class="id" title="var">F</span> : <span class="id" title="var">UnifiedCarrierFunctor</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;: <span class="id" title="keyword">Type</span><br/>
+:= <span class="id" title="keyword">∀</span> <span class="id" title="var">x</span> <span class="id" title="var">y</span>, (<span class="id" title="var">x</span> → <span class="id" title="var">y</span>) → (<span class="id" title="var">F</span> <span class="id" title="var">x</span> → <span class="id" title="var">F</span> <span class="id" title="var">x</span>)<br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Record</span> <span class="id" title="var">UnifiedCarrierComponent</span> := {<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">ucc_functor</span> : <span class="id" title="var">UnifiedCarrierFunctor</span> ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">ucc_functor_monotone</span> : <span class="id" title="var">is_monotone</span> <span class="id" title="var">ucc_functor</span> ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">ucc_ctor_family</span> : <span class="id" title="keyword">∀</span> <span class="id" title="var">A</span>, <span class="id" title="var">UnifiedCarrierCtorFamily</span> <span class="id" title="var">ucc_functor</span> <span class="id" title="var">A</span> ;<br/>
+}.<br/>
+
+<br/>
+<span class="comment">(*&nbsp;We&nbsp;can&nbsp;bypass&nbsp;the&nbsp;check&nbsp;because&nbsp;of&nbsp;the&nbsp;`is_monotone`&nbsp;requirement.&nbsp;*)</span><br/>
+#[<span class="id" title="var">bypass_check</span>(<span class="id" title="var">positivity</span>=<span class="id" title="var">yes</span>)]<br/>
+<span class="id" title="keyword">Inductive</span> <span class="id" title="var">UnifiedCarrier</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">F</span>: <span class="id" title="var">UnifiedCarrierFunctor</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">pos</span> : <span class="id" title="var">is_monotone</span> <span class="id" title="var">F</span>)<br/>
+: <span class="id" title="keyword">Type</span> :=<br/>
+| <span class="id" title="var">c</span> (<span class="id" title="var">st</span> : <span class="id" title="var">F</span> (<span class="id" title="var">UnifiedCarrier</span> <span class="id" title="var">F</span> <span class="id" title="var">pos</span>))<br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">CompInvertorT</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">UCC</span> : <span class="id" title="var">UnifiedCarrierComponent</span>)<br/>
+: <span class="id" title="keyword">Type</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;:= <span class="id" title="keyword">∀</span> (<span class="id" title="var">A</span> : <span class="id" title="keyword">Type</span>) (<span class="id" title="var">x</span> : <span class="id" title="var">ucc_functor</span> <span class="id" title="var">UCC</span> <span class="id" title="var">A</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">option</span> ({ <span class="id" title="var">nla</span> : (<span class="id" title="var">nat</span>*(<span class="id" title="var">list</span> <span class="id" title="var">A</span>))%<span class="id" title="keyword">type</span> | <span class="id" title="var">ucc_ctor_family</span> <span class="id" title="var">UCC</span> <span class="id" title="var">A</span> <span class="id" title="var">nla</span> = <span class="id" title="var">Some</span> <span class="id" title="var">x</span> })<br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Record</span> <span class="id" title="var">Component</span> := {<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">comp_UCC</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: <span class="id" title="var">UnifiedCarrierComponent</span> ;<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">comp_invertor</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: <span class="id" title="var">CompInvertorT</span> <span class="id" title="var">comp_UCC</span> ;<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">comp_invertor_complete</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: <span class="id" title="keyword">∀</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">A</span> : <span class="id" title="keyword">Type</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">nla</span> : (<span class="id" title="var">nat</span>*(<span class="id" title="var">list</span> <span class="id" title="var">A</span>))%<span class="id" title="keyword">type</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">x</span> : <span class="id" title="var">ucc_functor</span> <span class="id" title="var">comp_UCC</span> <span class="id" title="var">A</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">ucc_ctor_family</span> <span class="id" title="var">comp_UCC</span> <span class="id" title="var">A</span> <span class="id" title="var">nla</span> = <span class="id" title="var">Some</span> <span class="id" title="var">x</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">∃</span> <span class="id" title="var">pf</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">comp_invertor</span> <span class="id" title="var">A</span> <span class="id" title="var">x</span> = <span class="id" title="var">Some</span> (<span class="id" title="var">exist</span> <span class="id" title="var">_</span> <span class="id" title="var">nla</span> <span class="id" title="var">pf</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;;<br/>
+}.<br/>
+
+<br/>
+<span class="id" title="keyword">Section</span> <span class="id" title="var">constant</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Context</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">UCI</span> : <span class="id" title="var">UnifiedCarrierInfo</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">constant_UnifiedCarrierFunctor</span> : <span class="id" title="var">UnifiedCarrierFunctor</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:= <span class="id" title="keyword">fun</span> <span class="id" title="var">_</span> ⇒ <span class="id" title="var">UCI</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">constant_UnifiedCarrierFunctor_monotone</span> : <span class="id" title="var">is_monotone</span> <span class="id" title="var">constant_UnifiedCarrierFunctor</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">(*&nbsp;TODO&nbsp;*)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">constant_inversion</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{<span class="id" title="var">A</span> : <span class="id" title="keyword">Type</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">x</span> : <span class="id" title="var">constant_UnifiedCarrierFunctor</span> <span class="id" title="var">A</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;:= 0.<br/>
+
+<br/>
+<span class="id" title="keyword">End</span> <span class="id" title="var">constant</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">bool_UCC</span> : <span class="id" title="var">UnifiedCarrierComponent</span> := {|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">ucc_functor</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:= <span class="id" title="var">constant_UnifiedCarrierFunctor</span> <span class="id" title="var">bool</span> ;<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">ucc_functor_monotone</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:= <span class="id" title="var">constant_UnifiedCarrierFunctor_monotone</span> <span class="id" title="var">bool</span> ;<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">ucc_ctor_family</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:= <span class="id" title="keyword">fun</span> <span class="id" title="var">A</span> <span class="id" title="var">nla</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">nla</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| (0, []) ⇒ <span class="id" title="var">Some</span> <span class="id" title="var">true</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| (1, []) ⇒ <span class="id" title="var">Some</span> <span class="id" title="var">false</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">_</span> ⇒ <span class="id" title="var">None</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;;<br/>
+|}.<br/>
+
+<br/>
+<span class="id" title="keyword">Program Definition</span> <span class="id" title="var">bool_component</span> : <span class="id" title="var">Component</span> := {|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">comp_UCC</span> :=  <span class="id" title="var">bool_UCC</span> ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">comp_invertor</span> := <span class="id" title="keyword">fun</span> <span class="id" title="var">A</span> <span class="id" title="var">x</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">x</span> <span class="id" title="keyword">return</span> <span class="id" title="var">option</span> ({ <span class="id" title="var">nla</span> : (<span class="id" title="var">nat</span>*(<span class="id" title="var">list</span> <span class="id" title="var">A</span>))%<span class="id" title="keyword">type</span> | <span class="id" title="var">ucc_ctor_family</span> <span class="id" title="var">bool_UCC</span> <span class="id" title="var">A</span> <span class="id" title="var">nla</span> = <span class="id" title="var">Some</span> <span class="id" title="var">x</span> }) <span class="id" title="keyword">with</span> <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">true</span> ⇒ <span class="id" title="var">Some</span> (<span class="id" title="var">exist</span> (<span class="id" title="keyword">fun</span> <span class="id" title="var">y</span> ⇒ <span class="id" title="var">ucc_ctor_family</span> <span class="id" title="var">bool_UCC</span> <span class="id" title="var">A</span> <span class="id" title="var">y</span> = <span class="id" title="var">Some</span> <span class="id" title="var">true</span>) (0,([]):(<span class="id" title="var">list</span> <span class="id" title="var">A</span>)) <span class="id" title="var">erefl</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">false</span> ⇒ <span class="id" title="var">Some</span> (<span class="id" title="var">exist</span> <span class="id" title="var">_</span> (1,([]):(<span class="id" title="var">list</span> <span class="id" title="var">A</span>)) <span class="id" title="var">erefl</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;;<br/>
+|}.<br/>
+
+<br/>
+<span class="id" title="keyword">Section</span> <span class="id" title="var">paircomb_ucf</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Context</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">F1</span> <span class="id" title="var">F2</span> : <span class="id" title="var">UnifiedCarrierComponent</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">paircomb_ucf_UnifiedCarrierFunctor</span> : <span class="id" title="var">UnifiedCarrierFunctor</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;:=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">fun</span> <span class="id" title="var">A</span> ⇒ ((<span class="id" title="var">ucc_functor</span> <span class="id" title="var">F1</span> <span class="id" title="var">A</span>)+(<span class="id" title="var">ucc_functor</span> <span class="id" title="var">F2</span> <span class="id" title="var">A</span>))%<span class="id" title="keyword">type</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">paircomb_ucf_UnifiedCarrierFunctor_monotone</span> : <span class="id" title="var">is_monotone</span> <span class="id" title="var">paircomb_ucf_UnifiedCarrierFunctor</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">End</span> <span class="id" title="var">paircomb_ucf</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Section</span> <span class="id" title="var">paircomb</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Context</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">C1</span> <span class="id" title="var">C2</span> : <span class="id" title="var">Component</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Program Definition</span> <span class="id" title="var">paircomb</span> : <span class="id" title="var">Component</span> := {|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">comp_UCC</span> := {|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">ucc_functor</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">paircomb_ucf_UnifiedCarrierFunctor</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">comp_UCC</span> <span class="id" title="var">C1</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">comp_UCC</span> <span class="id" title="var">C2</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|};<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;|}.<br/>
+
+<br/>
+<span class="id" title="keyword">End</span> <span class="id" title="var">paircomb</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Section</span> <span class="id" title="var">combine_ucf</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Context</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">l</span> : <span class="id" title="var">list</span> (<span class="id" title="var">UnifiedCarrierFunctor</span>))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">pf</span> : <span class="id" title="keyword">∀</span> (<span class="id" title="var">F</span> : <span class="id" title="var">UnifiedCarrierFunctor</span>), <span class="id" title="var">F</span> ∈ <span class="id" title="var">l</span> → <span class="id" title="var">is_monotone</span> <span class="id" title="var">F</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">combine_ucf</span> : <span class="id" title="var">UnifiedCarrierFunctor</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;:= <span class="id" title="keyword">fun</span> <span class="id" title="var">A</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">l'</span> := (<span class="id" title="keyword">fun</span> <span class="id" title="var">F</span> ⇒ <span class="id" title="var">F</span> <span class="id" title="var">A</span>) &lt;$&gt; <span class="id" title="var">l</span> <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">foldr</span> <span class="id" title="var">sum</span> <span class="id" title="var">Empty_set</span> <span class="id" title="var">l'</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;.<br/>
+
+<br/>
+<span class="id" title="keyword">End</span> <span class="id" title="var">combine_ucf</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Section</span> <span class="id" title="var">combine</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Context</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">l</span> : <span class="id" title="var">list</span> <span class="id" title="var">Component</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">(*<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;Definition&nbsp;combine&nbsp;:&nbsp;Component&nbsp;:=&nbsp;{|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;comp_UCC&nbsp;:=&nbsp;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;|}.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;*)</span><br/>
+
+<br/>
+<span class="id" title="keyword">End</span> <span class="id" title="var">combine</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Section</span> <span class="id" title="var">with_signature</span>.<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Context</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{<span class="id" title="var">Σ</span> : <span class="id" title="var">OPMLSignature</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">UCI</span> : <span class="id" title="var">UnifiedCarrierInfo</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">UCF</span> : <span class="id" title="var">UnifiedCarrierFunctor</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">pos</span> : <span class="id" title="var">is_monotone</span> <span class="id" title="var">UCF</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">CarrierFunctor</span> : <span class="id" title="keyword">Type</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> (<span class="id" title="var">s</span> : <span class="id" title="var">opml_sort</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">propset</span> <span class="id" title="var">UCI</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">(*<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;Context<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(CF&nbsp;:&nbsp;CarrierFunctor)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(cfi&nbsp;:&nbsp;CarrierFunctorInvertor)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;.<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;Definition&nbsp;lift_cf&nbsp;:&nbsp;propset&nbsp;(UnifiedCarrier&nbsp;UCF&nbsp;pos)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;:=&nbsp;PropSet&nbsp;(fun&nbsp;(e&nbsp;:&nbsp;UnifiedCarrier&nbsp;UCF&nbsp;pos)&nbsp;=&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;match&nbsp;e&nbsp;with<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;c&nbsp;_&nbsp;_&nbsp;x&nbsp;=&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;match&nbsp;(cfi&nbsp;x)&nbsp;with<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;None&nbsp;=&gt;&nbsp;False<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|&nbsp;Some&nbsp;((A:Type),(y:A),pf)&nbsp;=&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">(*&nbsp;Need&nbsp;to&nbsp;know&nbsp;that&nbsp;`x`&nbsp;came&nbsp;from&nbsp;UCF&nbsp;*)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;True<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;end<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;).<br/>
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;*)</span><br/>
+<span class="id" title="keyword">End</span> <span class="id" title="var">with_signature</span>.<br/>
+<span class="comment">(*<br/>
+<span class="comment">(*<br/>
+Definition&nbsp;ModelInfo&nbsp;:&nbsp;Type&nbsp;:=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;()*)</span><br/>
+Record&nbsp;ModelInfo&nbsp;:=&nbsp;{<br/>
+<br/>
+}.<br/>
+<br/>
+Definition&nbsp;ModelFunctor&nbsp;:&nbsp;Type&nbsp;-&gt;&nbsp;Type&nbsp;:=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;fun&nbsp;(CarrierBase&nbsp;:&nbsp;Type)&nbsp;=&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(Type*(ModelInfo))*)</span><br/>
+
+<br/>
+</div>
+<hr/>This page has been generated by <a href="http://coq.inria.fr/">coqdoc</a>
+</div>
+
+</div>
+
+</body>
+</html>

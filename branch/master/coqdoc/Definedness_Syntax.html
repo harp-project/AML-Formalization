@@ -1,0 +1,256 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link href="coqdoc.css" rel="stylesheet" type="text/css" />
+<title>Definedness_Syntax</title>
+</head>
+
+<body>
+
+<div id="page">
+
+<div id="header">
+</div>
+
+<div id="main">
+
+<h1 class="libtitle">File Definedness_Syntax</h1>
+
+<div class="code">
+</div>
+
+<div class="doc">
+<a id="lab1"></a><h1 class="section">Definedness</h1>
+
+
+<div class="paragraph"> </div>
+
+   In this module we define the definedness symbol and use it to build derived notions
+   like totality and equality.
+ 
+</div>
+<div class="code">
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">MatchingLogic</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Export</span> <span class="id" title="var">Logic</span>.<br/>
+<span class="id" title="keyword">Import</span> <span class="id" title="var">MatchingLogic.Logic.Notations</span>.<br/>
+
+<br/>
+
+<br/>
+<span class="comment">(*&nbsp;We&nbsp;have&nbsp;only&nbsp;one&nbsp;symbol&nbsp;*)</span><br/>
+<span class="id" title="keyword">Inductive</span> <span class="id" title="var">Symbols</span> := <span class="id" title="var">def_sym</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Global Instance</span> <span class="id" title="var">Symbols_eqdec</span> : <span class="id" title="var">EqDecision</span> <span class="id" title="var">Symbols</span>.<br/>
+
+<br/>
+#[<span class="id" title="var">global</span>]<br/>
+<span class="id" title="var">Program</span> <span class="id" title="keyword">Instance</span> <span class="id" title="var">Symbols_finite</span> : <span class="id" title="var">finite.Finite</span> <span class="id" title="var">Symbols</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Global Instance</span> <span class="id" title="var">Symbols_countable</span> : <span class="id" title="var">countable.Countable</span> <span class="id" title="var">Symbols</span>.<br/>
+ 
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Class</span> <span class="id" title="keyword">Syntax</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>} :=<br/>
+&nbsp;&nbsp;{<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">(*&nbsp;'Symbols'&nbsp;are&nbsp;a&nbsp;'subset'&nbsp;of&nbsp;all&nbsp;the&nbsp;symbols&nbsp;from&nbsp;the&nbsp;signature&nbsp;*)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">sym_inj</span>: <span class="id" title="var">Symbols</span> → <span class="id" title="var">symbols</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">(*&nbsp;TODO&nbsp;make&nbsp;it&nbsp;injective?&nbsp;*)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">(*&nbsp;for&nbsp;convenience&nbsp;*)</span><br/>
+&nbsp;&nbsp;}.<br/>
+
+<br/>
+<span class="id" title="keyword">Section</span> <span class="id" title="var">definedness</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Open</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">ml_scope</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Context</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>}.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Context</span> {<span class="id" title="var">syntax</span> : <span class="id" title="keyword">Syntax</span>}.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">definedness</span> : <span class="id" title="var">Pattern</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">patt_sym</span> (<span class="id" title="var">sym_inj</span> <span class="id" title="var">def_sym</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">patt_defined</span> (<span class="id" title="var">phi</span> : <span class="id" title="var">Pattern</span>) : <span class="id" title="var">Pattern</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">definedness</span> ⋅ <span class="id" title="var">phi</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">patt_total</span> (<span class="id" title="var">phi</span>: <span class="id" title="var">Pattern</span>) : <span class="id" title="var">Pattern</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">patt_not</span> (<span class="id" title="var">patt_defined</span> (<span class="id" title="var">patt_not</span> <span class="id" title="var">phi</span>)).<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">patt_subseteq</span> (<span class="id" title="var">phi1</span> <span class="id" title="var">phi2</span> : <span class="id" title="var">Pattern</span>) : <span class="id" title="var">Pattern</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">patt_total</span> (<span class="id" title="var">phi1</span> ---&gt; <span class="id" title="var">phi2</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">patt_equal</span> (<span class="id" title="var">phi1</span> <span class="id" title="var">phi2</span> : <span class="id" title="var">Pattern</span>) : <span class="id" title="var">Pattern</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">patt_total</span> (<span class="id" title="var">phi1</span> &lt;---&gt; <span class="id" title="var">phi2</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">patt_in</span> (<span class="id" title="var">phi1</span> <span class="id" title="var">phi2</span> : <span class="id" title="var">Pattern</span>) : <span class="id" title="var">Pattern</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">patt_defined</span> (<span class="id" title="var">patt_and</span> <span class="id" title="var">phi1</span> <span class="id" title="var">phi2</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">AC_patt_defined</span> : <span class="id" title="var">Application_context</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;@<span class="id" title="var">ctx_app_r</span> <span class="id" title="var">_</span> <span class="id" title="var">definedness</span> <span class="id" title="var">box</span> <span class="id" title="keyword">ltac</span>:(<span class="id" title="tactic">auto</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">is_predicate_pattern</span> ψ : <span class="id" title="var">Pattern</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">patt_equal</span> ψ <span class="id" title="var">patt_top</span>) <span class="id" title="var">or</span> (<span class="id" title="var">patt_equal</span> ψ <span class="id" title="var">patt_bott</span>).<br/>
+<span class="id" title="keyword">End</span> <span class="id" title="var">definedness</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Module</span> <span class="id" title="var">Notations</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Import</span> <span class="id" title="keyword">Syntax</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Notation</span> &quot;⌈ p ⌉" := (<span class="id" title="var">patt_defined</span> <span class="id" title="var">p</span>) : <span class="id" title="var">ml_scope</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Notation</span> &quot;⌊ p ⌋" := (<span class="id" title="var">patt_total</span> <span class="id" title="var">p</span>) : <span class="id" title="var">ml_scope</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Notation</span> &quot;p =ml q" := (<span class="id" title="var">patt_equal</span> <span class="id" title="var">p</span> <span class="id" title="var">q</span>) (<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 68, <span class="id" title="tactic">left</span> <span class="id" title="keyword">associativity</span>) : <span class="id" title="var">ml_scope</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Notation</span> &quot;p ⊆ml q" := (<span class="id" title="var">patt_subseteq</span> <span class="id" title="var">p</span> <span class="id" title="var">q</span>) (<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 68, <span class="id" title="tactic">left</span> <span class="id" title="keyword">associativity</span>) : <span class="id" title="var">ml_scope</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Notation</span> &quot;p ∈ml q" := (<span class="id" title="var">patt_in</span> <span class="id" title="var">p</span> <span class="id" title="var">q</span>) (<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 68, <span class="id" title="tactic">left</span> <span class="id" title="keyword">associativity</span>) : <span class="id" title="var">ml_scope</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Notation</span> &quot;'⌈_⌉'" := <span class="id" title="var">definedness</span> : <span class="id" title="var">ml_scope</span>.<br/>
+<span class="id" title="keyword">End</span> <span class="id" title="var">Notations</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Section</span> <span class="id" title="var">definedness</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Context</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>}<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{<span class="id" title="var">syntax</span> : <span class="id" title="keyword">Syntax</span>}<br/>
+&nbsp;&nbsp;.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Import</span> <span class="id" title="var">Notations</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Open</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">ml_scope</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">well_formed_defined</span> <span class="id" title="var">ϕ</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed</span> <span class="id" title="var">ϕ</span> = <span class="id" title="var">true</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed</span> ⌈ <span class="id" title="var">ϕ</span> ⌉ = <span class="id" title="var">true</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="comment">(*<br/>
+&nbsp;&nbsp;[local]
+   Hint Resolve well_formed_defined : core.
+   *)</span><br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">well_formed_total</span> <span class="id" title="var">ϕ</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed</span> <span class="id" title="var">ϕ</span> = <span class="id" title="var">true</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed</span> ⌊ <span class="id" title="var">ϕ</span> ⌋ = <span class="id" title="var">true</span>.<br/>
+<span class="comment">(*<br/>
+&nbsp;&nbsp;[local]
+   Hint Resolve well_formed_total : core.
+*)</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">well_formed_equal</span> (<span class="id" title="var">phi1</span> <span class="id" title="var">phi2</span> : <span class="id" title="var">Pattern</span>) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed</span> <span class="id" title="var">phi1</span> = <span class="id" title="var">true</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed</span> <span class="id" title="var">phi2</span> = <span class="id" title="var">true</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed</span> (<span class="id" title="var">phi1</span> =<span class="id" title="var">ml</span> <span class="id" title="var">phi2</span>) = <span class="id" title="var">true</span>.<br/>
+<span class="comment">(*<br/>
+&nbsp;&nbsp;[local]
+   Hint Resolve well_formed_equal : core.
+*)</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">well_formed_subseteq</span> (<span class="id" title="var">phi1</span> <span class="id" title="var">phi2</span> : <span class="id" title="var">Pattern</span>) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed</span> <span class="id" title="var">phi1</span> = <span class="id" title="var">true</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed</span> <span class="id" title="var">phi2</span> = <span class="id" title="var">true</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed</span> (<span class="id" title="var">phi1</span> ⊆<span class="id" title="var">ml</span> <span class="id" title="var">phi2</span>) = <span class="id" title="var">true</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="comment">(*<br/>
+&nbsp;&nbsp;[local]
+   Hint Resolve well_formed_subseteq : core.
+*)</span><br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">well_formed_in</span> (<span class="id" title="var">phi1</span> <span class="id" title="var">phi2</span> : <span class="id" title="var">Pattern</span>) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed</span> <span class="id" title="var">phi1</span> = <span class="id" title="var">true</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed</span> <span class="id" title="var">phi2</span> = <span class="id" title="var">true</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed</span> (<span class="id" title="var">phi1</span> ∈<span class="id" title="var">ml</span> <span class="id" title="var">phi2</span>) = <span class="id" title="var">true</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="comment">(*<br/>
+&nbsp;&nbsp;[local]
+   Hint Resolve well_formed_in : core.
+*)</span><br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">ev_x</span> := (<span class="id" title="var">evar_fresh</span> []).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">p_x</span> := <span class="id" title="var">patt_free_evar</span> <span class="id" title="var">ev_x</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Inductive</span> <span class="id" title="var">AxiomName</span> := <span class="id" title="var">AxDefinedness</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">axiom</span> (<span class="id" title="var">name</span> : <span class="id" title="var">AxiomName</span>) : <span class="id" title="var">Pattern</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">name</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">AxDefinedness</span> ⇒ <span class="id" title="var">patt_defined</span> <span class="id" title="var">p_x</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Program Definition</span> <span class="id" title="var">named_axioms</span> : <span class="id" title="var">NamedAxioms</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{| <span class="id" title="var">NAName</span> := <span class="id" title="var">AxiomName</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">NAAxiom</span> := <span class="id" title="var">axiom</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;|}.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">theory</span> := <span class="id" title="var">theory_of_NamedAxioms</span> <span class="id" title="var">named_axioms</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Obligation</span> <span class="id" title="keyword">Tactic</span> := <span class="id" title="tactic">idtac</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Substitution classes: 
+</div>
+<div class="code">
+&nbsp;&nbsp;#[<span class="id" title="var">global</span>]<br/>
+&nbsp;&nbsp;<span class="id" title="var">Program</span> <span class="id" title="keyword">Instance</span> <span class="id" title="var">Unary_defined</span> : <span class="id" title="var">Unary</span> <span class="id" title="var">patt_defined</span> := {}.<br/>
+
+<br/>
+&nbsp;&nbsp;#[<span class="id" title="var">global</span>]<br/>
+&nbsp;&nbsp;<span class="id" title="var">Program</span> <span class="id" title="keyword">Instance</span> <span class="id" title="var">Unary_total</span> : <span class="id" title="var">Unary</span> <span class="id" title="var">patt_total</span> := {}.<br/>
+
+<br/>
+&nbsp;&nbsp;#[<span class="id" title="var">global</span>]<br/>
+&nbsp;&nbsp;<span class="id" title="var">Program</span> <span class="id" title="keyword">Instance</span> <span class="id" title="var">Binary_equal</span> : <span class="id" title="var">Binary</span> <span class="id" title="var">patt_equal</span> := {}.<br/>
+
+<br/>
+&nbsp;&nbsp;#[<span class="id" title="var">global</span>]<br/>
+&nbsp;&nbsp;<span class="id" title="var">Program</span> <span class="id" title="keyword">Instance</span> <span class="id" title="var">Binary_subseteq</span> : <span class="id" title="var">Binary</span> <span class="id" title="var">patt_subseteq</span> := {}.<br/>
+
+<br/>
+&nbsp;&nbsp;#[<span class="id" title="var">global</span>]<br/>
+&nbsp;&nbsp;<span class="id" title="var">Program</span> <span class="id" title="keyword">Instance</span> <span class="id" title="var">Binary_in</span> : <span class="id" title="var">Binary</span> <span class="id" title="var">patt_in</span> := {}.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="comment">(*&nbsp;Defines&nbsp;ϕ₁&nbsp;to&nbsp;be&nbsp;an&nbsp;inversion&nbsp;of&nbsp;ϕ₂&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="comment">(*&nbsp;∀&nbsp;x.&nbsp;ϕ₁&nbsp;x&nbsp;=&nbsp;∃&nbsp;y.&nbsp;y&nbsp;∧&nbsp;(x&nbsp;∈&nbsp;ϕ₂&nbsp;y)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;This&nbsp;assumes,&nbsp;that&nbsp;bound&nbsp;element&nbsp;variables&nbsp;x&nbsp;and&nbsp;y&nbsp;do&nbsp;not&nbsp;occur&nbsp;in&nbsp;ϕ₁&nbsp;and&nbsp;ϕ₂&nbsp;*)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">patt_eq_inversion_of</span> <span class="id" title="var">ϕ₁</span> <span class="id" title="var">ϕ₂</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:= <span class="id" title="var">patt_forall</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">patt_equal</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">patt_app</span> (<span class="id" title="var">nest_ex</span> <span class="id" title="var">ϕ₁</span>) (<span class="id" title="var">patt_bound_evar</span> 0))<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">patt_exists</span> (<span class="id" title="var">patt_and</span> (<span class="id" title="var">patt_bound_evar</span> 0)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">patt_in</span> (<span class="id" title="var">patt_bound_evar</span> 1)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">patt_app</span> (<span class="id" title="var">nest_ex</span> (<span class="id" title="var">nest_ex</span> <span class="id" title="var">ϕ₂</span>)) (<span class="id" title="var">patt_bound_evar</span> 0)))))).<br/>
+
+<br/>
+<span class="id" title="keyword">End</span> <span class="id" title="var">definedness</span>.<br/>
+</div>
+<hr/>This page has been generated by <a href="http://coq.inria.fr/">coqdoc</a>
+</div>
+
+</div>
+
+</body>
+</html>

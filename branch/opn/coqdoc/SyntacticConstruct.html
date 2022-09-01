@@ -1,0 +1,859 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link href="coqdoc.css" rel="stylesheet" type="text/css" />
+<title>SyntacticConstruct</title>
+</head>
+
+<body>
+
+<div id="page">
+
+<div id="header">
+</div>
+
+<div id="main">
+
+<h1 class="libtitle">File SyntacticConstruct</h1>
+
+<div class="code">
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">ssreflect</span> <span class="id" title="var">ssrfun</span> <span class="id" title="var">ssrbool</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Btauto</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">stdpp</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">base</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">MatchingLogic.Utils</span><br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">extralibrary</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">stdpp_ext</span><br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">stdpp</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">fin_sets</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">MatchingLogic</span><br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Pattern</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">DerivedOperators_Syntax</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Substitution</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">IndexManipulation</span><br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Import</span> <span class="id" title="var">MatchingLogic.Substitution.Notations</span>.<br/>
+
+<br/>
+
+<br/>
+<span class="id" title="keyword">Section</span> <span class="id" title="var">with_signature</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Context</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>}.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a id="lab5"></a><h1 class="section">General substitutions</h1>
+
+
+<div class="paragraph"> </div>
+
+  First, we extract the information that identify the different substiutions:
+<ul class="doclist">
+<li> How to "step" or "increase" (mostly de Bruijn indices) some properties
+    in the recursive calls for binders
+
+</li>
+<li> How the substitutions work for variables (both set and element, bound and free)
+
+</li>
+</ul>
+
+</div>
+<div class="code">
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Record</span> <span class="id" title="var">SpecificSubst</span> {<span class="id" title="var">A</span> : <span class="id" title="keyword">Type</span>} : <span class="id" title="keyword">Type</span> := {<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">increase_ex</span> : <span class="id" title="var">A</span> → <span class="id" title="var">A</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">increase_mu</span> : <span class="id" title="var">A</span> → <span class="id" title="var">A</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">on_fevar</span> : <span class="id" title="var">A</span> → <span class="id" title="tactic">evar</span> → <span class="id" title="var">Pattern</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">on_fsvar</span> : <span class="id" title="var">A</span> → <span class="id" title="var">svar</span> → <span class="id" title="var">Pattern</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">on_bevar</span> : <span class="id" title="var">A</span> → <span class="id" title="var">db_index</span> → <span class="id" title="var">Pattern</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">on_bsvar</span> : <span class="id" title="var">A</span> → <span class="id" title="var">db_index</span> → <span class="id" title="var">Pattern</span>;<br/>
+&nbsp;&nbsp;}.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+    We define the general structure of substitutions, and use the specific
+    information for the binders and the variables defined in `SpeificSubst`.
+   
+</div>
+<div class="code">
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Fixpoint</span> <span class="id" title="var">apply_subst</span> {<span class="id" title="var">A</span> : <span class="id" title="keyword">Type</span>} (<span class="id" title="var">s</span> : <span class="id" title="var">SpecificSubst</span>) (<span class="id" title="var">st</span> : <span class="id" title="var">A</span>) (<span class="id" title="var">phi</span> : <span class="id" title="var">Pattern</span>) :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">phi</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_free_evar</span> <span class="id" title="var">x</span> ⇒ <span class="id" title="var">on_fevar</span> <span class="id" title="var">s</span> <span class="id" title="var">st</span> <span class="id" title="var">x</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_free_svar</span> <span class="id" title="var">X</span> ⇒ <span class="id" title="var">on_fsvar</span> <span class="id" title="var">s</span> <span class="id" title="var">st</span> <span class="id" title="var">X</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_bound_evar</span> <span class="id" title="var">n</span> ⇒ <span class="id" title="var">on_bevar</span> <span class="id" title="var">s</span> <span class="id" title="var">st</span> <span class="id" title="var">n</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_bound_svar</span> <span class="id" title="var">N</span> ⇒ <span class="id" title="var">on_bsvar</span> <span class="id" title="var">s</span> <span class="id" title="var">st</span> <span class="id" title="var">N</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_sym</span> <span class="id" title="var">sm</span> ⇒ <span class="id" title="var">patt_sym</span> <span class="id" title="var">sm</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_app</span> <span class="id" title="var">phi1</span> <span class="id" title="var">phi2</span> ⇒ <span class="id" title="var">patt_app</span> (<span class="id" title="var">apply_subst</span> <span class="id" title="var">s</span> <span class="id" title="var">st</span> <span class="id" title="var">phi1</span>) (<span class="id" title="var">apply_subst</span> <span class="id" title="var">s</span> <span class="id" title="var">st</span> <span class="id" title="var">phi2</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_bott</span> ⇒ <span class="id" title="var">patt_bott</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_imp</span> <span class="id" title="var">phi1</span> <span class="id" title="var">phi2</span> ⇒ <span class="id" title="var">patt_imp</span> (<span class="id" title="var">apply_subst</span> <span class="id" title="var">s</span> <span class="id" title="var">st</span> <span class="id" title="var">phi1</span>) (<span class="id" title="var">apply_subst</span> <span class="id" title="var">s</span> <span class="id" title="var">st</span> <span class="id" title="var">phi2</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_exists</span> <span class="id" title="var">phi'</span> ⇒ <span class="id" title="var">patt_exists</span> (<span class="id" title="var">apply_subst</span> <span class="id" title="var">s</span> (<span class="id" title="var">increase_ex</span> <span class="id" title="var">s</span> <span class="id" title="var">st</span>) <span class="id" title="var">phi'</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">patt_mu</span> <span class="id" title="var">phi'</span> ⇒ <span class="id" title="var">patt_mu</span> (<span class="id" title="var">apply_subst</span> <span class="id" title="var">s</span> (<span class="id" title="var">increase_mu</span> <span class="id" title="var">s</span> <span class="id" title="var">st</span>) <span class="id" title="var">phi'</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+For substitutions that can be described with the previous definition,
+      we can instantiate the following type class: 
+</div>
+<div class="code">
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Class</span> <span class="id" title="var">PatternMorphism</span> {<span class="id" title="var">A</span> : <span class="id" title="keyword">Type</span>} (<span class="id" title="var">f</span> : <span class="id" title="var">A</span> → <span class="id" title="var">Pattern</span> → <span class="id" title="var">Pattern</span>) := {<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">pm_spec_data</span> : <span class="id" title="var">SpecificSubst</span> ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">pm_ezero_increase</span> : <span class="id" title="keyword">∀</span> <span class="id" title="var">a</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">on_bevar</span> <span class="id" title="var">pm_spec_data</span> (<span class="id" title="var">increase_ex</span> <span class="id" title="var">pm_spec_data</span> <span class="id" title="var">a</span>) 0 = <span class="id" title="var">patt_bound_evar</span> 0 ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">pm_szero_increase</span> : <span class="id" title="keyword">∀</span> <span class="id" title="var">a</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">on_bsvar</span> <span class="id" title="var">pm_spec_data</span> (<span class="id" title="var">increase_mu</span> <span class="id" title="var">pm_spec_data</span> <span class="id" title="var">a</span>) 0 = <span class="id" title="var">patt_bound_svar</span> 0 ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">pm_correctness</span> : <span class="id" title="keyword">∀</span> <span class="id" title="var">a</span> (<span class="id" title="var">phi</span> : <span class="id" title="var">Pattern</span>), <span class="id" title="var">f</span> <span class="id" title="var">a</span> <span class="id" title="var">phi</span> = <span class="id" title="var">apply_subst</span> <span class="id" title="var">pm_spec_data</span> <span class="id" title="var">a</span> <span class="id" title="var">phi</span><br/>
+&nbsp;&nbsp;}.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Variable quantifications are such morphisms: 
+</div>
+<div class="code">
+
+<br/>
+&nbsp;&nbsp;#[<span class="id" title="var">global</span>]<br/>
+&nbsp;&nbsp;<span class="id" title="var">Program</span> <span class="id" title="keyword">Instance</span> <span class="id" title="var">Evar_quantify_morphism</span> (<span class="id" title="var">x'</span> : <span class="id" title="tactic">evar</span>) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">PatternMorphism</span> (<span class="id" title="var">evar_quantify</span> <span class="id" title="var">x'</span>) := {<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">pm_spec_data</span> := {|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">increase_ex</span> := <span class="id" title="keyword">fun</span> <span class="id" title="var">x</span> ⇒ <span class="id" title="var">S</span> <span class="id" title="var">x</span> ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">increase_mu</span> := <span class="id" title="var">id</span> ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">on_fevar</span> := <span class="id" title="keyword">fun</span> <span class="id" title="keyword">level</span> <span class="id" title="var">x</span> ⇒ <span class="id" title="keyword">if</span> <span class="id" title="var">decide</span> (<span class="id" title="var">x'</span> = <span class="id" title="var">x</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">then</span> <span class="id" title="var">patt_bound_evar</span> <span class="id" title="keyword">level</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">else</span> <span class="id" title="var">patt_free_evar</span> <span class="id" title="var">x</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">on_fsvar</span> := <span class="id" title="keyword">fun</span> <span class="id" title="var">_</span> <span class="id" title="var">X</span> ⇒ <span class="id" title="var">patt_free_svar</span> <span class="id" title="var">X</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">on_bevar</span> := <span class="id" title="keyword">fun</span> <span class="id" title="var">_</span> <span class="id" title="var">n</span> ⇒ <span class="id" title="var">patt_bound_evar</span> <span class="id" title="var">n</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">on_bsvar</span> := <span class="id" title="keyword">fun</span> <span class="id" title="var">_</span> <span class="id" title="var">N</span> ⇒ <span class="id" title="var">patt_bound_svar</span> <span class="id" title="var">N</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;|}<br/>
+&nbsp;&nbsp;}.<br/>
+
+<br/>
+&nbsp;&nbsp;#[<span class="id" title="var">global</span>]<br/>
+&nbsp;&nbsp;<span class="id" title="var">Program</span> <span class="id" title="keyword">Instance</span> <span class="id" title="var">Svar_quantify_morphism</span> (<span class="id" title="var">x'</span> : <span class="id" title="var">svar</span>) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">PatternMorphism</span> (<span class="id" title="var">svar_quantify</span> <span class="id" title="var">x'</span>) := {<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">pm_spec_data</span> := {|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">increase_ex</span> := <span class="id" title="var">id</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">increase_mu</span> := <span class="id" title="keyword">fun</span> <span class="id" title="var">x</span> ⇒ <span class="id" title="var">S</span> <span class="id" title="var">x</span> ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">on_fevar</span> := <span class="id" title="keyword">fun</span> <span class="id" title="var">_</span> <span class="id" title="var">X</span> ⇒ <span class="id" title="var">patt_free_evar</span> <span class="id" title="var">X</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">on_fsvar</span> := <span class="id" title="keyword">fun</span> <span class="id" title="keyword">level</span> <span class="id" title="var">x</span> ⇒ <span class="id" title="keyword">if</span> <span class="id" title="var">decide</span> (<span class="id" title="var">x'</span> = <span class="id" title="var">x</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">then</span> <span class="id" title="var">patt_bound_svar</span> <span class="id" title="keyword">level</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">else</span> <span class="id" title="var">patt_free_svar</span> <span class="id" title="var">x</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">on_bevar</span> := <span class="id" title="keyword">fun</span> <span class="id" title="var">_</span> <span class="id" title="var">n</span> ⇒ <span class="id" title="var">patt_bound_evar</span> <span class="id" title="var">n</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">on_bsvar</span> := <span class="id" title="keyword">fun</span> <span class="id" title="var">_</span> <span class="id" title="var">N</span> ⇒ <span class="id" title="var">patt_bound_svar</span> <span class="id" title="var">N</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;|}<br/>
+&nbsp;&nbsp;}.<br/>
+
+<br/>
+&nbsp;&nbsp;#[<span class="id" title="var">global</span>]<br/>
+&nbsp;&nbsp;<span class="id" title="var">Program</span> <span class="id" title="keyword">Instance</span> <span class="id" title="var">Bevar_subst_morphism</span> (ψ : <span class="id" title="var">Pattern</span>) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">PatternMorphism</span> (<span class="id" title="var">bevar_subst</span> ψ) := {<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">pm_spec_data</span> := {|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">increase_ex</span> := <span class="id" title="keyword">fun</span> <span class="id" title="var">x</span> ⇒ <span class="id" title="var">S</span> <span class="id" title="var">x</span> ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">increase_mu</span> := <span class="id" title="var">id</span> ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">on_fevar</span> := <span class="id" title="keyword">fun</span> <span class="id" title="var">_</span> <span class="id" title="var">x</span> ⇒ <span class="id" title="var">patt_free_evar</span> <span class="id" title="var">x</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">on_fsvar</span> := <span class="id" title="keyword">fun</span> <span class="id" title="var">_</span> <span class="id" title="var">X</span> ⇒ <span class="id" title="var">patt_free_svar</span> <span class="id" title="var">X</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">on_bevar</span> := <span class="id" title="keyword">fun</span> <span class="id" title="var">x</span> <span class="id" title="var">n</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">compare_nat</span> <span class="id" title="var">n</span> <span class="id" title="var">x</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">Nat_less</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> ⇒ <span class="id" title="var">patt_bound_evar</span> <span class="id" title="var">n</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">Nat_equal</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> ⇒ ψ<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">Nat_greater</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> ⇒ <span class="id" title="var">patt_bound_evar</span> (<span class="id" title="var">Nat.pred</span> <span class="id" title="var">n</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">on_bsvar</span> := <span class="id" title="keyword">fun</span> <span class="id" title="var">_</span> <span class="id" title="var">N</span> ⇒ <span class="id" title="var">patt_bound_svar</span> <span class="id" title="var">N</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;|}<br/>
+&nbsp;&nbsp;}.<br/>
+
+<br/>
+&nbsp;&nbsp;#[<span class="id" title="var">global</span>]<br/>
+&nbsp;&nbsp;<span class="id" title="var">Program</span> <span class="id" title="keyword">Instance</span> <span class="id" title="var">Bsvar_subst_morphism</span> (ψ : <span class="id" title="var">Pattern</span>) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">PatternMorphism</span> (<span class="id" title="var">bsvar_subst</span> ψ) := {<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">pm_spec_data</span> := {|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">increase_ex</span> := <span class="id" title="var">id</span> ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">increase_mu</span> := <span class="id" title="keyword">fun</span> <span class="id" title="var">x</span> ⇒ <span class="id" title="var">S</span> <span class="id" title="var">x</span> ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">on_fevar</span> := <span class="id" title="keyword">fun</span> <span class="id" title="var">_</span> <span class="id" title="var">x</span> ⇒ <span class="id" title="var">patt_free_evar</span> <span class="id" title="var">x</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">on_fsvar</span> := <span class="id" title="keyword">fun</span> <span class="id" title="var">_</span> <span class="id" title="var">X</span> ⇒ <span class="id" title="var">patt_free_svar</span> <span class="id" title="var">X</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">on_bevar</span> := <span class="id" title="keyword">fun</span> <span class="id" title="var">_</span> <span class="id" title="var">n</span> ⇒ <span class="id" title="var">patt_bound_evar</span> <span class="id" title="var">n</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">on_bsvar</span> := <span class="id" title="keyword">fun</span> <span class="id" title="var">X</span> <span class="id" title="var">N</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">compare_nat</span> <span class="id" title="var">N</span> <span class="id" title="var">X</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">Nat_less</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> ⇒ <span class="id" title="var">patt_bound_svar</span> <span class="id" title="var">N</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">Nat_equal</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> ⇒ ψ<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">Nat_greater</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> ⇒ <span class="id" title="var">patt_bound_svar</span> (<span class="id" title="var">Nat.pred</span> <span class="id" title="var">N</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;|}<br/>
+&nbsp;&nbsp;}.<br/>
+
+<br/>
+&nbsp;&nbsp;#[<span class="id" title="var">global</span>]<br/>
+&nbsp;&nbsp;<span class="id" title="var">Program</span> <span class="id" title="keyword">Instance</span> <span class="id" title="var">Evar_open_morphism</span> (<span class="id" title="var">x</span> : <span class="id" title="tactic">evar</span>) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">PatternMorphism</span> (<span class="id" title="var">evar_open</span> <span class="id" title="var">x</span>) := {<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">pm_spec_data</span> := {|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">increase_ex</span> := <span class="id" title="keyword">fun</span> <span class="id" title="var">x</span> ⇒ <span class="id" title="var">S</span> <span class="id" title="var">x</span> ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">increase_mu</span> := <span class="id" title="var">id</span> ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">on_fevar</span> := <span class="id" title="keyword">fun</span> <span class="id" title="var">_</span> <span class="id" title="var">x</span> ⇒ <span class="id" title="var">patt_free_evar</span> <span class="id" title="var">x</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">on_fsvar</span> := <span class="id" title="keyword">fun</span> <span class="id" title="var">_</span> <span class="id" title="var">X</span> ⇒ <span class="id" title="var">patt_free_svar</span> <span class="id" title="var">X</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">on_bevar</span> := <span class="id" title="keyword">fun</span> <span class="id" title="var">dbi</span> <span class="id" title="var">n</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">compare_nat</span> <span class="id" title="var">n</span> <span class="id" title="var">dbi</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">Nat_less</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> ⇒ <span class="id" title="var">patt_bound_evar</span> <span class="id" title="var">n</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">Nat_equal</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> ⇒ <span class="id" title="var">patt_free_evar</span> <span class="id" title="var">x</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">Nat_greater</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> ⇒ <span class="id" title="var">patt_bound_evar</span> (<span class="id" title="var">Nat.pred</span> <span class="id" title="var">n</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">on_bsvar</span> := <span class="id" title="keyword">fun</span> <span class="id" title="var">_</span> <span class="id" title="var">N</span> ⇒ <span class="id" title="var">patt_bound_svar</span> <span class="id" title="var">N</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;|}<br/>
+&nbsp;&nbsp;}.<br/>
+
+<br/>
+&nbsp;&nbsp;#[<span class="id" title="var">global</span>]<br/>
+&nbsp;&nbsp;<span class="id" title="var">Program</span> <span class="id" title="keyword">Instance</span> <span class="id" title="var">Svar_open_morphism</span> (<span class="id" title="var">X</span> : <span class="id" title="var">svar</span>) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">PatternMorphism</span> (<span class="id" title="var">svar_open</span> <span class="id" title="var">X</span>) := {<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">pm_spec_data</span> := {|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">increase_ex</span> := <span class="id" title="var">id</span> ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">increase_mu</span> := <span class="id" title="keyword">fun</span> <span class="id" title="var">x</span> ⇒ <span class="id" title="var">S</span> <span class="id" title="var">x</span> ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">on_fevar</span> := <span class="id" title="keyword">fun</span> <span class="id" title="var">_</span> <span class="id" title="var">x</span> ⇒ <span class="id" title="var">patt_free_evar</span> <span class="id" title="var">x</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">on_fsvar</span> := <span class="id" title="keyword">fun</span> <span class="id" title="var">_</span> <span class="id" title="var">X</span> ⇒ <span class="id" title="var">patt_free_svar</span> <span class="id" title="var">X</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">on_bevar</span> := <span class="id" title="keyword">fun</span> <span class="id" title="var">_</span> <span class="id" title="var">n</span> ⇒ <span class="id" title="var">patt_bound_evar</span> <span class="id" title="var">n</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">on_bsvar</span> := <span class="id" title="keyword">fun</span> <span class="id" title="var">Dbi</span> <span class="id" title="var">N</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="var">compare_nat</span> <span class="id" title="var">N</span> <span class="id" title="var">Dbi</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">Nat_less</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> ⇒ <span class="id" title="var">patt_bound_svar</span> <span class="id" title="var">N</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">Nat_equal</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> ⇒ <span class="id" title="var">patt_free_svar</span> <span class="id" title="var">X</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">Nat_greater</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> ⇒ <span class="id" title="var">patt_bound_svar</span> (<span class="id" title="var">Nat.pred</span> <span class="id" title="var">N</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;|}<br/>
+&nbsp;&nbsp;}.<br/>
+
+<br/>
+&nbsp;&nbsp;#[<span class="id" title="var">global</span>]<br/>
+&nbsp;&nbsp;<span class="id" title="var">Program</span> <span class="id" title="keyword">Instance</span> <span class="id" title="var">Free_evar_subst_morphism</span> (ψ : <span class="id" title="var">Pattern</span>) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">PatternMorphism</span> (<span class="id" title="var">free_evar_subst</span> ψ) := {<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">pm_spec_data</span> := {|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">increase_ex</span> := <span class="id" title="var">id</span> ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">increase_mu</span> := <span class="id" title="var">id</span> ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">on_fevar</span> := <span class="id" title="keyword">fun</span> <span class="id" title="var">x</span> <span class="id" title="var">x'</span> ⇒ <span class="id" title="keyword">if</span> <span class="id" title="var">decide</span> (<span class="id" title="var">x</span> = <span class="id" title="var">x'</span>) <span class="id" title="keyword">then</span> ψ <span class="id" title="keyword">else</span> <span class="id" title="var">patt_free_evar</span> <span class="id" title="var">x'</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">on_fsvar</span> := <span class="id" title="keyword">fun</span> <span class="id" title="var">_</span> <span class="id" title="var">X</span> ⇒ <span class="id" title="var">patt_free_svar</span> <span class="id" title="var">X</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">on_bevar</span> := <span class="id" title="keyword">fun</span> <span class="id" title="var">_</span> <span class="id" title="var">n</span> ⇒ <span class="id" title="var">patt_bound_evar</span> <span class="id" title="var">n</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">on_bsvar</span> := <span class="id" title="keyword">fun</span> <span class="id" title="var">_</span> <span class="id" title="var">N</span> ⇒ <span class="id" title="var">patt_bound_svar</span> <span class="id" title="var">N</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;|}<br/>
+&nbsp;&nbsp;}.<br/>
+
+<br/>
+&nbsp;&nbsp;#[<span class="id" title="var">global</span>]<br/>
+&nbsp;&nbsp;<span class="id" title="var">Program</span> <span class="id" title="keyword">Instance</span> <span class="id" title="var">Free_svar_subst_morphism</span> (ψ : <span class="id" title="var">Pattern</span>) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">PatternMorphism</span> (<span class="id" title="var">free_svar_subst</span> ψ) := {<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">pm_spec_data</span> := {|<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">increase_ex</span> := <span class="id" title="var">id</span> ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">increase_mu</span> := <span class="id" title="var">id</span> ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">on_fevar</span> := <span class="id" title="keyword">fun</span> <span class="id" title="var">_</span> <span class="id" title="var">x</span> ⇒ <span class="id" title="var">patt_free_evar</span> <span class="id" title="var">x</span> ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">on_fsvar</span> := <span class="id" title="keyword">fun</span> <span class="id" title="var">X</span> <span class="id" title="var">X'</span> ⇒ <span class="id" title="keyword">if</span> <span class="id" title="var">decide</span> (<span class="id" title="var">X</span> = <span class="id" title="var">X'</span>) <span class="id" title="keyword">then</span> ψ <span class="id" title="keyword">else</span> <span class="id" title="var">patt_free_svar</span> <span class="id" title="var">X'</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">on_bevar</span> := <span class="id" title="keyword">fun</span> <span class="id" title="var">_</span> <span class="id" title="var">n</span> ⇒ <span class="id" title="var">patt_bound_evar</span> <span class="id" title="var">n</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">on_bsvar</span> := <span class="id" title="keyword">fun</span> <span class="id" title="var">_</span> <span class="id" title="var">N</span> ⇒ <span class="id" title="var">patt_bound_svar</span> <span class="id" title="var">N</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;|}<br/>
+&nbsp;&nbsp;}.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a id="lab6"></a><h1 class="section">Substitution type classes for the different syntacical cateories</h1>
+
+
+<div class="paragraph"> </div>
+
+   Every syntactic construct has a category (unary operator, binder etc),
+   and has to have certain properties about well-formedness
+   and substitution.
+
+</div>
+<div class="code">
+
+<br/>
+<span class="id" title="keyword">Class</span> <span class="id" title="var">Binary</span> (<span class="id" title="var">binary</span> : <span class="id" title="var">Pattern</span> → <span class="id" title="var">Pattern</span> → <span class="id" title="var">Pattern</span>) := {<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">binary_morphism</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> {<span class="id" title="var">A</span> : <span class="id" title="keyword">Type</span>} (<span class="id" title="var">f</span> : <span class="id" title="var">A</span> → <span class="id" title="var">Pattern</span> → <span class="id" title="var">Pattern</span>) (<span class="id" title="var">f_morph</span> : <span class="id" title="var">PatternMorphism</span> <span class="id" title="var">f</span>) (<span class="id" title="var">phi1</span> <span class="id" title="var">phi2</span> : <span class="id" title="var">Pattern</span>) <span class="id" title="var">a</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">f</span> <span class="id" title="var">a</span> (<span class="id" title="var">binary</span> <span class="id" title="var">phi1</span> <span class="id" title="var">phi2</span>) = <span class="id" title="var">binary</span> (<span class="id" title="var">f</span> <span class="id" title="var">a</span> <span class="id" title="var">phi1</span>) (<span class="id" title="var">f</span> <span class="id" title="var">a</span> <span class="id" title="var">phi2</span>) ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">binary_wfp</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> (ψ1 ψ2 : <span class="id" title="var">Pattern</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_positive</span> (<span class="id" title="var">binary</span> ψ1 ψ2)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= <span class="id" title="var">well_formed_positive</span> ψ1 &amp;&amp; <span class="id" title="var">well_formed_positive</span> ψ2 ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">binary_wfcex</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> (<span class="id" title="var">n</span> : <span class="id" title="var">nat</span>) (ψ1 ψ2 : <span class="id" title="var">Pattern</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_closed_ex_aux</span> (<span class="id" title="var">binary</span> ψ1 ψ2) <span class="id" title="var">n</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= <span class="id" title="var">well_formed_closed_ex_aux</span> ψ1 <span class="id" title="var">n</span> &amp;&amp; <span class="id" title="var">well_formed_closed_ex_aux</span> ψ2 <span class="id" title="var">n</span> ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">binary_wfcmu</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> (<span class="id" title="var">n</span> : <span class="id" title="var">nat</span>) (ψ1 ψ2 : <span class="id" title="var">Pattern</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_closed_mu_aux</span> (<span class="id" title="var">binary</span> ψ1 ψ2) <span class="id" title="var">n</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= <span class="id" title="var">well_formed_closed_mu_aux</span> ψ1 <span class="id" title="var">n</span> &amp;&amp; <span class="id" title="var">well_formed_closed_mu_aux</span> ψ2 <span class="id" title="var">n</span> ;<br/>
+}.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">binary_wfxy</span><br/>
+&nbsp;&nbsp;(<span class="id" title="var">binary</span> : <span class="id" title="var">Pattern</span> → <span class="id" title="var">Pattern</span> → <span class="id" title="var">Pattern</span>)<br/>
+&nbsp;&nbsp;{<span class="id" title="var">_b</span> : <span class="id" title="var">Binary</span> <span class="id" title="var">binary</span>}<br/>
+:<br/>
+<span class="id" title="keyword">∀</span> (<span class="id" title="var">x</span> <span class="id" title="var">y</span> : <span class="id" title="var">nat</span>) (ψ1 ψ2 : <span class="id" title="var">Pattern</span>),<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed_xy</span> <span class="id" title="var">x</span> <span class="id" title="var">y</span> (<span class="id" title="var">binary</span> ψ1 ψ2)<br/>
+&nbsp;&nbsp;= <span class="id" title="var">well_formed_xy</span> <span class="id" title="var">x</span> <span class="id" title="var">y</span> ψ1 &amp;&amp; <span class="id" title="var">well_formed_xy</span> <span class="id" title="var">x</span> <span class="id" title="var">y</span> ψ2.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">binary_wfxy_compose</span><br/>
+&nbsp;&nbsp;(<span class="id" title="var">binary</span> : <span class="id" title="var">Pattern</span> → <span class="id" title="var">Pattern</span> → <span class="id" title="var">Pattern</span>)<br/>
+&nbsp;&nbsp;{<span class="id" title="var">_b</span> : <span class="id" title="var">Binary</span> <span class="id" title="var">binary</span>}<br/>
+:<br/>
+<span class="id" title="keyword">∀</span> (<span class="id" title="var">x</span> <span class="id" title="var">y</span> : <span class="id" title="var">nat</span>) (ψ1 ψ2 : <span class="id" title="var">Pattern</span>),<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed_xy</span> <span class="id" title="var">x</span> <span class="id" title="var">y</span> ψ1 = <span class="id" title="var">true</span> ∧ <span class="id" title="var">well_formed_xy</span> <span class="id" title="var">x</span> <span class="id" title="var">y</span> ψ2 = <span class="id" title="var">true</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed_xy</span> <span class="id" title="var">x</span> <span class="id" title="var">y</span> (<span class="id" title="var">binary</span> ψ1 ψ2) = <span class="id" title="var">true</span><br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">binary_wfxy_decompose</span><br/>
+&nbsp;&nbsp;(<span class="id" title="var">binary</span> : <span class="id" title="var">Pattern</span> → <span class="id" title="var">Pattern</span> → <span class="id" title="var">Pattern</span>)<br/>
+&nbsp;&nbsp;{<span class="id" title="var">_b</span> : <span class="id" title="var">Binary</span> <span class="id" title="var">binary</span>}<br/>
+:<br/>
+<span class="id" title="keyword">∀</span> (<span class="id" title="var">x</span> <span class="id" title="var">y</span> : <span class="id" title="var">nat</span>) (ψ1 ψ2 : <span class="id" title="var">Pattern</span>),<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed_xy</span> <span class="id" title="var">x</span> <span class="id" title="var">y</span> (<span class="id" title="var">binary</span> ψ1 ψ2) = <span class="id" title="var">true</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed_xy</span> <span class="id" title="var">x</span> <span class="id" title="var">y</span> ψ1 = <span class="id" title="var">true</span> ∧ <span class="id" title="var">well_formed_xy</span> <span class="id" title="var">x</span> <span class="id" title="var">y</span> ψ2 = <span class="id" title="var">true</span><br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Class</span> <span class="id" title="var">Unary</span> (<span class="id" title="var">unary</span> : <span class="id" title="var">Pattern</span> → <span class="id" title="var">Pattern</span>) := {<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">unary_morphism</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> {<span class="id" title="var">A</span> : <span class="id" title="keyword">Type</span>} (<span class="id" title="var">f</span> : <span class="id" title="var">A</span> → <span class="id" title="var">Pattern</span> → <span class="id" title="var">Pattern</span>) (<span class="id" title="var">f_morph</span> : <span class="id" title="var">PatternMorphism</span> <span class="id" title="var">f</span>) (<span class="id" title="var">phi</span> : <span class="id" title="var">Pattern</span>) <span class="id" title="var">a</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">f</span> <span class="id" title="var">a</span> (<span class="id" title="var">unary</span> <span class="id" title="var">phi</span>) = <span class="id" title="var">unary</span> (<span class="id" title="var">f</span> <span class="id" title="var">a</span> <span class="id" title="var">phi</span>) ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">unary_wfp</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> (ψ : <span class="id" title="var">Pattern</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_positive</span> (<span class="id" title="var">unary</span> ψ) = <span class="id" title="var">well_formed_positive</span> ψ ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">unary_wfcex</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> (<span class="id" title="var">n</span> : <span class="id" title="var">nat</span>) (ψ : <span class="id" title="var">Pattern</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_closed_ex_aux</span> (<span class="id" title="var">unary</span> ψ) <span class="id" title="var">n</span> = <span class="id" title="var">well_formed_closed_ex_aux</span> ψ <span class="id" title="var">n</span> ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">unary_wfcmu</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> (<span class="id" title="var">n</span> : <span class="id" title="var">nat</span>) (ψ : <span class="id" title="var">Pattern</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed_closed_mu_aux</span> (<span class="id" title="var">unary</span> ψ) <span class="id" title="var">n</span> = <span class="id" title="var">well_formed_closed_mu_aux</span> ψ <span class="id" title="var">n</span> ;<br/>
+}.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">unary_wfxy</span> (<span class="id" title="var">unary</span> : <span class="id" title="var">Pattern</span> → <span class="id" title="var">Pattern</span>) {<span class="id" title="var">_</span> : <span class="id" title="var">Unary</span> <span class="id" title="var">unary</span>} :<br/>
+<span class="id" title="keyword">∀</span> (<span class="id" title="var">x</span> <span class="id" title="var">y</span> : <span class="id" title="var">nat</span>) (ψ : <span class="id" title="var">Pattern</span>),<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed_xy</span> <span class="id" title="var">x</span> <span class="id" title="var">y</span> (<span class="id" title="var">unary</span> ψ) = <span class="id" title="var">well_formed_xy</span> <span class="id" title="var">x</span> <span class="id" title="var">y</span> ψ<br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">unary_wfxy_compose</span> (<span class="id" title="var">unary</span> : <span class="id" title="var">Pattern</span> → <span class="id" title="var">Pattern</span>) {<span class="id" title="var">_uu</span> : <span class="id" title="var">Unary</span> <span class="id" title="var">unary</span>} :<br/>
+<span class="id" title="keyword">∀</span> (<span class="id" title="var">x</span> <span class="id" title="var">y</span> : <span class="id" title="var">nat</span>) (ψ : <span class="id" title="var">Pattern</span>),<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed_xy</span> <span class="id" title="var">x</span> <span class="id" title="var">y</span> ψ = <span class="id" title="var">true</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed_xy</span> <span class="id" title="var">x</span> <span class="id" title="var">y</span> (<span class="id" title="var">unary</span> ψ) = <span class="id" title="var">true</span><br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">unary_wfxy_decompose</span> (<span class="id" title="var">unary</span> : <span class="id" title="var">Pattern</span> → <span class="id" title="var">Pattern</span>) {<span class="id" title="var">_</span> : <span class="id" title="var">Unary</span> <span class="id" title="var">unary</span>} :<br/>
+<span class="id" title="keyword">∀</span> (<span class="id" title="var">x</span> <span class="id" title="var">y</span> : <span class="id" title="var">nat</span>) (ψ : <span class="id" title="var">Pattern</span>),<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed_xy</span> <span class="id" title="var">x</span> <span class="id" title="var">y</span> (<span class="id" title="var">unary</span> ψ) = <span class="id" title="var">true</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed_xy</span> <span class="id" title="var">x</span> <span class="id" title="var">y</span> ψ = <span class="id" title="var">true</span><br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Class</span> <span class="id" title="var">Nullary</span> (<span class="id" title="var">nullary</span> : <span class="id" title="var">Pattern</span>) := {<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">nullary_morphism</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> {<span class="id" title="var">A</span> : <span class="id" title="keyword">Type</span>} (<span class="id" title="var">f</span> : <span class="id" title="var">A</span> → <span class="id" title="var">Pattern</span> → <span class="id" title="var">Pattern</span>) (<span class="id" title="var">f_morph</span> : <span class="id" title="var">PatternMorphism</span> <span class="id" title="var">f</span>) <span class="id" title="var">a</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">f</span> <span class="id" title="var">a</span> <span class="id" title="var">nullary</span> = <span class="id" title="var">nullary</span> ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">nullary_wfp</span> : <span class="id" title="var">well_formed_positive</span> <span class="id" title="var">nullary</span> = <span class="id" title="var">true</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">nullary_wfcex</span> : <span class="id" title="keyword">∀</span> (<span class="id" title="var">n</span> : <span class="id" title="var">nat</span>), <span class="id" title="var">well_formed_closed_ex_aux</span> <span class="id" title="var">nullary</span> <span class="id" title="var">n</span> = <span class="id" title="var">true</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">nullary_wfcmu</span> : <span class="id" title="keyword">∀</span> (<span class="id" title="var">n</span> : <span class="id" title="var">nat</span>), <span class="id" title="var">well_formed_closed_mu_aux</span> <span class="id" title="var">nullary</span> <span class="id" title="var">n</span> = <span class="id" title="var">true</span>;<br/>
+}.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">nullary_wfxy</span> (<span class="id" title="var">nullary</span> : <span class="id" title="var">Pattern</span>) {<span class="id" title="var">_</span> : <span class="id" title="var">Nullary</span> <span class="id" title="var">nullary</span>} :<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">∀</span> (<span class="id" title="var">x</span> <span class="id" title="var">y</span> : <span class="id" title="var">nat</span>), <span class="id" title="var">well_formed_xy</span> <span class="id" title="var">x</span> <span class="id" title="var">y</span> <span class="id" title="var">nullary</span> = <span class="id" title="var">true</span><br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">well_formed_positive_foldr_binary</span><br/>
+&nbsp;&nbsp;(<span class="id" title="var">binary</span> : <span class="id" title="var">Pattern</span> → <span class="id" title="var">Pattern</span> → <span class="id" title="var">Pattern</span>)<br/>
+&nbsp;&nbsp;{<span class="id" title="var">_bin</span> : <span class="id" title="var">Binary</span> <span class="id" title="var">binary</span>}<br/>
+&nbsp;&nbsp;(<span class="id" title="var">g</span> : <span class="id" title="var">Pattern</span>)<br/>
+&nbsp;&nbsp;(<span class="id" title="var">xs</span> : <span class="id" title="var">list</span> <span class="id" title="var">Pattern</span>)<br/>
+&nbsp;&nbsp;:<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed_positive</span> (<span class="id" title="var">foldr</span> <span class="id" title="var">binary</span> <span class="id" title="var">g</span> <span class="id" title="var">xs</span>)<br/>
+&nbsp;&nbsp;= (<span class="id" title="var">well_formed_positive</span> <span class="id" title="var">g</span> &amp;&amp; <span class="id" title="var">lwf_positive</span> <span class="id" title="var">xs</span>).<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">well_formed_cex_foldr_binary</span><br/>
+&nbsp;&nbsp;(<span class="id" title="var">binary</span> : <span class="id" title="var">Pattern</span> → <span class="id" title="var">Pattern</span> → <span class="id" title="var">Pattern</span>)<br/>
+&nbsp;&nbsp;{<span class="id" title="var">_bin</span> : <span class="id" title="var">Binary</span> <span class="id" title="var">binary</span>}<br/>
+&nbsp;&nbsp;(<span class="id" title="var">n</span> : <span class="id" title="var">nat</span>)<br/>
+&nbsp;&nbsp;(<span class="id" title="var">g</span> : <span class="id" title="var">Pattern</span>)<br/>
+&nbsp;&nbsp;(<span class="id" title="var">xs</span> : <span class="id" title="var">list</span> <span class="id" title="var">Pattern</span>)<br/>
+&nbsp;&nbsp;:<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed_closed_ex_aux</span> (<span class="id" title="var">foldr</span> <span class="id" title="var">binary</span> <span class="id" title="var">g</span> <span class="id" title="var">xs</span>) <span class="id" title="var">n</span><br/>
+&nbsp;&nbsp;= (<span class="id" title="var">well_formed_closed_ex_aux</span> <span class="id" title="var">g</span> <span class="id" title="var">n</span> &amp;&amp; <span class="id" title="var">lwf_cex</span> <span class="id" title="var">n</span> <span class="id" title="var">xs</span>).<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">well_formed_cmu_foldr_binary</span><br/>
+&nbsp;&nbsp;(<span class="id" title="var">binary</span> : <span class="id" title="var">Pattern</span> → <span class="id" title="var">Pattern</span> → <span class="id" title="var">Pattern</span>)<br/>
+&nbsp;&nbsp;{<span class="id" title="var">_bin</span> : <span class="id" title="var">Binary</span> <span class="id" title="var">binary</span>}<br/>
+&nbsp;&nbsp;(<span class="id" title="var">n</span> : <span class="id" title="var">nat</span>)<br/>
+&nbsp;&nbsp;(<span class="id" title="var">g</span> : <span class="id" title="var">Pattern</span>)<br/>
+&nbsp;&nbsp;(<span class="id" title="var">xs</span> : <span class="id" title="var">list</span> <span class="id" title="var">Pattern</span>)<br/>
+&nbsp;&nbsp;:<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed_closed_mu_aux</span> (<span class="id" title="var">foldr</span> <span class="id" title="var">binary</span> <span class="id" title="var">g</span> <span class="id" title="var">xs</span>) <span class="id" title="var">n</span><br/>
+&nbsp;&nbsp;= (<span class="id" title="var">well_formed_closed_mu_aux</span> <span class="id" title="var">g</span> <span class="id" title="var">n</span> &amp;&amp; <span class="id" title="var">lwf_cmu</span> <span class="id" title="var">n</span> <span class="id" title="var">xs</span>).<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">well_formed_xy_foldr_binary</span><br/>
+&nbsp;&nbsp;(<span class="id" title="var">binary</span> : <span class="id" title="var">Pattern</span> → <span class="id" title="var">Pattern</span> → <span class="id" title="var">Pattern</span>)<br/>
+&nbsp;&nbsp;{<span class="id" title="var">_bin</span> : <span class="id" title="var">Binary</span> <span class="id" title="var">binary</span>}<br/>
+&nbsp;&nbsp;(<span class="id" title="var">m</span> <span class="id" title="var">n</span> : <span class="id" title="var">nat</span>)<br/>
+&nbsp;&nbsp;(<span class="id" title="var">g</span> : <span class="id" title="var">Pattern</span>)<br/>
+&nbsp;&nbsp;(<span class="id" title="var">xs</span> : <span class="id" title="var">list</span> <span class="id" title="var">Pattern</span>)<br/>
+&nbsp;&nbsp;:<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed_xy</span> <span class="id" title="var">m</span> <span class="id" title="var">n</span> (<span class="id" title="var">foldr</span> <span class="id" title="var">binary</span> <span class="id" title="var">g</span> <span class="id" title="var">xs</span>)<br/>
+&nbsp;&nbsp;= (<span class="id" title="var">well_formed_xy</span> <span class="id" title="var">m</span> <span class="id" title="var">n</span> <span class="id" title="var">g</span> &amp;&amp; <span class="id" title="var">lwf_xy</span> <span class="id" title="var">m</span> <span class="id" title="var">n</span> <span class="id" title="var">xs</span>)<br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">well_formed_xy_foldr_binary_compose</span><br/>
+&nbsp;&nbsp;(<span class="id" title="var">binary</span> : <span class="id" title="var">Pattern</span> → <span class="id" title="var">Pattern</span> → <span class="id" title="var">Pattern</span>)<br/>
+&nbsp;&nbsp;{<span class="id" title="var">_bin</span> : <span class="id" title="var">Binary</span> <span class="id" title="var">binary</span>}<br/>
+&nbsp;&nbsp;(<span class="id" title="var">m</span> <span class="id" title="var">n</span> : <span class="id" title="var">nat</span>)<br/>
+&nbsp;&nbsp;(<span class="id" title="var">g</span> : <span class="id" title="var">Pattern</span>)<br/>
+&nbsp;&nbsp;(<span class="id" title="var">xs</span> : <span class="id" title="var">list</span> <span class="id" title="var">Pattern</span>)<br/>
+&nbsp;&nbsp;:<br/>
+&nbsp;&nbsp;(<span class="id" title="var">well_formed_xy</span> <span class="id" title="var">m</span> <span class="id" title="var">n</span> <span class="id" title="var">g</span> = <span class="id" title="var">true</span> ∧ <span class="id" title="var">lwf_xy</span> <span class="id" title="var">m</span> <span class="id" title="var">n</span> <span class="id" title="var">xs</span> = <span class="id" title="var">true</span>) →<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed_xy</span> <span class="id" title="var">m</span> <span class="id" title="var">n</span> (<span class="id" title="var">foldr</span> <span class="id" title="var">binary</span> <span class="id" title="var">g</span> <span class="id" title="var">xs</span>) = <span class="id" title="var">true</span><br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">well_formed_xy_foldr_binary_decompose</span><br/>
+&nbsp;&nbsp;(<span class="id" title="var">binary</span> : <span class="id" title="var">Pattern</span> → <span class="id" title="var">Pattern</span> → <span class="id" title="var">Pattern</span>)<br/>
+&nbsp;&nbsp;{<span class="id" title="var">_bin</span> : <span class="id" title="var">Binary</span> <span class="id" title="var">binary</span>}<br/>
+&nbsp;&nbsp;(<span class="id" title="var">m</span> <span class="id" title="var">n</span> : <span class="id" title="var">nat</span>)<br/>
+&nbsp;&nbsp;(<span class="id" title="var">g</span> : <span class="id" title="var">Pattern</span>)<br/>
+&nbsp;&nbsp;(<span class="id" title="var">xs</span> : <span class="id" title="var">list</span> <span class="id" title="var">Pattern</span>)<br/>
+&nbsp;&nbsp;:<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed_xy</span> <span class="id" title="var">m</span> <span class="id" title="var">n</span> (<span class="id" title="var">foldr</span> <span class="id" title="var">binary</span> <span class="id" title="var">g</span> <span class="id" title="var">xs</span>) = <span class="id" title="var">true</span> →<br/>
+&nbsp;&nbsp;(<span class="id" title="var">well_formed_xy</span> <span class="id" title="var">m</span> <span class="id" title="var">n</span> <span class="id" title="var">g</span> = <span class="id" title="var">true</span> ∧ <span class="id" title="var">lwf_xy</span> <span class="id" title="var">m</span> <span class="id" title="var">n</span> <span class="id" title="var">xs</span> = <span class="id" title="var">true</span>)<br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Class</span> <span class="id" title="var">EBinder</span> (<span class="id" title="var">binder</span> : <span class="id" title="var">Pattern</span> → <span class="id" title="var">Pattern</span>) := {<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">ebinder_morphism</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> {<span class="id" title="var">A</span> : <span class="id" title="keyword">Type</span>} (<span class="id" title="var">f</span> : <span class="id" title="var">A</span> → <span class="id" title="var">Pattern</span> → <span class="id" title="var">Pattern</span>) (<span class="id" title="var">f_morph</span> : <span class="id" title="var">PatternMorphism</span> <span class="id" title="var">f</span>) (<span class="id" title="var">phi</span> : <span class="id" title="var">Pattern</span>) <span class="id" title="var">a</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">f</span> <span class="id" title="var">a</span> (<span class="id" title="var">binder</span> <span class="id" title="var">phi</span>) = <span class="id" title="var">binder</span> (<span class="id" title="var">f</span> (<span class="id" title="var">increase_ex</span> <span class="id" title="var">pm_spec_data</span> <span class="id" title="var">a</span>) <span class="id" title="var">phi</span>) ;<br/>
+}.<br/>
+
+<br/>
+<span class="id" title="keyword">Class</span> <span class="id" title="var">SBinder</span> (<span class="id" title="var">binder</span> : <span class="id" title="var">Pattern</span> → <span class="id" title="var">Pattern</span>) := {<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">sbinder_morphism</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> {<span class="id" title="var">A</span> : <span class="id" title="keyword">Type</span>} (<span class="id" title="var">f</span> : <span class="id" title="var">A</span> → <span class="id" title="var">Pattern</span> → <span class="id" title="var">Pattern</span>) (<span class="id" title="var">f_morph</span> : <span class="id" title="var">PatternMorphism</span> <span class="id" title="var">f</span>) (<span class="id" title="var">phi</span> : <span class="id" title="var">Pattern</span>) <span class="id" title="var">a</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">f</span> <span class="id" title="var">a</span> (<span class="id" title="var">binder</span> <span class="id" title="var">phi</span>) = <span class="id" title="var">binder</span> (<span class="id" title="var">f</span> (<span class="id" title="var">increase_mu</span> <span class="id" title="var">pm_spec_data</span> <span class="id" title="var">a</span>) <span class="id" title="var">phi</span>) ;<br/>
+}.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Next, we define instances for the primitives of matching logic: 
+</div>
+<div class="code">
+
+<br/>
+#[<span class="id" title="var">global</span>]<br/>
+<span class="id" title="var">Program</span> <span class="id" title="keyword">Instance</span> <span class="id" title="var">EBinder_exists</span> : <span class="id" title="var">EBinder</span> <span class="id" title="var">patt_exists</span> := {}.<br/>
+
+<br/>
+#[<span class="id" title="var">global</span>]<br/>
+<span class="id" title="var">Program</span> <span class="id" title="keyword">Instance</span> <span class="id" title="var">SBinder_mu</span> : <span class="id" title="var">SBinder</span> <span class="id" title="var">patt_mu</span> := {}.<br/>
+
+<br/>
+#[<span class="id" title="var">global</span>]<br/>
+<span class="id" title="var">Program</span> <span class="id" title="keyword">Instance</span> <span class="id" title="var">Binary_imp</span> : <span class="id" title="var">Binary</span> <span class="id" title="var">patt_imp</span> := {}.<br/>
+
+<br/>
+#[<span class="id" title="var">global</span>]<br/>
+<span class="id" title="var">Program</span> <span class="id" title="keyword">Instance</span> <span class="id" title="var">Binary_app</span> : <span class="id" title="var">Binary</span> <span class="id" title="var">patt_app</span> := {}.<br/>
+
+<br/>
+#[<span class="id" title="var">global</span>]<br/>
+<span class="id" title="var">Program</span> <span class="id" title="keyword">Instance</span> <span class="id" title="var">Nullary_bott</span> : <span class="id" title="var">Nullary</span> <span class="id" title="var">patt_bott</span> := {}.<br/>
+
+<br/>
+#[<span class="id" title="var">global</span>]<br/>
+<span class="id" title="var">Program</span> <span class="id" title="keyword">Instance</span> <span class="id" title="var">Nullary_sym</span> <span class="id" title="var">s</span> : <span class="id" title="var">Nullary</span> (<span class="id" title="var">patt_sym</span> <span class="id" title="var">s</span>) := {}.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+We define the simplification class instances for the derived operators: 
+</div>
+<div class="code">
+
+<br/>
+#[<span class="id" title="var">global</span>]<br/>
+<span class="id" title="var">Program</span> <span class="id" title="keyword">Instance</span> <span class="id" title="var">Unary_not</span> : <span class="id" title="var">Unary</span> <span class="id" title="var">patt_not</span> := {}.<br/>
+
+<br/>
+#[<span class="id" title="var">global</span>]<br/>
+<span class="id" title="var">Program</span> <span class="id" title="keyword">Instance</span> <span class="id" title="var">NVNullary_top</span> : <span class="id" title="var">Nullary</span> <span class="id" title="var">patt_top</span> := {}.<br/>
+
+<br/>
+#[<span class="id" title="var">global</span>]<br/>
+<span class="id" title="var">Program</span> <span class="id" title="keyword">Instance</span> <span class="id" title="var">Binary_or</span> : <span class="id" title="var">Binary</span> <span class="id" title="var">patt_or</span> := {}.<br/>
+
+<br/>
+#[<span class="id" title="var">global</span>]<br/>
+<span class="id" title="var">Program</span> <span class="id" title="keyword">Instance</span> <span class="id" title="var">Binary_and</span> : <span class="id" title="var">Binary</span> <span class="id" title="var">patt_and</span> := {}.<br/>
+
+<br/>
+#[<span class="id" title="var">global</span>]<br/>
+<span class="id" title="var">Program</span> <span class="id" title="keyword">Instance</span> <span class="id" title="var">Binary_iff</span> : <span class="id" title="var">Binary</span> <span class="id" title="var">patt_iff</span> := {}.<br/>
+
+<br/>
+#[<span class="id" title="var">global</span>]<br/>
+<span class="id" title="var">Program</span> <span class="id" title="keyword">Instance</span> <span class="id" title="var">EBinder_forall</span> : <span class="id" title="var">EBinder</span> <span class="id" title="var">patt_forall</span> := {}.<br/>
+
+<br/>
+<span class="id" title="keyword">Class</span> <span class="id" title="var">SwappableEx</span> {<span class="id" title="var">A</span> : <span class="id" title="keyword">Type</span>} (<span class="id" title="var">f</span> : <span class="id" title="var">A</span> → <span class="id" title="var">Pattern</span> → <span class="id" title="var">Pattern</span>) (<span class="id" title="var">g</span> : <span class="id" title="var">Pattern</span> → <span class="id" title="var">Pattern</span>)<br/>
+&nbsp;&nbsp;(<span class="id" title="var">m</span> : <span class="id" title="var">PatternMorphism</span> <span class="id" title="var">f</span>) :=<br/>
+{<br/>
+&nbsp;&nbsp;<span class="id" title="var">eswap</span> : <span class="id" title="keyword">∀</span> <span class="id" title="var">phi</span> <span class="id" title="var">a</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">apply_subst</span> <span class="id" title="var">pm_spec_data</span> (<span class="id" title="var">increase_ex</span> <span class="id" title="var">pm_spec_data</span> <span class="id" title="var">a</span>) (<span class="id" title="var">g</span> <span class="id" title="var">phi</span>) =<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">g</span> (<span class="id" title="var">apply_subst</span> <span class="id" title="var">pm_spec_data</span> <span class="id" title="var">a</span> <span class="id" title="var">phi</span>) ;<br/>
+}.<br/>
+
+<br/>
+#[<span class="id" title="var">global</span>]<br/>
+<span class="id" title="var">Program</span> <span class="id" title="keyword">Instance</span> <span class="id" title="var">Bevar_subst_swaps_ex_nesting</span> (ψ : <span class="id" title="var">Pattern</span>) (<span class="id" title="var">p</span> : <span class="id" title="var">well_formed_closed</span> ψ) :<br/>
+&nbsp;&nbsp;<span class="id" title="var">SwappableEx</span> <span class="id" title="var">_</span> <span class="id" title="var">nest_ex</span> (<span class="id" title="var">Bevar_subst_morphism</span> ψ).<br/>
+
+<br/>
+#[<span class="id" title="var">global</span>]<br/>
+<span class="id" title="var">Program</span> <span class="id" title="keyword">Instance</span> <span class="id" title="var">Bsvar_subst_swaps_ex_nesting</span> (ψ : <span class="id" title="var">Pattern</span>) (<span class="id" title="var">p</span> : <span class="id" title="var">well_formed_closed</span> ψ) :<br/>
+&nbsp;&nbsp;<span class="id" title="var">SwappableEx</span> <span class="id" title="var">_</span> <span class="id" title="var">nest_ex</span> (<span class="id" title="var">Bsvar_subst_morphism</span> ψ).<br/>
+
+<br/>
+#[<span class="id" title="var">global</span>]<br/>
+<span class="id" title="var">Program</span> <span class="id" title="keyword">Instance</span> <span class="id" title="var">Fevar_subst_swaps_ex_nesting</span> (ψ : <span class="id" title="var">Pattern</span>) (<span class="id" title="var">p</span> : <span class="id" title="var">well_formed_closed</span> ψ) :<br/>
+&nbsp;&nbsp;<span class="id" title="var">SwappableEx</span> <span class="id" title="var">_</span> <span class="id" title="var">nest_ex</span> (<span class="id" title="var">Free_evar_subst_morphism</span> ψ).<br/>
+
+<br/>
+#[<span class="id" title="var">global</span>]<br/>
+<span class="id" title="var">Program</span> <span class="id" title="keyword">Instance</span> <span class="id" title="var">Fsvar_subst_swaps_ex_nesting</span> (ψ : <span class="id" title="var">Pattern</span>) (<span class="id" title="var">p</span> : <span class="id" title="var">well_formed_closed</span> ψ) :<br/>
+&nbsp;&nbsp;<span class="id" title="var">SwappableEx</span> <span class="id" title="var">_</span> <span class="id" title="var">nest_ex</span> (<span class="id" title="var">Free_svar_subst_morphism</span> ψ).<br/>
+
+<br/>
+#[<span class="id" title="var">global</span>]<br/>
+<span class="id" title="var">Program</span> <span class="id" title="keyword">Instance</span> <span class="id" title="var">Evar_quantify_swaps_ex_nesting</span> (<span class="id" title="var">x</span> : <span class="id" title="tactic">evar</span>) :<br/>
+&nbsp;&nbsp;<span class="id" title="var">SwappableEx</span> <span class="id" title="var">_</span> <span class="id" title="var">nest_ex</span> (<span class="id" title="var">Evar_quantify_morphism</span> <span class="id" title="var">x</span>).<br/>
+
+<br/>
+#[<span class="id" title="var">global</span>]<br/>
+<span class="id" title="var">Program</span> <span class="id" title="keyword">Instance</span> <span class="id" title="var">Svar_quantify_swaps_ex_nesting</span> (<span class="id" title="var">X</span> : <span class="id" title="var">svar</span>) :<br/>
+&nbsp;&nbsp;<span class="id" title="var">SwappableEx</span> <span class="id" title="var">_</span> <span class="id" title="var">nest_ex</span> (<span class="id" title="var">Svar_quantify_morphism</span> <span class="id" title="var">X</span>).<br/>
+
+<br/>
+#[<span class="id" title="var">global</span>]<br/>
+<span class="id" title="var">Program</span> <span class="id" title="keyword">Instance</span> <span class="id" title="var">Evar_open_swaps_ex_nesting</span> (<span class="id" title="var">x</span> : <span class="id" title="tactic">evar</span>) :<br/>
+&nbsp;&nbsp;<span class="id" title="var">SwappableEx</span> <span class="id" title="var">_</span> <span class="id" title="var">nest_ex</span> (<span class="id" title="var">Evar_open_morphism</span> <span class="id" title="var">x</span>).<br/>
+
+<br/>
+#[<span class="id" title="var">global</span>]<br/>
+<span class="id" title="var">Program</span> <span class="id" title="keyword">Instance</span> <span class="id" title="var">Svar_open_swaps_ex_nesting</span> (<span class="id" title="var">X</span> : <span class="id" title="var">svar</span>) :<br/>
+&nbsp;&nbsp;<span class="id" title="var">SwappableEx</span> <span class="id" title="var">_</span> <span class="id" title="var">nest_ex</span> (<span class="id" title="var">Svar_open_morphism</span> <span class="id" title="var">X</span>).<br/>
+
+<br/>
+<span class="comment">(*&nbsp;TODO:&nbsp;mu&nbsp;operations:<br/>
+<br/>
+Class&nbsp;SwappableMu&nbsp;{A&nbsp;:&nbsp;Type}&nbsp;(f&nbsp;:&nbsp;A&nbsp;-&gt;&nbsp;Pattern&nbsp;-&gt;&nbsp;Pattern)&nbsp;(g&nbsp;:&nbsp;Pattern&nbsp;-&gt;&nbsp;Pattern)<br/>
+&nbsp;&nbsp;(m&nbsp;:&nbsp;PatternMorphism&nbsp;f)&nbsp;:=<br/>
+{<br/>
+&nbsp;&nbsp;szero_increase&nbsp;:&nbsp;forall&nbsp;a,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;apply_subst&nbsp;spec_data&nbsp;(increase_mu&nbsp;spec_data&nbsp;a)&nbsp;(patt_bound_svar&nbsp;0)&nbsp;=&nbsp;patt_bound_svar&nbsp;0&nbsp;;<br/>
+&nbsp;&nbsp;sswap_f_g&nbsp;:&nbsp;forall&nbsp;phi&nbsp;a,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;apply_subst&nbsp;spec_data&nbsp;(increase_mu&nbsp;spec_data&nbsp;a)&nbsp;(g&nbsp;phi)&nbsp;=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;g&nbsp;(apply_subst&nbsp;spec_data&nbsp;a&nbsp;phi)&nbsp;;<br/>
+}.<br/>
+<br/>
+[global]
+Program Instance Bsvar_subst_swaps_nesting (ψ : Pattern) (p : well_formed_closed ψ) :
+  @SwappableMu _ (bsvar_subst ψ) nest_mu (Bsvar_subst_morphism ψ).
+Next Obligation.
+  intros. rewrite <- correctness. reflexivity.
+Defined.
+Next Obligation.
+  intros ψ WFψ phi a.
+  do 2 rewrite <- correctness.
+  unfold nest_mu. rewrite <- nest_mu_gt; auto. 2: lia.
+  rewrite Nat.add_comm. reflexivity.
+Defined. *)</span><br/>
+
+<br/>
+<span class="id" title="keyword">Class</span> <span class="id" title="var">ESortedBinder</span> (<span class="id" title="var">binder</span> : <span class="id" title="var">Pattern</span> → <span class="id" title="var">Pattern</span> → <span class="id" title="var">Pattern</span>) (<span class="id" title="var">g</span> : <span class="id" title="var">Pattern</span> → <span class="id" title="var">Pattern</span>) := {<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">esorted_binder_morphism</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> {<span class="id" title="var">A</span> : <span class="id" title="keyword">Type</span>} (<span class="id" title="var">f</span> : <span class="id" title="var">A</span> → <span class="id" title="var">Pattern</span> → <span class="id" title="var">Pattern</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">f_morph</span> : <span class="id" title="var">PatternMorphism</span> <span class="id" title="var">f</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">f_swap</span> : <span class="id" title="var">SwappableEx</span> <span class="id" title="var">f</span> <span class="id" title="var">g</span> <span class="id" title="var">f_morph</span>) (<span class="id" title="var">s</span> <span class="id" title="var">phi</span> : <span class="id" title="var">Pattern</span>) <span class="id" title="var">a</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">f</span> <span class="id" title="var">a</span> (<span class="id" title="var">binder</span> <span class="id" title="var">s</span> <span class="id" title="var">phi</span>) = <span class="id" title="var">binder</span> (<span class="id" title="var">f</span> <span class="id" title="var">a</span> <span class="id" title="var">s</span>) (<span class="id" title="var">f</span> (<span class="id" title="var">increase_ex</span> <span class="id" title="var">pm_spec_data</span> <span class="id" title="var">a</span>) <span class="id" title="var">phi</span>) ;<br/>
+}.<br/>
+
+<br/>
+<span class="id" title="keyword">Class</span> <span class="id" title="var">SSortedBinder</span> (<span class="id" title="var">binder</span> : <span class="id" title="var">Pattern</span> → <span class="id" title="var">Pattern</span> → <span class="id" title="var">Pattern</span>) (<span class="id" title="var">g</span> : <span class="id" title="var">Pattern</span> → <span class="id" title="var">Pattern</span>) := {<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">ssorted_binder_morphism</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> {<span class="id" title="var">A</span> : <span class="id" title="keyword">Type</span>} (<span class="id" title="var">f</span> : <span class="id" title="var">A</span> → <span class="id" title="var">Pattern</span> → <span class="id" title="var">Pattern</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">f_morph</span> : <span class="id" title="var">PatternMorphism</span> <span class="id" title="var">f</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">f_swap</span> : <span class="id" title="var">SwappableEx</span> <span class="id" title="var">f</span> <span class="id" title="var">g</span> <span class="id" title="var">f_morph</span>) (<span class="id" title="var">s</span> <span class="id" title="var">phi</span> : <span class="id" title="var">Pattern</span>) <span class="id" title="var">a</span>,<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">f</span> <span class="id" title="var">a</span> (<span class="id" title="var">binder</span> <span class="id" title="var">s</span> <span class="id" title="var">phi</span>) = <span class="id" title="var">binder</span> (<span class="id" title="var">f</span> <span class="id" title="var">a</span> <span class="id" title="var">s</span>) (<span class="id" title="var">f</span> (<span class="id" title="var">increase_mu</span> <span class="id" title="var">pm_spec_data</span> <span class="id" title="var">a</span>) <span class="id" title="var">phi</span>) ;<br/>
+}.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Next, we define the substitution simplification record: 
+</div>
+<div class="code">
+
+<br/>
+<span class="id" title="keyword">Definition</span> <span class="id" title="var">mlSimpl'</span> :=<br/>
+(<br/>
+&nbsp;&nbsp;@<span class="id" title="var">binary_morphism</span>,<br/>
+&nbsp;&nbsp;@<span class="id" title="var">unary_morphism</span>,<br/>
+&nbsp;&nbsp;@<span class="id" title="var">nullary_morphism</span>,<br/>
+&nbsp;&nbsp;@<span class="id" title="var">ebinder_morphism</span>,<br/>
+&nbsp;&nbsp;@<span class="id" title="var">sbinder_morphism</span><br/>
+).<br/>
+
+<br/>
+<span class="id" title="keyword">End</span> <span class="id" title="var">with_signature</span>.<br/>
+
+<br/>
+<span class="comment">(*<br/>
+&nbsp;&nbsp;Hints&nbsp;are&nbsp;needed&nbsp;to&nbsp;automatically&nbsp;infer&nbsp;the&nbsp;SwappableEx&nbsp;instances.<br/>
+&nbsp;&nbsp;TODO:&nbsp;there&nbsp;is&nbsp;still&nbsp;a&nbsp;problem&nbsp;when&nbsp;the&nbsp;well_formed_closed&nbsp;assumption&nbsp;is<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;missing<br/>
+&nbsp;&nbsp;TODO(jan.tusil):&nbsp;I&nbsp;would&nbsp;add&nbsp;the&nbsp;hints&nbsp;to&nbsp;a&nbsp;separate&nbsp;database<br/>
+*)</span><br/>
+#[<span class="id" title="var">export</span>]<br/>
+<span class="id" title="keyword">Hint</span> <span class="id" title="keyword">Resolve</span> <span class="id" title="var">Bevar_subst_swaps_ex_nesting</span> : <span class="id" title="var">core</span>.<br/>
+#[<span class="id" title="var">export</span>]<br/>
+<span class="id" title="keyword">Hint</span> <span class="id" title="keyword">Resolve</span> <span class="id" title="var">Bsvar_subst_swaps_ex_nesting</span> : <span class="id" title="var">core</span>.<br/>
+#[<span class="id" title="var">export</span>]<br/>
+<span class="id" title="keyword">Hint</span> <span class="id" title="keyword">Resolve</span> <span class="id" title="var">Fevar_subst_swaps_ex_nesting</span> : <span class="id" title="var">core</span>.<br/>
+#[<span class="id" title="var">export</span>]<br/>
+<span class="id" title="keyword">Hint</span> <span class="id" title="keyword">Resolve</span> <span class="id" title="var">Fsvar_subst_swaps_ex_nesting</span> : <span class="id" title="var">core</span>.<br/>
+#[<span class="id" title="var">export</span>]<br/>
+<span class="id" title="keyword">Hint</span> <span class="id" title="keyword">Resolve</span> <span class="id" title="var">Evar_quantify_swaps_ex_nesting</span> : <span class="id" title="var">core</span>.<br/>
+#[<span class="id" title="var">export</span>]<br/>
+<span class="id" title="keyword">Hint</span> <span class="id" title="keyword">Resolve</span> <span class="id" title="var">Svar_quantify_swaps_ex_nesting</span> : <span class="id" title="var">core</span>.<br/>
+#[<span class="id" title="var">export</span>]<br/>
+<span class="id" title="keyword">Hint</span> <span class="id" title="keyword">Resolve</span> <span class="id" title="var">Evar_open_swaps_ex_nesting</span> : <span class="id" title="var">core</span>.<br/>
+#[<span class="id" title="var">export</span>]<br/>
+<span class="id" title="keyword">Hint</span> <span class="id" title="keyword">Resolve</span> <span class="id" title="var">Svar_open_swaps_ex_nesting</span> : <span class="id" title="var">core</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+  This tactic identifies the sorted binder for simplification (by checking its type).
+  Since automatic identification of the instance of the type class is not working
+  currently, we identify the correct instance by giving the parameters inferred
+  from the context.
+
+<div class="paragraph"> </div>
+
+  TODO: more strict identification of the point where the simplification has to be
+        made, since nested sorted quantifiers can occur, which break the tactic.
+        One potential solution is to use Ltac2.
+
+</div>
+<div class="code">
+<span class="id" title="keyword">Ltac</span> <span class="id" title="var">simpl_sorted_quantification</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="keyword">goal</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;| |- <span class="id" title="keyword">context</span> <span class="id" title="var">G</span> [?<span class="id" title="var">f</span> ?<span class="id" title="var">arg</span> <span class="id" title="var">_</span> (?<span class="id" title="var">binder</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span>)] ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="keyword">type</span> <span class="id" title="keyword">of</span> <span class="id" title="var">binder</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">Pattern</span> → <span class="id" title="var">Pattern</span> → <span class="id" title="var">Pattern</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">tryif</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">unshelve</span> (<span class="id" title="var">erewrite</span> (@<span class="id" title="var">esorted_binder_morphism</span> <span class="id" title="var">_</span> <span class="id" title="var">binder</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> (<span class="id" title="var">f</span> <span class="id" title="var">arg</span>) <span class="id" title="var">_</span> <span class="id" title="var">_</span>));<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">(*&nbsp;prove&nbsp;these&nbsp;in&nbsp;this&nbsp;order:&nbsp;*)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">lazymatch</span> <span class="id" title="keyword">goal</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| |- <span class="id" title="var">ESortedBinder</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> ⇒ <span class="id" title="var">typeclasses</span> <span class="id" title="tactic">eauto</span> + <span class="id" title="var">now</span> <span class="id" title="tactic">eauto</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">_</span> ⇒ <span class="id" title="tactic">idtac</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">lazymatch</span> <span class="id" title="keyword">goal</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| |- <span class="id" title="var">SwappableEx</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> ⇒ <span class="id" title="var">typeclasses</span> <span class="id" title="tactic">eauto</span> + <span class="id" title="tactic">eauto</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">_</span> ⇒ <span class="id" title="tactic">idtac</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">lazymatch</span> <span class="id" title="keyword">goal</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| |- <span class="id" title="var">PatternMorphism</span> <span class="id" title="var">_</span> ⇒ <span class="id" title="var">tryif</span> <span class="id" title="var">typeclasses</span> <span class="id" title="tactic">eauto</span> <span class="id" title="keyword">then</span> <span class="id" title="tactic">idtac</span> <span class="id" title="keyword">else</span> <span class="id" title="tactic">eauto</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">_</span> ⇒ <span class="id" title="tactic">idtac</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">then</span> <span class="id" title="tactic">idtac</span> <span class="comment">(*&nbsp;"Success&nbsp;with"&nbsp;binder&nbsp;*)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">else</span> (<span class="id" title="tactic">idtac</span> <span class="comment">(*&nbsp;"No&nbsp;sorted&nbsp;simplification&nbsp;instance&nbsp;for&nbsp;"&nbsp;binder&nbsp;*)</span>; <span class="id" title="tactic">fail</span> 0)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Ltac</span> <span class="id" title="var">simpl_sorted_quantification_hyp</span> <span class="id" title="var">H</span> :=<br/>
+<span class="id" title="keyword">match</span> <span class="id" title="keyword">type</span> <span class="id" title="keyword">of</span> <span class="id" title="var">H</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;| <span class="id" title="keyword">context</span> <span class="id" title="var">G</span> [?<span class="id" title="var">f</span> ?<span class="id" title="var">arg</span> <span class="id" title="var">_</span> (?<span class="id" title="var">binder</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span>)] ⇒ <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="keyword">type</span> <span class="id" title="keyword">of</span> <span class="id" title="var">binder</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">Pattern</span> → <span class="id" title="var">Pattern</span> → <span class="id" title="var">Pattern</span> ⇒ <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">tryif</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="keyword">let</span> <span class="id" title="var">name</span> := <span class="id" title="tactic">fresh</span> "X" <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">(*&nbsp;NOTE:&nbsp;erewrite&nbsp;for&nbsp;some&nbsp;reason&nbsp;does&nbsp;not&nbsp;terminate&nbsp;*)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">unshelve</span> (<span class="id" title="var">epose</span> <span class="id" title="var">proof</span> (<span class="id" title="var">name</span> := @<span class="id" title="var">esorted_binder_morphism</span> <span class="id" title="var">_</span> <span class="id" title="var">binder</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> (<span class="id" title="var">f</span> <span class="id" title="var">arg</span>) <span class="id" title="var">_</span> <span class="id" title="var">_</span>)); <span class="id" title="tactic">try</span> (<span class="id" title="tactic">rewrite</span> <span class="id" title="var">name</span> <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>; <span class="id" title="tactic">clear</span> <span class="id" title="var">name</span>);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">(*&nbsp;try&nbsp;typeclasses&nbsp;eauto;&nbsp;auto;&nbsp;*)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">(*&nbsp;prove&nbsp;these&nbsp;in&nbsp;this&nbsp;order:&nbsp;*)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">lazymatch</span> <span class="id" title="keyword">goal</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| |- <span class="id" title="var">ESortedBinder</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> ⇒ <span class="id" title="var">typeclasses</span> <span class="id" title="tactic">eauto</span> + <span class="id" title="var">now</span> <span class="id" title="tactic">eauto</span> <span class="comment">(*&nbsp;this&nbsp;should&nbsp;succeed&nbsp;*)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">_</span> ⇒ <span class="id" title="tactic">idtac</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">lazymatch</span> <span class="id" title="keyword">goal</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| |- <span class="id" title="var">SwappableEx</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> ⇒ <span class="id" title="var">typeclasses</span> <span class="id" title="tactic">eauto</span> + <span class="id" title="tactic">eauto</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">_</span> ⇒ <span class="id" title="tactic">idtac</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">lazymatch</span> <span class="id" title="keyword">goal</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| |- <span class="id" title="var">PatternMorphism</span> <span class="id" title="var">_</span> ⇒ <span class="id" title="var">tryif</span> <span class="id" title="var">typeclasses</span> <span class="id" title="tactic">eauto</span> <span class="id" title="keyword">then</span> <span class="id" title="tactic">idtac</span> <span class="id" title="keyword">else</span> <span class="id" title="tactic">eauto</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">_</span> ⇒ <span class="id" title="tactic">idtac</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">then</span> <span class="id" title="tactic">idtac</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">else</span> (<span class="id" title="tactic">idtac</span> <span class="comment">(*&nbsp;"No&nbsp;sorted&nbsp;simplification&nbsp;instance&nbsp;for&nbsp;"&nbsp;binder&nbsp;*)</span>; <span class="id" title="tactic">fail</span> 0 <span class="comment">(*backtrack*)</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Section</span> <span class="id" title="var">Test</span>.<br/>
+&nbsp;&nbsp;<span class="comment">(*&nbsp;NOTE:&nbsp;these&nbsp;tactics&nbsp;are&nbsp;not&nbsp;exported!!!!!&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Import</span> <span class="id" title="var">Substitution.Notations</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Open</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">ml_scope</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Context</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>}.<br/>
+&nbsp;&nbsp;<span class="comment">(*&nbsp;Tactic&nbsp;Notation&nbsp;"mlSimpl"&nbsp;:=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;repeat&nbsp;(rewrite&nbsp;mlSimpl'&nbsp;+&nbsp;simpl_sorted_quantification);&nbsp;repeat&nbsp;rewrite&nbsp;<span class="inlinecode"><span class="id" title="var">increase_ex</span></span> <span class="inlinecode"><span class="id" title="var">_</span></span> <span class="inlinecode"><span class="id" title="var">_</span></span>/=;&nbsp;repeat&nbsp;rewrite&nbsp;<span class="inlinecode"><span class="id" title="var">increase_mu</span></span>/=.<br/>
+<br/>
+&nbsp;&nbsp;Tactic&nbsp;Notation&nbsp;"mlSimpl"&nbsp;"in"&nbsp;hyp(H)&nbsp;:=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;repeat&nbsp;(rewrite&nbsp;mlSimpl'&nbsp;in&nbsp;H&nbsp;+&nbsp;simpl_sorted_quantification_hyp&nbsp;H);&nbsp;repeat&nbsp;rewrite&nbsp;<span class="inlinecode"><span class="id" title="var">increase_ex</span></span> <span class="inlinecode"><span class="id" title="var">_</span></span> <span class="inlinecode"><span class="id" title="var">_</span></span>/=&nbsp;in&nbsp;H;&nbsp;repeat&nbsp;rewrite&nbsp;<span class="inlinecode"><span class="id" title="var">increase_mu</span></span> <span class="inlinecode"><span class="id" title="var">_</span></span> <span class="inlinecode"><span class="id" title="var">_</span></span>/=&nbsp;in&nbsp;H.&nbsp;*)</span><br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Tactic Notation</span> "mlSimpl" :=<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">repeat</span> (<span class="id" title="tactic">rewrite</span> <span class="id" title="var">mlSimpl'</span>); <span class="id" title="tactic">try</span> <span class="id" title="tactic">rewrite</span> [<span class="id" title="var">increase_ex</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span>]/=; <span class="id" title="tactic">try</span> <span class="id" title="tactic">rewrite</span> [<span class="id" title="var">increase_mu</span>]/=.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Tactic Notation</span> "mlSimpl" "in" <span class="id" title="var">hyp</span>(<span class="id" title="var">H</span>) :=<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">repeat</span> (<span class="id" title="tactic">rewrite</span> <span class="id" title="var">mlSimpl'</span> <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>); <span class="id" title="tactic">try</span> <span class="id" title="tactic">rewrite</span> [<span class="id" title="var">increase_ex</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span>]/= <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>; <span class="id" title="tactic">try</span> <span class="id" title="tactic">rewrite</span> [<span class="id" title="var">increase_mu</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span>]/= <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Tactic Notation</span> "mlSortedSimpl" := <span class="id" title="var">simpl_sorted_quantification</span>; <span class="id" title="tactic">try</span> <span class="id" title="tactic">rewrite</span> [<span class="id" title="var">increase_mu</span>]/=.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Tactic Notation</span> "mlSortedSimpl" "in" <span class="id" title="var">hyp</span>(<span class="id" title="var">H</span>) := <span class="id" title="var">simpl_sorted_quantification_hyp</span> <span class="id" title="var">H</span>; <span class="id" title="tactic">try</span> <span class="id" title="tactic">rewrite</span> [<span class="id" title="var">increase_mu</span>]/=.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Local Definition</span> <span class="id" title="var">patt_forall_of_sort</span> (<span class="id" title="var">sort</span> <span class="id" title="var">phi</span> : <span class="id" title="var">Pattern</span>) : <span class="id" title="var">Pattern</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">patt_exists</span> (<span class="id" title="var">patt_imp</span> (<span class="id" title="var">patt_imp</span> (<span class="id" title="var">patt_bound_evar</span> 0) (<span class="id" title="var">nest_ex</span> <span class="id" title="var">sort</span>)) <span class="id" title="var">phi</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;#[<span class="id" title="var">local</span>]<br/>
+&nbsp;&nbsp;<span class="id" title="var">Program</span> <span class="id" title="keyword">Instance</span> <span class="id" title="var">sorted_forall_binder</span> : <span class="id" title="var">ESortedBinder</span> <span class="id" title="var">patt_forall_of_sort</span> <span class="id" title="var">nest_ex</span> := {}.<br/>
+
+<br/>
+<span class="id" title="keyword">Goal</span> <span class="id" title="keyword">∀</span> <span class="id" title="var">s</span> ψ <span class="id" title="var">x</span>, <span class="comment">(*&nbsp;well_formed_closed&nbsp;ψ&nbsp;-&gt;&nbsp;*)</span><br/>
+(<span class="id" title="var">patt_forall_of_sort</span> <span class="id" title="var">s</span> ψ)^[[<span class="id" title="tactic">evar</span>: <span class="id" title="var">x</span> ↦ ψ]] = <span class="id" title="var">patt_bott</span> →<br/>
+(<span class="id" title="var">patt_forall_of_sort</span> <span class="id" title="var">s</span> ψ)^{<span class="id" title="tactic">evar</span>: 0 ↦ <span class="id" title="var">x</span>} = <span class="id" title="var">patt_bott</span> →<br/>
+(<span class="id" title="var">patt_forall_of_sort</span> <span class="id" title="var">s</span> ψ)^{{<span class="id" title="tactic">evar</span>: <span class="id" title="var">x</span> ↦ 0}} = <span class="id" title="var">patt_bott</span> →<br/>
+(<span class="id" title="var">patt_forall_of_sort</span> <span class="id" title="var">s</span> ψ)^[[<span class="id" title="tactic">evar</span>: <span class="id" title="var">x</span> ↦ ψ]] = <span class="id" title="var">patt_bott</span> ∧ <br/>
+(<span class="id" title="var">patt_forall_of_sort</span> <span class="id" title="var">s</span> ψ)^{<span class="id" title="tactic">evar</span>: 0 ↦ <span class="id" title="var">x</span>} = <span class="id" title="var">patt_bott</span> ∧<br/>
+(<span class="id" title="var">patt_forall_of_sort</span> <span class="id" title="var">s</span> ψ)^{{<span class="id" title="tactic">evar</span>: <span class="id" title="var">x</span> ↦ 0}} = <span class="id" title="var">patt_bott</span><br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Goal</span> <span class="id" title="keyword">∀</span> <span class="id" title="var">s</span> ψ <span class="id" title="var">x</span>, <span class="comment">(*&nbsp;well_formed_closed&nbsp;ψ&nbsp;-&gt;&nbsp;*)</span><br/>
+(<span class="id" title="var">patt_forall_of_sort</span> (<span class="id" title="var">patt_imp</span> <span class="id" title="var">s</span> <span class="id" title="var">s</span>) ψ)^[[<span class="id" title="tactic">evar</span>: <span class="id" title="var">x</span> ↦ ψ]] = <span class="id" title="var">patt_bott</span><br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Local Definition</span> <span class="id" title="var">ml_plus</span> := <span class="id" title="var">patt_app</span>.<br/>
+<span class="id" title="keyword">Local Definition</span> <span class="id" title="var">ml_in</span> := <span class="id" title="var">patt_app</span>.<br/>
+<span class="id" title="keyword">Local Definition</span> <span class="id" title="var">ml_eq</span> := <span class="id" title="var">patt_app</span>.<br/>
+<span class="id" title="keyword">Local Definition</span> <span class="id" title="var">patt_inhabitant_set</span> := <span class="id" title="var">patt_app</span> <span class="id" title="var">patt_bott</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Import</span> <span class="id" title="var">Substitution.Notations</span>.<br/>
+<span class="id" title="keyword">Import</span> <span class="id" title="var">Pattern.Notations</span>.<br/>
+<span class="id" title="keyword">Import</span> <span class="id" title="var">DerivedOperators_Syntax.Notations</span>.<br/>
+<span class="id" title="keyword">Import</span> <span class="id" title="var">Pattern.BoundVarSugar</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Local Notation</span> &quot;a +ml b" := (<span class="id" title="var">ml_plus</span> <span class="id" title="var">a</span> <span class="id" title="var">b</span>) (<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 67).<br/>
+<span class="id" title="keyword">Local Notation</span> &quot;a =ml b" := (<span class="id" title="var">ml_eq</span> <span class="id" title="var">a</span> <span class="id" title="var">b</span>) (<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 67).<br/>
+<span class="id" title="keyword">Local Notation</span> &quot;a ∈ml b" := (<span class="id" title="var">ml_in</span> <span class="id" title="var">a</span> <span class="id" title="var">b</span>) (<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 67).<br/>
+<span class="id" title="keyword">Local Notation</span> &quot;'ex' , phi" := (<span class="id" title="var">patt_exists</span> <span class="id" title="var">phi</span>) (<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 80) : <span class="id" title="var">ml_scope</span>.<br/>
+<span class="id" title="keyword">Local Notation</span> &quot;'mu' , phi" := (<span class="id" title="var">patt_mu</span> <span class="id" title="var">phi</span>) (<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 80) : <span class="id" title="var">ml_scope</span>.<br/>
+<span class="id" title="keyword">Local Notation</span> &quot;〚 phi 〛" := (<span class="id" title="var">patt_inhabitant_set</span> <span class="id" title="var">phi</span>) (<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 0) : <span class="id" title="var">ml_scope</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Open</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">ml_scope</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Local Notation</span> &quot;'all' s ,  phi" := <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">patt_forall_of_sort</span> <span class="id" title="var">s</span> <span class="id" title="var">phi</span>) (<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 70) : <span class="id" title="var">ml_scope</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Local Definition</span> <span class="id" title="var">patt_exists_of_sort</span> (<span class="id" title="var">sort</span> <span class="id" title="var">phi</span> : <span class="id" title="var">Pattern</span>) : <span class="id" title="var">Pattern</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">ex</span> , ((<span class="id" title="var">b0</span> ∈<span class="id" title="var">ml</span> 〚<span class="id" title="var">nest_ex</span> <span class="id" title="var">sort</span>〛) <span class="id" title="var">and</span> <span class="id" title="var">phi</span>).<br/>
+<span class="id" title="keyword">Local Notation</span> &quot;'ex' s ,  phi" := <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">patt_exists_of_sort</span> <span class="id" title="var">s</span> <span class="id" title="var">phi</span>) (<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 70) : <span class="id" title="var">ml_scope</span>.<br/>
+<span class="id" title="keyword">Local Definition</span> <span class="id" title="var">Nat</span> := <span class="id" title="var">patt_bott</span>.<br/>
+<span class="id" title="keyword">Local Definition</span> <span class="id" title="var">Zero</span> := <span class="id" title="var">patt_bott</span>.<br/>
+<span class="id" title="keyword">Local Definition</span> <span class="id" title="var">Succ</span> := <span class="id" title="var">patt_bott</span>.<br/>
+<span class="id" title="keyword">Local Definition</span> <span class="id" title="var">patt_subseteq</span> := <span class="id" title="var">patt_app</span>.<br/>
+<span class="id" title="keyword">Notation</span> &quot;p ⊆ml q" := (<span class="id" title="var">patt_subseteq</span> <span class="id" title="var">p</span> <span class="id" title="var">q</span>) (<span class="id" title="tactic">at</span> <span class="id" title="keyword">level</span> 67) : <span class="id" title="var">ml_scope</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Goal</span> <span class="id" title="keyword">∀</span> <span class="id" title="var">X</span>,<br/>
+&nbsp;&nbsp;(( <span class="id" title="var">patt_free_svar</span> <span class="id" title="var">X</span> ⊆<span class="id" title="var">ml</span> 〚 <span class="id" title="var">Nat</span> 〛 ---&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Zero</span> ∈<span class="id" title="var">ml</span> <span class="id" title="var">patt_free_svar</span> <span class="id" title="var">X</span> ---&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">all</span> <span class="id" title="var">Nat</span>, (<span class="id" title="var">b0</span> ∈<span class="id" title="var">ml</span> <span class="id" title="var">patt_free_svar</span> <span class="id" title="var">X</span> ---&gt; <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Succ</span> ⋅ <span class="id" title="var">b0</span> ∈<span class="id" title="var">ml</span> <span class="id" title="var">patt_free_svar</span> <span class="id" title="var">X</span>)) ---&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">all</span> <span class="id" title="var">Nat</span>, <span class="id" title="var">b0</span> ∈<span class="id" title="var">ml</span> <span class="id" title="var">patt_free_svar</span> <span class="id" title="var">X</span> ) ) ^[[<span class="id" title="var">svar</span>:<span class="id" title="var">X</span>↦<span class="id" title="var">ex</span> <span class="id" title="var">Nat</span>, <span class="id" title="var">b0</span> <span class="id" title="var">and</span> <span class="id" title="var">Zero</span> +<span class="id" title="var">ml</span> <span class="id" title="var">b0</span> =<span class="id" title="var">ml</span> <span class="id" title="var">b0</span>]] ) = <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;( (<span class="id" title="var">ex</span> <span class="id" title="var">Nat</span>, <span class="id" title="var">b0</span> <span class="id" title="var">and</span> <span class="id" title="var">Zero</span> +<span class="id" title="var">ml</span> <span class="id" title="var">b0</span> =<span class="id" title="var">ml</span> <span class="id" title="var">b0</span>) ⊆<span class="id" title="var">ml</span> 〚 <span class="id" title="var">Nat</span> 〛 ---&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Zero</span> ∈<span class="id" title="var">ml</span> (<span class="id" title="var">ex</span> <span class="id" title="var">Nat</span>, <span class="id" title="var">b0</span> <span class="id" title="var">and</span> <span class="id" title="var">Zero</span> +<span class="id" title="var">ml</span> <span class="id" title="var">b0</span> =<span class="id" title="var">ml</span> <span class="id" title="var">b0</span>) ---&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">all</span> <span class="id" title="var">Nat</span>, (<span class="id" title="var">b0</span> ∈<span class="id" title="var">ml</span> (<span class="id" title="var">ex</span> <span class="id" title="var">Nat</span>, <span class="id" title="var">b0</span> <span class="id" title="var">and</span> <span class="id" title="var">Zero</span> +<span class="id" title="var">ml</span> <span class="id" title="var">b0</span> =<span class="id" title="var">ml</span> <span class="id" title="var">b0</span>) ---&gt; <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Succ</span> ⋅ <span class="id" title="var">b0</span> ∈<span class="id" title="var">ml</span> (<span class="id" title="var">ex</span> <span class="id" title="var">Nat</span>, <span class="id" title="var">b0</span> <span class="id" title="var">and</span> <span class="id" title="var">Zero</span> +<span class="id" title="var">ml</span> <span class="id" title="var">b0</span> =<span class="id" title="var">ml</span> <span class="id" title="var">b0</span>))) ---&gt;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">all</span> <span class="id" title="var">Nat</span>, <span class="id" title="var">b0</span> ∈<span class="id" title="var">ml</span> (<span class="id" title="var">ex</span> <span class="id" title="var">Nat</span>, <span class="id" title="var">b0</span> <span class="id" title="var">and</span> <span class="id" title="var">Zero</span> +<span class="id" title="var">ml</span> <span class="id" title="var">b0</span> =<span class="id" title="var">ml</span> <span class="id" title="var">b0</span>) ) ).<br/>
+
+<br/>
+<span class="id" title="keyword">End</span> <span class="id" title="var">Test</span>.<br/>
+</div>
+<hr/>This page has been generated by <a href="http://coq.inria.fr/">coqdoc</a>
+</div>
+
+</div>
+
+</body>
+</html>

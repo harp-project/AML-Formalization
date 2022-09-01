@@ -1,0 +1,223 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link href="coqdoc.css" rel="stylesheet" type="text/css" />
+<title>Reshaper</title>
+</head>
+
+<body>
+
+<div id="page">
+
+<div id="header">
+</div>
+
+<div id="main">
+
+<h1 class="libtitle">File Reshaper</h1>
+
+<div class="code">
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">ssreflect</span> <span class="id" title="var">ssrfun</span> <span class="id" title="var">ssrbool</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Ltac2</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Ltac2</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Ensembles</span> <span class="id" title="var">Bool</span> <span class="id" title="var">String</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq.Logic</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">FunctionalExtensionality</span> <span class="id" title="var">Eqdep_dec</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="keyword">Equations</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="keyword">Equations</span>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Coq.Program.Tactics</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">MatchingLogic</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">Syntax</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">DerivedOperators_Syntax</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">ProofSystem</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">IndexManipulation</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">wftactics</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">ProofInfo</span><br/>
+.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">MatchingLogic.ProofMode</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Basics</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Propositional</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Firstorder</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">stdpp</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">list</span> <span class="id" title="var">tactics</span> <span class="id" title="var">fin_sets</span> <span class="id" title="var">coGset</span> <span class="id" title="var">gmap</span> <span class="id" title="var">sets</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">MatchingLogic.Utils</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">stdpp_ext</span>.<br/>
+<span class="id" title="keyword">Import</span> <span class="id" title="var">extralibrary</span>.<br/>
+<span class="id" title="keyword">Import</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">MatchingLogic.Syntax.Notations</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">MatchingLogic.DerivedOperators_Syntax.Notations</span><br/>
+&nbsp;&nbsp;<span class="id" title="var">MatchingLogic.ProofInfo.Notations</span><br/>
+.<br/>
+<span class="id" title="keyword">Open</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">ml_scope</span>.<br/>
+<span class="id" title="keyword">Open</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">string_scope</span>.<br/>
+<span class="id" title="keyword">Open</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">list_scope</span>.<br/>
+<span class="id" title="keyword">Section</span> <span class="id" title="var">with_signature</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Context</span> {<span class="id" title="var">Σ</span> : <span class="id" title="var">Signature</span>}.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Open</span> <span class="id" title="keyword">Scope</span> <span class="id" title="var">ml_scope</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Structure</span> <span class="id" title="var">TaggedPattern</span> := <span class="id" title="var">TagPattern</span> { <span class="id" title="var">untagPattern</span> :&gt; <span class="id" title="var">Pattern</span>; }.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Definition</span> <span class="id" title="var">reshape_nil</span> <span class="id" title="var">p</span> := <span class="id" title="var">TagPattern</span> <span class="id" title="var">p</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Canonical</span> <span class="id" title="keyword">Structure</span> <span class="id" title="var">reshape_cons</span> (<span class="id" title="var">p</span> : <span class="id" title="var">Pattern</span>) : <span class="id" title="var">TaggedPattern</span> := <span class="id" title="var">reshape_nil</span> <span class="id" title="var">p</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Structure</span> <span class="id" title="var">ImpReshapeS</span> (<span class="id" title="var">g</span> : <span class="id" title="var">Pattern</span>) (<span class="id" title="var">l</span> : <span class="id" title="var">list</span> <span class="id" title="var">Pattern</span>) :=<br/>
+&nbsp;&nbsp;<span class="id" title="var">ImpReshape</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{ <span class="id" title="var">irs_flattened</span> :&gt; <span class="id" title="var">TaggedPattern</span> ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">irs_pf</span> : (<span class="id" title="var">untagPattern</span> <span class="id" title="var">irs_flattened</span>) = <span class="id" title="var">foldr</span> <span class="id" title="var">patt_imp</span> <span class="id" title="var">g</span> <span class="id" title="var">l</span> ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;}.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">ImpReshape_nil_pf0</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;∀ (<span class="id" title="var">g</span> : <span class="id" title="var">Pattern</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">g</span> = <span class="id" title="var">foldr</span> <span class="id" title="var">patt_imp</span> <span class="id" title="var">g</span> [].<br/>
+ 
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Canonical</span> <span class="id" title="keyword">Structure</span> <span class="id" title="var">ImpReshape_nil</span> (<span class="id" title="var">g</span> : <span class="id" title="var">Pattern</span>) : <span class="id" title="var">ImpReshapeS</span> <span class="id" title="var">g</span> [] :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">ImpReshape</span> <span class="id" title="var">g</span> [] (<span class="id" title="var">reshape_nil</span> <span class="id" title="var">g</span>) (<span class="id" title="var">ImpReshape_nil_pf0</span> <span class="id" title="var">g</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Program Canonical</span> <span class="id" title="keyword">Structure</span> <span class="id" title="var">ImpReshape_cons</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">g</span> <span class="id" title="var">x</span> : <span class="id" title="var">Pattern</span>) (<span class="id" title="var">xs</span> : <span class="id" title="var">list</span> <span class="id" title="var">Pattern</span>) (<span class="id" title="var">r</span> : <span class="id" title="var">ImpReshapeS</span> <span class="id" title="var">g</span> <span class="id" title="var">xs</span>)<br/>
+&nbsp;&nbsp;: <span class="id" title="var">ImpReshapeS</span> <span class="id" title="var">g</span> (<span class="id" title="var">x</span>::<span class="id" title="var">xs</span>) :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">ImpReshape</span> <span class="id" title="var">g</span> (<span class="id" title="var">x</span>::<span class="id" title="var">xs</span>) (<span class="id" title="var">reshape_cons</span> (<span class="id" title="var">x</span> ---&gt; <span class="id" title="var">untagPattern</span> (<span class="id" title="var">reshape_cons</span> <span class="id" title="var">r</span>))) <span class="id" title="var">_</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">reshape</span> (<span class="id" title="var">Γ</span> : <span class="id" title="var">Theory</span>) (<span class="id" title="var">g</span> : <span class="id" title="var">Pattern</span>) (<span class="id" title="var">xs</span>: <span class="id" title="var">list</span> <span class="id" title="var">Pattern</span>) (<span class="id" title="var">i</span> : <span class="id" title="var">ProofInfo</span>) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> (<span class="id" title="var">r</span> : <span class="id" title="var">ImpReshapeS</span> <span class="id" title="var">g</span> <span class="id" title="var">xs</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢<span class="id" title="var">i</span> <span class="id" title="var">foldr</span> (<span class="id" title="var">patt_imp</span>) <span class="id" title="var">g</span> <span class="id" title="var">xs</span> <span class="id" title="keyword">using</span> <span class="id" title="var">i</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢<span class="id" title="var">i</span> (<span class="id" title="var">untagPattern</span> (<span class="id" title="var">irs_flattened</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">r</span>)) <span class="id" title="keyword">using</span> <span class="id" title="var">i</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Local Example</span> <span class="id" title="var">ex_reshape</span> <span class="id" title="var">Γ</span> <span class="id" title="var">a</span> <span class="id" title="var">b</span> <span class="id" title="var">c</span> <span class="id" title="var">d</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed</span> <span class="id" title="var">a</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed</span> <span class="id" title="var">b</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed</span> <span class="id" title="var">c</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed</span> <span class="id" title="var">d</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢<span class="id" title="var">i</span> <span class="id" title="var">a</span> ---&gt; (<span class="id" title="var">b</span> ---&gt; (<span class="id" title="var">c</span> ---&gt; <span class="id" title="var">d</span>)) <span class="id" title="keyword">using</span> <span class="id" title="var">BasicReasoning</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="comment">(*<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;Γ&nbsp;⊢&nbsp;(φ₁&nbsp;and&nbsp;...&nbsp;and&nbsp;φₖ)&nbsp;---&gt;&nbsp;ψ<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;-------------------------------<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;Γ&nbsp;⊢&nbsp;φ₁&nbsp;---&gt;&nbsp;...&nbsp;---&gt;&nbsp;φₖ&nbsp;---&gt;&nbsp;ψ<br/>
+&nbsp;&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">reshape_lhs_imp_to_and_backward</span> <span class="id" title="var">Γ</span> (<span class="id" title="var">g</span> <span class="id" title="var">x</span> : <span class="id" title="var">Pattern</span>) (<span class="id" title="var">xs</span> : <span class="id" title="var">list</span> <span class="id" title="var">Pattern</span>) <span class="id" title="var">i</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed</span> <span class="id" title="var">g</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed</span> <span class="id" title="var">x</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Pattern.wf</span> <span class="id" title="var">xs</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> (<span class="id" title="var">r</span> : <span class="id" title="var">ImpReshapeS</span> <span class="id" title="var">g</span> (<span class="id" title="var">x</span>::<span class="id" title="var">xs</span>)),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢<span class="id" title="var">i</span> ((<span class="id" title="var">foldr</span> (<span class="id" title="var">patt_and</span>) <span class="id" title="var">x</span> <span class="id" title="var">xs</span>) ---&gt; <span class="id" title="var">g</span>) <span class="id" title="keyword">using</span> <span class="id" title="var">i</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢<span class="id" title="var">i</span> <span class="id" title="var">untagPattern</span> (<span class="id" title="var">irs_flattened</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">r</span>) <span class="id" title="keyword">using</span> <span class="id" title="var">i</span> .<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">reshape_lhs_imp_to_and_forward'</span> <span class="id" title="var">Γ</span> (<span class="id" title="var">g</span> <span class="id" title="var">x</span> : <span class="id" title="var">Pattern</span>) (<span class="id" title="var">xs</span> : <span class="id" title="var">list</span> <span class="id" title="var">Pattern</span>) <span class="id" title="var">i</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed</span> <span class="id" title="var">g</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed</span> <span class="id" title="var">x</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Pattern.wf</span> <span class="id" title="var">xs</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> (<span class="id" title="var">r</span> : <span class="id" title="var">ImpReshapeS</span> <span class="id" title="var">g</span> (<span class="id" title="var">x</span>::<span class="id" title="var">xs</span>)),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢<span class="id" title="var">i</span> <span class="id" title="var">untagPattern</span> (<span class="id" title="var">irs_flattened</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">r</span>) <span class="id" title="keyword">using</span> <span class="id" title="var">i</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢<span class="id" title="var">i</span> ((<span class="id" title="var">foldr</span> (<span class="id" title="var">patt_and</span>) <span class="id" title="var">x</span> <span class="id" title="var">xs</span>) ---&gt; <span class="id" title="var">g</span>) <span class="id" title="keyword">using</span> <span class="id" title="var">i</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="comment">(*<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Γ&nbsp;⊢&nbsp;φ₁&nbsp;---&gt;&nbsp;...&nbsp;---&gt;&nbsp;φₖ&nbsp;---&gt;&nbsp;ψ<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;------------------------------<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Γ&nbsp;⊢&nbsp;(φ₁&nbsp;and&nbsp;...&nbsp;and&nbsp;φₖ)&nbsp;---&gt;&nbsp;ψ<br/>
+&nbsp;&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">reshape_lhs_imp_to_and_forward</span> <span class="id" title="var">Γ</span> (<span class="id" title="var">g</span> <span class="id" title="var">x</span> : <span class="id" title="var">Pattern</span>) (<span class="id" title="var">xs</span> : <span class="id" title="var">list</span> <span class="id" title="var">Pattern</span>) <span class="id" title="var">i</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed</span> <span class="id" title="var">g</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed</span> <span class="id" title="var">x</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Pattern.wf</span> <span class="id" title="var">xs</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> (<span class="id" title="var">r</span> : <span class="id" title="var">ImpReshapeS</span> <span class="id" title="var">g</span> (<span class="id" title="var">x</span>::<span class="id" title="var">xs</span>)),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢<span class="id" title="var">i</span> <span class="id" title="var">untagPattern</span> (<span class="id" title="var">irs_flattened</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">r</span>) <span class="id" title="keyword">using</span> <span class="id" title="var">i</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> (<span class="id" title="var">rev</span> <span class="id" title="var">xs</span>) <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| [] ⇒ <span class="id" title="var">Γ</span> ⊢<span class="id" title="var">i</span> <span class="id" title="var">x</span> ---&gt; <span class="id" title="var">g</span> <span class="id" title="keyword">using</span> <span class="id" title="var">i</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">yk</span>::<span class="id" title="var">ys</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢<span class="id" title="var">i</span> ((<span class="id" title="var">foldr</span> (<span class="id" title="var">patt_and</span>) <span class="id" title="var">yk</span> (<span class="id" title="var">x</span>::(<span class="id" title="var">rev</span> <span class="id" title="var">ys</span>))) ---&gt; <span class="id" title="var">g</span>) <span class="id" title="keyword">using</span> <span class="id" title="var">i</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Local Example</span> <span class="id" title="var">ex_match_imp</span> <span class="id" title="var">Γ</span> <span class="id" title="var">a</span> <span class="id" title="var">b</span> <span class="id" title="var">c</span> <span class="id" title="var">d</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed</span> <span class="id" title="var">a</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed</span> <span class="id" title="var">b</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed</span> <span class="id" title="var">c</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed</span> <span class="id" title="var">d</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢<span class="id" title="var">i</span> <span class="id" title="var">c</span> ---&gt; (<span class="id" title="var">b</span> ---&gt; (<span class="id" title="var">a</span> ---&gt; <span class="id" title="var">d</span>)) <span class="id" title="keyword">using</span> <span class="id" title="var">BasicReasoning</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢<span class="id" title="var">i</span> <span class="id" title="var">a</span> ---&gt; (<span class="id" title="var">b</span> ---&gt; (<span class="id" title="var">c</span> ---&gt; <span class="id" title="var">d</span>)) <span class="id" title="keyword">using</span> <span class="id" title="var">BasicReasoning</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Structure</span> <span class="id" title="var">AndReshapeS</span> (<span class="id" title="var">g</span> : <span class="id" title="var">Pattern</span>) (<span class="id" title="var">l</span> : <span class="id" title="var">list</span> <span class="id" title="var">Pattern</span>) :=<br/>
+&nbsp;&nbsp;<span class="id" title="var">AndReshape</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;{ <span class="id" title="var">ars_flattened</span> :&gt; <span class="id" title="var">TaggedPattern</span> ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">ars_pf</span> : (<span class="id" title="var">untagPattern</span> <span class="id" title="var">ars_flattened</span>) = <span class="id" title="var">foldr</span> <span class="id" title="var">patt_and</span> <span class="id" title="var">g</span> <span class="id" title="var">l</span> ;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;}.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">AndReshape_nil_pf0</span>:<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;∀ (<span class="id" title="var">g</span> : <span class="id" title="var">Pattern</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">g</span> = <span class="id" title="var">foldr</span> <span class="id" title="var">patt_and</span> <span class="id" title="var">g</span> [].<br/>
+ 
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Canonical</span> <span class="id" title="keyword">Structure</span> <span class="id" title="var">AndReshape_nil</span> (<span class="id" title="var">g</span> : <span class="id" title="var">Pattern</span>) : <span class="id" title="var">AndReshapeS</span> <span class="id" title="var">g</span> [] :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">AndReshape</span> <span class="id" title="var">g</span> [] (<span class="id" title="var">reshape_nil</span> <span class="id" title="var">g</span>) (<span class="id" title="var">AndReshape_nil_pf0</span> <span class="id" title="var">g</span>).<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Program Canonical</span> <span class="id" title="keyword">Structure</span> <span class="id" title="var">AndReshape_cons</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="var">g</span> <span class="id" title="var">x</span> : <span class="id" title="var">Pattern</span>) (<span class="id" title="var">xs</span> : <span class="id" title="var">list</span> <span class="id" title="var">Pattern</span>) (<span class="id" title="var">r</span> : <span class="id" title="var">AndReshapeS</span> <span class="id" title="var">g</span> <span class="id" title="var">xs</span>)<br/>
+&nbsp;&nbsp;: <span class="id" title="var">AndReshapeS</span> <span class="id" title="var">g</span> (<span class="id" title="var">x</span>::<span class="id" title="var">xs</span>) :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">AndReshape</span> <span class="id" title="var">g</span> (<span class="id" title="var">x</span>::<span class="id" title="var">xs</span>) (<span class="id" title="var">reshape_cons</span> (<span class="id" title="var">x</span> <span class="id" title="var">and</span> <span class="id" title="var">untagPattern</span> (<span class="id" title="var">reshape_cons</span> <span class="id" title="var">r</span>))) <span class="id" title="var">_</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">reshape_and</span> (<span class="id" title="var">Γ</span> : <span class="id" title="var">Theory</span>) (<span class="id" title="var">g</span> : <span class="id" title="var">Pattern</span>) (<span class="id" title="var">xs</span>: <span class="id" title="var">list</span> <span class="id" title="var">Pattern</span>) (<span class="id" title="var">i</span> : <span class="id" title="var">ProofInfo</span>) :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> (<span class="id" title="var">r</span> : <span class="id" title="var">AndReshapeS</span> <span class="id" title="var">g</span> <span class="id" title="var">xs</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢<span class="id" title="var">i</span> <span class="id" title="var">foldr</span> (<span class="id" title="var">patt_and</span>) <span class="id" title="var">g</span> <span class="id" title="var">xs</span> <span class="id" title="keyword">using</span> <span class="id" title="var">i</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢<span class="id" title="var">i</span> (<span class="id" title="var">untagPattern</span> (<span class="id" title="var">ars_flattened</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">r</span>)) <span class="id" title="keyword">using</span> <span class="id" title="var">i</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Local Example</span> <span class="id" title="var">ex_reshape_and</span> <span class="id" title="var">Γ</span> <span class="id" title="var">a</span> <span class="id" title="var">b</span> <span class="id" title="var">c</span> <span class="id" title="var">d</span>:<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed</span> <span class="id" title="var">a</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed</span> <span class="id" title="var">b</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed</span> <span class="id" title="var">c</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">well_formed</span> <span class="id" title="var">d</span> →<br/>
+&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢<span class="id" title="var">i</span> <span class="id" title="var">a</span> <span class="id" title="var">and</span> <span class="id" title="var">b</span> <span class="id" title="var">and</span> <span class="id" title="var">c</span> <span class="id" title="var">and</span> <span class="id" title="var">d</span> <span class="id" title="keyword">using</span> <span class="id" title="var">BasicReasoning</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">(*<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Γ&nbsp;⊢&nbsp;φ₁&nbsp;---&gt;&nbsp;...&nbsp;---&gt;&nbsp;φₖ&nbsp;---&gt;&nbsp;ψ<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;------------------------------<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Γ&nbsp;⊢&nbsp;(φ₁&nbsp;and&nbsp;...&nbsp;and&nbsp;φₖ)&nbsp;---&gt;&nbsp;ψ<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">reshape_lhs_and_to_imp_backward</span> <span class="id" title="var">Γ</span> (<span class="id" title="var">g</span> <span class="id" title="var">x</span> : <span class="id" title="var">Pattern</span>) (<span class="id" title="var">xs</span> : <span class="id" title="var">list</span> <span class="id" title="var">Pattern</span>) <span class="id" title="var">i</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed</span> <span class="id" title="var">g</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed</span> <span class="id" title="var">x</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Pattern.wf</span> <span class="id" title="var">xs</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> (<span class="id" title="var">r</span> : <span class="id" title="var">AndReshapeS</span> <span class="id" title="var">x</span> <span class="id" title="var">xs</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢<span class="id" title="var">i</span> ((<span class="id" title="var">foldr</span> (<span class="id" title="var">patt_imp</span>) <span class="id" title="var">g</span> (<span class="id" title="var">x</span>::<span class="id" title="var">xs</span>))) <span class="id" title="keyword">using</span> <span class="id" title="var">i</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢<span class="id" title="var">i</span> (<span class="id" title="var">untagPattern</span> (<span class="id" title="var">ars_flattened</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">r</span>)) ---&gt; <span class="id" title="var">g</span> <span class="id" title="keyword">using</span> <span class="id" title="var">i</span> .<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Lemma</span> <span class="id" title="var">reshape_lhs_and_to_imp_forward</span> <span class="id" title="var">Γ</span> (<span class="id" title="var">g</span> <span class="id" title="var">x</span> : <span class="id" title="var">Pattern</span>) (<span class="id" title="var">xs</span> : <span class="id" title="var">list</span> <span class="id" title="var">Pattern</span>) <span class="id" title="var">i</span> :<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed</span> <span class="id" title="var">g</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed</span> <span class="id" title="var">x</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Pattern.wf</span> <span class="id" title="var">xs</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">∀</span> (<span class="id" title="var">r</span> : <span class="id" title="var">AndReshapeS</span> <span class="id" title="var">x</span> <span class="id" title="var">xs</span>),<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢<span class="id" title="var">i</span> (<span class="id" title="var">untagPattern</span> (<span class="id" title="var">ars_flattened</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> <span class="id" title="var">r</span>)) ---&gt; <span class="id" title="var">g</span> <span class="id" title="keyword">using</span> <span class="id" title="var">i</span> →<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢<span class="id" title="var">i</span> ((<span class="id" title="var">foldr</span> (<span class="id" title="var">patt_imp</span>) <span class="id" title="var">g</span> (<span class="id" title="var">x</span>::<span class="id" title="var">xs</span>))) <span class="id" title="keyword">using</span> <span class="id" title="var">i</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Local Example</span> <span class="id" title="var">ex_match_and</span> <span class="id" title="var">Γ</span> <span class="id" title="var">a</span> <span class="id" title="var">b</span> <span class="id" title="var">c</span> <span class="id" title="var">d</span>:<br/>
+&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed</span> <span class="id" title="var">a</span> →<br/>
+&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed</span> <span class="id" title="var">b</span> →<br/>
+&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed</span> <span class="id" title="var">c</span> →<br/>
+&nbsp;&nbsp;&nbsp;<span class="id" title="var">well_formed</span> <span class="id" title="var">d</span> →<br/>
+&nbsp;&nbsp;&nbsp;<span class="id" title="var">Γ</span> ⊢<span class="id" title="var">i</span> (<span class="id" title="var">a</span> <span class="id" title="var">and</span> <span class="id" title="var">b</span> <span class="id" title="var">and</span> <span class="id" title="var">c</span>) ---&gt; <span class="id" title="var">d</span> <span class="id" title="keyword">using</span> <span class="id" title="var">BasicReasoning</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">End</span> <span class="id" title="var">with_signature</span>.<br/>
+</div>
+<hr/>This page has been generated by <a href="http://coq.inria.fr/">coqdoc</a>
+</div>
+
+</div>
+
+</body>
+</html>
