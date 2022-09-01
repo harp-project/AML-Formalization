@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html class="alectryon-standalone"><head><title>wftactics.v</title><meta charset="utf-8"><meta content="Alectryon" name="generator"><meta name="viewport" content="width=device-width, initial-scale=1"><link href="alectryon.css" rel="stylesheet"><link href="pygments.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/IBM-type/0.5.4/css/ibm-type.min.css" integrity="sha512-sky5cf9Ts6FY1kstGOBHSybfKqdHR41M0Ldb0BjNiv3ifltoQIsg0zIaQ+wwdwgQ0w9vKFW7Js50lxH9vqNSSw==" crossorigin="anonymous" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/firacode/5.2.0/fira_code.min.css" integrity="sha512-MbysAYimH1hH2xYzkkMHB6MqxBqfP0megxsCLknbYqHVwXTCg9IqHbk+ZP/vnhO8UEW6PaXAkKe2vQ+SWACxxA==" crossorigin="anonymous" /><script src="alectryon.js"></script></head><body><article class="alectryon-root alectryon-centered"><div class="alectryon-banner">Built with <a href="https://github.com/cpitclaudel/alectryon/">Alectryon</a>, running Coq+SerAPI v8.15.0+0.15.0. Bubbles (<span class="alectryon-bubble"></span>) indicate interactive fragments: hover for details, tap to reveal contents. Use <kbd>Ctrl+↑</kbd> <kbd>Ctrl+↓</kbd> to navigate, <kbd>Ctrl+🖱️</kbd> to focus. On Mac, use <kbd>⌘</kbd> instead of <kbd>Ctrl</kbd>.</div><pre class="alectryon-io highlight"><!-- Generator: Alectryon --><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">From</span> LibHyps <span class="kn">Require Import</span> LibHyps.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">From</span> Coq <span class="kn">Require Import</span> ssreflect ssrfun ssrbool.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">From</span> <span class="kn">Ltac2</span> <span class="kn">Require Import</span> <span class="kn">Ltac2</span>.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">From</span> Coq <span class="kn">Require Import</span> Btauto.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><input class="alectryon-toggle" id="wftactics-v-chk0" style="display: none" type="checkbox"><label class="alectryon-input" for="wftactics-v-chk0"><span class="kn">From</span> stdpp <span class="kn">Require Import</span> countable infinite.</label><small class="alectryon-output"><div><div class="alectryon-messages"><blockquote class="alectryon-message">New coercion path [Is_true] : bool &gt;-&gt; <span class="kt">Sortclass</span> <span class="kr">is</span> ambiguous <span class="kr">with</span> existing 
+[is_true] : bool &gt;-&gt; <span class="kt">Sortclass</span>.
+[ambiguous-paths,typechecker]</blockquote></div></div></small><span class="alectryon-wsp">
+</span></span><span class="alectryon-sentence"><input class="alectryon-toggle" id="wftactics-v-chk1" style="display: none" type="checkbox"><label class="alectryon-input" for="wftactics-v-chk1"><span class="kn">From</span> stdpp <span class="kn">Require Import</span> pmap gmap mapset fin_sets propset.</label><small class="alectryon-output"><div><div class="alectryon-messages"><blockquote class="alectryon-message">New coercion path [Is_true] : bool &gt;-&gt; <span class="kt">Sortclass</span> <span class="kr">is</span> ambiguous <span class="kr">with</span> existing 
+[is_true] : bool &gt;-&gt; <span class="kt">Sortclass</span>.
+[ambiguous-paths,typechecker]</blockquote></div></div></small><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Require Import</span> stdpp_ext.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">From</span> MatchingLogic
+<span class="kn">Require Import</span>
+  Utils.extralibrary
+  Pattern
+  Substitution
+  ApplicationContext
+  SyntaxLemmas.FreshnessSubstitution
+  SyntacticConstruct
+.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kt">Set</span> Default <span class="kn">Proof</span> Mode <span class="s2">&quot;Classic&quot;</span>.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+
+<span class="c">(* This hook is specifically intended to be filled with a tactic which</span>
+<span class="c">   transforms provability hypotheses into well_formedness hypotheses.</span>
+<span class="c">   We call it early, before any goal splitting is done,</span>
+<span class="c">   so that it is not called for all the subgoals again and again.</span>
+<span class="c"> *)</span>
+</span><span class="alectryon-wsp"> </span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Ltac2 mutable</span> proved_hook_wfauto
+ := (<span class="kr">fun</span> () =&gt; () <span class="c">(* Message.print (Message.of_string &quot;hook_wfauto base&quot;) *)</span>).</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp"> 
+ <span class="c">(* We give a name to the wrapper so that it is shown in the profile (when profiling). *)</span>
+</span><span class="alectryon-wsp"> </span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Ltac</span> <span class="nf">proved_hook_wfauto</span> := <span class="kr">ltac2</span>:(|- proved_hook_wfauto ()).</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp"> 
+
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Definition</span> <span class="nf">wfToWfxySimplifications</span> := (
+  @wf_wfxy00,
+  @wf_lwf_xy
+).</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Definition</span> <span class="nf">wfxySimplifications</span> := (
+  @binary_wfxy,
+  @unary_wfxy,
+  @nullary_wfxy,
+  @lwf_xy_app,
+  @lwf_xy_cons,
+  @well_formed_xy_foldr_binary
+).</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Ltac</span> <span class="nf">simplifyWfxyHyp</span> H :=
+  <span class="nb">unfold</span> is_true <span class="kr">in</span> H;
+  <span class="kr">lazymatch</span> <span class="kp">type of</span> H <span class="kr">with</span>
+  | well_formed _ = true
+    =&gt; <span class="nb">apply</span> wf_wfxy00_decompose <span class="kr">in</span> H
+  | Pattern.<span class="kn">wf</span> _ = true
+    =&gt; <span class="nb">apply</span> wf_lwf_xy_decompose <span class="kr">in</span> H
+  | _ =&gt; <span class="kp">idtac</span>
+  <span class="kr">end</span>;
+  <span class="kp">try</span> <span class="kr">lazymatch</span> <span class="kp">type of</span> H <span class="kr">with</span>
+  | well_formed_xy <span class="nl">?m</span> <span class="nl">?n</span> (foldr <span class="nl">?binary</span> <span class="nl">?g</span> <span class="nl">?xs</span>) = true
+    =&gt; <span class="nb">apply</span> (well_formed_xy_foldr_binary_decompose _) <span class="kr">in</span> H;
+       <span class="kr">let</span> <span class="nv">H1</span> := <span class="kp">fresh</span> <span class="s2">&quot;H1&quot;</span> <span class="kr">in</span>
+       <span class="kr">let</span> <span class="nv">H2</span> := <span class="kp">fresh</span> <span class="s2">&quot;H2&quot;</span> <span class="kr">in</span>
+       <span class="nb">destruct</span> H <span class="kr">as</span> [H1 H2];
+       simplifyWfxyHyp H1;
+       simplifyWfxyHyp H2
+  | lwf_xy <span class="nl">?m</span> <span class="nl">?n</span> (<span class="nl">?x</span>::<span class="nl">?xs</span>) = true
+    =&gt; <span class="nb">apply</span> lwf_xy_cons_decompose <span class="kr">in</span> H;
+       <span class="kr">let</span> <span class="nv">H1</span> := <span class="kp">fresh</span> <span class="s2">&quot;H1&quot;</span> <span class="kr">in</span>
+       <span class="kr">let</span> <span class="nv">H2</span> := <span class="kp">fresh</span> <span class="s2">&quot;H2&quot;</span> <span class="kr">in</span>
+       <span class="nb">destruct</span> H <span class="kr">as</span> [H1 H2];
+       simplifyWfxyHyp H1;
+       simplifyWfxyHyp H2
+  | lwf_xy <span class="nl">?m</span> <span class="nl">?n</span> (<span class="nl">?xs</span> ++ <span class="nl">?ys</span>) = true
+    =&gt; <span class="nb">apply</span> lwf_xy_app_decompose <span class="kr">in</span> H;
+      <span class="kr">let</span> <span class="nv">H1</span> := <span class="kp">fresh</span> <span class="s2">&quot;H1&quot;</span> <span class="kr">in</span>
+      <span class="kr">let</span> <span class="nv">H2</span> := <span class="kp">fresh</span> <span class="s2">&quot;H2&quot;</span> <span class="kr">in</span>
+      <span class="nb">destruct</span> H <span class="kr">as</span> [H1 H2];
+      simplifyWfxyHyp H1;
+      simplifyWfxyHyp H2
+  | well_formed_xy <span class="nl">?x</span> <span class="nl">?y</span> (<span class="nl">?binary</span> <span class="nl">?ψ1</span> <span class="nl">?ψ2</span>) = true
+    =&gt; <span class="nb">apply</span> (binary_wfxy_decompose _) <span class="kr">in</span> H;
+      <span class="kr">let</span> <span class="nv">H1</span> := <span class="kp">fresh</span> <span class="s2">&quot;H1&quot;</span> <span class="kr">in</span>
+      <span class="kr">let</span> <span class="nv">H2</span> := <span class="kp">fresh</span> <span class="s2">&quot;H2&quot;</span> <span class="kr">in</span>
+      <span class="nb">destruct</span> H <span class="kr">as</span> [H1 H2];
+      simplifyWfxyHyp H1;
+      simplifyWfxyHyp H2
+  | well_formed_xy <span class="nl">?x</span> <span class="nl">?y</span> (<span class="nl">?unary</span> <span class="nl">?ψ1</span>) = true
+    =&gt; <span class="nb">apply</span> (unary_wfxy_decompose _) <span class="kr">in</span> H;
+       simplifyWfxyHyp H
+  <span class="c">(* No point in simplifying these *)</span>
+  <span class="c">(*</span>
+<span class="c">  | well_formed_xy ?x ?y ?nullary = true</span>
+<span class="c">    =&gt; apply nullary_wfxy in H</span>
+<span class="c">    *)</span>
+  | _ =&gt; <span class="kp">idtac</span>
+  <span class="kr">end</span>
+.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Ltac</span> <span class="nf">compositeSimplifyAllWfHyps</span> :=
+  <span class="c">(*proved_hook_wfauto;*)</span>
+  (onAllHyps simplifyWfxyHyp)
+.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Ltac</span> <span class="nf">compoundDecomposeWfGoal</span> :=
+  <span class="nb">rewrite</span> <span class="nl">?wfToWfxySimplifications</span>;
+  <span class="nb">rewrite</span> <span class="nl">?wfxySimplifications</span>;
+  <span class="kr">lazymatch goal with</span>
+  | [ |- <span class="nl">?g</span>] =&gt;
+    split_and?;
+    <span class="kr">lazymatch goal with</span>
+    | [ |- <span class="nl">?g&#39;</span>] =&gt; <span class="kp">idtac</span> <span class="c">(*&quot;Goal &quot; g&#39; &quot; from &quot; g &quot;.&quot;*)</span>
+    <span class="kr">end</span>
+  <span class="kr">end</span>
+.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Ltac</span> <span class="nf">propagateTrueInHyps</span> :=
+  <span class="kp">repeat</span> (
+    <span class="kr">match goal with</span>
+    | [H: _ |- _] =&gt; (
+        <span class="nb">rewrite</span> !(andb_true_r,andb_true_l) <span class="kr">in</span> H
+      )
+    <span class="kr">end</span>
+  )
+.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Ltac</span> <span class="nf">propagateTrueInGoal</span> :=
+  <span class="nb">rewrite</span> !(andb_true_r,andb_true_l)
+.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Ltac</span> <span class="nf">clear_all_impls</span> :=
+  <span class="kp">repeat</span> (
+    <span class="kr">match goal with</span>
+    | [ H : <span class="kr">forall</span> <span class="nv">_</span>, _ |- _] =&gt; <span class="nb">clear</span> H
+    <span class="kr">end</span>
+  ).</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+
+</span><span class="alectryon-wsp">  </span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Ltac</span> <span class="nf">wf_auto2_decompose_hyps</span> :=
+    proved_hook_wfauto;
+    <span class="nb">unfold</span>
+      is_true,
+      evar_open,
+      svar_open
+    <span class="kr">in</span> *;
+    <span class="nb">simpl</span> <span class="kr">in</span> *
+  .</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">  
+
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Ltac</span> <span class="nf">solve_size</span> :=
+  <span class="kp">repeat</span> (
+  <span class="kr">match goal with</span>
+  | [ |- size&#39; (evar_open _ _ _) &lt; _ ]
+    =&gt; <span class="nb">rewrite</span> evar_open_size&#39;
+
+  | [ |- size&#39; (svar_open _ _ _) &lt; _ ]
+    =&gt; <span class="nb">rewrite</span> svar_open_size&#39;
+
+  | [ |- size&#39; _ &lt; size&#39; (patt_app _ _) ]
+    =&gt; <span class="nb">simpl</span>; <span class="bp">lia</span>
+
+  | [ |- size&#39; _ &lt; size&#39; (patt_imp _ _) ]
+    =&gt; <span class="nb">simpl</span>; <span class="bp">lia</span>
+
+  | [ |- size&#39; _ &lt; size&#39; (patt_exists _) ]
+    =&gt; <span class="nb">simpl</span>; <span class="bp">lia</span>
+  <span class="kr">end</span>
+  )
+.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Ltac</span> <span class="nf">wf_auto2_fast_done</span> :=
+  <span class="kp">try</span> solve_size;
+  <span class="kp">try</span> <span class="bp">assumption</span>;
+  <span class="kp">try</span> <span class="bp">reflexivity</span>;
+  <span class="kp">try</span> <span class="bp">congruence</span>;
+  <span class="kp">try</span> <span class="nb">btauto</span>
+.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">  
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Ltac</span> <span class="nf">wf_auto2_composite_step</span> :=
+  <span class="nb">unfold</span> is_true;
+  <span class="nb">simpl</span>;
+  <span class="kp">first</span> [
+    <span class="nb">split</span> |
+    <span class="nb">apply</span> wf_wfxy00_compose |
+    <span class="nb">apply</span> wf_lwf_xy_compose |
+    <span class="nb">apply</span> free_evar_subst_preserves_no_negative_occurrence |
+    <span class="nb">apply</span> wf_sctx |
+    <span class="nb">apply</span> well_formed_xy_free_evar_subst |
+    <span class="nb">apply</span> (well_formed_xy_foldr_binary_compose _) |
+    <span class="nb">apply</span> lwf_xy_cons_compose |
+    <span class="nb">apply</span> lwf_xy_app_compose |
+    <span class="nb">apply</span> (binary_wfxy_compose _) |
+    <span class="nb">apply</span> (unary_wfxy_compose _) |
+    <span class="nb">apply</span> (nullary_wfxy _) |
+    <span class="nb">apply</span> wf_evar_open_from_wf_ex |
+    <span class="nb">apply</span> wf_sctx
+  ];
+  wf_auto2_fast_done
+  <span class="c">(*compoundDecomposeWfGoal*)</span>
+.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Definition</span> <span class="nf">wfPositiveSimplifications</span> := (
+  @well_formed_positive_foldr_binary,
+  @nullary_wfp,
+  @unary_wfp,
+  @binary_wfp,
+  @wfp_evar_quan
+).</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Definition</span> <span class="nf">wfCexSimplifications</span> := (
+  @well_formed_cex_foldr_binary,
+  @nullary_wfcex,
+  @unary_wfcex,
+  @binary_wfcex
+).</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Definition</span> <span class="nf">wfCmuSimplifications</span> := (
+  @well_formed_cmu_foldr_binary,
+  @nullary_wfcmu,
+  @unary_wfcmu,
+  @binary_wfcmu,
+  @wfcmu_evar_quan
+).</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Definition</span> <span class="nf">wfSimplifications</span> := (
+  @wf_corr,
+  @andb_true_r
+).</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Definition</span> <span class="nf">lwfPositiveSimplifications</span> := (
+  @lwf_positive_cons,
+  @lwf_positive_app
+).</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Definition</span> <span class="nf">lwfCmuSimplifications</span> := (
+  @lwf_cmu_cons,
+  @lwf_cmu_app
+).</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Definition</span> <span class="nf">lwfCexSimplifications</span> := (
+  @lwf_cex_cons,
+  @lwf_cex_app
+).</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Ltac2 mutable</span> simplify_wf_hyp_part_hook
+:= (<span class="kr">fun</span> (<span class="nv">h</span> : ident) =&gt; () ).</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Ltac</span> <span class="nf">_simplify_wf_hyp_part_hook</span> H :=
+  <span class="kr">let</span> <span class="nv">tac</span> := <span class="kr">ltac2</span>:(h |- simplify_wf_hyp_part_hook (Option.get (Ltac1.to_ident h))) <span class="kr">in</span>
+  tac H
+.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Tactic Notation</span> <span class="s2">&quot;simplify_wf_hyp_part_hook&quot;</span> <span class="kn">ident</span>(H) :=
+  _simplify_wf_hyp_part_hook H
+.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Ltac2 mutable</span> simplify_wf_goal_hook
+:= (<span class="kr">fun</span> () =&gt; () ).</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Ltac</span> <span class="nf">_simplify_wf_goal_hook</span> :=
+  <span class="kr">ltac2</span>:(simplify_wf_goal_hook ())
+.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Tactic Notation</span> <span class="s2">&quot;simplify_wf_goal_hook&quot;</span> :=
+  _simplify_wf_goal_hook
+.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Ltac</span> <span class="nf">partsDecomposeWfGoal</span> :=
+  <span class="nb">rewrite</span> -<span class="nl">?wfxy00_wf</span>;
+  <span class="nb">rewrite</span> ?(wfPositiveSimplifications,
+            wfCexSimplifications,
+            wfCmuSimplifications,
+            wfSimplifications,
+            lwfPositiveSimplifications,
+            lwfCmuSimplifications,
+            lwfCexSimplifications,
+            lwf_xy_decompose);
+  <span class="kp">try</span> simplify_wf_goal_hook
+.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Ltac</span> <span class="nf">simplifyWfHypParts</span> H :=
+  <span class="kr">let</span> <span class="nv">t</span> := <span class="kp">type of</span> H <span class="kr">in</span>
+  <span class="c">(* idtac &quot;SimplifyWfHypParts &quot; H &quot; (&quot; t &quot;)&quot;; *)</span>
+  <span class="kp">first</span>
+    [ (<span class="kp">progress</span> (simplify_wf_hyp_part_hook H; destruct_andb? H))
+    | (
+  <span class="kr">lazymatch</span> <span class="kp">type of</span> H <span class="kr">with</span>
+  | well_formed_positive (bevar_subst (patt_free_evar _) _ _) = true
+    =&gt; 
+      <span class="nb">apply</span> evar_open_positive <span class="kr">in</span> H; simplifyWfHypParts H
+  | well_formed_closed_ex_aux (bevar_subst (patt_free_evar _) <span class="nl">?n</span> _) <span class="nl">?n</span> = true
+    =&gt;
+      <span class="nb">apply</span> wfc_ex_aux_body_ex_imp2 <span class="kr">in</span> H; simplifyWfHypParts H
+  | well_formed_closed_mu_aux (bevar_subst (patt_free_evar _) _ _) _ = true
+      =&gt;
+        <span class="nb">apply</span> wfc_mu_aux_body_ex_imp2 <span class="kr">in</span> H; simplifyWfHypParts H
+  | well_formed_positive _ = true
+    =&gt;
+      <span class="nb">rewrite</span> <span class="nl">?wfPositiveSimplifications</span> <span class="kr">in</span> H;
+      destruct_andb? H
+  <span class="c">(* We are doing lazymatch, so this has to be before the general case*)</span>
+  | well_formed_closed_ex_aux (bevar_subst (patt_free_evar <span class="nl">?x</span>) <span class="nl">?k</span> <span class="nl">?p</span>) <span class="nl">?k</span> = true
+      =&gt;
+        <span class="nb">apply</span> wfc_ex_aux_S_bevar_subst_fe <span class="kr">in</span> H
+  | well_formed_closed_ex_aux _ _ = true
+    =&gt;
+      <span class="nb">rewrite</span> <span class="nl">?wfCexSimplifications</span> <span class="kr">in</span> H;
+      destruct_andb? H
+  | well_formed_closed_mu_aux _ _ = true
+    =&gt;
+      <span class="nb">rewrite</span> <span class="nl">?wfCmuSimplifications</span> <span class="kr">in</span> H;
+      destruct_andb? H
+  | Pattern.<span class="kn">wf</span> _ = true
+    =&gt;
+      <span class="nb">rewrite</span> wf_corr <span class="kr">in</span> H;
+      destruct_andb? H
+  | lwf_positive _ = true
+    =&gt;
+      <span class="nb">rewrite</span> <span class="nl">?lwfPositiveSimplifications</span> <span class="kr">in</span> H;
+      destruct_andb? H
+  | lwf_cmu _ _ = true
+    =&gt;
+      <span class="nb">rewrite</span> <span class="nl">?lwfCmuSimplifications</span> <span class="kr">in</span> H;
+      destruct_andb? H
+  | lwf_cex _ _ = true
+    =&gt;
+      <span class="nb">rewrite</span> <span class="nl">?lwfCexSimplifications</span> <span class="kr">in</span> H;
+      destruct_andb? H
+  | lwf_xy _ _ _ = true
+    =&gt;
+      <span class="nb">rewrite</span> lwf_xy_decompose <span class="kr">in</span> H;
+      destruct_andb? H
+  | _ =&gt; <span class="kp">idtac</span>
+  <span class="kr">end</span>
+  )]
+.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Ltac</span> <span class="nf">toBeRunOnAllHypsParts</span> h := simplifyWfHypParts h.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Ltac</span> <span class="nf">simplifyAllWfHypsParts</span> :=
+  (onAllHyps toBeRunOnAllHypsParts) ;{ toBeRunOnAllHypsParts }
+.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Ltac</span> <span class="nf">decomposeWfHypsIntoParts</span> :=
+  simplifyAllWfHypsParts
+.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Ltac</span> <span class="nf">wf_auto2_unfolds</span> :=
+  <span class="nb">unfold</span>
+    is_true,
+    well_formed,
+    well_formed_closed,
+    well_formed_xy,
+    evar_open,
+    svar_open<span class="c">(*,</span>
+<span class="c">    free_evar_subst,</span>
+<span class="c">    free_evar_subst*)</span>
+  <span class="kr">in</span> *
+.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Ltac</span> <span class="nf">wf_auto2_decompose_hyps_parts</span> :=
+  proved_hook_wfauto;
+  wf_auto2_unfolds;
+  <span class="nb">simpl</span> <span class="kr">in</span> *;
+  destruct_andb?;
+  decomposeWfHypsIntoParts
+.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Ltac</span> <span class="nf">wf_auto2_step_parts</span> :=
+  wf_auto2_unfolds;
+  <span class="kp">try</span> partsDecomposeWfGoal;
+  <span class="nb">cbn</span> <span class="kr">in</span> *; <span class="nb">subst</span>; <span class="nb">cbn</span> <span class="kr">in</span> *;
+  split_and?;
+  wf_auto2_fast_done;
+  <span class="kp">try</span> <span class="kr">lazymatch goal with</span>
+  | [MF : mu_free <span class="nl">?p</span> = true |- well_formed_positive (bevar_subst _ _ <span class="nl">?p</span>) = true]
+    =&gt; <span class="nb">apply</span> bevar_subst_positive; <span class="kp">solve</span> wf_auto2_step_parts
+  <span class="kr">end</span>;
+  <span class="kp">try</span> <span class="kp">first</span> [
+  <span class="nb">apply</span> wfp_free_evar_subst |
+  <span class="nb">apply</span> wfc_ex_free_evar_subst_2 |
+  <span class="nb">apply</span> wfc_mu_free_evar_subst |
+  <span class="nb">apply</span> svar_hno_bsvar_subst |
+  <span class="nb">apply</span> svar_hno_false_if_fresh |
+  <span class="nb">apply</span> well_formed_positive_svar_quantify |
+  <span class="nb">apply</span> free_evar_subst_preserves_no_negative_occurrence |
+  <span class="nb">apply</span> no_negative_occurrence_svar_quantify |
+  <span class="nb">apply</span> bevar_subst_closed_mu|
+  <span class="nb">apply</span> bevar_subst_closed_ex|
+  <span class="nb">apply</span> bevar_subst_positive_2|
+  <span class="nb">apply</span> evar_quantify_closed_ex|
+  <span class="nb">apply</span> svar_quantify_closed_ex|
+  <span class="nb">apply</span> evar_quantify_closed_mu|
+  <span class="nb">apply</span> svar_quantify_closed_mu|
+  <span class="nb">apply</span> wfp_free_svar_subst_1|
+  <span class="nb">apply</span> wfc_mu_free_svar_subst|
+  <span class="nb">apply</span> wfc_ex_free_svar_subst|
+  <span class="nb">apply</span> wp_sctx|
+  <span class="nb">apply</span> wcmu_sctx|
+  <span class="nb">apply</span> wcex_sctx|
+  <span class="nb">apply</span> wfp_bsvar_subst|
+  <span class="nb">apply</span> wfc_mu_aux_bsvar_subst|
+  <span class="nb">apply</span> wfc_ex_aux_bsvar_subst
+  ];
+  <span class="kp">try</span> (<span class="kr">lazymatch goal with</span>
+  | [ H : well_formed_closed_mu_aux <span class="nl">?p</span> <span class="mi">0</span> = true |- no_negative_occurrence_db_b _ <span class="nl">?p</span> = true]
+    =&gt; <span class="nb">apply</span> wfc_impl_no_neg_occ; <span class="nb">apply</span> H
+
+  | [ H : well_formed_closed_mu_aux <span class="nl">?p</span> <span class="mi">0</span> = true |- no_positive_occurrence_db_b _ <span class="nl">?p</span> = true]
+    =&gt; <span class="nb">apply</span> wfc_impl_no_pos_occ; <span class="nb">apply</span> H
+
+  | [ H : well_formed_closed_ex_aux <span class="nl">?p</span> _ = true |- well_formed_closed_ex_aux <span class="nl">?p</span> (S <span class="nl">?n</span>) = true ]
+    =&gt; <span class="nb">eapply</span> well_formed_closed_ex_aux_ind;[|<span class="nb">apply</span> H]; <span class="bp">lia</span>
+
+    <span class="c">(* last option for well_formed_closed_mu_aux: try decreasing n *)</span>
+  | [ H : well_formed_closed_mu_aux <span class="nl">?p</span> _ = true |- well_formed_closed_mu_aux <span class="nl">?p</span> (S <span class="nl">?n</span>) = true ]
+    =&gt; <span class="nb">eapply</span> well_formed_closed_mu_aux_ind;[|<span class="nb">apply</span> H]; <span class="bp">lia</span>
+  <span class="kr">end</span>)
+.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Ltac</span> <span class="nf">wf_auto2_fast</span> :=
+  wf_auto2_fast_done;
+  compositeSimplifyAllWfHyps;
+  <span class="kp">repeat</span> wf_auto2_composite_step
+.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Ltac</span> <span class="nf">print_hyps</span> :=
+  <span class="kp">try</span> <span class="kr">match goal with</span>
+  | [H : <span class="nl">?t</span> |- _] =&gt; <span class="kp">idtac</span> t; <span class="kp">fail</span>
+  <span class="kr">end</span>
+.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Ltac</span> <span class="nf">wf_auto2_fallback</span> :=
+  <span class="kr">match goal with</span>
+  | [ |- <span class="nl">?G</span> ] =&gt; <span class="kp">idtac</span> <span class="c">(*&quot;Falling back on &quot; G*)</span> <span class="c">(*; print_hyps*)</span>
+  <span class="kr">end</span>;
+  <span class="kp">repeat</span> wf_auto2_decompose_hyps_parts;
+  <span class="kp">repeat</span> wf_auto2_step_parts
+.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Ltac</span> <span class="nf">wf_auto2</span> :=
+  <span class="kp">try</span> <span class="bp">reflexivity</span>; <span class="c">(* this generates a simple proof: just eq_refl*)</span>
+  <span class="nb">subst</span>;
+  proved_hook_wfauto;
+  clear_all_impls;
+  <span class="c">(*clear_others;*)</span>
+  wf_auto2_fast;
+  wf_auto2_fallback
+.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Ltac</span> <span class="nf">try_wfauto2</span> :=
+<span class="kr">lazymatch goal with</span>
+| [|- is_true (well_formed _)] =&gt; wf_auto2
+| [|- well_formed _ = true ] =&gt; wf_auto2
+| [|- is_true (well_formed_closed _)] =&gt; wf_auto2
+| [|- well_formed_closed _ = true ] =&gt; wf_auto2
+| [|- is_true (<span class="kn">wf</span> _)] =&gt; wf_auto2
+| [|- <span class="kn">wf</span> _ = true ] =&gt; wf_auto2
+| _ =&gt; <span class="kp">idtac</span>
+<span class="kr">end</span>.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Tactic Notation</span> <span class="s2">&quot;mlSimpl&quot;</span> :=
+  <span class="kp">repeat</span> (<span class="nb">rewrite</span> mlSimpl&#39;); <span class="kp">try</span> <span class="nb">rewrite</span> [increase_ex _ _]/=; <span class="kp">try</span> <span class="nb">rewrite</span> [increase_mu]/=.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Tactic Notation</span> <span class="s2">&quot;mlSimpl&quot;</span> <span class="s2">&quot;in&quot;</span> hyp(H) :=
+  <span class="kp">repeat</span> (<span class="nb">rewrite</span> mlSimpl&#39; <span class="kr">in</span> H); <span class="kp">try</span> <span class="nb">rewrite</span> [increase_ex _ _]/= <span class="kr">in</span> H; <span class="kp">try</span> <span class="nb">rewrite</span> [increase_mu _ _]/= <span class="kr">in</span> H.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Tactic Notation</span> <span class="s2">&quot;mlSortedSimpl&quot;</span> := simpl_sorted_quantification; <span class="kp">try</span> <span class="nb">rewrite</span> [increase_mu]/=.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-sentence"><span class="alectryon-input"><span class="kn">Tactic Notation</span> <span class="s2">&quot;mlSortedSimpl&quot;</span> <span class="s2">&quot;in&quot;</span> hyp(H) := simpl_sorted_quantification H; <span class="kp">try</span> <span class="nb">rewrite</span> [increase_mu]/=.</span><span class="alectryon-wsp">
+</span></span><span class="alectryon-wsp">
+</span></pre></article></body></html>

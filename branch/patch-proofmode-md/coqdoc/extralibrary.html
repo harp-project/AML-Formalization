@@ -1,0 +1,367 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link href="coqdoc.css" rel="stylesheet" type="text/css" />
+<title>extralibrary</title>
+</head>
+
+<body>
+
+<div id="page">
+
+<div id="header">
+</div>
+
+<div id="main">
+
+<h1 class="libtitle">File extralibrary</h1>
+
+<div class="code">
+</div>
+
+<div class="doc">
+<a id="lab1"></a><h1 class="section">Module <span class="inlinecode"><span class="id" title="var">extralibrary</span></span>: library functions, theorems, and tactics</h1>
+
+</div>
+<div class="code">
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Export</span> <span class="id" title="var">ssreflect</span> <span class="id" title="var">ssrfun</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">Coq</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Bool.Bool</span>.<br/>
+<span class="id" title="keyword">From</span> <span class="id" title="var">stdpp</span> <span class="id" title="keyword">Require</span> <span class="id" title="keyword">Export</span> <span class="id" title="var">base</span> <span class="id" title="var">tactics</span>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">Arith</span>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">ZArith</span>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Import</span> <span class="id" title="var">List</span>.<br/>
+<span class="id" title="keyword">Require</span> <span class="id" title="keyword">Export</span> <span class="id" title="var">Coq.micromega.Lia</span>.<br/>
+
+<br/>
+<span class="comment">(*&nbsp;alternative&nbsp;to&nbsp;destruct:&nbsp;when&nbsp;hypotheses/goals&nbsp;contain&nbsp;match&nbsp;expressions&nbsp;*)</span><br/>
+<span class="id" title="keyword">Ltac</span> <span class="id" title="var">break_match_hyp</span> :=<br/>
+<span class="id" title="keyword">match</span> <span class="id" title="keyword">goal</span> <span class="id" title="keyword">with</span><br/>
+| [ <span class="id" title="var">H</span> : <span class="id" title="keyword">context</span> [ <span class="id" title="keyword">match</span> ?<span class="id" title="var">X</span> <span class="id" title="keyword">with</span> <span class="id" title="var">_</span>⇒<span class="id" title="var">_</span> <span class="id" title="keyword">end</span> ] |- <span class="id" title="var">_</span>] ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="keyword">type</span> <span class="id" title="keyword">of</span> <span class="id" title="var">X</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">sumbool</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span>⇒<span class="id" title="tactic">destruct</span> <span class="id" title="var">X</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">_</span>⇒<span class="id" title="tactic">destruct</span> <span class="id" title="var">X</span> <span class="id" title="var">eqn</span>:? <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span> <br/>
+<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Ltac</span> <span class="id" title="var">break_match_goal</span> :=<br/>
+<span class="id" title="keyword">match</span> <span class="id" title="keyword">goal</span> <span class="id" title="keyword">with</span><br/>
+| [ |- <span class="id" title="keyword">context</span> [ <span class="id" title="keyword">match</span> ?<span class="id" title="var">X</span> <span class="id" title="keyword">with</span> <span class="id" title="var">_</span>⇒<span class="id" title="var">_</span> <span class="id" title="keyword">end</span> ] ] ⇒ <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="keyword">type</span> <span class="id" title="keyword">of</span> <span class="id" title="var">X</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">sumbool</span> <span class="id" title="var">_</span> <span class="id" title="var">_</span> ⇒ <span class="id" title="tactic">destruct</span> <span class="id" title="var">X</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">_</span> ⇒ <span class="id" title="tactic">destruct</span> <span class="id" title="var">X</span> <span class="id" title="var">eqn</span>:?<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+Usage: 
+   Works similarly for `match` expressions too
+
+</div>
+<div class="code">
+<span class="id" title="keyword">Goal</span> <span class="id" title="keyword">∀</span> <span class="id" title="var">x</span>, <span class="id" title="var">x</span> &amp;&amp; <span class="id" title="var">true</span> = <span class="id" title="var">x</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a id="lab2"></a><h2 class="section">Arithmetic</h2>
+
+</div>
+<div class="code">
+
+<br/>
+<span class="id" title="keyword">Inductive</span> <span class="id" title="var">comparison_nat</span> (<span class="id" title="var">x</span> <span class="id" title="var">y</span>: <span class="id" title="var">nat</span>) : <span class="id" title="keyword">Set</span> :=<br/>
+&nbsp;&nbsp;| <span class="id" title="var">Nat_less</span>:    <span class="id" title="var">x</span> &lt; <span class="id" title="var">y</span> → <span class="id" title="var">comparison_nat</span> <span class="id" title="var">x</span> <span class="id" title="var">y</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">Nat_equal</span>:   <span class="id" title="var">x</span> = <span class="id" title="var">y</span> → <span class="id" title="var">comparison_nat</span> <span class="id" title="var">x</span> <span class="id" title="var">y</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">Nat_greater</span>: <span class="id" title="var">x</span> &gt; <span class="id" title="var">y</span> → <span class="id" title="var">comparison_nat</span> <span class="id" title="var">x</span> <span class="id" title="var">y</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">compare_nat</span>: <span class="id" title="keyword">∀</span> <span class="id" title="var">x</span> <span class="id" title="var">y</span>, <span class="id" title="var">comparison_nat</span> <span class="id" title="var">x</span> <span class="id" title="var">y</span>.<br/>
+
+<br/>
+</div>
+
+<div class="doc">
+<a id="lab3"></a><h2 class="section">Peano induction.</h2>
+
+<div class="paragraph"> </div>
+
+ This is a variant of the induction principle over natural
+  numbers.  It will be used later to do induction over
+  the size of a type. 
+</div>
+<div class="code">
+
+<br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">Peano_induction</span>:<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">∀</span> (<span class="id" title="var">P</span>: <span class="id" title="var">nat</span> → <span class="id" title="keyword">Prop</span>),<br/>
+&nbsp;&nbsp;(<span class="id" title="keyword">∀</span> <span class="id" title="var">x</span>, (<span class="id" title="keyword">∀</span> <span class="id" title="var">y</span>, <span class="id" title="var">y</span> &lt; <span class="id" title="var">x</span> → <span class="id" title="var">P</span> <span class="id" title="var">y</span>) → <span class="id" title="var">P</span> <span class="id" title="var">x</span>) →<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">∀</span> <span class="id" title="var">x</span>, <span class="id" title="var">P</span> <span class="id" title="var">x</span>.<br/>
+
+<br/>
+<span class="comment">(*&nbsp;taken&nbsp;from&nbsp;https://softwarefoundations.cis.upenn.edu/vfa-current/Perm.html&nbsp;*)</span><br/>
+<span class="id" title="keyword">Lemma</span> <span class="id" title="var">eqb_reflect</span> : <span class="id" title="keyword">∀</span> <span class="id" title="var">x</span> <span class="id" title="var">y</span>, <span class="id" title="var">reflect</span> (<span class="id" title="var">x</span> = <span class="id" title="var">y</span>) (<span class="id" title="var">x</span> =? <span class="id" title="var">y</span>).<br/>
+
+<br/>
+<span class="comment">(*&nbsp;Taken&nbsp;from<br/>
+&nbsp;&nbsp;&nbsp;https://gitlab.mpi-sws.org/iris/stdpp/-/blob/c5ee00e4ba9e0122ddfbd0de97847d8e96154595/theories/tactics.v<br/>
+&nbsp;&nbsp;&nbsp;and&nbsp;modified&nbsp;so&nbsp;that&nbsp;it&nbsp;works&nbsp;with&nbsp;<span class="inlinecode">=</span> <span class="inlinecode"><span class="id" title="var">true</span></span>&nbsp;instead&nbsp;of&nbsp;`is_True`<br/>
+&nbsp;*)</span><br/>
+
+<br/>
+<span class="id" title="keyword">Tactic Notation</span> "naive_bsolver" <span class="id" title="var">tactic</span>(<span class="id" title="var">tac</span>) :=<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">unfold</span> <span class="id" title="var">iff</span>, <span class="id" title="var">not</span> <span class="id" title="tactic">in</span> *;<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">repeat</span> <span class="id" title="keyword">match</span> <span class="id" title="keyword">goal</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">H</span> : <span class="id" title="keyword">context</span> [∀ <span class="id" title="var">_</span>, <span class="id" title="var">_</span> ∧ <span class="id" title="var">_</span> ] |- <span class="id" title="var">_</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">repeat</span> <span class="id" title="tactic">setoid_rewrite</span> <span class="id" title="var">forall_and_distr</span> <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>; <span class="id" title="var">revert</span> <span class="id" title="var">H</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">end</span>;<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="keyword">rec</span> <span class="id" title="var">go</span> <span class="id" title="var">n</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">repeat</span> <span class="id" title="keyword">match</span> <span class="id" title="keyword">goal</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;<span class="comment">(**i&nbsp;solve&nbsp;the&nbsp;goal&nbsp;*)</span><br/>
+&nbsp;&nbsp;| |- <span class="id" title="var">_</span> ⇒ <span class="id" title="var">fast_done</span><br/>
+&nbsp;&nbsp;<span class="comment">(**i&nbsp;intros&nbsp;*)</span><br/>
+&nbsp;&nbsp;| |- ∀ <span class="id" title="var">_</span>, <span class="id" title="var">_</span> ⇒ <span class="id" title="tactic">intro</span><br/>
+&nbsp;&nbsp;<span class="comment">(**i&nbsp;simplification&nbsp;of&nbsp;assumptions&nbsp;*)</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">H</span> : <span class="id" title="var">False</span> |- <span class="id" title="var">_</span> ⇒ <span class="id" title="tactic">destruct</span> <span class="id" title="var">H</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">H</span> : <span class="id" title="var">_</span> ∧ <span class="id" title="var">_</span> |- <span class="id" title="var">_</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">(*&nbsp;Work&nbsp;around&nbsp;bug&nbsp;https://coq.inria.fr/bugs/show_bug.cgi?id=2901&nbsp;*)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">H1</span> := <span class="id" title="tactic">fresh</span> <span class="id" title="tactic">in</span> <span class="id" title="keyword">let</span> <span class="id" title="var">H2</span> := <span class="id" title="tactic">fresh</span> <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">destruct</span> <span class="id" title="var">H</span> <span class="id" title="keyword">as</span> [<span class="id" title="var">H1</span> <span class="id" title="var">H2</span>]; <span class="id" title="tactic">try</span> <span class="id" title="tactic">clear</span> <span class="id" title="var">H</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">H</span> : ∃ <span class="id" title="var">_</span>, <span class="id" title="var">_</span>  |- <span class="id" title="var">_</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">x</span> := <span class="id" title="tactic">fresh</span> <span class="id" title="tactic">in</span> <span class="id" title="keyword">let</span> <span class="id" title="var">Hx</span> := <span class="id" title="tactic">fresh</span> <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">destruct</span> <span class="id" title="var">H</span> <span class="id" title="keyword">as</span> [<span class="id" title="var">x</span> <span class="id" title="var">Hx</span>]; <span class="id" title="tactic">try</span> <span class="id" title="tactic">clear</span> <span class="id" title="var">H</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">H</span> : ?<span class="id" title="var">P</span> → ?<span class="id" title="var">Q</span>, <span class="id" title="var">H2</span> : ?<span class="id" title="var">P</span> |- <span class="id" title="var">_</span> ⇒ <span class="id" title="tactic">specialize</span> (<span class="id" title="var">H</span> <span class="id" title="var">H2</span>)<br/>
+&nbsp;&nbsp;| <span class="id" title="var">H</span> : <span class="id" title="var">is_true</span> (<span class="id" title="var">bool_decide</span> <span class="id" title="var">_</span>) |- <span class="id" title="var">_</span> ⇒ <span class="id" title="tactic">apply</span> <span class="id" title="var">bool_decide_eq_true</span> <span class="id" title="tactic">in</span> <span class="id" title="var">H</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">H</span> : (<span class="id" title="var">bool_decide</span> <span class="id" title="var">_</span>) = <span class="id" title="var">true</span> |- <span class="id" title="var">_</span> ⇒ <span class="id" title="tactic">apply</span> <span class="id" title="var">bool_decide_eq_true</span> <span class="id" title="tactic">in</span> <span class="id" title="var">H</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">H</span> : <span class="id" title="var">is_true</span> (<span class="id" title="var">_</span> &amp;&amp; <span class="id" title="var">_</span>) |- <span class="id" title="var">_</span> ⇒ <span class="id" title="tactic">apply</span> <span class="id" title="var">andb_true_iff</span> <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>; <span class="id" title="tactic">destruct</span> <span class="id" title="var">H</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">H</span> : (<span class="id" title="var">_</span> &amp;&amp; <span class="id" title="var">_</span>) = <span class="id" title="var">true</span> |- <span class="id" title="var">_</span> ⇒ <span class="id" title="tactic">apply</span> <span class="id" title="var">andb_true_iff</span> <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>; <span class="id" title="tactic">destruct</span> <span class="id" title="var">H</span><br/>
+&nbsp;&nbsp;<span class="comment">(**i&nbsp;simplify&nbsp;and&nbsp;solve&nbsp;equalities&nbsp;*)</span><br/>
+&nbsp;&nbsp;| |- <span class="id" title="var">_</span> ⇒ <span class="id" title="tactic">progress</span> <span class="id" title="var">simplify_eq</span>/=<br/>
+&nbsp;&nbsp;<span class="comment">(**i&nbsp;operations&nbsp;that&nbsp;generate&nbsp;more&nbsp;subgoals&nbsp;*)</span><br/>
+&nbsp;&nbsp;| |- <span class="id" title="var">_</span> ∧ <span class="id" title="var">_</span> ⇒ <span class="id" title="tactic">split</span><br/>
+&nbsp;&nbsp;| |- <span class="id" title="var">is_true</span> (<span class="id" title="var">bool_decide</span> <span class="id" title="var">_</span>) ⇒ <span class="id" title="tactic">apply</span> <span class="id" title="var">bool_decide_eq_true</span><br/>
+&nbsp;&nbsp;| |- (<span class="id" title="var">bool_decide</span> <span class="id" title="var">_</span>) = <span class="id" title="var">true</span> ⇒ <span class="id" title="tactic">apply</span> <span class="id" title="var">bool_decide_eq_true</span><br/>
+&nbsp;&nbsp;| |- <span class="id" title="var">is_true</span> (<span class="id" title="var">_</span> &amp;&amp; <span class="id" title="var">_</span>) ⇒ <span class="id" title="tactic">apply</span> <span class="id" title="var">andb_true_iff</span>; <span class="id" title="tactic">split</span><br/>
+&nbsp;&nbsp;| |- (<span class="id" title="var">_</span> &amp;&amp; <span class="id" title="var">_</span>) = <span class="id" title="var">true</span> ⇒ <span class="id" title="tactic">apply</span> <span class="id" title="var">andb_true_iff</span>; <span class="id" title="tactic">split</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">H</span> : <span class="id" title="var">_</span> ∨ <span class="id" title="var">_</span> |- <span class="id" title="var">_</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">H1</span> := <span class="id" title="tactic">fresh</span> <span class="id" title="tactic">in</span> <span class="id" title="tactic">destruct</span> <span class="id" title="var">H</span> <span class="id" title="keyword">as</span> [<span class="id" title="var">H1</span>|<span class="id" title="var">H1</span>]; <span class="id" title="tactic">try</span> <span class="id" title="tactic">clear</span> <span class="id" title="var">H</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">H</span> : <span class="id" title="var">is_true</span> (<span class="id" title="var">_</span> || <span class="id" title="var">_</span>) |- <span class="id" title="var">_</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <span class="id" title="var">orb_true_iff</span> <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>; <span class="id" title="keyword">let</span> <span class="id" title="var">H1</span> := <span class="id" title="tactic">fresh</span> <span class="id" title="tactic">in</span> <span class="id" title="tactic">destruct</span> <span class="id" title="var">H</span> <span class="id" title="keyword">as</span> [<span class="id" title="var">H1</span>|<span class="id" title="var">H1</span>]; <span class="id" title="tactic">try</span> <span class="id" title="tactic">clear</span> <span class="id" title="var">H</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">H</span> : (<span class="id" title="var">_</span> || <span class="id" title="var">_</span>) = <span class="id" title="var">true</span> |- <span class="id" title="var">_</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <span class="id" title="var">orb_true_iff</span> <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>; <span class="id" title="keyword">let</span> <span class="id" title="var">H1</span> := <span class="id" title="tactic">fresh</span> <span class="id" title="tactic">in</span> <span class="id" title="tactic">destruct</span> <span class="id" title="var">H</span> <span class="id" title="keyword">as</span> [<span class="id" title="var">H1</span>|<span class="id" title="var">H1</span>]; <span class="id" title="tactic">try</span> <span class="id" title="tactic">clear</span> <span class="id" title="var">H</span><br/>
+&nbsp;&nbsp;<span class="comment">(**i&nbsp;solve&nbsp;the&nbsp;goal&nbsp;using&nbsp;the&nbsp;user&nbsp;supplied&nbsp;tactic&nbsp;*)</span><br/>
+&nbsp;&nbsp;| |- <span class="id" title="var">_</span> ⇒ <span class="id" title="tactic">solve</span> [<span class="id" title="var">tac</span>]<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">end</span>;<br/>
+&nbsp;&nbsp;<span class="comment">(**i&nbsp;use&nbsp;recursion&nbsp;to&nbsp;enable&nbsp;backtracking&nbsp;on&nbsp;the&nbsp;following&nbsp;clauses.&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="keyword">goal</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;<span class="comment">(**i&nbsp;instantiation&nbsp;of&nbsp;the&nbsp;conclusion&nbsp;*)</span><br/>
+&nbsp;&nbsp;| |- ∃ <span class="id" title="var">x</span>, <span class="id" title="var">_</span> ⇒ <span class="id" title="var">no_new_unsolved_evars</span> <span class="id" title="keyword">ltac</span>:(<span class="id" title="tactic">eexists</span>; <span class="id" title="var">go</span> <span class="id" title="var">n</span>)<br/>
+&nbsp;&nbsp;| |- <span class="id" title="var">_</span> ∨ <span class="id" title="var">_</span> ⇒ <span class="id" title="tactic">first</span> [<span class="id" title="tactic">left</span>; <span class="id" title="var">go</span> <span class="id" title="var">n</span> | <span class="id" title="tactic">right</span>; <span class="id" title="var">go</span> <span class="id" title="var">n</span>]<br/>
+&nbsp;&nbsp;| |- <span class="id" title="var">is_true</span> (<span class="id" title="var">_</span> || <span class="id" title="var">_</span>) ⇒ <span class="id" title="tactic">apply</span> <span class="id" title="var">orb_true_iff</span>; <span class="id" title="tactic">first</span> [<span class="id" title="tactic">left</span>; <span class="id" title="var">go</span> <span class="id" title="var">n</span> | <span class="id" title="tactic">right</span>; <span class="id" title="var">go</span> <span class="id" title="var">n</span>]<br/>
+&nbsp;&nbsp;| |- (<span class="id" title="var">_</span> || <span class="id" title="var">_</span>) = <span class="id" title="var">true</span> ⇒ <span class="id" title="tactic">apply</span> <span class="id" title="var">orb_true_iff</span>; <span class="id" title="tactic">first</span> [<span class="id" title="tactic">left</span>; <span class="id" title="var">go</span> <span class="id" title="var">n</span> | <span class="id" title="tactic">right</span>; <span class="id" title="var">go</span> <span class="id" title="var">n</span>]<br/>
+&nbsp;&nbsp;| <span class="id" title="var">_</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">(**i&nbsp;instantiations&nbsp;of&nbsp;assumptions.&nbsp;*)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">lazymatch</span> <span class="id" title="var">n</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">S</span> ?<span class="id" title="var">n'</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">(**i&nbsp;we&nbsp;give&nbsp;priority&nbsp;to&nbsp;assumptions&nbsp;that&nbsp;fit&nbsp;on&nbsp;the&nbsp;conclusion.&nbsp;*)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="keyword">goal</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">H</span> : <span class="id" title="var">_</span> → <span class="id" title="var">_</span> |- <span class="id" title="var">_</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">is_non_dependent</span> <span class="id" title="var">H</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">no_new_unsolved_evars</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">ltac</span>:(<span class="id" title="tactic">first</span> [<span class="id" title="tactic">eapply</span> <span class="id" title="var">H</span> | <span class="id" title="var">opose</span> <span class="id" title="var">proof</span>× <span class="id" title="var">H</span>]; <span class="id" title="tactic">clear</span> <span class="id" title="var">H</span>; <span class="id" title="var">go</span> <span class="id" title="var">n'</span>)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;<span class="id" title="tactic">in</span> <span class="id" title="var">iter</span> (<span class="id" title="keyword">fun</span> <span class="id" title="var">n'</span> ⇒ <span class="id" title="var">go</span> <span class="id" title="var">n'</span>) (<span class="id" title="tactic">eval</span> <span class="id" title="tactic">compute</span> <span class="id" title="tactic">in</span> (<span class="id" title="var">seq</span> 1 6)).<br/>
+<span class="id" title="keyword">Tactic Notation</span> "naive_bsolver" := <span class="id" title="var">naive_bsolver</span> <span class="id" title="tactic">eauto</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Tactic Notation</span> "split_and" :=<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="keyword">goal</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;| |- <span class="id" title="var">_</span> ∧ <span class="id" title="var">_</span> ⇒ <span class="id" title="tactic">split</span><br/>
+&nbsp;&nbsp;| |- <span class="id" title="var">Is_true</span> (<span class="id" title="var">_</span> &amp;&amp; <span class="id" title="var">_</span>) ⇒ <span class="id" title="tactic">apply</span> <span class="id" title="var">andb_True</span>; <span class="id" title="tactic">split</span><br/>
+&nbsp;&nbsp;| |- <span class="id" title="var">is_true</span> (<span class="id" title="var">_</span> &amp;&amp; <span class="id" title="var">_</span>) ⇒ <span class="id" title="tactic">apply</span> <span class="id" title="var">andb_true_iff</span>; <span class="id" title="tactic">split</span><br/>
+&nbsp;&nbsp;| |- (<span class="id" title="var">_</span> &amp;&amp; <span class="id" title="var">_</span>) = <span class="id" title="var">true</span> ⇒ <span class="id" title="tactic">apply</span> <span class="id" title="var">andb_true_iff</span>; <span class="id" title="tactic">split</span>                                                  <br/>
+&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+<span class="id" title="keyword">Tactic Notation</span> "split_and" "?" := <span class="id" title="tactic">repeat</span> <span class="id" title="var">split_and</span>.<br/>
+<span class="id" title="keyword">Tactic Notation</span> "split_and" "!" := <span class="id" title="tactic">hnf</span>; <span class="id" title="var">split_and</span>; <span class="id" title="var">split_and</span>?.<br/>
+
+<br/>
+<span class="id" title="keyword">Ltac</span> <span class="id" title="var">destruct_and_go</span> <span class="id" title="var">H</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">try</span> <span class="id" title="keyword">lazymatch</span> <span class="id" title="keyword">type</span> <span class="id" title="keyword">of</span> <span class="id" title="var">H</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">True</span> ⇒ <span class="id" title="tactic">clear</span> <span class="id" title="var">H</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">_</span> ∧ <span class="id" title="var">_</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">H1</span> := <span class="id" title="tactic">fresh</span> <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">H2</span> := <span class="id" title="tactic">fresh</span> <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">destruct</span> <span class="id" title="var">H</span> <span class="id" title="keyword">as</span> [ <span class="id" title="var">H1</span> <span class="id" title="var">H2</span> ];<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">destruct_and_go</span> <span class="id" title="var">H1</span>; <span class="id" title="var">destruct_and_go</span> <span class="id" title="var">H2</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">Is_true</span> (<span class="id" title="var">bool_decide</span> <span class="id" title="var">_</span>) ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> (<span class="id" title="var">bool_decide_unpack</span> <span class="id" title="var">_</span>) <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">destruct_and_go</span> <span class="id" title="var">H</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">Is_true</span> (<span class="id" title="var">_</span> &amp;&amp; <span class="id" title="var">_</span>) ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <span class="id" title="var">andb_True</span> <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">destruct_and_go</span> <span class="id" title="var">H</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">is_true</span> (<span class="id" title="var">_</span> &amp;&amp; <span class="id" title="var">_</span>) ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <span class="id" title="var">andb_true_iff</span> <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">destruct_and_go</span> <span class="id" title="var">H</span><br/>
+&nbsp;&nbsp;| (<span class="id" title="var">_</span> &amp;&amp; <span class="id" title="var">_</span>) = <span class="id" title="var">true</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <span class="id" title="var">andb_true_iff</span> <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">destruct_and_go</span> <span class="id" title="var">H</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Tactic Notation</span> "destruct_and" "?" <span class="id" title="var">ident</span>(<span class="id" title="var">H</span>) :=<br/>
+&nbsp;&nbsp;<span class="id" title="var">destruct_and_go</span> <span class="id" title="var">H</span>.<br/>
+<span class="id" title="keyword">Tactic Notation</span> "destruct_and" "!" <span class="id" title="var">ident</span>(<span class="id" title="var">H</span>) :=<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">hnf</span> <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>; <span class="id" title="tactic">progress</span> (<span class="id" title="var">destruct_and</span>? <span class="id" title="var">H</span>).<br/>
+<span class="id" title="keyword">Tactic Notation</span> "destruct_and" "?" :=<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">repeat</span> <span class="id" title="keyword">match</span> <span class="id" title="keyword">goal</span> <span class="id" title="keyword">with</span> <span class="id" title="var">H</span> : <span class="id" title="var">_</span> |- <span class="id" title="var">_</span> ⇒ <span class="id" title="tactic">progress</span> (<span class="id" title="var">destruct_and</span>? <span class="id" title="var">H</span>) <span class="id" title="keyword">end</span>.<br/>
+<span class="id" title="keyword">Tactic Notation</span> "destruct_and" "!" :=<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">progress</span> <span class="id" title="var">destruct_and</span>?.<br/>
+
+<br/>
+<span class="id" title="keyword">Ltac</span> <span class="id" title="var">destruct_ex_go</span> <span class="id" title="var">H</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">try</span> <span class="id" title="keyword">lazymatch</span> <span class="id" title="keyword">type</span> <span class="id" title="keyword">of</span> <span class="id" title="var">H</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">True</span> ⇒ <span class="id" title="tactic">clear</span> <span class="id" title="var">H</span><br/>
+&nbsp;&nbsp;| (<span class="id" title="var">ex</span> <span class="id" title="var">_</span>) ⇒ <span class="id" title="keyword">let</span> <span class="id" title="var">x</span> := <span class="id" title="tactic">fresh</span> "x" <span class="id" title="tactic">in</span> <span class="id" title="keyword">let</span> <span class="id" title="var">H'</span> := <span class="id" title="tactic">fresh</span> "H" <span class="id" title="tactic">in</span> <span class="id" title="tactic">destruct</span> <span class="id" title="var">H</span> <span class="id" title="keyword">as</span> [ <span class="id" title="var">x</span> <span class="id" title="var">H</span> ]<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+<span class="id" title="keyword">Tactic Notation</span> "destruct_ex" "?" <span class="id" title="var">ident</span>(<span class="id" title="var">H</span>) :=<br/>
+&nbsp;&nbsp;<span class="id" title="var">destruct_ex_go</span> <span class="id" title="var">H</span>.<br/>
+<span class="id" title="keyword">Tactic Notation</span> "destruct_ex" "!" <span class="id" title="var">ident</span>(<span class="id" title="var">H</span>) :=<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">hnf</span> <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>; <span class="id" title="tactic">progress</span> (<span class="id" title="var">destruct_ex</span>? <span class="id" title="var">H</span>).<br/>
+
+<br/>
+<span class="id" title="keyword">Tactic Notation</span> "destruct_ex" "?" :=<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">repeat</span> <span class="id" title="keyword">match</span> <span class="id" title="keyword">goal</span> <span class="id" title="keyword">with</span> <span class="id" title="var">H</span> : <span class="id" title="var">_</span> |- <span class="id" title="var">_</span> ⇒ <span class="id" title="tactic">progress</span> (<span class="id" title="var">destruct_ex</span>? <span class="id" title="var">H</span>) <span class="id" title="keyword">end</span>.<br/>
+<span class="id" title="keyword">Tactic Notation</span> "destruct_ex" "!" :=<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">progress</span> <span class="id" title="var">destruct_ex</span>?.<br/>
+
+<br/>
+<span class="id" title="keyword">Tactic Notation</span> "destruct_and_ex" "?" :=<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">repeat</span> (<span class="id" title="var">destruct_and</span>? || <span class="id" title="var">destruct_ex</span>?).<br/>
+<span class="id" title="keyword">Tactic Notation</span> "destruct_and_ex" "!" :=<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">progress</span> <span class="id" title="var">destruct_and_ex</span>?.<br/>
+
+<br/>
+<span class="id" title="keyword">Tactic Notation</span> "destruct_or" "?" <span class="id" title="var">ident</span>(<span class="id" title="var">H</span>) :=<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">repeat</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;(<span class="id" title="keyword">match</span> <span class="id" title="keyword">type</span> <span class="id" title="keyword">of</span> <span class="id" title="var">H</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">is_true</span> <span class="id" title="var">false</span> ⇒ <span class="id" title="tactic">inversion</span> <span class="id" title="var">H</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">False</span> ⇒ <span class="id" title="tactic">destruct</span> <span class="id" title="var">H</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">_</span> ∨ <span class="id" title="var">_</span> ⇒ <span class="id" title="tactic">destruct</span> <span class="id" title="var">H</span> <span class="id" title="keyword">as</span> [<span class="id" title="var">H</span>|<span class="id" title="var">H</span>]<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">Is_true</span> (<span class="id" title="var">bool_decide</span> <span class="id" title="var">_</span>) ⇒ <span class="id" title="tactic">apply</span> (<span class="id" title="var">bool_decide_unpack</span> <span class="id" title="var">_</span>) <span class="id" title="tactic">in</span> <span class="id" title="var">H</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">Is_true</span> (<span class="id" title="var">_</span> || <span class="id" title="var">_</span>) ⇒ <span class="id" title="tactic">apply</span> <span class="id" title="var">orb_True</span> <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>; <span class="id" title="tactic">destruct</span> <span class="id" title="var">H</span> <span class="id" title="keyword">as</span> [<span class="id" title="var">H</span>|<span class="id" title="var">H</span>]<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">is_true</span> (<span class="id" title="var">_</span> || <span class="id" title="var">_</span>) ⇒ <span class="id" title="tactic">apply</span> <span class="id" title="var">orb_true_iff</span> <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>; <span class="id" title="tactic">destruct</span> <span class="id" title="var">H</span> <span class="id" title="keyword">as</span> [<span class="id" title="var">H</span>|<span class="id" title="var">H</span>]<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| (<span class="id" title="var">_</span> || <span class="id" title="var">_</span>) = <span class="id" title="var">true</span> ⇒ <span class="id" title="tactic">apply</span> <span class="id" title="var">orb_true_iff</span> <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>; <span class="id" title="tactic">destruct</span> <span class="id" title="var">H</span> <span class="id" title="keyword">as</span> [<span class="id" title="var">H</span>|<span class="id" title="var">H</span>]<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span>).<br/>
+
+<br/>
+<span class="id" title="keyword">Tactic Notation</span> "destruct_or" "!" <span class="id" title="var">ident</span>(<span class="id" title="var">H</span>) := <span class="id" title="tactic">hnf</span> <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>; <span class="id" title="tactic">progress</span> (<span class="id" title="var">destruct_or</span>? <span class="id" title="var">H</span>).<br/>
+
+<br/>
+<span class="id" title="keyword">Tactic Notation</span> "destruct_or" "?" :=<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">repeat</span> <span class="id" title="keyword">match</span> <span class="id" title="keyword">goal</span> <span class="id" title="keyword">with</span> <span class="id" title="var">H</span> : <span class="id" title="var">_</span> |- <span class="id" title="var">_</span> ⇒ <span class="id" title="tactic">progress</span> (<span class="id" title="var">destruct_or</span>? <span class="id" title="var">H</span>) <span class="id" title="keyword">end</span>.<br/>
+<span class="id" title="keyword">Tactic Notation</span> "destruct_or" "!" :=<br/>
+&nbsp;&nbsp;<span class="id" title="tactic">progress</span> <span class="id" title="var">destruct_or</span>?.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Tactic Notation</span> "is_really_non_dependent" <span class="id" title="keyword">constr</span>(<span class="id" title="var">H</span>) :=<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">match</span> <span class="id" title="keyword">goal</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;| <span class="id" title="var">_</span> : <span class="id" title="keyword">context</span> [ <span class="id" title="var">H</span> ] |- <span class="id" title="var">_</span> ⇒ <span class="id" title="tactic">fail</span> 1<br/>
+&nbsp;&nbsp;| <span class="id" title="var">_</span> := <span class="id" title="keyword">context</span> [ <span class="id" title="var">H</span> ]  |- <span class="id" title="var">_</span> ⇒ <span class="id" title="tactic">fail</span> 1<br/>
+&nbsp;&nbsp;| |- <span class="id" title="keyword">context</span> [ <span class="id" title="var">H</span> ] ⇒ <span class="id" title="tactic">fail</span> 1<br/>
+&nbsp;&nbsp;| <span class="id" title="var">_</span> ⇒ <span class="id" title="tactic">idtac</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+<span class="id" title="keyword">Ltac</span> <span class="id" title="var">destruct_and_deduplicate'</span> <span class="id" title="var">H</span> <span class="id" title="var">cont</span> :=<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">lazymatch</span> <span class="id" title="keyword">type</span> <span class="id" title="keyword">of</span> <span class="id" title="var">H</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;| ?<span class="id" title="var">P</span> ∧ ?<span class="id" title="var">P</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">lazymatch</span> <span class="id" title="keyword">goal</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| [<span class="id" title="var">H1</span> : <span class="id" title="var">P</span> |- <span class="id" title="var">_</span>] ⇒ <span class="id" title="tactic">clear</span> <span class="id" title="var">H</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">_</span> ⇒ <br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">H2</span> := <span class="id" title="tactic">fresh</span> "H" <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">pose</span> <span class="id" title="var">proof</span> (<span class="id" title="var">H2</span> := <span class="id" title="var">proj1</span> <span class="id" title="var">H</span>);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">clear</span> <span class="id" title="var">H</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">cont</span> <span class="id" title="var">H2</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;| ?<span class="id" title="var">P</span> ∧ ?<span class="id" title="var">Q</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">lazymatch</span> <span class="id" title="keyword">goal</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| [<span class="id" title="var">H1</span> : <span class="id" title="var">P</span>, <span class="id" title="var">H2</span> : <span class="id" title="var">Q</span> |- <span class="id" title="var">_</span>]<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;⇒ <span class="id" title="tactic">clear</span> <span class="id" title="var">H</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| [<span class="id" title="var">H1</span> : <span class="id" title="var">P</span> |- <span class="id" title="var">_</span>]<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">H2</span> := <span class="id" title="tactic">fresh</span> "H" <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">pose</span> <span class="id" title="var">proof</span> (<span class="id" title="var">H2</span> := <span class="id" title="var">proj2</span> <span class="id" title="var">H</span>);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">clear</span> <span class="id" title="var">H</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">cont</span> <span class="id" title="var">H2</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| [<span class="id" title="var">H1</span> : <span class="id" title="var">Q</span> |- <span class="id" title="var">_</span>]<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">H2</span> := <span class="id" title="tactic">fresh</span> "H" <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">pose</span> <span class="id" title="var">proof</span> (<span class="id" title="var">H2</span> := <span class="id" title="var">proj1</span> <span class="id" title="var">H</span>);<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">clear</span> <span class="id" title="var">H</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">cont</span> <span class="id" title="var">H2</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">_</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">H1</span> := <span class="id" title="tactic">fresh</span> <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">let</span> <span class="id" title="var">H2</span> := <span class="id" title="tactic">fresh</span> <span class="id" title="tactic">in</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">destruct</span> <span class="id" title="var">H</span> <span class="id" title="keyword">as</span> [ <span class="id" title="var">H1</span> <span class="id" title="var">H2</span> ];<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">cont</span> <span class="id" title="var">H1</span>; <span class="id" title="var">cont</span> <span class="id" title="var">H2</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">end</span><br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Tactic Notation</span><br/>
+&nbsp;&nbsp;"destruct_and_deduplicate" <span class="id" title="var">ident</span>(<span class="id" title="var">H</span>) <span class="id" title="var">tactic</span>(<span class="id" title="var">cont</span>)<br/>
+&nbsp;&nbsp;:= <span class="id" title="var">destruct_and_deduplicate'</span> <span class="id" title="var">H</span> <span class="id" title="var">cont</span><br/>
+.<br/>
+
+<br/>
+<span class="id" title="keyword">Example</span> <span class="id" title="var">ex_destruct_and_deduplicate</span> <span class="id" title="var">P</span> <span class="id" title="var">Q</span> <span class="id" title="var">R</span>:<br/>
+&nbsp;&nbsp;<span class="id" title="var">P</span> ∧ <span class="id" title="var">Q</span> → <span class="id" title="var">P</span> ∧ <span class="id" title="var">R</span> → <span class="id" title="var">Q</span> ∧ <span class="id" title="var">R</span> → <span class="id" title="var">R</span> ∧ <span class="id" title="var">R</span> → <span class="id" title="var">R</span>.<br/>
+
+<br/>
+<span class="comment">(*&nbsp;A&nbsp;lightweight&nbsp;version&nbsp;of&nbsp;destruct_and&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Ltac</span> <span class="id" title="var">destruct_andb_go</span> <span class="id" title="var">H</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">try</span> <span class="id" title="keyword">lazymatch</span> <span class="id" title="keyword">type</span> <span class="id" title="keyword">of</span> <span class="id" title="var">H</span> <span class="id" title="keyword">with</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| <span class="id" title="var">true</span> ⇒ <span class="id" title="tactic">clear</span> <span class="id" title="var">H</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;| (<span class="id" title="var">_</span> &amp;&amp; <span class="id" title="var">_</span>) = <span class="id" title="var">true</span> ⇒<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">apply</span> <span class="id" title="var">andb_true_iff</span> <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>;<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">destruct_and_deduplicate</span> <span class="id" title="var">H</span> <span class="id" title="var">destruct_andb_go</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="keyword">end</span>.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="comment">(*&nbsp;We&nbsp;first&nbsp;use&nbsp;the&nbsp;associativity&nbsp;so&nbsp;that&nbsp;every&nbsp;destruct<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;yields&nbsp;at&nbsp;least&nbsp;one&nbsp;'atomic'&nbsp;hypothesis<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(not&nbsp;containing&nbsp;<span class="inlinecode"><span class="id" title="var">andb</span></span>),&nbsp;which&nbsp;may&nbsp;already&nbsp;exist<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;among&nbsp;the&nbsp;other&nbsp;hypotheses.<br/>
+&nbsp;&nbsp;&nbsp;*)</span><br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Ltac</span> <span class="id" title="var">destruct_andb_go_wrapper</span> <span class="id" title="var">H</span> :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">(*repeat&nbsp;rewrite&nbsp;-&gt;&nbsp;andb_assoc&nbsp;in&nbsp;H;*)</span><br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">destruct_andb_go</span> <span class="id" title="var">H</span><br/>
+&nbsp;&nbsp;.<br/>
+
+<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Tactic Notation</span> "destruct_andb" "?" <span class="id" title="var">ident</span>(<span class="id" title="var">H</span>) :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="var">destruct_andb_go_wrapper</span> <span class="id" title="var">H</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Tactic Notation</span> "destruct_andb" "!" <span class="id" title="var">ident</span>(<span class="id" title="var">H</span>) :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">hnf</span> <span class="id" title="tactic">in</span> <span class="id" title="var">H</span>; <span class="id" title="tactic">progress</span> (<span class="id" title="var">destruct_andb</span>? <span class="id" title="var">H</span>).<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Tactic Notation</span> "destruct_andb" "?" :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">repeat</span> <span class="id" title="keyword">match</span> <span class="id" title="keyword">goal</span> <span class="id" title="keyword">with</span> <span class="id" title="var">H</span> : <span class="id" title="var">_</span> |- <span class="id" title="var">_</span> ⇒ <span class="id" title="tactic">progress</span> (<span class="id" title="var">destruct_andb</span>? <span class="id" title="var">H</span>) <span class="id" title="keyword">end</span>.<br/>
+&nbsp;&nbsp;<span class="id" title="keyword">Tactic Notation</span> "destruct_andb" "!" :=<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="id" title="tactic">progress</span> <span class="id" title="var">destruct_andb</span>?.<br/>
+</div>
+<hr/>This page has been generated by <a href="http://coq.inria.fr/">coqdoc</a>
+</div>
+
+</div>
+
+</body>
+</html>
