@@ -64,7 +64,7 @@ jobs:
             touch "./branch/${CIRCLE_BRANCH}/.nojekyll"
             git add "./branch/${CIRCLE_BRANCH}"
             git commit --amend -m 'Update documentation'
-            echo -e "Host github.com\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
+            mkdir -p ~/.ssh/ && echo -e "Host github.com\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
             git push -f origin gh-pages
             #ghp-import --no-jekyll --prefix "branch/${CIRCLE_BRANCH}/" --push /tmp/workspace/share/doc/coq-matching-logic/doc/
 
