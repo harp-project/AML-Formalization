@@ -51,11 +51,10 @@ jobs:
       - add_ssh_keys:
           fingerprints:
             - "e0:63:b6:98:fc:4d:b8:60:86:71:46:dd:e8:be:84:02"
+      - checkout
       - run:
           name: Deploy docs to gh-pages branch
           command: |
-            git clone -b "gh-pages" "$CIRCLE_REPOSITORY_URL" gh-pages
-            cd gh-pages
             git switch gh-pages
             git config user.email "jenda.tusil+ci@gmail.com"
             git config user.name "ci-build"
@@ -64,9 +63,7 @@ jobs:
             touch "./branch/${CIRCLE_BRANCH}/.nojekyll"
             git add "./branch/${CIRCLE_BRANCH}"
             git commit --amend -m 'Update documentation'
-            mkdir -p ~/.ssh/ && echo -e "Host github.com\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
             git push -f origin gh-pages
-            #ghp-import --no-jekyll --prefix "branch/${CIRCLE_BRANCH}/" --push /tmp/workspace/share/doc/coq-matching-logic/doc/
 
 workflows:
   # Name the workflow "welcome"
