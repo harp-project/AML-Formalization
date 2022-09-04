@@ -69,6 +69,7 @@
             pkgs.python310Packages.pip
             pkgs.coqPackages.serapi
             pkgs.coq
+            pkgs.parallel
           ];
           
 

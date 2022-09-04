@@ -10,13 +10,18 @@ jobs:
   build:
     docker:
       - image: nixos/nix
+    # The resource_class feature allows configuring CPU and RAM resources for each job.
+    # Different resource classes are available for different executors.
+    # https://circleci.com/docs/2.0/configuration-reference/#resourceclass
+    resource_class: large
     steps:
       - run:
-          name: "Install git"
+          name: "Install dependencies"
           command: |
             nix-channel --update
             nix-env --upgrade
 #            nix-env -iA nixpkgs.git
+            nix-env -iA 'cachix'
       - checkout
       - run:
           name: "Build"
