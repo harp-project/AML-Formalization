@@ -68,7 +68,15 @@
         ( { coq, stdenv }:
         stdenv.mkDerivation {
           name = "coq-matching-logic-doc";
-          src = self + "/matching-logic-doc";
+          src = pkgs.lib.cleanSource (pkgs.nix-gitignore.gitignoreSourcePure [
+            ".git"
+            ".circleci/"
+            ".github"
+            "result*"
+            "*.nix"
+            "flake.lock"
+            ./.gitignore
+          ] ./matching-logic-doc);
           buildInputs = [
             self.outputs.packages.${system}.alectryon
             self.outputs.packages.${system}.coq-matching-logic
@@ -97,7 +105,16 @@
         ( { coq, stdenv }:
         stdenv.mkDerivation {
           name = "coq-matching-logic-example-fol";
-          src = self + "/examples/03_FOL";
+          src = pkgs.lib.cleanSource (pkgs.nix-gitignore.gitignoreSourcePure [
+            ".git"
+            ".circleci/"
+            ".github"
+            "result*"
+            "*.nix"
+            "flake.lock"
+            ./.gitignore
+          ] ./examples/03_FOL);
+
           propagatedBuildInputs = [
             self.outputs.packages.${system}.coq-matching-logic
           ];
@@ -110,7 +127,15 @@
         ( { coq, stdenv }:
         stdenv.mkDerivation {
           name = "coq-matching-logic-example-proofmode";
-          src = self + "/examples/02_proofmode";
+          src = pkgs.lib.cleanSource (pkgs.nix-gitignore.gitignoreSourcePure [
+            ".git"
+            ".circleci/"
+            ".github"
+            "result*"
+            "*.nix"
+            "flake.lock"
+            ./.gitignore
+          ] ./examples/02_proofmode);
           propagatedBuildInputs = [
             self.outputs.packages.${system}.coq-matching-logic
           ];
