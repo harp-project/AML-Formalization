@@ -23,6 +23,7 @@ jobs:
             nix-env -iA 'nixpkgs.cachix' 'nixpkgs.bash'
             cachix authtoken "${CACHIX_AUTH_TOKEN}"
             cachix use harp-ml-in-coq
+            nproc
       - checkout
       - run:
           name: "Build"
