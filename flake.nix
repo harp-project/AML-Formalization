@@ -43,7 +43,16 @@
         ( { coq, stdenv }:
         stdenv.mkDerivation {
           name = "coq-matching-logic";
-          src = self + "/matching-logic";
+          src = pkgs.lib.cleanSource (pkgs.nix-gitignore.gitignoreSourcePure [
+            ".git"
+            ".circleci/"
+            ".github"
+            "result*"
+            "*.nix"
+            "flake.lock"
+            ./.gitignore
+          ] ./matching-logic);
+
           propagatedBuildInputs = [
             pkgs.coq
             pkgs.coqPackages.equations
