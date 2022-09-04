@@ -27,16 +27,16 @@ jobs:
       - checkout
       - run:
           name: "Build"
-          command: cachix watch-exec harp-ml-in-coq nix --extra-experimental-features nix-command --extra-experimental-features flakes --print-build-logs build '.#coq-matching-logic' --no-link
+          command: cachix watch-exec harp-ml-in-coq -- nix --extra-experimental-features nix-command --extra-experimental-features flakes --print-build-logs build '.#coq-matching-logic' --no-link
       - run:
           name: "FOL -- Build"
-          command: cachix watch-exec harp-ml-in-coq nix --extra-experimental-features nix-command --extra-experimental-features flakes --print-build-logs build '.#coq-matching-logic-example-fol' --no-link
+          command: cachix watch-exec harp-ml-in-coq -- nix --extra-experimental-features nix-command --extra-experimental-features flakes --print-build-logs build '.#coq-matching-logic-example-fol' --no-link
       - run:
           name: "Prover Build & Test"
-          command: cachix watch-exec harp-ml-in-coq nix --extra-experimental-features nix-command --extra-experimental-features flakes --print-build-logs build '.#coq-matching-logic-mm-exporter' --no-link
+          command: cachix watch-exec harp-ml-in-coq -- nix --extra-experimental-features nix-command --extra-experimental-features flakes --print-build-logs build '.#coq-matching-logic-mm-exporter' --no-link
       - run:
           name: "Doc"
-          command: cachix watch-exec harp-ml-in-coq nix --extra-experimental-features nix-command --extra-experimental-features flakes --print-build-logs build '.#coq-matching-logic-doc' --out-link '../doc-output'
+          command: cachix watch-exec harp-ml-in-coq -- nix --extra-experimental-features nix-command --extra-experimental-features flakes --print-build-logs build '.#coq-matching-logic-doc' --out-link '../doc-output'
           no_output_timeout: 60m
       - persist_to_workspace:
           root: ../doc-output
