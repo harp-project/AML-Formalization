@@ -25,7 +25,7 @@ alectryon: doc/alectryon
 doc/alectryon:
 	mkdir -p doc/alectryon
 	find $(PATH_TO_COMPILED_LIBRARY) -name \*.v \
-		| parallel -j+0 alectryon -R $(PATH_TO_COMPILED_LIBRARY) MatchingLogic \
+		| parallel -j+0 --joblog paralel.log -- alectryon -R $(PATH_TO_COMPILED_LIBRARY) MatchingLogic \
 		--expect-unexpected \
 		--traceback \
 		--frontend coq \
