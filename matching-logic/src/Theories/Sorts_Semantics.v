@@ -760,9 +760,9 @@ Section with_model.
       f_equal. apply functional_extensionality.
       intros m.
       remember (fresh_evar (patt_in b0 (patt_inhabitant_set (nest_ex s)) and ϕ)) as x.
-      case_match.
+      destruct (indec m) eqn:Hm.
       {
-        clear Heqd.
+        clear Hm.
         rename e into Hinh.
         unfold evar_open. simpl_bevar_subst. simpl.
         unfold nest_ex. rewrite nest_ex_same.
@@ -798,7 +798,7 @@ Section with_model.
         rewrite Htmp. clear. unfold_leibniz. set_solver.
       }
       {
-        clear Heqd.
+        clear Hm.
         rename n into Hinh.
         unfold evar_open. simpl_bevar_subst.
         rewrite eval_and_simpl. simpl.
@@ -842,9 +842,9 @@ Section with_model.
       intros m.
       remember (fresh_evar
       (patt_in b0 (patt_inhabitant_set (nest_ex s)) ---> ϕ)) as x.
-      case_match.
+      destruct (indec m) eqn:Hm.
       {
-        clear Heqd.
+        clear Hm.
         rename e into Hinh.
         unfold evar_open. simpl_bevar_subst. simpl.
         unfold nest_ex. rewrite nest_ex_same.
@@ -883,7 +883,7 @@ Section with_model.
         rewrite Htmp. clear. unfold_leibniz. set_solver.
       }
       {
-        clear Heqd.
+        clear Hm.
         rename n into Hinh.
         unfold evar_open. simpl_bevar_subst.
         rewrite eval_imp_simpl. simpl.
