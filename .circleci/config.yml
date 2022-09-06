@@ -6,15 +6,19 @@ version: 2.1
 #  welcome: circleci/welcome-orb@0.4.1
 # Orchestrate or schedule a set of jobs
 
+orbs:
+  nix: eld/nix@1.0.0
+
 jobs:
   build:
     docker:
-      - image: nixos/nix
+      - image: cimg/base
     # The resource_class feature allows configuring CPU and RAM resources for each job.
     # Different resource classes are available for different executors.
     # https://circleci.com/docs/2.0/configuration-reference/#resourceclass
     resource_class: large
     steps:
+      - nix/install
       - run:
           name: "Install dependencies"
           command: |
