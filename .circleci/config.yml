@@ -8,9 +8,9 @@ version: 2.1
 
 jobs:
   build:
-    docker:
-#      - image: cimg/base:stable
-      - image: ghcr.io/numtide/nix-unstable-installer/nix:2.12.0pre20220901_4823067
+    machine: ubuntu-2204
+#    docker:
+#      - image: ghcr.io/numtide/nix-unstable-installer/nix:2.12.0pre20220901_4823067
     # The resource_class feature allows configuring CPU and RAM resources for each job.
     # Different resource classes are available for different executors.
     # https://circleci.com/docs/2.0/configuration-reference/#resourceclass
@@ -19,7 +19,7 @@ jobs:
       - run:
           name: "Install dependencies"
           command: |
-            #sh <(curl -L https://github.com/numtide/nix-unstable-installer/releases/download/nix-2.12.0pre20220901_4823067/install)
+            sh <(curl -L https://github.com/numtide/nix-unstable-installer/releases/download/nix-2.12.0pre20220901_4823067/install)
             mkdir -p ~/.config/nix/
             echo 'experimental-features = nix-command flakes' >> ~/.config/nix/nix.conf
             nix-channel --add 'https://nixos.org/channels/nixpkgs-unstable' nixpkgs
