@@ -505,26 +505,35 @@ Qed.
     induction ϕ; intros p k l Hnk Hwfc Hci; simpl in *; auto.
     {
       unfold evar_open in Hwfc. simpl in Hwfc.
-      repeat case_match; simpl in *; auto; inversion Hci; subst; simpl in *; try lia;
-        repeat case_match; try lia.
-      unfold evar_open in Hwfc. simpl in Hwfc. case_match; try lia.
-      exfalso. clear Heqc Heqs Hci Heqc0.
-      induction l1; simpl in Hwfc.
+      destruct (compare_nat n p.1) eqn:Hcmpnp1;
+      destruct (decide (n = k)) eqn:Heqnk;
+        simpl in *; subst; try reflexivity;
+        inversion Hci as [| k0 x0 [Hk0x0 Hl]| k0 k1 x0 x1 k2 Hk0k1 Hcik1x1l [Hrest1 Hrest2]];
+        subst; simpl in *; try lia;
+        destruct (decide (k < k)); try lia.
+      unfold evar_open in Hwfc. simpl in Hwfc.
+      destruct (compare_nat k k1) eqn:Hckk1; try lia.
+      exfalso. clear -k2 Hwfc Hcik1x1l Hckk1.
+      induction k2; simpl in Hwfc.
       {
         case_match. lia. congruence.
       }
       {
-        destruct a. inversion H2; subst.
-        unfold evar_open in Hwfc. simpl in Hwfc. case_match; subst; auto; try lia.
-        apply IHl1. apply Hwfc.
-        destruct l1.
+        destruct a as [dbi ev]. simpl in *.
+        inversion Hcik1x1l as [| |k0' k1' x0' x1' l' Hk0'k1' Hcik1'x1'l']. subst.
+        unfold evar_open in Hwfc. simpl in Hwfc.
+        destruct (compare_nat k dbi) eqn:Hkdbi; subst; auto; try lia.
+        apply IHk2. apply Hwfc.
+        destruct k2.
         {
           constructor.
         }
         {
           destruct p.
-          inversion H7. subst.
-          apply ci_cons. lia. assumption.
+          inversion Hcik1'x1'l'.
+          apply ci_cons.
+          { lia. }
+          { assumption. }
         }
       }
     }

@@ -128,7 +128,7 @@ Section index_manipulation.
   Proof.
     induction φ; intros dbi dbi2 ψ more Hgt Hwf; cbn; auto.
     * do 3 case_match; auto; simpl; try case_match; subst; try lia; auto.
-      rewrite nest_ex_aux_wfcex; auto. wf_auto. eapply well_formed_closed_ex_aux_ind. 2: exact H0. lia.
+      rewrite nest_ex_aux_wfcex; auto. wf_auto. eapply well_formed_closed_ex_aux_ind. 2: eassumption. lia.
       now replace (pred n + more) with (pred (n + more)) by lia.
     * rewrite -> IHφ1, -> IHφ2; auto.
     * rewrite -> IHφ1, -> IHφ2; auto.
@@ -142,7 +142,7 @@ Section index_manipulation.
   Proof.
     induction φ; intros dbi dbi2 ψ more Hgt Hwf; cbn; auto.
     * do 3 case_match; auto; simpl; try case_match; subst; try lia; auto.
-      rewrite nest_mu_aux_wfcmu; auto. wf_auto. eapply well_formed_closed_mu_aux_ind. 2: exact H. lia.
+      rewrite nest_mu_aux_wfcmu; auto. wf_auto. eapply well_formed_closed_mu_aux_ind. 2: eassumption. lia.
       now replace (pred n + more) with (pred (n + more)) by lia.
     * rewrite -> IHφ1, -> IHφ2; auto.
     * rewrite -> IHφ1, -> IHφ2; auto.

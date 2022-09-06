@@ -23,12 +23,11 @@ install-coqdoc: doc/coqdoc
 alectryon: doc/alectryon
 
 doc/alectryon:
+	coqc --version
+	sertop --version
 	mkdir -p doc/alectryon
 	find $(PATH_TO_COMPILED_LIBRARY) -name \*.v \
-		| xargs alectryon -R $(PATH_TO_COMPILED_LIBRARY) MatchingLogic \
-		--frontend coq \
-		--backend webpage \
-		--output-directory doc/alectryon
+		| parallel -j+0 --joblog paralel.log --halt-on-error 2 --ungroup -v -- ./run_alectryon.sh "$(PATH_TO_COMPILED_LIBRARY)"
 
 install-alectryon: doc/alectryon
 	install -d $(DOCDIR)/$(INSTALLCOQDOCROOT)/doc/alectryon/

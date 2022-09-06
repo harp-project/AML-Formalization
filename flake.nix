@@ -43,9 +43,18 @@
         ( { coq, stdenv }:
         stdenv.mkDerivation {
           name = "coq-matching-logic";
-          src = self + "/matching-logic";
+          src = pkgs.lib.cleanSource (pkgs.nix-gitignore.gitignoreSourcePure [
+            ".git"
+            ".circleci/"
+            ".github"
+            "result*"
+            "*.nix"
+            "flake.lock"
+            ./.gitignore
+          ] ./matching-logic);
+
           propagatedBuildInputs = [
-            pkgs.coq
+            coq
             pkgs.coqPackages.equations
             pkgs.coqPackages.stdpp
           ];
@@ -59,20 +68,32 @@
         ( { coq, stdenv }:
         stdenv.mkDerivation {
           name = "coq-matching-logic-doc";
-          src = self + "/matching-logic-doc";
+          src = pkgs.lib.cleanSource (pkgs.nix-gitignore.gitignoreSourcePure [
+            ".git"
+            ".circleci/"
+            ".github"
+            "result*"
+            "*.nix"
+            "flake.lock"
+            ./.gitignore
+          ] ./matching-logic-doc);
           buildInputs = [
-            self.outputs.packages.${system}.alectryon
+            #self.outputs.packages.${system}.alectryon
             self.outputs.packages.${system}.coq-matching-logic
             # we use a newer version which is compatible with new pigments
-            # pkgs.python310Packages.alectryon
+            pkgs.python310Packages.alectryon
             pkgs.python310Packages.pygments
             pkgs.python310Packages.pip
             pkgs.coqPackages.serapi
-            pkgs.coq
+            coq
+            pkgs.parallel
           ];
           
+          postPatch = ''
+            patchShebangs run_alectryon.sh
+          '';
 
-          buildFlags = [ "PATH_TO_COMPILED_LIBRARY=${self.outputs.packages.${system}.coq-matching-logic}/lib/coq/${coq.coq-version}/user-contrib/MatchingLogic" ];
+          buildFlags = [ "PATH_TO_COMPILED_LIBRARY=${self.outputs.packages.${system}.coq-matching-logic}/lib/coq/${coq.coq-version}/user-contrib/MatchingLogic/" ];
 
           installTargets = "install-coqdoc install-alectryon";
           # We are not going to install this system-wide, so we can afford not to have the coq version in the path to the docs.
@@ -87,7 +108,16 @@
         ( { coq, stdenv }:
         stdenv.mkDerivation {
           name = "coq-matching-logic-example-fol";
-          src = self + "/examples/03_FOL";
+          src = pkgs.lib.cleanSource (pkgs.nix-gitignore.gitignoreSourcePure [
+            ".git"
+            ".circleci/"
+            ".github"
+            "result*"
+            "*.nix"
+            "flake.lock"
+            ./.gitignore
+          ] ./examples/03_FOL);
+
           propagatedBuildInputs = [
             self.outputs.packages.${system}.coq-matching-logic
           ];
@@ -100,7 +130,15 @@
         ( { coq, stdenv }:
         stdenv.mkDerivation {
           name = "coq-matching-logic-example-proofmode";
-          src = self + "/examples/02_proofmode";
+          src = pkgs.lib.cleanSource (pkgs.nix-gitignore.gitignoreSourcePure [
+            ".git"
+            ".circleci/"
+            ".github"
+            "result*"
+            "*.nix"
+            "flake.lock"
+            ./.gitignore
+          ] ./examples/02_proofmode);
           propagatedBuildInputs = [
             self.outputs.packages.${system}.coq-matching-logic
           ];
