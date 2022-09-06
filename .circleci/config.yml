@@ -20,7 +20,7 @@ jobs:
           command: |
             mkdir -p ~/.config/nix/
             echo 'experimental-features = nix-command flakes' >> ~/.config/nix/nix.conf
-            nix-env -iA 'nixpkgs.cachix' 'nixpkgs.bash'
+            nix-env -iA 'cachix' 'bash'
             cachix authtoken "${CACHIX_AUTH_TOKEN}"
             cachix use harp-ml-in-coq
             nproc
