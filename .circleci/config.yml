@@ -22,8 +22,8 @@ jobs:
             #sh <(curl -L https://github.com/numtide/nix-unstable-installer/releases/download/nix-2.12.0pre20220901_4823067/install)
             mkdir -p ~/.config/nix/
             echo 'experimental-features = nix-command flakes' >> ~/.config/nix/nix.conf
-            sudo nix-channel --add 'https://nixos.org/channels/nixpkgs-unstable' nixpkgs
-            sudo nix-channel --update
+            nix-channel --add 'https://nixos.org/channels/nixpkgs-unstable' nixpkgs
+            nix-channel --update
             nix-env -iA 'nixpkgs.cachix' 'nixpkgs.bash'
             cachix authtoken "${CACHIX_AUTH_TOKEN}"
             cachix use harp-ml-in-coq
