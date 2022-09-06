@@ -18,6 +18,7 @@ jobs:
       - run:
           name: "Install dependencies"
           command: |
+            nix-channel --list
             mkdir -p ~/.config/nix/
             echo 'experimental-features = nix-command flakes' >> ~/.config/nix/nix.conf
             nix-env -iA 'cachix' 'bash'
