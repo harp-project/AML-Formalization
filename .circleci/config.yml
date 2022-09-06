@@ -18,10 +18,10 @@ jobs:
       - run:
           name: "Install dependencies"
           command: |
-            nix-channel --list
             mkdir -p ~/.config/nix/
             echo 'experimental-features = nix-command flakes' >> ~/.config/nix/nix.conf
-            nix-env -iA 'cachix' 'bash'
+            nix-channel --add 'https://nixos.org/channels/nixpkgs-22.05' nixpkgs
+            nix-env -iA 'nixpkgs.cachix' 'nixpkgs.bash'
             cachix authtoken "${CACHIX_AUTH_TOKEN}"
             cachix use harp-ml-in-coq
             nproc
