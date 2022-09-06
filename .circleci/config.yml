@@ -18,8 +18,10 @@ jobs:
       - run:
           name: "Install dependencies"
           command: |
-            nix-channel --update
-            nix-env --upgrade
+            mkdir -p ~/.config/nix/
+            echo 'experimental-features = nix-command flakes' >> ~/.config/nix/nix.conf
+#            nix-channel --update
+#            nix-env --upgrade
             nix-env -iA 'nixpkgs.cachix' 'nixpkgs.bash'
             cachix authtoken "${CACHIX_AUTH_TOKEN}"
             cachix use harp-ml-in-coq
@@ -27,16 +29,16 @@ jobs:
       - checkout
       - run:
           name: "Build"
-          command: cachix watch-exec harp-ml-in-coq -- nix --extra-experimental-features nix-command --extra-experimental-features flakes --print-build-logs build '.#coq-matching-logic' --no-link
+          command: cachix watch-exec harp-ml-in-coq -- nix --print-build-logs build '.#coq-matching-logic' --no-link
       - run:
           name: "FOL -- Build"
-          command: cachix watch-exec harp-ml-in-coq -- nix --extra-experimental-features nix-command --extra-experimental-features flakes --print-build-logs build '.#coq-matching-logic-example-fol' --no-link
+          command: cachix watch-exec harp-ml-in-coq -- nix --print-build-logs build '.#coq-matching-logic-example-fol' --no-link
       - run:
           name: "Prover Build & Test"
-          command: cachix watch-exec harp-ml-in-coq -- nix --extra-experimental-features nix-command --extra-experimental-features flakes --print-build-logs build '.#coq-matching-logic-mm-exporter' --no-link
+          command: cachix watch-exec harp-ml-in-coq -- nix --print-build-logs build '.#coq-matching-logic-mm-exporter' --no-link
       - run:
           name: "Doc"
-          command: cachix watch-exec harp-ml-in-coq -- nix --extra-experimental-features nix-command --extra-experimental-features flakes --print-build-logs build '.#coq-matching-logic-doc' --out-link '../doc-output'
+          command: cachix watch-exec harp-ml-in-coq -- nix --print-build-logs build '.#coq-matching-logic-doc' --out-link '../doc-output'
           no_output_timeout: 60m
       - persist_to_workspace:
           root: ../doc-output
