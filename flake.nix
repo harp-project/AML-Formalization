@@ -54,7 +54,7 @@
           ] ./matching-logic);
 
           propagatedBuildInputs = [
-            pkgs.coq
+            coq
             pkgs.coqPackages.equations
             pkgs.coqPackages.stdpp
           ];
@@ -85,7 +85,7 @@
             pkgs.python310Packages.pygments
             pkgs.python310Packages.pip
             pkgs.coqPackages.serapi
-            pkgs.coqPackages.coq
+            coq
             pkgs.parallel
           ];
           

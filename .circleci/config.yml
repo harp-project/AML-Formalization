@@ -40,10 +40,10 @@ jobs:
           command: cachix watch-exec harp-ml-in-coq -- nix --show-trace --print-build-logs build '.#coq-matching-logic-mm-exporter' --no-link
       - run:
           name: "Doc"
-          command: cachix watch-exec harp-ml-in-coq -- nix --show-trace --print-build-logs build '.#coq-matching-logic-doc' --out-link '../doc-output'
+          command: cachix watch-exec harp-ml-in-coq -- nix --show-trace --print-build-logs build '.#coq-matching-logic-doc' --out-link './doc-output'
           no_output_timeout: 60m
       - persist_to_workspace:
-          root: ../doc-output
+          root: ./doc-output
           paths: share/doc/coq-matching-logic/doc
 
 
