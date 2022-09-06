@@ -9,7 +9,7 @@ version: 2.1
 jobs:
   build:
     machine:
-      image: ubuntu-2204
+      image: ubuntu-2204:current
 #    docker:
 #      - image: ghcr.io/numtide/nix-unstable-installer/nix:2.12.0pre20220901_4823067
     # The resource_class feature allows configuring CPU and RAM resources for each job.
