@@ -23,6 +23,8 @@ install-coqdoc: doc/coqdoc
 alectryon: doc/alectryon
 
 doc/alectryon:
+	coqc --version
+	sertop --version
 	mkdir -p doc/alectryon
 	find $(PATH_TO_COMPILED_LIBRARY) -name \*.v \
 		| parallel -j+0 --joblog paralel.log --halt-on-error 2 --ungroup -v  -- alectryon -R $(PATH_TO_COMPILED_LIBRARY) MatchingLogic \
