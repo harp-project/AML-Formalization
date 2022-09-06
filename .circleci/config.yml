@@ -22,7 +22,7 @@ jobs:
             echo 'experimental-features = nix-command flakes' >> ~/.config/nix/nix.conf
             nix-channel --add 'https://nixos.org/channels/nixpkgs-unstable' nixpkgs
             nix-channel --update
-            nix-env -iA 'nixpkgs.cachix' 'nixpkgs.bash'
+            strace nix-env -iA 'nixpkgs.cachix' 'nixpkgs.bash'
             cachix authtoken "${CACHIX_AUTH_TOKEN}"
             cachix use harp-ml-in-coq
             nproc
