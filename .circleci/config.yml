@@ -35,9 +35,9 @@ jobs:
       - run:
           name: "FOL -- Build"
           command: cachix watch-exec harp-ml-in-coq -- nix --show-trace --print-build-logs build '.#coq-matching-logic-example-fol' --no-link
-      - run:
-          name: "Prover Build & Test"
-          command: cachix watch-exec harp-ml-in-coq -- nix --show-trace --print-build-logs build '.#coq-matching-logic-mm-exporter' --no-link
+#      - run:
+#          name: "Prover Build & Test"
+#          command: cachix watch-exec harp-ml-in-coq -- nix --show-trace --print-build-logs build '.#coq-matching-logic-mm-exporter' --no-link
       - run:
           name: "Doc"
           command: cachix watch-exec harp-ml-in-coq -- nix --show-trace --print-build-logs build '.#coq-matching-logic-doc' --out-link './doc-output'

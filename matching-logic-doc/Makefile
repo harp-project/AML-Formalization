@@ -26,12 +26,18 @@ doc/alectryon:
 	coqc --version
 	sertop --version
 	mkdir -p doc/alectryon
-	find $(PATH_TO_COMPILED_LIBRARY) -name \*.v \
-		| parallel -j+0 --joblog paralel.log --halt-on-error 2 --ungroup -v  -- alectryon -R $(PATH_TO_COMPILED_LIBRARY) MatchingLogic \
+	alectryon -R $(PATH_TO_COMPILED_LIBRARY) MatchingLogic \
 		--traceback \
 		--frontend coq \
 		--backend webpage \
-		--output-directory doc/alectryon
+		--output-directory doc/alectryon \
+		$(PATH_TO_COMPILED_LIBRARY)/Tests/TEST_proofmode_example.v
+#	find $(PATH_TO_COMPILED_LIBRARY) -name \*.v \
+#		| parallel -j+0 --joblog paralel.log --halt-on-error 2 --ungroup -v  -- alectryon -R $(PATH_TO_COMPILED_LIBRARY) MatchingLogic \
+#		--traceback \
+#		--frontend coq \
+#		--backend webpage \
+#		--output-directory doc/alectryon
 
 install-alectryon: doc/alectryon
 	install -d $(DOCDIR)/$(INSTALLCOQDOCROOT)/doc/alectryon/
