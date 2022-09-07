@@ -78,10 +78,10 @@
             ./.gitignore
           ] ./matching-logic-doc);
           buildInputs = [
-            #self.outputs.packages.${system}.alectryon
+            self.outputs.packages.${system}.alectryon
             self.outputs.packages.${system}.coq-matching-logic
             # we use a newer version which is compatible with new pigments
-            pkgs.python310Packages.alectryon
+            #pkgs.python310Packages.alectryon
             pkgs.python310Packages.pygments
             pkgs.python310Packages.pip
             pkgs.coqPackages.serapi
