@@ -78,10 +78,10 @@
             ./.gitignore
           ] ./matching-logic-doc);
           buildInputs = [
-            #self.outputs.packages.${system}.alectryon
+            self.outputs.packages.${system}.alectryon
             self.outputs.packages.${system}.coq-matching-logic
             # we use a newer version which is compatible with new pigments
-            pkgs.python310Packages.alectryon
+            #pkgs.python310Packages.alectryon
             pkgs.python310Packages.pygments
             pkgs.python310Packages.pip
             pkgs.coqPackages.serapi
@@ -95,7 +95,7 @@
 
           buildFlags = [ "PATH_TO_COMPILED_LIBRARY=${self.outputs.packages.${system}.coq-matching-logic}/lib/coq/${coq.coq-version}/user-contrib/MatchingLogic/" ];
 
-          installTargets = "install-coqdoc install-alectryon";
+          installTargets = "install-coqdoc install-alectryon install-snippets";
           # We are not going to install this system-wide, so we can afford not to have the coq version in the path to the docs.
           # We do not want to have the version in the path, since it would be harder for the CI the figure out where the docs live. 
           # installFlags = [ "DOCDIR=$(out)/share/coq/${coq.coq-version}" "INSTALLCOQDOCROOT=coq-matching-logic" ];

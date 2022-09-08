@@ -40,3 +40,6 @@ For more informations do `python extract_snippets -h`
 ## Makefile
 Command `make file.v` extracts `.v` found in `theories/oridinals` and makes a latex file. \
 And extract snippets and in directory snippets.
+
+## Other
+Based on [coq-community/hydra-batless](https://github.com/coq-community/hydra-battles/tree/bef8539a16e6f3c022e429640be4a99e2abc3d56)
