@@ -191,7 +191,7 @@ Module Notations.
 End Notations.
 
 Section subst.
-  Import Substitution.Notations.
+  Import Notations.
   Open Scope ml_scope.
   Context {Σ : Signature}.
 
