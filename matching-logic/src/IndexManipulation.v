@@ -126,6 +126,7 @@ Section index_manipulation.
   Proof.
     induction φ; intros dbi dbi2 ψ more Hgt Hwf; cbn; auto.
     * do 3 case_match; auto; simpl; try case_match; subst; try lia; auto.
+
       rewrite nest_ex_aux_wfcex; auto. eapply well_formed_closed_ex_aux_ind.
       2: apply andb_true_iff in Hwf; apply Hwf. lia.
       now replace (pred n + more) with (pred (n + more)) by lia.

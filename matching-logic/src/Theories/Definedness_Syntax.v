@@ -76,7 +76,7 @@ Module Notations.
   Notation "p =ml q" := (patt_equal p q) (at level 67) : ml_scope.
   Notation "p ⊆ml q" := (patt_subseteq p q) (at level 67) : ml_scope.
   Notation "p ∈ml q" := (patt_in p q) (at level 67) : ml_scope.
-  Notation "⌈ '_' ⌉" := (patt_sym (Definedness_Syntax.inj definedness)) : ml_scope.
+  Notation "⌈ '_' ⌉" := (patt_sym (inj definedness)) : ml_scope.
 
 End Notations.
 

@@ -500,24 +500,26 @@ Section with_signature.
         repeat case_match; simpl in *; auto; inversion Hci; subst; simpl in *; try lia;
           repeat case_match; try lia.
         unfold evar_open in Hwfc. simpl in Hwfc. case_match; try lia.
-        exfalso. clear Heqc Heqs Hci Heqc0.
+        exfalso.
         induction l1; simpl in Hwfc.
         {
           case_match. lia. congruence.
         }
         {
-          destruct a. inversion H2; subst.
+          destruct a. inversion H4; subst.
           unfold evar_open in Hwfc. simpl in Hwfc. case_match; subst; auto; try lia.
-          apply IHl1. apply Hwfc.
+          apply IHl1. 2: apply Hwfc.
           destruct l1.
           {
-            constructor.
+            constructor. lia. constructor.
           }
           {
             destruct p.
-            inversion H7. subst.
-            apply ci_cons. lia. assumption.
+            inversion H10. subst.
+            apply ci_cons. lia. apply ci_cons. lia. assumption.
           }
+          destruct l1. constructor.
+          destruct p. inversion H10. subst. constructor. lia. auto.
         }
       }
       {

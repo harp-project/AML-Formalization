@@ -8,31 +8,52 @@ version: 2.1
 
 jobs:
   build:
-    docker:
-      - image: nixos/nix
+    machine:
+      image: ubuntu-2204:current
+#    docker:
+#      - image: ghcr.io/numtide/nix-unstable-installer/nix:2.12.0pre20220901_4823067
+    # The resource_class feature allows configuring CPU and RAM resources for each job.
+    # Different resource classes are available for different executors.
+    # https://circleci.com/docs/2.0/configuration-reference/#resourceclass
+    resource_class: large
     steps:
       - run:
-          name: "Install git"
+          name: "Install dependencies"
           command: |
+            sh <(curl -L https://github.com/numtide/nix-unstable-installer/releases/download/nix-2.12.0pre20220901_4823067/install)
+            source /home/circleci/.nix-profile/etc/profile.d/nix.sh
+            mkdir -p ~/.config/nix/
+            echo 'experimental-features = nix-command flakes' >> ~/.config/nix/nix.conf
+            nix-channel --add 'https://nixos.org/channels/nixpkgs-unstable' nixpkgs
             nix-channel --update
-            nix-env --upgrade
-#            nix-env -iA nixpkgs.git
+            nix-env -iA 'nixpkgs.cachix' 'nixpkgs.bash'
+            cachix authtoken "${CACHIX_AUTH_TOKEN}"
+            cachix use harp-ml-in-coq
+            nproc
       - checkout
       - run:
           name: "Build"
-          command: nix --extra-experimental-features nix-command --extra-experimental-features flakes --print-build-logs build '.#coq-matching-logic'
+          command: |
+            source /home/circleci/.nix-profile/etc/profile.d/nix.sh
+            cachix watch-exec harp-ml-in-coq -- nix --show-trace --print-build-logs build '.#coq-matching-logic' --no-link
       - run:
           name: "FOL -- Build"
-          command: nix --extra-experimental-features nix-command --extra-experimental-features flakes --print-build-logs build '.#coq-matching-logic-example-fol'
+          command: |
+            source /home/circleci/.nix-profile/etc/profile.d/nix.sh
+            cachix watch-exec harp-ml-in-coq -- nix --show-trace --print-build-logs build '.#coq-matching-logic-example-fol' --no-link
       - run:
           name: "Prover Build & Test"
-          command: nix --extra-experimental-features nix-command --extra-experimental-features flakes --print-build-logs build '.#coq-matching-logic-mm-exporter'
+          command: |
+            source /home/circleci/.nix-profile/etc/profile.d/nix.sh
+            cachix watch-exec harp-ml-in-coq -- nix --show-trace --print-build-logs build '.#coq-matching-logic-mm-exporter' --no-link
       - run:
           name: "Doc"
-          command: nix --extra-experimental-features nix-command --extra-experimental-features flakes --print-build-logs build '.#coq-matching-logic-doc' --out-link 'doc-output'
-          no_output_timeout: 45m
+          command: |
+            source /home/circleci/.nix-profile/etc/profile.d/nix.sh
+            cachix watch-exec harp-ml-in-coq -- nix --show-trace --print-build-logs build '.#coq-matching-logic-doc' --out-link './doc-output'
+          no_output_timeout: 60m
       - persist_to_workspace:
-          root: doc-output
+          root: ./doc-output
           paths: share/doc/coq-matching-logic/doc
 
 
@@ -44,18 +65,25 @@ jobs:
       - checkout
       - attach_workspace:
           at: /tmp/workspace
-      - run:
-          name: Install and configure dependencies
-          command: |
-            git config user.email "jenda.tusil+ci@gmail.com"
-            git config user.name "ci-build"
-            nix-env -iA 'nixpkgs.ghp-import'
+      #- run:
+      #    name: Install and configure dependencies
+      #    command: |
+      #      #nix-env -iA 'nixpkgs.ghp-import'
       - add_ssh_keys:
           fingerprints:
             - "e0:63:b6:98:fc:4d:b8:60:86:71:46:dd:e8:be:84:02"
       - run:
           name: Deploy docs to gh-pages branch
-          command: ghp-import --no-jekyll --prefix "branch/${CIRCLE_BRANCH}/" --push --no-history --force /tmp/workspace/share/doc/coq-matching-logic/doc/
+          command: |
+            git switch gh-pages
+            git config user.email "jenda.tusil+ci@gmail.com"
+            git config user.name "ci-build"
+            rm -rf "./branch/${CIRCLE_BRANCH}/"
+            cp -R "/tmp/workspace/share/doc/coq-matching-logic/doc/" "./branch/${CIRCLE_BRANCH}/"
+            touch "./branch/${CIRCLE_BRANCH}/.nojekyll"
+            git add "./branch/${CIRCLE_BRANCH}"
+            git commit --amend -m 'Update documentation'
+            git push -f origin gh-pages
 
 workflows:
   # Name the workflow "welcome"

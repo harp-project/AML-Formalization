@@ -1259,20 +1259,20 @@ induction φ; intros ψ dbi X; simpl.
 - split; intros H; auto.
   destruct H; auto.
   destruct H; congruence.
-- case_match; split; intros H.
-  + simpl in H. set_solver.
-  + destruct H.
-    * destruct H; auto. case_match; auto; subst. lia. congruence.
+- case_match; split; intros H'.
+  + simpl in H'. set_solver.
+  + destruct H' as [H'|H'].
+    * destruct H'; auto. case_match; auto; subst. lia. congruence.
     * set_solver.
   + left. split; auto. case_match; auto.
   + simpl in H. set_solver.
   + simpl in H. set_solver.
-  + destruct H.
-    * destruct H. case_match; try lia; congruence.
+  + destruct H' as [H'|H'].
+    * destruct H'. case_match; try lia; congruence.
     * set_solver.
-- split; intros H; auto.
-  destruct H.
-  + destruct H. congruence.
+- split; intros H'; auto.
+  destruct H' as [H'|H'].
+  + destruct H'. congruence.
   + set_solver.
 - rewrite elem_of_union.
   rewrite elem_of_union.
@@ -1350,16 +1350,16 @@ induction φ; intros ψ dbi X; simpl.
 - split; intros H; auto.
   destruct H; auto.
   destruct H; congruence.
-- case_match; split; intros H.
-  + simpl in H. set_solver.
-  + destruct H.
-    * destruct H; auto. case_match; auto; subst. lia. congruence.
+- case_match; split; intros H'.
+  + simpl in H'. set_solver.
+  + destruct H' as [H'|H'].
+    * destruct H'; auto. case_match; auto; subst. lia. congruence.
     * set_solver.
   + left. split; auto. case_match; auto.
-  + simpl in H. set_solver.
-  + simpl in H. set_solver.
-  + destruct H.
-    * destruct H. case_match; try lia; congruence.
+  + simpl in H'. set_solver.
+  + simpl in H'. set_solver.
+  + destruct H' as [H'|H'].
+    * destruct H'. case_match; try lia; congruence.
     * set_solver.
 - split; intros H; auto.
   destruct H; auto.
@@ -1572,8 +1572,10 @@ bevar_occur (phi^{evar: dbi2 ↦ X}) dbi1 = false.
 Proof.
 move: phi dbi1 dbi2.
 induction sz; move=> phi; destruct phi; simpl; move=> dbi1 dbi2 Hsz H H1; try rewrite !IHsz; auto; try lia; try apply orb_false_elim in H1; firstorder.
-{ cbn. repeat case_match; simpl; auto; try lia. rewrite Heqs. reflexivity.
-  case_match; try lia. }
+{ cbn. repeat case_match; simpl; auto; try lia.
+  { rewrite H0. reflexivity. }
+  { case_match; try lia. }
+}
 simpl. lia.
 Qed.
 
@@ -1976,10 +1978,10 @@ move: dbi1 dbi2.
 induction phi; intros dbi1 dbi2 H; simpl; auto.
 -
   case_match; auto.
-  + split; intros H0.
+  + split; intros H0'.
     * apply wfc_impl_no_neg_occ. apply Hwfcpsi.
     * apply wfc_impl_no_pos_occ. apply Hwfcpsi.
-  + split; intros H0.
+  + split; intros H0'.
     * auto.
     * cbn. repeat case_match. lia. reflexivity.
 - specialize (IHphi1 dbi1 dbi2).

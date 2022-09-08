@@ -549,12 +549,13 @@ Section with_syntax.
             }
             {
                 rewrite elem_of_PropSet in Hin.
-                destruct_and_ex!.
-                inversion H2. subst. clear H2.
-                inversion H0. subst. clear H0.
-                rewrite elem_of_PropSet in H3.
-                destruct H3 as [a [H3 H3'] ].
-                inversion H3.
+                destruct Hinre as [a1 [Ja1 Ga1] ].
+                destruct Hin as [a2 [Ja2 Ga2] ].
+                inversion Ja1; clear Ja1; subst.
+                inversion Ja2; clear Ja2; subst.
+                rewrite elem_of_PropSet in Ga1.
+                destruct Ga1 as [a3 [Ja3 Ga3] ].
+                inversion Ja3.
             }
         }
     Qed.
@@ -655,11 +656,12 @@ Section with_syntax.
             unfold Sorts_Syntax.sym.
             do 2 rewrite eval_sym_simpl.
             unfold sym_interp at 1. simpl. unfold new_sym_interp.
-            repeat case_match.
-            { exfalso. clear -e HDefNeqInh. congruence. }
-            2: { contradiction n0. reflexivity. }
+            destruct (decide (inj inhabitant = inj inhabitant)) as [Heq|Hneq] eqn:Hid;[|contradiction].
+            clear Hid Heq.
+            destruct (decide (inj inhabitant = Definedness_Syntax.inj definedness)) as [Heq|Hneq] eqn:Hnid.
+            { clear -HDefNeqInh Heq. congruence. }
             {
-                clear e Heqs1 Heqs0 n.
+                clear Hneq Hnid.
                 unfold app_ext at 1.
                 unfold app_interp at 1. simpl. unfold new_app_interp.
                 set_unfold. intros x. split.
@@ -1077,15 +1079,16 @@ Section with_syntax.
                                     rewrite elem_of_PropSet in Hin.
                                     destruct_and_ex!. repeat case_match; subst; auto; try congruence.
                                     {
-                                        clear Heqs2 n0 n Heqs1 n1 Heqs3 e Heqs4 H0.
+                                        clear -H3.
                                         unfold fmap in H3.
                                         with_strategy transparent [propset_fmap] unfold propset_fmap in H3.
-                                        clear -H3. set_solver.
+                                        set_solver.
                                     }
                                     {
+                                        clear -H3. 
                                         unfold fmap in H3.
                                         with_strategy transparent [propset_fmap] unfold propset_fmap in H3.
-                                        clear -H3. set_solver.
+                                        set_solver.
                                     }
                                 }
                                 {
@@ -1097,15 +1100,16 @@ Section with_syntax.
                                     rewrite elem_of_PropSet in Hin.
                                     destruct_and_ex!. repeat case_match; subst; auto; try congruence.
                                     {
-                                        clear Heqs2 n0 n Heqs1 n1 Heqs3 e Heqs4 H0.
+                                        clear -H3.
                                         unfold fmap in H3.
                                         with_strategy transparent [propset_fmap] unfold propset_fmap in H3.
-                                        clear -H3. set_solver.
+                                        set_solver.
                                     }
                                     {
+                                        clear -H3. 
                                         unfold fmap in H3.
                                         with_strategy transparent [propset_fmap] unfold propset_fmap in H3.
-                                        clear -H3. set_solver.
+                                        set_solver.
                                     }
                                 }
                                 destruct el.
@@ -1118,15 +1122,16 @@ Section with_syntax.
                                     rewrite elem_of_PropSet in Hin.
                                     destruct_and_ex!. repeat case_match; subst; auto; try congruence.
                                     {
-                                        clear Heqs2 n0 n Heqs1 n1 Heqs3 e Heqs4 H0.
+                                        clear -H3. 
                                         unfold fmap in H3.
                                         with_strategy transparent [propset_fmap] unfold propset_fmap in H3.
-                                        clear -H3. set_solver.
+                                        set_solver.
                                     }
                                     {
+                                        clear -H2. 
                                         unfold fmap in H2.
                                         with_strategy transparent [propset_fmap] unfold propset_fmap in H2.
-                                        clear -H2. set_solver.
+                                        set_solver.
                                     }
                                 }
                                 rewrite update_evar_val_lift_val_comm in Hc.
@@ -1985,7 +1990,8 @@ Section with_syntax.
                                     rewrite elem_of_PropSet in Hnotin'.
                                     unfold is_not_core_symbol,is_core_symbol in H.
                                     repeat case_match; subst; auto; try contradiction.
-                                    apply Hnotin'. clear Hnotin' Heqs3 Heqs2 Heqs1 Heqs0.
+                                    apply Hnotin'.
+                                    clear -Hin.
                                     rewrite elem_of_PropSet in Hin.
                                     destruct Hin as [le [re [Hle [Hre Hin] ] ] ].
                                     exists cinh. exists (cel (inl re)).
@@ -2054,7 +2060,7 @@ Section with_syntax.
                                         exfalso. clear -Hin.  set_solver.
                                     }
                                     rewrite update_evar_val_lift_val_comm.
-                                    clear Heqs1 Heqs2 Heqs4 Heqs3 Hle e n1.
+                                    clear -IHszpred Hszϕ HSPred Hwf H' Hin Hre.
                                     specialize (IHszpred (update_evar_val (fresh_evar ϕ) d0 ρ)).
                                     feed specialize IHszpred.
                                     {
@@ -2168,7 +2174,7 @@ Section with_syntax.
                                         repeat split; try assumption.
                                     }
                                     {
-                                        clear Heqs3 Heqs4 Heqs2 Heqs1.
+                                        clear -IHszpred Hc Hwf Hszϕ HSPred HSPred'.
                                         rewrite update_evar_val_lift_val_comm in Hc.
                                         specialize (IHszpred (update_evar_val (fresh_evar ϕ) a0 ρ)).
                                         feed specialize IHszpred.
@@ -2182,7 +2188,6 @@ Section with_syntax.
                                             wf_auto2.
                                         }
                                         destruct IHszpred as [IH1 IH2].
-                                        clear Hle e.
                                         specialize (HSPred' (update_evar_val (fresh_evar ϕ) a0 ρ)).
                                         destruct HSPred' as [HFull|HEmpty].
                                         {

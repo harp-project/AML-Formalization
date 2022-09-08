@@ -750,7 +750,10 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
         constructor; simpl.
         { set_solver. }
         { set_solver. }
-        { unfold implb in *. repeat case_match; try reflexivity; simpl in *; try assumption. inversion Heqb. }
+        { unfold implb in *.
+          destruct (uses_kt pf1) eqn:Hktpf1;[|reflexivity]. simpl in *.
+          exact Hpf4.
+        }
         { clear -pwi_pf_fp. set_solver. }
       }
       { assumption. }
@@ -759,8 +762,10 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
         constructor; simpl.
         { set_solver. }
         { set_solver. }
-        { unfold implb in *. repeat case_match; try reflexivity; simpl in *; try assumption. inversion Heqb.
-          rewrite orb_comm in H2. simpl in H2. inversion H2.     
+        { unfold implb in *.
+          destruct (uses_kt pf2) eqn:Hktpf2;[|reflexivity].
+          rewrite orb_comm in Hpf4. simpl in *.
+          exact Hpf4.
         }
         {
           clear -pwi_pf_fp. set_solver.

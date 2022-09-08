@@ -99,13 +99,14 @@ Section ProofSystemTheorems.
 
     pose proof (universal_generalization Γ (all , (⌈ b0 and patt_free_evar x ⌉ ---> ⌊ b0 <---> patt_free_evar x ⌋)) x AnyReasoning (pile_any _)) as H1.
     simpl in H1.
-    case_match; try congruence.
+    destruct (decide (x = x)) eqn:Hxx;[|congruence].
     apply H1.
     { wf_auto2. }
     clear H1.
-    pose proof (universal_generalization Γ (⌈ (patt_free_evar y) and (patt_free_evar x) ⌉ ---> ⌊ (patt_free_evar y) <---> (patt_free_evar x) ⌋) y AnyReasoning (pile_any _)) as H1.
-    simpl in H1. clear Heqs. do 2 case_match; auto; try congruence.
-    2: { clear Heqs Heqs0. congruence.  }
+    pose proof (@universal_generalization _ Γ (⌈ (patt_free_evar y) and (patt_free_evar x) ⌉ ---> ⌊ (patt_free_evar y) <---> (patt_free_evar x) ⌋) y AnyReasoning (pile_any _)) as H1.
+    simpl in H1. clear Hxx.
+    destruct (decide (y = y)) eqn:Hyy;[|congruence].
+    destruct (decide (y = x)) eqn:Heqyx;[congruence|].
     apply H1.
     { wf_auto2. }
     clear H1.

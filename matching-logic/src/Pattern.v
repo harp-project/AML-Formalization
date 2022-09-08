@@ -13,6 +13,7 @@ From MatchingLogic Require Export
 (* TODO have different type for element variable and for set variable index *)
 Definition db_index := nat.
 
+(* begin snippet Pattern *)
 Inductive Pattern {Σ : Signature} : Set :=
 | patt_free_evar (x : evar)
 | patt_free_svar (x : svar)
@@ -25,6 +26,7 @@ Inductive Pattern {Σ : Signature} : Set :=
 | patt_exists (phi : Pattern)
 | patt_mu (phi : Pattern)
 .
+(* end snippet Pattern *)
 
 Global
 Instance Pattern_eqdec {Σ : Signature} : EqDecision Pattern.
@@ -659,8 +661,8 @@ Qed.
 
 (* TODO move somewhere else *)
 Lemma wfapp_proj_1 {Σ : Signature} l₁ l₂:
-Pattern.wf (l₁ ++ l₂) = true ->
-Pattern.wf l₁ = true.
+wf (l₁ ++ l₂) = true ->
+wf l₁ = true.
 Proof.
 intros H.
 apply (wf_take (length l₁)) in H.
@@ -669,8 +671,8 @@ exact H.
 Qed.
 
 Lemma wfapp_proj_2 {Σ : Signature} l₁ l₂:
-Pattern.wf (l₁ ++ l₂) = true ->
-Pattern.wf l₂ = true.
+wf (l₁ ++ l₂) = true ->
+wf l₂ = true.
 Proof.
 intros H.
 apply (wf_drop (length l₁)) in H.
@@ -679,33 +681,33 @@ exact H.
 Qed.
 
 Lemma wfl₁hl₂_proj_l₁ {Σ : Signature} l₁ h l₂:
-Pattern.wf (l₁ ++ h :: l₂) ->
-Pattern.wf l₁.
+wf (l₁ ++ h :: l₂) ->
+wf l₁.
 Proof.
 apply wfapp_proj_1.
 Qed.
 
 Lemma wfl₁hl₂_proj_h {Σ : Signature} l₁ h l₂:
-Pattern.wf (l₁ ++ h :: l₂) ->
+wf (l₁ ++ h :: l₂) ->
 well_formed h.
 Proof.
-intros H. apply wfapp_proj_2 in H. unfold Pattern.wf in H.
+intros H. apply wfapp_proj_2 in H. unfold wf in H.
 simpl in H. apply andb_prop in H as [H1 H2].
 exact H1.
 Qed.
 
 Lemma wfl₁hl₂_proj_l₂ {Σ : Signature} l₁ h l₂:
-Pattern.wf (l₁ ++ h :: l₂) ->
-Pattern.wf l₂.
+wf (l₁ ++ h :: l₂) ->
+wf l₂.
 Proof.
-intros H. apply wfapp_proj_2 in H. unfold Pattern.wf in H.
+intros H. apply wfapp_proj_2 in H. unfold wf in H.
 simpl in H. apply andb_prop in H as [H1 H2].
 exact H2.
 Qed.
 
 Lemma wfl₁hl₂_proj_l₁l₂ {Σ : Signature} l₁ h l₂:
-Pattern.wf (l₁ ++ h :: l₂) ->
-Pattern.wf (l₁ ++ l₂).
+wf (l₁ ++ h :: l₂) ->
+wf (l₁ ++ l₂).
 Proof.
 intros H.
 pose proof (wfl₁hl₂_proj_l₁ _ _ _ H).
