@@ -2319,7 +2319,13 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
       1-4: wf_auto2.
     }
 
-
+    (* TODO do something like this, but we need more general mlApplyMeta
+    toMLGoal.
+    { wf_auto2. }
+    mlIntro "H".
+    mlDestructAnd "H" as "H1" "H2".
+    mlApplyMeta HSUB.
+    *)
     eapply MP. 2: useBasicReasoning; apply and_impl'; try_wfauto2.
     apply reorder_meta; try_wfauto2.
     exact HSUB.

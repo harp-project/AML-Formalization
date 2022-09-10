@@ -3753,8 +3753,66 @@ Proof.
   exact H.
 Defined.
 
+Lemma lhs_imp_to_and {Σ : Signature} Γ (g x : Pattern) (xs : list Pattern):
+  well_formed g ->
+  well_formed x ->
+  Pattern.wf xs ->
+  Γ ⊢i (foldr patt_imp g (x :: xs)) ---> (foldr patt_and x xs ---> g)
+  using BasicReasoning.
+Proof.
+  intros wfg wfx wfxs.
+  induction xs; simpl.
+  {
+    apply A_impl_A.
+    wf_auto2.
+  }
+  {
+    pose proof (wfaxs := wfxs).
+    unfold Pattern.wf in wfxs.
+    simpl in wfxs.
+    apply andb_prop in wfxs as [wfa wfxs].
+    fold (Pattern.wf xs) in wfxs.
+    specialize (IHxs wfxs).
+    simpl in IHxs.
+    assert (Hwffa: well_formed (foldr patt_and x xs)).
+    { apply well_formed_foldr_and; assumption. }
+    toMLGoal.
+    { wf_auto2. }
+    mlAdd IHxs as "H".
+    mlIntro "H1".
+    mlIntro "H2".
+    mlDestructAnd "H2" as "H3" "H4".
+    mlApplyMeta reorder in "H1".
+    mlAssert ("H5": (x ---> foldr patt_imp g xs)).
+    { wf_auto2. }
+    {
+      mlApply "H1".
+      mlExact "H3".  
+    }
+    mlAssert ("H6" : (foldr patt_and x xs ---> g)).
+    { wf_auto2. }
+    {
+      mlApply "H".
+      mlExact "H5".
+    }
+    mlApply "H6".
+    mlExact "H4".
+  }
+Defined.
 
 
+Lemma lhs_imp_to_and_meta {Σ : Signature} Γ (g x : Pattern) (xs : list Pattern) i:
+  well_formed g ->
+  well_formed x ->
+  Pattern.wf xs ->
+  Γ ⊢i (foldr patt_imp g (x :: xs)) using i ->
+  Γ ⊢i (foldr patt_and x xs ---> g) using i.
+Proof.
+  intros wfg wfx wfxs H.
+  eapply MP.
+  2: { useBasicReasoning. apply lhs_imp_to_and; assumption. }
+  exact H.
+Defined.
 
 #[local]
 Ltac tryExact l idx :=

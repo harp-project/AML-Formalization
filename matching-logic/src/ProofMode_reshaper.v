@@ -134,6 +134,11 @@ Section with_signature.
   Abort.
 
 
+  (*
+    Γ ⊢ (φ₁ and ... and φₖ) ---> ψ
+    -------------------------------
+    Γ ⊢ φ₁ ---> ... ---> φₖ ---> ψ
+  *)
   Lemma lhs_and_to_imp_r Γ (g x : Pattern) (xs : list Pattern) i :
     well_formed g ->
     well_formed x ->
