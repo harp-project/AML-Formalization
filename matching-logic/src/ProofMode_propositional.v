@@ -2786,6 +2786,12 @@ Ltac2 rec applyRec (f : constr) (xs : constr list) : constr :=
   | y::ys => (applyRec constr:($f $y) ys)
   end.
 
+Ltac2 Eval (applyRec constr:(S) [constr:("")]).
+
+Ltac2 fitsExactly (f : constr) (xs : constr list) : bool :=
+
+.
+
 (*
   All thic complicated code is here only for one reason:
   I want to be able to first run the tactic with all the parameters

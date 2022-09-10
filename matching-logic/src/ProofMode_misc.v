@@ -3022,12 +3022,47 @@ Defined.
 Ltac2 _callCompletedTransformedAndCast
   (t : constr) (transform : constr) (tac : constr -> unit) :=
   let tac' := (fun (t' : constr) =>
-    let tcast := open_constr:(@useGenericReasoning'' _ _ _ _ _ $t') in
-    fillWithUnderscoresAndCall tac tcast
+    Message.print (Message.of_constr t');
+    let tac'' := (fun (t'' : constr) =>
+      Message.print (Message.of_constr t'');
+      let tcast := open_constr:(@useGenericReasoning'' _ _ _ _ _ $t'') in
+      fillWithUnderscoresAndCall tac tcast []
+    ) in
+    fillWithUnderscoresAndCall (fun t''' => Message.print (Message.of_constr t'''); tac'' t''') transform [t']
   ) in
-  fillWithUnderscoresAndCall tac' t
+  Message.print (Message.of_constr t);
+  fillWithUnderscoresAndCall tac' t []
 .
 
+Ltac2 mlApplyMetaGeneralized (t : constr) :=
+  _callCompletedTransformedAndCast t constr:(@reshape_lhs_imp_to_and_forward) _mlApplyMetaRaw ;
+  try_solve_pile_basic ();
+  try_wfa ()
+.
+
+Ltac _mlApplyMetaGeneralized t :=
+  let ff := ltac2:(t' |- mlApplyMetaGeneralized (Option.get (Ltac1.to_constr(t')))) in
+  ff t
+.
+
+
+Tactic Notation "mlApplyMetaGeneralized" constr(t) :=
+  _mlApplyMetaGeneralized t
+.
+
+Example ex_mlApplyMetaGeneralized  {Σ : Signature} Γ a b c d:
+  well_formed a ->
+  well_formed b ->
+  well_formed c ->
+  well_formed d ->
+  Γ ⊢ a ---> b ---> c ---> d ->
+  Γ ⊢ d.
+Proof.
+  intros wfa wfb wfc wfd H.
+  toMLGoal.
+  { wf_auto2. }
+  mlApplyMetaGeneralized H.
+Abort.
 
 Close Scope ml_scope.
 Close Scope list_scope.
