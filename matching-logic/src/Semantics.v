@@ -166,9 +166,8 @@ Section semantics.
   Lemma update_evar_val_same x m ρ :
     evar_valuation (update_evar_val x m ρ) x = m.
   Proof.
-    unfold update_evar_val. simpl. destruct (decide (x = x)); simpl.
-    + reflexivity.
-    + contradiction.
+    unfold update_evar_val. simpl.
+    rewrite decide_eq_same. reflexivity.
   Qed.
 
   Lemma update_evar_val_neq (ρ : Valuation) x1 e x2 :
@@ -1232,7 +1231,7 @@ Section with_model.
         * repeat rewrite -> eval_bound_evar_simpl; auto.
         * rewrite eval_free_svar_simpl. unfold update_svar_val.
           destruct ρ as [ρₑ ρₛ]. simpl.
-          destruct (decide (X = X)). simpl. auto. contradiction.
+          rewrite decide_eq_same. reflexivity.
         * repeat rewrite -> eval_bound_svar_simpl; auto.
       + (* sym *)
         simpl. repeat rewrite -> eval_sym_simpl; auto.

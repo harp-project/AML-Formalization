@@ -2,7 +2,7 @@ From Coq Require Import ssreflect ssrfun ssrbool.
 
 From Coq Require Import Ensembles.
 From stdpp Require Import base fin_sets sets propset.
-From MatchingLogic.Utils Require Import Lattice.
+From MatchingLogic.Utils Require Import Lattice stdpp_ext.
 From MatchingLogic Require Import Syntax Semantics.
 
 Import MatchingLogic.Syntax.Notations.
@@ -262,7 +262,8 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
             specialize (Hneg H2).
             inversion Hneg. subst. cbn in H5. case_match; congruence.
           * simpl. simpl in H4. destruct (decide (X = x)). contradiction. apply H4.
-          * simpl. simpl in H4. destruct (decide (x = x)). auto. apply H4.
+          * simpl. simpl in H4. rewrite decide_eq_same. rewrite decide_eq_same in H4.
+            auto.
           * simpl. simpl in H4. destruct (decide (X = x)). contradiction. apply H4.
             
         + (* EVar bound *)

@@ -109,7 +109,7 @@ Lemma count_evar_occurrences_subst_ctx AC x:
 Proof.
   intros H.
   induction AC; simpl.
-  - destruct (decide (x = x)); [reflexivity|contradiction].
+  - rewrite decide_eq_same. reflexivity.
   - simpl in H. apply not_elem_of_union in H.
   rewrite IHAC;[exact (proj1 H)|].
   rewrite count_evar_occurrences_0; [exact (proj2 H)|].
@@ -152,7 +152,7 @@ Proof.
   assert (Hcount0: count_evar_occurrences boxvar p = 0).
   { lia. }
   rewrite Hcount0.
-  destruct (decide (0 = 0)). 2: contradiction. simpl. clear e.
+  rewrite decide_eq_same.
   f_equal.
   2: { apply proof_irrelevance. }
   rewrite IHAC;[assumption|reflexivity].
@@ -174,7 +174,7 @@ Proof.
   { lia. }
 
   rewrite Hcount0.
-  destruct (decide (0 = 0)). 2: contradiction. simpl. clear e.
+  rewrite decide_eq_same.
 
   f_equal.
   2: { apply proof_irrelevance. }
@@ -210,9 +210,7 @@ Proof.
   induction AC.
   - unfold ApplicationContext2PatternCtx,ApplicationContext2PatternCtx'.
     unfold emplace. simpl. unfold free_evar_subst. simpl.
-    destruct (decide (_ = _)); simpl.
-    + reflexivity.
-    + contradiction.
+    rewrite decide_eq_same. reflexivity.
   - simpl.
     rewrite -IHAC.
     unfold ApplicationContext2PatternCtx,ApplicationContext2PatternCtx'.

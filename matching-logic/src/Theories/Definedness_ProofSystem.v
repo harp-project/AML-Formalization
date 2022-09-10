@@ -2298,22 +2298,18 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
     }
     2: { apply pile_any. }
     
-
-    eapply MP. 2: useBasicReasoning; apply and_impl'; try_wfauto2.
-    apply reorder_meta; try_wfauto2.
-    
-
     unfold exists_quantify in HSUB.
     mlSimpl in HSUB.
-    rewrite -> HeqZ, -> HeqZvar in HSUB. simpl evar_quantify in HSUB.
-
+    rewrite -> HeqZ, -> HeqZvar in HSUB.
+    simpl evar_quantify in HSUB.
     rewrite decide_eq_same in HSUB.
 
     rewrite evar_quantify_noop in HSUB.
     {
       apply count_evar_occurrences_0.
       unfold fresh_evar. simpl.
-      epose (NIN := not_elem_of_union (evar_fresh (elements (free_evars φ ∪ free_evars φ'))) (free_evars φ) (free_evars φ')). destruct NIN as [NIN1 NIN2].
+      epose (NIN := not_elem_of_union (evar_fresh (elements (free_evars φ ∪ free_evars φ'))) (free_evars φ) (free_evars φ')).
+      destruct NIN as [NIN1 NIN2].
       epose (NIN3 := NIN1 _). destruct NIN3. auto.
       Unshelve.
       5: { unfold instantiate. simpl.
@@ -2322,6 +2318,10 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
 
       1-4: wf_auto2.
     }
+
+
+    eapply MP. 2: useBasicReasoning; apply and_impl'; try_wfauto2.
+    apply reorder_meta; try_wfauto2.
     exact HSUB.
   Qed.
 
