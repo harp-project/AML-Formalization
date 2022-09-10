@@ -162,6 +162,8 @@ From MatchingLogic Require Import
     Theories.Definedness_ProofSystem
 .
 Import Theories.Definedness_Syntax.Notations.
+Open Scope ml_scope.
+Open Scope string_scope.
 
 (* Obviously, without the definedness symbol, we cannot use equality. *)
 Fail Example use_rewriteBy {Σ : Signature} (Γ : Theory) (ϕ₁ ϕ₂ ϕ₃ ϕ₄ : Pattern) :
@@ -304,4 +306,6 @@ Proof.
     mlExact "H2".
 Defined.
 
-
+Close Scope ml_scope.
+Close Scope string_scope.
+Close Scope list_scope.

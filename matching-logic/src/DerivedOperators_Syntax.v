@@ -1,7 +1,4 @@
 From Coq Require Import ssreflect ssrfun ssrbool.
-Set Implicit Arguments.
-Unset Strict Implicit.
-Unset Printing Implicit Defensive.
 
 From stdpp Require Import base sets propset.
 From Coq Require Import Logic.Classical_Prop.
@@ -9,11 +6,12 @@ From MatchingLogic.Utils Require Import Lattice stdpp_ext extralibrary.
 From MatchingLogic Require Import Syntax IndexManipulation.
 
 Import MatchingLogic.Syntax.Notations.
+Import MatchingLogic.Substitution.Notations.
 
-  Section with_signature.
+Section with_signature.
     Context {Σ : Signature}.
+    Open Scope ml_scope.
 
-    
     Definition patt_not (phi : Pattern) := patt_imp phi patt_bott.
 
     Definition patt_or  (l r : Pattern) := patt_imp (patt_not l) r.
@@ -30,7 +28,7 @@ Import MatchingLogic.Syntax.Notations.
       patt_not (patt_exists (patt_not phi)).
 
     Definition patt_nu (phi : Pattern) :=
-      patt_not (patt_mu (patt_not (bsvar_subst phi (patt_not (patt_bound_svar 0)) 0))).
+      patt_not (patt_mu (patt_not (phi^[svar: 0 ↦ patt_not (patt_bound_svar 0)]))).
 
     Lemma size_not (phi : Pattern) :
       size (patt_not phi) = 1 + size phi.
@@ -111,7 +109,7 @@ Import MatchingLogic.Syntax.Notations.
     Proof.
       intros. simpl. do 2 rewrite andb_true_r. auto.
     Qed.
-    
+
     Lemma well_formed_positive_all φ : 
       well_formed_positive (patt_forall φ)
     <->
@@ -119,146 +117,76 @@ Import MatchingLogic.Syntax.Notations.
     Proof.
       intros. simpl. do 2 rewrite andb_true_r. auto.
     Qed.
-    
-    Lemma bevar_subst_not ψ (wfψ : well_formed_closed ψ) x ϕ :
-      bevar_subst (patt_not ϕ) ψ x = patt_not (bevar_subst ϕ ψ x).
-    Proof. simpl. unfold patt_not. reflexivity. Qed.
 
-    Lemma bevar_subst_or ψ (wfψ : well_formed_closed ψ) x ϕ₁ ϕ₂ :
-      bevar_subst (patt_or ϕ₁ ϕ₂) ψ x = patt_or (bevar_subst ϕ₁ ψ x) (bevar_subst ϕ₂ ψ x).
-    Proof. simpl. unfold patt_or. unfold patt_not. reflexivity. Qed.
-
-    Lemma bevar_subst_and ψ (wfψ : well_formed_closed ψ) x ϕ₁ ϕ₂ :
-      bevar_subst (patt_and ϕ₁ ϕ₂) ψ x = patt_and (bevar_subst ϕ₁ ψ x) (bevar_subst ϕ₂ ψ x).
-    Proof. simpl. unfold patt_and. unfold patt_not. reflexivity. Qed.
-
-    Lemma bevar_subst_iff ψ (wfψ : well_formed_closed ψ) x ϕ₁ ϕ₂ :
-      bevar_subst (patt_iff ϕ₁ ϕ₂) ψ x = patt_iff (bevar_subst ϕ₁ ψ x) (bevar_subst ϕ₂ ψ x).
-    Proof. simpl. unfold patt_iff. unfold patt_and. unfold patt_not. reflexivity. Qed.
-
-    Lemma bevar_subst_top ψ (wfψ : well_formed_closed ψ) x : bevar_subst patt_top ψ x = patt_top.
-    Proof. simpl. unfold patt_top. unfold patt_not. reflexivity. Qed.
-
-    Lemma bevar_subst_forall ψ (wfψ : well_formed_closed ψ) x ϕ :
-      bevar_subst (patt_forall ϕ) ψ x = patt_forall (bevar_subst ϕ ψ (S x)).
+    Lemma svar_quantify_forall n X ϕ :
+      (patt_forall ϕ)^{{svar: X ↦ n}} = patt_forall (ϕ^{{svar: X ↦ n}}).
     Proof. simpl. unfold patt_forall. unfold patt_not. reflexivity. Qed.
 
-    (* TODO: bevar_subst_nu *)
-
-    Lemma bsvar_subst_not ψ (wfψ : well_formed_closed ψ) x ϕ :
-      bsvar_subst (patt_not ϕ) ψ x = patt_not (bsvar_subst ϕ ψ x).
-    Proof. simpl. unfold patt_not. reflexivity. Qed.
-
-    Lemma bsvar_subst_or ψ (wfψ : well_formed_closed ψ) x ϕ₁ ϕ₂ :
-      bsvar_subst (patt_or ϕ₁ ϕ₂) ψ x = patt_or (bsvar_subst ϕ₁ ψ x) (bsvar_subst ϕ₂ ψ x).
-    Proof. simpl. unfold patt_or. unfold patt_not. reflexivity. Qed.
-
-    Lemma bsvar_subst_and ψ (wfψ : well_formed_closed ψ) x ϕ₁ ϕ₂ :
-      bsvar_subst (patt_and ϕ₁ ϕ₂) ψ x = patt_and (bsvar_subst ϕ₁ ψ x) (bsvar_subst ϕ₂ ψ x).
-    Proof. simpl. unfold patt_and. unfold patt_not. reflexivity. Qed.
-
-    Lemma bsvar_subst_iff ψ (wfψ : well_formed_closed ψ) x ϕ₁ ϕ₂ :
-      bsvar_subst (patt_iff ϕ₁ ϕ₂) ψ x = patt_iff (bsvar_subst ϕ₁ ψ x) (bsvar_subst ϕ₂ ψ x).
-    Proof. simpl. unfold patt_iff. unfold patt_and. unfold patt_not. reflexivity. Qed.
-
-    Lemma bsvar_subst_top ψ (wfψ : well_formed_closed ψ) x : bsvar_subst patt_top ψ x = patt_top.
-    Proof. simpl. unfold patt_top. unfold patt_not. reflexivity. Qed.
-
-    Lemma bsvar_subst_forall ψ (wfψ : well_formed_closed ψ) x ϕ :
-      bsvar_subst (patt_forall ϕ) ψ x = patt_forall (bsvar_subst ϕ ψ x).
-    Proof. simpl. unfold patt_forall. unfold patt_not. reflexivity. Qed.
-
-    (* ******* *)
-
-    Lemma evar_open_not k x ϕ : evar_open k x (patt_not ϕ) = patt_not (evar_open k x ϕ).
-    Proof. simpl. unfold patt_not. reflexivity. Qed.
-
-    Lemma evar_open_or k x ϕ₁ ϕ₂ : evar_open k x (patt_or ϕ₁ ϕ₂) = patt_or (evar_open k x ϕ₁) (evar_open k x ϕ₂).
-    Proof. simpl. unfold patt_or. unfold patt_not. reflexivity. Qed.
-
-    Lemma evar_open_and k x ϕ₁ ϕ₂ : evar_open k x (patt_and ϕ₁ ϕ₂) = patt_and (evar_open k x ϕ₁) (evar_open k x ϕ₂).
-    Proof. simpl. unfold patt_and. unfold patt_not. reflexivity. Qed.
-
-    Lemma evar_open_iff k x ϕ₁ ϕ₂ : evar_open k x (patt_iff ϕ₁ ϕ₂) = patt_iff (evar_open k x ϕ₁) (evar_open k x ϕ₂).
-    Proof. simpl. unfold patt_iff. unfold patt_and. unfold patt_not. reflexivity. Qed.
-
-    Lemma evar_open_top k x : evar_open k x patt_top = patt_top.
-    Proof. simpl. unfold patt_top. unfold patt_not. reflexivity. Qed.
-
-    Lemma evar_open_forall k x ϕ : evar_open k x (patt_forall ϕ) = patt_forall (evar_open (S k) x ϕ).
-    Proof. simpl. unfold patt_forall. unfold patt_not. reflexivity. Qed.
-
-    Lemma evar_open_nu k x ϕ : evar_open k x (patt_nu ϕ) = patt_nu (evar_open k x ϕ).
-    Proof. simpl. unfold patt_nu. unfold patt_not. unfold evar_open. simpl.
-      rewrite -> bevar_subst_bsvar_subst; auto.
-    Abort.
-
-    Lemma svar_open_not k x ϕ : svar_open k x (patt_not ϕ) = patt_not (svar_open k x ϕ).
-    Proof. simpl. unfold patt_not. reflexivity. Qed.
-
-    Lemma svar_open_or k x ϕ₁ ϕ₂ : svar_open k x (patt_or ϕ₁ ϕ₂) = patt_or (svar_open k x ϕ₁) (svar_open k x ϕ₂).
-    Proof. simpl. unfold patt_or. unfold patt_not. reflexivity. Qed.
-
-    Lemma svar_open_and k x ϕ₁ ϕ₂ : svar_open k x (patt_and ϕ₁ ϕ₂) = patt_and (svar_open k x ϕ₁) (svar_open k x ϕ₂).
-    Proof. simpl. unfold patt_and. unfold patt_not. reflexivity. Qed.
-
-    Lemma svar_open_iff k x ϕ₁ ϕ₂ : svar_open k x (patt_iff ϕ₁ ϕ₂) = patt_iff (svar_open k x ϕ₁) (svar_open k x ϕ₂).
-    Proof. simpl. unfold patt_iff. unfold patt_and. unfold patt_not. reflexivity. Qed.
-
-    Lemma svar_open_top k x : svar_open k x patt_top = patt_top.
-    Proof. simpl. unfold patt_top. unfold patt_not. reflexivity. Qed.
-
-    Lemma svar_open_forall k x ϕ : svar_open k x (patt_forall ϕ) = patt_forall (svar_open k x ϕ).
-    Proof. simpl. unfold patt_forall. unfold patt_not. reflexivity. Qed.
+    (** We define the simplification class instances for the derived operators: *)
 
     #[global]
-     Instance Unary_not : Unary patt_not :=
-      {|
-      unary_bevar_subst := bevar_subst_not ;
-      unary_bsvar_subst := bsvar_subst_not ;
-      unary_wf := well_formed_not ;
-      |}.
+     Program Instance Unary_not : Unary patt_not := {}.
+     Next Obligation.
+       intros A f m φ a.
+       unfold patt_not. repeat rewrite pm_correctness.
+       simpl. reflexivity.
+     Defined.
+     Next Obligation.
+       intros ψ Wfψ. wf_auto2.
+     Defined.
 
     #[global]
-     Instance NVNullary_top : NVNullary patt_top :=
-      {|
-      nvnullary_bevar_subst := bevar_subst_top ;
-      nvnullary_bsvar_subst := bsvar_subst_top ;
-      nvnullary_wf := well_formed_top ;
-      |}.
+     Program Instance NVNullary_top : Nullary patt_top := {}.
+     Next Obligation.
+       intros A f m φ.
+       unfold patt_top. repeat rewrite pm_correctness.
+       simpl. reflexivity.
+     Defined.
+     Next Obligation.
+       wf_auto2.
+     Defined.
 
     #[global]
-     Instance Binary_or : Binary patt_or :=
-      {|
-      binary_bevar_subst := bevar_subst_or ;
-      binary_bsvar_subst := bsvar_subst_or ;
-      binary_wf := well_formed_or ;
-      |}.
+     Program Instance Binary_or : Binary patt_or := {}.
+     Next Obligation.
+       intros A f m φ1 φ2 a.
+       unfold patt_or. repeat rewrite pm_correctness.
+       simpl. reflexivity.
+     Defined.
+     Next Obligation.
+       intros ψ1 ψ2 Wfψ1 Wfψ2. wf_auto2.
+     Defined.
 
     #[global]
-     Instance Binary_and : Binary patt_and :=
-      {|
-      binary_bevar_subst := bevar_subst_and ;
-      binary_bsvar_subst := bsvar_subst_and ;
-      binary_wf := well_formed_and ;
-      |}.
+     Program Instance Binary_and : Binary patt_and := {}.
+     Next Obligation.
+       intros A f m φ1 φ2 a.
+       unfold patt_and. repeat rewrite pm_correctness.
+       simpl. reflexivity.
+     Defined.
+     Next Obligation.
+       intros ψ1 ψ2 Wfψ1 Wfψ2. wf_auto2.
+     Defined.
 
     #[global]
-     Instance Binary_iff : Binary patt_iff :=
-      {|
-      binary_bevar_subst := bevar_subst_iff ;
-      binary_bsvar_subst := bsvar_subst_iff ;
-      binary_wf := well_formed_iff ;
-      |}.
+     Program Instance Binary_iff : Binary patt_iff := {}.
+     Next Obligation.
+       intros A f m φ1 φ2 a.
+       unfold patt_iff. repeat rewrite pm_correctness.
+       simpl. reflexivity.
+     Defined.
+     Next Obligation.
+       intros ψ1 ψ2 Wfψ1 Wfψ2. wf_auto2.
+     Defined.
 
     #[global]
-     Instance EBinder_forall : EBinder patt_forall _ _ :=
-      {|
-      ebinder_bevar_subst := bevar_subst_forall ;
-      ebinder_bsvar_subst := bsvar_subst_forall ;
-      |}.
-  
-  
+     Program Instance EBinder_forall : EBinder patt_forall := {}.
+     Next Obligation.
+       intros A f m φ a.
+       unfold patt_not. repeat rewrite pm_correctness.
+       simpl. reflexivity.
+     Defined.
+
   End with_signature.
 
 
@@ -272,6 +200,7 @@ Module Notations.
   Notation "'Top'" := patt_top : ml_scope.
   Notation "'all' , phi" := (patt_forall phi) (at level 70) : ml_scope.
   Notation "'nu' , phi" := (patt_nu phi) (at level 70) : ml_scope.
+
 End Notations.
 
 Module Semantics.

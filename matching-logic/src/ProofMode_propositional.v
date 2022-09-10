@@ -1,7 +1,4 @@
 From Coq Require Import ssreflect ssrfun ssrbool.
-Set Implicit Arguments.
-Unset Strict Implicit.
-Unset Printing Implicit Defensive.
 
 From Ltac2 Require Import Ltac2 Control.
 
@@ -12,12 +9,10 @@ From Equations Require Import Equations.
 Require Import Coq.Program.Tactics.
 
 From MatchingLogic Require Import
-    Syntax
+    Logic
     DerivedOperators_Syntax
-    ProofSystem
-    IndexManipulation
-    wftactics
     ProofMode_base
+    ProofInfo
 .
 
 From stdpp Require Import list tactics fin_sets coGset gmap sets.
@@ -27,9 +22,8 @@ From MatchingLogic.Utils Require Import stdpp_ext.
 Import extralibrary.
 
 Import
-  MatchingLogic.Syntax.Notations
+  MatchingLogic.Logic.Notations
   MatchingLogic.DerivedOperators_Syntax.Notations
-  MatchingLogic.ProofSystem.Notations
 .
 
 Set Default Proof Mode "Classic".
@@ -38,1205 +32,973 @@ Open Scope string_scope.
 Open Scope list_scope.
 Open Scope ml_scope.
 
-Lemma P1 {Σ : Signature} (Γ : Theory) (ϕ ψ : Pattern) :
-well_formed ϕ ->
-well_formed ψ ->
-Γ ⊢i ϕ ---> ψ ---> ϕ 
-using BasicReasoning.
-Proof.
-intros wfϕ wfψ.
-unshelve (eexists).
-{ apply ProofSystem.P1. exact wfϕ. exact wfψ. }
-{ abstract(solve_pim_simple). }
-Defined.
-
-Lemma P2 {Σ : Signature} (Γ : Theory) (ϕ ψ ξ : Pattern) :
-well_formed ϕ ->
-well_formed ψ ->
-well_formed ξ ->
-Γ ⊢i (ϕ ---> ψ ---> ξ) ---> (ϕ ---> ψ) ---> (ϕ ---> ξ)
-using BasicReasoning.
-Proof.
-intros wfϕ wfψ wfξ.
-unshelve (eexists).
-{ apply ProofSystem.P2. exact wfϕ. exact wfψ. exact wfξ. }
-{ abstract (solve_pim_simple). }
-Defined.
-
-Lemma P3 {Σ : Signature} (Γ : Theory) (ϕ : Pattern) :
-well_formed ϕ ->
-Γ ⊢i (((ϕ ---> ⊥) ---> ⊥) ---> ϕ)
-using BasicReasoning.
-Proof.
-intros wfϕ.
-unshelve (eexists).
-{ apply ProofSystem.P3. exact wfϕ. }
-{ abstract ( solve_pim_simple ). }
-Defined.
-
-Lemma MP {Σ : Signature} (Γ : Theory) (ϕ₁ ϕ₂ : Pattern) (i : ProofInfo) :
-Γ ⊢i ϕ₁ using i ->
-Γ ⊢i (ϕ₁ ---> ϕ₂) using i ->
-Γ ⊢i ϕ₂ using i.
-Proof.
-intros H1 H2.
-unshelve (eexists).
-{
-  eapply (ProofSystem.Modus_ponens _ _ _).
-  { apply H1. }
-  { apply H2. }
-}
-{
-  abstract(
-    simpl;
-    destruct H1 as [pf1 Hpf1];
-    destruct H2 as [pf2 Hpf2];
-    destruct Hpf1,Hpf2;
-    constructor; simpl;
-    [set_solver|set_solver|(destruct (uses_kt pf1),(uses_kt pf2); simpl in *; congruence)|set_solver]
-  ).
-}
-Defined.
-
 Lemma hypothesis {Σ : Signature} (Γ : Theory) (axiom : Pattern) :
-well_formed axiom ->
-(axiom ∈ Γ) ->
-Γ ⊢i axiom
-using BasicReasoning.
+  well_formed axiom ->
+  (axiom ∈ Γ) ->
+  Γ ⊢i axiom
+  using BasicReasoning.
 Proof.
-intros Hwf Hin.
-unshelve (eexists).
-{
-  apply ProofSystem.hypothesis. apply Hwf. apply Hin.
-}
-{
-  abstract (
-    constructor; simpl;
-    [( set_solver )
-    |( set_solver )
-    |( reflexivity )
-    |( set_solver )
-    ]
-  ).
-}
+  intros Hwf Hin.
+  unshelve (eexists).
+  {
+    apply ProofSystem.hypothesis. apply Hwf. apply Hin.
+  }
+  {
+    abstract (
+      constructor; simpl;
+      [( set_solver )
+      |( set_solver )
+      |( reflexivity )
+      |( set_solver )
+      ]
+    ).
+  }
 Defined.
 
 Arguments P1 {Σ} _ (_%ml) (_%ml) _ _ .
 Arguments P2 {Σ} _ (_%ml) (_%ml) (_%ml) _ _ _.
 Arguments P3 {Σ} _ (_%ml) _.
 
-  Lemma A_impl_A {Σ : Signature} (Γ : Theory) (A : Pattern)  :
-    (well_formed A) ->
-    Γ ⊢i (A ---> A)
-    using BasicReasoning.
-  Proof. 
-    intros WFA.
-    pose (_1 := P2 Γ A (A ---> A) A ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
-    pose (_2 := P1 Γ A (A ---> A) ltac:(wf_auto2) ltac:(wf_auto2)).
-    pose (_3 := MP _2 _1).
-    pose (_4 := P1 Γ A A ltac:(wf_auto2) ltac:(wf_auto2)).
-    pose (_5 := MP _4 _3).
-    exact _5.
-  Defined.
-
-
-  Lemma pile_evs_svs_kt_back {Σ : Signature} evs1 evs2 svs1 svs2 kt1 kt2 fp1 fp2:
-  ProofInfoLe
-    ( (ExGen := evs1, SVSubst := svs1, KT := kt1, FP := fp1))
-    ( (ExGen := evs2, SVSubst := svs2, KT := kt2, FP := fp2)) ->
-    evs1 ⊆ evs2 /\ svs1 ⊆ svs2 /\ kt1 ==> kt2 /\ fp1 ⊆ fp2.
-  Proof.
-    intros pile.
-    repeat split.
-    {
-      destruct pile as [pile].
-      rewrite elem_of_subseteq.
-      intros x Hx.
-      remember (fresh_evar (patt_free_evar x)) as y.
-      pose (pf1 := @A_impl_A Σ ∅ (patt_free_evar y) ltac:(wf_auto2)).
-      pose (pf2 := @ProofSystem.Ex_gen Σ ∅ (patt_free_evar y) (patt_free_evar y) x ltac:(wf_auto2) ltac:(wf_auto2) (proj1_sig pf1) ltac:(simpl; rewrite elem_of_singleton; solve_fresh_neq)).
-      specialize (pile ∅ _ pf2).
-      feed specialize pile.
-      {
-        constructor.
-        { simpl. clear -Hx. set_solver. }
-        { simpl. clear. set_solver. }
-        { simpl. reflexivity. }
-        { simpl. set_solver. }
-      }
-      destruct pile as [Hm2 Hm3 Hm4 Hm5].
-      simpl in *.
-      clear -Hm2.
-      set_solver.
-    }
-    {
-      destruct pile as [pile].
-      rewrite elem_of_subseteq.
-      intros X HX.
-      pose (pf1 := @A_impl_A Σ ∅ (patt_free_svar X) ltac:(wf_auto2)).
-      pose (pf2 := @ProofSystem.Svar_subst Σ ∅ (patt_free_svar X ---> patt_free_svar X) patt_bott X ltac:(wf_auto2) ltac:(wf_auto2) (proj1_sig pf1)).
-      specialize (pile ∅ _ pf2).
-      feed specialize pile.
-      {
-        constructor; simpl.
-        { clear. set_solver. }
-        { clear -HX. set_solver. }
-        { reflexivity. }
-        { set_solver. }
-      }
-      destruct pile as [Hp2 Hp3 Hp4].
-      simpl in *.
-      clear -Hp3.
-      set_solver.
-    }
-    {
-      destruct pile as [pile].
-      pose (pf1 := @A_impl_A Σ ∅ patt_bott ltac:(wf_auto2)).
-      pose (pf2 := @ProofSystem.Knaster_tarski Σ ∅ (patt_bound_svar 0) patt_bott ltac:(wf_auto2) (proj1_sig pf1)).
-      destruct kt1.
-      2: { simpl. reflexivity. }
-      specialize (pile ∅ _ pf2).
-      feed specialize pile.
-      {
-        constructor; simpl.
-        { clear. set_solver. }
-        { clear. set_solver. }
-        { reflexivity. }
-        { set_solver. }
-      }
-      destruct pile as [Hp2 Hp3 Hp4].
-      simpl in Hp4.
-      rewrite Hp4.
-      reflexivity.
-    }
-    {
-      destruct pile as [pile].
-      rewrite elem_of_subseteq.
-      intros (*p*) [p wfp] Hp.
-      (*assert (wfp : well_formed p) by admit.*)
-      pose (pf1 := @A_impl_A Σ ∅ patt_bott ltac:(wf_auto2)).
-      pose (pf2 := @Framing_left Σ ∅ patt_bott patt_bott p wfp (proj1_sig pf1)).
-      pose (pf3 := @Framing_right Σ ∅ patt_bott patt_bott p wfp (proj1_sig pf1)).
-      pose proof (pile1 := pile ∅ _ pf2).
-      pose proof (pile2 := pile ∅ _ pf3).
-      clear pile.
-      feed specialize pile1.
-      {
-        constructor; simpl.
-        { clear; set_solver. }
-        { clear; set_solver. }
-        { reflexivity. }
-        { simpl. set_solver. }
-      }
-      feed specialize pile2.
-      {
-        constructor; simpl.
-        { clear; set_solver. }
-        { clear; set_solver. }
-        { reflexivity. }
-        { simpl. set_solver. }
-      }
-      destruct pile1, pile2. simpl in *.
-      rewrite elem_of_subseteq in pwi_pf_fp0.
-      setoid_rewrite elem_of_gset_to_coGset in pwi_pf_fp0.
-      specialize (pwi_pf_fp0 (exist _ p wfp) ltac:(set_solver)).
-      exact pwi_pf_fp0.
-    }
-  Qed.
-
-Lemma useGenericReasoning  {Σ : Signature} (Γ : Theory) (ϕ : Pattern) evs svs kt fp i:
-(ProofInfoLe ((ExGen := evs, SVSubst := svs, KT := kt, FP := fp)) i) ->
-Γ ⊢i ϕ using ((ExGen := evs, SVSubst := svs, KT := kt, FP := fp)) ->
-Γ ⊢i ϕ using i.
+Lemma P4m  {Σ : Signature}(Γ : Theory) (A B : Pattern) :
+  well_formed A ->
+  well_formed B ->
+  Γ ⊢i ((A ---> B) ---> ((A ---> !B) ---> !A))
+  using BasicReasoning.
 Proof.
-intros pile [pf Hpf].
-exists pf.
-destruct Hpf as [Hpf2 Hpf3 Hpf4 Hpf5].
-simpl in *.
-destruct i.
-pose proof (Htmp := @pile_evs_svs_kt_back Σ).
-specialize (Htmp evs pi_generalized_evars svs pi_substituted_svars kt pi_uses_kt fp pi_framing_patterns pile).
-destruct Htmp as [Hevs [Hsvs [Hkt Hfp] ] ].
-constructor; simpl.
-{ clear -Hpf2 Hevs. set_solver. }
-{ clear -Hpf3 Hsvs. set_solver. }
-{ unfold implb in *. repeat case_match; try reflexivity; try assumption. inversion Hpf4. }
-{ clear -Hpf5 Hfp. set_solver.  }
+  intros WFA WFB.
+  pose (H1 := P2 Γ A B Bot ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
+  pose (H2 := (P2 Γ (A ---> B ---> Bot) (A ---> B) (A ---> Bot) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2))).
+  pose (H3 := MP H1 H2).
+  pose (H4 := (P1 Γ (((A ---> B ---> Bot) ---> A ---> B) ---> (A ---> B ---> Bot) ---> A ---> Bot)
+    (A ---> B) ltac:(wf_auto2) ltac:(wf_auto2))).
+  pose (H5 := MP H3 H4).
+  pose (H6 := (P2 Γ (A ---> B) ((A ---> B ---> Bot) ---> A ---> B) ((A ---> B ---> Bot) ---> A ---> Bot)
+    ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2))).
+  pose (H7 := MP H5 H6).
+  pose (H8 := (P1 Γ (A ---> B) (A ---> B ---> Bot) ltac:(wf_auto2) ltac:(wf_auto2))).
+  pose (H9 := MP H8 H7).
+  exact H9.
 Defined.
 
-Lemma useGenericReasoning'  {Σ : Signature} (Γ : Theory) (ϕ : Pattern) i' i:
-(ProofInfoLe i' i) ->
-Γ ⊢i ϕ using i' ->
-Γ ⊢i ϕ using i.
+Lemma P4i {Σ : Signature} (Γ : Theory) (A : Pattern) :
+  well_formed A ->
+  Γ ⊢i ((A ---> !A) ---> !A)
+  using BasicReasoning.
 Proof.
-  intros H.
-  destruct i'.
-  apply useGenericReasoning.
-  exact H.
-Qed.
-
-Lemma mlUseGenericReasoning
-  {Σ : Signature} (Γ : Theory) (l : hypotheses) (g : Pattern) (i i' : ProofInfo) :
-  ProofInfoLe i i' ->
-  @mkMLGoal Σ Γ l g i ->
-  @mkMLGoal Σ Γ l g i'.
-Proof.
-  intros pile H wf1 wf2.
-  specialize (H wf1 wf2).
-  simpl in *.
-  destruct i.
-  eapply useGenericReasoning.
-  { apply pile. }
-  exact H.
+  intros WFA.
+  eapply MP.
+  { apply (A_impl_A _ A WFA). }
+  { apply (P4m _ A A WFA WFA). }
 Defined.
 
-  Lemma P4m  {Σ : Signature}(Γ : Theory) (A B : Pattern) :
-    well_formed A ->
-    well_formed B ->
-    Γ ⊢i ((A ---> B) ---> ((A ---> !B) ---> !A))
-    using BasicReasoning.
-  Proof.
-    intros WFA WFB.
-    pose (H1 := P2 Γ A B Bot ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
-    pose (H2 := (P2 Γ (A ---> B ---> Bot) (A ---> B) (A ---> Bot) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2))).
-    pose (H3 := MP H1 H2).
-    pose (H4 := (P1 Γ (((A ---> B ---> Bot) ---> A ---> B) ---> (A ---> B ---> Bot) ---> A ---> Bot)
-      (A ---> B) ltac:(wf_auto2) ltac:(wf_auto2))).
-    pose (H5 := MP  H3 H4).
-    pose (H6 := (P2 Γ (A ---> B) ((A ---> B ---> Bot) ---> A ---> B) ((A ---> B ---> Bot) ---> A ---> Bot)
-      ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2))).
-    pose (H7 := MP H5 H6).
-    pose (H8 := (P1 Γ (A ---> B) (A ---> B ---> Bot) ltac:(wf_auto2) ltac:(wf_auto2))).
-    pose (H9 := MP H8 H7).
-    exact H9.
-  Defined.
+Lemma reorder {Σ : Signature} (Γ : Theory) (A B C : Pattern) :
+  well_formed A ->
+  well_formed B ->
+  well_formed C ->
+  Γ ⊢i ((A ---> B ---> C) ---> ( B ---> A ---> C))
+  using BasicReasoning.
+Proof.
+  intros WFA WFB WFC.
 
-  Lemma P4i {Σ : Signature} (Γ : Theory) (A : Pattern) :
-    well_formed A ->
-    Γ ⊢i ((A ---> !A) ---> !A)
-    using BasicReasoning.
-  Proof.
-    intros WFA.
-    eapply MP.
-    { apply (@A_impl_A _ _ A WFA). }
-    { apply (@P4m _ _ A A WFA WFA). }
-  Defined.
+  pose (t1 := (MP
+                  (P1 Γ ((A ---> B) ---> A ---> C) B ltac:(wf_auto2) ltac:(wf_auto2))
+                  (P1 Γ (((A ---> B) ---> A ---> C) ---> B ---> (A ---> B) ---> A ---> C) (A ---> B ---> C) ltac:(wf_auto2) ltac:(wf_auto2)))).
 
-  Lemma reorder {Σ : Signature} (Γ : Theory) (A B C : Pattern) :
-    well_formed A ->
-    well_formed B ->
-    well_formed C ->
-    Γ ⊢i ((A ---> B ---> C) ---> ( B ---> A ---> C))
-    using BasicReasoning.
-  Proof.
-    intros WFA WFB WFC.
-   
-    pose (t1 := (MP
-                    (P1 Γ ((A ---> B) ---> A ---> C) B ltac:(wf_auto2) ltac:(wf_auto2))
-                    (P1 Γ (((A ---> B) ---> A ---> C) ---> B ---> (A ---> B) ---> A ---> C) (A ---> B ---> C) ltac:(wf_auto2) ltac:(wf_auto2)))).
+  pose(ABC := (A ---> B ---> C)).
+
+  eapply MP.
+  - eapply MP.
+    + apply(P1 _ B A ltac:(wf_auto2) ltac:(wf_auto2)).
+    + apply(P1 _ (B ---> A ---> B) (A ---> B ---> C) ltac:(wf_auto2) ltac:(wf_auto2)).
+  - eapply MP.
+    + eapply MP.
+      * eapply MP.
+        -- eapply MP.
+           ++ apply (A_impl_A _ ABC ltac:(wf_auto2)).
+           ++ eapply MP.
+              ** eapply MP.
+                 --- apply(P2 _ A B C ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
+                 --- unshelve (eapply(P1 _ _ (A ---> B ---> C) _ _)); wf_auto2.
+              ** apply P2; wf_auto2.
+        -- eapply MP.
+           ++ apply t1.
+           ++ apply(P2 _ ABC ((A ---> B) ---> (A ---> C)) (B ---> (A ---> B) ---> (A ---> C)) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
+      * eapply MP.
+        -- eapply MP.
+           ++ apply(P2 _ B (A ---> B) (A ---> C) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
+           ++ apply(P1 _ _ ABC); wf_auto2.
+        -- apply P2; wf_auto2.
+    + apply P2; wf_auto2.
+Defined.
+
+
+Lemma reorder_meta {Σ : Signature} {Γ : Theory} {A B C : Pattern} {i : ProofInfo} :
+  well_formed A ->
+  well_formed B ->
+  well_formed C ->  
+  Γ ⊢i (A ---> B ---> C) using i ->
+  Γ ⊢i (B ---> A ---> C) using i.
+Proof.
+  intros H H0 H1 H2.
+  eapply MP. apply H2.
+  apply useBasicReasoning.
+  apply reorder; wf_auto2.
+Defined.
+
+Lemma syllogism {Σ : Signature} (Γ : Theory) (A B C : Pattern) :
+  well_formed A ->
+  well_formed B ->
+  well_formed C ->
+  Γ ⊢i ((A ---> B) ---> (B ---> C) ---> (A ---> C))
+  using BasicReasoning.
+Proof.
+  intros WFA WFB WFC.
+  apply reorder_meta;[wf_auto2|wf_auto2|wf_auto2|].
+  eapply MP.
+  - apply(P1 _ (B ---> C) A); wf_auto2.
+  - eapply MP.
+    + eapply MP.
+      * apply (P2 _ A B C); wf_auto2.
+      * apply (P1 _ ((A ---> B ---> C) ---> (A ---> B) ---> A ---> C) (B ---> C)); wf_auto2.
+    + apply P2; wf_auto2.
+Defined.
+
+Lemma syllogism_meta {Σ : Signature} {Γ : Theory} {A B C : Pattern} {i : ProofInfo} :
+  well_formed A ->
+  well_formed B ->
+  well_formed C ->
+  Γ ⊢i (A ---> B) using i ->
+  Γ ⊢i (B ---> C) using i ->
+  Γ ⊢i (A ---> C) using i.
+Proof.
+  intros H H0 H1 H2 H3.
+  eapply MP.
+  - exact H2.
+  - eapply MP.
+    + exact H3.
+    + apply reorder_meta;[wf_auto2|wf_auto2|wf_auto2|].
+      apply useBasicReasoning.
+      apply syllogism; wf_auto2.
+Defined.
+
+Lemma modus_ponens {Σ : Signature} (Γ : Theory) (A B : Pattern) :
+  well_formed A ->
+  well_formed B ->
+  Γ ⊢i (A ---> (A ---> B) ---> B)
+  using BasicReasoning.
+Proof.
+  intros WFA WFB.
+  eapply MP.
+  - apply (P1 _ A (A ---> B) ltac:(wf_auto2) ltac:(wf_auto2)).
+  - eapply MP.
+    + eapply MP.
+      * apply (A_impl_A _ (A ---> B) ltac:(wf_auto2)).
+      * eapply (P2 _ (A ---> B) A B ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
+    + apply reorder_meta;[wf_auto2|wf_auto2|wf_auto2|].
+      apply syllogism; wf_auto2.
+Defined.
+
+Lemma not_not_intro {Σ : Signature} (Γ : Theory) (A : Pattern) :
+  well_formed A ->
+  Γ ⊢i (A ---> !(!A))
+  using BasicReasoning.
+Proof.
+  intros WFA.
+  apply modus_ponens; wf_auto2.
+Defined.
+
+Lemma P4 {Σ : Signature} (Γ : Theory) (A B : Pattern)  :
+  well_formed A ->
+  well_formed B -> 
+  Γ ⊢i (((! A) ---> (! B)) ---> (B ---> A))
+  using BasicReasoning.
+Proof.
+  intros WFA WFB.
+  pose proof (m := P3 Γ A ltac:(wf_auto2)).
+  pose proof (m0 := P1 Γ (((A ---> Bot) ---> Bot) ---> A) B ltac:(wf_auto2) ltac:(wf_auto2)).
+  pose proof (m1 := P2 Γ B ((A ---> Bot) ---> Bot) A ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
+  pose proof (m2 := MP m m0).
+  pose proof (m3 := MP m2 m1).
+  pose proof (m4 := P1 Γ ((B ---> (A ---> Bot) ---> Bot) ---> B ---> A) ((A ---> Bot) ---> (B ---> Bot)) ltac:(wf_auto2) ltac:(wf_auto2) ).
+  pose proof (m5 := MP m3 m4).
+  pose proof (m6 := P2 Γ ((A ---> Bot) ---> (B ---> Bot)) (B ---> (A ---> Bot) ---> Bot) (B ---> A) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
+  pose proof (m7 := MP m5 m6).
+  pose proof (m8 := reorder Γ (A ---> Bot) (B) Bot ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
+  apply (MP m8 m7).
+Defined.
+
+Lemma conj_intro {Σ : Signature} (Γ : Theory) (A B : Pattern) :
+  well_formed A ->
+  well_formed B ->
+  Γ ⊢i (A ---> B ---> (A and B))
+  using BasicReasoning.
+Proof.
+  intros WFA WFB.
+  pose proof (tB := (A_impl_A Γ B ltac:(wf_auto2))).
+  epose proof (t1 := MP (P2 _ (!(!A) ---> !B) A Bot ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)) (P1 _ _ B _ _)).
+  epose proof (t2 := MP (reorder_meta _ _ _ (P4 _ (!A) B ltac:(wf_auto2) ltac:(wf_auto2))) (P1 _ _ B _ _)).
+  epose proof (t3'' := MP (P1 _ A (!(!A) ---> !B) _ _) (P1 _ _ B _ _)).
+  epose proof (t4 := MP tB (MP t2 (P2 _ B B _ _ _ _))).
+  epose proof (t5'' := 
+          MP t4
+                       (MP t1
+                                     (P2 _ B ((!(!A) ---> !B) ---> !A)
+                                         (((!(!A) ---> !B) ---> A) ---> !(!(!A) ---> !B)) _ _ _))).
   
-    pose(ABC := (A ---> B ---> C)).
-    
-    eapply MP.
-    - eapply MP.
-      + apply(P1 _ B A ltac:(wf_auto2) ltac:(wf_auto2)).
-      + apply(P1 _ (B ---> A ---> B) (A ---> B ---> C) ltac:(wf_auto2) ltac:(wf_auto2)).
-    - eapply MP.
-      + eapply MP.
-        * eapply MP.
-          -- eapply MP.
-             ++ apply (@A_impl_A _ _ ABC ltac:(wf_auto2)).
-             ++ eapply MP.
-                ** eapply MP.
-                   --- apply(P2 _ A B C ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
-                   --- unshelve (eapply(P1 _ _ (A ---> B ---> C) _ _)); wf_auto2.
-                ** apply P2; wf_auto2.
-          -- eapply MP.
-             ++ apply t1.
-             ++ apply(P2 _ ABC ((A ---> B) ---> (A ---> C)) (B ---> (A ---> B) ---> (A ---> C)) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
-        * eapply MP.
-          -- eapply MP.
-             ++ apply(P2 _ B (A ---> B) (A ---> C) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
-             ++ apply(P1 _ _ ABC); wf_auto2.
-          -- apply P2; wf_auto2.
-      + apply P2; wf_auto2.
-  Defined.
+  epose proof (tA := (P1 Γ A B) _ _).
+  epose proof (tB' := MP tB
+                            (P1 _ (B ---> B) A _ _)).
+  epose proof (t3' := MP t3''
+                            (P2 _ B A ((!(!A) ---> !B) ---> A) _ _ _)).
+  epose proof (t3 := MP t3'
+                           (P1 _ ((B ---> A) ---> B ---> (! (! A) ---> ! B) ---> A) A _ _)).
+  epose proof (t5' := MP t5''
+                            (P2 _ B ((!(!A) ---> !B) ---> A) (!(!(!A) ---> !B)) _ _ _)).
+  epose proof (t5 := MP t5' 
+                           (P1 _ ((B ---> (! (! A) ---> ! B) ---> A) ---> B ---> ! (! (! A) ---> ! B))
+                               A _ _)).
+  epose proof (t6 := MP tA
+                           (MP t3
+                                         (P2 _ A (B ---> A) (B ---> (!(!A) ---> !B) ---> A) _ _ _))).
+  epose proof (t7 := MP t6 
+                           (MP t5 
+                                         (P2 _ A (B ---> (!(!A) ---> !B) ---> A) (B ---> !(!(!A) ---> !B)) _ _ _))).
+  apply t7.
+  Unshelve.
+  all: wf_auto2.
+Defined.
 
+Lemma conj_intro_meta {Σ : Signature} (Γ : Theory) (A B : Pattern) (i : ProofInfo) :
+  well_formed A ->
+  well_formed B ->
+  Γ ⊢i A using i ->
+  Γ ⊢i B using i ->
+  Γ ⊢i (A and B) using i.
+Proof.
+  intros WFA WFB H H0.
+  eapply MP.
+  - exact H0.
+  - eapply MP.
+    + exact H.
+    + apply useBasicReasoning.
+      apply conj_intro; wf_auto2.
+Defined.
 
-  Lemma reorder_meta {Σ : Signature} (Γ : Theory) (A B C : Pattern) (i : ProofInfo) :
-    well_formed A ->
-    well_formed B ->
-    well_formed C ->  
-    Γ ⊢i (A ---> B ---> C) using i ->
-    Γ ⊢i (B ---> A ---> C) using i.
-  Proof.
-    intros H H0 H1 H2.
-    eapply MP. apply H2.
-    apply useBasicReasoning.
-    apply reorder; wf_auto2.
-  Defined.
+Lemma syllogism_4_meta {Σ : Signature} (Γ : Theory) (A B C D : Pattern) (i : ProofInfo) :
+  well_formed A ->
+  well_formed B ->
+  well_formed C ->
+  well_formed D ->
+  Γ ⊢i (A ---> B ---> C) using i ->
+  Γ ⊢i (C ---> D) using i ->
+  Γ ⊢i (A ---> B ---> D) using i.
+Proof.
+  intros WFA WFB WFC WFD H H0.
+  eapply MP.
+  - exact H.
+  - eapply MP.
+    + eapply MP.
+      * eapply MP.
+        -- eapply MP.
+           ++ exact H0.
+           ++ apply useBasicReasoning. 
+              eapply (P1 _ (C ---> D) B _ _).
+        -- apply useBasicReasoning.  
+            eapply (P2 _ B C D _ _ _).
+      * apply useBasicReasoning. 
+        eapply (P1 _ ((B ---> C) ---> B ---> D) A _ _).
+    + apply useBasicReasoning. 
+      eapply (P2 _ A (B ---> C) (B ---> D) _ _ _).
+      Unshelve.
+      all: wf_auto2.
+Defined.
 
-  Lemma syllogism {Σ : Signature} (Γ : Theory) (A B C : Pattern) :
-    well_formed A ->
-    well_formed B ->
-    well_formed C ->
-    Γ ⊢i ((A ---> B) ---> (B ---> C) ---> (A ---> C))
-    using BasicReasoning.
-  Proof.
-    intros WFA WFB WFC.
-    apply reorder_meta;[wf_auto2|wf_auto2|wf_auto2|].
-    eapply MP.
-    - apply(P1 _ (B ---> C) A); wf_auto2.
-    - eapply MP.
-      + eapply MP.
-        * apply (P2 _ A B C); wf_auto2.
-        * apply (P1 _ ((A ---> B ---> C) ---> (A ---> B) ---> A ---> C) (B ---> C)); wf_auto2.
-      + apply P2; wf_auto2.
-  Defined.
-  
-  Lemma syllogism_meta {Σ : Signature} (Γ : Theory) (A B C : Pattern) (i : ProofInfo) :
-    well_formed A ->
-    well_formed B ->
-    well_formed C ->
-    Γ ⊢i (A ---> B) using i ->
-    Γ ⊢i (B ---> C) using i ->
-    Γ ⊢i (A ---> C) using i.
-  Proof.
-    intros H H0 H1 H2 H3.
-    eapply MP.
-    - exact H2.
-    - eapply MP.
-      + exact H3.
-      + apply reorder_meta;[wf_auto2|wf_auto2|wf_auto2|].
-        apply useBasicReasoning.
-        apply syllogism; wf_auto2.
-  Defined.
-  
-  Lemma modus_ponens {Σ : Signature} (Γ : Theory) (A B : Pattern) :
-    well_formed A ->
-    well_formed B ->
-    Γ ⊢i (A ---> (A ---> B) ---> B)
-    using BasicReasoning.
-  Proof.
-    intros WFA WFB.
-    eapply MP.
-    - apply (P1 _ A (A ---> B) ltac:(wf_auto2) ltac:(wf_auto2)).
-    - eapply MP.
-      + eapply MP.
-        * apply (@A_impl_A _ _ (A ---> B) ltac:(wf_auto2)).
-        * eapply (P2 _ (A ---> B) A B ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
-      + apply reorder_meta;[wf_auto2|wf_auto2|wf_auto2|].
-        apply syllogism; wf_auto2.
-  Defined.
-
-  Lemma not_not_intro {Σ : Signature} (Γ : Theory) (A : Pattern) :
-    well_formed A ->
-    Γ ⊢i (A ---> !(!A))
-    using BasicReasoning.
-  Proof.
-    intros WFA.
-    apply modus_ponens; wf_auto2.
-  Defined.
-
-  Lemma P4 {Σ : Signature} (Γ : Theory) (A B : Pattern)  :
-    well_formed A ->
-    well_formed B -> 
-    Γ ⊢i (((! A) ---> (! B)) ---> (B ---> A))
-    using BasicReasoning.
-  Proof.
-    intros WFA WFB.
-    pose proof (m := P3 Γ A ltac:(wf_auto2)).
-    pose proof (m0 := P1 Γ (((A ---> Bot) ---> Bot) ---> A) B ltac:(wf_auto2) ltac:(wf_auto2)).
-    pose proof (m1 := P2 Γ B ((A ---> Bot) ---> Bot) A ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
-    pose proof (m2 := MP m m0).
-    pose proof (m3 := MP m2 m1).
-    pose proof (m4 := P1 Γ ((B ---> (A ---> Bot) ---> Bot) ---> B ---> A) ((A ---> Bot) ---> (B ---> Bot)) ltac:(wf_auto2) ltac:(wf_auto2) ).
-    pose proof (m5 := MP m3 m4).
-    pose proof (m6 := P2 Γ ((A ---> Bot) ---> (B ---> Bot)) (B ---> (A ---> Bot) ---> Bot) (B ---> A) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
-    pose proof (m7 := MP m5 m6).
-    pose proof (m8 := @reorder _ Γ (A ---> Bot) (B) Bot ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
-    apply (MP m8 m7).
-  Defined.
-
-  Lemma conj_intro {Σ : Signature} (Γ : Theory) (A B : Pattern) :
-    well_formed A ->
-    well_formed B ->
-    Γ ⊢i (A ---> B ---> (A and B))
-    using BasicReasoning.
-  Proof.
-    intros WFA WFB.
-    pose proof (tB := (@A_impl_A _ Γ B ltac:(wf_auto2))).
-    epose proof (t1 := MP (P2 _ (!(!A) ---> !B) A Bot ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)) (P1 _ _ B _ _)).
-    epose proof (t2 := MP (reorder_meta _ _ _ (@P4 _ _ (!A) B ltac:(wf_auto2) ltac:(wf_auto2))) (P1 _ _ B _ _)).
-    epose proof (t3'' := MP (P1 _ A (!(!A) ---> !B) _ _) (P1 _ _ B _ _)).
-    epose proof (t4 := MP tB (MP t2 (P2 _ B B _ _ _ _))).
-    epose proof (t5'' := 
-            MP t4
-                         (MP t1
-                                       (P2 _ B ((!(!A) ---> !B) ---> !A)
-                                           (((!(!A) ---> !B) ---> A) ---> !(!(!A) ---> !B)) _ _ _))).
-    
-    epose proof (tA := (P1 Γ A B) _ _).
-    epose proof (tB' := MP tB
-                              (P1 _ (B ---> B) A _ _)).
-    epose proof (t3' := MP t3''
-                              (P2 _ B A ((!(!A) ---> !B) ---> A) _ _ _)).
-    epose proof (t3 := MP t3'
-                             (P1 _ ((B ---> A) ---> B ---> (! (! A) ---> ! B) ---> A) A _ _)).
-    epose proof (t5' := MP t5''
-                              (P2 _ B ((!(!A) ---> !B) ---> A) (!(!(!A) ---> !B)) _ _ _)).
-    epose proof (t5 := MP t5' 
-                             (P1 _ ((B ---> (! (! A) ---> ! B) ---> A) ---> B ---> ! (! (! A) ---> ! B))
-                                 A _ _)).
-    epose proof (t6 := MP tA
-                             (MP t3
-                                           (P2 _ A (B ---> A) (B ---> (!(!A) ---> !B) ---> A) _ _ _))).
-    epose proof (t7 := MP t6 
-                             (MP t5 
-                                           (P2 _ A (B ---> (!(!A) ---> !B) ---> A) (B ---> !(!(!A) ---> !B)) _ _ _))).
-    apply t7.
+Lemma bot_elim {Σ : Signature} (Γ : Theory) (A : Pattern) :
+  well_formed A ->
+  Γ ⊢i (Bot ---> A)
+  using BasicReasoning.
+Proof.
+  intros WFA.
+  eapply MP.
+  - eapply MP.
+    + eapply MP.
+      * eapply MP.
+        -- eapply (P1 _ Bot Bot _ _).
+        -- eapply (P2 _ Bot Bot Bot _ _ _).
+      * eapply (P4 _ Bot Bot _ _).
+    + eapply (P1 _ (Bot ---> Bot) (A ---> Bot) _ _).
+  - eapply (P4 _ A Bot _ _).
     Unshelve.
     all: wf_auto2.
-  Defined.
+Defined.
 
-  Lemma conj_intro_meta {Σ : Signature} (Γ : Theory) (A B : Pattern) (i : ProofInfo) :
-    well_formed A ->
-    well_formed B ->
-    Γ ⊢i A using i ->
-    Γ ⊢i B using i ->
-    Γ ⊢i (A and B) using i.
-  Proof.
-    intros WFA WFB H H0.
-    eapply MP.
-    - exact H0.
-    - eapply MP.
-      + exact H.
-      + apply useBasicReasoning.
-        apply conj_intro; wf_auto2.
-  Defined.
-  
-  Lemma syllogism_4_meta {Σ : Signature} (Γ : Theory) (A B C D : Pattern) (i : ProofInfo) :
-    well_formed A ->
-    well_formed B ->
-    well_formed C ->
-    well_formed D ->
-    Γ ⊢i (A ---> B ---> C) using i ->
-    Γ ⊢i (C ---> D) using i ->
-    Γ ⊢i (A ---> B ---> D) using i.
-  Proof.
-    intros WFA WFB WFC WFD H H0.
-    eapply MP.
-    - exact H.
-    - eapply MP.
-      + eapply MP.
-        * eapply MP.
-          -- eapply MP.
-             ++ exact H0.
-             ++ apply useBasicReasoning. 
-                eapply (P1 _ (C ---> D) B _ _).
-          -- apply useBasicReasoning.  
-              eapply (P2 _ B C D _ _ _).
-        * apply useBasicReasoning. 
-          eapply (P1 _ ((B ---> C) ---> B ---> D) A _ _).
-      + apply useBasicReasoning. 
-        eapply (P2 _ A (B ---> C) (B ---> D) _ _ _).
-        Unshelve.
-        all: wf_auto2.
-  Defined.
+Lemma modus_ponens' {Σ : Signature} (Γ : Theory) (A B : Pattern) :
+  well_formed A ->
+  well_formed B ->
+  Γ ⊢i (A ---> (!B ---> !A) ---> B)
+  using BasicReasoning.
+Proof.
+  intros WFA WFB.
+  apply reorder_meta;[wf_auto2|wf_auto2|wf_auto2|].
+  apply P4; wf_auto2.
+Defined.
 
-  Lemma bot_elim {Σ : Signature} (Γ : Theory) (A : Pattern) :
-    well_formed A ->
-    Γ ⊢i (Bot ---> A)
-    using BasicReasoning.
-  Proof.
-    intros WFA.
-    eapply MP.
-    - eapply MP.
-      + eapply MP.
-        * eapply MP.
-          -- eapply (P1 _ Bot Bot _ _).
-          -- eapply (P2 _ Bot Bot Bot _ _ _).
-        * eapply (@P4 _ _ Bot Bot _ _).
-      + eapply (P1 _ (Bot ---> Bot) (A ---> Bot) _ _).
-    - eapply (@P4 _ _ A Bot _ _).
-      Unshelve.
-      all: wf_auto2.
-  Defined.
+Lemma disj_right_intro {Σ : Signature} (Γ : Theory) (A B : Pattern) :
+  well_formed A ->
+  well_formed B ->
+  Γ ⊢i (B ---> (A or B))
+  using BasicReasoning.
+Proof.
+  intros WFA WFB.
+  apply useBasicReasoning.
+  apply P1; wf_auto2.
+Defined.
 
-  Lemma modus_ponens' {Σ : Signature} (Γ : Theory) (A B : Pattern) :
-    well_formed A ->
-    well_formed B ->
-    Γ ⊢i (A ---> (!B ---> !A) ---> B)
-    using BasicReasoning.
-  Proof.
-    intros WFA WFB.
-    apply reorder_meta;[wf_auto2|wf_auto2|wf_auto2|].
-    apply P4; wf_auto2.
-  Defined.
+Lemma disj_left_intro {Σ : Signature} (Γ : Theory) (A B : Pattern) :
+  well_formed A ->
+  well_formed B ->
+  Γ ⊢i (A ---> (A or B))
+  using BasicReasoning.
+Proof.
+  intros WFA WFB.
+  eapply syllogism_4_meta.
+  5: { apply modus_ponens; wf_auto2. }
+  5: { apply bot_elim; wf_auto2. }
+  all: wf_auto2.
+Defined.
 
-  Lemma disj_right_intro {Σ : Signature} (Γ : Theory) (A B : Pattern) :
-    well_formed A ->
-    well_formed B ->
-    Γ ⊢i (B ---> (A or B))
-    using BasicReasoning.
-  Proof.
-    intros WFA WFB.
+Lemma disj_right_intro_meta {Σ : Signature} (Γ : Theory) (A B : Pattern) (i : ProofInfo) :
+  well_formed A ->
+  well_formed B ->
+  Γ ⊢i B using i ->
+  Γ ⊢i (A or B) using i.
+Proof.
+  intros HwfA HwfB HB.
+  eapply MP.
+  { exact HB. }
+  {
     apply useBasicReasoning.
+    apply disj_right_intro; wf_auto2.
+  }
+Defined.
+
+Lemma disj_left_intro_meta {Σ : Signature} (Γ : Theory) (A B : Pattern) (i : ProofInfo) :
+  well_formed A ->
+  well_formed B ->
+  Γ ⊢i A using i ->
+  Γ ⊢i (A or B) using i.
+Proof.
+  intros HwfA HwfB HA.
+  eapply MP.
+  { exact HA. }
+  apply useBasicReasoning.
+  apply disj_left_intro; assumption.
+Defined.
+
+Lemma not_not_elim {Σ : Signature} (Γ : Theory) (A : Pattern) :
+  well_formed A ->
+  Γ ⊢i (!(!A) ---> A)
+  using BasicReasoning.
+Proof.
+  intros WFA.
+  apply P3. exact WFA.
+Defined.
+
+Lemma not_not_elim_meta {Σ : Signature} Γ A (i : ProofInfo) :
+  well_formed A ->
+  Γ ⊢i (! ! A) using i ->
+  Γ ⊢i A using i.
+Proof.
+  intros wfA nnA.
+  eapply MP.
+  { apply nnA. }
+  { apply useBasicReasoning. apply not_not_elim. exact wfA. }
+Defined.
+
+Lemma double_neg_elim {Σ : Signature} (Γ : Theory) (A B : Pattern) :
+  well_formed A ->
+  well_formed B ->
+  Γ ⊢i (((!(!A)) ---> (!(!B))) ---> (A ---> B))
+  using BasicReasoning.
+Proof.
+  intros WFA WFB.
+  eapply syllogism_meta.
+  5: apply P4.
+  4: apply P4.
+  all: wf_auto2.
+Defined.
+
+Lemma double_neg_elim_meta {Σ : Signature} (Γ : Theory) (A B : Pattern) (i : ProofInfo) :
+  well_formed A ->
+  well_formed B -> 
+  Γ ⊢i ((!(!A)) ---> (!(!B))) using i ->
+  Γ ⊢i (A ---> B) using i.
+Proof.
+  intros WFA WFB H.
+  eapply MP.
+  - exact H.
+  - apply useBasicReasoning.
+    apply double_neg_elim; wf_auto2.
+Defined.
+
+Lemma not_not_impl_intro {Σ : Signature} (Γ : Theory) (A B : Pattern) :
+  well_formed A ->
+  well_formed B ->
+  Γ ⊢i ((A ---> B) ---> ((! ! A) ---> (! ! B)))
+  using BasicReasoning.
+Proof.
+  intros WFA WFB.
+
+  epose (S1 := syllogism Γ (! ! A) A B _ _ _).
+
+  epose (MP1 := MP (not_not_elim _ A _) S1).
+
+  epose(NNB := not_not_intro Γ B _).
+
+  epose(P1 := (P1 Γ (B ---> ! (! B)) (! ! A) _ _)).
+
+  epose(MP2 := MP NNB P1).
+
+  epose(P2' := (P2 Γ (! ! A) B (! !B) _ _ _)).
+
+  epose(MP3 := MP MP2 P2').
+
+  eapply @syllogism_meta with (B := (! (! A) ---> B)).
+  - shelve.
+  - shelve.
+  - shelve.
+  - assumption.
+  - assumption.
+    Unshelve.
+    all: wf_auto2.
+Defined.
+
+Lemma contraposition {Σ : Signature} (Γ : Theory) (A B : Pattern) : 
+  well_formed A ->
+  well_formed B -> 
+  Γ ⊢i ((A ---> B) ---> ((! B) ---> (! A)))
+  using BasicReasoning.
+Proof.
+  intros WFA WFB.
+  epose proof (P4 Γ (! A) (! B) _ _) as m.
+  apply @syllogism_meta with (B := (! (! A) ---> ! (! B))).
+  - shelve.
+  - shelve.
+  - shelve.
+  - apply not_not_impl_intro; wf_auto2.
+  - exact m. (* apply (P4 _ _ _). shelve. shelve. *)
+    Unshelve.
+    all: wf_auto2.
+Defined.
+
+Lemma or_comm_meta {Σ : Signature} (Γ : Theory) (A B : Pattern) (i : ProofInfo):
+  well_formed A ->
+  well_formed B ->
+  Γ ⊢i (A or B) using i ->
+  Γ ⊢i (B or A) using i.
+Proof.
+  intros WFA WFB H. unfold patt_or in *.
+  epose proof (P4 := (P4 Γ A (!B) _ _)).
+  epose proof (NNI := not_not_intro  Γ B _).
+  apply (useBasicReasoning i) in P4.
+  apply (useBasicReasoning i) in NNI.
+  epose proof (SI := syllogism_meta _ _ _ H NNI).
+  eapply MP.
+  - exact SI.
+  - exact P4.
+    Unshelve.
+    all: wf_auto2.
+Defined.
+
+Lemma A_implies_not_not_A_alt {Σ : Signature} (Γ : Theory) (A : Pattern) (i : ProofInfo) :
+  well_formed A ->
+  Γ ⊢i A using i ->
+  Γ ⊢i (!( !A )) using i.
+Proof.
+  intros WFA H. unfold patt_not.
+  eapply MP.
+  { apply H. }
+  {
+    apply useBasicReasoning.
+    apply not_not_intro.
+    exact WFA.
+  }
+Defined.
+
+Lemma P5i {Σ : Signature} (Γ : Theory) (A B : Pattern) :
+  well_formed A ->
+  well_formed B ->
+  Γ ⊢i (! A ---> (A ---> B))
+  using BasicReasoning.
+Proof.
+  intros WFA WFB.
+  eapply syllogism_meta.
+  5: apply P4.
+  4: apply P1.
+  all: wf_auto2.
+Defined.
+
+Lemma A_implies_not_not_A_alt_Γ {Σ : Signature} (Γ : Theory) (A : Pattern) (i : ProofInfo) :
+  well_formed A ->
+  Γ ⊢i A using i ->
+  Γ ⊢i (!( !A )) using i.
+Proof.
+  intros WFA H. unfold patt_not.
+  eapply MP.
+  { apply H. }
+  { apply useBasicReasoning. apply not_not_intro. exact WFA. }
+Defined.
+
+
+Lemma exclusion {Σ : Signature} (G : Theory) (A : Pattern) (i : ProofInfo) :
+  well_formed A ->
+  G ⊢i A using i ->
+  G ⊢i (A ---> Bot) using i ->
+  G ⊢i Bot using i.
+Proof.
+  intros WFA H H0.
+  eapply MP.
+  apply H.
+  apply H0.
+Defined.
+
+Lemma modus_tollens {Σ : Signature} Γ A B (i : ProofInfo) :
+  Γ ⊢i (A ---> B) using i ->
+  Γ ⊢i (!B ---> !A) using i.
+Proof.
+  intros H.
+  pose proof (wf := proved_impl_wf _ _ (proj1_sig H)).
+  assert (wfA : well_formed A) by wf_auto2.
+  assert (wfB : well_formed B) by wf_auto2.
+
+  eapply MP.
+  2: { apply useBasicReasoning. apply contraposition; wf_auto2. }
+  apply H.
+Defined.
+
+Lemma A_impl_not_not_B {Σ : Signature} Γ A B :
+  well_formed A ->
+  well_formed B ->
+  Γ ⊢i ((A ---> ! !B) ---> (A ---> B))
+  using BasicReasoning.
+Proof.
+  intros WFA WFB.
+
+  assert (H0 : Γ ⊢i (! !B ---> B) using BasicReasoning).
+  {
+    apply not_not_elim. wf_auto2.
+  }
+
+  assert (H1 : Γ ⊢i ((A ---> ! !B) ---> (! !B ---> B) ---> (A ---> B)) using BasicReasoning).
+  {
+    apply syllogism; wf_auto2.
+  }
+
+  eapply MP.
+  2: { 
+    apply reorder_meta.
+    4: apply H1.
+    all: wf_auto2.
+  }
+  apply H0.
+Defined.
+
+Lemma prf_weaken_conclusion {Σ : Signature} Γ A B B' :
+  well_formed A ->
+  well_formed B ->
+  well_formed B' ->
+  Γ ⊢i ((B ---> B') ---> ((A ---> B) ---> (A ---> B')))
+  using BasicReasoning.
+Proof.
+  intros wfA wfB wfB'.
+  apply reorder_meta;[wf_auto2|wf_auto2|wf_auto2|].
+  apply syllogism; wf_auto2.
+Defined.
+
+Lemma prf_weaken_conclusion_meta {Σ : Signature} Γ A B B' (i : ProofInfo) :
+  well_formed A ->
+  well_formed B ->
+  well_formed B' ->
+  Γ ⊢i (B ---> B') using i ->
+  Γ ⊢i ((A ---> B) ---> (A ---> B')) using i.
+Proof.
+  intros wfA wfB wfB' BimpB'.
+  assert (H1: Γ ⊢i ((A ---> B) ---> (B ---> B') ---> (A ---> B')) using i).
+  {
+    apply useBasicReasoning. apply syllogism; wf_auto2.
+  }
+  apply reorder_meta in H1;[|wf_auto2|wf_auto2|wf_auto2].
+  eapply MP. 2: apply H1. apply BimpB'.
+Defined.
+
+Lemma prf_weaken_conclusion_iter {Σ : Signature} Γ l g g'
+        (wfl : Pattern.wf l) (wfg : well_formed g) (wfg' : well_formed g') :
+  Γ ⊢i ((g ---> g') ---> (fold_right patt_imp g l ---> fold_right patt_imp g' l))
+  using BasicReasoning.
+Proof.
+  induction l.
+  - apply A_impl_A. wf_auto2.
+  - pose proof (wfl' := wfl).
+    apply andb_prop in wfl.
+    fold (map well_formed) in wfl.
+    destruct wfl as [wfa wfl].
+    (* fold does not work in wfl, so I just assert & clear. *)
+    assert (wfl'' : Pattern.wf l) by apply wfl.
+    clear wfl.
+    specialize (IHl wfl'').
+    simpl in *.
+    eapply syllogism_meta.
+    5: eapply prf_weaken_conclusion.
+    4: apply IHl.
+    all: wf_auto2.
+Defined.
+
+Lemma prf_weaken_conclusion_iter_meta {Σ : Signature} Γ l g g' (i : ProofInfo):
+  Pattern.wf l ->
+  well_formed g ->
+  well_formed g' ->
+  Γ ⊢i (g ---> g') using i ->
+  Γ ⊢i ((fold_right patt_imp g l) ---> (fold_right patt_imp g' l)) using i.
+Proof.
+  intros wfl wfg wfg' gimpg'.
+  eapply MP.
+  2: { apply useBasicReasoning. apply prf_weaken_conclusion_iter; wf_auto2. }
+  1: { apply gimpg'. }
+Defined.
+
+Lemma prf_weaken_conclusion_iter_meta_meta {Σ : Signature} Γ l g g' (i : ProofInfo):
+  Pattern.wf l ->
+  well_formed g ->
+  well_formed g' ->
+  Γ ⊢i (g ---> g') using i ->
+  Γ ⊢i (fold_right patt_imp g l) using i ->
+  Γ ⊢i (fold_right patt_imp g' l) using i.
+Proof.
+  intros wfl wfg wfg' gimpg' H.
+  eapply MP.
+  { apply gimpg'. }
+  eapply MP.
+  { apply H. }
+  apply reorder_meta;[wf_auto2|wf_auto2|wf_auto2|].
+  apply useBasicReasoning.
+  apply prf_weaken_conclusion_iter.
+  all: wf_auto2.
+Defined.
+
+Lemma prf_weaken_conclusion_meta_meta {Σ : Signature} Γ A B B' (i : ProofInfo) :
+  well_formed A ->
+  well_formed B ->
+  well_formed B' ->
+  Γ ⊢i (B ---> B') using i ->
+  Γ ⊢i (A ---> B) using i ->
+  Γ ⊢i (A ---> B') using i.
+Proof.
+  intros WFA WFB WFB' H H0.
+  eapply MP. 2: apply prf_weaken_conclusion_meta. 1: apply H0.
+  4: apply H. all: wf_auto2.
+Defined.
+
+Lemma prf_strenghten_premise {Σ : Signature} Γ A A' B :
+  well_formed A ->
+  well_formed A' ->
+  well_formed B ->
+  Γ ⊢i ((A' ---> A) ---> ((A ---> B) ---> (A' ---> B))) using BasicReasoning.
+Proof.
+  intros wfA wfA' wfB.
+  apply syllogism; wf_auto2.
+Defined.
+
+Lemma prf_strenghten_premise_iter {Σ : Signature}  Γ l₁ l₂ h h' g :
+  Pattern.wf l₁ -> Pattern.wf l₂ ->
+  well_formed h ->
+  well_formed h' ->
+  well_formed g ->
+  Γ ⊢i (h' ---> h) --->
+      foldr patt_imp g (l₁ ++ h::l₂) --->
+      foldr patt_imp g (l₁ ++ h'::l₂)
+  using BasicReasoning.
+Proof.
+  intros wfl₁ wfl₂ wfh wfh' wfg.
+  induction l₁.
+  - simpl. apply prf_strenghten_premise. all: wf_auto2.
+  - pose proof (wfal₁ := wfl₁).
+    remember (foldr patt_imp g (h::l₂)) as g1.
+    remember (foldr patt_imp g (h'::l₂)) as g2.
+    unfold Pattern.wf in wfl₁. simpl in wfl₁. apply andb_prop in wfl₁.
+    destruct wfl₁ as [wfa wfl₁].
+    specialize (IHl₁ wfl₁).
+    remember (foldr patt_imp g (l₁ ++ h::l₂)) as b.
+    remember (foldr patt_imp g (l₁ ++ h'::l₂)) as b'.
+
+    assert (prf: Γ ⊢i ((b ---> b') ---> ((a ---> b) ---> (a ---> b'))) using BasicReasoning).
+    { apply prf_weaken_conclusion; subst; wf_auto2. }
+
+    subst.
+    eapply syllogism_meta.
+    5: { apply prf. }
+    4: { apply IHl₁. }
+    all: wf_auto2.
+Defined.
+
+Lemma prf_strenghten_premise_meta {Σ : Signature} Γ A A' B (i : ProofInfo) :
+  well_formed A ->
+  well_formed A' ->
+  well_formed B ->
+  Γ ⊢i (A' ---> A) using i ->
+  Γ ⊢i ((A ---> B) ---> (A' ---> B)) using i.
+Proof.
+  intros wfA wfA' wfB A'impA.
+  assert (H1: Γ ⊢i ((A' ---> A) ---> (A ---> B) ---> (A' ---> B)) using i).
+  {
+    apply useBasicReasoning. apply syllogism; wf_auto2.
+  }
+  eapply MP. 2: apply H1. apply A'impA.
+Defined.
+
+Lemma prf_strenghten_premise_meta_meta {Σ : Signature} Γ A A' B (i : ProofInfo) :
+  well_formed A ->
+  well_formed A' ->
+  well_formed B ->
+  Γ ⊢i (A' ---> A) using i ->
+  Γ ⊢i (A ---> B) using i ->
+  Γ ⊢i (A' ---> B) using i.
+Proof.
+  intros wfA wfA' wfB A'impA AimpB.
+  eapply MP. 2: apply prf_strenghten_premise_meta. 1: apply AimpB.
+  4: apply A'impA. all: wf_auto2.
+Defined.
+
+Lemma prf_strenghten_premise_iter_meta {Σ : Signature} Γ l₁ l₂ h h' g (i : ProofInfo) :
+  Pattern.wf l₁ -> Pattern.wf l₂ ->
+  well_formed h ->
+  well_formed h' ->
+  well_formed g ->
+  Γ ⊢i (h' ---> h) using i ->
+  Γ ⊢i foldr patt_imp g (l₁ ++ h::l₂) --->
+       foldr patt_imp g (l₁ ++ h'::l₂)
+  using i.
+Proof.
+  intros WFl₁ WFl₂ WFh WFh' WFg H.
+  eapply MP.
+  2: { apply useBasicReasoning. apply prf_strenghten_premise_iter; wf_auto2. }
+  exact H.
+Defined.
+
+Lemma prf_strenghten_premise_iter_meta_meta {Σ : Signature} Γ l₁ l₂ h h' g (i : ProofInfo) :
+  Pattern.wf l₁ -> Pattern.wf l₂ ->
+  well_formed h ->
+  well_formed h' ->
+  well_formed g ->
+  Γ ⊢i (h' ---> h) using i ->
+  Γ ⊢i foldr patt_imp g (l₁ ++ h::l₂) using i ->
+  Γ ⊢i foldr patt_imp g (l₁ ++ h'::l₂) using i.  
+Proof.
+  intros WFl₁ WFl₂ WFh WFh' WFg H H0.
+  eapply MP.
+  2: eapply prf_strenghten_premise_iter_meta.
+  7: eassumption. 1: assumption. all: wf_auto2.
+Defined.
+
+
+Local Example example_nested_const {Σ : Signature} Γ a b c:
+  well_formed a ->
+  well_formed b ->
+  well_formed c ->
+  (* like P2 but nested a bit *)
+  Γ ⊢i (a ---> (b ---> (c ---> a)))
+  using BasicReasoning.
+Proof.
+  intros wfa wfb wfc.
+  assert (H1: Γ ⊢i ((c ---> a) ---> (b ---> (c ---> a))) using BasicReasoning).
+  {
     apply P1; wf_auto2.
-  Defined.
-  
-  Lemma disj_left_intro {Σ : Signature} (Γ : Theory) (A B : Pattern) :
-    well_formed A ->
-    well_formed B ->
-    Γ ⊢i (A ---> (A or B))
-    using BasicReasoning.
-  Proof.
-    intros WFA WFB.
-    eapply syllogism_4_meta.
-    5: { apply modus_ponens; wf_auto2. }
-    5: { apply bot_elim; wf_auto2. }
-    all: wf_auto2.
-  Defined.
+  }
+  assert (H2: Γ ⊢i (a ---> (c ---> a)) using BasicReasoning).
+  { apply P1; wf_auto2. }
 
-  Lemma disj_right_intro_meta {Σ : Signature} (Γ : Theory) (A B : Pattern) (i : ProofInfo) :
-    well_formed A ->
-    well_formed B ->
-    Γ ⊢i B using i ->
-    Γ ⊢i (A or B) using i.
-  Proof.
-    intros HwfA HwfB HB.
-    eapply MP.
-    { exact HB. }
-    {
-      apply useBasicReasoning.
-      apply disj_right_intro; wf_auto2.
-    }
-  Defined.
+  eapply (syllogism_meta _ _ _ H2 H1).
+  Unshelve. all: wf_auto2.
+Defined.
 
-  Lemma disj_left_intro_meta {Σ : Signature} (Γ : Theory) (A B : Pattern) (i : ProofInfo) :
-    well_formed A ->
-    well_formed B ->
-    Γ ⊢i A using i ->
-    Γ ⊢i (A or B) using i.
-  Proof.
-    intros HwfA HwfB HA.
-    eapply MP.
-    { exact HA. }
-    apply useBasicReasoning.
-    apply disj_left_intro; assumption.
-  Defined.
-
-  Lemma not_not_elim {Σ : Signature} (Γ : Theory) (A : Pattern) :
-    well_formed A ->
-    Γ ⊢i (!(!A) ---> A)
-    using BasicReasoning.
-  Proof.
-    intros WFA.
-    apply P3. exact WFA.
-  Defined.
-
-  Lemma not_not_elim_meta {Σ : Signature} Γ A (i : ProofInfo) :
-    well_formed A ->
-    Γ ⊢i (! ! A) using i ->
-    Γ ⊢i A using i.
-  Proof.
-    intros wfA nnA.
-    eapply MP.
-    { apply nnA. }
-    { apply useBasicReasoning. apply not_not_elim. exact wfA. }
-  Defined.
-
-  Lemma double_neg_elim {Σ : Signature} (Γ : Theory) (A B : Pattern) :
-    well_formed A ->
-    well_formed B ->
-    Γ ⊢i (((!(!A)) ---> (!(!B))) ---> (A ---> B))
-    using BasicReasoning.
-  Proof.
-    intros WFA WFB.
-    eapply syllogism_meta.
-    5: apply P4.
-    4: apply P4.
-    all: wf_auto2.
-  Defined.
-
-  Lemma double_neg_elim_meta {Σ : Signature} (Γ : Theory) (A B : Pattern) (i : ProofInfo) :
-    well_formed A ->
-    well_formed B -> 
-    Γ ⊢i ((!(!A)) ---> (!(!B))) using i ->
-    Γ ⊢i (A ---> B) using i.
-  Proof.
-    intros WFA WFB H.
-    eapply MP.
-    - exact H.
-    - apply useBasicReasoning.
-      apply double_neg_elim; wf_auto2.
-  Defined.
-
-  Lemma not_not_impl_intro {Σ : Signature} (Γ : Theory) (A B : Pattern) :
-    well_formed A ->
-    well_formed B ->
-    Γ ⊢i ((A ---> B) ---> ((! ! A) ---> (! ! B)))
-    using BasicReasoning.
-  Proof.
-    intros WFA WFB.
-    
-    epose (S1 := @syllogism _ Γ (! ! A) A B _ _ _).
-    
-    epose (MP1 := MP (@not_not_elim _ _ A _) S1).
-    
-    epose(NNB := @not_not_intro _ Γ B _).
-
-    epose(P1 := (P1 Γ (B ---> ! (! B)) (! ! A) _ _)).
-    
-    epose(MP2 := MP NNB P1).
-    
-    epose(P2' := (P2 Γ (! ! A) B (! !B) _ _ _)).
-    
-    epose(MP3 := MP MP2 P2').
-    
-    eapply @syllogism_meta with (B := (! (! A) ---> B)).
-    - shelve.
-    - shelve.
-    - shelve.
-    - assumption.
-    - assumption.
-      Unshelve.
-      all: wf_auto2.
-  Defined.
-
-  Lemma contraposition {Σ : Signature} (Γ : Theory) (A B : Pattern) : 
-    well_formed A ->
-    well_formed B -> 
-    Γ ⊢i ((A ---> B) ---> ((! B) ---> (! A)))
-    using BasicReasoning.
-  Proof.
-    intros WFA WFB.
-    epose proof (@P4 _ Γ (! A) (! B) _ _) as m.
-    apply syllogism_meta with (B := (! (! A) ---> ! (! B))).
-    - shelve.
-    - shelve.
-    - shelve.
-    - apply @not_not_impl_intro; wf_auto2.
-    - exact m. (* apply (P4 _ _ _). shelve. shelve. *)
-      Unshelve.
-      all: wf_auto2.
-  Defined.
-
-  Lemma or_comm_meta {Σ : Signature} (Γ : Theory) (A B : Pattern) (i : ProofInfo):
-    well_formed A ->
-    well_formed B ->
-    Γ ⊢i (A or B) using i ->
-    Γ ⊢i (B or A) using i.
-  Proof.
-    intros WFA WFB H. unfold patt_or in *.    
-    epose proof (P4 := (@P4 _ Γ A (!B) _ _)).
-    epose proof (NNI := @not_not_intro  _ Γ B _).
-    apply (useBasicReasoning i) in P4.
-    apply (useBasicReasoning i) in NNI.
-    epose proof (SI := @syllogism_meta _ Γ _ _ _ _ _ _ _ H NNI).
-    eapply MP.
-    - exact SI.
-    - exact P4.
-      Unshelve.
-      all: wf_auto2.
-  Defined.
-
-  Lemma A_implies_not_not_A_alt {Σ : Signature} (Γ : Theory) (A : Pattern) (i : ProofInfo) :
-    well_formed A ->
-    Γ ⊢i A using i ->
-    Γ ⊢i (!( !A )) using i.
-  Proof.
-    intros WFA H. unfold patt_not.
-    eapply MP.
-    { apply H. }
-    {
-      apply useBasicReasoning.
-      apply not_not_intro.
-      exact WFA.
-    }
-  Defined.
-
-  Lemma P5i {Σ : Signature} (Γ : Theory) (A B : Pattern) :
-    well_formed A ->
-    well_formed B ->
-    Γ ⊢i (! A ---> (A ---> B))
-    using BasicReasoning.
-  Proof.
-    intros WFA WFB.
-    eapply syllogism_meta.
-    5: apply P4.
-    4: apply P1.
-    all: wf_auto2.
-  Defined.
-
-  Lemma false_implies_everything {Σ : Signature} (Γ : Theory) (phi : Pattern) :
-    well_formed phi ->
-    Γ ⊢i (Bot ---> phi) using BasicReasoning.
-  Proof.
-    apply bot_elim.
-  Defined.
-
-  Lemma A_implies_not_not_A_alt_Γ {Σ : Signature} (Γ : Theory) (A : Pattern) (i : ProofInfo) :
-    well_formed A ->
-    Γ ⊢i A using i ->
-    Γ ⊢i (!( !A )) using i.
-  Proof.
-    intros WFA H. unfold patt_not.
-    eapply MP.
-    { apply H. }
-    { apply useBasicReasoning. apply not_not_intro. exact WFA. }
-  Defined.
-
-
-  Lemma exclusion {Σ : Signature} (G : Theory) (A : Pattern) (i : ProofInfo) :
-    well_formed A ->
-    G ⊢i A using i ->
-    G ⊢i (A ---> Bot) using i ->
-    G ⊢i Bot using i.
-  Proof.
-    intros WFA H H0.
-    eapply MP.
-    apply H.
-    apply H0.
-  Defined.
-
-  Lemma modus_tollens {Σ : Signature} Γ A B (i : ProofInfo) :
-    Γ ⊢i (A ---> B) using i ->
-    Γ ⊢i (!B ---> !A) using i.
-  Proof.
-    intros H.
-    pose proof (wf := proved_impl_wf _ _ (proj1_sig H)).
-    assert (wfA : well_formed A) by wf_auto2.
-    assert (wfB : well_formed B) by wf_auto2.
-
-    eapply MP.
-    2: { apply useBasicReasoning. apply contraposition; wf_auto2. }
-    apply H.
-  Defined.
-  
-  Lemma A_impl_not_not_B {Σ : Signature} Γ A B :
-    well_formed A ->
-    well_formed B ->
-    Γ ⊢i ((A ---> ! !B) ---> (A ---> B))
-    using BasicReasoning.
-  Proof.
-    intros WFA WFB.
-
-    assert (H0 : Γ ⊢i (! !B ---> B) using BasicReasoning).
-    {
-      apply not_not_elim. wf_auto2.
-    }
-
-    assert (H1 : Γ ⊢i ((A ---> ! !B) ---> (! !B ---> B) ---> (A ---> B)) using BasicReasoning).
-    {
-      apply syllogism; wf_auto2.
-    }
-
-    eapply MP.
-    2: { 
-      apply reorder_meta.
-      4: apply H1.
-      all: wf_auto2.
-    }
-    apply H0.
-  Defined.
-
-  Lemma prf_weaken_conclusion {Σ : Signature} Γ A B B' :
-    well_formed A ->
-    well_formed B ->
-    well_formed B' ->
-    Γ ⊢i ((B ---> B') ---> ((A ---> B) ---> (A ---> B')))
-    using BasicReasoning.
-  Proof.
-    intros wfA wfB wfB'.
-    apply reorder_meta;[wf_auto2|wf_auto2|wf_auto2|].
-    apply syllogism; wf_auto2.
-  Defined.
-
-  Lemma prf_weaken_conclusion_meta {Σ : Signature} Γ A B B' (i : ProofInfo) :
-    well_formed A ->
-    well_formed B ->
-    well_formed B' ->
-    Γ ⊢i (B ---> B') using i ->
-    Γ ⊢i ((A ---> B) ---> (A ---> B')) using i.
-  Proof.
-    intros wfA wfB wfB' BimpB'.
-    assert (H1: Γ ⊢i ((A ---> B) ---> (B ---> B') ---> (A ---> B')) using i).
-    {
-      apply useBasicReasoning. apply syllogism; wf_auto2.
-    }
-    apply reorder_meta in H1;[|wf_auto2|wf_auto2|wf_auto2].
-    eapply MP. 2: apply H1. apply BimpB'.
-  Defined.
-
-  Lemma prf_weaken_conclusion_iter {Σ : Signature} Γ l g g'
-          (wfl : Pattern.wf l) (wfg : well_formed g) (wfg' : well_formed g') :
-    Γ ⊢i ((g ---> g') ---> (fold_right patt_imp g l ---> fold_right patt_imp g' l))
-    using BasicReasoning.
-  Proof.
-    induction l.
-    - apply A_impl_A. wf_auto2.
-    - pose proof (wfl' := wfl).
-      apply andb_prop in wfl.
-      fold (map well_formed) in wfl.
-      destruct wfl as [wfa wfl].
-      (* I do not know how to fold it, so I just assert & clear. *)
-      assert (wfl'' : Pattern.wf l) by apply wfl.
-      clear wfl.
-      specialize (IHl wfl'').
-      simpl in *.
-      eapply syllogism_meta.
-      5: eapply prf_weaken_conclusion.
-      4: apply IHl.
-      all: wf_auto2.
-  Defined.
-
-  Lemma prf_weaken_conclusion_iter_meta {Σ : Signature} Γ l g g' (i : ProofInfo):
-    Pattern.wf l ->
-    well_formed g ->
-    well_formed g' ->
-    Γ ⊢i (g ---> g') using i ->
-    Γ ⊢i ((fold_right patt_imp g l) ---> (fold_right patt_imp g' l)) using i.
-  Proof.
-    intros wfl wfg wfg' gimpg'.
-    eapply MP.
-    2: { apply useBasicReasoning. apply prf_weaken_conclusion_iter; wf_auto2. }
-    1: { apply gimpg'. }
-  Defined.
-
-  Lemma prf_weaken_conclusion_iter_meta_meta {Σ : Signature} Γ l g g' (i : ProofInfo):
-    Pattern.wf l ->
-    well_formed g ->
-    well_formed g' ->
-    Γ ⊢i (g ---> g') using i ->
-    Γ ⊢i (fold_right patt_imp g l) using i ->
-    Γ ⊢i (fold_right patt_imp g' l) using i.
-  Proof.
-    intros wfl wfg wfg' gimpg' H.
-    eapply MP.
-    { apply gimpg'. }
-    eapply MP.
-    { apply H. }
-    apply reorder_meta;[wf_auto2|wf_auto2|wf_auto2|].
-    apply useBasicReasoning.
-    apply prf_weaken_conclusion_iter.
-    all: wf_auto2.
-  Defined.
-
-  Lemma prf_weaken_conclusion_meta_meta {Σ : Signature} Γ A B B' (i : ProofInfo) :
-    well_formed A ->
-    well_formed B ->
-    well_formed B' ->
-    Γ ⊢i (B ---> B') using i ->
-    Γ ⊢i (A ---> B) using i ->
-    Γ ⊢i (A ---> B') using i.
-  Proof.
-    intros WFA WFB WFB' H H0.
-    eapply MP. 2: apply prf_weaken_conclusion_meta. 1: apply H0.
-    4: apply H. all: wf_auto2.
-  Defined.
-
-  Lemma prf_strenghten_premise {Σ : Signature} Γ A A' B :
-    well_formed A ->
-    well_formed A' ->
-    well_formed B ->
-    Γ ⊢i ((A' ---> A) ---> ((A ---> B) ---> (A' ---> B))) using BasicReasoning.
-  Proof.
-    intros wfA wfA' wfB.
-    apply syllogism; wf_auto2.
-  Defined.
-
-  Lemma prf_strenghten_premise_iter {Σ : Signature}  Γ l₁ l₂ h h' g :
-    Pattern.wf l₁ -> Pattern.wf l₂ ->
-    well_formed h ->
-    well_formed h' ->
-    well_formed g ->
-    Γ ⊢i (h' ---> h) --->
-        foldr patt_imp g (l₁ ++ h::l₂) --->
-        foldr patt_imp g (l₁ ++ h'::l₂)
-    using BasicReasoning.
-  Proof.
-    intros wfl₁ wfl₂ wfh wfh' wfg.
-    induction l₁.
-    - simpl. apply prf_strenghten_premise. all: wf_auto2.
-    - pose proof (wfal₁ := wfl₁).
-      remember (foldr patt_imp g (h::l₂)) as g1.
-      remember (foldr patt_imp g (h'::l₂)) as g2.
-      unfold Pattern.wf in wfl₁. simpl in wfl₁. apply andb_prop in wfl₁.
-      destruct wfl₁ as [wfa wfl₁].
-      specialize (IHl₁ wfl₁).
-      remember (foldr patt_imp g (l₁ ++ h::l₂)) as b.
-      remember (foldr patt_imp g (l₁ ++ h'::l₂)) as b'.
-
-      assert (prf: Γ ⊢i ((b ---> b') ---> ((a ---> b) ---> (a ---> b'))) using BasicReasoning).
-      { apply prf_weaken_conclusion; subst; wf_auto2. }
-
-      subst.
-      eapply syllogism_meta.
-      5: { apply prf. }
-      4: { apply IHl₁. }
-      all: wf_auto2.
-  Defined.
-
-  Lemma prf_strenghten_premise_meta {Σ : Signature} Γ A A' B (i : ProofInfo) :
-    well_formed A ->
-    well_formed A' ->
-    well_formed B ->
-    Γ ⊢i (A' ---> A) using i ->
-    Γ ⊢i ((A ---> B) ---> (A' ---> B)) using i.
-  Proof.
-    intros wfA wfA' wfB A'impA.
-    assert (H1: Γ ⊢i ((A' ---> A) ---> (A ---> B) ---> (A' ---> B)) using i).
-    {
-      apply useBasicReasoning. apply syllogism; wf_auto2.
-    }
-    eapply MP. 2: apply H1. apply A'impA.
-  Defined.
-
-  Lemma prf_strenghten_premise_meta_meta {Σ : Signature} Γ A A' B (i : ProofInfo) :
-    well_formed A ->
-    well_formed A' ->
-    well_formed B ->
-    Γ ⊢i (A' ---> A) using i ->
-    Γ ⊢i (A ---> B) using i ->
-    Γ ⊢i (A' ---> B) using i.
-  Proof.
-    intros wfA wfA' wfB A'impA AimpB.
-    eapply MP. 2: apply prf_strenghten_premise_meta. 1: apply AimpB.
-    4: apply A'impA. all: wf_auto2.
-  Defined.
-
-  Lemma prf_strenghten_premise_iter_meta {Σ : Signature} Γ l₁ l₂ h h' g (i : ProofInfo) :
-    Pattern.wf l₁ -> Pattern.wf l₂ ->
-    well_formed h ->
-    well_formed h' ->
-    well_formed g ->
-    Γ ⊢i (h' ---> h) using i ->
-    Γ ⊢i foldr patt_imp g (l₁ ++ h::l₂) --->
-         foldr patt_imp g (l₁ ++ h'::l₂)
-    using i.  
-  Proof.
-    intros WFl₁ WFl₂ WFh WFh' WFg H.
-    eapply MP.
-    2: { apply useBasicReasoning. apply prf_strenghten_premise_iter; wf_auto2. }
-    exact H.
-  Defined.
-
-  Lemma prf_strenghten_premise_iter_meta_meta {Σ : Signature} Γ l₁ l₂ h h' g (i : ProofInfo) :
-    Pattern.wf l₁ -> Pattern.wf l₂ ->
-    well_formed h ->
-    well_formed h' ->
-    well_formed g ->
-    Γ ⊢i (h' ---> h) using i ->
-    Γ ⊢i foldr patt_imp g (l₁ ++ h::l₂) using i ->
-    Γ ⊢i foldr patt_imp g (l₁ ++ h'::l₂) using i.  
-  Proof.
-    intros WFl₁ WFl₂ WFh WFh' WFg H H0.
-    eapply MP.
-    2: eapply prf_strenghten_premise_iter_meta.
-    7: eassumption. 1: assumption. all: wf_auto2.
-  Defined.
-
-
-  Local Example example_nested_const {Σ : Signature} Γ a b c:
-    well_formed a ->
-    well_formed b ->
-    well_formed c ->
-    (* like P2 but nested a bit *)
-    Γ ⊢i (a ---> (b ---> (c ---> a)))
-    using BasicReasoning.
-  Proof.
-    intros wfa wfb wfc.
-    assert (H1: Γ ⊢i ((c ---> a) ---> (b ---> (c ---> a))) using BasicReasoning).
+(* This will form a base for the tactic 'exact 0' *)
+Lemma nested_const {Σ : Signature} Γ a l:
+  well_formed a ->
+  Pattern.wf l ->
+  Γ ⊢i (a ---> (fold_right patt_imp a l))
+  using BasicReasoning.
+Proof.
+  intros wfa wfl.
+  induction l; simpl.
+  - apply A_impl_A. exact wfa.
+  - pose proof (wfa0l := wfl).
+    unfold Pattern.wf in wfl. simpl in wfl. apply andb_prop in wfl. destruct wfl as [wfa0 wfl].
+    specialize (IHl wfl).
+    assert (H1 : Γ ⊢i ((foldr patt_imp a l) ---> (a0 ---> (foldr patt_imp a l))) using BasicReasoning).
     {
       apply P1; wf_auto2.
     }
-    assert (H2: Γ ⊢i (a ---> (c ---> a)) using BasicReasoning).
-    { apply P1; wf_auto2. }
+    eapply syllogism_meta.
+    5: apply H1. 4: assumption. all: wf_auto2.
+Defined.
 
-    eapply (@syllogism_meta _ _ _ _ _ _ _ _ _ H2 H1).
-    Unshelve. all: wf_auto2.
-  Defined.
+Lemma nested_const_middle {Σ : Signature} Γ a l₁ l₂:
+  well_formed a ->
+  Pattern.wf l₁ ->
+  Pattern.wf l₂ ->
+  Γ ⊢i (fold_right patt_imp a (l₁ ++ a :: l₂))
+  using BasicReasoning.
+Proof.
+  intros wfa wfl₁ wfl₂.
+  induction l₁; simpl.
+  - apply nested_const; wf_auto2.
+  - pose proof (wfa0l₁ := wfl₁).
+    unfold Pattern.wf in wfl₁. simpl in wfl₁. apply andb_prop in wfl₁. destruct wfl₁ as [wfa0 wfl₁].
+    specialize (IHl₁ wfl₁). simpl in IHl₁.
+    eapply MP. 2: apply P1. 1: apply IHl₁. all: wf_auto2.
+Defined.
 
-  (* This will form a base for the tactic 'exact 0' *)
-  Lemma nested_const {Σ : Signature} Γ a l:
-    well_formed a ->
-    Pattern.wf l ->
-    Γ ⊢i (a ---> (fold_right patt_imp a l))
-    using BasicReasoning.
-  Proof.
-    intros wfa wfl.
-    induction l; simpl.
-    - apply A_impl_A. exact wfa.
-    - pose proof (wfa0l := wfl).
-      unfold Pattern.wf in wfl. simpl in wfl. apply andb_prop in wfl. destruct wfl as [wfa0 wfl].
-      specialize (IHl wfl).
-      assert (H1 : Γ ⊢i ((foldr patt_imp a l) ---> (a0 ---> (foldr patt_imp a l))) using BasicReasoning).
-      {
-        apply P1; wf_auto2.
-      }
-      eapply syllogism_meta.
-      5: apply H1. 4: assumption. all: wf_auto2.
-  Defined.
-
-  Lemma nested_const_middle {Σ : Signature} Γ a l₁ l₂:
-    well_formed a ->
-    Pattern.wf l₁ ->
-    Pattern.wf l₂ ->
-    Γ ⊢i (fold_right patt_imp a (l₁ ++ a :: l₂))
-    using BasicReasoning.
-  Proof.
-    intros wfa wfl₁ wfl₂.
-    induction l₁; simpl.
-    - apply nested_const; wf_auto2.
-    - pose proof (wfa0l₁ := wfl₁).
-      unfold Pattern.wf in wfl₁. simpl in wfl₁. apply andb_prop in wfl₁. destruct wfl₁ as [wfa0 wfl₁].
-      specialize (IHl₁ wfl₁). simpl in IHl₁.
-      eapply MP. 2: apply P1. 1: apply IHl₁. all: wf_auto2.
-  Defined.
-
-  Lemma prf_reorder_iter {Σ : Signature} Γ a b g l₁ l₂:
-    well_formed a ->
-    well_formed b ->
-    well_formed g ->
-    Pattern.wf l₁ ->
-    Pattern.wf l₂ ->
-    Γ ⊢i ((fold_right patt_imp g (l₁ ++ [a;b] ++ l₂)) --->
-         (fold_right patt_imp g (l₁ ++ [b;a] ++ l₂)))
-    using BasicReasoning.
-  Proof.
-    intros wfa wfb wfg wfl₁ wfl₂.
-    induction l₁; simpl in *.
-    - apply reorder; wf_auto2.
-    - pose proof (wfa0l₁ := wfl₁).
-      unfold Pattern.wf in wfl₁. apply andb_prop in wfl₁. destruct wfl₁ as [wfa0 wfl₁].
-      specialize (IHl₁ wfl₁).
-      eapply prf_weaken_conclusion_meta.
-      4: apply IHl₁.
-      all: wf_auto2.
-  Defined.
-
-  Lemma prf_reorder_iter_meta {Σ : Signature} Γ a b g l₁ l₂ (i : ProofInfo):
-    well_formed a ->
-    well_formed b ->
-    well_formed g ->
-    Pattern.wf l₁ ->
-    Pattern.wf l₂ ->
-    Γ ⊢i (fold_right patt_imp g (l₁ ++ [a;b] ++ l₂)) using i ->
-    Γ ⊢i (fold_right patt_imp g (l₁ ++ [b;a] ++ l₂)) using i.
-  Proof.
-    (* TODO we should have a function/lemma for creating these "meta" variants. *)
-    intros WFa WFb WFg Wfl1 Wfl2 H.
-    eapply MP.
-    2: { apply useBasicReasoning. apply prf_reorder_iter; wf_auto2. }
-    exact H.
-  Defined.
-  
-  Lemma A_impl_not_not_B_meta {Σ : Signature} Γ A B (i : ProofInfo) :
-    well_formed A ->
-    well_formed B ->
-    Γ ⊢i A ---> ! !B using i ->
-    Γ ⊢i A ---> B using i.
-  Proof.
-    intros WFA WFB H.
-    eapply MP.
-    2: { apply useBasicReasoning. apply A_impl_not_not_B; wf_auto2. }
-    exact H.
-  Defined.
-
-  Lemma pf_conj_elim_l {Σ : Signature} Γ A B :
-    well_formed A ->
-    well_formed B ->
-    Γ ⊢i A and B ---> A using BasicReasoning.
-  Proof.
-    intros WFA WFB. unfold patt_and. unfold patt_not at 1.
-
-    assert (Γ ⊢i (! A ---> (! A or ! B)) using BasicReasoning).
-    { apply disj_left_intro; wf_auto2. }
-
-    assert (Γ ⊢i ((! A or ! B) ---> (! A or ! B ---> ⊥) ---> ⊥) using BasicReasoning).
-    {
-      apply modus_ponens; wf_auto2.
-    }
-    assert (Γ ⊢i (! A ---> ((! A or ! B ---> ⊥) ---> ⊥)) using BasicReasoning).
-    { eapply syllogism_meta. 5: apply H0. 4: apply H. all: wf_auto2. }
-    epose proof (reorder_meta _ _ _ H1).
-    apply A_impl_not_not_B_meta;[wf_auto2|wf_auto2|].
-    apply H2.
-    Unshelve.
+Lemma prf_reorder_iter {Σ : Signature} Γ a b g l₁ l₂:
+  well_formed a ->
+  well_formed b ->
+  well_formed g ->
+  Pattern.wf l₁ ->
+  Pattern.wf l₂ ->
+  Γ ⊢i ((fold_right patt_imp g (l₁ ++ [a;b] ++ l₂)) --->
+       (fold_right patt_imp g (l₁ ++ [b;a] ++ l₂)))
+  using BasicReasoning.
+Proof.
+  intros wfa wfb wfg wfl₁ wfl₂.
+  induction l₁; simpl in *.
+  - apply reorder; wf_auto2.
+  - pose proof (wfa0l₁ := wfl₁).
+    unfold Pattern.wf in wfl₁. apply andb_prop in wfl₁. destruct wfl₁ as [wfa0 wfl₁].
+    specialize (IHl₁ wfl₁).
+    eapply prf_weaken_conclusion_meta.
+    4: apply IHl₁.
     all: wf_auto2.
-  Defined.
+Defined.
 
-  Lemma pf_conj_elim_r {Σ : Signature} Γ A B :
-    well_formed A ->
-    well_formed B ->
-    Γ ⊢i A and B ---> B using BasicReasoning.
-  Proof.
-    intros WFA WFB. unfold patt_and. unfold patt_not at 1.
+Lemma prf_reorder_iter_meta {Σ : Signature} Γ a b g l₁ l₂ (i : ProofInfo):
+  well_formed a ->
+  well_formed b ->
+  well_formed g ->
+  Pattern.wf l₁ ->
+  Pattern.wf l₂ ->
+  Γ ⊢i (fold_right patt_imp g (l₁ ++ [a;b] ++ l₂)) using i ->
+  Γ ⊢i (fold_right patt_imp g (l₁ ++ [b;a] ++ l₂)) using i.
+Proof.
+  (* TODO we should have a function/lemma for creating these "meta" variants. *)
+  intros WFa WFb WFg Wfl1 Wfl2 H.
+  eapply MP.
+  2: { apply useBasicReasoning. apply prf_reorder_iter; wf_auto2. }
+  exact H.
+Defined.
 
-    assert (Γ ⊢i (! B ---> (! A or ! B)) using BasicReasoning).
-    { apply disj_right_intro; wf_auto2. }
+Lemma A_impl_not_not_B_meta {Σ : Signature} Γ A B (i : ProofInfo) :
+  well_formed A ->
+  well_formed B ->
+  Γ ⊢i A ---> ! !B using i ->
+  Γ ⊢i A ---> B using i.
+Proof.
+  intros WFA WFB H.
+  eapply MP.
+  2: { apply useBasicReasoning. apply A_impl_not_not_B; wf_auto2. }
+  exact H.
+Defined.
 
-    assert (Γ ⊢i ((! A or ! B) ---> (! A or ! B ---> ⊥) ---> ⊥) using BasicReasoning).
-    { apply modus_ponens; wf_auto2. }
+Lemma pf_conj_elim_l {Σ : Signature} Γ A B :
+  well_formed A ->
+  well_formed B ->
+  Γ ⊢i A and B ---> A using BasicReasoning.
+Proof.
+  intros WFA WFB. unfold patt_and. unfold patt_not at 1.
 
-    assert (Γ ⊢i (! B ---> ((! A or ! B ---> ⊥) ---> ⊥)) using BasicReasoning).
-    { eapply syllogism_meta. 5: apply H0. 4: apply H. all: wf_auto2. }
-    epose proof (reorder_meta  _ _ _ H1).
-    apply A_impl_not_not_B_meta;[wf_auto2|wf_auto2|].
-    apply H2.
-    Unshelve.
-    all: wf_auto2.
-  Defined.
+  assert (Γ ⊢i (! A ---> (! A or ! B)) using BasicReasoning).
+  { apply disj_left_intro; wf_auto2. }
 
-  Lemma pf_conj_elim_l_meta {Σ : Signature} Γ A B (i : ProofInfo) :
-    well_formed A ->
-    well_formed B ->
-    Γ ⊢i A and B using i ->
-    Γ ⊢i A using i.
-  Proof.
-    intros WFA WFB H.
-    eapply MP.
-    2: { apply useBasicReasoning. apply pf_conj_elim_l. wf_auto2. shelve. }
-    1: apply H.
-    Unshelve. all: wf_auto2.
-  Defined.
-  
-  Lemma pf_conj_elim_r_meta {Σ : Signature} Γ A B (i : ProofInfo) :
-    well_formed A ->
-    well_formed B ->
-    Γ ⊢i A and B using i ->
-    Γ ⊢i B using i.
-  Proof.
-    intros WFA WFB H.
-    eapply MP.
-    2: apply useBasicReasoning; apply pf_conj_elim_r.
-    1: apply H.
-    all: wf_auto2.
-  Defined.
+  assert (Γ ⊢i ((! A or ! B) ---> (! A or ! B ---> ⊥) ---> ⊥) using BasicReasoning).
+  {
+    apply modus_ponens; wf_auto2.
+  }
+  assert (Γ ⊢i (! A ---> ((! A or ! B ---> ⊥) ---> ⊥)) using BasicReasoning).
+  { eapply syllogism_meta. 5: apply H0. 4: apply H. all: wf_auto2. }
+  epose proof (reorder_meta _ _ _ H1).
+  apply A_impl_not_not_B_meta;[wf_auto2|wf_auto2|].
+  apply H2.
+  Unshelve.
+  all: wf_auto2.
+Defined.
 
-  Lemma A_or_notA {Σ : Signature} Γ A :
-    well_formed A ->
-    Γ ⊢i A or ! A using BasicReasoning.
-  Proof.
-    intros wfA.
-    unfold patt_or.
-    apply A_impl_A. wf_auto2.
-  Defined.
+Lemma pf_conj_elim_r {Σ : Signature} Γ A B :
+  well_formed A ->
+  well_formed B ->
+  Γ ⊢i A and B ---> B using BasicReasoning.
+Proof.
+  intros WFA WFB. unfold patt_and. unfold patt_not at 1.
 
-  Lemma P4m_meta {Σ : Signature} (Γ : Theory) (A B : Pattern) (i : ProofInfo) :
-    well_formed A ->
-    well_formed B ->
-    Γ ⊢i A ---> B using i ->
-    Γ ⊢i A ---> !B using i ->
-    Γ ⊢i !A using i.
-  Proof.
-    intros wfA wfB AimpB AimpnB.
-    pose proof (H1 := @P4m _ Γ A B wfA wfB).
-    assert (H2 : Γ ⊢i (A ---> ! B) ---> ! A using i).
-    { eapply MP. 2: { apply useBasicReasoning; apply H1. } exact AimpB. }
-    eapply MP. 2: { apply H2. } exact AimpnB.
-  Defined.
+  assert (Γ ⊢i (! B ---> (! A or ! B)) using BasicReasoning).
+  { apply disj_right_intro; wf_auto2. }
+
+  assert (Γ ⊢i ((! A or ! B) ---> (! A or ! B ---> ⊥) ---> ⊥) using BasicReasoning).
+  { apply modus_ponens; wf_auto2. }
+
+  assert (Γ ⊢i (! B ---> ((! A or ! B ---> ⊥) ---> ⊥)) using BasicReasoning).
+  { eapply syllogism_meta. 5: apply H0. 4: apply H. all: wf_auto2. }
+  epose proof (reorder_meta  _ _ _ H1).
+  apply A_impl_not_not_B_meta;[wf_auto2|wf_auto2|].
+  apply H2.
+  Unshelve.
+  all: wf_auto2.
+Defined.
+
+Lemma pf_conj_elim_l_meta {Σ : Signature} Γ A B (i : ProofInfo) :
+  well_formed A ->
+  well_formed B ->
+  Γ ⊢i A and B using i ->
+  Γ ⊢i A using i.
+Proof.
+  intros WFA WFB H.
+  eapply MP.
+  2: { apply useBasicReasoning. apply pf_conj_elim_l. wf_auto2. shelve. }
+  1: apply H.
+  Unshelve. all: wf_auto2.
+Defined.
+
+Lemma pf_conj_elim_r_meta {Σ : Signature} Γ A B (i : ProofInfo) :
+  well_formed A ->
+  well_formed B ->
+  Γ ⊢i A and B using i ->
+  Γ ⊢i B using i.
+Proof.
+  intros WFA WFB H.
+  eapply MP.
+  2: apply useBasicReasoning; apply pf_conj_elim_r.
+  1: apply H.
+  all: wf_auto2.
+Defined.
+
+Lemma A_or_notA {Σ : Signature} Γ A :
+  well_formed A ->
+  Γ ⊢i A or ! A using BasicReasoning.
+Proof.
+  intros wfA.
+  unfold patt_or.
+  apply A_impl_A. wf_auto2.
+Defined.
+
+Lemma P4m_meta {Σ : Signature} (Γ : Theory) (A B : Pattern) (i : ProofInfo) :
+  well_formed A ->
+  well_formed B ->
+  Γ ⊢i A ---> B using i ->
+  Γ ⊢i A ---> !B using i ->
+  Γ ⊢i !A using i.
+Proof.
+  intros wfA wfB AimpB AimpnB.
+  pose proof (H1 := P4m Γ A B wfA wfB).
+  assert (H2 : Γ ⊢i (A ---> ! B) ---> ! A using i).
+  { eapply MP. 2: { apply useBasicReasoning; apply H1. } exact AimpB. }
+  eapply MP. 2: { apply H2. } exact AimpnB.
+Defined.
 
 Lemma MLGoal_exactn {Σ : Signature}
   (Γ : Theory)
@@ -1244,34 +1006,34 @@ Lemma MLGoal_exactn {Σ : Signature}
   (name : string)
   (g : Pattern)
   (info : ProofInfo) :
-  @mkMLGoal Σ Γ (l₁ ++ (mkNH name g) :: l₂) g info.
+  mkMLGoal Σ Γ (l₁ ++ (mkNH _ name g) :: l₂) g info.
 Proof.
-mlExtractWF wfl₁gl₂ wfg.
-fromMLGoal.
-useBasicReasoning.
-unfold patterns_of in *.
-rewrite map_app.
-apply nested_const_middle.
-{ exact wfg. }
-{ abstract (
-    pose proof (wfl₁ := wf_take (length (patterns_of l₁)) wfl₁gl₂);
-    rewrite map_app in wfl₁;
-    rewrite take_app in wfl₁;
-    exact wfl₁
-  ).
-}
-{
-  abstract (
-    pose proof (wfgl₂ := wf_drop (length (patterns_of l₁)) wfl₁gl₂);
-    rewrite map_app in wfgl₂;
-    rewrite drop_app in wfgl₂;
-    unfold Pattern.wf in wfgl₂;
-    simpl in wfgl₂;
-    apply andb_prop in wfgl₂;
-    destruct wfgl₂ as [_ wfl₂];
-    exact wfl₂
-  ).
-}
+  mlExtractWF wfl₁gl₂ wfg.
+  fromMLGoal.
+  useBasicReasoning.
+  unfold patterns_of in *.
+  rewrite map_app.
+  apply nested_const_middle.
+  { exact wfg. }
+  { abstract (
+      pose proof (wfl₁ := wf_take (length (patterns_of l₁)) _ wfl₁gl₂);
+      rewrite map_app in wfl₁;
+      rewrite take_app in wfl₁;
+      exact wfl₁
+    ).
+  }
+  {
+    abstract (
+      pose proof (wfgl₂ := wf_drop (length (patterns_of l₁)) _ wfl₁gl₂);
+      rewrite map_app in wfgl₂;
+      rewrite drop_app in wfgl₂;
+      unfold Pattern.wf in wfgl₂;
+      simpl in wfgl₂;
+      apply andb_prop in wfgl₂;
+      destruct wfgl₂ as [_ wfl₂];
+      exact wfl₂
+    ).
+  }
 Defined.
 
 
@@ -1282,13 +1044,13 @@ Tactic Notation "mlExactn" constr(n) :=
 
 
 Lemma MLGoal_exact {Σ : Signature} Γ l name g idx info:
-  find_hyp name l = Some (idx, (mkNH name g)) ->
-  @mkMLGoal Σ Γ l g info.
+  find_hyp name l = Some (idx, (mkNH _ name g)) ->
+  mkMLGoal Σ Γ l g info.
 Proof.
   intros Hfound.
   setoid_rewrite -> list.list_find_Some in Hfound.
   destruct Hfound as [Hfound1 [Hfound2 Hfound3] ].
-  rewrite -[l](take_drop_middle l idx (mkNH name g)).
+  rewrite -[l](take_drop_middle l idx (mkNH _ name g)).
   { exact Hfound1. }
   apply MLGoal_exactn.
 Defined.
@@ -1312,239 +1074,239 @@ Defined.
 
 
 Lemma MLGoal_weakenConclusion' {Σ : Signature} Γ l g g' (i : ProofInfo):
-Γ ⊢i g ---> g' using i ->
-@mkMLGoal Σ Γ l g i ->
-@mkMLGoal Σ Γ l g' i.
+  Γ ⊢i g ---> g' using i ->
+  mkMLGoal Σ Γ l g i ->
+  mkMLGoal Σ Γ l g' i.
 Proof.
-intros Hgg' Hlg.
-(*mlExtractWF wfl wfgp.*)
-unfold of_MLGoal in *. simpl in *.
-intros wfg' wfl.
-pose proof (wfimp := proved_impl_wf _ _ (proj1_sig Hgg')).
-apply well_formed_imp_proj1 in wfimp.
-eapply prf_weaken_conclusion_iter_meta_meta.
-5: apply Hlg.
-4: apply Hgg'.
-all: assumption.
+  intros Hgg' Hlg.
+  (*mlExtractWF wfl wfgp.*)
+  unfold of_MLGoal in *. simpl in *.
+  intros wfg' wfl.
+  pose proof (wfimp := proved_impl_wf _ _ (proj1_sig Hgg')).
+  apply well_formed_imp_proj1 in wfimp.
+  eapply prf_weaken_conclusion_iter_meta_meta.
+  5: apply Hlg.
+  4: apply Hgg'.
+  all: assumption.
 Defined.
 
 Lemma prf_contraction {Σ : Signature} Γ a b:
-well_formed a ->
-well_formed b ->
-Γ ⊢i ((a ---> a ---> b) ---> (a ---> b)) using BasicReasoning.
+  well_formed a ->
+  well_formed b ->
+  Γ ⊢i ((a ---> a ---> b) ---> (a ---> b)) using BasicReasoning.
 Proof.
-intros wfa wfb.
-assert (H1 : Γ ⊢i (a ---> ((a ---> b) ---> b)) using BasicReasoning).
-{
-  apply modus_ponens; assumption.
-}
-assert (H2 : Γ ⊢i ((a ---> ((a ---> b) ---> b)) ---> ((a ---> (a ---> b)) ---> (a ---> b))) using BasicReasoning).
-{
-  apply P2; wf_auto2.
-}
-eapply MP. 2: apply H2. apply H1.
+  intros wfa wfb.
+  assert (H1 : Γ ⊢i (a ---> ((a ---> b) ---> b)) using BasicReasoning).
+  {
+    apply modus_ponens; assumption.
+  }
+  assert (H2 : Γ ⊢i ((a ---> ((a ---> b) ---> b)) ---> ((a ---> (a ---> b)) ---> (a ---> b))) using BasicReasoning).
+  {
+    apply P2; wf_auto2.
+  }
+  eapply MP. 2: apply H2. apply H1.
 Defined.
 
 Lemma prf_weaken_conclusion_under_implication {Σ : Signature} Γ a b c:
-well_formed a ->
-well_formed b ->
-well_formed c ->
-Γ ⊢i ((a ---> b) ---> ((a ---> (b ---> c)) ---> (a ---> c))) using BasicReasoning.
+  well_formed a ->
+  well_formed b ->
+  well_formed c ->
+  Γ ⊢i ((a ---> b) ---> ((a ---> (b ---> c)) ---> (a ---> c))) using BasicReasoning.
 Proof.
-intros wfa wfb wfc.
-assert (H1 : Γ ⊢i ((a ---> (b ---> c)) ---> (b ---> (a ---> c))) using BasicReasoning).
-{
-  apply reorder; wf_auto2.
-}
-assert (H2 : Γ ⊢i (((b ---> (a ---> c)) ---> (a ---> c)) ---> ((a ---> (b ---> c)) ---> (a ---> c))) using BasicReasoning).
-{
-  apply prf_strenghten_premise_meta;[wf_auto2|wf_auto2|wf_auto2|].
-  apply H1.
-}
-eapply prf_weaken_conclusion_meta_meta.
-4: apply H2. 1-3: wf_auto2. clear H1 H2.
+  intros wfa wfb wfc.
+  assert (H1 : Γ ⊢i ((a ---> (b ---> c)) ---> (b ---> (a ---> c))) using BasicReasoning).
+  {
+    apply reorder; wf_auto2.
+  }
+  assert (H2 : Γ ⊢i (((b ---> (a ---> c)) ---> (a ---> c)) ---> ((a ---> (b ---> c)) ---> (a ---> c))) using BasicReasoning).
+  {
+    apply prf_strenghten_premise_meta;[wf_auto2|wf_auto2|wf_auto2|].
+    apply H1.
+  }
+  eapply prf_weaken_conclusion_meta_meta.
+  4: apply H2. 1-3: wf_auto2. clear H1 H2.
 
-assert (H3 : Γ ⊢i ((a ---> b) ---> ((b ---> (a ---> c)) ---> (a ---> (a ---> c)))) using BasicReasoning).
-{
-  apply syllogism; wf_auto2.
-}
-assert (H4 : Γ ⊢i ((a ---> (a ---> c)) ---> (a ---> c)) using BasicReasoning).
-{
-  apply prf_contraction; wf_auto2.
-}
-assert (Hiter: ((a ---> b) ---> (b ---> a ---> c) ---> a ---> c)
-               = foldr patt_imp (a ---> c) [(a ---> b); (b ---> a ---> c)]) by reflexivity.
+  assert (H3 : Γ ⊢i ((a ---> b) ---> ((b ---> (a ---> c)) ---> (a ---> (a ---> c)))) using BasicReasoning).
+  {
+    apply syllogism; wf_auto2.
+  }
+  assert (H4 : Γ ⊢i ((a ---> (a ---> c)) ---> (a ---> c)) using BasicReasoning).
+  {
+    apply prf_contraction; wf_auto2.
+  }
+  assert (Hiter: ((a ---> b) ---> (b ---> a ---> c) ---> a ---> c)
+                 = foldr patt_imp (a ---> c) [(a ---> b); (b ---> a ---> c)]) by reflexivity.
 
-eapply (@cast_proof' _ _ _ _ _ Hiter).
+  eapply (cast_proof' _ _ _ _ Hiter).
 
-eapply prf_weaken_conclusion_iter_meta_meta.
-5: apply H3. 4: apply H4. all: wf_auto2.
+  eapply prf_weaken_conclusion_iter_meta_meta.
+  5: apply H3. 4: apply H4. all: wf_auto2.
 Defined.
 
 Lemma prf_weaken_conclusion_under_implication_meta {Σ : Signature} Γ a b c (i : ProofInfo):
-well_formed a ->
-well_formed b ->
-well_formed c ->
-Γ ⊢i (a ---> b) using i ->
-Γ ⊢i ((a ---> (b ---> c)) ---> (a ---> c)) using i.
+  well_formed a ->
+  well_formed b ->
+  well_formed c ->
+  Γ ⊢i (a ---> b) using i ->
+  Γ ⊢i ((a ---> (b ---> c)) ---> (a ---> c)) using i.
 Proof.
-intros wfa wfb wfc H.
-eapply MP.
-2: { useBasicReasoning. apply prf_weaken_conclusion_under_implication; wf_auto2. }
-exact H.
+  intros wfa wfb wfc H.
+  eapply MP.
+  2: { useBasicReasoning. apply prf_weaken_conclusion_under_implication; wf_auto2. }
+  exact H.
 Defined.
 
 Lemma prf_weaken_conclusion_under_implication_meta_meta {Σ : Signature} Γ a b c i:
-well_formed a ->
-well_formed b ->
-well_formed c ->
-Γ ⊢i a ---> b using i ->
-Γ ⊢i a ---> b ---> c using i ->
-Γ ⊢i a ---> c using i.
+  well_formed a ->
+  well_formed b ->
+  well_formed c ->
+  Γ ⊢i a ---> b using i ->
+  Γ ⊢i a ---> b ---> c using i ->
+  Γ ⊢i a ---> c using i.
 Proof.
-intros wfa wfb wfc H1 H2.
-eapply MP.
-{ apply H2. }
-{ apply prf_weaken_conclusion_under_implication_meta.
-  4: { apply H1. }
-  all: wf_auto2.
-}
+  intros wfa wfb wfc H1 H2.
+  eapply MP.
+  { apply H2. }
+  { apply prf_weaken_conclusion_under_implication_meta.
+    4: { apply H1. }
+    all: wf_auto2.
+  }
 Defined.
 
 Lemma prf_weaken_conclusion_iter_under_implication {Σ : Signature} Γ l g g':
-Pattern.wf l ->
-well_formed g ->
-well_formed g' ->
-Γ ⊢i (((g ---> g') ---> (foldr patt_imp g l)) ---> ((g ---> g') ---> (foldr patt_imp g' l)))
-using BasicReasoning.
+  Pattern.wf l ->
+  well_formed g ->
+  well_formed g' ->
+  Γ ⊢i (((g ---> g') ---> (foldr patt_imp g l)) ---> ((g ---> g') ---> (foldr patt_imp g' l)))
+  using BasicReasoning.
 Proof.
-intros wfl wfg wfg'.
-pose proof (H1 := @prf_weaken_conclusion_iter Σ Γ l g g' wfl wfg wfg').
-remember ((g ---> g')) as a.
-remember (foldr patt_imp g l) as b.
-remember (foldr patt_imp g' l) as c.
-assert (well_formed a) by (subst; wf_auto2).
-assert (well_formed b) by (subst; wf_auto2).
-assert (well_formed c) by (subst; wf_auto2).
-pose proof (H2' := @prf_weaken_conclusion_under_implication _ Γ a b c ltac:(assumption) ltac:(assumption) ltac:(assumption)).
-apply reorder_meta in H2'. 2,3,4: subst;wf_auto2.
-eapply MP. 2: apply H2'. apply H1.
+  intros wfl wfg wfg'.
+  pose proof (H1 := prf_weaken_conclusion_iter Γ l g g' wfl wfg wfg').
+  remember ((g ---> g')) as a.
+  remember (foldr patt_imp g l) as b.
+  remember (foldr patt_imp g' l) as c.
+  assert (well_formed a) by (subst; wf_auto2).
+  assert (well_formed b) by (subst; wf_auto2).
+  assert (well_formed c) by (subst; wf_auto2).
+  pose proof (H2' := prf_weaken_conclusion_under_implication Γ a b c ltac:(assumption) ltac:(assumption) ltac:(assumption)).
+  apply reorder_meta in H2'. 2,3,4: subst;wf_auto2.
+  eapply MP. 2: apply H2'. apply H1.
 Defined.
 
 Lemma prf_weaken_conclusion_iter_under_implication_meta {Σ : Signature} Γ l g g' (i : ProofInfo):
-Pattern.wf l ->
-well_formed g ->
-well_formed g' ->
-Γ ⊢i ((g ---> g') ---> (foldr patt_imp g l)) using i->
-Γ ⊢i ((g ---> g') ---> (foldr patt_imp g' l)) using i.
+  Pattern.wf l ->
+  well_formed g ->
+  well_formed g' ->
+  Γ ⊢i ((g ---> g') ---> (foldr patt_imp g l)) using i->
+  Γ ⊢i ((g ---> g') ---> (foldr patt_imp g' l)) using i.
 Proof.
-intros wfl wfg wfg' H.
-eapply MP.
-2: { useBasicReasoning. apply prf_weaken_conclusion_iter_under_implication; wf_auto2. }
-{ exact H. }
+  intros wfl wfg wfg' H.
+  eapply MP.
+  2: { useBasicReasoning. apply prf_weaken_conclusion_iter_under_implication; wf_auto2. }
+  { exact H. }
 Defined.
 
 Lemma MLGoal_weakenConclusion_under_first_implication {Σ : Signature} Γ l name g g' i:
-@mkMLGoal Σ Γ (mkNH name (g ---> g') :: l) g i ->
-@mkMLGoal Σ Γ (mkNH name (g ---> g') :: l) g' i .
+  mkMLGoal Σ Γ (mkNH _ name (g ---> g') :: l) g i ->
+  mkMLGoal Σ Γ (mkNH _ name (g ---> g') :: l) g' i .
 Proof.
-intros H. unfold of_MLGoal in *. simpl in *.
-intros wfg' wfgg'l.
-pose proof (Htmp := wfgg'l).
-unfold Pattern.wf in Htmp. simpl in Htmp. apply andb_prop in Htmp. destruct Htmp as [wfgg' wfl].
-apply well_formed_imp_proj1 in wfgg'. specialize (H wfgg' wfgg'l).
-apply prf_weaken_conclusion_iter_under_implication_meta; assumption.
+  intros H. unfold of_MLGoal in *. simpl in *.
+  intros wfg' wfgg'l.
+  pose proof (Htmp := wfgg'l).
+  unfold Pattern.wf in Htmp. simpl in Htmp. apply andb_prop in Htmp. destruct Htmp as [wfgg' wfl].
+  apply well_formed_imp_proj1 in wfgg'. specialize (H wfgg' wfgg'l).
+  apply prf_weaken_conclusion_iter_under_implication_meta; assumption.
 Defined.
 
 Lemma prf_weaken_conclusion_iter_under_implication_iter {Σ : Signature} Γ l₁ l₂ g g':
-Pattern.wf l₁ ->
-Pattern.wf l₂ ->
-well_formed g ->
-well_formed g' ->
-Γ ⊢i ((foldr patt_imp g (l₁ ++ (g ---> g') :: l₂)) --->
-     (foldr patt_imp g' (l₁ ++ (g ---> g') :: l₂)))
-using BasicReasoning.
+  Pattern.wf l₁ ->
+  Pattern.wf l₂ ->
+  well_formed g ->
+  well_formed g' ->
+  Γ ⊢i ((foldr patt_imp g (l₁ ++ (g ---> g') :: l₂)) --->
+       (foldr patt_imp g' (l₁ ++ (g ---> g') :: l₂)))
+  using BasicReasoning.
 Proof.
-intros wfl₁ wfl₂ wfg wfg'.
-induction l₁; simpl.
-- apply prf_weaken_conclusion_iter_under_implication; auto.
-- pose proof (wfal₁ := wfl₁). unfold Pattern.wf in wfl₁. simpl in wfl₁. apply andb_prop in wfl₁.
-  destruct wfl₁ as [wfa wfl₁]. specialize (IHl₁ wfl₁).
-  eapply prf_weaken_conclusion_meta. 4: assumption. all: wf_auto2.
+  intros wfl₁ wfl₂ wfg wfg'.
+  induction l₁; simpl.
+  - apply prf_weaken_conclusion_iter_under_implication; auto.
+  - pose proof (wfal₁ := wfl₁). unfold Pattern.wf in wfl₁. simpl in wfl₁. apply andb_prop in wfl₁.
+    destruct wfl₁ as [wfa wfl₁]. specialize (IHl₁ wfl₁).
+    eapply prf_weaken_conclusion_meta. 4: assumption. all: wf_auto2.
 Defined.
 
 Lemma prf_weaken_conclusion_iter_under_implication_iter_meta {Σ : Signature} Γ l₁ l₂ g g' i:
-Pattern.wf l₁ ->
-Pattern.wf l₂ ->
-well_formed g ->
-well_formed g' ->
-Γ ⊢i (foldr patt_imp g (l₁ ++ (g ---> g') :: l₂)) using i ->
-Γ ⊢i (foldr patt_imp g' (l₁ ++ (g ---> g') :: l₂)) using i.
+  Pattern.wf l₁ ->
+  Pattern.wf l₂ ->
+  well_formed g ->
+  well_formed g' ->
+  Γ ⊢i (foldr patt_imp g (l₁ ++ (g ---> g') :: l₂)) using i ->
+  Γ ⊢i (foldr patt_imp g' (l₁ ++ (g ---> g') :: l₂)) using i.
 Proof.
-intros wfl₁ wfl₂ wfg wfg' H.
-eapply MP.
-{ apply H. }
-{ useBasicReasoning. apply prf_weaken_conclusion_iter_under_implication_iter; wf_auto2. }
+  intros wfl₁ wfl₂ wfg wfg' H.
+  eapply MP.
+  { apply H. }
+  { useBasicReasoning. apply prf_weaken_conclusion_iter_under_implication_iter; wf_auto2. }
 Defined.
 
 Lemma MLGoal_weakenConclusion {Σ : Signature} Γ l₁ l₂ name g g' i:
-@mkMLGoal Σ Γ (l₁ ++ (mkNH name (g ---> g')) :: l₂) g i ->
-@mkMLGoal Σ Γ (l₁ ++ (mkNH name (g ---> g')) :: l₂) g' i.
+  mkMLGoal Σ Γ (l₁ ++ (mkNH _ name (g ---> g')) :: l₂) g i ->
+  mkMLGoal Σ Γ (l₁ ++ (mkNH _ name (g ---> g')) :: l₂) g' i.
 Proof.
-unfold of_MLGoal in *. simpl in *.
-intros H wfg' wfl₁gg'l₂.
+  unfold of_MLGoal in *. simpl in *.
+  intros H wfg' wfl₁gg'l₂.
 
-unfold patterns_of in wfl₁gg'l₂.
-rewrite map_app in wfl₁gg'l₂.
+  unfold patterns_of in wfl₁gg'l₂.
+  rewrite map_app in wfl₁gg'l₂.
 
-unfold patterns_of.
-rewrite map_app.
+  unfold patterns_of.
+  rewrite map_app.
 
-apply prf_weaken_conclusion_iter_under_implication_iter_meta.
-{ abstract (pose proof (wfl₁ := wf_take (length (patterns_of l₁)) wfl₁gg'l₂); simpl in wfl₁; rewrite take_app in wfl₁; exact wfl₁). }
-{ abstract (
-    pose proof (wfgg'l₂ := wf_drop (length (patterns_of l₁)) wfl₁gg'l₂);
-    rewrite drop_app in wfgg'l₂;
-    pose proof (Htmp := wfgg'l₂);
-    unfold Pattern.wf in Htmp;
-    simpl in Htmp;
-    apply andb_prop in Htmp;
-    destruct Htmp as [wfgg' wfl₂];
-    exact wfl₂
-  ).
-}
-{
-  abstract(
-    pose proof (wfgg'l₂ := wf_drop (length (patterns_of l₁)) wfl₁gg'l₂);
-    rewrite drop_app in wfgg'l₂;
-    pose proof (Htmp := wfgg'l₂);
-    unfold Pattern.wf in Htmp;
-    simpl in Htmp;
-    apply andb_prop in Htmp;
-    destruct Htmp as [wfgg' wfl₂];
-    pose proof (wfg := well_formed_imp_proj1 wfgg');
-    exact wfg
-  ).
-}
-{ exact wfg'. }
+  apply prf_weaken_conclusion_iter_under_implication_iter_meta.
+  { abstract (pose proof (wfl₁ := wf_take (length (patterns_of l₁)) _ wfl₁gg'l₂); simpl in wfl₁; rewrite take_app in wfl₁; exact wfl₁). }
+  { abstract (
+      pose proof (wfgg'l₂ := wf_drop (length (patterns_of l₁)) _ wfl₁gg'l₂);
+      rewrite drop_app in wfgg'l₂;
+      pose proof (Htmp := wfgg'l₂);
+      unfold Pattern.wf in Htmp;
+      simpl in Htmp;
+      apply andb_prop in Htmp;
+      destruct Htmp as [wfgg' wfl₂];
+      exact wfl₂
+    ).
+  }
+  {
+    abstract(
+      pose proof (wfgg'l₂ := wf_drop (length (patterns_of l₁)) _ wfl₁gg'l₂);
+      rewrite drop_app in wfgg'l₂;
+      pose proof (Htmp := wfgg'l₂);
+      unfold Pattern.wf in Htmp;
+      simpl in Htmp;
+      apply andb_prop in Htmp;
+      destruct Htmp as [wfgg' wfl₂];
+      pose proof (wfg := well_formed_imp_proj1 _ _ wfgg');
+      exact wfg
+    ).
+  }
+  { exact wfg'. }
 
-unfold patterns_of in H.
-rewrite map_app in H.
-apply H.
-{
-  abstract(
-    pose proof (wfgg'l₂ := wf_drop (length (patterns_of l₁)) wfl₁gg'l₂);
-    rewrite drop_app in wfgg'l₂;
-    pose proof (Htmp := wfgg'l₂);
-    unfold Pattern.wf in Htmp;
-    simpl in Htmp;
-    apply andb_prop in Htmp;
-    destruct Htmp as [wfgg' wfl₂];
-    pose proof (wfg := well_formed_imp_proj1 wfgg');
-    exact wfg
-  ).
-}
-exact wfl₁gg'l₂.
+  unfold patterns_of in H.
+  rewrite map_app in H.
+  apply H.
+  {
+    abstract(
+      pose proof (wfgg'l₂ := wf_drop (length (patterns_of l₁)) _ wfl₁gg'l₂);
+      rewrite drop_app in wfgg'l₂;
+      pose proof (Htmp := wfgg'l₂);
+      unfold Pattern.wf in Htmp;
+      simpl in Htmp;
+      apply andb_prop in Htmp;
+      destruct Htmp as [wfgg' wfl₂];
+      pose proof (wfg := well_formed_imp_proj1 _ _ wfgg');
+      exact wfg
+    ).
+  }
+  exact wfl₁gg'l₂.
 Defined.
 
 
@@ -1552,7 +1314,7 @@ Tactic Notation "mlApplyn" constr(n) :=
   _mlReshapeHypsByIdx n;
   apply MLGoal_weakenConclusion;
   _mlReshapeHypsBack.
-  
+
 
 Tactic Notation "mlApply" constr(name') :=
   _mlReshapeHypsByName name';
@@ -1576,250 +1338,238 @@ Defined.
 
 
 Lemma Constructive_dilemma {Σ : Signature} Γ p q r s:
-well_formed p ->
-well_formed q ->
-well_formed r ->
-well_formed s ->
-Γ ⊢i ((p ---> q) ---> (r ---> s) ---> (p or r) ---> (q or s)) using BasicReasoning.
+  well_formed p ->
+  well_formed q ->
+  well_formed r ->
+  well_formed s ->
+  Γ ⊢i ((p ---> q) ---> (r ---> s) ---> (p or r) ---> (q or s)) using BasicReasoning.
 Proof.
-intros wfp wfq wfr wfs.
-unfold patt_or.
+  intros wfp wfq wfr wfs.
+  unfold patt_or.
 
-toMLGoal.
-{ wf_auto2. }
+  toMLGoal.
+  { wf_auto2. }
 
-mlIntro "H0". mlIntro "H1". mlIntro "H2". mlIntro "H3".
-mlApply "H1".
-mlApply "H2".
-mlIntro "H4".
-mlApply "H3".
-mlApply "H0".
-mlExact "H4".
-Defined.
-
-Lemma prf_add_assumption {Σ : Signature} Γ a b i :
-well_formed a ->
-well_formed b ->
-Γ ⊢i b using i ->
-Γ ⊢i (a ---> b) using i.
-Proof.
-intros wfa wfb H.
-eapply MP.
-{ apply H. }
-{ useBasicReasoning. apply P1; wf_auto2. }
+  mlIntro "H0". mlIntro "H1". mlIntro "H2". mlIntro "H3".
+  mlApply "H1".
+  mlApply "H2".
+  mlIntro "H4".
+  mlApply "H3".
+  mlApply "H0".
+  mlExact "H4".
 Defined.
 
 Lemma prf_impl_distr_meta {Σ : Signature} Γ a b c i:
-well_formed a ->
-well_formed b ->
-well_formed c ->
-Γ ⊢i (a ---> (b ---> c)) using i ->
-Γ ⊢i ((a ---> b) ---> (a ---> c)) using i.
+  well_formed a ->
+  well_formed b ->
+  well_formed c ->
+  Γ ⊢i (a ---> (b ---> c)) using i ->
+  Γ ⊢i ((a ---> b) ---> (a ---> c)) using i.
 Proof.
-intros wfa wfb wfc H.
-eapply MP.
-{ apply H. }
-{ useBasicReasoning. apply P2; wf_auto2. }
+  intros wfa wfb wfc H.
+  eapply MP.
+  { apply H. }
+  { useBasicReasoning. apply P2; wf_auto2. }
 Defined.
 
 Lemma prf_add_lemma_under_implication {Σ : Signature} Γ l g h:
-Pattern.wf l ->
-well_formed g ->
-well_formed h ->
-Γ ⊢i ((foldr patt_imp h l) --->
-     ((foldr patt_imp g (l ++ [h])) --->
-      (foldr patt_imp g l)))
-using BasicReasoning.
+  Pattern.wf l ->
+  well_formed g ->
+  well_formed h ->
+  Γ ⊢i ((foldr patt_imp h l) --->
+       ((foldr patt_imp g (l ++ [h])) --->
+        (foldr patt_imp g l)))
+  using BasicReasoning.
 Proof.
-intros wfl wfg wfh.
-induction l; simpl.
-- apply modus_ponens; auto.
-- pose proof (wfal := wfl).
-  unfold Pattern.wf in wfl. apply andb_prop in wfl. destruct wfl as [wfa wfl].
-  specialize (IHl wfl).
-  assert (H1: Γ ⊢i a --->
-                  foldr patt_imp h l --->
-                  foldr patt_imp g (l ++ [h]) --->
-                  foldr patt_imp g l
-          using BasicReasoning).
-  { apply prf_add_assumption; wf_auto2. }
+  intros wfl wfg wfh.
+  induction l; simpl.
+  - apply modus_ponens; auto.
+  - pose proof (wfal := wfl).
+    unfold Pattern.wf in wfl. apply andb_prop in wfl. destruct wfl as [wfa wfl].
+    specialize (IHl wfl).
+    assert (H1: Γ ⊢i a --->
+                    foldr patt_imp h l --->
+                    foldr patt_imp g (l ++ [h]) --->
+                    foldr patt_imp g l
+            using BasicReasoning).
+    { apply prf_add_assumption; wf_auto2. }
 
-  assert (H2 : Γ ⊢i (a ---> foldr patt_imp h l) --->
-                   (a ---> foldr patt_imp g (l ++ [h]) --->
-                   foldr patt_imp g l)
-          using BasicReasoning).
-  { apply prf_impl_distr_meta;[wf_auto2|wf_auto2|wf_auto2|]. apply H1. }
+    assert (H2 : Γ ⊢i (a ---> foldr patt_imp h l) --->
+                     (a ---> foldr patt_imp g (l ++ [h]) --->
+                     foldr patt_imp g l)
+            using BasicReasoning).
+    { apply prf_impl_distr_meta;[wf_auto2|wf_auto2|wf_auto2|]. apply H1. }
 
-  assert (H3 : Γ ⊢i ((a ---> foldr patt_imp g (l ++ [h]) ---> foldr patt_imp g l)
-                      ---> ((a ---> foldr patt_imp g (l ++ [h])) ---> (a ---> foldr patt_imp g l)))
-          using BasicReasoning).
-  { apply P2; wf_auto2. }
+    assert (H3 : Γ ⊢i ((a ---> foldr patt_imp g (l ++ [h]) ---> foldr patt_imp g l)
+                        ---> ((a ---> foldr patt_imp g (l ++ [h])) ---> (a ---> foldr patt_imp g l)))
+            using BasicReasoning).
+    { apply P2; wf_auto2. }
 
-  eapply prf_weaken_conclusion_meta_meta.
-  4: apply H3. 4: apply H2. all: wf_auto2.
+    eapply prf_weaken_conclusion_meta_meta.
+    4: apply H3. 4: apply H2. all: wf_auto2.
 Defined.
 
 Lemma prf_add_lemma_under_implication_meta {Σ : Signature} Γ l g h i:
-Pattern.wf l ->
-well_formed g ->
-well_formed h ->
-Γ ⊢i (foldr patt_imp h l) using i ->
-Γ ⊢i ((foldr patt_imp g (l ++ [h])) ---> (foldr patt_imp g l)) using i.
+  Pattern.wf l ->
+  well_formed g ->
+  well_formed h ->
+  Γ ⊢i (foldr patt_imp h l) using i ->
+  Γ ⊢i ((foldr patt_imp g (l ++ [h])) ---> (foldr patt_imp g l)) using i.
 Proof.
-intros WFl WFg WGh H.
-eapply MP.
-{ apply H. }
-{ useBasicReasoning. apply prf_add_lemma_under_implication. all: wf_auto2. }
+  intros WFl WFg WGh H.
+  eapply MP.
+  { apply H. }
+  { useBasicReasoning. apply prf_add_lemma_under_implication. all: wf_auto2. }
 Defined.
 
 Lemma prf_add_lemma_under_implication_meta_meta {Σ : Signature} Γ l g h i:
-Pattern.wf l ->
-well_formed g ->
-well_formed h ->
-Γ ⊢i (foldr patt_imp h l) using i ->
-Γ ⊢i (foldr patt_imp g (l ++ [h])) using i ->
-Γ ⊢i (foldr patt_imp g l) using i.
+  Pattern.wf l ->
+  well_formed g ->
+  well_formed h ->
+  Γ ⊢i (foldr patt_imp h l) using i ->
+  Γ ⊢i (foldr patt_imp g (l ++ [h])) using i ->
+  Γ ⊢i (foldr patt_imp g l) using i.
 Proof.
-intros WFl WFg WGh H H0.
-eapply MP.
-{ apply H0. }
-{ apply prf_add_lemma_under_implication_meta. 4: apply H. all: wf_auto2. }
+  intros WFl WFg WGh H H0.
+  eapply MP.
+  { apply H0. }
+  { apply prf_add_lemma_under_implication_meta. 4: apply H. all: wf_auto2. }
 Defined.
 
 Lemma mlGoal_assert {Σ : Signature} Γ l name g h i:
-well_formed h ->
-@mkMLGoal Σ Γ l h i ->
-@mkMLGoal Σ Γ (l ++ [mkNH name h]) g i ->
-@mkMLGoal Σ Γ l g i.
+  well_formed h ->
+  mkMLGoal Σ Γ l h i ->
+  mkMLGoal Σ Γ (l ++ [mkNH _ name h]) g i ->
+  mkMLGoal Σ Γ l g i.
 Proof.
-intros wfh H1 H2.
-unfold of_MLGoal in *. simpl in *.
-intros wfg wfl.
-eapply prf_add_lemma_under_implication_meta_meta.
-4: apply H1. 6: unfold patterns_of in H2; rewrite map_app in H2; apply H2. all: try assumption.
-{ abstract (
-    unfold Pattern.wf;
-    rewrite map_app;
-    rewrite foldr_app;
-    simpl;
-    rewrite wfh;
-    simpl;
-    exact wfl
-  ).
-}
+  intros wfh H1 H2.
+  unfold of_MLGoal in *. simpl in *.
+  intros wfg wfl.
+  eapply prf_add_lemma_under_implication_meta_meta.
+  4: apply H1. 6: unfold patterns_of in H2; rewrite map_app in H2; apply H2. all: try assumption.
+  { abstract (
+      unfold Pattern.wf;
+      rewrite map_app;
+      rewrite foldr_app;
+      simpl;
+      rewrite wfh;
+      simpl;
+      exact wfl
+    ).
+  }
 Defined.
 
 Lemma prf_add_lemma_under_implication_generalized {Σ : Signature} Γ l1 l2 g h:
-Pattern.wf l1 ->
-Pattern.wf l2 ->
-well_formed g ->
-well_formed h ->
-Γ ⊢i ((foldr patt_imp h l1) ---> ((foldr patt_imp g (l1 ++ [h] ++ l2)) ---> (foldr patt_imp g (l1 ++ l2))))
-using BasicReasoning.
+  Pattern.wf l1 ->
+  Pattern.wf l2 ->
+  well_formed g ->
+  well_formed h ->
+  Γ ⊢i ((foldr patt_imp h l1) ---> ((foldr patt_imp g (l1 ++ [h] ++ l2)) ---> (foldr patt_imp g (l1 ++ l2))))
+  using BasicReasoning.
 Proof.
-intros wfl1 wfl2 wfg wfh.
-induction l1; simpl.
-- apply modus_ponens; wf_auto2.
-- pose proof (wfal1 := wfl1).
-  unfold Pattern.wf in wfl1. simpl in wfl1. apply andb_prop in wfl1. destruct wfl1 as [wfa wfl1].
-  specialize (IHl1 wfl1).
-  assert (H1: Γ ⊢i a ---> foldr patt_imp h l1 ---> foldr patt_imp g (l1 ++ [h] ++ l2) ---> foldr patt_imp g (l1 ++ l2) using BasicReasoning).
-  { apply prf_add_assumption; wf_auto2. }
-  assert (H2 : Γ ⊢i (a ---> foldr patt_imp h l1) ---> (a ---> foldr patt_imp g (l1 ++ [h] ++ l2) ---> foldr patt_imp g (l1 ++ l2)) using BasicReasoning).
-  { apply prf_impl_distr_meta;[wf_auto2|wf_auto2|wf_auto2|]. exact H1. }
-  assert (H3 : Γ ⊢i ((a ---> foldr patt_imp g (l1 ++ [h] ++ l2) ---> foldr patt_imp g (l1 ++ l2))
-                      ---> ((a ---> foldr patt_imp g (l1 ++ [h] ++ l2)) ---> (a ---> foldr patt_imp g (l1 ++ l2)))) using BasicReasoning).
-  { apply P2; wf_auto2. }
+  intros wfl1 wfl2 wfg wfh.
+  induction l1; simpl.
+  - apply modus_ponens; wf_auto2.
+  - pose proof (wfal1 := wfl1).
+    unfold Pattern.wf in wfl1. simpl in wfl1. apply andb_prop in wfl1. destruct wfl1 as [wfa wfl1].
+    specialize (IHl1 wfl1).
+    assert (H1: Γ ⊢i a ---> foldr patt_imp h l1 ---> foldr patt_imp g (l1 ++ [h] ++ l2) ---> foldr patt_imp g (l1 ++ l2) using BasicReasoning).
+    { apply prf_add_assumption; wf_auto2. }
+    assert (H2 : Γ ⊢i (a ---> foldr patt_imp h l1) ---> (a ---> foldr patt_imp g (l1 ++ [h] ++ l2) ---> foldr patt_imp g (l1 ++ l2)) using BasicReasoning).
+    { apply prf_impl_distr_meta;[wf_auto2|wf_auto2|wf_auto2|]. exact H1. }
+    assert (H3 : Γ ⊢i ((a ---> foldr patt_imp g (l1 ++ [h] ++ l2) ---> foldr patt_imp g (l1 ++ l2))
+                        ---> ((a ---> foldr patt_imp g (l1 ++ [h] ++ l2)) ---> (a ---> foldr patt_imp g (l1 ++ l2)))) using BasicReasoning).
+    { apply P2; wf_auto2. }
 
-  eapply prf_weaken_conclusion_meta_meta.
-  4: apply H3. 4: assumption. all: wf_auto2.
+    eapply prf_weaken_conclusion_meta_meta.
+    4: apply H3. 4: assumption. all: wf_auto2.
 Defined.
 
 Lemma prf_add_lemma_under_implication_generalized_meta {Σ : Signature} Γ l1 l2 g h i:
-Pattern.wf l1 ->
-Pattern.wf l2 ->
-well_formed g ->
-well_formed h ->
-Γ ⊢i (foldr patt_imp h l1) using i ->
-Γ ⊢i ((foldr patt_imp g (l1 ++ [h] ++ l2)) ---> (foldr patt_imp g (l1 ++ l2))) using i.
+  Pattern.wf l1 ->
+  Pattern.wf l2 ->
+  well_formed g ->
+  well_formed h ->
+  Γ ⊢i (foldr patt_imp h l1) using i ->
+  Γ ⊢i ((foldr patt_imp g (l1 ++ [h] ++ l2)) ---> (foldr patt_imp g (l1 ++ l2))) using i.
 Proof.
-intros WFl1 WFl2 WFg WGh H.
-eapply MP.
-{ apply H. }
-{ useBasicReasoning.
-  apply prf_add_lemma_under_implication_generalized; wf_auto2.
-}
+  intros WFl1 WFl2 WFg WGh H.
+  eapply MP.
+  { apply H. }
+  { useBasicReasoning.
+    apply prf_add_lemma_under_implication_generalized; wf_auto2.
+  }
 Defined.
 
 Lemma prf_add_lemma_under_implication_generalized_meta_meta {Σ : Signature} Γ l1 l2 g h i:
-Pattern.wf l1 ->
-Pattern.wf l2 ->
-well_formed g ->
-well_formed h ->
-Γ ⊢i (foldr patt_imp h l1) using i ->
-Γ ⊢i (foldr patt_imp g (l1 ++ [h] ++ l2)) using i ->
-Γ ⊢i (foldr patt_imp g (l1 ++ l2)) using i.
+  Pattern.wf l1 ->
+  Pattern.wf l2 ->
+  well_formed g ->
+  well_formed h ->
+  Γ ⊢i (foldr patt_imp h l1) using i ->
+  Γ ⊢i (foldr patt_imp g (l1 ++ [h] ++ l2)) using i ->
+  Γ ⊢i (foldr patt_imp g (l1 ++ l2)) using i.
 Proof.
-intros WFl1 WFl2 WFg WGh H H0.
-eapply MP.
-{ apply H0. }
-{ apply prf_add_lemma_under_implication_generalized_meta.
-  5: apply H. all: wf_auto2.
-}
+  intros WFl1 WFl2 WFg WGh H H0.
+  eapply MP.
+  { apply H0. }
+  { apply prf_add_lemma_under_implication_generalized_meta.
+    5: apply H. all: wf_auto2.
+  }
 Defined.
 
 Lemma mlGoal_assert_generalized {Σ : Signature} Γ l1 l2 name g h i:
-well_formed h ->
-@mkMLGoal Σ Γ l1 h i ->
-@mkMLGoal Σ Γ (l1 ++ [mkNH name h] ++ l2) g i ->
-@mkMLGoal Σ Γ (l1 ++ l2) g i.
+  well_formed h ->
+  mkMLGoal Σ Γ l1 h i ->
+  mkMLGoal Σ Γ (l1 ++ [mkNH _ name h] ++ l2) g i ->
+  mkMLGoal Σ Γ (l1 ++ l2) g i.
 Proof.
-intros wfh H1 H2.
-unfold of_MLGoal in *. simpl in *.
-intros wfg wfl1l2.
-unfold patterns_of.
-rewrite map_app.
-eapply prf_add_lemma_under_implication_generalized_meta_meta.
-5: apply H1. 7: unfold patterns_of in H2; rewrite map_app in H2; apply H2. all: try assumption.
-{ abstract (
-      apply (wf_take (length (patterns_of l1))) in wfl1l2;
-      unfold patterns_of in wfl1l2;
-      rewrite map_app in wfl1l2;
-      rewrite take_app in wfl1l2;
-      exact wfl1l2
-  ).
-}
-{ abstract (
-      apply (wf_drop (length (patterns_of l1))) in wfl1l2;
-      unfold patterns_of in wfl1l2;
-      rewrite map_app in wfl1l2;
-      rewrite drop_app in wfl1l2;
-      exact wfl1l2
-  ).
-}
-{ abstract (
-      apply (wf_take (length (patterns_of l1))) in wfl1l2;
-      unfold patterns_of in wfl1l2;
-      rewrite map_app in wfl1l2;
-      rewrite take_app in wfl1l2;
-      exact wfl1l2
-  ).
-}
-{
-  abstract(
-    pose proof (wfl1 := wf_take (length (patterns_of l1)) wfl1l2);
-    unfold patterns_of in wfl1;
-    rewrite map_app in wfl1;
-    rewrite take_app in wfl1;
-    pose proof (wfl2 := wf_drop (length (patterns_of l1)) wfl1l2);
-    unfold patterns_of in wfl2;
-    rewrite map_app in wfl2;
-    rewrite drop_app in wfl2;
-    unfold Pattern.wf; rewrite map_app; rewrite foldr_app;
-    simpl; rewrite wfh; unfold Pattern.wf in wfl2; rewrite wfl2;
-    simpl; exact wfl1
-  ).
-}
+  intros wfh H1 H2.
+  unfold of_MLGoal in *. simpl in *.
+  intros wfg wfl1l2.
+  unfold patterns_of.
+  rewrite map_app.
+  eapply prf_add_lemma_under_implication_generalized_meta_meta.
+  5: apply H1. 7: unfold patterns_of in H2; rewrite map_app in H2; apply H2. all: try assumption.
+  { abstract (
+        apply (wf_take (length (patterns_of l1))) in wfl1l2;
+        unfold patterns_of in wfl1l2;
+        rewrite map_app in wfl1l2;
+        rewrite take_app in wfl1l2;
+        exact wfl1l2
+    ).
+  }
+  { abstract (
+        apply (wf_drop (length (patterns_of l1))) in wfl1l2;
+        unfold patterns_of in wfl1l2;
+        rewrite map_app in wfl1l2;
+        rewrite drop_app in wfl1l2;
+        exact wfl1l2
+    ).
+  }
+  { abstract (
+        apply (wf_take (length (patterns_of l1))) in wfl1l2;
+        unfold patterns_of in wfl1l2;
+        rewrite map_app in wfl1l2;
+        rewrite take_app in wfl1l2;
+        exact wfl1l2
+    ).
+  }
+  {
+    abstract(
+      pose proof (wfl1 := wf_take (length (patterns_of l1)) _ wfl1l2);
+      unfold patterns_of in wfl1;
+      rewrite map_app in wfl1;
+      rewrite take_app in wfl1;
+      pose proof (wfl2 := wf_drop (length (patterns_of l1)) _ wfl1l2);
+      unfold patterns_of in wfl2;
+      rewrite map_app in wfl2;
+      rewrite drop_app in wfl2;
+      unfold Pattern.wf; rewrite map_app; rewrite foldr_app;
+      simpl; rewrite wfh; unfold Pattern.wf in wfl2; rewrite wfl2;
+      simpl; exact wfl1
+    ).
+  }
 Defined.
 
 Tactic Notation "_mlAssert_nocheck" "(" constr(name) ":" constr(t) ")" :=
@@ -1870,11 +1620,11 @@ Ltac _getGoalProofInfo :=
     => i
   end.
 
-  Ltac _getGoalTheory :=
-    lazymatch goal with
-    | |- @of_MLGoal ?Sgm (@mkMLGoal ?Sgm ?Ctx ?l ?g ?i)
-      => Ctx
-    end.
+Ltac _getGoalTheory :=
+  lazymatch goal with
+  | |- @of_MLGoal ?Sgm (@mkMLGoal ?Sgm ?Ctx ?l ?g ?i)
+    => Ctx
+  end.
 
 Tactic Notation "mlAssert" "(" constr(name) ":" constr(t) ")" "using" "first" constr(n) :=
   _failIfUsed name;
@@ -1899,7 +1649,7 @@ Tactic Notation "mlAssert" "(" constr(name) ":" constr(t) ")" "using" "first" co
       assert (H : @mkMLGoal Sgm Ctx l1 t i) ;
       [
         (eapply cast_proof_ml_hyps; [(rewrite Heql1; reflexivity)|]);  clear l1 l2 Heql1 Heql2
-      | apply (cast_proof_ml_hyps (f_equal patterns_of Heql1)) in H;
+      | apply (cast_proof_ml_hyps _ _ _ (f_equal patterns_of Heql1)) in H;
         eapply (@mlGoal_assert_generalized Sgm Ctx (take n l) (drop n l) name g t i Hwf H);
         rewrite [_ ++ _]/=; clear l1 l2 Heql1 Heql2 H] 
     ]
@@ -1927,177 +1677,177 @@ Proof.
   mlAssert ("H4" : p) using first 2.
   { wf_auto2. }
   { admit. }
-  
+
   mlAssert (p) using first 2.
   { wf_auto2. }
   { admit. }
 Abort.
 
 Lemma P4i' {Σ : Signature} (Γ : Theory) (A : Pattern) :
-well_formed A →
-Γ ⊢i ((!A ---> A) ---> A) using BasicReasoning.
+  well_formed A →
+  Γ ⊢i ((!A ---> A) ---> A) using BasicReasoning.
 Proof.
-intros wfA.
-assert (H1: Γ ⊢i ((! A ---> ! ! A) ---> ! ! A) using BasicReasoning).
-{ apply P4i. wf_auto2. }
-assert (H2: Γ ⊢i ((! A ---> A) ---> (! A ---> ! ! A)) using BasicReasoning).
-{ eapply prf_weaken_conclusion_meta. 
-  4: apply not_not_intro.
-  all: wf_auto2.
-}
+  intros wfA.
+  assert (H1: Γ ⊢i ((! A ---> ! ! A) ---> ! ! A) using BasicReasoning).
+  { apply P4i. wf_auto2. }
+  assert (H2: Γ ⊢i ((! A ---> A) ---> (! A ---> ! ! A)) using BasicReasoning).
+  { eapply prf_weaken_conclusion_meta. 
+    4: apply not_not_intro.
+    all: wf_auto2.
+  }
 
-eapply prf_strenghten_premise_meta_meta. 4: apply H2.
-4: eapply prf_weaken_conclusion_meta_meta. 7: apply not_not_elim.
-8: { apply H1. }
-all: wf_auto2.
+  eapply prf_strenghten_premise_meta_meta. 4: apply H2.
+  4: eapply prf_weaken_conclusion_meta_meta. 7: apply not_not_elim.
+  8: { apply H1. }
+  all: wf_auto2.
 Defined.
 
 Lemma tofold {Σ : Signature} p:
-p = fold_right patt_imp p [].
+  p = fold_right patt_imp p [].
 Proof.
-reflexivity.
+  reflexivity.
 Defined.
 
 Lemma consume {Σ : Signature} p q l:
-fold_right patt_imp (p ---> q) l = fold_right patt_imp q (l ++ [p]).
+  fold_right patt_imp (p ---> q) l = fold_right patt_imp q (l ++ [p]).
 Proof.
-rewrite foldr_app. reflexivity.
+  rewrite foldr_app. reflexivity.
 Defined.
 
 Lemma prf_disj_elim {Σ : Signature} Γ p q r:
-well_formed p ->
-well_formed q ->
-well_formed r ->
-Γ ⊢i ((p ---> r) ---> (q ---> r) ---> (p or q) ---> r)
-using BasicReasoning.
+  well_formed p ->
+  well_formed q ->
+  well_formed r ->
+  Γ ⊢i ((p ---> r) ---> (q ---> r) ---> (p or q) ---> r)
+  using BasicReasoning.
 Proof.
-intros wfp wfq wfr.
-pose proof (H1 := @Constructive_dilemma Σ Γ p r q r wfp wfr wfq wfr).
-assert (Γ ⊢i ((r or r) ---> r) using BasicReasoning).
-{ unfold patt_or. apply P4i'. wf_auto2. }
-eapply cast_proof' in H1.
-2: { rewrite -> tofold. do 3 rewrite -> consume. reflexivity. }
-eapply prf_weaken_conclusion_iter_meta_meta in H1. 5: apply H.
-{ apply H1. }
-all: wf_auto2.
+  intros wfp wfq wfr.
+  pose proof (H1 := Constructive_dilemma Γ p r q r wfp wfr wfq wfr).
+  assert (Γ ⊢i ((r or r) ---> r) using BasicReasoning).
+  { unfold patt_or. apply P4i'. wf_auto2. }
+  eapply cast_proof' in H1.
+  2: { rewrite -> tofold. do 3 rewrite -> consume. reflexivity. }
+  eapply prf_weaken_conclusion_iter_meta_meta in H1. 5: apply H.
+  { apply H1. }
+  all: wf_auto2.
 Defined.
 
 Lemma prf_disj_elim_meta {Σ : Signature} Γ p q r i:
-well_formed p ->
-well_formed q ->
-well_formed r ->
-Γ ⊢i (p ---> r) using i ->
-Γ ⊢i ((q ---> r) ---> (p or q) ---> r) using i.
+  well_formed p ->
+  well_formed q ->
+  well_formed r ->
+  Γ ⊢i (p ---> r) using i ->
+  Γ ⊢i ((q ---> r) ---> (p or q) ---> r) using i.
 Proof.
-intros WFp WHq WFr H.
-eapply MP. apply H. useBasicReasoning. apply prf_disj_elim.
-all: wf_auto2.
+  intros WFp WHq WFr H.
+  eapply MP. apply H. useBasicReasoning. apply prf_disj_elim.
+  all: wf_auto2.
 Defined.
 
 Lemma prf_disj_elim_meta_meta {Σ : Signature} Γ p q r i:
-well_formed p ->
-well_formed q ->
-well_formed r ->
-Γ ⊢i (p ---> r) using i ->
-Γ ⊢i (q ---> r) using i ->
-Γ ⊢i ((p or q) ---> r) using i.
+  well_formed p ->
+  well_formed q ->
+  well_formed r ->
+  Γ ⊢i (p ---> r) using i ->
+  Γ ⊢i (q ---> r) using i ->
+  Γ ⊢i ((p or q) ---> r) using i.
 Proof.
-intros WFp WHq WFr H H0.
-eapply MP. apply H0. apply prf_disj_elim_meta. 4: apply H.
-all: wf_auto2.
+  intros WFp WHq WFr H H0.
+  eapply MP. apply H0. apply prf_disj_elim_meta. 4: apply H.
+  all: wf_auto2.
 Defined.
 
 Lemma prf_disj_elim_meta_meta_meta {Σ : Signature} Γ p q r i:
-well_formed p ->
-well_formed q ->
-well_formed r ->
-Γ ⊢i (p ---> r) using i ->
-Γ ⊢i (q ---> r) using i ->
-Γ ⊢i (p or q) using i ->
-Γ ⊢i r using i.
+  well_formed p ->
+  well_formed q ->
+  well_formed r ->
+  Γ ⊢i (p ---> r) using i ->
+  Γ ⊢i (q ---> r) using i ->
+  Γ ⊢i (p or q) using i ->
+  Γ ⊢i r using i.
 Proof.
-intros WFp WHq WFr H H0 H1.
-eapply MP. apply H1.
-apply prf_disj_elim_meta_meta.
-all: assumption.
+  intros WFp WHq WFr H H0 H1.
+  eapply MP. apply H1.
+  apply prf_disj_elim_meta_meta.
+  all: assumption.
 Defined.
 
 Lemma prf_add_proved_to_assumptions {Σ : Signature} Γ l a g i:
-Pattern.wf l ->
-well_formed a ->
-well_formed g ->
-Γ ⊢i a using i->
-Γ ⊢i ((foldr patt_imp g (a::l)) ---> (foldr patt_imp g l)) using i.
+  Pattern.wf l ->
+  well_formed a ->
+  well_formed g ->
+  Γ ⊢i a using i->
+  Γ ⊢i ((foldr patt_imp g (a::l)) ---> (foldr patt_imp g l)) using i.
 Proof.
-intros wfl wfa wfg Ha.
-induction l.
-- simpl.
-  pose proof (@modus_ponens Σ Γ _ _ wfa wfg).
-  eapply MP. apply Ha. useBasicReasoning. apply H.
-- pose proof (wfa0l := wfl).
-  unfold Pattern.wf in wfl. simpl in wfl. apply andb_prop in wfl. destruct wfl as [wfa0 wfl].
-  specialize (IHl wfl).
-  simpl in IHl. simpl.
-  (* < change a0 and a in the LHS > *)
-  assert (H : Γ ⊢i (a ---> a0 ---> foldr patt_imp g l) ---> (a0 ---> a ---> foldr patt_imp g l) using BasicReasoning).
-  { apply reorder; wf_auto2. }
+  intros wfl wfa wfg Ha.
+  induction l.
+  - simpl.
+    pose proof (modus_ponens Γ _ _ wfa wfg).
+    eapply MP. apply Ha. useBasicReasoning. apply H.
+  - pose proof (wfa0l := wfl).
+    unfold Pattern.wf in wfl. simpl in wfl. apply andb_prop in wfl. destruct wfl as [wfa0 wfl].
+    specialize (IHl wfl).
+    simpl in IHl. simpl.
+    (* < change a0 and a in the LHS > *)
+    assert (H : Γ ⊢i (a ---> a0 ---> foldr patt_imp g l) ---> (a0 ---> a ---> foldr patt_imp g l) using BasicReasoning).
+    { apply reorder; wf_auto2. }
 
-  eapply cast_proof'.
-  { rewrite -> tofold. rewrite -> consume. reflexivity. }
-  pose proof (H0 := @prf_strenghten_premise_iter_meta_meta Σ Γ [] []).
-  simpl in H0. simpl.
-  specialize (H0 (a0 ---> a ---> foldr patt_imp g l) (a ---> a0 ---> foldr patt_imp g l)).
-  specialize (H0 (a0 ---> foldr patt_imp g l)). simpl in H0. simpl.
-  simpl. apply H0. all: try_wfauto2.
-  { useBasicReasoning. apply H. }
-  clear H0 H.
-  (* </change a0 and a > *)
-  assert (Γ ⊢i ((a ---> a0 ---> foldr patt_imp g l) ---> (a0 ---> foldr patt_imp g l)) using i).
-  { eapply MP. 2: { useBasicReasoning. apply modus_ponens; wf_auto2. } apply Ha. }
-  
-  eapply prf_strenghten_premise_meta_meta. 5: apply H. all: try_wfauto2.
-  useBasicReasoning.
-  apply reorder; wf_auto2.
+    eapply cast_proof'.
+    { rewrite -> tofold. rewrite -> consume. reflexivity. }
+    pose proof (H0 := prf_strenghten_premise_iter_meta_meta Γ [] []).
+    simpl in H0. simpl.
+    specialize (H0 (a0 ---> a ---> foldr patt_imp g l) (a ---> a0 ---> foldr patt_imp g l)).
+    specialize (H0 (a0 ---> foldr patt_imp g l)). simpl in H0. simpl.
+    simpl. apply H0. all: try_wfauto2.
+    { useBasicReasoning. apply H. }
+    clear H0 H.
+    (* </change a0 and a > *)
+    assert (Γ ⊢i ((a ---> a0 ---> foldr patt_imp g l) ---> (a0 ---> foldr patt_imp g l)) using i).
+    { eapply MP. 2: { useBasicReasoning. apply modus_ponens; wf_auto2. } apply Ha. }
+
+    eapply prf_strenghten_premise_meta_meta. 5: apply H. all: try_wfauto2.
+    useBasicReasoning.
+    apply reorder; wf_auto2.
 Defined.
 
 Lemma prf_add_proved_to_assumptions_meta {Σ : Signature} Γ l a g i:
-Pattern.wf l ->
-well_formed a ->
-well_formed g ->
-Γ ⊢i a using i ->
-Γ ⊢i (foldr patt_imp g (a::l)) using i ->
-Γ ⊢i (foldr patt_imp g l) using i.
+  Pattern.wf l ->
+  well_formed a ->
+  well_formed g ->
+  Γ ⊢i a using i ->
+  Γ ⊢i (foldr patt_imp g (a::l)) using i ->
+  Γ ⊢i (foldr patt_imp g l) using i.
 Proof.
-intros WFl WFa WFg H H0.
-eapply MP.
-apply H0.
-eapply prf_add_proved_to_assumptions.
-4: apply H.
-all: wf_auto2.
+  intros WFl WFa WFg H H0.
+  eapply MP.
+  apply H0.
+  eapply prf_add_proved_to_assumptions.
+  4: apply H.
+  all: wf_auto2.
 Defined.
 
 Lemma MLGoal_add {Σ : Signature} Γ l name g h i:
-Γ ⊢i h using i ->
-@mkMLGoal Σ Γ (mkNH name h::l) g i ->
-@mkMLGoal Σ Γ l g i.
+  Γ ⊢i h using i ->
+  mkMLGoal Σ Γ (mkNH _ name h::l) g i ->
+  mkMLGoal Σ Γ l g i.
 Proof.
-intros H H0.
-unfold of_MLGoal in *. simpl in *.
-intros wfg wfl.
-apply prf_add_proved_to_assumptions_meta with (a := h).
-5: apply H0.
-all: try assumption.
-{ abstract (pose (tmp := proj1_sig H); apply proved_impl_wf in tmp; exact tmp). }
-{ abstract (
-      unfold Pattern.wf;
-      simpl;
-      pose (tmp := proj1_sig H);
-      apply proved_impl_wf in tmp;
-      rewrite tmp;
-      simpl;
-      exact wfl
-  ).
-}
+  intros H H0.
+  unfold of_MLGoal in *. simpl in *.
+  intros wfg wfl.
+  apply prf_add_proved_to_assumptions_meta with (a := h).
+  5: apply H0.
+  all: try assumption.
+  { abstract (pose (tmp := proj1_sig H); apply proved_impl_wf in tmp; exact tmp). }
+  { abstract (
+        unfold Pattern.wf;
+        simpl;
+        pose (tmp := proj1_sig H);
+        apply proved_impl_wf in tmp;
+        rewrite tmp;
+        simpl;
+        exact wfl
+    ).
+  }
 Defined.
 
 Tactic Notation "mlAdd" constr(n) "as" constr(name') :=
@@ -2112,181 +1862,180 @@ Tactic Notation "mlAdd" constr(n) :=
   let name := eval cbv in (fresh hyps) in
   mlAdd n as name.
 
-  Local Example ex_mlAdd {Σ : Signature} Γ l g h i:
-    Pattern.wf l ->
-    well_formed g ->
-    well_formed h ->
-    Γ ⊢i (h ---> g) using i ->
-    Γ ⊢i h using i ->
-    Γ ⊢i g using i.
-  Proof.
-    intros WFl WFg WFh H H0. toMLGoal.
-    { wf_auto2. }
-    mlAdd H0 as "H0".
-    mlAdd H.
-    mlApply "0".
-    mlExact "H0".
-  Defined.
+Local Example ex_mlAdd {Σ : Signature} Γ l g h i:
+  Pattern.wf l ->
+  well_formed g ->
+  well_formed h ->
+  Γ ⊢i (h ---> g) using i ->
+  Γ ⊢i h using i ->
+  Γ ⊢i g using i.
+Proof.
+  intros WFl WFg WFh H H0. toMLGoal.
+  { wf_auto2. }
+  mlAdd H0 as "H0".
+  mlAdd H.
+  mlApply "0".
+  mlExact "H0".
+Defined.
 
 
-  Lemma prf_clear_hyp {Σ : Signature} Γ l1 l2 g h:
-    Pattern.wf l1 ->
-    Pattern.wf l2 ->
-    well_formed g ->
-    well_formed h ->
-    Γ ⊢i (foldr patt_imp g (l1 ++ l2)) ---> (foldr patt_imp g (l1 ++ [h] ++ l2))
-    using BasicReasoning.
-  Proof.
-    intros wfl1 wfl2 wfg wfh.
-    induction l1; simpl.
-    - apply P1; wf_auto2.
-    - unfold Pattern.wf in wfl1. simpl in wfl1. apply andb_prop in wfl1. destruct wfl1 as [wfa wfl1].
-      specialize (IHl1 wfl1).
+Lemma prf_clear_hyp {Σ : Signature} Γ l1 l2 g h:
+  Pattern.wf l1 ->
+  Pattern.wf l2 ->
+  well_formed g ->
+  well_formed h ->
+  Γ ⊢i (foldr patt_imp g (l1 ++ l2)) ---> (foldr patt_imp g (l1 ++ [h] ++ l2))
+  using BasicReasoning.
+Proof.
+  intros wfl1 wfl2 wfg wfh.
+  induction l1; simpl.
+  - apply P1; wf_auto2.
+  - unfold Pattern.wf in wfl1. simpl in wfl1. apply andb_prop in wfl1. destruct wfl1 as [wfa wfl1].
+    specialize (IHl1 wfl1).
 
-      assert (H1: Γ ⊢i a ---> foldr patt_imp g (l1 ++ l2) ---> foldr patt_imp g (l1 ++ [h] ++ l2) using BasicReasoning).
-      {
-        toMLGoal.
-        { wf_auto2. }
-        mlAdd IHl1 as "H0".
-        mlIntro "H1". mlExact "H0".
-      }
-      apply prf_impl_distr_meta; try_wfauto2. apply H1.
-  Defined.
+    assert (H1: Γ ⊢i a ---> foldr patt_imp g (l1 ++ l2) ---> foldr patt_imp g (l1 ++ [h] ++ l2) using BasicReasoning).
+    {
+      toMLGoal.
+      { wf_auto2. }
+      mlAdd IHl1 as "H0".
+      mlIntro "H1". mlExact "H0".
+    }
+    apply prf_impl_distr_meta; try_wfauto2. apply H1.
+Defined.
 
-  Lemma prf_clear_hyp_meta {Σ : Signature} Γ l1 l2 g h i:
-    Pattern.wf l1 ->
-    Pattern.wf l2 ->
-    well_formed g ->
-    well_formed h ->
-    Γ ⊢i (foldr patt_imp g (l1 ++ l2)) using i ->
-    Γ ⊢i (foldr patt_imp g (l1 ++ [h] ++ l2)) using i.
-  Proof.
-    intros. eapply MP.
-    apply H3.
-    useBasicReasoning.
-    apply prf_clear_hyp; wf_auto2.
-  Defined.  
+Lemma prf_clear_hyp_meta {Σ : Signature} Γ l1 l2 g h i:
+  Pattern.wf l1 ->
+  Pattern.wf l2 ->
+  well_formed g ->
+  well_formed h ->
+  Γ ⊢i (foldr patt_imp g (l1 ++ l2)) using i ->
+  Γ ⊢i (foldr patt_imp g (l1 ++ [h] ++ l2)) using i.
+Proof.
+  intros. eapply MP.
+  apply H3.
+  useBasicReasoning.
+  apply prf_clear_hyp; wf_auto2.
+Defined.  
 
-  
 
-  Lemma mlGoal_clear_hyp {Σ : Signature} Γ l1 l2 g h i:
-    @mkMLGoal Σ Γ (l1 ++ l2) g i ->
-    @mkMLGoal Σ Γ (l1 ++ h::l2) g i.
-  Proof.
-    intros H1.
-    unfold of_MLGoal in *. simpl in *. intros wfg wfl1hl2.
-    unfold patterns_of in *. rewrite map_app.
-    rewrite map_app in wfl1hl2; simpl in wfl1hl2.
-    apply prf_clear_hyp_meta.
-    5: rewrite map_app in H1; apply H1. all: try assumption.
-    { apply wfl₁hl₂_proj_l₁ in wfl1hl2. exact wfl1hl2. }
-    { apply wfl₁hl₂_proj_l₂ in wfl1hl2. exact wfl1hl2. }
-    { apply wfl₁hl₂_proj_h in wfl1hl2. exact wfl1hl2. }
-    { apply wfl₁hl₂_proj_l₁l₂ in wfl1hl2. exact wfl1hl2. }
-  Defined.
-  
+
+Lemma mlGoal_clear_hyp {Σ : Signature} Γ l1 l2 g h i:
+  mkMLGoal Σ Γ (l1 ++ l2) g i ->
+  mkMLGoal Σ Γ (l1 ++ h::l2) g i.
+Proof.
+  intros H1.
+  unfold of_MLGoal in *. simpl in *. intros wfg wfl1hl2.
+  unfold patterns_of in *. rewrite map_app.
+  rewrite map_app in wfl1hl2; simpl in wfl1hl2.
+  apply prf_clear_hyp_meta.
+  5: rewrite map_app in H1; apply H1. all: try assumption.
+  { apply wfl₁hl₂_proj_l₁ in wfl1hl2. exact wfl1hl2. }
+  { apply wfl₁hl₂_proj_l₂ in wfl1hl2. exact wfl1hl2. }
+  { apply wfl₁hl₂_proj_h in wfl1hl2. exact wfl1hl2. }
+  { apply wfl₁hl₂_proj_l₁l₂ in wfl1hl2. exact wfl1hl2. }
+Defined.
 
 
 Tactic Notation "mlClear" constr(name) := 
   _mlReshapeHypsByName name; apply mlGoal_clear_hyp; _mlReshapeHypsBack.
 
 Local Example ex_mlClear {Σ : Signature} Γ a b c:
-well_formed a ->
-well_formed b ->
-well_formed c ->
-Γ ⊢i a ---> (b ---> (c ---> b)) using BasicReasoning.
+  well_formed a ->
+  well_formed b ->
+  well_formed c ->
+  Γ ⊢i a ---> (b ---> (c ---> b)) using BasicReasoning.
 Proof.
-intros wfa wfb wfc.
-toMLGoal.
-{ wf_auto2. }
-mlIntro "H0". mlIntro "H1". mlIntro "H2".
-mlClear "H2".
-mlClear "H0".
-mlExact "H1".
+  intros wfa wfb wfc.
+  toMLGoal.
+  { wf_auto2. }
+  mlIntro "H0". mlIntro "H1". mlIntro "H2".
+  mlClear "H2".
+  mlClear "H0".
+  mlExact "H1".
 Defined.
 
 
 Lemma not_concl {Σ : Signature} Γ p q:
-well_formed p ->
-well_formed q ->
-Γ ⊢i (p ---> (q ---> ((p ---> ! q) ---> ⊥))) using BasicReasoning.
+  well_formed p ->
+  well_formed q ->
+  Γ ⊢i (p ---> (q ---> ((p ---> ! q) ---> ⊥))) using BasicReasoning.
 Proof.
-intros wfp wfq.
-eapply cast_proof'.
-{
-  rewrite [(p ---> q ---> (p ---> ! q) ---> ⊥)]tofold.
-  do 3 rewrite consume.
-  rewrite [(((nil ++ [p]) ++ [q]) ++ [p ---> ! q])]/=.
-  replace ([p; q; p--->!q]) with ([p] ++ [q; p ---> !q] ++ []) by reflexivity.
-  reflexivity.
-}
-apply prf_reorder_iter_meta; try_wfauto2.
-simpl.
-fold (! q).
-apply modus_ponens; wf_auto2.
+  intros wfp wfq.
+  eapply cast_proof'.
+  {
+    rewrite [(p ---> q ---> (p ---> ! q) ---> ⊥)]tofold.
+    do 3 rewrite consume.
+    rewrite [(((nil ++ [p]) ++ [q]) ++ [p ---> ! q])]/=.
+    replace ([p; q; p--->!q]) with ([p] ++ [q; p ---> !q] ++ []) by reflexivity.
+    reflexivity.
+  }
+  apply prf_reorder_iter_meta; try_wfauto2.
+  simpl.
+  fold (! q).
+  apply modus_ponens; wf_auto2.
 Defined.
 
 (* TODO rename or remove *)
 Lemma helper {Σ : Signature} Γ p q r:
-well_formed p ->
-well_formed q ->
-well_formed r ->
-Γ ⊢i (p ---> (q ---> ((p ---> (q ---> r)) ---> r))) using BasicReasoning.
+  well_formed p ->
+  well_formed q ->
+  well_formed r ->
+  Γ ⊢i (p ---> (q ---> ((p ---> (q ---> r)) ---> r))) using BasicReasoning.
 Proof.
-intros wfp wfq wfr.
-eapply cast_proof'.
-{
-  rewrite [(p ---> q ---> (p ---> q ---> r) ---> r)]tofold. repeat rewrite consume.
-  replace ((([] ++ [p]) ++ [q]) ++ [p ---> (q ---> r)]) with ([p;q;p--->(q ---> r)]) by reflexivity.
-  replace ([p;q;p--->(q ---> r)]) with ([p] ++ [q; p ---> (q ---> r)] ++ []) by reflexivity.
-  reflexivity.
-}
-apply prf_reorder_iter_meta; try_wfauto2.
-simpl.
-apply modus_ponens; wf_auto2.
+  intros wfp wfq wfr.
+  eapply cast_proof'.
+  {
+    rewrite [(p ---> q ---> (p ---> q ---> r) ---> r)]tofold. repeat rewrite consume.
+    replace ((([] ++ [p]) ++ [q]) ++ [p ---> (q ---> r)]) with ([p;q;p--->(q ---> r)]) by reflexivity.
+    replace ([p;q;p--->(q ---> r)]) with ([p] ++ [q; p ---> (q ---> r)] ++ []) by reflexivity.
+    reflexivity.
+  }
+  apply prf_reorder_iter_meta; try_wfauto2.
+  simpl.
+  apply modus_ponens; wf_auto2.
 Defined.
 
 Lemma reorder_last_to_head {Σ : Signature} Γ g x l:
-Pattern.wf l ->
-well_formed g ->
-well_formed x ->
-Γ ⊢i ((foldr patt_imp g (x::l)) ---> (foldr patt_imp g (l ++ [x]))) using BasicReasoning.
+  Pattern.wf l ->
+  well_formed g ->
+  well_formed x ->
+  Γ ⊢i ((foldr patt_imp g (x::l)) ---> (foldr patt_imp g (l ++ [x]))) using BasicReasoning.
 Proof.
-intros wfl wfg wfx.
-induction l.
-- simpl. apply A_impl_A. wf_auto2.
-- pose proof (wfal := wfl).
-  unfold Pattern.wf in wfl. simpl in wfl. apply andb_prop in wfl. destruct wfl as [wfa wfl].
-  specialize (IHl wfl).
-  simpl. simpl in IHl.
-  eapply cast_proof'.
-  { rewrite -> tofold at 1. repeat rewrite -> consume. reflexivity. }
-  eapply prf_weaken_conclusion_iter_meta_meta.
-  4: { apply IHl. }
-  all: try_wfauto2.
-  eapply cast_proof'.
-  {
-    rewrite consume.
-    replace ((([] ++ [x ---> a ---> foldr patt_imp g l]) ++ [a]) ++ [x])
-      with ([x ---> a ---> foldr patt_imp g l] ++ [a;x] ++ []) by reflexivity.
-    reflexivity.
-  }
-  apply prf_reorder_iter_meta; wf_auto2.
-  simpl. apply A_impl_A. wf_auto2.
+  intros wfl wfg wfx.
+  induction l.
+  - simpl. apply A_impl_A. wf_auto2.
+  - pose proof (wfal := wfl).
+    unfold Pattern.wf in wfl. simpl in wfl. apply andb_prop in wfl. destruct wfl as [wfa wfl].
+    specialize (IHl wfl).
+    simpl. simpl in IHl.
+    eapply cast_proof'.
+    { rewrite -> tofold at 1. repeat rewrite -> consume. reflexivity. }
+    eapply prf_weaken_conclusion_iter_meta_meta.
+    4: { apply IHl. }
+    all: try_wfauto2.
+    eapply cast_proof'.
+    {
+      rewrite consume.
+      replace ((([] ++ [x ---> a ---> foldr patt_imp g l]) ++ [a]) ++ [x])
+        with ([x ---> a ---> foldr patt_imp g l] ++ [a;x] ++ []) by reflexivity.
+      reflexivity.
+    }
+    apply prf_reorder_iter_meta; wf_auto2.
+    simpl. apply A_impl_A. wf_auto2.
 Defined.
 
 Lemma reorder_last_to_head_meta {Σ : Signature} Γ g x l i:
-Pattern.wf l ->
-well_formed g ->
-well_formed x ->
-Γ ⊢i (foldr patt_imp g (x::l)) using i ->
-Γ ⊢i (foldr patt_imp g (l ++ [x])) using i.
+  Pattern.wf l ->
+  well_formed g ->
+  well_formed x ->
+  Γ ⊢i (foldr patt_imp g (x::l)) using i ->
+  Γ ⊢i (foldr patt_imp g (l ++ [x])) using i.
 Proof.
-intros WFl WFG WFx H.
-eapply MP.
-apply H.
-useBasicReasoning.
-apply reorder_last_to_head; wf_auto2.
+  intros WFl WFG WFx H.
+  eapply MP.
+  apply H.
+  useBasicReasoning.
+  apply reorder_last_to_head; wf_auto2.
 Defined.
 
 (* Iterated modus ponens.
@@ -2294,281 +2043,280 @@ Defined.
  Γ ⊢i ((x₁ -> ... -> xₙ -> (x₁ -> ... -> xₙ -> r)) -> r)
 *)
 Lemma modus_ponens_iter {Σ : Signature} Γ l r:
-Pattern.wf l ->
-well_formed r ->
-Γ ⊢i (foldr patt_imp r (l ++ [foldr patt_imp r l])) using BasicReasoning.
+  Pattern.wf l ->
+  well_formed r ->
+  Γ ⊢i (foldr patt_imp r (l ++ [foldr patt_imp r l])) using BasicReasoning.
 Proof.
-intros wfl wfr.
-induction l.
-- simpl. apply A_impl_A. exact wfr.
-- pose proof (wfal := wfl).
-  unfold Pattern.wf in wfl. simpl in wfl. apply andb_prop in wfl. destruct wfl as [wfa wfl].
-  specialize (IHl wfl).
-  simpl.
-  eapply cast_proof'.
-  { rewrite foldr_app. simpl. rewrite consume. simpl. reflexivity. }
-  eapply cast_proof' in IHl.
-  2: { rewrite foldr_app. reflexivity. }
-  simpl in IHl.
-  eapply prf_weaken_conclusion_meta_meta.
-  4: { apply reorder_last_to_head; wf_auto2. }
-  all: try_wfauto2.
-  simpl. apply modus_ponens; wf_auto2.
+  intros wfl wfr.
+  induction l.
+  - simpl. apply A_impl_A. exact wfr.
+  - pose proof (wfal := wfl).
+    unfold Pattern.wf in wfl. simpl in wfl. apply andb_prop in wfl. destruct wfl as [wfa wfl].
+    specialize (IHl wfl).
+    simpl.
+    eapply cast_proof'.
+    { rewrite foldr_app. simpl. rewrite consume. simpl. reflexivity. }
+    eapply cast_proof' in IHl.
+    2: { rewrite foldr_app. reflexivity. }
+    simpl in IHl.
+    eapply prf_weaken_conclusion_meta_meta.
+    4: { apply reorder_last_to_head; wf_auto2. }
+    all: try_wfauto2.
+    simpl. apply modus_ponens; wf_auto2.
 Defined.
 
 Lemma and_impl {Σ : Signature} Γ p q r:
-well_formed p ->
-well_formed q ->
-well_formed r ->
-Γ ⊢i ((p and q ---> r) ---> (p ---> (q ---> r))) using BasicReasoning.
+  well_formed p ->
+  well_formed q ->
+  well_formed r ->
+  Γ ⊢i ((p and q ---> r) ---> (p ---> (q ---> r))) using BasicReasoning.
 Proof.
-intros wfp wfq wfr.
-toMLGoal.
-{ wf_auto2. }
-mlIntro "H0". mlIntro "H2". mlIntro "H3".
-unfold patt_and. mlApply "H0".
-mlIntro "H4". unfold patt_or at 2.
-mlAssert ("H5" : (! ! p)).
-{ wf_auto2. }
-{
-  mlAdd (@not_not_intro Σ Γ p wfp) as "H6".
-  mlApply "H6".
-  mlExact "H2".
-}
-mlAssert ("H6" : (! q)).
-{ wf_auto2. }
-{
-  mlApply "H4". mlExact "H5".
-}
-mlApply "H6". mlExact "H3".
+  intros wfp wfq wfr.
+  toMLGoal.
+  { wf_auto2. }
+  mlIntro "H0". mlIntro "H2". mlIntro "H3".
+  unfold patt_and. mlApply "H0".
+  mlIntro "H4". unfold patt_or at 2.
+  mlAssert ("H5" : (! ! p)).
+  { wf_auto2. }
+  {
+    mlAdd (not_not_intro Γ p wfp) as "H6".
+    mlApply "H6".
+    mlExact "H2".
+  }
+  mlAssert ("H6" : (! q)).
+  { wf_auto2. }
+  {
+    mlApply "H4". mlExact "H5".
+  }
+  mlApply "H6". mlExact "H3".
 Defined.
 
 Lemma and_impl' {Σ : Signature} Γ p q r:
-well_formed p ->
-well_formed q ->
-well_formed r ->
-Γ ⊢i ((p ---> (q ---> r)) ---> ((p and q) ---> r)) using BasicReasoning.
+  well_formed p ->
+  well_formed q ->
+  well_formed r ->
+  Γ ⊢i ((p ---> (q ---> r)) ---> ((p and q) ---> r)) using BasicReasoning.
 Proof.
-intros wfp wfq wfr.
-toMLGoal.
-{ wf_auto2. }
-mlIntro "H0". mlIntro "H1".
-mlAssert ("H2" : p).
-{ wf_auto2. }
-{
-  mlAdd (@pf_conj_elim_l Σ Γ p q wfp wfq) as "H2".
-  mlApply "H2".
-  mlExact "H1".
-}
-mlAssert ("H3" : q).
-{ wf_auto2. }
-{
-  mlAdd (@pf_conj_elim_r Σ Γ p q wfp wfq) as "H4".
-  mlApply "H4".
-  mlExact "H1".
-}
-(* This pattern is basically an "apply ... in" *)
-mlAssert ("H4" : (q ---> r)).
-{ wf_auto2. }
-{ mlApply "H0". mlExact "H2". }
-mlApply "H4". mlExact "H3".
+  intros wfp wfq wfr.
+  toMLGoal.
+  { wf_auto2. }
+  mlIntro "H0". mlIntro "H1".
+  mlAssert ("H2" : p).
+  { wf_auto2. }
+  {
+    mlAdd (pf_conj_elim_l Γ p q wfp wfq) as "H2".
+    mlApply "H2".
+    mlExact "H1".
+  }
+  mlAssert ("H3" : q).
+  { wf_auto2. }
+  {
+    mlAdd (pf_conj_elim_r Γ p q wfp wfq) as "H4".
+    mlApply "H4".
+    mlExact "H1".
+  }
+  (* This pattern is basically an "apply ... in" *)
+  mlAssert ("H4" : (q ---> r)).
+  { wf_auto2. }
+  { mlApply "H0". mlExact "H2". }
+  mlApply "H4". mlExact "H3".
 Defined.
 
 Lemma prf_disj_elim_iter {Σ : Signature} Γ l p q r:
-Pattern.wf l ->
-well_formed p ->
-well_formed q ->
-well_formed r ->
-Γ ⊢i ((fold_right patt_imp r (l ++ [p]))
-       --->
-       ((fold_right patt_imp r (l ++ [q]))
-          --->                                                                
-          (fold_right patt_imp r (l ++ [p or q]))))
-using BasicReasoning.
+  Pattern.wf l ->
+  well_formed p ->
+  well_formed q ->
+  well_formed r ->
+  Γ ⊢i ((fold_right patt_imp r (l ++ [p]))
+         --->
+         ((fold_right patt_imp r (l ++ [q]))
+            --->
+            (fold_right patt_imp r (l ++ [p or q]))))
+  using BasicReasoning.
 Proof.
-intros wfl wfp wfq wfr.
-induction l.
-- simpl. apply prf_disj_elim; wf_auto2.
-- pose proof (wfal := wfl).
-  unfold Pattern.wf in wfl. simpl in wfl. apply andb_prop in wfl. destruct wfl as [wfa wfl].
-  specialize (IHl wfl).
-  simpl in *.
-  toMLGoal.
-  { wf_auto2. }
-  mlIntro "H0". mlIntro "H1". mlIntro "H2". 
-  mlAdd IHl as "H3".
-  mlAssert ("H4" : (foldr patt_imp r (l ++ [p]))).
-  { wf_auto2. }
-  { mlApply "H0". mlExact "H2". }
-  mlAssert ("H5" : (foldr patt_imp r (l ++ [q]))).
-  { wf_auto2. }
-  { mlApply "H1". mlExact "H2". }
-  mlAssert ("H6" : (foldr patt_imp r (l ++ [q]) ---> foldr patt_imp r (l ++ [p or q]))).
-  { wf_auto2. }
-  { mlApply "H3". mlExact "H4". }
-  mlApply "H6".
-  mlExact "H5".
+  intros wfl wfp wfq wfr.
+  induction l.
+  - simpl. apply prf_disj_elim; wf_auto2.
+  - pose proof (wfal := wfl).
+    unfold Pattern.wf in wfl. simpl in wfl. apply andb_prop in wfl. destruct wfl as [wfa wfl].
+    specialize (IHl wfl).
+    simpl in *.
+    toMLGoal.
+    { wf_auto2. }
+    mlIntro "H0". mlIntro "H1". mlIntro "H2". 
+    mlAdd IHl as "H3".
+    mlAssert ("H4" : (foldr patt_imp r (l ++ [p]))).
+    { wf_auto2. }
+    { mlApply "H0". mlExact "H2". }
+    mlAssert ("H5" : (foldr patt_imp r (l ++ [q]))).
+    { wf_auto2. }
+    { mlApply "H1". mlExact "H2". }
+    mlAssert ("H6" : (foldr patt_imp r (l ++ [q]) ---> foldr patt_imp r (l ++ [p or q]))).
+    { wf_auto2. }
+    { mlApply "H3". mlExact "H4". }
+    mlApply "H6".
+    mlExact "H5".
 Defined.
 
 Lemma prf_disj_elim_iter_2 {Σ : Signature} Γ l₁ l₂ p q r:
-Pattern.wf l₁ ->
-Pattern.wf l₂ ->
-well_formed p ->
-well_formed q ->
-well_formed r ->
-Γ ⊢i ((fold_right patt_imp r (l₁ ++ [p] ++ l₂))
-       --->
-       ((fold_right patt_imp r (l₁ ++ [q] ++ l₂))
-          --->                                                                
-          (fold_right patt_imp r (l₁ ++ [p or q] ++ l₂))))
-using BasicReasoning.  
+  Pattern.wf l₁ ->
+  Pattern.wf l₂ ->
+  well_formed p ->
+  well_formed q ->
+  well_formed r ->
+  Γ ⊢i ((fold_right patt_imp r (l₁ ++ [p] ++ l₂))
+         --->
+         ((fold_right patt_imp r (l₁ ++ [q] ++ l₂))
+            --->
+            (fold_right patt_imp r (l₁ ++ [p or q] ++ l₂))))
+  using BasicReasoning.
 Proof.
-intros wfl₁ wfl₂ wfp wfq wfr.
-move: l₁ wfl₁.
-induction l₂; intros l₁ wfl₁.
-- simpl. apply prf_disj_elim_iter; wf_auto2.
-- pose proof (wfal₂ := wfl₂).
-  unfold Pattern.wf in wfl₂. simpl in wfl₂. apply andb_prop in wfl₂. destruct wfl₂ as [wfa wfl₂].
+  intros wfl₁ wfl₂ wfp wfq wfr.
+  move: l₁ wfl₁.
+  induction l₂; intros l₁ wfl₁.
+  - simpl. apply prf_disj_elim_iter; wf_auto2.
+  - pose proof (wfal₂ := wfl₂).
+    unfold Pattern.wf in wfl₂. simpl in wfl₂. apply andb_prop in wfl₂. destruct wfl₂ as [wfa wfl₂].
 
-  simpl. (* We need to move 'a' to the beginning of l₁; then we can apply IHl₂. *)
-  (* Or we can swap p and a (move a to the end of l_1) *)
-  remember (foldr patt_imp r (l₁ ++ p :: a :: l₂)) as A in |-.
-  remember (foldr patt_imp r (l₁ ++ q :: a :: l₂)) as B in |-.
-  remember (foldr patt_imp r (l₁ ++ (p or q) :: a :: l₂)) as C in |-.
-  eapply cast_proof'.
-  { rewrite -HeqA. rewrite -HeqB. rewrite -HeqC. reflexivity. }
-  eapply cast_proof'.
-  {
-    rewrite -> tofold at 1. rewrite consume. rewrite consume. rewrite [_ ++ [B] ]/=.
-    rewrite -> HeqA at 1. rewrite -> HeqB at 1. rewrite -> HeqC at 1.
-    reflexivity.
-  }
-  eapply prf_weaken_conclusion_iter_meta_meta.
-  4: {
+    simpl. (* We need to move 'a' to the beginning of l₁; then we can apply IHl₂. *)
+    (* Or we can swap p and a (move a to the end of l_1) *)
+    remember (foldr patt_imp r (l₁ ++ p :: a :: l₂)) as A in |-.
+    remember (foldr patt_imp r (l₁ ++ q :: a :: l₂)) as B in |-.
+    remember (foldr patt_imp r (l₁ ++ (p or q) :: a :: l₂)) as C in |-.
+    eapply cast_proof'.
+    { rewrite -HeqA. rewrite -HeqB. rewrite -HeqC. reflexivity. }
     eapply cast_proof'.
     {
-      replace (l₁ ++ (p or q) :: a :: l₂) with (l₁ ++ [p or q; a] ++ l₂) by reflexivity.
+      rewrite -> tofold at 1. rewrite consume. rewrite consume. rewrite [_ ++ [B] ]/=.
+      rewrite -> HeqA at 1. rewrite -> HeqB at 1. rewrite -> HeqC at 1.
       reflexivity.
     }
-    apply prf_reorder_iter; wf_auto2.
-  }
-  all: try_wfauto2.
-  simpl.
+    eapply prf_weaken_conclusion_iter_meta_meta.
+    4: {
+      eapply cast_proof'.
+      {
+        replace (l₁ ++ (p or q) :: a :: l₂) with (l₁ ++ [p or q; a] ++ l₂) by reflexivity.
+        reflexivity.
+      }
+      apply prf_reorder_iter; wf_auto2.
+    }
+    all: try_wfauto2.
+    simpl.
 
-  eapply cast_proof'.
-  { 
-    rewrite -> tofold at 1. repeat rewrite consume. rewrite [_ ++ [_] ]/=.
+    eapply cast_proof'.
+    { 
+      rewrite -> tofold at 1. repeat rewrite consume. rewrite [_ ++ [_] ]/=.
 
-  replace
-    ([foldr patt_imp r (l₁ ++ p :: a :: l₂); foldr patt_imp r (l₁ ++ q :: a :: l₂)])
-    with
-      ([foldr patt_imp r (l₁ ++ p :: a :: l₂)] ++ (foldr patt_imp r (l₁ ++ q :: a :: l₂))::[])
-    by reflexivity.
-    reflexivity.
-  }
-
-  eapply prf_strenghten_premise_iter_meta_meta with (h := foldr patt_imp r (l₁ ++ a :: q :: l₂)).
-  6: { apply prf_reorder_iter; wf_auto2. }
-  all: try_wfauto2.
-
-  eapply cast_proof'.
-  {
     replace
-      ([foldr patt_imp r (l₁ ++ p :: a :: l₂)] ++ [foldr patt_imp r (l₁ ++ a :: q :: l₂)])
+      ([foldr patt_imp r (l₁ ++ p :: a :: l₂); foldr patt_imp r (l₁ ++ q :: a :: l₂)])
       with
-      ([] ++ ((foldr patt_imp r (l₁ ++ p :: a :: l₂))::[foldr patt_imp r (l₁ ++ a :: q :: l₂)]))
+        ([foldr patt_imp r (l₁ ++ p :: a :: l₂)] ++ (foldr patt_imp r (l₁ ++ q :: a :: l₂))::[])
       by reflexivity.
-    reflexivity.
- }
+      reflexivity.
+    }
 
-  eapply prf_strenghten_premise_iter_meta_meta with (h := (foldr patt_imp r (l₁ ++ a :: p :: l₂))).
-  6: {  apply prf_reorder_iter; wf_auto2. }
-  all: try_wfauto2.
+    eapply prf_strenghten_premise_iter_meta_meta with (h := foldr patt_imp r (l₁ ++ a :: q :: l₂)).
+    6: { apply prf_reorder_iter; wf_auto2. }
+    all: try_wfauto2.
 
-  simpl.
-  eapply cast_proof'.
-  {
-    replace (l₁ ++ a :: p :: l₂) with ((l₁ ++ [a]) ++ [p] ++ l₂) by (rewrite <- app_assoc; reflexivity).
-    replace (l₁ ++ a :: q :: l₂) with ((l₁ ++ [a]) ++ [q] ++ l₂) by (rewrite <- app_assoc; reflexivity).
-    replace (l₁ ++ a :: (p or q) :: l₂) with ((l₁ ++ [a]) ++ [p or q] ++ l₂) by (rewrite <- app_assoc; reflexivity).
-    reflexivity.
-  }
-  apply IHl₂; wf_auto2.
+    eapply cast_proof'.
+    {
+      replace
+        ([foldr patt_imp r (l₁ ++ p :: a :: l₂)] ++ [foldr patt_imp r (l₁ ++ a :: q :: l₂)])
+        with
+        ([] ++ ((foldr patt_imp r (l₁ ++ p :: a :: l₂))::[foldr patt_imp r (l₁ ++ a :: q :: l₂)]))
+        by reflexivity.
+      reflexivity.
+   }
+
+    eapply prf_strenghten_premise_iter_meta_meta with (h := (foldr patt_imp r (l₁ ++ a :: p :: l₂))).
+    6: {  apply prf_reorder_iter; wf_auto2. }
+    all: try_wfauto2.
+
+    simpl.
+    eapply cast_proof'.
+    {
+      replace (l₁ ++ a :: p :: l₂) with ((l₁ ++ [a]) ++ [p] ++ l₂) by (rewrite <- app_assoc; reflexivity).
+      replace (l₁ ++ a :: q :: l₂) with ((l₁ ++ [a]) ++ [q] ++ l₂) by (rewrite <- app_assoc; reflexivity).
+      replace (l₁ ++ a :: (p or q) :: l₂) with ((l₁ ++ [a]) ++ [p or q] ++ l₂) by (rewrite <- app_assoc; reflexivity).
+      reflexivity.
+    }
+    apply IHl₂; wf_auto2.
 Defined.
 
 Lemma prf_disj_elim_iter_2_meta {Σ : Signature} Γ l₁ l₂ p q r i:
-Pattern.wf l₁ ->
-Pattern.wf l₂ ->
-well_formed p ->
-well_formed q ->
-well_formed r ->
-Γ ⊢i (fold_right patt_imp r (l₁ ++ [p] ++ l₂)) using i ->
-Γ ⊢i ((fold_right patt_imp r (l₁ ++ [q] ++ l₂))
-          --->                                                                
-          (fold_right patt_imp r (l₁ ++ [p or q] ++ l₂))) using i.
-        
+  Pattern.wf l₁ ->
+  Pattern.wf l₂ ->
+  well_formed p ->
+  well_formed q ->
+  well_formed r ->
+  Γ ⊢i (fold_right patt_imp r (l₁ ++ [p] ++ l₂)) using i ->
+  Γ ⊢i ((fold_right patt_imp r (l₁ ++ [q] ++ l₂))
+            --->
+            (fold_right patt_imp r (l₁ ++ [p or q] ++ l₂))) using i.
 Proof.
-intros WFl1 WFl2 WFp WFq WFr H.
-eapply MP.
-apply H.
-useBasicReasoning.
-apply prf_disj_elim_iter_2; wf_auto2.
+  intros WFl1 WFl2 WFp WFq WFr H.
+  eapply MP.
+  apply H.
+  useBasicReasoning.
+  apply prf_disj_elim_iter_2; wf_auto2.
 Defined.
 
 Lemma prf_disj_elim_iter_2_meta_meta {Σ : Signature} Γ l₁ l₂ p q r i:
-Pattern.wf l₁ ->
-Pattern.wf l₂ ->
-well_formed p ->
-well_formed q ->
-well_formed r ->
-Γ ⊢i (fold_right patt_imp r (l₁ ++ [p] ++ l₂)) using i ->
-Γ ⊢i (fold_right patt_imp r (l₁ ++ [q] ++ l₂)) using i ->
-Γ ⊢i (fold_right patt_imp r (l₁ ++ [p or q] ++ l₂)) using i.
+  Pattern.wf l₁ ->
+  Pattern.wf l₂ ->
+  well_formed p ->
+  well_formed q ->
+  well_formed r ->
+  Γ ⊢i (fold_right patt_imp r (l₁ ++ [p] ++ l₂)) using i ->
+  Γ ⊢i (fold_right patt_imp r (l₁ ++ [q] ++ l₂)) using i ->
+  Γ ⊢i (fold_right patt_imp r (l₁ ++ [p or q] ++ l₂)) using i.
 Proof.
-intros WFl1 WFl2 WFp WFq WFr H H0.
-eapply MP.
-2: { apply prf_disj_elim_iter_2_meta; try_wfauto2. apply H. }
-apply H0.
+  intros WFl1 WFl2 WFp WFq WFr H H0.
+  eapply MP.
+  2: { apply prf_disj_elim_iter_2_meta; try_wfauto2. apply H. }
+  apply H0.
 Defined.
 
 Lemma MLGoal_disj_elim {Σ : Signature} Γ l₁ l₂ pn p qn q pqn r i:
-@mkMLGoal Σ Γ (l₁ ++ [mkNH pn p] ++ l₂) r i ->
-@mkMLGoal Σ Γ (l₁ ++ [mkNH qn q] ++ l₂) r i ->
-@mkMLGoal Σ Γ (l₁ ++ [mkNH pqn (p or q)] ++ l₂) r i.
+  mkMLGoal Σ Γ (l₁ ++ [mkNH _ pn p] ++ l₂) r i ->
+  mkMLGoal Σ Γ (l₁ ++ [mkNH _ qn q] ++ l₂) r i ->
+  mkMLGoal Σ Γ (l₁ ++ [mkNH _ pqn (p or q)] ++ l₂) r i.
 Proof.
-intros H1 H2.
-unfold of_MLGoal in *. simpl in *.
-intros wfr Hwf.
-unfold patterns_of in *.
-rewrite map_app.
-rewrite map_app in H1.
-rewrite map_app in H2.
-apply prf_disj_elim_iter_2_meta_meta.
-7: apply H2.
-6: apply H1.
-all: try assumption; unfold patterns_of in *; rewrite map_app in Hwf.
-{ abstract (apply wfl₁hl₂_proj_l₁ in Hwf; exact Hwf). }
-{ abstract (apply wfl₁hl₂_proj_l₂ in Hwf; exact Hwf). }
-{ abstract (apply wfl₁hl₂_proj_h in Hwf; wf_auto2). }
-{ abstract (apply wfl₁hl₂_proj_h in Hwf; wf_auto2). }
-{
-  pose proof (wfl₁hl₂_proj_l₁ Hwf).
-  pose proof (wfl₁hl₂_proj_h Hwf).
-  pose proof (wfl₁hl₂_proj_l₂ Hwf).
-  apply wf_app; [assumption|].
-  unfold patt_or,patt_not in *.
-  simpl.
-  wf_auto2.
-}
-{
-  pose proof (wfl₁hl₂_proj_l₁ Hwf).
-  pose proof (wfl₁hl₂_proj_h Hwf).
-  pose proof (wfl₁hl₂_proj_l₂ Hwf).
-  apply wf_app; [assumption|].
-  unfold patt_or,patt_not in *.
-  simpl.
-  wf_auto2.
-}
+  intros H1 H2.
+  unfold of_MLGoal in *. simpl in *.
+  intros wfr Hwf.
+  unfold patterns_of in *.
+  rewrite map_app.
+  rewrite map_app in H1.
+  rewrite map_app in H2.
+  apply prf_disj_elim_iter_2_meta_meta.
+  7: apply H2.
+  6: apply H1.
+  all: try assumption; unfold patterns_of in *; rewrite map_app in Hwf.
+  { abstract (apply wfl₁hl₂_proj_l₁ in Hwf; exact Hwf). }
+  { abstract (apply wfl₁hl₂_proj_l₂ in Hwf; exact Hwf). }
+  { abstract (apply wfl₁hl₂_proj_h in Hwf; wf_auto2). }
+  { abstract (apply wfl₁hl₂_proj_h in Hwf; wf_auto2). }
+  {
+    pose proof (wfl₁hl₂_proj_l₁ _ _ _ Hwf).
+    pose proof (wfl₁hl₂_proj_h _ _ _ Hwf).
+    pose proof (wfl₁hl₂_proj_l₂ _ _ _ Hwf).
+    apply wf_app; [assumption|].
+    unfold patt_or,patt_not in *.
+    simpl.
+    wf_auto2.
+  }
+  {
+    pose proof (wfl₁hl₂_proj_l₁ _ _ _ Hwf).
+    pose proof (wfl₁hl₂_proj_h _ _ _ Hwf).
+    pose proof (wfl₁hl₂_proj_l₂ _ _ _ Hwf).
+    apply wf_app; [assumption|].
+    unfold patt_or,patt_not in *.
+    simpl.
+    wf_auto2.
+  }
 Defined.
 
 Tactic Notation "mlDestructOr" constr(name) "as" constr(name1) constr(name2) :=
@@ -2590,7 +2338,7 @@ Tactic Notation "mlDestructOr" constr(name) :=
   let name1 := eval cbv in (fresh (name0 :: hyps)) in
   mlDestructOr name as name0 name1.
 
-  Local Example exd {Σ : Signature} Γ a b p q c i:
+Local Example exd {Σ : Signature} Γ a b p q c i:
   well_formed a ->
   well_formed b ->
   well_formed p ->
@@ -2652,8 +2400,8 @@ Proof.
   intros WFA WFB.
   split; intros H.
   {
-    pose proof (H1 := pf_iff_proj1 WFA WFB H).
-    pose proof (H2 := pf_iff_proj2 WFA WFB H).
+    pose proof (H1 := pf_iff_proj1 _ _ _ _ WFA WFB H).
+    pose proof (H2 := pf_iff_proj2 _ _ _ _ WFA WFB H).
     split; assumption.
   }
   {
@@ -2722,181 +2470,181 @@ Defined.
 
 
 Lemma and_of_negated_iff_not_impl {Σ : Signature} Γ p1 p2:
-well_formed p1 ->
-well_formed p2 ->
-Γ ⊢i (! (! p1 ---> p2) <---> ! p1 and ! p2)
-using BasicReasoning.
+  well_formed p1 ->
+  well_formed p2 ->
+  Γ ⊢i (! (! p1 ---> p2) <---> ! p1 and ! p2)
+  using BasicReasoning.
 Proof.
-intros wfp1 wfp2.
-apply conj_intro_meta.
-{ wf_auto2. }
-{ wf_auto2. }
-- toMLGoal.
+  intros wfp1 wfp2.
+  apply conj_intro_meta.
   { wf_auto2. }
-  mlIntro "H0". mlIntro "H1".
-  mlApply "H0".
-  mlIntro "H2".
-  unfold patt_or.
-  mlAdd (@not_not_elim Σ Γ p2 ltac:(wf_auto2)) as "H3".
-  mlApply "H3".
-  mlApply "H1".
-  mlAdd (@not_not_intro Σ Γ (! p1) ltac:(wf_auto2)) as "H4".
-  mlApply "H4".
-  mlExact "H2".
-- toMLGoal.
   { wf_auto2. }
-  mlIntro "H0". mlIntro "H1".
-  unfold patt_and.
-  mlApply "H0".
-  unfold patt_or.
-  mlIntro "H2".
-  mlAdd (@not_not_intro Σ Γ p2 ltac:(wf_auto2)) as "H3".
-  mlApply "H3".
-  mlApply "H1".
-  mlAdd (@not_not_elim Σ Γ (! p1) ltac:(wf_auto2)) as "H4".
-  mlApply "H4".
-  mlExact "H2".
+  - toMLGoal.
+    { wf_auto2. }
+    mlIntro "H0". mlIntro "H1".
+    mlApply "H0".
+    mlIntro "H2".
+    unfold patt_or.
+    mlAdd (not_not_elim Γ p2 ltac:(wf_auto2)) as "H3".
+    mlApply "H3".
+    mlApply "H1".
+    mlAdd (not_not_intro Γ (! p1) ltac:(wf_auto2)) as "H4".
+    mlApply "H4".
+    mlExact "H2".
+  - toMLGoal.
+    { wf_auto2. }
+    mlIntro "H0". mlIntro "H1".
+    unfold patt_and.
+    mlApply "H0".
+    unfold patt_or.
+    mlIntro "H2".
+    mlAdd (@not_not_intro Σ Γ p2 ltac:(wf_auto2)) as "H3".
+    mlApply "H3".
+    mlApply "H1".
+    mlAdd (@not_not_elim Σ Γ (! p1) ltac:(wf_auto2)) as "H4".
+    mlApply "H4".
+    mlExact "H2".
 Defined.
 
 Lemma and_impl_2 {Σ : Signature} Γ p1 p2:
-well_formed p1 ->
-well_formed p2 ->
-Γ ⊢i (! (p1 ---> p2) <---> p1 and ! p2)
-using BasicReasoning.
+  well_formed p1 ->
+  well_formed p2 ->
+  Γ ⊢i (! (p1 ---> p2) <---> p1 and ! p2)
+  using BasicReasoning.
 Proof.
-intros wfp1 wfp2.
-apply conj_intro_meta.
-{ wf_auto2. }
-{ wf_auto2. }
-- toMLGoal.
+  intros wfp1 wfp2.
+  apply conj_intro_meta.
   { wf_auto2. }
-  mlIntro "H0". mlIntro "H1".
-  mlApply "H0".
-  mlIntro "H2".
-  unfold patt_or.
-  mlAdd (@not_not_elim Σ Γ p2 ltac:(wf_auto2)) as "H3".
-  mlApply "H3".
-  mlApply "H1".
-  mlAdd (@not_not_intro Σ Γ p1 ltac:(wf_auto2)) as "H4".
-  mlApply "H4".
-  mlExact "H2".
-- toMLGoal.
   { wf_auto2. }
-  mlIntro "H0". mlIntro "H1".
-  mlApply "H0".
-  unfold patt_or.
-  mlIntro "H2".
-  mlAdd (@not_not_intro Σ Γ p2 ltac:(wf_auto2)) as "H3".
-  mlApply "H3".
-  mlApply "H1".
-  mlAdd (@not_not_elim Σ Γ p1 ltac:(wf_auto2)) as "H4".
-  mlApply "H4".
-  mlExact "H2".
+  - toMLGoal.
+    { wf_auto2. }
+    mlIntro "H0". mlIntro "H1".
+    mlApply "H0".
+    mlIntro "H2".
+    unfold patt_or.
+    mlAdd (not_not_elim Γ p2 ltac:(wf_auto2)) as "H3".
+    mlApply "H3".
+    mlApply "H1".
+    mlAdd (not_not_intro Γ p1 ltac:(wf_auto2)) as "H4".
+    mlApply "H4".
+    mlExact "H2".
+  - toMLGoal.
+    { wf_auto2. }
+    mlIntro "H0". mlIntro "H1".
+    mlApply "H0".
+    unfold patt_or.
+    mlIntro "H2".
+    mlAdd (not_not_intro Γ p2 ltac:(wf_auto2)) as "H3".
+    mlApply "H3".
+    mlApply "H1".
+    mlAdd (not_not_elim Γ p1 ltac:(wf_auto2)) as "H4".
+    mlApply "H4".
+    mlExact "H2".
 Defined.
 
 Lemma conj_intro_meta_partial {Σ : Signature} (Γ : Theory) (A B : Pattern) (i : ProofInfo) :
-well_formed A → well_formed B →
-Γ ⊢i A using i →
-Γ ⊢i B ---> (A and B) using i.
+  well_formed A → well_formed B →
+  Γ ⊢i A using i →
+  Γ ⊢i B ---> (A and B) using i.
 Proof.
-intros WFA WFB H.
-eapply MP.
-- exact H.
-- useBasicReasoning. apply conj_intro.
-  { wf_auto2. }
-  { wf_auto2. }
+  intros WFA WFB H.
+  eapply MP.
+  - exact H.
+  - useBasicReasoning. apply conj_intro.
+    { wf_auto2. }
+    { wf_auto2. }
 Defined.
 
 Lemma and_impl_patt {Σ : Signature} (A B C : Pattern) Γ (i : ProofInfo):
-well_formed A → well_formed B → well_formed C →
-Γ ⊢i A using i ->
-Γ ⊢i ((A and B) ---> C) using i ->
-Γ ⊢i (B ---> C) using i.
+  well_formed A → well_formed B → well_formed C →
+  Γ ⊢i A using i ->
+  Γ ⊢i ((A and B) ---> C) using i ->
+  Γ ⊢i (B ---> C) using i.
 Proof.
-intros WFA WFB WFC H H0.
-eapply syllogism_meta with (B := patt_and A B).
-{ wf_auto2. }
-{ wf_auto2. }
-{ wf_auto2. }
-2: { exact H0. }
-apply conj_intro_meta_partial.
-{ wf_auto2. }
-{ wf_auto2. }
-exact H.
+  intros WFA WFB WFC H H0.
+  eapply @syllogism_meta with (B := patt_and A B).
+  { wf_auto2. }
+  { wf_auto2. }
+  { wf_auto2. }
+  2: { exact H0. }
+  apply conj_intro_meta_partial.
+  { wf_auto2. }
+  { wf_auto2. }
+  exact H.
 Defined.
 
 Lemma conj_intro2 {Σ : Signature} (Γ : Theory) (A B : Pattern) :
-well_formed A -> well_formed B ->
-Γ ⊢i (A ---> (B ---> (B and A)))
-using BasicReasoning.
+  well_formed A -> well_formed B ->
+  Γ ⊢i (A ---> (B ---> (B and A)))
+  using BasicReasoning.
 Proof.
-intros WFA WFB. eapply reorder_meta.
-{ wf_auto2. }
-{ wf_auto2. }
-{ wf_auto2. }
-apply conj_intro.
-{ wf_auto2. }
-{ wf_auto2. }
+  intros WFA WFB. eapply reorder_meta.
+  { wf_auto2. }
+  { wf_auto2. }
+  { wf_auto2. }
+  apply conj_intro.
+  { wf_auto2. }
+  { wf_auto2. }
 Defined.
 
 Lemma conj_intro_meta_partial2  {Σ : Signature} (Γ : Theory) (A B : Pattern) (i : ProofInfo):
-well_formed A → well_formed B →
-Γ ⊢i A using i →
-Γ ⊢i B ---> (B and A) using i.
+  well_formed A → well_formed B →
+  Γ ⊢i A using i →
+  Γ ⊢i B ---> (B and A) using i.
 Proof.
-intros WFA WFB H.
-eapply MP.
-- exact H.
-- useBasicReasoning. apply conj_intro2.
-  { wf_auto2. }
-  { wf_auto2. }
+  intros WFA WFB H.
+  eapply MP.
+  - exact H.
+  - useBasicReasoning. apply conj_intro2.
+    { wf_auto2. }
+    { wf_auto2. }
 Defined.
 
 Lemma and_impl_patt2 {Σ : Signature}  (A B C : Pattern) Γ (i : ProofInfo):
-well_formed A → well_formed B → well_formed C →
-Γ ⊢i A using i ->
-Γ ⊢i ((B and A) ---> C) using i ->
-Γ ⊢i (B ---> C) using i.
+  well_formed A → well_formed B → well_formed C →
+  Γ ⊢i A using i ->
+  Γ ⊢i ((B and A) ---> C) using i ->
+  Γ ⊢i (B ---> C) using i.
 Proof.
-intros WFA WFB WFC H H0.
-eapply syllogism_meta with (B := patt_and B A).
-{ wf_auto2. }
-{ wf_auto2. }
-{ wf_auto2. }
-2: exact H0.
-apply conj_intro_meta_partial2.
-{ wf_auto2. }
-{ wf_auto2. }
-exact H.
+  intros WFA WFB WFC H H0.
+  eapply @syllogism_meta with (B := patt_and B A).
+  { wf_auto2. }
+  { wf_auto2. }
+  { wf_auto2. }
+  2: exact H0.
+  apply conj_intro_meta_partial2.
+  { wf_auto2. }
+  { wf_auto2. }
+  exact H.
 Defined.
 
 
 Lemma patt_and_comm_meta {Σ : Signature} (A B : Pattern) (Γ : Theory) (i : ProofInfo) :
-well_formed A → well_formed B
-->
-Γ ⊢i A and B using i ->
-Γ ⊢i B and A using i.
+  well_formed A → well_formed B
+  ->
+  Γ ⊢i A and B using i ->
+  Γ ⊢i B and A using i.
 Proof.
-intros WFA WFB H.
-apply pf_conj_elim_r_meta in H as P1.
-apply pf_conj_elim_l_meta in H as P2. all: try_wfauto2.
-apply conj_intro_meta; assumption.
+  intros WFA WFB H.
+  apply pf_conj_elim_r_meta in H as P1.
+  apply pf_conj_elim_l_meta in H as P2. all: try_wfauto2.
+  apply conj_intro_meta; assumption.
 Defined.
 
 Lemma MLGoal_applyMeta {Σ : Signature} Γ r r' i:
-Γ ⊢i (r' ---> r) using i ->
-forall l,
-@mkMLGoal Σ Γ l r' i ->
-@mkMLGoal Σ Γ l r i.
+  Γ ⊢i (r' ---> r) using i ->
+  forall l,
+  mkMLGoal Σ Γ l r' i ->
+  mkMLGoal Σ Γ l r i.
 Proof.
-intros Himp l H.
-unfold of_MLGoal in *. simpl in *.
-intros wfr wfl.
-eapply prf_weaken_conclusion_iter_meta_meta.
-4: apply Himp.
-4: apply H.
-all: try assumption.
-1,2: pose proof (wfrr' := proved_impl_wf _ _ (proj1_sig Himp)); wf_auto2.
+  intros Himp l H.
+  unfold of_MLGoal in *. simpl in *.
+  intros wfr wfl.
+  eapply prf_weaken_conclusion_iter_meta_meta.
+  4: apply Himp.
+  4: apply H.
+  all: try assumption.
+  1,2: pose proof (wfrr' := proved_impl_wf _ _ (proj1_sig Himp)); wf_auto2.
 Defined.
 
 
@@ -2910,8 +2658,8 @@ Ltac2 _mlApplyMetaRaw (t : constr) :=
   eapply (@MLGoal_applyMeta _ _ _ _ _ $t).
 
 Lemma MLGoal_left {Σ : Signature} Γ l x y i:
-  @mkMLGoal Σ Γ l x i ->
-  @mkMLGoal Σ Γ l (patt_or x y) i.
+  mkMLGoal Σ Γ l x i ->
+  mkMLGoal Σ Γ l (patt_or x y) i.
 Proof.
   intros H.
   unfold of_MLGoal in *. simpl in *.
@@ -2927,8 +2675,8 @@ Proof.
 Defined.
 
 Lemma MLGoal_right {Σ : Signature} Γ l x y i:
-  @mkMLGoal Σ Γ l y i ->
-  @mkMLGoal Σ Γ l (patt_or x y) i.
+  mkMLGoal Σ Γ l y i ->
+  mkMLGoal Σ Γ l (patt_or x y) i.
 Proof.
   intros H.
   unfold of_MLGoal in *. simpl in *.
@@ -2962,8 +2710,8 @@ Defined.
 Lemma MLGoal_applyMetaIn {Σ : Signature} Γ n r n' r' i:
   Γ ⊢i (r ---> r') using i ->
   forall l₁ l₂ g,
-    @mkMLGoal Σ Γ (l₁ ++ (mkNH n' r')::l₂) g i ->
-    @mkMLGoal Σ Γ (l₁ ++ (mkNH n r)::l₂ ) g i.
+    mkMLGoal Σ Γ (l₁ ++ (mkNH _ n' r')::l₂) g i ->
+    mkMLGoal Σ Γ (l₁ ++ (mkNH _ n r)::l₂ ) g i.
 Proof.
   intros Himp l₁ l₂ g H.
   unfold of_MLGoal in *. simpl in *.
@@ -2982,9 +2730,9 @@ Proof.
   { abstract (apply wfl₁hl₂_proj_h in Hwf; exact Hwf). }
   { exact wfg. }
   { abstract(
-      pose proof (wfapp_proj_1 Hwf);
-      pose proof (wfl₁hl₂_proj_l₂ Hwf);
-      pose proof (wfl₁hl₂_proj_h Hwf);
+      pose proof (wfapp_proj_1 _ _ Hwf);
+      pose proof (wfl₁hl₂_proj_l₂ _ _ _ Hwf);
+      pose proof (wfl₁hl₂_proj_h _ _ _ Hwf);
       unfold Pattern.wf;
       rewrite map_app;
       rewrite foldr_app;
@@ -3028,7 +2776,7 @@ Proof.
   toMLGoal.
   { wf_auto2. }
   mlIntro "H0".
-  mlApplyMetaRaw (@disj_left_intro Σ Γ p q ltac:(wf_auto2) ltac:(wf_auto2)) in "H0".
+  mlApplyMetaRaw (disj_left_intro Γ p q ltac:(wf_auto2) ltac:(wf_auto2)) in "H0".
   mlExact "H0".
 Defined.
 
@@ -3066,9 +2814,9 @@ Ltac2 rec fillWithUnderscoresAndCall (tac : constr -> unit) (t : constr) :=
   to feed it the proof before feeding it the ProofInfoLe.
 *)
 Lemma useGenericReasoning''  {Σ : Signature} (Γ : Theory) (ϕ : Pattern) i' i:
-Γ ⊢i ϕ using i' ->
-(ProofInfoLe i' i) ->
-Γ ⊢i ϕ using i.
+  Γ ⊢i ϕ using i' ->
+  (ProofInfoLe i' i) ->
+  Γ ⊢i ϕ using i.
 Proof.
   intros H pile.
   eapply useGenericReasoning'.
@@ -3136,7 +2884,7 @@ Ltac _mlApplyMetaIn t name :=
   let ff := ltac2:(t' name' |- mlApplyMetaIn (Option.get (Ltac1.to_constr(t'))) (Option.get (Ltac1.to_constr(name')))) in
   ff t name
 .
-  
+
 Tactic Notation "mlApplyMeta" constr(t) :=
   _mlApplyMeta t.
 
@@ -3146,17 +2894,17 @@ Tactic Notation "mlApplyMeta" constr(t) "in" constr(name) :=
 
 
 Lemma MLGoal_destructAnd {Σ : Signature} Γ g l₁ l₂ nx x ny y nxy i:
-    @mkMLGoal Σ Γ (l₁ ++ (mkNH nx x)::(mkNH ny y)::l₂ ) g i ->
-    @mkMLGoal Σ Γ (l₁ ++ (mkNH nxy (x and y))::l₂) g i.
+    mkMLGoal Σ Γ (l₁ ++ (mkNH _ nx x)::(mkNH _ ny y)::l₂ ) g i ->
+    mkMLGoal Σ Γ (l₁ ++ (mkNH _ nxy (x and y))::l₂) g i.
 Proof.
   intros H.
   unfold of_MLGoal. intros wfg Hwf. pose proof (wfg' := wfg). pose proof (Hwf' := Hwf).
   revert wfg' Hwf'.
-  cut (of_MLGoal (@mkMLGoal Σ Γ (l₁ ++ (mkNH nxy (x and y))::l₂ ) g i)).
+  cut (of_MLGoal (mkMLGoal Σ Γ (l₁ ++ (mkNH _ nxy (x and y))::l₂ ) g i)).
   { auto. }
   simpl in wfg, Hwf.
 
-  mlAssert (ny : y) using first (length (l₁ ++ [mkNH nxy (x and y)])).
+  mlAssert (ny : y) using first (length (l₁ ++ [mkNH _ nxy (x and y)])).
 
   all: unfold patterns_of in Hwf; rewrite map_app in Hwf.
 
@@ -3171,7 +2919,7 @@ Proof.
   }
   {
     eapply cast_proof_ml_hyps.
-    { replace (l₁ ++ (mkNH nxy (x and y)) :: l₂) with ((l₁ ++ [mkNH nxy (x and y)]) ++ l₂).
+    { replace (l₁ ++ (mkNH _ nxy (x and y)) :: l₂) with ((l₁ ++ [mkNH _ nxy (x and y)]) ++ l₂).
       2: { rewrite -app_assoc. reflexivity. }
       rewrite take_app.
       reflexivity.
@@ -3193,13 +2941,13 @@ Proof.
   }
 
   eapply cast_proof_ml_hyps.
-  {  
-    replace (l₁ ++ (mkNH nxy (x and y)) :: l₂) with ((l₁ ++ [mkNH nxy (x and y)]) ++ l₂).
+  {
+    replace (l₁ ++ (mkNH _ nxy (x and y)) :: l₂) with ((l₁ ++ [mkNH _ nxy (x and y)]) ++ l₂).
     2: { rewrite -app_assoc. reflexivity. }
     rewrite take_app. rewrite drop_app. reflexivity.
   }
 
-  mlAssert (nx : x) using first (length (l₁ ++ [mkNH nxy (x and y)])).
+  mlAssert (nx : x) using first (length (l₁ ++ [mkNH _ nxy (x and y)])).
   { abstract (
       apply wfapp_proj_2 in Hwf;
       unfold Pattern.wf in Hwf;
@@ -3212,7 +2960,7 @@ Proof.
   {
     eapply cast_proof_ml_hyps.
     {
-      replace (l₁ ++ (mkNH nxy (x and y)) :: l₂) with ((l₁++ [mkNH nxy (x and y)]) ++ l₂).
+      replace (l₁ ++ (mkNH _ nxy (x and y)) :: l₂) with ((l₁++ [mkNH _ nxy (x and y)]) ++ l₂).
       2: { rewrite -app_assoc. reflexivity. }
       rewrite take_app.
       reflexivity.
@@ -3233,8 +2981,8 @@ Proof.
   }
 
   eapply cast_proof_ml_hyps.
-  {  
-    replace (l₁ ++ (mkNH nxy (x and y)) :: l₂) with ((l₁++ [mkNH nxy (x and y)]) ++ l₂).
+  {
+    replace (l₁ ++ (mkNH _ nxy (x and y)) :: l₂) with ((l₁++ [mkNH _ nxy (x and y)]) ++ l₂).
     2: { rewrite -app_assoc. reflexivity. }
     rewrite take_app. rewrite drop_app. reflexivity.
   }
@@ -3244,7 +2992,7 @@ Proof.
     rewrite -app_assoc. reflexivity.
   }
 
- apply mlGoal_clear_hyp.  
+ apply mlGoal_clear_hyp.
  exact H.
 Defined.
 
@@ -3280,125 +3028,125 @@ Defined.
 
  
 Lemma and_of_equiv_is_equiv {Σ : Signature} Γ p q p' q' i:
-well_formed p ->
-well_formed q ->
-well_formed p' ->
-well_formed q' ->
-Γ ⊢i (p <---> p') using i ->
-Γ ⊢i (q <---> q') using i ->
-Γ ⊢i ((p and q) <---> (p' and q')) using i.
+  well_formed p ->
+  well_formed q ->
+  well_formed p' ->
+  well_formed q' ->
+  Γ ⊢i (p <---> p') using i ->
+  Γ ⊢i (q <---> q') using i ->
+  Γ ⊢i ((p and q) <---> (p' and q')) using i.
 Proof.
-intros wfp wfq wfp' wfq' pep' qeq'.
-pose proof (pip' := pep'). apply pf_conj_elim_l_meta in pip'; auto.
-pose proof (p'ip := pep'). apply pf_conj_elim_r_meta in p'ip; auto.
-pose proof (qiq' := qeq'). apply pf_conj_elim_l_meta in qiq'; auto.
-pose proof (q'iq := qeq'). apply pf_conj_elim_r_meta in q'iq; auto.
+  intros wfp wfq wfp' wfq' pep' qeq'.
+  pose proof (pip' := pep'). apply pf_conj_elim_l_meta in pip'; auto.
+  pose proof (p'ip := pep'). apply pf_conj_elim_r_meta in p'ip; auto.
+  pose proof (qiq' := qeq'). apply pf_conj_elim_l_meta in qiq'; auto.
+  pose proof (q'iq := qeq'). apply pf_conj_elim_r_meta in q'iq; auto.
 
-apply conj_intro_meta; auto.
-- toMLGoal.
-  { wf_auto2. }
-  mlIntro "H0". unfold patt_and.
-  mlIntro "H1". mlApply "H0".
-  mlDestructOr "H1" as "H2" "H3".
-  + apply modus_tollens in pip'; auto 10.
-    mlAdd pip' as "H1".
-    mlLeft.
-    mlApply "H1".
-    mlExact "H2".
-  + apply modus_tollens in qiq'; auto 10.
-    mlAdd qiq' as "H1".
-    mlRight.
-    mlApply "H1".
-    mlExact "H3".
-- toMLGoal.
-  { wf_auto2. }
-  mlIntro "H0". unfold patt_and.
-  mlIntro "H1". mlApply "H0".
-  mlDestructOr "H1" as "H2" "H3".
-  + mlLeft.
-    apply modus_tollens in p'ip; auto.
-    mlAdd p'ip as "H1".
-    mlApply "H1".
-    mlExact "H2".
-  + mlRight.
-    apply modus_tollens in q'iq; auto.
-    mlAdd q'iq as "H1".
-    mlApply "H1".
-    mlExact "H3".
+  apply conj_intro_meta; auto.
+  - toMLGoal.
+    { wf_auto2. }
+    mlIntro "H0". unfold patt_and.
+    mlIntro "H1". mlApply "H0".
+    mlDestructOr "H1" as "H2" "H3".
+    + apply modus_tollens in pip'; auto 10.
+      mlAdd pip' as "H1".
+      mlLeft.
+      mlApply "H1".
+      mlExact "H2".
+    + apply modus_tollens in qiq'; auto 10.
+      mlAdd qiq' as "H1".
+      mlRight.
+      mlApply "H1".
+      mlExact "H3".
+  - toMLGoal.
+    { wf_auto2. }
+    mlIntro "H0". unfold patt_and.
+    mlIntro "H1". mlApply "H0".
+    mlDestructOr "H1" as "H2" "H3".
+    + mlLeft.
+      apply modus_tollens in p'ip; auto.
+      mlAdd p'ip as "H1".
+      mlApply "H1".
+      mlExact "H2".
+    + mlRight.
+      apply modus_tollens in q'iq; auto.
+      mlAdd q'iq as "H1".
+      mlApply "H1".
+      mlExact "H3".
 Defined. 
 
 Lemma or_of_equiv_is_equiv {Σ : Signature} Γ p q p' q' i:
-well_formed p ->
-well_formed q ->
-well_formed p' ->
-well_formed q' ->
-Γ ⊢i (p <---> p') using i ->
-Γ ⊢i (q <---> q') using i ->
-Γ ⊢i ((p or q) <---> (p' or q')) using i.
+  well_formed p ->
+  well_formed q ->
+  well_formed p' ->
+  well_formed q' ->
+  Γ ⊢i (p <---> p') using i ->
+  Γ ⊢i (q <---> q') using i ->
+  Γ ⊢i ((p or q) <---> (p' or q')) using i.
 Proof with try_wfauto2.
-intros wfp wfq wfp' wfq' pep' qeq'.
-pose proof (pip' := pep'). apply pf_conj_elim_l_meta in pip'...
-pose proof (p'ip := pep'). apply pf_conj_elim_r_meta in p'ip...
-pose proof (qiq' := qeq'). apply pf_conj_elim_l_meta in qiq'...
-pose proof (q'iq := qeq'). apply pf_conj_elim_r_meta in q'iq...
+  intros wfp wfq wfp' wfq' pep' qeq'.
+  pose proof (pip' := pep'). apply pf_conj_elim_l_meta in pip'...
+  pose proof (p'ip := pep'). apply pf_conj_elim_r_meta in p'ip...
+  pose proof (qiq' := qeq'). apply pf_conj_elim_l_meta in qiq'...
+  pose proof (q'iq := qeq'). apply pf_conj_elim_r_meta in q'iq...
 
-apply conj_intro_meta; auto.
-- toMLGoal.
-  { auto. }
-  mlIntro "H0".
-  mlDestructOr "H0" as "H1" "H2".
-  + mlLeft. fromMLGoal. assumption.
-  + mlRight. fromMLGoal. assumption.
-- toMLGoal.
-  { auto. }
-  mlIntro "H0".
-  mlDestructOr "H0" as "H1" "H2".
-  + mlLeft. fromMLGoal. assumption.
-  + mlRight. fromMLGoal. assumption.
+  apply conj_intro_meta; auto.
+  - toMLGoal.
+    { auto. }
+    mlIntro "H0".
+    mlDestructOr "H0" as "H1" "H2".
+    + mlLeft. fromMLGoal. assumption.
+    + mlRight. fromMLGoal. assumption.
+  - toMLGoal.
+    { auto. }
+    mlIntro "H0".
+    mlDestructOr "H0" as "H1" "H2".
+    + mlLeft. fromMLGoal. assumption.
+    + mlRight. fromMLGoal. assumption.
 Defined.
 
 
 Lemma impl_iff_notp_or_q {Σ : Signature} Γ p q:
-well_formed p ->
-well_formed q ->
-Γ ⊢i ((p ---> q) <---> (! p or q))
-using BasicReasoning.
+  well_formed p ->
+  well_formed q ->
+  Γ ⊢i ((p ---> q) <---> (! p or q))
+  using BasicReasoning.
 Proof.
-intros wfp wfq.
-apply conj_intro_meta; auto.
-- toMLGoal.
-  { wf_auto2. }
-  mlIntro "H0".
-  mlAdd (@A_or_notA Σ Γ p wfp) as "H1".
-  mlDestructOr "H1" as "H2" "H3".
-  + mlRight.
+  intros wfp wfq.
+  apply conj_intro_meta; auto.
+  - toMLGoal.
+    { wf_auto2. }
+    mlIntro "H0".
+    mlAdd (A_or_notA Γ p wfp) as "H1".
+    mlDestructOr "H1" as "H2" "H3".
+    + mlRight.
+      mlApply "H0".
+      mlExact "H2".
+    + mlLeft.
+      mlExact "H3".
+  - toMLGoal.
+    { wf_auto2. }
+    mlIntro "H0". mlIntro "H2". unfold patt_or.
     mlApply "H0".
+    mlApplyMeta not_not_intro.
     mlExact "H2".
-  + mlLeft.
-    mlExact "H3".
-- toMLGoal.
-  { wf_auto2. }
-  mlIntro "H0". mlIntro "H2". unfold patt_or.
-  mlApply "H0".
-  mlApplyMeta not_not_intro.
-  mlExact "H2".
 Defined.
 
 Lemma p_and_notp_is_bot {Σ : Signature} Γ p:
-well_formed p ->
-Γ ⊢i (⊥ <---> p and ! p)
-using BasicReasoning.
+  well_formed p ->
+  Γ ⊢i (⊥ <---> p and ! p)
+  using BasicReasoning.
 Proof.
-intros wfp.
-apply conj_intro_meta; auto.
-- apply bot_elim; auto.
-- unfold patt_and.
-  toMLGoal.
-  { wf_auto2. }
-  mlIntro "H0".
-  mlApply "H0".
-  mlAdd (@A_or_notA Σ Γ (! p) ltac:(wf_auto2)) as "H1".
-  mlExact "H1".
+  intros wfp.
+  apply conj_intro_meta; auto.
+  - apply bot_elim; auto.
+  - unfold patt_and.
+    toMLGoal.
+    { wf_auto2. }
+    mlIntro "H0".
+    mlApply "H0".
+    mlAdd (A_or_notA Γ (! p) ltac:(wf_auto2)) as "H1".
+    mlExact "H1".
 Defined.
 
 Ltac mlExFalso :=
@@ -3407,204 +3155,203 @@ Ltac mlExFalso :=
 
 
 Lemma weird_lemma  {Σ : Signature} Γ A B L R:
-well_formed A ->
-well_formed B ->
-well_formed L ->
-well_formed R ->
-Γ ⊢i (((L and A) ---> (B or R)) ---> (L ---> ((A ---> B) or R)))
-using BasicReasoning.
+  well_formed A ->
+  well_formed B ->
+  well_formed L ->
+  well_formed R ->
+  Γ ⊢i (((L and A) ---> (B or R)) ---> (L ---> ((A ---> B) or R)))
+  using BasicReasoning.
 Proof.
-intros wfA wfB wfL wfR.
-toMLGoal.
-{ wf_auto2. }
-mlIntro "H0". mlIntro "H1".
-mlAdd (@A_or_notA Σ Γ A wfA) as "H2".
-mlDestructOr "H2" as "H3" "H4".
-- mlAssert ("H2" : (B or R)).
+  intros wfA wfB wfL wfR.
+  toMLGoal.
   { wf_auto2. }
-  { mlApply "H0".
-    unfold patt_and at 2.
-    mlIntro "H2".
+  mlIntro "H0". mlIntro "H1".
+  mlAdd (A_or_notA Γ A wfA) as "H2".
+  mlDestructOr "H2" as "H3" "H4".
+  - mlAssert ("H2" : (B or R)).
+    { wf_auto2. }
+    { mlApply "H0".
+      unfold patt_and at 2.
+      mlIntro "H2".
+      mlDestructOr "H2" as "H4" "H5".
+      + mlApply "H4". mlExact "H1".
+      + mlApply "H5". mlExact "H3".
+    }
     mlDestructOr "H2" as "H4" "H5".
-    + mlApply "H4". mlExact "H1".
-    + mlApply "H5". mlExact "H3".
-  }
-  mlDestructOr "H2" as "H4" "H5".
-  + mlLeft. mlIntro "H2". mlExact "H4".
-  + mlRight. mlExact "H5".
-- mlLeft.
-  mlIntro "H2".
-  mlExFalso.
-  mlApply "H4". mlExact "H2".
+    + mlLeft. mlIntro "H2". mlExact "H4".
+    + mlRight. mlExact "H5".
+  - mlLeft.
+    mlIntro "H2".
+    mlExFalso.
+    mlApply "H4". mlExact "H2".
 Defined.
 
 Lemma weird_lemma_meta {Σ : Signature} Γ A B L R i:
-well_formed A ->
-well_formed B ->
-well_formed L ->
-well_formed R ->
-Γ ⊢i ((L and A) ---> (B or R)) using i ->
-Γ ⊢i (L ---> ((A ---> B) or R)) using i.
+  well_formed A ->
+  well_formed B ->
+  well_formed L ->
+  well_formed R ->
+  Γ ⊢i ((L and A) ---> (B or R)) using i ->
+  Γ ⊢i (L ---> ((A ---> B) or R)) using i.
 Proof.
-intros WFA WFB WFL WFR H.
-eapply MP.
-2: { useBasicReasoning. apply weird_lemma; assumption. }
-exact H.
+  intros WFA WFB WFL WFR H.
+  eapply MP.
+  2: { useBasicReasoning. apply weird_lemma; assumption. }
+  exact H.
 Defined.
 
 Lemma imp_trans_mixed_meta {Σ : Signature} Γ A B C D i :
-well_formed A -> well_formed B -> well_formed C -> well_formed D ->
-Γ ⊢i (C ---> A) using i ->
-Γ ⊢i (B ---> D) using i ->
-Γ ⊢i ((A ---> B) ---> C ---> D) using i.
+  well_formed A -> well_formed B -> well_formed C -> well_formed D ->
+  Γ ⊢i (C ---> A) using i ->
+  Γ ⊢i (B ---> D) using i ->
+  Γ ⊢i ((A ---> B) ---> C ---> D) using i.
 Proof.
-intros WFA WFB WFC WFD H H0.
-epose proof (H1 := @prf_weaken_conclusion Σ Γ A B D WFA WFB WFD).
-eapply useBasicReasoning in H1.
-eapply MP in H1.
-2: { exact H0. }
-epose proof (H2 := @prf_strenghten_premise Σ Γ A C D WFA WFC WFD).
-eapply useBasicReasoning in H2.
-eapply MP in H2.
-2: { exact H. }
-epose proof (H3 := @syllogism_meta Σ Γ _ _ _ i _ _ _ H1 H2).
-exact H3.
-Unshelve. all: wf_auto2.
+  intros WFA WFB WFC WFD H H0.
+  epose proof (H1 := prf_weaken_conclusion Γ A B D WFA WFB WFD).
+  eapply useBasicReasoning in H1.
+  eapply MP in H1.
+  2: { exact H0. }
+  epose proof (H2 := prf_strenghten_premise Γ A C D WFA WFC WFD).
+  eapply useBasicReasoning in H2.
+  eapply MP in H2.
+  2: { exact H. }
+  epose proof (H3 := syllogism_meta _ _ _ H1 H2).
+  exact H3.
+  Unshelve. all: wf_auto2.
 Defined.
 
 Lemma and_weaken {Σ : Signature} A B C Γ i:
-well_formed A -> well_formed B -> well_formed C ->
-Γ ⊢i (B ---> C) using i ->
-Γ ⊢i ((A and B) ---> (A and C)) using i.
+  well_formed A -> well_formed B -> well_formed C ->
+  Γ ⊢i (B ---> C) using i ->
+  Γ ⊢i ((A and B) ---> (A and C)) using i.
 Proof.
-intros WFA WFB WFC H.
-epose proof (H0 := @and_impl' Σ Γ A B (A and C) _ _ _).
-eapply MP. 2: { useBasicReasoning. exact H0. }
-apply reorder_meta.
-1-3: wf_auto2.
-epose proof (H1 := @prf_strenghten_premise Σ Γ C B (A ---> A and C) _ _ _).
-eapply MP.
-2: eapply MP.
-3: { useBasicReasoning. exact H1. }
-2: { exact H. }
-useBasicReasoning.
-apply conj_intro2; assumption.
-Unshelve.
-all: wf_auto2.
+  intros WFA WFB WFC H.
+  epose proof (H0 := and_impl' Γ A B (A and C) _ _ _).
+  eapply MP. 2: { useBasicReasoning. exact H0. }
+  apply reorder_meta.
+  1-3: wf_auto2.
+  epose proof (H1 := prf_strenghten_premise Γ C B (A ---> A and C) _ _ _).
+  eapply MP.
+  2: eapply MP.
+  3: { useBasicReasoning. exact H1. }
+  2: { exact H. }
+  useBasicReasoning.
+  apply conj_intro2; assumption.
+  Unshelve.
+  all: wf_auto2.
 Defined.
 
 Lemma impl_and {Σ : Signature} Γ A B C D i: 
-well_formed A -> well_formed B -> well_formed C -> well_formed D ->
-Γ ⊢i (A ---> B) using i ->
-Γ ⊢i (C ---> D) using i ->
-Γ ⊢i (A and C) ---> (B and D) using i.
+  well_formed A -> well_formed B -> well_formed C -> well_formed D ->
+  Γ ⊢i (A ---> B) using i ->
+  Γ ⊢i (C ---> D) using i ->
+  Γ ⊢i (A and C) ---> (B and D) using i.
 Proof.
-intros WFA WFB WFC WFD H H0.
-toMLGoal.
-{ wf_auto2. }
-{
-  mlAdd H as "H0".
-  mlAdd H0 as "H1".
-  mlIntro "H2".
-  mlDestructAnd "H2" as "H3" "H4".
-  mlIntro "H5".
-  mlDestructOr "H5" as "H6" "H7".
+  intros WFA WFB WFC WFD H H0.
+  toMLGoal.
+  { wf_auto2. }
   {
-    mlApply "H6".
-    mlApply "H0".
-    mlExact "H3".
+    mlAdd H as "H0".
+    mlAdd H0 as "H1".
+    mlIntro "H2".
+    mlDestructAnd "H2" as "H3" "H4".
+    mlIntro "H5".
+    mlDestructOr "H5" as "H6" "H7".
+    {
+      mlApply "H6".
+      mlApply "H0".
+      mlExact "H3".
+    }
+    {
+      mlApply "H7".
+      mlApply "H1".
+      mlExact "H4".
+    }
   }
-  {
-    mlApply "H7".
-    mlApply "H1".
-    mlExact "H4".
-  }
-}
 Defined.
 
 Lemma and_drop {Σ : Signature} A B C Γ i:
-well_formed A -> well_formed B -> well_formed C ->
-Γ ⊢i ((A and B) ---> C) using i ->
-Γ ⊢i ((A and B) ---> (A and C)) using i.
+  well_formed A -> well_formed B -> well_formed C ->
+  Γ ⊢i ((A and B) ---> C) using i ->
+  Γ ⊢i ((A and B) ---> (A and C)) using i.
 Proof.
-intros WFA WFB WFC H.
-toMLGoal.
-{ wf_auto2. }
-mlAdd H as "H0".
-mlIntro "H1".
-mlIntro "H2".
-mlDestructOr "H2" as "H3" "H4".
-{
-  mlDestructAnd "H1" as "H5" "H6".
-  mlApply "H3".
-  mlExact "H5".
-}
-{
-  mlApply "H4".
-  mlApply "H0".
-  mlExact "H1".
-}
+  intros WFA WFB WFC H.
+  toMLGoal.
+  { wf_auto2. }
+  mlAdd H as "H0".
+  mlIntro "H1".
+  mlIntro "H2".
+  mlDestructOr "H2" as "H3" "H4".
+  {
+    mlDestructAnd "H1" as "H5" "H6".
+    mlApply "H3".
+    mlExact "H5".
+  }
+  {
+    mlApply "H4".
+    mlApply "H0".
+    mlExact "H1".
+  }
 Defined.
 
 
 Lemma prf_equiv_of_impl_of_equiv {Σ : Signature} Γ a b a' b' i:
-well_formed a = true ->
-well_formed b = true ->
-well_formed a' = true ->
-well_formed b' = true ->
-Γ ⊢i (a <---> a') using i ->
-Γ ⊢i (b <---> b') using i ->
-Γ ⊢i (a ---> b) <---> (a' ---> b') using i
-.
+  well_formed a = true ->
+  well_formed b = true ->
+  well_formed a' = true ->
+  well_formed b' = true ->
+  Γ ⊢i (a <---> a') using i ->
+  Γ ⊢i (b <---> b') using i ->
+  Γ ⊢i (a ---> b) <---> (a' ---> b') using i.
 Proof.
-intros wfa wfb wfa' wfb' Haa' Hbb'.
-unshelve(epose proof (Haa'1 := @pf_conj_elim_l_meta _ _ _ _ _ _ _ Haa')).
-{ wf_auto2. }
-{ wf_auto2. }
-unshelve(epose proof (Haa'2 := @pf_conj_elim_r_meta _ _ _ _ _ _ _ Haa')).
-{ wf_auto2. }
-{ wf_auto2. }
-unshelve(epose proof (Hbb'1 := @pf_conj_elim_l_meta _ _ _ _ _ _ _ Hbb')).
-{ wf_auto2. }
-{ wf_auto2. }
-unshelve(epose proof (Hbb'2 := @pf_conj_elim_r_meta _ _ _ _ _ _ _ Hbb')).
-{ wf_auto2. }
-{ wf_auto2. }
+  intros wfa wfb wfa' wfb' Haa' Hbb'.
+  unshelve(epose proof (Haa'1 := pf_conj_elim_l_meta _ _ _ _ _ _ Haa')).
+  { wf_auto2. }
+  { wf_auto2. }
+  unshelve(epose proof (Haa'2 := pf_conj_elim_r_meta _ _ _ _ _ _ Haa')).
+  { wf_auto2. }
+  { wf_auto2. }
+  unshelve(epose proof (Hbb'1 := pf_conj_elim_l_meta _ _ _ _ _ _ Hbb')).
+  { wf_auto2. }
+  { wf_auto2. }
+  unshelve(epose proof (Hbb'2 := pf_conj_elim_r_meta _ _ _ _ _ _ Hbb')).
+  { wf_auto2. }
+  { wf_auto2. }
 
-apply pf_iff_equiv_trans with (B := (a ---> b')).
-1-3: wf_auto2.
-  + apply conj_intro_meta.
-    1-2: wf_auto2.
-    * toMLGoal.
-      { wf_auto2. }
-      mlIntro "H0". mlIntro "H1".
-      mlAdd Hbb'1 as "H2".
-      mlApply "H2".
-      mlApply "H0".
-      mlExact "H1".
-    * toMLGoal.
-      { wf_auto2. }
-      mlIntro "H0". mlIntro "H1".
-      mlAdd Hbb'2 as "H2".
-      mlApply "H2".
-      mlApply "H0".
-      mlExact "H1".
-  + apply conj_intro_meta.
-    1-2: wf_auto2.
-    * toMLGoal.
-      { wf_auto2. }
-      mlIntro "H0". mlIntro "H1".
-      mlAdd Haa'2 as "H2".
-      mlApply "H0".
-      mlApply "H2".
-      mlExact "H1".
-    * toMLGoal.
-      { wf_auto2. }
-      mlIntro "H0". mlIntro "H1".
-      mlAdd Haa'1 as "H2".
-      mlApply "H0".
-      mlApply "H2".
-      mlExact "H1".
+  apply pf_iff_equiv_trans with (B := (a ---> b')).
+  1-3: wf_auto2.
+    + apply conj_intro_meta.
+      1-2: wf_auto2.
+      * toMLGoal.
+        { wf_auto2. }
+        mlIntro "H0". mlIntro "H1".
+        mlAdd Hbb'1 as "H2".
+        mlApply "H2".
+        mlApply "H0".
+        mlExact "H1".
+      * toMLGoal.
+        { wf_auto2. }
+        mlIntro "H0". mlIntro "H1".
+        mlAdd Hbb'2 as "H2".
+        mlApply "H2".
+        mlApply "H0".
+        mlExact "H1".
+    + apply conj_intro_meta.
+      1-2: wf_auto2.
+      * toMLGoal.
+        { wf_auto2. }
+        mlIntro "H0". mlIntro "H1".
+        mlAdd Haa'2 as "H2".
+        mlApply "H0".
+        mlApply "H2".
+        mlExact "H1".
+      * toMLGoal.
+        { wf_auto2. }
+        mlIntro "H0". mlIntro "H1".
+        mlAdd Haa'1 as "H2".
+        mlApply "H0".
+        mlApply "H2".
+        mlExact "H1".
 Defined.
 
 
@@ -3707,9 +3454,9 @@ Proof.
 Defined.
 
 Lemma MLGoal_splitAnd {Σ : Signature} Γ a b l i:
-  @mkMLGoal Σ Γ l a i ->
-  @mkMLGoal Σ Γ l b i ->
-  @mkMLGoal Σ Γ l (a and b) i.
+  mkMLGoal Σ Γ l a i ->
+  mkMLGoal Σ Γ l b i ->
+  mkMLGoal Σ Γ l (a and b) i.
 Proof.
   intros Ha Hb.
   unfold of_MLGoal in *. simpl in *.
@@ -3827,7 +3574,7 @@ Defined.
 Lemma top_holds {Σ : Signature} Γ:
   Γ ⊢i Top using BasicReasoning.
 Proof.
-  apply false_implies_everything.
+  apply bot_elim.
   { wf_auto2. }
 Defined.
 
@@ -3866,7 +3613,7 @@ Proof.
   - mlSplitAnd.
     + mlExact "H0".
     + mlClear "H0". fromMLGoal.
-      apply false_implies_everything.
+      apply bot_elim.
       { wf_auto2. }
   - mlDestructAnd "H0" as "H1" "H2".
     mlExact "H1".
@@ -4027,7 +3774,7 @@ Ltac mlAssumption :=
 
 
 
-  Lemma impl_eq_or {Σ : Signature} Γ a b:
+Lemma impl_eq_or {Σ : Signature} Γ a b:
   well_formed a ->
   well_formed b ->
   Γ ⊢i ( (a ---> b) <---> ((! a) or b) )
@@ -4154,7 +3901,7 @@ Defined.
 
 Lemma MLGoal_ExactMeta {Σ:Signature} : forall Γ l g i,
   Γ ⊢i g using i ->
-  @mkMLGoal Σ Γ l g i.
+  mkMLGoal Σ Γ l g i.
 Proof.
   intros Γ l g i pf wfG wfl.
   unfold of_MLGoal. simpl in *.
@@ -4173,6 +3920,19 @@ Proof.
   mlExactMeta (top_holds Γ).
 Defined.
 
+Local Example exfalso_test {Σ : Signature} p Γ i :
+  well_formed p ->
+  Γ ⊢i p and ! p ---> Top using i.
+Proof.
+  intro WF. toMLGoal.
+  { wf_auto2. }
+  mlIntro "H".
+  mlDestructAnd "H" as "H0" "H1".
+  mlExFalso.
+  mlApply "H1".
+  mlExact "H0".
+Defined.
+
 (**********************************************************************************)
 
 
@@ -4182,13 +3942,13 @@ Defined.
    Its only purpose is only to show as many tactics as possible.\
  *)
  Example ex_and_of_equiv_is_equiv_2 {Σ : Signature} Γ p q p' q' i:
- well_formed p ->
- well_formed q ->
- well_formed p' ->
- well_formed q' ->
- Γ ⊢i (p <---> p') using i ->
- Γ ⊢i (q <---> q') using i ->
- Γ ⊢i ((p and q) <---> (p' and q')) using i.
+   well_formed p ->
+   well_formed q ->
+   well_formed p' ->
+   well_formed q' ->
+   Γ ⊢i (p <---> p') using i ->
+   Γ ⊢i (q <---> q') using i ->
+   Γ ⊢i ((p and q) <---> (p' and q')) using i.
 Proof.
  intros wfp wfq wfp' wfq' pep' qeq'.
  pose proof (pip' := pep'). apply pf_conj_elim_l_meta in pip'; auto.
@@ -4268,3 +4028,8 @@ Defined.
         mlApplyMeta q'iq.
         mlExact "H2". 
   Defined.
+
+Close Scope string_scope.
+Close Scope list_scope.
+Close Scope ml_scope.
+

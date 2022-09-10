@@ -1,7 +1,4 @@
 From Coq Require Import ssreflect ssrfun ssrbool.
-Set Implicit Arguments.
-Unset Strict Implicit.
-Unset Printing Implicit Defensive.
 
 Require Import Setoid.
 From Coq Require Import Unicode.Utf8.
@@ -10,23 +7,20 @@ From Coq.Classes Require Import Morphisms_Prop.
 
 From stdpp Require Import base sets.
 
-From MatchingLogic Require Import Syntax DerivedOperators_Syntax Utils.extralibrary wftactics.
+From MatchingLogic Require Import Logic.
+Import MatchingLogic.Logic.Notations.
 Require Import MatchingLogic.Theories.Definedness_Syntax.
 
-Import MatchingLogic.Syntax.Notations.
-Import MatchingLogic.Syntax.BoundVarSugar.
-Import MatchingLogic.IndexManipulation.
-Import MatchingLogic.DerivedOperators_Syntax.Notations.
 Import MatchingLogic.Theories.Definedness_Syntax.Notations.
-Import MatchingLogic.Substitution.Notations.
+Import BoundVarSugar.
 
 Inductive Symbols := inhabitant.
 
-Instance Symbols_eqdec : EqDecision Symbols.
+Global Instance Symbols_eqdec : EqDecision Symbols.
 Proof. unfold EqDecision. intros x y. unfold Decision. destruct x. decide equality. (*solve_decision.*) Defined.
 
 Section sorts_syntax.
-
+  Open Scope ml_scope.
   Context {Σ : Signature}.
 
   Class Syntax :=
@@ -38,7 +32,7 @@ Section sorts_syntax.
 
   Local Definition sym (s : Symbols) : Pattern :=
     patt_sym (inj s).
-  
+
   Example test_pattern_1 := patt_equal (sym inhabitant) (sym inhabitant).
   Definition patt_inhabitant_set(phi : Pattern) : Pattern := sym inhabitant $ phi.
 
@@ -49,42 +43,41 @@ End sorts_syntax.
 Section sorts.
   Context {Σ : Signature}.
   Context {self : Syntax}.
+  Open Scope ml_scope.
   Local Notation "〚 phi 〛" := (patt_inhabitant_set phi) (at level 0) : ml_scope.
-  Lemma bevar_subst_inhabitant_set ψ (wfcψ : well_formed_closed ψ) x ϕ :
-    〚ϕ〛^[evar: x ↦ ψ] = 〚ϕ^[evar: x ↦ ψ]〛.
-  Proof. unfold patt_inhabitant_set. simpl_bevar_subst. reflexivity. Qed.
-
-  Lemma bsvar_subst_inhabitant_set ψ (wfcψ : well_formed_closed ψ) X ϕ :
-    〚ϕ〛^[svar: X ↦ ψ] = 〚ϕ^[svar: X ↦ ψ]〛.
-  Proof. unfold patt_inhabitant_set. simpl_bsvar_subst. reflexivity. Qed.
 
   #[global]
-   Instance Unary_inhabitant_set : Unary patt_inhabitant_set :=
-    {| unary_bevar_subst := bevar_subst_inhabitant_set ;
-       unary_bsvar_subst := bsvar_subst_inhabitant_set ;
-       unary_wf := ltac:(wf_auto2) ;
-    |}.
+  Program Instance Unary_inhabitant_set : Unary patt_inhabitant_set := {}.
+  Next Obligation.
+    repeat rewrite pm_correctness. reflexivity.
+  Defined.
 
   Definition patt_sorted_neg (sort phi : Pattern) : Pattern :=
     〚sort〛 and ! phi.
 
-  Lemma bevar_subst_sorted_neg ψ (wfcψ : well_formed_closed ψ) x s ϕ :
-    bevar_subst (patt_sorted_neg s ϕ) ψ x = patt_sorted_neg (bevar_subst s ψ x) (bevar_subst ϕ ψ x).
-  Proof. unfold patt_sorted_neg. simpl_bevar_subst. reflexivity. Qed.
+  #[global]
+  Program Instance Binary_sorted_neg : Binary patt_sorted_neg := {}.
+  Next Obligation.
+    repeat rewrite pm_correctness. reflexivity.
+  Defined.
+  Next Obligation.
+    wf_auto2.
+  Defined.
 
-  Lemma bsvar_subst_sorted_neg ψ (wfcψ : well_formed_closed ψ) x s ϕ :
-    bsvar_subst (patt_sorted_neg s ϕ) ψ x = patt_sorted_neg (bsvar_subst s ψ x) (bsvar_subst ϕ ψ x).
-  Proof. unfold patt_sorted_neg.
-    simpl_bsvar_subst.
-    reflexivity.
-  Qed.
+  Definition patt_exists_of_sort (sort phi : Pattern) : Pattern :=
+    ex , ((b0 ∈ml 〚nest_ex sort〛) and phi).
+  Local Notation "'ex' s ,  phi" := 
+    (patt_exists_of_sort s phi) (at level 70) : ml_scope.
 
   #[global]
-   Instance Binary_sorted_neg : Binary patt_sorted_neg :=
-    {| binary_bevar_subst := bevar_subst_sorted_neg ;
-       binary_bsvar_subst := bsvar_subst_sorted_neg ;
-       binary_wf := ltac:(wf_auto2) ;
-    |}.
+  Program Instance sorted_exists_binder : ESortedBinder patt_exists_of_sort nest_ex := {}.
+  Next Obligation.
+    repeat rewrite pm_correctness.
+    cbn.
+    rewrite (@eswap _ _ _ nest_ex _ f_swap).
+    replace (on_bevar pm_spec_data (increase_ex pm_spec_data a) 0) with b0. reflexivity.
+    now rewrite pm_ezero_increase.
+  Defined.
 
   Definition patt_forall_of_sort (sort phi : Pattern) : Pattern :=
     all , ((b0 ∈ml 〚nest_ex sort〛) ---> phi).
@@ -92,69 +85,20 @@ Section sorts.
   Local Notation "'all' s ,  phi" := 
     (patt_forall_of_sort s phi) (at level 70) : ml_scope.
 
-  Definition patt_exists_of_sort (sort phi : Pattern) : Pattern :=
-    ex , ((patt_bound_evar 0 ∈ml 〚nest_ex sort〛) and phi).
-  Local Notation "'ex' s ,  phi" := 
-    (patt_exists_of_sort s phi) (at level 70) : ml_scope.
-
-  Lemma bevar_subst_forall_of_sort s ψ (wfcψ : well_formed_closed ψ) db ϕ :
-    (all s , ϕ)^[evar: db ↦ ψ] = all s^[evar: db ↦ ψ] , ϕ^[evar: S db ↦ ψ].
-  Proof.
-    unfold patt_forall_of_sort.
-    repeat (rewrite simpl_bevar_subst';[assumption|]).
-    simpl. unfold nest_ex. replace (S db) with (db + 1) by lia. rewrite nest_ex_gt; auto. lia.
-  Qed.
-
-  Lemma bsvar_subst_forall_of_sort s ψ (wfcψ : well_formed_closed ψ) db ϕ :
-    (all s , ϕ)^[svar: db ↦ ψ] = all s^[svar: db ↦ ψ] , ϕ^[svar: db ↦ ψ].
-  Proof.
-    unfold patt_forall_of_sort.
-    repeat (rewrite simpl_bsvar_subst';[assumption|]).
-    simpl.
-    rewrite bsvar_subst_nest_ex_aux_comm.
-    { unfold well_formed_closed in wfcψ. destruct_and!. assumption. }
-    reflexivity.
-  Qed.
-
-  Lemma bevar_subst_exists_of_sort s ψ (wfcψ : well_formed_closed ψ) db ϕ :
-    (ex s , ϕ)^[evar: db ↦ ψ] = ex s^[evar: db ↦ ψ] , ϕ^[evar: S db ↦ ψ].
-  Proof.
-    unfold patt_exists_of_sort.
-    repeat (rewrite simpl_bevar_subst';[assumption|]).
-    unfold nest_ex.
-    simpl. unfold nest_ex. replace (S db) with (db + 1) by lia.
-    rewrite nest_ex_gt; auto. lia.
-  Qed.
-
-  Lemma bsvar_subst_exists_of_sort s ψ (wfcψ : well_formed_closed ψ) db ϕ :
-    (ex s , ϕ)^[svar: db ↦ ψ] = ex s^[svar: db ↦ ψ] , ϕ^[svar: db ↦ ψ].
-  Proof.
-    unfold patt_exists_of_sort.
-    repeat (rewrite simpl_bsvar_subst';[assumption|]).
-    simpl.
-    rewrite bsvar_subst_nest_ex_aux_comm.
-    { unfold well_formed_closed in wfcψ. destruct_and!. assumption. }
-    reflexivity.
-  Qed.
-
   #[global]
-   Instance EBinder_forall_of_sort s : EBinder (patt_forall_of_sort s) _ _:=
-    {|
-    ebinder_bevar_subst := bevar_subst_forall_of_sort s ;
-    ebinder_bsvar_subst := bsvar_subst_forall_of_sort s ;
-    |}.
+  Program Instance sorted_forall_binder : ESortedBinder patt_forall_of_sort nest_ex := {}.
+  Next Obligation.
+    repeat rewrite pm_correctness.
+    cbn.
+    rewrite (@eswap _ _ _ nest_ex _ f_swap).
+    replace (on_bevar pm_spec_data (increase_ex pm_spec_data a) 0) with b0. reflexivity.
+    now rewrite pm_ezero_increase.
+  Defined.
 
-  #[global]
-   Instance EBinder_exists_of_sort s : EBinder (patt_exists_of_sort s) _ _:=
-    {|
-    ebinder_bevar_subst := bevar_subst_exists_of_sort s ;
-    ebinder_bsvar_subst := bsvar_subst_exists_of_sort s ;
-    |}.
-  
   (* TODO patt_forall_of_sort and patt_exists_of_sorts are duals - a lemma *)
 
   (* TODO a lemma about patt_forall_of_sort *)
-  
+
   Definition patt_total_function(phi from to : Pattern) : Pattern :=
     all from , (ex (nest_ex to) , ((nest_ex (nest_ex phi) $ b1) =ml b0)).
 

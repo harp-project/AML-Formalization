@@ -1,7 +1,4 @@
 From Coq Require Import ssreflect ssrfun ssrbool.
-Set Implicit Arguments.
-Unset Strict Implicit.
-Unset Printing Implicit Defensive.
 
 Require Import Setoid.
 From Coq Require Import Unicode.Utf8.
@@ -11,44 +8,40 @@ From Coq.Classes Require Import Morphisms_Prop.
 From stdpp Require Import base sets.
 
 From MatchingLogic Require Import
-    Syntax
-    Semantics
-    DerivedOperators_Syntax
-    DerivedOperators_Semantics
+    Logic
     Utils.extralibrary
     Theories.Definedness_Syntax
     Theories.Definedness_Semantics
     Theories.Sorts_Syntax.
 
-Import MatchingLogic.Syntax.Notations.
-Import MatchingLogic.Syntax.BoundVarSugar.
-Import MatchingLogic.Semantics.Notations.
-Import MatchingLogic.IndexManipulation.
+
+Import MatchingLogic.Logic.Notations.
 Import MatchingLogic.DerivedOperators_Syntax.Notations.
-Import MatchingLogic.Substitution.Notations.
+Import MatchingLogic.Semantics.Notations.
 
 Section with_model.
     Context
       {Σ : Signature}
       {syntax : Sorts_Syntax.Syntax}
       {M : Model}.
+    Open Scope ml_scope.
     Hypothesis M_satisfies_theory : M ⊨ᵀ Definedness_Syntax.theory.
 
     Local Definition sym (s : Symbols) : Pattern :=
-    patt_sym (inj s).
+      patt_sym (inj s).
 
     Definition Mpatt_inhabitant_set m := app_ext (sym_interp M (inj inhabitant)) {[m]}.
 
     (* ϕ is expected to be a sort pattern *)
-    Definition Minterp_inhabitant (ϕ : Pattern) (ρ : @Valuation Σ M)
+    Definition Minterp_inhabitant (ϕ : Pattern) (ρ : Valuation)
       := @eval Σ M ρ (patt_app (sym inhabitant) ϕ).
-    
+
     Lemma eval_forall_of_sort_predicate s ϕ ρ:
       let x := fresh_evar ϕ in
-      M_predicate M (evar_open 0 x ϕ) ->
+      M_predicate M (ϕ^{evar: 0 ↦ x}) ->
       eval ρ (patt_forall_of_sort s ϕ) = ⊤
       <-> (∀ m : Domain M, m ∈ Minterp_inhabitant s ρ ->
-                           eval (update_evar_val x m ρ) (evar_open 0 x ϕ) = ⊤).
+                           eval (update_evar_val x m ρ) (ϕ^{evar: 0 ↦ x}) = ⊤).
     Proof.
       intros x Hpred.
       unfold patt_forall_of_sort.
@@ -56,7 +49,7 @@ Section with_model.
       { apply sub_imp_r. apply sub_eq. reflexivity.  }
       rewrite eval_forall_predicate.
       {
-        unfold evar_open. simpl_bevar_subst. simpl.
+        mlSimpl. simpl.
         apply M_predicate_impl.
         - apply T_predicate_in.
           apply M_satisfies_theory.
@@ -96,28 +89,28 @@ Section with_model.
         rewrite HeqBigϕ'. simpl. rewrite is_subformula_of_refl. simpl.
         rewrite !orb_true_r. auto.
       }
-            
+
       split.
       - intros H m H'.
         specialize (H m).
         (*rewrite -eval_fresh_evar_subterm.*)
-        rewrite -(@eval_fresh_evar_subterm _ _ _ Bigϕ).
+        rewrite -(eval_fresh_evar_subterm _ Bigϕ).
         rewrite HeqBigϕ in H.
-        rewrite evar_open_imp in H.
+        mlSimpl in H.
         rewrite -HeqBigϕ in H.
         assumption.
         rewrite {3}HeqBigϕ in H.
         eapply eval_impl_MP.
         apply H.
         simpl. fold evar_open.
-  
+
         unfold Minterp_inhabitant in H'.
-        pose proof (Hfeip := @free_evar_in_patt _ _ M M_satisfies_theory (fresh_evar Bigϕ) (patt_sym (inj inhabitant) $ evar_open 0 (fresh_evar Bigϕ) (nest_ex s)) (update_evar_val (fresh_evar Bigϕ) m ρ)).
+        pose proof (Hfeip := free_evar_in_patt M M_satisfies_theory (fresh_evar Bigϕ) (patt_sym (inj inhabitant) $ (nest_ex s)^{evar: 0 ↦ (fresh_evar Bigϕ)}) (update_evar_val (fresh_evar Bigϕ) m ρ)).
         destruct Hfeip as [Hfeip1 _]. apply Hfeip1. clear Hfeip1.
         rewrite update_evar_val_same.
         clear H. unfold sym in H'.
         unfold Ensembles.In.
-        
+
         rewrite eval_app_simpl.
         unfold evar_open. rewrite nest_ex_same.
         rewrite eval_sym_simpl.
@@ -131,16 +124,16 @@ Section with_model.
         apply H'.
 
       - intros H m.
-        pose proof (Hfeip := @free_evar_in_patt _ _ M M_satisfies_theory (fresh_evar Bigϕ) (patt_sym (inj inhabitant) $ evar_open 0 (fresh_evar Bigϕ) (nest_ex s)) (update_evar_val (fresh_evar Bigϕ) m ρ)).
+        pose proof (Hfeip := free_evar_in_patt  M M_satisfies_theory (fresh_evar Bigϕ) (patt_sym (inj inhabitant) $ (nest_ex s)^{evar: 0 ↦ (fresh_evar Bigϕ)}) (update_evar_val (fresh_evar Bigϕ) m ρ)).
         destruct Hfeip as [_ Hfeip2].
         rewrite {3}HeqBigϕ.
-        unfold evar_open. simpl_bevar_subst. simpl.
+        unfold evar_open. mlSimpl. simpl.
         apply eval_predicate_impl.
         apply T_predicate_in. apply M_satisfies_theory.
         intros H1.
         specialize (Hfeip2 H1). clear H1.
         specialize (H m).
-        rewrite -(@eval_fresh_evar_subterm _ _ _ Bigϕ) in H.
+        rewrite -(eval_fresh_evar_subterm _ Bigϕ) in H.
         apply Hsub. apply H. clear H.
 
         unfold Minterp_inhabitant.
@@ -163,10 +156,10 @@ Section with_model.
 
     Lemma eval_exists_of_sort_predicate s ϕ ρ:
       let x := fresh_evar ϕ in
-      M_predicate M (evar_open 0 x ϕ) ->
+      M_predicate M (ϕ^{evar: 0 ↦ x}) ->
       eval ρ (patt_exists_of_sort s ϕ) = ⊤
       <-> (∃ m : Domain M, m ∈ Minterp_inhabitant s ρ /\
-                           eval (update_evar_val x m ρ) (evar_open 0 x ϕ) = ⊤).
+                           eval (update_evar_val x m ρ) (ϕ^{evar: 0 ↦ x}) = ⊤).
     Proof.
       intros x Hpred.
       unfold patt_exists_of_sort.
@@ -174,7 +167,7 @@ Section with_model.
       { unfold patt_and. unfold patt_or.  apply sub_imp_l. apply sub_imp_r. apply sub_imp_l. apply sub_eq. reflexivity. }
       rewrite eval_exists_predicate_full.
       {
-        unfold evar_open. simpl_bevar_subst. simpl.
+        unfold evar_open. mlSimpl. simpl.
         apply M_predicate_and.
         - apply T_predicate_in.
           apply M_satisfies_theory.
@@ -216,11 +209,11 @@ Section with_model.
         rewrite HeqBigϕ'. simpl. rewrite is_subformula_of_refl. simpl.
         rewrite !orb_true_r. auto.
       }
-      
+
       split.
       - intros [m H].
         exists m.
-        rewrite -(@eval_fresh_evar_subterm _ _ _ Bigϕ).
+        rewrite -(eval_fresh_evar_subterm _ Bigϕ).
         assumption.
         rewrite {3}HeqBigϕ in H.
 
@@ -229,7 +222,7 @@ Section with_model.
         destruct H as [H1 H2].
         split. 2: apply H2. clear H2.
         unfold Minterp_inhabitant.
-        pose proof (Hfeip := @free_evar_in_patt _ _ M M_satisfies_theory (fresh_evar Bigϕ) (patt_sym (inj inhabitant) $ evar_open 0 (fresh_evar Bigϕ) (nest_ex s)) (update_evar_val (fresh_evar Bigϕ) m ρ)).
+        pose proof (Hfeip := free_evar_in_patt M M_satisfies_theory (fresh_evar Bigϕ) (patt_sym (inj inhabitant) $ (nest_ex s)^{evar: 0 ↦ (fresh_evar Bigϕ)}) (update_evar_val (fresh_evar Bigϕ) m ρ)).
         destruct Hfeip as [_ Hfeip2].
 
         apply Hfeip2 in H1. clear Hfeip2.
@@ -251,7 +244,7 @@ Section with_model.
         apply H1.
 
       - intros [m [H1 H2] ]. exists m.
-        pose proof (Hfeip := @free_evar_in_patt _ _ M M_satisfies_theory (fresh_evar Bigϕ) (patt_sym (inj inhabitant) $ evar_open 0 (fresh_evar Bigϕ) (nest_ex s)) (update_evar_val (fresh_evar Bigϕ) m ρ)).
+        pose proof (Hfeip := free_evar_in_patt M M_satisfies_theory (fresh_evar Bigϕ) (patt_sym (inj inhabitant) $ (nest_ex s)^{evar: 0 ↦ (fresh_evar Bigϕ)}) (update_evar_val (fresh_evar Bigϕ) m ρ)).
         destruct Hfeip as [Hfeip1 _].
         rewrite {3}HeqBigϕ.
         apply eval_and_full. fold evar_open.
@@ -272,7 +265,7 @@ Section with_model.
             solve_free_evars_inclusion 5.
           }
           apply H1.
-        + rewrite -(@eval_fresh_evar_subterm _ _ _ Bigϕ) in H2.
+        + rewrite -(eval_fresh_evar_subterm _ Bigϕ) in H2.
           apply Hsub.
           apply H2.
     Qed.
@@ -280,12 +273,12 @@ Section with_model.
 
     Lemma M_predicate_exists_of_sort s ϕ :
       let x := fresh_evar ϕ in
-      M_predicate M (evar_open 0 x ϕ) -> M_predicate M (patt_exists_of_sort s ϕ).
+      M_predicate M (ϕ^{evar: 0 ↦ x}) -> M_predicate M (patt_exists_of_sort s ϕ).
     Proof.
       intros x Hpred.
       unfold patt_exists_of_sort.
       apply M_predicate_exists.
-      unfold evar_open. simpl_bevar_subst.
+      unfold evar_open. mlSimpl.
       rewrite {1}[bevar_subst _ _ _]/=.
       apply M_predicate_and.
       - apply T_predicate_in.
@@ -295,7 +288,6 @@ Section with_model.
         2: apply Hpred.
         eapply evar_fresh_in_subformula.
         2: apply set_evar_fresh_is_fresh.
-        unfold patt_and. unfold patt_not. unfold patt_or.
         apply sub_imp_l.
         apply sub_imp_r. apply sub_imp_l. apply sub_eq. reflexivity.
     Qed.
@@ -304,12 +296,12 @@ Section with_model.
 
     Lemma M_predicate_forall_of_sort s ϕ :
       let x := fresh_evar ϕ in
-      M_predicate M (evar_open 0 x ϕ) -> M_predicate M (patt_forall_of_sort s ϕ).
+      M_predicate M (ϕ^{evar: 0 ↦ x}) -> M_predicate M (patt_forall_of_sort s ϕ).
     Proof.
       intros x Hpred.
       unfold patt_forall_of_sort.
       apply M_predicate_forall.
-      unfold evar_open. simpl_bevar_subst.
+      unfold evar_open. mlSimpl.
       apply M_predicate_impl.
       - apply T_predicate_in.
         apply M_satisfies_theory.
@@ -324,18 +316,21 @@ Section with_model.
 
     Lemma interp_total_function f s₁ s₂ ρ :
       @eval Σ M ρ (patt_total_function f s₁ s₂) = ⊤ <->
-      @is_total_function Σ M f (Minterp_inhabitant s₁ ρ) (Minterp_inhabitant s₂ ρ) ρ.
+      is_total_function f (Minterp_inhabitant s₁ ρ) (Minterp_inhabitant s₂ ρ) ρ.
     Proof.
       unfold is_total_function.
       rewrite eval_forall_of_sort_predicate.
-      1: { eauto. }
+      1: { mlSortedSimpl. eapply M_predicate_exists_of_sort. eauto. }
 
-      unfold evar_open. simpl_bevar_subst.
       remember (fresh_evar (patt_exists_of_sort (nest_ex s₂) (patt_equal ((nest_ex (nest_ex f)) $ b1) b0))) as x'.
       rewrite [nest_ex s₂]/nest_ex.
+      mlSortedSimpl.
       unfold nest_ex. repeat rewrite nest_ex_same.
-      rewrite fuse_nest_ex_same. rewrite nest_ex_same_general. 1-2: lia. simpl.
-      rewrite -/(nest_ex s₂).
+      rewrite fuse_nest_ex_same.
+      unfold evar_open.
+      rewrite nest_ex_same_general. 1-2: lia. mlSimpl.
+      simpl. rewrite nest_ex_same_general. 1-2: lia. mlSimpl.
+      simpl.
 
       apply all_iff_morphism.
       unfold pointwise_relation. intros m₁.
@@ -343,7 +338,7 @@ Section with_model.
 
       rewrite eval_exists_of_sort_predicate.
       1: {
-        unfold evar_open. simpl_bevar_subst.
+        unfold evar_open. mlSimpl.
         apply T_predicate_equals; apply M_satisfies_theory.
       }
       apply ex_iff_morphism. unfold pointwise_relation. intros m₂.
@@ -368,10 +363,10 @@ Section with_model.
         2: apply set_evar_fresh_is_fresh'. solve_free_evars_inclusion 5.
       }
 
-      apply and_iff_morphism; auto.
+      apply and_iff_morphism.
+      1: { now rewrite nest_ex_aux_0. }
 
-      unfold nest_ex.
-      unfold evar_open. simpl_bevar_subst.
+      unfold evar_open. mlSimpl. simpl.
       repeat rewrite nest_ex_same.
 
 
@@ -418,14 +413,16 @@ Section with_model.
             ⊆ {[m₂]}.
     Proof.
       rewrite eval_forall_of_sort_predicate.
-      1: { eauto. }
+      1: { mlSortedSimpl. eauto. }
 
-      unfold evar_open. simpl_bevar_subst.
+      unfold evar_open. mlSimpl.
       remember (fresh_evar (patt_exists_of_sort (nest_ex s₂) (patt_subseteq ((nest_ex (nest_ex f)) $ b1) b0))) as x'.
       rewrite [nest_ex s₂]/nest_ex.
+      mlSortedSimpl.
       rewrite nest_ex_same.
       unfold nest_ex.
-      rewrite fuse_nest_ex_same. rewrite nest_ex_same_general. 1-2: lia. simpl.
+      rewrite fuse_nest_ex_same.
+      mlSimpl. rewrite nest_ex_same_general. 1-2: lia. simpl.
 
       apply all_iff_morphism.
       unfold pointwise_relation. intros m₁.
@@ -433,7 +430,7 @@ Section with_model.
 
       rewrite eval_exists_of_sort_predicate.
       1: {
-        unfold evar_open. simpl_bevar_subst.
+        unfold evar_open. mlSimpl.
         apply T_predicate_subseteq; apply M_satisfies_theory.
       }
 
@@ -463,7 +460,7 @@ Section with_model.
 
       apply and_iff_morphism; auto.
 
-      unfold evar_open. simpl_bevar_subst.
+      unfold evar_open. mlSimpl.
       rewrite nest_ex_same.
       simpl.
       remember (fresh_evar (patt_subseteq (nest_ex_aux 0 1 f $ patt_free_evar x') b0)) as x''.
@@ -504,7 +501,7 @@ Section with_model.
 
     Lemma Minterp_inhabitant_evar_open_update_evar_val ρ x e s m:
       evar_is_fresh_in x s ->
-      m ∈ Minterp_inhabitant (evar_open 0 x (nest_ex s)) (update_evar_val x e ρ)
+      m ∈ Minterp_inhabitant ((nest_ex s)^{evar: 0 ↦ x}) (update_evar_val x e ρ)
       <-> m ∈ Minterp_inhabitant s ρ.
     Proof.
       intros Hfr.
@@ -531,12 +528,14 @@ Section with_model.
         match goal with
         | [ |- M_predicate _ (evar_open _ ?x _) ] => remember x
         end.
-        unfold evar_open. simpl_bevar_subst. simpl.
+        unfold evar_open. mlSortedSimpl. mlSimpl. simpl.
+        case_match; try lia.
+        case_match; try lia.
         apply M_predicate_forall_of_sort.
         match goal with
         | [ |- M_predicate _ (evar_open _ ?x _) ] => remember x
         end.
-        unfold evar_open. simpl_bevar_subst. simpl.
+        unfold evar_open. mlSimpl. simpl.
         eauto.
       }
       remember
@@ -549,7 +548,7 @@ Section with_model.
       apply all_iff_morphism. intros m₁.
       apply all_iff_morphism. intros Hm₁s.
 
-      unfold evar_open. simpl_bevar_subst.
+      unfold evar_open. mlSortedSimpl.
       rewrite eval_forall_of_sort_predicate.
       1: { eauto 8. (* TODO be more explicit. Have a tactic for this kind of goals. *) }
       remember
@@ -573,7 +572,7 @@ Section with_model.
         solve_free_evars_inclusion 5.
       }
       apply all_iff_morphism. intros Hm₂s.
-      unfold evar_open. simpl_bevar_subst.
+      unfold evar_open. mlSimpl.
       unfold nest_ex in *.
       rewrite fuse_nest_ex_same in Heqx₂, Heqx₁. rewrite nest_ex_same_general in Heqx₁, Heqx₂.
       1-2: lia.
@@ -594,7 +593,7 @@ Section with_model.
       rewrite update_evar_val_same.
       rewrite eval_free_evar_independent.
       {
-         rewrite Heqx₂. unfold evar_is_fresh_in.
+         unfold evar_is_fresh_in.
          eapply evar_is_fresh_in_richer'.
          2: apply set_evar_fresh_is_fresh'. cbn.
          solve_free_evars_inclusion 5.
@@ -622,7 +621,7 @@ Section with_model.
       unfold rel_of.
       rewrite eval_free_evar_independent.
       {
-         rewrite Heqx₂. unfold evar_is_fresh_in.
+         (* rewrite Heqx₂. *) unfold evar_is_fresh_in.
          eapply evar_is_fresh_in_richer'.
          2: apply set_evar_fresh_is_fresh'. cbn.
          solve_free_evars_inclusion 5.
@@ -650,13 +649,15 @@ Section with_model.
         match goal with
         | [ |- M_predicate _ (evar_open _ ?x _) ] => remember x
         end.
-        unfold evar_open. simpl_bevar_subst. simpl.
+        unfold evar_open. mlSortedSimpl. mlSimpl. simpl.
         apply M_predicate_forall_of_sort.
         match goal with
         | [ |- M_predicate _ (evar_open _ ?x _) ] => remember x
         end.
-        unfold evar_open. simpl_bevar_subst. simpl.
-        eauto.
+        case_match; try lia.
+        case_match; try lia.
+        unfold evar_open. mlSimpl. simpl.
+        eauto 8.
       }
       remember
       (fresh_evar
@@ -666,13 +667,13 @@ Section with_model.
       apply all_iff_morphism. intros m₁.
       apply all_iff_morphism. intros Hm₁s.
 
-      unfold evar_open. simpl_bevar_subst.
+      unfold evar_open. mlSortedSimpl. mlSimpl.
       rewrite eval_forall_of_sort_predicate.
       1: {
                 match goal with
         | [ |- M_predicate _ (evar_open _ ?x _) ] => remember x
         end.
-        unfold evar_open. simpl_bevar_subst. simpl.
+        unfold evar_open. mlSimpl. simpl.
         eauto.
       }
       remember
@@ -695,12 +696,12 @@ Section with_model.
       rewrite fuse_nest_ex_same in Heqx₂, Heqx₁. rewrite nest_ex_same_general in Heqx₁, Heqx₂.
       1-2: lia.
       rewrite fuse_nest_ex_same. rewrite nest_ex_same_general. 1-2: lia. simpl pred.
-      simpl_bevar_subst.
+      mlSimpl.
 
       rewrite eval_predicate_impl.
       1: { eauto. }
       simpl.
-      
+
       rewrite equal_iff_interpr_same.
       1: { apply M_satisfies_theory. }
       rewrite 2!eval_app_simpl.
@@ -740,7 +741,6 @@ Section with_model.
       clear. set_solver.
     Qed.
 
-    
 
     Lemma eval_exists_of_sort
       (s : Pattern)
@@ -750,7 +750,7 @@ Section with_model.
     eval ρ (patt_exists_of_sort s ϕ)
     = stdpp_ext.propset_fa_union (λ (m : Domain M),
       match (indec m) with
-      | left _ => eval (update_evar_val (fresh_evar ϕ) m ρ) (evar_open 0 (fresh_evar ϕ) ϕ)
+      | left _ => eval (update_evar_val (fresh_evar ϕ) m ρ) (ϕ^{evar: 0 ↦ (fresh_evar ϕ)})
       | right _ => ∅
       end
     ).
@@ -764,13 +764,13 @@ Section with_model.
       {
         clear Hm.
         rename e into Hinh.
-        unfold evar_open. simpl_bevar_subst. simpl.
+        unfold evar_open. mlSimpl. simpl.
         unfold nest_ex. rewrite nest_ex_same.
         rewrite eval_and_simpl.
         unfold Minterp_inhabitant in Hinh.
         replace m with (evar_valuation (update_evar_val x m ρ) x) in Hinh.
         2: { apply update_evar_val_same. }
-        rewrite -(@eval_free_evar_independent _ _ ρ x m) in Hinh.
+        rewrite -(eval_free_evar_independent ρ x m) in Hinh.
         {
           eapply evar_is_fresh_in_richer.
           2: { subst. apply set_evar_fresh_is_fresh. }
@@ -800,13 +800,13 @@ Section with_model.
       {
         clear Hm.
         rename n into Hinh.
-        unfold evar_open. simpl_bevar_subst.
+        unfold evar_open. mlSimpl.
         rewrite eval_and_simpl. simpl.
         replace m with (evar_valuation (update_evar_val x m ρ) x) in Hinh.
         2: { apply update_evar_val_same. }
         unfold nest_ex. rewrite nest_ex_same.
         unfold Minterp_inhabitant in Hinh.
-        rewrite -(@eval_free_evar_independent _ _ ρ x m) in Hinh.
+        rewrite -(eval_free_evar_independent ρ x m) in Hinh.
         {
           eapply evar_is_fresh_in_richer.
           2: { subst. apply set_evar_fresh_is_fresh. }
@@ -830,7 +830,7 @@ Section with_model.
     eval ρ (patt_forall_of_sort s ϕ)
     = stdpp_ext.propset_fa_intersection (λ (m : Domain M),
       match (indec m) with
-      | left _ => eval (update_evar_val (fresh_evar ϕ) m ρ) (evar_open 0 (fresh_evar ϕ) ϕ)
+      | left _ => eval (update_evar_val (fresh_evar ϕ) m ρ) (ϕ^{evar: 0 ↦ (fresh_evar ϕ)})
       | right _ => ⊤
       end
     ).
@@ -846,12 +846,12 @@ Section with_model.
       {
         clear Hm.
         rename e into Hinh.
-        unfold evar_open. simpl_bevar_subst. simpl.
+        unfold evar_open. mlSimpl. simpl.
         unfold nest_ex. rewrite nest_ex_same.
         unfold Minterp_inhabitant in Hinh.
         replace m with (evar_valuation (update_evar_val x m ρ) x) in Hinh.
         2: { apply update_evar_val_same. }
-        rewrite -(@eval_free_evar_independent _ _ ρ x m) in Hinh.
+        rewrite -(eval_free_evar_independent ρ x m) in Hinh.
         {
           eapply evar_is_fresh_in_richer.
           2: { subst. apply set_evar_fresh_is_fresh. }
@@ -885,13 +885,13 @@ Section with_model.
       {
         clear Hm.
         rename n into Hinh.
-        unfold evar_open. simpl_bevar_subst.
+        unfold evar_open. mlSimpl.
         rewrite eval_imp_simpl. simpl.
         replace m with (evar_valuation (update_evar_val x m ρ) x) in Hinh.
         2: { apply update_evar_val_same. }
         unfold nest_ex. rewrite nest_ex_same.
         unfold Minterp_inhabitant in Hinh.
-        rewrite -(@eval_free_evar_independent _ _ ρ x m) in Hinh.
+        rewrite -(eval_free_evar_independent ρ x m) in Hinh.
         {
           eapply evar_is_fresh_in_richer.
           2: { subst. apply set_evar_fresh_is_fresh. }
@@ -904,10 +904,10 @@ Section with_model.
         rewrite Hinh. clear. set_solver.
       }
     Qed.
-    
+
 
   End with_model.
-    
+
 
   #[export]
   Hint Resolve M_predicate_exists_of_sort : core.

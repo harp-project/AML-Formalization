@@ -6,10 +6,10 @@ From MatchingLogic.Utils Require Import Lattice.
 From MatchingLogic Require Import Syntax Semantics.
 
 Import MatchingLogic.Syntax.Notations.
-Open Scope ml_scope.
+Import MatchingLogic.Substitution.Notations.
 
 Section monotonic.
-
+  Open Scope ml_scope.
   Context {Σ : Signature}.
 
 
@@ -148,7 +148,7 @@ Section monotonic.
       forall (phi : Pattern) (dbi : db_index) (X : svar),
         no_negative_occurrence_db_b dbi phi ->
         X ∉ (free_svars phi) ->
-        respects_blacklist (svar_open dbi X phi) (Empty_set svar) (Ensembles.Singleton svar X).
+        respects_blacklist (phi^{svar: dbi ↦ X}) (Empty_set svar) (Ensembles.Singleton svar X).
     Proof.
       intros phi dbi X Hpodb Hni.
       pose proof (Hpno := @not_free_implies_positive_negative_occurrence Σ phi X Hni).
@@ -165,7 +165,7 @@ Section monotonic.
     Lemma mu_wellformed_respects_blacklist : forall (phi : Pattern) (X : svar),
         well_formed_positive (patt_mu phi) ->
         svar_is_fresh_in X phi ->
-        respects_blacklist (svar_open 0 X phi) (Empty_set svar) (Ensembles.Singleton svar X).
+        respects_blacklist (phi^{svar: 0 ↦ X}) (Empty_set svar) (Ensembles.Singleton svar X).
     Proof.
       intros phi X H Hfr. simpl in H.
       apply andb_true_iff in H.
@@ -183,11 +183,11 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
     Lemma evar_open_respects_blacklist :
       forall (phi : Pattern) (Bp Bn : Ensemble svar) (x : evar) (n : nat),
         respects_blacklist phi Bp Bn ->
-        respects_blacklist (evar_open n x phi) Bp Bn.
+        respects_blacklist (phi^{evar: n ↦ x}) Bp Bn.
     Proof.
       induction phi; try auto.
       - (* EVar bound *)
-        intros. simpl. rewrite evar_open_bound_evar.
+        intros. cbn.
         case_match; assumption.
       -  (* App *) 
         intros.
@@ -207,8 +207,7 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
         specialize (IHphi2 Bp Bn x n Hrb2).
         apply respects_blacklist_impl; assumption.
       - (* Ex *)
-        intros.
-        rewrite evar_open_exists.
+        intros. mlSimpl.
         apply respects_blacklist_ex'.
         apply respects_blacklist_ex in H.
         auto.
@@ -430,7 +429,7 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
           }
         * (* Ex *)
           simpl. remember (respects_blacklist_ex phi Bp Bn Hrb) as Hrb'. clear HeqHrb'.
-          specialize (IHn (evar_open 0 (evar_fresh (elements (free_evars phi))) phi)).
+          specialize (IHn (phi^{evar: 0 ↦ (evar_fresh (elements (free_evars phi)))})).
           rewrite <- evar_open_size in IHn.
           assert (Hsz': size phi <= n). simpl in *. lia.
           remember (evar_fresh (elements (free_evars phi))) as fresh.
@@ -450,7 +449,7 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
               destruct IHn as [IHn1 IHn2].
           {
             specialize (IHn1 HBp S1 S2 Hincl).
-            remember (evar_open 0 fresh phi) as phi'.
+            remember (phi^{evar: 0 ↦ fresh}) as phi'.
             remember (update_svar_val V S1 ρ') as ρ''.
             unfold leq in IHn1. simpl in *. unfold Included in *. unfold In in *.
             subst.
@@ -458,7 +457,7 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
           }
           {
             specialize (IHn2 HBp S1 S2 Hincl).
-            remember (evar_open 0 fresh phi) as phi'.
+            remember (phi^{evar: 0 ↦ fresh}) as phi'.
             remember (update_svar_val V S1 ρ') as ρ''.
             unfold leq in IHn1. simpl in *. unfold Included in *. unfold In in *.
             subst.
@@ -478,13 +477,13 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
             simpl.
 
             remember (fresh_svar phi) as X'.
-            remember (svar_open 0 X' phi) as phi'.
+            remember (phi^{svar: 0 ↦ X'}) as phi'.
             pose proof (Hszeq := svar_open_size 0 X' phi).
             assert (Hsz'': size phi' <= n).
             { rewrite -> Heqphi'. rewrite <- Hszeq. assumption. }
             specialize (IHn phi' Hsz'').
-            simpl in Hwfp. destruct Hwfp as [Hpo Hwfp].
-            
+            simpl in Hwfp.
+
             assert (Hrb': respects_blacklist phi' (Empty_set svar) (Ensembles.Singleton svar X')).
             { subst. apply mu_wellformed_respects_blacklist. apply Hwfpmu. apply set_svar_fresh_is_fresh. }
 
@@ -551,13 +550,13 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
             simpl.
 
             remember (fresh_svar phi) as X'.
-            remember (svar_open 0 X' phi) as phi'.
+            remember (phi^{svar: 0 ↦ X'}) as phi'.
             pose proof (Hszeq := svar_open_size 0 X' phi).
             assert (Hsz'': size phi' <= n).
             { rewrite -> Heqphi'. rewrite <- Hszeq. assumption. }
             specialize (IHn phi' Hsz'').
-            simpl in Hwfp. destruct Hwfp as [Hpo Hwfp].
-            
+            simpl in Hwfp.
+
             assert (Hrb': respects_blacklist phi' (Empty_set svar) (Ensembles.Singleton svar X')).
             { subst. apply mu_wellformed_respects_blacklist. apply Hwfpmu. apply set_svar_fresh_is_fresh. }
 
@@ -625,13 +624,13 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
         @MonotonicFunction A OS
                            (fun S : propset (Domain M) =>
                               (@eval Σ M (update_svar_val X S ρ)
-                                                       (svar_open 0 X phi))).
+                                                       (phi^{svar: 0 ↦ X}))).
     Proof.
       simpl. intros phi X ρ Hwfp Hfr.
       pose proof (Hrb := mu_wellformed_respects_blacklist phi X Hwfp Hfr).
       simpl in Hrb.
       inversion Hwfp.
-      remember (svar_open 0 X phi) as phi'.
+      remember (phi^{svar: 0 ↦ X}) as phi'.
       assert (Hsz : size phi' <= size phi').
       { lia. }
       pose proof (Hmono := respects_blacklist_implies_monotonic (size phi') phi').

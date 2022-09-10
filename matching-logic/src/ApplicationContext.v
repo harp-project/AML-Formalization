@@ -142,8 +142,8 @@ Section with_signature.
 Module Notations.
 
 Notation "□" := box.
-Notation "p '$l' C" := (@ctx_app_l _ p C _) (at level 65).
-Notation "C '$r' p" := (@ctx_app_r _ C p _) (at level 65).
+Notation "p '$ₗ' C" := (@ctx_app_l _ p C _) (at level 65).
+Notation "C '$ᵣ' p" := (@ctx_app_r _ C p _) (at level 65).
 Notation "C .[ □ ↦ p ]" := (subst_ctx C p)
    (at level 2, format "C .[ □ ↦ p ]").
 

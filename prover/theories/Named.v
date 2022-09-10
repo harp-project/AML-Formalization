@@ -1,7 +1,4 @@
 From Coq Require Import ssreflect ssrfun ssrbool.
-Set Implicit Arguments.
-Unset Strict Implicit.
-Unset Printing Implicit Defensive.
 
 From stdpp Require Import base pmap gmap fin_maps finite.
 From MatchingLogic Require Import Syntax.
@@ -12,7 +9,6 @@ Section named.
   Context
     {Σ : Signature}
   .
-  
 
   Inductive NamedPattern : Set :=
   | npatt_evar (x : evar)
@@ -126,7 +122,7 @@ Section named.
     | patt_bound_svar n => patt_bound_svar (S n)
     | x => x
     end.
-  
+
   Definition cache_incr_evar (cache : gmap Pattern NamedPattern) : gmap Pattern NamedPattern :=
     kmap incr_one_evar cache.
 
@@ -184,9 +180,9 @@ Section named.
 
 
   Definition CacheEntry := (Pattern * NamedPattern)%type.
-  
+
   Definition is_bound_evar (ϕ : Pattern) : Prop := exists b, ϕ = patt_bound_evar b.
-  
+
   Global Instance is_bound_evar_dec (ϕ : Pattern) : Decision (is_bound_evar ϕ).
   Proof.
     unfold Decision; destruct ϕ; simpl;
@@ -195,7 +191,7 @@ Section named.
   Defined.
 
   Definition is_bound_evar_entry (ϕnϕ : CacheEntry) : Prop := is_bound_evar (fst ϕnϕ).
-  
+
   Global Instance is_bound_evar_entry_dec (ce : CacheEntry) : Decision (is_bound_evar_entry ce).
   Proof.
     destruct ce as [ϕ nϕ].
@@ -204,9 +200,9 @@ Section named.
     - right. intros Hcontra. inversion Hcontra. simpl in H. subst ϕ.
       apply R. exists x. reflexivity.
   Defined.
-  
+
   Definition is_bound_svar (ϕ : Pattern) : Prop := exists b, ϕ = patt_bound_svar b.
-  
+
   Global Instance is_bound_svar_dec (ϕ : Pattern) : Decision (is_bound_svar ϕ).
   Proof.
     unfold Decision; destruct ϕ; simpl;
@@ -225,7 +221,7 @@ Section named.
       apply R. exists x. reflexivity.
   Defined.
 
-  
+
   Definition keep_bound_evars (cache : gmap Pattern NamedPattern) :=
     filter is_bound_evar_entry cache.
 
@@ -237,8 +233,8 @@ Section named.
 
   Definition remove_bound_svars (cache : gmap Pattern NamedPattern) :=
     filter (fun e => ~ is_bound_svar_entry e) cache.
-  
-  
+
+
   (* pre: all dangling variables of [\phi] are in [cache].  *)
   Fixpoint to_NamedPattern2'
            (ϕ : Pattern)
@@ -296,7 +292,7 @@ Section named.
 
   Definition to_NamedPattern2 (ϕ : Pattern) : NamedPattern :=
     (to_NamedPattern2' ϕ gmap_empty ∅ ∅).1.1.1.
-  
+
   Fixpoint named_no_negative_occurrence (X : svar) (ϕ : NamedPattern) : bool :=
     match ϕ with
     | npatt_evar _ | npatt_sym _ | npatt_bott => true
@@ -314,7 +310,7 @@ Section named.
     | npatt_app ϕ₁ ϕ₂ => named_no_positive_occurrence X ϕ₁ && named_no_positive_occurrence X ϕ₂
     | npatt_imp ϕ₁ ϕ₂ => named_no_negative_occurrence X ϕ₁ && named_no_positive_occurrence X ϕ₂
     | npatt_exists _ ϕ' => named_no_positive_occurrence X ϕ'
-    | npatt_mu _ ϕ' => named_no_positive_occurrence X ϕ'                                  
+    | npatt_mu _ ϕ' => named_no_positive_occurrence X ϕ'
     end.
 
   Definition SVarMap_injective_prop (svm : SVarMap) : Prop :=
@@ -355,9 +351,9 @@ Section named.
       simpl.
       apply Hinj.
   Qed.
-  
-      
-  
+
+
+
   Lemma to_NamedPattern'_occurrence
         (evm : EVarMap) (svm : SVarMap) (X : svar) (dbi : db_index) (ϕ : Pattern):
     SVarMap_injective_prop svm ->
@@ -400,7 +396,7 @@ Section named.
       feed specialize IHϕ2.
       { eapply svar_is_fresh_in_app_r. apply Hfresh. }
       clear Hfresh.
-      
+
       simpl.
       remember (to_NamedPattern' ϕ1 evm svm) as tnϕ1.
       destruct tnϕ1 as [[nphi1 evm'] svm'].
@@ -420,22 +416,22 @@ Section named.
 
       pose proof (IHϕ10 := IHϕ1 evm svm Hinj Hdbi).
       rewrite -Heqtnϕ1 in IHϕ10. simpl in IHϕ10. destruct IHϕ10 as [IHϕ11 IHϕ12].
-      
+
 
       (* TODO: prove that a call to [to_NamedPattern'] preserves injectivity. *)
       (*
       pose proof (IHϕ20 := IHϕ2 evm' svm' Hinj Hdbi).
-      
+
       rewrite -Heqtnϕ2 in IHϕ20.
       destruct IHϕ20 as [IHϕ21 IHϕ22].
-      
+
       (* simpl in , IHϕ21, IHϕ22. *)
       simpl in IHϕ11, IHϕ12.
       rewrite IHϕ11 IHϕ12.
       rewrite -Heqtnϕ2 in IHϕ21.
        *)
   Abort.
-  
+
 
   Fixpoint named_well_formed_positive (phi : NamedPattern) : bool :=
     match phi with
@@ -463,9 +459,9 @@ Section named.
     | nbox => p
     | @nctx_app_l C' p' prf => npatt_app (named_subst_ctx C' p) p'
     | @nctx_app_r p' C' prf => npatt_app p' (named_subst_ctx C' p)
-    end.  
+    end.
 
-(*  
+(*
   Print well_formed_positive.
 
 
@@ -476,7 +472,7 @@ Section named.
   | hypothesis (axiom : Pattern) :
       well_formed axiom ->
       (axiom ∈ theory) -> theory ⊢ axiom
-                                              
+
   (* FOL reasoning *)
   (* Propositional tautology *)
   | P1 (phi psi : Pattern) :

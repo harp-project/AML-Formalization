@@ -1,7 +1,4 @@
 From Coq Require Import ssreflect ssrfun ssrbool.
-Set Implicit Arguments.
-Unset Strict Implicit.
-Unset Printing Implicit Defensive.
 
 Require Import Equations.Prop.Equations.
 
@@ -13,16 +10,13 @@ From Coq.Classes Require Import Morphisms_Prop.
 From Coq.Unicode Require Import Utf8.
 From Coq.micromega Require Import Lia.
 
-From MatchingLogic
-Require Import
-  Syntax
-  NamedAxioms
+From MatchingLogic Require Import Logic.
+From MatchingLogic Require Import
   Semantics
-  DerivedOperators_Syntax
   DerivedOperators_Semantics
-  IndexManipulation
   PrePredicate
 .
+Import MatchingLogic.Logic.Notations.
 From MatchingLogic.Utils Require Import stdpp_ext.
 
 From stdpp Require Import base fin_sets sets propset proof_irrel option list finite.
@@ -30,26 +24,22 @@ From stdpp Require Import base fin_sets sets propset proof_irrel option list fin
 Import extralibrary.
 
 Require Import MatchingLogic.Theories.Definedness_Syntax.
-
-Import MatchingLogic.Syntax.Notations.
-Import MatchingLogic.Semantics.Notations.
-Import MatchingLogic.DerivedOperators_Syntax.Notations.
-Import MatchingLogic.Substitution.Notations.
-Import MatchingLogic.Syntax.BoundVarSugar.
-
 Import Definedness_Syntax.Notations.
+Import MatchingLogic.Semantics.Notations.
+Import MatchingLogic.Syntax.BoundVarSugar.
 
 Section definedness.
   Context
     {Σ : Signature}
     {syntax : Syntax}
   .
+  Open Scope ml_scope.
 
   Let sym (s : Symbols) : Pattern :=
     @patt_sym Σ (inj s).
-  
+
   Lemma definedness_model_application :
-    forall (M : @Model Σ) (ρ : @Valuation Σ M),
+    forall (M : Model) (ρ : Valuation),
       M ⊨ᵀ theory ->
       forall (m: Domain M),
                  (app_ext (eval ρ (sym definedness)) {[m]}) = ⊤.
@@ -93,10 +83,10 @@ Section definedness.
     rewrite -> eval_sym_simpl. apply H.
   Qed.
 
-  Lemma definedness_not_empty_1 : forall (M : @Model Σ),
+  Lemma definedness_not_empty_1 : forall (M : Model),
       M ⊨ᵀ theory ->
-      forall (ϕ : Pattern) (ρ : @Valuation Σ M),
-        (@eval Σ M ρ ϕ) <> ∅ ->
+      forall (ϕ : Pattern) (ρ : Valuation),
+        (eval ρ ϕ) <> ∅ ->
         (@eval Σ M ρ ⌈ ϕ ⌉ ) = ⊤.
   Proof.
     intros.
@@ -104,17 +94,15 @@ Section definedness.
     destruct H'.
     unfold patt_defined.
     rewrite -> eval_app_simpl.
-    
-    pose proof (H'' := @definedness_model_application M ρ H x).
+
+    pose proof (H'' := definedness_model_application M ρ H x).
     unfold sym in H''.
     rewrite -> set_eq_subseteq in H''.
     destruct H'' as [_ H''].
     assert (Hincl: {[x]} ⊆ (eval ρ ϕ) ).
     { rewrite -> elem_of_subseteq. intros.  inversion H2. subst. assumption. }
 
-    pose proof (Hincl' := @app_ext_monotonic_r
-                            Σ
-                            M
+    pose proof (Hincl' := app_ext_monotonic_r
                             (eval ρ (patt_sym (inj definedness)))
                             {[x]}
                             (eval ρ ϕ)
@@ -129,10 +117,10 @@ Section definedness.
     assumption.
   Qed.
 
-  Lemma definedness_empty_1 : forall (M : @Model Σ),
+  Lemma definedness_empty_1 : forall (M : Model),
       M ⊨ᵀ theory ->
-      forall (ϕ : Pattern) (ρ : @Valuation Σ M),
-      @eval Σ M ρ ϕ = ∅ ->
+      forall (ϕ : Pattern) (ρ : Valuation),
+      eval ρ ϕ = ∅ ->
       @eval Σ M ρ ⌈ ϕ ⌉ = ∅.
   Proof.
     intros M H ϕ ρ H0. unfold patt_defined.
@@ -144,33 +132,33 @@ Section definedness.
   Theorem modus_tollens: forall (P Q : Prop), (P -> Q) -> ~Q -> ~P.
   Proof. auto. Qed.
 
-  Lemma definedness_empty_2 : forall (M : @Model Σ),
+  Lemma definedness_empty_2 : forall (M : Model),
       M ⊨ᵀ theory ->
-      forall (ϕ : Pattern) (ρ : @Valuation Σ M),
-        @eval Σ M ρ ⌈ ϕ ⌉ = ∅ ->
+      forall (ϕ : Pattern) (ρ : Valuation),
+        eval ρ ⌈ ϕ ⌉ = ∅ ->
         @eval Σ M ρ ϕ = ∅.
   Proof.
     intros M H ϕ ρ H0.
-    pose proof (H1 := @empty_impl_not_full Σ M _ H0).
-    pose proof (H2 := @modus_tollens _ _ (@definedness_not_empty_1 M H ϕ ρ) H1).
+    pose proof (H1 := empty_impl_not_full _ H0).
+    pose proof (H2 := modus_tollens _ _ (definedness_not_empty_1 M H ϕ ρ) H1).
     apply NNPP in H2. apply H2.
   Qed.
 
-  Lemma definedness_not_empty_2 : forall (M : @Model Σ),
+  Lemma definedness_not_empty_2 : forall (M : Model),
       M ⊨ᵀ theory ->
-      forall (ϕ : Pattern) (ρ : @Valuation Σ M),
-        @eval Σ M ρ ⌈ ϕ ⌉ = ⊤ ->
+      forall (ϕ : Pattern) (ρ : Valuation),
+        eval ρ ⌈ ϕ ⌉ = ⊤ ->
         @eval Σ M ρ ϕ <> ∅.
   Proof.
     intros M H ϕ ρ H0.
-    pose proof (H1 := full_impl_not_empty H0).
-    exact (@modus_tollens _ _ (@definedness_empty_1 M H ϕ ρ) H1).
+    pose proof (H1 := full_impl_not_empty _ H0).
+    exact (modus_tollens _ _ (definedness_empty_1 M H ϕ ρ) H1).
   Qed.
 
-  Lemma definedness_not_empty_iff : forall (M : @Model Σ),
+  Lemma definedness_not_empty_iff : forall (M : Model),
     M ⊨ᵀ theory ->
-    forall (ϕ : Pattern) (ρ : @Valuation Σ M),
-      (@eval Σ M ρ ϕ) <> ∅ <->
+    forall (ϕ : Pattern) (ρ : Valuation),
+      (eval ρ ϕ) <> ∅ <->
       (@eval Σ M ρ ⌈ ϕ ⌉ ) = ⊤.
   Proof.
     intros M HM ϕ ρ.
@@ -183,10 +171,10 @@ Section definedness.
     }
   Qed.
 
-  Lemma totality_not_full : forall (M : @Model Σ),
+  Lemma totality_not_full : forall (M : Model),
       M ⊨ᵀ theory ->
-      forall (ϕ : Pattern) (ρ : @Valuation Σ M),
-        @eval Σ M ρ ϕ <> ⊤ ->
+      forall (ϕ : Pattern) (ρ : Valuation),
+        eval ρ ϕ <> ⊤ ->
         @eval Σ M ρ ⌊ ϕ ⌋ = ∅.
   Proof.
     intros.
@@ -208,10 +196,10 @@ Section definedness.
     apply Hnonempty.
   Qed.
 
-  Lemma totality_full : forall (M : @Model Σ),
+  Lemma totality_full : forall (M : Model),
       M ⊨ᵀ theory ->
-      forall (ϕ : Pattern) (ρ : @Valuation Σ M),
-        @eval Σ M ρ ϕ = ⊤ ->
+      forall (ϕ : Pattern) (ρ : Valuation),
+        eval ρ ϕ = ⊤ ->
         @eval Σ M ρ ⌊ ϕ ⌋ = ⊤.
   Proof.
     intros M H ϕ ρ H0.
@@ -223,27 +211,27 @@ Section definedness.
       clear. set_solver.
     }
 
-    pose proof (H2 := @definedness_empty_1 M H (patt_not ϕ) ρ H1).
+    pose proof (H2 := definedness_empty_1 M H (patt_not ϕ) ρ H1).
     rewrite -> H2.
     clear. set_solver.
   Qed.
 
-  Lemma totality_result_empty : forall (M : @Model Σ),
+  Lemma totality_result_empty : forall (M : Model),
       M ⊨ᵀ theory ->
-      forall (ϕ : Pattern) (ρ : @Valuation Σ M),
-        @eval Σ M ρ ⌊ ϕ ⌋ = ∅ ->
+      forall (ϕ : Pattern) (ρ : Valuation),
+        eval ρ ⌊ ϕ ⌋ = ∅ ->
         @eval Σ M ρ ϕ <> ⊤.
   Proof.
     intros M H ϕ ρ H0.
-    pose proof (H1 := empty_impl_not_full H0).
-    pose proof (H2 := @modus_tollens _ _ (@totality_full M H ϕ ρ) H1).
+    pose proof (H1 := empty_impl_not_full _ H0).
+    pose proof (H2 := modus_tollens _ _ (totality_full M H ϕ ρ) H1).
     apply H2.
   Qed.
 
-  Lemma totality_not_full_iff : forall (M : @Model Σ),
+  Lemma totality_not_full_iff : forall (M : Model),
       M ⊨ᵀ theory ->
-      forall (ϕ : Pattern) (ρ : @Valuation Σ M),
-        @eval Σ M ρ ϕ <> ⊤ <->
+      forall (ϕ : Pattern) (ρ : Valuation),
+        eval ρ ϕ <> ⊤ <->
         @eval Σ M ρ ⌊ ϕ ⌋ = ∅.
   Proof.
     intros M HM ϕ ρ.
@@ -256,23 +244,23 @@ Section definedness.
     }
   Qed.
 
-  Lemma totality_result_nonempty : forall (M : @Model Σ),
+  Lemma totality_result_nonempty : forall (M : Model),
       M ⊨ᵀ theory ->
-      forall (ϕ : Pattern) (ρ : @Valuation Σ M),
-        @eval Σ M ρ ⌊ ϕ ⌋ <> ∅ ->
+      forall (ϕ : Pattern) (ρ : Valuation),
+        eval ρ ⌊ ϕ ⌋ <> ∅ ->
         @eval Σ M ρ ϕ = ⊤.
   Proof.
     intros M H ϕ ρ H0.
-    pose proof (H2 := @modus_tollens _ _ (@totality_not_full M H ϕ ρ) H0).
+    pose proof (H2 := modus_tollens _ _ (totality_not_full M H ϕ ρ) H0).
     apply NNPP in H2. apply H2.
   Qed.
   
-  Lemma equal_iff_both_subseteq : forall (M : @Model Σ),        
+  Lemma equal_iff_both_subseteq : forall (M : Model),
       M ⊨ᵀ theory ->
-      forall (ϕ1 ϕ2 : Pattern) (ρ : @Valuation Σ M),
-        @eval Σ M ρ (ϕ1 =ml ϕ2) = ⊤ <->
+      forall (ϕ1 ϕ2 : Pattern) (ρ : Valuation),
+        eval ρ (ϕ1 =ml ϕ2) = ⊤ <->
         (
-          @eval Σ M ρ (ϕ1 ⊆ml ϕ2) = ⊤ /\
+          eval ρ (ϕ1 ⊆ml ϕ2) = ⊤ /\
           @eval Σ M ρ (patt_subseteq ϕ2 ϕ1) = ⊤).
   Proof.
     intros M H ϕ1 ϕ2 ρ.
@@ -280,23 +268,23 @@ Section definedness.
     - intros H0.
       unfold patt_equal in H0.
       apply full_impl_not_empty in H0.
-      apply (@totality_result_nonempty _ H) in H0.
+      apply (totality_result_nonempty _ H) in H0.
       unfold "<--->" in H0.
       rewrite -> eval_and_simpl in H0.
       rewrite -> intersection_full_iff_both_full in H0.
       destruct H0 as [H1 H2].
       unfold patt_subseteq.
-      apply (@totality_full _ H) in H1.
-      apply (@totality_full _ H) in H2.
+      apply (totality_full _ H) in H1.
+      apply (totality_full _ H) in H2.
       split; assumption.
     - intros [H0 H1].
       unfold patt_subseteq.
       apply full_impl_not_empty in H0.
       apply full_impl_not_empty in H1.
-      apply (@totality_result_nonempty _ H) in H0.
-      apply (@totality_result_nonempty _ H) in H1.
+      apply (totality_result_nonempty _ H) in H0.
+      apply (totality_result_nonempty _ H) in H1.
       unfold patt_equal.
-      apply (@totality_full _ H).
+      apply (totality_full _ H).
       unfold "<--->".
       rewrite -> eval_and_simpl.
       rewrite -> H0.
@@ -304,11 +292,11 @@ Section definedness.
       clear. set_solver.
   Qed.
 
-  Lemma subseteq_iff_interpr_subseteq : forall (M : @Model Σ),
+  Lemma subseteq_iff_interpr_subseteq : forall (M : Model),
       M ⊨ᵀ theory ->
-      forall (ϕ1 ϕ2 : Pattern) (ρ : @Valuation Σ M),
-        @eval Σ M ρ (ϕ1 ⊆ml ϕ2) = ⊤ <->
-        (@eval Σ M ρ ϕ1)
+      forall (ϕ1 ϕ2 : Pattern) (ρ : Valuation),
+        eval ρ (ϕ1 ⊆ml ϕ2) = ⊤ <->
+        (eval ρ ϕ1)
           ⊆ (@eval Σ M ρ ϕ2).
   Proof.
     intros M H ϕ1 ϕ2 ρ.
@@ -316,7 +304,7 @@ Section definedness.
     - intros H0.
       unfold patt_subseteq in H0.
       apply full_impl_not_empty in H0.
-      apply (@totality_result_nonempty _ H) in H0.
+      apply (totality_result_nonempty _ H) in H0.
       rewrite -> eval_imp_simpl in H0.
       rewrite -> set_eq_subseteq in H0.
       destruct H0 as [_ H0].
@@ -330,7 +318,7 @@ Section definedness.
       set_solver.
     - intros H0.
       unfold patt_subseteq.
-      apply (@totality_full _ H).
+      apply (totality_full _ H).
       rewrite -> eval_imp_simpl.
       rewrite -> set_eq_subseteq.
       split.
@@ -341,78 +329,78 @@ Section definedness.
       + right. auto.
       + left. apply elem_of_compl. assumption.
   Qed.
-  
-  Lemma equal_iff_interpr_same : forall (M : @Model Σ),
+
+  Lemma equal_iff_interpr_same : forall (M : Model),
       M ⊨ᵀ theory ->
-      forall (ϕ1 ϕ2 : Pattern) (ρ : @Valuation Σ M),
-        @eval Σ M ρ (ϕ1 =ml ϕ2) = ⊤ <->
-        @eval Σ M ρ ϕ1
+      forall (ϕ1 ϕ2 : Pattern) (ρ : Valuation),
+        eval ρ (ϕ1 =ml ϕ2) = ⊤ <->
+        eval ρ ϕ1
         = @eval Σ M ρ ϕ2.
   Proof.
     intros M H ϕ1 ϕ2 ρ.
     split.
     - intros H0.
-      apply (@equal_iff_both_subseteq _ H) in H0.
+      apply (equal_iff_both_subseteq _ H) in H0.
       destruct H0 as [Hsub1 Hsub2].
-      apply (@subseteq_iff_interpr_subseteq _ H) in Hsub1.
-      apply (@subseteq_iff_interpr_subseteq _ H) in Hsub2.
+      apply (subseteq_iff_interpr_subseteq _ H) in Hsub1.
+      apply (subseteq_iff_interpr_subseteq _ H) in Hsub2.
       rewrite -> set_eq_subseteq.
       split; assumption.
     - intros H0.
       rewrite -> set_eq_subseteq in H0.
       destruct H0 as [Hincl1 Hincl2].
-      apply (@subseteq_iff_interpr_subseteq _ H) in Hincl1.
-      apply (@subseteq_iff_interpr_subseteq _ H) in Hincl2.
+      apply (subseteq_iff_interpr_subseteq _ H) in Hincl1.
+      apply (subseteq_iff_interpr_subseteq _ H) in Hincl2.
       apply equal_iff_both_subseteq. auto. split; auto.
   Qed.
 
-  Lemma equal_refl : forall (M : @Model Σ),
+  Lemma equal_refl : forall (M : Model),
       M ⊨ᵀ theory ->
-      forall (ϕ : Pattern) (ρ : @Valuation Σ M),
+      forall (ϕ : Pattern) (ρ : Valuation),
         @eval Σ M ρ (patt_equal ϕ ϕ) = ⊤.
   Proof.
     intros M H ϕ ρ.
-    apply (@equal_iff_interpr_same _ H).
+    apply (equal_iff_interpr_same _ H).
     auto.
   Qed.
 
-  Lemma equal_sym : forall (M : @Model Σ),
+  Lemma equal_sym : forall (M : Model),
       M ⊨ᵀ theory ->
-      forall (ϕ1 ϕ2 : Pattern) (ρ : @Valuation Σ M),
-        @eval Σ M ρ (ϕ1 =ml ϕ2) = ⊤ ->
+      forall (ϕ1 ϕ2 : Pattern) (ρ : Valuation),
+        eval ρ (ϕ1 =ml ϕ2) = ⊤ ->
         @eval Σ M ρ (patt_equal ϕ2 ϕ1) = ⊤.
   Proof.
     intros M H ϕ1 ϕ2 ρ H0.
-    apply (@equal_iff_interpr_same _ H).
-    apply (@equal_iff_interpr_same _ H) in H0.
+    apply (equal_iff_interpr_same _ H).
+    apply (equal_iff_interpr_same _ H) in H0.
     symmetry. auto.
   Qed.
 
-  Lemma equal_trans : forall (M : @Model Σ),
+  Lemma equal_trans : forall (M : Model),
       M ⊨ᵀ theory ->
-      forall (ϕ1 ϕ2 ϕ3 : Pattern) (ρ : @Valuation Σ M),
-        @eval Σ M ρ (ϕ1 =ml ϕ2) = ⊤ ->
-        @eval Σ M ρ (patt_equal ϕ2 ϕ3) = ⊤ ->
+      forall (ϕ1 ϕ2 ϕ3 : Pattern) (ρ : Valuation),
+        eval ρ (ϕ1 =ml ϕ2) = ⊤ ->
+        eval ρ (patt_equal ϕ2 ϕ3) = ⊤ ->
         @eval Σ M ρ (patt_equal ϕ1 ϕ3) = ⊤.
   Proof.
     intros M H ϕ1 ϕ2 ϕ3 ρ H0 H1.
-    apply (@equal_iff_interpr_same _ H).
-    apply (@equal_iff_interpr_same _ H) in H0.
-    apply (@equal_iff_interpr_same _ H) in H1.
+    apply (equal_iff_interpr_same _ H).
+    apply (equal_iff_interpr_same _ H) in H0.
+    apply (equal_iff_interpr_same _ H) in H1.
     rewrite -> H0. auto.
   Qed.
 
-  Lemma free_evar_in_patt : forall (M : @Model Σ),
+  Lemma free_evar_in_patt : forall (M : Model),
       M ⊨ᵀ theory ->
-      forall (x : evar)(ϕ : Pattern) (ρ : @Valuation Σ M),
-        (evar_valuation ρ x ∈ (@eval Σ M ρ ϕ)) <->
+      forall (x : evar)(ϕ : Pattern) (ρ : Valuation),
+        (evar_valuation ρ x ∈ (eval ρ ϕ)) <->
         @eval Σ M ρ (patt_in (patt_free_evar x) ϕ) = ⊤.
   Proof.
     intros M H x ϕ ρ.
     split.
     - intros H0.
       unfold patt_in.
-      apply (@definedness_not_empty_1 _ H).
+      apply (definedness_not_empty_1 _ H).
       intros Contra.
       apply Contains_Elements_Not_Empty in Contra. exact Contra.
       exists (evar_valuation ρ x).
@@ -422,7 +410,7 @@ Section definedness.
       + assumption.
     - intros H0.
       unfold patt_in in H0.
-      apply (@definedness_not_empty_2 _ H) in H0.
+      apply (definedness_not_empty_2 _ H) in H0.
       unfold not in H0.
       assert (H0': (eval ρ (patt_free_evar x and ϕ)) = ∅ -> False).
       { intros Contra. apply H0. auto. }
@@ -514,9 +502,8 @@ Section definedness.
     match goal with
     | |- context G [fresh_evar ?t] => remember (fresh_evar t) as X
     end.
-    
-    unfold evar_open.
-    simpl_bevar_subst.
+
+    mlSimpl.
     apply T_predicate_equals.
     apply Hm.
   Qed.
@@ -530,7 +517,7 @@ Section definedness.
   Proof.
     intros Htheory.
     rewrite eval_forall_predicate.
-    { unfold evar_open. simpl_bevar_subst. apply T_predicate_equals. apply Htheory. }
+    { mlSimpl. apply T_predicate_equals. apply Htheory. }
     apply all_iff_morphism. intros m₁.
     remember ((fresh_evar
           (patt_equal (nest_ex ϕ₁ $ BoundVarSugar.b0)
@@ -538,15 +525,15 @@ Section definedness.
               (BoundVarSugar.b0
                  and patt_in BoundVarSugar.b1 (nest_ex (nest_ex ϕ₂) $ BoundVarSugar.b0)))))) as x.
     unfold evar_open.
-    simpl_bevar_subst.
+    mlSimpl.
     rewrite equal_iff_interpr_same.
     { apply Htheory. }
 
     rewrite eval_set_builder.
-    { unfold evar_open. simpl_bevar_subst. apply T_predicate_in. apply Htheory. }
+    { mlSimpl. apply T_predicate_in. apply Htheory. }
 
     assert (Hpi: ∀ M ρ ϕ rhs,
-               @eval _ M ρ ϕ = rhs
+               eval ρ ϕ = rhs
                <-> (∀ m, m ∈ @eval _ M ρ ϕ <-> m ∈ rhs)).
     { split; intros H.
       + rewrite H. auto.
@@ -573,8 +560,8 @@ Section definedness.
                 (patt_free_evar x
                  ∈ml (nest_ex_aux 0 1 (nest_ex_aux 0 1 ϕ₂))^[evar:1↦patt_free_evar x] $ b0)) as y.
     rewrite fuse_nest_ex_same.
-    rewrite nest_ex_same_general. 1-2: lia.
-    simpl_bevar_subst. simpl. rewrite nest_ex_same.
+    rewrite nest_ex_same_general. 1-2: cbn; lia.
+    mlSimpl. rewrite nest_ex_same.
 (*
     do 3 rewrite evar_open_bound_evar.
     repeat case_match; try lia.
@@ -588,7 +575,7 @@ Section definedness.
     2: { apply Htheory. } *)
     rewrite eval_free_evar_simpl.
     rewrite update_evar_val_same.
-    fold (m₂ ∈ rel_of ρ ϕ₁ m₁).
+    fold (m₂ ∈ rel_of ρ ϕ₁ m₁). simpl.
 
     (*rewrite simpl_evar_open.*)
     rewrite <- free_evar_in_patt; auto.
@@ -630,10 +617,10 @@ Section definedness.
     auto.
   Qed.
 
-  Lemma single_element_definedness_impl_satisfies_definedness (M : @Model Σ) :
+  Lemma single_element_definedness_impl_satisfies_definedness (M : Model) :
     (exists (hashdef : Domain M),
         sym_interp M (inj definedness) = {[hashdef]}
-        /\ forall x, app_interp hashdef x = ⊤
+        /\ forall x, app_interp _ hashdef x = ⊤
     ) ->
         satisfies_model M (axiom AxDefinedness).
   Proof.
@@ -666,12 +653,12 @@ Section definedness.
   Qed.
 
   Lemma satisfies_definedness_implies_has_element_for_every_element
-    (M : @Model Σ):
+    (M : Model):
     M ⊨ᵀ theory ->
     forall (x y : Domain M),
       exists (z : Domain M),
         z ∈ sym_interp M (inj definedness)
-        /\ y ∈ app_interp z x.
+        /\ y ∈ app_interp _ z x.
   Proof.
     intros HM x y.
     unfold theory in HM.
@@ -701,12 +688,12 @@ Section definedness.
     split; assumption.
   Qed.
 
-  Lemma not_equal_iff_not_interpr_same_1 : forall (M : @Model Σ),
+  Lemma not_equal_iff_not_interpr_same_1 : forall (M : Model),
     M ⊨ᵀ theory ->
-    forall (ϕ1 ϕ2 : Pattern) (ρ : @Valuation Σ M),
+    forall (ϕ1 ϕ2 : Pattern) (ρ : Valuation),
       @eval Σ M ρ (ϕ1 =ml ϕ2) = ∅ <->
-      @eval Σ M ρ ϕ1
-      <> @eval Σ M ρ ϕ2.
+      eval ρ ϕ1
+      <> eval ρ ϕ2.
   Proof.
     intros M H ϕ1 ϕ2 ρ.
     rewrite -predicate_not_full_iff_empty.
@@ -716,11 +703,11 @@ Section definedness.
     split; intros H'; exact H'.
   Qed.
 
-  Lemma not_subseteq_iff_not_interpr_subseteq_1 : forall (M : @Model Σ),
+  Lemma not_subseteq_iff_not_interpr_subseteq_1 : forall (M : Model),
     M ⊨ᵀ theory ->
-    forall (ϕ1 ϕ2 : Pattern) (ρ : @Valuation Σ M),
-      @eval Σ M ρ (ϕ1 ⊆ml ϕ2) = ∅ <->
-      ~(@eval Σ M ρ ϕ1)
+    forall (ϕ1 ϕ2 : Pattern) (ρ : Valuation),
+      eval ρ (ϕ1 ⊆ml ϕ2) = ∅ <->
+      ~(eval ρ ϕ1)
         ⊆ (@eval Σ M ρ ϕ2).
   Proof.
     intros M H ϕ1 ϕ2 ρ.
@@ -736,7 +723,7 @@ End definedness.
 From MatchingLogic Require Import StringSignature.
 
 Module equivalence_insufficient.
-
+  Open Scope ml_scope.
   Inductive exampleSymbols : Set :=
   | sym_f.
 
@@ -893,7 +880,7 @@ Module equivalence_insufficient.
         set_unfold. intuition.
         left. intuition. apply H. intro. congruence.
   Qed.
-
+  Close Scope ml_scope.
 End equivalence_insufficient.
 
 

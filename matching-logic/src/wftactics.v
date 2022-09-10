@@ -1,7 +1,4 @@
 From Coq Require Import ssreflect ssrfun ssrbool.
-Set Implicit Arguments.
-Unset Strict Implicit.
-Unset Printing Implicit Defensive.
 
 From stdpp Require Import countable infinite.
 From stdpp Require Import pmap gmap mapset fin_sets propset.
@@ -24,7 +21,7 @@ Tactic Notation "wf_auto" := wf_auto 5.
 
 Ltac wf_auto2 := unfold is_true in *;
 repeat (try assumption; try reflexivity; try (solve [wf_auto]); (* TODO: get rid of [wf_auto] *)
-apply nvnullary_wf || apply unary_wf || apply binary_wf ||
+apply nullary_wf || apply unary_wf || apply binary_wf ||
 match goal with
 | [ |- (forall _, _) ]
   => intro
@@ -145,7 +142,7 @@ match goal with
 | [ |- svar_has_negative_occurrence _ (svar_open _ _ _) = false] =>
   unfold svar_open; apply svar_hno_bsvar_subst
 
-|[ |- context C [ svar_quantify ?X ?n (svar_open ?n ?X _) ] ]
+|[ |- context C [ svar_quantify _ _ (svar_open _ _ _) ] ]
   => rewrite svar_quantify_svar_open
 
 | [ |- well_formed_closed_mu_aux (svar_open _ _ _) _ = true] =>
@@ -189,8 +186,12 @@ lazymatch goal with
 | _ => idtac
 end.
 
+Tactic Notation "mlSimpl" :=
+  repeat (rewrite mlSimpl'); try rewrite [increase_ex _ _]/=; try rewrite [increase_mu]/=.
 
-Ltac simpl_bevar_subst :=
-  repeat (rewrite simpl_bevar_subst';try_wfauto2).
-Ltac simpl_bsvar_subst :=
-  repeat (rewrite simpl_bsvar_subst';try_wfauto2).
+Tactic Notation "mlSimpl" "in" hyp(H) :=
+  repeat (rewrite mlSimpl' in H); try rewrite [increase_ex _ _]/= in H; try rewrite [increase_mu _ _]/= in H.
+
+Tactic Notation "mlSortedSimpl" := simpl_sorted_quantification; try rewrite [increase_mu]/=.
+Tactic Notation "mlSortedSimpl" "in" hyp(H) := simpl_sorted_quantification H; try rewrite [increase_mu]/=.
+

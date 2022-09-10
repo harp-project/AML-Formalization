@@ -24,7 +24,7 @@ Section named_proof_system.
   | N_hypothesis (axiom : NamedPattern) :
       named_well_formed axiom ->
       axiom ∈ theory -> theory ⊢N axiom
-                                              
+
   (* FOL reasoning *)
   (* Propositional tautology *)
   | N_P1 (phi psi : NamedPattern) :

@@ -1,7 +1,4 @@
 From Coq Require Import ssreflect ssrfun ssrbool.
-Set Implicit Arguments.
-Unset Strict Implicit.
-Unset Printing Implicit Defensive.
 
 From Coq.Logic Require Import FunctionalExtensionality PropExtensionality Classical_Pred_Type Classical_Prop.
 From Coq.micromega Require Import Lia.
@@ -11,12 +8,13 @@ From stdpp Require Import base fin_sets.
 From stdpp Require Import pmap gmap mapset fin_sets sets propset.
 
 From MatchingLogic.Utils Require Import stdpp_ext extralibrary.
-From MatchingLogic Require Import Syntax.
+From MatchingLogic Require Import Pattern Substitution Freshness.
 
-Import MatchingLogic.Syntax.Notations.
+Import MatchingLogic.Substitution.Notations.
 
 Section index_manipulation.
   Context {Σ : Signature}.
+  Open Scope ml_scope.
 
   Fixpoint nest_ex_aux level more ϕ {struct ϕ} : Pattern :=
     match ϕ with
@@ -124,11 +122,13 @@ Section index_manipulation.
   Qed.
 
   Lemma nest_ex_gt : forall φ dbi dbi2 ψ more, dbi2 >= dbi -> well_formed_closed ψ ->
-     bevar_subst (nest_ex_aux dbi more φ) ψ (dbi2 + more) = nest_ex_aux dbi more (bevar_subst φ ψ dbi2).
+     (nest_ex_aux dbi more φ)^[evar: (dbi2 + more) ↦ ψ] = nest_ex_aux dbi more (φ^[evar: dbi2 ↦ ψ]).
   Proof.
     induction φ; intros dbi dbi2 ψ more Hgt Hwf; cbn; auto.
     * do 3 case_match; auto; simpl; try case_match; subst; try lia; auto.
-      rewrite nest_ex_aux_wfcex; auto. wf_auto. eapply well_formed_closed_ex_aux_ind. 2: eassumption. lia.
+
+      rewrite nest_ex_aux_wfcex; auto. eapply well_formed_closed_ex_aux_ind.
+      2: apply andb_true_iff in Hwf; apply Hwf. lia.
       now replace (pred n + more) with (pred (n + more)) by lia.
     * rewrite -> IHφ1, -> IHφ2; auto.
     * rewrite -> IHφ1, -> IHφ2; auto.
@@ -138,11 +138,12 @@ Section index_manipulation.
   Qed.
 
   Lemma nest_mu_gt : forall φ dbi dbi2 ψ more, dbi2 >= dbi -> well_formed_closed ψ ->
-     bsvar_subst (nest_mu_aux dbi more φ) ψ (dbi2 + more) = nest_mu_aux dbi more (bsvar_subst φ ψ dbi2).
+     (nest_mu_aux dbi more φ)^[svar: (dbi2 + more) ↦ ψ] = nest_mu_aux dbi more (φ^[svar: dbi2 ↦ ψ]).
   Proof.
     induction φ; intros dbi dbi2 ψ more Hgt Hwf; cbn; auto.
     * do 3 case_match; auto; simpl; try case_match; subst; try lia; auto.
-      rewrite nest_mu_aux_wfcmu; auto. wf_auto. eapply well_formed_closed_mu_aux_ind. 2: eassumption. lia.
+      rewrite nest_mu_aux_wfcmu; auto. eapply well_formed_closed_mu_aux_ind.
+      2: apply andb_true_iff in Hwf; apply Hwf. lia.
       now replace (pred n + more) with (pred (n + more)) by lia.
     * rewrite -> IHφ1, -> IHφ2; auto.
     * rewrite -> IHφ1, -> IHφ2; auto.
@@ -151,9 +152,120 @@ Section index_manipulation.
       rewrite -> IHφ; auto.
   Qed.
 
+
+(** NESTING AND QUANTIFICATION **)
+
+  Lemma nest_ex_gt_evar_quantify : forall φ dbi dbi2 x more, dbi >= dbi2 ->
+     (nest_ex_aux dbi2 more φ)^{{evar: x ↦ dbi + more}} = 
+     nest_ex_aux dbi2 more (φ^{{evar: x ↦ dbi}}).
+  Proof.
+    induction φ; intros dbi dbi2 x' more Hgt; cbn; auto.
+    * case_match; auto; simpl; try case_match; subst; try lia; auto.
+    * rewrite -> IHφ1, -> IHφ2; auto.
+    * rewrite -> IHφ1, -> IHφ2; auto.
+    * specialize (IHφ (S dbi) (S dbi2) x' more ltac:(lia)). simpl in IHφ.
+      rewrite -> IHφ; auto.
+    * rewrite -> IHφ; auto.
+  Qed.
+
+  Lemma nest_mu_gt_svar_quantify : forall φ dbi dbi2 x more, dbi >= dbi2 ->
+     (nest_mu_aux dbi2 more φ)^{{svar: x ↦ dbi + more}} = 
+     nest_mu_aux dbi2 more (φ^{{svar: x ↦ dbi}}).
+  Proof.
+    induction φ; intros dbi dbi2 x' more Hgt; cbn; auto.
+    * case_match; auto; simpl; try case_match; subst; try lia; auto.
+    * rewrite -> IHφ1, -> IHφ2; auto.
+    * rewrite -> IHφ1, -> IHφ2; auto.
+    * rewrite -> IHφ; auto.
+    * specialize (IHφ (S dbi) (S dbi2) x' more ltac:(lia)). simpl in IHφ.
+      rewrite -> IHφ; auto.
+  Qed.
+
+  Lemma nest_mu_evar_quantify : forall φ dbi dbi2 x more,
+     (nest_mu_aux dbi2 more φ)^{{evar: x ↦ dbi}} = nest_mu_aux dbi2 more (φ^{{evar: x ↦ dbi}}).
+  Proof.
+    induction φ; intros dbi dbi2 x' more; cbn; auto.
+    * case_match; auto; simpl; try case_match; subst; try lia; auto.
+    * rewrite -> IHφ1, -> IHφ2; auto.
+    * rewrite -> IHφ1, -> IHφ2; auto.
+    * rewrite -> IHφ; auto.
+    * rewrite -> IHφ; auto.
+  Qed.
+
+  Lemma nest_ex_svar_quantify : forall φ dbi dbi2 x more,
+     (nest_ex_aux dbi2 more φ)^{{svar: x ↦ dbi}} = nest_ex_aux dbi2 more (φ^{{svar: x ↦ dbi}}).
+  Proof.
+    induction φ; intros dbi dbi2 x' more; cbn; auto.
+    * case_match; auto; simpl; try case_match; subst; try lia; auto.
+    * rewrite -> IHφ1, -> IHφ2; auto.
+    * rewrite -> IHφ1, -> IHφ2; auto.
+    * rewrite -> IHφ; auto.
+    * rewrite -> IHφ; auto.
+  Qed.
+
+(** NESTING AND FREE VARIABLE SUBSTITUTION **)
+
+  Lemma nest_ex_free_evar_subst : forall φ dbi x more ψ,
+     well_formed_closed_ex_aux ψ dbi ->
+     (nest_ex_aux dbi more φ)^[[evar: x ↦ ψ]] = 
+     nest_ex_aux dbi more (φ^[[evar: x ↦ ψ]]).
+  Proof.
+    induction φ; intros dbi x' more ψ Hwf; cbn; auto.
+    * case_match; auto; simpl; try case_match; subst; try lia; auto.
+      now rewrite nest_ex_aux_wfcex.
+    * rewrite -> IHφ1, -> IHφ2; auto.
+    * rewrite -> IHφ1, -> IHφ2; auto.
+    * rewrite -> IHφ; auto. eapply well_formed_closed_ex_aux_ind. 2: eassumption. lia.
+    * rewrite -> IHφ; auto.
+  Qed.
+
+  Lemma nest_mu_free_evar_subst : forall φ dbi x more ψ,
+     well_formed_closed_mu_aux ψ dbi ->
+     (nest_mu_aux dbi more φ)^[[evar: x ↦ ψ]] = 
+     nest_mu_aux dbi more (φ^[[evar: x ↦ ψ]]).
+  Proof.
+    induction φ; intros dbi x' more ψ Hwf; cbn; auto.
+    * case_match; auto; simpl; try case_match; subst; try lia; auto.
+      now rewrite nest_mu_aux_wfcmu.
+    * rewrite -> IHφ1, -> IHφ2; auto.
+    * rewrite -> IHφ1, -> IHφ2; auto.
+    * rewrite -> IHφ; auto.
+    * rewrite -> IHφ; auto. eapply well_formed_closed_mu_aux_ind. 2: eassumption. lia.
+  Qed.
+
+  Lemma nest_ex_free_svar_subst : forall φ dbi X more ψ,
+     well_formed_closed_ex_aux ψ dbi ->
+     (nest_ex_aux dbi more φ)^[[svar: X ↦ ψ]] = 
+     nest_ex_aux dbi more (φ^[[svar: X ↦ ψ]]).
+  Proof.
+    induction φ; intros dbi x' more ψ Hwf; cbn; auto.
+    * case_match; auto; simpl; try case_match; subst; try lia; auto.
+      now rewrite nest_ex_aux_wfcex.
+    * rewrite -> IHφ1, -> IHφ2; auto.
+    * rewrite -> IHφ1, -> IHφ2; auto.
+    * rewrite -> IHφ; auto. eapply well_formed_closed_ex_aux_ind. 2: eassumption. lia.
+    * rewrite -> IHφ; auto.
+  Qed.
+
+  Lemma nest_mu_free_svar_subst : forall φ dbi X more ψ,
+     well_formed_closed_mu_aux ψ dbi ->
+     (nest_mu_aux dbi more φ)^[[svar: X ↦ ψ]] = 
+     nest_mu_aux dbi more (φ^[[svar: X ↦ ψ]]).
+  Proof.
+    induction φ; intros dbi x' more ψ Hwf; cbn; auto.
+    * case_match; auto; simpl; try case_match; subst; try lia; auto.
+      now rewrite nest_mu_aux_wfcmu.
+    * rewrite -> IHφ1, -> IHφ2; auto.
+    * rewrite -> IHφ1, -> IHφ2; auto.
+    * rewrite -> IHφ; auto.
+    * rewrite -> IHφ; auto. eapply well_formed_closed_mu_aux_ind. 2: eassumption. lia.
+  Qed.
+
+(** ******* **)
+
   Lemma nest_ex_same_general : forall φ dbi ψ more,
      forall x,  x >= dbi -> x < dbi + more -> 
-     bevar_subst (nest_ex_aux dbi more φ) ψ x = nest_ex_aux dbi (pred more) φ.
+     (nest_ex_aux dbi more φ)^[evar: x ↦ ψ] = nest_ex_aux dbi (pred more) φ.
   Proof.
     induction φ; intros dbi ψ more x' Hx1 Hx2; cbn; auto.
     * do 2 case_match; auto; try lia.
@@ -166,7 +278,7 @@ Section index_manipulation.
 
   Lemma nest_mu_same_general : forall φ dbi ψ more,
      forall x,  x >= dbi -> x < dbi + more -> 
-     bsvar_subst (nest_mu_aux dbi more φ) ψ x = nest_mu_aux dbi (pred more) φ.
+     (nest_mu_aux dbi more φ)^[svar: x ↦ ψ] = nest_mu_aux dbi (pred more) φ.
   Proof.
     induction φ; intros dbi ψ more x' Hx1 Hx2; cbn; auto.
     * do 2 case_match; auto; try lia.
@@ -202,14 +314,14 @@ Section index_manipulation.
   Defined.
 
   Corollary nest_ex_same : forall φ dbi ψ,
-     bevar_subst (nest_ex_aux dbi 1 φ) ψ dbi = φ.
+     (nest_ex_aux dbi 1 φ)^[evar: dbi ↦ ψ] = φ.
   Proof.
     intros φ dbi ψ. rewrite nest_ex_same_general; try lia.
     simpl. now rewrite nest_ex_aux_0.
   Qed.
 
   Corollary nest_mu_same : forall φ dbi ψ,
-     bsvar_subst (nest_mu_aux dbi 1 φ) ψ dbi = φ.
+     (nest_mu_aux dbi 1 φ)^[svar: dbi ↦ ψ] = φ.
   Proof.
     intros φ dbi ψ. rewrite nest_mu_same_general; try lia.
     simpl. now rewrite nest_mu_aux_0.
@@ -257,7 +369,7 @@ Section index_manipulation.
 
  Lemma bsvar_subst_nest_ex_aux_comm level more ϕ dbi ψ:
     well_formed_closed_ex_aux ψ level ->
-    bsvar_subst (nest_ex_aux level more ϕ) ψ dbi = nest_ex_aux level more (bsvar_subst ϕ ψ dbi).
+    (nest_ex_aux level more ϕ)^[svar: dbi ↦ ψ] = nest_ex_aux level more (ϕ^[svar: dbi ↦ ψ]).
   Proof.
     move: level dbi. unfold svar_open.
     induction ϕ; move=> level dbi H; simpl; auto.
@@ -271,7 +383,8 @@ Section index_manipulation.
   Qed.
 
   Lemma svar_open_nest_ex_aux_comm level more ϕ dbi X:
-    svar_open dbi X (nest_ex_aux level more ϕ) = nest_ex_aux level more (svar_open dbi X ϕ).
+    (nest_ex_aux level more ϕ)^{svar: dbi ↦ X} = 
+    nest_ex_aux level more (ϕ^{svar: dbi ↦ X}).
   Proof.
     apply bsvar_subst_nest_ex_aux_comm.
     reflexivity.
@@ -279,7 +392,7 @@ Section index_manipulation.
 
   Lemma bevar_subst_nest_mu_aux_comm level more ϕ dbi ψ:
     well_formed_closed_mu_aux ψ level ->
-    bevar_subst (nest_mu_aux level more ϕ) ψ dbi = nest_mu_aux level more (bevar_subst ϕ ψ dbi).
+    (nest_mu_aux level more ϕ)^[evar: dbi ↦ ψ] = nest_mu_aux level more (ϕ^[evar: dbi ↦ ψ]).
   Proof.
     move: level dbi. unfold svar_open.
     induction ϕ; move=> level dbi H; simpl; auto.
@@ -293,7 +406,8 @@ Section index_manipulation.
   Qed.
 
   Lemma evar_open_nest_mu_aux_comm level more ϕ dbi X:
-    evar_open dbi X (nest_mu_aux level more ϕ) = nest_mu_aux level more (evar_open dbi X ϕ).
+    (nest_mu_aux level more ϕ)^{evar: dbi ↦ X} =
+    nest_mu_aux level more (ϕ^{evar: dbi ↦ X}).
   Proof.
     move: level dbi. unfold evar_open.
     induction ϕ; move=> level dbi; simpl; auto; try congruence.
@@ -381,13 +495,13 @@ Section index_manipulation.
   Qed.
 
   Corollary svar_open_nest_ex_comm ϕ dbi X:
-    svar_open dbi X (nest_ex ϕ) = nest_ex (svar_open dbi X ϕ).
+    (nest_ex ϕ)^{svar: dbi ↦ X} = nest_ex (ϕ^{svar: dbi ↦ X}).
   Proof.
     exact (svar_open_nest_ex_aux_comm 0 1 ϕ dbi X).
   Qed.
 
   Corollary evar_open_nest_mu_comm ϕ dbi X:
-    evar_open dbi X (nest_mu ϕ) = nest_mu (evar_open dbi X ϕ).
+    (nest_mu ϕ)^{evar: dbi ↦ X} = nest_mu (ϕ^{evar: dbi ↦ X}).
   Proof.
     exact (evar_open_nest_mu_aux_comm 0 1 ϕ dbi X).
   Qed.

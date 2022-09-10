@@ -1,7 +1,4 @@
 From Coq Require Import ssreflect ssrfun ssrbool.
-Set Implicit Arguments.
-Unset Strict Implicit.
-Unset Printing Implicit Defensive.
 
 From stdpp Require Import base tactics sets.
 
@@ -19,12 +16,17 @@ Require Import
     Substitution
 .
 
+Import MatchingLogic.Substitution.Notations.
 
-  Lemma free_evar_subst_subst_ctx_independent {Σ : Signature} AC ϕ Xfr1 Xfr2:
+Section with_signature.
+  Open Scope ml_scope.
+  Context {Σ : Signature}.
+
+  Lemma free_evar_subst_subst_ctx_independent AC ϕ Xfr1 Xfr2:
   Xfr1 ∉ free_evars_ctx AC ->
   Xfr2 ∉ free_evars_ctx AC ->
-  free_evar_subst (subst_ctx AC (patt_free_evar Xfr1)) ϕ Xfr1 =
-  free_evar_subst (subst_ctx AC (patt_free_evar Xfr2)) ϕ Xfr2.
+  (subst_ctx AC (patt_free_evar Xfr1))^[[evar: Xfr1 ↦ ϕ]] =
+  (subst_ctx AC (patt_free_evar Xfr2))^[[evar: Xfr2 ↦ ϕ]].
 Proof.
   intros HXfr1 HXfr2.
   induction AC.
@@ -36,9 +38,9 @@ Proof.
     { set_solver. }
     { set_solver. }
     simpl. rewrite IHAC.
-    rewrite [free_evar_subst p ϕ Xfr1]free_evar_subst_no_occurrence.
+    rewrite [p^[[evar: Xfr1 ↦ ϕ]]]free_evar_subst_no_occurrence.
     { apply count_evar_occurrences_0. set_solver. }
-    rewrite [free_evar_subst p ϕ Xfr2]free_evar_subst_no_occurrence.
+    rewrite [p^[[evar: Xfr2 ↦ ϕ]]]free_evar_subst_no_occurrence.
     { apply count_evar_occurrences_0. set_solver. }
     reflexivity.
   - simpl in HXfr1. simpl in HXfr2.
@@ -46,10 +48,11 @@ Proof.
     { set_solver. }
     { set_solver. }
     simpl. rewrite IHAC.
-    rewrite [free_evar_subst p ϕ Xfr1]free_evar_subst_no_occurrence.
+    rewrite [p^[[evar: Xfr1 ↦ ϕ]]]free_evar_subst_no_occurrence.
     { apply count_evar_occurrences_0. set_solver. }
-    rewrite [free_evar_subst p ϕ Xfr2]free_evar_subst_no_occurrence.
+    rewrite [p^[[evar: Xfr2 ↦ ϕ]]]free_evar_subst_no_occurrence.
     { apply count_evar_occurrences_0. set_solver. }
     reflexivity.
 Qed.
 
+End with_signature.

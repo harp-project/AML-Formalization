@@ -1,7 +1,4 @@
 From Coq Require Import ssreflect ssrfun ssrbool.
-Set Implicit Arguments.
-Unset Strict Implicit.
-Unset Printing Implicit Defensive.
 
 From Coq Require Import Logic.Classical_Prop.
 
@@ -41,16 +38,16 @@ pcPattern := ApplicationContext2Pattern boxvar AC;
 
 Lemma AC2PC'_wf boxvar AC pf: PC_wf (@ApplicationContext2PatternCtx' boxvar AC pf).
 Proof.
-unfold PC_wf. apply wf_sctx. reflexivity.
+  unfold PC_wf. apply wf_sctx. reflexivity.
 Qed.
 
 Definition ApplicationContext2PatternCtx (AC : Application_context) : PatternCtx :=
-let boxvar := (evar_fresh (elements (free_evars_ctx AC))) in
-@ApplicationContext2PatternCtx' boxvar AC (@set_evar_fresh_is_fresh' Σ _).
+  let boxvar := (evar_fresh (elements (free_evars_ctx AC))) in
+    ApplicationContext2PatternCtx' boxvar AC (@set_evar_fresh_is_fresh' Σ _).
 
 Lemma AC2PC_wf AC: PC_wf (ApplicationContext2PatternCtx AC).
 Proof.
-apply AC2PC'_wf.
+  apply AC2PC'_wf.
 Defined.
 
 Definition is_application (p : Pattern) : bool :=
@@ -91,9 +88,9 @@ Fixpoint PatternCtx2ApplicationContext'
 | patt_app p1 p2 =>
 fun wf =>
 if decide (count_evar_occurrences box_evar p1 = 0) is left _ then
-@ctx_app_r Σ p1 (@PatternCtx2ApplicationContext' box_evar p2 (well_formed_app_2 wf)) (well_formed_app_1 wf)
+@ctx_app_r Σ p1 (@PatternCtx2ApplicationContext' box_evar p2 (well_formed_app_2 _ _ wf)) (well_formed_app_1 _ _ wf)
 else if decide (count_evar_occurrences box_evar p2 = 0) is left _ then
-    @ctx_app_l Σ (@PatternCtx2ApplicationContext' box_evar p1 (well_formed_app_1 wf)) p2 (well_formed_app_2 wf)
+    @ctx_app_l Σ (@PatternCtx2ApplicationContext' box_evar p1 (well_formed_app_1 _ _ wf)) p2 (well_formed_app_2 _ _ wf)
   else
     box
 | _ => fun _ => box
@@ -102,93 +99,94 @@ end
 .
 
 
-Definition PatternCtx2ApplicationContext (C : PatternCtx) (pf: PC_wf C) : Application_context :=
-@PatternCtx2ApplicationContext' (pcEvar C) (pcPattern C) pf.
+Definition PatternCtx2ApplicationContext (C : PatternCtx) (pf: PC_wf C) : 
+  Application_context :=
+  @PatternCtx2ApplicationContext' (pcEvar C) (pcPattern C) pf.
 
 Lemma count_evar_occurrences_subst_ctx AC x:
-x ∉ free_evars_ctx AC ->
-count_evar_occurrences x (subst_ctx AC (patt_free_evar x)) = 1.
+  x ∉ free_evars_ctx AC ->
+  count_evar_occurrences x (subst_ctx AC (patt_free_evar x)) = 1.
 Proof.
-intros H.
-induction AC; simpl.
-- destruct (decide (x = x)); [reflexivity|contradiction].
-- simpl in H. apply not_elem_of_union in H.
-rewrite IHAC;[exact (proj1 H)|].
-rewrite count_evar_occurrences_0; [exact (proj2 H)|].
-reflexivity.
-- simpl in H. apply not_elem_of_union in H.
-rewrite IHAC;[exact (proj2 H)|].
-rewrite count_evar_occurrences_0; [exact (proj1 H)|].
+  intros H.
+  induction AC; simpl.
+  - destruct (decide (x = x)); [reflexivity|contradiction].
+  - simpl in H. apply not_elem_of_union in H.
+  rewrite IHAC;[exact (proj1 H)|].
+  rewrite count_evar_occurrences_0; [exact (proj2 H)|].
+  reflexivity.
+  - simpl in H. apply not_elem_of_union in H.
+  rewrite IHAC;[exact (proj2 H)|].
+  rewrite count_evar_occurrences_0; [exact (proj1 H)|].
 reflexivity.
 Qed.
 
 Lemma ApplicationContext2PatternCtx2ApplicationContext'
-(boxvar : evar)
-(AC : Application_context)
-(Hnotin: boxvar ∉ free_evars_ctx AC) :
-let C : PatternCtx := @ApplicationContext2PatternCtx' boxvar AC Hnotin in
-let pf := AC2PC'_wf Hnotin in
-PatternCtx2ApplicationContext' boxvar pf = AC.
+  (boxvar : evar)
+  (AC : Application_context)
+  (Hnotin: boxvar ∉ free_evars_ctx AC) :
+  let C : PatternCtx := ApplicationContext2PatternCtx' boxvar AC Hnotin in
+  let pf := AC2PC'_wf _ _ Hnotin in
+  PatternCtx2ApplicationContext' boxvar _ pf = AC.
 Proof.
-simpl.
-move: (AC2PC'_wf Hnotin).
-move: boxvar Hnotin.
+  simpl.
+  move: (AC2PC'_wf _ _ Hnotin).
+  move: boxvar Hnotin.
 
-induction AC; intros boxvar Hnotin pf.
-- reflexivity.
-- simpl.
-simpl in Hnotin.
-pose proof (Hnotin' := Hnotin).
-apply not_elem_of_union in Hnotin'.
-destruct Hnotin' as [HnotinAC Hnotinp].
-assert (Hcount1: count_evar_occurrences boxvar (subst_ctx AC (patt_free_evar boxvar)) = 1).
-{ rewrite count_evar_occurrences_subst_ctx; [exact HnotinAC|reflexivity]. }
-rewrite Hcount1.
-destruct (decide (1 = 0)); [inversion e|simpl].
-clear n.
+  induction AC; intros boxvar Hnotin pf.
+  - reflexivity.
+  - simpl.
+  simpl in Hnotin.
+  pose proof (Hnotin' := Hnotin).
+  apply not_elem_of_union in Hnotin'.
+  destruct Hnotin' as [HnotinAC Hnotinp].
+  assert (Hcount1: count_evar_occurrences boxvar (subst_ctx AC (patt_free_evar boxvar)) = 1).
+  { rewrite count_evar_occurrences_subst_ctx; [exact HnotinAC|reflexivity]. }
+  rewrite Hcount1.
+  destruct (decide (1 = 0)); [inversion e|simpl].
+  clear n.
 
-assert (HoneOcc : count_evar_occurrences boxvar (ApplicationContext2Pattern boxvar (ctx_app_l AC p Prf)) = 1).
-{ apply ApplicationContext2Pattern_one_occ. simpl. exact Hnotin. }
-simpl in HoneOcc.
-rewrite Hcount1 in HoneOcc.
-assert (Hcount0: count_evar_occurrences boxvar p = 0).
-{ lia. }
-rewrite Hcount0.
-destruct (decide (0 = 0)). 2: contradiction. simpl. clear e.
-f_equal.
-2: { apply proof_irrelevance. }
-rewrite IHAC;[assumption|reflexivity].
-- simpl.
-simpl in Hnotin.
-pose proof (Hnotin' := Hnotin).
-apply not_elem_of_union in Hnotin'.
-destruct Hnotin' as [Hnotinp HnotinAC].
+  assert (HoneOcc : count_evar_occurrences boxvar (ApplicationContext2Pattern boxvar (ctx_app_l AC p Prf)) = 1).
+  { apply ApplicationContext2Pattern_one_occ. simpl. exact Hnotin. }
+  simpl in HoneOcc.
+  rewrite Hcount1 in HoneOcc.
+  assert (Hcount0: count_evar_occurrences boxvar p = 0).
+  { lia. }
+  rewrite Hcount0.
+  destruct (decide (0 = 0)). 2: contradiction. simpl. clear e.
+  f_equal.
+  2: { apply proof_irrelevance. }
+  rewrite IHAC;[assumption|reflexivity].
+  - simpl.
+  simpl in Hnotin.
+  pose proof (Hnotin' := Hnotin).
+  apply not_elem_of_union in Hnotin'.
+  destruct Hnotin' as [Hnotinp HnotinAC].
 
-assert (HoneOcc : count_evar_occurrences boxvar (ApplicationContext2Pattern boxvar (ctx_app_r p AC Prf)) = 1).
-{ apply ApplicationContext2Pattern_one_occ. simpl. exact Hnotin. }
+  assert (HoneOcc : count_evar_occurrences boxvar (ApplicationContext2Pattern boxvar (ctx_app_r p AC Prf)) = 1).
+  { apply ApplicationContext2Pattern_one_occ. simpl. exact Hnotin. }
 
-assert (Hcount1: count_evar_occurrences boxvar (subst_ctx AC (patt_free_evar boxvar)) = 1).
-{ rewrite count_evar_occurrences_subst_ctx; [exact HnotinAC|reflexivity]. }
+  assert (Hcount1: count_evar_occurrences boxvar (subst_ctx AC (patt_free_evar boxvar)) = 1).
+  { rewrite count_evar_occurrences_subst_ctx; [exact HnotinAC|reflexivity]. }
 
-simpl in HoneOcc.
-rewrite Hcount1 in HoneOcc.
-assert (Hcount0: count_evar_occurrences boxvar p = 0).
-{ lia. }
+  simpl in HoneOcc.
+  rewrite Hcount1 in HoneOcc.
+  assert (Hcount0: count_evar_occurrences boxvar p = 0).
+  { lia. }
 
-rewrite Hcount0.
-destruct (decide (0 = 0)). 2: contradiction. simpl. clear e.
+  rewrite Hcount0.
+  destruct (decide (0 = 0)). 2: contradiction. simpl. clear e.
 
-f_equal.
-2: { apply proof_irrelevance. }
-rewrite IHAC;[assumption|reflexivity].
+  f_equal.
+  2: { apply proof_irrelevance. }
+  rewrite IHAC;[assumption|reflexivity].
 Qed.
 
 Lemma ApplicationContext2PatternCtx2ApplicationContext (AC : Application_context) :
-PatternCtx2ApplicationContext (AC2PC_wf AC) = AC.
+  PatternCtx2ApplicationContext _ (AC2PC_wf AC) = AC.
 Proof.
-unfold PatternCtx2ApplicationContext, ApplicationContext2PatternCtx.
-unfold AC2PC_wf.
-apply ApplicationContext2PatternCtx2ApplicationContext'.
+  unfold PatternCtx2ApplicationContext, ApplicationContext2PatternCtx.
+  unfold AC2PC_wf.
+  apply ApplicationContext2PatternCtx2ApplicationContext'.
 Qed.
 
 Fixpoint is_implicative_context' (box_evar : evar) (phi : Pattern) : bool :=
@@ -204,14 +202,9 @@ then is_implicative_context' box_evar phi2 else true)
 end.
 
 Definition is_implicative_context (C : PatternCtx) :=
-is_implicative_context' (pcEvar C) (pcPattern C).
+  is_implicative_context' (pcEvar C) (pcPattern C).
 
-
-End with_signature.
-
-
-
-Lemma emplace_subst_ctx {Σ : Signature} AC ϕ:
+Lemma emplace_subst_ctx AC ϕ:
   emplace (ApplicationContext2PatternCtx AC) ϕ = subst_ctx AC ϕ.
 Proof.
   induction AC.
@@ -278,3 +271,4 @@ Proof.
     }
 Qed.
 
+End with_signature.

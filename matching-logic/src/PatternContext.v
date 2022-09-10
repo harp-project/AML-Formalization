@@ -1,7 +1,4 @@
 From Coq Require Import ssreflect ssrfun ssrbool.
-Set Implicit Arguments.
-Unset Strict Implicit.
-Unset Printing Implicit Defensive.
 
 From stdpp Require Import base tactics sets.
 
@@ -17,6 +14,8 @@ Require Import
     Substitution
 .
 
+Import MatchingLogic.Substitution.Notations.
+
 Section with_signature.
     Context {Σ : Signature}.
 
@@ -29,8 +28,9 @@ Section with_signature.
 
   Definition PC_wf C := well_formed (pcPattern C).
 
+  Open Scope ml_scope.
   Definition emplace (ctx : PatternCtx) (p : Pattern) : Pattern :=
-    free_evar_subst (pcPattern ctx) p (pcEvar ctx).
+    (pcPattern ctx)^[[evar: (pcEvar ctx) ↦ p]].
 
 
 End with_signature.

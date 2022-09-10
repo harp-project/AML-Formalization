@@ -1,7 +1,4 @@
 From Coq Require Import ssreflect ssrfun ssrbool.
-Set Implicit Arguments.
-Unset Strict Implicit.
-Unset Printing Implicit Defensive.
 
 From Ltac2 Require Import Ltac2.
 
@@ -15,7 +12,7 @@ From Coq.Classes Require Import Morphisms_Prop.
 From Coq.Unicode Require Import Utf8.
 From Coq.micromega Require Import Lia.
 
-From MatchingLogic Require Import Syntax NamedAxioms DerivedOperators_Syntax ProofSystem ProofMode IndexManipulation Substitution.
+From MatchingLogic Require Import Logic ProofMode.
 From MatchingLogic.Theories Require Import Definedness_Syntax Definedness_ProofSystem.
 From MatchingLogic.Utils Require Import stdpp_ext.
 
@@ -25,18 +22,16 @@ From stdpp Require Import base fin_sets sets propset proof_irrel option list.
 
 Import extralibrary.
 
-Import MatchingLogic.Syntax.Notations.
-Import MatchingLogic.DerivedOperators_Syntax.Notations.
-Import MatchingLogic.Syntax.BoundVarSugar.
-Import MatchingLogic.ProofSystem.Notations.
-Import MatchingLogic.Substitution.Notations.
+Import MatchingLogic.Logic.Notations.
+Import MatchingLogic.Theories.Definedness_Syntax.Notations.
 
 Set Default Proof Mode "Classic".
 
 Close Scope equations_scope. (* Because of [!] *)
 
-Import Notations.
 Open Scope ml_scope.
+Open Scope string_scope.
+Open Scope list_scope.
 
 Section ProofSystemTheorems.
   Context
@@ -83,8 +78,8 @@ Section ProofSystemTheorems.
     mlApplyMeta H. clear H.
     mlSplitAnd.
     2: fromMLGoal; assumption.
-    
-    epose proof (@forall_functional_subst _ _ (all, (⌈ b0 and b1 ⌉ ---> ⌊ b0 <---> b1 ⌋)) φ'
+
+    epose proof (forall_functional_subst (all, (⌈ b0 and b1 ⌉ ---> ⌊ b0 <---> b1 ⌋)) φ'
                     Γ HΓ ltac:(wf_auto2) ltac:(wf_auto2) _ ltac:(wf_auto2)) as H.
     Unshelve.
     2: { cbn. do 2 case_match; auto; lia. }
@@ -102,7 +97,7 @@ Section ProofSystemTheorems.
 
    (* TODO: mlIntro for supporting 'all' *)
 
-    pose proof (@universal_generalization _ Γ (all , (⌈ b0 and patt_free_evar x ⌉ ---> ⌊ b0 <---> patt_free_evar x ⌋)) x AnyReasoning (pile_any _)) as H1.
+    pose proof (universal_generalization Γ (all , (⌈ b0 and patt_free_evar x ⌉ ---> ⌊ b0 <---> patt_free_evar x ⌋)) x AnyReasoning (pile_any _)) as H1.
     simpl in H1.
     destruct (decide (x = x)) eqn:Hxx;[|congruence].
     apply H1.
@@ -125,12 +120,12 @@ Section ProofSystemTheorems.
     intros Γ φ HΓ Wf.
     toMLGoal. wf_auto2.
     mlIntro "H0".
-    mlApplyMetaRaw (@forall_functional_subst _ _ ⌈ b0 ⌉ φ _ HΓ ltac:(wf_auto2)
+    mlApplyMetaRaw (forall_functional_subst ⌈ b0 ⌉ φ _ HΓ ltac:(wf_auto2)
                  ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
     mlSplitAnd.
     * mlClear "H0". fromMLGoal. wf_auto2.
       remember (fresh_evar patt_bott) as x.
-      pose proof (@universal_generalization _ Γ ⌈patt_free_evar x⌉ x AnyReasoning (pile_any _)) 
+      pose proof (universal_generalization Γ ⌈patt_free_evar x⌉ x AnyReasoning (pile_any _)) 
         as H1.
       cbn in H1. case_match. 2: congruence. apply H1. reflexivity.
       gapply defined_evar.
@@ -174,22 +169,23 @@ Section ProofSystemTheorems.
 
     toMLGoal. wf_auto2.
     mlIntro.
-    mlApplyMetaRaw (useAnyReasoning (@bott_not_defined _ _ Γ)).
+    mlApplyMetaRaw (useAnyReasoning (bott_not_defined Γ)).
     fromMLGoal. wf_auto2.
-    
+
     apply ceil_monotonic; auto.
     { apply pile_any. }
     { wf_auto2. }
 
     toMLGoal. wf_auto2.
-    mlApplyMetaRaw (useAnyReasoning (@not_not_intro _ Γ ((φ ∈ml φ' <---> φ =ml φ' ))
+    mlApplyMetaRaw (useAnyReasoning (not_not_intro Γ ((φ ∈ml φ' <---> φ =ml φ' ))
                     ltac:(wf_auto2))).
     mlSplitAnd; mlIntro.
-    * mlApplyMetaRaw (membership_imp_equal HΓ Mufree Wf1 Wf2 Func1 Func2). mlExactn 0.
-    * mlApplyMetaRaw (equal_imp_membership HΓ Mufree Wf1 Wf2 _). mlExactn 0.
+    * mlApplyMeta membership_imp_equal; auto. mlExactn 0.
+    * mlApplyMeta equal_imp_membership; auto. mlExactn 0.
       Unshelve.
       toMLGoal. wf_auto2.
-      now mlApplyMetaRaw (functional_pattern_defined HΓ Wf2).
+      clear h. mlApplyMeta functional_pattern_defined; auto.
+      mlExactMeta Func2.
   Defined.
 
   Lemma Prop₃_right : forall Γ φ φ',
@@ -206,13 +202,13 @@ Section ProofSystemTheorems.
     { wf_auto2. }
     (* Why can we only mlApplyMetaRaw here, and not after mlRevert? *)
     {
-      mlApplyMetaRaw (useAnyReasoning (@phi_impl_defined_phi Σ syntax Γ (φ and φ') HΓ ltac:(wf_auto2))).
+      mlApplyMetaRaw (useAnyReasoning (phi_impl_defined_phi Γ (φ and φ') HΓ ltac:(wf_auto2))).
       mlExact "H0".
     }
     replace (⌈ φ and φ' ⌉) with (φ ∈ml φ') by auto.
     mlDestructAnd "H0" as "H2" "H3". mlSplitAnd.
     * mlExact "H2".
-    * mlApplyMetaRaw (membership_imp_equal HΓ MF Wf1 Wf2 Func1 Func2).
+    * mlApplyMeta membership_imp_equal; auto.
       mlExact "H1".
   Defined.
 
@@ -258,7 +254,7 @@ Section ProofSystemTheorems.
     mlIntro "H0". mlDestructAnd "H0" as "H1" "H2".
     mlSplitAnd.
     2: { mlExact "H2". }
-    epose proof (@equality_elimination_basic _ _ Γ φ' (patt_free_evar x)
+    epose proof (equality_elimination_basic Γ φ' (patt_free_evar x)
             {|pcEvar := x; pcPattern := φ^[evar: 0 ↦ patt_free_evar x]|} 
             HΓ WF2 ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
     cbn in H.
@@ -268,7 +264,7 @@ Section ProofSystemTheorems.
       clear - WF2.
       wf_auto2.
     }
-    pose proof (@bound_to_free_variable_subst Σ φ x 1 0 φ' ltac:(lia) ltac:(wf_auto2) WFp1 NotIn) as H0.
+    pose proof (bound_to_free_variable_subst φ x 1 0 φ' ltac:(lia) ltac:(wf_auto2) WFp1 NotIn) as H0.
     unfold evar_open in H0. rewrite <- H0 in H. (* TODO: cast_proof? *)
     rewrite free_evar_subst_id in H.
     assert (Γ ⊢ φ^[evar:0↦φ'] <---> φ^[evar:0↦patt_free_evar x] --->
@@ -276,9 +272,9 @@ Section ProofSystemTheorems.
       toMLGoal; wf_auto2.
       mlIntro "H1". unfold patt_iff. mlDestructAnd "H1" as "H2" "H3". mlExact "H3".
     }
-    
+
     apply useAnyReasoning in H.
-    epose proof (@syllogism_meta Σ Γ _ _ _ AnyReasoning _ _ _ H Hiff).
+    epose proof (syllogism_meta _ _ _ H Hiff).
     (* TODO: mlApplyMetaRaw buggy?
              Tries to match the longest conclusion, not the shortest *)
     apply reorder_meta in H1.
@@ -308,11 +304,11 @@ Section ProofSystemTheorems.
     mlDestructAnd "H0" as "H1" "H2".
     mlSplitAnd.
     2: { mlAssumption. }
-    epose proof (@equality_elimination_basic _ _ Γ φ' (patt_free_evar x)
+    epose proof (equality_elimination_basic Γ φ' (patt_free_evar x)
             {|pcEvar := x; pcPattern := φ^[evar: 0 ↦ patt_free_evar x]|} 
             HΓ WF2 ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
     cbn in H.
-    pose proof (@bound_to_free_variable_subst _ φ x 1 0 φ' ltac:(lia) ltac:(clear -WF2; wf_auto2) WFp1 NotIn) as H0.
+    pose proof (bound_to_free_variable_subst φ x 1 0 φ' ltac:(lia) ltac:(clear -WF2; wf_auto2) WFp1 NotIn) as H0.
     unfold evar_open in H0. rewrite <- H0 in H. (* TODO: cast_proof? *)
     rewrite free_evar_subst_id in H.
     assert (Γ ⊢ φ^[evar:0↦φ'] <---> φ^[evar:0↦patt_free_evar x] --->
@@ -321,7 +317,7 @@ Section ProofSystemTheorems.
       mlIntro "H1". unfold patt_iff. mlDestructAnd "H1" as "H2" "H3". mlExact "H2".
     }
     apply useAnyReasoning in H.
-    epose proof (@syllogism_meta _ Γ _ _ _ AnyReasoning _ _ _ H Hiff).
+    epose proof (syllogism_meta _ _ _ H Hiff).
     (* TODO: mlApplyMetaRaw buggy?
              Tries to match the longest conclusion, not the shortest *)
     apply reorder_meta in H1.
@@ -450,7 +446,6 @@ Section UnificationProcedure.
         and
         foldr patt_and Top (map eq_vars Ss)
     end.
-  Print Unification_problem.
   Definition wf_unification (u : Unification_problem) :=
     wf (map fst u.1) && wf (map snd u.1) && wf (map snd u.2).
 
@@ -534,7 +529,7 @@ Section UnificationProcedure.
          end) with (@app Pattern) by reflexivity.
       mlRevertLast.
       rewrite map_app.
-      do 2 rewrite foldr_app. Check consume.
+      do 2 rewrite foldr_app.
       simpl.
       apply wf_unify_pattern in WF. cbn in WF.
       rewrite map_app in WF. rewrite foldr_app in WF.
@@ -664,3 +659,7 @@ Section UnificationProcedure.
   end. *)
 
 End UnificationProcedure.
+
+Close Scope ml_scope.
+Close Scope string_scope.
+Close Scope list_scope.

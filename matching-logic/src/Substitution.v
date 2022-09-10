@@ -1,7 +1,4 @@
 From Coq Require Import ssreflect ssrfun ssrbool.
-Set Implicit Arguments.
-Unset Strict Implicit.
-Unset Printing Implicit Defensive.
 
 From stdpp Require Import base tactics sets.
 
@@ -15,7 +12,7 @@ Section subst.
 
      (* There are two substitution operations over patterns, [bevar_subst] and [bsvar_subst]. *)
   (* substitute bound variable x for psi in phi *)
-  Fixpoint bevar_subst (phi psi : Pattern) (x : db_index) :=
+  Fixpoint bevar_subst (psi : Pattern) (x : db_index) (phi : Pattern) :=
     match phi with
     | patt_free_evar x' => patt_free_evar x'
     | patt_free_svar x' => patt_free_svar x'
@@ -26,15 +23,15 @@ Section subst.
                            end
     | patt_bound_svar n => patt_bound_svar n
     | patt_sym sigma => patt_sym sigma
-    | patt_app phi1 phi2 => patt_app (bevar_subst phi1 psi x)
-                                     (bevar_subst phi2 psi x)
+    | patt_app phi1 phi2 => patt_app (bevar_subst psi x phi1)
+                                     (bevar_subst psi x phi2)
     | patt_bott => patt_bott
-    | patt_imp phi1 phi2 => patt_imp (bevar_subst phi1 psi x) (bevar_subst phi2 psi x)
-    | patt_exists phi' => patt_exists (bevar_subst phi' psi (S x))
-    | patt_mu phi' => patt_mu (bevar_subst phi' psi x)
+    | patt_imp phi1 phi2 => patt_imp (bevar_subst psi x phi1) (bevar_subst psi x phi2)
+    | patt_exists phi' => patt_exists (bevar_subst psi (S x) phi')
+    | patt_mu phi' => patt_mu (bevar_subst psi x phi')
     end.
 
-  Fixpoint bsvar_subst (phi psi : Pattern) (x : db_index) :=
+  Fixpoint bsvar_subst (psi : Pattern) (x : db_index) (phi : Pattern) :=
     match phi with
     | patt_free_evar x' => patt_free_evar x'
     | patt_free_svar x' => patt_free_svar x'
@@ -45,12 +42,12 @@ Section subst.
                            | Nat_greater _ _ _ => patt_bound_svar (Nat.pred n)
                            end
     | patt_sym sigma => patt_sym sigma
-    | patt_app phi1 phi2 => patt_app (bsvar_subst phi1 psi x)
-                                     (bsvar_subst phi2 psi x)
+    | patt_app phi1 phi2 => patt_app (bsvar_subst psi x phi1)
+                                     (bsvar_subst psi x phi2)
     | patt_bott => patt_bott
-    | patt_imp phi1 phi2 => patt_imp (bsvar_subst phi1 psi x) (bsvar_subst phi2 psi x)
-    | patt_exists phi' => patt_exists (bsvar_subst phi' psi x)
-    | patt_mu phi' => patt_mu (bsvar_subst phi' psi (S x))
+    | patt_imp phi1 phi2 => patt_imp (bsvar_subst psi x phi1) (bsvar_subst psi x phi2)
+    | patt_exists phi' => patt_exists (bsvar_subst psi x phi')
+    | patt_mu phi' => patt_mu (bsvar_subst psi(S x) phi')
     end.
 
 
@@ -85,46 +82,47 @@ Section subst.
     end.
   
   (* substitute free element variable x for psi in phi *)
-  Fixpoint free_evar_subst (phi psi : Pattern) (x : evar) :=
+  Fixpoint free_evar_subst (psi : Pattern) (x : evar) (phi : Pattern) :=
     match phi with
     | patt_free_evar x' => if decide (x = x') is left _ then psi else patt_free_evar x'
     | patt_free_svar X => patt_free_svar X
     | patt_bound_evar x' => patt_bound_evar x'
     | patt_bound_svar X => patt_bound_svar X
     | patt_sym sigma => patt_sym sigma
-    | patt_app phi1 phi2 => patt_app (free_evar_subst phi1 psi x)
-                                     (free_evar_subst phi2 psi x)
+    | patt_app phi1 phi2 => patt_app (free_evar_subst psi x phi1)
+                                     (free_evar_subst psi x phi2)
     | patt_bott => patt_bott
-    | patt_imp phi1 phi2 => patt_imp (free_evar_subst phi1 psi x) (free_evar_subst phi2 psi x)
-    | patt_exists phi' => patt_exists (free_evar_subst phi' psi x)
-    | patt_mu phi' => patt_mu (free_evar_subst phi' psi x)
+    | patt_imp phi1 phi2 => patt_imp (free_evar_subst psi x phi1) (free_evar_subst psi x phi2)
+    | patt_exists phi' => patt_exists (free_evar_subst psi x phi')
+    | patt_mu phi' => patt_mu (free_evar_subst psi x phi')
     end.
 
   (* substitute free set variable X for psi in phi *)
-  Fixpoint free_svar_subst (phi psi : Pattern) (X : svar) : Pattern :=
+  Fixpoint free_svar_subst (psi : Pattern) (X : svar) (phi : Pattern) : Pattern :=
     match phi with
     | patt_free_evar x => patt_free_evar x
     | patt_free_svar X' => if decide (X = X') is left _ then psi else patt_free_svar X'
     | patt_bound_evar x => patt_bound_evar x
     | patt_bound_svar X' => patt_bound_svar X'
     | patt_sym sigma => patt_sym sigma
-    | patt_app phi1 phi2 => patt_app (free_svar_subst phi1 psi X)
-                                     (free_svar_subst phi2 psi X)
+    | patt_app phi1 phi2 => patt_app (free_svar_subst psi X phi1)
+                                     (free_svar_subst psi X phi2)
     | patt_bott => patt_bott
-    | patt_imp phi1 phi2 => patt_imp (free_svar_subst phi1 psi X) (free_svar_subst phi2 psi X)
-    | patt_exists phi' => patt_exists (free_svar_subst phi' psi X)
-    | patt_mu phi' => patt_mu (free_svar_subst phi' psi X)
+    | patt_imp phi1 phi2 => patt_imp (free_svar_subst psi X phi1) (free_svar_subst psi X phi2)
+    | patt_exists phi' => patt_exists (free_svar_subst psi X phi')
+    | patt_mu phi' => patt_mu (free_svar_subst psi X phi')
     end.
+
 
   (* instantiate exists x. p or mu x. p with psi for p *)
   Definition instantiate (phi psi : Pattern) :=
     match phi with
-    | patt_exists phi' => bevar_subst phi' psi 0
-    | patt_mu phi' => bsvar_subst phi' psi 0
+    | patt_exists phi' => bevar_subst psi 0 phi'
+    | patt_mu phi' => bsvar_subst psi 0 phi'
     | _ => phi
     end.
 
-  (* replace element variable x with de Bruijn index level *)
+      (* replace element variable x with de Bruijn index level *)
   Fixpoint evar_quantify (x : evar) (level : db_index)
            (p : Pattern) : Pattern :=
     match p with
@@ -156,86 +154,58 @@ Section subst.
     | patt_mu p' => patt_mu (svar_quantify X (S level) p')
     end.
 
-  Definition exists_quantify (x : evar)
-             (p : Pattern) : Pattern :=
-    patt_exists (evar_quantify x 0 p).
-
-  Definition mu_quantify (X : svar)
-             (p : Pattern) : Pattern :=
-    patt_mu (svar_quantify X 0 p).
-
-
-  
-  (* replace de Bruijn index k with element variable n *)
-  Definition evar_open (k : db_index) (x : evar) (p : Pattern) : Pattern :=
-    bevar_subst p (patt_free_evar x) k.
+      (* replace de Bruijn index k with element variable n *)
+  Definition evar_open (x : evar) (k : db_index) (p : Pattern) : Pattern :=
+    bevar_subst (patt_free_evar x) k p.
 
 
   (* replace de Bruijn index k with set variable n *)
-  Definition svar_open (k : db_index) (X : svar) (p : Pattern) : Pattern :=
-    bsvar_subst p (patt_free_svar X) k.
+  Definition svar_open (X : svar) (k : db_index) (p : Pattern) : Pattern :=
+    bsvar_subst (patt_free_svar X) k p.
+End subst.
 
-  Lemma evar_open_free_evar k n x: evar_open k n (patt_free_evar x) = patt_free_evar x.
-  Proof. reflexivity. Qed.
-  Lemma evar_open_free_svar k n X: evar_open k n (patt_free_svar X) = patt_free_svar X.
-  Proof. reflexivity. Qed.
-  Lemma evar_open_bound_evar k n x: evar_open k n (patt_bound_evar x) = 
-                           match compare_nat x k with
-                           | Nat_less _ _ _ => patt_bound_evar x
-                           | Nat_equal _ _ _ => patt_free_evar n
-                           | Nat_greater _ _ _ => patt_bound_evar (Nat.pred x)
-                           end.
-  Proof.
-    cbn. case_match; done.
-  Qed.
-  Lemma evar_open_bound_svar k n X: evar_open k n (patt_bound_svar X) = patt_bound_svar X.
-  Proof. reflexivity. Qed.
-  Lemma evar_open_sym k n s: evar_open k n (patt_sym s) = patt_sym s.
-  Proof. reflexivity. Qed.
-  Lemma evar_open_app k n ls rs: evar_open k n (patt_app ls rs) = patt_app (evar_open k n ls) (evar_open k n rs).
-  Proof. reflexivity. Qed.
-  Lemma evar_open_bott k n: evar_open k n patt_bott = patt_bott.
-  Proof. reflexivity. Qed.
-  Lemma evar_open_imp k n ls rs: evar_open k n (patt_imp ls rs) = patt_imp (evar_open k n ls) (evar_open k n rs).
-  Proof. reflexivity. Qed.
-  Lemma evar_open_exists k n p': evar_open k n (patt_exists p') = patt_exists (evar_open (S k) n p').
-  Proof. reflexivity. Qed.
-  Lemma evar_open_mu k n p': evar_open k n (patt_mu p') = patt_mu (evar_open k n p').
-  Proof. reflexivity. Qed.
+Module Notations.
 
-  (* More trivial but useful lemmas *)
-  Lemma svar_open_free_evar k n x: svar_open k n (patt_free_evar x) = patt_free_evar x.
-  Proof. reflexivity. Qed.
-  Lemma svar_open_free_svar k n X: svar_open k n (patt_free_svar X) = patt_free_svar X.
-  Proof. reflexivity. Qed.
-  Lemma svar_open_bound_evar k n x: svar_open k n (patt_bound_evar x) = patt_bound_evar x.
-  Proof. reflexivity. Qed.
-  Lemma svar_open_bound_svar k n X: svar_open k n (patt_bound_svar X) = 
-                                    match compare_nat X k with
-                                    | Nat_less _ _ _ => patt_bound_svar X
-                                    | Nat_equal _ _ _ => patt_free_svar n
-                                    | Nat_greater _ _ _ => patt_bound_svar (Nat.pred X)
-                                    end.
-  Proof.
-    reflexivity.
-  Qed.
-  Lemma svar_open_sym k n s: svar_open k n (patt_sym s) = patt_sym s.
-  Proof. reflexivity. Qed.
-  Lemma svar_open_app k n ls rs: svar_open k n (patt_app ls rs) = patt_app (svar_open k n ls) (svar_open k n rs).
-  Proof. reflexivity. Qed.
-  Lemma svar_open_bott k n: svar_open k n patt_bott = patt_bott.
-  Proof. reflexivity. Qed.
-  Lemma svar_open_imp k n ls rs: svar_open k n (patt_imp ls rs) = patt_imp (svar_open k n ls) (svar_open k n rs).
-  Proof. reflexivity. Qed.
-  Lemma svar_open_exists k n p': svar_open k n (patt_exists p') = patt_exists (svar_open k n p').
-  Proof. reflexivity. Qed.
-  Lemma svar_open_mu k n p': svar_open k n (patt_mu p') = patt_mu (svar_open (S k) n p').
-  Proof. reflexivity. Qed.
+  Declare Scope ml_scope.
+  Delimit Scope ml_scope with ml.
+  Notation "e ^[ 'evar:' dbi ↦ e' ]" := (bevar_subst e' dbi e) (at level 2, e' at level 200, left associativity,
+  format "e ^[ 'evar:' dbi ↦ e' ]" ) : ml_scope.
+  Notation "e ^[ 'svar:' dbi ↦ e' ]" := (bsvar_subst e' dbi e) (at level 2, e' at level 200, left associativity,
+  format "e ^[ 'svar:' dbi ↦ e' ]" ) : ml_scope.
+  Notation "e ^[[ 'evar:' x ↦ e' ]]" := (free_evar_subst e' x e) (at level 2, e' at level 200, left associativity,
+  format "e ^[[ 'evar:' x ↦ e' ]]" ) : ml_scope.
+  Notation "e ^[[ 'svar:' X ↦ e' ]]" := (free_svar_subst e' X e) (at level 2, e' at level 200, left associativity,
+  format "e ^[[ 'svar:' X ↦ e' ]]" ) : ml_scope.
 
+  Notation "e ^{ 'evar:' db ↦ x }" := (evar_open x db e) (at level 2, x at level 200, left associativity,
+  format "e ^{ 'evar:' db ↦ x }" ) : ml_scope.
+  Notation "e ^{ 'svar:' db ↦ x }" := (svar_open x db e) (at level 2, x at level 200, left associativity,
+  format "e ^{ 'svar:' db ↦ x }" ) : ml_scope.
+  Notation "e ^{{ 'evar:' x ↦ db }}" := (evar_quantify x db e) (at level 2, x at level 200, left associativity,
+  format "e ^{{ 'evar:' x ↦ db }}" ) : ml_scope.
+  Notation "e ^{{ 'svar:' x ↦ db }}" := (svar_quantify x db e) (at level 2, x at level 200, left associativity,
+  format "e ^{{ 'svar:' x ↦ db }}" ) : ml_scope.
+
+  Notation "e ^ [ e' ]" := (instantiate e e') (at level 2, e' at level 200, left associativity) : ml_scope.
+
+End Notations.
+
+Section subst.
+  Import Notations.
+  Open Scope ml_scope.
+  Context {Σ : Signature}.
+
+  Definition exists_quantify (x : evar)
+             (p : Pattern) : Pattern :=
+    patt_exists (p^{{evar: x ↦ 0}}).
+
+  Definition mu_quantify (X : svar)
+             (p : Pattern) : Pattern :=
+    patt_mu (p^{{svar: X ↦ 0}}).
 
   Lemma evar_open_size :
     forall (k : db_index) (n : evar) (p : Pattern),
-      size p = size (evar_open k n p).
+      size p = size (p^{evar: k ↦ n}).
   Proof.
     intros k n p. generalize dependent k.
     induction p; intros k; cbn; try reflexivity.
@@ -248,7 +218,7 @@ Section subst.
 
   Lemma svar_open_size :
     forall (k : db_index) (n : svar) (p : Pattern),
-      size p = size (svar_open k n p).
+      size p = size (p^{svar: k ↦ n}).
   Proof.
     intros k n p. generalize dependent k.
     induction p; intros k; cbn; try reflexivity.
@@ -263,13 +233,13 @@ Section subst.
  
    (* From https://www.chargueraud.org/research/2009/ln/main.pdf in 3.3 (body def.) *)
    Definition wfc_body_ex phi  := forall x, 
-   ~ elem_of x (free_evars phi) -> well_formed_closed (evar_open 0 x phi) = true.
+   ~ elem_of x (free_evars phi) -> well_formed_closed (phi^{evar: 0 ↦ x}) = true.
 
 
    Lemma positive_negative_occurrence_evar_open_and : forall (phi : Pattern) (db1 db2 : db_index) (x : evar),
    (*le db1 db2 ->*)
-   (no_positive_occurrence_db_b db1 phi -> no_positive_occurrence_db_b db1 (evar_open db2 x phi))
-   /\ (no_negative_occurrence_db_b db1 phi -> no_negative_occurrence_db_b db1 (evar_open db2 x phi)).
+   (no_positive_occurrence_db_b db1 phi -> no_positive_occurrence_db_b db1 (phi^{evar: db2 ↦ x}))
+   /\ (no_negative_occurrence_db_b db1 phi -> no_negative_occurrence_db_b db1 (phi^{evar: db2 ↦ x})).
 Proof.
  induction phi; intros db1 db2 x'; cbn; split; intro H; try lia; auto.
  * case_match; auto.
@@ -286,14 +256,14 @@ Qed.
 
 Lemma no_negative_occurrence_evar_open phi db1 db2 x:
  no_negative_occurrence_db_b db1 phi = true ->
- no_negative_occurrence_db_b db1 (evar_open db2 x phi) = true.
+ no_negative_occurrence_db_b db1 (phi^{evar: db2 ↦ x}) = true.
 Proof.
  apply positive_negative_occurrence_evar_open_and.
 Qed.
 
 Lemma no_positive_occurrence_evar_open phi db1 db2 x:
  no_positive_occurrence_db_b db1 phi = true ->
- no_positive_occurrence_db_b db1 (evar_open db2 x phi) = true.
+ no_positive_occurrence_db_b db1 (phi^{evar: db2 ↦ x}) = true.
 Proof.
  apply positive_negative_occurrence_evar_open_and.
 Qed.
@@ -302,7 +272,7 @@ Qed.
 (*Helper lemma for wf_body_to_wf_ex*)
 Lemma wfc_ex_aux_body_ex_imp2:
  forall phi n x,
-   well_formed_closed_ex_aux (evar_open n x phi) n = true
+   well_formed_closed_ex_aux (phi^{evar: n ↦ x}) n = true
    ->
    well_formed_closed_ex_aux phi (S n) = true.
 Proof using .
@@ -325,7 +295,7 @@ Qed.
 (*Helper lemma for wf_body_to_wf_ex*)
 Lemma wfc_mu_aux_body_ex_imp2:
  forall phi n n' x,
-   well_formed_closed_mu_aux (evar_open n x phi) n' = true
+   well_formed_closed_mu_aux (phi^{evar: n ↦ x}) n' = true
    ->
    well_formed_closed_mu_aux phi n' = true.
 Proof using .
@@ -344,7 +314,7 @@ Qed.
 
 Lemma wfc_ex_aux_body_mu_imp2:
  forall phi n n' X,
-   well_formed_closed_ex_aux (svar_open n X phi) n' = true
+   well_formed_closed_ex_aux (phi^{svar: n ↦ X}) n' = true
    ->
    well_formed_closed_ex_aux phi n' = true.
 Proof using .
@@ -363,7 +333,7 @@ Qed.
 
 Lemma wfc_mu_aux_body_mu_imp2:
  forall phi n X,
-   well_formed_closed_mu_aux (svar_open n X phi) n = true
+   well_formed_closed_mu_aux (phi^{svar: n ↦ X}) n = true
    ->
    well_formed_closed_mu_aux phi (S n) = true.
 Proof using .
@@ -384,131 +354,11 @@ Proof using .
 Qed.
 
 
-  (* The following lemmas are trivial but useful for [rewrite !simpl_evar_open]. *)
-
-  Lemma bevar_subst_free_evar ψ (pf : well_formed_closed ψ) n x :
-    bevar_subst (patt_free_evar x) ψ n = patt_free_evar x.
-  Proof. reflexivity. Qed.
-
-  Lemma bevar_subst_free_svar ψ (pf : well_formed_closed ψ) n X :
-    bevar_subst (patt_free_svar X) ψ n = patt_free_svar X.
-  Proof. reflexivity. Qed.
-
-  Lemma bevar_subst_bound_evar ψ (pf : well_formed_closed ψ) n x :
-    bevar_subst (patt_bound_evar x) ψ n = match compare_nat x n with
-                                          | Nat_less _ _ _ => patt_bound_evar x
-                                          | Nat_equal _ _ _ => ψ
-                                          | Nat_greater _ _ _ => patt_bound_evar (pred x)
-                                          end.
-  Proof.
-    cbn. case_match; done.
-  Qed.
-
-  Lemma bevar_subst_bound_svar ψ (pf : well_formed_closed ψ) n X :
-    bevar_subst (patt_bound_svar X) ψ n = patt_bound_svar X.
-  Proof. reflexivity. Qed.
-
-  Lemma bevar_subst_sym ψ (pf : well_formed_closed ψ) n s :
-    bevar_subst (patt_sym s) ψ n = patt_sym s.
-  Proof. reflexivity. Qed.
-
-  Lemma bevar_subst_app ψ (pf : well_formed_closed ψ) n ls rs :
-    bevar_subst (patt_app ls rs) ψ n = patt_app (bevar_subst ls ψ n) (bevar_subst rs ψ n).
-  Proof. reflexivity. Qed.
-
-  Lemma bevar_subst_bott ψ (pf : well_formed_closed ψ) n:
-    bevar_subst patt_bott ψ n = patt_bott.
-  Proof. reflexivity. Qed.
-
-  Lemma bevar_subst_imp ψ (pf : well_formed_closed ψ) n ls rs :
-    bevar_subst (patt_imp ls rs) ψ n = patt_imp (bevar_subst ls ψ n) (bevar_subst rs ψ n).
-  Proof. reflexivity. Qed.
-
-  Lemma bevar_subst_exists ψ (pf : well_formed_closed ψ) n ϕ :
-    bevar_subst (patt_exists ϕ) ψ n = patt_exists (bevar_subst ϕ ψ (S n)).
-  Proof. reflexivity. Qed.
-
-  Lemma bevar_subst_mu ψ (pf : well_formed_closed ψ) n ϕ :
-    bevar_subst (patt_mu ϕ) ψ n = patt_mu (bevar_subst ϕ ψ n).
-  Proof. reflexivity. Qed.
-
-  (* More trivial but useful lemmas *)
-  Lemma bsvar_subst_free_evar ψ (pf : well_formed_closed ψ) n x :
-    bsvar_subst (patt_free_evar x) ψ n = patt_free_evar x.
-  Proof. reflexivity. Qed.
-
-  Lemma bsvar_subst_free_svar ψ (pf : well_formed_closed ψ) n X :
-    bsvar_subst (patt_free_svar X) ψ n = patt_free_svar X.
-  Proof. reflexivity. Qed.
-
-  Lemma bsvar_subst_bound_evar ψ (pf : well_formed_closed ψ) n x :
-    bsvar_subst (patt_bound_evar x) ψ n = patt_bound_evar x.
-  Proof. reflexivity. Qed.
-
-  Lemma bsvar_subst_bound_svar ψ (pf : well_formed_closed ψ) n X :
-    bsvar_subst (patt_bound_svar X) ψ n = match compare_nat X n with
-                                          | Nat_less _ _ _ => patt_bound_svar X
-                                          | Nat_equal _ _ _ => ψ
-                                          | Nat_greater _ _ _ => patt_bound_svar (pred X)
-                                          end.
-  Proof.
-    reflexivity.
-  Qed.
-
-  Lemma bsvar_subst_sym ψ (pf : well_formed_closed ψ) n s :
-    bsvar_subst (patt_sym s) ψ n = patt_sym s.
-  Proof. reflexivity. Qed.
-
-  Lemma bsvar_subst_app ψ (pf : well_formed_closed ψ) n ls rs :
-    bsvar_subst (patt_app ls rs) ψ n = patt_app (bsvar_subst ls ψ n) (bsvar_subst rs ψ n).
-  Proof. reflexivity. Qed.
-
-  Lemma bsvar_subst_bott ψ (pf : well_formed_closed ψ) n :
-    bsvar_subst patt_bott ψ n = patt_bott.
-  Proof. reflexivity. Qed.
-
-  Lemma bsvar_subst_imp ψ (pf : well_formed_closed ψ) n ls rs:
-    bsvar_subst (patt_imp ls rs) ψ n = patt_imp (bsvar_subst ls ψ n) (bsvar_subst rs ψ n).
-  Proof. reflexivity. Qed.
-
-  Lemma bsvar_subst_exists ψ (pf : well_formed_closed ψ) n ϕ :
-    bsvar_subst (patt_exists ϕ) ψ n = patt_exists (bsvar_subst ϕ ψ n).
-  Proof. reflexivity. Qed.
-
-  Lemma bsvar_subst_mu ψ (pf : well_formed_closed ψ) n ϕ :
-    bsvar_subst (patt_mu ϕ) ψ n = patt_mu (bsvar_subst ϕ ψ (S n)).
-  Proof. reflexivity. Qed.
-
-
-End subst.
-
-Module Notations.
-
-Declare Scope ml_scope.
-Notation "e ^[ 'evar:' dbi ↦ e' ]" := (bevar_subst e e' dbi) (at level 2, e' at level 200, left associativity,
-format "e ^[ 'evar:' dbi ↦ e' ]" ) : ml_scope.
-Notation "e ^[ 'svar:' dbi ↦ e' ]" := (bsvar_subst e e' dbi) (at level 2, e' at level 200, left associativity,
-format "e ^[ 'svar:' dbi ↦ e' ]" ) : ml_scope.
-Notation "e ^[[ 'evar:' x ↦ e' ]]" := (free_evar_subst e e' x) (at level 2, e' at level 200, left associativity,
-format "e ^[[ 'evar:' x ↦ e' ]]" ) : ml_scope.
-Notation "e ^[[ 'svar:' X ↦ e' ]]" := (free_svar_subst e e' X) (at level 2, e' at level 200, left associativity,
-format "e ^[[ 'svar:' X ↦ e' ]]" ) : ml_scope.
-Notation "e ^ [ e' ]" := (instantiate e e') (at level 2, e' at level 200, left associativity) : ml_scope.
-
-End Notations.
-
-Import Notations.
-Open Scope ml_scope.
-
-Section subst.
-    Context {Σ : Signature}.
-
-
 Lemma wfc_ex_aux_bevar_subst :
 forall phi psi n,
   well_formed_closed_ex_aux phi (S n) = true
   -> well_formed_closed_ex_aux psi n = true
-  -> well_formed_closed_ex_aux (bevar_subst phi psi n) n = true.
+  -> well_formed_closed_ex_aux (phi^[evar: n ↦ psi]) n = true.
 Proof.
 intros phi psi n H H0. 
 generalize dependent n. generalize dependent psi.
@@ -532,7 +382,7 @@ Lemma wfc_mu_aux_bevar_subst :
 forall phi psi n n',
   well_formed_closed_mu_aux phi n' = true
   -> well_formed_closed_mu_aux psi n' = true
-  -> well_formed_closed_mu_aux (bevar_subst phi psi n) n' = true.
+  -> well_formed_closed_mu_aux (phi^[evar: n ↦ psi]) n' = true.
 Proof.
 intros phi psi n n' H H0. 
 generalize dependent n. generalize dependent n'. generalize dependent psi.
@@ -555,7 +405,7 @@ Lemma wfc_ex_aux_bsvar_subst :
 forall phi psi n n',
   well_formed_closed_ex_aux phi n = true
   -> well_formed_closed_ex_aux psi n = true
-  -> well_formed_closed_ex_aux (bsvar_subst phi psi n') n = true.
+  -> well_formed_closed_ex_aux (phi^[svar: n' ↦ psi]) n = true.
 Proof.
 intros phi psi n n' H H0. 
 generalize dependent n. generalize dependent n'. generalize dependent psi.
@@ -574,7 +424,7 @@ Lemma wfc_mu_aux_bsvar_subst :
 forall phi psi n',
   well_formed_closed_mu_aux phi (S n') = true
   -> well_formed_closed_mu_aux psi n' = true
-  -> well_formed_closed_mu_aux (bsvar_subst phi psi n') n' = true.
+  -> well_formed_closed_mu_aux (phi^[svar: n' ↦ psi]) n' = true.
 Proof.
 intros phi psi n' H H0. 
 generalize dependent n'. generalize dependent psi.
@@ -599,7 +449,7 @@ Corollary wfc_ex_aux_body_ex_imp1:
 forall phi n x,
   well_formed_closed_ex_aux phi (S n) = true
   ->
-  well_formed_closed_ex_aux (evar_open n x phi) n = true.
+  well_formed_closed_ex_aux (phi^{evar: n ↦ x}) n = true.
 Proof using .
 intros. apply wfc_ex_aux_bevar_subst; auto.
 Qed.
@@ -608,7 +458,7 @@ Corollary wfc_mu_aux_body_ex_imp1:
 forall phi n n' x,
   well_formed_closed_mu_aux phi n' = true
   ->
-  well_formed_closed_mu_aux (evar_open n x phi) n' = true.
+  well_formed_closed_mu_aux (phi^{evar: n ↦ x}) n' = true.
 Proof using .
 intros. now apply wfc_mu_aux_bevar_subst.
 Qed.
@@ -617,7 +467,7 @@ Corollary wfc_ex_aux_body_mu_imp1:
 forall phi n n' X,
   well_formed_closed_ex_aux phi n' = true
   ->
-  well_formed_closed_ex_aux (svar_open n X phi) n' = true.
+  well_formed_closed_ex_aux (phi^{svar: n ↦ X}) n' = true.
 Proof using .
 intros. now apply wfc_ex_aux_bsvar_subst.
 Qed.
@@ -626,7 +476,7 @@ Corollary wfc_mu_aux_body_mu_imp1:
 forall phi n X,
   well_formed_closed_mu_aux phi (S n) = true
   ->
-  well_formed_closed_mu_aux (svar_open n X phi) n = true.
+  well_formed_closed_mu_aux (phi^{svar: n ↦ X}) n = true.
 Proof using .
 intros. now apply wfc_mu_aux_bsvar_subst.
 Qed.
@@ -673,7 +523,7 @@ Corollary wfc_mu_aux_body_mu_imp3:
 forall phi n n' X, n' <= n ->
   well_formed_closed_mu_aux phi (S n) = true
   ->
-  well_formed_closed_mu_aux (svar_open n' X phi) n = true.
+  well_formed_closed_mu_aux (phi^{svar: n' ↦ X}) n = true.
 Proof using .
 intros. now apply wfc_mu_aux_bsvar_subst_le.
 Qed.
@@ -682,7 +532,7 @@ Corollary wfc_mu_aux_body_ex_imp3:
 forall phi n n' X, n' <= n ->
   well_formed_closed_ex_aux phi (S n) = true
   ->
-  well_formed_closed_ex_aux (evar_open n' X phi) n = true.
+  well_formed_closed_ex_aux (phi^{evar: n' ↦ X}) n = true.
 Proof using .
 intros. now apply wfc_ex_aux_bsvar_subst_le.
 Qed.
@@ -691,7 +541,7 @@ Corollary wfc_ex_aux_body_iff:
 forall phi n x,
   well_formed_closed_ex_aux phi (S n) = true
   <->
-  well_formed_closed_ex_aux (evar_open n x phi) n = true.
+  well_formed_closed_ex_aux (phi^{evar: n ↦ x}) n = true.
 Proof.
 split.
 apply wfc_ex_aux_body_ex_imp1.
@@ -702,7 +552,7 @@ Corollary wfc_mu_aux_body_iff:
 forall phi n X,
   well_formed_closed_mu_aux phi (S n) = true
   <->
-  well_formed_closed_mu_aux (svar_open n X phi) n = true.
+  well_formed_closed_mu_aux (phi^{svar: n ↦ X}) n = true.
 Proof.
 split.
 apply wfc_mu_aux_body_mu_imp1.
@@ -728,11 +578,11 @@ Qed.
 Lemma no_neg_occ_db_bevar_subst phi psi dbi1 dbi2:
 well_formed_closed_mu_aux psi 0 = true ->
 no_negative_occurrence_db_b dbi1 phi = true ->
-no_negative_occurrence_db_b dbi1 (bevar_subst phi psi dbi2) = true
+no_negative_occurrence_db_b dbi1 (phi^[evar: dbi2 ↦ psi]) = true
 with no_pos_occ_db_bevar_subst  phi psi dbi1 dbi2:
    well_formed_closed_mu_aux psi 0 = true ->
    no_positive_occurrence_db_b dbi1 phi = true ->
-   no_positive_occurrence_db_b dbi1 (bevar_subst phi psi dbi2) = true.
+   no_positive_occurrence_db_b dbi1 (phi^[evar: dbi2 ↦ psi]) = true.
 Proof.
 - move: dbi1 dbi2.
 induction phi; intros dbi1 dbi2 Hwfcpsi Hnonegphi; cbn in *; auto.
@@ -740,7 +590,7 @@ induction phi; intros dbi1 dbi2 Hwfcpsi Hnonegphi; cbn in *; auto.
 + destruct_and!.
 rewrite -> IHphi1, -> IHphi2; auto.
 + destruct_and!.
-fold (no_positive_occurrence_db_b dbi1 (bevar_subst phi1 psi dbi2)).
+fold (no_positive_occurrence_db_b dbi1 (phi1^[evar: dbi2 ↦ psi]) ).
 rewrite no_pos_occ_db_bevar_subst; auto.
 rewrite -> IHphi2; auto.
 - move: dbi1 dbi2.
@@ -750,7 +600,7 @@ apply wfc_impl_no_pos_occ. assumption.
 + destruct_and!.
 rewrite -> IHphi1, -> IHphi2; auto.
 + destruct_and!.
-fold (no_negative_occurrence_db_b dbi1 (bevar_subst phi1 psi dbi2)).
+fold (no_negative_occurrence_db_b dbi1 (phi1^[evar: dbi2 ↦ psi]) ).
 rewrite no_neg_occ_db_bevar_subst; auto.
 rewrite -> IHphi2; auto.
 Qed.
@@ -760,7 +610,7 @@ forall φ ψ n,
 well_formed_closed_mu_aux ψ 0 = true ->
 well_formed_positive φ = true ->
 well_formed_positive ψ = true ->
-well_formed_positive (bevar_subst φ ψ n) = true.
+well_formed_positive (φ^[evar: n ↦ ψ])  = true.
 Proof.
 induction φ; intros ψ n' H0 H1 H2; cbn in *; auto.
 * break_match_goal; auto.
@@ -773,7 +623,7 @@ Qed.
 
 Corollary wfp_evar_open : forall phi x n,
 well_formed_positive phi = true ->
-well_formed_positive (evar_open n x phi) = true.
+well_formed_positive (phi^{evar: n ↦ x}) = true.
 Proof.
 intros phi x n WF. apply bevar_subst_positive_2; auto.
 Qed.
@@ -783,7 +633,7 @@ Qed.
 (* evar_open and evar_quantify are inverses *)
 Lemma evar_open_evar_quantify x n phi:
 well_formed_closed_ex_aux phi n ->
-(evar_open n x (evar_quantify x n phi)) = phi.
+((phi^{{evar: x ↦ n}})^{evar: n ↦ x}) = phi.
 Proof.
 intros H.
 (*apply wfc_wfc_ind in H.*)
@@ -810,7 +660,7 @@ Qed.
 
 Lemma svar_open_svar_quantify X n phi:
 well_formed_closed_mu_aux phi n ->
-(svar_open n X (svar_quantify X n phi)) = phi.
+((phi^{{svar: X ↦ n}})^{svar: n ↦ X}) = phi.
 Proof.
 intros H.
 (*apply wfc_wfc_ind in H.*)
@@ -837,7 +687,7 @@ Qed.
 
 Lemma evar_quantify_evar_open x n phi:
 x ∉ free_evars phi -> well_formed_closed_ex_aux phi (S n) ->
-(evar_quantify x n (evar_open n x phi)) = phi.
+((phi^{evar: n ↦ x})^{{evar: x ↦ n}}) = phi.
 Proof.
 revert n.
 induction phi; intros n' H0 H1; simpl; auto.
@@ -864,7 +714,7 @@ Qed.
 
 Lemma svar_quantify_svar_open X n phi:
 X ∉ free_svars phi -> well_formed_closed_mu_aux phi (S n) ->
-(svar_quantify X n (svar_open n X phi)) = phi.
+((phi^{svar: n ↦ X})^{{svar: X ↦ n}}) = phi.
 Proof.
 revert n.
 induction phi; intros n' H0 H1; simpl; auto.
@@ -890,7 +740,7 @@ erewrite -> IHphi by assumption. reflexivity.
 Qed.
 
 Lemma double_evar_quantify φ : forall x n,
-evar_quantify x n (evar_quantify x n φ) = evar_quantify x n φ.
+φ^{{evar: x ↦ n}}^{{evar: x ↦ n}} = φ^{{evar: x ↦ n}}.
 Proof.
 induction φ; intros x' n'; simpl; auto.
 * unfold evar_quantify. repeat case_match; auto. contradiction.
@@ -901,7 +751,7 @@ induction φ; intros x' n'; simpl; auto.
 Qed.
 
 Lemma double_svar_quantify φ : forall X n,
-svar_quantify X n (svar_quantify X n φ) = svar_quantify X n φ.
+φ^{{svar: X ↦ n}}^{{svar: X ↦ n}} = φ^{{svar: X ↦ n}}.
 Proof.
 induction φ; intros x' n'; simpl; auto.
 * unfold svar_quantify. repeat case_match; auto. contradiction.
@@ -913,7 +763,7 @@ Qed.
 
 Lemma well_formed_bevar_subst φ : forall ψ n m,
 m >= n -> well_formed_closed_ex_aux φ n ->
-bevar_subst φ ψ m = φ.
+(φ^[evar: m ↦ ψ]) = φ.
 Proof.
 induction φ; intros ψ n' m' H H0; simpl; auto.
 * simpl in H0. repeat case_match; auto; try lia; congruence.
@@ -929,7 +779,7 @@ Qed.
 
 Lemma well_formed_bsvar_subst φ : forall ψ k m,
 m >= k -> well_formed_closed_mu_aux φ k ->
-bsvar_subst φ ψ m = φ.
+(φ^[svar: m ↦ ψ]) = φ.
 Proof.
 induction φ; intros ψ k' m' H H0; simpl; auto.
 * simpl in H0. repeat case_match; auto; try lia; congruence.
@@ -946,7 +796,7 @@ Qed.
 (* bevar_subst is identity if n does not occur in phi *)
 Corollary bevar_subst_not_occur n ψ ϕ :
 well_formed_closed_ex_aux ϕ n ->
-bevar_subst ϕ ψ n = ϕ.
+(ϕ^[evar: n ↦ ψ]) = ϕ.
 Proof.
 intro H. eapply well_formed_bevar_subst; eauto.
 Qed.
@@ -954,7 +804,7 @@ Qed.
 (* evar_open is identity if n does not occur in phi *)
 Corollary evar_open_not_occur n x ϕ :
 well_formed_closed_ex_aux ϕ n ->
-evar_open n x ϕ = ϕ.
+ϕ^{evar: n ↦ x} = ϕ.
 Proof.
 apply bevar_subst_not_occur.
 Qed.
@@ -962,7 +812,7 @@ Qed.
 (* bsvar_subst is identity if n does not occur in phi *)
 Corollary bsvar_subst_not_occur n ψ ϕ :
 well_formed_closed_mu_aux ϕ n ->
-bsvar_subst ϕ ψ n = ϕ.
+(ϕ^[svar: n ↦ ψ]) = ϕ.
 Proof.
 intro H. eapply well_formed_bsvar_subst; eauto.
 Qed.
@@ -970,7 +820,7 @@ Qed.
 (* evar_open is identity if n does not occur in phi *)
 Corollary svar_open_not_occur n x ϕ :
 well_formed_closed_mu_aux ϕ n ->
-svar_open n x ϕ = ϕ.
+ϕ^{svar: n ↦ x} = ϕ.
 Proof.
 apply bsvar_subst_not_occur.
 Qed.
@@ -980,7 +830,7 @@ Lemma evar_open_closed :
 forall phi,
 well_formed_closed_ex_aux phi 0 ->
 forall n v,
-  evar_open n v phi = phi.
+  phi^{evar: n ↦ v} = phi.
 Proof.
 intros phi H n v. unfold evar_open. erewrite well_formed_bevar_subst. 3: exact H.
 auto. lia.
@@ -990,7 +840,7 @@ Lemma svar_open_closed :
 forall phi,
 well_formed_closed_mu_aux phi 0 ->
 forall n v,
-  svar_open n v phi = phi.
+  phi^{svar: n ↦ v} = phi.
 Proof. 
 intros phi H n v. unfold svar_open. erewrite well_formed_bsvar_subst. 3: exact H.
 auto. lia.
@@ -999,8 +849,8 @@ Qed.
 Lemma bevar_subst_comm_higher :
 forall phi psi1 psi2 n m, 
 n > m -> well_formed_closed_ex_aux psi1 0 -> well_formed_closed_ex_aux psi2 0 ->
-bevar_subst (bevar_subst phi psi1 n) psi2 m = 
-bevar_subst (bevar_subst phi psi2 m) psi1 (pred n).
+(phi^[evar: n ↦ psi1])^[evar: m ↦ psi2] = 
+(phi^[evar: m ↦ psi2])^[evar: pred n ↦ psi1].
 Proof.
 induction phi; intros psi1 psi2 n0 m0 NEQ Hwf1 Hwf2; simpl; auto.
 - repeat case_match; simpl; try rewrite -> Heqc; try rewrite -> Heqc0; auto; subst; try congruence.
@@ -1017,8 +867,8 @@ Qed.
 Lemma bevar_subst_comm_lower :
 forall phi psi1 psi2 n m, 
 n < m -> well_formed_closed_ex_aux psi1 0 -> well_formed_closed_ex_aux psi2 0 ->
-bevar_subst (bevar_subst phi psi1 n) psi2 m = 
-bevar_subst (bevar_subst phi psi2 (S m)) psi1 n.
+(phi^[evar: n ↦ psi1])^[evar: m ↦ psi2] = 
+(phi^[evar: S m ↦ psi2])^[evar: n ↦ psi1].
 Proof.
 induction phi; intros psi1 psi2 n0 m0 NEQ Hwf1 Hwf2; simpl; auto.
 - repeat case_match; simpl; try rewrite -> Heqc; try rewrite -> Heqc0; auto; subst; try congruence.
@@ -1034,8 +884,8 @@ Qed.
 Lemma bsvar_subst_comm_higher :
 forall phi psi1 psi2 n m, 
 n > m -> well_formed_closed_mu_aux psi1 0 -> well_formed_closed_mu_aux psi2 0 ->
-bsvar_subst (bsvar_subst phi psi1 n) psi2 m = 
-bsvar_subst (bsvar_subst phi psi2 m) psi1 (pred n).
+(phi^[svar: n ↦ psi1])^[svar: m ↦ psi2] = 
+(phi^[svar: m ↦ psi2])^[svar: pred n ↦ psi1].
 Proof.
 induction phi; intros psi1 psi2 n0 m0 NEQ Hwf1 Hwf2; simpl; auto.
 - repeat case_match; simpl; try rewrite -> Heqc; try rewrite -> Heqc0; auto; subst; try congruence.
@@ -1052,8 +902,8 @@ Qed.
 Lemma bsvar_subst_comm_lower :
 forall phi psi1 psi2 n m, 
 n < m -> well_formed_closed_mu_aux psi1 0 -> well_formed_closed_mu_aux psi2 0 ->
-bsvar_subst (bsvar_subst phi psi1 n) psi2 m = 
-bsvar_subst (bsvar_subst phi psi2 (S m)) psi1 n.
+(phi^[svar: n ↦ psi1])^[svar: m ↦ psi2] = 
+(phi^[svar: S m ↦ psi2])^[svar: n ↦ psi1].
 Proof.
 induction phi; intros psi1 psi2 n0 m0 NEQ Hwf1 Hwf2; simpl; auto.
 - repeat case_match; simpl; try rewrite -> Heqc; try rewrite -> Heqc0; auto; subst; try congruence.
@@ -1071,7 +921,7 @@ forall n m,
 n < m 
 ->
 forall x y phi,
-  evar_open n x (evar_open m y phi) = evar_open (pred m) y (evar_open n x phi).
+  phi^{evar: m ↦ y}^{evar: n ↦ x} = phi^{evar: n ↦ x}^{evar: pred m ↦ y}.
 Proof.
 intros n m Hneqnm x y phi. apply bevar_subst_comm_higher; auto.
 Qed.
@@ -1081,7 +931,7 @@ forall n m,
 n > m 
 ->
 forall x y phi,
-  evar_open n x (evar_open m y phi) = evar_open m y (evar_open (S n) x phi).
+  phi^{evar: m ↦ y}^{evar: n ↦ x} = phi^{evar: S n ↦ x}^{evar: m ↦ y}.
 Proof.
 intros n m Hneqnm x y phi. apply bevar_subst_comm_lower; auto.
 Qed.
@@ -1091,7 +941,7 @@ forall n m,
 n < m 
 ->
 forall X Y phi,
-  svar_open n X (svar_open m Y phi) = svar_open (pred m) Y (svar_open n X phi).
+   phi^{svar: m ↦ Y}^{svar: n ↦ X} = phi^{svar: n ↦ X}^{svar: pred m ↦ Y} .
 Proof.
 intros n m Hneqnm x y phi. apply bsvar_subst_comm_higher; auto.
 Qed.
@@ -1101,15 +951,15 @@ forall n m,
 n > m
 ->
 forall X Y phi,
-  svar_open n X (svar_open m Y phi) = svar_open m Y (svar_open (S n) X phi).
+  phi^{svar: m ↦ Y} ^{svar: n ↦ X} = phi^{svar: S n ↦ X} ^{svar: m ↦ Y}.
 Proof.
 intros n m Hneqnm x y phi. apply bsvar_subst_comm_lower; auto.
 Qed.
 
 Lemma bevar_subst_bsvar_subst phi psi1 psi2 dbi1 dbi2
 : well_formed_closed psi1 -> well_formed_closed psi2 ->
-bevar_subst (bsvar_subst phi psi1 dbi1) psi2 dbi2
-= bsvar_subst (bevar_subst phi psi2 dbi2) psi1 dbi1.
+(phi^[svar: dbi1 ↦ psi1])^[evar: dbi2 ↦ psi2] = 
+(phi^[evar: dbi2 ↦ psi2])^[svar: dbi1 ↦ psi1].
 Proof.
 generalize dependent dbi1. generalize dependent dbi2.
 induction phi; intros dbi1 dbi2 Hwf1 Hwf2; simpl; auto.
@@ -1127,14 +977,14 @@ Qed.
 
 Corollary svar_open_evar_open_comm
 : forall (phi : Pattern) (dbi1 : db_index)(x : evar)(dbi2 : db_index)(X : svar),
-evar_open dbi1 x (svar_open dbi2 X phi) = svar_open dbi2 X (evar_open dbi1 x phi).
+  phi^{svar: dbi2 ↦ X}^{evar: dbi1 ↦ x}  = phi^{evar: dbi1 ↦ x}^{svar: dbi2 ↦ X} .
 Proof.
 intros phi dbi1 x dbi2 X. apply bevar_subst_bsvar_subst; auto.
 Qed.
 
 
 Lemma free_svars_evar_open : forall (ϕ : Pattern) (dbi :db_index) (x : evar),
-free_svars (evar_open dbi x ϕ) = free_svars ϕ.
+free_svars ϕ^{evar: dbi ↦ x} = free_svars ϕ.
 Proof.
 unfold evar_open.
 induction ϕ; intros dbi x'; simpl; try reflexivity.
@@ -1150,10 +1000,10 @@ Lemma positive_negative_occurrence_db_named :
 forall (phi : Pattern) (dbi : db_index) (X : svar),
   (no_positive_occurrence_db_b dbi phi ->
    svar_has_positive_occurrence X phi = false ->
-   svar_has_positive_occurrence X (svar_open dbi X phi) = false)
+   svar_has_positive_occurrence X (phi^{svar: dbi ↦ X}) = false)
   /\ (no_negative_occurrence_db_b dbi phi ->
       svar_has_negative_occurrence X phi = false ->
-      svar_has_negative_occurrence X (svar_open dbi X phi) = false).
+      svar_has_negative_occurrence X (phi^{svar: dbi ↦ X}) = false).
 Proof.
 unfold svar_open.
 induction phi; intros dbi X; split; simpl; try firstorder; cbn in *.
@@ -1170,8 +1020,8 @@ induction phi; intros dbi X; split; simpl; try firstorder; cbn in *.
 Qed.
 
 Lemma positive_negative_occurrence_evar_open : forall (ϕ : Pattern) (X : svar) (dbi : db_index) (x : evar),
-  (svar_has_positive_occurrence X (evar_open dbi x ϕ) = false <-> svar_has_positive_occurrence X ϕ = false)
-  /\ (svar_has_negative_occurrence X (evar_open dbi x ϕ) = false <-> svar_has_negative_occurrence X ϕ = false).
+  (svar_has_positive_occurrence X (ϕ^{evar: dbi ↦ x}) = false <-> svar_has_positive_occurrence X ϕ = false)
+  /\ (svar_has_negative_occurrence X (ϕ^{evar: dbi ↦ x}) = false <-> svar_has_negative_occurrence X ϕ = false).
 Proof.
 unfold evar_open.
 induction ϕ; intros dbi X; split; simpl; auto; cbn.
@@ -1212,13 +1062,13 @@ induction ϕ; intros dbi X; split; simpl; auto; cbn.
 Qed.
 
 Corollary positive_occurrence_evar_open : forall (ϕ : Pattern) (X : svar) (dbi : db_index) (x : evar),
-  svar_has_positive_occurrence X (evar_open dbi x ϕ) = false <-> svar_has_positive_occurrence X ϕ = false.
+  svar_has_positive_occurrence X (ϕ^{evar: dbi ↦ x}) = false <-> svar_has_positive_occurrence X ϕ = false.
 Proof.
 apply positive_negative_occurrence_evar_open.
 Qed.
 
 Corollary negative_occurrence_evar_open : forall (ϕ : Pattern) (X : svar) (dbi : db_index) (x : evar),
-  svar_has_negative_occurrence X (evar_open dbi x ϕ) = false <-> svar_has_negative_occurrence X ϕ = false.
+  svar_has_negative_occurrence X (ϕ^{evar: dbi ↦ x}) = false <-> svar_has_negative_occurrence X ϕ = false.
 Proof.
 apply positive_negative_occurrence_evar_open.
 Qed.
@@ -1227,9 +1077,9 @@ Lemma positive_negative_occurrence_db_svar_open_le : forall (phi : Pattern) (dbi
   dbi1 < dbi2 ->
   (
     no_positive_occurrence_db_b dbi1 phi ->
-    no_positive_occurrence_db_b dbi1 (svar_open dbi2 X phi)
+    no_positive_occurrence_db_b dbi1 (phi^{svar: dbi2 ↦ X})
   )
-  /\ (no_negative_occurrence_db_b dbi1 phi -> no_negative_occurrence_db_b dbi1 (svar_open dbi2 X phi)).
+  /\ (no_negative_occurrence_db_b dbi1 phi -> no_negative_occurrence_db_b dbi1 (phi^{svar: dbi2 ↦ X})).
 Proof.
 unfold svar_open.
 induction phi; intros dbi1 dbi2 X Hneq; split; intros H; simpl in *; auto; cbn in *.
@@ -1255,7 +1105,7 @@ Qed.
 
 Lemma wfp_svar_open : forall (phi : Pattern) (dbi : db_index) (X : svar),
   well_formed_positive phi = true ->
-  well_formed_positive (svar_open dbi X phi) = true.
+  well_formed_positive (phi^{svar: dbi ↦ X}) = true.
 Proof.
 unfold svar_open.
 induction phi; simpl; intros dbi X H.
@@ -1281,10 +1131,10 @@ forall (phi : Pattern) (X Y : svar) (dbi : db_index),
   X <> Y ->
   (
     svar_has_negative_occurrence X phi = false ->
-    svar_has_negative_occurrence X (svar_open dbi Y phi) = false
+    svar_has_negative_occurrence X (phi^{svar: dbi ↦ Y}) = false
   ) /\ (
     svar_has_positive_occurrence X phi = false ->
-    svar_has_positive_occurrence X (svar_open dbi Y phi) = false
+    svar_has_positive_occurrence X (phi^{svar: dbi ↦ Y}) = false
   ).
 Proof.
 unfold svar_open.
@@ -1306,12 +1156,12 @@ Qed.
 Corollary evar_open_wfc_aux db1 db2 X phi :
 db1 <= db2 ->
 well_formed_closed_ex_aux phi db1 ->
-evar_open db2 X phi = phi.
+phi^{evar: db2 ↦ X} = phi.
 Proof.
 intros H H0. unfold evar_open. eapply well_formed_bevar_subst. 2: eassumption. auto.
 Qed.
 
-Corollary evar_open_wfc m X phi : well_formed_closed_ex_aux phi 0 -> evar_open m X phi = phi.
+Corollary evar_open_wfc m X phi : well_formed_closed_ex_aux phi 0 -> phi^{evar: m ↦ X} = phi.
 Proof.
 intros H.
 unfold well_formed_closed in H.
@@ -1323,12 +1173,12 @@ Qed.
 Corollary svar_open_wfc_aux db1 db2 X phi :
 db1 <= db2 ->
 well_formed_closed_mu_aux phi db1 ->
-svar_open db2 X phi = phi.
+phi^{svar: db2 ↦ X} = phi.
 Proof.
 intros H H0. unfold evar_open. eapply well_formed_bsvar_subst. 2: eassumption. auto.
 Qed.
 
-Corollary svar_open_wfc m X phi : well_formed_closed_mu_aux phi 0 -> svar_open m X phi = phi.
+Corollary svar_open_wfc m X phi : well_formed_closed_mu_aux phi 0 -> phi^{svar: m ↦ X} = phi.
 Proof.
 intros H.
 unfold well_formed_closed in H.
@@ -1339,16 +1189,16 @@ Qed.
 
 Corollary evar_open_bsvar_subst m phi1 phi2 dbi X
 : well_formed_closed phi2 ->
-  evar_open m X (bsvar_subst phi1 phi2 dbi)
-  = bsvar_subst (evar_open m X phi1) phi2 dbi.
+  phi1^[svar: dbi ↦ phi2]^{evar: m ↦ X}
+  = phi1^{evar: m ↦ X}^[svar: dbi ↦ phi2].
 Proof.
 intro H. apply bevar_subst_bsvar_subst; auto.
 Qed.
 
 Corollary svar_open_bevar_subst m phi1 phi2 dbi X
 : well_formed_closed phi2 ->
-  svar_open m X (bevar_subst phi1 phi2 dbi)
-  = bevar_subst (svar_open m X phi1) phi2 dbi.
+  phi1^[evar: dbi ↦ phi2]^{svar: m ↦ X}
+  = phi1^{svar: m ↦ X}^[evar: dbi ↦ phi2].
 Proof.
 intro H. apply eq_sym, bevar_subst_bsvar_subst; auto.
 Qed.
@@ -1356,8 +1206,8 @@ Qed.
 Corollary svar_open_bsvar_subst_higher m phi1 phi2 dbi X
 : well_formed_closed phi2 ->
   m < dbi ->
-  svar_open m X (bsvar_subst phi1 phi2 dbi)
-  = bsvar_subst (svar_open m X phi1) phi2 (pred dbi).
+  phi1^[svar: dbi ↦ phi2]^{svar: m ↦ X}
+  = phi1^{svar: m ↦ X}^[svar: pred dbi ↦ phi2].
 Proof.
 intros H H0. apply bsvar_subst_comm_higher; auto.
 unfold well_formed_closed in *. destruct_and!. auto.
@@ -1366,8 +1216,8 @@ Qed.
 Corollary svar_open_bsvar_subst_lower m phi1 phi2 dbi X
 : well_formed_closed phi2 ->
   m > dbi ->
-  svar_open m X (bsvar_subst phi1 phi2 dbi)
-  = bsvar_subst (svar_open (S m) X phi1) phi2 dbi.
+  phi1^[svar: dbi ↦ phi2]^{svar: m ↦ X}
+  = phi1^{svar: S m ↦ X}^[svar: dbi ↦ phi2].
 Proof.
 intros H H0. apply bsvar_subst_comm_lower; auto.
 unfold well_formed_closed in *. destruct_and!. auto.
@@ -1376,8 +1226,8 @@ Qed.
 Corollary evar_open_bevar_subst_higher m phi1 phi2 dbi X
 : well_formed_closed_ex_aux phi2 0 ->
   m < dbi ->
-  evar_open m X (bevar_subst phi1 phi2 dbi)
-  = bevar_subst (evar_open m X phi1) phi2 (pred dbi).
+  phi1^[evar: dbi ↦ phi2]^{evar: m ↦ X}
+  = phi1^{evar: m ↦ X}^[evar: pred dbi ↦ phi2].
 Proof.
 intros H H0. apply bevar_subst_comm_higher; auto.
 Qed.
@@ -1385,8 +1235,8 @@ Qed.
 Corollary evar_open_bevar_subst_lower m phi1 phi2 dbi X
 : well_formed_closed phi2 ->
   m > dbi ->
-  evar_open m X (bevar_subst phi1 phi2 dbi)
-  = bevar_subst (evar_open (S m) X phi1) phi2 dbi.
+  phi1^[evar: dbi ↦ phi2]^{evar: m ↦ X}
+  = phi1^{evar: S m ↦ X}^[evar: dbi ↦ phi2].
 Proof.
 intros H H0. apply bevar_subst_comm_lower; auto.
 unfold well_formed_closed in *. destruct_and!. auto.
@@ -1396,7 +1246,7 @@ Qed.
 
 Lemma free_svars_bsvar_subst' :
 forall φ ψ dbi X,
-  (X ∈ free_svars (bsvar_subst φ ψ dbi)) <->
+  (X ∈ free_svars (φ^[svar: dbi ↦ ψ])) <->
   ((X ∈ (free_svars ψ) /\ bsvar_occur φ dbi) \/ (X ∈ (free_svars φ))).
 Proof.
 induction φ; intros ψ dbi X; simpl.
@@ -1490,7 +1340,7 @@ Qed.
 
 Lemma free_evars_bevar_subst' :
 forall φ ψ dbi X,
-  (X ∈ free_evars (bevar_subst φ ψ dbi)) <->
+  (X ∈ free_evars (φ^[evar: dbi ↦ ψ])) <->
   ((X ∈ (free_evars ψ) /\ bevar_occur φ dbi) \/ (X ∈ (free_evars φ))).
 Proof.
 induction φ; intros ψ dbi X; simpl.
@@ -1585,7 +1435,7 @@ Qed.
 
 Lemma free_svars_bsvar_subst :
 forall φ ψ dbi,
-free_svars (bsvar_subst φ ψ dbi) ⊆ union (free_svars ψ) (free_svars φ).
+free_svars (φ^[svar: dbi ↦ ψ]) ⊆ union (free_svars ψ) (free_svars φ).
 Proof.
 induction φ; intros ψ dbi; simpl; try set_solver.
 case_match; simpl; set_solver.
@@ -1593,7 +1443,7 @@ Qed.
 
 Lemma free_evars_bevar_subst :
 forall φ ψ dbi,
-free_evars (bevar_subst φ ψ dbi) ⊆ union (free_evars ψ) (free_evars φ).
+free_evars (φ^[evar: dbi ↦ ψ]) ⊆ union (free_evars ψ) (free_evars φ).
 Proof.
 induction φ; intros ψ dbi Hwf; simpl; try set_solver.
 case_match; simpl; set_solver.
@@ -1601,7 +1451,7 @@ Qed.
 
 Lemma free_svars_svar_open'' :
 forall φ dbi X Y,
-  (X ∈ free_svars (svar_open dbi Y φ)) <->
+  (X ∈ free_svars (φ^{svar: dbi ↦ Y})) <->
   (((X = Y) /\ (bsvar_occur φ dbi)) \/ (X ∈ (free_svars φ))).
 Proof.
 intros φ dbi X Y.
@@ -1613,14 +1463,14 @@ tauto.
 Qed.
 
 Corollary free_svars_svar_open ϕ X dbi :
-free_svars (svar_open dbi X ϕ) ⊆ union (singleton X) (free_svars ϕ).
+free_svars (ϕ^{svar: dbi ↦ X}) ⊆ union (singleton X) (free_svars ϕ).
 Proof.
 apply free_svars_bsvar_subst; auto.
 Qed.
 
 Lemma free_evars_evar_open'' :
 forall φ dbi x y,
-  (x ∈ free_evars (evar_open dbi y φ)) <->
+  (x ∈ free_evars (φ^{evar: dbi ↦ y})) <->
   ((x = y /\ bevar_occur φ dbi) \/ (x ∈ (free_evars φ))).
 Proof.
 intros φ dbi x y.
@@ -1632,13 +1482,13 @@ tauto.
 Qed.
 
 Corollary free_evars_evar_open ϕ x dbi :
-free_evars (evar_open dbi x ϕ) ⊆ union (singleton x) (free_evars ϕ).
+free_evars (ϕ^{evar: dbi ↦ x}) ⊆ union (singleton x) (free_evars ϕ).
 Proof.
 apply free_evars_bevar_subst; auto.
 Qed.
 
 Lemma free_evars_evar_open' ϕ x dbi:
-free_evars ϕ ⊆ free_evars (evar_open dbi x ϕ).
+free_evars ϕ ⊆ free_evars (ϕ^{evar: dbi ↦ x}).
 Proof.
 move: dbi.
 induction ϕ; intros dbi; simpl; try apply empty_subseteq.
@@ -1659,7 +1509,7 @@ Qed.
 
 Lemma free_evar_subst_no_occurrence x p q:
 count_evar_occurrences x p = 0 ->
-free_evar_subst p q x = p.
+p^[[evar:x ↦ q]] = p.
 Proof.
 intros H.
 remember (size' p) as sz.
@@ -1682,7 +1532,7 @@ Qed.
 Lemma Private_bsvar_occur_evar_open sz dbi1 dbi2 X phi:
 size phi <= sz ->
 bsvar_occur phi dbi1 = false ->
-bsvar_occur (evar_open dbi2 X phi) dbi1 = false.
+bsvar_occur (phi^{evar: dbi2 ↦ X}) dbi1 = false.
 Proof.
 move: phi dbi1 dbi2.
 induction sz; move=> phi; destruct phi; simpl; move=> dbi1 dbi2 Hsz H; try rewrite !IHsz; auto; try lia; try apply orb_false_elim in H; firstorder.
@@ -1692,7 +1542,7 @@ Qed.
 
 Corollary bsvar_occur_evar_open dbi1 dbi2 X phi:
 bsvar_occur phi dbi1 = false ->
-bsvar_occur (evar_open dbi2 X phi) dbi1 = false.
+bsvar_occur (phi^{evar: dbi2 ↦ X}) dbi1 = false.
 Proof.
 apply Private_bsvar_occur_evar_open with (sz := size phi). lia.
 Qed.
@@ -1700,7 +1550,7 @@ Qed.
 Lemma Private_bevar_occur_svar_open sz dbi1 dbi2 X phi:
 size phi <= sz ->
 bevar_occur phi dbi1 = false ->
-bevar_occur (svar_open dbi2 X phi) dbi1 = false.
+bevar_occur (phi^{svar: dbi2 ↦ X}) dbi1 = false.
 Proof.
 move: phi dbi1 dbi2.
 induction sz; move=> phi; destruct phi; simpl; move=> dbi1 dbi2 Hsz H; try rewrite !IHsz; auto; try lia; try apply orb_false_elim in H; firstorder.
@@ -1710,7 +1560,7 @@ Qed.
 
 Corollary bevar_occur_svar_open dbi1 dbi2 X phi:
 bevar_occur phi dbi1 = false ->
-bevar_occur (svar_open dbi2 X phi) dbi1 = false.
+bevar_occur (phi^{svar: dbi2 ↦ X}) dbi1 = false.
 Proof.
 apply Private_bevar_occur_svar_open with (sz := size phi). lia.
 Qed.
@@ -1718,7 +1568,7 @@ Qed.
 Lemma Private_bevar_occur_evar_open sz dbi1 dbi2 X phi:
 size phi <= sz -> dbi1 < dbi2 ->
 bevar_occur phi dbi1 = false ->
-bevar_occur (evar_open dbi2 X phi) dbi1 = false.
+bevar_occur (phi^{evar: dbi2 ↦ X}) dbi1 = false.
 Proof.
 move: phi dbi1 dbi2.
 induction sz; move=> phi; destruct phi; simpl; move=> dbi1 dbi2 Hsz H H1; try rewrite !IHsz; auto; try lia; try apply orb_false_elim in H1; firstorder.
@@ -1731,7 +1581,7 @@ Qed.
 
 Corollary bevar_occur_evar_open dbi1 dbi2 X phi:
 bevar_occur phi dbi1 = false -> dbi1 < dbi2 ->
-bevar_occur (evar_open dbi2 X phi) dbi1 = false.
+bevar_occur (phi^{evar: dbi2 ↦ X}) dbi1 = false.
 Proof.
 intros H H0. apply Private_bevar_occur_evar_open with (sz := size phi); auto.
 Qed.
@@ -1740,7 +1590,7 @@ Lemma well_formed_positive_bevar_subst φ : forall n ψ,
 mu_free φ ->
 well_formed_positive φ = true -> well_formed_positive ψ = true
 ->
-well_formed_positive (bevar_subst φ ψ n) = true.
+well_formed_positive (φ^[evar: n ↦ ψ]) = true.
 Proof.
 induction φ; intros n' ψ H H0 H1; simpl; auto.
 2-3: apply andb_true_iff in H as [E1 E2];
@@ -1750,7 +1600,7 @@ induction φ; intros n' ψ H H0 H1; simpl; auto.
 Qed.
 
 Lemma mu_free_bevar_subst :
-forall φ ψ, mu_free φ -> mu_free ψ -> forall n, mu_free (bevar_subst φ ψ n).
+forall φ ψ, mu_free φ -> mu_free ψ -> forall n, mu_free (φ^[evar: n ↦ ψ]).
 Proof.
 induction φ; intros ψ H H0 n'; simpl; try now constructor.
 * break_match_goal; auto.
@@ -1761,14 +1611,14 @@ induction φ; intros ψ H H0 n'; simpl; try now constructor.
 Qed.
 
 Corollary mu_free_evar_open :
-forall φ, mu_free φ -> forall x n, mu_free (evar_open n x φ).
+forall φ, mu_free φ -> forall x n, mu_free (φ^{evar: n ↦ x}).
 Proof.
 intros φ H x n. apply mu_free_bevar_subst; auto.
 Qed.
 
 Theorem evar_open_free_evar_subst_swap :
 forall φ x n ψ y, x <> y -> well_formed ψ ->
-  evar_open n x (free_evar_subst φ ψ y) = free_evar_subst (evar_open n x φ) ψ y.
+  φ^[[evar: y ↦ ψ]]^{evar: n ↦ x} = φ^{evar: n ↦ x}^[[evar: y ↦ ψ]].
 Proof.
 induction φ; intros x' n' ψ y H H0; simpl; auto.
 * destruct (decide (y = x)); simpl.
@@ -1777,14 +1627,14 @@ induction φ; intros x' n' ψ y H H0; simpl; auto.
   ** reflexivity.
 * cbn. break_match_goal; simpl; auto. destruct (decide (y = x')); auto.
   congruence.
-* unfold evar_open in *. now rewrite -> bevar_subst_app, -> IHφ1, -> IHφ2.
-* unfold evar_open in *. now rewrite -> bevar_subst_imp, -> IHφ1, -> IHφ2.
-* unfold evar_open in *. now rewrite -> bevar_subst_exists, -> IHφ.
-* unfold evar_open in *. now rewrite -> bevar_subst_mu, -> IHφ.
+* unfold evar_open in *. simpl. now rewrite -> IHφ1, -> IHφ2.
+* unfold evar_open in *. simpl. now rewrite -> IHφ1, -> IHφ2.
+* unfold evar_open in *. simpl. now rewrite -> IHφ.
+* unfold evar_open in *. simpl. now rewrite -> IHφ.
 Qed.
 
 Lemma free_evars_free_evar_subst : forall φ ψ x,
-free_evars (free_evar_subst φ ψ x) ⊆ free_evars φ ∪ free_evars ψ.
+free_evars (φ^[[evar: x ↦ ψ]]) ⊆ free_evars φ ∪ free_evars ψ.
 Proof.
 induction φ; intros ψ x'; simpl.
 2-5, 7: apply empty_subseteq.
@@ -1805,7 +1655,7 @@ forall φ x m n ψ,
   m > n ->
   well_formed_closed_ex_aux ψ 0 ->
   well_formed_closed_ex_aux φ m -> x ∉ free_evars φ ->
-  bevar_subst φ ψ n = free_evar_subst (evar_open n x φ) ψ x.
+  φ^[evar: n ↦ ψ] = φ^{evar: n ↦ x}^[[evar: x ↦ ψ]].
 Proof.
 induction φ; intros x' m n' ψ H WFψ H0 H1; cbn; auto.
 - destruct (decide (x' = x)); simpl.
@@ -1829,7 +1679,7 @@ forall φ X m n ψ,
   m > n ->
   well_formed_closed_mu_aux ψ 0 ->
   well_formed_closed_mu_aux φ m -> X ∉ free_svars φ ->
-  bsvar_subst φ ψ n = free_svar_subst (svar_open n X φ) ψ X.
+  φ^[svar: n ↦ ψ] = φ^{svar: n ↦ X}^[[svar: X ↦ ψ]].
 Proof.
 induction φ; intros x' m n' ψ H WFψ H0 H1; cbn; auto.
 - destruct (decide (x' = x)); simpl.
@@ -1850,9 +1700,9 @@ Qed.
 
 Lemma evar_open_no_negative_occurrence :
 forall φ db1 db2 x,
-  (no_negative_occurrence_db_b db1 (evar_open db2 x φ) ->
+  (no_negative_occurrence_db_b db1 (φ^{evar: db2 ↦ x}) ->
   no_negative_occurrence_db_b db1 φ) /\
-  (no_positive_occurrence_db_b db1 (evar_open db2 x φ) ->
+  (no_positive_occurrence_db_b db1 (φ^{evar: db2 ↦ x}) ->
   no_positive_occurrence_db_b db1 φ).
 Proof.
 induction φ; intros db1 db2 x'; simpl; auto.
@@ -1878,7 +1728,7 @@ induction φ; intros db1 db2 x'; simpl; auto.
 Qed.
 
 Lemma evar_open_positive : forall φ n x,
-well_formed_positive (evar_open n x φ) = true ->
+well_formed_positive (φ^{evar: n ↦ x}) = true ->
 well_formed_positive φ = true.
 Proof.
 induction φ; intros n' x' H; cbn; auto.
@@ -1898,7 +1748,7 @@ forall φ ψ n m,
 well_formed_closed_mu_aux φ m = true ->
 well_formed_closed_mu_aux ψ m = true
 ->
-well_formed_closed_mu_aux (bevar_subst φ ψ n) m = true.
+well_formed_closed_mu_aux (φ^[evar: n ↦ ψ]) m = true.
 Proof.
 induction φ; intros ψ n' m H H0; cbn; auto.
 * break_match_goal; simpl in H0, H; simpl; auto.
@@ -1913,7 +1763,7 @@ forall φ ψ n,
 well_formed_closed_ex_aux φ (S n) = true ->
 well_formed_closed_ex_aux ψ n = true
 ->
-well_formed_closed_ex_aux (bevar_subst φ ψ n) n = true.
+well_formed_closed_ex_aux (φ^[evar: n ↦ ψ]) n = true.
 Proof.
 induction φ; intros ψ n' H H0; cbn; auto.
 * break_match_goal; simpl in H0, H; simpl; auto.
@@ -1928,7 +1778,7 @@ Lemma bevar_subst_positive :
 forall φ ψ n, mu_free φ ->
 well_formed_positive φ = true -> well_formed_positive ψ = true
 ->
-well_formed_positive (bevar_subst φ ψ n) = true.
+well_formed_positive (φ^[evar: n ↦ ψ]) = true.
 Proof.
 induction φ; intros ψ n' H H0 H1; cbn; auto.
 * break_match_goal; auto.
@@ -1942,7 +1792,7 @@ Qed.
 
 Theorem evar_quantify_closed_ex :
 forall φ x n, well_formed_closed_ex_aux φ n ->
-well_formed_closed_ex_aux (evar_quantify x n φ) (S n) = true.
+well_formed_closed_ex_aux (φ^{{evar: x ↦ n}}) (S n) = true.
 Proof.
 induction φ; intros x' n' H; cbn; auto.
 * destruct (decide (x' = x)); simpl; auto.
@@ -1954,7 +1804,7 @@ Qed.
 
 Theorem svar_quantify_closed_mu :
 forall φ X n, well_formed_closed_mu_aux φ n ->
-well_formed_closed_mu_aux (svar_quantify X n φ) (S n) = true.
+well_formed_closed_mu_aux (φ^{{svar: X ↦ n}}) (S n) = true.
 Proof.
 induction φ; intros x' n' H; cbn; auto.
 * destruct (decide (x' = x)); simpl; auto.
@@ -1966,7 +1816,7 @@ Qed.
 
 Theorem evar_quantify_closed_mu :
 forall φ x n m, well_formed_closed_mu_aux φ m ->
-well_formed_closed_mu_aux (evar_quantify x n φ) m = true.
+well_formed_closed_mu_aux (φ^{{evar: x ↦ n}}) m = true.
 Proof.
 induction φ; intros x' n' m H; cbn; auto.
 - destruct (decide (x' = x)); simpl; auto.
@@ -1979,7 +1829,7 @@ Qed.
 
 Theorem svar_quantify_closed_ex :
 forall φ X n m, well_formed_closed_ex_aux φ m ->
-well_formed_closed_ex_aux (svar_quantify X n φ) m = true.
+well_formed_closed_ex_aux (φ^{{svar: X ↦ n}}) m = true.
 Proof.
 induction φ; intros x' n' m H; cbn; auto.
 - destruct (decide (x' = x)); simpl; auto.
@@ -1993,9 +1843,9 @@ Qed.
 Theorem no_occ_quantify : 
 ∀ (φ : Pattern) (db1 db2 : db_index) (x : evar),
 (no_negative_occurrence_db_b db1 φ
- → no_negative_occurrence_db_b db1 (evar_quantify x db2 φ))
+ → no_negative_occurrence_db_b db1 (φ^{{evar: x ↦ db2}}))
 ∧ (no_positive_occurrence_db_b db1 φ
-   → no_positive_occurrence_db_b db1 (evar_quantify x db2 φ)).
+   → no_positive_occurrence_db_b db1 (φ^{{evar: x ↦ db2}})).
 Proof.
 induction φ; split; intros H; cbn; auto.
 1-2: destruct (decide (x0 = x)); simpl; auto.
@@ -2010,7 +1860,7 @@ Qed.
 
 Theorem evar_quantify_positive :
 forall φ x n, well_formed_positive φ ->
-well_formed_positive (evar_quantify x n φ) = true.
+well_formed_positive (φ^{{evar: x ↦ n}}) = true.
 Proof.
 induction φ; intros x' n' H; cbn; auto.
 * destruct (decide (x' = x)); simpl; auto.
@@ -2023,7 +1873,7 @@ Qed.
 
 Corollary evar_quantify_well_formed :
 forall φ x, well_formed φ ->
-  well_formed (patt_exists (evar_quantify x 0 φ)) = true.
+  well_formed (patt_exists (φ^{{evar: x ↦ 0}})) = true.
 Proof.
 intros φ x H.
 unfold well_formed, well_formed_closed in *.
@@ -2035,7 +1885,7 @@ split_and!; simpl.
 Qed.
 
 Theorem evar_quantify_not_free :
-forall φ x n, x ∉ (free_evars (evar_quantify x n φ)).
+forall φ x n, x ∉ (free_evars (φ^{{evar: x ↦ n}})).
 Proof.
 induction φ; intros x' n'; simpl.
 2-5, 7: apply not_elem_of_empty.
@@ -2049,7 +1899,7 @@ induction φ; intros x' n'; simpl.
 Qed.
 
 Theorem svar_quantify_not_free :
-forall φ X n, X ∉ (free_svars (svar_quantify X n φ)).
+forall φ X n, X ∉ (free_svars (φ^{{svar: X ↦ n}})).
 Proof.
 induction φ; intros x' n'; simpl; try set_solver.
 case_match; simpl; set_solver.
@@ -2058,7 +1908,7 @@ Qed.
 (* FIXME: rename! *)
 Lemma evar_quantify_noop :
 forall φ x n, count_evar_occurrences x φ = 0 ->
-evar_quantify x n φ = φ.
+φ^{{evar: x ↦ n}} = φ.
 Proof.
 induction φ; intros x' n' H; simpl; auto.
 - simpl in H.
@@ -2074,7 +1924,7 @@ Qed.
 
 Lemma wf_ex_evar_quantify x p:
 well_formed p = true ->
-well_formed (patt_exists (evar_quantify x 0 p)) = true.
+well_formed (patt_exists (p^{{evar: x ↦ 0}})) = true.
 Proof.
 intros Hwf.
 unfold well_formed,well_formed_closed in Hwf. simpl in Hwf.
@@ -2095,7 +1945,7 @@ Qed.
 
 
 Lemma free_evars_evar_quantify x n p:
-  free_evars (evar_quantify x n p) = free_evars p ∖ {[x]}.
+  free_evars (p^{{evar: x ↦ n}}) = free_evars p ∖ {[x]}.
 Proof.
   move: n.
   induction p; intros n'; simpl; try set_solver.
@@ -2105,7 +1955,7 @@ Proof.
 Qed.
 
 Lemma free_svars_svar_quantify X n p:
-  free_svars (svar_quantify X n p) = free_svars p ∖ {[X]}.
+  free_svars (p^{{svar: X ↦ n}}) = free_svars p ∖ {[X]}.
 Proof.
   move: n.
   induction p; intros n'; simpl; try set_solver.
@@ -2118,9 +1968,9 @@ Qed.
 Lemma no_neg_occ_db_bsvar_subst phi psi dbi1 dbi2:
 well_formed_closed_mu_aux psi 0 = true -> dbi1 < dbi2 ->
 (no_negative_occurrence_db_b dbi1 phi = true ->
- no_negative_occurrence_db_b dbi1 (bsvar_subst phi psi dbi2) = true)
+ no_negative_occurrence_db_b dbi1 (phi^[svar: dbi2 ↦ psi]) = true)
 /\ (no_positive_occurrence_db_b dbi1 phi = true ->
-    no_positive_occurrence_db_b dbi1 (bsvar_subst phi psi dbi2) = true).
+    no_positive_occurrence_db_b dbi1 (phi^[svar: dbi2 ↦ psi]) = true).
 Proof.
 intros Hwfcpsi.
 move: dbi1 dbi2.
@@ -2183,11 +2033,11 @@ well_formed_closed_mu_aux psi 0 ->
 well_formed_positive phi ->
 (
   no_negative_occurrence_db_b n phi ->
-  well_formed_positive (bsvar_subst phi psi n) )
+  well_formed_positive (phi^[svar: n ↦ psi]) )
 /\ (no_positive_occurrence_db_b n phi ->
     forall phi',
       well_formed_positive phi' ->
-      well_formed_positive (patt_imp (bsvar_subst phi psi n) phi')
+      well_formed_positive (patt_imp (phi^[svar: n ↦ psi]) phi')
    )
 .
 Proof.
@@ -2262,7 +2112,7 @@ induction phi; intros n' Hwfpphi; cbn in *; auto.
 - apply andb_prop in Hwfpphi. destruct Hwfpphi as [Hwfpphi1 Hwfpphi2].
   pose proof (IHphi' := IHphi (S n') Hwfpphi2).
   destruct IHphi' as [IHphi1' IHphi2'].
-  assert (H: no_negative_occurrence_db_b 0 (bsvar_subst phi psi (S n'))).
+  assert (H: no_negative_occurrence_db_b 0 (phi^[svar: S n' ↦ psi])).
   { clear IHphi1' IHphi2'.
     apply no_neg_occ_db_bsvar_subst; auto. lia.
   }
@@ -2284,7 +2134,7 @@ Corollary wfp_bsvar_subst (phi psi : Pattern) :
 well_formed_positive (patt_mu phi) ->
 well_formed_positive psi ->
 well_formed_closed_mu_aux psi 0 ->
-well_formed_positive (bsvar_subst phi psi 0).
+well_formed_positive (phi^[svar: 0 ↦ psi]).
 Proof.
 intros H1 H2 H3.
 simpl in H1.
@@ -2297,12 +2147,9 @@ apply H41.
 apply Hnonegphi.
 Qed.
 
-
-End subst.
-
-Lemma bevar_subst_evar_quantify_free_evar {Σ : Signature} x dbi ϕ:
+Lemma bevar_subst_evar_quantify_free_evar x dbi ϕ:
   well_formed_closed_ex_aux ϕ dbi ->
-  bevar_subst (evar_quantify x dbi ϕ) (patt_free_evar x) dbi  = ϕ.
+  (ϕ^{{evar: x ↦ dbi}})^[evar: dbi ↦ patt_free_evar x] = ϕ.
 Proof.
   move: dbi.
   induction ϕ; intros dbi Hwf; simpl in *; auto.
@@ -2323,9 +2170,9 @@ Proof.
   - rewrite IHϕ;[assumption|reflexivity].
 Qed.
 
-Lemma bsvar_subst_svar_quantify_free_svar {Σ : Signature} X dbi ϕ:
+Lemma bsvar_subst_svar_quantify_free_svar X dbi ϕ:
   well_formed_closed_mu_aux ϕ dbi ->
-  bsvar_subst (svar_quantify X dbi ϕ) (patt_free_svar X) dbi  = ϕ.
+  (ϕ^{{svar: X ↦ dbi}})^[svar: dbi ↦ (patt_free_svar X)]  = ϕ.
 Proof.
   move: dbi.
   induction ϕ; intros dbi Hwf; simpl in *; auto.
@@ -2348,9 +2195,9 @@ Qed.
 
 
 
-Lemma free_svar_subst_fresh {Σ : Signature} phi psi X:
+Lemma free_svar_subst_fresh phi psi X:
   svar_is_fresh_in X phi ->
-  free_svar_subst phi psi X = phi.
+  phi^[[svar: X ↦ psi]] = phi.
 Proof.
   intros Hfresh.
   unfold svar_is_fresh_in in Hfresh.
@@ -2375,10 +2222,10 @@ Proof.
 Qed.
 
 
-Lemma wfc_mu_free_svar_subst {Σ : Signature} level ϕ ψ X:
+Lemma wfc_mu_free_svar_subst level ϕ ψ X:
   well_formed_closed_mu_aux ϕ level ->
   well_formed_closed_mu_aux ψ level ->
-  well_formed_closed_mu_aux (free_svar_subst ϕ ψ X) level = true.
+  well_formed_closed_mu_aux (ϕ^[[svar: X ↦ ψ]]) level = true.
 Proof.
   intros Hϕ Hψ.
   move: level Hϕ Hψ.
@@ -2394,13 +2241,10 @@ Proof.
   - rewrite IHϕ; auto. eapply well_formed_closed_mu_aux_ind. 2: exact Hψ. lia.
 Qed.
 
-#[export]
- Hint Resolve wfc_mu_free_svar_subst : core.
-
-Lemma wfc_ex_free_svar_subst {Σ : Signature} level ϕ ψ X:
+Lemma wfc_ex_free_svar_subst level ϕ ψ X:
   well_formed_closed_ex_aux ϕ level ->
   well_formed_closed_ex_aux ψ level ->
-  well_formed_closed_ex_aux (free_svar_subst ϕ ψ X) level = true.
+  well_formed_closed_ex_aux (ϕ^[[svar: X ↦ ψ]]) level = true.
 Proof.
   intros Hϕ Hψ.
   move: level Hϕ Hψ.
@@ -2416,13 +2260,10 @@ Proof.
   - rewrite IHϕ; auto. eapply well_formed_closed_ex_aux_ind. 2: exact Hψ. lia.
 Qed.
 
-#[export]
- Hint Resolve wfc_mu_free_svar_subst : core.
-
-Lemma wfc_ex_free_evar_subst_2 {Σ : Signature} level ϕ ψ X:
+Lemma wfc_ex_free_evar_subst_2 level ϕ ψ x:
   well_formed_closed_ex_aux ϕ level ->
   well_formed_closed_ex_aux ψ level ->
-  well_formed_closed_ex_aux (free_evar_subst ϕ ψ X) level = true.
+  well_formed_closed_ex_aux (ϕ^[[evar: x ↦ ψ]]) level = true.
 Proof.
   intros Hϕ Hψ.
   move: level Hϕ Hψ.
@@ -2438,14 +2279,10 @@ Proof.
   - rewrite IHϕ; auto. eapply well_formed_closed_ex_aux_ind. 2: exact Hψ. lia.
 Qed.
 
-#[export]
- Hint Resolve wfc_ex_free_evar_subst_2 : core.
-
-
-Lemma wfc_mu_free_evar_subst {Σ : Signature} level ϕ ψ x:
+Lemma wfc_mu_free_evar_subst level ϕ ψ x:
 well_formed_closed_mu_aux ϕ level ->
 well_formed_closed_mu_aux ψ level ->
-well_formed_closed_mu_aux (free_evar_subst ϕ ψ x) level = true.
+well_formed_closed_mu_aux (ϕ^[[evar: x ↦ ψ]]) level = true.
 Proof.
 intros Hϕ Hψ.
 move: level Hϕ Hψ.
@@ -2464,9 +2301,9 @@ induction ϕ; intros level Hϕ Hψ; simpl in *; auto.
 Qed.
 
 
-Lemma wf_evar_open_from_wf_ex {Σ : Signature} x ϕ:
+Lemma wf_evar_open_from_wf_ex x ϕ:
   well_formed (patt_exists ϕ) ->
-  well_formed (evar_open 0 x ϕ).
+  well_formed (ϕ^{evar: 0 ↦ x}).
 Proof.
   intros H.
   unfold well_formed, well_formed_closed in *.
@@ -2476,10 +2313,9 @@ Proof.
   - apply wfc_mu_aux_body_ex_imp3. lia. assumption.
 Qed.
 
-
-Lemma evar_open_size' {Σ : Signature} :
+Lemma evar_open_size' :
   forall (k : db_index) (n : evar) (p : Pattern),
-    size' (evar_open k n p) = size' p.
+    size' (p^{evar: k ↦ n}) = size' p.
 Proof.
   intros k n p. generalize dependent k.
   induction p; intros k; cbn; try reflexivity.
@@ -2490,9 +2326,9 @@ Proof.
   rewrite (IHp k); reflexivity.
 Qed.
 
-Lemma svar_open_size' {Σ : Signature} :
+Lemma svar_open_size' :
   forall (k : db_index) (n : svar) (p : Pattern),
-    size' (svar_open k n p) = size' p.
+    size' (p^{svar: k ↦ n}) = size' p.
 Proof.
   intros k n p. generalize dependent k.
   induction p; intros k; cbn; try reflexivity.
@@ -2503,14 +2339,12 @@ Proof.
   rewrite (IHp (S k)); reflexivity.
 Qed.
 
-Check fold_left.
 Definition bcmcloseex
-    {Σ : Signature}
     (l : list (prod db_index evar))
     (ϕ : Pattern) : Pattern
-:= fold_left (λ ϕ' p, evar_open p.1 p.2 ϕ') l ϕ.
+:= fold_left (λ ϕ' p, ϕ'^{evar: p.1 ↦ p.2}) l ϕ.
 
-Lemma bcmcloseex_append {Σ : Signature} (l₁ l₂ : list (prod db_index evar)) (ϕ : Pattern) :
+Lemma bcmcloseex_append (l₁ l₂ : list (prod db_index evar)) (ϕ : Pattern) :
   bcmcloseex (l₁ ++ l₂) ϕ = bcmcloseex l₂ (bcmcloseex l₁ ϕ).
 Proof.
   unfold bcmcloseex. rewrite fold_left_app. reflexivity.
@@ -2531,7 +2365,6 @@ Proof.
 Qed.
 *)
 Lemma bcmcloseex_bott
-  {Σ : Signature}
   (l : list (prod db_index evar))
   : bcmcloseex l patt_bott = patt_bott.
 Proof.
@@ -2541,7 +2374,6 @@ Proof.
 Qed.
 
 Lemma bcmcloseex_sym
-  {Σ : Signature}
   (l : list (prod db_index evar))
   (s : symbols)
   : bcmcloseex l (patt_sym s) = (patt_sym s).
@@ -2552,7 +2384,6 @@ Proof.
 Qed.
 
 Lemma bcmcloseex_imp
-  {Σ : Signature}
   (l : list (prod db_index evar))
   (p q : Pattern)
   : bcmcloseex l (patt_imp p q) = patt_imp (bcmcloseex l p) (bcmcloseex l q).
@@ -2564,7 +2395,6 @@ Proof.
 Qed.
 
 Lemma bcmcloseex_app
-  {Σ : Signature}
   (l : list (prod db_index evar))
   (p q : Pattern)
   : bcmcloseex l (patt_app p q) = patt_app (bcmcloseex l p) (bcmcloseex l q).
@@ -2576,7 +2406,6 @@ Proof.
 Qed.
 
 Lemma bcmcloseex_ex
-  {Σ : Signature}
   (l : list (prod db_index evar))
   (q : Pattern)
   : bcmcloseex l (patt_exists q) = patt_exists (bcmcloseex (map (λ p, (S p.1,p.2)) l) q).
@@ -2588,7 +2417,6 @@ Proof.
 Qed.
 
 Lemma bcmcloseex_mu
-  {Σ : Signature}
   (l : list (prod db_index evar))
   (q : Pattern)
   : bcmcloseex l (patt_mu q) = patt_mu (bcmcloseex l q).
@@ -2599,7 +2427,7 @@ Proof.
   { simpl. rewrite IHl. reflexivity. }
 Qed.
 
-Lemma wfc_ex_aux_S_bevar_subst_fe {Σ : Signature} k ϕ x:
+Lemma wfc_ex_aux_S_bevar_subst_fe k ϕ x:
   well_formed_closed_ex_aux ϕ^[evar:k↦patt_free_evar x] k = true ->
   well_formed_closed_ex_aux ϕ (S k) = true.  
 Proof.
@@ -2610,9 +2438,9 @@ Proof.
   { destruct_and!. rewrite IHϕ1;[assumption|]. rewrite IHϕ2;[assumption|]. reflexivity. }
 Qed.
 
-Lemma wfc_ex_aux_evar_open_gt {Σ : Signature} dbi x k ϕ:
+Lemma wfc_ex_aux_evar_open_gt dbi x k ϕ:
   k > dbi ->
-  well_formed_closed_ex_aux (evar_open dbi x ϕ) k ->
+  well_formed_closed_ex_aux (ϕ^{evar: dbi ↦ x}) k ->
   well_formed_closed_ex_aux ϕ (S k).
 Proof.
   unfold evar_open.
@@ -2644,9 +2472,9 @@ Proof.
   }
 Qed.
 
-Lemma wfc_ex_aux_evar_open_lt {Σ : Signature} dbi x k ϕ:
+Lemma wfc_ex_aux_evar_open_lt dbi x k ϕ:
   k < dbi ->
-  well_formed_closed_ex_aux (evar_open dbi x ϕ) k = true ->
+  well_formed_closed_ex_aux (ϕ^{evar: dbi ↦ x}) k = true ->
   well_formed_closed_ex_aux ϕ (S dbi) = true.
 Proof.
   intros H1 H2.
@@ -2677,9 +2505,9 @@ Proof.
   }
 Qed.
 
-Lemma evar_open_twice_not_occur {Σ : Signature} n x y ϕ:
+Lemma evar_open_twice_not_occur n x y ϕ:
   bevar_occur ϕ n = false ->
-  evar_open n y (evar_open n x ϕ) = evar_open n x (evar_open (S n) y ϕ).
+  ϕ^{evar: n ↦ x}^{evar: n ↦ y} = ϕ^{evar: S n ↦ y}^{evar: n ↦ x}.
 Proof.
   unfold evar_open.
   move: n.
@@ -2711,7 +2539,7 @@ Proof.
   }
 Qed.
 
-Lemma wfc_ex_aux_bcmcloseex {Σ : Signature} l k ϕ:
+Lemma wfc_ex_aux_bcmcloseex l k ϕ:
   Forall (λ p : nat * evar, p.1 ≤ k) l ->
   well_formed_closed_ex_aux (bcmcloseex l (patt_exists ϕ)) k = true ->
   well_formed_closed_ex_aux (bcmcloseex (map (λ p : nat * evar, (S p.1, p.2)) l) ϕ) (S k) = true.
@@ -2729,8 +2557,8 @@ Proof.
   }
 Qed.
 
-Lemma free_svars_free_evar_subst {Σ : Signature} ϕ x ψ:
-  free_svars (free_evar_subst ϕ ψ x) ⊆ free_svars ϕ ∪ free_svars ψ.
+Lemma free_svars_free_evar_subst ϕ x ψ:
+  free_svars (ϕ^[[evar: x ↦ ψ]]) ⊆ free_svars ϕ ∪ free_svars ψ.
 Proof.
   induction ϕ; simpl; try set_solver.
   {
@@ -2744,3 +2572,12 @@ Proof.
   }
 Qed.
 
+End subst.
+
+
+#[export]
+ Hint Resolve wfc_mu_free_svar_subst : core.
+#[export]
+ Hint Resolve wfc_mu_free_svar_subst : core.
+#[export]
+ Hint Resolve wfc_ex_free_evar_subst_2 : core.

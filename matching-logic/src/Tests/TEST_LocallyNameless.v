@@ -1,27 +1,26 @@
 From Coq Require Import ssreflect ssrfun ssrbool.
-Set Implicit Arguments.
-Unset Strict Implicit.
-Unset Printing Implicit Defensive.
-
 From Coq Require Import String Ensembles.
 Require Import Coq.Logic.Classical_Prop.
 
 From stdpp Require Import base fin_sets sets propset finite.
 
-From MatchingLogic Require Import Syntax Semantics DerivedOperators_Syntax DerivedOperators_Semantics StringSignature ProofSystem ProofMode.
-From MatchingLogic.Theories Require Import Definedness_Syntax Definedness_Semantics Sorts_Syntax Sorts_Semantics Definedness_ProofSystem.
+From MatchingLogic Require Import Logic
+                                  ProofMode.
+From MatchingLogic.Theories Require Import Definedness_Syntax
+                                           Definedness_Semantics
+                                           Sorts_Syntax
+                                           Sorts_Semantics
+                                           Definedness_ProofSystem.
 From MatchingLogic.Utils Require Import stdpp_ext.
 
-Import MatchingLogic.Syntax.Notations.
-Import MatchingLogic.Syntax.BoundVarSugar.
-Import MatchingLogic.ProofSystem.Notations.
+Import MatchingLogic.Logic.Notations.
 Import MatchingLogic.Theories.Definedness_Syntax.Notations.
 Import MatchingLogic.Semantics.Notations.
 Import MatchingLogic.DerivedOperators_Syntax.Notations.
-Import MatchingLogic.IndexManipulation.
 
 (* In this module we show how to define a signature and build patterns *)
 Module test_1.
+  Open Scope ml_scope.
   (* We have three symbols *)
   Inductive Symbols := ctor| p | f .
 
@@ -64,11 +63,11 @@ Module test_1.
   Definition b : Pattern := (patt_free_evar "b").
   Definition c : Pattern := (patt_free_evar "c").
   Definition d : Pattern := (patt_free_evar "d").
-  
+
   Definition more : Pattern := A or ! A.
 
-  Example e1 X: evar_open 0 X more = more.
-  Proof. unfold more. unfold evar_open. simpl_bevar_subst. reflexivity. Qed.
+  Example e1 X: more^{evar: 0 ↦ X} = more.
+  Proof. unfold more. unfold evar_open. mlSimpl. reflexivity. Qed.
   
   Definition complex : Pattern :=
     a ---> (b ---> !C) $ ex , D $ Bot and Top.
@@ -94,7 +93,7 @@ End test_1.
 Module test_2.
   Section test_2.
     Import Definedness_Syntax.
-
+    Open Scope ml_scope.
     (* We must include all the symbols from the Definedness module into our signature.
        We do this by defining a constructor `sym_import_definedness : Definedness.Symbols -> Symbols`.
        And we also define a bunch of other symbols.
@@ -141,7 +140,7 @@ Module test_2.
       Sorts_Syntax.inj := sym_import_sorts;
       Sorts_Syntax.imported_definedness := definedness_syntax;
       |}.
-    
+
     Example test_pattern_0 : Pattern := patt_sym sym_c.
     Example test_pattern_1 : Pattern := @patt_defined signature definedness_syntax (patt_sym sym_c).
     Example test_pattern_2 : Pattern := patt_defined (patt_sym sym_c).
@@ -149,8 +148,8 @@ Module test_2.
     Example test_pattern_4 : Pattern := patt_defined (patt_sym sym_c).
     Example test_pattern_5 : Pattern := patt_equal (patt_inhabitant_set (patt_sym sym_SortNat)) (patt_sym sym_zero).
 
-    Example test_pattern_3_open s x : evar_open 0 x (test_pattern_3 s) = (test_pattern_3 s).
-    Proof. unfold test_pattern_3. unfold evar_open. simpl_bevar_subst. reflexivity. Qed.
+    Example test_pattern_3_open s x : (test_pattern_3 s)^{evar: 0 ↦ x} = (test_pattern_3 s).
+    Proof. unfold test_pattern_3. unfold evar_open. mlSimpl. reflexivity. Qed.
 
     Inductive CustomElements :=
     | m_def (* interprets the definedness symbol *)
@@ -160,14 +159,14 @@ Module test_2.
 
     Instance CustomElements_eqdec : EqDecision CustomElements.
     Proof. solve_decision. Defined.
-    
+
     Inductive domain : Set :=
     | dom_nat (n:nat)
     | dom_custom (c:CustomElements)
-    .    
+    .
 
     Instance domain_inhabited : Inhabited domain := populate (dom_nat 0).
-    
+
     Instance domain_eqdec : EqDecision domain.
     Proof. solve_decision. Defined.
 
@@ -212,14 +211,13 @@ Module test_2.
         auto.
       }
     Qed.
-    
   End test_2.
 End test_2.
 
 Module test_3.
   Section test_3.
     Import Definedness_Syntax.
-
+    Open Scope ml_scope.
     Inductive Symbols :=
     | sym_import_definedness (d : Definedness_Syntax.Symbols)
     | Zero | Succ (* constructors for Nats *)
@@ -285,34 +283,27 @@ Module test_3.
       Γₙₐₜ ⊢i sym_tt ∈ml sym_even $ sym_succ $ sym_succ $ sym_succ $ sym_succ $ sym_zero using AnyReasoning.
     Proof.
       assert (Γₙₐₜ ⊢i ruleA using AnyReasoning) as RA.
-      { gapply hypothesis; auto. apply pile_any. set_solver. }
+      { gapply hypothesis; [ apply pile_any | wf_auto2 | set_solver ]. } 
+      (* TODO: <- create a tactic for the previous assertion *)
       assert (Γₙₐₜ ⊢i ruleC using AnyReasoning) as RC.
-      { gapply hypothesis; auto. apply pile_any. set_solver. }
+      { gapply hypothesis; [ apply pile_any | wf_auto2 | set_solver ]. }
       apply universal_generalization with (x := "X") in RA as RA1. (* revert Meta *)
       2: apply pile_any. 2: auto.
-      assert (Γₙₐₜ
-       ⊢i all ,
-           (X0 ∈ml sym_succ $ sym_succ $ b0 --->
-            sym_even $ X0 =ml patt_sym even $ b0) using AnyReasoning) as RA1' by auto.
-      clear RA1.
+      unfold ruleA in RA1.
+      mlSimpl in RA1. 
       assert (Γₙₐₜ ⊢i ex , (sym_succ $ sym_succ $ sym_zero =ml b0) using AnyReasoning) as S2WF.
       { admit. }
       assert (Γₙₐₜ ⊢i ex , (sym_succ $ sym_succ $ sym_succ $ sym_succ $ sym_zero =ml b0) using AnyReasoning) as S4WF.
       { admit. }
-      mgSpecMeta RA1' with (sym_succ $ sym_succ $ sym_zero).
-      repeat rewrite simpl_bevar_subst'  in RA1'; wf_auto2. 2: admit. (* apply def_theory. *)
-      simpl in RA1'.
-      apply universal_generalization with (x := "X0") in RA1' as RA2. (* revert Meta *)
+      mgSpecMeta RA1 with (sym_succ $ sym_succ $ sym_zero).
+      mlSimpl in RA1; wf_auto2. 2: admit. (* apply def_theory. *)
+      simpl in RA1.
+      apply universal_generalization with (x := "X0") in RA1 as RA2. (* revert Meta *)
       2: apply pile_any. 2: auto.
-      assert (Γₙₐₜ
-       ⊢i all ,
-           (b0 ∈ml sym_succ $ sym_succ $ sym_succ $ sym_succ $ sym_zero --->
-            sym_even $ b0 =ml patt_sym even $ sym_succ $ sym_succ $ sym_zero) using AnyReasoning) as RA2' by auto.
-      clear RA2 RA1'.
-      mgSpecMeta RA2' with (sym_succ $ sym_succ $ sym_succ $ sym_succ $ sym_zero).
-      repeat rewrite simpl_bevar_subst'  in RA2'; wf_auto2. 2: admit. (* apply def_theory. *)
-      simpl in RA2'.
-      Search patt_exists ML_proof_system.
+      mlSimpl in RA2. simpl in RA2.
+      mgSpecMeta RA2 with (sym_succ $ sym_succ $ sym_succ $ sym_succ $ sym_zero).
+      mlSimpl in RA2; wf_auto2. 2: admit. (* apply def_theory. *)
+      simpl in RA2.
     Abort.
   End test_3.
 End test_3.

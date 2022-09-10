@@ -1,7 +1,4 @@
 From Coq Require Import ssreflect ssrfun ssrbool.
-Set Implicit Arguments.
-Unset Strict Implicit.
-Unset Printing Implicit Defensive.
 
 From stdpp Require Import base gmap.
 
@@ -402,9 +399,9 @@ Ltac solve_fresh_neq' :=
   repeat (
       match goal with
       | Heq: (eq ?x ?t) |- not (eq ?x ?y) =>
-        pose proof (X_eq_evar_fresh_impl_X_notin_S Heq); clear dependent Heq
+        pose proof (X_eq_evar_fresh_impl_X_notin_S _ _ Heq); clear dependent Heq
       | Heq: (eq ?x ?t) |- not (eq ?y ?x) =>
-        pose proof (X_eq_evar_fresh_impl_X_notin_S Heq); clear dependent Heq
+        pose proof (X_eq_evar_fresh_impl_X_notin_S _ _ Heq); clear dependent Heq
       end
     );
   (idtac + apply nesym);
@@ -432,9 +429,9 @@ Ltac solve_fresh_svar_neq :=
   repeat (
       match goal with
       | Heq: (eq ?x ?t) |- not (eq ?x ?y) =>
-        pose proof (X_eq_svar_fresh_impl_X_notin_S Heq); clear dependent Heq
+        pose proof (X_eq_svar_fresh_impl_X_notin_S _ _ Heq); clear dependent Heq
       | Heq: (eq ?x ?t) |- not (eq ?y ?x) =>
-        pose proof (X_eq_svar_fresh_impl_X_notin_S Heq); clear dependent Heq
+        pose proof (X_eq_svar_fresh_impl_X_notin_S _ _ Heq); clear dependent Heq
       end
     );
   (idtac + apply nesym);
@@ -455,13 +452,11 @@ Ltac solve_fresh_svar_neq :=
     fail
   end.
 
-
-
 Definition evar_fresh_dep {Σ : Signature} (S : EVarSet) : {x : evar & x ∉ S} :=
-  @existT evar (fun x => x ∉ S) (evar_fresh_s S) (@set_evar_fresh_is_fresh' Σ S).
+  @existT evar (fun x => x ∉ S) (evar_fresh_s S) (set_evar_fresh_is_fresh' S).
 
 Definition svar_fresh_dep {Σ : Signature} (S : SVarSet) : {X : svar & X ∉ S} :=
-  @existT svar (fun x => x ∉ S) (svar_fresh_s S) (@set_svar_fresh_is_fresh' _ S).
+  @existT svar (fun x => x ∉ S) (svar_fresh_s S) (set_svar_fresh_is_fresh' S).
 
 
 Fixpoint evar_fresh_seq {Σ : Signature} (avoid : EVarSet) (n : nat) : list evar :=
