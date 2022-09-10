@@ -40,6 +40,11 @@ Section with_signature.
   Open Scope string_scope.
   Open Scope list_scope.
 
+  (*
+    Γ ⊢ φ₁ → φ₂
+    -------------------- (x ∉ FV(φ₂))
+    Γ ⊢ (∃x. φ₁) → φ₂
+  *)
   Lemma Ex_gen (Γ : Theory) (ϕ₁ ϕ₂ : Pattern) (x : evar) (i : ProofInfo)
       {pile : ProofInfoLe (
               {| pi_generalized_evars := {[x]};
@@ -95,7 +100,9 @@ Section with_signature.
     }
   Defined.
 
-
+  (*
+     Γ ⊢ φ[y/x] → ∃x. φ
+   *)
   Lemma Ex_quan (Γ : Theory) (ϕ : Pattern) (y : evar) :
     well_formed (patt_exists ϕ) ->
     Γ ⊢i (instantiate (patt_exists ϕ) (patt_free_evar y) ---> (patt_exists ϕ))
@@ -118,6 +125,11 @@ Section with_signature.
     }
   Defined.
 
+  (*
+    Γ ⊢ φ
+    --------------
+    Γ ⊢ ∀x. φ
+  *)
   Lemma universal_generalization Γ ϕ x (i : ProofInfo) :
     ProofInfoLe ( (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)) i ->
     well_formed ϕ ->
@@ -139,8 +151,9 @@ Section with_signature.
     mlApply "0". mlExactn 0.
   Defined.
 
-  (*Hint Resolve evar_quantify_well_formed.*)
-
+  (*
+   Γ ⊢ (∀x. φ) → φ
+  *)
   Lemma forall_variable_substitution Γ ϕ x:
     well_formed ϕ ->
     Γ ⊢i (all, ϕ^{{evar: x ↦ 0}}) ---> ϕ
@@ -178,6 +191,11 @@ Section with_signature.
   Defined.
 
 
+  (*
+    Γ ⊢ φ₁ → φ₂
+    -----------------------
+    Γ ⊢ (∃x. φ₁) → (∃x. φ₂)
+  *)
   Lemma ex_quan_monotone Γ x ϕ₁ ϕ₂ (i : ProofInfo)
     (pile : ProofInfoLe ( (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)) i) :
     Γ ⊢i ϕ₁ ---> ϕ₂ using i ->
@@ -218,6 +236,9 @@ Section with_signature.
     abstract (wf_auto2).
   Defined.
 
+  (*
+     Γ ⊢ (∃x. φ₁ /\ φ₂) -> (∃x. φ₁)
+  *)
   Lemma ex_quan_and_proj1 Γ x ϕ₁ ϕ₂:
     well_formed ϕ₁ = true ->
     well_formed ϕ₂ = true ->
@@ -233,6 +254,9 @@ Section with_signature.
     mlDestructAnd "0". mlExactn 0.
   Defined.
 
+  (*
+     Γ ⊢ (∃x. φ₁ /\ φ₂) -> (∃x. φ₂)
+  *)
   Lemma ex_quan_and_proj2 Γ x ϕ₁ ϕ₂:
     well_formed ϕ₁ = true ->
     well_formed ϕ₂ = true ->
@@ -249,7 +273,12 @@ Section with_signature.
     mlExactn 1.
   Defined.
 
-
+  (*
+   Γ ⊢ φ₁ → φ₂
+   ----------------------------
+   Γ ⊢ φ₁ → ∀x. φ₂
+  *)
+  (* identity *)
   Lemma strip_exists_quantify_l Γ x P Q i :
     x ∉ free_evars P ->
     well_formed_closed_ex_aux P 1 ->
@@ -265,6 +294,7 @@ Section with_signature.
   ).
   Defined.
 
+  (* identity *)
   Lemma strip_exists_quantify_r Γ x P Q i :
     x ∉ free_evars Q ->
     well_formed_closed_ex_aux Q 1 ->
@@ -282,6 +312,9 @@ Section with_signature.
 
 
   (* prenex-exists-and-left *)
+  (*
+   Γ ⊢ ((∃x. φ₁) /\ φ₂) → (∃x. (φ₁ /\ φ₂))
+   *)
   Lemma prenex_exists_and_1 (Γ : Theory) ϕ₁ ϕ₂:
     well_formed (ex, ϕ₁) ->
     well_formed ϕ₂ ->
@@ -330,6 +363,9 @@ Section with_signature.
   Defined.
 
   (* prenex-exists-and-right *)
+  (*
+     Γ ⊢ (∃x. (φ₁ /\ φ₂)) → ((∃x. φ₁) /\ φ₂)
+  *)
   Lemma prenex_exists_and_2 (Γ : Theory) ϕ₁ ϕ₂:
     well_formed (ex, ϕ₁) ->
     well_formed ϕ₂ ->
@@ -394,6 +430,9 @@ Section with_signature.
       mlExactn 1.
   Defined.
 
+  (*
+     Γ ⊢ (∃x. (φ₁ /\ φ₂)) ↔ ((∃x. φ₁) /\ φ₂)
+  *)
   Lemma prenex_exists_and_iff (Γ : Theory) ϕ₁ ϕ₂:
     well_formed (ex, ϕ₁) ->
     well_formed ϕ₂ ->
@@ -413,6 +452,15 @@ Section with_signature.
   Defined.
 
 
+  (*
+     This is basically [universal_generalization]
+    but under an implication.
+    I wonder if we could get an iterative version [forall_gen_iter]?
+    Like,
+    Γ ⊢ φ₁ → ... → φₖ → ψ
+    ----------------------------
+    Γ ⊢ φ₁ → ... → φₖ → ∀x. ψ
+  *)
   Lemma forall_gen Γ ϕ₁ ϕ₂ x (i : ProofInfo):
     evar_is_fresh_in x ϕ₁ ->
     ProofInfoLe ( (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)) i ->
@@ -443,6 +491,13 @@ Section with_signature.
     apply modus_tollens; assumption.
   Defined.
 
+  (*
+   Γ ⊢ (∀x. φ) → φ
+
+   This is the same as [forall_variable_substitution]
+   except that here we have a ProofInfoLe assumption
+   instead of a concrete [using] clause.
+  *)
   Lemma forall_variable_substitution' Γ ϕ x (i : ProofInfo):
     well_formed ϕ ->
     (ProofInfoLe ( (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)) i) ->
@@ -453,6 +508,11 @@ Section with_signature.
     eapply useGenericReasoning. apply pile. apply Htmp.
   Defined.
 
+  (*
+    Γ ⊢ ∀x. φ
+    ----------
+    Γ ⊢ φ
+  *)
   Lemma forall_elim Γ ϕ x (i : ProofInfo):
     well_formed (ex, ϕ) ->
     evar_is_fresh_in x ϕ ->
@@ -476,6 +536,30 @@ Section with_signature.
     apply H.
   Defined.
 
+  (*
+   Γ ⊢ ∀x. (φ₁ → φ₂)
+   ------------------
+   Γ ⊢ (∃x. φ₁) → φ₂
+
+  When applied backwards,
+  turns an existential quantification on the LHS of an implication
+  into an universal quantification on top.
+  I wonder if we can get an iterative version, saying that
+   Γ ⊢ ∀ x. (φ₁ → ... → φᵢ → ... → φₖ → ψ)
+   ------------------
+   Γ ⊢ φ₁ → ... → (∃x. φᵢ) → ... → φₖ → ψ
+
+  Even better, I would like to have a version which says that
+   Γ ⊢ ∀ x₁,...,xₘ,x. (φ₁ → ... → φᵢ → ... → φₖ → ψ)
+   ------------------
+   Γ ⊢ ∀ x₁,...,xₘ. (φ₁ → ... → (∃x. φᵢ) → ... → φₖ → ψ)
+
+  because that would basically implement [mgDestructEx],
+  assuming we hide the leading universal quantifiers.
+
+  TODO: parameterize this lemma with a variable which is fresh in (ϕ₁ ---> ϕ₂),
+  instead of hard-coding the fresh generation.
+  *)
   Lemma prenex_forall_imp Γ ϕ₁ ϕ₂ i:
     well_formed (ex, ϕ₁) ->
     well_formed ϕ₂ ->
@@ -516,7 +600,7 @@ Section with_signature.
     unfold evar_open in *. simpl in *. exact H.
   Defined.
 
-
+  (* TODO move this somewhere else *)
   Lemma evar_fresh_in_foldr x g l:
     evar_is_fresh_in x (foldr patt_imp g l) <-> evar_is_fresh_in x g /\ evar_is_fresh_in_list x l.
   Proof.

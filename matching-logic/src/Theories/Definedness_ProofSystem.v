@@ -2197,10 +2197,29 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
     }
   Qed.
 
+  Lemma evar_quantify_equal_simpl : forall φ1 φ2 x n,
+      evar_quantify x n (φ1 =ml φ2) = (evar_quantify x n φ1) =ml (evar_quantify x n φ2).
+  Proof. auto. Qed.
+
+  Definition is_functional ϕ : Pattern :=
+    (ex, ϕ =ml b0).
+
+  Lemma patt_eq_comm φ φ' Γ:
+    theory ⊆ Γ ->
+    well_formed φ ->
+    well_formed φ' ->
+    Γ ⊢ (φ =ml φ') <---> (φ' =ml φ).
+  Proof.
+    intros HΓ wfφ wfφ'.
+    pose proof (SYM1 := @patt_eq_sym Γ φ' φ HΓ wfφ' wfφ).
+    pose proof (SYM2 := @patt_eq_sym Γ φ φ' HΓ wfφ wfφ').
+    apply pf_iff_split. 3,4: assumption. 1,2: wf_auto2. 
+  Defined.
+
   Lemma exists_functional_subst φ φ' Γ :
     theory ⊆ Γ ->
     mu_free φ -> well_formed φ' -> well_formed_closed_ex_aux φ 1 -> well_formed_closed_mu_aux φ 0 ->
-    Γ ⊢i ((instantiate (patt_exists φ) φ') and (patt_exists (patt_equal φ' (patt_bound_evar 0)))) ---> (patt_exists φ)
+    Γ ⊢i ((instantiate (patt_exists φ) φ') and is_functional φ') ---> (patt_exists φ)
     using AnyReasoning.
   Proof.
     intros HΓ MF WF WFB WFM.
@@ -2208,12 +2227,13 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
     remember (patt_free_evar Zvar) as Z.
     assert (well_formed Z) as WFZ.
     { rewrite HeqZ. auto. }
-    assert (Γ ⊢i (patt_equal φ' Z <---> patt_equal Z φ') using AnyReasoning).
+    (*
+    assert (Hcomm: Γ ⊢ (patt_equal φ' Z <---> patt_equal Z φ')).
     {
-      pose proof (SYM1 := patt_eq_sym Γ φ' Z ltac:(auto) ltac:(auto) WFZ).
-      pose proof (SYM2 := patt_eq_sym Γ Z φ' ltac:(assumption) WFZ ltac:(auto)).
-      apply pf_iff_split. 3,4: assumption. 1,2: wf_auto2.  
+      apply patt_eq_comm; assumption.
     }
+    apply pf_iff_iff in Hcomm. destruct Hcomm.     2,3: wf_auto2. *)
+
     assert (well_formed (instantiate (ex , φ) φ')) as WF1. {
       unfold instantiate.
       unfold well_formed, well_formed_closed.
@@ -2232,10 +2252,8 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
       now apply mu_free_wfp.
     }
     pose proof (equality_elimination2 Γ φ' Z φ HΓ MF WF WFZ WFB).
-    apply pf_iff_iff in H. destruct H.
     assert (well_formed (ex, φ)) as WFEX.
     { wf_auto. now apply mu_free_wfp. }
-    2,3: wf_auto2.
     pose proof (EQ := Ex_quan Γ φ Zvar WFEX).
     change constraint in EQ.
     epose proof (PC := prf_conclusion Γ (patt_equal φ' Z) (instantiate (ex , φ) (patt_free_evar Zvar) ---> ex , φ) AnyReasoning ltac:(apply well_formed_equal;wf_auto2) _ EQ).
@@ -4268,28 +4286,32 @@ Lemma MLGoal_mlSpecialize {Σ : Signature} {syntax : Syntax} Γ l₁ l₂ p t g 
   mkMLGoal Σ Γ (l₁ ++ (mkNH _ name ((all, p) and (ex , t =ml b0)))::l₂) g AnyReasoning.
 Proof.
   intros HΓ MF WF MG.
-  unfold of_MLGoal in *. simpl in *. wf_auto2.
+  unfold of_MLGoal in *. simpl in *. intros H H0.
   assert (well_formed (ex , p)). {
     unfold patterns_of in H0. rewrite map_app in H0.
     apply wfl₁hl₂_proj_h in H0; simpl in H0.
     apply andb_true_iff in H0 as [H0'' H0'].
     apply andb_true_iff in H0' as [H0_1 H0_2]; simpl in *; repeat rewrite andb_true_r in H0_1, H0_2; repeat rewrite andb_true_iff in H0_1, H0_2; wf_auto2.
   }
-  epose proof (MG H _) as MG'.
+  unshelve (epose proof (MG H _) as MG').
+  {
+    unfold patterns_of in *; rewrite -> map_app in *; simpl in H0; wf_auto2.
+    1: now apply wfl₁hl₂_proj_l₁ in H0.
+    apply wfl₁hl₂_proj_l₂ in H0 as H0'; simpl.
+    apply wfl₁hl₂_proj_h in H0.
+    apply wf_cons; wf_auto2.
+  }
+  clear MG.
   unfold patterns_of in *. rewrite -> map_app in *. simpl.
   eapply prf_strenghten_premise_iter_meta_meta.
-  7: exact MG'. all: auto.
+  7: exact MG'.
+  5: assumption.
   1: now apply wfl₁hl₂_proj_l₁ in H0.
   1: now apply wfl₁hl₂_proj_l₂ in H0.
-  apply wfl₁hl₂_proj_h in H0. wf_auto2.
-  apply wfl₁hl₂_proj_h in H0. wf_auto2.
-  apply forall_functional_subst. 1-3: auto. all: wf_auto2.
-  Unshelve.
-  all: unfold patterns_of in *; rewrite -> map_app in *; simpl in H0; wf_auto2.
-  1: now apply wfl₁hl₂_proj_l₁ in H0.
-  apply wfl₁hl₂_proj_l₂ in H0 as H0'; simpl.
-  apply wfl₁hl₂_proj_h in H0.
-  apply wf_cons; wf_auto2.
+  1,2: wf_auto2.
+  simpl.
+  apply forall_functional_subst. 1-3: assumption.
+  all: wf_auto2.
 Defined.
 
 (**
