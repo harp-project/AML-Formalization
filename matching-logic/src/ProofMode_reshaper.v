@@ -139,7 +139,7 @@ Section with_signature.
     -------------------------------
     Γ ⊢ φ₁ ---> ... ---> φₖ ---> ψ
   *)
-  Lemma lhs_and_to_imp_r Γ (g x : Pattern) (xs : list Pattern) i :
+  Lemma reshape_lhs_imp_to_and_backward Γ (g x : Pattern) (xs : list Pattern) i :
     well_formed g ->
     well_formed x ->
     Pattern.wf xs ->
@@ -154,16 +154,38 @@ Section with_signature.
     apply lhs_and_to_imp_meta; assumption.
   Defined.
 
+  (*
+      Γ ⊢ φ₁ ---> ... ---> φₖ ---> ψ
+      ------------------------------
+      Γ ⊢ (φ₁ and ... and φₖ) ---> ψ
+  *)
+  Lemma reshape_lhs_imp_to_and_forward Γ (g x : Pattern) (xs : list Pattern) i :
+    well_formed g ->
+    well_formed x ->
+    Pattern.wf xs ->
+    forall (r : ImpReshapeS g (x::xs)),
+       Γ ⊢i untagPattern (irs_flattened _ _ r) using i ->
+       Γ ⊢i ((foldr (patt_and) x xs) ---> g) using i.
+  Proof.
+    intros wfg wfx wfxs r H.
+    eapply cast_proof' in H.
+    2: { rewrite irs_pf; reflexivity. }
+    clear r.
+    apply lhs_imp_to_and_meta; assumption.
+  Defined.
 
-  Local Example ex_match Γ a b c d:
+  Local Example ex_match_imp Γ a b c d:
     well_formed a ->
     well_formed b ->
     well_formed c ->
     well_formed d ->
+    Γ ⊢i c ---> (b ---> (a ---> d)) using BasicReasoning ->
     Γ ⊢i a ---> (b ---> (c ---> d)) using BasicReasoning.
   Proof.
-    intros wfa wfb wfc wfd.
-    apply lhs_and_to_imp_r.
+    intros wfa wfb wfc wfd H.
+    apply reshape_lhs_imp_to_and_backward; try_wfauto2.
+    apply reshape_lhs_imp_to_and_forward in H; try_wfauto2.
+    simpl in *.
   Abort.
 
 
@@ -263,7 +285,7 @@ Section with_signature.
       ------------------------------
       Γ ⊢ (φ₁ and ... and φₖ) ---> ψ
     *)
-  Lemma lhs_imp_to_and_r Γ (g x : Pattern) (xs : list Pattern) i :
+  Lemma reshape_lhs_and_to_imp_backward Γ (g x : Pattern) (xs : list Pattern) i :
     well_formed g ->
     well_formed x ->
     Pattern.wf xs ->
@@ -278,6 +300,21 @@ Section with_signature.
     apply lhs_imp_to_and_meta; assumption.
   Defined.
 
+  Lemma reshape_lhs_and_to_imp_forward Γ (g x : Pattern) (xs : list Pattern) i :
+    well_formed g ->
+    well_formed x ->
+    Pattern.wf xs ->
+    forall (r : AndReshapeS x xs),
+      Γ ⊢i (untagPattern (ars_flattened _ _ r)) ---> g using i ->
+      Γ ⊢i ((foldr (patt_imp) g (x::xs))) using i.
+  Proof.
+    intros wfg wfx wfxs r H.
+    eapply cast_proof' in H.
+    2: { rewrite ars_pf; reflexivity. }
+    clear r.
+    apply lhs_and_to_imp_meta; assumption.
+  Defined.
+
   Local Example ex_match_and Γ a b c d:
    well_formed a ->
    well_formed b ->
@@ -286,7 +323,7 @@ Section with_signature.
    Γ ⊢i (a and b and c) ---> d using BasicReasoning.
   Proof.
    intros wfa wfb wfc wfd.
-   apply lhs_imp_to_and_r; simpl.
+   apply reshape_lhs_and_to_imp_backward; simpl.
   Abort.
 
 End with_signature.
