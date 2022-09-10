@@ -2216,6 +2216,7 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
     apply pf_iff_split. 3,4: assumption. 1,2: wf_auto2. 
   Defined.
 
+
   Lemma exists_functional_subst φ φ' Γ :
     theory ⊆ Γ ->
     mu_free φ -> well_formed φ' -> well_formed_closed_ex_aux φ 1 -> well_formed_closed_mu_aux φ 0 ->
@@ -2227,12 +2228,6 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
     remember (patt_free_evar Zvar) as Z.
     assert (well_formed Z) as WFZ.
     { rewrite HeqZ. auto. }
-    (*
-    assert (Hcomm: Γ ⊢ (patt_equal φ' Z <---> patt_equal Z φ')).
-    {
-      apply patt_eq_comm; assumption.
-    }
-    apply pf_iff_iff in Hcomm. destruct Hcomm.     2,3: wf_auto2. *)
 
     assert (well_formed (instantiate (ex , φ) φ')) as WF1. {
       unfold instantiate.
@@ -2251,19 +2246,18 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
       all: try rewrite HeqZ; auto.
       now apply mu_free_wfp.
     }
-    pose proof (equality_elimination2 Γ φ' Z φ HΓ MF WF WFZ WFB).
+    
     assert (well_formed (ex, φ)) as WFEX.
     { wf_auto. now apply mu_free_wfp. }
     pose proof (EQ := Ex_quan Γ φ Zvar WFEX).
     change constraint in EQ.
     epose proof (PC := prf_conclusion Γ (patt_equal φ' Z) (instantiate (ex , φ) (patt_free_evar Zvar) ---> ex , φ) AnyReasoning ltac:(apply well_formed_equal;wf_auto2) _ EQ).
 
-    assert (Γ
-              ⊢i patt_equal φ' Z ---> instantiate (ex , φ) φ' ---> ex , φ using AnyReasoning) as HSUB.
+    assert (Γ ⊢ patt_equal φ' Z ---> (ex , φ) ^ [φ'] ---> ex , φ) as HSUB.
     {
       pose proof (EE := equality_elimination2 Γ φ' Z φ HΓ
-                                               ltac:(auto) ltac:(auto) ltac:(auto) WFB).
-      unfold instantiate in EE.
+                                               ltac:(auto) ltac:(auto) ltac:(auto) WFB WFM).
+
       epose proof (PSP := prf_strenghten_premise Γ ((patt_equal φ' Z) and (instantiate (ex , φ) Z))
                                                  ((patt_equal φ' Z) and (instantiate (ex , φ) φ'))
                                                  (ex , φ) _ _ _).
@@ -2285,18 +2279,11 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
         unshelve(epose proof (AI := and_impl' Γ (patt_equal φ' Z) (instantiate (ex , φ) φ') (instantiate (ex , φ) Z) _ _ _)).
         1-3: wf_auto2.
         eapply MP. 2: useBasicReasoning; exact AI.
-        { apply EE. wf_auto2. }
+        { exact EE. }
     }
-    eapply MP. 2: useBasicReasoning; apply and_impl'; try_wfauto2.
 
-    apply reorder_meta; try_wfauto2.
     eapply (Ex_gen Γ _ _ Zvar) in HSUB.
-    2: { apply pile_any. }
-
-    unfold exists_quantify in HSUB.
-    mlSimpl in HSUB.
-    rewrite -> HeqZ, -> HeqZvar in HSUB. simpl evar_quantify in HSUB.
-    2: {
+    3: {
       rewrite HeqZvar. unfold fresh_evar. simpl.
       apply not_elem_of_union.
       split.
@@ -2309,20 +2296,33 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
         clear. set_solver.
 
     }
-    destruct (decide ((fresh_evar (φ $ φ')) = (fresh_evar (φ $ φ')))) in HSUB;
-      simpl in HSUB. 2: congruence.
-    rewrite evar_quantify_noop in HSUB; auto.
+    2: { apply pile_any. }
+    
 
-    apply count_evar_occurrences_0.
-    unfold fresh_evar. simpl.
-    epose (NIN := not_elem_of_union (evar_fresh (elements (free_evars φ ∪ free_evars φ'))) (free_evars φ) (free_evars φ')). destruct NIN as [NIN1 NIN2].
-    epose (NIN3 := NIN1 _). destruct NIN3. auto.
-    Unshelve.
-    5: { unfold instantiate. simpl.
-         apply set_evar_fresh_is_fresh'.
+    eapply MP. 2: useBasicReasoning; apply and_impl'; try_wfauto2.
+    apply reorder_meta; try_wfauto2.
+    
+
+    unfold exists_quantify in HSUB.
+    mlSimpl in HSUB.
+    rewrite -> HeqZ, -> HeqZvar in HSUB. simpl evar_quantify in HSUB.
+
+    rewrite decide_eq_same in HSUB.
+
+    rewrite evar_quantify_noop in HSUB.
+    {
+      apply count_evar_occurrences_0.
+      unfold fresh_evar. simpl.
+      epose (NIN := not_elem_of_union (evar_fresh (elements (free_evars φ ∪ free_evars φ'))) (free_evars φ) (free_evars φ')). destruct NIN as [NIN1 NIN2].
+      epose (NIN3 := NIN1 _). destruct NIN3. auto.
+      Unshelve.
+      5: { unfold instantiate. simpl.
+           apply set_evar_fresh_is_fresh'.
+      }
+
+      1-4: wf_auto2.
     }
-
-    1-4: wf_auto2.
+    exact HSUB.
   Qed.
 
   Corollary forall_functional_subst φ φ' Γ :
