@@ -2780,17 +2780,18 @@ Proof.
   mlExact "H0".
 Defined.
 
-Ltac2 rec applyRec (f : constr) (xs : constr list) : constr :=
+Ltac2 rec applyRec (f : constr) (xs : constr list) : constr option :=
   match xs with
-  | [] => f
-  | y::ys => (applyRec constr:($f $y) ys)
+  | [] => Some f
+  | y::ys =>
+    lazy_match! Constr.type f with
+    | (forall _ : ?t, _) =>
+      Control.plus (fun () => applyRec constr:($f $y) ys) (fun _ => None)
+    | _ => None
+    end
   end.
 
-Ltac2 Eval (applyRec constr:(S) [constr:("")]).
-
-Ltac2 fitsExactly (f : constr) (xs : constr list) : bool :=
-
-.
+Ltac2 Eval (applyRec constr:(Nat.add) [constr:(1);constr:(2)]).
 
 (*
   All thic complicated code is here only for one reason:
@@ -2801,23 +2802,53 @@ Ltac2 fitsExactly (f : constr) (xs : constr list) : bool :=
   In particular, I want the proof mode goals to be generated first,
   and the other, uninteresting goals, next.
 *)
-Ltac2 rec fillWithUnderscoresAndCall (tac : constr -> unit) (t : constr) (args : constr list) :=
-  lazy_match! Constr.type t with
-  | (?t' -> ?t's) =>
-    lazy_match! goal with
-    | [|- ?g] =>
-      let h := Fresh.in_goal ident:(h) in
-      assert(h : $t' -> $g) > [(
-        let pftprime := Fresh.in_goal ident:(pftprime) in
-        intro $pftprime;
-        let new_t := open_constr:($t ltac2:(Notations.exact0 false (fun () => Control.hyp (pftprime)))) in
-        fillWithUnderscoresAndCall tac new_t args;
-        Std.clear [pftprime]
-      )|(apply &h)
-      ]
+Ltac2 rec fillWithUnderscoresAndCall
+  (tac : constr -> unit) (t : constr) (args : constr list) :=
+  (*
+  Message.print (
+    Message.concat
+      (Message.of_string "fillWithUnderscoresAndCall: t = ")
+      (Message.of_constr t)
+  );
+  Message.print (
+    Message.concat
+      (Message.of_string "fillWithUnderscoresAndCall: args = ")
+      (List.fold_right (Message.concat) (Message.of_string "") (List.map Message.of_constr args))
+  );
+  *)
+  let cont := (fun () =>
+    lazy_match! Constr.type t with
+    | (?t' -> ?t's) =>
+      lazy_match! goal with
+      | [|- ?g] =>
+        let h := Fresh.in_goal ident:(h) in
+        assert(h : $t' -> $g) > [(
+          let pftprime := Fresh.in_goal ident:(pftprime) in
+          intro $pftprime;
+          let new_t := open_constr:($t ltac2:(Notations.exact0 false (fun () => Control.hyp (pftprime)))) in
+          fillWithUnderscoresAndCall tac new_t args;
+          Std.clear [pftprime]
+        )|(apply &h)
+        ]
+      end
+    | (forall _ : _, _) => fillWithUnderscoresAndCall tac open_constr:($t _) args
+    | ?remainder => throw (Invalid_argument (Some (Message.concat (Message.concat (Message.of_string "Remainder type: ") (Message.of_constr remainder)) (Message.concat (Message.of_string ", of term") (Message.of_constr t)))))
     end
-  | (forall _ : _, _) => fillWithUnderscoresAndCall tac open_constr:($t _) args
-  | _ => tac (applyRec t args)
+  ) in
+  match (applyRec t args) with
+  | None =>
+    (* Cannot apply [t] to [args] => continue *)
+    cont ()
+  | Some result =>
+    (* Can apply [to] to [args], *)
+    lazy_match! Constr.type result with
+    | (forall _ : _, _) =>
+      (* but result would still accept an argument => continue *)
+      cont ()
+    | _ =>
+      (* and nothing more can be applied to the result => we are done *)
+      tac result
+    end
   end
 .
 
@@ -2864,11 +2895,13 @@ Ltac2 try_wfa () :=
       if (Constr.has_evar p) then
         ()
       else
-      ltac1:(try_wfauto2)
+        ltac1:(try_wfauto2)
     ) in
     lazy_match! goal with
     | [|- well_formed ?p = true] => wfa p
     | [|- is_true (well_formed ?p) ] => wfa p
+    | [|- Pattern.wf ?l = true] => wfa l
+    | [|- is_true (Pattern.wf ?l) ] => wfa l
     | [|- _] => ()
     end
   )
