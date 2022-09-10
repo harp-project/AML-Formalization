@@ -2780,6 +2780,12 @@ Proof.
   mlExact "H0".
 Defined.
 
+Ltac2 rec applyRec (f : constr) (xs : constr list) : constr :=
+  match xs with
+  | [] => f
+  | y::ys => (applyRec constr:($f $y) ys)
+  end.
+
 (*
   All thic complicated code is here only for one reason:
   I want to be able to first run the tactic with all the parameters
@@ -2789,7 +2795,7 @@ Defined.
   In particular, I want the proof mode goals to be generated first,
   and the other, uninteresting goals, next.
 *)
-Ltac2 rec fillWithUnderscoresAndCall (tac : constr -> unit) (t : constr) :=
+Ltac2 rec fillWithUnderscoresAndCall (tac : constr -> unit) (t : constr) (args : constr list) :=
   lazy_match! Constr.type t with
   | (?t' -> ?t's) =>
     lazy_match! goal with
@@ -2799,13 +2805,13 @@ Ltac2 rec fillWithUnderscoresAndCall (tac : constr -> unit) (t : constr) :=
         let pftprime := Fresh.in_goal ident:(pftprime) in
         intro $pftprime;
         let new_t := open_constr:($t ltac2:(Notations.exact0 false (fun () => Control.hyp (pftprime)))) in
-        fillWithUnderscoresAndCall tac new_t;
+        fillWithUnderscoresAndCall tac new_t args;
         Std.clear [pftprime]
       )|(apply &h)
       ]
     end
-  | (forall _ : _, _) => fillWithUnderscoresAndCall tac open_constr:($t _)
-  | _ => tac t
+  | (forall _ : _, _) => fillWithUnderscoresAndCall tac open_constr:($t _) args
+  | _ => tac (applyRec t args)
   end
 .
 
@@ -2827,9 +2833,9 @@ Defined.
 Ltac2 _callCompletedAndCast (t : constr) (tac : constr -> unit) :=
   let tac' := (fun (t' : constr) =>
     let tcast := open_constr:(@useGenericReasoning'' _ _ _ _ _ $t') in
-    fillWithUnderscoresAndCall tac tcast
+    fillWithUnderscoresAndCall tac tcast []
   ) in
-  fillWithUnderscoresAndCall tac' t
+  fillWithUnderscoresAndCall tac' t []
 .
 
 Ltac2 try_solve_pile_basic () :=

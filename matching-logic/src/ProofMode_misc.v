@@ -3019,6 +3019,15 @@ Proof.
   mlTauto.
 Defined.
 
+Ltac2 _callCompletedTransformedAndCast
+  (t : constr) (transform : constr) (tac : constr -> unit) :=
+  let tac' := (fun (t' : constr) =>
+    let tcast := open_constr:(@useGenericReasoning'' _ _ _ _ _ $t') in
+    fillWithUnderscoresAndCall tac tcast
+  ) in
+  fillWithUnderscoresAndCall tac' t
+.
+
 
 Close Scope ml_scope.
 Close Scope list_scope.

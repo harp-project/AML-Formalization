@@ -2324,6 +2324,9 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
     { wf_auto2. }
     mlIntro "H".
     mlDestructAnd "H" as "H1" "H2".
+
+    mlApplyMeta (reshape_lhs_imp_to_and_forward _ _ _ _ _ _ _ _ _ HSUB).
+    eapply reshape_lhs_imp_to_and_forward in HSUB; try_wfauto2; simpl in HSUB.
     mlApplyMeta HSUB.
     *)
     eapply MP. 2: useBasicReasoning; apply and_impl'; try_wfauto2.
