@@ -488,7 +488,7 @@ Section UnificationProcedure.
         assert (well_formed a) by now apply andb_true_iff in Wf3.
         apply well_formed_and; apply well_formed_imp;
         repeat apply well_formed_and; auto;
-        apply ProofMode_propositional.well_formed_foldr_and; wf_auto2.
+        apply well_formed_foldr_and; wf_auto2.
       }
       mlSplitAnd; mlIntro "H"; mlDestructAnd "H" as "H0" "H1".
       - mlRevertLast. mlRewrite IHxs at 1. mlIntro "H1". mlDestructAnd "H1".
