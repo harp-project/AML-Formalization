@@ -163,14 +163,15 @@ Section with_signature.
     well_formed g ->
     well_formed x ->
     Pattern.wf xs ->
-    forall (r : ImpReshapeS g (xs++[x])),
+    forall (r : ImpReshapeS g (x::xs)),
        Γ ⊢i untagPattern (irs_flattened _ _ r) using i ->
-       Γ ⊢i ((foldr (patt_and) x xs) ---> g) using i.
+       Γ ⊢i ((foldl (patt_and) x xs) ---> g) using i.
   Proof.
     intros wfg wfx wfxs r H.
     eapply cast_proof' in H.
     2: { rewrite irs_pf; reflexivity. }
     clear r.
+    simpl in H.
     apply lhs_imp_to_and_meta; try assumption.
   Defined.
 

@@ -3740,6 +3740,24 @@ Proof.
     assumption.
 Qed.
 
+Local Lemma well_formed_foldl_and {Σ : Signature} (x : Pattern) (xs : list Pattern):
+  well_formed x ->
+  Pattern.wf xs ->
+  well_formed (foldl patt_and x xs).
+Proof.
+  intros wfx wfxs.
+  induction xs using rev_ind; simpl.
+  - assumption.
+  - feed specialize IHxs.
+    { apply wfapp_proj_1 in wfxs. exact wfxs. }
+    rewrite foldl_app. simpl.
+    apply well_formed_and.
+    { apply IHxs. }
+    { apply wfapp_proj_2 in wfxs. unfold Pattern.wf in wfxs. simpl in wfxs.
+      rewrite andb_true_r in wfxs.
+      exact wfxs.
+    }
+Qed.
 
 Lemma lhs_and_to_imp {Σ : Signature} Γ (g x : Pattern) (xs : list Pattern):
   well_formed g ->
@@ -3844,6 +3862,47 @@ Proof.
   }
 Defined.
 
+Lemma and_foldl_foldr {Σ : Signature} Γ (x : Pattern) (xs : list Pattern):
+  well_formed x ->
+  Pattern.wf xs ->
+  Γ ⊢i (foldl patt_and x xs <---> (foldr patt_and x xs))
+  using BasicReasoning.
+Proof.
+  intros wfx wfxs.
+  induction xs; simpl.
+  {
+    apply pf_iff_equiv_refl.
+    exact wfx.
+  }
+  {
+    pose proof (wfaxs := wfxs).
+    unfold Pattern.wf in wfxs.
+    simpl in wfxs.
+    apply andb_prop in wfxs as [wfa wfxs].
+    fold (Pattern.wf xs) in wfxs.
+    assert (Hwffaxxs: well_formed (foldr patt_and x xs)).
+    { apply well_formed_foldr_and; assumption. }
+    assert (Hwffa: well_formed (foldl patt_and (x and a) xs)).
+    { apply well_formed_foldl_and; wf_auto2. }
+    specialize (IHxs wfxs).
+    induction xs using rev_ind.
+    toMLGoal.
+    { wf_auto2. }
+    mlSplitAnd; mlIntro "H1"; mlAdd IHxs as "H2"; mlDestructAnd "H2" as "H3" "H4".
+    {
+      mlSplitAnd.
+      {
+        clear. induction xs.
+        {
+          simpl. mlDestructAnd "H1" as "H11" "H12". mlExact "H12".
+        }
+        {
+
+        }
+      }
+    }
+  }
+Defined.
 
 Lemma lhs_imp_to_and_meta {Σ : Signature} Γ (g x : Pattern) (xs : list Pattern) i:
   well_formed g ->
