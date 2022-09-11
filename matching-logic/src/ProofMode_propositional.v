@@ -3947,7 +3947,6 @@ Proof.
   apply foldr_and_weaken_last; assumption.
 Defined.
 
-
 Lemma foldr_and_last_rotate {Σ : Signature} Γ (x1 x2 : Pattern) (xs : list Pattern):
   well_formed x1 ->
   well_formed x2 ->
@@ -3955,8 +3954,7 @@ Lemma foldr_and_last_rotate {Σ : Signature} Γ (x1 x2 : Pattern) (xs : list Pat
   Γ ⊢i ((foldr patt_and x2 (xs ++ [x1])) <---> (x2 and (foldr patt_and x1 xs))) using BasicReasoning.
 Proof.
   intros wfx1 wfx2 wfxs.
-  move: x1 x2 wfx1 wfx2.
-  induction xs; intros x1 x2 wfx1 wfx2; simpl.
+  destruct xs; simpl.
   {
     apply patt_and_comm; assumption.
   }
@@ -3970,6 +3968,8 @@ Proof.
     assert (Hwf1: well_formed (foldr patt_and (x1 and x2) xs)).
     { apply well_formed_foldr_and;[wf_auto2|assumption]. }
     assert (Hwf2: well_formed (foldr patt_and x1 xs)).
+    { apply well_formed_foldr_and; assumption. }
+    assert (Hwf3: well_formed (foldr patt_and x2 xs)).
     { apply well_formed_foldr_and; assumption. }
 
     rewrite foldr_app. simpl. 
@@ -3989,9 +3989,29 @@ Proof.
       }
       { mlExact "Ha". }
       {
-
+        mlApplyMeta foldr_and_weaken_last_meta in "Hf".
+        2: { apply pf_conj_elim_l; wf_auto2. }
+        2: wf_auto2.
+        mlExact "Hf".
       }
-      specialize (IHxs wfxs).
+    }
+    {
+      mlDestructAnd "H" as "H1" "H1'".
+      mlDestructAnd "H1'" as "H2" "H3".
+      mlSplitAnd;[mlExact "H2"|].
+      mlAssert ("Hf": (x2 and foldr patt_and x1 xs)).
+      { wf_auto2. }
+      { mlSplitAnd;[mlExact "H1"|mlExact "H3"]. }
+      mlAdd (foldr_and_weaken_last Γ x1 (x1 and x2) xs ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2))as "Hw".
+      mlAssert ("Hw'" : (foldr patt_and x1 xs ---> foldr patt_and (x1 and x2) xs)).
+      { wf_auto2. }
+      {
+        mlApply "Hw".
+        mlIntro "Hx1".
+        mlSplitAnd;[mlExact "Hx1"|mlExact "H1"].
+      }
+      mlApply "Hw'".
+      mlExact "H3".
     }
   }
 Defined.
