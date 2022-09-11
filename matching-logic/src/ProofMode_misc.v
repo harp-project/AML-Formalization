@@ -35,15 +35,12 @@ Open Scope list_scope.
 Ltac2 _callCompletedTransformedAndCast
   (t : constr) (transform : constr) (tac : constr -> unit) :=
   let tac' := (fun (t' : constr) =>
-    Message.print (Message.of_constr t');
     let tac'' := (fun (t'' : constr) =>
-      Message.print (Message.of_constr t'');
       let tcast := open_constr:(@useGenericReasoning'' _ _ _ _ _ $t'') in
       fillWithUnderscoresAndCall tac tcast []
     ) in
-    fillWithUnderscoresAndCall (fun t''' => Message.print (Message.of_constr t'''); tac'' t''') transform [t']
+    fillWithUnderscoresAndCall (fun t''' => tac'' t''') transform [t']
   ) in
-  Message.print (Message.of_constr t);
   fillWithUnderscoresAndCall tac' t []
 .
 
@@ -56,7 +53,7 @@ Ltac2 mlApplyMetaGeneralized (t : constr) :=
 Ltac _mlApplyMetaGeneralized t :=
   let ff := ltac2:(t' |- mlApplyMetaGeneralized (Option.get (Ltac1.to_constr(t')))) in
   ff t;
-  rewrite [foldr patt_and _ _]/foldr
+  rewrite [foldr patt_and _ _]/=
 .
 
 
@@ -64,6 +61,7 @@ Tactic Notation "mlApplyMetaGeneralized" constr(t) :=
   _mlApplyMetaGeneralized t
 .
 
+#[local]
 Example ex_mlApplyMetaGeneralized  {Σ : Signature} Γ a b c d e f:
   well_formed a ->
   well_formed b ->
@@ -72,17 +70,15 @@ Example ex_mlApplyMetaGeneralized  {Σ : Signature} Γ a b c d e f:
   well_formed e ->
   well_formed f ->
   Γ ⊢ a ---> b ---> c ---> d ---> e ---> f ->
-  Γ ⊢ f.
+  Γ ⊢ (a and b and c and d and e) ---> f.
 Proof.
   intros wfa wfb wfc wfd wfe wff H.
   toMLGoal.
   { wf_auto2. }
+  mlIntro "H1".
   mlApplyMetaGeneralized H.
-  fromMLGoal.
-  eapply MP.
-  2: apply foldr_and_last_rotate_1.
-  Set Printing Parentheses.
-Abort.
+  mlExact "H1".
+Defined.
 
 Section FOL_helpers.
 
