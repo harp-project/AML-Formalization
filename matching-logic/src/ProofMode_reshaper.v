@@ -2,7 +2,7 @@ From Coq Require Import ssreflect ssrfun ssrbool.
 
 From Ltac2 Require Import Ltac2.
 
-From Coq Require Import Ensembles Bool.
+From Coq Require Import Ensembles Bool String.
 From Coq.Logic Require Import FunctionalExtensionality Eqdep_dec.
 From Equations Require Import Equations.
 
@@ -32,6 +32,10 @@ Import
 .
 
 Set Default Proof Mode "Classic".
+
+Open Scope ml_scope.
+Open Scope string_scope.
+Open Scope list_scope.
 
 Section with_signature.
   Context {Σ : Signature}.
@@ -184,7 +188,7 @@ Section with_signature.
        match (rev xs) with
        | [] => Γ ⊢i x ---> g using i
        | yk::ys =>
-          Γ ⊢i ((foldr (patt_and) yk (rev ys)) ---> g) using i
+          Γ ⊢i ((foldr (patt_and) yk (x::(rev ys))) ---> g) using i
        end.
   Proof.
     intros wfg wfx wfxs r H.
@@ -206,7 +210,6 @@ Section with_signature.
 
       apply (f_equal (@rev Pattern)) in Heqxs.
       simpl in Heqxs.
-      Search rev app.
       rewrite rev_app_distr in Heqxs.
       simpl in Heqxs.
       rewrite rev_involutive in Heqxs.
@@ -231,34 +234,52 @@ Section with_signature.
       assert (Pattern.wf (rev l)).
       { apply wf_rev. assumption. }
 
+      assert (well_formed (foldr patt_and x l)).
+      { apply well_formed_foldr_and; assumption. }
+
+      assert (well_formed (foldr patt_and p l)).
+      { apply well_formed_foldr_and; assumption. }
+
+      assert (well_formed (foldr patt_and (p and x) l)).
+      { apply well_formed_foldr_and; wf_auto2. }
+
+
+      assert (well_formed (foldr patt_and x (rev l))).
+      { apply well_formed_foldr_and; assumption. }
+
+      assert (well_formed (foldr patt_and p (rev l))).
+      { apply well_formed_foldr_and; assumption. }
+
+      assert (well_formed (foldr patt_and (p and x) (rev l))).
+      { apply well_formed_foldr_and; wf_auto2. }
+
       toMLGoal.
-      { well_formed_foldr_and.  wf_auto2. }
-
-      eapply (useBasicReasoning _ (prf_strenghten_premise_meta _ _ _ _ _ _ _ _ _)) in H.
-      eapply MP in H.
-      2: {
-        apply foldr_and_last_rotate_1.
+      {
+        apply well_formed_imp;[|assumption].
+        apply well_formed_and;[assumption|].
+        apply well_formed_foldr_and; assumption.
       }
-      simpl in *.
-      Check foldr_and_last_rotate_1.
-      rewrite Heqxs.
+      
+      mlAdd H as "H1".
+      mlIntro "H2".
+      mlApply "H1".
+      mlClear "H1".
+      rewrite foldr_app.
+      simpl.
+      useBasicReasoning.
+      mlAdd (foldr_and_weaken_last Γ p (p and x) (rev l) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)) as "Hw".
+      mlDestructAnd "H2" as "Hx" "Hf".
+      mlAssert ("Hw'": (foldr patt_and p (rev l) ---> foldr patt_and (p and x) (rev l))).
+      { wf_auto2. }
+      {
+        mlApply "Hw".
+        mlIntro "Hp".
+        mlSplitAnd;[mlExact "Hp" | mlExact "Hx"].
+      }
+      mlClear "Hw".
+      mlApply "Hw'".
+      mlExact "Hf".
     }
-    eapply cast_proof' in H.
-    2: { rewrite irs_pf; reflexivity. }
-    clear r.
-    apply lhs_imp_to_and_meta in H;[|assumption|assumption|assumption].
-
-    Check (Coq.Lists.List.last).
-    pose proof (Htmp := foldr_and_last_rotate_1 Γ).
-    remember (last (x::xs)) as xl eqn:Heqxl.
-    destruct xl as [xl|].
-    2: {
-      rewrite last_cons in Heqxl.
-      destruct (last xs); inversion Heqxl.
-    }
-
-    pose proof (Htmp := foldr_and_last_rotate_1 Γ).
-    ; assumption.
   Defined.
 
   Local Example ex_match_imp Γ a b c d:
