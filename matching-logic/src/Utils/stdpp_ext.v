@@ -1,7 +1,16 @@
 (* Extensions to the stdpp library *)
 From Coq Require Import ssreflect ssrfun ssrbool.
-From Coq.Logic Require Import Classical_Prop Classical_Pred_Type.
+From Coq.Logic Require Import Classical_Prop Classical_Pred_Type Eqdep_dec.
 From stdpp Require Import pmap gmap mapset fin_sets sets list propset coGset.
+
+Lemma decide_eq_same (A : Type) {dec : forall (t1 t2 : A), Decision (t1 = t2)} t:
+  decide (t = t) = left erefl.
+Proof.
+  destruct (decide (t = t));[|congruence].
+  apply f_equal.
+  apply UIP_dec.
+  apply dec.
+Qed.
 
 Lemma pmap_to_list_lookup {A} (M : Pmap A) (i : positive) (x : A)
   : (i,x) ∈ (map_to_list M) <-> lookup i M = Some x.

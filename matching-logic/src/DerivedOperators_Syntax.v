@@ -190,6 +190,39 @@ Section with_signature.
   End with_signature.
 
 
+Lemma well_formed_foldr_and {Σ : Signature} (x : Pattern) (xs : list Pattern):
+  well_formed x ->
+  Pattern.wf xs ->
+  well_formed (foldr patt_and x xs).
+Proof.
+  intros wfx wfxs.
+  induction xs; simpl.
+  - assumption.
+  - feed specialize IHxs.
+    { unfold Pattern.wf in wfxs. simpl in wfxs. destruct_and!. assumption. }
+    apply well_formed_and.
+    { unfold Pattern.wf in wfxs. simpl in wfxs. destruct_and!. assumption. }
+    assumption.
+Qed.
+
+Lemma wf_rev {Σ : Signature} l:
+  Pattern.wf l ->
+  Pattern.wf (rev l).
+Proof.
+  intros H. induction l; simpl.
+  { exact H. }
+  {
+    apply wf_app; unfold Pattern.wf in *; simpl in *; destruct_and!.
+    {
+      apply IHl. apply H1.
+    }
+    {
+      split_and;[assumption|reflexivity].
+    }
+  }
+Qed.
+
+
 Module Notations.
   Import Syntax.
 

@@ -14,6 +14,7 @@ Require Import
 From MatchingLogic
 Require Import
     Utils.extralibrary
+    Utils.stdpp_ext
     Pattern
     Syntax
     Semantics
@@ -656,8 +657,7 @@ Section with_syntax.
             unfold Sorts_Syntax.sym.
             do 2 rewrite eval_sym_simpl.
             unfold sym_interp at 1. simpl. unfold new_sym_interp.
-            destruct (decide (inj inhabitant = inj inhabitant)) as [Heq|Hneq] eqn:Hid;[|contradiction].
-            clear Hid Heq.
+            rewrite decide_eq_same.
             destruct (decide (inj inhabitant = Definedness_Syntax.inj definedness)) as [Heq|Hneq] eqn:Hnid.
             { clear -HDefNeqInh Heq. congruence. }
             {

@@ -99,13 +99,13 @@ Section ProofSystemTheorems.
 
     pose proof (universal_generalization Γ (all , (⌈ b0 and patt_free_evar x ⌉ ---> ⌊ b0 <---> patt_free_evar x ⌋)) x AnyReasoning (pile_any _)) as H1.
     simpl in H1.
-    destruct (decide (x = x)) eqn:Hxx;[|congruence].
+    rewrite decide_eq_same in H1.
     apply H1.
     { wf_auto2. }
     clear H1.
     pose proof (@universal_generalization _ Γ (⌈ (patt_free_evar y) and (patt_free_evar x) ⌉ ---> ⌊ (patt_free_evar y) <---> (patt_free_evar x) ⌋) y AnyReasoning (pile_any _)) as H1.
-    simpl in H1. clear Hxx.
-    destruct (decide (y = y)) eqn:Hyy;[|congruence].
+    simpl in H1.
+    rewrite decide_eq_same in H1.
     destruct (decide (y = x)) eqn:Heqyx;[congruence|].
     apply H1.
     { wf_auto2. }
@@ -488,7 +488,7 @@ Section UnificationProcedure.
         assert (well_formed a) by now apply andb_true_iff in Wf3.
         apply well_formed_and; apply well_formed_imp;
         repeat apply well_formed_and; auto;
-        apply ProofMode_propositional.well_formed_foldr_and; wf_auto2.
+        apply well_formed_foldr_and; wf_auto2.
       }
       mlSplitAnd; mlIntro "H"; mlDestructAnd "H" as "H0" "H1".
       - mlRevertLast. mlRewrite IHxs at 1. mlIntro "H1". mlDestructAnd "H1".

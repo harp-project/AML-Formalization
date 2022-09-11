@@ -32,6 +32,54 @@ Open Scope ml_scope.
 Open Scope string_scope.
 Open Scope list_scope.
 
+Ltac2 _callCompletedTransformedAndCast
+  (t : constr) (transform : constr) (tac : constr -> unit) :=
+  let tac' := (fun (t' : constr) =>
+    let tac'' := (fun (t'' : constr) =>
+      let tcast := open_constr:(@useGenericReasoning'' _ _ _ _ _ $t'') in
+      fillWithUnderscoresAndCall tac tcast []
+    ) in
+    fillWithUnderscoresAndCall (fun t''' => tac'' t''') transform [t']
+  ) in
+  fillWithUnderscoresAndCall tac' t []
+.
+
+Ltac2 mlApplyMetaGeneralized (t : constr) :=
+  _callCompletedTransformedAndCast t constr:(@reshape_lhs_imp_to_and_forward) _mlApplyMetaRaw ;
+  try_solve_pile_basic ();
+  try_wfa ()
+.
+
+Ltac _mlApplyMetaGeneralized t :=
+  let ff := ltac2:(t' |- mlApplyMetaGeneralized (Option.get (Ltac1.to_constr(t')))) in
+  ff t;
+  rewrite [foldr patt_and _ _]/=
+.
+
+
+Tactic Notation "mlApplyMetaGeneralized" constr(t) :=
+  _mlApplyMetaGeneralized t
+.
+
+#[local]
+Example ex_mlApplyMetaGeneralized  {Σ : Signature} Γ a b c d e f:
+  well_formed a ->
+  well_formed b ->
+  well_formed c ->
+  well_formed d ->
+  well_formed e ->
+  well_formed f ->
+  Γ ⊢ a ---> b ---> c ---> d ---> e ---> f ->
+  Γ ⊢ (a and b and c and d and e) ---> f.
+Proof.
+  intros wfa wfb wfc wfd wfe wff H.
+  toMLGoal.
+  { wf_auto2. }
+  mlIntro "H1".
+  mlApplyMetaGeneralized H.
+  mlExact "H1".
+Defined.
+
 Section FOL_helpers.
 
   Context {Σ : Signature}.
@@ -3018,6 +3066,7 @@ Proof.
   { wf_auto2. }
   mlTauto.
 Defined.
+
 
 
 Close Scope ml_scope.

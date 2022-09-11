@@ -1432,6 +1432,9 @@ Section with_signature.
 
 End with_signature.
 
+
+(* TODO remove these hints *)
+
 #[export]
  Hint Resolve well_formed_positive_svar_quantify : core.
 

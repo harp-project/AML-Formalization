@@ -2780,6 +2780,19 @@ Proof.
   mlExact "H0".
 Defined.
 
+Ltac2 rec applyRec (f : constr) (xs : constr list) : constr option :=
+  match xs with
+  | [] => Some f
+  | y::ys =>
+    lazy_match! Constr.type f with
+    | (forall _ : ?t, _) =>
+      Control.plus (fun () => applyRec constr:($f $y) ys) (fun _ => None)
+    | _ => None
+    end
+  end.
+
+Ltac2 Eval (applyRec constr:(Nat.add) [constr:(1);constr:(2)]).
+
 (*
   All thic complicated code is here only for one reason:
   I want to be able to first run the tactic with all the parameters
@@ -2789,23 +2802,53 @@ Defined.
   In particular, I want the proof mode goals to be generated first,
   and the other, uninteresting goals, next.
 *)
-Ltac2 rec fillWithUnderscoresAndCall (tac : constr -> unit) (t : constr) :=
-  lazy_match! Constr.type t with
-  | (?t' -> ?t's) =>
-    lazy_match! goal with
-    | [|- ?g] =>
-      let h := Fresh.in_goal ident:(h) in
-      assert(h : $t' -> $g) > [(
-        let pftprime := Fresh.in_goal ident:(pftprime) in
-        intro $pftprime;
-        let new_t := open_constr:($t ltac2:(Notations.exact0 false (fun () => Control.hyp (pftprime)))) in
-        fillWithUnderscoresAndCall tac new_t;
-        Std.clear [pftprime]
-      )|(apply &h)
-      ]
+Ltac2 rec fillWithUnderscoresAndCall
+  (tac : constr -> unit) (t : constr) (args : constr list) :=
+  (*
+  Message.print (
+    Message.concat
+      (Message.of_string "fillWithUnderscoresAndCall: t = ")
+      (Message.of_constr t)
+  );
+  Message.print (
+    Message.concat
+      (Message.of_string "fillWithUnderscoresAndCall: args = ")
+      (List.fold_right (Message.concat) (Message.of_string "") (List.map Message.of_constr args))
+  );
+  *)
+  let cont := (fun () =>
+    lazy_match! Constr.type t with
+    | (?t' -> ?t's) =>
+      lazy_match! goal with
+      | [|- ?g] =>
+        let h := Fresh.in_goal ident:(h) in
+        assert(h : $t' -> $g) > [(
+          let pftprime := Fresh.in_goal ident:(pftprime) in
+          intro $pftprime;
+          let new_t := open_constr:($t ltac2:(Notations.exact0 false (fun () => Control.hyp (pftprime)))) in
+          fillWithUnderscoresAndCall tac new_t args;
+          Std.clear [pftprime]
+        )|(apply &h)
+        ]
+      end
+    | (forall _ : _, _) => fillWithUnderscoresAndCall tac open_constr:($t _) args
+    | ?remainder => throw (Invalid_argument (Some (Message.concat (Message.concat (Message.of_string "Remainder type: ") (Message.of_constr remainder)) (Message.concat (Message.of_string ", of term") (Message.of_constr t)))))
     end
-  | (forall _ : _, _) => fillWithUnderscoresAndCall tac open_constr:($t _)
-  | _ => tac t
+  ) in
+  match (applyRec t args) with
+  | None =>
+    (* Cannot apply [t] to [args] => continue *)
+    cont ()
+  | Some result =>
+    (* Can apply [to] to [args], *)
+    lazy_match! Constr.type result with
+    | (forall _ : _, _) =>
+      (* but result would still accept an argument => continue *)
+      cont ()
+    | _ =>
+      (* and nothing more can be applied to the result => we are done *)
+      tac result
+    end
   end
 .
 
@@ -2827,9 +2870,9 @@ Defined.
 Ltac2 _callCompletedAndCast (t : constr) (tac : constr -> unit) :=
   let tac' := (fun (t' : constr) =>
     let tcast := open_constr:(@useGenericReasoning'' _ _ _ _ _ $t') in
-    fillWithUnderscoresAndCall tac tcast
+    fillWithUnderscoresAndCall tac tcast []
   ) in
-  fillWithUnderscoresAndCall tac' t
+  fillWithUnderscoresAndCall tac' t []
 .
 
 Ltac2 try_solve_pile_basic () :=
@@ -2852,11 +2895,13 @@ Ltac2 try_wfa () :=
       if (Constr.has_evar p) then
         ()
       else
-      ltac1:(try_wfauto2)
+        ltac1:(try_wfauto2)
     ) in
     lazy_match! goal with
     | [|- well_formed ?p = true] => wfa p
     | [|- is_true (well_formed ?p) ] => wfa p
+    | [|- Pattern.wf ?l = true] => wfa l
+    | [|- is_true (Pattern.wf ?l) ] => wfa l
     | [|- _] => ()
     end
   )
@@ -3678,24 +3723,6 @@ Proof.
   mlExact "H2".
 Defined.
 
-
-
-Local Lemma well_formed_foldr_and {Σ : Signature} (x : Pattern) (xs : list Pattern):
-  well_formed x ->
-  Pattern.wf xs ->
-  well_formed (foldr patt_and x xs).
-Proof.
-  intros wfx wfxs.
-  induction xs; simpl.
-  - assumption.
-  - feed specialize IHxs.
-    { unfold Pattern.wf in wfxs. simpl in wfxs. destruct_and!. assumption. }
-    apply well_formed_and.
-    { unfold Pattern.wf in wfxs. simpl in wfxs. destruct_and!. assumption. }
-    assumption.
-Qed.
-
-
 Lemma lhs_and_to_imp {Σ : Signature} Γ (g x : Pattern) (xs : list Pattern):
   well_formed g ->
   well_formed x ->
@@ -3753,9 +3780,258 @@ Proof.
   exact H.
 Defined.
 
+Lemma lhs_imp_to_and {Σ : Signature} Γ (g x : Pattern) (xs : list Pattern):
+  well_formed g ->
+  well_formed x ->
+  Pattern.wf xs ->
+  Γ ⊢i (foldr patt_imp g (x :: xs)) ---> (foldr patt_and x xs ---> g)
+  using BasicReasoning.
+Proof.
+  intros wfg wfx wfxs.
+  induction xs; simpl.
+  {
+    apply A_impl_A.
+    wf_auto2.
+  }
+  {
+    pose proof (wfaxs := wfxs).
+    unfold Pattern.wf in wfxs.
+    simpl in wfxs.
+    apply andb_prop in wfxs as [wfa wfxs].
+    fold (Pattern.wf xs) in wfxs.
+    specialize (IHxs wfxs).
+    simpl in IHxs.
+    assert (Hwffa: well_formed (foldr patt_and x xs)).
+    { apply well_formed_foldr_and; assumption. }
+    toMLGoal.
+    { wf_auto2. }
+    mlAdd IHxs as "H".
+    mlIntro "H1".
+    mlIntro "H2".
+    mlDestructAnd "H2" as "H3" "H4".
+    mlApplyMeta reorder in "H1".
+    mlAssert ("H5": (x ---> foldr patt_imp g xs)).
+    { wf_auto2. }
+    {
+      mlApply "H1".
+      mlExact "H3".  
+    }
+    mlAssert ("H6" : (foldr patt_and x xs ---> g)).
+    { wf_auto2. }
+    {
+      mlApply "H".
+      mlExact "H5".
+    }
+    mlApply "H6".
+    mlExact "H4".
+  }
+Defined.
 
 
+Lemma lhs_imp_to_and_meta {Σ : Signature} Γ (g x : Pattern) (xs : list Pattern) i:
+  well_formed g ->
+  well_formed x ->
+  Pattern.wf xs ->
+  Γ ⊢i (foldr patt_imp g (x :: xs)) using i ->
+  Γ ⊢i (foldr patt_and x xs ---> g) using i.
+Proof.
+  intros wfg wfx wfxs H.
+  eapply MP.
+  2: { useBasicReasoning. apply lhs_imp_to_and; assumption. }
+  exact H.
+Defined.
 
+Lemma foldr_and_impl_last {Σ : Signature} Γ (x : Pattern) (xs : list Pattern):
+  well_formed x ->
+  Pattern.wf xs ->
+  Γ ⊢i (foldr patt_and x xs ---> x) using BasicReasoning.
+Proof.
+  intros wfx wfxs.
+  induction xs; simpl.
+  {
+    apply A_impl_A.
+    exact wfx.
+  }
+  {
+    pose proof (wfaxs := wfxs).
+    unfold Pattern.wf in wfxs.
+    simpl in wfxs.
+    apply andb_prop in wfxs as [wfa wfxs].
+    fold (Pattern.wf xs) in wfxs.
+    specialize (IHxs wfxs).
+    assert (Hwf2: well_formed (foldr patt_and x xs)).
+    { apply well_formed_foldr_and; assumption. }
+    toMLGoal.
+    { wf_auto2. }
+    mlAdd IHxs as "IH".
+    mlIntro "H".
+    mlDestructAnd "H" as "Ha" "Hf".
+    mlApply "IH".
+    mlExact "Hf".
+  }
+Defined.
+
+Lemma foldr_and_weaken_last {Σ : Signature} Γ (x y : Pattern) (xs : list Pattern):
+  well_formed x ->
+  well_formed y ->
+  Pattern.wf xs ->
+  Γ ⊢i (x ---> y) ---> (foldr patt_and x xs ---> foldr patt_and y xs) using BasicReasoning.
+Proof.
+  intros wfx wfy wfxs.
+  induction xs; simpl.
+  {
+    apply A_impl_A.
+    wf_auto2.
+  }
+  {
+    pose proof (wfaxs := wfxs).
+    unfold Pattern.wf in wfxs.
+    simpl in wfxs.
+    apply andb_prop in wfxs as [wfa wfxs].
+    fold (Pattern.wf xs) in wfxs.
+    assert (Hwf1: well_formed (foldr patt_and x xs)).
+    { apply well_formed_foldr_and; assumption. }
+    assert (Hwf2: well_formed (foldr patt_and y xs)).
+    { apply well_formed_foldr_and; assumption. }
+    specialize (IHxs wfxs).
+    toMLGoal.
+    {
+      wf_auto2.
+    }
+    mlAdd IHxs as "IH".
+    mlIntro "H1".
+    mlIntro "H2".
+    mlDestructAnd "H2" as "H3" "H4".
+    mlSplitAnd;[mlExact "H3"|].
+    mlAssert ("IH'": (foldr patt_and x xs ---> foldr patt_and y xs)).
+    {
+      wf_auto2.
+    }
+    {
+      mlApply "IH".
+      mlExact "H1".
+    }
+    mlApply "IH'".
+    mlExact "H4".
+  }
+Defined.
+
+Lemma foldr_and_weaken_last_meta {Σ : Signature} Γ (x y : Pattern) (xs : list Pattern) i:
+  well_formed x ->
+  well_formed y ->
+  Pattern.wf xs ->
+  Γ ⊢i (x ---> y) using i ->
+  Γ ⊢i (foldr patt_and x xs ---> foldr patt_and y xs) using i.
+Proof.
+  intros wfx wfy wfxs H.
+  eapply MP;[exact H|].
+  useBasicReasoning.
+  apply foldr_and_weaken_last; assumption.
+Defined.
+
+Lemma foldr_and_last_rotate {Σ : Signature} Γ (x1 x2 : Pattern) (xs : list Pattern):
+  well_formed x1 ->
+  well_formed x2 ->
+  Pattern.wf xs ->
+  Γ ⊢i ((foldr patt_and x2 (xs ++ [x1])) <---> (x2 and (foldr patt_and x1 xs))) using BasicReasoning.
+Proof.
+  intros wfx1 wfx2 wfxs.
+  destruct xs; simpl.
+  {
+    apply patt_and_comm; assumption.
+  }
+  {
+    pose proof (wfaxs := wfxs).
+    unfold Pattern.wf in wfxs.
+    simpl in wfxs.
+    apply andb_prop in wfxs as [wfa wfxs].
+    fold (Pattern.wf xs) in wfxs.
+
+    assert (Hwf1: well_formed (foldr patt_and (x1 and x2) xs)).
+    { apply well_formed_foldr_and;[wf_auto2|assumption]. }
+    assert (Hwf2: well_formed (foldr patt_and x1 xs)).
+    { apply well_formed_foldr_and; assumption. }
+    assert (Hwf3: well_formed (foldr patt_and x2 xs)).
+    { apply well_formed_foldr_and; assumption. }
+
+    rewrite foldr_app. simpl. 
+    toMLGoal.
+    { wf_auto2. }
+    mlSplitAnd; mlIntro "H".
+    {
+      mlDestructAnd "H" as "Ha" "Hf".
+      repeat mlSplitAnd.
+      { mlApplyMeta foldr_and_impl_last in "Hf".
+        mlDestructAnd "Hf" as "Hx1" "Hx2".
+        mlExact "Hx2".
+      }
+      { mlExact "Ha". }
+      {
+        mlApplyMeta foldr_and_weaken_last_meta in "Hf".
+        2: { apply pf_conj_elim_l; wf_auto2. }
+        2: wf_auto2.
+        mlExact "Hf".
+      }
+    }
+    {
+      mlDestructAnd "H" as "H1" "H1'".
+      mlDestructAnd "H1'" as "H2" "H3".
+      mlSplitAnd;[mlExact "H2"|].
+      mlAssert ("Hf": (x2 and foldr patt_and x1 xs)).
+      { wf_auto2. }
+      { mlSplitAnd;[mlExact "H1"|mlExact "H3"]. }
+      mlAdd (foldr_and_weaken_last Γ x1 (x1 and x2) xs ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2))as "Hw".
+      mlAssert ("Hw'" : (foldr patt_and x1 xs ---> foldr patt_and (x1 and x2) xs)).
+      { wf_auto2. }
+      {
+        mlApply "Hw".
+        mlIntro "Hx1".
+        mlSplitAnd;[mlExact "Hx1"|mlExact "H1"].
+      }
+      mlApply "Hw'".
+      mlExact "H3".
+    }
+  }
+Defined.
+
+Lemma foldr_and_last_rotate_1 {Σ : Signature} Γ (x1 x2 : Pattern) (xs : list Pattern):
+  well_formed x1 ->
+  well_formed x2 ->
+  Pattern.wf xs ->
+  Γ ⊢i ((foldr patt_and x2 (xs ++ [x1])) ---> (x2 and (foldr patt_and x1 xs))) using BasicReasoning.
+Proof.
+  intros.
+  assert (well_formed (foldr patt_and (x1 and x2) xs)).
+  { apply well_formed_foldr_and; wf_auto2. }
+  assert (well_formed (foldr patt_and x1 xs)).
+  { apply well_formed_foldr_and; wf_auto2. }
+  eapply pf_iff_proj1.
+  3: { apply foldr_and_last_rotate; assumption. }
+  {
+    rewrite foldr_app. simpl. wf_auto2.
+  }
+  apply well_formed_and; wf_auto2.
+Defined.
+
+Lemma foldr_and_last_rotate_2 {Σ : Signature} Γ (x1 x2 : Pattern) (xs : list Pattern):
+  well_formed x1 ->
+  well_formed x2 ->
+  Pattern.wf xs ->
+  Γ ⊢i ((x2 and (foldr patt_and x1 xs)) ---> ((foldr patt_and x2 (xs ++ [x1])))) using BasicReasoning.
+Proof.
+  intros.
+  assert (well_formed (foldr patt_and (x1 and x2) xs)).
+  { apply well_formed_foldr_and; wf_auto2. }
+  assert (well_formed (foldr patt_and x1 xs)).
+  { apply well_formed_foldr_and; wf_auto2. }
+  eapply pf_iff_proj2.
+  3: { apply foldr_and_last_rotate; assumption. }
+  {
+    rewrite foldr_app. simpl. wf_auto2.
+  }
+  apply well_formed_and; wf_auto2.
+Defined.
+Locate MP.
 #[local]
 Ltac tryExact l idx :=
   match l with
