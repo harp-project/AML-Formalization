@@ -35,15 +35,15 @@ Open Scope list_scope.
 Ltac2 _callCompletedTransformedAndCast
   (t : constr) (transform : constr) (tac : constr -> unit) :=
   let tac' := (fun (t' : constr) =>
-    Message.print (Message.of_constr t');
+    (*Message.print (Message.of_constr t');*)
     let tac'' := (fun (t'' : constr) =>
-      Message.print (Message.of_constr t'');
+      (*Message.print (Message.of_constr t'');*)
       let tcast := open_constr:(@useGenericReasoning'' _ _ _ _ _ $t'') in
       fillWithUnderscoresAndCall tac tcast []
     ) in
-    fillWithUnderscoresAndCall (fun t''' => Message.print (Message.of_constr t'''); tac'' t''') transform [t']
+    fillWithUnderscoresAndCall (fun t''' => (*Message.print (Message.of_constr t''');*) tac'' t''') transform [t']
   ) in
-  Message.print (Message.of_constr t);
+  (*Message.print (Message.of_constr t);*)
   fillWithUnderscoresAndCall tac' t []
 .
 
@@ -78,7 +78,6 @@ Proof.
   toMLGoal.
   { wf_auto2. }
   mlApplyMetaGeneralized H.
-  
   Set Printing Parentheses.
 Abort.
 

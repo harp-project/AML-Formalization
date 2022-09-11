@@ -163,7 +163,7 @@ Section with_signature.
     well_formed g ->
     well_formed x ->
     Pattern.wf xs ->
-    forall (r : ImpReshapeS g (xs++[x])),
+    forall (r : ImpReshapeS g (x::xs)),
        Γ ⊢i untagPattern (irs_flattened _ _ r) using i ->
        Γ ⊢i ((foldr (patt_and) x xs) ---> g) using i.
   Proof.
@@ -171,7 +171,7 @@ Section with_signature.
     eapply cast_proof' in H.
     2: { rewrite irs_pf; reflexivity. }
     clear r.
-    apply lhs_imp_to_and_meta; try assumption.
+    apply lhs_imp_to_and_meta; assumption.
   Defined.
 
   Local Example ex_match_imp Γ a b c d:
@@ -215,9 +215,9 @@ Section with_signature.
   Qed.
 
 
-  Lemma reshape_and (Γ : Theory) (x : Pattern) (xs: list Pattern) (i : ProofInfo) :
-    forall (r : AndReshapeS x xs),
-       Γ ⊢i foldr (patt_and) x xs using i ->
+  Lemma reshape_and (Γ : Theory) (g : Pattern) (xs: list Pattern) (i : ProofInfo) :
+    forall (r : AndReshapeS g xs),
+       Γ ⊢i foldr (patt_and) g xs using i ->
        Γ ⊢i (untagPattern (ars_flattened _ _ r)) using i.
   Proof.
     intros r [pf Hpf].
@@ -234,8 +234,8 @@ Section with_signature.
       {
         rewrite elem_of_subseteq in Hpf2.
         rewrite elem_of_subseteq.
-        intros x' Hx.
-        specialize (Hpf2 x').
+        intros x Hx.
+        specialize (Hpf2 x).
         apply Hpf2. clear Hpf2.
         rewrite elem_of_gset_to_coGset in Hx.
         rewrite uses_of_ex_gen_correct in Hx.
@@ -247,8 +247,8 @@ Section with_signature.
       {
         rewrite elem_of_subseteq in Hpf3.
         rewrite elem_of_subseteq.
-        intros x' Hx.
-        specialize (Hpf3 x').
+        intros x Hx.
+        specialize (Hpf3 x).
         apply Hpf3. clear Hpf3.
         rewrite elem_of_gset_to_coGset in Hx.
         rewrite uses_of_svar_subst_correct in Hx.
@@ -290,14 +290,14 @@ Section with_signature.
     well_formed x ->
     Pattern.wf xs ->
     forall (r : AndReshapeS x xs),
-       Γ ⊢i ((foldr (patt_imp) g (xs ++ [x]))) using i ->
+       Γ ⊢i ((foldr (patt_imp) g (x::xs))) using i ->
        Γ ⊢i (untagPattern (ars_flattened _ _ r)) ---> g using i .
   Proof.
     intros wfg wfx wfxs r H.
     eapply cast_proof'.
     { rewrite ars_pf; reflexivity. }
     clear r.
-    apply lhs_imp_to_and_meta; try assumption.
+    apply lhs_imp_to_and_meta; assumption.
   Defined.
 
   Lemma reshape_lhs_and_to_imp_forward Γ (g x : Pattern) (xs : list Pattern) i :

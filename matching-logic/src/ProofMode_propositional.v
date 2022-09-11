@@ -3802,7 +3802,7 @@ Lemma lhs_imp_to_and {Σ : Signature} Γ (g x : Pattern) (xs : list Pattern):
   well_formed g ->
   well_formed x ->
   Pattern.wf xs ->
-  Γ ⊢i (foldr patt_imp g (xs ++ [x])) ---> (foldr patt_and x xs ---> g)
+  Γ ⊢i (foldr patt_imp g (x :: xs)) ---> (foldr patt_and x xs ---> g)
   using BasicReasoning.
 Proof.
   intros wfg wfx wfxs.
@@ -3827,7 +3827,8 @@ Proof.
     mlIntro "H1".
     mlIntro "H2".
     mlDestructAnd "H2" as "H3" "H4".
-    mlAssert ("H5": (foldr patt_imp g (xs ++ [x]))).
+    mlApplyMeta reorder in "H1".
+    mlAssert ("H5": (x ---> foldr patt_imp g xs)).
     { wf_auto2. }
     {
       mlApply "H1".
@@ -3849,7 +3850,7 @@ Lemma lhs_imp_to_and_meta {Σ : Signature} Γ (g x : Pattern) (xs : list Pattern
   well_formed g ->
   well_formed x ->
   Pattern.wf xs ->
-  Γ ⊢i (foldr patt_imp g (xs ++ [x])) using i ->
+  Γ ⊢i (foldr patt_imp g (x :: xs)) using i ->
   Γ ⊢i (foldr patt_and x xs ---> g) using i.
 Proof.
   intros wfg wfx wfxs H.
