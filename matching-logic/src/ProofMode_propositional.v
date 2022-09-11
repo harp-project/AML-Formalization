@@ -3859,6 +3859,93 @@ Proof.
   exact H.
 Defined.
 
+Lemma foldr_and_impl_last {Σ : Signature} Γ (x : Pattern) (xs : list Pattern):
+  well_formed x ->
+  Pattern.wf xs ->
+  Γ ⊢i (foldr patt_and x xs ---> x) using BasicReasoning.
+Proof.
+  intros wfx wfxs.
+  induction xs; simpl.
+  {
+    apply A_impl_A.
+    exact wfx.
+  }
+  {
+    pose proof (wfaxs := wfxs).
+    unfold Pattern.wf in wfxs.
+    simpl in wfxs.
+    apply andb_prop in wfxs as [wfa wfxs].
+    fold (Pattern.wf xs) in wfxs.
+    specialize (IHxs wfxs).
+    assert (Hwf2: well_formed (foldr patt_and x xs)).
+    { apply well_formed_foldr_and; assumption. }
+    toMLGoal.
+    { wf_auto2. }
+    mlAdd IHxs as "IH".
+    mlIntro "H".
+    mlDestructAnd "H" as "Ha" "Hf".
+    mlApply "IH".
+    mlExact "Hf".
+  }
+Defined.
+
+Lemma foldr_and_weaken_last {Σ : Signature} Γ (x y : Pattern) (xs : list Pattern):
+  well_formed x ->
+  well_formed y ->
+  Pattern.wf xs ->
+  Γ ⊢i (x ---> y) ---> (foldr patt_and x xs ---> foldr patt_and y xs) using BasicReasoning.
+Proof.
+  
+Defined.
+
+Lemma foldr_and_last_rotate {Σ : Signature} Γ (x1 x2 : Pattern) (xs : list Pattern):
+  well_formed x1 ->
+  well_formed x2 ->
+  Pattern.wf xs ->
+  Γ ⊢i ((foldr patt_and x2 (xs ++ [x1])) <---> (x2 and (foldr patt_and x1 xs))) using BasicReasoning.
+Proof.
+  intros wfx1 wfx2 wfxs.
+  move: x1 x2 wfx1 wfx2.
+  induction xs; intros x1 x2 wfx1 wfx2; simpl.
+  {
+    apply patt_and_comm; assumption.
+  }
+  {
+    pose proof (wfaxs := wfxs).
+    unfold Pattern.wf in wfxs.
+    simpl in wfxs.
+    apply andb_prop in wfxs as [wfa wfxs].
+    fold (Pattern.wf xs) in wfxs.
+
+    assert (Hwf1: well_formed (foldr patt_and (x1 and x2) xs)).
+    { apply well_formed_foldr_and;[wf_auto2|assumption]. }
+    assert (Hwf2: well_formed (foldr patt_and x1 xs)).
+    { apply well_formed_foldr_and; assumption. }
+
+    rewrite foldr_app. simpl. 
+    toMLGoal.
+    { wf_auto2. }
+    (*
+    mlAdd IHxs as "IH".
+    mlDestructAnd "IH" as "IH1" "IH2".
+    *)
+    mlSplitAnd; mlIntro "H".
+    {
+      mlDestructAnd "H" as "Ha" "Hf".
+      repeat mlSplitAnd.
+      { mlApplyMeta foldr_and_impl_last in "Hf".
+        mlDestructAnd "Hf" as "Hx1" "Hx2".
+        mlExact "Hx2".
+      }
+      { mlExact "Ha". }
+      {
+
+      }
+      specialize (IHxs wfxs).
+    }
+  }
+Defined.
+
 #[local]
 Ltac tryExact l idx :=
   match l with
