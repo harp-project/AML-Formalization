@@ -14,6 +14,7 @@ From MatchingLogic Require Import
     ProofSystem
     IndexManipulation
     wftactics
+    ProofInfo
     ProofMode_base
     ProofMode_propositional
 .
@@ -154,12 +155,7 @@ Section with_signature.
     apply lhs_and_to_imp_meta; assumption.
   Defined.
 
-  (*
-      Γ ⊢ φ₁ ---> ... ---> φₖ ---> ψ
-      ------------------------------
-      Γ ⊢ (φ₁ and ... and φₖ) ---> ψ
-  *)
-  Lemma reshape_lhs_imp_to_and_forward Γ (g x : Pattern) (xs : list Pattern) i :
+  Lemma reshape_lhs_imp_to_and_forward' Γ (g x : Pattern) (xs : list Pattern) i :
     well_formed g ->
     well_formed x ->
     Pattern.wf xs ->
@@ -172,6 +168,97 @@ Section with_signature.
     2: { rewrite irs_pf; reflexivity. }
     clear r.
     apply lhs_imp_to_and_meta; assumption.
+  Defined.
+
+  (*
+      Γ ⊢ φ₁ ---> ... ---> φₖ ---> ψ
+      ------------------------------
+      Γ ⊢ (φ₁ and ... and φₖ) ---> ψ
+  *)
+  Lemma reshape_lhs_imp_to_and_forward Γ (g x : Pattern) (xs : list Pattern) i :
+    well_formed g ->
+    well_formed x ->
+    Pattern.wf xs ->
+    forall (r : ImpReshapeS g (x::xs)),
+       Γ ⊢i untagPattern (irs_flattened _ _ r) using i ->
+       match (rev xs) with
+       | [] => Γ ⊢i x ---> g using i
+       | yk::ys =>
+          Γ ⊢i ((foldr (patt_and) yk (rev ys)) ---> g) using i
+       end.
+  Proof.
+    intros wfg wfx wfxs r H.
+    apply reshape_lhs_imp_to_and_forward' in H;[|assumption|assumption|assumption].
+    destruct (rev xs) eqn:Heqxs; simpl in *.
+    {
+      apply (f_equal (@rev Pattern)) in Heqxs.
+      rewrite rev_involutive in Heqxs.
+      simpl in Heqxs.
+      subst xs. simpl in H.
+      exact H.
+    }
+    {
+      rewrite -[xs]rev_involutive in H.
+      rewrite Heqxs in H.
+      simpl in H.
+      destruct xs as [|y ys];[(simpl in Heqxs; inversion Heqxs)|].
+      simpl in Heqxs.
+
+      apply (f_equal (@rev Pattern)) in Heqxs.
+      simpl in Heqxs.
+      Search rev app.
+      rewrite rev_app_distr in Heqxs.
+      simpl in Heqxs.
+      rewrite rev_involutive in Heqxs.
+
+      assert (Pattern.wf l).
+      {
+        rewrite Heqxs in wfxs.
+        apply wfapp_proj_1 in wfxs.
+        rewrite -[l]rev_involutive.
+        apply wf_rev.
+        apply wfxs.
+      }
+
+      assert (well_formed p).
+      {
+        rewrite Heqxs in wfxs.
+        apply wfapp_proj_2 in wfxs.
+        unfold Pattern.wf in wfxs. simpl in wfxs.
+        destruct_and!; assumption.
+      }
+
+      assert (Pattern.wf (rev l)).
+      { apply wf_rev. assumption. }
+
+      toMLGoal.
+      { well_formed_foldr_and.  wf_auto2. }
+
+      eapply (useBasicReasoning _ (prf_strenghten_premise_meta _ _ _ _ _ _ _ _ _)) in H.
+      eapply MP in H.
+      2: {
+        apply foldr_and_last_rotate_1.
+      }
+      simpl in *.
+      Check foldr_and_last_rotate_1.
+      rewrite Heqxs.
+    }
+    eapply cast_proof' in H.
+    2: { rewrite irs_pf; reflexivity. }
+    clear r.
+    apply lhs_imp_to_and_meta in H;[|assumption|assumption|assumption].
+
+    Check (Coq.Lists.List.last).
+    pose proof (Htmp := foldr_and_last_rotate_1 Γ).
+    remember (last (x::xs)) as xl eqn:Heqxl.
+    destruct xl as [xl|].
+    2: {
+      rewrite last_cons in Heqxl.
+      destruct (last xs); inversion Heqxl.
+    }
+
+    pose proof (Htmp := foldr_and_last_rotate_1 Γ).
+    ; assumption.
   Defined.
 
   Local Example ex_match_imp Γ a b c d:

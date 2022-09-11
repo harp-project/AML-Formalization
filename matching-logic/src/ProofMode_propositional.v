@@ -3723,24 +3723,6 @@ Proof.
   mlExact "H2".
 Defined.
 
-
-
-Local Lemma well_formed_foldr_and {Σ : Signature} (x : Pattern) (xs : list Pattern):
-  well_formed x ->
-  Pattern.wf xs ->
-  well_formed (foldr patt_and x xs).
-Proof.
-  intros wfx wfxs.
-  induction xs; simpl.
-  - assumption.
-  - feed specialize IHxs.
-    { unfold Pattern.wf in wfxs. simpl in wfxs. destruct_and!. assumption. }
-    apply well_formed_and.
-    { unfold Pattern.wf in wfxs. simpl in wfxs. destruct_and!. assumption. }
-    assumption.
-Qed.
-
-
 Lemma lhs_and_to_imp {Σ : Signature} Γ (g x : Pattern) (xs : list Pattern):
   well_formed g ->
   well_formed x ->
@@ -4049,7 +4031,7 @@ Proof.
   }
   apply well_formed_and; wf_auto2.
 Defined.
-
+Locate MP.
 #[local]
 Ltac tryExact l idx :=
   match l with
