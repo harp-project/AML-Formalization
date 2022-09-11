@@ -3895,8 +3895,58 @@ Lemma foldr_and_weaken_last {Σ : Signature} Γ (x y : Pattern) (xs : list Patte
   Pattern.wf xs ->
   Γ ⊢i (x ---> y) ---> (foldr patt_and x xs ---> foldr patt_and y xs) using BasicReasoning.
 Proof.
-  
+  intros wfx wfy wfxs.
+  induction xs; simpl.
+  {
+    apply A_impl_A.
+    wf_auto2.
+  }
+  {
+    pose proof (wfaxs := wfxs).
+    unfold Pattern.wf in wfxs.
+    simpl in wfxs.
+    apply andb_prop in wfxs as [wfa wfxs].
+    fold (Pattern.wf xs) in wfxs.
+    assert (Hwf1: well_formed (foldr patt_and x xs)).
+    { apply well_formed_foldr_and; assumption. }
+    assert (Hwf2: well_formed (foldr patt_and y xs)).
+    { apply well_formed_foldr_and; assumption. }
+    specialize (IHxs wfxs).
+    toMLGoal.
+    {
+      wf_auto2.
+    }
+    mlAdd IHxs as "IH".
+    mlIntro "H1".
+    mlIntro "H2".
+    mlDestructAnd "H2" as "H3" "H4".
+    mlSplitAnd;[mlExact "H3"|].
+    mlAssert ("IH'": (foldr patt_and x xs ---> foldr patt_and y xs)).
+    {
+      wf_auto2.
+    }
+    {
+      mlApply "IH".
+      mlExact "H1".
+    }
+    mlApply "IH'".
+    mlExact "H4".
+  }
 Defined.
+
+Lemma foldr_and_weaken_last_meta {Σ : Signature} Γ (x y : Pattern) (xs : list Pattern) i:
+  well_formed x ->
+  well_formed y ->
+  Pattern.wf xs ->
+  Γ ⊢i (x ---> y) using i ->
+  Γ ⊢i (foldr patt_and x xs ---> foldr patt_and y xs) using i.
+Proof.
+  intros wfx wfy wfxs H.
+  eapply MP;[exact H|].
+  useBasicReasoning.
+  apply foldr_and_weaken_last; assumption.
+Defined.
+
 
 Lemma foldr_and_last_rotate {Σ : Signature} Γ (x1 x2 : Pattern) (xs : list Pattern):
   well_formed x1 ->
