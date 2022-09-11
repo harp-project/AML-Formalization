@@ -3975,10 +3975,6 @@ Proof.
     rewrite foldr_app. simpl. 
     toMLGoal.
     { wf_auto2. }
-    (*
-    mlAdd IHxs as "IH".
-    mlDestructAnd "IH" as "IH1" "IH2".
-    *)
     mlSplitAnd; mlIntro "H".
     {
       mlDestructAnd "H" as "Ha" "Hf".
@@ -4014,6 +4010,44 @@ Proof.
       mlExact "H3".
     }
   }
+Defined.
+
+Lemma foldr_and_last_rotate_1 {Σ : Signature} Γ (x1 x2 : Pattern) (xs : list Pattern):
+  well_formed x1 ->
+  well_formed x2 ->
+  Pattern.wf xs ->
+  Γ ⊢i ((foldr patt_and x2 (xs ++ [x1])) ---> (x2 and (foldr patt_and x1 xs))) using BasicReasoning.
+Proof.
+  intros.
+  assert (well_formed (foldr patt_and (x1 and x2) xs)).
+  { apply well_formed_foldr_and; wf_auto2. }
+  assert (well_formed (foldr patt_and x1 xs)).
+  { apply well_formed_foldr_and; wf_auto2. }
+  eapply pf_iff_proj1.
+  3: { apply foldr_and_last_rotate; assumption. }
+  {
+    rewrite foldr_app. simpl. wf_auto2.
+  }
+  apply well_formed_and; wf_auto2.
+Defined.
+
+Lemma foldr_and_last_rotate_2 {Σ : Signature} Γ (x1 x2 : Pattern) (xs : list Pattern):
+  well_formed x1 ->
+  well_formed x2 ->
+  Pattern.wf xs ->
+  Γ ⊢i ((x2 and (foldr patt_and x1 xs)) ---> ((foldr patt_and x2 (xs ++ [x1])))) using BasicReasoning.
+Proof.
+  intros.
+  assert (well_formed (foldr patt_and (x1 and x2) xs)).
+  { apply well_formed_foldr_and; wf_auto2. }
+  assert (well_formed (foldr patt_and x1 xs)).
+  { apply well_formed_foldr_and; wf_auto2. }
+  eapply pf_iff_proj2.
+  3: { apply foldr_and_last_rotate; assumption. }
+  {
+    rewrite foldr_app. simpl. wf_auto2.
+  }
+  apply well_formed_and; wf_auto2.
 Defined.
 
 #[local]
