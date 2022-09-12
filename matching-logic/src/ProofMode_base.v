@@ -65,9 +65,19 @@ Defined.
 Definition find_hyp {Σ : Signature} (name : string) (hyps : hypotheses) : option (nat * named_hypothesis)%type
 := stdpp.list.list_find (has_name name) hyps.
 
+(*
+Check Nat.iter.
+Lemma lt {Σ : Signature} : True.
+Proof.
+  Compute (Nat.iter 5 patt_exists patt_bott).
+Defined.
+*)
+
+Print well_formed. Print well_formed_closed.
 
 Record MLGoal {Σ : Signature} : Type := mkMLGoal
   { mlTheory : Theory;
+    mlForalls : nat;
     mlHypotheses: hypotheses;
     mlConclusion : Pattern ;
     mlInfo : ProofSystem.ProofInfo ;
@@ -77,11 +87,11 @@ Definition MLGoal_from_goal
   {Σ : Signature} (Γ : Theory) (goal : Pattern) (pi : ProofInfo)
   :
   MLGoal
-  := mkMLGoal Σ Γ nil goal pi.
+  := mkMLGoal Σ Γ 0 nil goal pi.
 
 Coercion of_MLGoal {Σ : Signature} (MG : MLGoal) : Type :=
-  well_formed (mlConclusion MG) ->
-  Pattern.wf (patterns_of (mlHypotheses MG)) ->
+  well_formed (Nat.iter (mlForalls MG) patt_forall (mlConclusion MG)) ->
+  Pattern.wf (map (Nat.iter (mlForalls MG) patt_forall) (patterns_of (mlHypotheses MG))) ->
   (mlTheory MG) ⊢i (fold_right patt_imp (mlConclusion MG) (patterns_of (mlHypotheses MG)))
   using (mlInfo MG).
 
@@ -89,32 +99,32 @@ Coercion of_MLGoal {Σ : Signature} (MG : MLGoal) : Type :=
 
   (* This is useful only for printing. 
      0x2c75 was used for the ⊢ to avoid collision *)
-  Notation "G 'Ⱶ' g 'using' pi "
-  := (mkMLGoal _ G [] g pi)
+  Notation "G 'Ⱶ' 'vars:' n g 'using' pi "
+  := (mkMLGoal _ G n [] g pi)
   (at level 95,
   no associativity,
-  format "G  'Ⱶ' '//' g '//' 'using'  pi '//'",
+  format "G  'Ⱶ' 'vars:' n '//' g '//' 'using'  pi '//'",
   only printing).
 
-  Notation "G 'Ⱶ' g"
-  := (mkMLGoal _ G [] g AnyReasoning)
+  Notation "G 'Ⱶ' 'vars:' n g"
+  := (mkMLGoal _ G n [] g AnyReasoning)
   (at level 95,
   no associativity,
-  format "G  'Ⱶ' '//'  g '//'",
+  format "G  'Ⱶ' '//' 'vars:' n '//' g '//'",
   only printing).
 
-  Notation "G 'Ⱶ' l -------------------------------------- g 'using' pi "
-  := (mkMLGoal _ G l g pi)
+  Notation "G 'Ⱶ' 'vars:' n l -------------------------------------- g 'using' pi "
+  := (mkMLGoal _ G n l g pi)
   (at level 95,
   no associativity,
-  format "G  'Ⱶ' '//' l -------------------------------------- '//' g '//' 'using'  pi '//'",
+  format "G  'Ⱶ' '//' 'vars:' n '//' l -------------------------------------- '//' g '//' 'using'  pi '//'",
   only printing).
 
-  Notation "G 'Ⱶ' l -------------------------------------- g"
-  := (mkMLGoal _ G l g AnyReasoning)
+  Notation "G 'Ⱶ' 'vars:' n l -------------------------------------- g"
+  := (mkMLGoal _ G n l g AnyReasoning)
   (at level 95,
   no associativity,
-  format "G  'Ⱶ' '//' l -------------------------------------- '//' g '//'",
+  format "G  'Ⱶ' '//' 'vars:' n '//' l -------------------------------------- '//' g '//'",
   only printing).
 
 Ltac toMLGoal :=
@@ -179,9 +189,9 @@ Proof.
   }
 Defined.
 
-Lemma cast_proof_ml_hyps {Σ : Signature} Γ hyps hyps' (e : patterns_of hyps = patterns_of hyps') goal (i : ProofInfo) :
-  mkMLGoal Σ Γ hyps goal i ->
-  mkMLGoal Σ Γ hyps' goal i.
+Lemma cast_proof_ml_hyps {Σ : Signature} Γ n hyps hyps' (e : patterns_of hyps = patterns_of hyps') goal (i : ProofInfo) :
+  mkMLGoal Σ Γ n hyps goal i ->
+  mkMLGoal Σ Γ n hyps' goal i.
 Proof.
   unfold of_MLGoal. simpl. intros H.
   intros wfg wfhyps'.
@@ -193,9 +203,9 @@ Proof.
   reflexivity.
 Defined.
 
-Lemma cast_proof_ml_goal {Σ : Signature} Γ hyps goal goal' (e : goal = goal') (i : ProofInfo):
-  mkMLGoal Σ Γ hyps goal i ->
-  mkMLGoal Σ Γ hyps goal' i .
+Lemma cast_proof_ml_goal {Σ : Signature} Γ n hyps goal goal' (e : goal = goal') (i : ProofInfo):
+  mkMLGoal Σ Γ n hyps goal i ->
+  mkMLGoal Σ Γ n hyps goal' i .
 Proof.
   unfold of_MLGoal. simpl. intros H.
   intros wfgoal' wfhyps.
