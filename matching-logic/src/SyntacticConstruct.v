@@ -317,22 +317,26 @@ Class Binary (binary : Pattern -> Pattern -> Pattern) := {
     binary_morphism :
       forall {A : Type} (f : A -> Pattern -> Pattern) (f_morph : PatternMorphism f) (phi1 phi2 : Pattern) a,
         f a (binary phi1 phi2) = binary (f a phi1) (f a phi2) ;
-     binary_wf : forall ψ1 ψ2, well_formed ψ1 -> well_formed ψ2 -> 
-        well_formed (binary ψ1 ψ2) ;
+     binary_wf :
+      forall (x y : nat) (ψ1 ψ2 : Pattern),
+        well_formed_xy x y (binary ψ1 ψ2)
+        = well_formed_xy x y ψ1 && well_formed_xy x y ψ2 ;
 }.
 
 Class Unary (unary : Pattern -> Pattern) := {
     unary_morphism :
       forall {A : Type} (f : A -> Pattern -> Pattern) (f_morph : PatternMorphism f) (phi : Pattern) a,
         f a (unary phi) = unary (f a phi) ;
-    unary_wf : forall ψ, well_formed ψ -> well_formed (unary ψ) ;
+    unary_wf :
+      forall (x y : nat) (ψ : Pattern),
+        well_formed_xy x y (unary ψ) = well_formed_xy x y ψ ;
 }.
 
 Class Nullary (nullary : Pattern) := {
     nullary_morphism :
       forall {A : Type} (f : A -> Pattern -> Pattern) (f_morph : PatternMorphism f) a,
         f a nullary = nullary ;
-    nullary_wf : well_formed nullary ;
+    nullary_wf : forall (x y : nat), well_formed_xy x y nullary = true;
 }.
 
 Class EBinder (binder : Pattern -> Pattern) := {
@@ -371,8 +375,11 @@ Next Obligation.
 Defined.
 Next Obligation.
   intros φ1 φ2 WF1 WF2.
-  now apply well_formed_imp.
-Defined.
+  unfold well_formed_xy.
+  simpl.
+  rewrite !andb_assoc.
+  unfold andb; repeat case_match; congruence.
+Defined. (* TODO Qed should be enough? *)
 
 #[global]
 Program Instance Binary_app : Binary patt_app := {}.
@@ -382,7 +389,10 @@ Next Obligation.
 Defined.
 Next Obligation.
   intros φ1 φ2 WF1 WF2.
-  now apply well_formed_app.
+  unfold well_formed_xy.
+  simpl.
+  rewrite !andb_assoc.
+  unfold andb; repeat case_match; congruence.
 Defined.
 
 #[global]
@@ -392,7 +402,7 @@ Next Obligation.
   simpl. reflexivity.
 Defined.
 Next Obligation.
-  auto.
+  intros. reflexivity.
 Defined.
 
 #[global]
@@ -402,7 +412,7 @@ Next Obligation.
   simpl. reflexivity.
 Defined.
 Next Obligation.
-  auto.
+  intros. reflexivity.
 Defined.
 
 Class SwappableEx {A : Type} (f : A -> Pattern -> Pattern) (g : Pattern -> Pattern)
@@ -550,6 +560,7 @@ End with_signature.
   Hints are needed to automatically infer the SwappableEx instances.
   TODO: there is still a problem when the well_formed_closed assumption is
         missing
+  TODO(jan.tusil): I would add the hints to a separate database
 *)
 #[export]
 Hint Resolve Bevar_subst_swaps_ex_nesting : core.

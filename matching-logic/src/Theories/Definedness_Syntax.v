@@ -46,6 +46,8 @@ Section definedness.
 
   Context {syntax : Syntax}.
 
+  Check (ex, patt_bott).
+
   Definition patt_defined (phi : Pattern) : Pattern :=
     patt_sym (inj definedness) $ phi.
 
@@ -180,12 +182,20 @@ Section definedness.
     unfold patt_total. repeat rewrite pm_correctness.
     simpl. reflexivity.
   Defined.
+  Next Obligation.
+    unfold patt_total.
+    wf_auto2.
+  Defined.
 
   #[global]
   Program Instance Binary_equal : Binary patt_equal := {}.
   Next Obligation.
     unfold patt_equal. repeat rewrite pm_correctness.
     simpl. reflexivity.
+  Defined.
+  Next Obligation.
+    unfold patt_equal.
+    wf_auto2.
   Defined.
 
   #[global]
@@ -194,12 +204,20 @@ Section definedness.
     unfold patt_subseteq. repeat rewrite pm_correctness.
     simpl. reflexivity.
   Defined.
+  Next Obligation.
+    unfold patt_subseteq.
+    wf_auto2.
+  Defined.
 
   #[global]
   Program Instance Binary_in : Binary patt_in := {}.
   Next Obligation.
     unfold patt_in. repeat rewrite pm_correctness.
     simpl. reflexivity.
+  Defined.
+  Next Obligation.
+    unfold patt_in.
+    wf_auto2.
   Defined.
 
   (* Defines ϕ₁ to be an inversion of ϕ₂ *)

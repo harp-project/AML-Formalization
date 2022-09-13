@@ -2,7 +2,7 @@ From Coq Require Import ssreflect ssrfun ssrbool.
 
 From Coq Require Import Logic.Classical_Prop Logic.Eqdep_dec.
 From MatchingLogic.Utils Require Import stdpp_ext Lattice.
-From MatchingLogic Require Import Syntax NamedAxioms DerivedOperators_Syntax monotonic wftactics.
+From MatchingLogic Require Import Syntax NamedAxioms DerivedOperators_Syntax wftactics.
 From stdpp Require Import base fin_sets sets propset gmap.
 
 From MatchingLogic.Utils Require Import extralibrary.
@@ -134,12 +134,7 @@ Section ml_proof_system.
   Γ ⊢r ϕ -> well_formed ϕ.
   Proof.
   intros pf.
-  induction pf; auto; try (solve [wf_auto2]).
-  - unfold free_svar_subst. wf_auto2.
-    apply wfp_free_svar_subst_1; auto; unfold well_formed_closed; split_and; assumption.
-    all: fold free_svar_subst.
-    apply wfc_mu_free_svar_subst; auto.
-    apply wfc_ex_free_svar_subst; auto.
+  induction pf; wf_auto2.
   Qed.
 
 
