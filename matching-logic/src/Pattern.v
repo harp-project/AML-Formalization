@@ -715,6 +715,23 @@ pose proof (wfl₁hl₂_proj_l₂ _ _ _ H).
 apply wf_app; assumption.
 Qed.
 
+
+Definition well_formed_xy {Σ : Signature} (x y : nat) (ϕ : Pattern) : bool :=
+  well_formed_positive ϕ &&
+  well_formed_closed_ex_aux ϕ x &&
+  well_formed_closed_mu_aux ϕ y
+.
+
+Lemma wfxy00_wf {Σ : Signature} (ϕ : Pattern) :
+  well_formed_xy 0 0 ϕ = well_formed ϕ.
+Proof.
+  unfold well_formed,well_formed_closed,well_formed_xy.
+  simpl.
+  rewrite -andb_assoc.
+  rewrite [well_formed_closed_mu_aux _ _ && well_formed_closed_ex_aux _ _]andb_comm.
+  reflexivity.
+Qed.
+
 Definition wfPattern {Σ : Signature} := {p : Pattern | well_formed p = true}.
 
 Global Instance wfPattern_eqdec {Σ : Signature} : EqDecision wfPattern.
