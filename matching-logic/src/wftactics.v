@@ -1,5 +1,7 @@
 From Coq Require Import ssreflect ssrfun ssrbool.
 
+From Coq Require Import Btauto.
+
 From stdpp Require Import countable infinite.
 From stdpp Require Import pmap gmap mapset fin_sets propset.
 Require Import stdpp_ext.
@@ -14,166 +16,222 @@ Require Import
   SyntacticConstruct
 .
 
+Ltac decomposeWfGoal :=
+  rewrite -?wfxy00_wf;
+  rewrite !(nullary_wf,unary_wf,binary_wf,andb_true_r)
+.
+
+Ltac decomposeWfHyps :=
+  repeat (
+    match goal with
+    | [H: _ |- _] => (
+        rewrite -?wfxy00_wf in H;
+        rewrite !(nullary_wf,unary_wf,binary_wf,andb_true_r) in H
+      )
+    end
+  )
+.
+
+Ltac propagateTrueInHyps :=
+  repeat (
+    match goal with
+    | [H: _ |- _] => (
+        rewrite !(andb_true_r,andb_true_l) in H
+      )
+    end
+  )
+.
+
+Ltac propagateTrueInGoal :=
+  rewrite !(andb_true_r,andb_true_l)
+.
 
 Tactic Notation "wf_auto" int_or_var(n)
   := auto n; unfold well_formed, well_formed_closed in *; destruct_and?; simpl in *; split_and?; auto n.
 Tactic Notation "wf_auto" := wf_auto 5.
 
-Ltac wf_auto2 := unfold is_true in *;
-repeat (try assumption; try reflexivity; try (solve [wf_auto]); (* TODO: get rid of [wf_auto] *)
-apply nullary_wf || apply unary_wf || apply binary_wf ||
-match goal with
-| [ |- (forall _, _) ]
-  => intro
+Ltac wf_auto2_step := 
+  first [
+  progress unfold
+    is_true,
+    well_formed,
+    well_formed_closed,
+    well_formed_xy,
+    evar_open,
+    svar_open
+    in *|
+  assumption|
+  reflexivity|
+  progress decomposeWfGoal|
+  progress decomposeWfHyps|
+  progress destruct_and?|
+  progress split_and?|
+  progress simpl in *|
+  progress subst|
+  progress propagateTrueInGoal|
+  progress propagateTrueInHyps|
+  congruence|
+  btauto|
+  apply bevar_subst_closed_mu|
+  apply bevar_subst_closed_ex|
+  match goal with
+  | [ |- (forall _, _) ]
+    => intro
 
-| [ |- size' (evar_open _ _ _) < _ ]
-  => rewrite evar_open_size'
+  | [ |- size' (evar_open _ _ _) < _ ]
+    => rewrite evar_open_size'
 
-| [ |- size' (svar_open _ _ _) < _ ]
-  => rewrite svar_open_size'
+  | [ |- size' (svar_open _ _ _) < _ ]
+    => rewrite svar_open_size'
 
-| [ |- size' _ < size' (patt_app _ _) ]
-  => simpl; lia
+  | [ |- size' _ < size' (patt_app _ _) ]
+    => simpl; lia
 
-| [ |- size' _ < size' (patt_imp _ _) ]
-  => simpl; lia
+  | [ |- size' _ < size' (patt_imp _ _) ]
+    => simpl; lia
 
-| [ |- size' _ < size' (patt_exists _) ]
-  => simpl; lia
+  | [ |- size' _ < size' (patt_exists _) ]
+    => simpl; lia
 
-| [ |- well_formed (foldr patt_imp ?g ?xs) = true ]
-  => apply well_formed_foldr
+  | [ |- well_formed (foldr patt_imp ?g ?xs) = true ]
+    => apply well_formed_foldr
 
-| [ |- wf (take ?n ?xs) = true ]
-  => apply wf_take
+  | [ |- wf (take ?n ?xs) = true ]
+    => apply wf_take
 
-| [ |- wf (drop ?n ?xs) = true ]
-  => apply wf_drop
+  | [ |- wf (drop ?n ?xs) = true ]
+    => apply wf_drop
 
-| [ |- wf (<[?n := ?p]> ?xs) = true ]
-  => apply wf_insert
+  | [ |- wf (<[?n := ?p]> ?xs) = true ]
+    => apply wf_insert
 
-| [ |- wf (?x :: ?xs) = true ]
-  => apply wf_cons
+  | [ |- wf (?x :: ?xs) = true ]
+    => apply wf_cons
 
-| [ |- wf (?xs ++ ?ys) = true ]
-  => apply wf_app
+  | [ |- wf (?xs ++ ?ys) = true ]
+    => apply wf_app
 
-| [ |- well_formed (patt_free_evar _) = true]
-  => reflexivity
+  | [ |- well_formed (patt_free_evar _) = true]
+    => reflexivity
 
-| [ |- well_formed (patt_free_svar _) = true]
-  => reflexivity
+  | [ |- well_formed (patt_free_svar _) = true]
+    => reflexivity
 
-| [ H : well_formed (patt_app ?p ?q) = true |- _]
+  | [ H : well_formed (patt_app ?p ?q) = true |- _]
+    => assert (well_formed p = true);
+      [eapply well_formed_app_proj1; eassumption|];
+      assert ( well_formed q = true);
+      [eapply well_formed_app_proj2; eassumption|];
+      clear H
+
+  | [ H : well_formed (patt_imp ?p ?q) = true |- _]
   => assert (well_formed p = true);
-    [eapply well_formed_app_proj1; eassumption|];
-    assert ( well_formed q = true);
-    [eapply well_formed_app_proj2; eassumption|];
-    clear H
+      [eapply well_formed_imp_proj1; eassumption|];
+      assert ( well_formed q = true);
+      [eapply well_formed_imp_proj2; eassumption|];
+      clear H
 
-| [ H : well_formed (patt_imp ?p ?q) = true |- _]
-  => assert (well_formed p = true);
-    [eapply well_formed_imp_proj1; eassumption|];
-    assert ( well_formed q = true);
-    [eapply well_formed_imp_proj2; eassumption|];
-    clear H
+  | [ |- well_formed (free_evar_subst ?phi ?p ?E) = true ]
+    => apply well_formed_free_evar_subst
 
-| [ |- well_formed (free_evar_subst ?phi ?p ?E) = true ]
-  => apply well_formed_free_evar_subst
+  | [ |- ?x ∉ ?E ]
+    => progress simpl
 
-| [ |- ?x ∉ ?E ]
-  => progress simpl
+  | [ |- ?x ∉ free_evars (free_evar_subst _ _ _) ]
+    => eapply not_elem_of_larger_impl_not_elem_of;
+      [apply free_evars_free_evar_subst|]
 
-| [ |- ?x ∉ free_evars (free_evar_subst _ _ _) ]
-  => eapply not_elem_of_larger_impl_not_elem_of;
-     [apply free_evars_free_evar_subst|]
+  | [frx: ?x ∉ _ |- ?x <> ?E ]
+    => clear -frx; set_solver
 
-| [frx: ?x ∉ _ |- ?x <> ?E ]
-  => clear -frx; set_solver
+  | [frx: ?x ∉ _ |- ?x ∉ ?E ]
+    => clear -frx; set_solver
 
-| [frx: ?x ∉ _ |- ?x ∉ ?E ]
-  => clear -frx; set_solver
+  | [ |- well_formed (evar_open _ _ _) = true]
+    => apply wf_evar_open_from_wf_ex
 
-| [ |- well_formed (evar_open _ _ _) = true]
-  => apply wf_evar_open_from_wf_ex
+  | [ |- well_formed (@subst_ctx _ _ _) = true]
+    => apply wf_sctx
 
-| [ |- well_formed (@subst_ctx _ _ _) = true]
-  => apply wf_sctx
+    (* fallback *)
+  | [ |- well_formed _ = true]
+    => unfold well_formed, well_formed_closed in *; simpl in *;
+      destruct_and?; split_and?
 
-  (* fallback *)
-| [ |- well_formed _ = true]
-  => unfold well_formed, well_formed_closed in *; simpl in *;
-     destruct_and?; split_and?
+  | [ |- well_formed_positive (free_evar_subst _ _ _) = true ]
+    => apply wfp_free_evar_subst
 
-| [ |- well_formed_positive (free_evar_subst _ _ _) = true ]
-  => apply wfp_free_evar_subst
+  | [H: well_formed_positive (patt_exists _) = true |- _]
+    => simpl in H
 
-| [H: well_formed_positive (patt_exists _) = true |- _]
-  => simpl in H
+  | [H: well_formed_closed_mu_aux (patt_exists _) _ = true |- _]
+    => simpl in H
 
-| [H: well_formed_closed_mu_aux (patt_exists _) _ = true |- _]
-  => simpl in H
+  | [H: well_formed_closed_ex_aux (patt_exists _) _ = true |- _]
+    => simpl in H
 
-| [H: well_formed_closed_ex_aux (patt_exists _) _ = true |- _]
-  => simpl in H
+  | [ |- well_formed_closed_mu_aux (free_evar_subst _ _ _) _ = true]
+    => apply wfc_mu_free_evar_subst
 
-| [ |- well_formed_closed_mu_aux (free_evar_subst _ _ _) _ = true]
-  => apply wfc_mu_free_evar_subst
+  | [ |- well_formed_closed_ex_aux (free_evar_subst _ _ _) _ = true]
+    => apply wfc_ex_free_evar_subst_2; simpl
 
-| [ |- well_formed_closed_ex_aux (free_evar_subst _ _ _) _ = true]
-  => apply wfc_ex_free_evar_subst_2; simpl
+  | [ |- well_formed_positive (bsvar_subst _ _ _) = true ]
+    => apply wfp_bsvar_subst
 
-| [ |- well_formed_positive (bsvar_subst _ _ _) = true ]
-  => apply wfp_bsvar_subst
+  | [ |- well_formed_positive _ = true ]
+    => progress (simpl; split_and?)
 
-| [ |- well_formed_positive _ = true ]
-  => progress (simpl; split_and?)
+  | [ |- no_negative_occurrence_db_b _ (free_evar_subst _ _ _) = true ]
+    => apply free_evar_subst_preserves_no_negative_occurrence
 
-| [ |- no_negative_occurrence_db_b _ (free_evar_subst _ _ _) = true ]
-  => apply free_evar_subst_preserves_no_negative_occurrence
+  | [ |- well_formed_closed_mu_aux (bsvar_subst _ _ _) _ = true ]
+    => apply wfc_mu_aux_bsvar_subst
 
-| [ |- well_formed_closed_mu_aux (bsvar_subst _ _ _) _ = true ]
-  => apply wfc_mu_aux_bsvar_subst
+  | [ |- well_formed_closed_ex_aux (bsvar_subst _ _ _) _ = true ]
+    => apply wfc_ex_aux_bsvar_subst
 
-| [ |- well_formed_closed_ex_aux (bsvar_subst _ _ _) _ = true ]
-  => apply wfc_ex_aux_bsvar_subst
+  | [ |- svar_has_negative_occurrence _ (svar_open _ _ _) = false] =>
+    unfold svar_open; apply svar_hno_bsvar_subst
 
-| [ |- svar_has_negative_occurrence _ (svar_open _ _ _) = false] =>
-  unfold svar_open; apply svar_hno_bsvar_subst
+  |[ |- context C [ svar_quantify _ _ (svar_open _ _ _) ] ]
+    => rewrite svar_quantify_svar_open
 
-|[ |- context C [ svar_quantify _ _ (svar_open _ _ _) ] ]
-  => rewrite svar_quantify_svar_open
+  | [ |- well_formed_closed_mu_aux (svar_open _ _ _) _ = true] =>
+    unfold svar_open; apply wfc_mu_aux_bsvar_subst
 
-| [ |- well_formed_closed_mu_aux (svar_open _ _ _) _ = true] =>
-  unfold svar_open; apply wfc_mu_aux_bsvar_subst
+  | [ |- well_formed_closed_ex_aux (svar_open _ _ _) _ = true] =>
+    unfold svar_open; apply wfc_ex_aux_bsvar_subst
 
-| [ |- well_formed_closed_ex_aux (svar_open _ _ _) _ = true] =>
-  unfold svar_open; apply wfc_ex_aux_bsvar_subst
+  | [ |- no_negative_occurrence_db_b _ _ = true ]
+    => solve [unfold well_formed in *; simpl in *; destruct_and!; assumption]
 
-| [ |- no_negative_occurrence_db_b _ _ = true ]
-  => solve [unfold well_formed in *; simpl in *; destruct_and!; assumption]
+  | [ |- no_negative_occurrence_db_b _ (free_evar_subst _ _ _) = true ]
+    => apply free_evar_subst_preserves_no_negative_occurrence
 
-| [ |- no_negative_occurrence_db_b _ (free_evar_subst _ _ _) = true ]
-  => apply free_evar_subst_preserves_no_negative_occurrence
+  (* last option for [svar_has_negative_occurrence] *)
+  | [ |- svar_has_negative_occurrence _ _ = false ]
+    => apply svar_hno_false_if_fresh
 
-(* last option for [svar_has_negative_occurrence] *)
-| [ |- svar_has_negative_occurrence _ _ = false ]
-  => apply svar_hno_false_if_fresh
+  | [ |- svar_is_fresh_in _ _ ]
+    => unfold svar_is_fresh_in
 
-| [ |- svar_is_fresh_in _ _ ]
-  => unfold svar_is_fresh_in
+    (* last option for well_formed_closed_ex_aux: try decreasing n *)
+  | [ |- well_formed_closed_ex_aux ?p (S ?n) = true ]
+    => eapply well_formed_closed_ex_aux_ind with (ind_evar1 := n);[lia|]
 
-  (* last option for well_formed_closed_ex_aux: try decreasing n *)
-| [ |- well_formed_closed_ex_aux ?p (S ?n) = true ]
-  => eapply well_formed_closed_ex_aux_ind with (ind_evar1 := n);[lia|]
+    (* last option for well_formed_closed_mu_aux: try decreasing n *)
+  | [ |- well_formed_closed_mu_aux ?p (S ?n) = true ]
+    => eapply well_formed_closed_mu_aux_ind with (ind_svar1 := n);[lia|]
 
-  (* last option for well_formed_closed_mu_aux: try decreasing n *)
-| [ |- well_formed_closed_mu_aux ?p (S ?n) = true ]
-  => eapply well_formed_closed_mu_aux_ind with (ind_svar1 := n);[lia|]
-
-end; unfold is_true in *
-).
+  end
+  ]
+.
+Ltac wf_auto2 :=
+  repeat (
+    wf_auto2_step
+  )
+.
 
 Ltac try_wfauto2 :=
 lazymatch goal with

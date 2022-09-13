@@ -1073,7 +1073,9 @@ Section with_signature.
   Proof.
     intros Hsubst.
     move: dbi Hsubst.
-    induction ϕ; intros dbi Hsubst; simpl in *; auto.
+    induction ϕ; intros dbi Hsubst; simpl in *; try reflexivity; try assumption.
+    - info_auto.
+    ; auto.
     - apply andb_prop in Hsubst. destruct Hsubst as [Hsubst1 Hsubst2].
       specialize (IHϕ1 dbi Hsubst1).
       specialize (IHϕ2 dbi Hsubst2).

@@ -49,7 +49,7 @@ Section with_signature.
     Qed.
 
     Lemma well_formed_closed_mu_aux_iter_forall
-  {Σ : Signature} (ϕ ψ : Pattern) (n : nat)
+  (ϕ ψ : Pattern) (n : nat)
   (pf : forall idx, (well_formed_closed_mu_aux ϕ idx -> well_formed_closed_mu_aux ψ idx)) :
   forall idx,
   well_formed_closed_mu_aux (Nat.iter n patt_forall ϕ) idx ->
@@ -69,7 +69,7 @@ Proof.
 Qed.
 
 Lemma well_formed_positive_iter_forall
-  {Σ : Signature} (ϕ ψ : Pattern) (n : nat)
+  (ϕ ψ : Pattern) (n : nat)
   (pf : (well_formed_positive ϕ -> well_formed_positive ψ)) :
   well_formed_positive (Nat.iter n patt_forall ϕ) ->
   well_formed_positive (Nat.iter n patt_forall ψ).
@@ -229,7 +229,10 @@ Qed.
        simpl. reflexivity.
      Defined.
      Next Obligation.
-       intros ψ Wfψ. wf_auto2.
+       intros x y ψ.
+       unfold patt_not.
+       rewrite !(nullary_wf,unary_wf,binary_wf,andb_true_r).
+       reflexivity.
      Defined.
 
     #[global]
@@ -251,7 +254,7 @@ Qed.
        simpl. reflexivity.
      Defined.
      Next Obligation.
-       intros ψ1 ψ2 Wfψ1 Wfψ2. wf_auto2.
+       intros ψ1 ψ2 Wfψ1 Wfψ2. wf_auto2. btauto.
      Defined.
 
     #[global]

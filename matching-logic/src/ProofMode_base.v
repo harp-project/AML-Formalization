@@ -217,11 +217,10 @@ Proof.
   reflexivity.
 Defined.
 
-
-Lemma MLGoal_intro {Σ : Signature} (Γ : Theory) (l : hypotheses) (name : string) (x g : Pattern)
+Lemma MLGoal_intro {Σ : Signature} (Γ : Theory) (n : nat) (l : hypotheses) (name : string) (x g : Pattern)
   (i : ProofInfo) :
-  mkMLGoal _ Γ (l ++ [mkNH _ name x]) g i ->
-  mkMLGoal _ Γ l (x ---> g) i.
+  mkMLGoal _ Γ n (l ++ [mkNH _ name x]) g i ->
+  mkMLGoal _ Γ n l (x ---> g) i.
 Proof.
   intros H.
   unfold of_MLGoal in H. simpl in H.
