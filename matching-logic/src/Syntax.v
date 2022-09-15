@@ -871,78 +871,7 @@ Section with_signature.
       split_and!; auto.
   Qed.
 
-  (* Lemma bevar_occur_positivity ψ dbi :
-    bsvar_occur ψ dbi = false ->
-    no_negative_occurrence_db_b dbi ψ = true /\ no_positive_occurrence_db_b dbi ψ.
-  Proof.
-    induction ψ; intros H; cbn; auto.
-    * simpl in H. case_match; auto.
-    * *)
-
-  Lemma nno_free_svar_subst dbi ϕ ψ X:
-    well_formed_closed_mu_aux ψ dbi ->
-    no_negative_occurrence_db_b dbi (ϕ^[[svar: X ↦ ψ]])
-    = no_negative_occurrence_db_b dbi ϕ
-  with npo_free_svar_subst dbi ϕ ψ X:
-    well_formed_closed_mu_aux ψ dbi ->
-    no_positive_occurrence_db_b dbi (ϕ^[[svar: X ↦ ψ]])
-    = no_positive_occurrence_db_b dbi ϕ.
-  Proof.
-    - move: dbi.
-      induction ϕ; intros dbi Hwf; simpl; auto.
-      + case_match; cbn; [|reflexivity].
-        eapply Private_wfc_impl_no_neg_pos_occ. exact Hwf. lia.
-      + cbn. rewrite IHϕ1; auto. rewrite IHϕ2; auto.
-      + cbn.
-        fold (no_positive_occurrence_db_b).
-        rewrite nno_free_svar_subst; auto.
-        rewrite npo_free_svar_subst; auto.
-      + cbn.
-        rewrite IHϕ; auto.
-      + cbn.
-        rewrite IHϕ; auto. eapply well_formed_closed_mu_aux_ind. 2: exact Hwf. lia.
-    - move: dbi.
-      induction ϕ; intros dbi Hwf; simpl; auto.
-      + case_match; cbn; [|reflexivity].
-        eapply Private_wfc_impl_no_neg_pos_occ. exact Hwf. lia.
-      + cbn. rewrite IHϕ1; auto. rewrite IHϕ2; auto.
-      + cbn.
-        fold (no_negative_occurrence_db_b).
-        rewrite nno_free_svar_subst; auto.
-        rewrite IHϕ2; auto.
-      + cbn.
-        rewrite IHϕ; auto.
-      + cbn.
-        rewrite IHϕ; auto. eapply well_formed_closed_mu_aux_ind. 2: exact Hwf. lia.
-  Qed.
-
-  Lemma wfp_free_svar_subst_1 ϕ ψ X:
-    well_formed_closed ψ = true ->
-    well_formed_positive ψ = true ->
-    well_formed_positive ϕ = true ->
-    well_formed_positive (ϕ^[[svar: X ↦ ψ]]) = true.
-  Proof.
-    intros wfcψ wfpψ wfpϕ.
-    induction ϕ; simpl; auto.
-    - case_match; auto.
-    - simpl in wfpϕ. destruct_and!.
-      rewrite -> IHϕ1 by assumption.
-      rewrite -> IHϕ2 by assumption.
-      reflexivity.
-    - simpl in wfpϕ. destruct_and!.
-      rewrite -> IHϕ1 by assumption.
-      rewrite -> IHϕ2 by assumption.
-      reflexivity.
-    - simpl in wfpϕ. destruct_and!.
-      specialize (IHϕ H0).
-      rewrite -> IHϕ.
-      rewrite nno_free_svar_subst.
-      { apply andb_true_iff in wfcψ. apply wfcψ. }
-      rewrite H.
-      reflexivity.
-  Qed.
-
-  Lemma wfp_free_svar_subst ϕ ψ X:
+   Lemma wfp_free_svar_subst ϕ ψ X:
     well_formed_closed_mu_aux ψ 0 ->
     well_formed_positive ψ = true ->
     well_formed_positive ϕ = true ->
@@ -1226,50 +1155,6 @@ Section with_signature.
     intros p.
     apply svar_is_fresh_in_dec.
   Defined.
-
-  Lemma wfcex_evar_quan_impl_wfcex x n dbi ϕ:
-    well_formed_closed_ex_aux (ϕ^{{evar: x ↦ n}}) dbi = true ->
-    well_formed_closed_ex_aux ϕ dbi.
-  Proof.
-    intros H.
-    move: n dbi H.
-    induction ϕ; intros n' dbi H; simpl in *; auto.
-    - destruct_and!.
-      erewrite -> IHϕ1 by eassumption.
-      erewrite -> IHϕ2 by eassumption.
-      reflexivity.
-    - destruct_and!.
-      erewrite -> IHϕ1 by eassumption.
-      erewrite -> IHϕ2 by eassumption.
-      reflexivity.
-    - erewrite IHϕ by eassumption.
-      reflexivity.
-    - simpl.
-      erewrite -> IHϕ by eassumption.
-      reflexivity.
-  Qed.
-
-  Lemma wfcmu_evar_quan_impl_wfcmu x n dbi ϕ:
-    well_formed_closed_mu_aux (ϕ^{{evar: x ↦ n}}) dbi = true ->
-    well_formed_closed_mu_aux ϕ dbi.
-  Proof.
-    intros H.
-    move: n dbi H.
-    induction ϕ; intros n' dbi H; simpl in *; auto.
-    - destruct_and!.
-      erewrite -> IHϕ1 by eassumption.
-      erewrite -> IHϕ2 by eassumption.
-      reflexivity.
-    - destruct_and!.
-      erewrite -> IHϕ1 by eassumption.
-      erewrite -> IHϕ2 by eassumption.
-      reflexivity.
-    - erewrite IHϕ by eassumption.
-      reflexivity.
-    - simpl.
-      erewrite -> IHϕ by eassumption.
-      reflexivity.
-  Qed.
 
   Lemma wfc_ex_lower ϕ n:
     bevar_occur ϕ n = false ->

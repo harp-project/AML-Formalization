@@ -17,11 +17,12 @@ Require Import
 .
 
 Definition wfSimplifications := (
-  nullary_wf,
-  unary_wf,
-  binary_wf,
-  andb_true_r,
-  @wfp_evar_quan
+  @nullary_wf,
+  @unary_wf,
+  @binary_wf,
+  @andb_true_r,
+  @wfp_evar_quan,
+  @wfcmu_evar_quan
 ).
 
 Ltac decomposeWfGoal :=
@@ -85,6 +86,16 @@ Ltac wf_auto2_step :=
   apply bevar_subst_closed_mu|
   apply bevar_subst_closed_ex|
   apply bevar_subst_positive_2|
+  apply evar_quantify_closed_ex|
+  apply svar_quantify_closed_ex|
+  apply evar_quantify_closed_mu|
+  apply svar_quantify_closed_mu|
+  apply wfp_free_svar_subst_1|
+  apply wfc_mu_free_svar_subst|
+  apply wfc_ex_free_svar_subst|
+  apply wp_sctx|
+  apply wcmu_sctx|
+  apply wcex_sctx|
   match goal with
   | [ |- (forall _, _) ]
     => intro

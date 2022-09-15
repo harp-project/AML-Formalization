@@ -2661,6 +2661,133 @@ Proof.
  }
 Qed.
 
+Lemma wfcmu_evar_quan_impl_wfcmu x n dbi ϕ:
+    well_formed_closed_mu_aux (ϕ^{{evar: x ↦ n}}) dbi = true ->
+    well_formed_closed_mu_aux ϕ dbi.
+  Proof.
+    intros H.
+    move: n dbi H.
+    induction ϕ; intros n' dbi H; simpl in *; auto.
+    - destruct_and!.
+      erewrite -> IHϕ1 by eassumption.
+      erewrite -> IHϕ2 by eassumption.
+      reflexivity.
+    - destruct_and!.
+      erewrite -> IHϕ1 by eassumption.
+      erewrite -> IHϕ2 by eassumption.
+      reflexivity.
+    - erewrite IHϕ by eassumption.
+      reflexivity.
+    - simpl.
+      erewrite -> IHϕ by eassumption.
+      reflexivity.
+  Qed.
+
+
+
+  Lemma wfcmu_evar_quan x n dbi ϕ:
+    well_formed_closed_mu_aux (ϕ^{{evar: x ↦ n}}) dbi
+    = well_formed_closed_mu_aux ϕ dbi.
+  Proof.
+    destruct (well_formed_closed_mu_aux (ϕ^{{evar: x ↦ n}}) dbi) eqn:H1,
+             (well_formed_closed_mu_aux ϕ dbi) eqn:H2;
+    try reflexivity.
+  {
+    apply wfcmu_evar_quan_impl_wfcmu in H1.
+    congruence.
+  }
+  {
+    apply evar_quantify_closed_mu with (x := x) (n := n) in H2.
+    congruence.
+  }
+ Qed.
+
+ Lemma wfcex_evar_quan_impl_wfcex x n dbi ϕ:
+ well_formed_closed_ex_aux (ϕ^{{evar: x ↦ n}}) dbi = true ->
+ well_formed_closed_ex_aux ϕ dbi.
+Proof.
+ intros H.
+ move: n dbi H.
+ induction ϕ; intros n' dbi H; simpl in *; auto.
+ - destruct_and!.
+   erewrite -> IHϕ1 by eassumption.
+   erewrite -> IHϕ2 by eassumption.
+   reflexivity.
+ - destruct_and!.
+   erewrite -> IHϕ1 by eassumption.
+   erewrite -> IHϕ2 by eassumption.
+   reflexivity.
+ - erewrite IHϕ by eassumption.
+   reflexivity.
+ - simpl.
+   erewrite -> IHϕ by eassumption.
+   reflexivity.
+Qed.
+
+
+Lemma nno_free_svar_subst dbi ϕ ψ X:
+well_formed_closed_mu_aux ψ dbi ->
+no_negative_occurrence_db_b dbi (ϕ^[[svar: X ↦ ψ]])
+= no_negative_occurrence_db_b dbi ϕ
+with npo_free_svar_subst dbi ϕ ψ X:
+well_formed_closed_mu_aux ψ dbi ->
+no_positive_occurrence_db_b dbi (ϕ^[[svar: X ↦ ψ]])
+= no_positive_occurrence_db_b dbi ϕ.
+Proof.
+- move: dbi.
+  induction ϕ; intros dbi Hwf; simpl; auto.
+  + case_match; cbn; [|reflexivity].
+    eapply Private_wfc_impl_no_neg_pos_occ. exact Hwf. lia.
+  + cbn. rewrite IHϕ1; auto. rewrite IHϕ2; auto.
+  + cbn.
+    fold (no_positive_occurrence_db_b).
+    rewrite nno_free_svar_subst; auto.
+    rewrite npo_free_svar_subst; auto.
+  + cbn.
+    rewrite IHϕ; auto.
+  + cbn.
+    rewrite IHϕ; auto. eapply well_formed_closed_mu_aux_ind. 2: exact Hwf. lia.
+- move: dbi.
+  induction ϕ; intros dbi Hwf; simpl; auto.
+  + case_match; cbn; [|reflexivity].
+    eapply Private_wfc_impl_no_neg_pos_occ. exact Hwf. lia.
+  + cbn. rewrite IHϕ1; auto. rewrite IHϕ2; auto.
+  + cbn.
+    fold (no_negative_occurrence_db_b).
+    rewrite nno_free_svar_subst; auto.
+    rewrite IHϕ2; auto.
+  + cbn.
+    rewrite IHϕ; auto.
+  + cbn.
+    rewrite IHϕ; auto. eapply well_formed_closed_mu_aux_ind. 2: exact Hwf. lia.
+Qed.
+
+Lemma wfp_free_svar_subst_1 ϕ ψ X:
+well_formed_closed ψ = true ->
+well_formed_positive ψ = true ->
+well_formed_positive ϕ = true ->
+well_formed_positive (ϕ^[[svar: X ↦ ψ]]) = true.
+Proof.
+intros wfcψ wfpψ wfpϕ.
+induction ϕ; simpl; auto.
+- case_match; auto.
+- simpl in wfpϕ. destruct_and!.
+  rewrite -> IHϕ1 by assumption.
+  rewrite -> IHϕ2 by assumption.
+  reflexivity.
+- simpl in wfpϕ. destruct_and!.
+  rewrite -> IHϕ1 by assumption.
+  rewrite -> IHϕ2 by assumption.
+  reflexivity.
+- simpl in wfpϕ. destruct_and!.
+  specialize (IHϕ H0).
+  rewrite -> IHϕ.
+  rewrite nno_free_svar_subst.
+  { apply andb_true_iff in wfcψ. apply wfcψ. }
+  rewrite H.
+  reflexivity.
+Qed.
+
 End subst.
 
 

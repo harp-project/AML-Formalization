@@ -2,6 +2,7 @@ From Coq Require Import ssreflect ssrfun ssrbool.
 
 From Coq Require Import Logic.Classical_Prop Logic.Eqdep_dec.
 From MatchingLogic.Utils Require Import stdpp_ext Lattice.
+(* TODO do we need [monotonic] here? *)
 From MatchingLogic Require Import Syntax NamedAxioms DerivedOperators_Syntax monotonic wftactics.
 From stdpp Require Import base fin_sets sets propset gmap.
 
@@ -134,18 +135,7 @@ Section ml_proof_system.
   Γ ⊢r ϕ -> well_formed ϕ.
   Proof.
   intros pf.
-  induction pf; auto; try (solve [wf_auto2]).
-  - wf_auto2. Locate evar_quantify_positive. Locate wfp_evar_quan_impl_wfp.
-    Search well_formed_positive (evar_quantify _ _ _).
-    Unset Printing Notations.
-    apply bevar_subst_positive_2; wf_auto2.
-    Search (well_formed_positive (bevar_subst _ _ _)).
-  - wf_auto2.
-    Search (well_formed_positive (bevar_subst _ _ _)).
-    apply wfp_free_svar_subst_1; auto; unfold well_formed_closed; split_and; assumption.
-    all: fold free_svar_subst.
-    apply wfc_mu_free_svar_subst; auto.
-    apply wfc_ex_free_svar_subst; auto.
+  induction pf; wf_auto2.
   Qed.
 
 
