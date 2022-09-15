@@ -1073,9 +1073,7 @@ Section with_signature.
   Proof.
     intros Hsubst.
     move: dbi Hsubst.
-    induction ϕ; intros dbi Hsubst; simpl in *; try reflexivity; try assumption.
-    - info_auto.
-    ; auto.
+    induction ϕ; intros dbi Hsubst; simpl in *; try reflexivity; auto with nocore.
     - apply andb_prop in Hsubst. destruct Hsubst as [Hsubst1 Hsubst2].
       specialize (IHϕ1 dbi Hsubst1).
       specialize (IHϕ2 dbi Hsubst2).
@@ -1094,7 +1092,7 @@ Section with_signature.
   Proof.
     intros Hsubst.
     move: dbi Hsubst.
-    induction ϕ; intros dbi Hsubst; simpl in *; auto.
+    induction ϕ; intros dbi Hsubst; simpl in *; try reflexivity; auto with nocore.
     - apply andb_prop in Hsubst. destruct Hsubst as [Hsubst1 Hsubst2].
       specialize (IHϕ1 dbi Hsubst1).
       specialize (IHϕ2 dbi Hsubst2).
@@ -1115,7 +1113,7 @@ Section with_signature.
     no_positive_occurrence_db_b dbi ϕ = true.
   Proof.
     - move: dbi.
-      induction ϕ; intros dbi Hsubst; cbn in *; auto.
+      induction ϕ; intros dbi Hsubst; cbn in *; try reflexivity; auto with nocore.
       + apply andb_prop in Hsubst. destruct Hsubst as [Hsubst1 Hsubst2].
         specialize (IHϕ1 dbi Hsubst1).
         specialize (IHϕ2 dbi Hsubst2).
@@ -1129,7 +1127,7 @@ Section with_signature.
         erewrite npo_after_subst_impl_npo_before.
         reflexivity. eassumption.
     - move: dbi.
-      induction ϕ; intros dbi Hsubst; cbn in *; auto.
+      induction ϕ; intros dbi Hsubst; cbn in *; try reflexivity; auto with nocore.
       + apply andb_prop in Hsubst. destruct Hsubst as [Hsubst1 Hsubst2].
         specialize (IHϕ1 dbi Hsubst1).
         specialize (IHϕ2 dbi Hsubst2).
@@ -1150,7 +1148,7 @@ Section with_signature.
   Proof.
     intros Hsubst.
     move: Hsubst.
-    induction ϕ; intros Hsubst; simpl in *; auto.
+    induction ϕ; intros Hsubst; simpl in *; try reflexivity; auto with nocore.
     - apply andb_prop in Hsubst. destruct Hsubst as [Hsubst1 Hsubst2].
       specialize (IHϕ1 Hsubst1).
       specialize (IHϕ2 Hsubst2).
