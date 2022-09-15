@@ -135,7 +135,13 @@ Section ml_proof_system.
   Proof.
   intros pf.
   induction pf; auto; try (solve [wf_auto2]).
-  - unfold free_svar_subst. wf_auto2.
+  - wf_auto2. Locate evar_quantify_positive. Locate wfp_evar_quan_impl_wfp.
+    Search well_formed_positive (evar_quantify _ _ _).
+    Unset Printing Notations.
+    apply bevar_subst_positive_2; wf_auto2.
+    Search (well_formed_positive (bevar_subst _ _ _)).
+  - wf_auto2.
+    Search (well_formed_positive (bevar_subst _ _ _)).
     apply wfp_free_svar_subst_1; auto; unfold well_formed_closed; split_and; assumption.
     all: fold free_svar_subst.
     apply wfc_mu_free_svar_subst; auto.

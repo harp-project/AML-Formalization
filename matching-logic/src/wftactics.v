@@ -16,9 +16,17 @@ Require Import
   SyntacticConstruct
 .
 
+Definition wfSimplifications := (
+  nullary_wf,
+  unary_wf,
+  binary_wf,
+  andb_true_r,
+  @wfp_evar_quan
+).
+
 Ltac decomposeWfGoal :=
   rewrite -?wfxy00_wf;
-  rewrite !(nullary_wf,unary_wf,binary_wf,andb_true_r)
+  rewrite !wfSimplifications
 .
 
 Ltac decomposeWfHyps :=
@@ -26,7 +34,7 @@ Ltac decomposeWfHyps :=
     match goal with
     | [H: _ |- _] => (
         rewrite -?wfxy00_wf in H;
-        rewrite !(nullary_wf,unary_wf,binary_wf,andb_true_r) in H
+        rewrite !wfSimplifications in H
       )
     end
   )
@@ -58,7 +66,9 @@ Ltac wf_auto2_step :=
     well_formed_closed,
     well_formed_xy,
     evar_open,
-    svar_open
+    svar_open,
+    free_evar_subst,
+    free_evar_subst
     in *|
   assumption|
   reflexivity|
@@ -74,6 +84,7 @@ Ltac wf_auto2_step :=
   btauto|
   apply bevar_subst_closed_mu|
   apply bevar_subst_closed_ex|
+  apply bevar_subst_positive_2|
   match goal with
   | [ |- (forall _, _) ]
     => intro

@@ -2572,7 +2572,97 @@ Proof.
   }
 Qed.
 
+
+Lemma no_neg_occ_quan_impl_no_neg_occ x n1 n2 ϕ:
+no_negative_occurrence_db_b n1 (ϕ^{{evar: x ↦ n2}}) = true ->
+no_negative_occurrence_db_b n1 ϕ = true
+with no_pos_occ_quan_impl_no_pos_occ x n1 n2 ϕ:
+no_positive_occurrence_db_b n1 (ϕ^{{evar: x ↦ n2}}) = true ->
+no_positive_occurrence_db_b n1 ϕ = true.
+Proof.
+- intros H.
+  move: n1 n2 H.
+  induction ϕ; intros n1 n2 H; simpl in *; auto.
+  + unfold no_negative_occurrence_db_b in *. simpl in *. fold no_negative_occurrence_db_b in *.
+    destruct_and!.
+    erewrite -> IHϕ1 by eassumption.
+    erewrite -> IHϕ2 by eassumption.
+    reflexivity.
+  + unfold no_negative_occurrence_db_b in *. simpl in *.
+    fold no_negative_occurrence_db_b no_positive_occurrence_db_b in *.
+    destruct_and!.
+    erewrite -> no_pos_occ_quan_impl_no_pos_occ by eassumption.
+    erewrite -> IHϕ2 by eassumption.
+    reflexivity.
+  + unfold no_negative_occurrence_db_b in *. simpl in *. fold no_negative_occurrence_db_b in *.
+    erewrite -> IHϕ by eassumption.
+    reflexivity.
+  + unfold no_negative_occurrence_db_b in *. simpl in *. fold no_negative_occurrence_db_b in *.
+    erewrite -> IHϕ by eassumption.
+    reflexivity.
+- intros H.
+  move: n1 n2 H.
+  induction ϕ; intros n1 n2 H; simpl in *; auto.
+  + unfold no_positive_occurrence_db_b in *. simpl in *. fold no_positive_occurrence_db_b in *.
+    destruct_and!.
+    erewrite -> IHϕ1 by eassumption.
+    erewrite -> IHϕ2 by eassumption.
+    reflexivity.
+  + unfold no_positive_occurrence_db_b in *. simpl in *.
+    fold no_positive_occurrence_db_b no_negative_occurrence_db_b in *.
+    destruct_and!.
+    erewrite -> no_neg_occ_quan_impl_no_neg_occ by eassumption.
+    erewrite -> IHϕ2 by eassumption.
+    reflexivity.
+  + unfold no_positive_occurrence_db_b in *. simpl in *. fold no_positive_occurrence_db_b in *.
+    erewrite -> IHϕ by eassumption.
+    reflexivity.
+  + unfold no_positive_occurrence_db_b in *. simpl in *. fold no_positive_occurrence_db_b in *.
+    erewrite -> IHϕ by eassumption.
+    reflexivity.
+Qed.
+
+Lemma wfp_evar_quan_impl_wfp x n ϕ:
+ well_formed_positive (ϕ^{{evar: x ↦ n}}) = true ->
+ well_formed_positive ϕ.
+Proof.
+ intros H.
+ move: n H.
+ induction ϕ; intros n' H; simpl in *; auto.
+ - destruct_and!.
+   erewrite -> IHϕ1 by eassumption.
+   erewrite -> IHϕ2 by eassumption.
+   reflexivity.
+ - destruct_and!.
+   erewrite -> IHϕ1 by eassumption.
+   erewrite -> IHϕ2 by eassumption.
+   reflexivity.
+ - erewrite IHϕ by eassumption.
+   reflexivity.
+ - simpl.
+   destruct_and!.
+   erewrite -> IHϕ by eassumption.
+   erewrite -> no_neg_occ_quan_impl_no_neg_occ by eassumption.
+   reflexivity.
+Qed.
+
+Lemma wfp_evar_quan x n ϕ:
+ well_formed_positive (ϕ^{{evar: x ↦ n}}) = well_formed_positive ϕ.
+Proof.
+ destruct (well_formed_positive (ϕ^{{evar: x ↦ n}})) eqn:H1,(well_formed_positive ϕ) eqn:H2;
+   try reflexivity.
+ {
+   apply wfp_evar_quan_impl_wfp in H1.
+   congruence.
+ }
+ {
+   apply evar_quantify_positive with (x := x) (n := n) in H2.
+   congruence.
+ }
+Qed.
+
 End subst.
+
 
 
 #[export]

@@ -254,7 +254,7 @@ Qed.
        simpl. reflexivity.
      Defined.
      Next Obligation.
-       intros ψ1 ψ2 Wfψ1 Wfψ2. wf_auto2. btauto.
+       intros ψ1 ψ2 Wfψ1 Wfψ2. wf_auto2.
      Defined.
 
     #[global]
