@@ -231,7 +231,12 @@ Fixpoint rename {Σ : Signature}
       : alpha_equiv R R'
         (npatt_exists x t)
         (npatt_exists y u)
-      (* TODO mu *)
+    | ae_mu (X Y : svar) (t u : NamedPattern)
+      (tEu : alpha_equiv
+        R (pb_update R' X Y) t u)
+      : alpha_equiv R R'
+        (npatt_mu X t)
+        (npatt_mu Y u)
     .
 
   #[global]
@@ -297,8 +302,19 @@ Fixpoint rename {Σ : Signature}
       all: right; intros HContra; inversion HContra; contradiction.
     }
     {
-      (* exists x. x /\ exists y. y ≡α exists x. x /\ exists x. x *)
       pose proof (IH' := IHx (pb_update R x x1) R' y).
+      destruct IH'.
+      {
+        left. constructor. assumption.
+      }
+      {
+        right. intros HContra. inversion HContra. clear HContra.
+        subst.
+        contradiction.
+      }
+    }
+    {
+      pose proof (IH' := IHx R (pb_update R' X X0) y).
       destruct IH'.
       {
         left. constructor. assumption.
