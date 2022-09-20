@@ -225,7 +225,91 @@ Fixpoint rename {Σ : Signature}
       : alpha_equiv R R' (npatt_imp t u) (npatt_imp t' u')
     | ae_bott : alpha_equiv R R' npatt_bott npatt_bott
     | ae_sym (s : symbols) : alpha_equiv R R' (npatt_sym s) (npatt_sym s) 
+    | ae_ex (x y : evar) (t u : NamedPattern)
+      (tEu : alpha_equiv
+        (pb_update R x y) R' t u)
+      : alpha_equiv R R'
+        (npatt_exists x t)
+        (npatt_exists y u)
+      (* TODO mu *)
     .
+
+  #[global]
+  Instance alpha_dec
+    {Σ : Signature}
+    (R : PartialBijection evar)
+    (R' : PartialBijection svar)
+    : RelDecision (alpha_equiv R R').
+  Proof.
+    unfold RelDecision.
+    intros x y.
+    unfold Decision.
+    move: R R' y.
+    (*remember (size' x) as szx.*)
+    induction x; intros R R' y; destruct y; try (solve [repeat constructor]);
+      try (solve [right; intros HH; inversion HH]).
+    {
+      destruct (decide ((x, x0) ∈ pbr R)).
+      {
+        left. constructor. assumption.
+      }
+      {
+        right. intros HContra. inversion HContra.
+        contradiction.
+      }
+    }
+    {
+      destruct (decide ((X, X0) ∈ pbr R')).
+      {
+        left. constructor. assumption.
+      }
+      {
+        right. intros HContra. inversion HContra.
+        contradiction.
+      }
+    }
+    {
+      destruct (decide (sigma = sigma0)).
+      {
+        left. subst. constructor.
+      }
+      {
+        right. intros HContra. inversion HContra.
+        contradiction.
+      }
+    }
+    {
+      specialize (IHx1 R R' y1).
+      specialize (IHx2 R R' y2).
+      destruct IHx1, IHx2.
+      {
+        left. constructor; assumption.
+      }
+      all: right; intros HContra; inversion HContra; contradiction.
+    }
+    {
+      specialize (IHx1 R R' y1).
+      specialize (IHx2 R R' y2).
+      destruct IHx1, IHx2.
+      {
+        left. constructor; assumption.
+      }
+      all: right; intros HContra; inversion HContra; contradiction.
+    }
+    {
+      (* exists x. x /\ exists y. y ≡α exists x. x /\ exists x. x *)
+      pose proof (IH' := IHx (pb_update R x x1) R' y).
+      destruct IH'.
+      {
+        left. constructor. assumption.
+      }
+      {
+        right. intros HContra. inversion HContra. clear HContra.
+        subst.
+        contradiction.
+      }
+    }
+  Defined.
 
   (*
   (* TESTS *)

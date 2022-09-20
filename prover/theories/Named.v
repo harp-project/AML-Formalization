@@ -21,6 +21,16 @@ Section named.
   | npatt_mu (X : svar) (phi : NamedPattern)
   .
 
+Fixpoint nsize' (p : NamedPattern) : nat :=
+  match p with
+  | npatt_app ls rs => 1 + (nsize' ls) + (nsize' rs)
+  | npatt_imp ls rs => 1 + (nsize' ls) + (nsize' rs)
+  | npatt_exists _ p' => 1 + nsize' p'
+  | npatt_mu _ p' => 1 + nsize' p'
+  | _ => 1
+  end.
+
+  #[global]
   Instance NamedPattern_eqdec : EqDecision NamedPattern.
   Proof. solve_decision. Defined.
 
