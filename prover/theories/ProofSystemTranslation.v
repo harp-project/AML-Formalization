@@ -153,6 +153,57 @@ Fixpoint rename {Σ : Signature}
 
   Arguments pbr {A%type_scope} {_eqd _cnt} p.
 
+  Program Definition pbr_converse {A : Type}
+    {_eqd : EqDecision A}
+    {_cnt : Countable A}
+    (R : PartialBijection A) : PartialBijection A
+  := {|
+    pbr := (set_map (fun p => (p.2, p.1)) (pbr R))  ;
+  |}.
+  Next Obligation.
+    intros ??????? H1 H2.
+    rewrite elem_of_map in H1.
+    rewrite elem_of_map in H2.
+    destruct H1 as [[x11 x12] [H11 H12]].
+    destruct H2 as [[x21 x22] [H21 H22]].
+    simpl in *.
+    inversion H11; clear H11; inversion H21; clear H21; subst.
+    destruct R as [r pf1 pf2]; simpl in *.
+    naive_solver.
+  Qed.
+  Next Obligation.
+    intros ??????? H1 H2.
+    rewrite elem_of_map in H1.
+    rewrite elem_of_map in H2.
+    destruct H1 as [[x11 x12] [H11 H12]].
+    destruct H2 as [[x21 x22] [H21 H22]].
+    simpl in *.
+    inversion H11; clear H11; inversion H21; clear H21; subst.
+    destruct R as [r pf1 pf2]; simpl in *.
+    naive_solver.
+  Qed.
+ 
+  Lemma pbr_converse_sym (A : Type)
+    {_eqd : EqDecision A}
+    {_cnt : Countable A}
+    (R : PartialBijection A)
+    : forall (x y : A), ((x,y) ∈ (pbr (pbr_converse R))) <-> ((y,x) ∈ (pbr R)).
+  Proof.
+    intros x y.
+    destruct R as [r pf1 pf2]; simpl.
+    rewrite elem_of_map.
+    split; intros H.
+    {
+      destruct H as [[a1 a2] [H1 H2]].
+      simpl in *.
+      naive_solver.
+    }
+    {
+      exists (y,x).
+      split;[reflexivity|assumption].
+    }
+  Qed.
+
   Definition related {A : Type} (u v : prod A A) : Prop
   := u.1 = v.1 \/ u.2 = v.2.
 
@@ -238,6 +289,17 @@ Fixpoint rename {Σ : Signature}
         (npatt_mu X t)
         (npatt_mu Y u)
     .
+
+  Lemma alpha'_sym
+    {Σ : Signature}
+    (R : PartialBijection evar)
+    (R' : PartialBijection svar)
+    : forall x y,
+      alpha_equiv' R R' x y <->
+      alpha_equiv' (pbr_converse R) (pbr_converse R') y x.
+  Proof.
+    intros x y; split; intros H; induction H; constructor; auto.
+  Qed.
 
   #[global]
   Instance alpha'_dec
@@ -408,8 +470,6 @@ Fixpoint rename {Σ : Signature}
     cs_history : list NamedPattern;
   }.
 
-  Check list_find.
-
   Definition lookup_or
     {Σ : Signature}
     (state : CollapseState)
@@ -478,6 +538,40 @@ Fixpoint rename {Σ : Signature}
             (res.1, (npatt_mu X res.2))
           )
     end.
+
+    Lemma lookup_or_leaf_alpha
+      {Σ : Signature}
+      (state : CollapseState)
+      (nϕ : NamedPattern)
+      : alpha_equiv (lookup_or_leaf state nϕ).2 nϕ.
+    Proof.
+      unfold lookup_or_leaf, lookup_or_node, lookup_or.
+      simpl.
+      destruct (list_find (alpha_equiv nϕ) (cs_history state)) as [[n phi] |] eqn:Heq; simpl.
+      {
+        rewrite list_find_Some in Heq.
+        destruct Heq as [H1 [H2 H3]].
+        specialize (H3 _ _ H1).
+      }
+    Qed.
+
+    Lemma collapse_aux_alpha
+      {Σ : Signature}
+      (state : CollapseState)
+      (nϕ : NamedPattern)
+      : alpha_equiv (collapse_aux state nϕ).2 nϕ.
+    Proof.
+      induction nϕ;
+        simpl.  ;
+        unfold lookup_or_leaf,lookup_or_node,lookup_or;
+        simpl;
+        repeat case_match;
+        subst;
+        simpl.
+      {
+        rewrite -> list_find_Some in *.
+      }
+    Qed.
 
   (*
   (* TESTS *)
