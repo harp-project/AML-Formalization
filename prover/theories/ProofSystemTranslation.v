@@ -850,6 +850,8 @@ Fixpoint rename {Σ : Signature}
           )
     end.
 
+    (* (exists x. x) ---> (exists y. (y ---> exists z. z)) *)
+
     Lemma lookup_or_leaf_alpha
       {Σ : Signature}
       (state : CollapseState)
@@ -1097,43 +1099,49 @@ Fixpoint rename {Σ : Signature}
       }
     Qed.
 
-    Lemma alpha_equiv'_impl_almost_same_evars {Σ : Signature} R R' nϕ1 nϕ2:
-      alpha_equiv' R R' nϕ1 nϕ2 ->
-      forall x1 x2,
-        x1 ∈ (named_free_evars nϕ1) ->
-        x2 ∈ (named_free_evars nϕ2) ->
-        (x1, x2) ∈ pbr R.
+    Lemma alpha_equiv_same_size {Σ : Signature}
+      (nϕ1 nϕ2 : NamedPattern) R R'
+      : alpha_equiv' R R' nϕ1 nϕ2 ->
+        nsize' nϕ1 = nsize' nϕ2.
     Proof.
-      intros Halpha x1 x2 Hx1 Hx2.
-      move: x1 x2 Hx1 Hx2.
-      induction Halpha; intros x1 x2 Hx1 Hx2; simpl in *.
-      { 
-        rewrite elem_of_singleton in Hx1.
-        rewrite elem_of_singleton in Hx2.
-        subst.
-        assumption.
-      }
-      {
-        exfalso. set_solver.
-      }
-      {
-        rewrite elem_of_union in Hx1.
-        rewrite elem_of_union in Hx2.
-        destruct Hx1,Hx2; auto.
-        {
-          apply IHHalpha1.
-        }
-      }
+      intros H.
+      induction H; simpl; lia.
     Qed.
 
-    Lemma collapse_aux_alpha
+    Lemma collapse_aux_nsize' {Σ : Signature}
+      (state : CollapseState)
+      (nϕ : NamedPattern)
+      : nsize' (collapse_aux state nϕ).2 = nsize' nϕ.
+    Proof.
+      move: state.
+      induction nϕ; intros state; simpl;
+        unfold lookup_or_leaf,lookup_or_node,lookup_or,alpha_equiv;
+        repeat case_match; subst; simpl; try lia;
+      match goal with
+      | [H' : list_find _ _ = Some _ |- _] =>
+        rewrite list_find_Some in H';
+        destruct_and!;
+        match goal with
+        | [ Ha: alpha_equiv' _ _ _ _ |- _] => apply alpha'_sym in Ha
+        end;
+        erewrite alpha_equiv_same_size;[|eassumption];reflexivity
+      | _ => congruence
+      end.
+    Qed.
+
+    Lemma collapse_aux_alpha'
       {Σ : Signature}
       (state : CollapseState)
       (nϕ : NamedPattern)
       : alpha_equiv (collapse_aux state nϕ).2 nϕ.
     Proof.
-      induction nϕ;
-        simpl; try apply lookup_or_leaf_alpha.
+      remember (nsize' nϕ) as sz.
+      assert (Hsz: nsize' nϕ <= sz) by lia.
+      clear Heqsz.
+
+      move: nϕ Hsz.
+      induction sz; intros nϕ Hsz; destruct nϕ;
+        simpl in *; try lia; try apply lookup_or_leaf_alpha.
       {
         unfold lookup_or_node,lookup_or. simpl.
         repeat case_match.
@@ -1148,6 +1156,38 @@ Fixpoint rename {Σ : Signature}
           simpl. clear H.
           constructor; simpl; unfold alpha_equiv in *.
           {
+            pose proof (H1e := alpha_equiv_impl_same_evars _ _ (IHsz nϕ1 ltac:(lia))).
+            pose proof (H2e := alpha_equiv_impl_same_evars _ _ (IHsz nϕ2 ltac:(lia))).
+            pose proof (H1s := alpha_equiv_impl_same_svars _ _ (IHsz nϕ1 ltac:(lia))).
+            pose proof (H2s := alpha_equiv_impl_same_svars _ _ (IHsz nϕ2 ltac:(lia))).
+    
+            rewrite H1e H1s.
+            replace (named_free_evars nϕ1
+              ∪ named_free_evars (collapse_aux (collapse_aux state nϕ1).1 nϕ2).2
+              ∪ (named_free_evars nϕ1 ∪ named_free_evars nϕ2) )
+            with (named_free_evars (collapse_aux (collapse_aux state nϕ1).1 nϕ2).2
+              ∪ (named_free_evars nϕ1 ∪ named_free_evars nϕ2)
+            ) by (clear; set_solver).
+            replace (named_free_svars nϕ1
+              ∪ named_free_svars (collapse_aux (collapse_aux state nϕ1).1 nϕ2).2
+              ∪ (named_free_svars nϕ1 ∪ named_free_svars nϕ2))
+            with (named_free_svars (collapse_aux (collapse_aux state nϕ1).1 nϕ2).2
+              ∪ (named_free_svars nϕ1 ∪ named_free_svars nϕ2)
+            ) by (clear; set_solver).
+
+
+            match goal with
+            | [ |- alpha_equiv' (diagonal ?s1) (diagonal ?s2) _ _]
+              => remember s1 as S1; remember s2 as S2
+            end.
+            match type of IHnϕ1 with
+            | alpha_equiv' (diagonal ?t1) (diagonal ?t2) _ _
+              => remember t1 as T1; remember t2 as T2
+            end.
+            assert (T1 = S1).
+            {
+              set_solver.
+            }
             apply IHnϕ1.
           }
         }
