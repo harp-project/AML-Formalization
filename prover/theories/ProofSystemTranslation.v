@@ -352,7 +352,104 @@ Fixpoint rename {Σ : Signature}
       : alpha_equiv' R R'
         (npatt_mu X t)
         (npatt_mu Y u)
-    .
+  .
+
+  #[global]
+  Instance myswap_involutive
+    (A : Type) :
+    Involutive (=) (@myswap A).
+  Proof.
+    unfold Involutive.
+    intros p.
+    destruct p.
+    unfold myswap.
+    reflexivity.
+  Qed.
+
+  #[global]
+  Instance myswap_inj (A : Type) : Inj (=) (=) (@myswap A).
+  Proof.
+    intros p1 p2 Hp1p2.
+    unfold myswap in Hp1p2.
+    destruct p1,p2.
+    simpl in *.
+    inversion Hp1p2.
+    subst.
+    reflexivity.
+  Qed.
+
+  Check @set_map.
+
+  #[global]
+  Instance set_map_involutive (A C : Type)
+    {_eoAC : ElemOf A C}
+    {_eleAC : Elements A C}
+    {_singAC : Singleton A C}
+    {_emptyC : Empty C}
+    {_uniC : Union C}
+    {_interC : Intersection C}
+    {_difC : Difference C}
+    {_eqdecA : EqDecision A}
+    {_finac : FinSet A C}
+    (f : A -> A)
+    {_injF : Inj (=) (=) f}
+    {_invF : Involutive (=) f}
+    {_lC : LeibnizEquiv C}
+    :
+    Involutive (=) (@set_map A C _eleAC A C _singAC _emptyC _uniC f).
+  Proof.
+    intros x.
+    unfold set_map.
+    Search list_to_set elements.
+    rewrite -[x in _ = x]list_to_set_elements_L.
+    rewrite elements_list_to_set.
+    {
+      rewrite NoDup_fmap.
+      apply NoDup_elements.
+    }
+    rewrite -list_fmap_compose.
+    unfold compose.
+    under [fun x0 => _]functional_extensionality => x0.
+    {
+      rewrite _invF.
+      over.
+    }
+    fold (@Coq.Init.Datatypes.id A).
+    rewrite list_fmap_id.
+    reflexivity.
+  Qed.
+
+  #[global]
+  Instance pbr_converse_involutive
+    (A : Type)
+    {_eqd : EqDecision A}
+    {_cnt : Countable A}
+     : Involutive (=) (@pbr_converse A _eqd _cnt).
+  Proof.
+    unfold Involutive.
+    intros R.
+    destruct R.
+    apply pb_eq_dep.
+    simpl.
+    rewrite cancel.
+    reflexivity.
+  Qed.
+
+  Lemma alpha_equiv_converse'
+    {Σ : Signature}
+    (R : PartialBijection evar)
+    (R' : PartialBijection svar)
+    : forall x y,
+      alpha_equiv' R R' x y ->
+      alpha_equiv' (pbr_converse R) (pbr_converse R') y x.
+  Proof.
+    intros x y H.
+    induction H; try (solve [constructor; auto]).
+      { constructor. rewrite pbr_converse_sym; assumption. }
+      { constructor. rewrite pbr_converse_sym; assumption. }
+      { constructor. rewrite pbr_update_converse in IHalpha_equiv'. assumption. }
+      { constructor. rewrite pbr_update_converse in IHalpha_equiv'. assumption. }
+  Qed.
 
   Lemma alpha'_sym
     {Σ : Signature}
@@ -362,12 +459,16 @@ Fixpoint rename {Σ : Signature}
       alpha_equiv' R R' x y <->
       alpha_equiv' (pbr_converse R) (pbr_converse R') y x.
   Proof.
-    intros x y; split; intros H; induction H; constructor; auto.
-    { rewrite pbr_converse_sym; assumption. }
-    { rewrite pbr_converse_sym; assumption. }
-    { rewrite pbr_converse_sym; assumption. }
+    intros x y; split; intros H.
     {
-
+      apply alpha_equiv_converse'.
+      apply H.
+    }
+    { 
+      rewrite -[R](@cancel (PartialBijection evar) _ eq (@pbr_converse evar _ _)).
+      rewrite -[R'](@cancel (PartialBijection svar) _ eq (@pbr_converse svar _ _)).
+      apply alpha_equiv_converse'.
+      apply H.
     }
   Qed.
 
