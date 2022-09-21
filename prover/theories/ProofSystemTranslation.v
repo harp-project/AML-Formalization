@@ -660,8 +660,6 @@ Fixpoint rename {Σ : Signature}
 
   Lemma alpha_equiv_sym
   {Σ : Signature}
-  (R : PartialBijection evar)
-  (R' : PartialBijection svar)
   : forall x y,
     alpha_equiv x y <->
     alpha_equiv y x.
@@ -675,6 +673,78 @@ Fixpoint rename {Σ : Signature}
     apply reflexivity.
   Qed.
 
+  Lemma alpha_equiv_refl {Σ : Signature} :
+    forall p, alpha_equiv p p.
+  Proof.
+    intros p.
+    unfold alpha_equiv.
+    do 2 rewrite union_idemp_L.
+    cut (forall R R', pbr (diagonal (named_free_evars p)) ⊆ (pbr R) ->
+      pbr (diagonal (named_free_svars p)) ⊆ (pbr R')
+     -> alpha_equiv' R R' p p).
+    {
+      intros H. apply H; apply reflexivity.
+    }
+    
+    induction p; intros H1 H2; constructor; try set_solver.
+    {
+      simpl in *.
+      apply IHp.
+      {
+        simpl in *.
+        rewrite elem_of_subseteq.
+        intros x0 Hx0.
+        rewrite elem_of_map in Hx0.
+        destruct Hx0 as [x' [Hx'1 Hx'2]].
+        subst.
+        rewrite elem_of_union.
+        rewrite elem_of_singleton.
+        unfold twice.
+        destruct (decide (x = x')).
+        {
+          subst. right. reflexivity.
+        }
+        {
+          left.
+          rewrite elem_of_filter.
+          unfold unrelated,related.
+          simpl.
+          set_solver.
+        }
+      }
+      {
+        assumption.
+      }
+    }
+    {
+      apply IHp.
+      {
+        assumption.
+      }
+      {
+        simpl in *.
+        rewrite elem_of_subseteq.
+        intros [X1 X2] HX1X2.
+        rewrite elem_of_map in HX1X2.
+        destruct HX1X2 as [X3 [HX3 HX4]].
+        unfold twice in *.
+        simpl in *.
+        inversion HX3. clear HX3. subst.
+        rewrite elem_of_union. 
+        destruct (decide (X3 = X)).
+        {
+          subst. right. rewrite elem_of_singleton. reflexivity.
+        }
+        {
+          left.
+          rewrite elem_of_filter.
+          unfold unrelated,related.
+          simpl.
+          set_solver.
+        }
+      }
+    }
+  Qed.
 
   Fixpoint npfoldtopdown {Σ : Signature} {State : Type} 
     (f : State -> NamedPattern -> State)
@@ -792,8 +862,11 @@ Fixpoint rename {Σ : Signature}
       {
         rewrite list_find_Some in Heq.
         destruct Heq as [H1 [H2 H3]].
-        apply alpha_eq
-        specialize (H3 _ _ H1).
+        apply alpha_equiv_sym.
+        assumption.
+      }
+      {
+        apply alpha_equiv_refl.
       }
     Qed.
 
