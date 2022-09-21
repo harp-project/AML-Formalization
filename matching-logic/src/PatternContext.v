@@ -58,5 +58,10 @@ Section with_signature.
          | patt_exists phi' => variable_occurs_negatively x phi'
          | patt_mu phi' => variable_occurs_negatively x phi'         
     end.
+
+  Definition is_positive_context (C : PatternCtx) := ~~ variable_occurs_negatively (pcEvar C) (pcPattern C).
+
+  Definition is_negative_context (C : PatternCtx) := ~~ variable_occurs_positively (pcEvar C) (pcPattern C).
+  
   
 End with_signature.
