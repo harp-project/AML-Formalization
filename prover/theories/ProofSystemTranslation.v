@@ -1,9 +1,10 @@
 From Coq Require Import ssreflect ssrfun ssrbool.
 
 From Coq Require Import Strings.String.
+From Coq Require Import Logic.PropExtensionality Logic.Eqdep_dec.
 From Equations Require Import Equations.
 
-From stdpp Require Export base gmap.
+From stdpp Require Export base gmap fin_sets sets list.
 From MatchingLogic Require Import Syntax Semantics StringSignature ProofSystem ProofMode.
 From MatchingLogicProver Require Import Named NamedProofSystem NMatchers.
 
@@ -143,6 +144,7 @@ Fixpoint rename {Σ : Signature}
     {_eqd : EqDecision A}
     {_cnt : Countable A}
      :=
+  mkPartialBijection
   {
     pbr : gset (prod A A) ;
     pb1 : forall (x y1 y2 : A),
@@ -151,14 +153,29 @@ Fixpoint rename {Σ : Signature}
       (x1,y) ∈ pbr -> (x2,y) ∈ pbr -> x1 = x2 ;
   }.
 
+  Lemma pb_eq_dep (A : Type) 
+    {_eqd : EqDecision A}
+    {_cnt : Countable A}
+    (s s' : gset (prod A A))
+    pf1 pf1' pf2 pf2'
+    : s = s' ->
+      @mkPartialBijection A _eqd _cnt s pf1 pf2 = @mkPartialBijection A _eqd _cnt s' pf1' pf2'.
+    Proof.
+      intros H.
+      subst s'.
+      f_equal; apply proof_irrelevance.
+    Qed.
+
   Arguments pbr {A%type_scope} {_eqd _cnt} p.
+
+  Definition myswap {A : Type} (p : prod A A) : prod A A := (p.2, p.1).
 
   Program Definition pbr_converse {A : Type}
     {_eqd : EqDecision A}
     {_cnt : Countable A}
     (R : PartialBijection A) : PartialBijection A
   := {|
-    pbr := (set_map (fun p => (p.2, p.1)) (pbr R))  ;
+    pbr := (set_map myswap (pbr R))  ;
   |}.
   Next Obligation.
     intros ??????? H1 H2.
@@ -192,6 +209,7 @@ Fixpoint rename {Σ : Signature}
     intros x y.
     destruct R as [r pf1 pf2]; simpl.
     rewrite elem_of_map.
+    unfold myswap.
     split; intros H.
     {
       destruct H as [[a1 a2] [H1 H2]].
@@ -254,6 +272,52 @@ Fixpoint rename {Σ : Signature}
   naive_solver.
  Qed.
 
+ Lemma pbr_update_converse
+  {A : Type}
+  {_eqd : EqDecision A}
+  {_cnt : Countable A}
+  (R : PartialBijection A)
+  : forall x y, pbr_converse (pb_update R x y) = pb_update (pbr_converse R) y x.
+  Proof.
+    intros x y.
+    destruct R as [r pf1 pf2]; simpl in *.
+    unfold pb_update,pbr_converse; simpl.
+    apply pb_eq_dep.
+    rewrite set_map_union_L.
+    rewrite set_map_singleton_L.
+    simpl.
+
+    cut ((@set_map (A * A) (gset (A * A)) _ (A * A) (gset (A * A)) _ _ _ myswap (filter (unrelated (x, y)) r)) = (filter (unrelated (y, x)) (set_map myswap r))).
+    {
+      intros H. rewrite H. reflexivity.
+    }
+    apply anti_symm with (S := @subseteq (gset (prod A A)) _).
+    { apply _. }
+    1,2: rewrite elem_of_subseteq; intros x0 Hx0.
+    {
+      rewrite elem_of_map in Hx0.
+      destruct Hx0 as [[x' y'] [Hx'y'1 Hx'y'2]].
+      rewrite elem_of_filter in Hx'y'2.
+      rewrite elem_of_filter.
+      rewrite elem_of_map.
+      unfold unrelated,related,myswap in *.
+      simpl in *.
+      subst.
+      naive_solver.
+    }
+    {
+      rewrite elem_of_filter in Hx0.
+      rewrite elem_of_map in Hx0.
+      rewrite elem_of_map.
+      unfold unrelated,related,myswap in *.
+      simpl in *.
+      exists (x0.2, x0.1). simpl.
+      rewrite -surjective_pairing.
+      rewrite elem_of_filter. simpl.
+      naive_solver.
+    }
+  Qed.
+
   Inductive alpha_equiv'
     {Σ : Signature}
     (R : PartialBijection evar)
@@ -299,6 +363,12 @@ Fixpoint rename {Σ : Signature}
       alpha_equiv' (pbr_converse R) (pbr_converse R') y x.
   Proof.
     intros x y; split; intros H; induction H; constructor; auto.
+    { rewrite pbr_converse_sym; assumption. }
+    { rewrite pbr_converse_sym; assumption. }
+    { rewrite pbr_converse_sym; assumption. }
+    {
+
+    }
   Qed.
 
   #[global]
