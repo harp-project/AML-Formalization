@@ -665,10 +665,16 @@ Fixpoint rename {Σ : Signature}
   : forall x y,
     alpha_equiv x y <->
     alpha_equiv y x.
-Proof.
-  intros x y.
-  unfold alpha_equiv.
-  rewrite alpha'_sym.
+  Proof.
+    intros x y.
+    unfold alpha_equiv.
+    rewrite alpha'_sym.
+    rewrite !pbr_converse_diagonal.
+    rewrite [named_free_evars y ∪ named_free_evars x]union_comm_L.
+    rewrite [named_free_svars y ∪ named_free_svars x]union_comm_L.
+    apply reflexivity.
+  Qed.
+
 
   Fixpoint npfoldtopdown {Σ : Signature} {State : Type} 
     (f : State -> NamedPattern -> State)
