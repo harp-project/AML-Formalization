@@ -203,48 +203,48 @@ Fixpoint rename {Σ : Signature}
   naive_solver.
  Qed.
 
-  Inductive alpha_equiv
+  Inductive alpha_equiv'
     {Σ : Signature}
     (R : PartialBijection evar)
     (R' : PartialBijection svar)
     : relation NamedPattern
     :=
     | ae_evar (x y : evar) (pf : (x, y) ∈ (pbr R))
-      : alpha_equiv R R' (npatt_evar x) (npatt_evar y)
+      : alpha_equiv' R R' (npatt_evar x) (npatt_evar y)
     | ae_svar (X Y : svar) (pf : (X, Y) ∈ (pbr R'))
-      : alpha_equiv R R' (npatt_svar X) (npatt_svar Y)
+      : alpha_equiv' R R' (npatt_svar X) (npatt_svar Y)
     | ae_app
       (t t' u u' : NamedPattern)
-      (tEt' : alpha_equiv R R' t t')
-      (uEu' : alpha_equiv R R' u u')
-      : alpha_equiv R R' (npatt_app t u) (npatt_app t' u')
+      (tEt' : alpha_equiv' R R' t t')
+      (uEu' : alpha_equiv' R R' u u')
+      : alpha_equiv' R R' (npatt_app t u) (npatt_app t' u')
     | ae_imp
       (t t' u u' : NamedPattern)
-      (tEt' : alpha_equiv R R' t t')
-      (uEu' : alpha_equiv R R' u u')
-      : alpha_equiv R R' (npatt_imp t u) (npatt_imp t' u')
-    | ae_bott : alpha_equiv R R' npatt_bott npatt_bott
-    | ae_sym (s : symbols) : alpha_equiv R R' (npatt_sym s) (npatt_sym s) 
+      (tEt' : alpha_equiv' R R' t t')
+      (uEu' : alpha_equiv' R R' u u')
+      : alpha_equiv' R R' (npatt_imp t u) (npatt_imp t' u')
+    | ae_bott : alpha_equiv' R R' npatt_bott npatt_bott
+    | ae_sym (s : symbols) : alpha_equiv' R R' (npatt_sym s) (npatt_sym s) 
     | ae_ex (x y : evar) (t u : NamedPattern)
-      (tEu : alpha_equiv
+      (tEu : alpha_equiv'
         (pb_update R x y) R' t u)
-      : alpha_equiv R R'
+      : alpha_equiv' R R'
         (npatt_exists x t)
         (npatt_exists y u)
     | ae_mu (X Y : svar) (t u : NamedPattern)
-      (tEu : alpha_equiv
+      (tEu : alpha_equiv'
         R (pb_update R' X Y) t u)
-      : alpha_equiv R R'
+      : alpha_equiv' R R'
         (npatt_mu X t)
         (npatt_mu Y u)
     .
 
   #[global]
-  Instance alpha_dec
+  Instance alpha'_dec
     {Σ : Signature}
     (R : PartialBijection evar)
     (R' : PartialBijection svar)
-    : RelDecision (alpha_equiv R R').
+    : RelDecision (alpha_equiv' R R').
   Proof.
     unfold RelDecision.
     intros x y.
@@ -326,6 +326,158 @@ Fixpoint rename {Σ : Signature}
       }
     }
   Defined.
+
+  Program Definition diagonal
+    {A : Type}
+    {_eqd : EqDecision A}
+    {_cnt : Countable A}
+    (S : gset A)
+     : PartialBijection A :=
+    {|
+      pbr := set_map (fun (x : A) => (x,x)) S ;
+    |}.
+  Next Obligation.
+    intros ??????? H1 H2.
+    rewrite elem_of_map in H1.
+    rewrite elem_of_map in H2.
+    destruct H1 as [w1 [Hw1 H'w1]].
+    destruct H2 as [w2 [Hw2 H'w2]].
+    inversion Hw1; clear Hw1; subst.
+    inversion Hw2; clear Hw2; subst.
+    reflexivity.
+  Qed.
+  Next Obligation.
+    intros ??????? H1 H2.
+    rewrite elem_of_map in H1.
+    rewrite elem_of_map in H2.
+    destruct H1 as [w1 [Hw1 H'w1]].
+    destruct H2 as [w2 [Hw2 H'w2]].
+    inversion Hw1; clear Hw1; subst.
+    inversion Hw2; clear Hw2; subst.
+    reflexivity.
+  Qed.
+
+  Definition alpha_equiv {Σ : Signature} (phi psi : NamedPattern) : Prop :=
+    alpha_equiv'
+      (diagonal (named_free_evars phi ∪ named_free_evars psi))
+      (diagonal (named_free_svars phi ∪ named_free_svars psi))
+      phi psi
+  .
+
+  #[global]
+  Instance alpha_dec
+    {Σ : Signature}
+    : RelDecision alpha_equiv.
+  Proof.
+    intros x y.
+    apply alpha'_dec.
+  Defined.
+
+  Fixpoint npfoldtopdown {Σ : Signature} {State : Type} 
+    (f : State -> NamedPattern -> State)
+    (state : State) (nϕ : NamedPattern)
+    : (State)%type
+  :=
+    match nϕ with
+    | npatt_evar x => f state (npatt_evar x)
+    | npatt_svar X => f state (npatt_svar X)
+    | npatt_sym s => f state (npatt_sym s)
+    | npatt_bott => f state npatt_bott
+    | npatt_imp nϕ1 nϕ2 =>
+      let state' := f state (npatt_imp nϕ1 nϕ2) in
+      let state'' := npfoldtopdown f state' nϕ1 in
+      let state''' := npfoldtopdown f state' nϕ2 in
+      state'''      
+    | npatt_app nϕ1 nϕ2 =>
+      let state' := f state (npatt_app nϕ1 nϕ2) in
+      let state'' := npfoldtopdown f state' nϕ1 in
+      let state''' := npfoldtopdown f state' nϕ2 in
+      state'''
+    | npatt_exists x nϕ' =>
+      let state' := f state (npatt_exists x nϕ') in
+      let state'' := npfoldtopdown f state' nϕ' in
+      state''
+    | npatt_mu X nϕ' =>
+      let state' := f state (npatt_mu X nϕ') in
+      let state'' := npfoldtopdown f state' nϕ' in
+      state''
+    end.
+  
+
+  Record CollapseState {Σ : Signature} := mkCollapseState {
+    cs_history : list NamedPattern;
+  }.
+
+  Check list_find.
+
+  Definition lookup_or
+    {Σ : Signature}
+    (state : CollapseState)
+    (nϕ : NamedPattern)
+    (owise : (CollapseState * NamedPattern)%type)
+    : (CollapseState * NamedPattern)%type
+    := match (list_find (alpha_equiv nϕ) (cs_history state)) with
+    | Some (_, nϕ') => (state, nϕ')
+    | None => owise
+    end.
+
+
+  Definition lookup_or_node
+    {Σ : Signature}
+    (state : CollapseState)
+    (nϕ : NamedPattern)
+    (owise : (CollapseState * NamedPattern)%type)
+    : (CollapseState * NamedPattern)%type
+    := lookup_or state nϕ (mkCollapseState Σ ((owise.2)::(cs_history owise.1)), (owise.2)).
+
+  Definition lookup_or_leaf
+    {Σ : Signature}
+    (state : CollapseState)
+    (nϕ : NamedPattern)
+    : (CollapseState * NamedPattern)%type
+    := lookup_or_node state nϕ (state, nϕ).
+
+
+  Program Fixpoint collapse_aux
+    {Σ : Signature}
+    (state : CollapseState)
+    (nϕ : NamedPattern)
+    : (CollapseState * NamedPattern)%type
+  :=
+    match nϕ with
+    | npatt_evar x
+      => lookup_or_leaf state nϕ
+    | npatt_svar X
+      => lookup_or_leaf state nϕ
+    | npatt_bott
+      => lookup_or_leaf state nϕ
+    | npatt_sym s
+      => lookup_or_leaf state nϕ
+    | npatt_imp nϕ1 nϕ2
+      => lookup_or_node state nϕ
+        ( let res := collapse_aux state nϕ1 in
+          let res' := collapse_aux (res.1) nϕ2 in
+          (res'.1, (npatt_imp res.2 res'.2))
+        )
+    | npatt_app nϕ1 nϕ2
+        => lookup_or_node state nϕ
+          ( let res := collapse_aux state nϕ1 in
+            let res' := collapse_aux (res.1) nϕ2 in
+            (res'.1, (npatt_app res.2 res'.2))
+          )
+    | npatt_exists x nϕ'
+      => lookup_or_node state nϕ
+        (
+          let res := collapse_aux state nϕ' in
+          (res.1, (npatt_exists x res.2))
+        )
+    | npatt_mu X nϕ'
+        => lookup_or_node state nϕ
+          (
+            let res := collapse_aux state nϕ' in
+            (res.1, (npatt_mu X res.2))
+          )
+    end.
 
   (*
   (* TESTS *)
