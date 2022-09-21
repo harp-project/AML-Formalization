@@ -560,6 +560,16 @@ Fixpoint rename {Σ : Signature}
     }
   Defined.
 
+  Definition twice {A : Type} (x : A) : prod A A := (x, x).
+
+  #[global]
+  Instance twice_inj {A : Type} : Inj (=) (=) (@twice A).
+  Proof.
+    intros x y H.
+    inversion H.
+    reflexivity.
+  Qed.
+
   Program Definition diagonal
     {A : Type}
     {_eqd : EqDecision A}
@@ -567,7 +577,7 @@ Fixpoint rename {Σ : Signature}
     (S : gset A)
      : PartialBijection A :=
     {|
-      pbr := set_map (fun (x : A) => (x,x)) S ;
+      pbr := set_map twice S ;
     |}.
   Next Obligation.
     intros ??????? H1 H2.
@@ -605,6 +615,60 @@ Fixpoint rename {Σ : Signature}
     intros x y.
     apply alpha'_dec.
   Defined.
+
+  Lemma myswap_twice (A : Type) : myswap ∘ (@twice A) = twice.
+  Proof.
+    apply functional_extensionality.
+    intros x. reflexivity.
+  Qed.
+
+  Lemma pbr_converse_diagonal (A : Type) {_eqd : EqDecision A} {_cnt : Countable A} (S : gset A):
+    pbr_converse (diagonal S) = diagonal S.
+  Proof.
+    unfold diagonal,pbr_converse.
+    apply pb_eq_dep.
+    simpl.
+    unfold set_map.
+    apply anti_symm with (S := @subseteq (gset (prod A A)) _).
+    { apply _. }
+    1,2: rewrite elem_of_subseteq; intros x Hx.
+    {
+      rewrite elem_of_list_to_set in Hx.
+      rewrite elem_of_list_to_set.
+      rewrite elements_list_to_set in Hx.
+      { apply NoDup_fmap.
+        { apply _. }
+        { apply NoDup_elements. }
+      }
+      rewrite -list_fmap_compose in Hx.
+      rewrite myswap_twice in Hx.
+      exact Hx.
+    }
+    {
+      rewrite elem_of_list_to_set.
+      rewrite elem_of_list_to_set in Hx.
+      rewrite elements_list_to_set.
+      { apply NoDup_fmap.
+        { apply _. }
+        { apply NoDup_elements. }
+      }
+      rewrite -list_fmap_compose.
+      rewrite myswap_twice.
+      exact Hx.
+    }
+  Qed.
+
+  Lemma alpha_equiv_sym
+  {Σ : Signature}
+  (R : PartialBijection evar)
+  (R' : PartialBijection svar)
+  : forall x y,
+    alpha_equiv x y <->
+    alpha_equiv y x.
+Proof.
+  intros x y.
+  unfold alpha_equiv.
+  rewrite alpha'_sym.
 
   Fixpoint npfoldtopdown {Σ : Signature} {State : Type} 
     (f : State -> NamedPattern -> State)
@@ -722,6 +786,7 @@ Fixpoint rename {Σ : Signature}
       {
         rewrite list_find_Some in Heq.
         destruct Heq as [H1 [H2 H3]].
+        apply alpha_eq
         specialize (H3 _ _ H1).
       }
     Qed.
