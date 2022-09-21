@@ -4396,6 +4396,132 @@ Proof.
   mlExact "mH1".
 Defined.
 
+Lemma membership_impl_subseteq {Σ : Signature} {syntax : Syntax} Γ g ψ:
+    theory ⊆ Γ -> mu_free ψ -> mu_free g ->
+    well_formed g -> well_formed ψ ->
+    Γ ⊢ (ex , (g =ml b0)) ->
+    Γ ⊢ (g ∈ml ψ) ---> (g ⊆ml ψ).
+Proof.
+  intros HΓ Hmfψ Hmfg wfg wfψ Hfung.
+  toMLGoal.
+  { wf_auto2. }
+  mlAdd Hfung as "Hfung".
+  fromMLGoal.
+  apply prenex_forall_imp.
+  { wf_auto2. }
+  { wf_auto2. }
+  { apply pile_any. }
+  match goal with
+  | [|- (_ ⊢i ?p using _)] => remember (fresh_evar p) as x
+  end.
+  
+  rewrite -[p in _ ⊢i (all, p) using _](evar_quantify_evar_open x 0).
+  { subst x. eapply evar_fresh_in_subformula.
+    2: { apply set_evar_fresh_is_fresh. }
+    unfold patt_forall.
+    apply sub_imp_l.
+    apply sub_exists.
+    apply sub_imp_l.
+    apply sub_eq.
+    reflexivity.
+  }
+  { simpl. split_and!; try reflexivity; wf_auto2. }
+  apply universal_generalization.
+  { apply pile_any. }
+  { wf_auto2. }
+  mlSimpl.
+  rewrite [evar_open x 0 (patt_bound_evar 0)]/evar_open.
+  simpl.
+  toMLGoal.
+  { wf_auto2. }
+  mlIntro "Heq".
+  mlRewriteBy "Heq" at 1.
+  { assumption. }
+  { simpl. split_and!; auto; rewrite mu_free_evar_open; auto. }
+  mlRewriteBy "Heq" at 1.
+  { assumption. }
+  { simpl. split_and!; auto; rewrite mu_free_evar_open; auto. }
+  mlClear "Heq".
+  unfold patt_subseteq.
+  mlIntro "H1".
+  mlApplyMeta (floor_monotonic Γ (patt_free_evar x ∈ml (evar_open x 0 ψ))).
+  3: { assumption. }
+  {
+    mlApplyMeta def_phi_impl_tot_def_phi.
+    mlExact "H1".
+    assumption.
+  }
+  clear h.
+  toMLGoal.
+  { wf_auto2. }
+  mlIntro "H1".
+  unfold patt_in.
+
+
+  fromMLGoal.
+  apply membership_elimination.
+  { apply pile_any. }
+  { wf_auto2. }
+  { assumption. }
+
+  clear Heqx.
+   match goal with
+  | [|- (_ ⊢i ?p using _)] => remember (fresh_evar p) as y
+  end.
+  rewrite -[p in _ ⊢i (all, p) using _](evar_quantify_evar_open y 0).
+  {
+    subst y.
+    eapply evar_fresh_in_subformula.
+    2: { apply set_evar_fresh_is_fresh. }
+    unfold patt_forall.
+    apply sub_imp_l.
+    apply sub_exists.
+    apply sub_imp_l.
+    apply sub_eq.
+    reflexivity.
+  }
+  { simpl. split_and!; simpl; try reflexivity; wf_auto2;
+      rewrite -wfc_ex_aux_body_iff; wf_auto2.
+  }
+  apply universal_generalization.
+  { apply pile_any. }
+  {  mlSimpl. unfold evar_open. simpl. wf_auto2; repeat (apply bevar_subst_closed_ex; wf_auto2). }
+  mlSimpl. unfold evar_open. simpl.
+
+  pose proof (Htmp := membership_imp Γ y (⌈ patt_free_evar x and ψ^[evar:0↦patt_free_evar x]^[evar:0↦patt_free_evar y] ⌉) ( patt_free_evar x ---> ψ^[evar:0↦patt_free_evar x]^[evar:0↦patt_free_evar y] ) HΓ).
+  feed specialize Htmp.
+  {     wf_auto2; repeat (apply bevar_subst_closed_ex; wf_auto2). }
+  {     wf_auto2; repeat (apply bevar_subst_closed_ex; wf_auto2). }
+  apply pf_iff_proj1 in Htmp.
+  2,3: (     wf_auto2; repeat (apply bevar_subst_closed_ex; wf_auto2)).
+  (* HERE WE END 
+  eapply MP. apply Htmp.
+  toMLGoal.
+  {
+    wf_auto2; repeat (apply bevar_subst_closed_ex; wf_auto2).
+  }
+  Check membership_imp.
+  mlRewrite <- membership_imp at 1.
+  
+  Check membership_imp_1.
+  toMLGoal;[wf_auto2|].
+  mlIntro "H1".
+
+
+   
+(*
+  0 -> N
+  forall y . y in 0 -> y in N
+  y in 0 -> y in N
+  y = 0 -> y in N // 0 is a unit pattern
+  0 in N // equational reasoning
+  by assumption
+   *)
+  
+  
+Defined.
+
+
 Close Scope ml_scope.
 Close Scope string_scope.
 Close Scope list_scope.
