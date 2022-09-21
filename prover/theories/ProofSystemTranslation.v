@@ -870,6 +870,262 @@ Fixpoint rename {Σ : Signature}
       }
     Qed.
 
+
+    Lemma alpha_equiv'_impl_almost_same_evars {Σ : Signature} R R' nϕ1 nϕ2:
+      alpha_equiv' R R' nϕ1 nϕ2 ->
+      forall x1, x1 ∈ (named_free_evars nϕ1) ->
+        exists x2, x2 ∈ (named_free_evars nϕ2) /\
+          (x1, x2) ∈ pbr R.
+    Proof.
+      intros Halpha x1 Hx1.
+      induction Halpha; simpl in *.
+      {
+        rewrite elem_of_singleton in Hx1.
+        subst.
+        exists y.
+        rewrite elem_of_singleton.
+        split;[reflexivity|assumption].
+      }
+      { exfalso. set_solver. }
+      {
+        rewrite elem_of_union in Hx1.
+        destruct Hx1 as [Hx1|Hx1].
+        {
+          specialize (IHHalpha1 Hx1).
+          destruct IHHalpha1 as [x2 [Hx21 Hx22]].
+          exists x2.
+          rewrite elem_of_union.
+          naive_solver.
+        }
+        {
+          specialize (IHHalpha2 Hx1).
+          destruct IHHalpha2 as [x2 [Hx21 Hx22]].
+          exists x2.
+          rewrite elem_of_union.
+          naive_solver.
+        }
+      }
+      {
+        rewrite elem_of_union in Hx1.
+        destruct Hx1 as [Hx1|Hx1].
+        {
+          specialize (IHHalpha1 Hx1).
+          destruct IHHalpha1 as [x2 [Hx21 Hx22]].
+          exists x2.
+          rewrite elem_of_union.
+          naive_solver.
+        }
+        {
+          specialize (IHHalpha2 Hx1).
+          destruct IHHalpha2 as [x2 [Hx21 Hx22]].
+          exists x2.
+          rewrite elem_of_union.
+          naive_solver.
+        }
+      }
+      { exfalso. set_solver. }
+      { exfalso. set_solver. }
+      {
+        destruct (decide (x1 = x)).
+        {
+          subst. clear -Hx1. exfalso. set_solver.
+        }
+        {
+          feed specialize IHHalpha.
+          {
+            set_solver.
+          }
+          destruct IHHalpha as [x2 [Hx21 Hx22]].
+          rewrite elem_of_union in Hx22.
+          rewrite elem_of_filter in Hx22.
+          unfold unrelated,related in Hx22.
+          rewrite elem_of_singleton in Hx22.
+          simpl in Hx22.
+          destruct Hx22; try naive_solver.
+          exists x2. set_solver.
+        }
+      }
+      {
+        specialize (IHHalpha Hx1).
+        exact IHHalpha.
+      }
+    Qed.
+
+    Lemma alpha_equiv'_impl_almost_same_svars {Σ : Signature} R R' nϕ1 nϕ2:
+      alpha_equiv' R R' nϕ1 nϕ2 ->
+      forall X1, X1 ∈ (named_free_svars nϕ1) ->
+        exists X2, X2 ∈ (named_free_svars nϕ2) /\
+          (X1, X2) ∈ pbr R'.
+    Proof.
+      intros Halpha X1 HX1.
+      induction Halpha; simpl in *.
+      { exfalso. set_solver. }
+      {
+        rewrite elem_of_singleton in HX1.
+        subst.
+        exists Y.
+        rewrite elem_of_singleton.
+        split;[reflexivity|assumption].
+      }
+      {
+        rewrite elem_of_union in HX1.
+        destruct HX1 as [HX1|HX1].
+        {
+          specialize (IHHalpha1 HX1).
+          destruct IHHalpha1 as [X2 [HX21 HX22]].
+          exists X2.
+          rewrite elem_of_union.
+          naive_solver.
+        }
+        {
+          specialize (IHHalpha2 HX1).
+          destruct IHHalpha2 as [X2 [HX21 HX22]].
+          exists X2.
+          rewrite elem_of_union.
+          naive_solver.
+        }
+      }
+      {
+        rewrite elem_of_union in HX1.
+        destruct HX1 as [HX1|HX1].
+        {
+          specialize (IHHalpha1 HX1).
+          destruct IHHalpha1 as [X2 [HX21 HX22]].
+          exists X2.
+          rewrite elem_of_union.
+          naive_solver.
+        }
+        {
+          specialize (IHHalpha2 HX1).
+          destruct IHHalpha2 as [X2 [HX21 HX22]].
+          exists X2.
+          rewrite elem_of_union.
+          naive_solver.
+        }
+      }
+      { exfalso. set_solver. }
+      { exfalso. set_solver. }
+      {
+        specialize (IHHalpha HX1).
+        exact IHHalpha.
+      }
+      {
+        destruct (decide (X1 = X)).
+        {
+          subst. clear -HX1. exfalso. set_solver.
+        }
+        {
+          feed specialize IHHalpha.
+          {
+            set_solver.
+          }
+          destruct IHHalpha as [X2 [HX21 HX22]].
+          rewrite elem_of_union in HX22.
+          rewrite elem_of_filter in HX22.
+          unfold unrelated,related in HX22.
+          rewrite elem_of_singleton in HX22.
+          simpl in HX22.
+          destruct HX22; try naive_solver.
+          exists X2. set_solver.
+        }
+      }
+    Qed.
+
+    Lemma alpha_equiv_impl_same_evars {Σ : Signature} nϕ1 nϕ2:
+      alpha_equiv nϕ1 nϕ2 ->
+      (named_free_evars nϕ1) = (named_free_evars nϕ2).
+    Proof.
+      intros Halpha.
+      unfold alpha_equiv in Halpha.
+      pose proof (H1 := alpha_equiv'_impl_almost_same_evars _ _ nϕ1 nϕ2 Halpha).
+      pose proof (H2 := alpha_equiv'_impl_almost_same_evars _ _ nϕ2 nϕ1 (proj1 (alpha_equiv_sym nϕ1 nϕ2) Halpha)).
+      simpl in *. unfold twice in *.
+      apply anti_symm with (S := @subseteq (gset (evar)) _).
+      { apply _. }
+      {
+        rewrite elem_of_subseteq.
+        intros x Hx.
+        specialize (H1 _ Hx).
+        destruct H1 as [x2 [Hx21 Hx22]].
+        rewrite elem_of_map in Hx22.
+        destruct Hx22 as [x0 [Hx01 Hx02]].
+        inversion Hx01; clear Hx01; subst.
+        assumption.
+      }
+      {
+        rewrite elem_of_subseteq.
+        intros x Hx.
+        specialize (H2 _ Hx).
+        destruct H2 as [x2 [Hx21 Hx22]].
+        rewrite elem_of_map in Hx22.
+        destruct Hx22 as [x0 [Hx01 Hx02]].
+        inversion Hx01; clear Hx01; subst.
+        assumption.
+      }
+    Qed.
+
+    Lemma alpha_equiv_impl_same_svars {Σ : Signature} nϕ1 nϕ2:
+      alpha_equiv nϕ1 nϕ2 ->
+      (named_free_svars nϕ1) = (named_free_svars nϕ2).
+    Proof.
+      intros Halpha.
+      unfold alpha_equiv in Halpha.
+      pose proof (H1 := alpha_equiv'_impl_almost_same_svars _ _ nϕ1 nϕ2 Halpha).
+      pose proof (H2 := alpha_equiv'_impl_almost_same_svars _ _ nϕ2 nϕ1 (proj1 (alpha_equiv_sym nϕ1 nϕ2) Halpha)).
+      simpl in *. unfold twice in *.
+      apply anti_symm with (S := @subseteq (gset (svar)) _).
+      { apply _. }
+      {
+        rewrite elem_of_subseteq.
+        intros x Hx.
+        specialize (H1 _ Hx).
+        destruct H1 as [x2 [Hx21 Hx22]].
+        rewrite elem_of_map in Hx22.
+        destruct Hx22 as [x0 [Hx01 Hx02]].
+        inversion Hx01; clear Hx01; subst.
+        assumption.
+      }
+      {
+        rewrite elem_of_subseteq.
+        intros x Hx.
+        specialize (H2 _ Hx).
+        destruct H2 as [x2 [Hx21 Hx22]].
+        rewrite elem_of_map in Hx22.
+        destruct Hx22 as [x0 [Hx01 Hx02]].
+        inversion Hx01; clear Hx01; subst.
+        assumption.
+      }
+    Qed.
+
+    Lemma alpha_equiv'_impl_almost_same_evars {Σ : Signature} R R' nϕ1 nϕ2:
+      alpha_equiv' R R' nϕ1 nϕ2 ->
+      forall x1 x2,
+        x1 ∈ (named_free_evars nϕ1) ->
+        x2 ∈ (named_free_evars nϕ2) ->
+        (x1, x2) ∈ pbr R.
+    Proof.
+      intros Halpha x1 x2 Hx1 Hx2.
+      move: x1 x2 Hx1 Hx2.
+      induction Halpha; intros x1 x2 Hx1 Hx2; simpl in *.
+      { 
+        rewrite elem_of_singleton in Hx1.
+        rewrite elem_of_singleton in Hx2.
+        subst.
+        assumption.
+      }
+      {
+        exfalso. set_solver.
+      }
+      {
+        rewrite elem_of_union in Hx1.
+        rewrite elem_of_union in Hx2.
+        destruct Hx1,Hx2; auto.
+        {
+          apply IHHalpha1.
+        }
+      }
+    Qed.
+
     Lemma collapse_aux_alpha
       {Σ : Signature}
       (state : CollapseState)
@@ -877,7 +1133,30 @@ Fixpoint rename {Σ : Signature}
       : alpha_equiv (collapse_aux state nϕ).2 nϕ.
     Proof.
       induction nϕ;
-        simpl.  ;
+        simpl; try apply lookup_or_leaf_alpha.
+      {
+        unfold lookup_or_node,lookup_or. simpl.
+        repeat case_match.
+        {
+          subst. simpl.
+          rewrite list_find_Some in H.
+          destruct H as [H1 [H2 H3]].
+          apply alpha_equiv_sym.
+          apply H2.
+        }
+        {
+          simpl. clear H.
+          constructor; simpl; unfold alpha_equiv in *.
+          {
+            apply IHnϕ1.
+          }
+        }
+        rewrite IHnϕ1.
+        apply ae_app.
+        constructor.
+      }
+        
+        ;
         unfold lookup_or_leaf,lookup_or_node,lookup_or;
         simpl;
         repeat case_match;
