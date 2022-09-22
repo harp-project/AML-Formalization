@@ -4,7 +4,7 @@ From Coq Require Import Strings.String.
 From Coq Require Import Logic.PropExtensionality Logic.Eqdep_dec.
 From Equations Require Import Equations.
 
-From stdpp Require Export base gmap fin_sets sets list.
+From stdpp Require Export base gmap fin_sets sets list countable.
 From MatchingLogic Require Import Syntax Semantics StringSignature ProofSystem ProofMode.
 From MatchingLogicProver Require Import Named NamedProofSystem NMatchers.
 
@@ -1129,6 +1129,214 @@ Fixpoint rename {Σ : Signature}
       end.
     Qed.
 
+    Definition gset_of_pairs_apply {A B : Type}
+     {_eqdA : EqDecision A}
+     {_eqdB : EqDecision B}
+     {_cntA : Countable A}
+     {_cntB : Countable B}
+     (x : A) (s : gset (prod A B))
+      : gset B
+    := set_map snd (filter (fun p => p.1 = x) s).
+
+    Definition gset_of_pairs_compose {A B C : Type}
+      {_eqdA : EqDecision A}
+      {_eqdB : EqDecision B}
+      {_eqdC : EqDecision C}
+      {_cntA : Countable A}
+      {_cntB : Countable B}
+      {_cntC : Countable C}
+      (s1 : gset (prod A B))
+      (s2 : gset (prod B C))
+      : gset (prod A C)
+    := set_fold (fun (p : prod A B) (g' : gset (prod A C)) =>
+        let a := p.1 in
+        let b := p.2 in
+        g' ∪ (set_map (fun (c : C) => (a,c))  (gset_of_pairs_apply p.2 s2))
+    ) ∅ s1.
+
+    Definition list_of_pairs_apply {A B : Type}
+    {_eqdA : EqDecision A}
+    {_eqdB : EqDecision B}
+    (x : A) (s : list (prod A B))
+     : list B
+   := fmap snd (filter (fun p => p.1 = x) s).
+
+   Definition list_of_pairs_compose {A B C : Type}
+      {_eqdA : EqDecision A}
+      {_eqdB : EqDecision B}
+      {_eqdC : EqDecision C}
+      (s1 : list (prod A B))
+      (s2 : list (prod B C))
+      : list (prod A C)
+    := foldr (fun (p : prod A B) (g' : list (prod A C)) =>
+        let a := p.1 in
+        let b := p.2 in
+        g' ++ (fmap (fun (c : C) => (a,c))  (list_of_pairs_apply b s2))
+    ) [] s1.
+
+
+    Lemma list_of_pairs_compose_correct {A B C : Type}
+    {_eqdA : EqDecision A}
+    {_eqdB : EqDecision B}
+    {_eqdC : EqDecision C}
+    (s1 : list (prod A B))
+    (s2 : list (prod B C))
+    : forall (a : A) (c : C),
+      (a, c) ∈ (list_of_pairs_compose s1 s2)
+      <-> exists (b : B), (a, b) ∈ s1 /\ (b, c) ∈ s2.
+    Proof.
+      intros a c.
+      unfold list_of_pairs_compose.
+      split; intros H'.
+      {
+        induction s1; simpl in *.
+        {
+          inversion H'.
+        }
+        {
+          rewrite elem_of_app in H'.
+          destruct H' as [H'|H'].
+          {
+            specialize (IHs1 H').
+            destruct IHs1 as [b [Hb1 Hb2]].
+            exists b.
+            split.
+            {
+              right. exact Hb1.
+            }
+            {
+              exact Hb2.
+            }
+          }
+          {
+            unfold fmap in H'.
+            rewrite elem_of_list_fmap in H'.
+            destruct H' as [y [Hy1 Hy2]].
+            inversion Hy1; clear Hy1; subst.
+            unfold list_of_pairs_apply in Hy2.
+            unfold fmap in Hy2.
+            rewrite elem_of_list_fmap in Hy2.
+            destruct Hy2 as [[b c][Hc1 Hc2]].
+            simpl in Hc1. subst y.
+            unfold filter in Hc2.
+            rewrite elem_of_list_filter in Hc2.
+            destruct a0 as [a0 b0]. simpl in *.
+            destruct Hc2 as [Hc2 Hc3].
+            simpl in Hc2. subst b.
+            exists b0.
+            split.
+            {
+              left.
+            }
+            {
+              exact Hc3.
+            }
+          }
+        }
+      }
+      {
+        move: a c H'.
+        induction s1; intros a' c' H'; simpl.
+        {
+          destruct H' as [b [Hb1 Hb2]].
+          inversion Hb1.  
+        }
+        {
+          destruct H' as [b [Hb1 Hb2]].
+          rewrite elem_of_app.
+          destruct a as [a'' b'']. simpl in *.
+          inversion Hb1; clear Hb1; subst.
+          {
+            specialize (IHs1 a'' c').
+            destruct (decide ((a'',b'') ∈ s1)).
+            {
+              feed specialize IHs1.
+              {
+                exists b''. split; assumption.
+              }
+              left. apply IHs1.
+            }
+            {
+              right.
+              unfold fmap.
+              rewrite elem_of_list_fmap.
+              exists c'.
+              split;[reflexivity|].
+              unfold list_of_pairs_apply.
+              unfold filter.
+              rewrite elem_of_list_fmap.
+              exists (b'', c').
+              split;[reflexivity|].
+              rewrite elem_of_list_filter.
+              simpl.
+              split;[reflexivity|assumption].
+            }
+          }
+          {
+            specialize (IHs1 a' c').
+            feed specialize IHs1.
+            {
+              exists b.
+              split; assumption.
+            }
+            left. apply IHs1.
+          }
+        }
+      }
+    Qed.
+
+    Lemma gset_of_pairs_compose_correct {A B C : Type}
+    {_eqdA : EqDecision A}
+    {_eqdB : EqDecision B}
+    {_eqdC : EqDecision C}
+    {_cntA : Countable A}
+    {_cntB : Countable B}
+    {_cntC : Countable C}
+    (s1 : gset (prod A B))
+    (s2 : gset (prod B C))
+    : forall (a : A) (c : C),
+      (a, c) ∈ (gset_of_pairs_compose s1 s2)
+      <-> exists (b : B), (a, b) ∈ s1 /\ (b, c) ∈ s2.
+    Proof.
+      intros a c.
+      unfold gset_of_pairs_compose.
+      induction s1 using set_ind_L.
+      {
+        simpl.
+        rewrite elem_of_empty.
+        setoid_rewrite -> elem_of_empty.
+        naive_solver.
+      }
+      {
+        destruct IHs1 as [IH1 IH2].
+        split; intros H'.
+        {
+          unfold set_fold in H'.
+          simpl in H'.
+          Search elements union.
+          rewrite elements_union_singleton in H'.
+          Search set_fold union.
+          rewrite set_fold_union in H'.
+          feed specialize IH1.
+          {
+
+          }
+        }
+        Search set_fold.
+        Set Typeclasses Debug.
+        rewrite set_fold_empty.
+      }
+      Search elem_of set_fold.
+      simpl.
+    Qed.
+
+    Check set_bind.
+    Program Definition pb_compose {A : Type} (pb1 pb2 : PartialBijection A)
+      : PartialBijection A
+    := {|
+      pbr := set_bind (pbr pb1) (pbr pb2) ;
+    |}.
+
     Lemma collapse_aux_alpha'
       {Σ : Signature}
       (state : CollapseState)
@@ -1156,7 +1364,8 @@ Fixpoint rename {Σ : Signature}
           simpl. clear H.
           constructor; simpl; unfold alpha_equiv in *.
           {
-            pose proof (H1e := alpha_equiv_impl_same_evars _ _ (IHsz nϕ1 ltac:(lia))).
+            pose proof (IH1 := (IHsz nϕ1 ltac:(lia))).
+            pose proof (H1e := alpha_equiv_impl_same_evars _ _ IH1).
             pose proof (H2e := alpha_equiv_impl_same_evars _ _ (IHsz nϕ2 ltac:(lia))).
             pose proof (H1s := alpha_equiv_impl_same_svars _ _ (IHsz nϕ1 ltac:(lia))).
             pose proof (H2s := alpha_equiv_impl_same_svars _ _ (IHsz nϕ2 ltac:(lia))).
@@ -1176,10 +1385,24 @@ Fixpoint rename {Σ : Signature}
             ) by (clear; set_solver).
 
 
+            rewrite H2e in IH1.
+
             match goal with
             | [ |- alpha_equiv' (diagonal ?s1) (diagonal ?s2) _ _]
               => remember s1 as S1; remember s2 as S2
             end.
+
+
+            subst.
+            apply IH1.
+
+
+            apply IHsz.
+            pose proof (H1e' := alpha_equiv_impl_same_evars _ _ (IHsz nϕ1 ltac:(lia))).
+
+            erewrite alpha_equiv_impl_same_evars.
+            2: { eapply IHsz. }
+
             match type of IHnϕ1 with
             | alpha_equiv' (diagonal ?t1) (diagonal ?t2) _ _
               => remember t1 as T1; remember t2 as T2
