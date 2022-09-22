@@ -1129,31 +1129,6 @@ Fixpoint rename {Σ : Signature}
       end.
     Qed.
 
-    Definition gset_of_pairs_apply {A B : Type}
-     {_eqdA : EqDecision A}
-     {_eqdB : EqDecision B}
-     {_cntA : Countable A}
-     {_cntB : Countable B}
-     (x : A) (s : gset (prod A B))
-      : gset B
-    := set_map snd (filter (fun p => p.1 = x) s).
-
-    Definition gset_of_pairs_compose {A B C : Type}
-      {_eqdA : EqDecision A}
-      {_eqdB : EqDecision B}
-      {_eqdC : EqDecision C}
-      {_cntA : Countable A}
-      {_cntB : Countable B}
-      {_cntC : Countable C}
-      (s1 : gset (prod A B))
-      (s2 : gset (prod B C))
-      : gset (prod A C)
-    := set_fold (fun (p : prod A B) (g' : gset (prod A C)) =>
-        let a := p.1 in
-        let b := p.2 in
-        g' ∪ (set_map (fun (c : C) => (a,c))  (gset_of_pairs_apply p.2 s2))
-    ) ∅ s1.
-
     Definition list_of_pairs_apply {A B : Type}
     {_eqdA : EqDecision A}
     {_eqdB : EqDecision B}
@@ -1285,58 +1260,57 @@ Fixpoint rename {Σ : Signature}
       }
     Qed.
 
-    Lemma gset_of_pairs_compose_correct {A B C : Type}
-    {_eqdA : EqDecision A}
-    {_eqdB : EqDecision B}
-    {_eqdC : EqDecision C}
-    {_cntA : Countable A}
-    {_cntB : Countable B}
-    {_cntC : Countable C}
-    (s1 : gset (prod A B))
-    (s2 : gset (prod B C))
-    : forall (a : A) (c : C),
-      (a, c) ∈ (gset_of_pairs_compose s1 s2)
-      <-> exists (b : B), (a, b) ∈ s1 /\ (b, c) ∈ s2.
-    Proof.
-      intros a c.
-      unfold gset_of_pairs_compose.
-      induction s1 using set_ind_L.
-      {
-        simpl.
-        rewrite elem_of_empty.
-        setoid_rewrite -> elem_of_empty.
-        naive_solver.
-      }
-      {
-        destruct IHs1 as [IH1 IH2].
-        split; intros H'.
-        {
-          unfold set_fold in H'.
-          simpl in H'.
-          Search elements union.
-          rewrite elements_union_singleton in H'.
-          Search set_fold union.
-          rewrite set_fold_union in H'.
-          feed specialize IH1.
-          {
-
-          }
-        }
-        Search set_fold.
-        Set Typeclasses Debug.
-        rewrite set_fold_empty.
-      }
-      Search elem_of set_fold.
-      simpl.
-    Qed.
-
-    Check set_bind.
-    Program Definition pb_compose {A : Type} (pb1 pb2 : PartialBijection A)
+    Program Definition pb_compose {A : Type}
+      {_eqd : EqDecision A }
+      {_cnd : Countable A }
+      (pb1 pb2 : PartialBijection A)
       : PartialBijection A
     := {|
-      pbr := set_bind (pbr pb1) (pbr pb2) ;
+      pbr := list_to_set (list_of_pairs_compose (elements (pbr pb1)) (elements (pbr pb2))) ;
     |}.
+    Next Obligation.
+      intros A _eqd _cnt pb1 pb2 x y1 y2 H1 H2.
+      rewrite elem_of_list_to_set in H1.
+      rewrite elem_of_list_to_set in H2.
+      rewrite list_of_pairs_compose_correct in H1.
+      rewrite list_of_pairs_compose_correct in H2.
+      destruct H1 as [B1 [HB11 HB12]].
+      destruct H2 as [B2 [HB21 HB22]].
+      rewrite elem_of_elements in HB11.
+      rewrite elem_of_elements in HB22.
+      rewrite elem_of_elements in HB12.
+      rewrite elem_of_elements in HB21.
 
+      destruct pb1 as [pbA pbApf1 pbApf2], pb2 as [pbB pbBpf1 pbBpf2].
+      simpl in *.
+      pose proof (pbApf1 _ _ _ HB11 HB21).
+      subst B2.
+      pose proof (pbBpf1 _ _ _ HB22 HB12).
+      subst y2.
+      reflexivity.
+    Qed.
+    Next Obligation.
+    intros A _eqd _cnt pb1 pb2 x y1 y2 H1 H2.
+    rewrite elem_of_list_to_set in H1.
+    rewrite elem_of_list_to_set in H2.
+    rewrite list_of_pairs_compose_correct in H1.
+    rewrite list_of_pairs_compose_correct in H2.
+    destruct H1 as [B1 [HB11 HB12]].
+    destruct H2 as [B2 [HB21 HB22]].
+    rewrite elem_of_elements in HB11.
+    rewrite elem_of_elements in HB22.
+    rewrite elem_of_elements in HB12.
+    rewrite elem_of_elements in HB21.
+
+    destruct pb1 as [pbA pbApf1 pbApf2], pb2 as [pbB pbBpf1 pbBpf2].
+    simpl in *.
+    pose proof (pbBpf2 _ _ _ HB22 HB12).
+    subst B2.
+    pose proof (pbApf2 _ _ _ HB11 HB21).
+    subst y1.
+    reflexivity.
+  Qed.
+  
     Lemma collapse_aux_alpha'
       {Σ : Signature}
       (state : CollapseState)
