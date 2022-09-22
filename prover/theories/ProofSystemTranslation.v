@@ -1,7 +1,7 @@
 From Coq Require Import ssreflect ssrfun ssrbool.
 
 From Coq Require Import Strings.String.
-From Coq Require Import Logic.PropExtensionality Logic.Eqdep_dec.
+From Coq Require Import Logic.PropExtensionality Logic.Eqdep_dec Logic.Classical_Prop.
 From Equations Require Import Equations.
 
 From stdpp Require Export base gmap fin_sets sets list countable.
@@ -849,6 +849,12 @@ Fixpoint rename {Σ : Signature}
             (res.1, (npatt_mu X res.2))
           )
     end.
+
+    Definition collapse
+    {Σ : Signature}
+    (nϕ : NamedPattern)
+    : NamedPattern :=
+    (collapse_aux (mkCollapseState Σ []) nϕ).2.
 
     (* (exists x. x) ---> (exists y. (y ---> exists z. z)) *)
 
@@ -1727,6 +1733,262 @@ Fixpoint rename {Σ : Signature}
         }
       }
     Qed.
+
+    Definition alpha_equiv_in_history_are_equal {Σ : Signature}
+      (state : CollapseState) : Prop
+      := forall (nϕ1 nϕ2 : NamedPattern),
+          nϕ1 ∈ (cs_history state) ->
+          nϕ2 ∈ (cs_history state) ->
+          alpha_equiv nϕ1 nϕ2 ->
+          nϕ1 = nϕ2
+    .
+
+
+
+    Lemma lookup_or_leaf_preserves_aeihae {Σ : Signature} (state : CollapseState)
+      (nϕ : NamedPattern) :
+      alpha_equiv_in_history_are_equal state ->
+      alpha_equiv_in_history_are_equal (lookup_or_leaf state nϕ).1
+    .
+    Proof.
+      intros H.
+      unfold lookup_or_leaf,lookup_or_node,lookup_or.
+      destruct (list_find (alpha_equiv nϕ) (cs_history state)) eqn:Heq.
+      {
+        destruct p as [n nϕ'].
+        simpl.
+        exact H.
+      }
+      {
+        simpl.
+        rewrite list_find_None in Heq.
+        rewrite Forall_forall in Heq.
+        unfold alpha_equiv_in_history_are_equal in *.
+        destruct state as [hist].
+        simpl in *.
+        intros.
+        rewrite elem_of_cons in H0.
+        rewrite elem_of_cons in H1.
+        destruct H0,H1; subst; simpl in *.
+        { reflexivity. }
+        { 
+          specialize (Heq _ H1).
+          contradiction.
+        }
+        {
+          specialize (Heq _ H0).
+          apply alpha_equiv_sym in H2.
+          contradiction.
+        }
+        {
+          apply H; assumption.
+        }
+      }
+    Qed.
+
+    Lemma lookup_or_node_preserves_aeihae {Σ : Signature} (state : CollapseState)
+      (nϕ : NamedPattern) :
+      alpha_equiv_in_history_are_equal state ->
+      alpha_equiv_in_history_are_equal (lookup_or_leaf state nϕ).1
+    .
+    Proof.
+      intros H.
+      unfold lookup_or_leaf,lookup_or_node,lookup_or.
+      destruct (list_find (alpha_equiv nϕ) (cs_history state)) eqn:Heq.
+      {
+        destruct p as [n nϕ'].
+        simpl.
+        exact H.
+      }
+      {
+        simpl.
+        rewrite list_find_None in Heq.
+        rewrite Forall_forall in Heq.
+        unfold alpha_equiv_in_history_are_equal in *.
+        destruct state as [hist].
+        simpl in *.
+        intros.
+        rewrite elem_of_cons in H0.
+        rewrite elem_of_cons in H1.
+        destruct H0,H1; subst; simpl in *.
+        { reflexivity. }
+        { 
+          specialize (Heq _ H1).
+          contradiction.
+        }
+        {
+          specialize (Heq _ H0).
+          apply alpha_equiv_sym in H2.
+          contradiction.
+        }
+        {
+          apply H; assumption.
+        }
+      }
+    Qed.
+
+    Lemma xy_diagonal {A : Type} {_eqd : EqDecision A} {_cnt : Countable A} (x y : A) (S : gset A)
+      : (x,y) ∈ pbr (diagonal S) -> x = y.
+    Proof.
+      intros H.
+      unfold diagonal in H. simpl in H.
+      rewrite elem_of_map in H.
+      destruct H as [x' Hx'].
+      unfold twice in Hx'.
+      destruct Hx' as [Hx'1 Hx'2].
+      inversion Hx'1.
+      subst. reflexivity.
+    Qed.
+(**)
+    Lemma collapse_arg_in_history {Σ : Signature} (state : CollapseState) (nϕ : NamedPattern) :
+    (collapse_aux state nϕ).2 ∈ cs_history (collapse_aux state nϕ).1
+    .
+    Proof.
+      induction nϕ; simpl; unfold lookup_or_leaf,lookup_or_node,lookup_or;
+      repeat case_match; simpl in *; subst;
+      match goal with [ H : list_find _ _ = Some _ |- _] => apply list_find_Some in H | _ => idtac end;
+      destruct_and?; try solve [left];
+      match goal with [ H : _ !! _ = Some _ |- _ ] => apply elem_of_list_lookup_2 in H | _ => idtac end;
+      try assumption.
+    Qed.
+
+    Lemma history_collapse_aux_subset {Σ : Signature} (state : CollapseState) (nϕ : NamedPattern) :
+      cs_history state ⊆ cs_history (collapse_aux state nϕ).1
+    .
+    Proof.
+      move: state.
+      induction nϕ; intros state; simpl; unfold lookup_or_leaf,lookup_or_node,lookup_or; simpl;
+        repeat case_match; subst; simpl; set_solver.
+    Qed.
+    
+    Definition history_subpattern_closed {Σ : Signature}
+      (state : CollapseState) : Prop
+      := forall (nϕ1 nϕ2 : NamedPattern),
+          is_nsubpattern_of_ind nϕ1 nϕ2 ->
+          nϕ2 ∈ (cs_history state) ->
+          nϕ1 ∈ (cs_history state)
+    .
+    
+    Lemma collapse_preserves_sc {Σ : Signature} (state : CollapseState) (nϕ : NamedPattern) :
+      history_subpattern_closed state ->
+      history_subpattern_closed (collapse_aux state nϕ).1
+    .
+    Proof.
+      unfold history_subpattern_closed.
+      move: state.
+      induction nϕ; intros state H nϕ1' nϕ2' Hsub Hin;
+        simpl in *; unfold lookup_or_leaf,lookup_or_node,lookup_or in *; repeat case_match; subst; simpl in *;
+        match goal with [ H : list_find _ _ = Some _ |- _] => apply list_find_Some in H | _ => idtac end;
+        destruct_and?;
+        match goal with [ H : alpha_equiv _ _ |- _] => inversion H; subst; clear H| _ => idtac end;
+        match goal with [H : _ ∈ pbr (diagonal _) |- _] => apply xy_diagonal in H; subst | _ => idtac end;
+        try solve [eapply H;[apply Hsub|]; assumption];
+        match goal with [ H : list_find _ _ = None |- _] => apply list_find_None in H | _ => idtac end;
+        rewrite elem_of_cons in Hin; destruct Hin as [Hin|Hin]; subst;
+        try solve [(inversion Hsub; clear Hsub; subst; try solve [left];
+        try solve [right; assumption])];
+        try solve [right; eauto with nocore];
+        idtac 
+      .
+      {
+        inversion Hsub; clear Hsub; subst.
+        {
+          rewrite elem_of_cons.
+          left.
+          reflexivity.
+        }
+        {
+          rewrite elem_of_cons.
+          right.
+          unfold elem_of.
+          epose proof (Htmp := history_collapse_aux_subset (collapse_aux state nϕ1).1 nϕ2).
+          unfold subseteq in Htmp.
+          Search elem_of_list list_subseteq.
+          unfold list_subseteq in Htmp.
+          apply Htmp.
+          eapply IHnϕ1.
+          { naive_solver. }
+          { eassumption. }
+          apply collapse_arg_in_history.
+        }
+        {
+          rewrite elem_of_cons.
+          right.
+          eapply IHnϕ2.
+          { naive_solver. }
+          { eassumption. }
+          apply collapse_arg_in_history.
+        }
+      }
+      {
+
+        inversion Hsub; clear Hsub; subst.
+        {
+          rewrite elem_of_cons.
+          left.
+          reflexivity.
+        }
+        {
+          rewrite elem_of_cons.
+          right.
+          unfold elem_of.
+          epose proof (Htmp := history_collapse_aux_subset (collapse_aux state nϕ1).1 nϕ2).
+          unfold subseteq in Htmp.
+          Search elem_of_list list_subseteq.
+          unfold list_subseteq in Htmp.
+          apply Htmp.
+          eapply IHnϕ1.
+          { naive_solver. }
+          { eassumption. }
+          apply collapse_arg_in_history.
+        }
+        {
+          rewrite elem_of_cons.
+          right.
+          eapply IHnϕ2.
+          { naive_solver. }
+          { eassumption. }
+          apply collapse_arg_in_history.
+        }
+      }
+
+      {
+        rewrite elem_of_cons.
+        classical_right.
+        inversion Hsub; subst; try contradiction; clear Hsub.
+        eapply IHnϕ.
+        { naive_solver. }
+        { apply H4. }
+        apply collapse_arg_in_history.
+      }
+      {
+        rewrite elem_of_cons.
+        classical_right.
+        inversion Hsub; subst; try contradiction; clear Hsub.
+        eapply IHnϕ.
+        { naive_solver. }
+        { apply H4. }
+        apply collapse_arg_in_history.
+      }
+    Qed.
+
+
+    Lemma collapse_aux_preserves_aeihae {Σ : Signature} (state : CollapseState) :
+      alpha_equiv_in_history_are_equal state ->
+      forall nϕ,
+        alpha_equiv_in_history_are_equal (collapse_aux state nϕ).1
+    .
+    Proof.
+      intros H nϕ.
+      move: state H.
+      induction nϕ; intros state H; simpl in *;
+        try solve [apply lookup_or_leaf_preserves_aeihae; assumption].
+      {
+        unfold lookup_or_node. simpl.
+      }
+    Qed.
+    
+    Print collapse_aux.
 
   (*
   (* TESTS *)
