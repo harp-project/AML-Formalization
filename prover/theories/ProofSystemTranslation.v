@@ -1449,6 +1449,57 @@ Fixpoint rename {Σ : Signature}
     }
   Qed.
 
+  Lemma diagonal_mono {A : Type}
+  {_eqd : EqDecision A }
+  {_cnd : Countable A }
+  ( R1 R2 : gset A)
+  : R1 ⊆ R2 -> pbr (diagonal R1) ⊆ pbr (diagonal R2).
+  Proof.
+    intros H.
+    unfold diagonal. simpl.
+    apply set_map_mono;[|assumption].
+    unfold pointwise_relation.
+    intros a. reflexivity.
+  Qed.
+
+  Lemma pb_update_same_ex {A : Type}
+  {_eqd : EqDecision A }
+  {_cnd : Countable A }
+  (R : PartialBijection A)
+  (x : A)
+  : pbr R ⊆ pbr (pb_update R x x).
+  Proof.
+    unfold pb_update; simpl.
+    rewrite elem_of_subseteq.
+    intros aa Haa.
+    rewrite elem_of_union.
+    rewrite elem_of_filter.
+    destruct aa as [x' y'].
+    unfold unrelated,related. simpl.
+    rewrite elem_of_singleton.
+    destruct (decide ((x',y') = (x, x))).
+    {
+      inversion e. subst. naive_solver.
+    }
+  Abort.
+
+  (*
+  Lemma collapse_aux_evars'
+  {Σ : Signature}
+  (state : CollapseState)
+  (nϕ : NamedPattern)
+  : named_free_evars (collapse_aux state nϕ).2 = named_free_evars nϕ.
+  Proof.
+    remember (nsize' nϕ) as sz.
+    assert (Hsz: nsize' nϕ <= sz) by lia.
+    clear Heqsz.
+
+    move: nϕ Hsz state.
+    induction sz; intros nϕ Hsz state; destruct nϕ;
+      simpl in *; try lia; unfold lookup_or    
+  Qed.
+*)
+
     Lemma collapse_aux_alpha'
       {Σ : Signature}
       (state : CollapseState)
@@ -1459,8 +1510,8 @@ Fixpoint rename {Σ : Signature}
       assert (Hsz: nsize' nϕ <= sz) by lia.
       clear Heqsz.
 
-      move: nϕ Hsz.
-      induction sz; intros nϕ Hsz; destruct nϕ;
+      move: nϕ Hsz state.
+      induction sz; intros nϕ Hsz state; destruct nϕ;
         simpl in *; try lia; try apply lookup_or_leaf_alpha.
       {
         unfold lookup_or_node,lookup_or. simpl.
@@ -1473,72 +1524,121 @@ Fixpoint rename {Σ : Signature}
           apply H2.
         }
         {
-          simpl. clear H.
+          simpl.
+          clear H.
+
           constructor; simpl; unfold alpha_equiv in *.
           {
-            pose proof (IH1 := (IHsz nϕ1 ltac:(lia))).
+            pose proof (IH1 := (IHsz nϕ1 ltac:(lia) state)).
+            pose proof (IH2 := (IHsz nϕ2 ltac:(lia) state)).
             pose proof (H1e := alpha_equiv_impl_same_evars _ _ IH1).
-            pose proof (H2e := alpha_equiv_impl_same_evars _ _ (IHsz nϕ2 ltac:(lia))).
-            pose proof (H1s := alpha_equiv_impl_same_svars _ _ (IHsz nϕ1 ltac:(lia))).
-            pose proof (H2s := alpha_equiv_impl_same_svars _ _ (IHsz nϕ2 ltac:(lia))).
+            pose proof (H1s := alpha_equiv_impl_same_svars _ _ IH1).
     
             rewrite H1e H1s.
-            replace (named_free_evars nϕ1
-              ∪ named_free_evars (collapse_aux (collapse_aux state nϕ1).1 nϕ2).2
-              ∪ (named_free_evars nϕ1 ∪ named_free_evars nϕ2) )
-            with (named_free_evars (collapse_aux (collapse_aux state nϕ1).1 nϕ2).2
-              ∪ (named_free_evars nϕ1 ∪ named_free_evars nϕ2)
-            ) by (clear; set_solver).
-            replace (named_free_svars nϕ1
-              ∪ named_free_svars (collapse_aux (collapse_aux state nϕ1).1 nϕ2).2
-              ∪ (named_free_svars nϕ1 ∪ named_free_svars nϕ2))
-            with (named_free_svars (collapse_aux (collapse_aux state nϕ1).1 nϕ2).2
-              ∪ (named_free_svars nϕ1 ∪ named_free_svars nϕ2)
-            ) by (clear; set_solver).
 
-
-            rewrite H2e in IH1.
-
-            match goal with
-            | [ |- alpha_equiv' (diagonal ?s1) (diagonal ?s2) _ _]
-              => remember s1 as S1; remember s2 as S2
-            end.
-
-
-            subst.
-            apply IH1.
-
-
-            apply IHsz.
-            pose proof (H1e' := alpha_equiv_impl_same_evars _ _ (IHsz nϕ1 ltac:(lia))).
-
-            erewrite alpha_equiv_impl_same_evars.
-            2: { eapply IHsz. }
-
-            match type of IHnϕ1 with
-            | alpha_equiv' (diagonal ?t1) (diagonal ?t2) _ _
-              => remember t1 as T1; remember t2 as T2
-            end.
-            assert (T1 = S1).
+            eapply alpha'_mono;[idtac|idtac|apply IH1].
             {
-              set_solver.
+              apply diagonal_mono.
+              rewrite H1e. clear. set_solver.
             }
-            apply IHnϕ1.
+            {
+              apply diagonal_mono.
+              rewrite H1s. clear. set_solver.
+            }
+          }
+          {
+            erewrite alpha_equiv_impl_same_evars.
+            2: apply IHsz; lia.
+            erewrite alpha_equiv_impl_same_svars.
+            2: apply IHsz; lia.
+            
+            eapply alpha'_mono.
+            3: { eapply IHsz. lia. }
+            { apply diagonal_mono. clear. set_solver. } 
+            { apply diagonal_mono. clear. set_solver. } 
           }
         }
-        rewrite IHnϕ1.
-        apply ae_app.
-        constructor.
       }
-        
-        ;
-        unfold lookup_or_leaf,lookup_or_node,lookup_or;
-        simpl;
-        repeat case_match;
-        subst;
-        simpl.
       {
-        rewrite -> list_find_Some in *.
+        unfold lookup_or_node,lookup_or. simpl.
+        repeat case_match.
+        {
+          subst. simpl.
+          rewrite list_find_Some in H.
+          destruct H as [H1 [H2 H3]].
+          apply alpha_equiv_sym.
+          apply H2.
+        }
+        {
+          simpl.
+          clear H.
+
+          constructor; simpl; unfold alpha_equiv in *.
+          {
+            pose proof (IH1 := (IHsz nϕ1 ltac:(lia) state)).
+            pose proof (IH2 := (IHsz nϕ2 ltac:(lia) state)).
+            pose proof (H1e := alpha_equiv_impl_same_evars _ _ IH1).
+            pose proof (H1s := alpha_equiv_impl_same_svars _ _ IH1).
+    
+            rewrite H1e H1s.
+
+            eapply alpha'_mono;[idtac|idtac|apply IH1].
+            {
+              apply diagonal_mono.
+              rewrite H1e. clear. set_solver.
+            }
+            {
+              apply diagonal_mono.
+              rewrite H1s. clear. set_solver.
+            }
+          }
+          {
+            erewrite alpha_equiv_impl_same_evars.
+            2: apply IHsz; lia.
+            erewrite alpha_equiv_impl_same_svars.
+            2: apply IHsz; lia.
+            
+            eapply alpha'_mono.
+            3: { eapply IHsz. lia. }
+            { apply diagonal_mono. clear. set_solver. } 
+            { apply diagonal_mono. clear. set_solver. } 
+          }
+        }
+      }
+      {
+        unfold lookup_or_node,lookup_or. simpl.
+        repeat case_match; simpl.
+        {
+          rewrite list_find_Some in H.
+          destruct H as [H1 [H2 H3]].
+          apply alpha_equiv_sym.
+          apply H2.
+        }
+        {
+          clear H.
+          constructor.
+          eapply alpha'_mono.
+          3: apply IHsz; lia.
+          { 
+            eapply transitivity.
+            {
+              eapply diagonal_mono.
+              erewrite alpha_equiv_impl_same_evars.
+              2: apply IHsz; lia.
+              rewrite union_idemp_L.
+              apply reflexivity.
+            }
+            Search pb_update.
+            eapply transitivity.
+            2: {
+              eapply pb_update_mono.
+            }
+            Search pb_update diagonal.
+            eapply diagonal_mono.
+          }
+          2: apply IHsz.
+          eapply IHsz.
+        }
       }
     Qed.
 
