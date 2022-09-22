@@ -21,8 +21,69 @@ Section named.
   | npatt_mu (X : svar) (phi : NamedPattern)
   .
 
+Fixpoint nsize' (p : NamedPattern) : nat :=
+  match p with
+  | npatt_app ls rs => 1 + (nsize' ls) + (nsize' rs)
+  | npatt_imp ls rs => 1 + (nsize' ls) + (nsize' rs)
+  | npatt_exists _ p' => 1 + nsize' p'
+  | npatt_mu _ p' => 1 + nsize' p'
+  | _ => 1
+  end.
+
+  #[global]
   Instance NamedPattern_eqdec : EqDecision NamedPattern.
   Proof. solve_decision. Defined.
+
+  #[global]
+  Instance NamedPattern_countable (sc : Countable symbols) : Countable NamedPattern.
+Proof.
+  set (enc :=
+         fix go p : gen_tree (unit
+                              + ((@symbols Σ)
+                                 + (((@evar variables))
+                                    + ((@svar variables)))))%type :=
+           match p with
+           | npatt_bott => GenLeaf (inl ())
+           | npatt_sym s => GenLeaf (inr (inl s))
+           | npatt_evar x => GenLeaf (inr (inr (inl x)))
+           | npatt_svar X => GenLeaf (inr (inr (inr X)))
+           | npatt_app p1 p2 => GenNode 0 [go p1; go p2]
+           | npatt_imp p1 p2 => GenNode 1 [go p1; go p2]
+           | npatt_exists x p' => GenNode 2 [GenLeaf (inr (inr (inl x))); go p']
+           | npatt_mu X p' => GenNode 3 [GenLeaf (inr (inr (inr X))); go p']
+           end
+      ).
+
+  set (dec :=
+         fix go (p : gen_tree (unit
+                              + ((@symbols Σ)
+                                 + (((@evar variables) )
+                                    + ((@svar variables)))))%type) : NamedPattern :=
+           match p with
+           | GenLeaf (inl ()) => npatt_bott
+           | GenLeaf (inr (inl s)) => npatt_sym s
+           | GenLeaf (inr (inr (inl x))) => npatt_evar x
+           | GenLeaf (inr (inr (inr X))) => npatt_svar X
+           | GenNode 0 [p1; p2] => npatt_app (go p1) (go p2)
+           | GenNode 1 [p1; p2] => npatt_imp (go p1) (go p2)
+           | GenNode 2 [nx; p'] =>
+            match (go nx) with
+            | npatt_evar x => npatt_exists x (go p')
+            | _ => npatt_bott (* dummy *)
+            end
+           | GenNode 3 [nX; p']  =>
+            match (go nX) with
+            | npatt_svar X => npatt_mu X (go p')
+            | _ => npatt_bott (* dummy *)
+            end
+           | _ => npatt_bott (* dummy *)
+           end
+      ).
+
+  refine (inj_countable' enc dec _).
+  intros x.
+  induction x; simpl; congruence.
+Defined.
 
   Definition EVarMap := gmap db_index evar.
   Definition SVarMap := gmap db_index svar.
