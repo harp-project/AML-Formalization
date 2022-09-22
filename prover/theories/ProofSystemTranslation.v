@@ -1462,43 +1462,6 @@ Fixpoint rename {Σ : Signature}
     intros a. reflexivity.
   Qed.
 
-  Lemma pb_update_same_ex {A : Type}
-  {_eqd : EqDecision A }
-  {_cnd : Countable A }
-  (R : PartialBijection A)
-  (x : A)
-  : pbr R ⊆ pbr (pb_update R x x).
-  Proof.
-    unfold pb_update; simpl.
-    rewrite elem_of_subseteq.
-    intros aa Haa.
-    rewrite elem_of_union.
-    rewrite elem_of_filter.
-    destruct aa as [x' y'].
-    unfold unrelated,related. simpl.
-    rewrite elem_of_singleton.
-    destruct (decide ((x',y') = (x, x))).
-    {
-      inversion e. subst. naive_solver.
-    }
-  Abort.
-
-  (*
-  Lemma collapse_aux_evars'
-  {Σ : Signature}
-  (state : CollapseState)
-  (nϕ : NamedPattern)
-  : named_free_evars (collapse_aux state nϕ).2 = named_free_evars nϕ.
-  Proof.
-    remember (nsize' nϕ) as sz.
-    assert (Hsz: nsize' nϕ <= sz) by lia.
-    clear Heqsz.
-
-    move: nϕ Hsz state.
-    induction sz; intros nϕ Hsz state; destruct nϕ;
-      simpl in *; try lia; unfold lookup_or    
-  Qed.
-*)
 
     Lemma collapse_aux_alpha'
       {Σ : Signature}
@@ -1628,16 +1591,139 @@ Fixpoint rename {Σ : Signature}
               rewrite union_idemp_L.
               apply reflexivity.
             }
-            Search pb_update.
-            eapply transitivity.
-            2: {
-              eapply pb_update_mono.
+            simpl.
+            rewrite elem_of_subseteq.
+            intros [e1 e2] He1e2.
+            rewrite elem_of_map in He1e2.
+            destruct He1e2 as [x' [H1 H2]].
+            unfold twice in H1. inversion H1. subst. clear H1.
+            rewrite elem_of_union.
+            rewrite elem_of_singleton.
+            destruct (decide (x = x')).
+            {
+              subst. right. reflexivity.
             }
-            Search pb_update diagonal.
-            eapply diagonal_mono.
+            {
+              rewrite elem_of_filter.
+              unfold unrelated,related.
+              simpl.
+              left.
+              split;[naive_solver|].
+              rewrite elem_of_map.
+              exists x'.
+              split;[reflexivity|].
+              rewrite elem_of_union.
+              left.
+              rewrite elem_of_difference.
+              rewrite elem_of_singleton.
+              split;[|congruence].
+              erewrite alpha_equiv_impl_same_evars.
+              { exact H2. }
+              apply IHsz.
+              lia.
+            }
           }
-          2: apply IHsz.
-          eapply IHsz.
+          {
+            eapply transitivity.
+            {
+              eapply diagonal_mono.
+              erewrite alpha_equiv_impl_same_svars.
+              2: apply IHsz; lia.
+              rewrite union_idemp_L.
+              apply reflexivity.
+            }
+            simpl.
+            rewrite elem_of_subseteq.
+            intros [e1 e2] He1e2.
+            rewrite elem_of_map in He1e2.
+            destruct He1e2 as [x' [H1 H2]].
+            unfold twice in H1. inversion H1. subst. clear H1.
+            rewrite elem_of_map.
+            exists x'.
+            split;[reflexivity|].
+            rewrite elem_of_union.
+            right. assumption.
+          }
+        }
+      }
+      {
+        unfold lookup_or_node,lookup_or. simpl.
+        repeat case_match; simpl.
+        {
+          rewrite list_find_Some in H.
+          destruct H as [H1 [H2 H3]].
+          apply alpha_equiv_sym.
+          apply H2.
+        }
+        {
+          clear H.
+          constructor.
+          eapply alpha'_mono.
+          3: apply IHsz; lia.
+          { 
+            eapply transitivity.
+            {
+              eapply diagonal_mono.
+              erewrite alpha_equiv_impl_same_evars.
+              2: apply IHsz; lia.
+              rewrite union_idemp_L.
+              apply reflexivity.
+            }
+            simpl.
+            rewrite elem_of_subseteq.
+            intros [e1 e2] He1e2.
+            rewrite elem_of_map in He1e2.
+            destruct He1e2 as [x' [H1 H2]].
+            unfold twice in H1. inversion H1. subst. clear H1.
+
+            rewrite elem_of_map.
+            exists x'.
+            split;[reflexivity|].
+            rewrite elem_of_union.
+            right. assumption.
+          }
+          {
+            eapply transitivity.
+            {
+              eapply diagonal_mono.
+              erewrite alpha_equiv_impl_same_svars.
+              2: apply IHsz; lia.
+              rewrite union_idemp_L.
+              apply reflexivity.
+            }
+            simpl.
+            rewrite elem_of_subseteq.
+            intros [e1 e2] He1e2.
+            rewrite elem_of_map in He1e2.
+            destruct He1e2 as [X' [H1 H2]].
+            unfold twice in H1. inversion H1. subst. clear H1.
+            
+            rewrite elem_of_union.
+            rewrite elem_of_singleton.
+            destruct (decide (X = X')).
+            {
+              subst. right. reflexivity.
+            }
+            {
+              rewrite elem_of_filter.
+              unfold unrelated,related.
+              simpl.
+              left.
+              split;[naive_solver|].
+              rewrite elem_of_map.
+              exists X'.
+              split;[reflexivity|].
+              rewrite elem_of_union.
+              left.
+              rewrite elem_of_difference.
+              rewrite elem_of_singleton.
+              split;[|congruence].
+              erewrite alpha_equiv_impl_same_svars.
+              { exact H2. }
+              apply IHsz.
+              lia.
+            }
+          }
         }
       }
     Qed.
