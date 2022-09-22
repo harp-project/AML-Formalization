@@ -1435,16 +1435,18 @@ Fixpoint rename {Σ : Signature}
     { naive_solver. }
     { naive_solver. }
     { 
-      pose proof (IHu _ _ _ _ _ _ tEu tEu0).
-      (* TODO extract a lemma *)
-
-      unfold pb_compose,pb_update in H.
-      simpl in H.
-      
-      Search pb_compose pb_update.
-      naive_solver.
+      pose proof (H'' := IHu _ _ _ _ _ _ tEu tEu0).
+      eapply alpha'_mono;[apply compose_update|idtac|].
+      2: apply H''.
+      apply reflexivity.
     }
-
+    {
+      eapply alpha'_mono;[|apply compose_update|idtac].
+      2: apply IHu.
+      3: apply tEu0.
+      2: apply tEu.
+      apply reflexivity.
+    }
   Qed.
 
     Lemma collapse_aux_alpha'
