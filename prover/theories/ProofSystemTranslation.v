@@ -1312,16 +1312,12 @@ Fixpoint rename {Σ : Signature}
   Qed.
   
   Lemma compose_update {A : Type} {_eqd : EqDecision A} {_cnt : Countable A}
-    (R1 R2 : PartialBijection A) (x0 x : A) :
-  (pb_compose (pb_update R1 x0 x) (pb_update R2 x x0)
-  = pb_update (pb_compose R1 R2) x0 x0).
-  {
+    (R1 R2 : PartialBijection A) (x y z : A) :
+  pbr (pb_compose (pb_update R1 x y) (pb_update R2 y z))
+  ⊆ pbr (pb_update (pb_compose R1 R2) x z).
+  Proof.
     destruct R1, R2.
-    apply pb_eq_dep.
     simpl.
-    apply anti_symm with (S := @subseteq (gset (prod A A)) _).
-    { apply _. }
-    {
       rewrite elem_of_subseteq.
       intros [e1 e2] H.
       rewrite elem_of_list_to_set in H.
@@ -1343,55 +1339,68 @@ Fixpoint rename {Σ : Signature}
       setoid_rewrite elem_of_elements.
       unfold unrelated, related in *.
       naive_solver.
-  }
-  {
-    rewrite elem_of_subseteq.
-    intros [e1 e2] H.
-    rewrite elem_of_list_to_set.
-    rewrite list_of_pairs_compose_correct.
-    rewrite elem_of_union in H.
-    rewrite elem_of_filter in H.
-    rewrite elem_of_singleton in H.
-    rewrite elem_of_list_to_set in H.
-    rewrite list_of_pairs_compose_correct in H.
-    setoid_rewrite elem_of_elements in H.
-    setoid_rewrite elem_of_elements.
-    setoid_rewrite elem_of_union.
-    setoid_rewrite elem_of_filter.
-    unfold unrelated,related in *. simpl in *.
-    setoid_rewrite elem_of_singleton.
-    destruct H as [[H1 [b [H2 H3]]]|H].
+  Qed.
+
+  Lemma pb_update_mono {A : Type}
+    {_eqd : EqDecision A }
+    {_cnd : Countable A }
+    (R1 R2 : PartialBijection A)
+    (x y : A) :
+    pbr R1 ⊆ pbr R2 ->
+    pbr (pb_update R1 x y) ⊆ pbr (pb_update R2 x y).
+  Proof.
+    intros H.
+    unfold pb_update. simpl.
+    apply union_mono.
     {
-      
-      exists b.
-      split.
-      {
-        left. split;[|assumption].
-        intros [HContra|HContra].
-        {
-          subst. apply H1. left. reflexivity.
-        }
-        {
-          subst. apply H1. clear H1.
-        }
-        apply H1.
-      }
-      naive_solver.
-      rewrite elem_of_filter. 
+      unfold filter.
+      rewrite elem_of_subseteq.
+      intros aa Haa.
+      rewrite elem_of_filter in Haa.
+      rewrite elem_of_filter.
+      destruct Haa as [H1 H2].
+      split;[assumption|].
+      set_solver.
     }
-    destruct H as [e' [He'1 He'2]].
-    rewrite elem_of_elements in He'1.
-    rewrite elem_of_elements in He'2.
-    rewrite elem_of_union in He'1.
-    rewrite elem_of_union in He'2.
-    rewrite elem_of_filter in He'1.
-    rewrite elem_of_filter in He'2.
-    rewrite elem_of_singleton in He'1.
-    rewrite elem_of_singleton in He'2.
-    
-    unfold unrelated, related in *.
-    naive_solver.
-  }
+    {
+      apply reflexivity.
+    }
+  Qed.
+
+
+  Lemma alpha'_mono {Σ : Signature}
+    (R1 R2 : PartialBijection evar)
+    (R'1 R'2 : PartialBijection svar)
+    (t u : NamedPattern)
+    : 
+      pbr R1 ⊆ pbr R2 ->
+      pbr R'1 ⊆ pbr R'2 ->
+      alpha_equiv' R1 R'1 t u ->
+      alpha_equiv' R2 R'2 t u.
+  Proof.
+    intros H1 H2 Ha.
+    move: R2 R'2 H1 H2.
+    induction Ha; intros R2 R'2 H1 H2; constructor; auto.
+    {
+      apply IHHa.
+      {
+        apply pb_update_mono.
+        exact H1.
+      }
+      {
+        apply H2.
+      }
+    }
+    {
+      apply IHHa.
+      { apply H1. }
+      {
+        apply pb_update_mono.
+        exact H2.
+      }
+    }
+  Qed.
+
 
   Lemma compose_alpha' {Σ : Signature}
     (R1 R2 : PartialBijection evar)
