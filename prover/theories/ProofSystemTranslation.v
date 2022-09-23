@@ -1972,32 +1972,188 @@ Fixpoint rename {Σ : Signature}
       }
     Qed.
 
-    (*
-    Lemma alpha_equiv'_diagonal {Σ : Signature} R1 R'1 R2 R'2 nϕ1 nϕ2:
-      alpha_equiv' (diagonal R1) (diagonal R'1) nϕ1 nϕ2
-      <-> alpha_equiv' (diagonal R2) (diagonal R'2) nϕ1 nϕ2
-    .
+
+    Lemma in_history_invert {Σ : Signature} (state : CollapseState) (nϕ1 nϕ2 : NamedPattern) :
+      nϕ2 ∈ cs_history (collapse_aux state nϕ1).1 ->
+      (forall nϕ2', alpha_equiv nϕ2 nϕ2' -> ~ is_nsubpattern_of_ind nϕ2' nϕ1) ->
+      nϕ2 ∈ cs_history state.
     Proof.
-      move: R1 R'1 R2 R'2.
-      enough (forall R1 R'1 R2 R'2, alpha_equiv' (diagonal R1) (diagonal R'1) nϕ1 nϕ2
-              -> alpha_equiv' (diagonal R2) (diagonal R'2) nϕ1 nϕ2).
+      remember (nsize' nϕ1) as sz.
+      assert (Hsz : nsize' nϕ1 <= sz) by lia.
+      clear Heqsz.
+      move: nϕ1 nϕ2 Hsz state.
+      induction sz; intros nϕ1 nϕ2 Hsz state H Hnsubp;
+        destruct nϕ1; simpl in *; try lia;
+        simpl in *; unfold lookup_or_leaf,lookup_or_node,lookup_or in *;
+        repeat case_match; subst; simpl in *; try assumption;
+        rewrite elem_of_cons in H; destruct H as [H|H]; try contradiction; try assumption;
+        subst; rewrite list_find_None in H0;
+        try solve [exfalso; apply Hnsubp; constructor; auto].
       {
-        intros. split; apply H.
+        exfalso. eapply Hnsubp;[|constructor;reflexivity]; constructor; simpl; unfold twice;
+        rewrite elem_of_map; exists x;split;[reflexivity|clear;set_solver].
       }
-      intros.
-      remember (diagonal R1) as dR1.
-      remember (diagonal R'1) as dR'1.
-      assert (HdR1 : pbr (diagonal R1) ⊆ pbr dR1) by set_solver.
-      assert (HdR'1 : pbr (diagonal R'1) ⊆ pbr dR'1) by set_solver.
-      clear HeqdR1 HeqdR'1.
-      move: R1 R'1 HdR1 HdR'1.
-
-      induction H; intros R1 R'1 HdR1 HdR'1; constructor.
       {
-        Print alpha_equiv'.
+        exfalso. eapply Hnsubp;[|constructor;reflexivity]; constructor; simpl; unfold twice;
+        rewrite elem_of_map; exists X;split;[reflexivity|clear;set_solver].
       }
-    Qed.*)
+      {
+        exfalso.  eapply Hnsubp;[|constructor;reflexivity]; constructor.
+      }
+      {
+        exfalso.
+        eapply Hnsubp;[|apply nsub_eq; reflexivity].
+        constructor.
+        {
+          eapply alpha'_mono.
+          3: { apply collapse_aux_alpha'. }
+          { set_solver. }
+          { set_solver. }
+        }
+        {
+          eapply alpha'_mono.
+          3: { apply collapse_aux_alpha'. }
+          { set_solver. }
+          { set_solver. }
+        }
+      }
+      {
+        eapply IHsz.
+        2: eapply IHsz.
+        3: apply H.
+        1,2: lia.
+        {
+          intros nϕ2' Halpha Hcontra.
+          eapply Hnsubp.
+          { apply Halpha. }
+          apply nsub_app_r.
+          apply Hcontra.
+        }
+        {
+          intros nϕ2' Halpha Hcontra.
+          eapply Hnsubp.
+          { apply Halpha. }
+          apply nsub_app_l.
+          apply Hcontra.
+        }
+      }
+      {
+        exfalso.  eapply Hnsubp;[|constructor;reflexivity]; constructor.
+      }
+      {
+        exfalso.
+        eapply Hnsubp;[|apply nsub_eq; reflexivity].
+        constructor.
+        {
+          eapply alpha'_mono.
+          3: { apply collapse_aux_alpha'. }
+          { set_solver. }
+          { set_solver. }
+        }
+        {
+          eapply alpha'_mono.
+          3: { apply collapse_aux_alpha'. }
+          { set_solver. }
+          { set_solver. }
+        }
+      }
+      {
+        eapply IHsz.
+        2: eapply IHsz.
+        3: apply H.
+        1,2: lia.
+        {
+          intros nϕ2' Halpha Hcontra.
+          eapply Hnsubp.
+          { apply Halpha. }
+          apply nsub_imp_r.
+          apply Hcontra.
+        }
+        {
+          intros nϕ2' Halpha Hcontra.
+          eapply Hnsubp.
+          { apply Halpha. }
+          apply nsub_imp_l.
+          apply Hcontra.
+        }
+      }
+      {
+        exfalso.
+        eapply Hnsubp;[|apply nsub_eq; reflexivity].
+        constructor.
+        eapply alpha'_mono.
+        3: { apply collapse_aux_alpha'. }
+        { 
+          simpl.
+          rewrite elem_of_subseteq.
+          intros [x1 x2] Hx1x2.
+          rewrite elem_of_map in Hx1x2.
+          destruct Hx1x2 as [x' [Hx' Hx1x1]].
+          inversion Hx'; clear Hx'; subst.
+          rewrite elem_of_union.
+          classical_left.
+          rewrite elem_of_singleton in H.
+          rewrite elem_of_filter.
+          split.
+          { unfold unrelated, related. simpl. naive_solver. }
+          rewrite elem_of_map.
+          exists x'. split;[reflexivity|].
+          set_solver.
+        }
+        {
+          set_solver.
+        }
+      }
+      {
+        eapply IHsz.
+        2: apply H.
+        { lia. }
+        repeat intro.
+        eapply Hnsubp.
+        { apply H1. }
+        apply nsub_exists.
+        exact H2.
+      }
+      {
 
+        exfalso.
+        eapply Hnsubp;[|apply nsub_eq; reflexivity].
+        constructor.
+        eapply alpha'_mono.
+        3: { apply collapse_aux_alpha'. }
+        {
+          set_solver.
+        }
+        { 
+          simpl.
+          rewrite elem_of_subseteq.
+          intros [x1 x2] Hx1x2.
+          rewrite elem_of_map in Hx1x2.
+          destruct Hx1x2 as [x' [Hx' Hx1x1]].
+          inversion Hx'; clear Hx'; subst.
+          rewrite elem_of_union.
+          classical_left.
+          rewrite elem_of_singleton in H.
+          rewrite elem_of_filter.
+          split.
+          { unfold unrelated, related. simpl. naive_solver. }
+          rewrite elem_of_map.
+          exists x'. split;[reflexivity|].
+          set_solver.
+        }
+      }
+      {
+
+        eapply IHsz.
+        2: apply H.
+        { lia. }
+        repeat intro.
+        eapply Hnsubp.
+        { apply H1. }
+        apply nsub_mu.
+        exact H2.
+      }
+    Qed.
 
     Lemma collapse_aux_preserves_aeihae {Σ : Signature} (state : CollapseState) :
       history_subpattern_closed state ->
