@@ -378,8 +378,6 @@ Fixpoint rename {Σ : Signature}
     reflexivity.
   Qed.
 
-  Check @set_map.
-
   #[global]
   Instance set_map_involutive (A C : Type)
     {_eoAC : ElemOf A C}
@@ -400,7 +398,6 @@ Fixpoint rename {Σ : Signature}
   Proof.
     intros x.
     unfold set_map.
-    Search list_to_set elements.
     rewrite -[x in _ = x]list_to_set_elements_L.
     rewrite elements_list_to_set.
     {
@@ -1903,7 +1900,6 @@ Fixpoint rename {Σ : Signature}
           unfold elem_of.
           epose proof (Htmp := history_collapse_aux_subset (collapse_aux state nϕ1).1 nϕ2).
           unfold subseteq in Htmp.
-          Search elem_of_list list_subseteq.
           unfold list_subseteq in Htmp.
           apply Htmp.
           eapply IHnϕ1.
@@ -1934,7 +1930,6 @@ Fixpoint rename {Σ : Signature}
           unfold elem_of.
           epose proof (Htmp := history_collapse_aux_subset (collapse_aux state nϕ1).1 nϕ2).
           unfold subseteq in Htmp.
-          Search elem_of_list list_subseteq.
           unfold list_subseteq in Htmp.
           apply Htmp.
           eapply IHnϕ1.
@@ -2155,6 +2150,207 @@ Fixpoint rename {Σ : Signature}
       }
     Qed.
 
+    (* TODO transitivity*)
+    Check is_nsubpattern_of_ind.
+
+    Lemma is_nsubpattern_of_ind_trans {Σ : Signature} (a b c : NamedPattern) :
+      is_nsubpattern_of_ind a b ->
+      is_nsubpattern_of_ind b c ->
+      is_nsubpattern_of_ind a c.
+    Proof.
+      intros H1 H2.
+      move: a H1.
+      induction H2; intros a H1; subst; try assumption; try (constructor; naive_solver).
+    Qed.
+
+    Definition alpha_normalized {Σ : Signature} (nϕ : NamedPattern) : Prop :=
+      forall nϕ1 nϕ2,
+        is_nsubpattern_of_ind nϕ1 nϕ ->
+        is_nsubpattern_of_ind nϕ2 nϕ ->
+        alpha_equiv nϕ1 nϕ2 ->
+        nϕ1 = nϕ2
+    .
+
+    Definition state_alpha_normalized {Σ : Signature} (state : CollapseState) : Prop :=
+      Forall alpha_normalized (cs_history state)
+    .
+
+    Lemma collapse_aux_preserves_an
+    {Σ : Signature} (state : CollapseState) (nϕ : NamedPattern) :
+      state_alpha_normalized state ->
+      state_alpha_normalized (collapse_aux state nϕ).1
+    .
+    Proof.
+      move: state.
+      induction nϕ; intros state Han; simpl;
+        unfold lookup_or_leaf,lookup_or_node,lookup_or;
+        repeat case_match; subst; simpl;
+        try assumption;
+        apply Forall_cons;
+        (split;[|try assumption]);
+        try solve [(intros nϕ1' nϕ2' H1 H2 Hae; inversion H1; inversion H2; subst; clear H1 H2;
+          reflexivity)].
+      { 
+        intros nϕ1' nϕ2' H1 H2 Hae.
+        pose proof (IH1 := IHnϕ1 _ Han).
+        pose proof (IH2 := IHnϕ2 _ IH1).
+        pose proof (Hin1 := collapse_arg_in_history state nϕ1).
+        pose proof (Hincl1 := history_collapse_aux_subset state nϕ1).
+        remember ((collapse_aux state nϕ1).1) as state'.
+        pose proof (Hin2 := collapse_arg_in_history state' nϕ2).
+        pose proof (Hincl2 := history_collapse_aux_subset state' nϕ2).
+        remember ((collapse_aux state' nϕ2).1) as state''.
+        assert (Hin3 : (collapse_aux state nϕ1).2 ∈ (cs_history state'')).
+        {
+          set_solver.
+        }
+        unfold state_alpha_normalized in *.
+        rewrite Forall_forall in IH2.
+        rewrite Forall_forall in IH1.
+        pose proof (IH11 := IH1 _ Hin1).
+        pose proof (IH21 := IH2 _ Hin2).
+        pose proof (IH31 := IH2 _ Hin3).
+        unfold alpha_normalized in *.
+        clear IHnϕ1 IHnϕ2 Han H IH1 IH2.
+
+      Ltac solve_with_alpha :=
+        match goal with
+        | [Ha : (alpha_equiv _ _),
+           H : (forall _ _ _ _ _, _) |- _]
+           => let Hnew := fresh "Hnew" in
+              unshelve(epose proof (Hnew := H _ _ _ _ Ha); apply Hnew)
+        end.
+        inversion H1; inversion H2; subst; clear H1 H2; simpl in *; try reflexivity;
+          inversion Hae; clear Hae; subst; simpl in *; auto; f_equal.
+        
+          match goal with
+          | [ Hae : alpha_equiv' _ _ ?x ?y,
+              H : (forall _ _ _ _ _, _)
+              |- ?x = ?y]
+            => let Hnew := fresh "Hnew" in
+            unshelve(epose proof (Hnew := H _ _ _ _ Hae); apply Hnew)
+          end.
+          solve_with_alpha; auto with nocore.
+        simpl.
+      }
+      {
+        rewrite list_find_None in H.
+        rewrite Forall_forall in H.
+        rewrite Forall_forall.
+        unfold alpha_normalized.
+        intros x Hx nϕa nϕb Hnϕa Hnϕb Hae.
+        pose proof (IH1 := IHnϕ1 state Han).
+        remember (collapse_aux state nϕ1).1 as state'.
+        pose proof (IH2 := IHnϕ2 state' IH1).
+        remember (collapse_aux state' nϕ2).1 as state''.
+        unfold state_alpha_normalized in IH2.
+        rewrite Forall_forall in IH2.
+        unfold alpha_normalized in IH2.
+        naive_solver.
+      }
+      { 
+        intros nϕ1' nϕ2' H1 H2 Hae.
+        pose proof (IH1 := IHnϕ1 _ Han).
+        pose proof (IH2 := IHnϕ2 _ IH1).
+        pose proof (Hin1 := collapse_arg_in_history state nϕ1).
+        pose proof (Hincl1 := history_collapse_aux_subset state nϕ1).
+        remember ((collapse_aux state nϕ1).1) as state'.
+        pose proof (Hin2 := collapse_arg_in_history state' nϕ2).
+        pose proof (Hincl2 := history_collapse_aux_subset state' nϕ2).
+        remember ((collapse_aux state' nϕ2).1) as state''.
+        assert (Hin3 : (collapse_aux state nϕ1).2 ∈ (cs_history state'')).
+        {
+          set_solver.
+        }
+        unfold state_alpha_normalized in *.
+        rewrite Forall_forall in IH2.
+        rewrite Forall_forall in IH1.
+        pose proof (IH11 := IH1 _ Hin1).
+        pose proof (IH21 := IH2 _ Hin2).
+        pose proof (IH31 := IH2 _ Hin3).
+        unfold alpha_normalized in *.
+        clear IHnϕ1 IHnϕ2 Han H IH1 IH2.
+        inversion H1; inversion H2; subst; clear H1 H2; simpl in *; try reflexivity;
+          solve_with_alpha.
+      }
+      {
+        rewrite list_find_None in H.
+        rewrite Forall_forall in H.
+        rewrite Forall_forall.
+        unfold alpha_normalized.
+        intros x Hx nϕa nϕb Hnϕa Hnϕb Hae.
+        pose proof (IH1 := IHnϕ1 state Han).
+        remember (collapse_aux state nϕ1).1 as state'.
+        pose proof (IH2 := IHnϕ2 state' IH1).
+        remember (collapse_aux state' nϕ2).1 as state''.
+        unfold state_alpha_normalized in IH2.
+        rewrite Forall_forall in IH2.
+        unfold alpha_normalized in IH2.
+        naive_solver.
+      }
+      { 
+        intros nϕ1' nϕ2' H1 H2 Hae.
+        pose proof (IH := IHnϕ _ Han).
+        pose proof (Hin1 := collapse_arg_in_history state nϕ).
+        pose proof (Hincl1 := history_collapse_aux_subset state nϕ).
+        remember ((collapse_aux state nϕ).1) as state'.
+        assert (Hin3 : (collapse_aux state nϕ).2 ∈ (cs_history state')).
+        {
+          set_solver.
+        }
+        unfold state_alpha_normalized in *.
+        rewrite Forall_forall in IH.
+        pose proof (IH' := IH _ Hin1).
+        unfold alpha_normalized in *.
+        inversion H1; inversion H2; subst; clear H1 H2; simpl in *; try reflexivity;
+          solve_with_alpha.
+      }
+      {
+        rewrite list_find_None in H.
+        rewrite Forall_forall in H.
+        rewrite Forall_forall.
+        unfold alpha_normalized.
+        intros x' Hx' nϕa nϕb Hnϕa Hnϕb Hae.
+        pose proof (IH1 := IHnϕ state Han).
+        remember (collapse_aux state nϕ).1 as state'.
+        unfold state_alpha_normalized in IH1.
+        rewrite Forall_forall in IH1.
+        unfold alpha_normalized in IH1.
+        naive_solver.
+      }
+      { 
+        intros nϕ1' nϕ2' H1 H2 Hae.
+        pose proof (IH := IHnϕ _ Han).
+        pose proof (Hin1 := collapse_arg_in_history state nϕ).
+        pose proof (Hincl1 := history_collapse_aux_subset state nϕ).
+        remember ((collapse_aux state nϕ).1) as state'.
+        assert (Hin3 : (collapse_aux state nϕ).2 ∈ (cs_history state')).
+        {
+          set_solver.
+        }
+        unfold state_alpha_normalized in *.
+        rewrite Forall_forall in IH.
+        pose proof (IH' := IH _ Hin1).
+        unfold alpha_normalized in *.
+        inversion H1; inversion H2; subst; clear H1 H2; simpl in *; try reflexivity;
+          solve_with_alpha.
+      }
+      {
+        rewrite list_find_None in H.
+        rewrite Forall_forall in H.
+        rewrite Forall_forall.
+        unfold alpha_normalized.
+        intros x' Hx' nϕa nϕb Hnϕa Hnϕb Hae.
+        pose proof (IH1 := IHnϕ state Han).
+        remember (collapse_aux state nϕ).1 as state'.
+        unfold state_alpha_normalized in IH1.
+        rewrite Forall_forall in IH1.
+        unfold alpha_normalized in IH1.
+        naive_solver.
+      }
+      Unshelve.
+    Qed.
+
     Lemma collapse_aux_preserves_aeihae {Σ : Signature} (state : CollapseState) :
       history_subpattern_closed state ->
       alpha_equiv_in_history_are_equal state ->
@@ -2195,10 +2391,10 @@ Fixpoint rename {Σ : Signature}
             remember ((collapse_aux state' nϕ2).1) as state''.
             remember ((collapse_aux state' nϕ2).2) as nϕ2'.
 
-            rewrite Hevars in tEt'.
-            rewrite Hsvars in tEt'.
-            rewrite Hevars in uEu'.
-            rewrite Hsvars in uEu'.
+            rewrite -Hevars in tEt'.
+            rewrite -Hsvars in tEt'.
+            rewrite -Hevars in uEu'.
+            rewrite -Hsvars in uEu'.
             rewrite 2!union_idemp_L in tEt'.
             rewrite 2!union_idemp_L in uEu'.
 
@@ -2208,17 +2404,48 @@ Fixpoint rename {Σ : Signature}
             pose proof (Hhist'' := collapse_preserves_sc (collapse_aux state nϕ1).1 nϕ2 Hhist').
             
             unfold alpha_equiv_in_history_are_equal in *.
-
-            assert ((exists p q, nϕ2 = npatt_app p q) \/ (npatt_app t' u' ∈ cs_history state')).
+            assert (Hfe1 : named_free_evars nϕ1' = named_free_evars nϕ1).
             {
-              destruct nϕ2; subst; simpl in Hphi2;
-              unfold lookup_or_leaf,lookup_or_node,lookup_or in Hphi2;
-              simpl in Hphi2; repeat case_match; subst; simpl in *;
-                try solve [left; eexists;eexists;reflexivity]; try solve[right; assumption];
-                rewrite elem_of_cons in Hphi2; destruct Hphi2 as [Hphi2|Hphi2]; subst;
-                try solve [inversion Hphi2]; try solve[right; assumption]; simpl in *. ;
+              apply alpha_equiv_impl_same_evars.
+              subst. apply collapse_aux_alpha'.
             }
+            assert (Hfs1 : named_free_svars nϕ1' = named_free_svars nϕ1).
+            {
+              apply alpha_equiv_impl_same_svars.
+              subst. apply collapse_aux_alpha'.
+            }
+            assert (Hfe2 : named_free_evars nϕ2' = named_free_evars nϕ2).
+            {
+              apply alpha_equiv_impl_same_evars.
+              subst. apply collapse_aux_alpha'.
+            }
+            assert (Hfs2 : named_free_svars nϕ2' = named_free_svars nϕ2).
+            {
+              apply alpha_equiv_impl_same_svars.
+              subst. apply collapse_aux_alpha'.
+            }
+            rewrite Hfe1 Hfe2 in tEt'.
+            rewrite Hfs1 Hfs2 in uEu'.
 
+            rewrite Heqstate'' in Hphi2.
+            pose proof (Hphi2' := in_history_invert _ _ _ Hphi2).
+            feed specialize Hphi2'.
+            {
+              intros p Hp Hcontra.
+              rewrite Forall_forall in Heq.
+              subst.
+              eapply Heq.
+              2: constructor.
+              2,3: simpl.
+              2: {
+                constructor.
+                { simpl.
+                }
+              }
+              inversion Hp; subst; clear Hp.
+              eapply Heq.
+            }
+            Check in_history_invert.
             
             assert (nϕ1' = t').
             {
