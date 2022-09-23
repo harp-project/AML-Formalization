@@ -1972,19 +1972,119 @@ Fixpoint rename {Σ : Signature}
       }
     Qed.
 
+    (*
+    Lemma alpha_equiv'_diagonal {Σ : Signature} R1 R'1 R2 R'2 nϕ1 nϕ2:
+      alpha_equiv' (diagonal R1) (diagonal R'1) nϕ1 nϕ2
+      <-> alpha_equiv' (diagonal R2) (diagonal R'2) nϕ1 nϕ2
+    .
+    Proof.
+      move: R1 R'1 R2 R'2.
+      enough (forall R1 R'1 R2 R'2, alpha_equiv' (diagonal R1) (diagonal R'1) nϕ1 nϕ2
+              -> alpha_equiv' (diagonal R2) (diagonal R'2) nϕ1 nϕ2).
+      {
+        intros. split; apply H.
+      }
+      intros.
+      remember (diagonal R1) as dR1.
+      remember (diagonal R'1) as dR'1.
+      assert (HdR1 : pbr (diagonal R1) ⊆ pbr dR1) by set_solver.
+      assert (HdR'1 : pbr (diagonal R'1) ⊆ pbr dR'1) by set_solver.
+      clear HeqdR1 HeqdR'1.
+      move: R1 R'1 HdR1 HdR'1.
+
+      induction H; intros R1 R'1 HdR1 HdR'1; constructor.
+      {
+        Print alpha_equiv'.
+      }
+    Qed.*)
+
 
     Lemma collapse_aux_preserves_aeihae {Σ : Signature} (state : CollapseState) :
+      history_subpattern_closed state ->
       alpha_equiv_in_history_are_equal state ->
       forall nϕ,
         alpha_equiv_in_history_are_equal (collapse_aux state nϕ).1
     .
     Proof.
-      intros H nϕ.
-      move: state H.
-      induction nϕ; intros state H; simpl in *;
+      intros Hhist H nϕ.
+      move: state Hhist H.
+      induction nϕ; intros state Hhist H; simpl in *;
         try solve [apply lookup_or_leaf_preserves_aeihae; assumption].
       {
-        unfold lookup_or_node. simpl.
+
+        unfold lookup_or_node,lookup_or. simpl.
+        destruct (list_find (alpha_equiv (npatt_app nϕ1 nϕ2)) (cs_history state)) eqn:Heq.
+        {
+          destruct p as [? nϕ'].
+          rewrite list_find_Some in Heq.
+          destruct Heq as [H1 [H2 H3]].
+          simpl.
+          exact H.
+        }
+        {
+          rewrite list_find_None in Heq.
+          simpl.
+          unfold alpha_equiv_in_history_are_equal. simpl.
+          intros phi1 phi2 Hphi1 Hphi2 Halpha.
+          rewrite elem_of_cons in Hphi1.
+          rewrite elem_of_cons in Hphi2.
+          destruct Hphi1 as [Hphi1|Hphi1], Hphi2 as [Hphi2|Hphi2]; subst.
+          { reflexivity. }
+          {
+            pose proof (Hevars := alpha_equiv_impl_same_evars _ _ Halpha).
+            pose proof (Hsvars := alpha_equiv_impl_same_svars _ _ Halpha).
+            inversion Halpha. subst. simpl in *. clear Halpha.
+            remember ((collapse_aux state nϕ1).1) as state'.
+            remember ((collapse_aux state nϕ1).2) as nϕ1'.
+            remember ((collapse_aux state' nϕ2).1) as state''.
+            remember ((collapse_aux state' nϕ2).2) as nϕ2'.
+
+            rewrite Hevars in tEt'.
+            rewrite Hsvars in tEt'.
+            rewrite Hevars in uEu'.
+            rewrite Hsvars in uEu'.
+            rewrite 2!union_idemp_L in tEt'.
+            rewrite 2!union_idemp_L in uEu'.
+
+            pose proof (IH1 := IHnϕ1 state Hhist H).
+            pose proof (Hhist' := collapse_preserves_sc state nϕ1 Hhist).
+            pose proof (IH2 := IHnϕ2 (collapse_aux state nϕ1).1 Hhist' IH1).
+            pose proof (Hhist'' := collapse_preserves_sc (collapse_aux state nϕ1).1 nϕ2 Hhist').
+            
+            unfold alpha_equiv_in_history_are_equal in *.
+
+            assert ((exists p q, nϕ2 = npatt_app p q) \/ (npatt_app t' u' ∈ cs_history state')).
+            {
+              destruct nϕ2; subst; simpl in Hphi2;
+              unfold lookup_or_leaf,lookup_or_node,lookup_or in Hphi2;
+              simpl in Hphi2; repeat case_match; subst; simpl in *;
+                try solve [left; eexists;eexists;reflexivity]; try solve[right; assumption];
+                rewrite elem_of_cons in Hphi2; destruct Hphi2 as [Hphi2|Hphi2]; subst;
+                try solve [inversion Hphi2]; try solve[right; assumption]; simpl in *. ;
+            }
+
+            
+            assert (nϕ1' = t').
+            {
+              subst.
+              eapply IHnϕ1.
+              apply IH1.
+              { subst; apply collapse_arg_in_history. }
+              { Search t'.   }
+            }
+            Search alpha_equiv'.
+            
+            
+            simpl in Hevars,Hsvars.
+            epose proof (Hsame1 := IH1 _ _ _ _ tEt').
+            f_equal.
+            
+            
+            apply IH2; try assumption.
+            eapply Hhist'';[|apply Hphi2].
+          }
+           
+        }
       }
     Qed.
     
