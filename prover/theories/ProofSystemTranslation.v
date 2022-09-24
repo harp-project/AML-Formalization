@@ -2174,6 +2174,263 @@ Fixpoint rename {Σ : Signature}
     Definition state_alpha_normalized {Σ : Signature} (state : CollapseState) : Prop :=
       Forall alpha_normalized (cs_history state)
     .
+(**)
+     (* ∃ x. x ≡α ∃ y. y *)
+    Lemma alpha_equiv'_diagonal {Σ : Signature} D1 D1' D2 D2' a b:
+      (named_free_evars a ∪ named_free_evars b) ⊆ D1 ->
+      (named_free_svars a ∪ named_free_svars b) ⊆ D1' ->
+      (named_free_evars a ∪ named_free_evars b) ⊆ D2 ->
+      (named_free_svars a ∪ named_free_svars b) ⊆ D2' ->
+      alpha_equiv' (diagonal D1) (diagonal D1') a b ->
+      alpha_equiv' (diagonal D2) (diagonal D2') a b
+    .
+    Proof.
+      intros Hev1 Hsv1 Hev2 Hsv2 H.
+      
+      remember (diagonal D1) as R1.
+      remember (diagonal D1') as R1'.
+      assert (HR1 : pbr R1 ⊆ pbr (diagonal D1)) by set_solver.
+      assert (HR1' : pbr R1' ⊆ pbr (diagonal D1')) by set_solver.
+      clear HeqR1 HeqR1'.
+
+      remember (diagonal D2) as R2.
+      remember (diagonal D2') as R2'.
+      assert (HR2 : pbr (diagonal D2) ⊆ pbr R2) by set_solver.
+      assert (HR2' : pbr (diagonal D2') ⊆ pbr R2') by set_solver.
+
+      clear HeqR2 HeqR2'.
+      move: D1 D1' D2 D2' Hev1 Hsv1 Hev2 Hsv2 HR1 HR1' HR2 HR2'.
+      induction H; intros D1 D1' D2 D2' Hev1 Hsv1 Hev2 Hsv2 HR1 HR1' HR2 HR2'; simpl in *.
+      {
+        constructor.
+        clear R' HR1' HR2'.
+        unfold twice in *.
+        set_solver.
+      }
+      {
+        constructor.
+        clear R HR1 HR2.
+        unfold twice in *.
+        set_solver.
+      }
+      {
+        constructor.
+        apply (IHalpha_equiv'1 D1 D1' D2 D2').
+        { set_solver. }
+        { set_solver. }
+        { set_solver. }
+        { set_solver. }
+        { assumption. }
+        { assumption. }
+        { assumption. }
+        { assumption. }
+        apply (IHalpha_equiv'2 D1 D1' D2 D2').
+        { set_solver. }
+        { set_solver. }
+        { set_solver. }
+        { set_solver. }
+        { assumption. }
+        { assumption. }
+        { assumption. }
+        { assumption. }
+      }
+      {
+        constructor.
+        apply (IHalpha_equiv'1 D1 D1' D2 D2').
+        { set_solver. }
+        { set_solver. }
+        { set_solver. }
+        { set_solver. }
+        { assumption. }
+        { assumption. }
+        { assumption. }
+        { assumption. }
+        apply (IHalpha_equiv'2 D1 D1' D2 D2').
+        { set_solver. }
+        { set_solver. }
+        { set_solver. }
+        { set_solver. }
+        { assumption. }
+        { assumption. }
+        { assumption. }
+        { assumption. }
+      }
+      { constructor. }
+      { constructor. }
+      {
+        constructor.
+        (* In order to use the induction hypothesis, it must hold that x=y.
+           So what if it does not?*)
+        
+        pose proof (IH := IHalpha_equiv' (D1 ∪ {[x;y]}) D1' (D2 ∪ {[x;y]}) D2').
+        feed specialize IH.
+        { clear -Hev1. set_unfold. intros.
+          destruct (decide (x0 = x)).
+          { right. left. assumption. }
+          destruct (decide (x0 = y)).
+          { right. right. assumption. }
+          left. apply Hev1. tauto.
+        }
+        { assumption. }
+        {
+          clear -Hev2. set_unfold. intros.
+          destruct (decide (x0 = x)).
+          { right. left. assumption. }
+          destruct (decide (x0 = y)).
+          { right. right. assumption. }
+          left. apply Hev2. tauto.
+        }
+        { assumption. }
+        {
+          rewrite set_map_union_L.
+          rewrite union_subseteq.
+          split.
+          {
+            admit.
+          }
+          {
+            rewrite elem_of_subseteq.
+            setoid_rewrite elem_of_singleton.
+            intros [x0 y0] Hx0y0.
+            inversion Hx0y0; clear Hx0y0; subst.
+            rewrite elem_of_union. right.
+            rewrite set_map_union_L.
+            rewrite elem_of_subseteq in HR1.
+            specialize (HR1 (x,y)).
+          }
+          Search set_map union.
+          2: apply _.
+          rewrite elem_of_subseteq.
+          intros [x0 y0] Hx0y0.
+          unfold unrelated,related in Hx0y0. simpl in Hx0y0.
+          rewrite elem_of_union in Hx0y0.
+          rewrite elem_of_filter in Hx0y0.
+          destruct Hx0y0 as [Hx0y0|Hx0y0]; simpl in *.
+          {
+            destruct Hx0y0 as [H1 H2].
+            Search set_map.
+          }
+          setoid_rewrite elem_of_union.
+        }
+        { set_solver. }
+        destruct (decide (named_free_evars t ∪ named_free_evars u ⊆ D1)).
+        {
+          feed specialize IH.
+          { assumption. }
+          { assumption. }
+          { set_solver. }
+  
+        }
+        
+        destruct (decide (x ∈ named_free_evars t)), (decide (y ∈ named_free_evars u)).
+        {
+          
+        }
+        
+        destruct (decide (x = y)).
+        {
+          subst.
+      
+          assert (Hup : pb_update (diagonal D2) y y = diagonal (D2 ∪ {[ y ]})).
+        {
+          clear HR1' Hsv1 Hsv2 D2' IHalpha_equiv'.
+          apply pb_eq_dep.
+          unfold unrelated,related,diagonal,twice in *; simpl.
+          rewrite elem_of_subseteq in HR1.
+          setoid_rewrite elem_of_map in HR1.
+          apply leibniz_equiv.
+          rewrite set_equiv_subseteq.
+          rewrite 2!elem_of_subseteq.
+          setoid_rewrite elem_of_union.
+          setoid_rewrite elem_of_filter.
+          setoid_rewrite elem_of_map.
+          setoid_rewrite elem_of_singleton.
+          setoid_rewrite elem_of_union.
+          setoid_rewrite elem_of_singleton.
+          rewrite elem_of_subseteq in Hev1.
+          rewrite elem_of_subseteq in Hev2.
+          setoid_rewrite elem_of_union in Hev1.
+          setoid_rewrite elem_of_union in Hev2.
+          setoid_rewrite elem_of_difference in Hev1.
+          setoid_rewrite elem_of_difference in Hev2.
+          setoid_rewrite elem_of_singleton in Hev1.
+          setoid_rewrite elem_of_singleton in Hev2.
+          split; intros [x00 x01] Hx0.
+          {
+            destruct Hx0 as [[Hx01 [x' [Hx02 Hx03]]]|Hx0]; simpl in *.
+            {
+              inversion Hx02. clear Hx02. subst.
+              exists x'.
+              split;[reflexivity|].
+              left. assumption.
+            }
+            {
+              inversion Hx0. clear Hx0. subst.
+              exists y.
+              split;[reflexivity|].
+              right. reflexivity.
+            }
+          }
+          {
+            simpl in *.
+            destruct Hx0 as [x' [Hx'1 [Hx'2|Hx'3]]].
+            {
+              inversion Hx'1. subst. clear Hx'1.
+              destruct (decide (x' = y)).
+              {
+                right. congruence.
+              }
+              {
+                left.
+                split.
+                {
+                  intros [HContra|HContra];subst; contradiction.
+                }
+                {
+                  exists x'.
+                  split;[reflexivity|assumption].
+                }
+              }
+            }
+            subst.
+            inversion Hx'1. subst. clear Hx'1.
+            right.
+            reflexivity.
+          }
+        }
+        rewrite Hup.
+        clear Hup.
+
+        destruct (decide (x ∈ named_free_evars t)), (decide (y ∈ named_free_evars u)).
+        {
+          
+        }
+        destruct (decide (y ∈ D2)).
+        {
+          apply (IHalpha_equiv' D1 D1'); auto.
+          { set_solver. }  
+        }
+        apply (IHalpha_equiv' D1 D1'); auto.
+        {
+
+          
+        set_solver.
+        }
+        assert (x = y).
+        {
+          unfold twice in HR1,HR1'.
+          rewrite elem_of_subseteq in HR1.
+          rewrite elem_of_subseteq in HR1'.
+          setoid_rewrite elem_of_map in HR1.
+          setoid_rewrite elem_of_map in HR1'.
+          clear HR1' Hsv.
+          set_solver.
+        }
+        Search pb_update diagonal.
+        apply IHalpha_equiv'.
+      }
+    Qed.
+
 
     #[local]
     Hint Constructors is_nsubpattern_of_ind : core.
