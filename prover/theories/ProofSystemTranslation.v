@@ -318,6 +318,7 @@ Fixpoint rename {Σ : Signature}
     }
   Qed.
 
+
   Inductive alpha_equiv'
     {Σ : Signature}
     (R : PartialBijection evar)
@@ -2174,59 +2175,151 @@ Fixpoint rename {Σ : Signature}
     Definition state_alpha_normalized {Σ : Signature} (state : CollapseState) : Prop :=
       Forall alpha_normalized (cs_history state)
     .
-(**)
+
+
+  Program Definition pb_update_iter
+  {A : Type}
+  {_eqd : EqDecision A}
+  {_cnt : Countable A}
+  (pb1 pb2 : PartialBijection A)
+  : PartialBijection A :=
+    set_fold
+      (fun (p : (prod A A)) (b : PartialBijection A) => pb_update b p.1 p.2)
+      pb1 (pbr pb2)
+  .
+
+  Lemma pb_update_iter_assoc
+  {A : Type}
+  {_eqd : EqDecision A}
+  {_cnt : Countable A}
+  (pb1 pb2 pb3 : PartialBijection A)
+  : pb_update_iter (pb_update_iter pb1 pb2) pb3
+    = pb_update_iter pb1 (pb_update_iter pb2 pb3).
+  Proof.
+
+  Qed.
+
+
+
+  (*
+  Program Definition pb_union
+  {A : Type}
+  {_eqd : EqDecision A}
+  {_cnt : Countable A}
+  (pb1 pb2 : PartialBijection A)
+  : PartialBijection
+  (R : gset (prod A A))
+*)
+  (* An attempt with pb_update_iter.
+     We cannot do set_fold_disj_union_strong,
+     because the update function is not commutative.
+   *)
+  Lemma alpha_equiv'_diagonal {Σ : Signature} D1 D1' D2 D2' a b R R':
+  (named_free_evars a ∪ named_free_evars b) ⊆ D2 ->
+  (named_free_svars a ∪ named_free_svars b) ⊆ D2' ->
+  alpha_equiv' (pb_update_iter (diagonal D1) R) (pb_update_iter (diagonal D1') R') a b ->
+  alpha_equiv' (pb_update_iter (diagonal D2) R) (pb_update_iter (diagonal D2') R') a b
+.
+Abort.
+
      (* ∃ x. x ≡α ∃ y. y *)
-    Lemma alpha_equiv'_diagonal {Σ : Signature} D1 D1' D2 D2' a b:
-      (named_free_evars a ∪ named_free_evars b) ⊆ D1 ->
-      (named_free_svars a ∪ named_free_svars b) ⊆ D1' ->
+    Lemma alpha_equiv'_diagonal {Σ : Signature} D1 D1' D2 D2' a b R R':
       (named_free_evars a ∪ named_free_evars b) ⊆ D2 ->
       (named_free_svars a ∪ named_free_svars b) ⊆ D2' ->
-      alpha_equiv' (diagonal D1) (diagonal D1') a b ->
-      alpha_equiv' (diagonal D2) (diagonal D2') a b
+      alpha_equiv' (pb_update_iter (diagonal D1) R) (pb_update_iter (diagonal D1') R') a b ->
+      alpha_equiv' (pb_update_iter (diagonal D2) R) (pb_update_iter (diagonal D2') R') a b
     .
     Proof.
-      intros Hev1 Hsv1 Hev2 Hsv2 H.
+      intros Hev2 Hsv2 H.
       
-      remember (diagonal D1) as R1.
-      remember (diagonal D1') as R1'.
-      assert (HR1 : pbr R1 ⊆ pbr (diagonal D1)) by set_solver.
-      assert (HR1' : pbr R1' ⊆ pbr (diagonal D1')) by set_solver.
+      remember (pb_update_iter (diagonal D1) R) as R1.
+      remember (pb_update_iter (diagonal D1') R') as R1'.
+      assert (HR1 : pbr R1 ⊆ pbr (pb_update_iter (diagonal D1) R)) by set_solver.
+      assert (HR1' : pbr R1' ⊆ pbr (pb_update_iter (diagonal D1') R')) by set_solver.
       clear HeqR1 HeqR1'.
 
       remember (diagonal D2) as R2.
       remember (diagonal D2') as R2'.
       assert (HR2 : pbr (diagonal D2) ⊆ pbr R2) by set_solver.
       assert (HR2' : pbr (diagonal D2') ⊆ pbr R2') by set_solver.
-
       clear HeqR2 HeqR2'.
-      move: D1 D1' D2 D2' Hev1 Hsv1 Hev2 Hsv2 HR1 HR1' HR2 HR2'.
-      induction H; intros D1 D1' D2 D2' Hev1 Hsv1 Hev2 Hsv2 HR1 HR1' HR2 HR2'; simpl in *.
+
+      move: D1 D1' R R' HR1 HR1' D2 D2' Hev2 Hsv2 R2 R2' HR2 HR2'.
+      induction H;
+        intros D1 D1' Res Res' HR1 HR1' D2 D2' Hev2 Hsv2 R2 R2' HR2 HR2';
+        simpl in *.
       {
         constructor.
-        clear R' HR1' HR2'.
-        unfold twice in *.
+        clear -HR1 HR2 pf Hev2.
+        move: R pf HR1.
+        induction Res using set_ind_L;
+          intros R pf HR1.
+        {
+          unfold pb_update_iter.
+          rewrite set_fold_empty.
+          unfold pb_update_iter in HR1.
+          rewrite set_fold_empty in HR1.
+          rewrite elem_of_subseteq in HR2.
+          apply HR2. clear HR2.
+          rewrite elem_of_subseteq in HR1.
+          apply HR1 in pf.
+          unfold diagonal in pf. simpl in pf.
+          rewrite elem_of_map in pf.
+          destruct pf as [x0 [Htmp Hin]].
+          inversion Htmp; clear Htmp; subst.
+          rewrite elem_of_map.
+          exists x0.
+          split;[reflexivity|].
+          clear -Hev2. set_solver.
+        }
+        {
+          unfold pb_update_iter.
+          simpl.
+          rewrite set_fold_disj_union_strong.
+          {
+            intros.
+            apply pb_eq_dep.
+            unfold unrelated,related,pb_update. simpl.
+            unfold unrelated,related. simpl.
+            clear.
+            apply leibniz_equiv.
+            rewrite set_equiv_subseteq.
+            rewrite 2!elem_of_subseteq.
+            setoid_rewrite elem_of_union.
+            setoid_rewrite elem_of_filter.
+            setoid_rewrite elem_of_union.
+            setoid_rewrite elem_of_filter.
+            setoid_rewrite elem_of_singleton.
+            destruct b'. simpl.
+            split; intros [x1' x2'] H.
+            
+          }
+        }
+        rewrite elem_of_subseteq in HR1.
+        destruct HR1 as [s Hs].
+        subst.
+        unfold diagonal,twice in pf. simpl in pf.
+        clear -pf Hev2 HR2.
         set_solver.
       }
       {
         constructor.
-        clear R HR1 HR2.
-        unfold twice in *.
+        destruct HR1' as [s Hs].
+        subst.
+        unfold diagonal,twice in pf. simpl in pf.
+        clear -pf Hsv2 HR2'.
         set_solver.
       }
       {
         constructor.
-        apply (IHalpha_equiv'1 D1 D1' D2 D2').
-        { set_solver. }
-        { set_solver. }
+        apply (IHalpha_equiv'1 D2 D2').
         { set_solver. }
         { set_solver. }
         { assumption. }
         { assumption. }
         { assumption. }
         { assumption. }
-        apply (IHalpha_equiv'2 D1 D1' D2 D2').
-        { set_solver. }
-        { set_solver. }
+        apply (IHalpha_equiv'2 D2 D2').
         { set_solver. }
         { set_solver. }
         { assumption. }
@@ -2236,18 +2329,14 @@ Fixpoint rename {Σ : Signature}
       }
       {
         constructor.
-        apply (IHalpha_equiv'1 D1 D1' D2 D2').
-        { set_solver. }
-        { set_solver. }
+        apply (IHalpha_equiv'1 D2 D2').
         { set_solver. }
         { set_solver. }
         { assumption. }
         { assumption. }
         { assumption. }
         { assumption. }
-        apply (IHalpha_equiv'2 D1 D1' D2 D2').
-        { set_solver. }
-        { set_solver. }
+        apply (IHalpha_equiv'2 D2 D2').
         { set_solver. }
         { set_solver. }
         { assumption. }
@@ -2259,6 +2348,9 @@ Fixpoint rename {Σ : Signature}
       { constructor. }
       {
         constructor.
+        destruct HR1 as [s Hs].
+        destruct HR1' as [s' Hs'].
+        subst.
         (* In order to use the induction hypothesis, it must hold that x=y.
            So what if it does not?*)
         
@@ -2431,7 +2523,7 @@ Fixpoint rename {Σ : Signature}
       }
     Qed.
 
-
+*)
     #[local]
     Hint Constructors is_nsubpattern_of_ind : core.
 
