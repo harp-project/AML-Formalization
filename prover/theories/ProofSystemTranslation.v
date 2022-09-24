@@ -2175,6 +2175,9 @@ Fixpoint rename {Σ : Signature}
       Forall alpha_normalized (cs_history state)
     .
 
+    #[local]
+    Hint Constructors is_nsubpattern_of_ind : core.
+
     Lemma collapse_aux_preserves_an
     {Σ : Signature} (state : CollapseState) (nϕ : NamedPattern) :
       state_alpha_normalized state ->
@@ -2213,23 +2216,60 @@ Fixpoint rename {Σ : Signature}
         unfold alpha_normalized in *.
         clear IHnϕ1 IHnϕ2 Han H IH1 IH2.
 
-      Ltac solve_with_alpha :=
-        match goal with
-        | [Ha : (alpha_equiv _ _),
-           H : (forall _ _ _ _ _, _) |- _]
-           => let Hnew := fresh "Hnew" in
-              unshelve(epose proof (Hnew := H _ _ _ _ Ha); apply Hnew)
-        end.
+        Ltac simpl_free :=
+          repeat (
+            repeat match goal with
+            | [ H : context [named_free_evars (collapse_aux ?st ?phi).2 ] |- _]
+              => rewrite (alpha_equiv_impl_same_evars (collapse_aux st phi).2 phi) in H;
+                 [apply collapse_aux_alpha'|]
+            | [ H : context [named_free_svars (collapse_aux ?st ?phi).2 ] |- _]
+                 => rewrite (alpha_equiv_impl_same_svars (collapse_aux st phi).2 phi) in H;
+                    [apply collapse_aux_alpha'|]
+            | [ |- context [named_free_evars (collapse_aux ?st ?phi).2 ]]
+              => rewrite (alpha_equiv_impl_same_evars (collapse_aux st phi).2 phi);
+                 [apply collapse_aux_alpha'|]
+            | [ |- context [named_free_svars (collapse_aux ?st ?phi).2 ]]
+                 => rewrite (alpha_equiv_impl_same_svars (collapse_aux st phi).2 phi);
+                    [apply collapse_aux_alpha'|]
+            end
+          )
+        .
+
         inversion H1; inversion H2; subst; clear H1 H2; simpl in *; try reflexivity;
-          inversion Hae; clear Hae; subst; simpl in *; auto; f_equal.
-        
+          inversion Hae; clear Hae; subst; simpl in *; auto; f_equal;
+          try (match goal with
+          | [ H : is_nsubpattern_of_ind ?a ?b |- ?c = ?d] =>
+            assert (is_nsubpattern_of_ind c b) by
+            ((eapply is_nsubpattern_of_ind_trans;[|apply H];(eauto)))
+          end);
+          try (match goal with
+          | [ H : is_nsubpattern_of_ind ?a ?b |- ?c = ?d] =>
+            assert (is_nsubpattern_of_ind d b) by
+            ((eapply is_nsubpattern_of_ind_trans;[|apply H];(eauto)))
+          end);
+          simpl_free
+        .
+        {
+          apply IH31; try assumption;try solve[apply nsub_eq; reflexivity].
+          unfold alpha_equiv.
+          simpl_free.
+          apply tEt'.
+        }
+        { apply IH11; try assumption; try solve[apply nsub_eq; reflexivity].
+        }
+        apply IH11;first[(apply nsub_eq; reflexivity)|assumption].
+        { apply nsub_eq; reflexivity. }
+        { assumption. }
+        Print is_nsubpattern_of_ind.
           match goal with
-          | [ Hae : alpha_equiv' _ _ ?x ?y,
+          | [ H1 : is_nsubpattern_of_ind _ _,
+              H2 : is_nsubpattern_of_ind _ _,
               H : (forall _ _ _ _ _, _)
-              |- ?x = ?y]
+              |- _]
             => let Hnew := fresh "Hnew" in
-            unshelve(epose proof (Hnew := H _ _ _ _ Hae); apply Hnew)
+            pose proof (Hnew := H _ _ H1 H2)
           end.
+          pose proof (Hnew' := IH31 _ _ H H6).
           solve_with_alpha; auto with nocore.
         simpl.
       }
