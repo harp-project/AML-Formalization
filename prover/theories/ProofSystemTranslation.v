@@ -2340,6 +2340,22 @@ Fixpoint rename {Σ : Signature}
       set_solver.
     Qed.
 
+    Lemma pb_update_shadow_subseteq_2
+    {A : Type}
+    {_eqd : EqDecision A}
+    {_cnt : Countable A}
+    (pb : PartialBijection A)
+    (x x' y : A)
+    : pbr (pb_update (pb_update pb x y) x' y) ⊆ pbr (pb_update pb x' y).
+    Proof.
+      rewrite elem_of_subseteq.
+      setoid_rewrite elem_of_union.
+      setoid_rewrite elem_of_filter.
+      setoid_rewrite elem_of_singleton.
+      unfold unrelated,related. simpl.
+      set_solver.
+    Qed.
+
     Lemma alpha_equiv'_diagonal {Σ : Signature}
       (D1 : gset evar) (D1' : gset svar)
       (D2 : gset evar) (D2' : gset svar)
@@ -2506,51 +2522,7 @@ Fixpoint rename {Σ : Signature}
       {
         constructor.
 
-        Check related.
-        (*
-        destruct (list_find (related (x,y)) Res).
-        2: {
-          clear -H.
-        }
-*)
-(*
-        destruct (decide (x = y)).
-        {
-          subst.
-          pose proof (IH := IHalpha_equiv' D1 D1' Res Res').
-          feed specialize IH.  
-          {
-            rewrite elem_of_subseteq.
-            intros x0 Hx0.
-            destruct x0 as [e1 e2]. simpl in *.
-            rewrite elem_of_union in Hx0.
-            simpl.
-            destruct Hx0 as [Hx0 | Hx0].
-            {
-              (* This follows from the monotonicity of filter,
-                 but there is no such lemma in stdpp and i am not interested
-                 in writing one now
-                *)
-              rewrite elem_of_filter in Hx0.
-              destruct Hx0 as [Hx01 Hx02].
-              eapply elem_of_weaken in Hx02;[|apply HR1].
-              exact Hx02.
-            }
-            {
-              rewrite elem_of_singleton in Hx0.
-              inversion Hx0. clear Hx0. subst.
-              rewrite elem_of_pb_update_iter.
-              assumption.
-            }
-          }
-          { assumption. }
-        }
-  *)     
-  
-              (* Idea: if x=y, then maybe when specializing the induction hypothesis,
-               we might try not extend the residual list, but the diagonal set...
-               In meanwhile, if x<>y, then what?
-            *)
+      
         pose proof (IH := IHalpha_equiv' D1 D1' ((x,y)::Res) Res').
         feed specialize IH.
         {
@@ -2712,6 +2684,9 @@ Fixpoint rename {Σ : Signature}
           }
           { apply HR2'. }
           simpl in IH1.
+          eapply alpha'_mono in IH1.
+          3: apply reflexivity.
+          2: apply pb_update_shadow_subseteq_2.
           apply IH1.
         }
         
