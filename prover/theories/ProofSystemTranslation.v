@@ -2217,31 +2217,110 @@ Fixpoint rename {Σ : Signature}
   Qed.
 
 
-
-  Lemma pb_update_iter_diag
+  Lemma elem_of_pb_update_iter
   {A : Type}
   {_eqd : EqDecision A}
   {_cnt : Countable A}
-  (pb1 pb2 : PartialBijection A)
-  D1 D2
+  (pb : PartialBijection A)
+  (x y : A)
   (u : list (prod A A))
-  : pbr pb1 ⊆ pbr pb2 ->
-    pbr (pb_update_iter (diagonal D1) u) ⊆ pbr (pb_update_iter (diagonal D2) u)
+  :
+    ((x, y) ∈ pbr (pb_update_iter pb u)) <->
+    (((x,y) ∈ pbr pb /\ (x ∉ map fst u) /\ (y ∉ map snd u))
+    \/ (exists (i : nat), (u !! i = Some (x, y)) /\
+        (
+        forall (j : nat),  j < i ->
+          forall (x' y' : A), u !! j = Some (x', y') -> x <> x' /\ y <> y'))
+    )
   .
   Proof.
-    move: pb1 pb2.
-    induction u; intros pb1 pb2 H.
+    move: pb x y.
+    induction u; intros pb x y; simpl in *.
     {
-      simpl. exact H.
+      set_solver.
     }
     {
+      specialize (IHu pb x y).
+      destruct a as [x' y']. simpl.
+      rewrite elem_of_union.
+      unfold unrelated,related.
+      rewrite elem_of_filter.
+      rewrite IHu. clear IHu.
       simpl.
-      rewrite elem_of_subseteq.
-      intros [x y].
-      rewrite 2!elem_of_union.
       rewrite elem_of_singleton.
-      rewrite 2!elem_of_filter.
-      naive_solver.
+      rewrite 2!elem_of_cons.
+      destruct pb. simpl in *.
+      split.
+      {
+        intros [H|H].
+        {
+          destruct H as [H1 H2].
+          destruct H2 as [[H21 [H22 H23]]|H2].
+          {
+            left. naive_solver.
+          }
+          {
+            destruct H2 as [i [Hi1 Hi2]].
+            right.
+            exists (S i).
+            simpl.
+            split;[assumption|].
+            intros j Hj x'0 y'0 Hx'0y'0.
+            destruct j; simpl in *.
+            {
+              naive_solver.
+            }
+            {
+              assert (Hji : j < i) by lia.
+              specialize (Hi2 j Hji).
+              apply Hi2.
+              assumption.
+            }
+          }
+        }
+        {
+          inversion H; clear H; subst.
+          destruct (decide ((x', y') ∈ pbr0 ∧ ¬ (x' = x' ∨ x' ∈ map fst u) ∧ ¬ (y' = y' ∨ y' ∈ map snd u))).
+          { left; assumption. }
+          right.
+          apply not_and_or in n.
+          exists 0.
+          split;[reflexivity|].
+          intros j HContra.
+          lia.
+        }
+      }
+      {
+        intros [H|H].
+        {
+          naive_solver.
+        }
+        {
+          destruct H as [i [Hi1 Hi2]].
+          destruct i; simpl in *.
+          {
+            inversion Hi1.
+            subst. clear Hi1.
+            right. reflexivity.
+          }
+          {
+
+            pose proof (Hi2' := Hi2 0 ltac:(lia) x' y' ltac:(reflexivity)).
+            destruct Hi2' as [Hi21 Hi22].
+            left.
+            split;[naive_solver|].
+            destruct (decide ((x, y) ∈ pbr0 ∧ (x ∉ map fst u) ∧ y ∉ map snd u)).
+            { left. assumption. }
+            right.
+            apply not_and_or in n.
+            exists i. split;[assumption|].
+            intros j Hji x'0 y'0 Huj.
+            apply (Hi2 (S j)).
+            { lia. }
+            simpl. assumption.
+          }
+        }
+      }
     }
   Qed.
 
