@@ -2375,13 +2375,9 @@ Fixpoint rename {Σ : Signature}
         rewrite [_.1]/=.
         rewrite [_.2]/=.
         rewrite [pb_update_iter pb _]/=.
-
-        
-        apply pb_update_mono.
-        specialize (IHres)
-        auto.
+        admit.
       }
-    Qed.
+    Abort.
 
 
     Lemma pb_update_shadow_subseteq_2_iter
@@ -2426,20 +2422,52 @@ Fixpoint rename {Σ : Signature}
         rewrite elem_of_singleton in H2.
         rewrite elem_of_union.
         rewrite elem_of_singleton.
-        pose proof (IH1 := IHRes x u v).
-        setoid_rewrite elem_of_subseteq in IH1.
-        setoid_rewrite elem_of_union in IH1.
-        specialize (IH1 pb (a,b)).
-        
+
         destruct H2 as [H2|H2].
-        2: {
-          inversion H2; clear H2; subst.
+        {
+          pose proof (IH1 := IHRes x u y).
+          setoid_rewrite elem_of_subseteq in IH1.
+          setoid_rewrite elem_of_union in IH1.
+          specialize (IH1 pb (a,b)).
+          feed specialize IH1.
+          {
+            left.
+            rewrite elem_of_filter in H2.
+            destruct H2 as [H21 H22].
+            rewrite elem_of_filter.
+            split.
+            {
+              unfold unrelated,related.
+              unfold unrelated,related in H21.
+              simpl in *.
+              tauto.
+            }
+            exact H22.
+          }
+          destruct IH1 as [IH1|IH1].
+          2: {
+            rewrite elem_of_singleton in IH1. inversion IH1. subst. contradiction.
+          }
+          left.
+          rewrite elem_of_filter in IH1.
+          rewrite elem_of_filter.
+          unfold unrelated,related in IH1.
+          simpl in IH1.
+          destruct IH1 as [IH11 IH12].
+          unfold unrelated,related.
+          simpl.
+          rewrite elem_of_filter in H2.
+          destruct H2 as [H21 H22].
+          unfold unrelated,related in H21.
+          simpl in H21.
+          split.
+          { tauto. }
+          apply IH12.
+        }
+        {
+          inversion H2. clear H2. subst.
           right. reflexivity.
         }
-        left.
-        specialize (IHRes x u v pb).
-        eapply transitivity.
-        
       }
     Qed.
 
