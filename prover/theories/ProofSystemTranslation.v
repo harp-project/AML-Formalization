@@ -2415,64 +2415,76 @@ Fixpoint rename {Σ : Signature}
       }
       {
         constructor.
-        destruct HR1' as [s Hs].
-        subst.
-        unfold diagonal,twice in pf. simpl in pf.
-        clear -pf Hsv2 HR2'.
-        set_solver.
+        {
+          specialize (IHalpha_equiv'1 D1 D1' Res Res' HR1 HR1' D2 D2').
+          apply IHalpha_equiv'1.
+          { set_solver. }
+          { set_solver. }
+          { assumption. }
+          { assumption. }
+        }
+        {
+          specialize (IHalpha_equiv'2 D1 D1' Res Res' HR1 HR1' D2 D2').
+          apply IHalpha_equiv'2.
+          { set_solver. }
+          { set_solver. }
+          { assumption. }
+          { assumption. }
+        }
       }
       {
         constructor.
-        apply (IHalpha_equiv'1 D2 D2').
-        { set_solver. }
-        { set_solver. }
-        { assumption. }
-        { assumption. }
-        { assumption. }
-        { assumption. }
-        apply (IHalpha_equiv'2 D2 D2').
-        { set_solver. }
-        { set_solver. }
-        { assumption. }
-        { assumption. }
-        { assumption. }
-        { assumption. }
-      }
-      {
-        constructor.
-        apply (IHalpha_equiv'1 D2 D2').
-        { set_solver. }
-        { set_solver. }
-        { assumption. }
-        { assumption. }
-        { assumption. }
-        { assumption. }
-        apply (IHalpha_equiv'2 D2 D2').
-        { set_solver. }
-        { set_solver. }
-        { assumption. }
-        { assumption. }
-        { assumption. }
-        { assumption. }
+        {
+          specialize (IHalpha_equiv'1 D1 D1' Res Res' HR1 HR1' D2 D2').
+          apply IHalpha_equiv'1.
+          { set_solver. }
+          { set_solver. }
+          { assumption. }
+          { assumption. }
+        }
+        {
+          specialize (IHalpha_equiv'2 D1 D1' Res Res' HR1 HR1' D2 D2').
+          apply IHalpha_equiv'2.
+          { set_solver. }
+          { set_solver. }
+          { assumption. }
+          { assumption. }
+        }
       }
       { constructor. }
       { constructor. }
       {
         constructor.
-        destruct HR1 as [s Hs].
-        destruct HR1' as [s' Hs'].
-        subst.
         (* In order to use the induction hypothesis, it must hold that x=y.
            So what if it does not?*)
         
-        pose proof (IH := IHalpha_equiv' (D1 ∪ {[x;y]}) D1' (D2 ∪ {[x;y]}) D2').
+        pose proof (IH := IHalpha_equiv' D1 D1' ((x,y)::Res) Res').
         feed specialize IH.
-        { clear -Hev1. set_unfold. intros.
-          destruct (decide (x0 = x)).
-          { right. left. assumption. }
-          destruct (decide (x0 = y)).
-          { right. right. assumption. }
-          left. apply Hev1. tauto.
+        {
+          rewrite elem_of_subseteq.
+          intros x0 Hx0.
+          destruct x0 as [e1 e2]. simpl in *.
+          rewrite elem_of_union in Hx0.
+          simpl.
+          rewrite elem_of_union.
+          destruct Hx0 as [Hx0 | Hx0].
+          {
+            left.
+            (* This follows from the monotonicity of filter,
+               but there is no such lemma in stdpp and i am not interested
+               in writing one now
+              *)
+            rewrite elem_of_filter in Hx0.
+            rewrite elem_of_filter.
+            destruct Hx0 as [Hx01 Hx02].
+            split;[assumption|].
+            eapply elem_of_weaken in Hx02;[|apply HR1].
+            exact Hx02.
+          }
+          {
+            right.
+            assumption.
+          }
         }
         { assumption. }
         {
