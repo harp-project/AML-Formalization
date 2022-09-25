@@ -2216,6 +2216,35 @@ Fixpoint rename {Σ : Signature}
     }
   Qed.
 
+
+
+  Lemma pb_update_iter_diag
+  {A : Type}
+  {_eqd : EqDecision A}
+  {_cnt : Countable A}
+  (pb1 pb2 : PartialBijection A)
+  D1 D2
+  (u : list (prod A A))
+  : pbr pb1 ⊆ pbr pb2 ->
+    pbr (pb_update_iter (diagonal D1) u) ⊆ pbr (pb_update_iter (diagonal D2) u)
+  .
+  Proof.
+    move: pb1 pb2.
+    induction u; intros pb1 pb2 H.
+    {
+      simpl. exact H.
+    }
+    {
+      simpl.
+      rewrite elem_of_subseteq.
+      intros [x y].
+      rewrite 2!elem_of_union.
+      rewrite elem_of_singleton.
+      rewrite 2!elem_of_filter.
+      naive_solver.
+    }
+  Qed.
+
     Lemma alpha_equiv'_diagonal {Σ : Signature} D1 D1' D2 D2' a b R R':
       (named_free_evars a ∪ named_free_evars b) ⊆ D2 ->
       (named_free_svars a ∪ named_free_svars b) ⊆ D2' ->
@@ -2243,132 +2272,20 @@ Fixpoint rename {Σ : Signature}
         simpl in *.
       {
         constructor.
-        clear -HR1 HR2 pf Hev2.
-        move: R x y D1 pf HR1 R2 D2 Hev2 HR2.
-        induction Res;
-          intros R x y D1 pf HR1 R2 D2 Hev2 HR2.
+        clear HR1' HR2' D2' Hsv2 R2' Res'.
+        assert (H1 : (x, y) ∈ pbr (pb_update_iter (diagonal D1) Res)).
         {
-          unfold pb_update_iter.
-          unfold pb_update_iter in HR1.
-          simpl. simpl in HR1.
-          rewrite elem_of_subseteq in HR2.
-          apply HR2. clear HR2.
-          rewrite elem_of_subseteq in HR1.
-          apply HR1 in pf.
-          unfold diagonal in pf. simpl in pf.
-          rewrite elem_of_map in pf.
-          destruct pf as [x0 [Htmp Hin]].
-          inversion Htmp; clear Htmp; subst.
-          rewrite elem_of_map.
-          exists x0.
-          split;[reflexivity|].
-          clear -Hev2. set_solver.
+          clear -pf HR1.
+          set_solver.
         }
+        assert (H2 : pbr (diagonal D1) ⊆ pbr R2).
         {
-          simpl.
-          rewrite elem_of_union.
-          destruct (decide ((x,y)=a)).
-          { subst. right. simpl. rewrite elem_of_singleton. reflexivity. }
-          pose proof (HR1' := HR1).
-          simpl in HR1'.
-          rewrite elem_of_subseteq in HR1'.
-          specialize (HR1' _ pf).
-          rewrite elem_of_union in HR1'.
-          destruct HR1' as [HR1'|HR1'].
-          2: {
-            rewrite elem_of_singleton in HR1'.
-            inversion HR1'. subst. clear HR1'.
-            destruct a. simpl in *. contradiction.
-          }
-          specialize (IHRes (pb_update R a.1 a.2) x y D1).
-          feed specialize IHRes.
-          {
-            unfold pb_update. simpl.
-            rewrite elem_of_union.
-            left.
-            unfold unrelated,related. simpl.
-            rewrite elem_of_filter. simpl.
-            split;[|assumption].
-            destruct a. simpl in HR1'.
-            intros HContra. apply n.
-            simpl in n, HR1', Hev2,pf.
-            assert (Hin1 : (x, y) ∈ pbr (pb_update_iter (diagonal D1) ((e, e0) :: Res))).
-            {
-              eapply elem_of_weaken. 2: apply HR1. exact pf.
-            }
-            assert (Hin2 : (e, e0) ∈ pbr (pb_update_iter (diagonal D1) ((e, e0) :: Res))).
-            {
-              simpl. rewrite elem_of_union. right. rewrite elem_of_singleton. reflexivity.
-            }
-            destruct HContra as [HContra|HContra];subst.
-            {
-              f_equal.
-              eapply (pb1 _ (pb_update_iter (diagonal D1) ((e,e0) :: Res))).
-              { apply Hin1. }
-              { apply Hin2. }
-            }
-            {
-              f_equal.
-              eapply (pb2 _ (pb_update_iter (diagonal D1) ((e,e0) :: Res))).
-              { apply Hin1. }
-              { apply Hin2. }
-            }
-          }
-          {
-            simpl in HR1.
-            rewrite elem_of_subseteq.
-            rewrite elem_of_subseteq in HR1.
-            intros x0 Hx0.
-            unfold pb_update in Hx0. simpl in Hx0.
-            rewrite elem_of_union in Hx0.
-            rewrite elem_of_filter in Hx0.
-            rewrite elem_of_filter in HR1'.
-            destruct HR1' as [HR1'1 HR1'2].
-            unfold unrelated,related in HR1'1.
-            simpl in HR1'1.
-            destruct a.
-            simpl in *.
-            destruct x0 as [c d].
-            unfold unrelated,related in *. rewrite elem_of_singleton in Hx0.
-            simpl in *.
-            destruct Hx0 as [Hx0|Hx0].
-            2: {
-              inversion Hx0. subst. clear Hx0.
-              naive_solver.
-              rewrite elem_of_singleton in Hx0. subst.
-              simpl in *.
-            }
-            specialize (HR1 x0 Hx0).
-            apply HR1'.
-          }
-          left.
-          rewrite elem_of_filter.
-          split.
-          { unfold unrelated, related. simpl. destruct a. simpl. intros HContra.
-            apply n.
-          }
-
-          rewrite elem_of_subseteq in HR1.
-          specialize (HR1 _ pf).
-          rewrite elem_of_union in HR1.
-          simpl. rewrite elem_of_union.
-          destruct HR1 as [HR1 | HR1].
-          {
-            unfold unrelated,related in HR1.
-            rewrite elem_of_filter in HR1.
-            destruct HR1 as [HR11 HR12].
-            specialize (IHRes _ pf HR12).
-          }
-          simpl.
-          rewrite elem_of_union.
-          rewrite set_fold_disj_union_strong.
+          unfold diagonal. simpl.
         }
-        rewrite elem_of_subseteq in HR1.
-        destruct HR1 as [s Hs].
-        subst.
-        unfold diagonal,twice in pf. simpl in pf.
-        clear -pf Hev2 HR2.
-        set_solver.
+        unfold diagonal in H1. simpl in H1.
+        
+        eapply pb_update_iter_mono in H1.
+        
       }
       {
         constructor.
