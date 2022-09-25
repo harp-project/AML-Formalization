@@ -2351,20 +2351,67 @@ Fixpoint rename {Σ : Signature}
         simpl in *.
       {
         constructor.
-        clear HR1' HR2' D2' Hsv2 R2' Res'.
         assert (H1 : (x, y) ∈ pbr (pb_update_iter (diagonal D1) Res)).
         {
           clear -pf HR1.
           set_solver.
         }
-        assert (H2 : pbr (diagonal D1) ⊆ pbr R2).
+        rewrite elem_of_pb_update_iter in H1.
+        rewrite elem_of_pb_update_iter.
+        destruct H1 as [H1|H1].
         {
-          unfold diagonal. simpl.
+          left.
+          destruct H1 as [H1 [H2 H3]].
+          repeat split; try assumption.
+          unfold diagonal in H1. simpl in H1.
+          rewrite elem_of_map in H1.
+          destruct H1 as [e [He1 He2]].
+          unfold twice in He1. inversion He1. subst.
+          eapply elem_of_weaken;[|apply HR2]. clear HR2.
+          rewrite elem_of_map. exists e.
+          split;[reflexivity|].
+          clear -Hev2.
+          set_solver.
         }
-        unfold diagonal in H1. simpl in H1.
-        
-        eapply pb_update_iter_mono in H1.
-        
+        {
+          destruct H1 as [i [Hresi H1]].
+          right.
+          exists i.
+          split;[assumption|].
+          naive_solver.
+        }
+      }
+      {
+        constructor.
+        assert (H1 : (X, Y) ∈ pbr (pb_update_iter (diagonal D1') Res')).
+        {
+          clear -pf HR1'.
+          set_solver.
+        }
+        rewrite elem_of_pb_update_iter in H1.
+        rewrite elem_of_pb_update_iter.
+        destruct H1 as [H1|H1].
+        {
+          left.
+          destruct H1 as [H1 [H2 H3]].
+          repeat split; try assumption.
+          unfold diagonal in H1. simpl in H1.
+          rewrite elem_of_map in H1.
+          destruct H1 as [e [He1 He2]].
+          unfold twice in He1. inversion He1. subst.
+          eapply elem_of_weaken;[|apply HR2']. clear HR2'.
+          rewrite elem_of_map. exists e.
+          split;[reflexivity|].
+          clear -Hsv2.
+          set_solver.
+        }
+        {
+          destruct H1 as [i [Hresi H1]].
+          right.
+          exists i.
+          split;[assumption|].
+          naive_solver.
+        }
       }
       {
         constructor.
