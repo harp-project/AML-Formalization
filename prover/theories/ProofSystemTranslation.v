@@ -2356,6 +2356,95 @@ Fixpoint rename {Σ : Signature}
       set_solver.
     Qed.
 
+    Lemma pb_update_shadow_subseteq_2_iter
+    {A : Type}
+    {_eqd : EqDecision A}
+    {_cnt : Countable A}
+    (pb : PartialBijection A)
+    (Res : list (prod A A))
+    (x x' y : A)
+    : pbr (pb_update (pb_update_iter (pb_update pb x y) Res) x' y)
+    ⊆ pbr (pb_update (pb_update (pb_update_iter pb Res) x y) x' y).
+    Proof.
+      move: x x' y pb.
+      induction Res; intros x x' y pb.
+      { simpl. set_solver. }
+      {
+        rewrite [pb_update_iter _ _]/=.
+        destruct a as [a b].
+        rewrite [_.1]/=.
+        rewrite [_.2]/=.
+        rewrite [pb_update_iter pb _]/=.
+
+        
+        apply pb_update_mono.
+        specialize (IHres)
+        auto.
+      }
+    Qed.
+
+
+    Lemma pb_update_shadow_subseteq_2_iter
+    {A : Type}
+    {_eqd : EqDecision A}
+    {_cnt : Countable A}
+    (pb : PartialBijection A)
+    (Res : list (prod A A))
+    (x x' y : A)
+    : pbr (pb_update (pb_update_iter (pb_update pb x y) Res) x' y)
+    ⊆ pbr (pb_update (pb_update_iter pb Res) x' y).
+    Proof.
+      move: x x' y pb.
+      induction Res; intros x x' y pb.
+      {
+        apply pb_update_shadow_subseteq_2.
+      }
+      {
+        simpl in *.
+        destruct a as [u v].
+        simpl.
+        rewrite elem_of_subseteq.
+        intros [a b] H.
+        rewrite elem_of_union.
+        rewrite elem_of_singleton.
+        rewrite elem_of_union in H.
+        rewrite elem_of_singleton in H.
+        destruct H as [H|H].
+        2: {
+          inversion H; clear H; subst.
+          right. reflexivity.
+        }
+        left.
+        rewrite elem_of_filter in H.
+        destruct H as [H1 H2].
+        rewrite elem_of_filter.
+        split;[assumption|].
+        unfold unrelated,related in H1. simpl in H1.
+        apply not_or_and in H1.
+        destruct H1 as [Hx' Hy].
+        rewrite elem_of_union in H2.
+        rewrite elem_of_singleton in H2.
+        rewrite elem_of_union.
+        rewrite elem_of_singleton.
+        pose proof (IH1 := IHRes x u v).
+        setoid_rewrite elem_of_subseteq in IH1.
+        setoid_rewrite elem_of_union in IH1.
+        specialize (IH1 pb (a,b)).
+        
+        destruct H2 as [H2|H2].
+        2: {
+          inversion H2; clear H2; subst.
+          right. reflexivity.
+        }
+        left.
+        specialize (IHRes x u v pb).
+        eapply transitivity.
+        
+      }
+    Qed.
+
+    
+
     Lemma alpha_equiv'_diagonal {Σ : Signature}
       (D1 : gset evar) (D1' : gset svar)
       (D2 : gset evar) (D2' : gset svar)
@@ -2686,7 +2775,20 @@ Fixpoint rename {Σ : Signature}
           simpl in IH1.
           eapply alpha'_mono in IH1.
           3: apply reflexivity.
-          2: apply pb_update_shadow_subseteq_2.
+          2: eapply pb_update_mono.
+          2: reflexivity.
+          clear -IH1.
+          move: IH1.
+          induction Res; intros IH1; simpl in *.
+          { eapply alpha'_mono in IH1.
+            3: apply reflexivity.
+            2: eapply pb_update_shadow_subseteq_2.
+            apply IH1.
+          }
+          {
+            auto.
+            destruct a. simpl in *.
+          }
           apply IH1.
         }
         
