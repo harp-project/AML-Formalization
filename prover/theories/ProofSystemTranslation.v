@@ -2657,8 +2657,70 @@ Fixpoint rename {Σ : Signature}
           assumption.
         }
         
+        destruct (decide ((x,x) ∈ pbr R2)), (decide ((y,y) ∈ pbr R2)).
+        {
+          pose proof (IH1 := IH R2 R2').
+          feed specialize IH1.
+          { set_solver. }
+          { apply HR2'. }
+          simpl in IH1.
+          apply IH1.
+        }
+        {
+          pose proof (IH1 := IH (pb_update R2 y y) R2').
+          feed specialize IH1.
+          { clear IHalpha_equiv' IH IH1.
+            rewrite elem_of_subseteq.
+            intros [x' x''] Hx'.
+            rewrite elem_of_map in Hx'.
+            destruct Hx' as [x00 [Hx00 Hx000]].
+            inversion Hx00. clear Hx00. subst.
+            rewrite elem_of_union in Hx000.
+            destruct Hx000.
+            {
+              unfold pb_update. simpl.
+              rewrite elem_of_union.
+              destruct (decide (x00 = y)).
+              {
+                subst. right. clear. set_solver.
+              }
+              {
+                left. rewrite elem_of_filter.
+                unfold unrelated,related. simpl.
+                split;[naive_solver|].
+                clear -HR2 H0.
+                set_solver.
+              }
+            }
+            {
+              rewrite elem_of_union in H0.
+              rewrite !elem_of_singleton in H0.
+              destruct H0; subst.
+              { clear -e n. unfold pb_update. simpl.
+                rewrite elem_of_union. 
+                rewrite elem_of_filter.
+                unfold unrelated,related. simpl.
+                set_solver.
+              }
+              {
+                clear -e n. unfold pb_update. simpl.
+                rewrite elem_of_union. 
+                rewrite elem_of_filter.
+                set_solver.
+              }
+            }
+          }
+          { apply HR2'. }
+          simpl in IH1.
+          apply IH1.
+        }
+        
         specialize (IH (pb_update_iter R2 ((x,x)::(y,y)::[])) R2').
         simpl in IH.
+        feed specialize IH.
+        {
+          u
+        }
         apply IH.
         {
 
