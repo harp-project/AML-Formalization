@@ -2324,9 +2324,18 @@ Fixpoint rename {Σ : Signature}
     }
   Qed.
 
-    Lemma alpha_equiv'_diagonal {Σ : Signature} D1 D1' D2 D2' a b R R':
-      (named_free_evars a ∪ named_free_evars b) ⊆ D2 ->
-      (named_free_svars a ∪ named_free_svars b) ⊆ D2' ->
+    Check @list_to_set.
+    Lemma alpha_equiv'_diagonal {Σ : Signature}
+      (D1 : gset evar) (D1' : gset svar)
+      (D2 : gset evar) (D2' : gset svar)
+      (a b : NamedPattern)
+      (R : list (prod evar evar))
+      (R' : list (prod svar svar))
+      :
+      (set_map (@twice evar) (named_free_evars a ∪ named_free_evars b))
+        ⊆ ((set_map (@twice evar) D2) ∪ (@list_to_set (prod evar evar) (gset (prod evar evar)) _ _ _ R)) ->
+      (set_map (@twice svar) (named_free_svars a ∪ named_free_svars b))
+        ⊆ ((set_map (@twice svar) D2') ∪ (@list_to_set (prod svar svar) (gset (prod svar svar)) _ _ _  R')) ->
       alpha_equiv' (pb_update_iter (diagonal D1) R) (pb_update_iter (diagonal D1') R') a b ->
       alpha_equiv' (pb_update_iter (diagonal D2) R) (pb_update_iter (diagonal D2') R') a b
     .
@@ -2356,12 +2365,13 @@ Fixpoint rename {Σ : Signature}
           clear -pf HR1.
           set_solver.
         }
+        
         rewrite elem_of_pb_update_iter in H1.
+
         rewrite elem_of_pb_update_iter.
-        destruct H1 as [H1|H1].
+        destruct H1 as [[H1 [H2 H3]]|H1].
         {
           left.
-          destruct H1 as [H1 [H2 H3]].
           repeat split; try assumption.
           unfold diagonal in H1. simpl in H1.
           rewrite elem_of_map in H1.
@@ -2370,8 +2380,20 @@ Fixpoint rename {Σ : Signature}
           eapply elem_of_weaken;[|apply HR2]. clear HR2.
           rewrite elem_of_map. exists e.
           split;[reflexivity|].
-          clear -Hev2.
-          set_solver.
+          clear -Hev2 H2 H3.
+          rewrite union_idemp_L in Hev2.
+          unfold twice in Hev2.
+          rewrite set_map_singleton_L in Hev2.
+          rewrite elem_of_subseteq in Hev2.
+          specialize (Hev2 (e, e) ltac:(set_solver)).
+          rewrite elem_of_union in Hev2.
+          destruct Hev2 as [Hev2|Hev2].
+          { set_solver. }
+          exfalso.
+          rewrite elem_of_list_to_set in Hev2.
+          clear -H2 Hev2.
+          (* There should be a lemma for this *)
+          induction Res; simpl; set_solver.
         }
         {
           destruct H1 as [i [Hresi H1]].
@@ -2388,12 +2410,13 @@ Fixpoint rename {Σ : Signature}
           clear -pf HR1'.
           set_solver.
         }
+        
         rewrite elem_of_pb_update_iter in H1.
+
         rewrite elem_of_pb_update_iter.
-        destruct H1 as [H1|H1].
+        destruct H1 as [[H1 [H2 H3]]|H1].
         {
           left.
-          destruct H1 as [H1 [H2 H3]].
           repeat split; try assumption.
           unfold diagonal in H1. simpl in H1.
           rewrite elem_of_map in H1.
@@ -2402,8 +2425,20 @@ Fixpoint rename {Σ : Signature}
           eapply elem_of_weaken;[|apply HR2']. clear HR2'.
           rewrite elem_of_map. exists e.
           split;[reflexivity|].
-          clear -Hsv2.
-          set_solver.
+          clear -Hsv2 H2 H3.
+          rewrite union_idemp_L in Hsv2.
+          unfold twice in Hsv2.
+          rewrite set_map_singleton_L in Hsv2.
+          rewrite elem_of_subseteq in Hsv2.
+          specialize (Hsv2 (e, e) ltac:(set_solver)).
+          rewrite elem_of_union in Hsv2.
+          destruct Hsv2 as [Hsv2|Hsv2].
+          { set_solver. }
+          exfalso.
+          rewrite elem_of_list_to_set in Hsv2.
+          clear -H2 Hsv2.
+          (* There should be a lemma for this *)
+          induction Res'; simpl; set_solver.
         }
         {
           destruct H1 as [i [Hresi H1]].
@@ -2487,6 +2522,25 @@ Fixpoint rename {Σ : Signature}
           }
         }
         { assumption. }
+        specialize (IH D2 D2').
+        feed specialize IH.
+        {
+          set_solver.
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         {
           clear -Hev2. set_unfold. intros.
           destruct (decide (x0 = x)).
