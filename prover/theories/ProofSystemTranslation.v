@@ -2801,22 +2801,11 @@ Fixpoint rename {Σ : Signature}
           }
           { apply HR2'. }
           simpl in IH1.
+
+          pose proof (Htmp' := @pb_update_shadow_subseteq_2_iter _ _ _ R2 Res y x y).
           eapply alpha'_mono in IH1.
           3: apply reflexivity.
-          2: eapply pb_update_mono.
-          2: reflexivity.
-          clear -IH1.
-          move: IH1.
-          induction Res; intros IH1; simpl in *.
-          { eapply alpha'_mono in IH1.
-            3: apply reflexivity.
-            2: eapply pb_update_shadow_subseteq_2.
-            apply IH1.
-          }
-          {
-            auto.
-            destruct a. simpl in *.
-          }
+          2: apply Htmp'.
           apply IH1.
         }
         
