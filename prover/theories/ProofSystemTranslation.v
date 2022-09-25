@@ -2324,6 +2324,22 @@ Fixpoint rename {Σ : Signature}
     }
   Qed.
 
+    Lemma pb_update_shadow_subseteq
+    {A : Type}
+    {_eqd : EqDecision A}
+    {_cnt : Countable A}
+    (pb : PartialBijection A)
+    (x y y' : A)
+    : pbr (pb_update (pb_update pb x y) x y') ⊆ pbr (pb_update pb x y').
+    Proof.
+      rewrite elem_of_subseteq.
+      setoid_rewrite elem_of_union.
+      setoid_rewrite elem_of_filter.
+      setoid_rewrite elem_of_singleton.
+      unfold unrelated,related. simpl.
+      set_solver.
+    Qed.
+
     Lemma alpha_equiv'_diagonal {Σ : Signature}
       (D1 : gset evar) (D1' : gset svar)
       (D2 : gset evar) (D2' : gset svar)
