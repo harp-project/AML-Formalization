@@ -2490,9 +2490,52 @@ Fixpoint rename {Σ : Signature}
       { constructor. }
       {
         constructor.
-        (* In order to use the induction hypothesis, it must hold that x=y.
-           So what if it does not?*)
-        
+
+        Check related.
+        (*
+        destruct (list_find (related (x,y)) Res).
+        2: {
+          clear -H.
+        }
+*)
+(*
+        destruct (decide (x = y)).
+        {
+          subst.
+          pose proof (IH := IHalpha_equiv' D1 D1' Res Res').
+          feed specialize IH.  
+          {
+            rewrite elem_of_subseteq.
+            intros x0 Hx0.
+            destruct x0 as [e1 e2]. simpl in *.
+            rewrite elem_of_union in Hx0.
+            simpl.
+            destruct Hx0 as [Hx0 | Hx0].
+            {
+              (* This follows from the monotonicity of filter,
+                 but there is no such lemma in stdpp and i am not interested
+                 in writing one now
+                *)
+              rewrite elem_of_filter in Hx0.
+              destruct Hx0 as [Hx01 Hx02].
+              eapply elem_of_weaken in Hx02;[|apply HR1].
+              exact Hx02.
+            }
+            {
+              rewrite elem_of_singleton in Hx0.
+              inversion Hx0. clear Hx0. subst.
+              rewrite elem_of_pb_update_iter.
+              assumption.
+            }
+          }
+          { assumption. }
+        }
+  *)     
+  
+              (* Idea: if x=y, then maybe when specializing the induction hypothesis,
+               we might try not extend the residual list, but the diagonal set...
+               In meanwhile, if x<>y, then what?
+            *)
         pose proof (IH := IHalpha_equiv' D1 D1' ((x,y)::Res) Res').
         feed specialize IH.
         {
@@ -2522,9 +2565,123 @@ Fixpoint rename {Σ : Signature}
           }
         }
         { assumption. }
-        specialize (IH D2 D2').
+        specialize (IH (D2 ∪ {[x;y]} ) D2').
         feed specialize IH.
-        {
+        { simpl.
+
+
+          rewrite !set_map_union_L.
+          rewrite elem_of_subseteq.
+          intros [e1 e2] He1e2.
+          assert (e1 = e2).
+          {
+            rewrite elem_of_union in He1e2.
+            destruct He1e2 as [He1e2|He1e2];rewrite elem_of_map in He1e2;
+              destruct He1e2 as [x'' [H1x'' H2x'']];
+              unfold twice in H1x''; inversion H1x''; subst;
+              reflexivity.
+          }
+          subst.
+          (* Essentially, this is our goal: *)
+          assert (Halmost: e2 = x \/ e2 = y \/ (e2,e2) ∈ Res \/ e2 ∈ D2).
+          {
+
+            destruct (decide (e2 = x)).
+            { tauto. }
+            destruct (decide (e2 = y)).
+            { tauto. }
+            right. right.
+            rewrite elem_of_subseteq in Hev2.
+            specialize (Hev2 (e2, e2)).
+            feed specialize Hev2.
+            {
+              rewrite elem_of_union in He1e2.
+              destruct He1e2 as [Htu|Htu];
+                rewrite elem_of_map in Htu;
+                destruct Htu as [e2' [He2' Htu]];
+                inversion He2'; clear He2';
+                subst e2'.
+              {
+                rewrite elem_of_map.
+                exists e2. split;[reflexivity|].
+                rewrite elem_of_union. left.
+                rewrite elem_of_difference.
+                split;[assumption|].
+                rewrite elem_of_singleton.
+                congruence.
+              }
+              {
+                rewrite elem_of_map.
+                exists e2. split;[reflexivity|].
+                rewrite elem_of_union. right.
+                rewrite elem_of_difference.
+                split;[assumption|].
+                rewrite elem_of_singleton.
+                congruence.
+              }
+            }
+            rewrite elem_of_union in Hev2.
+            rewrite elem_of_map in Hev2.
+            destruct Hev2 as [[x'' [Hev21 Hev22]]|Hev2].
+            {
+              inversion Hev21. clear Hev21. subst.
+              right. assumption.
+            }
+            {
+              rewrite elem_of_list_to_set in Hev2.
+              left. assumption.
+            }
+          }
+          
+
+          
+          rewrite !set_map_union_L in Hev2.
+          rewrite elem_of_subseteq in Hev2.
+          pose proof (Hev2' := Hev2).
+          specialize (Hev2 (e1, e2)).
+          rewrite elem_of_union in He1e2.
+          rewrite !elem_of_map in He1e2.
+          destruct He1e2 as [He1e2|He1e2].
+          {
+            destruct He1e2 as [x' [Hx' H']].
+            inversion Hx'. clear Hx'. subst.
+            rewrite !(elem_of_union,elem_of_singleton).
+            (*
+            assert (x' <> x -> x' <> y -> x ∈ named_free_evars u \/ y ∈ named_free_evars t).
+            {
+              intros.
+            }
+            *)
+
+            destruct (decide (x' = x)).
+            {
+              subst.
+            }
+            destruct (decide ((x',x')=(x,y))) as [Heq|Hneq].
+            {
+              inversion Heq. clear Heq. subst.
+              clear. set_solver.
+            }
+            {
+              feed specialize Hev2.
+              {
+                rewrite elem_of_union.
+                destruct (decide (x' = x)).
+                {
+                  assert (x' <> y) by congruence.
+                  subst.
+                }
+              }
+            }
+            set_solver.
+          }
+
+          rewrite [set_map twice (D2 ∪ _)]set_map_union_L.
+          clear -Hev2.
+          set_solver.
+          rewrite !set_map_union_L in Hev2.
+          Search set_map difference.
+          clear -Hev2.
           set_solver.
         }
 
