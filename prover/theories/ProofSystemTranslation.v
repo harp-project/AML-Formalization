@@ -2324,7 +2324,6 @@ Fixpoint rename {Σ : Signature}
     }
   Qed.
 
-    Check @list_to_set.
     Lemma alpha_equiv'_diagonal {Σ : Signature}
       (D1 : gset evar) (D1' : gset svar)
       (D2 : gset evar) (D2' : gset svar)
@@ -2632,57 +2631,21 @@ Fixpoint rename {Σ : Signature}
               left. assumption.
             }
           }
-          
+          clear -Halmost.
+          unfold twice.
+          rewrite !(elem_of_union,elem_of_map,elem_of_singleton,elem_of_list_to_set).
+          setoid_rewrite elem_of_singleton.
+          naive_solver.
+        }
+        {
+          assumption.
+        }
+        
+        specialize (IH (pb_update_iter R2 ((x,x)::(y,y)::[])) R2').
+        simpl in IH.
+        apply IH.
+        {
 
-          
-          rewrite !set_map_union_L in Hev2.
-          rewrite elem_of_subseteq in Hev2.
-          pose proof (Hev2' := Hev2).
-          specialize (Hev2 (e1, e2)).
-          rewrite elem_of_union in He1e2.
-          rewrite !elem_of_map in He1e2.
-          destruct He1e2 as [He1e2|He1e2].
-          {
-            destruct He1e2 as [x' [Hx' H']].
-            inversion Hx'. clear Hx'. subst.
-            rewrite !(elem_of_union,elem_of_singleton).
-            (*
-            assert (x' <> x -> x' <> y -> x ∈ named_free_evars u \/ y ∈ named_free_evars t).
-            {
-              intros.
-            }
-            *)
-
-            destruct (decide (x' = x)).
-            {
-              subst.
-            }
-            destruct (decide ((x',x')=(x,y))) as [Heq|Hneq].
-            {
-              inversion Heq. clear Heq. subst.
-              clear. set_solver.
-            }
-            {
-              feed specialize Hev2.
-              {
-                rewrite elem_of_union.
-                destruct (decide (x' = x)).
-                {
-                  assert (x' <> y) by congruence.
-                  subst.
-                }
-              }
-            }
-            set_solver.
-          }
-
-          rewrite [set_map twice (D2 ∪ _)]set_map_union_L.
-          clear -Hev2.
-          set_solver.
-          rewrite !set_map_union_L in Hev2.
-          Search set_map difference.
-          clear -Hev2.
-          set_solver.
         }
 
 
