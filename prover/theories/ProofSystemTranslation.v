@@ -3832,10 +3832,32 @@ Fixpoint rename {Σ : Signature}
                 simpl in H5.
                 lia.  
               }
-              {
-                
-              }
+              
             }
+            {
+              inversion Hae; clear Hae; subst.
+              simpl_free.
+              assert (Ht'sub : is_nsubpattern_of_ind t' (collapse_aux (collapse_aux state nϕ1).1 nϕ2).2).
+              {
+                eapply is_nsubpattern_of_ind_trans.
+                2: apply H5.
+                apply nsub_app_l.
+                apply nsub_eq.
+                reflexivity.
+              }
+              assert (Hu'sub : is_nsubpattern_of_ind u' (collapse_aux (collapse_aux state nϕ1).1 nϕ2).2).
+              {
+                eapply is_nsubpattern_of_ind_trans.
+                2: apply H5.
+                apply nsub_app_r.
+                apply nsub_eq.
+                reflexivity.
+              }
+              simpl in *.
+            }
+          }
+          {
+
           }
         }
       }
