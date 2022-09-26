@@ -3650,8 +3650,83 @@ Fixpoint rename {Σ : Signature}
               }
               {
                 rewrite list_find_None in Hfind1.
-                Search list_find not.
-                Search list_find 
+                rewrite list_find_None in H.
+                clear H. (* duplicate of Hnoth *)
+
+                assert (Ht'sub : is_nsubpattern_of_ind t' (collapse_aux state nϕ1).2).
+                {
+                    eapply is_nsubpattern_of_ind_trans.
+                    2: apply H5.
+                    apply nsub_app_l.
+                    apply nsub_eq.
+                    reflexivity.
+                  }
+                assert (Hu'sub : is_nsubpattern_of_ind u' (collapse_aux state nϕ1).2).
+                {
+                  eapply is_nsubpattern_of_ind_trans.
+                  2: apply H5.
+                  apply nsub_app_r.
+                  apply nsub_eq.
+                  reflexivity.
+                }
+                fold (alpha_equiv (collapse_aux (collapse_aux state nϕ1).1 nϕ2).2 u') in uEu'.
+                fold (alpha_equiv ((collapse_aux state nϕ1)).2 t') in tEt'.
+                apply alpha_equiv_sym in tEt'.
+                apply alpha_equiv_sym in uEu'.
+                pose proof (alpha_equiv_and_sub_impl_equal _ _ tEt' Ht'sub).
+                subst t'.
+                f_equal.
+                symmetry.
+
+
+                pose proof (IH1 := IHsz nϕ1 ltac:(lia) state Hfind1 Han).
+                pose proof (IH1' := IH1).
+                unfold state_alpha_normalized in IH1.
+                rewrite Forall_forall in IH1.
+                clear Ht'sub tEt'.
+                specialize (IH1 ((collapse_aux state nϕ1).2)).
+                feed specialize IH1.
+                {
+                  apply collapse_arg_in_history.
+                }
+
+                destruct ((list_find (fun nϕ' => alpha_equiv nϕ2 nϕ') (cs_history ((collapse_aux state nϕ1).1)))) eqn:Hfind2.
+                2: {
+                  rewrite list_find_None in Hfind2.
+                  pose proof (IH2 := IHsz nϕ2 ltac:(lia) (collapse_aux state nϕ1).1).
+                  feed specialize IH2.
+                  { apply Hfind2. }
+                  { apply IH1'. }
+                  unfold state_alpha_normalized in IH2.
+                  rewrite Forall_forall in IH2.
+                  specialize (IH2 ((collapse_aux (collapse_aux state nϕ1).1 nϕ2).2)).
+                  feed specialize IH2.
+                  {
+                    apply collapse_arg_in_history.
+                  }
+                  unfold alpha_normalized in IH2.
+                  pose proof (Halpha2 := collapse_aux_alpha' (collapse_aux state nϕ1).1 nϕ2).
+                  pose proof (Halphares := compose_alpha' _ _ _ _ _ _ _ uEu' Halpha2).
+                  simpl_free.
+                  fold (alpha_equiv u' nϕ2) in Halphares.
+                  (* HERE WE STOP FOR NOW *)
+                  simpl in Halphares.
+                  apply IH2.
+                  3: { apply uEu'. }
+                  2: { apply nsub_eq. reflexivity. }
+                  clear IH2 Hfind2.
+                  (*
+                  *)
+                }
+                {
+                  destruct p as [idx2 nϕ'2].
+                }
+                {
+                  
+
+                }
+
+                pose proof (alpha_equiv_and_sub_impl_equal _ _ uEu' Hu'sub).
               }
               2: {
                 rewrite 
