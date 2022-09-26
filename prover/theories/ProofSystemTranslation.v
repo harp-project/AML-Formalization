@@ -3313,6 +3313,35 @@ Fixpoint rename {Σ : Signature}
       }
     Qed.
 
+    Lemma alpha_equiv'_diagonal {Σ : Signature}
+      (D1 : gset evar) (D1' : gset svar)
+      (D2 : gset evar) (D2' : gset svar)
+      (a b : NamedPattern)
+      :
+      (named_free_evars a ∪ named_free_evars b) ⊆ D2 ->
+      (named_free_svars a ∪ named_free_svars b) ⊆ D2' ->
+      alpha_equiv' (diagonal D1) (diagonal D1') a b ->
+      alpha_equiv' (diagonal D2) (diagonal D2') a b
+    .
+    Proof.
+      intros H1 H2.
+      pose proof (Htmp := alpha_equiv'_diagonal' D1 D1' D2 D2' a b [] []).
+      simpl in Htmp.
+      apply Htmp.
+      {
+        rewrite union_empty_r_L.
+        eapply set_map_mono.
+        2: apply H1.
+        constructor.
+      }
+      {
+        rewrite union_empty_r_L.
+        eapply set_map_mono.
+        2: apply H2.
+        constructor.
+      }
+    Qed.
+
     #[local]
     Hint Constructors is_nsubpattern_of_ind : core.
 
