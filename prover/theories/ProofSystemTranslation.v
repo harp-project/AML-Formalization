@@ -2364,30 +2364,6 @@ Fixpoint rename {Σ : Signature}
     (Res : list (prod A A))
     (x x' y : A)
     : pbr (pb_update (pb_update_iter (pb_update pb x y) Res) x' y)
-    ⊆ pbr (pb_update (pb_update (pb_update_iter pb Res) x y) x' y).
-    Proof.
-      move: x x' y pb.
-      induction Res; intros x x' y pb.
-      { simpl. set_solver. }
-      {
-        rewrite [pb_update_iter _ _]/=.
-        destruct a as [a b].
-        rewrite [_.1]/=.
-        rewrite [_.2]/=.
-        rewrite [pb_update_iter pb _]/=.
-        admit.
-      }
-    Abort.
-
-
-    Lemma pb_update_shadow_subseteq_2_iter
-    {A : Type}
-    {_eqd : EqDecision A}
-    {_cnt : Countable A}
-    (pb : PartialBijection A)
-    (Res : list (prod A A))
-    (x x' y : A)
-    : pbr (pb_update (pb_update_iter (pb_update pb x y) Res) x' y)
     ⊆ pbr (pb_update (pb_update_iter pb Res) x' y).
     Proof.
       move: x x' y pb.
@@ -2426,6 +2402,97 @@ Fixpoint rename {Σ : Signature}
         destruct H2 as [H2|H2].
         {
           pose proof (IH1 := IHRes x u y).
+          setoid_rewrite elem_of_subseteq in IH1.
+          setoid_rewrite elem_of_union in IH1.
+          specialize (IH1 pb (a,b)).
+          feed specialize IH1.
+          {
+            left.
+            rewrite elem_of_filter in H2.
+            destruct H2 as [H21 H22].
+            rewrite elem_of_filter.
+            split.
+            {
+              unfold unrelated,related.
+              unfold unrelated,related in H21.
+              simpl in *.
+              tauto.
+            }
+            exact H22.
+          }
+          destruct IH1 as [IH1|IH1].
+          2: {
+            rewrite elem_of_singleton in IH1. inversion IH1. subst. contradiction.
+          }
+          left.
+          rewrite elem_of_filter in IH1.
+          rewrite elem_of_filter.
+          unfold unrelated,related in IH1.
+          simpl in IH1.
+          destruct IH1 as [IH11 IH12].
+          unfold unrelated,related.
+          simpl.
+          rewrite elem_of_filter in H2.
+          destruct H2 as [H21 H22].
+          unfold unrelated,related in H21.
+          simpl in H21.
+          split.
+          { tauto. }
+          apply IH12.
+        }
+        {
+          inversion H2. clear H2. subst.
+          right. reflexivity.
+        }
+      }
+    Qed.
+
+    Lemma pb_update_shadow_subseteq_iter
+    {A : Type}
+    {_eqd : EqDecision A}
+    {_cnt : Countable A}
+    (pb : PartialBijection A)
+    (Res : list (prod A A))
+    (x y y' : A)
+    : pbr (pb_update (pb_update_iter (pb_update pb x y) Res) x y')
+    ⊆ pbr (pb_update (pb_update_iter pb Res) x y').
+    Proof.
+      move: x y y' pb.
+      induction Res; intros x y y' pb.
+      {
+        apply pb_update_shadow_subseteq.
+      }
+      {
+        simpl in *.
+        destruct a as [u v].
+        simpl.
+        rewrite elem_of_subseteq.
+        intros [a b] H.
+        rewrite elem_of_union.
+        rewrite elem_of_singleton.
+        rewrite elem_of_union in H.
+        rewrite elem_of_singleton in H.
+        destruct H as [H|H].
+        2: {
+          inversion H; clear H; subst.
+          right. reflexivity.
+        }
+        left.
+        rewrite elem_of_filter in H.
+        destruct H as [H1 H2].
+        rewrite elem_of_filter.
+        split;[assumption|].
+        unfold unrelated,related in H1. simpl in H1.
+        apply not_or_and in H1.
+        destruct H1 as [Hx' Hy].
+        rewrite elem_of_union in H2.
+        rewrite elem_of_singleton in H2.
+        rewrite elem_of_union.
+        rewrite elem_of_singleton.
+
+        destruct H2 as [H2|H2].
+        {
+          pose proof (IH1 := IHRes x y v).
           setoid_rewrite elem_of_subseteq in IH1.
           setoid_rewrite elem_of_union in IH1.
           specialize (IH1 pb (a,b)).
@@ -2803,6 +2870,60 @@ Fixpoint rename {Σ : Signature}
           simpl in IH1.
 
           pose proof (Htmp' := @pb_update_shadow_subseteq_2_iter _ _ _ R2 Res y x y).
+          eapply alpha'_mono in IH1.
+          3: apply reflexivity.
+          2: apply Htmp'.
+          apply IH1.
+        }
+        {
+          pose proof (IH1 := IH (pb_update R2 x x) R2').
+          feed specialize IH1.
+          { clear IHalpha_equiv' IH IH1.
+            rewrite elem_of_subseteq.
+            intros [x' x''] Hx'.
+            rewrite elem_of_map in Hx'.
+            destruct Hx' as [x00 [Hx00 Hx000]].
+            inversion Hx00. clear Hx00. subst.
+            rewrite elem_of_union in Hx000.
+            destruct Hx000.
+            {
+              unfold pb_update. simpl.
+              rewrite elem_of_union.
+              destruct (decide (x00 = x)).
+              {
+                subst. right. clear. set_solver.
+              }
+              {
+                left. rewrite elem_of_filter.
+                unfold unrelated,related. simpl.
+                split;[naive_solver|].
+                clear -HR2 H0.
+                set_solver.
+              }
+            }
+            {
+              rewrite elem_of_union in H0.
+              rewrite !elem_of_singleton in H0.
+              destruct H0; subst.
+              { clear -e n. unfold pb_update. simpl.
+                rewrite elem_of_union. 
+                rewrite elem_of_filter.
+                unfold unrelated,related. simpl.
+                set_solver.
+              }
+              {
+                clear -e n. unfold pb_update. simpl.
+                rewrite elem_of_union. 
+                rewrite elem_of_filter.
+                unfold unrelated,related. simpl.
+                set_solver.
+              }
+            }
+          }
+          { apply HR2'. }
+          simpl in IH1.
+
+          pose proof (Htmp' := @pb_update_shadow_subseteq_iter _ _ _ R2 Res y x y).
           eapply alpha'_mono in IH1.
           3: apply reflexivity.
           2: apply Htmp'.
