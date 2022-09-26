@@ -3342,6 +3342,15 @@ Fixpoint rename {Σ : Signature}
       }
     Qed.
 
+    Lemma helper {Σ : Signature} (state : CollapseState) (nϕ1 nϕ2 : NamedPattern)
+    :
+      is_nsubpattern_of_ind (collapse_aux state nϕ1).2
+      (collapse_aux (collapse_aux state nϕ1).1 nϕ2).2
+    .
+
+    Abort.
+
+    
     #[local]
     Hint Constructors is_nsubpattern_of_ind : core.
 
@@ -3414,13 +3423,52 @@ Fixpoint rename {Σ : Signature}
             assert (is_nsubpattern_of_ind d b) by
             ((eapply is_nsubpattern_of_ind_trans;[|apply H];(eauto)))
           end);
-          simpl_free
+          simpl_free; (*
+          (idtac + symmetry in IH31);
+          (idtac + symmetry in IH21);
+          (idtac + symmetry in IH11); *)
+          try solve[(apply IH31 + apply IH21 + apply IH11); try assumption;try solve[apply nsub_eq; reflexivity];
+          unfold alpha_equiv;
+          simpl_free;
+          eapply alpha_equiv'_diagonal;
+          [idtac|idtac|(apply tEt' + apply uEu')];
+          simpl_free; apply reflexivity]
         .
         {
-          apply IH31; try assumption;try solve[apply nsub_eq; reflexivity].
-          unfold alpha_equiv.
-          simpl_free.
-          apply tEt'.
+          
+          destruct (decide (alpha_equiv nϕ1 nϕ2)) as [Hae|Hnae].
+          {
+            subst.
+            apply IH11 in Hae.
+            { admit. }
+            { constructor. apply collapse_ }
+          }
+          apply IH11; try assumption;try solve[apply nsub_eq; reflexivity].
+          constructor.
+          {
+
+          }
+
+
+          (* This does not look promising either. *)
+          apply IH11; try assumption;try solve[apply nsub_eq; reflexivity].
+          
+          (* This does not look promising *)
+          (*
+          apply IH21; try assumption;try solve[apply nsub_eq; reflexivity].
+          eapply is_nsubpattern_of_ind_trans;[eassumption|].
+          {
+            clear tEt' uEu' t' u' H6 H IH11 IH21 IH31.
+          }*)
+          Search collapse_aux.
+            apply collapse_arg_in_history.
+            unfold alpha_equiv;
+            simpl_free;
+            eapply alpha_equiv'_diagonal;
+            [idtac|idtac|eassumption];
+            simpl_free; apply reflexivity.
+          { simpl_free. apply reflexivity. }
+          { simpl_free. apply reflexivity. }
         }
         { apply IH11; try assumption; try solve[apply nsub_eq; reflexivity].
         }
