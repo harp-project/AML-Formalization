@@ -3415,7 +3415,7 @@ Fixpoint rename {Σ : Signature}
       | @nsub_mu _ _ _ _ sub' => S (subdepth _ _ sub')
       end.
 
-    Lemma proper_subpatterns_have_different_size
+    Lemma proper_subpatterns_have_different_size'
       {Σ : Signature}
       (a b : NamedPattern)
       (sub : is_nsubpattern_of_ind a b) :
@@ -3452,6 +3452,19 @@ Fixpoint rename {Σ : Signature}
         pose proof (H2 := subpatterns_have_leq_size _ _ sub).
         lia.
       }
+    Qed.
+
+    Lemma proper_subpatterns_have_different_size
+      {Σ : Signature}
+      (a b : NamedPattern) :
+      is_nsubpattern_of_ind a b ->
+      a <> b ->
+      nsize' a < nsize' b.
+    Proof.
+      intros Hsub Hneq.
+      pose proof (Hleq := proper_subpatterns_have_different_size' _ _ Hsub).
+      induction Hsub; simpl in *; subst; try contradiction; simpl in *;
+      try lia.
     Qed.
 
     Lemma alpha_equiv_and_sub_impl_equal
