@@ -3385,6 +3385,90 @@ Fixpoint rename {Σ : Signature}
         reflexivity.
     Qed.
 
+    Lemma alpha_equiv_have_same_size
+      {Σ : Signature}
+      (a b : NamedPattern) :
+      alpha_equiv a b ->
+      nsize' a = nsize' b.
+    Proof.
+      intros H.
+      induction H; simpl; lia.
+    Qed.
+
+    Lemma subpatterns_have_leq_size
+      {Σ : Signature}
+      (a b : NamedPattern) :
+      is_nsubpattern_of_ind a b ->
+      nsize' a <= nsize' b.
+    Proof.
+      intros Hsub.
+      induction Hsub; subst; try contradiction; simpl in *; try lia.
+    Qed.
+
+    Print is_nsubpattern_of_ind.
+    Fixpoint subdepth {Σ : Signature} (a b : NamedPattern)
+      (sub : is_nsubpattern_of_ind a b) : nat
+      :=
+      match sub with
+      | @nsub_eq _ _ _  _=> 0
+      | @nsub_app_l _ _ _ _ sub' => S (subdepth _ _ sub')
+      | @nsub_app_r _ _ _ _ sub' => S (subdepth _ _ sub')
+      | @nsub_imp_l _ _ _ _ sub' => S (subdepth _ _ sub')
+      | @nsub_imp_r _ _ _ _ sub' => S (subdepth _ _ sub')
+      | @nsub_exists _ _ _ _ sub' => S (subdepth _ _ sub')
+      | @nsub_mu _ _ _ _ sub' => S (subdepth _ _ sub')
+      end.
+
+    Print nsize'.
+
+    Lemma proper_subpatterns_have_different_size
+      {Σ : Signature}
+      (a b : NamedPattern) :
+      is_nsubpattern_of_ind a b ->
+      a <> b ->
+      nsize' a < nsize' b.
+    Proof.
+      move: a.
+      induction b; intros a Hind Hneq; simpl in *;
+        inversion Hind; clear Hind; subst;
+        try contradiction;
+        destruct a; simpl in *;
+        try specialize (IHb1 _ H1).
+
+
+      intros Hsub Hneq.
+      pose proof (Htmp := subpatterns_have_leq_size _ _ Hsub).
+      inversion Hsub; subst; clear Hsub; try contradiction;
+        simpl in *.
+        destruct a; simpl in *; try lia.
+      induction Hsub; intros Hneq; subst; simpl in *; try contradiction.
+      intros Hsub.
+      intros Hneq.
+      pose proof (Htmp := subpatterns_have_leq_size _ _ Hsub).
+      inversion Hsub; clear Hsub; subst; simpl in *; try lia ;
+        try contradiction.
+      apply Htmp.
+      lia.
+
+
+
+    Lemma alpha_equiv_and_sub_impl_equal
+      {Σ : Signature}
+      (a b : NamedPattern) :
+      alpha_equiv a b ->
+      is_nsubpattern_of_ind a b ->
+      a = b.
+    Proof.
+      intros H1 H2.
+      pose proof (Hss := alpha_equiv_have_same_size _ _ H1).
+      inversion H1; inversion H2; subst; try reflexivity; try assumption;
+      simpl in *;
+      match goal with
+      | [ H : ?a = ?b |- _] => assert (nsize' a = nsize' b) by congruence
+      end
+      ; simpl in *; try destruct ϕ₂; try lia.
+        try inversion H5; subst; clear H5; try inversion H3; subst.
+    Qed.
 
     Lemma collapse_aux_preserves_an
     {Σ : Signature} (state : CollapseState) (nϕ : NamedPattern) :
@@ -3481,11 +3565,57 @@ Fixpoint rename {Σ : Signature}
               eapply alpha_equiv'_diagonal in uEu'.
               2,3: apply reflexivity.
 
-              Check list_find.
+
               destruct ((list_find (fun nϕ' => alpha_equiv nϕ1 nϕ') (cs_history state))) eqn:Hfind1.
               {
-                destruct p as [idx ?].
-                rewrite list_find_Some in Hfind1.
+                destruct p as [idx1 nϕ'1].
+                erewrite collapse_aux_case_pattern_in_history;[|apply Hfind1].
+                simpl.
+                erewrite collapse_aux_case_pattern_in_history in tEt';[|apply Hfind1].
+                simpl in tEt'.
+                erewrite collapse_aux_case_pattern_in_history in H5;[|apply Hfind1].
+                simpl in H5.
+                erewrite (collapse_aux_case_pattern_in_history state) in uEu';[|apply Hfind1].
+                simpl in uEu'.
+
+                destruct ((list_find (fun nϕ' => alpha_equiv nϕ2 nϕ') (cs_history state))) eqn:Hfind2.
+                {
+                  destruct p as [idx2 nϕ'2].
+                  erewrite collapse_aux_case_pattern_in_history;[|apply Hfind2].
+                  simpl.
+                  erewrite (collapse_aux_case_pattern_in_history state) in uEu';[|apply Hfind2].
+                  simpl in uEu'.
+                  fold (alpha_equiv nϕ'1 t') in tEt'.
+                  fold (alpha_equiv nϕ'2 u') in uEu'.
+                  assert (Ht'sub : is_nsubpattern_of_ind t' nϕ'1).
+                  {
+                    eapply is_nsubpattern_of_ind_trans.
+                    2: apply H5.
+                    apply nsub_app_l.
+                    apply nsub_eq.
+                    reflexivity.
+                  }
+                  assert (Hu'sub : is_nsubpattern_of_ind u' nϕ'1).
+                  {
+                    eapply is_nsubpattern_of_ind_trans.
+                    2: apply H5.
+                    apply nsub_app_r.
+                    apply nsub_eq.
+                    reflexivity.
+                  }
+                  f_equal.
+                  {
+                    unfold state_alpha_normalized in Han.
+                    rewrite Forall_forall in Han.
+                    eapply Han.
+                    4: apply tEt'.
+                    2,3: apply nsub_eq; reflexivity.
+                  }
+                  rewrite list_find_Some in Hfind1.
+                  rewrite list_find_Some in Hfind2.
+                  pose proof (IH1 := IHsz nϕ1 ltac:(lia) state).
+                  
+                }
               }
               2: {
                 rewrite list_find_None in Hfind1.
