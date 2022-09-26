@@ -3484,6 +3484,48 @@ Fixpoint rename {Σ : Signature}
       subst. reflexivity.
     Qed.
 
+
+    Lemma diagonal_union
+      {A : Type} {_eqd : EqDecision A} {_cnt : Countable A}
+      (S T : gset A) :
+      pbr (diagonal (S ∪ T)) = pbr (diagonal S) ∪ pbr (diagonal T).
+    Proof.
+      unfold diagonal. simpl.
+      rewrite set_map_union_L.
+      reflexivity.
+    Qed.
+
+    Lemma alpha'_pbr {Σ : Signature} R1 R1' R2 R2' a b:
+      pbr R1 = pbr R2 ->
+      pbr R1' = pbr R2' ->
+      alpha_equiv' R1 R1' a b ->
+      alpha_equiv' R2 R2' a b.
+    Proof.
+      intros H1 H2 Hae.
+      move: R2 R2' H1 H2.
+      induction Hae; intros R2 R2' H1 H2; constructor; simpl in *.
+      { set_solver. }
+      { set_solver. }
+      { naive_solver. }
+      { naive_solver. }
+      { naive_solver. }
+      { naive_solver. }
+      {
+        apply IHHae;[|assumption].
+        rewrite H1.
+        unfold pb_update.
+        simpl.
+        reflexivity.
+      }
+      {
+        apply IHHae;[assumption|].
+        rewrite H2.
+        unfold pb_update.
+        simpl.
+        reflexivity.
+      }
+    Qed.
+    
     Lemma collapse_aux_preserves_an
     {Σ : Signature} (state : CollapseState) (nϕ : NamedPattern) :
       Forall (fun nϕ' => ~ alpha_equiv nϕ nϕ') (cs_history state) ->
