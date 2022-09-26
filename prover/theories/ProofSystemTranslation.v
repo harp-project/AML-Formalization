@@ -3627,10 +3627,28 @@ Fixpoint rename {Σ : Signature}
                   simpl in H5. lia.
                 }
                 {
-                  
+                  exfalso.
+                  rewrite list_find_None in Hfind2.
+                  rewrite list_find_None in H.
+                  fold (alpha_equiv nϕ'1 t') in tEt'.
+                  apply alpha_equiv_sym in tEt'.
+                  assert (Ht'sub : is_nsubpattern_of_ind t' nϕ'1).
+                  {
+                    eapply is_nsubpattern_of_ind_trans.
+                    2: apply H5.
+                    apply nsub_app_l.
+                    apply nsub_eq.
+                    reflexivity.
+                  }
+                  pose proof (alpha_equiv_and_sub_impl_equal _ _ tEt' Ht'sub).
+                  subst t'.
+                  clear Ht'sub tEt'.
+                  f_equal.
+                  apply subpatterns_have_leq_size in H5.
+                  simpl in H5. lia.
                 }
               }
-              2: {
+              {
                 rewrite list_find_None in Hfind1.
                 Search list_find not.
                 Search list_find 
