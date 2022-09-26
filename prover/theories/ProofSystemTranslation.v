@@ -1971,7 +1971,7 @@ Fixpoint rename {Σ : Signature}
 
     Lemma in_history_invert {Σ : Signature} (state : CollapseState) (nϕ1 nϕ2 : NamedPattern) :
       nϕ2 ∈ cs_history (collapse_aux state nϕ1).1 ->
-      (forall nϕ2', alpha_equiv nϕ2 nϕ2' -> ~ is_nsubpattern_of_ind nϕ2' nϕ1) ->
+      (forall nϕ2', alpha_equiv nϕ2 nϕ2' -> is_nsubpattern_of_ind nϕ2' nϕ1 -> False) ->
       nϕ2 ∈ cs_history state.
     Proof.
       remember (nsize' nϕ1) as sz.
@@ -2150,9 +2150,6 @@ Fixpoint rename {Σ : Signature}
         exact H2.
       }
     Qed.
-
-    (* TODO transitivity*)
-    Check is_nsubpattern_of_ind.
 
     Lemma is_nsubpattern_of_ind_trans {Σ : Signature} (a b c : NamedPattern) :
       is_nsubpattern_of_ind a b ->
@@ -3405,7 +3402,6 @@ Fixpoint rename {Σ : Signature}
       induction Hsub; subst; try contradiction; simpl in *; try lia.
     Qed.
 
-    Print is_nsubpattern_of_ind.
     Fixpoint subdepth {Σ : Signature} (a b : NamedPattern)
       (sub : is_nsubpattern_of_ind a b) : nat
       :=
@@ -3419,38 +3415,44 @@ Fixpoint rename {Σ : Signature}
       | @nsub_mu _ _ _ _ sub' => S (subdepth _ _ sub')
       end.
 
-    Print nsize'.
-
     Lemma proper_subpatterns_have_different_size
       {Σ : Signature}
-      (a b : NamedPattern) :
-      is_nsubpattern_of_ind a b ->
-      a <> b ->
-      nsize' a < nsize' b.
+      (a b : NamedPattern)
+      (sub : is_nsubpattern_of_ind a b) :
+      nsize' b - nsize' a >= subdepth _ _ sub.
     Proof.
-      move: a.
-      induction b; intros a Hind Hneq; simpl in *;
-        inversion Hind; clear Hind; subst;
-        try contradiction;
-        destruct a; simpl in *;
-        try specialize (IHb1 _ H1).
-
-
-      intros Hsub Hneq.
-      pose proof (Htmp := subpatterns_have_leq_size _ _ Hsub).
-      inversion Hsub; subst; clear Hsub; try contradiction;
-        simpl in *.
-        destruct a; simpl in *; try lia.
-      induction Hsub; intros Hneq; subst; simpl in *; try contradiction.
-      intros Hsub.
-      intros Hneq.
-      pose proof (Htmp := subpatterns_have_leq_size _ _ Hsub).
-      inversion Hsub; clear Hsub; subst; simpl in *; try lia ;
-        try contradiction.
-      apply Htmp.
-      lia.
-
-
+      induction sub.
+      { simpl. subst. lia. }
+      { simpl.
+        pose proof (H2 := subpatterns_have_leq_size _ _ sub).
+        lia.
+      }
+      {
+        simpl.
+        pose proof (H2 := subpatterns_have_leq_size _ _ sub).
+        lia.
+      }
+      {
+        simpl.
+        pose proof (H2 := subpatterns_have_leq_size _ _ sub).
+        lia.
+      }
+      {
+        simpl.
+        pose proof (H2 := subpatterns_have_leq_size _ _ sub).
+        lia.
+      }
+      {
+        simpl.
+        pose proof (H2 := subpatterns_have_leq_size _ _ sub).
+        lia.
+      }
+      {
+        simpl.
+        pose proof (H2 := subpatterns_have_leq_size _ _ sub).
+        lia.
+      }
+    Qed.
 
     Lemma alpha_equiv_and_sub_impl_equal
       {Σ : Signature}

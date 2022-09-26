@@ -522,7 +522,7 @@ Defined.
     | @nctx_app_r p' C' prf => npatt_app p' (named_subst_ctx C' p)
     end.
 
-    Inductive is_nsubpattern_of_ind : NamedPattern -> NamedPattern -> Prop :=
+    Inductive is_nsubpattern_of_ind : NamedPattern -> NamedPattern -> Set :=
     | nsub_eq ϕ₁ ϕ₂ : ϕ₁ = ϕ₂ -> is_nsubpattern_of_ind ϕ₁ ϕ₂
     | nsub_app_l ϕ₁ ϕ₂ ϕ₃ : is_nsubpattern_of_ind ϕ₁ ϕ₂ -> is_nsubpattern_of_ind ϕ₁ (npatt_app ϕ₂ ϕ₃)
     | nsub_app_r ϕ₁ ϕ₂ ϕ₃ : is_nsubpattern_of_ind ϕ₁ ϕ₃ -> is_nsubpattern_of_ind ϕ₁ (npatt_app ϕ₂ ϕ₃)
