@@ -3356,12 +3356,86 @@ Fixpoint rename {Σ : Signature}
 
     Lemma collapse_aux_preserves_an
     {Σ : Signature} (state : CollapseState) (nϕ : NamedPattern) :
+      Forall (fun nϕ' => ~ alpha_equiv nϕ nϕ') (cs_history state) ->
       state_alpha_normalized state ->
       state_alpha_normalized (collapse_aux state nϕ).1
     .
     Proof.
       move: state.
-      induction nϕ; intros state Han; simpl;
+
+      remember (nsize' nϕ) as sz.
+      assert (Hsz : nsize' nϕ <= sz) by lia.
+      clear Heqsz.
+      move: nϕ Hsz.
+      induction sz; intros nϕ Hsz state Hnoth Han.
+      {
+        destruct nϕ; simpl in Hsz; lia.
+      }
+
+      destruct nϕ; simpl in *.
+      {
+        unfold state_alpha_normalized.
+        unfold lookup_or_leaf,lookup_or_node,lookup_or. simpl.
+        repeat case_match; simpl.
+        { assumption. }
+        apply Forall_cons.
+        split.
+        { unfold alpha_normalized.
+          intros nϕ1 nϕ2 Hsubp1 Hsubp2 Hae'.
+          inversion Hsubp1; inversion Hsubp2; subst.
+          reflexivity.
+        }
+        { apply Han. }
+      }
+      {
+        unfold state_alpha_normalized.
+        unfold lookup_or_leaf,lookup_or_node,lookup_or. simpl.
+        repeat case_match; simpl.
+        { assumption. }
+        apply Forall_cons.
+        split.
+        { unfold alpha_normalized.
+          intros nϕ1 nϕ2 Hsubp1 Hsubp2 Hae'.
+          inversion Hsubp1; inversion Hsubp2; subst.
+          reflexivity.
+        }
+        { apply Han. }
+      }
+      {
+        unfold state_alpha_normalized.
+        unfold lookup_or_leaf,lookup_or_node,lookup_or. simpl.
+        repeat case_match; simpl.
+        { assumption. }
+        apply Forall_cons.
+        split.
+        { unfold alpha_normalized.
+          intros nϕ1 nϕ2 Hsubp1 Hsubp2 Hae'.
+          inversion Hsubp1; inversion Hsubp2; subst.
+          reflexivity.
+        }
+        { apply Han. }
+      }
+      2: {
+        unfold state_alpha_normalized.
+        unfold lookup_or_leaf,lookup_or_node,lookup_or. simpl.
+        repeat case_match; simpl.
+        { assumption. }
+        apply Forall_cons.
+        split.
+        { unfold alpha_normalized.
+          intros ?? Hsubp1 Hsubp2 Hae'.
+          inversion Hsubp1; inversion Hsubp2; subst.
+          reflexivity.
+        }
+        { apply Han. }
+      }
+      {
+        
+      }
+
+
+      move: state.
+      induction nϕ; intros state Hnoh Han; simpl;
         unfold lookup_or_leaf,lookup_or_node,lookup_or;
         repeat case_match; subst; simpl;
         try assumption;
@@ -3371,6 +3445,11 @@ Fixpoint rename {Σ : Signature}
           reflexivity)].
       { 
         intros nϕ1' nϕ2' H1 H2 Hae.
+        pose proof (IH1 := IHnϕ1 state).
+        feed specialize IH1.
+        {
+
+        }
         pose proof (IH1 := IHnϕ1 _ Han).
         pose proof (IH2 := IHnϕ2 _ IH1).
         pose proof (Hin1 := collapse_arg_in_history state nϕ1).
@@ -3435,7 +3514,7 @@ Fixpoint rename {Σ : Signature}
           simpl_free; apply reflexivity]
         .
         {
-          
+
           destruct (decide (alpha_equiv nϕ1 nϕ2)) as [Hae|Hnae].
           {
             subst.
