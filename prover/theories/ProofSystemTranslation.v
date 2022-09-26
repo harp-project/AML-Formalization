@@ -3351,8 +3351,40 @@ Fixpoint rename {Σ : Signature}
     Abort.
 
     
+    Ltac simpl_free :=
+          repeat (
+            repeat match goal with
+            | [ H : context [named_free_evars (collapse_aux ?st ?phi).2 ] |- _]
+              => rewrite (alpha_equiv_impl_same_evars (collapse_aux st phi).2 phi) in H;
+                 [apply collapse_aux_alpha'|]
+            | [ H : context [named_free_svars (collapse_aux ?st ?phi).2 ] |- _]
+                 => rewrite (alpha_equiv_impl_same_svars (collapse_aux st phi).2 phi) in H;
+                    [apply collapse_aux_alpha'|]
+            | [ |- context [named_free_evars (collapse_aux ?st ?phi).2 ]]
+              => rewrite (alpha_equiv_impl_same_evars (collapse_aux st phi).2 phi);
+                 [apply collapse_aux_alpha'|]
+            | [ |- context [named_free_svars (collapse_aux ?st ?phi).2 ]]
+                 => rewrite (alpha_equiv_impl_same_svars (collapse_aux st phi).2 phi);
+                    [apply collapse_aux_alpha'|]
+            end
+          )
+        .
     #[local]
     Hint Constructors is_nsubpattern_of_ind : core.
+
+    Lemma collapse_aux_case_pattern_in_history
+      {Σ : Signature} (state : CollapseState) (nϕ nϕ' : NamedPattern) (idx : nat) :
+      list_find (alpha_equiv nϕ) (cs_history state) = Some (idx, nϕ') ->
+      collapse_aux state nϕ = (state, nϕ').
+    Proof.
+      intros H.
+      destruct nϕ; simpl;
+        unfold lookup_or_leaf,lookup_or_node,lookup_or;
+        simpl;
+        rewrite H;
+        reflexivity.
+    Qed.
+
 
     Lemma collapse_aux_preserves_an
     {Σ : Signature} (state : CollapseState) (nϕ : NamedPattern) :
@@ -3430,7 +3462,52 @@ Fixpoint rename {Σ : Signature}
         { apply Han. }
       }
       {
-        
+        unfold lookup_or_node,lookup_or; simpl.
+        repeat case_match; simpl.
+        { apply Han. }
+        apply Forall_cons.
+        split.
+        {
+          unfold alpha_normalized.
+          intros phi1 phi2 Hsub1 Hsub2 Hae.
+          {
+            inversion Hsub1; inversion Hsub2; clear Hsub1 Hsub2; subst; try reflexivity.
+            {
+              inversion Hae; clear Hae; subst.
+              simpl in *.
+              simpl_free.
+              eapply alpha_equiv'_diagonal in tEt'.
+              2,3: apply reflexivity.
+              eapply alpha_equiv'_diagonal in uEu'.
+              2,3: apply reflexivity.
+
+              Check list_find.
+              destruct ((list_find (fun nϕ' => alpha_equiv nϕ1 nϕ') (cs_history state))) eqn:Hfind1.
+              {
+                destruct p as [idx ?].
+                rewrite list_find_Some in Hfind1.
+              }
+              2: {
+                rewrite list_find_None in Hfind1.
+                Search list_find not.
+                Search list_find 
+              }
+              2: {
+                rewrite 
+              }
+
+              pose proof (IH1 := IHsz nϕ1 ltac:(lia) state).
+              feed specialize IH1.
+              {
+                apply Hnoth.
+              }
+              f_equal.
+              {
+
+              }
+            }
+          }
+        }
       }
 
 
@@ -3471,24 +3548,7 @@ Fixpoint rename {Σ : Signature}
         unfold alpha_normalized in *.
         clear IHnϕ1 IHnϕ2 Han H IH1 IH2.
 
-        Ltac simpl_free :=
-          repeat (
-            repeat match goal with
-            | [ H : context [named_free_evars (collapse_aux ?st ?phi).2 ] |- _]
-              => rewrite (alpha_equiv_impl_same_evars (collapse_aux st phi).2 phi) in H;
-                 [apply collapse_aux_alpha'|]
-            | [ H : context [named_free_svars (collapse_aux ?st ?phi).2 ] |- _]
-                 => rewrite (alpha_equiv_impl_same_svars (collapse_aux st phi).2 phi) in H;
-                    [apply collapse_aux_alpha'|]
-            | [ |- context [named_free_evars (collapse_aux ?st ?phi).2 ]]
-              => rewrite (alpha_equiv_impl_same_evars (collapse_aux st phi).2 phi);
-                 [apply collapse_aux_alpha'|]
-            | [ |- context [named_free_svars (collapse_aux ?st ?phi).2 ]]
-                 => rewrite (alpha_equiv_impl_same_svars (collapse_aux st phi).2 phi);
-                    [apply collapse_aux_alpha'|]
-            end
-          )
-        .
+        
 
         inversion H1; inversion H2; subst; clear H1 H2; simpl in *; try reflexivity;
           inversion Hae; clear Hae; subst; simpl in *; auto; f_equal;
