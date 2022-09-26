@@ -3624,7 +3624,15 @@ Fixpoint rename {Σ : Signature}
       intros H1 H2.
       pose proof (compose_alpha' _ _ _ _ _ _ _ H1 H2).
       unfold alpha_equiv.
-      
+      pose proof (He := @pb_compose_diagonal evar _ _ (named_free_evars a ∪ named_free_evars b) (named_free_evars b ∪ named_free_evars c)).
+      pose proof (Hs := @pb_compose_diagonal svar _ _ (named_free_svars a ∪ named_free_svars b) (named_free_svars b ∪ named_free_svars c)).
+      destruct He as [se Hse].
+      destruct Hs as [ss Hss].
+      rewrite Hse in H.
+      rewrite Hss in H.
+      eapply alpha_equiv'_diagonal.
+      3: apply H.
+      { apply reflexivity. }{ apply reflexivity. }
     Qed.
     
     Lemma collapse_aux_preserves_an
