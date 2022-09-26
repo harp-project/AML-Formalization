@@ -3557,56 +3557,63 @@ Fixpoint rename {Σ : Signature}
           rewrite elem_of_list_to_set.
           rewrite list_of_pairs_compose_correct in Huv.
           destruct Huv as [b [Hb1 Hb2]].
-        }
-        unfold list_of_pairs_compose. simpl.
-        rewrite [elements (_ ∪ (set_map twice _))]elements_union_singleton.
-        Search elements union.
-        rewrite elements_union.
-      }
-      rewrite set_equiv_subseteq.
-      rewrite 2!elem_of_subseteq.
-      setoid_rewrite elem_of_map.
-      setoid_rewrite elem_of_list_to_set.
-      unfold list_of_pairs_compose.
-      simpl.
-      remember (elements (set_map twice T)) as lT.
-      remember (elements (set_map twice S)) as lS.
-      split; intros [a b] H.
-      {
-        remember (elements (set_map twice T)).
-        move: Heql. induction l; intros Heql.
-        { 
-          simpl in H.
-          symmetry in Heql.
-          move: H.
-          under [fun e => _]functional_extensionality => e.
+          rewrite elem_of_elements in Hb1.
+          rewrite elem_of_elements in Hb2.
+          rewrite elem_of_map in Hb2.
+          destruct Hb2 as [x' [Hx'1 Hx'2]].
+          inversion Hx'1. clear Hx'1. subst.
+          rewrite elem_of_union in Hb1.
+          destruct Hb1 as [Hb1|Hb1].
           {
-            under [fun f => _]functional_extensionality => f.
-            {
-              rewrite app_nil_r.
-              over.
-            }
-            over.
+            rewrite elem_of_singleton in Hb1.
+            inversion Hb1. clear Hb1. subst.
+            unfold fmap.
+            rewrite elem_of_list_fmap.
+            exists x.
+            split;[reflexivity|].
+            rewrite elem_of_elements.
+            set_solver.
           }
-          intros H.
-          remember (elements (set_map twice S)) as l'.
-          exfalso.
-          clear Heql Heql'.
-          induction l'; simpl in *; set_solver.
+          {
+            rewrite elem_of_map in Hb1.
+            destruct Hb1 as [x'' [Hx'' Hx''2]].
+            inversion Hx''. clear Hx''. subst.
+            unfold fmap.
+            rewrite elem_of_list_fmap.
+            exists x''.
+            split;[reflexivity|].
+            rewrite elem_of_elements.
+            set_solver.
+          }
         }
         {
-          destruct a0 as [c d].
-          remember (elements (set_map twice T)).
-          destruct l0.
+          rewrite elem_of_map in Huv.
+          destruct Huv as [x0 [Hx01 Hx02]].
+          inversion Hx01. clear Hx01. subst.
+          rewrite elem_of_list_to_set.
+          rewrite list_of_pairs_compose_correct.
+          rewrite elem_of_intersection in Hx02.
+          destruct Hx02 as [H1 H2].
+          rewrite elem_of_union in H1.
+          setoid_rewrite elem_of_elements.
+          destruct H1 as [H1|H1].
           {
-            inversion Heql.
+            rewrite elem_of_singleton in H1. subst.
+            exists x.
+            rewrite elem_of_union.
+            split.
+            {
+              set_solver.
+            }
+            {
+              set_solver.
+            }
           }
-          inversion Heql; clear Heql; subst.
-          simpl in *.
+          {
+            set_solver.
+          }
         }
-        rewrite elem_of_foldr in H.
       }
-      set_solver.
     Qed.
 
     Lemma alpha_equiv_trans {Σ : Signature} a b c:
