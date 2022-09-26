@@ -3525,6 +3525,91 @@ Fixpoint rename {Σ : Signature}
         reflexivity.
       }
     Qed.
+
+    
+    Lemma pb_compose_diagonal
+      {A : Type} {_eqd : EqDecision A} {_cnt : Countable A}
+      (S T : gset A) :
+      exists (ST : gset A),
+        pb_compose (diagonal S) (diagonal T) = (diagonal ST).
+    Proof.
+      exists (S ∩ T).
+      apply pb_eq_dep.
+      apply leibniz_equiv.
+      induction S using set_ind_L; simpl in *.
+      {
+        rewrite set_map_empty.
+        rewrite elements_empty.
+        simpl.
+        rewrite intersection_empty_l_L.
+        rewrite set_map_empty.
+        reflexivity.
+      }
+      {
+        rewrite set_map_union_L.
+        rewrite [set_map twice {[x]}]set_map_singleton_L.
+        rewrite [twice x]/twice.
+        unfold list_of_pairs_compose. simpl.
+        rewrite [elements (_ ∪ (set_map twice _))]elements_union_singleton.
+        Search elements union.
+        rewrite elements_union.
+      }
+      rewrite set_equiv_subseteq.
+      rewrite 2!elem_of_subseteq.
+      setoid_rewrite elem_of_map.
+      setoid_rewrite elem_of_list_to_set.
+      unfold list_of_pairs_compose.
+      simpl.
+      remember (elements (set_map twice T)) as lT.
+      remember (elements (set_map twice S)) as lS.
+      split; intros [a b] H.
+      {
+        remember (elements (set_map twice T)).
+        move: Heql. induction l; intros Heql.
+        { 
+          simpl in H.
+          symmetry in Heql.
+          move: H.
+          under [fun e => _]functional_extensionality => e.
+          {
+            under [fun f => _]functional_extensionality => f.
+            {
+              rewrite app_nil_r.
+              over.
+            }
+            over.
+          }
+          intros H.
+          remember (elements (set_map twice S)) as l'.
+          exfalso.
+          clear Heql Heql'.
+          induction l'; simpl in *; set_solver.
+        }
+        {
+          destruct a0 as [c d].
+          remember (elements (set_map twice T)).
+          destruct l0.
+          {
+            inversion Heql.
+          }
+          inversion Heql; clear Heql; subst.
+          simpl in *.
+        }
+        rewrite elem_of_foldr in H.
+      }
+      set_solver.
+    Qed.
+
+    Lemma alpha_equiv_trans {Σ : Signature} a b c:
+      alpha_equiv a b ->
+      alpha_equiv b c ->
+      alpha_equiv a c.
+    Proof.
+      intros H1 H2.
+      pose proof (compose_alpha' _ _ _ _ _ _ _ H1 H2).
+      unfold alpha_equiv.
+      
+    Qed.
     
     Lemma collapse_aux_preserves_an
     {Σ : Signature} (state : CollapseState) (nϕ : NamedPattern) :
@@ -3751,6 +3836,16 @@ Fixpoint rename {Σ : Signature}
                   pose proof (Halphares := compose_alpha' _ _ _ _ _ _ _ uEu' Halpha2).
                   simpl_free.
                   fold (alpha_equiv u' nϕ2) in Halphares.
+                  assert (alpha_equiv')
+                  eapply alpha'_pbr in Halphares.
+                  2: {
+                    unfold pb_compose. simpl.
+                    rewrite -diagonal_union.
+                  }
+                  apply alpha'_pbr in Halphares with (R2 := ).
+                  2: {
+                    apply f_equal
+                  }
                   (* HERE WE STOP FOR NOW *)
                   simpl in Halphares.
                   apply IH2.
