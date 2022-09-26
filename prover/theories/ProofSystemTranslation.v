@@ -3526,7 +3526,7 @@ Fixpoint rename {Σ : Signature}
       }
     Qed.
 
-    
+
     Lemma pb_compose_diagonal
       {A : Type} {_eqd : EqDecision A} {_cnt : Countable A}
       (S T : gset A) :
@@ -3549,6 +3549,15 @@ Fixpoint rename {Σ : Signature}
         rewrite set_map_union_L.
         rewrite [set_map twice {[x]}]set_map_singleton_L.
         rewrite [twice x]/twice.
+        rewrite set_equiv_subseteq.
+        rewrite 2!elem_of_subseteq.
+        split; intros [u v] Huv.
+        {
+          rewrite elem_of_list_to_set in Huv.
+          rewrite elem_of_list_to_set.
+          rewrite list_of_pairs_compose_correct in Huv.
+          destruct Huv as [b [Hb1 Hb2]].
+        }
         unfold list_of_pairs_compose. simpl.
         rewrite [elements (_ ∪ (set_map twice _))]elements_union_singleton.
         Search elements union.
