@@ -3474,15 +3474,14 @@ Fixpoint rename {Σ : Signature}
       is_nsubpattern_of_ind a b ->
       a = b.
     Proof.
-      intros H1 H2.
-      pose proof (Hss := alpha_equiv_have_same_size _ _ H1).
-      inversion H1; inversion H2; subst; try reflexivity; try assumption;
-      simpl in *;
-      match goal with
-      | [ H : ?a = ?b |- _] => assert (nsize' a = nsize' b) by congruence
-      end
-      ; simpl in *; try destruct ϕ₂; try lia.
-        try inversion H5; subst; clear H5; try inversion H3; subst.
+      intros Halpha Hsub.
+      pose proof (Hss := alpha_equiv_have_same_size _ _ Halpha).
+      pose proof (Hleq := proper_subpatterns_have_different_size' _ _ Hsub).
+      rewrite Hss in Hleq.
+      assert (Hsub0 : subdepth a b Hsub = 0) by lia.
+      clear -Hsub0 Hsub.
+      induction Hsub; simpl in *; try lia.
+      subst. reflexivity.
     Qed.
 
     Lemma collapse_aux_preserves_an
