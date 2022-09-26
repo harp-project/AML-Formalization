@@ -3596,6 +3596,7 @@ Fixpoint rename {Σ : Signature}
                 {
                   destruct p as [idx2 nϕ'2].
                   erewrite collapse_aux_case_pattern_in_history;[|apply Hfind2].
+                  exfalso.
                   simpl.
                   erewrite (collapse_aux_case_pattern_in_history state) in uEu';[|apply Hfind2].
                   simpl in uEu'.
@@ -3617,17 +3618,15 @@ Fixpoint rename {Σ : Signature}
                     apply nsub_eq.
                     reflexivity.
                   }
-                  f_equal.
-                  {
-                    unfold state_alpha_normalized in Han.
-                    rewrite Forall_forall in Han.
-                    eapply Han.
-                    4: apply tEt'.
-                    2,3: apply nsub_eq; reflexivity.
-                  }
-                  rewrite list_find_Some in Hfind1.
-                  rewrite list_find_Some in Hfind2.
-                  pose proof (IH1 := IHsz nϕ1 ltac:(lia) state).
+                  apply alpha_equiv_sym in tEt'.
+                  pose proof (alpha_equiv_and_sub_impl_equal _ _ tEt' Ht'sub).
+                  subst t'.
+                  clear tEt'.
+                  clear -H5.
+                  apply subpatterns_have_leq_size in H5.
+                  simpl in H5. lia.
+                }
+                {
                   
                 }
               }
