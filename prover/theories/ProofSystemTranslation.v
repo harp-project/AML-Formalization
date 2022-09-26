@@ -2923,193 +2923,94 @@ Fixpoint rename {Σ : Signature}
           { apply HR2'. }
           simpl in IH1.
 
-          pose proof (Htmp' := @pb_update_shadow_subseteq_iter _ _ _ R2 Res y x y).
+          pose proof (Htmp' := @pb_update_shadow_subseteq_iter _ _ _ R2 Res x x y).
           eapply alpha'_mono in IH1.
           3: apply reflexivity.
           2: apply Htmp'.
           apply IH1.
         }
-        
-        specialize (IH (pb_update_iter R2 ((x,x)::(y,y)::[])) R2').
-        simpl in IH.
-        feed specialize IH.
         {
-          u
-        }
-        apply IH.
-        {
-
-        }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        {
-          clear -Hev2. set_unfold. intros.
-          destruct (decide (x0 = x)).
-          { right. left. assumption. }
-          destruct (decide (x0 = y)).
-          { right. right. assumption. }
-          left. apply Hev2. tauto.
-        }
-        { assumption. }
-        {
-          rewrite set_map_union_L.
-          rewrite union_subseteq.
-          split.
-          {
-            admit.
-          }
-          {
+          pose proof (IH1 := IH (pb_update (pb_update R2 x x) y y) R2').
+          feed specialize IH1.
+          { clear IHalpha_equiv' IH IH1.
             rewrite elem_of_subseteq.
-            setoid_rewrite elem_of_singleton.
-            intros [x0 y0] Hx0y0.
-            inversion Hx0y0; clear Hx0y0; subst.
-            rewrite elem_of_union. right.
-            rewrite set_map_union_L.
-            rewrite elem_of_subseteq in HR1.
-            specialize (HR1 (x,y)).
-          }
-          Search set_map union.
-          2: apply _.
-          rewrite elem_of_subseteq.
-          intros [x0 y0] Hx0y0.
-          unfold unrelated,related in Hx0y0. simpl in Hx0y0.
-          rewrite elem_of_union in Hx0y0.
-          rewrite elem_of_filter in Hx0y0.
-          destruct Hx0y0 as [Hx0y0|Hx0y0]; simpl in *.
-          {
-            destruct Hx0y0 as [H1 H2].
-            Search set_map.
-          }
-          setoid_rewrite elem_of_union.
-        }
-        { set_solver. }
-        destruct (decide (named_free_evars t ∪ named_free_evars u ⊆ D1)).
-        {
-          feed specialize IH.
-          { assumption. }
-          { assumption. }
-          { set_solver. }
-  
-        }
-        
-        destruct (decide (x ∈ named_free_evars t)), (decide (y ∈ named_free_evars u)).
-        {
-          
-        }
-        
-        destruct (decide (x = y)).
-        {
-          subst.
-      
-          assert (Hup : pb_update (diagonal D2) y y = diagonal (D2 ∪ {[ y ]})).
-        {
-          clear HR1' Hsv1 Hsv2 D2' IHalpha_equiv'.
-          apply pb_eq_dep.
-          unfold unrelated,related,diagonal,twice in *; simpl.
-          rewrite elem_of_subseteq in HR1.
-          setoid_rewrite elem_of_map in HR1.
-          apply leibniz_equiv.
-          rewrite set_equiv_subseteq.
-          rewrite 2!elem_of_subseteq.
-          setoid_rewrite elem_of_union.
-          setoid_rewrite elem_of_filter.
-          setoid_rewrite elem_of_map.
-          setoid_rewrite elem_of_singleton.
-          setoid_rewrite elem_of_union.
-          setoid_rewrite elem_of_singleton.
-          rewrite elem_of_subseteq in Hev1.
-          rewrite elem_of_subseteq in Hev2.
-          setoid_rewrite elem_of_union in Hev1.
-          setoid_rewrite elem_of_union in Hev2.
-          setoid_rewrite elem_of_difference in Hev1.
-          setoid_rewrite elem_of_difference in Hev2.
-          setoid_rewrite elem_of_singleton in Hev1.
-          setoid_rewrite elem_of_singleton in Hev2.
-          split; intros [x00 x01] Hx0.
-          {
-            destruct Hx0 as [[Hx01 [x' [Hx02 Hx03]]]|Hx0]; simpl in *.
+            intros [x' x''] Hx'.
+            rewrite elem_of_map in Hx'.
+            destruct Hx' as [x00 [Hx00 Hx000]].
+            inversion Hx00. clear Hx00. subst.
+            rewrite elem_of_union in Hx000.
+            destruct Hx000 as [Hx000|Hx000].
             {
-              inversion Hx02. clear Hx02. subst.
-              exists x'.
-              split;[reflexivity|].
-              left. assumption.
-            }
-            {
-              inversion Hx0. clear Hx0. subst.
-              exists y.
-              split;[reflexivity|].
-              right. reflexivity.
-            }
-          }
-          {
-            simpl in *.
-            destruct Hx0 as [x' [Hx'1 [Hx'2|Hx'3]]].
-            {
-              inversion Hx'1. subst. clear Hx'1.
-              destruct (decide (x' = y)).
+              unfold pb_update. simpl.
+              rewrite elem_of_union.
+              destruct (decide (x00 = y)).
               {
-                right. congruence.
+                subst. right. clear. set_solver.
               }
               {
+                left. rewrite elem_of_filter.
+                unfold unrelated,related. simpl.
+                split;[naive_solver|].
+                rewrite elem_of_union.
+                destruct (decide (x00 = x)).
+                {
+                  subst. right. clear. set_solver.
+                }
                 left.
-                split.
-                {
-                  intros [HContra|HContra];subst; contradiction.
-                }
-                {
-                  exists x'.
-                  split;[reflexivity|assumption].
-                }
+                rewrite elem_of_filter.
+                simpl.
+                split;[naive_solver|].
+                clear -HR2 Hx000.
+                set_solver.
               }
             }
-            subst.
-            inversion Hx'1. subst. clear Hx'1.
-            right.
-            reflexivity.
+            {
+              rewrite elem_of_union in Hx000.
+              rewrite !elem_of_singleton in Hx000.
+              destruct Hx000; subst.
+              {
+                unfold pb_update. simpl.
+                rewrite elem_of_union. 
+                rewrite elem_of_filter.
+                unfold unrelated,related. simpl.
+                destruct (decide (x = y)).
+                {
+                  subst. right. clear. set_solver.
+                }
+                {
+                  left.
+                  split;[naive_solver|].
+                  rewrite elem_of_union.
+                  right. clear. set_solver.
+                }
+              }
+              {
+                unfold pb_update. simpl.
+                rewrite elem_of_union. 
+                rewrite elem_of_filter.
+                right.
+                clear. set_solver.
+              }
+            }
           }
-        }
-        rewrite Hup.
-        clear Hup.
+          { apply HR2'. }
+          simpl in IH1.
 
-        destruct (decide (x ∈ named_free_evars t)), (decide (y ∈ named_free_evars u)).
-        {
-          
+          pose proof (Htmp' := @pb_update_shadow_subseteq_2_iter _ _ _ (pb_update R2 x x) Res y x y).
+          eapply alpha'_mono in IH1.
+          3: apply reflexivity.
+          2: apply Htmp'.
+          clear Htmp'.
+          pose proof (Htmp' := @pb_update_shadow_subseteq_iter _ _ _ R2 Res x x y).
+          eapply alpha'_mono in IH1.
+          3: apply reflexivity.
+          2: apply Htmp'.
+          clear Htmp'.
+          apply IH1.
         }
-        destruct (decide (y ∈ D2)).
-        {
-          apply (IHalpha_equiv' D1 D1'); auto.
-          { set_solver. }  
-        }
-        apply (IHalpha_equiv' D1 D1'); auto.
-        {
-
-          
-        set_solver.
-        }
-        assert (x = y).
-        {
-          unfold twice in HR1,HR1'.
-          rewrite elem_of_subseteq in HR1.
-          rewrite elem_of_subseteq in HR1'.
-          setoid_rewrite elem_of_map in HR1.
-          setoid_rewrite elem_of_map in HR1'.
-          clear HR1' Hsv.
-          set_solver.
-        }
-        Search pb_update diagonal.
-        apply IHalpha_equiv'.
+      }
+      {
+        
       }
     Qed.
 
