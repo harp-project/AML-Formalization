@@ -4054,7 +4054,38 @@ Fixpoint rename {Σ : Signature}
               }
             }
             {
-              
+              destruct (list_find (alpha_equiv nϕ1) (cs_history state)) eqn:Hfind.
+              {
+                destruct p as [idx nϕ1'].
+                erewrite collapse_aux_case_pattern_in_history in H2;[|apply Hfind].
+                erewrite collapse_aux_case_pattern_in_history in H6;[|apply Hfind].
+                simpl in H2. simpl in H6.
+                rewrite list_find_Some in Hfind.
+                destruct Hfind as [Hfind1 [Hfind2 Hfind3]].
+                unfold state_alpha_normalized in Han.
+                rewrite Forall_forall in Han.
+                specialize (Han nϕ1').
+                feed specialize Han.
+                { Search elem_of lookup.
+                  rewrite elem_of_list_lookup.
+                  exists idx. apply Hfind1.
+                }
+                unfold alpha_normalized in Han.
+                apply Han.
+                { assumption. }
+                { assumption. }
+                { apply Hae. }
+              }
+              {
+                rewrite list_find_None in Hfind.
+                pose proof (IH := IHsz nϕ1 ltac:(lia) state Hfind Han).
+                simpl in IH.
+                unfold state_alpha_normalized in IH.
+                rewrite Forall_forall in IH.
+                eapply IH.
+                { apply collapse_arg_in_history. }
+                1-3: assumption.
+              }
             }
           }
         }
