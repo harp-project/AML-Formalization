@@ -3635,13 +3635,183 @@ Fixpoint rename {Σ : Signature}
       { apply reflexivity. }{ apply reflexivity. }
     Qed.
 
-    Lemma alpha_completes_subpattern {Σ : Signature}
-      (a a' b : NamedPattern) :
-      alpha_equiv a b ->
-      is_nsubpattern_of_ind a' a ->
-      exists b',
-        alpha_equiv a' b' /\
-        is_nsubpattern_of_ind b' b.
+    Definition no_alpha_duplicates {Σ : Signature} (state : CollapseState) : Prop
+    := forall (idx1 idx2 : nat) (nϕ1 nϕ2 : NamedPattern),
+      (cs_history state) !! idx1 = Some nϕ1 ->
+      (cs_history state) !! idx2 = Some nϕ2 ->
+      alpha_equiv nϕ1 nϕ2 ->
+      idx1 = idx2
+    .
+
+    Lemma collapse_aux_no_alpha_duplicates {Σ : Signature}
+      (state : CollapseState)
+      (nϕ : NamedPattern) :
+      no_alpha_duplicates state ->
+      no_alpha_duplicates (collapse_aux state nϕ).1
+    .
+    Proof.
+      move: state.
+      induction nϕ; intros state H; simpl;
+        unfold lookup_or_leaf,lookup_or_node,lookup_or; simpl in *;
+        repeat case_match; subst; simpl in *;
+        try assumption.
+      {
+        rewrite list_find_None in H0.
+        rewrite Forall_forall in H0.
+        unfold no_alpha_duplicates.
+        simpl.
+        intros idx1 idx2 nϕ1 nϕ2 Hidx1 Hidx2 Hae.
+        destruct idx1,idx2; simpl in *.
+        { reflexivity. }
+        {
+          exfalso.
+          inversion Hidx1. subst.
+          eapply H0.
+          2: apply Hae.
+          rewrite elem_of_list_lookup.
+          exists idx2. apply Hidx2.
+        }
+        {
+          exfalso.
+          inversion Hidx2. subst.
+          eapply H0.
+          2: apply alpha_equiv_sym; apply Hae.
+          rewrite elem_of_list_lookup.
+          exists idx1. apply Hidx1.
+        }
+        { naive_solver. }
+      }
+      {
+        rewrite list_find_None in H0.
+        rewrite Forall_forall in H0.
+        unfold no_alpha_duplicates.
+        simpl.
+        intros idx1 idx2 nϕ1 nϕ2 Hidx1 Hidx2 Hae.
+        destruct idx1,idx2; simpl in *.
+        { reflexivity. }
+        {
+          exfalso.
+          inversion Hidx1. subst.
+          eapply H0.
+          2: apply Hae.
+          rewrite elem_of_list_lookup.
+          exists idx2. apply Hidx2.
+        }
+        {
+          exfalso.
+          inversion Hidx2. subst.
+          eapply H0.
+          2: apply alpha_equiv_sym; apply Hae.
+          rewrite elem_of_list_lookup.
+          exists idx1. apply Hidx1.
+        }
+        { naive_solver. }
+      }
+      {
+        rewrite list_find_None in H0.
+        rewrite Forall_forall in H0.
+        unfold no_alpha_duplicates.
+        simpl.
+        intros idx1 idx2 nϕ1 nϕ2 Hidx1 Hidx2 Hae.
+        destruct idx1,idx2; simpl in *.
+        { reflexivity. }
+        {
+          exfalso.
+          inversion Hidx1. subst.
+          eapply H0.
+          2: apply Hae.
+          rewrite elem_of_list_lookup.
+          exists idx2. apply Hidx2.
+        }
+        {
+          exfalso.
+          inversion Hidx2. subst.
+          eapply H0.
+          2: apply alpha_equiv_sym; apply Hae.
+          rewrite elem_of_list_lookup.
+          exists idx1. apply Hidx1.
+        }
+        { naive_solver. }
+      }
+      {
+        specialize (IHnϕ1 state H).
+        specialize (IHnϕ2 _ IHnϕ1).
+        unfold no_alpha_duplicates.
+        intros idx1 idx2 p q Hp Hq Hpq.
+        simpl in *.
+
+        destruct idx1,idx2; simpl in *.
+        { reflexivity. }
+        {
+          inversion Hp. subst. clear Hp.
+          rewrite list_find_None in H0.
+          rewrite Forall_forall in H0.
+          exfalso.
+          assert (alpha_equiv (collapse_aux state nϕ1).2 nϕ1) by (apply collapse_aux_alpha').
+          assert (alpha_equiv (collapse_aux (collapse_aux state nϕ1).1 nϕ2).2 nϕ2) by (apply collapse_aux_alpha').
+
+          assert (Hq' : exists i, cs_history (collapse_aux (collapse_aux state nϕ1).1 nϕ2).1 !! i = Some q).
+          { exists idx2. apply Hq. }
+          rewrite -elem_of_list_lookup in Hq'.
+          (*
+          Check in_history_invert.
+          apply in_history_invert in Hq'.
+          *)
+          eapply H0.
+          2: eapply alpha_equiv_trans.
+          3: apply Hpq.
+          2: {
+
+            constructor.
+            {
+              simpl. simpl_free.
+              eapply alpha_equiv'_diagonal.
+              1,2: simpl_free; set_solver.
+              apply alpha_equiv_sym in H1.
+              apply H1.
+            }
+            {
+              simpl. simpl_free.
+              eapply alpha_equiv'_diagonal.
+              1,2: simpl_free; set_solver.
+              apply alpha_equiv_sym in H2.
+              apply H2.
+            }
+          }
+          rewrite elem_of_list_lookup.
+          exists idx
+        }
+      }
+      {
+        rewrite list_find_None in H0.
+        rewrite Forall_forall in H0.
+        unfold no_alpha_duplicates.
+        simpl.
+        intros idx1 idx2 nϕ1 nϕ2 Hidx1 Hidx2 Hae.
+        destruct idx1,idx2; simpl in *.
+        { reflexivity. }
+        {
+          exfalso.
+          inversion Hidx1. subst.
+          eapply H0.
+          2: apply Hae.
+          rewrite elem_of_list_lookup.
+          exists idx2. apply Hidx2.
+        }
+        {
+          exfalso.
+          inversion Hidx2. subst.
+          eapply H0.
+          2: apply alpha_equiv_sym; apply Hae.
+          rewrite elem_of_list_lookup.
+          exists idx1. apply Hidx1.
+        }
+        { naive_solver. }
+      }
+    Qed.
+
+
+
 
     Lemma collapse_aux_subpattern_in_history
       {Σ : Signature}
@@ -3730,6 +3900,11 @@ Fixpoint rename {Σ : Signature}
           feed specialize Hhc'.
           { apply nsub_app_l. apply nsub_eq. reflexivity. }
           { rewrite elem_of_list_lookup. eexists. eassumption. }
+          pose proof (Hhc'' := Hhc u' (npatt_app t' u')).
+          unfold history_subpattern_closed in Hhc''.
+          feed specialize Hhc''.
+          { apply nsub_app_r. apply nsub_eq. reflexivity. }
+          { rewrite elem_of_list_lookup. eexists. eassumption. }
           (* t' is alpha-equivalent to nϕ1, but we are missing the assumption
              that it is the first such thing in the list.
              In fact, with our current list of hypotheses,
@@ -3737,13 +3912,32 @@ Fixpoint rename {Σ : Signature}
              Therefore, we find some t'' which is the first pattern
              alpha-equivalent to nϕ1
           *)
-          About list_find_elem_of.
+
           pose proof (Ht'' := list_find_elem_of (alpha_equiv nϕ1) (cs_history state) _ Hhc' tEt').
           unfold is_Some in Ht''.
           destruct Ht'' as [[idx t''] Ht''].
           pose proof (H2t'' := Ht'').
           rewrite list_find_Some in H2t''.
           destruct H2t'' as [Ht''1 [Ht''2 Ht''3]].
+
+          (*
+          pose proof (Hu'' := list_find_elem_of (alpha_equiv nϕ2) (cs_history state) _ Hhc'' uEu').
+          unfold is_Some in Hu''.
+          destruct Hu'' as [[idx'' u''] Hu''].
+          pose proof (H2u'' := Hu'').
+          rewrite list_find_Some in H2u''.
+          destruct H2u'' as [Hu''1 [Hu''2 Hu''3]].
+          *)
+
+          assert (t'' = t').
+          {
+
+          }
+
+          pose proof (IH1 := IHnϕ1 nψ state Hhc).
+          erewrite collapse_aux_case_pattern_in_history in IH1.
+          2: { apply Ht''. }
+          simpl in IH1.
 
           rewrite elem_of_list_lookup in Hhc'.
           pose proof (IH1 := IHnϕ1 t'' state Hhc).
@@ -3756,9 +3950,13 @@ Fixpoint rename {Σ : Signature}
             reflexivity.
           }
           destruct IH1 as [nψ' [Ht''nψ' Hnψ'hist]].
-          
+          erewrite collapse_aux_case_pattern_in_history in Hnψ'hist.
+          2: { apply Ht''. }
+          simpl in Hnψ'hist.
 
           exists t''.
+          exists nψ'.
+          
           exists n.
         }
       }
