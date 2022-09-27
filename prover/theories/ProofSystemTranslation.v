@@ -3643,6 +3643,152 @@ Fixpoint rename {Σ : Signature}
       idx1 = idx2
     .
 
+    (* TODO: For this to hold, only subpatterns of the original pattern can be in history,
+       and collapse_aux can be called only on subpatterns of the original pattern.
+    *)
+    Lemma collapse_aux_no_subpattern_in_history
+      {Σ : Signature}
+      (state : CollapseState)
+      (nϕ : NamedPattern) :
+      (forall nϕ', is_nsubpattern_of_ind nϕ' nϕ -> nϕ' ∉ cs_history state) ->
+      collapse_aux state nϕ = (state, nϕ).
+    Proof.
+      move: state.
+      induction nϕ; intros state H; simpl;
+        unfold lookup_or_leaf,lookup_or_node,lookup_or; simpl in *;
+        repeat case_match; subst.
+      {
+        rewrite list_find_Some in H0.
+        destruct_and!.
+        inversion H0; subst.
+        unfold diagonal in pf. simpl in pf.
+        rewrite elem_of_map in pf.
+        destruct pf as [x0 [Hx01 Hx02]].
+        inversion Hx01. subst.
+        reflexivity.
+      }
+      {
+        exfalso.
+        rewrite list_find_None in H0.
+        rewrite Forall_forall in H0.
+        eapply H0.
+        2: apply alpha_equiv_refl.
+      }
+      {
+        rewrite list_find_Some in H0.
+        destruct_and!.
+        inversion H0; subst.
+        unfold diagonal in pf. simpl in pf.
+        rewrite elem_of_map in pf.
+        destruct pf as [x0 [Hx01 Hx02]].
+        inversion Hx01. subst.
+        reflexivity.
+      }
+    Qed.
+
+    Lemma collapse_aux_only_adds_subpatterns
+      {Σ : Signature}
+      (state : CollapseState)
+      (nϕ : NamedPattern) :
+    forall nψ,
+      (is_nsubpattern_of_ind nψ nϕ -> False) ->
+      nψ ∈ cs_history (collapse_aux state nϕ).1 ->
+      nψ ∈ cs_history state.
+    Proof.
+      move: state.
+      induction nϕ; intros state nψ Hnotsub Hin;
+        simpl in *; unfold lookup_or_leaf,lookup_or_node,lookup_or in *;
+        simpl in *; repeat case_match; subst; simpl in *; try assumption;
+        rewrite elem_of_cons in Hin; destruct Hin as [Hin|Hin]; try assumption;
+        subst.
+      { exfalso. apply Hnotsub. constructor. reflexivity. }
+      { exfalso. apply Hnotsub. constructor. reflexivity. }
+      { exfalso. apply Hnotsub. constructor. reflexivity. }
+      { 
+        destruct (decide (npatt_app (collapse_aux state nϕ1).2
+            (collapse_aux (collapse_aux state nϕ1).1 nϕ2).2
+          ∈ cs_history (collapse_aux state nϕ1).1)).
+        {
+          apply IHnϕ1.
+          {
+            intros HContra.
+            apply subpatterns_have_leq_size in HContra.
+            simpl in HContra.
+            erewrite alpha_equiv_have_same_size in HContra.
+            2: { apply collapse_aux_alpha'. }
+            erewrite (alpha_equiv_have_same_size (collapse_aux (collapse_aux state nϕ1).1 nϕ2).2 nϕ2) in HContra.
+            2: { apply collapse_aux_alpha'. }
+            lia.
+          }
+          {
+            assumption.
+          }
+        }
+        {
+          destruct (decide (npatt_app (collapse_aux state nϕ1).2
+              (collapse_aux (collapse_aux state nϕ1).1 nϕ2).2
+              ∈ cs_history (collapse_aux state nϕ2).1)).
+          {
+            apply IHnϕ2.
+            {
+              intros HContra.
+              apply subpatterns_have_leq_size in HContra.
+              simpl in HContra.
+              erewrite alpha_equiv_have_same_size in HContra.
+              2: { apply collapse_aux_alpha'. }
+              erewrite (alpha_equiv_have_same_size (collapse_aux (collapse_aux state nϕ1).1 nϕ2).2 nϕ2) in HContra.
+              2: { apply collapse_aux_alpha'. }
+              lia.
+            }
+            {
+              assumption.
+            }
+          }
+          {
+            exfalso.
+            apply Hnotsub.
+            constructor.
+            f_equal.
+            Search collapse_aux.
+          }
+        }
+
+        destruct (list_find (alpha_equiv nϕ1) (cs_history state)) eqn:Hfind1.
+        {
+          destruct p as [idx np].
+          erewrite (collapse_aux_case_pattern_in_history state) in Hnotsub;
+            [|apply Hfind1].
+          simpl in Hnotsub.
+          erewrite (collapse_aux_case_pattern_in_history state);
+            [|apply Hfind1].
+          simpl.
+
+          destruct (list_find (alpha_equiv nϕ2) (cs_history state)) eqn:Hfind2.
+          {
+            destruct p as [idx' np'].
+            erewrite (collapse_aux_case_pattern_in_history state) in Hnotsub;
+              [|apply Hfind2].
+            simpl in Hnotsub.
+            erewrite (collapse_aux_case_pattern_in_history state);
+              [|apply Hfind2].
+            simpl.
+
+            specialize (IHnϕ1 state (npatt_app np np')).
+            apply IHnϕ1.
+            {
+              intros HContra.
+              admit.
+            }
+          }
+        }
+        destruct (decide (is_nsubpattern_of_ind ))
+        exfalso. apply Hnotsub. constructor. reflexivity. }
+      {
+
+      }
+      { exfalso. apply Hnotsub. constructor. reflexivity. }
+    Qed.
+
     Lemma collapse_aux_no_alpha_duplicates {Σ : Signature}
       (state : CollapseState)
       (nϕ : NamedPattern) :
@@ -3744,6 +3890,9 @@ Fixpoint rename {Σ : Signature}
         { reflexivity. }
         {
           inversion Hp. subst. clear Hp.
+          (* We need to somehow prove that the state after one or two calls
+             does not contain a pattern alpha equivalent to the application.  
+           *)
           rewrite list_find_None in H0.
           rewrite Forall_forall in H0.
           exfalso.
