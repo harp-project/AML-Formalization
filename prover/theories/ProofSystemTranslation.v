@@ -3720,7 +3720,7 @@ Fixpoint rename {Σ : Signature}
           unfold alpha_normalized.
           intros phi1 phi2 Hsub1 Hsub2 Hae.
           {
-
+            
             inversion Hsub1; inversion Hsub2; clear Hsub1 Hsub2; subst; try reflexivity.
             {
               inversion Hae; clear Hae; subst.
@@ -3948,51 +3948,114 @@ Fixpoint rename {Σ : Signature}
             }
             {
               inversion Hae; clear Hae; subst.
-              simpl_free.
-              assert (Ht'sub : is_nsubpattern_of_ind t' (collapse_aux (collapse_aux state nϕ1).1 nϕ2).2).
-              {
-                eapply is_nsubpattern_of_ind_trans.
-                2: apply H5.
-                apply nsub_app_l.
-                apply nsub_eq.
-                reflexivity.
-              }
-              assert (Hu'sub : is_nsubpattern_of_ind u' (collapse_aux (collapse_aux state nϕ1).1 nϕ2).2).
-              {
-                eapply is_nsubpattern_of_ind_trans.
-                2: apply H5.
-                apply nsub_app_r.
-                apply nsub_eq.
-                reflexivity.
-              }
               simpl in *.
-              destruct (list_find (fun nϕ' => alpha_equiv nϕ2 nϕ') (cs_history (collapse_aux state nϕ1).1)) eqn:Hfind.
-              2: {
-                rewrite list_find_None in Hfind.
-                pose proof (IH := IHsz nϕ2 ltac:(lia) (collapse_aux state nϕ1).1 Hfind).
-              }
-              (*
-              (* This is not going to work *)
-              destruct (list_find (fun nϕ' => alpha_equiv nϕ1 nϕ') (cs_history state)) eqn:Hfind.
-              2: {
-                rewrite list_find_None in Hfind.
-                pose proof (IH := IHsz nϕ1 ltac:(lia) state).
-                feed specialize IH.
-                { apply Hfind. }
-                { assumption. }
-                unfold state_alpha_normalized in IH.
-                rewrite Forall_forall in IH.
-                f_equal.
+              simpl_free.
+              eapply alpha_equiv'_diagonal in tEt'.
+              2,3: apply reflexivity.
+              eapply alpha_equiv'_diagonal in uEu'.
+              2,3: apply reflexivity.
+
+
+              destruct ((list_find (fun nϕ' => alpha_equiv nϕ1 nϕ') (cs_history state))) eqn:Hfind1.
+              {
+                destruct p as [idx1 nϕ'1].
+                erewrite collapse_aux_case_pattern_in_history;[|apply Hfind1].
+                simpl.
+                erewrite collapse_aux_case_pattern_in_history in tEt';[|apply Hfind1].
+                simpl in tEt'.
+                erewrite collapse_aux_case_pattern_in_history in H2;[|apply Hfind1].
+                simpl in H2.
+                erewrite (collapse_aux_case_pattern_in_history state) in uEu';[|apply Hfind1].
+                simpl in uEu'.
+
+                destruct ((list_find (fun nϕ' => alpha_equiv nϕ2 nϕ') (cs_history state))) eqn:Hfind2.
                 {
-                  eapply IH.
-                  3: apply Ht'sub.
+                  destruct p as [idx2 nϕ'2].
+                  erewrite collapse_aux_case_pattern_in_history;[|apply Hfind2].
+                  exfalso.
+                  simpl.
+                  erewrite (collapse_aux_case_pattern_in_history state) in uEu';[|apply Hfind2].
+                  simpl in uEu'.
+                  fold (alpha_equiv t nϕ'1) in tEt'.
+                  fold (alpha_equiv u nϕ'2) in uEu'.
+                  assert (Ht'sub : is_nsubpattern_of_ind t nϕ'1).
+                  {
+                    eapply is_nsubpattern_of_ind_trans.
+                    2: apply H2.
+                    apply nsub_app_l.
+                    apply nsub_eq.
+                    reflexivity.
+                  }
+                  assert (Hu'sub : is_nsubpattern_of_ind u nϕ'1).
+                  {
+                    eapply is_nsubpattern_of_ind_trans.
+                    2: apply H2.
+                    apply nsub_app_r.
+                    apply nsub_eq.
+                    reflexivity.
+                  }
+                  
+                  pose proof (alpha_equiv_and_sub_impl_equal _ _ tEt' Ht'sub).
+                  subst t.
+                  clear -H2.
+                  apply subpatterns_have_leq_size in H2.
+                  simpl in H2. lia.
+                }
+                {
+                  exfalso.
+                  rewrite list_find_None in Hfind2.
+                  rewrite list_find_None in H.
+                  fold (alpha_equiv t nϕ'1) in tEt'.
+                  
+                  assert (Ht'sub : is_nsubpattern_of_ind t nϕ'1).
+                  {
+                    eapply is_nsubpattern_of_ind_trans.
+                    2: apply H2.
+                    apply nsub_app_l.
+                    apply nsub_eq.
+                    reflexivity.
+                  }
+                  
+                  pose proof (alpha_equiv_and_sub_impl_equal _ _ tEt' Ht'sub).
+                  subst t.
+                  apply subpatterns_have_leq_size in H2.
+                  simpl in H2. lia.
                 }
               }
-              *)
-            }
-          }
-          {
+              {
+                rewrite list_find_None in Hfind1.
+                rewrite list_find_None in H.
+                clear H. (* duplicate of Hnoth *)
 
+                assert (Ht'sub : is_nsubpattern_of_ind t (collapse_aux state nϕ1).2).
+                {
+                    eapply is_nsubpattern_of_ind_trans.
+                    2: apply H2.
+                    apply nsub_app_l.
+                    apply nsub_eq.
+                    reflexivity.
+                }
+                assert (Hu'sub : is_nsubpattern_of_ind u (collapse_aux state nϕ1).2).
+                {
+                  eapply is_nsubpattern_of_ind_trans.
+                  2: apply H2.
+                  apply nsub_app_r.
+                  apply nsub_eq.
+                  reflexivity.
+                }
+                fold (alpha_equiv t ((collapse_aux state nϕ1)).2) in tEt'.
+                fold (alpha_equiv u (collapse_aux (collapse_aux state nϕ1).1 nϕ2).2) in uEu'.
+                
+                pose proof (alpha_equiv_and_sub_impl_equal _ _ tEt' Ht'sub).
+                subst t.
+                apply subpatterns_have_leq_size in H2.
+                simpl in H2.
+                lia.  
+              }
+            }
+            {
+              
+            }
           }
         }
       }
