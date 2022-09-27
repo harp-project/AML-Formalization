@@ -3637,7 +3637,7 @@ Fixpoint rename {Σ : Signature}
     
     Lemma collapse_aux_preserves_an
     {Σ : Signature} (state : CollapseState) (nϕ : NamedPattern) :
-      Forall (fun nϕ' => ~ alpha_equiv nϕ nϕ') (cs_history state) ->
+      (*Forall (fun nϕ' => ~ alpha_equiv nϕ nϕ') (cs_history state) -> *)
       state_alpha_normalized state ->
       state_alpha_normalized (collapse_aux state nϕ).1
     .
@@ -3648,7 +3648,7 @@ Fixpoint rename {Σ : Signature}
       assert (Hsz : nsize' nϕ <= sz) by lia.
       clear Heqsz.
       move: nϕ Hsz.
-      induction sz; intros nϕ Hsz state Hnoth Han.
+      induction sz; intros nϕ Hsz state (*Hnoth*) Han.
       {
         destruct nϕ; simpl in Hsz; lia.
       }
@@ -4078,7 +4078,7 @@ Fixpoint rename {Σ : Signature}
               }
               {
                 rewrite list_find_None in Hfind.
-                pose proof (IH := IHsz nϕ1 ltac:(lia) state Hfind Han).
+                pose proof (IH := IHsz nϕ1 ltac:(lia) state (*Hfind*) Han).
                 simpl in IH.
                 unfold state_alpha_normalized in IH.
                 rewrite Forall_forall in IH.
@@ -4088,6 +4088,7 @@ Fixpoint rename {Σ : Signature}
               }
             }
             {
+              
               destruct (list_find (alpha_equiv nϕ1) (cs_history state)) eqn:Hfind1.
               {
                 destruct p as [idx1 nϕ1'].
@@ -4121,7 +4122,13 @@ Fixpoint rename {Σ : Signature}
                     apply Han; assumption.
                   }
                   {
-                    
+                    destruct (decide (idx1 < idx2)) as [Hlt|Hgeq].
+                    {
+                      specialize (Hfind23 _ _ Hfind11 Hlt).
+                      clear IHsz.
+                      exfalso.
+                      apply Hfind23. clear Hfind23.
+                    }
                   }
                 }
               }
