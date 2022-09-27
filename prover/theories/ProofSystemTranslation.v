@@ -3634,7 +3634,163 @@ Fixpoint rename {Σ : Signature}
       3: apply H.
       { apply reflexivity. }{ apply reflexivity. }
     Qed.
-    
+
+    Lemma alpha_completes_subpattern {Σ : Signature}
+      (a a' b : NamedPattern) :
+      alpha_equiv a b ->
+      is_nsubpattern_of_ind a' a ->
+      exists b',
+        alpha_equiv a' b' /\
+        is_nsubpattern_of_ind b' b.
+
+    Lemma collapse_aux_subpattern_in_history
+      {Σ : Signature}
+      (state : CollapseState)
+      (nϕ nψ : NamedPattern)
+      :
+      history_subpattern_closed state ->
+      is_nsubpattern_of_ind nψ (collapse_aux state nϕ).2 ->
+      exists nψ',
+        alpha_equiv nψ nψ' /\
+        nψ' ∈ cs_history (collapse_aux state nϕ).1
+    .
+    Proof.
+      move: nψ state.
+      induction nϕ; intros nψ state Hhc H; simpl in *;
+        unfold lookup_or_leaf,lookup_or_node,lookup_or in *;
+        simpl in *;
+        repeat case_match;
+        subst; simpl in *;
+        match goal with
+        | [H : list_find _ _ = Some _ |- _] => pose proof H as Hsome; apply list_find_Some in H
+        | [H : list_find _ _ = None _ |- _] => pose proof H as Hnone; apply list_find_None in H
+        | _ => idtac
+        end;
+        destruct_and?;
+        match goal with
+        | [H : alpha_equiv _ _ |- _] => inversion H; clear H
+        | _ => idtac
+        end;
+        subst.
+      {
+        exists nψ;
+        split;[apply alpha_equiv_refl|].
+        inversion H. clear H. subst.
+        rewrite elem_of_list_lookup; eexists; eassumption.
+      }
+      {
+        exists nψ;
+        split;[apply alpha_equiv_refl|].
+        inversion H. clear H. subst.
+        rewrite elem_of_cons;left;reflexivity.
+      }
+      {
+        exists nψ;
+        split;[apply alpha_equiv_refl|].
+        inversion H. clear H. subst.
+        rewrite elem_of_list_lookup; eexists; eassumption.
+      }
+      {
+        exists nψ;
+        split;[apply alpha_equiv_refl|].
+        inversion H. clear H. subst.
+        rewrite elem_of_cons;left;reflexivity.
+      }
+      {
+        exists nψ;
+        split;[apply alpha_equiv_refl|].
+        inversion H. clear H. subst.
+        rewrite elem_of_list_lookup; eexists; eassumption.
+      }
+      {
+        exists nψ;
+        split;[apply alpha_equiv_refl|].
+        inversion H. clear H. subst.
+        rewrite elem_of_cons;left;reflexivity.
+      }
+      {
+        eapply alpha_equiv'_diagonal in tEt'.
+        2,3: apply reflexivity.
+        eapply alpha_equiv'_diagonal in uEu'.
+        2,3: apply reflexivity.
+        fold (alpha_equiv nϕ1 t') in tEt'.
+        fold (alpha_equiv nϕ2 u') in uEu'.
+
+        inversion H; clear H; subst.
+        {
+          exists (npatt_app t' u').
+          split;[apply alpha_equiv_refl|].
+          rewrite elem_of_list_lookup.
+          eexists; eassumption.
+        }
+        {
+          
+          pose proof (Hhc' := Hhc t' (npatt_app t' u')).
+          unfold history_subpattern_closed in Hhc'.
+          feed specialize Hhc'.
+          { apply nsub_app_l. apply nsub_eq. reflexivity. }
+          { rewrite elem_of_list_lookup. eexists. eassumption. }
+          (* t' is alpha-equivalent to nϕ1, but we are missing the assumption
+             that it is the first such thing in the list.
+             In fact, with our current list of hypotheses,
+             it might not to be the first one.
+             Therefore, we find some t'' which is the first pattern
+             alpha-equivalent to nϕ1
+          *)
+          About list_find_elem_of.
+          pose proof (Ht'' := list_find_elem_of (alpha_equiv nϕ1) (cs_history state) _ Hhc' tEt').
+          unfold is_Some in Ht''.
+          destruct Ht'' as [[idx t''] Ht''].
+          pose proof (H2t'' := Ht'').
+          rewrite list_find_Some in H2t''.
+          destruct H2t'' as [Ht''1 [Ht''2 Ht''3]].
+
+          rewrite elem_of_list_lookup in Hhc'.
+          pose proof (IH1 := IHnϕ1 t'' state Hhc).
+          feed specialize IH1.
+          { 
+            erewrite collapse_aux_case_pattern_in_history.
+            2: { apply Ht''. }
+            simpl.
+            apply nsub_eq.
+            reflexivity.
+          }
+          destruct IH1 as [nψ' [Ht''nψ' Hnψ'hist]].
+          
+
+          exists t''.
+          exists n.
+        }
+      }
+
+
+
+      intros Hhist.
+      remember (collapse_aux state nϕ).2 as nψ'.
+      assert (Hsub1 : is_nsubpattern_of_ind nψ' (collapse_aux state nϕ).2).
+      { subst. constructor. reflexivity. }
+      clear Heqnψ'.
+
+      remember (collapse_aux state nϕ).1 as l.
+      assert (Hl :(cs_history (collapse_aux state nϕ).1) ⊆ (cs_history l)).
+      {
+        subst.
+        apply reflexivity.
+      }
+      clear Heql.
+
+      intros Hsubp.
+      move: Hl.
+      induction Hsubp; intros Hl.
+      {
+        subst.
+        assert ((collapse_aux state nϕ).2 ∈ (cs_history (collapse_aux state nϕ).1)).
+        { apply collapse_arg_in_history. }
+        set_solver.
+      }
+          
+    Qed.
+
     Lemma collapse_aux_preserves_an
     {Σ : Signature} (state : CollapseState) (nϕ : NamedPattern) :
       (*Forall (fun nϕ' => ~ alpha_equiv nϕ nϕ') (cs_history state) -> *)
@@ -4088,19 +4244,31 @@ Fixpoint rename {Σ : Signature}
               }
             }
             {
-              
+              pose proof (collapse_arg_in_history state nϕ1).
+              pose proof (Ha1 := collapse_aux_alpha' state nϕ1).
+              pose proof (Ha2 := collapse_aux_alpha' (collapse_aux state nϕ1).1 nϕ2).
+              (*pose proof (IH1 := IHsz nϕ1 ltac:(lia) state Han).*)
+              (*Print collapse_aux.*)
               destruct (list_find (alpha_equiv nϕ1) (cs_history state)) eqn:Hfind1.
               {
                 destruct p as [idx1 nϕ1'].
-                erewrite collapse_aux_case_pattern_in_history in H2;[|apply Hfind1].
+                erewrite (collapse_aux_case_pattern_in_history state) in H2;[|apply Hfind1].
                 simpl in H2.
-                erewrite (collapse_aux_case_pattern_in_history state)in H6;[|apply Hfind1].
+                erewrite (collapse_aux_case_pattern_in_history state) in H6;[|apply Hfind1].
                 simpl in H6.
+                erewrite (collapse_aux_case_pattern_in_history state) in Ha1;[|apply Hfind1].
+                simpl in Ha1.
+                erewrite (collapse_aux_case_pattern_in_history state) in Ha2;[|apply Hfind1].
+                simpl in Ha2.
+
                 destruct (list_find (alpha_equiv nϕ2) (cs_history state)) eqn:Hfind2.
                 {
                   destruct p as [idx2 nϕ2'].
                   erewrite (collapse_aux_case_pattern_in_history state)in H6;[|apply Hfind2].
                   simpl in H6.
+                  erewrite (collapse_aux_case_pattern_in_history state)in Ha2;[|apply Hfind2].
+                  simpl in Ha2.
+
                   rewrite list_find_Some in Hfind1.
                   rewrite list_find_Some in Hfind2.
                   destruct Hfind1 as [Hfind11 [Hfind12 Hfind13]].
