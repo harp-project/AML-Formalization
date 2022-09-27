@@ -3339,15 +3339,7 @@ Fixpoint rename {Σ : Signature}
       }
     Qed.
 
-    Lemma helper {Σ : Signature} (state : CollapseState) (nϕ1 nϕ2 : NamedPattern)
-    :
-      is_nsubpattern_of_ind (collapse_aux state nϕ1).2
-      (collapse_aux (collapse_aux state nϕ1).1 nϕ2).2
-    .
-
-    Abort.
-
-    
+   
     Ltac simpl_free :=
           repeat (
             repeat match goal with
@@ -3973,19 +3965,24 @@ Fixpoint rename {Σ : Signature}
 
     (* TODO: For this to hold, only subpatterns of the original pattern can be in history,
        and collapse_aux can be called only on subpatterns of the original pattern.
+       FIXME: this actually is not true, since the state will be filled with
+       all the subpatterns, right?
     *)
     Lemma collapse_aux_no_subpattern_in_history
       {Σ : Signature}
       (state : CollapseState)
-      (nϕ : NamedPattern) :
+      (nϕ Φ : NamedPattern) :
+      is_nsubpattern_of_ind nϕ Φ ->
+      history_has_only_alpha_subpatterns_of Φ state ->
       (forall nϕ', is_nsubpattern_of_ind nϕ' nϕ -> nϕ' ∉ cs_history state) ->
-      collapse_aux state nϕ = (state, nϕ).
+      collapse_aux state nϕ = ({| cs_history := nϕ :: (cs_history state) |}, nϕ).
     Proof.
       move: state.
-      induction nϕ; intros state H; simpl;
+      induction nϕ; intros state HsubΦ Hhhoas H; simpl;
         unfold lookup_or_leaf,lookup_or_node,lookup_or; simpl in *;
-        repeat case_match; subst.
+        repeat case_match; subst; try reflexivity.
       {
+        exfalso.
         rewrite list_find_Some in H0.
         destruct_and!.
         inversion H0; subst.
@@ -3993,16 +3990,20 @@ Fixpoint rename {Σ : Signature}
         rewrite elem_of_map in pf.
         destruct pf as [x0 [Hx01 Hx02]].
         inversion Hx01. subst.
-        reflexivity.
+        specialize (H (npatt_evar x0)).
+        feed specialize H.
+        {
+          constructor. reflexivity.
+        }
+        {
+          rewrite elem_of_list_lookup.
+          exists n.
+          assumption.
+        }
+        apply H.
       }
       {
         exfalso.
-        rewrite list_find_None in H0.
-        rewrite Forall_forall in H0.
-        eapply H0.
-        2: apply alpha_equiv_refl.
-      }
-      {
         rewrite list_find_Some in H0.
         destruct_and!.
         inversion H0; subst.
@@ -4010,9 +4011,52 @@ Fixpoint rename {Σ : Signature}
         rewrite elem_of_map in pf.
         destruct pf as [x0 [Hx01 Hx02]].
         inversion Hx01. subst.
-        reflexivity.
+        specialize (H (npatt_svar x0)).
+        feed specialize H.
+        {
+          constructor. reflexivity.
+        }
+        {
+          rewrite elem_of_list_lookup.
+          exists n.
+          assumption.
+        }
+        apply H.
       }
-    Qed.
+      {
+        exfalso.
+        rewrite list_find_Some in H0.
+        destruct_and!.
+        inversion H0; subst.
+        specialize (H (npatt_sym sigma)).
+        feed specialize H.
+        {
+          constructor. reflexivity.
+        }
+        {
+          rewrite elem_of_list_lookup.
+          exists n.
+          assumption.
+        }
+        apply H.
+      }
+      {
+        pose proof (IH1 := IHnϕ1 state).
+        feed specialize IH1.
+        {
+          eapply is_nsubpattern_of_ind_trans.
+          2: apply HsubΦ.
+          {
+            apply nsub_app_l. apply nsub_eq. reflexivity.
+          }
+        }
+        {
+          apply Hhhoas.
+        }
+        { naive_solver. }
+        admit.
+      }
+    Abort.
 
     Lemma collapse_aux_only_adds_subpatterns
       {Σ : Signature}
