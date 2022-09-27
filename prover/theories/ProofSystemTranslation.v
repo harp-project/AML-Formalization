@@ -3643,6 +3643,123 @@ Fixpoint rename {Σ : Signature}
       idx1 = idx2
     .
 
+    Definition history_has_only_alpha_subpatterns_of
+      {Σ : Signature}
+      (nϕ : NamedPattern)
+      (state : CollapseState)
+      := Forall (fun p => exists (p' : NamedPattern) (pf : is_nsubpattern_of_ind p' nϕ), alpha_equiv p p') (cs_history state)
+    .
+    
+    (*
+      Well, this would not be true if we required only exact subpatterns.
+      Consider the pattern [∃x.x -> ∃y.y].
+      Then the procedure adds [∃x.x -> ∃x.x]
+      into the history, which is not a subpattern.
+    *)
+    Lemma collapse_aux_preserves_hhoso
+      {Σ : Signature}
+      (Φ : NamedPattern)
+      (nϕ : NamedPattern)
+      (state : CollapseState)
+      :
+      is_nsubpattern_of_ind nϕ Φ ->
+      history_has_only_alpha_subpatterns_of Φ state ->
+      history_has_only_alpha_subpatterns_of Φ (collapse_aux state nϕ).1
+    .
+    Proof.
+      move: state.
+      induction nϕ; intros state Hsub Honly; simpl;
+        unfold lookup_or_leaf,lookup_or_node,lookup_or; simpl in *;
+        repeat case_match; subst; simpl in *; try assumption.
+      {
+        apply Forall_cons;split;try assumption.
+        exists (npatt_evar x).
+        unshelve (eexists).
+        { assumption. }
+        { apply alpha_equiv_refl. }
+      }
+      {
+        apply Forall_cons;split;try assumption.
+        exists (npatt_svar X).
+        unshelve (eexists).
+        { assumption. }
+        { apply alpha_equiv_refl. }
+      }
+      {
+        apply Forall_cons;split;try assumption.
+        exists (npatt_sym sigma).
+        unshelve (eexists).
+        { assumption. }
+        { apply alpha_equiv_refl. }
+      }
+      {
+        unfold history_has_only_alpha_subpatterns_of in *.
+        setoid_rewrite Forall_forall in IHnϕ1.
+        setoid_rewrite Forall_forall in IHnϕ2.
+        pose proof (IH1 := IHnϕ1 state).
+        feed specialize IH1.
+        {
+          eapply is_nsubpattern_of_ind_trans;[|apply Hsub].
+          apply nsub_app_l. apply nsub_eq. reflexivity.
+        }
+        {
+          rewrite Forall_forall in Honly.
+          naive_solver.
+        }
+        pose proof (IH1' := IH1 (collapse_aux state nϕ1).2).
+        feed specialize IH1'.
+        {
+          apply collapse_arg_in_history.
+        }
+        destruct IH1' as [p1 [Hp1sub Hp'a]].
+
+        pose proof (IH2 := IHnϕ2 (collapse_aux state nϕ1).1).
+        feed specialize IH2.
+        {
+          eapply is_nsubpattern_of_ind_trans;[|apply Hsub].
+          apply nsub_app_r. apply nsub_eq. reflexivity.
+        }
+        {
+          apply IH1.
+        }
+        pose proof (IH2' := IH2 (collapse_aux (collapse_aux state nϕ1).1 nϕ2).2).
+        feed specialize IH2'.
+        {
+          apply collapse_arg_in_history.
+        }
+        destruct IH2' as [q [Hqsub Hqa]].
+
+        apply Forall_cons;split.
+        {
+          exists (npatt_app nϕ1 nϕ2).
+          unshelve (eexists).
+          { apply Hsub. }
+          constructor.
+          {
+            simpl.
+            eapply alpha_equiv'_diagonal.
+            1,2: set_solver.
+            apply collapse_aux_alpha'.
+          }
+          {
+            simpl.
+            eapply alpha_equiv'_diagonal.
+            1,2: set_solver.
+            apply collapse_aux_alpha'.
+          }
+        }
+        {
+          rewrite Forall_forall in Honly.
+          rewrite Forall_forall.
+          naive_solver.
+        }
+      }
+      {
+        
+      }
+    Qed.
+
+
     (* TODO: For this to hold, only subpatterns of the original pattern can be in history,
        and collapse_aux can be called only on subpatterns of the original pattern.
     *)
