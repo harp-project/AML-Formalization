@@ -4066,7 +4066,7 @@ Fixpoint rename {Σ : Signature}
                 rewrite Forall_forall in Han.
                 specialize (Han nϕ1').
                 feed specialize Han.
-                { Search elem_of lookup.
+                { 
                   rewrite elem_of_list_lookup.
                   exists idx. apply Hfind1.
                 }
@@ -4085,6 +4085,45 @@ Fixpoint rename {Σ : Signature}
                 eapply IH.
                 { apply collapse_arg_in_history. }
                 1-3: assumption.
+              }
+            }
+            {
+              destruct (list_find (alpha_equiv nϕ1) (cs_history state)) eqn:Hfind1.
+              {
+                destruct p as [idx1 nϕ1'].
+                erewrite collapse_aux_case_pattern_in_history in H2;[|apply Hfind1].
+                simpl in H2.
+                erewrite (collapse_aux_case_pattern_in_history state)in H6;[|apply Hfind1].
+                simpl in H6.
+                destruct (list_find (alpha_equiv nϕ2) (cs_history state)) eqn:Hfind2.
+                {
+                  destruct p as [idx2 nϕ2'].
+                  erewrite (collapse_aux_case_pattern_in_history state)in H6;[|apply Hfind2].
+                  simpl in H6.
+                  rewrite list_find_Some in Hfind1.
+                  rewrite list_find_Some in Hfind2.
+                  destruct Hfind1 as [Hfind11 [Hfind12 Hfind13]].
+                  destruct Hfind2 as [Hfind21 [Hfind22 Hfind23]].
+                  destruct (decide (idx1 = idx2)).
+                  {
+                    subst.
+                    rewrite Hfind11 in Hfind21.
+                    inversion Hfind21. clear Hfind21. subst.
+                    unfold state_alpha_normalized in Han.
+                    rewrite Forall_forall in Han.
+                    specialize (Han nϕ2').
+                    feed specialize Han.
+                    {
+                      rewrite elem_of_list_lookup.
+                      exists idx2. apply Hfind11.
+                    }
+                    unfold alpha_normalized in Han.
+                    apply Han; assumption.
+                  }
+                  {
+                    
+                  }
+                }
               }
             }
           }
