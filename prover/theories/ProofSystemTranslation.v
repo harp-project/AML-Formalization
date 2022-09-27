@@ -3754,8 +3754,147 @@ Fixpoint rename {Σ : Signature}
           naive_solver.
         }
       }
+      
       {
-        
+        apply Forall_cons;split;try assumption.
+        exists (npatt_bott).
+        unshelve (eexists).
+        { assumption. }
+        { apply alpha_equiv_refl. }
+      }
+      {
+        unfold history_has_only_alpha_subpatterns_of in *.
+        setoid_rewrite Forall_forall in IHnϕ1.
+        setoid_rewrite Forall_forall in IHnϕ2.
+        pose proof (IH1 := IHnϕ1 state).
+        feed specialize IH1.
+        {
+          eapply is_nsubpattern_of_ind_trans;[|apply Hsub].
+          apply nsub_imp_l. apply nsub_eq. reflexivity.
+        }
+        {
+          rewrite Forall_forall in Honly.
+          naive_solver.
+        }
+        pose proof (IH1' := IH1 (collapse_aux state nϕ1).2).
+        feed specialize IH1'.
+        {
+          apply collapse_arg_in_history.
+        }
+        destruct IH1' as [p1 [Hp1sub Hp'a]].
+
+        pose proof (IH2 := IHnϕ2 (collapse_aux state nϕ1).1).
+        feed specialize IH2.
+        {
+          eapply is_nsubpattern_of_ind_trans;[|apply Hsub].
+          apply nsub_imp_r. apply nsub_eq. reflexivity.
+        }
+        {
+          apply IH1.
+        }
+        pose proof (IH2' := IH2 (collapse_aux (collapse_aux state nϕ1).1 nϕ2).2).
+        feed specialize IH2'.
+        {
+          apply collapse_arg_in_history.
+        }
+        destruct IH2' as [q [Hqsub Hqa]].
+
+        apply Forall_cons;split.
+        {
+          exists (npatt_imp nϕ1 nϕ2).
+          unshelve (eexists).
+          { apply Hsub. }
+          constructor.
+          {
+            simpl.
+            eapply alpha_equiv'_diagonal.
+            1,2: set_solver.
+            apply collapse_aux_alpha'.
+          }
+          {
+            simpl.
+            eapply alpha_equiv'_diagonal.
+            1,2: set_solver.
+            apply collapse_aux_alpha'.
+          }
+        }
+        {
+          rewrite Forall_forall in Honly.
+          rewrite Forall_forall.
+          naive_solver.
+        }
+      }
+      {
+        unfold history_has_only_alpha_subpatterns_of in *.
+        setoid_rewrite Forall_forall in IHnϕ.
+        pose proof (IH := IHnϕ state).
+        feed specialize IH.
+        {
+          eapply is_nsubpattern_of_ind_trans;[|apply Hsub].
+          apply nsub_exists. apply nsub_eq. reflexivity.
+        }
+        {
+          rewrite Forall_forall in Honly.
+          naive_solver.
+        }
+
+        pose proof (IH' := IH (collapse_aux state nϕ).2).
+        feed specialize IH'.
+        {
+          apply collapse_arg_in_history.
+        }
+        destruct IH' as [p1 [Hp1sub Hp'a]].
+
+        assert (Henϕp1 : alpha_equiv nϕ p1).
+        {
+          eapply alpha_equiv_trans.
+          2: apply Hp'a.
+          apply alpha_equiv_sym.
+          apply collapse_aux_alpha'.
+        }
+
+        assert (Heexnϕp1 : alpha_equiv (npatt_exists x (collapse_aux state nϕ).2) (npatt_exists x nϕ)).
+        {
+          constructor.
+          eapply alpha'_mono.
+          3: eapply alpha_equiv_trans.
+          4: apply alpha_equiv_sym; apply Henϕp1.
+          3: eapply alpha_equiv_trans.
+          3: apply collapse_aux_alpha'.
+          3: apply Henϕp1.
+          2: simpl; apply reflexivity.
+          {
+            simpl. clear. unfold unrelated,related.
+            rewrite elem_of_subseteq.
+            intros [e1 e2] H.
+            rewrite elem_of_map in H.
+            destruct H as [x' [H1x' H2x']].
+            inversion H1x'. subst. clear H1x'.
+            rewrite elem_of_union.
+            destruct (decide (x' = x)).
+            { set_solver. }
+            left.
+            rewrite elem_of_filter. simpl.
+            split;[naive_solver|].
+            rewrite elem_of_map.
+            exists x'.
+            split;[reflexivity|].
+            set_solver.
+          }
+        }
+
+        apply Forall_cons;split.
+        {
+          exists (npatt_exists x nϕ).
+          unshelve (eexists).
+          { apply Hsub. }
+          apply Heexnϕp1.
+        }
+        {
+          rewrite Forall_forall in Honly.
+          rewrite Forall_forall.
+          naive_solver.
+        }
       }
     Qed.
 
