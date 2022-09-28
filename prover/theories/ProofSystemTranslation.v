@@ -4092,6 +4092,55 @@ Fixpoint rename {Σ : Signature}
         }
         { naive_solver. }
         destruct IH1 as [prefix1 [Hprefix11 [Hprefix12 Hprefix13]]].
+        simpl.
+
+        destruct (classic (∀ nϕ' nϕ'' : NamedPattern,
+        alpha_equiv nϕ' nϕ''
+        → is_nsubpattern_of_ind nϕ'' nϕ2 → nϕ' ∉ nϕ1 :: prefix1)) as [Hcl|Hcl].
+        2: {
+          apply Classical_Pred_Type.not_all_ex_not in Hcl.
+          destruct Hcl as [n1 Hcl].
+          apply Classical_Pred_Type.not_all_ex_not in Hcl.
+          destruct Hcl as [n2 Hcl].
+          apply Classical_Pred_Type.not_all_ex_not in Hcl.
+          destruct Hcl as [n1En2 Hcl].
+          apply Classical_Pred_Type.not_all_ex_not in Hcl.
+          destruct Hcl as [n2Subnϕ2 Hcl].
+          apply NNPP in Hcl.
+          rewrite elem_of_cons in Hcl.
+          destruct Hcl as [Hcl|Hcl].
+          {
+            subst. exfalso. eapply H.
+            { apply n1En2. }
+            { apply }
+          }
+          Search not "all".
+          apply not_all in Hcl.
+        }
+
+        pose proof (IH2 := IHnϕ2 (collapse_aux state nϕ1).1).
+        feed specialize IH2.
+        {
+          eapply is_nsubpattern_of_ind_trans.
+          2: apply HsubΦ.
+          {
+            apply nsub_app_r. apply nsub_eq. reflexivity.
+          }
+        }
+        {
+          apply collapse_aux_preserves_hhoso.
+          {
+            eapply is_nsubpattern_of_ind_trans.
+            2: apply HsubΦ.
+            {
+              apply nsub_app_l. apply nsub_eq. reflexivity.
+            }
+          }
+          { exact Hhhoas. }
+        }
+        {
+          rewrite Hprefix13. simpl.
+        }
         destruct (classic (exists (pf :is_nsubpattern_of_ind nϕ2 nϕ1), True)).
         {
           exists prefix1.
@@ -4124,7 +4173,8 @@ Fixpoint rename {Σ : Signature}
               assumption.
             }
             {
-
+              rewrite !Hprefix13. simpl.
+              repeat f_equal.
             }
           }
         }
