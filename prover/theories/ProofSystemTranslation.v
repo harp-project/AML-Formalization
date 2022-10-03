@@ -3987,6 +3987,82 @@ Fixpoint rename {Σ : Signature}
       let newX := svar_fresh_s (svs ∪ named_svars nϕ'') in
       npatt_mu newX (rename_free_svar nϕ'' X newX)
     end.
+
+    Inductive myeq'
+    {Σ : Signature}
+    (R : PartialBijection evar)
+    (R' : PartialBijection svar)
+    : relation NamedPattern
+    :=
+    | me_evar (x y : evar) (pf : (x, y) ∈ (pbr R))
+      : myeq' R R' (npatt_evar x) (npatt_evar y)
+    | me_svar (X Y : svar) (pf : (X, Y) ∈ (pbr R'))
+      : myeq' R R' (npatt_svar X) (npatt_svar Y)
+    | me_app
+      (t t' u u' : NamedPattern)
+      (tEt' : myeq' R R' t t')
+      (uEu' : myeq' R R' u u')
+      : myeq' R R' (npatt_app t u) (npatt_app t' u')
+    | me_imp
+      (t t' u u' : NamedPattern)
+      (tEt' : myeq' R R' t t')
+      (uEu' : myeq' R R' u u')
+      : myeq' R R' (npatt_imp t u) (npatt_imp t' u')
+    | me_bott : myeq' R R' npatt_bott npatt_bott
+    | me_sym (s : symbols) : myeq' R R' (npatt_sym s) (npatt_sym s) 
+    | me_ex (x y : evar) (t u : NamedPattern)
+      (tEu : myeq' R R' t u) (xRy : (x, y) ∈ (pbr R))
+      : myeq' R R'
+        (npatt_exists x t)
+        (npatt_exists y u)
+    | me_mu (X Y : svar) (t u : NamedPattern)
+      (tEu : myeq' R R' t u) (XRY : (X, Y) ∈ (pbr R'))
+      : myeq' R R'
+        (npatt_mu X t)
+        (npatt_mu Y u)
+  .
+
+  Lemma myeq'_eq {Σ : Signature} (p q : NamedPattern) R R':
+    myeq' (diagonal R) (diagonal R') p q ->
+    p = q
+  .
+  Proof.
+    intros H.
+    induction H; try solve [subst; reflexivity].
+    {
+      unfold diagonal in pf. simpl in pf.
+      rewrite elem_of_map in pf.
+      destruct pf as [x0 [H1x0 H2x0]].
+      inversion H1x0. subst. clear H1x0.
+      reflexivity.
+    }
+    {
+      unfold diagonal in pf. simpl in pf.
+      rewrite elem_of_map in pf.
+      destruct pf as [X0 [H1X0 H2X0]].
+      inversion H1X0. subst. clear H1X0.
+      reflexivity.
+    }
+    {
+      unfold diagonal in xRy. simpl in xRy.
+      rewrite elem_of_map in xRy.
+      destruct xRy as [X0 [H1X0 H2X0]].
+      inversion H1X0. subst. clear H1X0.
+      reflexivity.
+    }
+    {
+      unfold diagonal in XRY. simpl in XRY.
+      rewrite elem_of_map in XRY.
+      destruct XRY as [X0 [H1X0 H2X0]].
+      inversion H1X0. subst. clear H1X0.
+      reflexivity.
+    }
+  Qed.
+
+
+  Lemma normalize_correct' {Σ : Signature}
+    (p q : NamedPattern) :
+
 (*
     (* This is not true, since there may be two alpha-equivalent subpatterns of nϕ
        and the first will get into the prefix before the second is evaluated...
