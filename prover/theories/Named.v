@@ -112,6 +112,31 @@ Defined.
     | npatt_mu X phi => difference (named_free_svars phi) (singleton X)
     end.
 
+
+    Fixpoint named_evars (phi : NamedPattern) : EVarSet :=
+      match phi with
+      | npatt_evar x => singleton x
+      | npatt_svar X => empty
+      | npatt_sym sigma => empty
+      | npatt_app phi1 phi2 => union (named_evars phi1) (named_evars phi2)
+      | npatt_bott => empty
+      | npatt_imp phi1 phi2 => union (named_evars phi1) (named_evars phi2)
+      | npatt_exists x phi => union (named_evars phi) (singleton x)
+      | npatt_mu X phi => named_evars phi
+      end.
+  
+    Fixpoint named_svars (phi : NamedPattern) : SVarSet :=
+      match phi with
+      | npatt_evar x => empty
+      | npatt_svar X => singleton X
+      | npatt_sym sigma => empty
+      | npatt_app phi1 phi2 => union (named_svars phi1) (named_svars phi2)
+      | npatt_bott => empty
+      | npatt_imp phi1 phi2 => union (named_svars phi1) (named_svars phi2)
+      | npatt_exists x phi => named_svars phi
+      | npatt_mu X phi => union (named_svars phi) (singleton X)
+      end.    
+
   Definition named_fresh_evar ϕ := evar_fresh (elements (named_free_evars ϕ)).
   Definition named_fresh_svar ϕ := svar_fresh (elements (named_free_svars ϕ)).
 
