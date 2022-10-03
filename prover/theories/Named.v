@@ -180,7 +180,57 @@ Defined.
            else npatt_mu X' (rename_free_svar phi' X Y)
       | npatt_exists x phi' => npatt_exists x (rename_free_svar phi' X Y)
       end.
+  
+  Ltac clear_decide :=
+    repeat (match goal with | [H: decide _ = _ |- _] => clear H end)
+  .
 
+  Lemma named_evars_rename_free_evar
+    (nϕ : NamedPattern) x y:
+    named_evars (rename_free_evar nϕ x y)
+    = (named_evars nϕ ∖ {[x]}) ∪
+      (if decide (x ∈ named_evars nϕ) is left _ then {[y]} else ∅)
+  .
+  Proof.
+    move: x y.
+    induction nϕ; intros x' y'; simpl;
+      repeat case_match; subst; simpl in *;
+      clear_decide.
+    { set_solver. }
+    { rewrite elem_of_singleton in n. contradiction. }
+    { rewrite elem_of_singleton in e. subst. contradiction. }
+    { rewrite elem_of_singleton in n0. set_solver. }
+    { exfalso. set_solver. }
+    { set_solver. }
+    { exfalso. set_solver. }
+    { set_solver. }
+    { 
+      specialize (IHnϕ1 x' y').
+      specialize (IHnϕ2 x' y').
+      repeat case_match; clear_decide; set_solver.
+    }
+    {
+      specialize (IHnϕ1 x' y').
+      specialize (IHnϕ2 x' y').
+      repeat case_match; clear_decide; set_solver.
+    }
+    { exfalso. set_solver. }
+    { set_solver. }
+    {
+      specialize (IHnϕ1 x' y').
+      specialize (IHnϕ2 x' y').
+      repeat case_match; clear_decide; set_solver.
+    }
+    {
+      specialize (IHnϕ1 x' y').
+      specialize (IHnϕ2 x' y').
+      repeat case_match; clear_decide; set_solver.
+    }
+    {
+      specialize (IHnϕ x y').
+    }
+  Qed.
+  
 
   (* substitute variable x for psi in phi: phi[psi/x] *)
   Fixpoint named_evar_subst (phi psi : NamedPattern) (x : evar) :=
