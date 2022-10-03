@@ -4059,9 +4059,110 @@ Fixpoint rename {Σ : Signature}
     }
   Qed.
 
+  Lemma normalize_same_evar
+    {Σ : Signature}
+    (t u : NamedPattern)
+    R R' evs svs:
+    named_evars t ⊆ evs ->
+    named_evars u ⊆ evs ->
+    alpha_equiv' R R' t u ->
+    evs ∪ named_evars (normalize evs svs t) = evs ∪ named_evars (normalize evs svs u)
+  .
+  Proof.
+    intros Ht Hu Ha.
+    move: Ht Hu.
+    induction Ha; intros Ht Hu; simpl in *.
+    {
+      set_solver.
+    }
+    { clear. set_solver. }
+    {
+      feed specialize IHHa1.
+      { set_solver. }
+      { set_solver. }
+      feed specialize IHHa2.
+      { set_solver. }
+      { set_solver. }
+      set_solver.
+    }
+    {
+      feed specialize IHHa1.
+      { set_solver. }
+      { set_solver. }
+      feed specialize IHHa2.
+      { set_solver. }
+      { set_solver. }
+      set_solver.
+    }
+    {
+      clear. set_solver.
+    }
+    {
+      clear. set_solver.
+    }
+    {
+      feed specialize IHHa.
+      { set_solver. } 
+      { set_solver. }
+      rewrite IHHa.
+      (* TODO need a lemma characterizing named_evars of rename_free_evar*)
+      set_solver.
+    }
+  Qed.
+
 
   Lemma normalize_correct' {Σ : Signature}
-    (p q : NamedPattern) :
+    (p q : NamedPattern) R R' evs svs:
+    named_evars p ⊆ evs ->
+    named_evars q ⊆ evs ->
+    named_svars p ⊆ svs ->
+    named_svars q ⊆ svs ->
+    alpha_equiv' R R' p q ->
+    myeq' R R' (normalize evs svs p) (normalize evs svs q)
+  .
+  Proof.
+    intros nep neq nsp nsq H.
+    move: nep neq nsp nsq.
+    induction H; intros nep neq nsp nsq; simpl in *.
+    {
+      constructor. assumption.
+    }
+    {
+      constructor. assumption.
+    }
+    {
+      constructor.
+      {
+        apply IHalpha_equiv'1; clear IHalpha_equiv'1 IHalpha_equiv'2; set_solver.
+      }
+      {
+        apply IHalpha_equiv'2; clear IHalpha_equiv'1 IHalpha_equiv'2; set_solver.
+      }
+    }
+    {
+      constructor.
+      {
+        apply IHalpha_equiv'1; clear IHalpha_equiv'1 IHalpha_equiv'2; set_solver.
+      }
+      {
+        apply IHalpha_equiv'2; clear IHalpha_equiv'1 IHalpha_equiv'2; set_solver.
+      }
+    }
+    {
+      constructor.
+    }
+    {
+      constructor.
+    }
+    {
+      feed specialize IHalpha_equiv'.
+      { clear IHalpha_equiv'; set_solver. }
+      { clear IHalpha_equiv'; set_solver. }
+      { clear IHalpha_equiv'; set_solver. }
+      { clear IHalpha_equiv'; set_solver. }
+      constructor.
+    }
+  Qed.
 
 (*
     (* This is not true, since there may be two alpha-equivalent subpatterns of nϕ
