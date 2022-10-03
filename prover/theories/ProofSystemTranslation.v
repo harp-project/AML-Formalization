@@ -3961,6 +3961,32 @@ Fixpoint rename {Σ : Signature}
         }
       }
     Qed.
+
+    Fixpoint normalize
+      {Σ : Signature}
+      (evs : EVarSet) (svs : SVarSet)
+      (nϕ : NamedPattern) : NamedPattern
+    :=
+    match nϕ with
+    | npatt_bott => npatt_bott
+    | npatt_sym s => npatt_sym s
+    | npatt_evar x => npatt_evar x
+    | npatt_svar X => npatt_svar X
+    | npatt_imp nϕ1 nϕ2
+      => npatt_imp (normalize evs svs nϕ1) (normalize evs svs nϕ2)
+    | npatt_app nϕ1 nϕ2
+      => npatt_app (normalize evs svs nϕ1) (normalize evs svs nϕ2)
+    | npatt_exists x nϕ'
+      =>
+      let nϕ'' := normalize evs svs nϕ' in
+      let newx := evar_fresh_s (evs ∪ named_evars nϕ'') in
+      npatt_exists newx (rename_free_evar nϕ'' x newx)
+    | npatt_mu X nϕ'
+      =>
+      let nϕ'' := normalize evs svs nϕ' in
+      let newX := svar_fresh_s (svs ∪ named_svars nϕ'') in
+      npatt_mu newX (rename_free_svar nϕ'' X newX)
+    end.
 (*
     (* This is not true, since there may be two alpha-equivalent subpatterns of nϕ
        and the first will get into the prefix before the second is evaluated...
