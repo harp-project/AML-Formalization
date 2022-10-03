@@ -115,6 +115,48 @@ Defined.
   Definition named_fresh_evar ϕ := evar_fresh (elements (named_free_evars ϕ)).
   Definition named_fresh_svar ϕ := svar_fresh (elements (named_free_svars ϕ)).
 
+  Fixpoint rename_free_evar (phi : NamedPattern) (x y : evar) :=
+    match phi with
+    | npatt_evar x'
+      => if decide (x = x') is left _ then npatt_evar y else npatt_evar x'
+    | npatt_svar X => npatt_svar X
+    | npatt_sym sigma => npatt_sym sigma
+    | npatt_app phi1 phi2
+      => npatt_app (rename_free_evar phi1 x y)  
+                   (rename_free_evar phi2 x y)
+    | npatt_bott => npatt_bott
+    | npatt_imp phi1 phi2
+      => npatt_imp (rename_free_evar phi1 x y)
+                   (rename_free_evar phi2 x y)
+    | npatt_exists x' phi'
+      => if decide (x = x') is left _
+         then npatt_exists x' phi'
+         else npatt_exists x' (rename_free_evar phi' x y)
+    | npatt_mu X phi' => npatt_mu X (rename_free_evar phi' x y)
+    end.
+
+
+    Fixpoint rename_free_svar (phi : NamedPattern) (X Y : svar) :=
+      match phi with
+      | npatt_svar X'
+        => if decide (X = X') is left _ then npatt_svar Y else npatt_svar X'
+      | npatt_evar x => npatt_evar x
+      | npatt_sym sigma => npatt_sym sigma
+      | npatt_app phi1 phi2
+        => npatt_app (rename_free_svar phi1 X Y)  
+                     (rename_free_svar phi2 X Y)
+      | npatt_bott => npatt_bott
+      | npatt_imp phi1 phi2
+        => npatt_imp (rename_free_svar phi1 X Y)
+                     (rename_free_svar phi2 X Y)
+      | npatt_mu X' phi'
+        => if decide (X = X') is left _
+           then npatt_mu X' phi'
+           else npatt_mu X' (rename_free_svar phi' X Y)
+      | npatt_exists x phi' => npatt_exists x (rename_free_svar phi' X Y)
+      end.
+
+
   (* substitute variable x for psi in phi: phi[psi/x] *)
   Fixpoint named_evar_subst (phi psi : NamedPattern) (x : evar) :=
     match phi with
