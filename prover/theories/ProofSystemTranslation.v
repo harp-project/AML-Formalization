@@ -3962,6 +3962,438 @@ Fixpoint rename {Σ : Signature}
       }
     Qed.
 
+    Lemma collapse_aux_exists_prefix
+      {Σ : Signature}
+      (state : CollapseState)
+      (nϕ Φ : NamedPattern) :
+      is_nsubpattern_of_ind nϕ Φ ->
+      history_has_only_alpha_subpatterns_of Φ state ->
+      exists (prefix : list NamedPattern) (nψ : NamedPattern),
+        Forall (fun p => exists (p' : NamedPattern) (pf : is_nsubpattern_of_ind p' nϕ), (alpha_equiv p p')) prefix /\
+        collapse_aux state nϕ = ({| cs_history := prefix ++ (cs_history state) |}, nψ)
+        /\ (
+          (forall nϕ' nϕ'', alpha_equiv nϕ' nϕ'' -> is_nsubpattern_of_ind nϕ'' nϕ -> nϕ' ∉ cs_history state) ->
+          nψ = nϕ /\ head prefix = Some nϕ
+        ).
+    Proof.
+      move: state.
+      induction nϕ; intros state HsubΦ Hhhoas.
+      {
+        destruct (list_find (alpha_equiv (npatt_evar x)) (cs_history state)) eqn:Hfind.
+        {
+          destruct p as [idx nψ].
+          rewrite list_find_Some in Hfind.
+          destruct Hfind as [Hfind1 [Hfind2 Hfind3]].
+          exists [], nψ.
+          split.
+          {
+            apply Forall_nil. exact I.
+          }
+          {
+            split.
+            {
+              simpl. unfold lookup_or_leaf,lookup_or_node,lookup_or.
+              repeat case_match.
+              {
+                subst.
+                rewrite list_find_Some in H.
+                destruct H as [Hfind21 [Hfind22 Hfind23]].
+                f_equal.
+                {
+                  destruct state.
+                  reflexivity.
+                }
+                {
+                  destruct (decide (n = idx)).
+                  {
+                    subst.
+                    congruence.
+                  }
+                  {
+                    destruct (decide (n < idx)).
+                    {
+                      specialize (Hfind3 _ _ Hfind21 l).
+                      contradiction.
+                    }
+                    {
+                      specialize (Hfind23 _ _ Hfind1 ltac:(lia)).
+                      contradiction.
+                    }
+                  }
+                }
+              }
+              {
+                exfalso.
+                rewrite list_find_None in H.
+                rewrite Forall_forall in H.
+                specialize (H nψ).
+                feed specialize H.
+                {
+                  rewrite elem_of_list_lookup.
+                  exists idx. apply Hfind1.
+                }
+                { apply Hfind2. }
+                exact H.
+              }
+            }
+            {
+              intros H.
+              exfalso.
+              eapply H.
+              { apply alpha_equiv_sym in Hfind2. apply Hfind2. }
+              { apply nsub_eq. reflexivity. }
+              { rewrite elem_of_list_lookup. exists idx. apply Hfind1. }
+            }
+          }
+        }
+        {
+          rewrite list_find_None in Hfind.
+          exists [npatt_evar x], (npatt_evar x).
+          split.
+          {
+            apply Forall_cons. split.
+            2: { apply Forall_nil. exact I. }
+            exists (npatt_evar x).
+            constructor.
+            {
+              apply nsub_eq. reflexivity.
+            }
+            { apply alpha_equiv_refl. }
+          }
+          {
+            split.
+            {
+              simpl. unfold lookup_or_leaf,lookup_or_node,lookup_or.
+              repeat case_match.
+              {
+                subst.
+                exfalso.
+                rewrite -list_find_None in Hfind.
+                rewrite Hfind in H.
+                inversion H.
+              }
+              {
+                simpl. reflexivity.
+              }
+            }
+            {
+              intros H.
+              split;[reflexivity|].
+              reflexivity.
+            }
+          }
+        }
+      }
+      {
+        destruct (list_find (alpha_equiv (npatt_svar X)) (cs_history state)) eqn:Hfind.
+        {
+          destruct p as [idx nψ].
+          rewrite list_find_Some in Hfind.
+          destruct Hfind as [Hfind1 [Hfind2 Hfind3]].
+          exists [], nψ.
+          split.
+          {
+            apply Forall_nil. exact I.
+          }
+          {
+            split.
+            {
+              simpl. unfold lookup_or_leaf,lookup_or_node,lookup_or.
+              repeat case_match.
+              {
+                subst.
+                rewrite list_find_Some in H.
+                destruct H as [Hfind21 [Hfind22 Hfind23]].
+                f_equal.
+                {
+                  destruct state.
+                  reflexivity.
+                }
+                {
+                  destruct (decide (n = idx)).
+                  {
+                    subst.
+                    congruence.
+                  }
+                  {
+                    destruct (decide (n < idx)).
+                    {
+                      specialize (Hfind3 _ _ Hfind21 l).
+                      contradiction.
+                    }
+                    {
+                      specialize (Hfind23 _ _ Hfind1 ltac:(lia)).
+                      contradiction.
+                    }
+                  }
+                }
+              }
+              {
+                exfalso.
+                rewrite list_find_None in H.
+                rewrite Forall_forall in H.
+                specialize (H nψ).
+                feed specialize H.
+                {
+                  rewrite elem_of_list_lookup.
+                  exists idx. apply Hfind1.
+                }
+                { apply Hfind2. }
+                exact H.
+              }
+            }
+            {
+              intros H.
+              exfalso.
+              eapply H.
+              { apply alpha_equiv_sym in Hfind2. apply Hfind2. }
+              { apply nsub_eq. reflexivity. }
+              { rewrite elem_of_list_lookup. exists idx. apply Hfind1. }
+            }
+          }
+        }
+        {
+          rewrite list_find_None in Hfind.
+          exists [npatt_svar X], (npatt_svar X).
+          split.
+          {
+            apply Forall_cons. split.
+            2: { apply Forall_nil. exact I. }
+            exists (npatt_svar X).
+            constructor.
+            {
+              apply nsub_eq. reflexivity.
+            }
+            { apply alpha_equiv_refl. }
+          }
+          {
+            split.
+            {
+              simpl. unfold lookup_or_leaf,lookup_or_node,lookup_or.
+              repeat case_match.
+              {
+                subst.
+                exfalso.
+                rewrite -list_find_None in Hfind.
+                rewrite Hfind in H.
+                inversion H.
+              }
+              {
+                simpl. reflexivity.
+              }
+            }
+            {
+              intros H.
+              split;[reflexivity|].
+              reflexivity.
+            }
+          }
+        }
+      }
+      {
+        destruct (list_find (alpha_equiv (npatt_sym sigma)) (cs_history state)) eqn:Hfind.
+        {
+          destruct p as [idx nψ].
+          rewrite list_find_Some in Hfind.
+          destruct Hfind as [Hfind1 [Hfind2 Hfind3]].
+          exists [], nψ.
+          split.
+          {
+            apply Forall_nil. exact I.
+          }
+          {
+            split.
+            {
+              simpl. unfold lookup_or_leaf,lookup_or_node,lookup_or.
+              repeat case_match.
+              {
+                subst.
+                rewrite list_find_Some in H.
+                destruct H as [Hfind21 [Hfind22 Hfind23]].
+                f_equal.
+                {
+                  destruct state.
+                  reflexivity.
+                }
+                {
+                  destruct (decide (n = idx)).
+                  {
+                    subst.
+                    congruence.
+                  }
+                  {
+                    destruct (decide (n < idx)).
+                    {
+                      specialize (Hfind3 _ _ Hfind21 l).
+                      contradiction.
+                    }
+                    {
+                      specialize (Hfind23 _ _ Hfind1 ltac:(lia)).
+                      contradiction.
+                    }
+                  }
+                }
+              }
+              {
+                exfalso.
+                rewrite list_find_None in H.
+                rewrite Forall_forall in H.
+                specialize (H nψ).
+                feed specialize H.
+                {
+                  rewrite elem_of_list_lookup.
+                  exists idx. apply Hfind1.
+                }
+                { apply Hfind2. }
+                exact H.
+              }
+            }
+            {
+              intros H.
+              exfalso.
+              eapply H.
+              { apply alpha_equiv_sym in Hfind2. apply Hfind2. }
+              { apply nsub_eq. reflexivity. }
+              { rewrite elem_of_list_lookup. exists idx. apply Hfind1. }
+            }
+          }
+        }
+        {
+          rewrite list_find_None in Hfind.
+          exists [npatt_sym sigma], (npatt_sym sigma).
+          split.
+          {
+            apply Forall_cons. split.
+            2: { apply Forall_nil. exact I. }
+            exists (npatt_sym sigma).
+            constructor.
+            {
+              apply nsub_eq. reflexivity.
+            }
+            { apply alpha_equiv_refl. }
+          }
+          {
+            split.
+            {
+              simpl. unfold lookup_or_leaf,lookup_or_node,lookup_or.
+              repeat case_match.
+              {
+                subst.
+                exfalso.
+                rewrite -list_find_None in Hfind.
+                rewrite Hfind in H.
+                inversion H.
+              }
+              {
+                simpl. reflexivity.
+              }
+            }
+            {
+              intros H.
+              split;[reflexivity|].
+              reflexivity.
+            }
+          }
+        }
+      }
+      {
+        destruct (list_find (alpha_equiv (npatt_app nϕ1 nϕ2)) (cs_history state)) eqn:Hfind.
+        {
+          destruct p as [idx nψ].
+          exists [], nψ.
+          split.
+          {
+            apply Forall_nil. exact I.
+          }
+          split.
+          {
+            simpl. unfold lookup_or_node,lookup_or.
+            repeat case_match.
+            {
+              inversion Hfind. clear Hfind. subst.
+              destruct state. reflexivity.
+            }
+            {
+              inversion Hfind.
+            }
+          }
+          {
+            intros H.
+            exfalso.
+            rewrite list_find_Some in Hfind.
+            destruct Hfind as [Hfind1 [Hfind2 Hfind3]].
+            eapply H.
+            { apply alpha_equiv_sym in Hfind2. apply Hfind2. }
+            { apply nsub_eq. reflexivity. }
+            {
+              rewrite elem_of_list_lookup.
+              exists idx. apply Hfind1.
+            }
+          }
+        }
+        {
+          specialize (IHnϕ1 state).
+          feed specialize IHnϕ1.
+          {
+            eapply is_nsubpattern_of_ind_trans.
+            2: { apply HsubΦ. }
+            { apply nsub_app_l. apply nsub_eq. reflexivity. }
+          }
+          { apply Hhhoas. }
+          destruct IHnϕ1 as [prefix1 [nψ1 [Hrec11 [Hrec12 Hrec13]]]].
+          specialize (IHnϕ2 (collapse_aux state nϕ1).1).
+          feed specialize IHnϕ2.
+          {
+            eapply is_nsubpattern_of_ind_trans.
+            2: { apply HsubΦ. }
+            { apply nsub_app_r. apply nsub_eq. reflexivity. }
+          }
+          {
+            apply collapse_aux_preserves_hhoso; try assumption.
+            eapply is_nsubpattern_of_ind_trans.
+            2: { apply HsubΦ. }
+            { apply nsub_app_l. apply nsub_eq. reflexivity. }
+          }
+          destruct IHnϕ2 as [prefix2 [nψ2 [Hrec21 [Hrec22 Hrec23]]]].
+          exists ((npatt_app nψ1 nψ2)::prefix2 ++ prefix1).
+          exists (npatt_app nψ1 nψ2).
+          split.
+          {
+            rewrite Forall_forall.
+            rewrite Forall_forall in Hrec21.
+            intros np Hnp.
+            rewrite elem_of_cons in Hnp.
+            destruct Hnp as [Hnp|Hnp].
+            {
+              subst np.
+            }
+            specialize (Hrec21 np Hnp).
+            destruct Hrec21 as [np' [Hsub Hae]].
+            exists np'.
+            constructor;[|assumption].
+            apply nsub_app_r.
+            apply Hsub.
+          }
+          split.
+          {
+            simpl. rewrite Hrec12. simpl.
+            rewrite Hrec12 in Hrec22. simpl in Hrec22.
+            rewrite Hrec22. simpl.
+            unfold lookup_or_node,lookup_or.
+            repeat case_match.
+            {
+              inversion Hfind.
+            }
+            simpl.
+            f_equal.
+            destruct state. simpl in *.
+            
+            reflexivity.
+          }
+        }
+      }
+    Qed.
+
 
     (* TODO: For this to hold, only subpatterns of the original pattern can be in history,
        and collapse_aux can be called only on subpatterns of the original pattern.
