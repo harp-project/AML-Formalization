@@ -3961,7 +3961,10 @@ Fixpoint rename {Σ : Signature}
         }
       }
     Qed.
-
+(*
+    (* This is not true, since there may be two alpha-equivalent subpatterns of nϕ
+       and the first will get into the prefix before the second is evaluated...
+       *)
     Lemma collapse_aux_exists_prefix
       {Σ : Signature}
       (state : CollapseState)
@@ -4355,24 +4358,61 @@ Fixpoint rename {Σ : Signature}
             { apply nsub_app_l. apply nsub_eq. reflexivity. }
           }
           destruct IHnϕ2 as [prefix2 [nψ2 [Hrec21 [Hrec22 Hrec23]]]].
+          pose proof (Ha1 := collapse_aux_alpha' state nϕ1).
+          pose proof (Ha2 := collapse_aux_alpha' (collapse_aux state nϕ1).1 nϕ2).
+          rewrite Hrec12 in Ha1. simpl in Ha1.
+          rewrite Hrec22 in Ha2. simpl in Ha2.
           exists ((npatt_app nψ1 nψ2)::prefix2 ++ prefix1).
           exists (npatt_app nψ1 nψ2).
           split.
           {
-            rewrite Forall_forall.
-            rewrite Forall_forall in Hrec21.
-            intros np Hnp.
-            rewrite elem_of_cons in Hnp.
-            destruct Hnp as [Hnp|Hnp].
+            rewrite Forall_cons.
+            rewrite Forall_app.
+            split.
             {
-              subst np.
+              exists (npatt_app nϕ1 nϕ2).
+              constructor.
+              {
+                apply nsub_eq. reflexivity.
+              }
+              {
+                (* TODO extract a lemma *)
+                constructor.
+                {
+                  eapply alpha_equiv'_diagonal.
+                  3: apply Ha1.
+                  1,2: clear; set_solver.
+                }
+                {
+                  eapply alpha_equiv'_diagonal.
+                  3: apply Ha2.
+                  1,2: clear; set_solver.
+                }
+              }
             }
-            specialize (Hrec21 np Hnp).
-            destruct Hrec21 as [np' [Hsub Hae]].
-            exists np'.
-            constructor;[|assumption].
-            apply nsub_app_r.
-            apply Hsub.
+            split.
+            {
+              rewrite Forall_forall.
+              rewrite Forall_forall in Hrec21.
+              intros np Hnp.
+              specialize (Hrec21 np Hnp).
+              destruct Hrec21 as [np' [Hsub Hae]].
+              exists np'.
+              constructor;[|assumption].
+              apply nsub_app_r.
+              apply Hsub.
+            }
+            {
+              rewrite Forall_forall.
+              rewrite Forall_forall in Hrec11.
+              intros np Hnp.
+              specialize (Hrec11 np Hnp).
+              destruct Hrec11 as [np' [Hsub Hae]].
+              exists np'.
+              constructor;[|assumption].
+              apply nsub_app_l.
+              apply Hsub.
+            }
           }
           split.
           {
@@ -4387,272 +4427,54 @@ Fixpoint rename {Σ : Signature}
             simpl.
             f_equal.
             destruct state. simpl in *.
-            
+            rewrite app_assoc.
             reflexivity.
+          }
+          {
+            intros H.
+            feed specialize Hrec13.
+            {
+              intros nϕ' nϕ'' Hae Hsub Hcontra.
+              specialize (H nϕ' nϕ'' Hae).
+              feed specialize H.
+              {
+                apply nsub_app_l. exact Hsub.
+              }
+              { exact Hcontra. }
+              exact H.
+            }
+            feed specialize Hrec23.
+            {
+              intros nϕ' nϕ'' Hae Hsub Hcontra.
+              rewrite Hrec12 in Hcontra. simpl in Hcontra.
+              rewrite elem_of_app in Hcontra.
+              destruct Hcontra as [Hcontra|Hcontra].
+              2: {
+                specialize (H nϕ' nϕ'' Hae).
+                feed specialize H.
+                { apply nsub_app_r. exact Hsub. }
+                { exact Hcontra. }
+                exact H.
+              }
+              {
+                
+              }
+            }
+            split.
+            {}
           }
         }
       }
     Qed.
 
+*)
+(* This is not true either.
+   Let state = []
+   and nϕ = ((∃ x. x) -> (exists y . y))
+   Then ((∃ x. x) -> (exists x. x)) is added to the history.
 
-    (* TODO: For this to hold, only subpatterns of the original pattern can be in history,
-       and collapse_aux can be called only on subpatterns of the original pattern.
-       FIXME: this actually is not true, since the state will be filled with
-       all the subpatterns, right?
-    *)
-    Lemma collapse_aux_no_subpattern_in_history
-      {Σ : Signature}
-      (state : CollapseState)
-      (nϕ Φ : NamedPattern) :
-      is_nsubpattern_of_ind nϕ Φ ->
-      history_has_only_alpha_subpatterns_of Φ state ->
-      (forall nϕ' nϕ'', alpha_equiv nϕ' nϕ'' -> is_nsubpattern_of_ind nϕ'' nϕ -> nϕ' ∉ cs_history state) ->
-      exists (prefix : list NamedPattern),
-        nϕ ∉ prefix /\
-        Forall (fun p => exists (p' : NamedPattern) (pf : is_nsubpattern_of_ind p' nϕ), (alpha_equiv p p')) prefix /\
-        collapse_aux state nϕ = ({| cs_history := nϕ :: prefix ++ (cs_history state) |}, nϕ).
-    Proof.
-      move: state.
-      induction nϕ; intros state HsubΦ Hhhoas H; simpl;
-        unfold lookup_or_leaf,lookup_or_node,lookup_or; simpl in *;
-        repeat case_match; subst; try reflexivity;
-        try solve [exists []; split;[clear;set_solver|split;[apply Forall_nil;exact I|reflexivity]]].
-      {
-        exfalso.
-        rewrite list_find_Some in H0.
-        destruct_and!.
-        inversion H0; subst.
-        unfold diagonal in pf. simpl in pf.
-        rewrite elem_of_map in pf.
-        destruct pf as [x0 [Hx01 Hx02]].
-        inversion Hx01. subst.
-        specialize (H (npatt_evar x0) (npatt_evar x0)).
-        feed specialize H.
-        {
-          apply alpha_equiv_refl.
-        }
-        {
-          constructor. reflexivity.
-        }
-        {
-          rewrite elem_of_list_lookup.
-          exists n.
-          assumption.
-        }
-        apply H.
-      }
-      {
-        exfalso.
-        rewrite list_find_Some in H0.
-        destruct_and!.
-        inversion H0; subst.
-        unfold diagonal in pf. simpl in pf.
-        rewrite elem_of_map in pf.
-        destruct pf as [x0 [Hx01 Hx02]].
-        inversion Hx01. subst.
-        specialize (H (npatt_svar x0) (npatt_svar x0)).
-        feed specialize H.
-        {
-          apply alpha_equiv_refl.
-        }
-        {
-          constructor. reflexivity.
-        }
-        {
-          rewrite elem_of_list_lookup.
-          exists n.
-          assumption.
-        }
-        apply H.
-      }
-      {
-        exfalso.
-        rewrite list_find_Some in H0.
-        destruct_and!.
-        inversion H0; subst.
-        specialize (H (npatt_sym sigma) (npatt_sym sigma)).
-        feed specialize H.
-        {
-          apply alpha_equiv_refl.
-        }
-        {
-          constructor. reflexivity.
-        }
-        {
-          rewrite elem_of_list_lookup.
-          exists n.
-          assumption.
-        }
-        apply H.
-      }
-      {
-        exists [].
-        split;[set_solver|].
-        split.
-        {
-          apply Forall_nil. exact I.
-        }
-        {
-          exfalso.
-          rewrite list_find_Some in H0.
-          destruct H0 as [H01 [H02 H03]].
-          apply alpha_equiv_sym in H02.
-          setoid_rewrite elem_of_list_lookup in H.
-          specialize (H _ _ H02).
-          feed specialize H.
-          {
-            apply nsub_eq. reflexivity.
-          }
-          {
-            exists n. apply H01.
-          }
-          exact H.
-        }
-      }
-      {
-        pose proof (IH1 := IHnϕ1 state).
-        feed specialize IH1.
-        {
-          eapply is_nsubpattern_of_ind_trans.
-          2: apply HsubΦ.
-          {
-            apply nsub_app_l. apply nsub_eq. reflexivity.
-          }
-        }
-        {
-          apply Hhhoas.
-        }
-        { naive_solver. }
-        destruct IH1 as [prefix1 [Hprefix11 [Hprefix12 Hprefix13]]].
-        simpl.
-
-        destruct (classic (∀ nϕ' nϕ'' : NamedPattern,
-        alpha_equiv nϕ' nϕ''
-        → is_nsubpattern_of_ind nϕ'' nϕ2 → nϕ' ∉ nϕ1 :: prefix1)) as [Hcl|Hcl].
-        2: {
-          apply Classical_Pred_Type.not_all_ex_not in Hcl.
-          destruct Hcl as [n1 Hcl].
-          apply Classical_Pred_Type.not_all_ex_not in Hcl.
-          destruct Hcl as [n2 Hcl].
-          apply Classical_Pred_Type.not_all_ex_not in Hcl.
-          destruct Hcl as [n1En2 Hcl].
-          apply Classical_Pred_Type.not_all_ex_not in Hcl.
-          destruct Hcl as [n2Subnϕ2 Hcl].
-          apply NNPP in Hcl.
-          rewrite elem_of_cons in Hcl.
-          destruct Hcl as [Hcl|Hcl].
-          {
-            subst. exfalso. eapply H.
-            { apply n1En2. }
-            { apply }
-          }
-          Search not "all".
-          apply not_all in Hcl.
-        }
-
-        pose proof (IH2 := IHnϕ2 (collapse_aux state nϕ1).1).
-        feed specialize IH2.
-        {
-          eapply is_nsubpattern_of_ind_trans.
-          2: apply HsubΦ.
-          {
-            apply nsub_app_r. apply nsub_eq. reflexivity.
-          }
-        }
-        {
-          apply collapse_aux_preserves_hhoso.
-          {
-            eapply is_nsubpattern_of_ind_trans.
-            2: apply HsubΦ.
-            {
-              apply nsub_app_l. apply nsub_eq. reflexivity.
-            }
-          }
-          { exact Hhhoas. }
-        }
-        {
-          rewrite Hprefix13. simpl.
-        }
-        destruct (classic (exists (pf :is_nsubpattern_of_ind nϕ2 nϕ1), True)).
-        {
-          exists prefix1.
-          split.
-          {
-            intros Hcontra.
-            exfalso.
-            rewrite Forall_forall in Hprefix12.
-            specialize (Hprefix12 _ Hcontra).
-            destruct Hprefix12 as [p' [Hsub Hae]].
-            apply subpatterns_have_leq_size in Hsub.
-            apply alpha_equiv_same_size in Hae.
-            simpl in *.
-            lia.
-          }
-          {
-            split.
-            {
-              clear -Hprefix12.
-              rewrite Forall_forall in Hprefix12.
-              rewrite Forall_forall.
-              intros x Hx.
-              specialize (Hprefix12 x Hx).
-              destruct Hprefix12 as [p' [Hsubp' Hae]].
-              exists p'.
-              unshelve (eexists).
-              {
-                apply nsub_app_l. assumption.
-              }
-              assumption.
-            }
-            {
-              rewrite !Hprefix13. simpl.
-              repeat f_equal.
-            }
-          }
-        }
-        pose proof (IH2 := IHnϕ2 (collapse_aux state nϕ1).1).
-        feed specialize IH2.
-        {
-          eapply is_nsubpattern_of_ind_trans.
-          2: apply HsubΦ.
-          {
-            apply nsub_app_r. apply nsub_eq. reflexivity.
-          }
-        }
-        {
-          apply collapse_aux_preserves_hhoso.
-          {
-            eapply is_nsubpattern_of_ind_trans.
-            2: apply HsubΦ.
-            {
-              apply nsub_app_l. apply nsub_eq. reflexivity.
-            } 
-          }
-          {
-            apply Hhhoas.
-          }
-        }
-        { 
-          rewrite Hprefix12. simpl.
-          intros nϕ' Hnϕ' Hcontra.
-          rewrite elem_of_cons in Hcontra.
-          destruct Hcontra as [Hcontra|Hcontra].
-          {
-            subst.
-          }
-          specialize (H nϕ').
-          feed specialize H.
-          {
-            apply nsub_app_r. assumption.
-          }
-          {
-
-          }
-
-        }
-      }
-    Abort.
-
+*)
+(*
     Lemma collapse_aux_only_adds_subpatterns
       {Σ : Signature}
       (state : CollapseState)
@@ -4755,6 +4577,7 @@ Fixpoint rename {Σ : Signature}
       }
       { exfalso. apply Hnotsub. constructor. reflexivity. }
     Qed.
+    *)
 
     Lemma collapse_aux_no_alpha_duplicates {Σ : Signature}
       (state : CollapseState)
