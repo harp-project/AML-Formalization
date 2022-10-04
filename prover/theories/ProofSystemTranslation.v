@@ -4456,26 +4456,146 @@ Fixpoint rename {Σ : Signature}
     }
   Qed.
 
+  Lemma bound_evars_normalize2_0
+    {Σ : Signature} evs defe svs defs nϕ:
+    maxEdepth nϕ = 0 ->
+    bound_evars (normalize2 evs defe svs defs nϕ) = ∅
+  .
+  Proof.
+    induction nϕ; intros H; simpl in *; try apply reflexivity.
+    {
+      specialize (IHnϕ1 ltac:(lia)).
+      specialize (IHnϕ2 ltac:(lia)).
+      set_solver.
+    }
+    {
+      specialize (IHnϕ1 ltac:(lia)).
+      specialize (IHnϕ2 ltac:(lia)).
+      set_solver.
+    }
+    { lia. }
+    {
+      specialize (IHnϕ ltac:(lia)).
+      rewrite bound_evars_rename_free_svar.
+      apply IHnϕ.
+    }
+  Qed.
+
+  Lemma bound_evars_normalize2_cons
+    {Σ : Signature} e evs defe svs defs nϕ:
+    bound_evars (normalize2 evs defe svs defs nϕ) ⊆ list_to_set evs ->
+    bound_evars (normalize2 (e :: evs) defe svs defs nϕ) ⊆ {[e]} ∪ list_to_set evs
+  .
+  Proof.
+    move: evs.
+    induction nϕ; intros evs H; simpl in *;
+      try set_solver.
+    {
+      repeat case_match; simpl in *.
+      {
+        rewrite maxEdepth_normalize2 in H0.
+        rewrite maxEdepth_normalize2 in H.
+        rewrite H0 in H.
+        rewrite bound_evars_rename_free_evar.
+        rewrite bound_evars_rename_free_evar in H.
+        rewrite bound_evars_normalize2_0;[assumption|].
+        set_solver.
+      }
+      {
+        rewrite maxEdepth_normalize2 in H0.
+        rewrite maxEdepth_normalize2 in H.
+        rewrite bound_evars_rename_free_evar.
+        rewrite bound_evars_rename_free_evar in H.
+        rewrite H0 in H.
+        eapply transitivity.
+        2: apply IHnϕ.
+      }
+    }
+  Qed.
+
   Lemma normalize2_uses_only_some_evars 
   {Σ : Signature}
   (evs : list evar) (defe : evar)
   (svs : list svar) (defs : svar)
   (nϕ : NamedPattern)
   :
-    maxEdepth nϕ <= length evs ->
+    maxEdepth nϕ = length evs ->
     bound_evars (normalize2 evs defe svs defs nϕ) ⊆ list_to_set (take (maxEdepth nϕ) evs)
   .
   Proof.
-    induction nϕ; simpl in *; try apply reflexivity.
+    move: evs.
+    induction nϕ; intros evs HE; simpl in *; try apply reflexivity.
     {
       destruct (decide (maxEdepth nϕ1 <= maxEdepth nϕ2)).
       {
         rewrite PeanoNat.Nat.max_r;[assumption|].
+        rewrite PeanoNat.Nat.max_r in HE;[assumption|].
+        pose proof (Hbenm := bound_evars_normalize2_monotone evs defe svs defs nϕ1 nϕ2).
+        feed specialize Hbenm.
+        { assumption. }
+        { assumption. }
+        set_solver.
       }
-      
-      apply Nat.max_case.
       {
-
+        rewrite PeanoNat.Nat.max_l;[lia|].
+        rewrite PeanoNat.Nat.max_l in HE;[lia|].
+        pose proof (Hbenm := bound_evars_normalize2_monotone evs defe svs defs nϕ2 nϕ1).
+        feed specialize Hbenm.
+        { assumption. }
+        { lia. }
+        set_solver.
+      }
+    }
+    {
+      destruct (decide (maxEdepth nϕ1 <= maxEdepth nϕ2)).
+      {
+        rewrite PeanoNat.Nat.max_r;[assumption|].
+        rewrite PeanoNat.Nat.max_r in HE;[assumption|].
+        pose proof (Hbenm := bound_evars_normalize2_monotone evs defe svs defs nϕ1 nϕ2).
+        feed specialize Hbenm.
+        { assumption. }
+        { assumption. }
+        set_solver.
+      }
+      {
+        rewrite PeanoNat.Nat.max_l;[lia|].
+        rewrite PeanoNat.Nat.max_l in HE;[lia|].
+        pose proof (Hbenm := bound_evars_normalize2_monotone evs defe svs defs nϕ2 nϕ1).
+        feed specialize Hbenm.
+        { assumption. }
+        { lia. }
+        set_solver.
+      }
+    }
+    {
+      destruct evs; simpl in *.
+      {
+        repeat case_match; simpl in *.
+        { lia. }
+        { lia. }
+      }
+      repeat case_match; simpl in *.
+      {
+        rewrite maxEdepth_normalize2 in H.
+        rewrite H. simpl.
+        specialize (IHnϕ evs ltac:(lia)).
+        rewrite H in IHnϕ. simpl in IHnϕ.
+        rewrite bound_evars_rename_free_evar.
+        admit.
+      }
+      {
+        rewrite bound_evars_rename_free_evar.
+        rewrite maxEdepth_normalize2 in H.
+        assert (Hm : maxEdepth nϕ = length evs) by lia.
+        rewrite Hm.
+        specialize (IHnϕ evs ltac:(lia)).
+        rewrite Hm in IHnϕ.
+        rewrite firstn_all. rewrite firstn_all in IHnϕ.
+        assert (nth n evs defe ∈ evs).
+        {
+          apply nth_elem_of.
+          { lia. }
+        }
       }
     }
   Qed.
