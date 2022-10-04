@@ -4106,7 +4106,7 @@ Fixpoint rename {Σ : Signature}
       { set_solver. }
       rewrite IHHa.
       (* TODO need a lemma characterizing named_evars of rename_free_evar*)
-      set_solver.
+      (*set_solver.*)
     }
   Qed.
 
