@@ -4123,6 +4123,200 @@ Fixpoint rename {Σ : Signature}
       npatt_mu newX (rename_free_svar nϕ'' X newX)
     end.
 
+    Lemma alpha_equiv_app {Σ : Signature} (a b c d : NamedPattern) :
+      alpha_equiv a b ->
+      alpha_equiv c d ->
+      alpha_equiv (npatt_app a c) (npatt_app b d)
+    .
+    Proof.
+      intros H1 H2.
+      constructor.
+      {
+        eapply alpha_equiv'_diagonal.
+        3: apply H1.
+        1,2: set_solver.
+      }
+      {
+        eapply alpha_equiv'_diagonal.
+        3: apply H2.
+        1,2: set_solver.
+      }
+    Qed.
+
+  Lemma alpha_equiv_imp {Σ : Signature} (a b c d : NamedPattern) :
+    alpha_equiv a b ->
+    alpha_equiv c d ->
+    alpha_equiv (npatt_imp a c) (npatt_imp b d)
+  .
+  Proof.
+    intros H1 H2.
+    constructor.
+    {
+      eapply alpha_equiv'_diagonal.
+      3: apply H1.
+      1,2: set_solver.
+    }
+    {
+      eapply alpha_equiv'_diagonal.
+      3: apply H2.
+      1,2: set_solver.
+    }
+  Qed.
+
+  Lemma maxEdepth_ae {Σ : Signature} (nϕ1 nϕ2 : NamedPattern) R R':
+    alpha_equiv' R R' nϕ1 nϕ2 ->
+    maxEdepth nϕ1 = maxEdepth nϕ2
+  .
+  Proof.
+    intros H.
+    induction H; simpl in *; lia.
+  Qed.
+
+  Lemma maxSdepth_ae {Σ : Signature} (nϕ1 nϕ2 : NamedPattern) R R':
+  alpha_equiv' R R' nϕ1 nϕ2 ->
+  maxSdepth nϕ1 = maxSdepth nϕ2
+  .
+  Proof.
+    intros H.
+    induction H; simpl in *; lia.
+  Qed.
+
+  Lemma maxEdepth_rename_fe {Σ : Signature} nϕ x y:
+    maxEdepth (rename_free_evar nϕ x y) = maxEdepth nϕ
+  .
+  Proof.
+    induction nϕ; simpl; repeat case_match; simpl in *;
+      solve[reflexivity|lia].
+  Qed.
+
+  Lemma maxSdepth_rename_fs {Σ : Signature} nϕ x y:
+    maxSdepth (rename_free_svar nϕ x y) = maxSdepth nϕ
+  .
+  Proof.
+    induction nϕ; simpl; repeat case_match; simpl in *;
+      solve[reflexivity|lia].
+  Qed.
+
+  Lemma maxSdepth_rename_fe {Σ : Signature} nϕ x y:
+    maxSdepth (rename_free_evar nϕ x y) = maxSdepth nϕ
+  .
+  Proof.
+    induction nϕ; simpl; repeat case_match; simpl in *;
+     solve[reflexivity|lia].
+  Qed.
+
+  Lemma maxEdepth_rename_fs {Σ : Signature} nϕ x y:
+    maxEdepth (rename_free_svar nϕ x y) = maxEdepth nϕ
+  .
+  Proof.
+    induction nϕ; simpl; repeat case_match; simpl in *;
+     solve[reflexivity|lia].
+  Qed.
+
+  Lemma maxEdepth_normalize2
+    {Σ : Signature} evs svs de ds nϕ
+    :
+    maxEdepth (normalize2 evs de svs ds nϕ) = maxEdepth nϕ
+  with
+    maxSdepth_normalize2
+    {Σ : Signature} evs svs de ds nϕ
+    :
+    maxSdepth (normalize2 evs de svs ds nϕ) = maxSdepth nϕ
+  .
+  Proof.
+    {
+      induction nϕ; simpl; try reflexivity; try lia.
+      {
+        rewrite IHnϕ.
+        rewrite maxEdepth_rename_fe.
+        rewrite IHnϕ.
+        reflexivity.
+      }
+      {
+        rewrite maxSdepth_normalize2.
+        rewrite maxEdepth_rename_fs.
+        rewrite IHnϕ.
+        reflexivity.
+      }
+    }
+    {
+      induction nϕ; simpl; try reflexivity; try lia.
+      {
+        rewrite maxEdepth_normalize2.
+        rewrite maxSdepth_rename_fe.
+        rewrite IHnϕ.
+        reflexivity.
+      }
+      {
+        rewrite IHnϕ.
+        rewrite maxSdepth_rename_fs.
+        rewrite IHnϕ.
+        reflexivity.
+      }
+    }
+  Qed.
+
+  Lemma normalize2_good {Σ : Signature} (nϕ1 nϕ2 : NamedPattern) evs defe svs defs R R':
+  maxEdepth nϕ1 <= length evs ->
+  maxSdepth nϕ1 <= length svs ->
+  maxEdepth nϕ2 <= length evs ->
+  maxSdepth nϕ2 <= length svs ->
+  alpha_equiv' R R' nϕ1 nϕ2 ->
+  myeq' R R' (normalize2 evs defe svs defs nϕ1) (normalize2 evs defe svs defs nϕ2)
+  .
+  Proof.
+    intros E1 S1 E2 S2 H.
+    induction H; simpl in *.
+    7: { 
+      feed specialize IHalpha_equiv'.
+      { lia. }  
+      { lia. }
+      { lia. }
+      { lia. }
+      constructor.
+    rewrite IHalpha_equiv'. 1,2,3,4: lia. f_equal. }
+  Qed.
+
+  Lemma helper {Σ : Signature} nϕ x y:
+    alpha_equiv (npatt_exists y (rename_free_evar nϕ x y))
+    (npatt_exists x nϕ)
+
+    Lemma normalize2_sound {Σ : Signature} (nϕ : NamedPattern) evs defe svs defs:
+      maxEdepth nϕ <= length evs ->
+      maxSdepth nϕ <= length svs ->
+      alpha_equiv (normalize2 evs defe svs defs nϕ) nϕ
+    .
+    Proof.
+      induction nϕ; simpl; intros HE HS.
+      {
+        apply alpha_equiv_refl.
+      }
+      {
+        apply alpha_equiv_refl.
+      }
+      {
+        apply alpha_equiv_refl.
+      }
+      {
+        specialize (IHnϕ1 ltac:(lia) ltac:(lia)).
+        specialize (IHnϕ2 ltac:(lia) ltac:(lia)).
+        eapply alpha_equiv_app; eassumption.
+      }
+      {
+        apply alpha_equiv_refl.
+      }
+      {
+        specialize (IHnϕ1 ltac:(lia) ltac:(lia)).
+        specialize (IHnϕ2 ltac:(lia) ltac:(lia)).
+        eapply alpha_equiv_imp; eassumption.
+      }
+      {
+        specialize (IHnϕ ltac:(lia) ltac:(lia)).
+        remember (normalize2 evs defe svs defs nϕ) as nϕ_2.
+        remember (nth (maxEdepth nϕ_2) evs defe) as x_2.
+        constructor.
+      }
+    Qed.
 
   Module TEST.
 
