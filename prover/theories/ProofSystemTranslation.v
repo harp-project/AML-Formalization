@@ -4288,6 +4288,100 @@ Fixpoint rename {Σ : Signature}
     }
   Qed.
 
+  Lemma bound_evars_rename_free_evar
+    {Σ : Signature}
+    x y nϕ:
+    bound_evars (rename_free_evar nϕ x y) = bound_evars nϕ
+  .
+  Proof.
+    induction nϕ; simpl; try set_solver.
+    {
+      destruct (decide (x = x0)); reflexivity.
+    }
+    {
+      destruct (decide (x = x0)).
+      {
+        subst. simpl. reflexivity.
+      }
+      {
+        simpl. rewrite IHnϕ. reflexivity.
+      }
+    }
+  Qed.
+
+  (* If used properly, normalize2 will not use use evars from the far end of the list *)
+
+  Lemma bound_evars_normalize2_monotone 
+  {Σ : Signature}
+  (evs : list evar) (defe : evar)
+  (svs : list svar) (defs : svar)
+  (nϕ1 nϕ2 : NamedPattern)
+  :
+  maxEdepth nϕ2 <= length evs ->
+  maxEdepth nϕ1 <= maxEdepth nϕ2 ->
+  bound_evars (normalize2 evs defe svs defs nϕ1)
+  ⊆ bound_evars (normalize2 evs defe svs defs nϕ2)
+  .
+  Proof.
+    induction nϕ1; simpl in *; intros Hevs Hdepth; try set_solver.
+    {
+      destruct (decide (maxEdepth nϕ1_1 <= maxEdepth nϕ1_2)).
+      {
+        rewrite PeanoNat.Nat.max_r in Hdepth;[assumption|].
+        specialize (IHnϕ1_1 ltac:(lia) ltac:(lia)).
+        set_solver.
+      }
+      {
+        assert (maxEdepth nϕ1_2 <= maxEdepth nϕ1_1) by lia.
+        rewrite PeanoNat.Nat.max_l in Hdepth;[assumption|].
+        specialize (IHnϕ1_2 ltac:(lia) ltac:(lia)).
+        set_solver.
+      }
+    }
+    {
+      destruct (decide (maxEdepth nϕ1_1 <= maxEdepth nϕ1_2)).
+      {
+        rewrite PeanoNat.Nat.max_r in Hdepth;[assumption|].
+        specialize (IHnϕ1_1 ltac:(lia) ltac:(lia)).
+        set_solver.
+      }
+      {
+        assert (maxEdepth nϕ1_2 <= maxEdepth nϕ1_1) by lia.
+        rewrite PeanoNat.Nat.max_l in Hdepth;[assumption|].
+        specialize (IHnϕ1_2 ltac:(lia) ltac:(lia)).
+        set_solver.
+      }
+    }
+    {
+      specialize (IHnϕ1 ltac:(lia) ltac:(lia)).
+      rewrite maxEdepth_normalize2.
+    }
+  Qed.
+
+  Lemma normalize2_uses_only_some_evars 
+  {Σ : Signature}
+  (evs : list evar) (defe : evar)
+  (svs : list svar) (defs : svar)
+  (nϕ : NamedPattern)
+  :
+    maxEdepth nϕ <= length evs ->
+    bound_evars (normalize2 evs defe svs defs nϕ) ⊆ list_to_set (take (maxEdepth nϕ) evs)
+  .
+  Proof.
+    induction nϕ; simpl in *; try apply reflexivity.
+    {
+      destruct (decide (maxEdepth nϕ1 <= maxEdepth nϕ2)).
+      {
+        rewrite PeanoNat.Nat.max_r;[assumption|].
+      }
+      
+      apply Nat.max_case.
+      {
+
+      }
+    }
+  Qed.
+
   (*
      When there can be some shadowing?
      1. two quantifiers in the formula, too short list
