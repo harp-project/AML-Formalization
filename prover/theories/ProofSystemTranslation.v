@@ -4309,6 +4309,92 @@ Fixpoint rename {Σ : Signature}
     }
   Qed.
 
+
+  Lemma bound_evars_rename_free_svar
+    {Σ : Signature}
+    X Y nϕ:
+    bound_evars (rename_free_svar nϕ X Y) = bound_evars nϕ
+  .
+  Proof.
+    induction nϕ; simpl; try set_solver.
+    {
+      destruct (decide (X = X0)); reflexivity.
+    }
+    {
+      destruct (decide (X = X0)).
+      {
+        subst. simpl. reflexivity.
+      }
+      {
+        simpl. rewrite IHnϕ. reflexivity.
+      }
+    }
+  Qed.
+
+  Lemma nth_maxEdepth_in_bound_normalize
+  {Σ : Signature}
+  (evs : list evar) (defe : evar)
+  (svs : list svar) (defs : svar)
+  (idx : nat)
+  (nϕ : NamedPattern)
+  :
+    maxEdepth nϕ <= length evs ->
+    idx < maxEdepth nϕ ->
+    nth idx evs defe ∈ bound_evars (normalize2 evs defe svs defs nϕ).
+  Proof.
+    induction nϕ; intros Hm Hi; simpl in *; try lia.
+    {
+      destruct (decide (maxEdepth nϕ1 <= maxEdepth nϕ2)) as [Hleq|Hnleq].
+      {
+        rewrite PeanoNat.Nat.max_r in Hm;[assumption|].
+        rewrite PeanoNat.Nat.max_r in Hi;[assumption|].
+        feed specialize IHnϕ2.
+        { lia. }
+        { lia. }
+        set_solver.
+      }
+      feed specialize IHnϕ1.
+      { lia. }
+      { lia. }
+      set_solver.
+    }
+    {
+      destruct (decide (maxEdepth nϕ1 <= maxEdepth nϕ2)) as [Hleq|Hnleq].
+      {
+        rewrite PeanoNat.Nat.max_r in Hm;[assumption|].
+        rewrite PeanoNat.Nat.max_r in Hi;[assumption|].
+        feed specialize IHnϕ2.
+        { lia. }
+        { lia. }
+        set_solver.
+      }
+      feed specialize IHnϕ1.
+      { lia. }
+      { lia. }
+      set_solver.
+    }
+    {
+      rewrite maxEdepth_normalize2.
+      rewrite bound_evars_rename_free_evar.
+      destruct (decide (idx = maxEdepth nϕ)).
+      {
+        subst. clear. set_solver.
+      }
+      feed specialize IHnϕ.
+      { lia. }
+      { lia. }
+      set_solver.
+    }
+    {
+      rewrite maxSdepth_normalize2.
+      rewrite bound_evars_rename_free_svar.
+      feed specialize IHnϕ.
+      { lia. }
+      { lia. }
+      set_solver.
+    }
+  Qed.
+
   (* If used properly, normalize2 will not use use evars from the far end of the list *)
 
   Lemma bound_evars_normalize2_monotone 
@@ -4317,7 +4403,7 @@ Fixpoint rename {Σ : Signature}
   (svs : list svar) (defs : svar)
   (nϕ1 nϕ2 : NamedPattern)
   :
-  maxEdepth nϕ2 <= length evs ->
+  maxEdepth nϕ2 = length evs ->
   maxEdepth nϕ1 <= maxEdepth nϕ2 ->
   bound_evars (normalize2 evs defe svs defs nϕ1)
   ⊆ bound_evars (normalize2 evs defe svs defs nϕ2)
@@ -4355,6 +4441,15 @@ Fixpoint rename {Σ : Signature}
     {
       specialize (IHnϕ1 ltac:(lia) ltac:(lia)).
       rewrite maxEdepth_normalize2.
+      rewrite bound_evars_rename_free_evar.
+
+
+
+      assert (nϕ1 = npatt_bott) by admit.
+      subst. simpl in *.
+
+      assert (Htmp : S (maxEdepth nϕ1) <= length evs) by lia.
+
     }
   Qed.
 
