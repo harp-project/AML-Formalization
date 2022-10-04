@@ -4059,6 +4059,164 @@ Fixpoint rename {Σ : Signature}
     }
   Qed.
 
+
+    
+  Fixpoint maxEdepth {Σ : Signature} (nϕ : NamedPattern) : nat
+  :=
+  match nϕ with
+    | npatt_bott => 0
+    | npatt_sym _ => 0
+    | npatt_evar _ => 0
+    | npatt_svar _ => 0
+    | npatt_imp nϕ1 nϕ2
+      => Nat.max (maxEdepth nϕ1) (maxEdepth nϕ2)
+    | npatt_app nϕ1 nϕ2
+      => Nat.max (maxEdepth nϕ1) (maxEdepth nϕ2)
+    | npatt_exists _ nϕ'
+      => S (maxEdepth nϕ')
+    | npatt_mu X nϕ'
+      => maxEdepth nϕ'
+    end.
+
+    Fixpoint maxSdepth {Σ : Signature} (nϕ : NamedPattern) : nat
+    :=
+    match nϕ with
+      | npatt_bott => 0
+      | npatt_sym _ => 0
+      | npatt_evar _ => 0
+      | npatt_svar _ => 0
+      | npatt_imp nϕ1 nϕ2
+        => Nat.max (maxSdepth nϕ1) (maxSdepth nϕ2)
+      | npatt_app nϕ1 nϕ2
+        => Nat.max (maxSdepth nϕ1) (maxSdepth nϕ2)
+      | npatt_exists _ nϕ'
+        => (maxSdepth nϕ')
+      | npatt_mu X nϕ'
+        => S (maxSdepth nϕ')
+      end.
+
+  Fixpoint normalize2
+    {Σ : Signature}
+    (evs : list evar) (defe : evar)
+    (svs : list svar) (defs : svar)
+    (nϕ : NamedPattern)
+  :=
+  let go := normalize2 evs defe svs defs in
+  match nϕ with
+    | npatt_bott => npatt_bott
+    | npatt_sym s => npatt_sym s
+    | npatt_evar x => npatt_evar x
+    | npatt_svar X => npatt_svar X
+    | npatt_imp nϕ1 nϕ2
+      => npatt_imp (go nϕ1) (go nϕ2)
+    | npatt_app nϕ1 nϕ2
+      => npatt_app (go nϕ1) (go nϕ2)
+    | npatt_exists x nϕ'
+      =>
+      let nϕ'' := go nϕ' in
+      let newx := nth (maxEdepth nϕ'') evs defe in
+      npatt_exists newx (rename_free_evar nϕ'' x newx)
+    | npatt_mu X nϕ'
+      =>
+      let nϕ'' := go nϕ' in
+      let newX := nth (maxSdepth nϕ'') svs defs in
+      npatt_mu newX (rename_free_svar nϕ'' X newX)
+    end.
+
+
+  Module TEST.
+
+  Inductive Symbol := a | b | c .
+
+
+  #[local]
+  Instance Symbol_eqdec : EqDecision Symbol.
+  Proof.
+    intros s1 s2. unfold Decision. decide equality.
+  Defined.
+
+  #[local]
+  Instance symbols_countable : Countable Symbol.
+  Proof.
+    eapply finite_countable.
+    Unshelve.
+    destruct Symbol_eqdec with (x:=a) (y:=b), Symbol_eqdec with (x:=a) (y:=c).
+    - econstructor.
+      + apply NoDup_cons_2 with (x:=a) (l:=[]).
+        apply not_elem_of_nil.
+        constructor.
+      + intros. destruct x.
+        apply elem_of_list_here.
+        rewrite e. apply elem_of_list_here.
+        rewrite e0. apply elem_of_list_here.
+    - econstructor.
+      + apply NoDup_cons_2 with (x:=a) (l:=[c]).
+        apply not_elem_of_cons. split. auto. apply not_elem_of_nil.
+        constructor. apply not_elem_of_nil.
+        constructor.
+      + intros. destruct x.
+        apply elem_of_list_here.
+        rewrite e. apply elem_of_list_here.
+        apply elem_of_list_further. apply elem_of_list_here.
+    - econstructor.
+      + apply NoDup_cons_2 with (x:=a) (l:=[b]).
+        apply not_elem_of_cons. split. auto. apply not_elem_of_nil.
+        constructor. apply not_elem_of_nil.
+        constructor.
+      + intros. destruct x.
+        apply elem_of_list_here.
+        apply elem_of_list_further. apply elem_of_list_here.
+        rewrite e. apply elem_of_list_here.
+    - econstructor.
+      + apply NoDup_cons_2 with (x:=a) (l:=[b; c]).
+        apply not_elem_of_cons. split. auto.
+        apply not_elem_of_cons. split. auto. apply not_elem_of_nil.
+        constructor. apply not_elem_of_cons. split. auto. apply not_elem_of_nil.
+        constructor. apply not_elem_of_nil.
+        constructor.
+      + intros. destruct x.
+        apply elem_of_list_here.
+        apply elem_of_list_further. apply elem_of_list_here.
+        apply elem_of_list_further. apply elem_of_list_further. apply elem_of_list_here.
+  Qed.
+
+
+  #[local]
+  Instance Σ : Signature :=
+    {| variables := StringMLVariables ;
+       symbols := Symbol ;
+    |}.
+
+    Definition ex1 : NamedPattern := (npatt_exists "x" (npatt_evar "x")).
+    Goal normalize2 [] "defE" [] "defS" ex1
+      = npatt_exists "defE" (npatt_evar "defE").
+    Proof. reflexivity. Qed.
+
+    Goal normalize2 ["y"] "defE" [] "defS" ex1
+      = npatt_exists "y" (npatt_evar "y").
+    Proof. reflexivity. Qed.
+
+    Definition ex2 : NamedPattern := npatt_imp (npatt_exists "x" (npatt_evar "x"))
+                                               (npatt_exists "y" (npatt_evar "y"))
+    .
+
+    Goal normalize2 ["z"] "defE" [] "defS" ex2
+    = npatt_imp (npatt_exists "z" (npatt_evar "z"))
+                (npatt_exists "z" (npatt_evar "z")).
+        Proof. reflexivity. Qed.
+
+    Definition ex3 : NamedPattern :=
+      npatt_imp (npatt_exists "x" (npatt_exists "x" (npatt_evar "x")))
+                (npatt_exists "y" (npatt_evar "y"))
+    .
+
+    Goal normalize2 ["z";"w"] "defE" [] "defS" ex3
+    = npatt_imp (npatt_exists "w" (npatt_exists "z" (npatt_evar "z")))
+                (npatt_exists "z" (npatt_evar "z")).
+        Proof. simpl. reflexivity. Qed.
+  End TEST.
+
+
   Lemma normalize_same_evar
     {Σ : Signature}
     (t u : NamedPattern)
