@@ -4442,14 +4442,17 @@ Fixpoint rename {Σ : Signature}
       specialize (IHnϕ1 ltac:(lia) ltac:(lia)).
       rewrite maxEdepth_normalize2.
       rewrite bound_evars_rename_free_evar.
-
-
-
-      assert (nϕ1 = npatt_bott) by admit.
-      subst. simpl in *.
-
-      assert (Htmp : S (maxEdepth nϕ1) <= length evs) by lia.
-
+      pose proof (Hmbn := nth_maxEdepth_in_bound_normalize evs defe svs defs (maxEdepth nϕ1) nϕ2).
+      feed specialize Hmbn.
+      { lia. }
+      { lia. }
+      set_solver.
+    }
+    {
+      specialize (IHnϕ1 ltac:(lia) ltac:(lia)).
+      rewrite maxSdepth_normalize2.
+      rewrite bound_evars_rename_free_svar.
+      assumption.
     }
   Qed.
 
