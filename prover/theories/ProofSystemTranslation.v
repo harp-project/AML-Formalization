@@ -4481,6 +4481,99 @@ Fixpoint rename {Σ : Signature}
     }
   Qed.
 
+  Lemma bound_evars_normalize2_S
+    {Σ : Signature} e evs defe svs defs nϕ:
+    maxEdepth nϕ <> 0 ->
+    bound_evars (normalize2 (e::evs) defe svs defs nϕ)
+    ⊆ {[e]} ∪ bound_evars (normalize2 evs defe svs defs nϕ)
+  .
+  Proof.
+    induction nϕ; intros HS; simpl in *; try lia;
+      try set_solver.
+    {
+      destruct (decide (maxEdepth nϕ1 <= maxEdepth nϕ2)).
+      {
+        rewrite PeanoNat.Nat.max_r in HS;[assumption|].
+        specialize (IHnϕ2 ltac:(lia)).
+        destruct (decide (maxEdepth nϕ1 = 0)).
+        {
+          rewrite bound_evars_normalize2_0;[assumption|].
+          set_solver.
+        }
+        {
+          specialize (IHnϕ1 ltac:(lia)).
+          set_solver.
+        }
+      }
+      {
+        rewrite PeanoNat.Nat.max_l in HS;[lia|].
+        specialize (IHnϕ1 ltac:(lia)).
+        destruct (decide (maxEdepth nϕ2 = 0)).
+        {
+          Check bound_evars_normalize2_0.
+          rewrite -> bound_evars_normalize2_0 with (nϕ := nϕ2).
+          2: { assumption. }
+          set_solver.
+        }
+        {
+          specialize (IHnϕ2 ltac:(lia)).
+          set_solver.
+        }
+      }
+    }
+    {
+      destruct (decide (maxEdepth nϕ1 <= maxEdepth nϕ2)).
+      {
+        rewrite PeanoNat.Nat.max_r in HS;[assumption|].
+        specialize (IHnϕ2 ltac:(lia)).
+        destruct (decide (maxEdepth nϕ1 = 0)).
+        {
+          rewrite bound_evars_normalize2_0;[assumption|].
+          set_solver.
+        }
+        {
+          specialize (IHnϕ1 ltac:(lia)).
+          set_solver.
+        }
+      }
+      {
+        rewrite PeanoNat.Nat.max_l in HS;[lia|].
+        specialize (IHnϕ1 ltac:(lia)).
+        destruct (decide (maxEdepth nϕ2 = 0)).
+        {
+          Check bound_evars_normalize2_0.
+          rewrite -> bound_evars_normalize2_0 with (nϕ := nϕ2).
+          2: { assumption. }
+          set_solver.
+        }
+        {
+          specialize (IHnϕ2 ltac:(lia)).
+          set_solver.
+        }
+      }
+    }
+    {
+      repeat case_match.
+      {
+        rewrite maxEdepth_normalize2 in H.
+        rewrite maxEdepth_normalize2.
+        rewrite H.
+        rewrite !bound_evars_rename_free_evar.
+        rewrite bound_evars_normalize2_0;[assumption|].
+        rewrite bound_evars_normalize2_0;[assumption|].
+        set_solver.
+      }
+      {
+        rewrite maxEdepth_normalize2 in H.
+        rewrite maxEdepth_normalize2.
+        rewrite H.
+        rewrite !bound_evars_rename_free_evar.
+        specialize (IHnϕ ltac:(lia)).
+        
+      }
+    }
+  Qed.
+
   Lemma bound_evars_normalize2_cons
     {Σ : Signature} e evs defe svs defs nϕ:
     bound_evars (normalize2 evs defe svs defs nϕ) ⊆ list_to_set evs ->
