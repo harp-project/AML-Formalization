@@ -4287,6 +4287,71 @@ Fixpoint rename {Σ : Signature}
       }
     }
   Qed.
+
+  (*
+     When there can be some shadowing?
+     1. two quantifiers in the formula, too short list
+        evs := []; nϕ := exists x. exists y. ⊥
+     2. repeated named variables in the list
+        evs := ["x";"y";"x"]; nϕ := exists x. exists y. exists z. ⊥
+  *)
+
+  Lemma normalize2_no_shadowing
+  {Σ : Signature}
+  (evs : list evar) (defe : evar)
+  (svs : list svar) (defs : svar)
+  (evsB : EVarSet )
+  (nϕ : NamedPattern)
+  :
+    NoDup evs ->
+    maxEdepth nϕ <= length evs ->
+    evsB ## list_to_set evs ->
+    ~ evar_shadowing_happens evsB (normalize2 evs defe svs defs nϕ)
+  .
+  Proof.
+    move: evs evsB.
+    induction nϕ; simpl; intros evs evsB HNDe HmE HB; try tauto.
+    {
+      specialize (IHnϕ1 evs evsB HNDe ltac:(lia) HB).
+      specialize (IHnϕ2 evs evsB HNDe ltac:(lia) HB).
+      tauto.
+    }
+    {
+      specialize (IHnϕ1 evs evsB HNDe ltac:(lia) HB).
+      specialize (IHnϕ2 evs evsB HNDe ltac:(lia) HB).
+      tauto.
+    }
+    {
+      rewrite maxEdepth_normalize2.
+      intros HContra.
+      destruct HContra as [HContra|HContra].
+      {
+        pose proof (nth_elem_of evs ((maxEdepth nϕ)) defe HmE).
+        set_solver.
+      }
+      {
+        pose proof (IH := IHnϕ evs (evsB ∪ {[nth (maxEdepth nϕ) evs defe]}) HNDe).
+        feed specialize IH.
+        {
+          lia.
+        }
+        {
+          cut ((nth (maxEdepth nϕ) evs defe) ∉ evs).
+          {
+            set_solver.
+          }
+          rewrite nth_overflow.
+        }
+      }
+      specialize (IHnϕ ltac:(lia)).
+      cut (~ (nth (maxEdepth (normalize2 evs defe svs defs nϕ)) evs defe)
+      ∈ @list_to_set _ EVarSet _ _ _ evs).
+      {
+        intros H. left.
+        tauto.
+    }
+  Qed.
+
 (* (x, y) ∈ pbr_update R x y 
    t ≡ ∃ x. t'
    u ≡ ∃ y. u'

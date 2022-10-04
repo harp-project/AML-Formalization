@@ -162,6 +162,31 @@ Defined.
         | npatt_mu X phi => (used_svars phi)
         end.    
 
+        Fixpoint bound_evars (phi : NamedPattern) : EVarSet :=
+          match phi with
+          | npatt_evar _ => empty
+          | npatt_svar _ => empty
+          | npatt_sym _ => empty
+          | npatt_app phi1 phi2 => union (bound_evars phi1) (bound_evars phi2)
+          | npatt_bott => empty
+          | npatt_imp phi1 phi2 => union (bound_evars phi1) (bound_evars phi2)
+          | npatt_exists x phi => {[x]} ∪ (bound_evars phi)
+          | npatt_mu _ phi => bound_evars phi
+          end.
+
+          Fixpoint bound_svars (phi : NamedPattern) : SVarSet :=
+            match phi with
+            | npatt_evar _ => empty
+            | npatt_svar _ => empty
+            | npatt_sym _ => empty
+            | npatt_app phi1 phi2 => union (bound_svars phi1) (bound_svars phi2)
+            | npatt_bott => empty
+            | npatt_imp phi1 phi2 => union (bound_svars phi1) (bound_svars phi2)
+            | npatt_exists _ phi => (bound_svars phi)
+            | npatt_mu X phi => {[X]} ∪ bound_svars phi
+            end.
+      
+
   Definition named_fresh_evar ϕ := evar_fresh (elements (named_free_evars ϕ)).
   Definition named_fresh_svar ϕ := svar_fresh (elements (named_free_svars ϕ)).
 
