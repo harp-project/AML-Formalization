@@ -4094,6 +4094,38 @@ Fixpoint rename {Σ : Signature}
       | npatt_mu X nϕ'
         => S (maxSdepth nϕ')
       end.
+    
+    Fixpoint evar_shadowing_happens {Σ : Signature} (evs : EVarSet) (nϕ : NamedPattern)
+    : Prop
+    :=
+    match nϕ with
+    | npatt_bott => False
+    | npatt_sym _ => False
+    | npatt_evar _ => False
+    | npatt_svar _ => False
+    | npatt_imp p q
+      => evar_shadowing_happens evs p \/ evar_shadowing_happens evs q
+    | npatt_app p q
+      => evar_shadowing_happens evs p \/ evar_shadowing_happens evs q
+    | npatt_exists x p => x ∈ evs \/ evar_shadowing_happens (evs ∪ {[x]}) p
+    | npatt_mu _ p => evar_shadowing_happens evs p
+    end.
+
+    Fixpoint svar_shadowing_happens {Σ : Signature} (svs : SVarSet) (nϕ : NamedPattern)
+    : Prop
+    :=
+    match nϕ with
+    | npatt_bott => False
+    | npatt_sym _ => False
+    | npatt_evar _ => False
+    | npatt_svar _ => False
+    | npatt_imp p q
+      => svar_shadowing_happens svs p \/ svar_shadowing_happens svs q
+    | npatt_app p q
+      => svar_shadowing_happens svs p \/ svar_shadowing_happens svs q
+    | npatt_exists _ p => svar_shadowing_happens svs p
+    | npatt_mu X p => X ∈ svs \/ svar_shadowing_happens svs p
+    end.
 
   Fixpoint normalize2
     {Σ : Signature}
@@ -4255,7 +4287,133 @@ Fixpoint rename {Σ : Signature}
       }
     }
   Qed.
+(* (x, y) ∈ pbr_update R x y 
+   t ≡ ∃ x. t'
+   u ≡ ∃ y. u'
+   ==>
+   =R
+ *)
+  Lemma meq_rename_strips_update
+    {Σ : Signature}
+    R R' x y z1 z2 t u:
+    (z1, z2) ∈ pbr R ->
+    myeq' (pb_update R x y) R' t u ->
+    myeq' R R' (rename_free_evar t x z1) (rename_free_evar u y z2)
+  .
+  Proof.
+    remember (pb_update R x y) as Ru.
+    assert (HxyRu : (x,y) ∈ pbr Ru).
+    {
+      subst Ru. unfold pb_update. simpl.
+      rewrite elem_of_union.
+      rewrite elem_of_filter.
+      right. rewrite elem_of_singleton. reflexivity.
+    }
+    (*
+    assert (HRRu : (filter (unrelated (x, y)) (pbr R)) ⊆ pbr Ru).
+    {
+      subst Ru. unfold pb_update. simpl.
+      clear. set_solver.
+    }*)
+    assert (HRuR : forall (x' y' : evar), unrelated (x, y) (x',y') ->
+        (x',y') ∈ pbr Ru -> (x',y') ∈ pbr R).
+    {
+      subst Ru. unfold pb_update. simpl.
+      intros x' y' Hx'y' H.
+      rewrite elem_of_union in H.
+      rewrite elem_of_filter in H.
+      destruct H as [[H1 H2]|H].
+      { exact H2. }
+      unfold unrelated,related in Hx'y'.
+      simpl in *. set_solver.
+    }
+    clear HeqRu.
+    intros HR H.
+    move: x y z1 z2 R HR HRuR HxyRu.
+    induction H; intros x' y' z1 z2 R HR HRuR Hx'y'Ru.
+    {
+      simpl in *.
+      repeat case_match; subst; constructor; try set_solver.
+      {
+        exfalso.
+        destruct Ru. simpl in *. naive_solver.
+      }
+      {
+        exfalso.
+        destruct Ru. simpl in *. naive_solver.
+      }
+      unfold unrelated,related in HRuR. simpl in HRuR.
+      set_solver.
+    }
+    {
+      simpl in *.
+      constructor.
+      auto with nocore.
+    }
+    {
+      simpl in *.
+      constructor; auto with nocore.
+    }
+    {
+      simpl in *.
+      constructor; auto with nocore.
+    }
+    {
+      simpl in *.
+      constructor.
+    }
+    {
+      simpl in *.
+      constructor.
+    }
+    {
+      simpl in *.
+      repeat case_match; subst; try solve [constructor; assumption].
+      3 : {
+        exfalso.
+        assert (x' = x) by (
+        destruct Ru; simpl in *; naive_solver).
+        subst. contradiction.
+      }
+      2 : {
+        exfalso.
+        assert (y' = y) by (
+        destruct Ru; simpl in *; naive_solver).
+        subst. contradiction.
+      }
+      2: {
+        constructor.
+        { auto with nocore. }
+        { apply HRuR.
+          { unfold unrelated, related. naive_solver. }
+          { assumption. }
+        }
+      }
+      {
+        pose proof (IH := IHmyeq' x y z1 z2 _ HR).
+        feed specialize IH.
+        { tauto. }
+        { exact Hx'y'Ru. }
 
+
+        pose proof (IHmyeq' x y x y Ru xRy).
+        feed specialize H2.
+        {
+          intros. assumption.
+        }
+        {
+          assumption.
+        }
+
+        constructor.
+        2: {
+          assumption.
+        }
+      }
+    }
+  Qed.
+
+  
   Lemma normalize2_good {Σ : Signature} (nϕ1 nϕ2 : NamedPattern) evs defe svs defs R R':
   maxEdepth nϕ1 <= length evs ->
   maxSdepth nϕ1 <= length svs ->
@@ -4274,6 +4432,14 @@ Fixpoint rename {Σ : Signature}
       { lia. }
       { lia. }
       constructor.
+      {
+        rewrite !maxEdepth_normalize2.
+        erewrite maxEdepth_ae;[|apply H].
+        remember ((normalize2 evs defe svs defs t)) as t'.
+        remember ((normalize2 evs defe svs defs u)) as u'.
+        remember (nth (maxEdepth u) evs defe) as n.
+        
+      }
     rewrite IHalpha_equiv'. 1,2,3,4: lia. f_equal. }
   Qed.
 
