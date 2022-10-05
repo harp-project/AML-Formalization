@@ -102,6 +102,8 @@ Ltac2 mutable proved_hook_wfauto
 (* We give a name to the wrapper so that it is shown in the profile (when profiling). *)
 Ltac proved_hook_wfauto := ltac2:(|- proved_hook_wfauto ()).
 
+(*Ltac destruct_and_where_*)
+
 Ltac wf_auto2_step := 
   first [
   progress unfold

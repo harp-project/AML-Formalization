@@ -275,11 +275,6 @@ Proof.
   Reset Ltac Profile.
   all: wf_auto2.
   Show Ltac Profile.
-
-  20: {
-    do 7 wf_auto2_step.
-  }
-  all: wf_auto2.
 Defined.
 
 Lemma conj_intro_meta {Σ : Signature} (Γ : Theory) (A B : Pattern) (i : ProofInfo) :
@@ -486,23 +481,8 @@ Proof.
     Unshelve.
     Show Ltac Profile.
     Reset Ltac Profile.
-    8: wf_auto2.
-    7: {
-      Show Ltac Profile.
-      do 5 wf_auto2_step.
-    wf_auto2.
-    }
-    6: wf_auto2.
-    Show Ltac Profile.
-    5: wf_auto2.
-    4: wf_auto2.
-    3: wf_auto2.
-    2: wf_auto2.
-    1: wf_auto2.
-.
-    1,2,3,4,5,6,7,8: wf_auto2.
-    Show Ltac Profile.
     all: wf_auto2.
+    Show Ltac Profile.
 Defined.
 
 Lemma contraposition {Σ : Signature} (Γ : Theory) (A B : Pattern) : 
