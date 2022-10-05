@@ -34,6 +34,7 @@ nra.cache
 *.swp
 # Emacs
 *~
+*_mm.hs
 
 # Generated documentation
 html/*

@@ -4746,6 +4746,49 @@ Fixpoint rename {Σ : Signature}
         }
       }
     }
+  Abort.
+
+  Lemma normalize2_uses_only_evars_from_evs
+  {Σ : Signature}
+  (evs : list evar) (defe : evar)
+  (svs : list svar) (defs : svar)
+  (nϕ : NamedPattern)
+  :
+    maxEdepth nϕ ≤ length evs ->
+    bound_evars (normalize2 evs defe svs defs nϕ) ⊆ list_to_set evs
+  .
+  Proof.
+    move: evs.
+    induction nϕ; intros evs HE; simpl in *; try apply reflexivity; try set_solver.
+    {
+      specialize (IHnϕ1 evs ltac:(lia)).
+      specialize (IHnϕ2 evs ltac:(lia)).
+      set_solver.
+    }
+    {
+      specialize (IHnϕ1 evs ltac:(lia)).
+      specialize (IHnϕ2 evs ltac:(lia)).
+      set_solver.
+    }
+    {
+      specialize (IHnϕ evs ltac:(lia)).
+      rewrite maxEdepth_normalize2.
+      rewrite bound_evars_rename_free_evar.
+      cut ({[nth (maxEdepth nϕ) evs defe]} ⊆ @list_to_set _ EVarSet _ _ _ evs).
+      { set_solver. }
+      {
+        rewrite elem_of_subseteq. intros x' HIn.
+        rewrite elem_of_singleton in HIn. subst.
+        rewrite elem_of_list_to_set.
+        now apply nth_elem_of.
+      }
+    }
+    {
+      specialize (IHnϕ evs HE).
+      rewrite maxSdepth_normalize2.
+      rewrite bound_evars_rename_free_svar.
+      set_solver.
+    }
   Qed.
 
   (*
@@ -4819,6 +4862,8 @@ Fixpoint rename {Σ : Signature}
     {Σ : Signature}
     R R' x y z1 z2 t u:
     (z1, z2) ∈ pbr R ->
+    x ∉ bound_evars t ->
+    y ∉ bound_evars u ->
     myeq' (pb_update R x y) R' t u ->
     myeq' R R' (rename_free_evar t x z1) (rename_free_evar u y z2)
   .
@@ -4850,9 +4895,9 @@ Fixpoint rename {Σ : Signature}
       simpl in *. set_solver.
     }
     clear HeqRu.
-    intros HR H.
-    move: x y z1 z2 R HR HRuR HxyRu.
-    induction H; intros x' y' z1 z2 R HR HRuR Hx'y'Ru.
+    intros HR Hxt Hyu H.
+    move: x y z1 z2 R Hxt Hyu HR HRuR HxyRu.
+    induction H; intros x' y' z1 z2 R Hxt Hyu HR HRuR Hx'y'Ru.
     {
       simpl in *.
       repeat case_match; subst; constructor; try set_solver.
@@ -4874,10 +4919,14 @@ Fixpoint rename {Σ : Signature}
     }
     {
       simpl in *.
+      specialize (IHmyeq'1 x' y' z1 z2 R ltac:(set_solver) ltac:(set_solver)).
+      specialize (IHmyeq'2 x' y' z1 z2 R ltac:(set_solver) ltac:(set_solver)).
       constructor; auto with nocore.
     }
     {
       simpl in *.
+      specialize (IHmyeq'1 x' y' z1 z2 R ltac:(set_solver) ltac:(set_solver)).
+      specialize (IHmyeq'2 x' y' z1 z2 R ltac:(set_solver) ltac:(set_solver)).
       constructor; auto with nocore.
     }
     {
@@ -4905,72 +4954,75 @@ Fixpoint rename {Σ : Signature}
       }
       2: {
         constructor.
-        { auto with nocore. }
+        {
+          specialize (IHmyeq' x' y' z1 z2 R ltac:(set_solver) ltac:(set_solver)).
+          auto with nocore.
+        }
         { apply HRuR.
           { unfold unrelated, related. naive_solver. }
           { assumption. }
         }
       }
       {
-        pose proof (IH := IHmyeq' x y z1 z2 _ HR).
-        feed specialize IH.
-        { tauto. }
-        { exact Hx'y'Ru. }
-
-
-        pose proof (IHmyeq' x y x y Ru xRy).
-        feed specialize H2.
-        {
-          intros. assumption.
-        }
-        {
-          assumption.
-        }
-
-        constructor.
-        2: {
-          admit.
-        }
-        admit.
+        set_solver.
       }
     }
-  Abort.
+    {
+      specialize (IHmyeq' x' y' z1 z2 R ltac:(set_solver) ltac:(set_solver)).
+      constructor; auto with nocore.
+    }
+  Qed.
 
   Lemma normalize2_good {Σ : Signature} (nϕ1 nϕ2 : NamedPattern) evs defe svs defs R R':
+  alpha_equiv' R R' nϕ1 nϕ2 ->
   maxEdepth nϕ1 <= length evs ->
   maxSdepth nϕ1 <= length svs ->
   maxEdepth nϕ2 <= length evs ->
   maxSdepth nϕ2 <= length svs ->
-  alpha_equiv' R R' nϕ1 nϕ2 ->
+  list_to_set evs ## named_evars nϕ1 ->
+  list_to_set evs ## named_evars nϕ2 ->
+  list_to_set svs ## named_svars nϕ1 ->
+  list_to_set svs ## named_svars nϕ2 ->
   myeq' R R' (normalize2 evs defe svs defs nϕ1) (normalize2 evs defe svs defs nϕ2)
   .
   Proof.
-    intros E1 S1 E2 S2 H.
-    induction H; simpl in *.
+    intro H.
+    induction H; simpl in *; intros HlE1 HlS1 HlE2 HlS2 HnE1 HnE2 HnS1 HnS2.
+    
     7: { 
       feed specialize IHalpha_equiv'.
-      { lia. }  
-      { lia. }
-      { lia. }
-      { lia. }
-      constructor.
+      1-4: lia.
+      1-4: set_solver.
       {
         rewrite !maxEdepth_normalize2.
         erewrite maxEdepth_ae;[|apply H].
         remember ((normalize2 evs defe svs defs t)) as t'.
         remember ((normalize2 evs defe svs defs u)) as u'.
         remember (nth (maxEdepth u) evs defe) as n.
-        (* 1) x, and y come from the ∃ binders in the original nϕ1 and nϕ2
+        assert ((n, n) ∈ pbr R) as RDiag. {
+          (* Assume: diagonal (list_to_set evs) ⊆ pbr R *)
+          admit .
+        }
+        constructor.
+        {
+          (* 1) x, and y come from the ∃ binders in the original nϕ1 and nϕ2
            2) they potentially occur in t and u both as bound and free
            3) from 1) : x, y ∉ evs
            4) from 3) x (and y) do not occur as bound in t' (and u')
               (they potentially occur in t' and u' as free though)
            5) rename_free_evar behaves as rename_all_evars because of 4)
-        *)
-        Print myeq'.
-        Print pb_update.
+           *)
+          apply meq_rename_strips_update.
+          { assumption. }
+          { Search normalize2 bound_evars. admit. }
+          { admit. }
+          { assumption. }
+        }
+        {
+          assumption.
+        }
       }
-    rewrite IHalpha_equiv'. 1,2,3,4: lia. f_equal. }
+    }
   Qed.
 
   Lemma helper {Σ : Signature} nϕ x y:
