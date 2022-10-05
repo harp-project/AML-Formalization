@@ -88,8 +88,8 @@ Tactic Notation "wf_auto" int_or_var(n)
   := auto n; unfold well_formed, well_formed_closed in *; destruct_and?; simpl in *; split_and?; auto n.
 Tactic Notation "wf_auto" := wf_auto 5.
 
-Ltac2 mutable rec hook_wfauto
-:= (fun () => Message.print (Message.of_string "hook_wfauto base")).
+Ltac2 mutable hook_wfauto
+:= (fun () => () (* Message.print (Message.of_string "hook_wfauto base") *)).
 
 Ltac wf_auto2_step := 
   first [
