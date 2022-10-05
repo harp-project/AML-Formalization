@@ -4933,7 +4933,6 @@ Fixpoint rename {Σ : Signature}
         }
         admit.
       }
-      admit.
     }
   Abort.
 
