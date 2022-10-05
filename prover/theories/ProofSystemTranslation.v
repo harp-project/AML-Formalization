@@ -4872,6 +4872,116 @@ Fixpoint rename {Σ : Signature}
     }
   Qed.
 
+  Lemma meq_rename_strips_update_svar
+    {Σ : Signature}
+    R R' X Y Z1 Z2 t u:
+    (Z1, Z2) ∈ pbr R' ->
+    X ∉ bound_svars t ->
+    X ∉ bound_svars u ->
+    myeq' R (pb_update R' X Y) t u ->
+    myeq' R R' (rename_free_svar t X Z1) (rename_free_svar u Y Z2)
+  .
+  Proof.
+    remember (pb_update R' X Y) as R'u.
+    assert (HxyRu : (X,Y) ∈ pbr R'u).
+    {
+      subst R'u. unfold pb_update. simpl.
+      rewrite elem_of_union.
+      rewrite elem_of_filter.
+      right. rewrite elem_of_singleton. reflexivity.
+    }
+    assert (HR'uR' : forall (X' Y' : svar), unrelated (X, Y) (X',Y') ->
+        (X',Y') ∈ pbr R'u -> (X',Y') ∈ pbr R').
+    {
+      subst R'u. unfold pb_update. simpl.
+      intros x' y' Hx'y' H.
+      rewrite elem_of_union in H.
+      rewrite elem_of_filter in H.
+      destruct H as [[H1 H2]|H].
+      { assumption. }
+      unfold unrelated,related in Hx'y'.
+      simpl in *. set_solver.
+    }
+    clear HeqR'u.
+    intros HR' HXt HYu H.
+    move: X Y Z1 Z2 R' HXt HYu HR' HR'uR' HxyRu.
+    induction H; intros X' Y' Z1 Z2 R' HXt HYu HR' HR'uR' HX'Y'Ru.
+    {
+      simpl in *.
+      constructor.
+      auto with nocore.
+    }
+    {
+      simpl in *.
+      repeat case_match; subst; constructor; try set_solver.
+      {
+        exfalso.
+        destruct R'u. simpl in *. naive_solver.
+      }
+      {
+        exfalso.
+        destruct R'u. simpl in *. naive_solver.
+      }
+      unfold unrelated,related in HR'uR'. simpl in HR'uR'.
+      set_solver.
+    }
+    {
+      simpl in *.
+      specialize (IHmyeq'1 X' Y' Z1 Z2 R' ltac:(set_solver) ltac:(set_solver)).
+      specialize (IHmyeq'2 X' Y' Z1 Z2 R' ltac:(set_solver) ltac:(set_solver)).
+      constructor; auto with nocore.
+    }
+    {
+      simpl in *.
+      specialize (IHmyeq'1 X' Y' Z1 Z2 R' ltac:(set_solver) ltac:(set_solver)).
+      specialize (IHmyeq'2 X' Y' Z1 Z2 R' ltac:(set_solver) ltac:(set_solver)).
+      constructor; auto with nocore.
+    }
+    {
+      simpl in *.
+      constructor.
+    }
+    {
+      simpl in *.
+      constructor.
+    }
+
+    {
+      specialize (IHmyeq' X' Y' Z1 Z2 R' ltac:(set_solver) ltac:(set_solver)).
+      constructor; auto with nocore.
+    }
+    {
+      simpl in *.
+      repeat case_match; subst; try solve [constructor; assumption].
+      3 : {
+        exfalso.
+        assert (X' = X) by (
+        destruct R'u; simpl in *; naive_solver).
+        subst. contradiction.
+      }
+      2 : {
+        exfalso.
+        assert (Y' = Y) by (
+        destruct R'u; simpl in *; naive_solver).
+        subst. contradiction.
+      }
+      2: {
+        constructor.
+        {
+          specialize (IHmyeq' X' Y' Z1 Z2 R' ltac:(set_solver) ltac:(set_solver)).
+          auto with nocore.
+        }
+        { apply HR'uR'.
+          { unfold unrelated, related. naive_solver. }
+          { assumption. }
+        }
+      }
+      {
+        set_solver.
+      }
+    }
+  Qed.
+
   Lemma normalize2_good' {Σ : Signature} (nϕ1 nϕ2 : NamedPattern) evs defe svs defs R R':
   alpha_equiv' R R' nϕ1 nϕ2 ->
   maxEdepth nϕ1 <= length evs ->
@@ -4940,7 +5050,6 @@ Fixpoint rename {Σ : Signature}
               (they potentially occur in t' and u' as free though)
            5) rename_free_evar behaves as rename_all_evars because of 4)
            *)
-          Search normalize2 bound_evars.
           pose proof (normalize2_uses_only_evars_from_evs evs defe svs defs t ltac:(lia)).
           pose proof (normalize2_uses_only_evars_from_evs evs defe svs defs u ltac:(lia)).
           apply meq_rename_strips_update.
@@ -4979,9 +5088,9 @@ Fixpoint rename {Σ : Signature}
         }
         constructor.
         {
-          pose proof (normalize2_uses_only_evars_from_evs evs defe svs defs t ltac:(lia)).
-          pose proof (normalize2_uses_only_evars_from_evs evs defe svs defs u ltac:(lia)).
-          apply meq_rename_strips_update.
+          pose proof (normalize2_uses_only_svars_from_svs evs defe svs defs t ltac:(lia)).
+          pose proof (normalize2_uses_only_svars_from_svs evs defe svs defs u ltac:(lia)).
+          apply meq_rename_strips_update_svar.
           { assumption. }
           { subst t'. set_solver. }
           { subst u'. set_solver. }
