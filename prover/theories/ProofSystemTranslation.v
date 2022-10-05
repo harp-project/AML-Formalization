@@ -4589,7 +4589,6 @@ Fixpoint rename {Σ : Signature}
         specialize (IHnϕ1 ltac:(lia) ltac:(lia)).
         destruct (decide (maxEdepth nϕ2 = 0)).
         {
-          Check bound_evars_normalize2_0.
           rewrite -> bound_evars_normalize2_0 with (nϕ := nϕ2).
           2: { assumption. }
           set_solver.
@@ -4802,20 +4801,17 @@ Fixpoint rename {Σ : Signature}
             set_solver.
           }
           rewrite nth_overflow.
+          admit.
+          admit.
         }
+        admit.
       }
-      specialize (IHnϕ ltac:(lia)).
-      cut (~ (nth (maxEdepth (normalize2 evs defe svs defs nϕ)) evs defe)
-      ∈ @list_to_set _ EVarSet _ _ _ evs).
-      {
-        intros H. left.
-        tauto.
     }
-  Qed.
+  Abort.
 
 (* (x, y) ∈ pbr_update R x y 
-   t ≡ ∃ x. t'
-   u ≡ ∃ y. u'
+   t ≡ ∃ x. ⊥
+   u ≡ ∃ y. ⊥
    ==>
    =R
  *)
@@ -4933,11 +4929,13 @@ Fixpoint rename {Σ : Signature}
 
         constructor.
         2: {
-          assumption.
+          admit.
         }
+        admit.
       }
+      admit.
     }
-  Qed.
+  Abort.
 
   
   Lemma normalize2_good {Σ : Signature} (nϕ1 nϕ2 : NamedPattern) evs defe svs defs R R':
