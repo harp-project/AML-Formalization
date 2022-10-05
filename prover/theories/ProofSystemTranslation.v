@@ -4973,12 +4973,14 @@ Fixpoint rename {Σ : Signature}
     }
   Qed.
 
-  Lemma normalize2_good {Σ : Signature} (nϕ1 nϕ2 : NamedPattern) evs defe svs defs R R':
+  Lemma normalize2_good' {Σ : Signature} (nϕ1 nϕ2 : NamedPattern) evs defe svs defs R R':
   alpha_equiv' R R' nϕ1 nϕ2 ->
   maxEdepth nϕ1 <= length evs ->
   maxSdepth nϕ1 <= length svs ->
   maxEdepth nϕ2 <= length evs ->
   maxSdepth nϕ2 <= length svs ->
+  pbr (diagonal (list_to_set evs)) ⊆ pbr R ->
+  pbr (diagonal (list_to_set svs)) ⊆ pbr R' ->
   list_to_set evs ## named_evars nϕ1 ->
   list_to_set evs ## named_evars nϕ2 ->
   list_to_set svs ## named_svars nϕ1 ->
@@ -4987,12 +4989,18 @@ Fixpoint rename {Σ : Signature}
   .
   Proof.
     intro H.
-    induction H; simpl in *; intros HlE1 HlS1 HlE2 HlS2 HnE1 HnE2 HnS1 HnS2.
+    induction H; simpl in *; intros HlE1 HlS1 HlE2 HlS2 HdR HdR' HnE1 HnE2 HnS1 HnS2.
     
     7: { 
       feed specialize IHalpha_equiv'.
       1-4: lia.
-      1-4: set_solver.
+      3-6: set_solver.
+      {
+        unfold twice,unrelated,related. simpl. set_solver.
+      }
+      {
+        assumption.
+      }
       {
         rewrite !maxEdepth_normalize2.
         erewrite maxEdepth_ae;[|apply H].
@@ -5000,8 +5008,11 @@ Fixpoint rename {Σ : Signature}
         remember ((normalize2 evs defe svs defs u)) as u'.
         remember (nth (maxEdepth u) evs defe) as n.
         assert ((n, n) ∈ pbr R) as RDiag. {
-          (* Assume: diagonal (list_to_set evs) ⊆ pbr R *)
-          admit .
+          pose proof (Hin := nth_elem_of evs (maxEdepth u) defe ltac:(lia)).
+          subst n.
+          clear -HdR Hin.
+          unfold twice in HdR.
+          set_solver.
         }
         constructor.
         {
