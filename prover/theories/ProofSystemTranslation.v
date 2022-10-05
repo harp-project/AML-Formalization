@@ -4309,6 +4309,27 @@ Fixpoint rename {Σ : Signature}
     }
   Qed.
 
+  Lemma bound_svars_rename_free_svar
+    {Σ : Signature}
+    X Y nϕ:
+    bound_svars (rename_free_svar nϕ X Y) = bound_svars nϕ
+  .
+  Proof.
+    induction nϕ; simpl; try set_solver.
+    {
+      destruct (decide (X = X0)); reflexivity.
+    }
+    {
+      destruct (decide (X = X0)).
+      {
+        subst. simpl. reflexivity.
+      }
+      {
+        simpl. rewrite IHnϕ. reflexivity.
+      }
+    }
+  Qed.
+
 
   Lemma bound_evars_rename_free_svar
     {Σ : Signature}
@@ -4322,6 +4343,27 @@ Fixpoint rename {Σ : Signature}
     }
     {
       destruct (decide (X = X0)).
+      {
+        subst. simpl. reflexivity.
+      }
+      {
+        simpl. rewrite IHnϕ. reflexivity.
+      }
+    }
+  Qed.
+
+  Lemma bound_svars_rename_free_evar
+    {Σ : Signature}
+    x y nϕ:
+    bound_svars (rename_free_evar nϕ x y) = bound_svars nϕ
+  .
+  Proof.
+    induction nϕ; simpl; try set_solver.
+    {
+      destruct (decide (x = x0)); reflexivity.
+    }
+    {
+      destruct (decide (x = x0)).
       {
         subst. simpl. reflexivity.
       }
@@ -4702,9 +4744,9 @@ Fixpoint rename {Σ : Signature}
     }
     {
       specialize (IHnϕ svs ltac:(lia)).
-      rewrite maxEdepth_normalize2.
-      rewrite bound_evars_rename_free_evar.
-      cut ({[nth (maxEdepth nϕ) evs defe]} ⊆ @list_to_set _ EVarSet _ _ _ evs).
+      rewrite maxSdepth_normalize2.
+      rewrite bound_svars_rename_free_svar.
+      cut ({[nth (maxSdepth nϕ) svs defs]} ⊆ @list_to_set _ SVarSet _ _ _ svs).
       { set_solver. }
       {
         rewrite elem_of_subseteq. intros x' HIn.
@@ -4715,12 +4757,6 @@ Fixpoint rename {Σ : Signature}
     }
   Qed.
 
-(* (x, y) ∈ pbr_update R x y 
-   t ≡ ∃ x. ⊥
-   u ≡ ∃ y. ⊥
-   ==>
-   =R
- *)
   Lemma meq_rename_strips_update
     {Σ : Signature}
     R R' x y z1 z2 t u:
