@@ -3992,38 +3992,47 @@ Fixpoint rename {Σ : Signature}
     {Σ : Signature}
     (R : PartialBijection evar)
     (R' : PartialBijection svar)
+    (S : PartialBijection evar)
+    (S' : PartialBijection svar)
     : relation NamedPattern
     :=
-    | me_evar (x y : evar) (pf : (x, y) ∈ (pbr R))
-      : myeq' R R' (npatt_evar x) (npatt_evar y)
-    | me_svar (X Y : svar) (pf : (X, Y) ∈ (pbr R'))
-      : myeq' R R' (npatt_svar X) (npatt_svar Y)
+    | me_evar (x y : evar) (pf : (x, y) ∈ (pbr R) \/ (x, y) ∈ (pbr S))
+      : myeq' R R' S S' (npatt_evar x) (npatt_evar y)
+    | me_svar (X Y : svar) (pf : (X, Y) ∈ (pbr R') \/ (X, Y) ∈ (pbr S'))
+      : myeq' R R' S S' (npatt_svar X) (npatt_svar Y)
     | me_app
       (t t' u u' : NamedPattern)
-      (tEt' : myeq' R R' t t')
-      (uEu' : myeq' R R' u u')
-      : myeq' R R' (npatt_app t u) (npatt_app t' u')
+      (tEt' : myeq' R R' S S' t t')
+      (uEu' : myeq' R R' S S' u u')
+      : myeq' R R' S S' (npatt_app t u) (npatt_app t' u')
     | me_imp
       (t t' u u' : NamedPattern)
-      (tEt' : myeq' R R' t t')
-      (uEu' : myeq' R R' u u')
-      : myeq' R R' (npatt_imp t u) (npatt_imp t' u')
-    | me_bott : myeq' R R' npatt_bott npatt_bott
-    | me_sym (s : symbols) : myeq' R R' (npatt_sym s) (npatt_sym s) 
+      (tEt' : myeq' R R' S S' t t')
+      (uEu' : myeq' R R' S S' u u')
+      : myeq' R R' S S' (npatt_imp t u) (npatt_imp t' u')
+    | me_bott : myeq' R R' S S' npatt_bott npatt_bott
+    | me_sym (s : symbols) : myeq' R R' S S' (npatt_sym s) (npatt_sym s) 
     | me_ex (x y : evar) (t u : NamedPattern)
-      (tEu : myeq' R R' t u) (xRy : (x, y) ∈ (pbr R))
-      : myeq' R R'
+      (tEu : myeq' R R' S S' t u) (xRy : (x, y) ∈ (pbr S))
+      : myeq' R R' S S' 
         (npatt_exists x t)
         (npatt_exists y u)
     | me_mu (X Y : svar) (t u : NamedPattern)
-      (tEu : myeq' R R' t u) (XRY : (X, Y) ∈ (pbr R'))
-      : myeq' R R'
+      (tEu : myeq' R R' S S' t u) (XRY : (X, Y) ∈ (pbr S'))
+      : myeq' R R' S S' 
         (npatt_mu X t)
         (npatt_mu Y u)
   .
 
-  Lemma myeq'_eq {Σ : Signature} (p q : NamedPattern) R R':
-    myeq' (diagonal R) (diagonal R') p q ->
+  Print pbr.
+  Program Definition empty_pb {A : Type} (_eqd : EqDecision A) (_cnt : Countable A)
+   : PartialBijection A
+   := {| pbr := ∅ |}.
+  Next Obligation. set_solver. Qed.
+  Next Obligation. set_solver. Qed.
+
+  Lemma myeq'_eq {Σ : Signature} (p q : NamedPattern) R R' S S':
+    myeq' (diagonal R) (diagonal R') (diagonal S) (diagonal S') p q ->
     p = q
   .
   Proof.
@@ -4031,17 +4040,29 @@ Fixpoint rename {Σ : Signature}
     induction H; try solve [subst; reflexivity].
     {
       unfold diagonal in pf. simpl in pf.
-      rewrite elem_of_map in pf.
-      destruct pf as [x0 [H1x0 H2x0]].
-      inversion H1x0. subst. clear H1x0.
-      reflexivity.
+      rewrite 2!elem_of_map in pf.
+      destruct pf as [[x0 [H1x0 H2x0]]|[x0 [H1x0 H2x0]]].
+      {
+        inversion H1x0. subst. clear H1x0.
+        reflexivity.
+      }
+      {
+        inversion H1x0. subst. clear H1x0.
+        reflexivity.
+      }
     }
     {
       unfold diagonal in pf. simpl in pf.
-      rewrite elem_of_map in pf.
-      destruct pf as [X0 [H1X0 H2X0]].
-      inversion H1X0. subst. clear H1X0.
-      reflexivity.
+      rewrite 2!elem_of_map in pf.
+      destruct pf as [[X0 [H1X0 H2X0]]|[X0 [H1X0 H2X0]]].
+      {
+        inversion H1X0. subst. clear H1X0.
+        reflexivity.
+      }
+      {
+        inversion H1X0. subst. clear H1X0.
+        reflexivity.
+      }
     }
     {
       unfold diagonal in xRy. simpl in xRy.
@@ -4759,12 +4780,13 @@ Fixpoint rename {Σ : Signature}
 
   Lemma meq_rename_strips_update
     {Σ : Signature}
-    R R' x y z1 z2 t u:
+    R R' S S' x y z1 z2 t u:
     (z1, z2) ∈ pbr R ->
+    (z1, z2) ∈ pbr S ->
     x ∉ bound_evars t ->
     y ∉ bound_evars u ->
-    myeq' (pb_update R x y) R' t u ->
-    myeq' R R' (rename_free_evar t x z1) (rename_free_evar u y z2)
+    myeq' (pb_update R x y) R' (pb_update S x y) S' t u ->
+    myeq' R R' S S' (rename_free_evar t x z1) (rename_free_evar u y z2)
   .
   Proof.
     remember (pb_update R x y) as Ru.
@@ -4775,12 +4797,7 @@ Fixpoint rename {Σ : Signature}
       rewrite elem_of_filter.
       right. rewrite elem_of_singleton. reflexivity.
     }
-    (*
-    assert (HRRu : (filter (unrelated (x, y)) (pbr R)) ⊆ pbr Ru).
-    {
-      subst Ru. unfold pb_update. simpl.
-      clear. set_solver.
-    }*)
+    
     assert (HRuR : forall (x' y' : evar), unrelated (x, y) (x',y') ->
         (x',y') ∈ pbr Ru -> (x',y') ∈ pbr R).
     {
@@ -4794,21 +4811,59 @@ Fixpoint rename {Σ : Signature}
       simpl in *. set_solver.
     }
     clear HeqRu.
-    intros HR Hxt Hyu H.
-    move: x y z1 z2 R Hxt Hyu HR HRuR HxyRu.
-    induction H; intros x' y' z1 z2 R Hxt Hyu HR HRuR Hx'y'Ru.
+
+    remember (pb_update S x y) as Su.
+    assert (HxySu : (x,y) ∈ pbr Su).
+    {
+      subst Su. unfold pb_update. simpl.
+      rewrite elem_of_union.
+      rewrite elem_of_filter.
+      right. rewrite elem_of_singleton. reflexivity.
+    }
+    
+    assert (HSuS : forall (x' y' : evar), unrelated (x, y) (x',y') ->
+        (x',y') ∈ pbr Su -> (x',y') ∈ pbr S).
+    {
+      subst Su. unfold pb_update. simpl.
+      intros x' y' Hx'y' H.
+      rewrite elem_of_union in H.
+      rewrite elem_of_filter in H.
+      destruct H as [[H1 H2]|H].
+      { exact H2. }
+      unfold unrelated,related in Hx'y'.
+      simpl in *. set_solver.
+    }
+    clear HeqSu.
+
+    intros HR HS Hxt Hyu H.
+    move: x y z1 z2 R Hxt Hyu HR HS HRuR HSuS HxyRu HxySu.
+    induction H; intros x' y' z1 z2 R Hxt Hyu HR HS HRuR HSuS Hx'y'Ru Hx'y'Su.
     {
       simpl in *.
       repeat case_match; subst; constructor; try set_solver.
       {
-        exfalso.
-        destruct Ru. simpl in *. naive_solver.
+        destruct pf as [pf|pf].
+        {
+          exfalso.
+          destruct Ru. simpl in *. naive_solver.
+        }
+        {
+          exfalso.
+          destruct Su. simpl in *. naive_solver.
+        }
       }
       {
-        exfalso.
-        destruct Ru. simpl in *. naive_solver.
+        destruct pf as [pf|pf].
+        {
+          exfalso.
+          destruct Ru. simpl in *. naive_solver.
+        }
+        {
+          exfalso.
+          destruct Su. simpl in *. naive_solver.
+        }
       }
-      unfold unrelated,related in HRuR. simpl in HRuR.
+      unfold unrelated,related in HRuR,HSuS. simpl in HRuR,HSuS.
       set_solver.
     }
     {
@@ -4842,13 +4897,13 @@ Fixpoint rename {Σ : Signature}
       3 : {
         exfalso.
         assert (x' = x) by (
-        destruct Ru; simpl in *; naive_solver).
+        destruct Su; simpl in *; naive_solver).
         subst. contradiction.
       }
       2 : {
         exfalso.
         assert (y' = y) by (
-        destruct Ru; simpl in *; naive_solver).
+        destruct Su; simpl in *; naive_solver).
         subst. contradiction.
       }
       2: {
@@ -4857,7 +4912,7 @@ Fixpoint rename {Σ : Signature}
           specialize (IHmyeq' x' y' z1 z2 R ltac:(set_solver) ltac:(set_solver)).
           auto with nocore.
         }
-        { apply HRuR.
+        { apply HSuS.
           { unfold unrelated, related. naive_solver. }
           { assumption. }
         }
