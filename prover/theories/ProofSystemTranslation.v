@@ -5103,6 +5103,75 @@ Fixpoint rename {Σ : Signature}
     }
   Qed.
 
+  Definition alpha_normalize
+    {Σ : Signature} evs svs (nϕ : NamedPattern) : NamedPattern
+    := normalize2 evs (evar_fresh_s ∅)
+                  svs (svar_fresh_s ∅)
+                  nϕ
+  .
+  
+  Lemma length_evar_fresh_seq {Σ : Signature} avoid n:
+    length (evar_fresh_seq avoid n) = n
+  .
+  Proof.
+    move: avoid.
+    induction n; intros avoid; simpl.
+    { reflexivity. }
+    { rewrite IHn. reflexivity. }
+  Qed.
+
+  Lemma length_svar_fresh_seq {Σ : Signature} avoid n:
+    length (svar_fresh_seq avoid n) = n
+  .
+  Proof.
+    move: avoid.
+    induction n; intros avoid; simpl.
+    { reflexivity. }
+    { rewrite IHn. reflexivity. }
+  Qed.
+
+  Theorem alpha_normalize_good
+    {Σ : Signature} (nϕ1 nϕ2 : NamedPattern):
+    let evs := evar_fresh_seq (named_evars nϕ1 ∪ named_evars nϕ2) (Nat.max (maxEdepth nϕ1) (maxEdepth nϕ2)) in
+    let svs := svar_fresh_seq (named_svars nϕ1 ∪ named_svars nϕ2) (Nat.max (maxSdepth nϕ1) (maxSdepth nϕ2)) in
+    alpha_equiv nϕ1 nϕ2 ->
+    (alpha_normalize evs svs nϕ1)
+      =
+    (alpha_normalize evs svs nϕ2)
+  .
+  Proof.
+    intros evs svs.
+    intros Ha.
+    unfold alpha_normalize.
+    eapply myeq'_eq
+    with
+      (R := list_to_set evs)
+      (R' := list_to_set svs)
+    .
+    apply normalize2_good'.
+    {
+      eapply alpha_equiv'_diagonal.
+      3: apply Ha.
+      { unfold evs}
+      assumption.
+    }
+    {
+      rewrite length_evar_fresh_seq. lia.
+    }
+    {
+      rewrite length_svar_fresh_seq. lia.
+    }
+    {
+      rewrite length_evar_fresh_seq. lia.
+    }
+    {
+      rewrite length_svar_fresh_seq. lia.
+    }
+    {
+
+    }
+  Qed.
+
   Lemma helper {Σ : Signature} nϕ x y:
     alpha_equiv (npatt_exists y (rename_free_evar nϕ x y))
     (npatt_exists x nϕ)
