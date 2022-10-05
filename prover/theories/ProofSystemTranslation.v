@@ -4481,42 +4481,90 @@ Fixpoint rename {Σ : Signature}
     }
   Qed.
 
+  
+  Lemma nth_in_bound_normalize2
+    {Σ : Signature} (n : nat) evs defe svs defs nϕ:
+    maxEdepth nϕ = S n->
+    (nth n evs defe) ∈ bound_evars (normalize2 (evs) defe svs defs nϕ)
+  .
+  Proof.
+    move: evs.
+    induction nϕ; intros evs Hn; simpl in *; try lia.
+    {
+      destruct (decide (maxEdepth nϕ1 <= maxEdepth nϕ2)).
+      {
+        rewrite PeanoNat.Nat.max_r in Hn;[assumption|].
+        specialize (IHnϕ2 evs ltac:(lia)).
+        set_solver.
+      }
+      {
+        rewrite PeanoNat.Nat.max_l in Hn;[lia|].
+        specialize (IHnϕ1 evs ltac:(lia)).
+        set_solver.
+      }
+    }
+    {
+      destruct (decide (maxEdepth nϕ1 <= maxEdepth nϕ2)).
+      {
+        rewrite PeanoNat.Nat.max_r in Hn;[assumption|].
+        specialize (IHnϕ2 evs ltac:(lia)).
+        set_solver.
+      }
+      {
+        rewrite PeanoNat.Nat.max_l in Hn;[lia|].
+        specialize (IHnϕ1 evs ltac:(lia)).
+        set_solver.
+      }
+    }
+    {
+      rewrite maxEdepth_normalize2.
+      rewrite bound_evars_rename_free_evar.
+      set_solver.
+    }
+    {
+      rewrite maxSdepth_normalize2.
+      rewrite bound_evars_rename_free_svar.
+      apply IHnϕ.
+      assumption.
+    }
+  Qed.
+
   Lemma bound_evars_normalize2_S
     {Σ : Signature} e evs defe svs defs nϕ:
     maxEdepth nϕ <> 0 ->
+    maxEdepth nϕ <= S (length evs) ->
     bound_evars (normalize2 (e::evs) defe svs defs nϕ)
     ⊆ {[e]} ∪ bound_evars (normalize2 evs defe svs defs nϕ)
   .
   Proof.
-    induction nϕ; intros HS; simpl in *; try lia;
+    induction nϕ; intros HS Hl; simpl in *; try lia;
       try set_solver.
     {
       destruct (decide (maxEdepth nϕ1 <= maxEdepth nϕ2)).
       {
         rewrite PeanoNat.Nat.max_r in HS;[assumption|].
-        specialize (IHnϕ2 ltac:(lia)).
+        specialize (IHnϕ2 ltac:(lia) ltac:(lia)).
         destruct (decide (maxEdepth nϕ1 = 0)).
         {
           rewrite bound_evars_normalize2_0;[assumption|].
           set_solver.
         }
         {
-          specialize (IHnϕ1 ltac:(lia)).
+          specialize (IHnϕ1 ltac:(lia) ltac:(lia)).
           set_solver.
         }
       }
       {
         rewrite PeanoNat.Nat.max_l in HS;[lia|].
-        specialize (IHnϕ1 ltac:(lia)).
+        specialize (IHnϕ1 ltac:(lia) ltac:(lia)).
         destruct (decide (maxEdepth nϕ2 = 0)).
         {
-          Check bound_evars_normalize2_0.
           rewrite -> bound_evars_normalize2_0 with (nϕ := nϕ2).
           2: { assumption. }
           set_solver.
         }
         {
-          specialize (IHnϕ2 ltac:(lia)).
+          specialize (IHnϕ2 ltac:(lia) ltac:(lia)).
           set_solver.
         }
       }
@@ -4525,20 +4573,20 @@ Fixpoint rename {Σ : Signature}
       destruct (decide (maxEdepth nϕ1 <= maxEdepth nϕ2)).
       {
         rewrite PeanoNat.Nat.max_r in HS;[assumption|].
-        specialize (IHnϕ2 ltac:(lia)).
+        specialize (IHnϕ2 ltac:(lia) ltac:(lia)).
         destruct (decide (maxEdepth nϕ1 = 0)).
         {
           rewrite bound_evars_normalize2_0;[assumption|].
           set_solver.
         }
         {
-          specialize (IHnϕ1 ltac:(lia)).
+          specialize (IHnϕ1 ltac:(lia) ltac:(lia)).
           set_solver.
         }
       }
       {
         rewrite PeanoNat.Nat.max_l in HS;[lia|].
-        specialize (IHnϕ1 ltac:(lia)).
+        specialize (IHnϕ1 ltac:(lia) ltac:(lia)).
         destruct (decide (maxEdepth nϕ2 = 0)).
         {
           Check bound_evars_normalize2_0.
@@ -4547,7 +4595,7 @@ Fixpoint rename {Σ : Signature}
           set_solver.
         }
         {
-          specialize (IHnϕ2 ltac:(lia)).
+          specialize (IHnϕ2 ltac:(lia) ltac:(lia)).
           set_solver.
         }
       }
@@ -4568,8 +4616,15 @@ Fixpoint rename {Σ : Signature}
         rewrite maxEdepth_normalize2.
         rewrite H.
         rewrite !bound_evars_rename_free_evar.
-        specialize (IHnϕ ltac:(lia)).
-        
+        specialize (IHnϕ ltac:(lia) ltac:(lia)).
+        assert (H0 : maxEdepth nϕ <= length evs) by lia.
+        rewrite H in H0.
+        destruct evs; simpl in *;[lia|].
+        assert (H1 : n <= length evs) by lia.
+        case_match; simpl in *.
+        1: {
+
+        }
       }
     }
   Qed.
