@@ -1,5 +1,7 @@
 From Coq Require Import ssreflect ssrfun ssrbool.
 
+From Ltac2 Require Import Ltac2.
+
 From Coq Require Import Btauto.
 
 From stdpp Require Import countable infinite.
@@ -15,6 +17,8 @@ Require Import
   SyntaxLemmas.FreshnessSubstitution
   SyntacticConstruct
 .
+
+Set Default Proof Mode "Classic".
 
 Definition wfSimplifications := (
   @nullary_wf,
@@ -51,6 +55,31 @@ Ltac propagateTrueInHyps :=
   )
 .
 
+Tactic Notation "is_duplicated" constr(t) :=
+  let T := type of t in
+  match goal with
+  | [H1 : T, H2 : T |- _] => idtac
+  end.
+
+Ltac makeHypNonDependent H :=
+  first [is_really_non_dependent H | is_duplicated H | pose proof H].
+
+Ltac makeEqTrueNonDependent :=
+  repeat (progress (
+   match goal with
+   | [H: _ = true |- _] => progress makeHypNonDependent H    
+    end
+  )).
+
+Example ex_makeEqTrueNonDependent
+  (A : Set) (f : A -> bool) (g : forall B, B -> Prop) (x : A) :
+  forall (H: f x = true), g _ H -> True.
+Proof.
+  intros H Hg.
+  makeEqTrueNonDependent.
+  (* Now there should be a hypothesis H0 : f x = true on which nothing happens *)
+Abort.
+
 Ltac propagateTrueInGoal :=
   rewrite !(andb_true_r,andb_true_l)
 .
@@ -59,8 +88,12 @@ Tactic Notation "wf_auto" int_or_var(n)
   := auto n; unfold well_formed, well_formed_closed in *; destruct_and?; simpl in *; split_and?; auto n.
 Tactic Notation "wf_auto" := wf_auto 5.
 
+Ltac2 mutable rec hook_wfauto
+:= (fun () => Message.print (Message.of_string "hook_wfauto base")).
+
 Ltac wf_auto2_step := 
   first [
+  progress ltac2:(|- hook_wfauto ())|
   progress unfold
     is_true,
     well_formed,
@@ -250,6 +283,8 @@ Ltac wf_auto2_step :=
   ]
 .
 Ltac wf_auto2 :=
+  (*unfold is_true in *;
+  makeEqTrueNonDependent;*)
   repeat (
     wf_auto2_step
   )

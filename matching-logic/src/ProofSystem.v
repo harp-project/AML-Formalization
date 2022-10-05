@@ -1,5 +1,7 @@
 From Coq Require Import ssreflect ssrfun ssrbool.
 
+From Ltac2 Require Import Ltac2.
+
 From Coq Require Import Logic.Classical_Prop Logic.Eqdep_dec.
 From MatchingLogic.Utils Require Import stdpp_ext Lattice.
 From MatchingLogic Require Import Syntax NamedAxioms DerivedOperators_Syntax wftactics.
@@ -10,6 +12,8 @@ From MatchingLogic.Utils Require Import extralibrary.
 Import MatchingLogic.Syntax.Notations.
 Import MatchingLogic.Substitution.Notations.
 Import MatchingLogic.DerivedOperators_Syntax.Notations.
+
+Set Default Proof Mode "Classic".
 
 Section ml_proof_system.
   Open Scope ml_scope.
@@ -136,7 +140,6 @@ Section ml_proof_system.
   intros pf.
   induction pf; wf_auto2.
   Qed.
-
 
 Lemma cast_proof {Γ} {ϕ} {ψ} (e : ψ = ϕ) : ML_proof_system Γ ϕ -> ML_proof_system Γ ψ.
 Proof. intros H. rewrite <- e in H. exact H. Defined.
@@ -654,3 +657,19 @@ Notation "'ExGen' ':=' evs ',' 'SVSubst' := svs ',' 'KT' := bkt ',' 'FP' := fpl"
 
 End Notations.
 
+
+
+Ltac2 pfs_to_wfs () :=
+  repeat (
+    match! goal with
+    | [h : @derives _ _ _ |- _]
+      => unfold derives
+    | [h : @derives_using _ _ _ _ |- _]
+      => apply @raw_proof_of in $h
+    | [ h: @ML_proof_system _ _ _ |- _]
+      => apply @proved_impl_wf in $h
+    end
+  ).
+
+Ltac2 Set hook_wfauto as oldhook
+:= (fun () => Message.print (Message.of_string "hook_wfauto p2w"); pfs_to_wfs (); oldhook ()).

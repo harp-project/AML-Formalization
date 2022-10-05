@@ -9,6 +9,7 @@ From Equations Require Import Equations.
 Require Import Coq.Program.Tactics.
 
 From MatchingLogic Require Import
+    Utils.extralibrary
     Logic
     DerivedOperators_Syntax
     ProofMode_base
@@ -59,6 +60,13 @@ Arguments P1 {Σ} _ (_%ml) (_%ml) _ _ .
 Arguments P2 {Σ} _ (_%ml) (_%ml) (_%ml) _ _ _.
 Arguments P3 {Σ} _ (_%ml) _.
 
+Ltac2 mutable rec some_function :=
+  (fun () => Message.print (Message.of_string "old"))
+.
+
+Ltac2 Set some_function as old
+:= (fun () => Message.print (Message.of_string "new"); old ()).
+
 Lemma P4m  {Σ : Signature}(Γ : Theory) (A B : Pattern) :
   well_formed A ->
   well_formed B ->
@@ -67,16 +75,24 @@ Lemma P4m  {Σ : Signature}(Γ : Theory) (A B : Pattern) :
 Proof.
   intros WFA WFB.
   pose (H1 := P2 Γ A B Bot ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
-  pose (H2 := (P2 Γ (A ---> B ---> Bot) (A ---> B) (A ---> Bot) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2))).
-  pose (H3 := MP H1 H2).
-  pose (H4 := (P1 Γ (((A ---> B ---> Bot) ---> A ---> B) ---> (A ---> B ---> Bot) ---> A ---> Bot)
+  assert (well_formed_closed_ex_aux A 0 = true).
+  {
+    ltac2:(|- some_function ()).
+    ltac2:(|- hook_wfauto ()).
+    ltac2:(|- pfs_to_wfs ()).
+    
+    wf_auto2.
+  }
+  pose proof (H2 := (P2 Γ (A ---> B ---> Bot) (A ---> B) (A ---> Bot) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2))).
+  pose proof (H3 := MP H1 H2).
+  pose proof (H4 := (P1 Γ (((A ---> B ---> Bot) ---> A ---> B) ---> (A ---> B ---> Bot) ---> A ---> Bot)
     (A ---> B) ltac:(wf_auto2) ltac:(wf_auto2))).
-  pose (H5 := MP H3 H4).
-  pose (H6 := (P2 Γ (A ---> B) ((A ---> B ---> Bot) ---> A ---> B) ((A ---> B ---> Bot) ---> A ---> Bot)
+  pose proof (H5 := MP H3 H4).
+  pose proof (H6 := (P2 Γ (A ---> B) ((A ---> B ---> Bot) ---> A ---> B) ((A ---> B ---> Bot) ---> A ---> Bot)
     ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2))).
-  pose (H7 := MP H5 H6).
-  pose (H8 := (P1 Γ (A ---> B) (A ---> B ---> Bot) ltac:(wf_auto2) ltac:(wf_auto2))).
-  pose (H9 := MP H8 H7).
+  pose proof (H7 := MP H5 H6).
+  pose proof (H8 := (P1 Γ (A ---> B) (A ---> B ---> Bot) ltac:(wf_auto2) ltac:(wf_auto2))).
+  pose proof (H9 := MP H8 H7).
   exact H9.
 Defined.
 

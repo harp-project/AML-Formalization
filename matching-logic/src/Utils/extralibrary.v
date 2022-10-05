@@ -332,3 +332,12 @@ Tactic Notation "destruct_or" "?" :=
   repeat match goal with H : _ |- _ => progress (destruct_or? H) end.
 Tactic Notation "destruct_or" "!" :=
   progress destruct_or?.
+
+  Tactic Notation "is_really_non_dependent" constr(H) :=
+  match goal with
+  | _ : context [ H ] |- _ => fail 1
+  | _ := context [ H ]  |- _ => fail 1
+  | |- context [ H ] => fail 1
+  | _ => idtac
+  end.
+ 
