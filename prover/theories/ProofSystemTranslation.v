@@ -4629,125 +4629,6 @@ Fixpoint rename {Σ : Signature}
     }
   Qed.
 
-  Lemma bound_evars_normalize2_cons
-    {Σ : Signature} e evs defe svs defs nϕ:
-    bound_evars (normalize2 evs defe svs defs nϕ) ⊆ list_to_set evs ->
-    bound_evars (normalize2 (e :: evs) defe svs defs nϕ) ⊆ {[e]} ∪ list_to_set evs
-  .
-  Proof.
-    move: evs.
-    induction nϕ; intros evs H; simpl in *;
-      try set_solver.
-    {
-      repeat case_match; simpl in *.
-      {
-        rewrite maxEdepth_normalize2 in H0.
-        rewrite maxEdepth_normalize2 in H.
-        rewrite H0 in H.
-        rewrite bound_evars_rename_free_evar.
-        rewrite bound_evars_rename_free_evar in H.
-        rewrite bound_evars_normalize2_0;[assumption|].
-        set_solver.
-      }
-      {
-        rewrite maxEdepth_normalize2 in H0.
-        rewrite maxEdepth_normalize2 in H.
-        rewrite bound_evars_rename_free_evar.
-        rewrite bound_evars_rename_free_evar in H.
-        rewrite H0 in H.
-        eapply transitivity.
-        2: apply IHnϕ.
-      }
-    }
-  Qed.
-
-  Lemma normalize2_uses_only_some_evars 
-  {Σ : Signature}
-  (evs : list evar) (defe : evar)
-  (svs : list svar) (defs : svar)
-  (nϕ : NamedPattern)
-  :
-    maxEdepth nϕ = length evs ->
-    bound_evars (normalize2 evs defe svs defs nϕ) ⊆ list_to_set (take (maxEdepth nϕ) evs)
-  .
-  Proof.
-    move: evs.
-    induction nϕ; intros evs HE; simpl in *; try apply reflexivity.
-    {
-      destruct (decide (maxEdepth nϕ1 <= maxEdepth nϕ2)).
-      {
-        rewrite PeanoNat.Nat.max_r;[assumption|].
-        rewrite PeanoNat.Nat.max_r in HE;[assumption|].
-        pose proof (Hbenm := bound_evars_normalize2_monotone evs defe svs defs nϕ1 nϕ2).
-        feed specialize Hbenm.
-        { assumption. }
-        { assumption. }
-        set_solver.
-      }
-      {
-        rewrite PeanoNat.Nat.max_l;[lia|].
-        rewrite PeanoNat.Nat.max_l in HE;[lia|].
-        pose proof (Hbenm := bound_evars_normalize2_monotone evs defe svs defs nϕ2 nϕ1).
-        feed specialize Hbenm.
-        { assumption. }
-        { lia. }
-        set_solver.
-      }
-    }
-    {
-      destruct (decide (maxEdepth nϕ1 <= maxEdepth nϕ2)).
-      {
-        rewrite PeanoNat.Nat.max_r;[assumption|].
-        rewrite PeanoNat.Nat.max_r in HE;[assumption|].
-        pose proof (Hbenm := bound_evars_normalize2_monotone evs defe svs defs nϕ1 nϕ2).
-        feed specialize Hbenm.
-        { assumption. }
-        { assumption. }
-        set_solver.
-      }
-      {
-        rewrite PeanoNat.Nat.max_l;[lia|].
-        rewrite PeanoNat.Nat.max_l in HE;[lia|].
-        pose proof (Hbenm := bound_evars_normalize2_monotone evs defe svs defs nϕ2 nϕ1).
-        feed specialize Hbenm.
-        { assumption. }
-        { lia. }
-        set_solver.
-      }
-    }
-    {
-      destruct evs; simpl in *.
-      {
-        repeat case_match; simpl in *.
-        { lia. }
-        { lia. }
-      }
-      repeat case_match; simpl in *.
-      {
-        rewrite maxEdepth_normalize2 in H.
-        rewrite H. simpl.
-        specialize (IHnϕ evs ltac:(lia)).
-        rewrite H in IHnϕ. simpl in IHnϕ.
-        rewrite bound_evars_rename_free_evar.
-        admit.
-      }
-      {
-        rewrite bound_evars_rename_free_evar.
-        rewrite maxEdepth_normalize2 in H.
-        assert (Hm : maxEdepth nϕ = length evs) by lia.
-        rewrite Hm.
-        specialize (IHnϕ evs ltac:(lia)).
-        rewrite Hm in IHnϕ.
-        rewrite firstn_all. rewrite firstn_all in IHnϕ.
-        assert (nth n evs defe ∈ evs).
-        {
-          apply nth_elem_of.
-          { lia. }
-        }
-      }
-    }
-  Abort.
-
   Lemma normalize2_uses_only_evars_from_evs
   {Σ : Signature}
   (evs : list evar) (defe : evar)
@@ -4791,66 +4672,48 @@ Fixpoint rename {Σ : Signature}
     }
   Qed.
 
-  (*
-     When there can be some shadowing?
-     1. two quantifiers in the formula, too short list
-        evs := []; nϕ := exists x. exists y. ⊥
-     2. repeated named variables in the list
-        evs := ["x";"y";"x"]; nϕ := exists x. exists y. exists z. ⊥
-  *)
-
-  Lemma normalize2_no_shadowing
-  {Σ : Signature}
-  (evs : list evar) (defe : evar)
-  (svs : list svar) (defs : svar)
-  (evsB : EVarSet )
-  (nϕ : NamedPattern)
+  Lemma normalize2_uses_only_svars_from_svs
+    {Σ : Signature}
+    (evs : list evar) (defe : evar)
+    (svs : list svar) (defs : svar)
+    (nϕ : NamedPattern)
   :
-    NoDup evs ->
-    maxEdepth nϕ <= length evs ->
-    evsB ## list_to_set evs ->
-    ~ evar_shadowing_happens evsB (normalize2 evs defe svs defs nϕ)
+    maxSdepth nϕ ≤ length svs ->
+    bound_svars (normalize2 evs defe svs defs nϕ) ⊆ list_to_set svs
   .
   Proof.
-    move: evs evsB.
-    induction nϕ; simpl; intros evs evsB HNDe HmE HB; try tauto.
+    move: svs.
+    induction nϕ; intros svs HS; simpl in *; try apply reflexivity; try set_solver.
     {
-      specialize (IHnϕ1 evs evsB HNDe ltac:(lia) HB).
-      specialize (IHnϕ2 evs evsB HNDe ltac:(lia) HB).
-      tauto.
+      specialize (IHnϕ1 svs ltac:(lia)).
+      specialize (IHnϕ2 svs ltac:(lia)).
+      set_solver.
     }
     {
-      specialize (IHnϕ1 evs evsB HNDe ltac:(lia) HB).
-      specialize (IHnϕ2 evs evsB HNDe ltac:(lia) HB).
-      tauto.
+      specialize (IHnϕ1 svs ltac:(lia)).
+      specialize (IHnϕ2 svs ltac:(lia)).
+      set_solver.
     }
     {
+      specialize (IHnϕ svs HS).
       rewrite maxEdepth_normalize2.
-      intros HContra.
-      destruct HContra as [HContra|HContra].
+      rewrite bound_svars_rename_free_evar.
+      set_solver.
+    }
+    {
+      specialize (IHnϕ svs ltac:(lia)).
+      rewrite maxEdepth_normalize2.
+      rewrite bound_evars_rename_free_evar.
+      cut ({[nth (maxEdepth nϕ) evs defe]} ⊆ @list_to_set _ EVarSet _ _ _ evs).
+      { set_solver. }
       {
-        pose proof (nth_elem_of evs ((maxEdepth nϕ)) defe HmE).
-        set_solver.
-      }
-      {
-        pose proof (IH := IHnϕ evs (evsB ∪ {[nth (maxEdepth nϕ) evs defe]}) HNDe).
-        feed specialize IH.
-        {
-          lia.
-        }
-        {
-          cut ((nth (maxEdepth nϕ) evs defe) ∉ evs).
-          {
-            set_solver.
-          }
-          rewrite nth_overflow.
-          admit.
-          admit.
-        }
-        admit.
+        rewrite elem_of_subseteq. intros x' HIn.
+        rewrite elem_of_singleton in HIn. subst.
+        rewrite elem_of_list_to_set.
+        now apply nth_elem_of.
       }
     }
-  Abort.
+  Qed.
 
 (* (x, y) ∈ pbr_update R x y 
    t ≡ ∃ x. ⊥
@@ -4990,8 +4853,26 @@ Fixpoint rename {Σ : Signature}
   Proof.
     intro H.
     induction H; simpl in *; intros HlE1 HlS1 HlE2 HlS2 HdR HdR' HnE1 HnE2 HnS1 HnS2.
-    
-    7: { 
+    1-2, 5-6: now constructor.
+    {
+      specialize (IHalpha_equiv'1 ltac:(lia) ltac:(lia) ltac:(lia) ltac:(lia)
+                                  HdR HdR' ltac:(set_solver) ltac:(set_solver)
+                                  ltac:(set_solver) ltac:(set_solver)).
+      specialize (IHalpha_equiv'2 ltac:(lia) ltac:(lia) ltac:(lia) ltac:(lia)
+                                  HdR HdR' ltac:(set_solver) ltac:(set_solver)
+                                  ltac:(set_solver) ltac:(set_solver)).
+      now constructor.
+    }
+    {
+      specialize (IHalpha_equiv'1 ltac:(lia) ltac:(lia) ltac:(lia) ltac:(lia)
+                                  HdR HdR' ltac:(set_solver) ltac:(set_solver)
+                                  ltac:(set_solver) ltac:(set_solver)).
+      specialize (IHalpha_equiv'2 ltac:(lia) ltac:(lia) ltac:(lia) ltac:(lia)
+                                  HdR HdR' ltac:(set_solver) ltac:(set_solver)
+                                  ltac:(set_solver) ltac:(set_solver)).
+      now constructor.
+    }
+    {
       feed specialize IHalpha_equiv'.
       1-4: lia.
       3-6: set_solver.
@@ -5023,10 +4904,51 @@ Fixpoint rename {Σ : Signature}
               (they potentially occur in t' and u' as free though)
            5) rename_free_evar behaves as rename_all_evars because of 4)
            *)
+          Search normalize2 bound_evars.
+          pose proof (normalize2_uses_only_evars_from_evs evs defe svs defs t ltac:(lia)).
+          pose proof (normalize2_uses_only_evars_from_evs evs defe svs defs u ltac:(lia)).
           apply meq_rename_strips_update.
           { assumption. }
-          { Search normalize2 bound_evars. admit. }
-          { admit. }
+          { subst t'. set_solver. }
+          { subst u'. set_solver. }
+          { assumption. }
+        }
+        {
+          assumption.
+        }
+      }
+    }
+    {
+      feed specialize IHalpha_equiv'.
+      1-4: lia.
+      3-6: set_solver.
+      {
+        assumption.
+      }
+      {
+        unfold twice,unrelated,related. simpl. set_solver.
+      }
+      {
+        rewrite !maxSdepth_normalize2.
+        erewrite maxSdepth_ae;[|apply H].
+        remember ((normalize2 evs defe svs defs t)) as t'.
+        remember ((normalize2 evs defe svs defs u)) as u'.
+        remember (nth (maxSdepth u) svs defs) as n.
+        assert ((n, n) ∈ pbr R') as RDiag. {
+          pose proof (Hin := nth_elem_of svs (maxSdepth u) defs ltac:(lia)).
+          subst n.
+          clear -HdR' Hin.
+          unfold twice in HdR'.
+          set_solver.
+        }
+        constructor.
+        {
+          pose proof (normalize2_uses_only_evars_from_evs evs defe svs defs t ltac:(lia)).
+          pose proof (normalize2_uses_only_evars_from_evs evs defe svs defs u ltac:(lia)).
+          apply meq_rename_strips_update.
+          { assumption. }
+          { subst t'. set_solver. }
+          { subst u'. set_solver. }
           { assumption. }
         }
         {
