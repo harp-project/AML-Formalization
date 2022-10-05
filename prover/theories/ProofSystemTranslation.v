@@ -3994,10 +3994,10 @@ Fixpoint rename {Σ : Signature}
     (R' : PartialBijection svar)
     : relation NamedPattern
     :=
-    | me_evar (x y : evar) (pf : (x, y) ∈ (pbr R))
-      : myeq' R R' (npatt_evar x) (npatt_evar y)
-    | me_svar (X Y : svar) (pf : (X, Y) ∈ (pbr R'))
-      : myeq' R R' (npatt_svar X) (npatt_svar Y)
+    | me_evar (x : evar)
+      : myeq' R R' (npatt_evar x) (npatt_evar x)
+    | me_svar (X : svar)
+      : myeq' R R' (npatt_svar X) (npatt_svar X)
     | me_app
       (t t' u u' : NamedPattern)
       (tEt' : myeq' R R' t t')
@@ -4010,17 +4010,31 @@ Fixpoint rename {Σ : Signature}
       : myeq' R R' (npatt_imp t u) (npatt_imp t' u')
     | me_bott : myeq' R R' npatt_bott npatt_bott
     | me_sym (s : symbols) : myeq' R R' (npatt_sym s) (npatt_sym s) 
-    | me_ex (x y : evar) (t u : NamedPattern)
-      (tEu : myeq' R R' t u) (xRy : (x, y) ∈ (pbr R))
+    | me_ex (x y z : evar) (t u : NamedPattern)
+      (tEu : myeq' R R' (rename_free_evar t x z) (rename_free_evar u y z))
+      (xRy : (x, y) ∈ (pbr R)) (Hfz1 : z ∉ named_evars t) (Hfz1 : z ∉ named_evars u)
       : myeq' R R'
         (npatt_exists x t)
         (npatt_exists y u)
-    | me_mu (X Y : svar) (t u : NamedPattern)
-      (tEu : myeq' R R' t u) (XRY : (X, Y) ∈ (pbr R'))
+    | me_mu (X Y Z: svar) (t u : NamedPattern)
+    (tEu : myeq' R R' (rename_free_svar t X Z) (rename_free_svar u Y Z))
+    (xRy : (X, Y) ∈ (pbr R')) (Hfz1 : Z ∉ named_svars t) (Hfz1 : Z ∉ named_svars u)
       : myeq' R R'
         (npatt_mu X t)
         (npatt_mu Y u)
   .
+
+
+  Lemma rename_inj {Σ : Signature} t u x y :
+    y ∉ named_evars t ->
+    y ∉ named_evars u ->
+    rename_free_evar t x y = rename_free_evar u x y ->
+    t = u.
+  Proof.
+    move: u x y. induction t; simpl; intros u x0 y0 H Hf1 Hf2; destruct u; subst;
+      repeat case_match; subst; simpl in *; repeat case_match; subst; try congruence;
+      try set_solver.
+  Qed.
 
   Lemma myeq'_eq {Σ : Signature} (p q : NamedPattern) R R':
     myeq' (diagonal R) (diagonal R') p q ->
@@ -4030,25 +4044,11 @@ Fixpoint rename {Σ : Signature}
     intros H.
     induction H; try solve [subst; reflexivity].
     {
-      unfold diagonal in pf. simpl in pf.
-      rewrite elem_of_map in pf.
-      destruct pf as [x0 [H1x0 H2x0]].
-      inversion H1x0. subst. clear H1x0.
-      reflexivity.
-    }
-    {
-      unfold diagonal in pf. simpl in pf.
-      rewrite elem_of_map in pf.
-      destruct pf as [X0 [H1X0 H2X0]].
-      inversion H1X0. subst. clear H1X0.
-      reflexivity.
-    }
-    {
       unfold diagonal in xRy. simpl in xRy.
       rewrite elem_of_map in xRy.
       destruct xRy as [X0 [H1X0 H2X0]].
       inversion H1X0. subst. clear H1X0.
-      reflexivity.
+      f_equal. apply rename_inj in IHmyeq'; assumption.
     }
     {
       unfold diagonal in XRY. simpl in XRY.
