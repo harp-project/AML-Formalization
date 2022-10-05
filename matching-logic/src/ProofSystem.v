@@ -672,8 +672,8 @@ Ltac2 pfs_to_wfs () :=
   ).
 
 
-Ltac2 Set hook_wfauto as oldhook
-:= (fun () => (*Message.print (Message.of_string "hook_wfauto p2w");*) pfs_to_wfs (); oldhook ()).
+Ltac2 Set proved_hook_wfauto as oldhook
+:= (fun () => (*Message.print (Message.of_string "hook_wfauto p2w");*) pfs_to_wfs () (*; oldhook ()*)).
 
 (*
 Ltac2 Set hook_wfauto

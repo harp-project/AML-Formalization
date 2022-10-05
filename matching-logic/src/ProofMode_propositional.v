@@ -33,6 +33,7 @@ Open Scope string_scope.
 Open Scope list_scope.
 Open Scope ml_scope.
 
+Set Ltac Profiling.
 Lemma hypothesis {Σ : Signature} (Γ : Theory) (axiom : Pattern) :
   well_formed axiom ->
   (axiom ∈ Γ) ->
@@ -270,6 +271,14 @@ Proof.
                                          (P2 _ A (B ---> (!(!A) ---> !B) ---> A) (B ---> !(!(!A) ---> !B)) _ _ _))).
   apply t7.
   Unshelve.
+  Show Ltac Profile.
+  Reset Ltac Profile.
+  all: wf_auto2.
+  Show Ltac Profile.
+
+  20: {
+    do 7 wf_auto2_step.
+  }
   all: wf_auto2.
 Defined.
 
@@ -475,6 +484,24 @@ Proof.
   - assumption.
   - assumption.
     Unshelve.
+    Show Ltac Profile.
+    Reset Ltac Profile.
+    8: wf_auto2.
+    7: {
+      Show Ltac Profile.
+      do 5 wf_auto2_step.
+    wf_auto2.
+    }
+    6: wf_auto2.
+    Show Ltac Profile.
+    5: wf_auto2.
+    4: wf_auto2.
+    3: wf_auto2.
+    2: wf_auto2.
+    1: wf_auto2.
+.
+    1,2,3,4,5,6,7,8: wf_auto2.
+    Show Ltac Profile.
     all: wf_auto2.
 Defined.
 

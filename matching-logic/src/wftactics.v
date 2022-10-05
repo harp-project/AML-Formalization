@@ -34,13 +34,16 @@ Ltac decomposeWfGoal :=
   rewrite !wfSimplifications
 .
 
+Ltac towfxy H := rewrite -wfxy00_wf in H.
+Ltac simplify_wfxy H := rewrite ?wfSimplifications in H.
+
 Ltac decomposeWfHyps :=
   repeat (
     match goal with
-    | [H: _ |- _] => (
-        rewrite -?wfxy00_wf in H;
-        rewrite !wfSimplifications in H
-      )
+    | [H : well_formed _ |- _]
+      => towfxy H
+    | [H : well_formed_xy _ _ _ |- _]
+      => simplify_wfxy H
     end
   )
 .
@@ -88,12 +91,19 @@ Tactic Notation "wf_auto" int_or_var(n)
   := auto n; unfold well_formed, well_formed_closed in *; destruct_and?; simpl in *; split_and?; auto n.
 Tactic Notation "wf_auto" := wf_auto 5.
 
-Ltac2 mutable hook_wfauto
+(* This hook is specifically intended to be filled with a tactic which
+   transforms provability hypotheses into well_formedness hypotheses.
+   We call it early, before any goal splitting is done,
+   so that it is not called for all the subgoals again and again.
+ *)
+Ltac2 mutable proved_hook_wfauto
 := (fun () => () (* Message.print (Message.of_string "hook_wfauto base") *)).
+
+(* We give a name to the wrapper so that it is shown in the profile (when profiling). *)
+Ltac proved_hook_wfauto := ltac2:(|- proved_hook_wfauto ()).
 
 Ltac wf_auto2_step := 
   first [
-  progress ltac2:(|- hook_wfauto ())|
   progress unfold
     is_true,
     well_formed,
@@ -106,14 +116,19 @@ Ltac wf_auto2_step :=
     in *|
   assumption|
   reflexivity|
-  progress decomposeWfGoal|
+  progress proved_hook_wfauto|
   progress decomposeWfHyps|
   progress destruct_and?|
-  progress split_and?|
   progress simpl in *|
   progress subst|
   progress propagateTrueInGoal|
   progress propagateTrueInHyps|
+  (* I do not want to do all the heavy multiple times, once for each subgoal.
+     First, decompose all the hypotheses. Then we may start
+     decomposing and splitting the goal.
+  *)
+  progress decomposeWfGoal|
+  progress split_and?|
   congruence|
   btauto|
   apply bevar_subst_closed_mu|
