@@ -691,7 +691,18 @@ Proof.
   { apply gimpg'. }
   eapply MP.
   { apply H. }
-  apply reorder_meta;[wf_auto2|wf_auto2|wf_auto2|].
+  apply reorder_meta.
+  {
+    wf_auto2.
+  }
+  {
+    wf_auto2.
+  }
+  Search well_formed foldr.
+  ;[wf_auto2|wf_auto2|wf_auto2|].
+  {
+
+  }
   apply useBasicReasoning.
   apply prf_weaken_conclusion_iter.
   all: wf_auto2.

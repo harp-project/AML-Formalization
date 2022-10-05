@@ -102,6 +102,30 @@ Ltac2 mutable proved_hook_wfauto
 (* We give a name to the wrapper so that it is shown in the profile (when profiling). *)
 Ltac proved_hook_wfauto := ltac2:(|- proved_hook_wfauto ()).
 
+Lemma well_formed_foldr_binary
+  {Σ : Signature}
+  (binary : Pattern -> Pattern -> Pattern)
+  {_bin : Binary binary}
+  (g : Pattern)
+  (xs : list Pattern)
+  :
+  well_formed (foldr binary g xs)
+  = (well_formed g && wf xs).
+Proof.
+  induction xs; simpl.
+  {
+    unfold wf. simpl. rewrite andb_true_r. reflexivity.
+  }
+  {
+    unfold wf in *. simpl.
+    rewrite -!wfxy00_wf.
+    rewrite -wfxy00_wf in IHxs.
+    rewrite binary_wf.
+    rewrite IHxs.
+    rewrite -!wfxy00_wf.
+    btauto.
+  }
+Qed.
 (*Ltac destruct_and_where_*)
 
 Ltac wf_auto2_step := 
