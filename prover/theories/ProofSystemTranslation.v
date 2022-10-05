@@ -4936,7 +4936,6 @@ Fixpoint rename {Σ : Signature}
     }
   Abort.
 
-  
   Lemma normalize2_good {Σ : Signature} (nϕ1 nϕ2 : NamedPattern) evs defe svs defs R R':
   maxEdepth nϕ1 <= length evs ->
   maxSdepth nϕ1 <= length svs ->
@@ -4961,7 +4960,15 @@ Fixpoint rename {Σ : Signature}
         remember ((normalize2 evs defe svs defs t)) as t'.
         remember ((normalize2 evs defe svs defs u)) as u'.
         remember (nth (maxEdepth u) evs defe) as n.
-        
+        (* 1) x, and y come from the ∃ binders in the original nϕ1 and nϕ2
+           2) they potentially occur in t and u both as bound and free
+           3) from 1) : x, y ∉ evs
+           4) from 3) x (and y) do not occur as bound in t' (and u')
+              (they potentially occur in t' and u' as free though)
+           5) rename_free_evar behaves as rename_all_evars because of 4)
+        *)
+        Print myeq'.
+        Print pb_update.
       }
     rewrite IHalpha_equiv'. 1,2,3,4: lia. f_equal. }
   Qed.
