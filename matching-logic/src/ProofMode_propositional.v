@@ -662,11 +662,6 @@ Proof.
     eapply syllogism_meta.
     5: eapply prf_weaken_conclusion.
     4: apply IHl.
-    {
-      wf_auto2_step.
-      wf_auto2_step.
-      wf_auto2_step.
-    }
     all: wf_auto2.
 Defined.
 

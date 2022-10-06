@@ -389,9 +389,9 @@ generalize dependent n. generalize dependent n'. generalize dependent psi.
 induction phi; intros psi n' H n'' H0; try lia; auto.
 - simpl in *. unfold well_formed_closed_mu_aux. repeat case_match; simpl; auto.
 - simpl. simpl in H.
-  rewrite IHphi1; auto. 2: rewrite IHphi2; auto. all: destruct_and!; auto.
+  rewrite IHphi1; auto with nocore. 2: rewrite IHphi2; auto. all: destruct_and!; auto.
 - simpl. simpl in H. destruct_and!.
-  rewrite IHphi1; auto. rewrite IHphi2; auto.
+  rewrite IHphi1; auto with nocore. rewrite IHphi2; auto.
 - simpl. simpl in H. rewrite IHphi. assumption. 2: reflexivity.
   eauto using well_formed_closed_ex_aux_ind.
 - simpl. simpl in H.
@@ -492,9 +492,9 @@ induction phi; intros psi n0 n' H Hwf1 Hwf2; try lia; auto.
 - simpl. case_match; auto. simpl. case_match; try lia.
   simpl in Hwf1. case_match; try lia. simpl. case_match; lia.
 - simpl. simpl in H. simpl in Hwf1. apply andb_true_iff in Hwf1 as [H1 H2].
-  rewrite (IHphi1 _ _ n'); auto. rewrite (IHphi2 _ _ n'); auto.
+  rewrite (IHphi1 _ _ n'); auto with nocore. rewrite (IHphi2 _ _ n'); auto.
 - simpl. simpl in H. simpl in Hwf1. apply andb_true_iff in Hwf1 as [H1 H2].
-  rewrite (IHphi1 _ _ n'); auto. rewrite (IHphi2 _ _ n'); auto.
+  rewrite (IHphi1 _ _ n'); auto with nocore. rewrite (IHphi2 _ _ n'); auto.
 - simpl. simpl in Hwf1. rewrite (IHphi _ _ n'); auto.
 - simpl. simpl in Hwf1. rewrite (IHphi _ _ (S n')); auto. lia.
   eapply well_formed_closed_mu_aux_ind. 2: eassumption. lia.
@@ -511,9 +511,9 @@ induction phi; intros psi n0 n' H Hwf1 Hwf2; try lia; auto.
 - simpl. case_match; auto. simpl. case_match; try lia.
   simpl in Hwf1. case_match; try lia. simpl. case_match; lia.
 - simpl. simpl in H. simpl in Hwf1. apply andb_true_iff in Hwf1 as [H1 H2].
-  rewrite (IHphi1 _ _ n'); auto. rewrite (IHphi2 _ _ n'); auto.
+  rewrite (IHphi1 _ _ n'); auto with nocore. rewrite (IHphi2 _ _ n'); auto.
 - simpl. simpl in H. simpl in Hwf1. apply andb_true_iff in Hwf1 as [H1 H2].
-  rewrite (IHphi1 _ _ n'); auto. rewrite (IHphi2 _ _ n'); auto.
+  rewrite (IHphi1 _ _ n'); auto with nocore. rewrite (IHphi2 _ _ n'); auto.
 - simpl. simpl in Hwf1. rewrite (IHphi _ _ (S n')); auto. lia.
   eapply well_formed_closed_ex_aux_ind. 2: eassumption. lia.
 - simpl. simpl in Hwf1. rewrite (IHphi _ _ n'); auto.
@@ -585,23 +585,23 @@ with no_pos_occ_db_bevar_subst  phi psi dbi1 dbi2:
    no_positive_occurrence_db_b dbi1 (phi^[evar: dbi2 ↦ psi]) = true.
 Proof.
 - move: dbi1 dbi2.
-induction phi; intros dbi1 dbi2 Hwfcpsi Hnonegphi; cbn in *; auto.
+induction phi; intros dbi1 dbi2 Hwfcpsi Hnonegphi; cbn in *; auto with nocore.
 + case_match; auto. now apply wfc_impl_no_neg_occ.
 + destruct_and!.
 rewrite -> IHphi1, -> IHphi2; auto.
 + destruct_and!.
 fold (no_positive_occurrence_db_b dbi1 (phi1^[evar: dbi2 ↦ psi]) ).
-rewrite no_pos_occ_db_bevar_subst; auto.
+rewrite no_pos_occ_db_bevar_subst; auto with nocore.
 rewrite -> IHphi2; auto.
 - move: dbi1 dbi2.
-induction phi; intros dbi1 dbi2 Hwfcpsi Hnonegphi; cbn in *; auto.
+induction phi; intros dbi1 dbi2 Hwfcpsi Hnonegphi; cbn in *; auto with nocore.
 + repeat case_match; auto.
 apply wfc_impl_no_pos_occ. assumption.
 + destruct_and!.
 rewrite -> IHphi1, -> IHphi2; auto.
 + destruct_and!.
 fold (no_negative_occurrence_db_b dbi1 (phi1^[evar: dbi2 ↦ psi]) ).
-rewrite no_neg_occ_db_bevar_subst; auto.
+rewrite no_neg_occ_db_bevar_subst; auto with nocore.
 rewrite -> IHphi2; auto.
 Qed.
 
@@ -612,12 +612,13 @@ well_formed_positive φ = true ->
 well_formed_positive ψ = true ->
 well_formed_positive (φ^[evar: n ↦ ψ])  = true.
 Proof.
-induction φ; intros ψ n' H0 H1 H2; cbn in *; auto.
+induction φ; intros ψ n' H0 H1 H2; cbn in *; auto with nocore.
 * break_match_goal; auto.
 * destruct_and!. rewrite -> IHφ1, -> IHφ2; auto.
 * destruct_and!. rewrite -> IHφ1, -> IHφ2; auto.
 * destruct_and!.
-rewrite IHφ; auto.
+rewrite IHφ; auto with nocore.
+rewrite andb_true_r.
 rewrite no_neg_occ_db_bevar_subst; auto.
 Qed.
 
@@ -642,7 +643,7 @@ induction phi; intros n' H; cbn; auto.
 - destruct (decide (x = x0)); subst; simpl.
 + break_match_goal; auto; lia.
 + reflexivity.
-- simpl in *. repeat case_match; simpl; auto; try lia; congruence.
+- simpl in *. repeat case_match; simpl; auto with nocore; try lia; congruence.
 - cbn in H. simpl. unfold evar_open, evar_quantify in IHphi1, IHphi2.
 apply andb_true_iff in H.
 destruct H as [H1 H2].
@@ -2229,15 +2230,17 @@ Lemma wfc_mu_free_svar_subst level ϕ ψ X:
 Proof.
   intros Hϕ Hψ.
   move: level Hϕ Hψ.
-  induction ϕ; intros level Hϕ Hψ; simpl in *; auto.
+  induction ϕ; intros level Hϕ Hψ; simpl in *; auto with nocore.
   - case_match; [|reflexivity].
     assumption.
   - destruct_and!.
-    rewrite IHϕ1; auto.
-    rewrite IHϕ2; auto.
+    rewrite IHϕ1; auto with nocore.
+    rewrite IHϕ2; auto with nocore.
+    reflexivity.
   - destruct_and!.
-    rewrite IHϕ1; auto.
-    rewrite IHϕ2; auto.
+    rewrite IHϕ1; auto with nocore.
+    rewrite IHϕ2; auto with nocore.
+    reflexivity.
   - rewrite IHϕ; auto. eapply well_formed_closed_mu_aux_ind. 2: exact Hψ. lia.
 Qed.
 
@@ -2252,11 +2255,13 @@ Proof.
   - case_match; [|reflexivity].
     assumption.
   - destruct_and!.
-    rewrite IHϕ1; auto.
-    rewrite IHϕ2; auto.
+    rewrite IHϕ1; auto with nocore.
+    rewrite IHϕ2; auto with nocore.
+    reflexivity.
   - destruct_and!.
-    rewrite IHϕ1; auto.
-    rewrite IHϕ2; auto.
+    rewrite IHϕ1; auto with nocore.
+    rewrite IHϕ2; auto with nocore.
+    reflexivity.
   - rewrite IHϕ; auto. eapply well_formed_closed_ex_aux_ind. 2: exact Hψ. lia.
 Qed.
 
@@ -2271,11 +2276,13 @@ Proof.
   - case_match; [|reflexivity].
     repeat case_match; auto.
   - destruct_and!.
-    rewrite IHϕ1; auto.
-    rewrite IHϕ2; auto.
+    rewrite IHϕ1; auto with nocore.
+    rewrite IHϕ2; auto with nocore.
+    reflexivity.
   - destruct_and!.
-    rewrite IHϕ1; auto.
-    rewrite IHϕ2; auto.
+    rewrite IHϕ1; auto with nocore.
+    rewrite IHϕ2; auto with nocore.
+    reflexivity.
   - rewrite IHϕ; auto. eapply well_formed_closed_ex_aux_ind. 2: exact Hψ. lia.
 Qed.
 
@@ -2290,11 +2297,13 @@ induction ϕ; intros level Hϕ Hψ; simpl in *; auto.
 - case_match; [|reflexivity].
   assumption.
 - destruct_and!.
-  rewrite IHϕ1; auto.
-  rewrite IHϕ2; auto.
+  rewrite IHϕ1; auto with nocore.
+  rewrite IHϕ2; auto with nocore.
+  reflexivity.
 - destruct_and!.
-  rewrite IHϕ1; auto.
-  rewrite IHϕ2; auto.
+  rewrite IHϕ1; auto with nocore.
+  rewrite IHϕ2; auto with nocore.
+  reflexivity.
 - apply IHϕ; auto.
   eapply well_formed_closed_mu_aux_ind.
   2: eassumption. lia.
@@ -2432,7 +2441,7 @@ Lemma wfc_ex_aux_S_bevar_subst_fe k ϕ x:
   well_formed_closed_ex_aux ϕ (S k) = true.  
 Proof.
   intros H. move: k H.
-  induction ϕ; intros k H; simpl in *; auto.
+  induction ϕ; intros k H; simpl in *; auto with nocore.
   { repeat case_match; auto; try lia. simpl in H. case_match; lia. }
   { destruct_and!. rewrite IHϕ1;[assumption|]. rewrite IHϕ2;[assumption|]. reflexivity. }
   { destruct_and!. rewrite IHϕ1;[assumption|]. rewrite IHϕ2;[assumption|]. reflexivity. }

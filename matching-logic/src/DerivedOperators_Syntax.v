@@ -229,12 +229,15 @@ Qed.
        simpl. reflexivity.
      Defined.
      Next Obligation.
-       intros x y ψ.
-       unfold patt_not.
-       rewrite !(nullary_wf,unary_wf,binary_wf,andb_true_r).
-       reflexivity.
-     Defined.
-
+      intros. wf_auto2.
+     Qed.
+     Next Obligation.
+      intros. wf_auto2.
+      Qed.
+    Next Obligation.
+      intros. wf_auto2.
+    Qed.
+     
     #[global]
      Program Instance NVNullary_top : Nullary patt_top := {}.
      Next Obligation.
@@ -243,8 +246,14 @@ Qed.
        simpl. reflexivity.
      Defined.
      Next Obligation.
-       wf_auto2.
-     Defined.
+      intros. wf_auto2.
+     Qed.
+     Next Obligation.
+      intros. wf_auto2.
+      Qed.
+    Next Obligation.
+      intros. wf_auto2.
+    Qed.
 
     #[global]
      Program Instance Binary_or : Binary patt_or := {}.
@@ -254,8 +263,14 @@ Qed.
        simpl. reflexivity.
      Defined.
      Next Obligation.
-       intros ψ1 ψ2 Wfψ1 Wfψ2. wf_auto2.
-     Defined.
+      intros. wf_auto2.
+     Qed.
+     Next Obligation.
+      intros. wf_auto2.
+      Qed.
+    Next Obligation.
+      intros. wf_auto2.
+    Qed.
 
     #[global]
      Program Instance Binary_and : Binary patt_and := {}.
@@ -265,8 +280,14 @@ Qed.
        simpl. reflexivity.
      Defined.
      Next Obligation.
-       intros ψ1 ψ2 Wfψ1 Wfψ2. wf_auto2.
-     Defined.
+      intros. wf_auto2.
+     Qed.
+     Next Obligation.
+      intros. wf_auto2.
+      Qed.
+    Next Obligation.
+      intros. wf_auto2.
+    Qed.
 
     #[global]
      Program Instance Binary_iff : Binary patt_iff := {}.
@@ -276,8 +297,14 @@ Qed.
        simpl. reflexivity.
      Defined.
      Next Obligation.
-       intros ψ1 ψ2 Wfψ1 Wfψ2. wf_auto2.
-     Defined.
+      intros. wf_auto2.
+     Qed.
+     Next Obligation.
+      intros. wf_auto2.
+      Qed.
+    Next Obligation.
+      intros. wf_auto2.
+    Qed.
 
     #[global]
      Program Instance EBinder_forall : EBinder patt_forall := {}.

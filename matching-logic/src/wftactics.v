@@ -22,13 +22,16 @@ Set Default Proof Mode "Classic".
 
 
 Definition wfSimplifications := (
-  @well_formed_xy_foldr_binary,
+  @wf_corr,
+  @well_formed_positive_foldr_binary,
+  @well_formed_cex_foldr_binary,
+  @well_formed_cmu_foldr_binary,
   @nullary_wfp,
   @nullary_wfcex,
   @nullary_wfcmu,
   @unary_wfp,
   @unary_wfcex,
-  @unary_wfxmu,
+  @unary_wfcmu,
   @binary_wfp,
   @binary_wfcex,
   @binary_wfcmu,

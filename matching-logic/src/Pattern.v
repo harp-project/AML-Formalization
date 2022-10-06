@@ -1,5 +1,7 @@
 From Coq Require Import ssreflect ssrfun ssrbool.
 
+From Coq Require Import Btauto.
+
 From stdpp Require Import countable infinite.
 From stdpp Require Import pmap gmap mapset fin_sets propset.
 Require Import stdpp_ext.
@@ -571,8 +573,6 @@ Proof.
   unfold well_formed,well_formed_closed. split_and!; assumption.
 Qed.
 
-Definition wf {Σ : Signature} (l : list Pattern) := fold_right andb true (map well_formed l).
-
 Definition lwf_positive {Σ : Signature} (l : list Pattern)
   := fold_right andb true (map well_formed_positive l).
 
@@ -582,6 +582,20 @@ Definition lwf_cmu {Σ : Signature} n (l : list Pattern)
 Definition lwf_cex {Σ : Signature} n (l : list Pattern)
   := fold_right andb true (map (fun p => well_formed_closed_ex_aux p n) l).
 
+Definition wf {Σ : Signature} (l : list Pattern) := fold_right andb true (map well_formed l).
+
+Lemma wf_corr {Σ : Signature} (l : list Pattern) :
+  wf l = lwf_positive l && lwf_cmu 0 l && lwf_cex 0 l
+.
+Proof.
+  unfold wf,lwf_positive,lwf_cmu,lwf_cex,well_formed,well_formed_closed.
+  induction l; simpl.
+  { reflexivity. }
+  {
+    rewrite IHl.
+    btauto.
+  }
+Qed.
 
 (* TODO: maybe generalize to any connective? *)
 Lemma well_formed_foldr {Σ : Signature} g xs :
