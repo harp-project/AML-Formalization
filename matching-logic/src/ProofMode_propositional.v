@@ -60,7 +60,6 @@ Arguments P1 {Σ} _ (_%ml) (_%ml) _ _ .
 Arguments P2 {Σ} _ (_%ml) (_%ml) (_%ml) _ _ _.
 Arguments P3 {Σ} _ (_%ml) _.
 
-Set Ltac Profiling.
 Lemma P4m  {Σ : Signature}(Γ : Theory) (A B : Pattern) :
   well_formed A ->
   well_formed B ->
@@ -92,12 +91,10 @@ Proof.
     wf_auto2.
   }
   *)
-  Set Ltac Profiling.
-  Reset Ltac Profile.
+
   
   pose proof (H6 := (P2 Γ (A ---> B) ((A ---> B ---> Bot) ---> A ---> B) ((A ---> B ---> Bot) ---> A ---> Bot)
     ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2))).
-  Show Ltac Profile.
   pose proof (H7 := MP H5 H6).
   pose proof (H8 := (P1 Γ (A ---> B) (A ---> B ---> Bot) ltac:(wf_auto2) ltac:(wf_auto2))).
   pose proof (H9 := MP H8 H7).
@@ -2875,7 +2872,6 @@ Ltac2 rec fillWithUnderscoresAndCall
     end
   end
 .
-Show Ltac Profile.
 
 (*
   We have this double-primed version because we want to be able

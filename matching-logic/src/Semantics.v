@@ -1320,7 +1320,9 @@ Section with_model.
           rewrite <- He1e1'.
           subst phi1'.
           rewrite -> evar_open_bsvar_subst.
-          2: { wf_auto2. }
+          2: { 
+            wf_auto2.
+          }
 
           assert (HXu: (Xfr1 = Xu)).
           { subst Xfr1. subst Xu. unfold fresh_evar.

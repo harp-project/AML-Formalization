@@ -121,7 +121,7 @@ Ltac fastWfSimpl H :=
     lazymatch goal with
     | [ |- context [x]]
       => idtac "Simplifying goal with" x;
-      rewrite !H; simpl; try reflexivity
+      try assumption; rewrite !H; simpl; try reflexivity
     | _ => idtac
     end
   | _ => idtac
@@ -202,8 +202,91 @@ Ltac clear_all_impls :=
     end
   ).
 
+Ltac solve_size :=
+  repeat (
+  match goal with
+  | [ |- size' (evar_open _ _ _) < _ ]
+    => rewrite evar_open_size'
+
+  | [ |- size' (svar_open _ _ _) < _ ]
+    => rewrite svar_open_size'
+
+  | [ |- size' _ < size' (patt_app _ _) ]
+    => simpl; lia
+
+  | [ |- size' _ < size' (patt_imp _ _) ]
+    => simpl; lia
+
+  | [ |- size' _ < size' (patt_exists _) ]
+    => simpl; lia
+  end
+  )
+.
+
+Ltac wf_auto2_step :=
+  try assumption;
+  try reflexivity;
+  try congruence;
+  try btauto;
+  try solve_size;
+  unfold
+    is_true,
+    well_formed,
+    well_formed_closed,
+    well_formed_xy,
+    evar_open,
+    svar_open,
+    free_evar_subst,
+    free_evar_subst
+    in *;
+  simpl in *;
+  try assumption;
+  try reflexivity;
+  proved_hook_wfauto;
+  decomposeWfHyps;
+  (destruct_andb? ;{ fastWfSimpl });
+  simpl in *;
+  subst;
+  simpl in *;
+  try assumption;
+  try reflexivity;
+  try first [
+  apply bevar_subst_closed_mu|
+  apply bevar_subst_closed_ex|
+  apply bevar_subst_positive_2|
+  apply evar_quantify_closed_ex|
+  apply svar_quantify_closed_ex|
+  apply evar_quantify_closed_mu|
+  apply svar_quantify_closed_mu|
+  apply wfp_free_svar_subst_1|
+  apply wfc_mu_free_svar_subst|
+  apply wfc_ex_free_svar_subst|
+  apply wp_sctx|
+  apply wcmu_sctx|
+  apply wcex_sctx|
+  apply wfp_bsvar_subst|
+  apply wfc_mu_aux_bsvar_subst|
+  apply wfc_ex_aux_bsvar_subst
+  ];
+  try (lazymatch goal with
+  | [ H : well_formed_closed_ex_aux ?p _ = true |- well_formed_closed_ex_aux ?p (S ?n) = true ]
+    => eapply well_formed_closed_ex_aux_ind;[|apply H]; lia
+
+    (* last option for well_formed_closed_mu_aux: try decreasing n *)
+  | [ H : well_formed_closed_mu_aux ?p _ = true |- well_formed_closed_mu_aux ?p (S ?n) = true ]
+    => eapply well_formed_closed_mu_aux_ind;[|apply H]; lia
+  end);
+  try decomposeWfGoal;
+  split_and?
+.
+Ltac wf_auto2 :=
+  repeat wf_auto2_step
+.
+(*
 Ltac wf_auto2_step := 
   first [
+    assumption|
+    reflexivity|
     progress clear_all_impls|
   progress unfold
     is_true,
@@ -403,7 +486,7 @@ Ltac wf_auto2 :=
     wf_auto2_step
   )
 .
-
+*)
 Ltac try_wfauto2 :=
 lazymatch goal with
 | [|- is_true (well_formed _)] => wf_auto2
