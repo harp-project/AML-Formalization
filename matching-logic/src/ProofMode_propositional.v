@@ -2875,6 +2875,7 @@ Ltac2 rec fillWithUnderscoresAndCall
     end
   end
 .
+Show Ltac Profile.
 
 (*
   We have this double-primed version because we want to be able

@@ -412,7 +412,7 @@ Qed.
      among the other hypotheses.
    *)
   Ltac destruct_andb_go_wrapper H :=
-    repeat rewrite -> andb_assoc in H;
+    (*repeat rewrite -> andb_assoc in H;*)
     destruct_andb_go H
   .
   
