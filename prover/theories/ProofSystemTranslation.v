@@ -3994,10 +3994,10 @@ Fixpoint rename {Σ : Signature}
     (R' : PartialBijection svar)
     : relation NamedPattern
     :=
-    | me_evar (x : evar)
-      : myeq' R R' (npatt_evar x) (npatt_evar x)
-    | me_svar (X : svar)
-      : myeq' R R' (npatt_svar X) (npatt_svar X)
+    | me_evar (x : evar) (y : evar) (pf : (x, y) ∈ pbr R)
+      : myeq' R R' (npatt_evar x) (npatt_evar y)
+    | me_svar (X : svar) (Y : svar) (pf : (X, Y) ∈ pbr R')
+      : myeq' R R' (npatt_svar X) (npatt_svar Y)
     | me_app
       (t t' u u' : NamedPattern)
       (tEt' : myeq' R R' t t')
@@ -4010,22 +4010,18 @@ Fixpoint rename {Σ : Signature}
       : myeq' R R' (npatt_imp t u) (npatt_imp t' u')
     | me_bott : myeq' R R' npatt_bott npatt_bott
     | me_sym (s : symbols) : myeq' R R' (npatt_sym s) (npatt_sym s) 
-    | me_ex (x y z : evar) (t u : NamedPattern)
-      (tEu : myeq' R R' (rename_free_evar t x z) (rename_free_evar u y z))
-      (xRy : (x, y) ∈ (pbr R)) (Hfz1 : z ∉ named_evars t) (Hfz1 : z ∉ named_evars u)
-      : myeq' R R'
-        (npatt_exists x t)
-        (npatt_exists y u)
-    | me_mu (X Y Z: svar) (t u : NamedPattern)
-    (tEu : myeq' R R' (rename_free_svar t X Z) (rename_free_svar u Y Z))
-    (xRy : (X, Y) ∈ (pbr R')) (Hfz1 : Z ∉ named_svars t) (Hfz1 : Z ∉ named_svars u)
+    | me_ex (x : evar) (t u : NamedPattern)
+      (pf : myeq' (pb_update R x x) R' t u)
+      : myeq' R R' (npatt_exists x t) (npatt_exists x u)
+    | me_mu (X : svar) (t u : NamedPattern)
+      (pf : myeq' R (pb_update R' X X) t u)
       : myeq' R R'
         (npatt_mu X t)
-        (npatt_mu Y u)
+        (npatt_mu X u)
   .
 
 
-  Lemma rename_inj {Σ : Signature} t u x y :
+  Lemma rename_evar_inj {Σ : Signature} t u x y :
     y ∉ named_evars t ->
     y ∉ named_evars u ->
     rename_free_evar t x y = rename_free_evar u x y ->
@@ -4036,31 +4032,85 @@ Fixpoint rename {Σ : Signature}
       try set_solver.
   Qed.
 
+  Lemma rename_svar_inj {Σ : Signature} t u X Y :
+    Y ∉ named_svars t ->
+    Y ∉ named_svars u ->
+    rename_free_svar t X Y = rename_free_svar u X Y->
+    t = u.
+  Proof.
+    move: u X Y. induction t; simpl; intros u X0 Y0 H Hf1 Hf2; destruct u; subst;
+      repeat case_match; subst; simpl in *; repeat case_match; subst; try congruence;
+      try set_solver.
+  Qed.
+
+  Lemma pb_update_diagonal
+    {A : Type} {_ : EqDecision A} {_ : Countable A} (R : gset A) x :
+      pb_update (diagonal R) x x = diagonal (R ∪ {[x]}).
+  Proof.
+    unfold diagonal, pb_update; simpl.
+    apply pb_eq_dep.
+    unfold unrelated, related. simpl.
+    apply leibniz_equiv.
+    split; intro H.
+    * rewrite elem_of_union in H.
+      rewrite elem_of_singleton elem_of_filter in H.
+      rewrite -> elem_of_map in *.
+      unfold twice in *.
+      setoid_rewrite elem_of_union.
+      setoid_rewrite elem_of_singleton.
+      naive_solver.
+    * rewrite elem_of_union.
+      rewrite elem_of_singleton elem_of_filter.
+      rewrite -> elem_of_map in *.
+      unfold twice in *.
+      setoid_rewrite elem_of_union in H.
+      setoid_rewrite elem_of_singleton in H.
+      destruct H as [? [? ?]]. subst. simpl.
+      destruct (X x1 x); naive_solver.
+  Qed.
+
+Require Import Equality.
+
   Lemma myeq'_eq {Σ : Signature} (p q : NamedPattern) R R':
     myeq' (diagonal R) (diagonal R') p q ->
     p = q
   .
   Proof.
     intros H.
-    induction H; try solve [subst; reflexivity].
+    dependent induction H; try solve [subst; reflexivity].
     {
-      unfold diagonal in xRy. simpl in xRy.
-      rewrite elem_of_map in xRy.
-      destruct xRy as [X0 [H1X0 H2X0]].
+      unfold diagonal in pf. simpl in pf.
+      rewrite elem_of_map in pf.
+      destruct pf as [X0 [H1X0 H2X0]].
       inversion H1X0. subst. clear H1X0.
-      f_equal. apply rename_inj in IHmyeq'; assumption.
+      f_equal.
     }
     {
-      unfold diagonal in XRY. simpl in XRY.
-      rewrite elem_of_map in XRY.
-      destruct XRY as [X0 [H1X0 H2X0]].
+      unfold diagonal in pf. simpl in pf.
+      rewrite elem_of_map in pf.
+      destruct pf as [X0 [H1X0 H2X0]].
       inversion H1X0. subst. clear H1X0.
-      reflexivity.
+      f_equal.
+    }
+    {
+      naive_solver.
+    }
+    {
+      naive_solver.
+    }
+    {
+      f_equal. eapply (IHmyeq' (R ∪ {[x]}) R').
+      { apply pb_update_diagonal. }
+      { reflexivity. }
+    }
+    {
+      f_equal. eapply (IHmyeq' R (R' ∪ {[X]})).
+      { reflexivity. }
+      { apply pb_update_diagonal. }
     }
   Qed.
 
 
-    
   Fixpoint maxEdepth {Σ : Signature} (nϕ : NamedPattern) : nat
   :=
   match nϕ with
@@ -4094,7 +4144,7 @@ Fixpoint rename {Σ : Signature}
       | npatt_mu X nϕ'
         => S (maxSdepth nϕ')
       end.
-    
+
     Fixpoint evar_shadowing_happens {Σ : Signature} (evs : EVarSet) (nϕ : NamedPattern)
     : Prop
     :=
@@ -4205,8 +4255,8 @@ Fixpoint rename {Σ : Signature}
   Qed.
 
   Lemma maxSdepth_ae {Σ : Signature} (nϕ1 nϕ2 : NamedPattern) R R':
-  alpha_equiv' R R' nϕ1 nϕ2 ->
-  maxSdepth nϕ1 = maxSdepth nϕ2
+    alpha_equiv' R R' nϕ1 nϕ2 ->
+    maxSdepth nϕ1 = maxSdepth nϕ2
   .
   Proof.
     intros H.
@@ -4440,15 +4490,15 @@ Fixpoint rename {Σ : Signature}
   (* If used properly, normalize2 will not use use evars from the far end of the list *)
 
   Lemma bound_evars_normalize2_monotone 
-  {Σ : Signature}
-  (evs : list evar) (defe : evar)
-  (svs : list svar) (defs : svar)
-  (nϕ1 nϕ2 : NamedPattern)
-  :
-  maxEdepth nϕ2 = length evs ->
-  maxEdepth nϕ1 <= maxEdepth nϕ2 ->
-  bound_evars (normalize2 evs defe svs defs nϕ1)
-  ⊆ bound_evars (normalize2 evs defe svs defs nϕ2)
+    {Σ : Signature}
+    (evs : list evar) (defe : evar)
+    (svs : list svar) (defs : svar)
+    (nϕ1 nϕ2 : NamedPattern)
+    :
+    maxEdepth nϕ2 = length evs ->
+    maxEdepth nϕ1 <= maxEdepth nϕ2 ->
+    bound_evars (normalize2 evs defe svs defs nϕ1)
+    ⊆ bound_evars (normalize2 evs defe svs defs nϕ2)
   .
   Proof.
     induction nϕ1; simpl in *; intros Hevs Hdepth; try set_solver.
@@ -4672,10 +4722,10 @@ Fixpoint rename {Σ : Signature}
   Qed.
 
   Lemma normalize2_uses_only_evars_from_evs
-  {Σ : Signature}
-  (evs : list evar) (defe : evar)
-  (svs : list svar) (defs : svar)
-  (nϕ : NamedPattern)
+    {Σ : Signature}
+    (evs : list evar) (defe : evar)
+    (svs : list svar) (defs : svar)
+    (nϕ : NamedPattern)
   :
     maxEdepth nϕ ≤ length evs ->
     bound_evars (normalize2 evs defe svs defs nϕ) ⊆ list_to_set evs
@@ -4757,16 +4807,163 @@ Fixpoint rename {Σ : Signature}
     }
   Qed.
 
+  Lemma pb_update_shadow {A : Type} {_ : EqDecision A} {_ : Countable A} (R : PartialBijection A) x1 y1 x2 y2:
+    x1 = x2 \/ y1 = y2 ->
+    pb_update (pb_update R x1 y1) x2 y2 = pb_update R x2 y2.
+  Proof.
+    intro H.
+    apply pb_eq_dep.
+    unfold pb_update, unrelated, related.
+    simpl. destruct H; subst.
+    * apply leibniz_equiv. split.
+      - intro. set_solver.
+      - intro. rewrite elem_of_union elem_of_filter in H.
+        destruct H.
+          2: set_solver.
+          destruct H. apply elem_of_union_l. rewrite elem_of_filter. split; auto. apply elem_of_union_l. rewrite elem_of_filter.
+Qed.
+
+  Lemma rename_free_evar_noop {Σ : Signature} φ (x : evar) :
+    rename_free_evar φ x x = φ.
+  Proof.
+    induction φ; simpl; try set_solver.
+    * case_match; now subst.
+    * now rewrite IHφ1 IHφ2.
+    * now rewrite IHφ1 IHφ2.
+    * case_match. reflexivity.
+      now rewrite IHφ.
+    * now rewrite IHφ.
+  Qed.
+
+  Lemma rename_free_svar_noop {Σ : Signature} φ (X : svar) :
+    rename_free_svar φ X X = φ.
+  Proof.
+    induction φ; simpl; try set_solver.
+    * case_match; now subst.
+    * now rewrite IHφ1 IHφ2.
+    * now rewrite IHφ1 IHφ2.
+    * now rewrite IHφ.
+    * case_match. reflexivity.
+      now rewrite IHφ.
+  Qed.
+
+  Lemma pb_update_comm {A : Type} {_ : EqDecision A} {_ : Countable A} (R : PartialBijection A) x1 y1 x2 y2:
+    x1 <> x2 -> y1 <> y2 ->
+    pb_update (pb_update R x1 y1) x2 y2 =
+    pb_update (pb_update R x2 y2) x1 y1.
+  Proof.
+    intros N1 N2.
+    apply pb_eq_dep.
+    unfold pb_update, unrelated, related. set_solver.
+  Qed.
+
+(*   Lemma pb_update_comm_under {A : Type} {_ : EqDecision A} {_ : Countable A} (R : PartialBijection A) x1 y1 x2 y2 d:
+    y1 <> y2 -> d <> x1 -> d <> x2 ->
+    pb_update (pb_update (pb_update R x1 y1) x2 y2) d d =
+    pb_update (pb_update (pb_update R x2 y2) x1 y1) d d.
+  Proof.
+    intros N1 N2 N3.
+    apply pb_eq_dep.
+    unfold pb_update, unrelated, related. set_solver.
+  Qed. *)
+
+  (* myeq' (pb_update (pb_update R x0 y) x0 x0) R' t u *)
+  Lemma pb_update_myeq_right {Σ : Signature} (x y : evar) φ ψ R R' :
+    myeq' (pb_update (pb_update R x y) x x) R' φ ψ ->
+    y <> x ->
+    y ∉ named_free_evars ψ.
+  Proof.
+    intro H. dependent induction H. 1-6, 8: simpl; try set_solver.
+    * unfold pb_update, unrelated, related in pf. simpl in pf.
+      rewrite elem_of_union in pf. intro. set_solver.
+    * intro. simpl.
+      destruct (decide (y = x0)).
+      { set_solver. }
+      { destruct (decide (x = x0)).
+        {
+          subst.
+          specialize (IHmyeq' x0 y (pb_update R x0 x0)).
+          epose proof (IHmyeq' _ n). set_solver.
+          Unshelve.
+            apply pb_eq_dep.
+            unfold pb_update, unrelated, related. set_solver.
+        }
+        {
+          specialize (IHmyeq' x y (pb_update R x0 x0)).
+          epose proof (IHmyeq' _ _).
+          Unshelve.
+          { set_solver. }
+          { rewrite (pb_update_comm (pb_update R x y)).
+            3: rewrite (pb_update_comm R).
+            all: try assumption.
+            reflexivity.
+          }
+          { assumption. }
+        }
+      }
+  Qed.
+
+  Lemma strip_pb_update_not_free_evar {Σ : Signature} t u R R' x y :
+    myeq' (pb_update R x y) R' t u ->
+    y ∉ named_free_evars u ->
+    myeq' R R' t u.
+  Proof.
+    intro H. dependent induction H; intro HIN; constructor; try set_solver.
+    { simpl in *.
+      destruct (decide (y = x0)).
+      { subst. apply pb_update_myeq_right in H.
+    }
+  Qed.
+
   Lemma meq_rename_strips_update
     {Σ : Signature}
     R R' x y z1 z2 t u:
-    (z1, z2) ∈ pbr R ->
-    x ∉ bound_evars t ->
-    y ∉ bound_evars u ->
     myeq' (pb_update R x y) R' t u ->
+    (z1, z2) ∈ pbr R ->
+(*     z1 ∉ named_evars t ->
+    z2 ∉ named_evars u -> *)
     myeq' R R' (rename_free_evar t x z1) (rename_free_evar u y z2)
   .
   Proof.
+    intro H.
+    move: z1 z2.
+    dependent induction H; intros z1 z2 HIN (* Hn1 Hn2 *); simpl.
+    {
+      simpl in *.
+      repeat case_match; subst; constructor; try assumption.
+      all: unfold unrelated, related in pf; set_solver.
+    }
+    { now constructor. }
+    { constructor; set_solver. }
+    { constructor; set_solver. }
+    { now constructor. }
+    { now constructor. }
+    {
+      repeat case_match; subst; simpl in *.
+      {
+        constructor.
+        now rewrite pb_update_shadow in H.
+      }
+      {
+        constructor.
+        apply pb_update_myeq_right in H as H'. 2: assumption.
+        (* pb_update removes all bindings -> y cannot occureither in t or u *)
+        specialize (IHmyeq' (pb_update R x0 x0) x0 y).
+      }
+    }
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     remember (pb_update R x y) as Ru.
     assert (HxyRu : (x,y) ∈ pbr Ru).
     {
@@ -4796,20 +4993,23 @@ Fixpoint rename {Σ : Signature}
     clear HeqRu.
     intros HR Hxt Hyu H.
     move: x y z1 z2 R Hxt Hyu HR HRuR HxyRu.
-    induction H; intros x' y' z1 z2 R Hxt Hyu HR HRuR Hx'y'Ru.
+    induction H; intros x' y' z1 z2 RR Hxt Hyu HR HRuR Hx'y'Ru.
     {
       simpl in *.
-      repeat case_match; subst; constructor; try set_solver.
+      repeat case_match; subst. constructor; try set_solver.
       {
         exfalso.
-        destruct Ru. simpl in *. naive_solver.
+        destruct R. simpl in *. naive_solver.
       }
       {
         exfalso.
-        destruct Ru. simpl in *. naive_solver.
+        destruct R. simpl in *. naive_solver.
       }
-      unfold unrelated,related in HRuR. simpl in HRuR.
-      set_solver.
+      {
+        constructor. apply HRuR.
+        { unfold unrelated, related. simpl. intro. naive_solver. }
+        { assumption. }
+      }
     }
     {
       simpl in *.
@@ -4818,14 +5018,14 @@ Fixpoint rename {Σ : Signature}
     }
     {
       simpl in *.
-      specialize (IHmyeq'1 x' y' z1 z2 R ltac:(set_solver) ltac:(set_solver)).
-      specialize (IHmyeq'2 x' y' z1 z2 R ltac:(set_solver) ltac:(set_solver)).
+      specialize (IHmyeq'1 x' y' z1 z2 RR ltac:(set_solver) ltac:(set_solver)).
+      specialize (IHmyeq'2 x' y' z1 z2 RR ltac:(set_solver) ltac:(set_solver)).
       constructor; auto with nocore.
     }
     {
       simpl in *.
-      specialize (IHmyeq'1 x' y' z1 z2 R ltac:(set_solver) ltac:(set_solver)).
-      specialize (IHmyeq'2 x' y' z1 z2 R ltac:(set_solver) ltac:(set_solver)).
+      specialize (IHmyeq'1 x' y' z1 z2 RR ltac:(set_solver) ltac:(set_solver)).
+      specialize (IHmyeq'2 x' y' z1 z2 RR ltac:(set_solver) ltac:(set_solver)).
       constructor; auto with nocore.
     }
     {
@@ -4838,36 +5038,31 @@ Fixpoint rename {Σ : Signature}
     }
     {
       simpl in *.
-      repeat case_match; subst; try solve [constructor; assumption].
-      3 : {
-        exfalso.
-        assert (x' = x) by (
-        destruct Ru; simpl in *; naive_solver).
-        subst. contradiction.
-      }
-      2 : {
-        exfalso.
-        assert (y' = y) by (
-        destruct Ru; simpl in *; naive_solver).
-        subst. contradiction.
-      }
-      2: {
-        constructor.
-        {
-          specialize (IHmyeq' x' y' z1 z2 R ltac:(set_solver) ltac:(set_solver)).
-          auto with nocore.
-        }
-        { apply HRuR.
-          { unfold unrelated, related. naive_solver. }
-          { assumption. }
-        }
-      }
+      repeat case_match; subst.
+      { constructor. admit. }
+      { exfalso.  }
+      1-2: exfalso; set_solver.
       {
-        set_solver.
+        constructor.
+        eapply IHmyeq'.
+        1-2: set_solver.
+        {
+          unfold pb_update, unrelated, related. simpl.
+          apply elem_of_union_l.
+          rewrite elem_of_filter.
+          
+        }
+        { set_solver. }
+        {
+          apply elem_of_union_l.
+          unfold unrelated, related.
+          rewrite elem_of_filter. set_solver.
+        }
       }
     }
     {
-      specialize (IHmyeq' x' y' z1 z2 R ltac:(set_solver) ltac:(set_solver)).
+      simpl.
+      specialize (IHmyeq' x' y' z1 z2 RR ltac:(set_solver) ltac:(set_solver)).
       constructor; auto with nocore.
     }
   Qed.
