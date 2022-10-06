@@ -400,6 +400,73 @@ Proof.
   btauto.
 Qed.
 
+Lemma well_formed_positive_foldr_binary
+  (binary : Pattern -> Pattern -> Pattern)
+  {_bin : Binary binary}
+  (g : Pattern)
+  (xs : list Pattern)
+  :
+  well_formed_positive (foldr binary g xs)
+  = (well_formed_positive g && lwf_positive xs).
+Proof.
+  induction xs; simpl.
+  {
+    unfold lwf_positive. simpl. rewrite andb_true_r. reflexivity.
+  }
+  {
+    unfold lwf_positive in *. simpl.
+    rewrite binary_wfp.
+    rewrite IHxs.
+    btauto.
+  }
+Qed.
+
+
+Lemma well_formed_cex_foldr_binary
+  (binary : Pattern -> Pattern -> Pattern)
+  {_bin : Binary binary}
+  (n : nat)
+  (g : Pattern)
+  (xs : list Pattern)
+  :
+  well_formed_closed_ex_aux (foldr binary g xs) n
+  = (well_formed_closed_ex_aux g n && lwf_cex n xs).
+Proof.
+  induction xs; simpl.
+  {
+    unfold lwf_cex. simpl. rewrite andb_true_r. reflexivity.
+  }
+  {
+    unfold lwf_cex in *. simpl.
+    rewrite binary_wfcex.
+    rewrite IHxs.
+    btauto.
+  }
+Qed.
+
+
+Lemma well_formed_cmu_foldr_binary
+  (binary : Pattern -> Pattern -> Pattern)
+  {_bin : Binary binary}
+  (n : nat)
+  (g : Pattern)
+  (xs : list Pattern)
+  :
+  well_formed_closed_mu_aux (foldr binary g xs) n
+  = (well_formed_closed_mu_aux g n && lwf_cmu n xs).
+Proof.
+  induction xs; simpl.
+  {
+    unfold lwf_cmu. simpl. rewrite andb_true_r. reflexivity.
+  }
+  {
+    unfold lwf_cmu in *. simpl.
+    rewrite binary_wfcmu.
+    rewrite IHxs.
+    btauto.
+  }
+Qed.
+
 Class EBinder (binder : Pattern -> Pattern) := {
     ebinder_morphism :
       forall {A : Type} (f : A -> Pattern -> Pattern) (f_morph : PatternMorphism f) (phi : Pattern) a,

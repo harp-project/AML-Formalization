@@ -579,55 +579,9 @@ Definition lwf_positive {Σ : Signature} (l : list Pattern)
 Definition lwf_cmu {Σ : Signature} n (l : list Pattern)
   := fold_right andb true (map (fun p => well_formed_closed_mu_aux p n) l).
 
-Definition lwf_ceu {Σ : Signature} n (l : list Pattern)
+Definition lwf_cex {Σ : Signature} n (l : list Pattern)
   := fold_right andb true (map (fun p => well_formed_closed_ex_aux p n) l).
 
-
-  Lemma well_formed_positive_foldr_binary
-  {Σ : Signature}
-  (binary : Pattern -> Pattern -> Pattern)
-  {_bin : Binary binary}
-  (g : Pattern)
-  (xs : list Pattern)
-  :
-  well_formed_positive (foldr binary g xs)
-  = (well_formed_positive g && wf xs).
-Proof.
-  induction xs; simpl.
-  {
-    unfold wf. simpl. rewrite andb_true_r. reflexivity.
-  }
-  {
-    unfold wf in *. simpl.
-    rewrite -!wfxy00_wf.
-    rewrite binary_wf.
-    rewrite IHxs.
-    btauto.
-  }
-Qed.
-
-Lemma well_formed_xy_foldr_binary
-  {Σ : Signature}
-  (binary : Pattern -> Pattern -> Pattern)
-  {_bin : Binary binary}
-  (g : Pattern)
-  (xs : list Pattern)
-  :
-  well_formed_xy 0 0 (foldr binary g xs)
-  = (well_formed_xy 0 0 g && wf xs).
-Proof.
-  induction xs; simpl.
-  {
-    unfold wf. simpl. rewrite andb_true_r. reflexivity.
-  }
-  {
-    unfold wf in *. simpl.
-    rewrite -!wfxy00_wf.
-    rewrite binary_wf.
-    rewrite IHxs.
-    btauto.
-  }
-Qed.
 
 (* TODO: maybe generalize to any connective? *)
 Lemma well_formed_foldr {Σ : Signature} g xs :
