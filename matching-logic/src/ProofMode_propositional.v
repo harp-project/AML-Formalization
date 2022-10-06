@@ -60,6 +60,7 @@ Arguments P1 {Σ} _ (_%ml) (_%ml) _ _ .
 Arguments P2 {Σ} _ (_%ml) (_%ml) (_%ml) _ _ _.
 Arguments P3 {Σ} _ (_%ml) _.
 
+Set Ltac Profiling.
 Lemma P4m  {Σ : Signature}(Γ : Theory) (A B : Pattern) :
   well_formed A ->
   well_formed B ->
@@ -77,8 +78,22 @@ Proof.
   pose proof (H4 := (P1 Γ (((A ---> B ---> Bot) ---> A ---> B) ---> (A ---> B ---> Bot) ---> A ---> Bot)
     (A ---> B) ltac:(wf_auto2) ltac:(wf_auto2))).
   pose proof (H5 := MP H3 H4).
+  (* This one is just for performance debugging purposes *)
+  unshelve (epose proof (H6 := (P2 Γ (A ---> B) ((A ---> B ---> Bot) ---> A ---> B) ((A ---> B ---> Bot) ---> A ---> Bot) _ _ _))).
+  {
+    wf_auto2_step.
+    wf_auto2_step.
+    wf_auto2_step.
+    wf_auto2_step.
+    wf_auto2_step.
+    wf_auto2_step.
+    wf_auto2.
+  }
+  (*
   pose proof (H6 := (P2 Γ (A ---> B) ((A ---> B ---> Bot) ---> A ---> B) ((A ---> B ---> Bot) ---> A ---> Bot)
     ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2))).
+    *)
+  Show Ltac Profile.
   pose proof (H7 := MP H5 H6).
   pose proof (H8 := (P1 Γ (A ---> B) (A ---> B ---> Bot) ltac:(wf_auto2) ltac:(wf_auto2))).
   pose proof (H9 := MP H8 H7).
@@ -654,7 +669,7 @@ Proof.
     5: eapply prf_weaken_conclusion.
     4: apply IHl.
     all: wf_auto2.
-Abort.
+Qed.
 
 
 Lemma prf_weaken_conclusion_iter_meta {Σ : Signature} Γ l g g' (i : ProofInfo):

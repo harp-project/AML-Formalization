@@ -85,7 +85,7 @@ Ltac decomposeWfHyps :=
   repeat (
     match goal with
     | [H : _ |- _]
-      => simplifyWfHyp
+      => simplifyWfHyp H
       (*
     | [H : well_formed_xy _ _ _ |- _]
       => simplify_wfxy H*)
