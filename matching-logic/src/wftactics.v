@@ -20,41 +20,72 @@ Require Import
 
 Set Default Proof Mode "Classic".
 
-
-Definition wfSimplifications := (
-  @wf_corr,
+Definition wfPositiveSimplifications := (
   @well_formed_positive_foldr_binary,
-  @well_formed_cex_foldr_binary,
-  @well_formed_cmu_foldr_binary,
   @nullary_wfp,
-  @nullary_wfcex,
-  @nullary_wfcmu,
   @unary_wfp,
-  @unary_wfcex,
-  @unary_wfcmu,
   @binary_wfp,
-  @binary_wfcex,
+  @wfp_evar_quan
+).
+
+Definition wfCexSimplifications := (
+  @well_formed_cex_foldr_binary,
+  @nullary_wfcex,
+  @unary_wfcex,
+  @binary_wfcex
+).
+
+Definition wfCmuSimplifications := (
+  @well_formed_cmu_foldr_binary,
+  @nullary_wfcmu,
+  @unary_wfcmu,
   @binary_wfcmu,
-  @andb_true_r,
-  @wfp_evar_quan,
   @wfcmu_evar_quan
 ).
 
+
+Definition wfSimplifications := (
+  @wf_corr,
+  @andb_true_r
+).
+
+Ltac simplifyWfHyp H :=
+  match type of H with
+  | well_formed_positive _
+    =>
+      rewrite !wfPositiveSimplifications;
+      destruct_and? H
+  | well_formed_closed_ex_aux _ _
+    =>
+      rewrite !wfCexSimplifications;
+      destruct_and? H
+  | well_formed_closed_mu_aux _ _
+    =>
+      rewrite !wfCmuSimplifications;
+      destruct_and? H
+  | _ => rewrite !wfSimplifications
+  end
+.
+
 Ltac decomposeWfGoal :=
   rewrite -?wfxy00_wf;
-  rewrite !wfSimplifications
+  rewrite !(wfPositiveSimplifications,
+            wfCexSimplifications,
+            wfCmuSimplifications,
+            wfSimplifications)
 .
 
 Ltac towfxy H := rewrite -wfxy00_wf in H.
 Ltac simplify_wfxy H := rewrite ?wfSimplifications in H.
 
-Ltac decomposeWfHyps :=
+Ltac decomposeWfHyps := 
   repeat (
     match goal with
-    | [H : well_formed _ |- _]
-      => towfxy H
+    | [H : _ |- _]
+      => simplifyWfHyp
+      (*
     | [H : well_formed_xy _ _ _ |- _]
-      => simplify_wfxy H
+      => simplify_wfxy H*)
     end
   )
 .
@@ -115,8 +146,16 @@ Ltac proved_hook_wfauto := ltac2:(|- proved_hook_wfauto ()).
 
 (*Ltac destruct_and_where_*)
 
+Ltac clear_all_impls :=
+  repeat (
+    match goal with
+    | [ H : forall _, _ |- _] => clear H
+    end
+  ).
+
 Ltac wf_auto2_step := 
   first [
+    progress clear_all_impls|
   progress unfold
     is_true,
     well_formed,
@@ -131,7 +170,7 @@ Ltac wf_auto2_step :=
   reflexivity|
   progress proved_hook_wfauto|
   progress decomposeWfHyps|
-  progress destruct_and?|
+  progress destruct_andb?|
   progress simpl in *|
   progress subst|
   progress propagateTrueInGoal|

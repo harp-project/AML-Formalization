@@ -341,3 +341,23 @@ Tactic Notation "destruct_or" "!" :=
   | _ => idtac
   end.
  
+(* A lightweight version of destruct_and *)
+  Ltac destruct_andb_go H :=
+    try lazymatch type of H with
+    | true => clear H
+    | (_ && _) = true =>
+      apply andb_true_iff in H;
+      let H1 := fresh in
+      let H2 := fresh in
+      destruct H as [ H1 H2 ];
+      destruct_and_go H1; destruct_and_go H2
+    end.
+  
+  Tactic Notation "destruct_andb" "?" ident(H) :=
+    destruct_andb_go H.
+  Tactic Notation "destruct_andb" "!" ident(H) :=
+    hnf in H; progress (destruct_andb? H).
+  Tactic Notation "destruct_andb" "?" :=
+    repeat match goal with H : _ |- _ => progress (destruct_andb? H) end.
+  Tactic Notation "destruct_andb" "!" :=
+    progress destruct_andb?.
