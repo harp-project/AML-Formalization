@@ -4209,7 +4209,8 @@ Proof.
   induction l; simpl; auto.
   simpl in wfl. apply wf_tail' in wfl as wfl'.
   cbn in wfl. apply andb_true_iff in wfl as [wfl _].
-  apply prf_conclusion; wf_auto2.
+  apply prf_conclusion; try solve [wf_auto2].
+  auto with nocore.
 Defined.
 
 Tactic Notation "mlExactMeta" uconstr(t) :=
