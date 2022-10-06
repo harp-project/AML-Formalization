@@ -222,13 +222,14 @@ Ltac solve_size :=
   end
   )
 .
-
-Ltac wf_auto2_step :=
+Ltac wf_auto2_fast_done := 
   try assumption;
   try reflexivity;
   try congruence;
-  try btauto;
-  try solve_size;
+  try btauto
+.
+
+Ltac wf_auto2_unfolds :=
   unfold
     is_true,
     well_formed,
@@ -238,18 +239,23 @@ Ltac wf_auto2_step :=
     svar_open,
     free_evar_subst,
     free_evar_subst
-    in *;
-  simpl in *;
-  try assumption;
-  try reflexivity;
+  in *
+.
+
+Ltac wf_auto2_decompose_hyps :=
   proved_hook_wfauto;
+  wf_auto2_unfolds;
+  simpl in *;
   decomposeWfHyps;
-  (destruct_andb? ;{ fastWfSimpl });
-  simpl in *;
-  subst;
-  simpl in *;
-  try assumption;
-  try reflexivity;
+  (destruct_andb? ;{ fastWfSimpl })
+.
+
+Ltac wf_auto2_step :=
+  wf_auto2_unfolds;
+  try decomposeWfGoal;
+  simpl in *; subst; simpl in *;
+  split_and?;
+  wf_auto2_fast_done;
   try first [
   apply bevar_subst_closed_mu|
   apply bevar_subst_closed_ex|
@@ -275,11 +281,12 @@ Ltac wf_auto2_step :=
     (* last option for well_formed_closed_mu_aux: try decreasing n *)
   | [ H : well_formed_closed_mu_aux ?p _ = true |- well_formed_closed_mu_aux ?p (S ?n) = true ]
     => eapply well_formed_closed_mu_aux_ind;[|apply H]; lia
-  end);
-  try decomposeWfGoal;
-  split_and?
+  end)
 .
+
 Ltac wf_auto2 :=
+  wf_auto2_fast_done;
+  repeat wf_auto2_decompose_hyps;
   repeat wf_auto2_step
 .
 (*
