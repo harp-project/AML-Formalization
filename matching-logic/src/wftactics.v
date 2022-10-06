@@ -21,34 +21,17 @@ Require Import
 Set Default Proof Mode "Classic".
 
 
-Lemma well_formed_xy_foldr_binary
-  {Σ : Signature}
-  (binary : Pattern -> Pattern -> Pattern)
-  {_bin : Binary binary}
-  (g : Pattern)
-  (xs : list Pattern)
-  :
-  well_formed_xy 0 0 (foldr binary g xs)
-  = (well_formed_xy 0 0 g && wf xs).
-Proof.
-  induction xs; simpl.
-  {
-    unfold wf. simpl. rewrite andb_true_r. reflexivity.
-  }
-  {
-    unfold wf in *. simpl.
-    rewrite -!wfxy00_wf.
-    rewrite binary_wf.
-    rewrite IHxs.
-    btauto.
-  }
-Qed.
-
 Definition wfSimplifications := (
   @well_formed_xy_foldr_binary,
-  @nullary_wf,
-  @unary_wf,
-  @binary_wf,
+  @nullary_wfp,
+  @nullary_wfcex,
+  @nullary_wfcmu,
+  @unary_wfp,
+  @unary_wfcex,
+  @unary_wfxmu,
+  @binary_wfp,
+  @binary_wfcex,
+  @binary_wfcmu,
   @andb_true_r,
   @wfp_evar_quan,
   @wfcmu_evar_quan

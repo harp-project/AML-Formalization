@@ -662,6 +662,11 @@ Proof.
     eapply syllogism_meta.
     5: eapply prf_weaken_conclusion.
     4: apply IHl.
+    {
+      wf_auto2_step.
+      wf_auto2_step.
+      wf_auto2_step.
+    }
     all: wf_auto2.
 Defined.
 
@@ -698,7 +703,9 @@ Proof.
   {
     wf_auto2.
   }
-  Search well_formed foldr.
+  {
+    wf_auto2.
+  }
   ;[wf_auto2|wf_auto2|wf_auto2|].
   {
 

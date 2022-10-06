@@ -1,5 +1,8 @@
 From Coq Require Import ssreflect ssrfun ssrbool.
 
+
+From Coq Require Import Btauto.
+
 From stdpp Require Import base.
 
 From MatchingLogic.Utils
@@ -317,27 +320,85 @@ Class Binary (binary : Pattern -> Pattern -> Pattern) := {
     binary_morphism :
       forall {A : Type} (f : A -> Pattern -> Pattern) (f_morph : PatternMorphism f) (phi1 phi2 : Pattern) a,
         f a (binary phi1 phi2) = binary (f a phi1) (f a phi2) ;
-     binary_wf :
-      forall (x y : nat) (ψ1 ψ2 : Pattern),
-        well_formed_xy x y (binary ψ1 ψ2)
-        = well_formed_xy x y ψ1 && well_formed_xy x y ψ2 ;
+    binary_wfp :
+      forall (ψ1 ψ2 : Pattern),
+        well_formed_positive (binary ψ1 ψ2)
+        = well_formed_positive ψ1 && well_formed_positive ψ2 ;
+    binary_wfcex :
+      forall (n : nat) (ψ1 ψ2 : Pattern),
+            well_formed_closed_ex_aux (binary ψ1 ψ2) n
+            = well_formed_closed_ex_aux ψ1 n && well_formed_closed_ex_aux ψ2 n ;
+    binary_wfcmu :
+      forall (n : nat) (ψ1 ψ2 : Pattern),
+            well_formed_closed_mu_aux (binary ψ1 ψ2) n
+            = well_formed_closed_mu_aux ψ1 n && well_formed_closed_mu_aux ψ2 n ;
 }.
+
+Lemma binary_wfxy
+  (binary : Pattern -> Pattern -> Pattern)
+  {_b : Binary binary}
+:
+forall (x y : nat) (ψ1 ψ2 : Pattern),
+  well_formed_xy x y (binary ψ1 ψ2)
+  = well_formed_xy x y ψ1 && well_formed_xy x y ψ2.
+Proof.
+  unfold well_formed_xy.
+  intros.
+  rewrite binary_wfp.
+  rewrite binary_wfcex.
+  rewrite binary_wfcmu.
+  btauto.
+Qed.
+
 
 Class Unary (unary : Pattern -> Pattern) := {
     unary_morphism :
       forall {A : Type} (f : A -> Pattern -> Pattern) (f_morph : PatternMorphism f) (phi : Pattern) a,
         f a (unary phi) = unary (f a phi) ;
-    unary_wf :
-      forall (x y : nat) (ψ : Pattern),
-        well_formed_xy x y (unary ψ) = well_formed_xy x y ψ ;
+    unary_wfp :
+      forall (ψ : Pattern),
+        well_formed_positive (unary ψ) = well_formed_positive ψ ;
+    unary_wfcex :
+      forall (n : nat) (ψ : Pattern),
+        well_formed_closed_ex_aux (unary ψ) n = well_formed_closed_ex_aux ψ n ;
+    unary_wfcmu :
+      forall (n : nat) (ψ : Pattern),
+        well_formed_closed_mu_aux (unary ψ) n = well_formed_closed_mu_aux ψ n ;
 }.
+
+Lemma unary_wfxy (unary : Pattern -> Pattern) {_ : Unary unary} :
+forall (x y : nat) (ψ : Pattern),
+  well_formed_xy x y (unary ψ) = well_formed_xy x y ψ
+.
+Proof.
+  unfold well_formed_xy.
+  intros.
+  rewrite unary_wfp.
+  rewrite unary_wfcex.
+  rewrite unary_wfcmu.
+  btauto.
+Qed.
 
 Class Nullary (nullary : Pattern) := {
     nullary_morphism :
       forall {A : Type} (f : A -> Pattern -> Pattern) (f_morph : PatternMorphism f) a,
         f a nullary = nullary ;
-    nullary_wf : forall (x y : nat), well_formed_xy x y nullary = true;
+    nullary_wfp : well_formed_positive nullary = true;
+    nullary_wfcex : forall (n : nat), well_formed_closed_ex_aux nullary n = true;
+    nullary_wfcmu : forall (n : nat), well_formed_closed_mu_aux nullary n = true;
 }.
+
+Lemma nullary_wfxy (nullary : Pattern) {_ : Nullary nullary} :
+  forall (x y : nat), well_formed_xy x y nullary = true
+.
+Proof.
+  unfold well_formed_xy.
+  intros.
+  rewrite nullary_wfp.
+  rewrite nullary_wfcex.
+  rewrite nullary_wfcmu.
+  btauto.
+Qed.
 
 Class EBinder (binder : Pattern -> Pattern) := {
     ebinder_morphism :
@@ -374,12 +435,15 @@ Next Obligation.
   simpl. reflexivity.
 Defined.
 Next Obligation.
-  intros φ1 φ2 WF1 WF2.
-  unfold well_formed_xy.
-  simpl.
-  rewrite !andb_assoc.
-  unfold andb; repeat case_match; congruence.
-Defined. (* TODO Qed should be enough? *)
+  intros. simpl. reflexivity.
+Qed.
+Next Obligation.
+  intros. simpl. reflexivity.
+Qed.
+Next Obligation.
+  intros. simpl. reflexivity.
+Qed.
+
 
 #[global]
 Program Instance Binary_app : Binary patt_app := {}.
@@ -388,12 +452,14 @@ Next Obligation.
   simpl. reflexivity.
 Defined.
 Next Obligation.
-  intros φ1 φ2 WF1 WF2.
-  unfold well_formed_xy.
-  simpl.
-  rewrite !andb_assoc.
-  unfold andb; repeat case_match; congruence.
-Defined.
+  intros. simpl. reflexivity.
+Qed.
+Next Obligation.
+  intros. simpl. reflexivity.
+Qed.
+Next Obligation.
+  intros. simpl. reflexivity.
+Qed.
 
 #[global]
 Program Instance Nullary_bott : Nullary patt_bott := {}.
@@ -402,8 +468,14 @@ Next Obligation.
   simpl. reflexivity.
 Defined.
 Next Obligation.
-  intros. reflexivity.
-Defined.
+  intros. simpl. reflexivity.
+Qed.
+Next Obligation.
+  intros. simpl. reflexivity.
+Qed.
+Next Obligation.
+  intros. simpl. reflexivity.
+Qed.
 
 #[global]
 Program Instance Nullary_sym s : Nullary (patt_sym s) := {}.
@@ -412,8 +484,14 @@ Next Obligation.
   simpl. reflexivity.
 Defined.
 Next Obligation.
-  intros. reflexivity.
-Defined.
+  intros. simpl. reflexivity.
+Qed.
+Next Obligation.
+  intros. simpl. reflexivity.
+Qed.
+Next Obligation.
+  intros. simpl. reflexivity.
+Qed.
 
 Class SwappableEx {A : Type} (f : A -> Pattern -> Pattern) (g : Pattern -> Pattern)
   (m : PatternMorphism f) :=
