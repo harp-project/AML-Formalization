@@ -347,7 +347,11 @@ Ltac destruct_and_deduplicate' H cont :=
   | ?P /\ ?P =>
     lazymatch goal with
     | [H1 : P |- _] => clear H
-    | _ => apply proj1 in H; cont H
+    | _ => 
+      let H2 := fresh "H" in
+      pose proof (H2 := proj1 H);
+      clear H;
+      cont H2
     end
   | ?P /\ ?Q =>
     lazymatch goal with

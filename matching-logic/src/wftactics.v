@@ -114,8 +114,24 @@ Ltac simplifyWfHyp H :=
   end
 .
 
+Ltac fastWfSimpl H :=
+  lazymatch type of H with
+  | true = true => clear H
+  | ?x = true =>
+    lazymatch goal with
+    | [ |- context [x]]
+      => idtac "Simplifying goal with" x;
+      rewrite !H; simpl; try reflexivity
+    | _ => idtac
+    end
+  | _ => idtac
+  end
+.
+
+Ltac toBeRunOnAllHyps h := fastWfSimpl h; simplifyWfHyp h.
+
 Ltac simplifyAllWfHyps :=
-  (onAllHyps simplifyWfHyp) ;{ simplifyWfHyp }
+  (onAllHyps toBeRunOnAllHyps) ;{ toBeRunOnAllHyps }
 .
 
 Ltac decomposeWfGoal :=
@@ -203,7 +219,7 @@ Ltac wf_auto2_step :=
   reflexivity|
   progress proved_hook_wfauto|
   progress decomposeWfHyps|
-  progress destruct_andb?|
+  progress (destruct_andb? ;{ fastWfSimpl })|
   progress simpl in *|
   progress subst|
   progress propagateTrueInGoal|
