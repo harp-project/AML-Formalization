@@ -33,7 +33,6 @@ Open Scope string_scope.
 Open Scope list_scope.
 Open Scope ml_scope.
 
-Set Ltac Profiling.
 Lemma hypothesis {Σ : Signature} (Γ : Theory) (axiom : Pattern) :
   well_formed axiom ->
   (axiom ∈ Γ) ->
@@ -97,6 +96,7 @@ Proof.
   { apply (P4m _ A A WFA WFA). }
 Defined.
 
+
 Lemma reorder {Σ : Signature} (Γ : Theory) (A B C : Pattern) :
   well_formed A ->
   well_formed B ->
@@ -136,7 +136,6 @@ Proof.
         -- apply P2; wf_auto2.
     + apply P2; wf_auto2.
 Defined.
-
 
 Lemma reorder_meta {Σ : Signature} {Γ : Theory} {A B C : Pattern} {i : ProofInfo} :
   well_formed A ->
@@ -241,40 +240,35 @@ Lemma conj_intro {Σ : Signature} (Γ : Theory) (A B : Pattern) :
 Proof.
   intros WFA WFB.
   pose proof (tB := (A_impl_A Γ B ltac:(wf_auto2))).
-  epose proof (t1 := MP (P2 _ (!(!A) ---> !B) A Bot ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)) (P1 _ _ B _ _)).
-  epose proof (t2 := MP (reorder_meta _ _ _ (P4 _ (!A) B ltac:(wf_auto2) ltac:(wf_auto2))) (P1 _ _ B _ _)).
-  epose proof (t3'' := MP (P1 _ A (!(!A) ---> !B) _ _) (P1 _ _ B _ _)).
-  epose proof (t4 := MP tB (MP t2 (P2 _ B B _ _ _ _))).
-  epose proof (t5'' := 
+  unshelve (epose proof (t1 := MP (P2 Γ (!(!A) ---> !B) A Bot ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)) (P1 _ _ B _ _))); try_wfauto2.
+  unshelve (epose proof (t2 := MP (reorder_meta _ _ _ (P4 Γ (!A) B ltac:(wf_auto2) ltac:(wf_auto2))) (P1 _ _ B _ _))); try_wfauto2.
+  unshelve (epose proof (t3'' := MP (P1 Γ A (!(!A) ---> !B) _ _) (P1 _ _ B _ _))); try_wfauto2.
+  unshelve (epose proof (t4 := MP tB (MP t2 (P2 Γ B B _ _ _ _)))); try_wfauto2.
+  unshelve (epose proof (t5'' := 
           MP t4
                        (MP t1
-                                     (P2 _ B ((!(!A) ---> !B) ---> !A)
-                                         (((!(!A) ---> !B) ---> A) ---> !(!(!A) ---> !B)) _ _ _))).
+                                     (P2 Γ B ((!(!A) ---> !B) ---> !A)
+                                         (((!(!A) ---> !B) ---> A) ---> !(!(!A) ---> !B)) _ _ _)))); try_wfauto2.
   
-  epose proof (tA := (P1 Γ A B) _ _).
-  epose proof (tB' := MP tB
-                            (P1 _ (B ---> B) A _ _)).
-  epose proof (t3' := MP t3''
-                            (P2 _ B A ((!(!A) ---> !B) ---> A) _ _ _)).
-  epose proof (t3 := MP t3'
-                           (P1 _ ((B ---> A) ---> B ---> (! (! A) ---> ! B) ---> A) A _ _)).
-  epose proof (t5' := MP t5''
-                            (P2 _ B ((!(!A) ---> !B) ---> A) (!(!(!A) ---> !B)) _ _ _)).
-  epose proof (t5 := MP t5' 
+  unshelve (epose proof (tA := (P1 Γ A B) _ _)); try_wfauto2.
+  unshelve (epose proof (tB' := MP tB
+                            (P1 _ (B ---> B) A _ _))); try_wfauto2.
+  unshelve (epose proof (t3' := MP t3''
+                            (P2 _ B A ((!(!A) ---> !B) ---> A) _ _ _))); try_wfauto2.
+  unshelve (epose proof (t3 := MP t3'
+                           (P1 _ ((B ---> A) ---> B ---> (! (! A) ---> ! B) ---> A) A _ _))); try_wfauto2.
+  unshelve (epose proof (t5' := MP t5''
+                            (P2 _ B ((!(!A) ---> !B) ---> A) (!(!(!A) ---> !B)) _ _ _))); try_wfauto2.
+  unshelve (epose proof (t5 := MP t5' 
                            (P1 _ ((B ---> (! (! A) ---> ! B) ---> A) ---> B ---> ! (! (! A) ---> ! B))
-                               A _ _)).
-  epose proof (t6 := MP tA
+                               A _ _))); try_wfauto2.
+  unshelve (epose proof (t6 := MP tA
                            (MP t3
-                                         (P2 _ A (B ---> A) (B ---> (!(!A) ---> !B) ---> A) _ _ _))).
-  epose proof (t7 := MP t6 
+                                         (P2 _ A (B ---> A) (B ---> (!(!A) ---> !B) ---> A) _ _ _)))); try_wfauto2.
+  unshelve (epose proof (t7 := MP t6 
                            (MP t5 
-                                         (P2 _ A (B ---> (!(!A) ---> !B) ---> A) (B ---> !(!(!A) ---> !B)) _ _ _))).
+                                         (P2 _ A (B ---> (!(!A) ---> !B) ---> A) (B ---> !(!(!A) ---> !B)) _ _ _)))); try_wfauto2.
   apply t7.
-  Unshelve.
-  Show Ltac Profile.
-  Reset Ltac Profile.
-  all: wf_auto2.
-  Show Ltac Profile.
 Defined.
 
 Lemma conj_intro_meta {Σ : Signature} (Γ : Theory) (A B : Pattern) (i : ProofInfo) :
@@ -479,10 +473,7 @@ Proof.
   - assumption.
   - assumption.
     Unshelve.
-    Show Ltac Profile.
-    Reset Ltac Profile.
     all: wf_auto2.
-    Show Ltac Profile.
 Defined.
 
 Lemma contraposition {Σ : Signature} (Γ : Theory) (A B : Pattern) : 
@@ -663,7 +654,8 @@ Proof.
     5: eapply prf_weaken_conclusion.
     4: apply IHl.
     all: wf_auto2.
-Defined.
+Abort.
+
 
 Lemma prf_weaken_conclusion_iter_meta {Σ : Signature} Γ l g g' (i : ProofInfo):
   Pattern.wf l ->
@@ -4333,4 +4325,3 @@ Defined.
 Close Scope string_scope.
 Close Scope list_scope.
 Close Scope ml_scope.
-

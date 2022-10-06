@@ -51,19 +51,22 @@ Definition wfSimplifications := (
 
 Ltac simplifyWfHyp H :=
   match type of H with
-  | well_formed_positive _
+  | well_formed_positive _ = true
     =>
-      rewrite !wfPositiveSimplifications;
+      rewrite !wfPositiveSimplifications in H;
       destruct_and? H
-  | well_formed_closed_ex_aux _ _
+  | well_formed_closed_ex_aux _ _ = true
     =>
-      rewrite !wfCexSimplifications;
+      rewrite !wfCexSimplifications in H;
       destruct_and? H
-  | well_formed_closed_mu_aux _ _
+  | well_formed_closed_mu_aux _ _ = true
     =>
-      rewrite !wfCmuSimplifications;
+      rewrite !wfCmuSimplifications in H;
       destruct_and? H
-  | _ => rewrite !wfSimplifications
+  | Pattern.wf _ = true
+    =>
+      rewrite wf_corr in H
+  | _ => rewrite !wfSimplifications in H
   end
 .
 
