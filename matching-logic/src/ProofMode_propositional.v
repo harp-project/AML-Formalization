@@ -78,6 +78,8 @@ Proof.
   pose proof (H4 := (P1 Γ (((A ---> B ---> Bot) ---> A ---> B) ---> (A ---> B ---> Bot) ---> A ---> Bot)
     (A ---> B) ltac:(wf_auto2) ltac:(wf_auto2))).
   pose proof (H5 := MP H3 H4).
+  
+  (*
   (* This one is just for performance debugging purposes *)
   unshelve (epose proof (H6 := (P2 Γ (A ---> B) ((A ---> B ---> Bot) ---> A ---> B) ((A ---> B ---> Bot) ---> A ---> Bot) _ _ _))).
   {
@@ -89,10 +91,12 @@ Proof.
     wf_auto2_step.
     wf_auto2.
   }
-  (*
+  *)
+  Set Ltac Profiling.
+  Reset Ltac Profile.
+  
   pose proof (H6 := (P2 Γ (A ---> B) ((A ---> B ---> Bot) ---> A ---> B) ((A ---> B ---> Bot) ---> A ---> Bot)
     ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2))).
-    *)
   Show Ltac Profile.
   pose proof (H7 := MP H5 H6).
   pose proof (H8 := (P1 Γ (A ---> B) (A ---> B ---> Bot) ltac:(wf_auto2) ltac:(wf_auto2))).
@@ -668,7 +672,8 @@ Proof.
     eapply syllogism_meta.
     5: eapply prf_weaken_conclusion.
     4: apply IHl.
-    all: wf_auto2.
+    
+    all: try solve [wf_auto2].
 Qed.
 
 
@@ -698,20 +703,7 @@ Proof.
   { apply gimpg'. }
   eapply MP.
   { apply H. }
-  apply reorder_meta.
-  {
-    wf_auto2.
-  }
-  {
-    wf_auto2.
-  }
-  {
-    wf_auto2.
-  }
-  ;[wf_auto2|wf_auto2|wf_auto2|].
-  {
-
-  }
+  apply reorder_meta;[wf_auto2|wf_auto2|wf_auto2|].
   apply useBasicReasoning.
   apply prf_weaken_conclusion_iter.
   all: wf_auto2.

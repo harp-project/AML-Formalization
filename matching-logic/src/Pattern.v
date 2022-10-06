@@ -597,6 +597,61 @@ Proof.
   }
 Qed.
 
+Lemma lwf_positive_cons
+  {Σ : Signature} (x : Pattern) (xs : list Pattern)
+  :
+  lwf_positive (x::xs) = well_formed_positive x && lwf_positive xs
+.
+Proof. reflexivity. Qed.
+
+Lemma lwf_cmu_cons
+  {Σ : Signature} (n : nat) (x : Pattern) (xs : list Pattern)
+  :
+  lwf_cmu n (x::xs) = well_formed_closed_mu_aux x n && lwf_cmu n xs
+.
+Proof. reflexivity. Qed.
+
+Lemma lwf_cex_cons
+  {Σ : Signature} (n : nat) (x : Pattern) (xs : list Pattern)
+  :
+  lwf_cex n (x::xs) = well_formed_closed_ex_aux x n && lwf_cex n xs
+.
+Proof. reflexivity. Qed.
+
+Lemma lwf_positive_app
+  {Σ : Signature} (xs ys : list Pattern)
+  :
+  lwf_positive (xs++ys) = lwf_positive xs && lwf_positive ys
+.
+Proof.
+  induction xs; simpl.
+  { reflexivity. }
+  { rewrite 2!lwf_positive_cons. rewrite IHxs. btauto. }
+Qed.
+
+
+Lemma lwf_cmu_app
+  {Σ : Signature} (n : nat) (xs ys : list Pattern)
+  :
+  lwf_cmu n (xs++ys) = lwf_cmu n xs && lwf_cmu n ys
+.
+Proof.
+  induction xs; simpl.
+  { reflexivity. }
+  { rewrite 2!lwf_cmu_cons. rewrite IHxs. btauto. }
+Qed.
+
+Lemma lwf_cex_app
+  {Σ : Signature} (n : nat) (xs ys : list Pattern)
+  :
+  lwf_cex n (xs++ys) = lwf_cex n xs && lwf_cex n ys
+.
+Proof.
+  induction xs; simpl.
+  { reflexivity. }
+  { rewrite 2!lwf_cex_cons. rewrite IHxs. btauto. }
+Qed.
+
 (* TODO: maybe generalize to any connective? *)
 Lemma well_formed_foldr {Σ : Signature} g xs :
   well_formed g = true ->

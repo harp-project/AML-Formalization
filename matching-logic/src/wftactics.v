@@ -1,3 +1,5 @@
+From LibHyps Require Import LibHyps.
+
 From Coq Require Import ssreflect ssrfun ssrbool.
 
 From Ltac2 Require Import Ltac2.
@@ -6,6 +8,8 @@ From Coq Require Import Btauto.
 
 From stdpp Require Import countable infinite.
 From stdpp Require Import pmap gmap mapset fin_sets propset.
+
+
 Require Import stdpp_ext.
 
 From MatchingLogic
@@ -43,31 +47,62 @@ Definition wfCmuSimplifications := (
   @wfcmu_evar_quan
 ).
 
-
 Definition wfSimplifications := (
   @wf_corr,
   @andb_true_r
 ).
 
+Definition lwfPositiveSimplifications := (
+  @lwf_positive_cons,
+  @lwf_positive_app
+).
+
+Definition lwfCmuSimplifications := (
+  @lwf_cmu_cons,
+  @lwf_cmu_app
+).
+
+Definition lwfCexSimplifications := (
+  @lwf_cex_cons,
+  @lwf_cex_app
+).
+
 Ltac simplifyWfHyp H :=
-  match type of H with
+  lazymatch type of H with
   | well_formed_positive _ = true
     =>
-      rewrite !wfPositiveSimplifications in H;
-      destruct_and? H
+      rewrite ?wfPositiveSimplifications in H;
+      destruct_andb? H
   | well_formed_closed_ex_aux _ _ = true
     =>
-      rewrite !wfCexSimplifications in H;
-      destruct_and? H
+      rewrite ?wfCexSimplifications in H;
+      destruct_andb? H
   | well_formed_closed_mu_aux _ _ = true
     =>
-      rewrite !wfCmuSimplifications in H;
-      destruct_and? H
+      rewrite ?wfCmuSimplifications in H;
+      destruct_andb? H
   | Pattern.wf _ = true
     =>
-      rewrite wf_corr in H
-  | _ => rewrite !wfSimplifications in H
+      rewrite wf_corr in H;
+      destruct_andb? H
+  | lwf_positive _ = true
+    =>
+      rewrite ?lwfPositiveSimplifications in H;
+      destruct_andb? H
+  | lwf_cmu _ _ = true
+    =>
+      rewrite ?lwfCmuSimplifications in H;
+      destruct_andb? H
+  | lwf_cex _ _ = true
+    =>
+      rewrite !lwfCexSimplifications in H;
+      destruct_andb? H
+  | _ => idtac
   end
+.
+
+Ltac simplifyAllWfHyps :=
+  onAllHyps simplifyWfHyp
 .
 
 Ltac decomposeWfGoal :=
@@ -75,13 +110,19 @@ Ltac decomposeWfGoal :=
   rewrite !(wfPositiveSimplifications,
             wfCexSimplifications,
             wfCmuSimplifications,
-            wfSimplifications)
+            wfSimplifications,
+            lwfPositiveSimplifications,
+            lwfCmuSimplifications,
+            lwfCexSimplifications)
 .
 
 Ltac towfxy H := rewrite -wfxy00_wf in H.
 Ltac simplify_wfxy H := rewrite ?wfSimplifications in H.
 
-Ltac decomposeWfHyps := 
+Ltac decomposeWfHyps :=
+  simplifyAllWfHyps
+.
+(*
   repeat (
     match goal with
     | [H : _ |- _]
@@ -92,6 +133,7 @@ Ltac decomposeWfHyps :=
     end
   )
 .
+*)
 
 Ltac propagateTrueInHyps :=
   repeat (

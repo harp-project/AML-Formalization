@@ -57,6 +57,7 @@
             coq
             pkgs.coqPackages.equations
             pkgs.coqPackages.stdpp
+            pkgs.coqPackages.LibHyps
           ];
           enableParallelBuilding = true;
           installFlags = [ "COQLIB=$(out)/lib/coq/${coq.coq-version}/" ];
