@@ -24,6 +24,17 @@ Require Import
 
 Set Default Proof Mode "Classic".
 
+(*
+Example oah a b c :
+  a /\ b /\ c = true ->
+  c = true
+.
+Proof.
+  intros H.
+  onAllHyps (fun h => try destruct h).
+Qed.
+*)
+
 Definition wfPositiveSimplifications := (
   @well_formed_positive_foldr_binary,
   @nullary_wfp,
@@ -68,6 +79,8 @@ Definition lwfCexSimplifications := (
 ).
 
 Ltac simplifyWfHyp H :=
+  let t := type of H in
+  (* idtac "SimplifyWfHyp " H " (" t ")"; *)
   lazymatch type of H with
   | well_formed_positive _ = true
     =>
@@ -95,14 +108,14 @@ Ltac simplifyWfHyp H :=
       destruct_andb? H
   | lwf_cex _ _ = true
     =>
-      rewrite !lwfCexSimplifications in H;
+      rewrite ?lwfCexSimplifications in H;
       destruct_andb? H
   | _ => idtac
   end
 .
 
 Ltac simplifyAllWfHyps :=
-  onAllHyps simplifyWfHyp
+  (onAllHyps simplifyWfHyp) ;{ simplifyWfHyp }
 .
 
 Ltac decomposeWfGoal :=
