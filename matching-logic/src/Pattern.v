@@ -637,6 +637,19 @@ Proof.
   }
 Qed.
 
+Lemma lwf_xy_decompose {Σ : Signature} (x y : nat) (l : list Pattern) :
+  lwf_xy x y l = lwf_positive l && lwf_cmu y l && lwf_cex x l
+.
+Proof.
+  unfold lwf_xy,lwf_positive,lwf_cmu,lwf_cex,well_formed_xy.
+  induction l; simpl.
+  { reflexivity. }
+  {
+    rewrite IHl. simpl.
+    btauto.
+  }
+Qed.
+
 Lemma lwf_xy_cons
   {Σ : Signature} (m n : nat) (x : Pattern) (xs : list Pattern)
   :

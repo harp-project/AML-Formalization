@@ -222,7 +222,8 @@ Ltac partsDecomposeWfGoal :=
             wfSimplifications,
             lwfPositiveSimplifications,
             lwfCmuSimplifications,
-            lwfCexSimplifications)
+            lwfCexSimplifications,
+            lwf_xy_decompose)
 .
 
 
@@ -257,6 +258,10 @@ Ltac simplifyWfHypParts H :=
   | lwf_cex _ _ = true
     =>
       rewrite ?lwfCexSimplifications in H;
+      destruct_andb? H
+  | lwf_xy _ _ _ = true
+    =>
+      rewrite lwf_xy_decompose in H;
       destruct_andb? H
   | _ => idtac
   end
