@@ -987,12 +987,21 @@ Section with_signature.
     well_formed (patt_mu ϕ) ->
     well_formed (ϕ^{svar: 0 ↦ X}).
   Proof.
-    intros H. wf_auto;
+    intros H. wf_auto2.
+    (*
+    wf_auto2_fast_done.
+    compositeSimplifyAllWfHyps.
+    wf_auto2_composite_step.
+    wf_auto2_composite_step.
+    Set Printing All.
+    Search well_formed svar_open.
+    wf_auto2.
     destruct_and!;
         [ (apply wfp_svar_open; auto)
         | (apply wfc_mu_aux_body_mu_imp1; assumption)
         | (apply wfc_ex_aux_body_mu_imp1; assumption)
         ].
+    *)
   Qed.
 
 

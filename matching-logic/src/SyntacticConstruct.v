@@ -467,6 +467,29 @@ Proof.
   }
 Qed.
 
+Lemma well_formed_xy_foldr_binary
+  (binary : Pattern -> Pattern -> Pattern)
+  {_bin : Binary binary}
+  (m n : nat)
+  (g : Pattern)
+  (xs : list Pattern)
+  :
+  well_formed_xy m n (foldr binary g xs)
+  = (well_formed_xy m n g && lwf_xy m n xs)
+.
+Proof.
+  induction xs; simpl.
+  {
+    unfold lwf_xy. simpl. rewrite andb_true_r. reflexivity.
+  }
+  {
+    unfold lwf_xy in *. simpl.
+    rewrite binary_wfxy.
+    rewrite IHxs.
+    btauto.
+  }
+Qed.
+
 Class EBinder (binder : Pattern -> Pattern) := {
     ebinder_morphism :
       forall {A : Type} (f : A -> Pattern -> Pattern) (f_morph : PatternMorphism f) (phi : Pattern) a,

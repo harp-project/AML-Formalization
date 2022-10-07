@@ -24,16 +24,152 @@ Require Import
 
 Set Default Proof Mode "Classic".
 
-(*
-Example oah a b c :
-  a /\ b /\ c = true ->
-  c = true
+
+(* This hook is specifically intended to be filled with a tactic which
+   transforms provability hypotheses into well_formedness hypotheses.
+   We call it early, before any goal splitting is done,
+   so that it is not called for all the subgoals again and again.
+ *)
+ Ltac2 mutable proved_hook_wfauto
+ := (fun () => () (* Message.print (Message.of_string "hook_wfauto base") *)).
+ 
+ (* We give a name to the wrapper so that it is shown in the profile (when profiling). *)
+ Ltac proved_hook_wfauto := ltac2:(|- proved_hook_wfauto ()).
+ 
+
+Definition wfToWfxySimplifications := (
+  @wf_wfxy00,
+  @wf_lwf_xy
+).
+
+Definition wfxySimplifications := (
+  @binary_wfxy,
+  @unary_wfxy,
+  @nullary_wfxy,
+  @lwf_xy_app,
+  @lwf_xy_cons,
+  @well_formed_xy_foldr_binary
+).
+
+Ltac simplifyWfxyHyp H :=
+  unfold is_true in *;
+  match type of H with
+  | well_formed _ = true
+    => rewrite wfToWfxySimplifications in H
+  | Pattern.wf _ = true
+    => rewrite wfToWfxySimplifications in H
+  | _ => idtac
+  end;
+  match type of H with
+  | well_formed_xy _ _ _ = true =>
+    rewrite ?wfxySimplifications in H
+  | _ => idtac
+  end;
+  (* try destruct conjunctions *)
+  let tH := type of H in
+  (destruct_andb? H) ;{
+    fun h' =>
+      let th' := type of h' in
+      idtac
+      (*idtac "From " tH " generate " th' "."*)
+  }
 .
-Proof.
-  intros H.
-  onAllHyps (fun h => try destruct h).
-Qed.
-*)
+
+Ltac compoundSimplifyHyp H :=
+  destruct_andb? H;
+  simplifyWfxyHyp H
+.
+
+Ltac compositeSimplifyAllWfHyps :=
+  proved_hook_wfauto;
+  (onAllHyps compoundSimplifyHyp) ;{ compoundSimplifyHyp }
+.
+
+
+Ltac compoundDecomposeWfGoal :=
+  rewrite ?wfToWfxySimplifications;
+  rewrite ?wfxySimplifications;
+  lazymatch goal with
+  | [ |- ?g] =>
+    split_and?;
+    lazymatch goal with
+    | [ |- ?g'] => idtac (*"Goal " g' " from " g "."*)
+    end
+  end
+.
+
+
+Ltac propagateTrueInHyps :=
+  repeat (
+    match goal with
+    | [H: _ |- _] => (
+        rewrite !(andb_true_r,andb_true_l) in H
+      )
+    end
+  )
+.
+
+Ltac propagateTrueInGoal :=
+  rewrite !(andb_true_r,andb_true_l)
+.
+
+
+Ltac clear_all_impls :=
+  repeat (
+    match goal with
+    | [ H : forall _, _ |- _] => clear H
+    end
+  ).
+
+
+  Ltac wf_auto2_decompose_hyps :=
+    proved_hook_wfauto;
+    unfold
+      is_true,
+      evar_open,
+      svar_open
+    in *;
+    simpl in *
+  .
+  
+
+Ltac solve_size :=
+  repeat (
+  match goal with
+  | [ |- size' (evar_open _ _ _) < _ ]
+    => rewrite evar_open_size'
+
+  | [ |- size' (svar_open _ _ _) < _ ]
+    => rewrite svar_open_size'
+
+  | [ |- size' _ < size' (patt_app _ _) ]
+    => simpl; lia
+
+  | [ |- size' _ < size' (patt_imp _ _) ]
+    => simpl; lia
+
+  | [ |- size' _ < size' (patt_exists _) ]
+    => simpl; lia
+  end
+  )
+.
+Ltac wf_auto2_fast_done :=
+  try solve_size;
+  try assumption;
+  try reflexivity;
+  try congruence;
+  try btauto
+.
+  
+Ltac wf_auto2_composite_step :=
+  simpl;
+  compoundDecomposeWfGoal;
+  wf_auto2_fast_done;
+  try first [
+    apply wf_evar_open_from_wf_ex |
+    apply wf_sctx
+  ]
+.
 
 Definition wfPositiveSimplifications := (
   @well_formed_positive_foldr_binary,
@@ -78,9 +214,21 @@ Definition lwfCexSimplifications := (
   @lwf_cex_app
 ).
 
-Ltac simplifyWfHyp H :=
+Ltac partsDecomposeWfGoal :=
+  rewrite -?wfxy00_wf;
+  rewrite !(wfPositiveSimplifications,
+            wfCexSimplifications,
+            wfCmuSimplifications,
+            wfSimplifications,
+            lwfPositiveSimplifications,
+            lwfCmuSimplifications,
+            lwfCexSimplifications)
+.
+
+
+Ltac simplifyWfHypParts H :=
   let t := type of H in
-  (* idtac "SimplifyWfHyp " H " (" t ")"; *)
+  (* idtac "SimplifyWfHypParts " H " (" t ")"; *)
   lazymatch type of H with
   | well_formed_positive _ = true
     =>
@@ -114,13 +262,13 @@ Ltac simplifyWfHyp H :=
   end
 .
 
-Ltac fastWfSimpl H :=
+Ltac fastWfSimplParts H :=
   lazymatch type of H with
   | true = true => clear H
   | ?x = true =>
     lazymatch goal with
     | [ |- context [x]]
-      => idtac "Simplifying goal with" x;
+      => (*idtac "Simplifying goal with" x;*)
       try assumption; rewrite !H; simpl; try reflexivity
     | _ => idtac
     end
@@ -128,106 +276,17 @@ Ltac fastWfSimpl H :=
   end
 .
 
-Ltac toBeRunOnAllHyps h := fastWfSimpl h; simplifyWfHyp h.
+Ltac toBeRunOnAllHypsParts h := fastWfSimplParts h; simplifyWfHypParts h.
 
-Ltac simplifyAllWfHyps :=
-  (onAllHyps toBeRunOnAllHyps) ;{ toBeRunOnAllHyps }
+Ltac simplifyAllWfHypsParts :=
+  (onAllHyps toBeRunOnAllHypsParts) ;{ toBeRunOnAllHypsParts }
 .
 
-Ltac decomposeWfGoal :=
-  rewrite -?wfxy00_wf;
-  rewrite !(wfPositiveSimplifications,
-            wfCexSimplifications,
-            wfCmuSimplifications,
-            wfSimplifications,
-            lwfPositiveSimplifications,
-            lwfCmuSimplifications,
-            lwfCexSimplifications)
+
+Ltac decomposeWfHypsIntoParts :=
+  simplifyAllWfHypsParts
 .
 
-Ltac towfxy H := rewrite -wfxy00_wf in H.
-Ltac simplify_wfxy H := rewrite ?wfSimplifications in H.
-
-Ltac decomposeWfHyps :=
-  simplifyAllWfHyps
-.
-(*
-  repeat (
-    match goal with
-    | [H : _ |- _]
-      => simplifyWfHyp H
-      (*
-    | [H : well_formed_xy _ _ _ |- _]
-      => simplify_wfxy H*)
-    end
-  )
-.
-*)
-
-Ltac propagateTrueInHyps :=
-  repeat (
-    match goal with
-    | [H: _ |- _] => (
-        rewrite !(andb_true_r,andb_true_l) in H
-      )
-    end
-  )
-.
-
-Ltac propagateTrueInGoal :=
-  rewrite !(andb_true_r,andb_true_l)
-.
-
-Tactic Notation "wf_auto" int_or_var(n)
-  := auto n; unfold well_formed, well_formed_closed in *; destruct_and?; simpl in *; split_and?; auto n.
-Tactic Notation "wf_auto" := wf_auto 5.
-
-(* This hook is specifically intended to be filled with a tactic which
-   transforms provability hypotheses into well_formedness hypotheses.
-   We call it early, before any goal splitting is done,
-   so that it is not called for all the subgoals again and again.
- *)
-Ltac2 mutable proved_hook_wfauto
-:= (fun () => () (* Message.print (Message.of_string "hook_wfauto base") *)).
-
-(* We give a name to the wrapper so that it is shown in the profile (when profiling). *)
-Ltac proved_hook_wfauto := ltac2:(|- proved_hook_wfauto ()).
-
-(*Ltac destruct_and_where_*)
-
-Ltac clear_all_impls :=
-  repeat (
-    match goal with
-    | [ H : forall _, _ |- _] => clear H
-    end
-  ).
-
-Ltac solve_size :=
-  repeat (
-  match goal with
-  | [ |- size' (evar_open _ _ _) < _ ]
-    => rewrite evar_open_size'
-
-  | [ |- size' (svar_open _ _ _) < _ ]
-    => rewrite svar_open_size'
-
-  | [ |- size' _ < size' (patt_app _ _) ]
-    => simpl; lia
-
-  | [ |- size' _ < size' (patt_imp _ _) ]
-    => simpl; lia
-
-  | [ |- size' _ < size' (patt_exists _) ]
-    => simpl; lia
-  end
-  )
-.
-Ltac wf_auto2_fast_done := 
-  try assumption;
-  try reflexivity;
-  try congruence;
-  try btauto
-.
 
 Ltac wf_auto2_unfolds :=
   unfold
@@ -242,17 +301,18 @@ Ltac wf_auto2_unfolds :=
   in *
 .
 
-Ltac wf_auto2_decompose_hyps :=
+Ltac wf_auto2_decompose_hyps_parts :=
   proved_hook_wfauto;
   wf_auto2_unfolds;
   simpl in *;
-  decomposeWfHyps;
-  (destruct_andb? ;{ fastWfSimpl })
+  destruct_andb?;
+  decomposeWfHypsIntoParts;
+  (destruct_andb? ;{ fastWfSimplParts })
 .
 
-Ltac wf_auto2_step :=
+Ltac wf_auto2_step_parts :=
   wf_auto2_unfolds;
-  try decomposeWfGoal;
+  try partsDecomposeWfGoal;
   simpl in *; subst; simpl in *;
   split_and?;
   wf_auto2_fast_done;
@@ -284,10 +344,26 @@ Ltac wf_auto2_step :=
   end)
 .
 
-Ltac wf_auto2 :=
+Ltac wf_auto2_fast :=
   wf_auto2_fast_done;
-  repeat wf_auto2_decompose_hyps;
-  repeat wf_auto2_step
+  compositeSimplifyAllWfHyps;
+  repeat wf_auto2_composite_step
+.
+
+Ltac print_hyps :=
+  try match goal with
+  | [H : ?t |- _] => idtac t; fail
+  end
+.
+
+Ltac wf_auto2 :=
+  clear_all_impls;
+  wf_auto2_fast;
+  match goal with
+  | [ |- ?G ] => idtac "Falling back on " G (*; print_hyps*)
+  end;
+  repeat wf_auto2_decompose_hyps_parts;
+  repeat wf_auto2_step_parts
 .
 (*
 Ltac wf_auto2_step := 

@@ -573,6 +573,32 @@ Proof.
   unfold well_formed,well_formed_closed. split_and!; assumption.
 Qed.
 
+
+Definition well_formed_xy {Σ : Signature} (x y : nat) (ϕ : Pattern) : bool :=
+  well_formed_positive ϕ &&
+  well_formed_closed_ex_aux ϕ x &&
+  well_formed_closed_mu_aux ϕ y
+.
+
+Lemma wfxy00_wf {Σ : Signature} (ϕ : Pattern) :
+  well_formed_xy 0 0 ϕ = well_formed ϕ.
+Proof.
+  unfold well_formed,well_formed_closed,well_formed_xy.
+  simpl.
+  rewrite -andb_assoc.
+  rewrite [well_formed_closed_mu_aux _ _ && well_formed_closed_ex_aux _ _]andb_comm.
+  reflexivity.
+Qed.
+
+Lemma wf_wfxy00 {Σ : Signature} (ϕ : Pattern) :
+  well_formed ϕ = well_formed_xy 0 0 ϕ
+.
+Proof. rewrite wfxy00_wf. reflexivity. Qed.
+
+
+Definition lwf_xy {Σ : Signature} (x y : nat) (l : list Pattern)
+  := fold_right andb true (map (well_formed_xy x y) l).
+
 Definition lwf_positive {Σ : Signature} (l : list Pattern)
   := fold_right andb true (map well_formed_positive l).
 
@@ -583,6 +609,20 @@ Definition lwf_cex {Σ : Signature} n (l : list Pattern)
   := fold_right andb true (map (fun p => well_formed_closed_ex_aux p n) l).
 
 Definition wf {Σ : Signature} (l : list Pattern) := fold_right andb true (map well_formed l).
+
+Lemma wf_lwf_xy {Σ : Signature} (l : list Pattern) :
+  wf l = lwf_xy 0 0 l
+.
+Proof.
+  unfold wf, lwf_xy.
+  induction l; simpl.
+  { reflexivity. }
+  {
+    rewrite IHl.
+    rewrite -wfxy00_wf.
+    reflexivity.
+  }
+Qed.
 
 Lemma wf_corr {Σ : Signature} (l : list Pattern) :
   wf l = lwf_positive l && lwf_cmu 0 l && lwf_cex 0 l
@@ -596,6 +636,13 @@ Proof.
     btauto.
   }
 Qed.
+
+Lemma lwf_xy_cons
+  {Σ : Signature} (m n : nat) (x : Pattern) (xs : list Pattern)
+  :
+  lwf_xy m n (x::xs) = well_formed_xy m n x && lwf_xy m n xs
+.
+Proof. reflexivity. Qed.
 
 Lemma lwf_positive_cons
   {Σ : Signature} (x : Pattern) (xs : list Pattern)
@@ -617,6 +664,17 @@ Lemma lwf_cex_cons
   lwf_cex n (x::xs) = well_formed_closed_ex_aux x n && lwf_cex n xs
 .
 Proof. reflexivity. Qed.
+
+Lemma lwf_xy_app
+  {Σ : Signature} (m n : nat) (xs ys : list Pattern)
+  :
+  lwf_xy m n (xs ++ ys) = lwf_xy m n xs && lwf_xy m n ys
+.
+Proof.
+  induction xs; simpl.
+  { reflexivity. }
+  { rewrite 2!lwf_xy_cons. rewrite IHxs. btauto. }
+Qed.
 
 Lemma lwf_positive_app
   {Σ : Signature} (xs ys : list Pattern)
@@ -794,22 +852,6 @@ pose proof (wfl₁hl₂_proj_l₂ _ _ _ H).
 apply wf_app; assumption.
 Qed.
 
-
-Definition well_formed_xy {Σ : Signature} (x y : nat) (ϕ : Pattern) : bool :=
-  well_formed_positive ϕ &&
-  well_formed_closed_ex_aux ϕ x &&
-  well_formed_closed_mu_aux ϕ y
-.
-
-Lemma wfxy00_wf {Σ : Signature} (ϕ : Pattern) :
-  well_formed_xy 0 0 ϕ = well_formed ϕ.
-Proof.
-  unfold well_formed,well_formed_closed,well_formed_xy.
-  simpl.
-  rewrite -andb_assoc.
-  rewrite [well_formed_closed_mu_aux _ _ && well_formed_closed_ex_aux _ _]andb_comm.
-  reflexivity.
-Qed.
 
 Definition wfPattern {Σ : Signature} := {p : Pattern | well_formed p = true}.
 

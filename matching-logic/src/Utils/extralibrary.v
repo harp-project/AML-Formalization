@@ -402,12 +402,6 @@ Qed.
     | (_ && _) = true =>
       apply andb_true_iff in H;
       destruct_and_deduplicate H destruct_andb_go
-      (*
-      let H1 := fresh in
-      let H2 := fresh in
-      destruct H as [ H1 H2 ];
-      destruct_andb_go H1; destruct_andb_go H2
-      *)
     end.
   
   (* We first use the associativity so that every destruct
