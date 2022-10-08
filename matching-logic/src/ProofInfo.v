@@ -445,7 +445,7 @@ Qed.
 Tactic Notation "aapply" uconstr(pf)
 := gapply pf; try apply pile_any.
 
-Ltac try_solve_pile := try (solve [(apply pile_evs_svs_kt; auto; try set_solver)]).
+Ltac try_solve_pile := try (solve [(apply pile_evs_svs_kt; auto; try apply empty_subseteq; try apply top_subseteq; try set_solver)]).
 
 
 Lemma pile_basic_generic {Σ : Signature} eg svs kt fp:
