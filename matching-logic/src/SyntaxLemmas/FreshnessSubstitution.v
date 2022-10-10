@@ -789,6 +789,141 @@ Proof.
       rewrite free_evar_subst_preserves_no_negative_occurrence; auto.
 Qed.
 
+Lemma neg_occurrence_bevar_subst x ϕ y n :
+  x <> y ->
+  evar_has_negative_occurrence x ϕ =
+  evar_has_negative_occurrence x ϕ^{evar:n↦y}
+  with
+  pos_occurrence_bevar_subst x ϕ y n :
+  x <> y ->
+  evar_has_positive_occurrence x ϕ =
+  evar_has_positive_occurrence x ϕ^{evar:n↦y}.
+Proof.
+  {
+    intro Neq.
+    clear neg_occurrence_bevar_subst.
+    generalize dependent n.
+    induction ϕ; try reflexivity.
+    + intro. cbn. destruct compare_nat; reflexivity.
+    + intro. specialize IHϕ1 with n. specialize IHϕ2 with n. cbn.
+      rewrite IHϕ1 IHϕ2. reflexivity.
+    + intro. cbn. fold evar_has_positive_occurrence. unfold evar_open in *.
+      rewrite <- IHϕ2. apply orb_id2r. intro H.
+      apply pos_occurrence_bevar_subst.
+      assumption.
+    + intro. cbn. specialize IHϕ with (S n). assumption.
+    + cbn. assumption.
+  }
+  {
+    intro Neq.
+    clear pos_occurrence_bevar_subst.
+    generalize dependent n.
+    induction ϕ; try reflexivity.
+    + intro. cbn. destruct compare_nat.
+      - reflexivity.
+      - cbn. destruct decide; congruence.
+      - reflexivity.
+    + intro. specialize IHϕ1 with n. specialize IHϕ2 with n. cbn.
+      rewrite IHϕ1 IHϕ2. reflexivity.
+    + intro. cbn. fold evar_has_negative_occurrence. unfold evar_open in *.
+      rewrite <- IHϕ2. apply orb_id2r. intro H.
+      apply neg_occurrence_bevar_subst.
+      assumption.
+    + intro. cbn. specialize IHϕ with (S n). assumption.
+    + cbn. assumption.
+  }
+Defined.
+
+Lemma neg_occurrence_bsvar_subst x ϕ X n :
+  evar_has_negative_occurrence x ϕ =
+  evar_has_negative_occurrence x ϕ^{svar:n↦X}
+  with
+  pos_occurrence_bsvar_subst x ϕ X n :
+  evar_has_positive_occurrence x ϕ =
+  evar_has_positive_occurrence x ϕ^{svar:n↦X}.
+Proof.
+  {
+    clear neg_occurrence_bsvar_subst.
+    generalize dependent n.
+    induction ϕ; try reflexivity.
+    + intro. cbn. destruct compare_nat; reflexivity.
+    + intro. specialize IHϕ1 with n. specialize IHϕ2 with n. cbn.
+      rewrite IHϕ1 IHϕ2. reflexivity.
+    + intro. cbn. fold svar_has_positive_occurrence. unfold svar_open in *.
+      rewrite <- IHϕ2. apply orb_id2r. intro H.
+      apply pos_occurrence_bsvar_subst.
+    + cbn. assumption.
+    + intro. cbn. specialize IHϕ with (S n). assumption.
+  }
+  {
+    clear pos_occurrence_bsvar_subst.
+    generalize dependent n.
+    induction ϕ; try reflexivity.
+    + intro. cbn. destruct compare_nat; reflexivity.
+    + intro. specialize IHϕ1 with n. specialize IHϕ2 with n. cbn.
+      rewrite IHϕ1 IHϕ2. reflexivity.
+    + intro. cbn. fold svar_has_negative_occurrence. unfold svar_open in *.
+      rewrite <- IHϕ2. apply orb_id2r. intro H.
+      apply neg_occurrence_bsvar_subst.
+      + cbn. assumption.
+      + intro. cbn. specialize IHϕ with (S n). assumption.
+  }
+Defined.
+
+Lemma fresh_svar_no_neg X ϕ :
+  svar_is_fresh_in X ϕ ->
+  svar_has_negative_occurrence X ϕ = false
+  with
+  fresh_svar_no_pos X ϕ :
+  svar_is_fresh_in X ϕ ->
+  svar_has_positive_occurrence X ϕ = false.
+Proof.
+  all: intro H.
+  {
+    clear fresh_svar_no_neg.
+    induction ϕ; try reflexivity.
+    + feed specialize IHϕ1.
+      { apply svar_is_fresh_in_app_l in H. assumption. }
+      feed specialize IHϕ2.
+      { apply svar_is_fresh_in_app_r in H. assumption. }
+      cbn. rewrite IHϕ1 IHϕ2. reflexivity.
+    + feed specialize IHϕ1.
+      { apply svar_is_fresh_in_imp_l in H. assumption. }
+      feed specialize IHϕ2.
+      { apply svar_is_fresh_in_imp_r in H. assumption. }
+      cbn. fold svar_has_positive_occurrence. rewrite IHϕ2.
+      rewrite orb_false_r.
+      apply fresh_svar_no_pos.
+      apply svar_is_fresh_in_imp_l in H.
+      assumption.
+    + cbn. apply IHϕ. rewrite <- svar_is_fresh_in_exists. assumption.
+    + cbn. apply IHϕ. rewrite <- svar_is_fresh_in_mu. assumption.
+  }
+  {
+    clear fresh_svar_no_pos.
+    induction ϕ; try reflexivity.
+    + cbn. destruct decide.
+      - unfold svar_is_fresh_in in H. set_solver.
+      - reflexivity.
+    + feed specialize IHϕ1.
+      { apply svar_is_fresh_in_app_l in H. assumption. }
+      feed specialize IHϕ2.
+      { apply svar_is_fresh_in_app_r in H. assumption. }
+      cbn. rewrite IHϕ1 IHϕ2. reflexivity.
+    + feed specialize IHϕ1.
+      { apply svar_is_fresh_in_imp_l in H. assumption. }
+      feed specialize IHϕ2.
+      { apply svar_is_fresh_in_imp_r in H. assumption. }
+      cbn. fold svar_has_negative_occurrence. rewrite IHϕ2.
+      rewrite orb_false_r.
+      apply fresh_svar_no_neg.
+      apply svar_is_fresh_in_imp_l in H.
+      assumption.
+    + cbn. apply IHϕ. rewrite <- svar_is_fresh_in_exists. assumption.
+    + cbn. apply IHϕ. rewrite <- svar_is_fresh_in_mu. assumption.
+  }
+Defined.
+
 End lemmas.
 
 #[export]

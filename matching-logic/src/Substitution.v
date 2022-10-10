@@ -2932,6 +2932,109 @@ Lemma Private_no_negative_occurrence_svar_quantify ϕ level X:
       split_and!; auto.
   Qed.
 
+  Lemma free_evar_subst_free_evar_subst φ ψ η x n :
+    well_formed_closed_ex_aux ψ n ->
+    count_evar_occurrences x η = 0 ->
+    φ^[[evar:x ↦ ψ]]^[evar:n ↦ η] =
+    φ^[evar:n ↦ η]^[[evar:x ↦ ψ]].
+  Proof.
+    generalize dependent n.
+    induction φ; intros; simpl; auto.
+    * case_match. now rewrite bevar_subst_not_occur.
+      now simpl.
+    * case_match; simpl; auto.
+      now rewrite free_evar_subst_no_occurrence.
+    * erewrite IHφ1, IHφ2. reflexivity. all: auto.
+    * erewrite IHφ1, IHφ2. reflexivity. all: auto.
+    * erewrite IHφ; auto.
+      eapply well_formed_closed_ex_aux_ind. 2: eassumption. lia.
+    * erewrite IHφ; auto.
+  Defined.
+
+  Lemma subst_svar_evar_svar ϕ x ψ n :
+    count_evar_occurrences x ϕ = 0 ->
+    ϕ^[svar:n↦patt_free_evar x]^[[evar:x↦ψ]] = ϕ^[svar:n↦ψ].
+  Proof.
+    intro H.
+    generalize dependent n.
+    induction ϕ; try reflexivity.
+    + cbn in H. destruct decide in H.
+      - congruence.
+      - cbn. destruct decide.
+        * congruence.
+        * reflexivity.
+    + intro. simpl. destruct compare_nat.
+      - reflexivity.
+      - simpl. destruct decide.
+        * reflexivity.
+        * congruence.
+      - reflexivity.
+    + simpl in H. apply plus_is_O in H. destruct H as [H1 H2].
+      intro. specialize IHϕ1 with n. specialize IHϕ2 with n.
+      apply IHϕ1 in H1. apply IHϕ2 in H2.
+      simpl. rewrite H1 H2. reflexivity.
+    + simpl in H. apply plus_is_O in H. destruct H as [H1 H2].
+      intro. specialize IHϕ1 with n. specialize IHϕ2 with n.
+      apply IHϕ1 in H1. apply IHϕ2 in H2.
+      simpl. rewrite H1 H2. reflexivity.
+    + simpl in H. intro. specialize IHϕ with n. apply IHϕ in H. simpl. rewrite H. reflexivity.
+    + simpl in H. intro.
+      simpl. f_equal.
+      pose proof (HS := IHϕ H (S n)).
+      assumption.
+  Defined.
+
+  Lemma no_neg_svar_subst ϕ x n :
+    x ∉ free_evars ϕ ->
+    no_negative_occurrence_db_b n ϕ = true ->
+    ~~evar_has_negative_occurrence x ϕ^[svar:n↦patt_free_evar x]
+    with
+    no_pos_svar_subst ϕ x n :
+    x ∉ free_evars ϕ ->
+    no_positive_occurrence_db_b n ϕ = true ->
+    ~~evar_has_positive_occurrence x ϕ^[svar:n↦patt_free_evar x].
+  Proof.
+    {
+      clear no_neg_svar_subst.
+      generalize dependent n.
+      induction ϕ; intros n' H0 H; simpl in *; auto.
+      * case_match; auto.
+      * cbn. cbn in H.
+        rewrite negb_orb. unfold is_true in *. rewrite IHϕ1; auto.
+        2: rewrite IHϕ2; auto.
+        all: clear -H0; set_solver.
+      * cbn. fold evar_has_positive_occurrence.
+        cbn in H. fold no_positive_occurrence_db_b in H.
+        destruct_and! H.
+        rewrite negb_orb. unfold is_true in *.
+        rewrite IHϕ2; auto. clear -H0. set_solver.
+        rewrite no_pos_svar_subst; auto. clear -H0. set_solver.
+      * cbn in *. now apply IHϕ.
+      * cbn in *. now apply IHϕ.
+    }
+    {
+      clear no_pos_svar_subst.
+      generalize dependent n.
+      induction ϕ; intros n' H0 H; simpl in *; auto.
+      * cbn. case_match; auto. set_solver.
+      * case_match; auto. cbn in *. subst.
+        destruct (decide (n' = n')); congruence.
+      * cbn in H.
+        rewrite negb_orb. fold evar_has_positive_occurrence.
+        unfold is_true in *. rewrite IHϕ1; auto.
+        2: rewrite IHϕ2; auto.
+        all: clear -H0; set_solver.
+      * cbn. fold evar_has_negative_occurrence.
+        cbn in H. fold no_negative_occurrence_db_b in H.
+        destruct_and! H.
+        rewrite negb_orb. unfold is_true in *.
+        rewrite IHϕ2; auto. clear -H0. set_solver.
+        rewrite no_neg_svar_subst; auto. clear -H0. set_solver.
+      * cbn in *. now apply IHϕ.
+      * cbn in *. now apply IHϕ.
+    }
+  Defined.
+
 End subst.
 
 
