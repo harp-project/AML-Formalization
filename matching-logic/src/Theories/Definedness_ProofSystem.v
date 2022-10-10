@@ -841,7 +841,7 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
       apply Ex_gen with (x := x) in IHpf.
       3: { simpl. set_solver. }
       2: { apply pile_evs_svs_kt.
-        { set_solver. }
+        { clear -Hpf2. set_solver. }
         { set_solver. }
         { reflexivity. }
         { clear. set_solver. }

@@ -32,5 +32,8 @@ Section with_signature.
   Definition emplace (ctx : PatternCtx) (p : Pattern) : Pattern :=
     (pcPattern ctx)^[[evar: (pcEvar ctx) ↦ p]].
 
+  Definition is_positive_context (C : PatternCtx) := ~~ evar_has_negative_occurrence (pcEvar C) (pcPattern C).
+
+  Definition is_negative_context (C : PatternCtx) := ~~ evar_has_positive_occurrence (pcEvar C) (pcPattern C).
 
 End with_signature.
