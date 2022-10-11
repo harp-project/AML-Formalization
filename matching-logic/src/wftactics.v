@@ -94,14 +94,9 @@ Ltac simplifyWfxyHyp H :=
   end
 .
 
-Ltac compoundSimplifyHyp H :=
-  destruct_andb? H;
-  simplifyWfxyHyp H
-.
-
 Ltac compositeSimplifyAllWfHyps :=
   proved_hook_wfauto;
-  (onAllHyps compoundSimplifyHyp) ;{ compoundSimplifyHyp }
+  (onAllHyps simplifyWfxyHyp)
 .
 
 
