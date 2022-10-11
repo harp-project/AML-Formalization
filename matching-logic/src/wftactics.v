@@ -73,7 +73,7 @@ Ltac simplifyWfxyHyp H :=
   end;
   match type of H with
   | well_formed_xy ?x ?y ?p = true =>
-    (rewrite ?[well_formed_xy x y p = true]wfxySimplifications in H)
+    rewrite ?wfxySimplifications in H
   | _ => idtac
   end;
   (* try destruct conjunctions *)
@@ -279,21 +279,7 @@ Ltac simplifyWfHypParts H :=
   end
 .
 
-Ltac fastWfSimplParts H :=
-  lazymatch type of H with
-  | true = true => clear H
-  | ?x = true =>
-    lazymatch goal with
-    | [ |- context [x]]
-      => (*idtac "Simplifying goal with" x;*)
-      try assumption; rewrite !H; simpl; try reflexivity
-    | _ => idtac
-    end
-  | _ => idtac
-  end
-.
-
-Ltac toBeRunOnAllHypsParts h := (*fastWfSimplParts h;*) simplifyWfHypParts h.
+Ltac toBeRunOnAllHypsParts h := simplifyWfHypParts h.
 
 Ltac simplifyAllWfHypsParts :=
   (onAllHyps toBeRunOnAllHypsParts) ;{ toBeRunOnAllHypsParts }
