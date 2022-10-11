@@ -720,6 +720,33 @@ Proof.
   { rewrite 2!lwf_xy_cons. rewrite IHxs. btauto. }
 Qed.
 
+Lemma lwf_xy_app_compose
+  {Σ : Signature} (m n : nat) (xs ys : list Pattern)
+  :
+  lwf_xy m n xs = true /\ lwf_xy m n ys = true ->
+  lwf_xy m n (xs ++ ys) = true
+.
+Proof.
+  intros H.
+  rewrite lwf_xy_app.
+  destruct H as [H1 H2].
+  rewrite H1 H2.
+  reflexivity.
+Qed.
+
+Lemma lwf_xy_app_decompose
+  {Σ : Signature} (m n : nat) (xs ys : list Pattern)
+  :
+  lwf_xy m n (xs ++ ys) = true ->
+  lwf_xy m n xs = true /\ lwf_xy m n ys = true
+.
+Proof.
+  intros H.
+  rewrite lwf_xy_app in H.
+  destruct_and!.
+  split; assumption.
+Qed.
+
 Lemma lwf_positive_app
   {Σ : Signature} (xs ys : list Pattern)
   :

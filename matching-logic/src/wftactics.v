@@ -61,14 +61,20 @@ Ltac simplifyWfxyHyp H :=
   | _ => idtac
   end;
   try lazymatch type of H with
+  | lwf_xy ?m ?n (?xs ++ ?ys) = true
+    => apply lwf_xy_app_decompose in H;
+       destruct H; simplifyWfxyHyp H
   | well_formed_xy ?x ?y (?binary ?ψ1 ?ψ2) = true
     => apply binary_wfxy_decompose in H;
        destruct H; simplifyWfxyHyp H
   | well_formed_xy ?x ?y (?unary ?ψ1) = true
     => apply unary_wfxy_decompose in H;
        simplifyWfxyHyp H
+  (* No point in simplifying these *)
+  (*
   | well_formed_xy ?x ?y ?nullary = true
     => apply nullary_wfxy in H
+    *)
   | _ => idtac
   end
   (*;
@@ -179,6 +185,7 @@ Ltac wf_auto2_composite_step :=
   compoundDecomposeWfGoal;
   wf_auto2_fast_done;
   try first [
+    apply lwf_xy_app_compose |
     apply (binary_wfxy_compose _) |
     apply (unary_wfxy_compose _) |
     apply (nullary_wfxy _) |
