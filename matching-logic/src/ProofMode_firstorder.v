@@ -691,7 +691,10 @@ Section with_signature.
     apply Ex_gen. apply pile_refl.
     apply evar_is_fresh_in_free_evar_subst. unfold evar_is_fresh_in. set_solver.
     toMLGoal.
-    { wf_auto2. }
+    { wf_auto2_fast.
+    Search well_formed free_evar_subst.
+      simpl.
+    }
     mlIntro "H".
     mlAssert ("H0" : (all , φ^{{evar: x ↦ 0}})). wf_auto2.
   Abort.
