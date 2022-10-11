@@ -309,8 +309,7 @@ Ltac wf_auto2_decompose_hyps_parts :=
   wf_auto2_unfolds;
   simpl in *;
   destruct_andb?;
-  decomposeWfHypsIntoParts;
-  (destruct_andb? ;{ fastWfSimplParts })
+  decomposeWfHypsIntoParts
 .
 
 Ltac wf_auto2_step_parts :=
