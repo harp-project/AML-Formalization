@@ -281,7 +281,7 @@ Ltac fastWfSimplParts H :=
   end
 .
 
-Ltac toBeRunOnAllHypsParts h := fastWfSimplParts h; simplifyWfHypParts h.
+Ltac toBeRunOnAllHypsParts h := (*fastWfSimplParts h;*) simplifyWfHypParts h.
 
 Ltac simplifyAllWfHypsParts :=
   (onAllHyps toBeRunOnAllHypsParts) ;{ toBeRunOnAllHypsParts }
