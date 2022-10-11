@@ -688,6 +688,33 @@ Lemma lwf_xy_cons
 .
 Proof. reflexivity. Qed.
 
+Lemma lwf_xy_cons_compose
+  {Σ : Signature} (m n : nat) (x : Pattern) (xs : list Pattern)
+  :
+  well_formed_xy m n x = true /\ lwf_xy m n xs = true ->
+  lwf_xy m n (x::xs) = true
+.
+Proof.
+  intros H.
+  rewrite lwf_xy_cons.
+  destruct H as [H1 H2].
+  rewrite H1 H2.
+  reflexivity.
+Qed.
+
+Lemma lwf_xy_cons_decompose
+  {Σ : Signature} (m n : nat) (x : Pattern) (xs : list Pattern)
+  :
+  lwf_xy m n (x::xs) = true ->
+  well_formed_xy m n x = true /\ lwf_xy m n xs = true
+.
+Proof.
+  intros H.
+  rewrite lwf_xy_cons in H.
+  destruct_and!.
+  split; assumption.
+Qed.
+
 Lemma lwf_positive_cons
   {Σ : Signature} (x : Pattern) (xs : list Pattern)
   :

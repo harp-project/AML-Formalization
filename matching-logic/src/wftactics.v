@@ -53,7 +53,7 @@ Definition wfxySimplifications := (
 
 Ltac simplifyWfxyHyp H :=
   unfold is_true in H;
-  match type of H with
+  lazymatch type of H with
   | well_formed _ = true
     => apply wf_wfxy00_decompose in H
   | Pattern.wf _ = true
@@ -61,14 +61,29 @@ Ltac simplifyWfxyHyp H :=
   | _ => idtac
   end;
   try lazymatch type of H with
+  | lwf_xy ?m ?n (?x::?xs) = true
+    => apply lwf_xy_cons_decompose in H;
+       let H1 := fresh "H1" in
+       let H2 := fresh "H2" in
+       destruct H as [H1 H2];
+       simplifyWfxyHyp H1;
+       simplifyWfxyHyp H2
   | lwf_xy ?m ?n (?xs ++ ?ys) = true
     => apply lwf_xy_app_decompose in H;
-       destruct H; simplifyWfxyHyp H
+      let H1 := fresh "H1" in
+      let H2 := fresh "H2" in
+      destruct H as [H1 H2];
+      simplifyWfxyHyp H1;
+      simplifyWfxyHyp H2
   | well_formed_xy ?x ?y (?binary ?ψ1 ?ψ2) = true
-    => apply binary_wfxy_decompose in H;
-       destruct H; simplifyWfxyHyp H
+    => apply (binary_wfxy_decompose _) in H;
+      let H1 := fresh "H1" in
+      let H2 := fresh "H2" in
+      destruct H as [H1 H2];
+      simplifyWfxyHyp H1;
+      simplifyWfxyHyp H2
   | well_formed_xy ?x ?y (?unary ?ψ1) = true
-    => apply unary_wfxy_decompose in H;
+    => apply (unary_wfxy_decompose _) in H;
        simplifyWfxyHyp H
   (* No point in simplifying these *)
   (*
@@ -77,21 +92,6 @@ Ltac simplifyWfxyHyp H :=
     *)
   | _ => idtac
   end
-  (*;
-  match type of H with
-  | well_formed_xy ?x ?y ?p = true =>
-    rewrite ?wfxySimplifications in H
-  | _ => idtac
-  end;
-  (* try destruct conjunctions *)
-  (* TODO need the same lazy destruct for normal conjunction *)
-  let tH := type of H in
-  (destruct_andb? H) ;{
-    fun h' =>
-      let th' := type of h' in
-      idtac; simplifyWfxyHyp h'
-      (*idtac "From " tH " generate " th' "."*)
-  }*)
 .
 
 Ltac compoundSimplifyHyp H :=
@@ -185,6 +185,7 @@ Ltac wf_auto2_composite_step :=
   compoundDecomposeWfGoal;
   wf_auto2_fast_done;
   try first [
+    apply lwf_xy_cons_compose |
     apply lwf_xy_app_compose |
     apply (binary_wfxy_compose _) |
     apply (unary_wfxy_compose _) |
