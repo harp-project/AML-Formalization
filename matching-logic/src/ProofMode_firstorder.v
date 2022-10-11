@@ -691,10 +691,7 @@ Section with_signature.
     apply Ex_gen. apply pile_refl.
     apply evar_is_fresh_in_free_evar_subst. unfold evar_is_fresh_in. set_solver.
     toMLGoal.
-    { wf_auto2_fast.
-    Search well_formed free_evar_subst.
-      simpl.
-    }
+    { wf_auto2. }
     mlIntro "H".
     mlAssert ("H0" : (all , φ^{{evar: x ↦ 0}})). wf_auto2.
   Abort.
@@ -707,7 +704,7 @@ Section with_signature.
   Proof.
     unfold of_MLGoal. simpl. intros Γ l g i x xN PI H wf1 wf2.
     eapply prf_weaken_conclusion_iter_meta_meta. 5: apply H.
-    all: try wf_auto2.
+    all: try solve[wf_auto2].
     toMLGoal. wf_auto2. mlIntro "H". mlIntro "H0".
     epose proof (Ex_gen Γ (! g^{evar: 0 ↦ x}) ⊥ x i _ _).
     mlApplyMeta H0. unfold exists_quantify. simpl.
