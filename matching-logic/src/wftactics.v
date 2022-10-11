@@ -52,7 +52,7 @@ Definition wfxySimplifications := (
 ).
 
 Ltac simplifyWfxyHyp H :=
-  unfold is_true in *;
+  unfold is_true in H;
   match type of H with
   | well_formed _ = true
     => rewrite wf_wfxy00 in H
