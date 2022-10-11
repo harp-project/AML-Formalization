@@ -987,7 +987,8 @@ Section with_signature.
     well_formed (patt_mu ϕ) ->
     well_formed (ϕ^{svar: 0 ↦ X}).
   Proof.
-    intros H. wf_auto2.
+    intros H. (*compoundDecomposeWfGoal.
+    apply (unary_wfxy_compose _).*) wf_auto2.
     (*
     wf_auto2_fast_done.
     compositeSimplifyAllWfHyps.

@@ -409,7 +409,7 @@ Proof.
   btauto.
 Qed.
 
-Lemma unary_wfxy_compose (unary : Pattern -> Pattern) {_ : Unary unary} :
+Lemma unary_wfxy_compose (unary : Pattern -> Pattern) {_uu : Unary unary} :
 forall (x y : nat) (ψ : Pattern),
   well_formed_xy x y ψ = true ->
   well_formed_xy x y (unary ψ) = true

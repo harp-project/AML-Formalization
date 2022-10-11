@@ -70,7 +70,8 @@ Ltac simplifyWfxyHyp H :=
   | well_formed_xy ?x ?y ?nullary = true
     => apply nullary_wfxy in H
   | _ => idtac
-  end;
+  end
+  (*;
   match type of H with
   | well_formed_xy ?x ?y ?p = true =>
     rewrite ?wfxySimplifications in H
@@ -84,7 +85,7 @@ Ltac simplifyWfxyHyp H :=
       let th' := type of h' in
       idtac; simplifyWfxyHyp h'
       (*idtac "From " tH " generate " th' "."*)
-  }
+  }*)
 .
 
 Ltac compoundSimplifyHyp H :=
@@ -178,6 +179,9 @@ Ltac wf_auto2_composite_step :=
   compoundDecomposeWfGoal;
   wf_auto2_fast_done;
   try first [
+    apply (binary_wfxy_compose _) |
+    apply (unary_wfxy_compose _) |
+    apply (nullary_wfxy _) |
     apply wf_evar_open_from_wf_ex |
     apply wf_sctx
   ]
