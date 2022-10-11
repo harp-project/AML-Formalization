@@ -595,6 +595,21 @@ Lemma wf_wfxy00 {Σ : Signature} (ϕ : Pattern) :
 .
 Proof. rewrite wfxy00_wf. reflexivity. Qed.
 
+Lemma wf_wfxy00_compose {Σ : Signature} (ϕ : Pattern) :
+  well_formed_xy 0 0 ϕ = true ->
+  well_formed ϕ = true
+.
+Proof.
+  intros H. rewrite wf_wfxy00. exact H.
+Qed.
+
+Lemma wf_wfxy00_decompose {Σ : Signature} (ϕ : Pattern) :
+  well_formed ϕ = true ->
+  well_formed_xy 0 0 ϕ = true
+.
+Proof.
+  intros H. rewrite -wf_wfxy00. exact H.
+Qed.
 
 Definition lwf_xy {Σ : Signature} (x y : nat) (l : list Pattern)
   := fold_right andb true (map (well_formed_xy x y) l).
@@ -622,6 +637,22 @@ Proof.
     rewrite -wfxy00_wf.
     reflexivity.
   }
+Qed.
+
+Lemma wf_lwf_xy_compose {Σ : Signature} (l : list Pattern) :
+  lwf_xy 0 0 l = true ->
+  wf l = true
+.
+Proof.
+  intros H. rewrite wf_lwf_xy. exact H.
+Qed.
+
+Lemma wf_lwf_xy_decompose {Σ : Signature} (l : list Pattern) :
+  wf l = true ->
+  lwf_xy 0 0 l = true
+.
+Proof.
+  intros H. rewrite -wf_lwf_xy. exact H.
 Qed.
 
 Lemma wf_corr {Σ : Signature} (l : list Pattern) :

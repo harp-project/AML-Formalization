@@ -350,6 +350,36 @@ Proof.
   btauto.
 Qed.
 
+Lemma binary_wfxy_compose
+  (binary : Pattern -> Pattern -> Pattern)
+  {_b : Binary binary}
+:
+forall (x y : nat) (ψ1 ψ2 : Pattern),
+  well_formed_xy x y ψ1 = true /\ well_formed_xy x y ψ2 = true ->
+  well_formed_xy x y (binary ψ1 ψ2) = true
+.
+Proof.
+  intros x y ψ1 ψ2 H.
+  rewrite binary_wfxy.
+  destruct H as [H1 H2].
+  rewrite H1 H2.
+  reflexivity.
+Qed.
+
+Lemma binary_wfxy_decompose
+  (binary : Pattern -> Pattern -> Pattern)
+  {_b : Binary binary}
+:
+forall (x y : nat) (ψ1 ψ2 : Pattern),
+  well_formed_xy x y (binary ψ1 ψ2) = true ->
+  well_formed_xy x y ψ1 = true /\ well_formed_xy x y ψ2 = true
+.
+Proof.
+  intros x y ψ1 ψ2 H.
+  rewrite binary_wfxy in H.
+  apply andb_true_iff in H.
+  exact H.
+Qed.
 
 Class Unary (unary : Pattern -> Pattern) := {
     unary_morphism :
@@ -378,6 +408,29 @@ Proof.
   rewrite unary_wfcmu.
   btauto.
 Qed.
+
+Lemma unary_wfxy_compose (unary : Pattern -> Pattern) {_ : Unary unary} :
+forall (x y : nat) (ψ : Pattern),
+  well_formed_xy x y ψ = true ->
+  well_formed_xy x y (unary ψ) = true
+.
+Proof.
+  intros x y ψ H'.
+  rewrite unary_wfxy.
+  exact H'.
+Qed.
+
+Lemma unary_wfxy_decompose (unary : Pattern -> Pattern) {_ : Unary unary} :
+forall (x y : nat) (ψ : Pattern),
+  well_formed_xy x y (unary ψ) = true ->
+  well_formed_xy x y ψ = true
+.
+Proof.
+  intros x y ψ H'.
+  rewrite unary_wfxy in H'.
+  exact H'.
+Qed.
+
 
 Class Nullary (nullary : Pattern) := {
     nullary_morphism :

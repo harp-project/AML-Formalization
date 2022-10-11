@@ -55,22 +55,34 @@ Ltac simplifyWfxyHyp H :=
   unfold is_true in H;
   match type of H with
   | well_formed _ = true
-    => rewrite wf_wfxy00 in H
+    => apply wf_wfxy00_decompose in H
   | Pattern.wf _ = true
-    => rewrite wf_lwf_xy in H
+    => apply wf_lwf_xy_decompose in H
+  | _ => idtac
+  end;
+  try lazymatch type of H with
+  | well_formed_xy ?x ?y (?binary ?ψ1 ?ψ2) = true
+    => apply binary_wfxy_decompose in H;
+       destruct H; simplifyWfxyHyp H
+  | well_formed_xy ?x ?y (?unary ?ψ1) = true
+    => apply unary_wfxy_decompose in H;
+       simplifyWfxyHyp H
+  | well_formed_xy ?x ?y ?nullary = true
+    => apply nullary_wfxy in H
   | _ => idtac
   end;
   match type of H with
-  | well_formed_xy _ _ _ = true =>
-    rewrite ?wfxySimplifications in H
+  | well_formed_xy ?x ?y ?p = true =>
+    (rewrite ?[well_formed_xy x y p = true]wfxySimplifications in H)
   | _ => idtac
   end;
   (* try destruct conjunctions *)
+  (* TODO need the same lazy destruct for normal conjunction *)
   let tH := type of H in
   (destruct_andb? H) ;{
     fun h' =>
       let th' := type of h' in
-      idtac
+      idtac; simplifyWfxyHyp h'
       (*idtac "From " tH " generate " th' "."*)
   }
 .
