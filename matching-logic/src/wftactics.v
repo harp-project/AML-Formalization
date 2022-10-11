@@ -55,9 +55,9 @@ Ltac simplifyWfxyHyp H :=
   unfold is_true in *;
   match type of H with
   | well_formed _ = true
-    => rewrite wfToWfxySimplifications in H
+    => rewrite wf_wfxy00 in H
   | Pattern.wf _ = true
-    => rewrite wfToWfxySimplifications in H
+    => rewrite wf_lwf_xy in H
   | _ => idtac
   end;
   match type of H with
@@ -361,14 +361,18 @@ Ltac print_hyps :=
   end
 .
 
-Ltac wf_auto2 :=
-  clear_all_impls;
-  wf_auto2_fast;
+Ltac wf_auto2_fallback :=
   match goal with
   | [ |- ?G ] => idtac "Falling back on " G (*; print_hyps*)
   end;
   repeat wf_auto2_decompose_hyps_parts;
   repeat wf_auto2_step_parts
+.
+
+Ltac wf_auto2 :=
+  clear_all_impls;
+  wf_auto2_fast;
+  wf_auto2_fallback
 .
 (*
 Ltac wf_auto2_step := 
