@@ -543,6 +543,41 @@ Proof.
   }
 Qed.
 
+Lemma well_formed_xy_foldr_binary_compose
+  (binary : Pattern -> Pattern -> Pattern)
+  {_bin : Binary binary}
+  (m n : nat)
+  (g : Pattern)
+  (xs : list Pattern)
+  :
+  (well_formed_xy m n g = true /\ lwf_xy m n xs = true) ->
+  well_formed_xy m n (foldr binary g xs) = true
+.
+Proof.
+  intros H.
+  rewrite well_formed_xy_foldr_binary.
+  destruct H as [H1 H2].
+  rewrite H1 H2.
+  reflexivity.
+Qed.
+
+Lemma well_formed_xy_foldr_binary_decompose
+  (binary : Pattern -> Pattern -> Pattern)
+  {_bin : Binary binary}
+  (m n : nat)
+  (g : Pattern)
+  (xs : list Pattern)
+  :
+  well_formed_xy m n (foldr binary g xs) = true ->
+  (well_formed_xy m n g = true /\ lwf_xy m n xs = true)
+.
+Proof.
+  intros H.
+  rewrite well_formed_xy_foldr_binary in H.
+  apply andb_true_iff in H.
+  exact H.
+Qed.
+
 Class EBinder (binder : Pattern -> Pattern) := {
     ebinder_morphism :
       forall {A : Type} (f : A -> Pattern -> Pattern) (f_morph : PatternMorphism f) (phi : Pattern) a,

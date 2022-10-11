@@ -61,6 +61,13 @@ Ltac simplifyWfxyHyp H :=
   | _ => idtac
   end;
   try lazymatch type of H with
+  | well_formed_xy ?m ?n (foldr ?binary ?g ?xs) = true
+    => apply (well_formed_xy_foldr_binary_decompose _) in H;
+       let H1 := fresh "H1" in
+       let H2 := fresh "H2" in
+       destruct H as [H1 H2];
+       simplifyWfxyHyp H1;
+       simplifyWfxyHyp H2
   | lwf_xy ?m ?n (?x::?xs) = true
     => apply lwf_xy_cons_decompose in H;
        let H1 := fresh "H1" in
@@ -176,10 +183,13 @@ Ltac wf_auto2_fast_done :=
 .
   
 Ltac wf_auto2_composite_step :=
+  unfold is_true;
   simpl;
-  compoundDecomposeWfGoal;
-  wf_auto2_fast_done;
-  try first [
+  repeat first [
+    split |
+    apply wf_wfxy00_compose |
+    apply wf_lwf_xy_compose |
+    apply (well_formed_xy_foldr_binary_compose _) |
     apply lwf_xy_cons_compose |
     apply lwf_xy_app_compose |
     apply (binary_wfxy_compose _) |
@@ -187,7 +197,9 @@ Ltac wf_auto2_composite_step :=
     apply (nullary_wfxy _) |
     apply wf_evar_open_from_wf_ex |
     apply wf_sctx
-  ]
+  ];
+  wf_auto2_fast_done
+  (*compoundDecomposeWfGoal*)
 .
 
 Definition wfPositiveSimplifications := (

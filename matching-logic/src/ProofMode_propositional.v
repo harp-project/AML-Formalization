@@ -72,6 +72,14 @@ Proof.
   {
     wf_auto2.
   }
+  (*
+  unshelve (epose proof (H2 := (P2 Γ (A ---> B ---> Bot) (A ---> B) (A ---> Bot) _ _ _ ))).
+  {
+(*    compositeSimplifyAllWfHyps.
+    wf_auto2_composite_step. *)
+    wf_auto2.
+  }
+  *)
   pose proof (H2 := (P2 Γ (A ---> B ---> Bot) (A ---> B) (A ---> Bot) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2))).
   pose proof (H3 := MP H1 H2).
   pose proof (H4 := (P1 Γ (((A ---> B ---> Bot) ---> A ---> B) ---> (A ---> B ---> Bot) ---> A ---> Bot)
