@@ -99,8 +99,10 @@ Section definedness.
     auto.
   Qed.
 
+  (*
   #[local]
    Hint Resolve well_formed_defined : core.
+   *)
 
   Lemma well_formed_total ϕ:
     well_formed ϕ = true ->
@@ -108,45 +110,48 @@ Section definedness.
   Proof.
     intros Hwfϕ.
     unfold patt_total.
-    auto.
+    wf_auto2.
   Qed.
-
+(*
   #[local]
    Hint Resolve well_formed_total : core.
-
+*)
   Lemma well_formed_equal (phi1 phi2 : Pattern) :
     well_formed phi1 = true ->
     well_formed phi2 = true ->
     well_formed (phi1 =ml phi2) = true.
   Proof.
-    intros wfphi1 wfphi2. unfold "=ml". auto.
+    intros wfphi1 wfphi2. unfold "=ml". wf_auto2.
   Qed.
-
+(*
   #[local]
    Hint Resolve well_formed_equal : core.
-
+*)
   Lemma well_formed_subseteq (phi1 phi2 : Pattern) :
     well_formed phi1 = true ->
     well_formed phi2 = true ->
     well_formed (phi1 ⊆ml phi2) = true.
   Proof.
-    intros wfphi1 wfphi2. unfold "⊆ml". auto.
+    intros wfphi1 wfphi2. unfold "⊆ml". wf_auto2.
   Qed.
 
+  (*
   #[local]
    Hint Resolve well_formed_subseteq : core.
+*)
 
   Lemma well_formed_in (phi1 phi2 : Pattern) :
     well_formed phi1 = true ->
     well_formed phi2 = true ->
     well_formed (phi1 ∈ml phi2) = true.
   Proof.
-    intros wfphi1 wfphi2. unfold "∈ml". auto.
+    intros wfphi1 wfphi2. unfold "∈ml". wf_auto2.
   Qed.
 
+  (*
   #[local]
    Hint Resolve well_formed_in : core.
-
+*)
 
   Definition ev_x := (evar_fresh []).
   Definition p_x := patt_free_evar ev_x.
@@ -168,57 +173,90 @@ Section definedness.
 
   Definition theory := theory_of_NamedAxioms named_axioms.
 
+  Obligation Tactic := idtac.
+
   (** Substitution classes: *)
   #[global]
   Program Instance Unary_defined : Unary patt_defined := {}.
   Next Obligation.
-    unfold patt_defined. repeat rewrite pm_correctness.
+    intros. unfold patt_defined. repeat rewrite pm_correctness.
     simpl. reflexivity.
   Defined.
+  Next Obligation.
+    wf_auto2.
+  Qed.
+  Next Obligation.
+    wf_auto2.
+  Qed.
+  Next Obligation.
+    wf_auto2.
+  Qed.
 
   #[global]
   Program Instance Unary_total : Unary patt_total := {}.
   Next Obligation.
-    unfold patt_total. repeat rewrite pm_correctness.
+    intros. unfold patt_total. repeat rewrite pm_correctness.
     simpl. reflexivity.
   Defined.
   Next Obligation.
-    unfold patt_total.
-    wf_auto2.
-  Defined.
+    intros. wf_auto2.
+  Qed.
+  Next Obligation.
+    intros. wf_auto2.
+  Qed.
+  Next Obligation.
+    intros. wf_auto2.
+  Qed.
 
   #[global]
   Program Instance Binary_equal : Binary patt_equal := {}.
   Next Obligation.
-    unfold patt_equal. repeat rewrite pm_correctness.
+    intros. unfold patt_equal. repeat rewrite pm_correctness.
     simpl. reflexivity.
   Defined.
   Next Obligation.
-    unfold patt_equal.
-    wf_auto2.
-  Defined.
+    intros. wf_auto2.
+  Qed.
+  Next Obligation.
+    intros. wf_auto2.
+  Qed.
+  Next Obligation.
+    intros. wf_auto2.
+  Qed.
+
+
 
   #[global]
   Program Instance Binary_subseteq : Binary patt_subseteq := {}.
   Next Obligation.
-    unfold patt_subseteq. repeat rewrite pm_correctness.
+    intros. unfold patt_subseteq. repeat rewrite pm_correctness.
     simpl. reflexivity.
   Defined.
   Next Obligation.
-    unfold patt_subseteq.
-    wf_auto2.
-  Defined.
+    intros. wf_auto2.
+  Qed.
+  Next Obligation.
+    intros. wf_auto2.
+  Qed.
+  Next Obligation.
+    intros. wf_auto2.
+  Qed.
 
   #[global]
   Program Instance Binary_in : Binary patt_in := {}.
   Next Obligation.
-    unfold patt_in. repeat rewrite pm_correctness.
+    intros. unfold patt_in. repeat rewrite pm_correctness.
     simpl. reflexivity.
   Defined.
   Next Obligation.
-    unfold patt_in.
-    wf_auto2.
-  Defined.
+    intros. wf_auto2.
+  Qed.
+  Next Obligation.
+    intros. wf_auto2.
+  Qed.
+  Next Obligation.
+    intros. wf_auto2.
+  Qed.
 
   (* Defines ϕ₁ to be an inversion of ϕ₂ *)
   (* ∀ x. ϕ₁ x = ∃ y. y ∧ (x ∈ ϕ₂ y)
