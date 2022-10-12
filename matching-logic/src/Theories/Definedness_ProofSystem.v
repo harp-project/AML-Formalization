@@ -270,7 +270,7 @@ Proof.
         { set_solver. }
         { apply reflexivity. }
         { reflexivity. }
-        { unfold defFP. clear. set_solver. }
+        {  unfold defFP. simpl. pi_set_solver. }
       }
       apply Htmp1.
     }
@@ -834,10 +834,10 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
         { apply Hpf4. }
         { clear -pwi_pf_fp. set_solver. }
       }
-      { wf_auto2. }
+      { clear pwi_pf_fp. wf_auto2. }
 
       apply reorder_meta in IHpf.
-      2-4: wf_auto2.
+      2-4: clear pwi_pf_fp; wf_auto2.
       apply Ex_gen with (x := x) in IHpf.
       3: { simpl. set_solver. }
       2: { apply pile_evs_svs_kt.
@@ -847,7 +847,7 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
         { clear. set_solver. }
       }
       apply reorder_meta in IHpf.
-      2-4: wf_auto2.
+      2-4: clear pwi_pf_fp; wf_auto2.
       exact IHpf.
       
     - (* Propagation of ⊥, left *)
@@ -928,9 +928,9 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
       *)
       assert (S2: Γ ⊢i phi1 ---> (phi2 or ⌈ ! ψ ⌉) using i').
       { toMLGoal.
-        { wf_auto2. }
+        { clear pwi_pf_fp; wf_auto2. }
         mlAdd IHpf. mlIntro.
-        mlAdd (useBasicReasoning i' (A_or_notA Γ (⌈ ! ψ ⌉) ltac:(wf_auto2))).
+        mlAdd (useBasicReasoning i' (A_or_notA Γ (⌈ ! ψ ⌉) ltac:(clear pwi_pf_fp; wf_auto2))).
         mlDestructOr "0".
         - mlRight. mlExact "3".
         - mlLeft.
@@ -978,12 +978,12 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
       {
         pose proof (Htmp := prf_prop_or_iff Γ (ctx_app_l box psi ltac:(assumption)) phi2 (⌈! ψ ⌉)).
         feed specialize Htmp.
-        { wf_auto2. }
-        { wf_auto2. }
+        { clear pwi_pf_fp;wf_auto2. }
+        { clear pwi_pf_fp;wf_auto2. }
         simpl in Htmp.
         apply pf_iff_proj1 in Htmp.
-        3: wf_auto2.
-        2: wf_auto2.
+        3: clear pwi_pf_fp; wf_auto2.
+        2: clear pwi_pf_fp; wf_auto2.
         subst i'.
         eapply syllogism_meta.
         5: {
@@ -991,13 +991,13 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
           clear. try_solve_pile.
         }
         4: assumption.
-        all: wf_auto2.
+        all: clear pwi_pf_fp; wf_auto2.
       }
 
       assert (S6: Γ ⊢i ((phi2 $ psi) or (⌈ ! ψ ⌉ $ psi)) ---> ((phi2 $ psi) or (⌈ ! ψ ⌉)) using i').
       {
         toMLGoal.
-        { wf_auto2. }
+        { clear pwi_pf_fp; wf_auto2. }
         mlIntro. mlAdd S3.
         (* TODO we need a tactic for adding  something with stronger constraint. *)
         mlAdd (useBasicReasoning i' (A_or_notA Γ (phi2 $ psi) ltac:(auto))).
@@ -1009,10 +1009,10 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
       assert (S7: Γ ⊢i (phi1 $ psi) ---> ((phi2 $ psi)  or ⌈ ! ψ ⌉) using i').
       {
         toMLGoal.
-        { wf_auto2. }
+        { clear pwi_pf_fp; wf_auto2. }
         mlAdd S5. mlAdd S6. mlIntro.
         mlAssert (((phi2 $ psi) or (⌈ ! ψ ⌉ $ psi))).
-        { wf_auto2. }
+        { clear pwi_pf_fp; wf_auto2. }
         { mlApply "0". mlExactn 2. }
         mlDestructOr "3".
         - mlLeft. mlExactn 3.
@@ -1020,15 +1020,15 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
       }
 
       toMLGoal.
-      { wf_auto2. }
+      { clear pwi_pf_fp; wf_auto2. }
       do 2 mlIntro. mlAdd S7.
       mlAssert ((phi2 $ psi or ⌈ ! ψ ⌉)).
-      { wf_auto2. }
+      { clear pwi_pf_fp; wf_auto2. }
       { mlApply "2". mlExactn 2. }
       mlDestructOr "3".
       + mlExactn 3.
       + mlAssert ((phi2 $ psi or ⌈ ! ψ ⌉)).
-        { wf_auto2. }
+        { clear pwi_pf_fp; wf_auto2. }
         { mlApply "2". mlExactn 2. }
         mlAdd (useBasicReasoning i' (A_or_notA Γ (phi2 $ psi) ltac:(auto))).
         mlDestructOr "4".
@@ -1082,9 +1082,9 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
       *)
       assert (S2: Γ ⊢i phi1 ---> (phi2 or ⌈ ! ψ ⌉) using i').
       { toMLGoal.
-        { wf_auto2. }
+        { clear pwi_pf_fp; wf_auto2. }
         mlAdd IHpf. mlIntro.
-        mlAdd (useBasicReasoning i' (A_or_notA Γ (⌈ ! ψ ⌉) ltac:(wf_auto2))).
+        mlAdd (useBasicReasoning i' (A_or_notA Γ (⌈ ! ψ ⌉) ltac:(clear pwi_pf_fp;wf_auto2))).
         mlDestructOr "2".
         - mlRight. mlExactn 0.
         - mlLeft.
@@ -1126,7 +1126,7 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
            Like: unshelve (eapply H); try_wfauto
         *)
         unshelve (eapply Framing_right).
-        { wf_auto2. }
+        { clear pwi_pf_fp; wf_auto2. }
         2: exact S2.
         subst i'. try_solve_pile.
       }
@@ -1135,22 +1135,22 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
       {
         pose proof (Htmp := prf_prop_or_iff Γ (ctx_app_r psi box ltac:(assumption)) phi2 (⌈! ψ ⌉)).
         feed specialize Htmp.
-        { wf_auto2. }
-        { wf_auto2. }
+        { clear pwi_pf_fp; wf_auto2. }
+        { clear pwi_pf_fp; wf_auto2. }
         simpl in Htmp.
         apply pf_iff_proj1 in Htmp.
-        2,3: wf_auto2.
+        2,3: clear pwi_pf_fp; wf_auto2.
         subst i'.
         eapply syllogism_meta.
         5: gapply Htmp; try_solve_pile.
         4: assumption.
-        all: wf_auto2.
+        all: clear pwi_pf_fp; wf_auto2.
       }
 
       assert (S6: Γ ⊢i ((psi $ phi2) or (psi $ ⌈ ! ψ ⌉)) ---> ((psi $ phi2) or (⌈ ! ψ ⌉)) using i').
       {
         toMLGoal.
-        { wf_auto2. }
+        { clear pwi_pf_fp; wf_auto2. }
         mlIntro. mlAdd S3.
         mlAdd (useBasicReasoning i' (A_or_notA Γ (psi $ phi2) ltac:(auto))).
         mlDestructOr "2".
@@ -1161,10 +1161,10 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
       assert (S7: Γ ⊢i (psi $ phi1) ---> ((psi $ phi2)  or ⌈ ! ψ ⌉) using i').
       {
         toMLGoal.
-        { wf_auto2. }
+        { clear pwi_pf_fp; wf_auto2. }
         mlAdd S5. mlAdd S6. mlIntro.
         mlAssert (((psi $ phi2) or (psi $ ⌈ ! ψ ⌉))).
-        { wf_auto2. }
+        { clear pwi_pf_fp; wf_auto2. }
         { mlApply "0". mlExactn 2. }
         mlDestructOr "3".
         - mlLeft. mlExactn 3.
@@ -1172,15 +1172,15 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
       }
 
       toMLGoal.
-      { wf_auto2. }
+      { clear pwi_pf_fp; wf_auto2. }
       do 2 mlIntro. mlAdd S7.
       mlAssert ((psi $ phi2 or ⌈ ! ψ ⌉)).
-      { wf_auto2. }
+      { clear pwi_pf_fp; wf_auto2. }
       { mlApply "2". mlExactn 2. }
       mlDestructOr "3".
       + mlExactn 3.
       + mlAssert ((psi $ phi2 or ⌈ ! ψ ⌉)).
-        { wf_auto2. }
+        { clear pwi_pf_fp; wf_auto2. }
         { mlApply "2". mlExactn 2. }
         mlAdd (useBasicReasoning i' (A_or_notA Γ (psi $ phi2) ltac:(auto))).
         mlDestructOr "4".
@@ -1202,7 +1202,7 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
         { clear -pwi_pf_fp. set_solver. }
       }
       {
-        wf_auto2.
+        clear pwi_pf_fp; wf_auto2.
       }
       
       remember_constraint as i'.
@@ -1234,7 +1234,7 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
         }
         { clear. set_solver. }
       }
-      { wf_auto2. }
+      { clear pwi_pf_fp; wf_auto2. }
 
     - (* Prefixpoint *)
       toMLGoal.
@@ -2050,7 +2050,6 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
       assert (well_formed (emplace C ϕ₁) = true) by (unfold emplace; wf_auto2).
       assert (well_formed (emplace C ϕ₂) = true) by (unfold emplace; wf_auto2).
       
-      wf_auto2.
       toMLGoal.
       { wf_auto2. }
       mlIntro. mlIntro. mlClear "1".
@@ -2248,7 +2247,7 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
     }
     
     assert (well_formed (ex, φ)) as WFEX.
-    { wf_auto. now apply mu_free_wfp. }
+    { wf_auto2. now apply mu_free_wfp. }
     pose proof (EQ := Ex_quan Γ φ Zvar WFEX).
     change constraint in EQ.
     epose proof (PC := prf_conclusion Γ (patt_equal φ' Z) (instantiate (ex , φ) (patt_free_evar Zvar) ---> ex , φ) AnyReasoning ltac:(apply well_formed_equal;wf_auto2) _ EQ).
@@ -2364,7 +2363,7 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
       clear BWF SWF.
       destruct_and!. split_and!; auto.
       apply mu_free_wfp; simpl; now rewrite MF.
-      all: simpl; wf_auto.
+      all: simpl; wf_auto2.
     }
     unshelve (epose proof (H := exists_functional_subst (! φ) φ' Γ HΓ _ WF _ _)).
     { simpl. rewrite andbT. exact MF. }
@@ -2408,7 +2407,7 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
     Unshelve.
     (* I do not like this. Why do we have unification variables on which nothing depends? *)
     4,5,6: apply well_formed_bott.
-    9: exact Γ.
+    4: exact Γ.
     all: wf_auto2.
   Qed.
 
@@ -2936,7 +2935,7 @@ Proof.
          unfold evar_is_fresh_in in H.
          simpl. set_solver.
        }
-       wf_auto.
+       { wf_auto2. }
        reflexivity.
   }
   apply Ex_gen.
@@ -3117,11 +3116,11 @@ Proof.
   - mlApplyMetaRaw (useAnyReasoning (Prop_disj_right Γ ϕ₁ ϕ₂ (patt_sym (Definedness_Syntax.inj definedness)) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) )).
     mlExact "H0".
   - mlDestructOr "H0" as "H1" "H2".
-    + unshelve (mlApplyMetaRaw (useAnyReasoning (@Framing_right Σ Γ ϕ₁ (ϕ₁ or ϕ₂) (patt_sym (Definedness_Syntax.inj definedness)) ltac:(wf_auto2) _(pile_any _) _))).
+    + unshelve (mlApplyMetaRaw (useAnyReasoning (@Framing_right Σ Γ ϕ₁ (ϕ₁ or ϕ₂) (patt_sym (Definedness_Syntax.inj definedness)) _ _(pile_any _) _))).
       { wf_auto2. }
       { toMLGoal. wf_auto2. mlIntro "H0'". mlLeft. mlExact "H0'". }
       mlExactn 0.
-    + unshelve (mlApplyMetaRaw (useAnyReasoning (@Framing_right Σ Γ ϕ₂ (ϕ₁ or ϕ₂) (patt_sym (Definedness_Syntax.inj definedness)) ltac:(wf_auto2) _ (pile_any _) _))).
+    + unshelve (mlApplyMetaRaw (useAnyReasoning (@Framing_right Σ Γ ϕ₂ (ϕ₁ or ϕ₂) (patt_sym (Definedness_Syntax.inj definedness)) _ _ (pile_any _) _))).
       { wf_auto2. }
       { toMLGoal. wf_auto2. mlIntro "H0'". mlRight. mlExact "H0'". }
       mlExact "H2".
@@ -3206,8 +3205,7 @@ Proof.
          unfold evar_is_fresh_in in H.
          simpl. set_solver.
        }
-       wf_auto.
-       1-2: eapply well_formed_closed_ex_aux_ind; try eassumption; lia.
+       wf_auto2.
        reflexivity.
   }
 
@@ -3512,7 +3510,6 @@ Proof.
   2: apply Htmp.
   all: fold bevar_subst.
   2,3,4: wf_auto2.
-  2,3: apply wfc_ex_aux_bevar_subst; wf_auto2.
   mlSimpl. simpl.
   rewrite bevar_subst_not_occur.
   { wf_auto2. }
@@ -3725,9 +3722,7 @@ Proof.
   {
     unfold evar_open. mlSimpl. simpl. gapply membership_not_1.
     { apply pile_any. }
-    { wf_auto2.
-      apply wfc_ex_aux_bevar_subst. wf_auto2. reflexivity.
-    }
+    { wf_auto2. }
     exact HΓ.
   }
 
@@ -4272,11 +4267,12 @@ Proof.
   toMLGoal. wf_auto2.
   mlApplyMeta forall_functional_subst.
   mlSplitAnd; fromMLGoal; auto.
-  Unshelve. all: auto. all: wf_auto.
+  Unshelve. all: auto. all: wf_auto2.
 Defined.
 
+(* TODO: make sure that the final [assumption] does not solve goals we do not want to solve. *)
 Tactic Notation "mgSpecMeta" ident(hyp) "with" constr(t) := 
-  unshelve (eapply (@mlSpecializeMeta _ _ _ _ t) in hyp); try wf_auto2.
+  unshelve (eapply (@mlSpecializeMeta _ _ _ _ t) in hyp); try_wfauto2; try assumption.
 
 Local Lemma test_spec {Σ : Signature} {syntax : Syntax}:
   forall Γ φ ψ, theory ⊆ Γ-> 
@@ -4300,15 +4296,13 @@ Proof.
     unfold patterns_of in H0. rewrite map_app in H0.
     apply wfl₁hl₂_proj_h in H0; simpl in H0.
     apply andb_true_iff in H0 as [H0'' H0'].
-    apply andb_true_iff in H0' as [H0_1 H0_2]; simpl in *; repeat rewrite andb_true_r in H0_1, H0_2; repeat rewrite andb_true_iff in H0_1, H0_2; wf_auto2.
+    apply andb_true_iff in H0' as [H0_1 H0_2]; simpl in *; repeat rewrite andb_true_r in H0_1, H0_2; repeat rewrite andb_true_iff in H0_1, H0_2; 
+    destruct_and!;
+    wf_auto2.
   }
   unshelve (epose proof (MG H _) as MG').
   {
     unfold patterns_of in *; rewrite -> map_app in *; simpl in H0; wf_auto2.
-    1: now apply wfl₁hl₂_proj_l₁ in H0.
-    apply wfl₁hl₂_proj_l₂ in H0 as H0'; simpl.
-    apply wfl₁hl₂_proj_h in H0.
-    apply wf_cons; wf_auto2.
   }
   clear MG.
   unfold patterns_of in *. rewrite -> map_app in *. simpl.

@@ -406,6 +406,7 @@ Ltac wf_auto2_fallback :=
 .
 
 Ltac wf_auto2 :=
+  try reflexivity; (* this generates a simple proof: just eq_refl*)
   subst;
   proved_hook_wfauto;
   clear_all_impls;

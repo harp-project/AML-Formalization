@@ -665,6 +665,8 @@ Ltac2 clear_piles () :=
     lazy_match! goal with
     | [ h : @ProofInfoLe _ _ _ |- _]
       => clear $h
+    | [ h : @ProofInfoMeaning _ _ _ _ _ |- _]
+      => clear $h
     end
   )
 .  
