@@ -3007,7 +3007,7 @@ Proof.
         clear. set_solver.
       }
       { wf_auto2. }
-      apply BasicProofSystemLemmas.Ex_quan_monotone.
+      apply Ex_quan_monotone.
       { try_solve_pile. }
       mlSimpl.
       toMLGoal.
@@ -3029,7 +3029,7 @@ Proof.
         clear. set_solver.
       }
       { wf_auto2. }
-      apply BasicProofSystemLemmas.Ex_quan_monotone.
+      apply Ex_quan_monotone.
       { try_solve_pile. }
       mlSimpl.
       toMLGoal.
@@ -3354,7 +3354,7 @@ Proof.
         eapply well_formed_closed_ex_aux_ind; try eassumption; lia.
         reflexivity.
       }
-      apply BasicProofSystemLemmas.Ex_quan_monotone.
+      apply Ex_quan_monotone.
       { apply pile_any. }
       {
         unfold evar_open. mlSimpl. simpl.
@@ -3449,7 +3449,7 @@ Proof.
     set_solver.
   }
   { simpl. split_and!; auto; wf_auto2. }
-  apply BasicProofSystemLemmas.Ex_quan_monotone.
+  apply Ex_quan_monotone.
   { apply pile_any. }
   unfold evar_open. mlSimpl. simpl.
   rewrite bevar_subst_not_occur.
@@ -3539,7 +3539,7 @@ Proof.
     apply (strip_exists_quantify_l Γ y).
     { simpl. clear -Htmp. set_solver. }
     { simpl. split_and!; try reflexivity. wf_auto2. }
-    apply BasicProofSystemLemmas.Ex_quan_monotone.
+    apply Ex_quan_monotone.
     { apply pile_any. }
     {
       unfold evar_open. mlSimpl. simpl.
@@ -3586,7 +3586,7 @@ Proof.
       set_solver.
     }
     { simpl. split_and!; try reflexivity. wf_auto2. }
-    apply BasicProofSystemLemmas.Ex_quan_monotone.
+    apply Ex_quan_monotone.
     { apply pile_any. }
     {
       eapply syllogism_meta.
@@ -3726,7 +3726,7 @@ Proof.
     exact HΓ.
   }
 
-  mlApplyMetaRaw (useAnyReasoning (BasicProofSystemLemmas.Ex_quan_monotone Γ  y _ _ AnyReasoning (pile_any _) Htmp)) in "H0".
+  mlApplyMetaRaw (useAnyReasoning (Ex_quan_monotone Γ  y _ _ AnyReasoning (pile_any _) Htmp)) in "H0".
   clear Htmp.
 
 
