@@ -340,10 +340,15 @@ Ltac wf_auto2_decompose_hyps_parts :=
 Ltac wf_auto2_step_parts :=
   wf_auto2_unfolds;
   try partsDecomposeWfGoal;
-  simpl in *; subst; simpl in *;
+  cbn in *; subst; cbn in *;
   split_and?;
   wf_auto2_fast_done;
   try first [
+  apply wfp_free_evar_subst |
+  apply wfc_ex_free_evar_subst_2 |
+  apply wfc_mu_free_evar_subst |
+  apply svar_hno_bsvar_subst |
+  apply svar_hno_false_if_fresh |
   apply well_formed_positive_svar_quantify |
   apply free_evar_subst_preserves_no_negative_occurrence |
   apply no_negative_occurrence_svar_quantify |

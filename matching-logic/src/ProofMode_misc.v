@@ -2217,7 +2217,7 @@ Section FOL_helpers.
       2: { clear -wfp. abstract (wf_auto2). }
 
       unshelve (epose proof (IH1 := pf_iff_proj1 _ _ _ _ _ _ IH)).
-      { clear -wfψ wfp. wf_auto2.  abstract (wf_auto2). }
+      { clear -wfψ wfp. abstract (wf_auto2). }
       { clear -wfψ wfq. abstract (wf_auto2). }
       unshelve (epose proof (IH2 := pf_iff_proj2 _ _ _ _ _ _ IH)).
       { clear -wfψ wfp. abstract (wf_auto2). }
@@ -2235,9 +2235,10 @@ Section FOL_helpers.
           3: {
             abstract (
               clear -ψ_sub_SvS p_sub_SvS frX wfψ wfp;
-              wf_auto2;
-              simpl in *;
+              wf_auto2; intros; wf_auto2;
+              cbn in *;
               pose proof (Htmp := free_svars_free_evar_subst ψ E p);
+              unfold svar_is_fresh_in;
               clear -Htmp ψ_sub_SvS p_sub_SvS frX;
               set_solver
             ).
@@ -2245,9 +2246,10 @@ Section FOL_helpers.
           2: {
             abstract (
               clear -ψ_sub_SvS q_sub_SvS frX wfψ wfq;
-              wf_auto2;
+              wf_auto2; intros; wf_auto2;
               simpl in *;
               pose proof (Htmp := free_svars_free_evar_subst ψ E q);
+              unfold svar_is_fresh_in;
               clear -Htmp ψ_sub_SvS q_sub_SvS frX;
               set_solver
             ).
@@ -2283,18 +2285,20 @@ Section FOL_helpers.
           3: {
             abstract (
               clear -ψ_sub_SvS q_sub_SvS frX wfψ wfq;
-              wf_auto2; simpl in *;
+              wf_auto2; intros; wf_auto2; simpl in *;
               pose proof (Htmp := free_svars_free_evar_subst ψ E q);
               clear -Htmp ψ_sub_SvS q_sub_SvS frX;
+              unfold svar_is_fresh_in;
               set_solver
             ).
           }
           2: {
             abstract (
               clear -ψ_sub_SvS p_sub_SvS frX wfψ wfp;
-              wf_auto2; simpl in *;
+              wf_auto2; intros; wf_auto2; simpl in *;
               pose proof (Htmp := free_svars_free_evar_subst ψ E p);
               clear -Htmp ψ_sub_SvS p_sub_SvS frX;
+              unfold svar_is_fresh_in;
               set_solver
             ).
           }
