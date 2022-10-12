@@ -1421,7 +1421,7 @@ Proof.
                     foldr patt_imp g (l ++ [h]) --->
                     foldr patt_imp g l
             using BasicReasoning).
-    { apply prf_add_assumption; wf_auto2. }
+    { apply prf_add_assumption; try_wfauto2. assumption. }
 
     assert (H2 : Γ ⊢i (a ---> foldr patt_imp h l) --->
                      (a ---> foldr patt_imp g (l ++ [h]) --->
@@ -1503,7 +1503,7 @@ Proof.
     unfold Pattern.wf in wfl1. simpl in wfl1. apply andb_prop in wfl1. destruct wfl1 as [wfa wfl1].
     specialize (IHl1 wfl1).
     assert (H1: Γ ⊢i a ---> foldr patt_imp h l1 ---> foldr patt_imp g (l1 ++ [h] ++ l2) ---> foldr patt_imp g (l1 ++ l2) using BasicReasoning).
-    { apply prf_add_assumption; wf_auto2. }
+    { apply prf_add_assumption; try_wfauto2. assumption. }
     assert (H2 : Γ ⊢i (a ---> foldr patt_imp h l1) ---> (a ---> foldr patt_imp g (l1 ++ [h] ++ l2) ---> foldr patt_imp g (l1 ++ l2)) using BasicReasoning).
     { apply prf_impl_distr_meta;[wf_auto2|wf_auto2|wf_auto2|]. exact H1. }
     assert (H3 : Γ ⊢i ((a ---> foldr patt_imp g (l1 ++ [h] ++ l2) ---> foldr patt_imp g (l1 ++ l2))

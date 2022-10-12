@@ -80,6 +80,8 @@ Proof.
   induction x; simpl; congruence.
 Defined.
 
+Definition Theory {Σ : Signature} := propset Pattern.
+
 Section syntax.
     Context {Σ : Signature}.
 

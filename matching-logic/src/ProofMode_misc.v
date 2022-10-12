@@ -296,7 +296,7 @@ Section FOL_helpers.
            { reflexivity. }
            { clear. set_solver. }
       }
-      all: wf_auto2.
+      all: try solve [wf_auto2].
        - eapply syllogism_meta.
            5: { apply useBasicReasoning. apply (Prop_bott_right Γ p ltac:(wf_auto2)). }
            4: { simpl. subst foC.  eapply useGenericReasoning.
@@ -906,9 +906,9 @@ Proof.
   abstract (
     unfold svar_open in H;
     rewrite <- free_evar_subst_bsvar_subst;
-    [idtac|wf_auto| unfold evar_is_fresh_in; simpl; clear; set_solver];
+    [idtac|wf_auto2| unfold evar_is_fresh_in; simpl; clear; set_solver];
     rewrite <- free_evar_subst_bsvar_subst;
-    [idtac|wf_auto|unfold evar_is_fresh_in; simpl; clear; set_solver];
+    [idtac|wf_auto2|unfold evar_is_fresh_in; simpl; clear; set_solver];
     reflexivity
  ).
 Defined.
@@ -1462,7 +1462,7 @@ Qed.
         ).
       }
       {
-        abstract (wf_auto2).
+        wf_auto2.
       }
     }
     (* this block is a symmetric version of the previous block*)
@@ -1919,19 +1919,14 @@ Section FOL_helpers.
         remember (well_formed_free_evar_subst_0 E _ _ wfp wfψ2) as wf2.
         remember (well_formed_free_evar_subst_0 E _ _ wfq wfψ1) as wf3.
         remember (well_formed_free_evar_subst_0 E _ _ wfq wfψ2) as wf4.
-        remember (frames_on_the_way_to_hole' EvS SvS E _ _ _
-        (frames_on_the_way_to_hole'_obligation_5 _ _ wfψ)
-        (frames_on_the_way_to_hole'_obligation_6 _ wfp)
-        (frames_on_the_way_to_hole'_obligation_7 _ wfq) ∪
-      frames_on_the_way_to_hole' EvS SvS E _ _ _
-        (frames_on_the_way_to_hole'_obligation_9 _ _ wfψ)
-        (frames_on_the_way_to_hole'_obligation_10 _ wfp)
-        (frames_on_the_way_to_hole'_obligation_11 _ wfq))
-        as rest.
-        remember (frames_on_the_way_to_hole'_obligation_1 E _ _ _ wfψ wfp) as wf1'.
-        remember (frames_on_the_way_to_hole'_obligation_2 E _ _ _ wfψ wfp) as wf2'.
-        remember (frames_on_the_way_to_hole'_obligation_3 E _ _ _ wfψ wfq) as wf3'.
-        remember (frames_on_the_way_to_hole'_obligation_4 E _ _ _ wfψ wfq) as wf4'.
+        remember (frames_on_the_way_to_hole'_obligation_1 E _ _ _ _ wfψ wfp wfq) as wf1'.
+        remember (frames_on_the_way_to_hole'_obligation_2 E _ _ _ _ wfψ wfp wfq) as wf2'.
+        remember (frames_on_the_way_to_hole'_obligation_3 E _ _ _ _ wfψ wfp wfq) as wf3'.
+        remember (frames_on_the_way_to_hole'_obligation_4 E _ _ _ _ wfψ wfp wfq) as wf4'.
+        match goal with
+        | [|- _ ⊆ gset_to_coGset ((_ ∪ ?r1) ∪ ?r2)] =>
+          remember r1 as rest1; remember r2 as rest2
+        end.
         clear.
         remember (ψ1^[[evar: E ↦ p]]) as A.
         remember (ψ1^[[evar: E ↦ q]]) as B.
@@ -2034,10 +2029,10 @@ Section FOL_helpers.
       }
 
       apply prf_equiv_of_impl_of_equiv.
-      { abstract (wf_auto2). }
-      { abstract (wf_auto2). }
-      { abstract (wf_auto2). }
-      { abstract (wf_auto2). }
+      { unfold i' in pile. clear i'. abstract (wf_auto2). }
+      { unfold i' in pile. clear i'. abstract (wf_auto2). }
+      { unfold i' in pile. clear i'. abstract (wf_auto2). }
+      { unfold i' in pile. clear i'. abstract (wf_auto2). }
       { apply pf₁. }
       { apply pf₂. }
     }
@@ -2047,7 +2042,7 @@ Section FOL_helpers.
 
       (* there used to be a destruct on whether E is in psi *)
 
-      assert (well_formed (ψ^{evar: 0 ↦ x})) by abstract(wf_auto2).
+      assert (well_formed (ψ^{evar: 0 ↦ x})) by (unfold i' in pile; clear i'; abstract(wf_auto2)).
       assert (size' (ψ^{evar: 0 ↦ x}) <= sz) by abstract(rewrite evar_open_size'; lia).
 
       pose proof (IH := IHsz (ψ^{evar: 0 ↦ x}) ltac:(assumption) ltac:(assumption)).
@@ -2222,7 +2217,7 @@ Section FOL_helpers.
       2: { clear -wfp. abstract (wf_auto2). }
 
       unshelve (epose proof (IH1 := pf_iff_proj1 _ _ _ _ _ _ IH)).
-      { clear -wfψ wfp. abstract (wf_auto2). }
+      { clear -wfψ wfp. wf_auto2.  abstract (wf_auto2). }
       { clear -wfψ wfq. abstract (wf_auto2). }
       unshelve (epose proof (IH2 := pf_iff_proj2 _ _ _ _ _ _ IH)).
       { clear -wfψ wfp. abstract (wf_auto2). }

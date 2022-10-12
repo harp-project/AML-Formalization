@@ -678,8 +678,7 @@ Section with_signature.
       subst x.
       eapply evar_is_fresh_in_richer'. 2: apply set_evar_fresh_is_fresh'. clear. set_solver.
     }
-    { wf_auto2. }
-
+    { assumption. }
   Abort.
 
   Lemma existential_instantiation :

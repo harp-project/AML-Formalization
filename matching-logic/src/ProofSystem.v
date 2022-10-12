@@ -657,7 +657,17 @@ Notation "'ExGen' ':=' evs ',' 'SVSubst' := svs ',' 'KT' := bkt ',' 'FP' := fpl"
 
 End Notations.
 
-
+(* We cannot turn a proof into wellformedness hypotheses
+   if there is a ProofInfoLe hypothesis depending on the proof
+  *)
+Ltac2 clear_piles () :=
+  repeat (
+    lazy_match! goal with
+    | [ h : @ProofInfoLe _ _ _ |- _]
+      => clear $h
+    end
+  )
+.  
 
 Ltac2 pfs_to_wfs () :=
   repeat (
@@ -673,7 +683,7 @@ Ltac2 pfs_to_wfs () :=
 
 
 Ltac2 Set proved_hook_wfauto as oldhook
-:= (fun () => (*Message.print (Message.of_string "hook_wfauto p2w");*) pfs_to_wfs () (*; oldhook ()*)).
+:= (fun () => (*Message.print (Message.of_string "hook_wfauto p2w");*) clear_piles (); pfs_to_wfs () (*; oldhook ()*)).
 
 (*
 Ltac2 Set hook_wfauto

@@ -28,8 +28,6 @@ From MatchingLogic Require Export
 
 Import MatchingLogic.Substitution.Notations.
 
-Definition Theory {Σ : Signature} := propset Pattern.
-
 Close Scope boolean_if_scope.
 
 Section syntax.
