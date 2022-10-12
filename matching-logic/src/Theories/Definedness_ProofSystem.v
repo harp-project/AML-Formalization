@@ -97,7 +97,7 @@ Lemma use_defined_axiom Γ:
   using BasicReasoning.
 Proof.
   intros HΓ.
-  apply hypothesis; auto. unfold theory,theory_of_NamedAxioms in HΓ. simpl in HΓ.
+  apply BasicProofSystemLemmas.hypothesis; auto. unfold theory,theory_of_NamedAxioms in HΓ. simpl in HΓ.
   eapply elem_of_weaken.
   2: { apply HΓ. }
   unfold axiom.
@@ -703,7 +703,7 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
         { wf_auto2. }
         mlIntro. mlClear "0". fromMLGoal.
         eapply useGenericReasoning.
-        2: apply (hypothesis Γ axiom0 i H).
+        2: apply (BasicProofSystemLemmas.hypothesis Γ axiom0 i H).
         apply pile_evs_svs_kt.
         {
           set_solver.
@@ -1863,7 +1863,7 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
         remember_constraint as i.
         assert (Γ' ⊢i (φ1 <---> φ2) using i). {
           subst i. useBasicReasoning.
-          apply hypothesis.
+          apply BasicProofSystemLemmas.hypothesis.
           - abstract (now apply well_formed_iff).
           - abstract (rewrite HeqΓ'; apply elem_of_union_r; constructor).
         }
@@ -2106,7 +2106,7 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
 
     remember_constraint as i'.
     assert (Γ' ⊢i (φ1 <---> φ2) using i'). {
-      subst i'. useBasicReasoning. apply hypothesis.
+      subst i'. useBasicReasoning. apply BasicProofSystemLemmas.hypothesis.
       - abstract (now apply well_formed_iff).
       - abstract (rewrite HeqΓ'; apply elem_of_union_r; constructor).
     }
@@ -2175,7 +2175,7 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
       remember (Γ ∪ {[ (φ1 <---> φ2) ]}) as Γ'.
       assert (Γ' ⊢i (φ1 <---> φ2) using i'). {
         subst i'. useBasicReasoning.
-        apply hypothesis. apply well_formed_iff; auto.
+        apply BasicProofSystemLemmas.hypothesis. apply well_formed_iff; auto.
         rewrite HeqΓ'. apply elem_of_union_r. constructor.
       }
       apply pf_iff_equiv_sym in H; auto.
@@ -2841,13 +2841,13 @@ Lemma floor_monotonic {Σ : Signature} {syntax : Syntax} Γ ϕ₁ ϕ₂ i :
 Proof.
   intros HΓ pile wfϕ₁ wfϕ₂ H.
   unfold patt_total.
-  apply ProofMode_propositional.modus_tollens.
+  apply BasicProofSystemLemmas.modus_tollens.
   apply ceil_monotonic.
   { assumption. }
   { exact pile. }
   { wf_auto2. }
   { wf_auto2. }
-  apply ProofMode_propositional.modus_tollens.
+  apply BasicProofSystemLemmas.modus_tollens.
   exact H.
 Defined.
 
@@ -2863,7 +2863,7 @@ Proof.
 
   mlRewrite (useBasicReasoning AnyReasoning (not_not_iff Γ (⌈ ϕ ⌉) ltac:(wf_auto2))) at 1. 
   fromMLGoal.
-  apply ProofMode_propositional.modus_tollens.
+  apply BasicProofSystemLemmas.modus_tollens.
   exact H.
 Defined.
 
@@ -3062,7 +3062,7 @@ Proof.
   { wf_auto2. }
   2: { wf_auto2. }
   3: {
-    apply ProofMode_propositional.modus_tollens.
+    apply BasicProofSystemLemmas.modus_tollens.
     {
       apply ceil_monotonic.
       { exact HΓ. }
@@ -3750,12 +3750,12 @@ Proof.
 
   assert (Htmp: Γ ⊢i (! (ex, b0 ∈ml ϕ)) ---> (! (patt_free_evar x ∈ml ⌈ ϕ ⌉)) using AnyReasoning).
   {
-    apply ProofMode_propositional.modus_tollens.
+    apply BasicProofSystemLemmas.modus_tollens.
     apply membership_symbol_ceil_left; assumption.
   }
   mlApplyMetaRaw Htmp.
   fromMLGoal.
-  apply ProofMode_propositional.modus_tollens.
+  apply BasicProofSystemLemmas.modus_tollens.
 
   pose proof (Hfr' := set_evar_fresh_is_fresh ϕ).
   eapply cast_proof'.
@@ -3845,7 +3845,7 @@ Proof.
   unfold patt_total at 1.
   unfold patt_total at 2.
   unfold patt_or.
-  apply ProofMode_propositional.modus_tollens.
+  apply BasicProofSystemLemmas.modus_tollens.
 
   assert (Γ ⊢i (! ! ⌊ ϕ ⌋) <---> ⌊ ϕ ⌋ using AnyReasoning).
   { toMLGoal.
@@ -3947,7 +3947,7 @@ Proof.
         mlExact "H0".
       }
       assert (Htmp: ((Γ ∪ {[! ϕ]})) ⊢i ! ϕ using i').
-      { gapply hypothesis. subst i'. try_solve_pile. wf_auto2. clear. set_solver. }
+      { gapply BasicProofSystemLemmas.hypothesis. subst i'. try_solve_pile. wf_auto2. clear. set_solver. }
       apply phi_impl_total_phi_meta in Htmp.
       2: { wf_auto2. }
       2: { subst i'. apply pile_refl.  }
@@ -3983,7 +3983,7 @@ Proof.
           useBasicReasoning. apply top_holds.
         + toMLGoal. wf_auto2.
           mlIntro "H0". mlClear "H0". fromMLGoal.
-          gapply hypothesis.
+          gapply BasicProofSystemLemmas.hypothesis.
           { try_solve_pile. }
           { wf_auto2. }
           clear. set_solver.
@@ -4016,7 +4016,7 @@ Proof.
     - toMLGoal. wf_auto2. mlIntro "H0". mlDestructOr "H0" as "H0'" "H0'".
       + assert (Γ ∪ {[ϕ₁ ---> ϕ₂]} ⊢i ϕ₁ ---> ϕ₂ using ( (ExGen := ∅, SVSubst := ∅, KT := false, FP := defFP))).
         {
-          gapply hypothesis.
+          gapply BasicProofSystemLemmas.hypothesis.
           { try_solve_pile. }
           { wf_auto2. }
           clear. set_solver.

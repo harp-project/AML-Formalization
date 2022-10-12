@@ -146,10 +146,10 @@ Section with_signature.
     apply Ex_gen.
     { exact pile. }
     { simpl. set_solver. }
-    toMLGoal.
+    unfold patt_not.
+    apply A_implies_not_not_A_alt.
     { wf_auto2. }
-    mlIntro. mlAdd Hϕ.
-    mlApply "0". mlExactn 0.
+    { exact Hϕ. }
   Defined.
 
   (*
