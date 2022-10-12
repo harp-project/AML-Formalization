@@ -29,10 +29,15 @@ Set Default Proof Mode "Classic".
 
 Open Scope ml_scope.
 
+Inductive ProofModeEntry {Σ : Signature} :=
+| pme_pattern (p : Pattern)
+| pme_variable
+.
+
 Record named_hypothesis {Σ : Signature} := mkNH
   {
     nh_name : string;
-    nh_patt : Pattern;
+    nh_pme : ProofModeEntry;
   }.
 
 Notation "N ∶ P" :=
@@ -53,7 +58,7 @@ Notation "x , y , .. , z ," :=
   (at level 100, left associativity, format "x ',' '//' y ',' '//' .. ',' '//' z ',' '//'", only printing) : ml_scope.
 
 Definition names_of {Σ : Signature} (h : hypotheses) : list string := map nh_name h.
-Definition patterns_of {Σ : Signature} (h : hypotheses) : list Pattern := map nh_patt h.
+Definition pmes_of {Σ : Signature} (h : hypotheses) : list ProofModeEntry := map nh_pme h.
 
 Definition has_name {Σ : Signature} (n : string) (nh : named_hypothesis) : Prop
 := nh_name nh = n.
@@ -82,10 +87,24 @@ Definition MLGoal_from_goal
   MLGoal
   := mkMLGoal Σ Γ nil goal pi.
 
+Definition MLGoal_to_pattern'
+  {Σ : Signature} (concl: Pattern) (pmes : list ProofModeEntry)
+  : Pattern
+:= fold_right
+    (fun h => fun i =>
+      match h with
+      | pme_pattern p => patt_imp p i
+      | pme_variable => patt_forall i
+      end
+    )
+    concl pmes.
+
+Definition MLGoal_to_pattern {Σ : Signature} (MG : MLGoal) : Pattern
+:= MLGoal_to_pattern' (mlConclusion MG) (pmes_of (mlHypotheses MG)).
+
 Coercion of_MLGoal {Σ : Signature} (MG : MLGoal) : Type :=
-  well_formed (mlConclusion MG) ->
-  Pattern.wf (patterns_of (mlHypotheses MG)) ->
-  (mlTheory MG) ⊢i (fold_right patt_imp (mlConclusion MG) (patterns_of (mlHypotheses MG)))
+  well_formed (MLGoal_to_pattern MG) ->
+  (mlTheory MG) ⊢i (MLGoal_to_pattern MG)
   using (mlInfo MG).
 
 
