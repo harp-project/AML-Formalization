@@ -87,17 +87,17 @@ Definition MLGoal_from_goal
   MLGoal
   := mkMLGoal Σ Γ nil goal pi.
 
+Definition connect {Σ : Signature} := (fun h => fun i =>
+match h with
+| pme_pattern p => patt_imp p i
+| pme_variable => patt_forall i
+end
+).
+
 Definition MLGoal_to_pattern'
   {Σ : Signature} (concl: Pattern) (pmes : list ProofModeEntry)
   : Pattern
-:= fold_right
-    (fun h => fun i =>
-      match h with
-      | pme_pattern p => patt_imp p i
-      | pme_variable => patt_forall i
-      end
-    )
-    concl pmes.
+:= fold_right connect concl pmes.
 
 Definition MLGoal_to_pattern {Σ : Signature} (MG : MLGoal) : Pattern
 := MLGoal_to_pattern' (mlConclusion MG) (pmes_of (mlHypotheses MG)).
@@ -201,45 +201,113 @@ Proof.
   }
 Defined.
 
-Lemma cast_proof_ml_hyps {Σ : Signature} Γ hyps hyps' (e : patterns_of hyps = patterns_of hyps') goal (i : ProofInfo) :
+Lemma cast_proof_ml_hyps {Σ : Signature}
+  Γ hyps hyps'
+  (e : hyps = hyps') goal (i : ProofInfo)
+  :
   mkMLGoal Σ Γ hyps goal i ->
   mkMLGoal Σ Γ hyps' goal i.
 Proof.
   unfold of_MLGoal. simpl. intros H.
-  intros wfg wfhyps'.
+  intros wfall.
   feed specialize H.
-  { exact wfg. }
-  { rewrite e. exact wfhyps'. }
+  {
+     rewrite e. exact wfall.
+  }
   unshelve (eapply (@cast_proof' Σ Γ _ _ i _ H)).
   rewrite e.
   reflexivity.
 Defined.
 
-Lemma cast_proof_ml_goal {Σ : Signature} Γ hyps goal goal' (e : goal = goal') (i : ProofInfo):
+Lemma cast_proof_ml_goal {Σ : Signature}
+  Γ hyps goal goal'
+  (e : goal = goal') (i : ProofInfo):
   mkMLGoal Σ Γ hyps goal i ->
   mkMLGoal Σ Γ hyps goal' i .
 Proof.
   unfold of_MLGoal. simpl. intros H.
-  intros wfgoal' wfhyps.
+  intros wfall.
   feed specialize H.
-  { rewrite e. exact wfgoal'. }
-  { exact wfhyps. }
+  { rewrite e. exact wfall. }
   unshelve (eapply (@cast_proof' Σ Γ _ _ i _ H)).
   rewrite e.
   reflexivity.
 Defined.
 
+Lemma wf_fr_connect_strip_last_variable {Σ : Signature}
+  (g : Pattern) (name : string)
+  l
+  :
+  well_formed (fold_right connect g (pmes_of (l ++ [(mkNH _ name pme_variable)]))) = true ->
+  well_formed (fold_right connect (all, g) (pmes_of l)) = true.
+Proof.
+  Print ProofModeEntry.
+  intros H.
+  induction l using rev_ind.
+  {
+    simpl in *. exact H.
+  }
+  {
+    feed specialize IHl.
+    {
+      clear IHl.
+      unfold pmes_of in *.
+      rewrite map_app in H. simpl in H.
+      rewrite map_app. simpl. 
+      rewrite foldr_app in H. simpl in H.
+      rewrite foldr_app. simpl.
+      rewrite map_app in H. simpl in H.
+      rewrite foldr_app in H. simpl in H.
+      simpl in H.
+    }
+  }
+Abort.
 
-Lemma MLGoal_intro {Σ : Signature} (Γ : Theory) (l : hypotheses) (name : string) (x g : Pattern)
+Lemma MLGoal_introImpl {Σ : Signature} (Γ : Theory) (l : hypotheses) (name : string) (x g : Pattern)
   (i : ProofInfo) :
-  mkMLGoal _ Γ (l ++ [mkNH _ name x]) g i ->
+  mkMLGoal _ Γ (l ++ [mkNH _ name (pme_pattern x)]) g i ->
   mkMLGoal _ Γ l (x ---> g) i.
 Proof.
   intros H.
   unfold of_MLGoal in H. simpl in H.
-  unfold of_MLGoal. simpl. intros wfxig wfl.
-
+  unfold of_MLGoal.
+  unfold MLGoal_to_pattern.
+  unfold MLGoal_to_pattern'.
+  unfold MLGoal_to_pattern in H.
+  unfold MLGoal_to_pattern' in H.
+  simpl. simpl in H. intros wfall.
   feed specialize H.
+  {
+    clear H.
+    induction l using rev_ind; simpl in *.
+    {
+      simpl in wfall. exact wfall.
+    }
+    {
+      Unset Printing Notations.
+      feed specialize IHl.
+      {
+        clear IHl.
+        unfold pmes_of in *.
+        rewrite map_app in wfall.
+        rewrite foldr_app in wfall.
+        simpl in wfall.
+        destruct (nh_pme x0) eqn:Heqx0; simpl in wfall.
+        {
+          unfold well_formed,well_formed_closed in *.
+          destruct_and!.
+          simpl in *.
+        }
+      }
+      destruct (nh_pme a) eqn:Heqa.
+      {
+        apply IHl.
+      }
+      simpl in wfall.
+    }
+    simpl.
+    wf_auto2.
+  }
   { abstract (apply well_formed_imp_proj2 in wfxig; exact wfxig). }
   { abstract (unfold Pattern.wf in *; unfold patterns_of;
     rewrite map_app map_app foldr_app; simpl;
