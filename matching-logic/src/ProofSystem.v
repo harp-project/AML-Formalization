@@ -1,8 +1,10 @@
 From Coq Require Import ssreflect ssrfun ssrbool.
 
+From Ltac2 Require Import Ltac2.
+
 From Coq Require Import Logic.Classical_Prop Logic.Eqdep_dec.
 From MatchingLogic.Utils Require Import stdpp_ext Lattice.
-From MatchingLogic Require Import Syntax NamedAxioms DerivedOperators_Syntax monotonic wftactics.
+From MatchingLogic Require Import Syntax NamedAxioms DerivedOperators_Syntax wftactics.
 From stdpp Require Import base fin_sets sets propset gmap.
 
 From MatchingLogic.Utils Require Import extralibrary.
@@ -10,6 +12,8 @@ From MatchingLogic.Utils Require Import extralibrary.
 Import MatchingLogic.Syntax.Notations.
 Import MatchingLogic.Substitution.Notations.
 Import MatchingLogic.DerivedOperators_Syntax.Notations.
+
+Set Default Proof Mode "Classic".
 
 Section ml_proof_system.
   Open Scope ml_scope.
@@ -134,14 +138,8 @@ Section ml_proof_system.
   Γ ⊢r ϕ -> well_formed ϕ.
   Proof.
   intros pf.
-  induction pf; auto; try (solve [wf_auto2]).
-  - unfold free_svar_subst. wf_auto2.
-    apply wfp_free_svar_subst_1; auto; unfold well_formed_closed; split_and; assumption.
-    all: fold free_svar_subst.
-    apply wfc_mu_free_svar_subst; auto.
-    apply wfc_ex_free_svar_subst; auto.
+  induction pf; wf_auto2. Set Printing All.
   Qed.
-
 
 Lemma cast_proof {Γ} {ϕ} {ψ} (e : ψ = ϕ) : ML_proof_system Γ ϕ -> ML_proof_system Γ ψ.
 Proof. intros H. rewrite <- e in H. exact H. Defined.
@@ -659,3 +657,37 @@ Notation "'ExGen' ':=' evs ',' 'SVSubst' := svs ',' 'KT' := bkt ',' 'FP' := fpl"
 
 End Notations.
 
+(* We cannot turn a proof into wellformedness hypotheses
+   if there is a ProofInfoLe hypothesis depending on the proof
+  *)
+Ltac2 clear_piles () :=
+  repeat (
+    lazy_match! goal with
+    | [ h : @ProofInfoLe _ _ _ |- _]
+      => clear $h
+    | [ h : @ProofInfoMeaning _ _ _ _ _ |- _]
+      => clear $h
+    end
+  )
+.  
+
+Ltac2 pfs_to_wfs () :=
+  repeat (
+    match! goal with
+    | [h : @derives _ _ _ |- _]
+      => unfold derives
+    | [h : @derives_using _ _ _ _ |- _]
+      => apply @raw_proof_of in $h
+    | [ h: @ML_proof_system _ _ _ |- _]
+      => apply @proved_impl_wf in $h
+    end
+  ).
+
+
+Ltac2 Set proved_hook_wfauto as oldhook
+:= (fun () => (*Message.print (Message.of_string "hook_wfauto p2w");*) clear_piles (); pfs_to_wfs () (*; oldhook ()*)).
+
+(*
+Ltac2 Set hook_wfauto
+:= (fun () => Message.print (Message.of_string "hook_wfauto p2w")).
+*)

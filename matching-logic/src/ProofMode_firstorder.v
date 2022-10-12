@@ -336,7 +336,7 @@ Section with_signature.
     { wf_auto2. }
     apply Ex_gen.
     { apply pile_refl. }
-    { wf_auto2. }
+    { subst x. apply set_evar_fresh_is_fresh. }
 
     apply lhs_to_and.
     { wf_auto2. }
@@ -409,7 +409,7 @@ Section with_signature.
       {
         rewrite -[ϕ₁ and ϕ₂](evar_quantify_evar_open x 0).
         { subst x. apply set_evar_fresh_is_fresh. }
-        { cbn. split_and!; auto. wf_auto. wf_auto2. }
+        { wf_auto2. }
         reflexivity.
       }
       apply Ex_gen.
@@ -678,8 +678,7 @@ Section with_signature.
       subst x.
       eapply evar_is_fresh_in_richer'. 2: apply set_evar_fresh_is_fresh'. clear. set_solver.
     }
-    { wf_auto. }
-
+    { assumption. }
   Abort.
 
   Lemma existential_instantiation :
@@ -690,7 +689,8 @@ Section with_signature.
     intros Γ φ x y WF xNy Hy.
     apply Ex_gen. apply pile_refl.
     apply evar_is_fresh_in_free_evar_subst. unfold evar_is_fresh_in. set_solver.
-    toMLGoal. wf_auto2.
+    toMLGoal.
+    { wf_auto2. }
     mlIntro "H".
     mlAssert ("H0" : (all , φ^{{evar: x ↦ 0}})). wf_auto2.
   Abort.
@@ -703,7 +703,7 @@ Section with_signature.
   Proof.
     unfold of_MLGoal. simpl. intros Γ l g i x xN PI H wf1 wf2.
     eapply prf_weaken_conclusion_iter_meta_meta. 5: apply H.
-    all: try wf_auto2.
+    all: try solve[wf_auto2].
     toMLGoal. wf_auto2. mlIntro "H". mlIntro "H0".
     epose proof (Ex_gen Γ (! g^{evar: 0 ↦ x}) ⊥ x i _ _).
     mlApplyMeta H0. unfold exists_quantify. simpl.

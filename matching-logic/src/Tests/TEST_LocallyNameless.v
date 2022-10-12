@@ -296,13 +296,13 @@ Module test_3.
       assert (Γₙₐₜ ⊢i ex , (sym_succ $ sym_succ $ sym_succ $ sym_succ $ sym_zero =ml b0) using AnyReasoning) as S4WF.
       { admit. }
       mgSpecMeta RA1 with (sym_succ $ sym_succ $ sym_zero).
-      mlSimpl in RA1; wf_auto2. 2: admit. (* apply def_theory. *)
+      mlSimpl in RA1; try_wfauto2. 2: admit. (* apply def_theory. *)
       simpl in RA1.
       apply universal_generalization with (x := "X0") in RA1 as RA2. (* revert Meta *)
       2: apply pile_any. 2: auto.
       mlSimpl in RA2. simpl in RA2.
       mgSpecMeta RA2 with (sym_succ $ sym_succ $ sym_succ $ sym_succ $ sym_zero).
-      mlSimpl in RA2; wf_auto2. 2: admit. (* apply def_theory. *)
+      mlSimpl in RA2; try_wfauto2. 2: admit. (* apply def_theory. *)
       simpl in RA2.
     Abort.
   End test_3.

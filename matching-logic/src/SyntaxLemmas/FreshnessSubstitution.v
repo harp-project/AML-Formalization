@@ -466,14 +466,14 @@ Section lemmas.
   Qed.
 
   Lemma free_evar_subst_preserves_no_negative_occurrence x p q n:
-    well_formed_closed_mu_aux q 0 ->
-    no_negative_occurrence_db_b n p ->
-    no_negative_occurrence_db_b n (p^[[evar: x ↦ q]])
+    well_formed_closed_mu_aux q 0 = true ->
+    no_negative_occurrence_db_b n p = true ->
+    no_negative_occurrence_db_b n (p^[[evar: x ↦ q]]) = true
   with
     free_evar_subst_preserves_no_positive_occurrence x p q n:
-    well_formed_closed_mu_aux q 0 ->
-    no_positive_occurrence_db_b n p ->
-    no_positive_occurrence_db_b n (p^[[evar: x ↦ q]])
+    well_formed_closed_mu_aux q 0 = true ->
+    no_positive_occurrence_db_b n p = true ->
+    no_positive_occurrence_db_b n (p^[[evar: x ↦ q]]) = true
   .
   Proof.
   - intros wfq nno.
@@ -562,6 +562,7 @@ Section lemmas.
     rewrite free_evar_subst_preserves_no_negative_occurrence; auto.
   Qed.
 
+
   Lemma well_formed_free_evar_subst x p q:
     well_formed q = true ->
     well_formed p = true ->
@@ -574,6 +575,20 @@ Section lemmas.
     feed specialize H.
     { split_and!; assumption. }
     destruct_and!. split_and!; auto.
+  Qed.
+
+  Lemma well_formed_xy_free_evar_subst x m n p q:
+    well_formed q = true ->
+    well_formed_xy m n p = true ->
+    well_formed_xy m n (p^[[evar: x ↦ q]]) = true.
+  Proof.
+    intros wfq wfp.
+    pose proof (H := @Private_well_formed_free_evar_subst x p q m n wfq).
+    unfold well_formed_xy. unfold well_formed_xy in wfp.
+    destruct_and!.
+    feed specialize H.
+    { split_and!; assumption. }
+    destruct_and!. split_and!; assumption.
   Qed.
 
   Lemma well_formed_free_evar_subst_0 x p q:

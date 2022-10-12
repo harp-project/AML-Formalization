@@ -332,3 +332,93 @@ Tactic Notation "destruct_or" "?" :=
   repeat match goal with H : _ |- _ => progress (destruct_or? H) end.
 Tactic Notation "destruct_or" "!" :=
   progress destruct_or?.
+
+  Tactic Notation "is_really_non_dependent" constr(H) :=
+  match goal with
+  | _ : context [ H ] |- _ => fail 1
+  | _ := context [ H ]  |- _ => fail 1
+  | |- context [ H ] => fail 1
+  | _ => idtac
+  end.
+ 
+
+Ltac destruct_and_deduplicate' H cont :=
+  lazymatch type of H with
+  | ?P /\ ?P =>
+    lazymatch goal with
+    | [H1 : P |- _] => clear H
+    | _ => 
+      let H2 := fresh "H" in
+      pose proof (H2 := proj1 H);
+      clear H;
+      cont H2
+    end
+  | ?P /\ ?Q =>
+    lazymatch goal with
+    | [H1 : P, H2 : Q |- _]
+      => clear H
+    | [H1 : P |- _]
+      =>
+        let H2 := fresh "H" in
+        pose proof (H2 := proj2 H);
+        clear H;
+        cont H2
+    | [H1 : Q |- _]
+      =>
+        let H2 := fresh "H" in
+        pose proof (H2 := proj1 H);
+        clear H;
+        cont H2
+    | _
+      =>
+      let H1 := fresh in
+      let H2 := fresh in
+      destruct H as [ H1 H2 ];
+      cont H1; cont H2
+    end
+  end
+.
+
+Tactic Notation
+  "destruct_and_deduplicate" ident(H) tactic(cont)
+  := destruct_and_deduplicate' H cont
+.
+
+Example ex_destruct_and_deduplicate P Q R:
+  P /\ Q -> P /\ R -> Q /\ R -> R /\ R -> R.
+Proof.
+  intros H1 H2 H3 H4.
+  destruct_and_deduplicate H1 (fun h => idtac h).
+  destruct_and_deduplicate H2 (fun h => idtac h).
+  destruct_and_deduplicate H3 (fun h => idtac h).
+  destruct_and_deduplicate H4 (fun h => idtac h).
+  assumption.
+Qed.
+
+(* A lightweight version of destruct_and *)
+  Ltac destruct_andb_go H :=
+    try lazymatch type of H with
+    | true => clear H
+    | (_ && _) = true =>
+      apply andb_true_iff in H;
+      destruct_and_deduplicate H destruct_andb_go
+    end.
+  
+  (* We first use the associativity so that every destruct
+     yields at least one 'atomic' hypothesis
+     (not containing [andb]), which may already exist
+     among the other hypotheses.
+   *)
+  Ltac destruct_andb_go_wrapper H :=
+    (*repeat rewrite -> andb_assoc in H;*)
+    destruct_andb_go H
+  .
+  
+  Tactic Notation "destruct_andb" "?" ident(H) :=
+    destruct_andb_go_wrapper H.
+  Tactic Notation "destruct_andb" "!" ident(H) :=
+    hnf in H; progress (destruct_andb? H).
+  Tactic Notation "destruct_andb" "?" :=
+    repeat match goal with H : _ |- _ => progress (destruct_andb? H) end.
+  Tactic Notation "destruct_andb" "!" :=
+    progress destruct_andb?.

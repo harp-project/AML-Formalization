@@ -46,11 +46,22 @@ Section sorts.
   Open Scope ml_scope.
   Local Notation "〚 phi 〛" := (patt_inhabitant_set phi) (at level 0) : ml_scope.
 
+  Obligation Tactic := idtac.
+
   #[global]
   Program Instance Unary_inhabitant_set : Unary patt_inhabitant_set := {}.
   Next Obligation.
-    repeat rewrite pm_correctness. reflexivity.
+    intros. repeat rewrite pm_correctness. reflexivity.
   Defined.
+  Next Obligation.
+    wf_auto2.
+  Qed.
+  Next Obligation.
+    wf_auto2.
+  Qed.
+  Next Obligation.
+    wf_auto2.
+  Qed.
 
   Definition patt_sorted_neg (sort phi : Pattern) : Pattern :=
     〚sort〛 and ! phi.
@@ -58,11 +69,17 @@ Section sorts.
   #[global]
   Program Instance Binary_sorted_neg : Binary patt_sorted_neg := {}.
   Next Obligation.
-    repeat rewrite pm_correctness. reflexivity.
+    intros. repeat rewrite pm_correctness. reflexivity.
   Defined.
   Next Obligation.
-    wf_auto2.
-  Defined.
+    intros. wf_auto2.
+  Qed.
+  Next Obligation.
+    intros. wf_auto2.
+  Qed.
+  Next Obligation.
+    intros. wf_auto2.
+  Qed.
 
   Definition patt_exists_of_sort (sort phi : Pattern) : Pattern :=
     ex , ((b0 ∈ml 〚nest_ex sort〛) and phi).
@@ -72,6 +89,7 @@ Section sorts.
   #[global]
   Program Instance sorted_exists_binder : ESortedBinder patt_exists_of_sort nest_ex := {}.
   Next Obligation.
+    intros.
     repeat rewrite pm_correctness.
     cbn.
     rewrite (@eswap _ _ _ nest_ex _ f_swap).
@@ -88,6 +106,7 @@ Section sorts.
   #[global]
   Program Instance sorted_forall_binder : ESortedBinder patt_forall_of_sort nest_ex := {}.
   Next Obligation.
+    intros.
     repeat rewrite pm_correctness.
     cbn.
     rewrite (@eswap _ _ _ nest_ex _ f_swap).

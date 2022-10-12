@@ -47,6 +47,103 @@ Section with_signature.
     Proof.
       simpl. lia.
     Qed.
+
+    Lemma well_formed_closed_mu_aux_iter_forall
+  (ϕ ψ : Pattern) (n : nat)
+  (pf : forall idx, (well_formed_closed_mu_aux ϕ idx -> well_formed_closed_mu_aux ψ idx)) :
+  forall idx,
+  well_formed_closed_mu_aux (Nat.iter n patt_forall ϕ) idx ->
+  well_formed_closed_mu_aux (Nat.iter n patt_forall ψ) idx.
+Proof.
+  move: pf.
+  induction n; intros pf idx H; simpl in *.
+  {
+    apply pf. exact H.
+  }
+  {
+    destruct_and!.
+    split_and!; try reflexivity.
+    specialize (IHn ltac:(auto)).
+    apply IHn. apply H.
+  }
+Qed.
+
+Lemma well_formed_positive_iter_forall
+  (ϕ ψ : Pattern) (n : nat)
+  (pf : (well_formed_positive ϕ -> well_formed_positive ψ)) :
+  well_formed_positive (Nat.iter n patt_forall ϕ) ->
+  well_formed_positive (Nat.iter n patt_forall ψ).
+Proof.
+  move: pf.
+  induction n; intros pf H; simpl in *.
+  {
+    apply pf. exact H.
+  }
+  {
+    destruct_and!.
+    split_and!; try reflexivity.
+    specialize (IHn ltac:(auto)).
+    apply IHn. apply H.
+  }
+Qed.
+
+    Lemma well_formed_closed_ex_aux_iter_forall
+      (ϕ ψ : Pattern) (n : nat)
+      (pf : forall idx, (well_formed_closed_ex_aux ϕ idx -> well_formed_closed_ex_aux ψ idx)) :
+        forall idx,
+        well_formed_closed_ex_aux (Nat.iter n patt_forall ϕ) idx ->
+        well_formed_closed_ex_aux (Nat.iter n patt_forall ψ) idx.
+    Proof.
+      move: pf.
+      induction n; intros pf idx H; simpl in *.
+      {
+        apply pf. exact H.
+      }
+      {
+        destruct_and!.
+        split_and!; try reflexivity.
+        specialize (IHn ltac:(auto)).
+        apply IHn. apply H.
+    }
+    Qed.
+
+Lemma well_formed_xy_forall (x y : nat) (ϕ : Pattern) :
+  well_formed_xy x y (patt_forall ϕ) = well_formed_xy (S x) y ϕ.
+Proof.
+  unfold well_formed_xy.
+  simpl.
+  rewrite !andb_true_r.
+  reflexivity.
+Qed.
+
+Lemma well_formed_xy_iter_forall
+  (f : Pattern -> Pattern)
+  (pf :
+    forall (x y : nat) (ϕ : Pattern) ,
+    well_formed_xy x y ϕ ->
+    well_formed_xy x y (f ϕ)
+  ) :
+  forall (n : nat) (x y : nat) (ϕ : Pattern),
+  well_formed_xy x y (Nat.iter n patt_forall ϕ) ->
+  well_formed_xy x y (Nat.iter n patt_forall (f ϕ)).
+Proof.
+  induction n.
+  {
+    intros.
+    simpl in *.
+    apply pf.
+    exact H.
+  }
+  {
+    intros x y ϕ H.
+    simpl in *.
+    rewrite well_formed_xy_forall in H.
+    rewrite well_formed_xy_forall.
+    apply IHn.
+    exact H.
+  }
+Qed.
+
     
     Lemma well_formed_not (phi : Pattern) :
       well_formed phi = true ->
@@ -132,9 +229,15 @@ Section with_signature.
        simpl. reflexivity.
      Defined.
      Next Obligation.
-       intros ψ Wfψ. wf_auto2.
-     Defined.
-
+      intros. wf_auto2.
+     Qed.
+     Next Obligation.
+      intros. wf_auto2.
+      Qed.
+    Next Obligation.
+      intros. wf_auto2.
+    Qed.
+     
     #[global]
      Program Instance NVNullary_top : Nullary patt_top := {}.
      Next Obligation.
@@ -143,8 +246,14 @@ Section with_signature.
        simpl. reflexivity.
      Defined.
      Next Obligation.
-       wf_auto2.
-     Defined.
+      intros. wf_auto2.
+     Qed.
+     Next Obligation.
+      intros. wf_auto2.
+      Qed.
+    Next Obligation.
+      intros. wf_auto2.
+    Qed.
 
     #[global]
      Program Instance Binary_or : Binary patt_or := {}.
@@ -154,8 +263,14 @@ Section with_signature.
        simpl. reflexivity.
      Defined.
      Next Obligation.
-       intros ψ1 ψ2 Wfψ1 Wfψ2. wf_auto2.
-     Defined.
+      intros. wf_auto2.
+     Qed.
+     Next Obligation.
+      intros. wf_auto2.
+      Qed.
+    Next Obligation.
+      intros. wf_auto2.
+    Qed.
 
     #[global]
      Program Instance Binary_and : Binary patt_and := {}.
@@ -165,8 +280,14 @@ Section with_signature.
        simpl. reflexivity.
      Defined.
      Next Obligation.
-       intros ψ1 ψ2 Wfψ1 Wfψ2. wf_auto2.
-     Defined.
+      intros. wf_auto2.
+     Qed.
+     Next Obligation.
+      intros. wf_auto2.
+      Qed.
+    Next Obligation.
+      intros. wf_auto2.
+    Qed.
 
     #[global]
      Program Instance Binary_iff : Binary patt_iff := {}.
@@ -176,8 +297,14 @@ Section with_signature.
        simpl. reflexivity.
      Defined.
      Next Obligation.
-       intros ψ1 ψ2 Wfψ1 Wfψ2. wf_auto2.
-     Defined.
+      intros. wf_auto2.
+     Qed.
+     Next Obligation.
+      intros. wf_auto2.
+      Qed.
+    Next Obligation.
+      intros. wf_auto2.
+    Qed.
 
     #[global]
      Program Instance EBinder_forall : EBinder patt_forall := {}.

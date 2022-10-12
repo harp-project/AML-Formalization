@@ -1,5 +1,8 @@
 From Coq Require Import ssreflect ssrfun ssrbool.
 
+
+From Coq Require Import Btauto.
+
 From stdpp Require Import base.
 
 From MatchingLogic.Utils
@@ -317,23 +320,263 @@ Class Binary (binary : Pattern -> Pattern -> Pattern) := {
     binary_morphism :
       forall {A : Type} (f : A -> Pattern -> Pattern) (f_morph : PatternMorphism f) (phi1 phi2 : Pattern) a,
         f a (binary phi1 phi2) = binary (f a phi1) (f a phi2) ;
-     binary_wf : forall ψ1 ψ2, well_formed ψ1 -> well_formed ψ2 -> 
-        well_formed (binary ψ1 ψ2) ;
+    binary_wfp :
+      forall (ψ1 ψ2 : Pattern),
+        well_formed_positive (binary ψ1 ψ2)
+        = well_formed_positive ψ1 && well_formed_positive ψ2 ;
+    binary_wfcex :
+      forall (n : nat) (ψ1 ψ2 : Pattern),
+            well_formed_closed_ex_aux (binary ψ1 ψ2) n
+            = well_formed_closed_ex_aux ψ1 n && well_formed_closed_ex_aux ψ2 n ;
+    binary_wfcmu :
+      forall (n : nat) (ψ1 ψ2 : Pattern),
+            well_formed_closed_mu_aux (binary ψ1 ψ2) n
+            = well_formed_closed_mu_aux ψ1 n && well_formed_closed_mu_aux ψ2 n ;
 }.
+
+Lemma binary_wfxy
+  (binary : Pattern -> Pattern -> Pattern)
+  {_b : Binary binary}
+:
+forall (x y : nat) (ψ1 ψ2 : Pattern),
+  well_formed_xy x y (binary ψ1 ψ2)
+  = well_formed_xy x y ψ1 && well_formed_xy x y ψ2.
+Proof.
+  unfold well_formed_xy.
+  intros.
+  rewrite binary_wfp.
+  rewrite binary_wfcex.
+  rewrite binary_wfcmu.
+  btauto.
+Qed.
+
+Lemma binary_wfxy_compose
+  (binary : Pattern -> Pattern -> Pattern)
+  {_b : Binary binary}
+:
+forall (x y : nat) (ψ1 ψ2 : Pattern),
+  well_formed_xy x y ψ1 = true /\ well_formed_xy x y ψ2 = true ->
+  well_formed_xy x y (binary ψ1 ψ2) = true
+.
+Proof.
+  intros x y ψ1 ψ2 H.
+  rewrite binary_wfxy.
+  destruct H as [H1 H2].
+  rewrite H1 H2.
+  reflexivity.
+Qed.
+
+Lemma binary_wfxy_decompose
+  (binary : Pattern -> Pattern -> Pattern)
+  {_b : Binary binary}
+:
+forall (x y : nat) (ψ1 ψ2 : Pattern),
+  well_formed_xy x y (binary ψ1 ψ2) = true ->
+  well_formed_xy x y ψ1 = true /\ well_formed_xy x y ψ2 = true
+.
+Proof.
+  intros x y ψ1 ψ2 H.
+  rewrite binary_wfxy in H.
+  apply andb_true_iff in H.
+  exact H.
+Qed.
 
 Class Unary (unary : Pattern -> Pattern) := {
     unary_morphism :
       forall {A : Type} (f : A -> Pattern -> Pattern) (f_morph : PatternMorphism f) (phi : Pattern) a,
         f a (unary phi) = unary (f a phi) ;
-    unary_wf : forall ψ, well_formed ψ -> well_formed (unary ψ) ;
+    unary_wfp :
+      forall (ψ : Pattern),
+        well_formed_positive (unary ψ) = well_formed_positive ψ ;
+    unary_wfcex :
+      forall (n : nat) (ψ : Pattern),
+        well_formed_closed_ex_aux (unary ψ) n = well_formed_closed_ex_aux ψ n ;
+    unary_wfcmu :
+      forall (n : nat) (ψ : Pattern),
+        well_formed_closed_mu_aux (unary ψ) n = well_formed_closed_mu_aux ψ n ;
 }.
+
+Lemma unary_wfxy (unary : Pattern -> Pattern) {_ : Unary unary} :
+forall (x y : nat) (ψ : Pattern),
+  well_formed_xy x y (unary ψ) = well_formed_xy x y ψ
+.
+Proof.
+  unfold well_formed_xy.
+  intros.
+  rewrite unary_wfp.
+  rewrite unary_wfcex.
+  rewrite unary_wfcmu.
+  btauto.
+Qed.
+
+Lemma unary_wfxy_compose (unary : Pattern -> Pattern) {_uu : Unary unary} :
+forall (x y : nat) (ψ : Pattern),
+  well_formed_xy x y ψ = true ->
+  well_formed_xy x y (unary ψ) = true
+.
+Proof.
+  intros x y ψ H'.
+  rewrite unary_wfxy.
+  exact H'.
+Qed.
+
+Lemma unary_wfxy_decompose (unary : Pattern -> Pattern) {_ : Unary unary} :
+forall (x y : nat) (ψ : Pattern),
+  well_formed_xy x y (unary ψ) = true ->
+  well_formed_xy x y ψ = true
+.
+Proof.
+  intros x y ψ H'.
+  rewrite unary_wfxy in H'.
+  exact H'.
+Qed.
+
 
 Class Nullary (nullary : Pattern) := {
     nullary_morphism :
       forall {A : Type} (f : A -> Pattern -> Pattern) (f_morph : PatternMorphism f) a,
         f a nullary = nullary ;
-    nullary_wf : well_formed nullary ;
+    nullary_wfp : well_formed_positive nullary = true;
+    nullary_wfcex : forall (n : nat), well_formed_closed_ex_aux nullary n = true;
+    nullary_wfcmu : forall (n : nat), well_formed_closed_mu_aux nullary n = true;
 }.
+
+Lemma nullary_wfxy (nullary : Pattern) {_ : Nullary nullary} :
+  forall (x y : nat), well_formed_xy x y nullary = true
+.
+Proof.
+  unfold well_formed_xy.
+  intros.
+  rewrite nullary_wfp.
+  rewrite nullary_wfcex.
+  rewrite nullary_wfcmu.
+  btauto.
+Qed.
+
+Lemma well_formed_positive_foldr_binary
+  (binary : Pattern -> Pattern -> Pattern)
+  {_bin : Binary binary}
+  (g : Pattern)
+  (xs : list Pattern)
+  :
+  well_formed_positive (foldr binary g xs)
+  = (well_formed_positive g && lwf_positive xs).
+Proof.
+  induction xs; simpl.
+  {
+    unfold lwf_positive. simpl. rewrite andb_true_r. reflexivity.
+  }
+  {
+    unfold lwf_positive in *. simpl.
+    rewrite binary_wfp.
+    rewrite IHxs.
+    btauto.
+  }
+Qed.
+
+
+Lemma well_formed_cex_foldr_binary
+  (binary : Pattern -> Pattern -> Pattern)
+  {_bin : Binary binary}
+  (n : nat)
+  (g : Pattern)
+  (xs : list Pattern)
+  :
+  well_formed_closed_ex_aux (foldr binary g xs) n
+  = (well_formed_closed_ex_aux g n && lwf_cex n xs).
+Proof.
+  induction xs; simpl.
+  {
+    unfold lwf_cex. simpl. rewrite andb_true_r. reflexivity.
+  }
+  {
+    unfold lwf_cex in *. simpl.
+    rewrite binary_wfcex.
+    rewrite IHxs.
+    btauto.
+  }
+Qed.
+
+
+Lemma well_formed_cmu_foldr_binary
+  (binary : Pattern -> Pattern -> Pattern)
+  {_bin : Binary binary}
+  (n : nat)
+  (g : Pattern)
+  (xs : list Pattern)
+  :
+  well_formed_closed_mu_aux (foldr binary g xs) n
+  = (well_formed_closed_mu_aux g n && lwf_cmu n xs).
+Proof.
+  induction xs; simpl.
+  {
+    unfold lwf_cmu. simpl. rewrite andb_true_r. reflexivity.
+  }
+  {
+    unfold lwf_cmu in *. simpl.
+    rewrite binary_wfcmu.
+    rewrite IHxs.
+    btauto.
+  }
+Qed.
+
+Lemma well_formed_xy_foldr_binary
+  (binary : Pattern -> Pattern -> Pattern)
+  {_bin : Binary binary}
+  (m n : nat)
+  (g : Pattern)
+  (xs : list Pattern)
+  :
+  well_formed_xy m n (foldr binary g xs)
+  = (well_formed_xy m n g && lwf_xy m n xs)
+.
+Proof.
+  induction xs; simpl.
+  {
+    unfold lwf_xy. simpl. rewrite andb_true_r. reflexivity.
+  }
+  {
+    unfold lwf_xy in *. simpl.
+    rewrite binary_wfxy.
+    rewrite IHxs.
+    btauto.
+  }
+Qed.
+
+Lemma well_formed_xy_foldr_binary_compose
+  (binary : Pattern -> Pattern -> Pattern)
+  {_bin : Binary binary}
+  (m n : nat)
+  (g : Pattern)
+  (xs : list Pattern)
+  :
+  (well_formed_xy m n g = true /\ lwf_xy m n xs = true) ->
+  well_formed_xy m n (foldr binary g xs) = true
+.
+Proof.
+  intros H.
+  rewrite well_formed_xy_foldr_binary.
+  destruct H as [H1 H2].
+  rewrite H1 H2.
+  reflexivity.
+Qed.
+
+Lemma well_formed_xy_foldr_binary_decompose
+  (binary : Pattern -> Pattern -> Pattern)
+  {_bin : Binary binary}
+  (m n : nat)
+  (g : Pattern)
+  (xs : list Pattern)
+  :
+  well_formed_xy m n (foldr binary g xs) = true ->
+  (well_formed_xy m n g = true /\ lwf_xy m n xs = true)
+.
+Proof.
+  intros H.
+  rewrite well_formed_xy_foldr_binary in H.
+  apply andb_true_iff in H.
+  exact H.
+Qed.
 
 Class EBinder (binder : Pattern -> Pattern) := {
     ebinder_morphism :
@@ -370,9 +613,15 @@ Next Obligation.
   simpl. reflexivity.
 Defined.
 Next Obligation.
-  intros φ1 φ2 WF1 WF2.
-  now apply well_formed_imp.
-Defined.
+  intros. simpl. reflexivity.
+Qed.
+Next Obligation.
+  intros. simpl. reflexivity.
+Qed.
+Next Obligation.
+  intros. simpl. reflexivity.
+Qed.
+
 
 #[global]
 Program Instance Binary_app : Binary patt_app := {}.
@@ -381,9 +630,14 @@ Next Obligation.
   simpl. reflexivity.
 Defined.
 Next Obligation.
-  intros φ1 φ2 WF1 WF2.
-  now apply well_formed_app.
-Defined.
+  intros. simpl. reflexivity.
+Qed.
+Next Obligation.
+  intros. simpl. reflexivity.
+Qed.
+Next Obligation.
+  intros. simpl. reflexivity.
+Qed.
 
 #[global]
 Program Instance Nullary_bott : Nullary patt_bott := {}.
@@ -392,8 +646,14 @@ Next Obligation.
   simpl. reflexivity.
 Defined.
 Next Obligation.
-  auto.
-Defined.
+  intros. simpl. reflexivity.
+Qed.
+Next Obligation.
+  intros. simpl. reflexivity.
+Qed.
+Next Obligation.
+  intros. simpl. reflexivity.
+Qed.
 
 #[global]
 Program Instance Nullary_sym s : Nullary (patt_sym s) := {}.
@@ -402,8 +662,14 @@ Next Obligation.
   simpl. reflexivity.
 Defined.
 Next Obligation.
-  auto.
-Defined.
+  intros. simpl. reflexivity.
+Qed.
+Next Obligation.
+  intros. simpl. reflexivity.
+Qed.
+Next Obligation.
+  intros. simpl. reflexivity.
+Qed.
 
 Class SwappableEx {A : Type} (f : A -> Pattern -> Pattern) (g : Pattern -> Pattern)
   (m : PatternMorphism f) :=
@@ -550,6 +816,7 @@ End with_signature.
   Hints are needed to automatically infer the SwappableEx instances.
   TODO: there is still a problem when the well_formed_closed assumption is
         missing
+  TODO(jan.tusil): I would add the hints to a separate database
 *)
 #[export]
 Hint Resolve Bevar_subst_swaps_ex_nesting : core.

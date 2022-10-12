@@ -1320,7 +1320,9 @@ Section with_model.
           rewrite <- He1e1'.
           subst phi1'.
           rewrite -> evar_open_bsvar_subst.
-          2: { wf_auto2. }
+          2: { 
+            wf_auto2.
+          }
 
           assert (HXu: (Xfr1 = Xu)).
           { subst Xfr1. subst Xu. unfold fresh_evar.
@@ -1991,9 +1993,7 @@ Section with_model.
                     psi X
                     (update_evar_val fresh c ρ) _ _ ) as H8.
         feed specialize H8.
-        {
-          wf_auto2.
-        }
+        { wf_auto2. }
         pose proof (eval_free_evar_independent ρ fresh c psi) as H9.
         rewrite -> H9 in H8. clear H9.
         unfold free_svar_subst in *.

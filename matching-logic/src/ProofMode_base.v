@@ -22,6 +22,9 @@ Import
   MatchingLogic.ProofSystem.Notations
 .
 
+(* Exports *)
+Export MatchingLogic.ProofSystem.
+
 Set Default Proof Mode "Classic".
 
 Open Scope ml_scope.
