@@ -343,6 +343,10 @@ Ltac wf_auto2_step_parts :=
   cbn in *; subst; cbn in *;
   split_and?;
   wf_auto2_fast_done;
+  try lazymatch goal with
+  | [MF : mu_free ?p = true |- well_formed_positive (bevar_subst _ _ ?p) = true]
+    => apply bevar_subst_positive; solve wf_auto2_step_parts
+  end;
   try first [
   apply wfp_free_evar_subst |
   apply wfc_ex_free_evar_subst_2 |

@@ -46,7 +46,7 @@ Section ProofSystemTheorems.
     intros Γ φ φ' SubTheory Mufree Wf1 Wf2.
     toMLGoal. wf_auto2.
     mlIntro "H0". mlDestructAnd "H0" as "H1" "H2".
-    mlRewriteBy "H2" at 1. assumption. wf_auto.
+    mlRewriteBy "H2" at 1. assumption. wf_auto2.
     mlSplitAnd; mlExact "H1".
   Defined.
 
@@ -92,7 +92,7 @@ Section ProofSystemTheorems.
     assert (x <> y) as XY.
     { intro. apply x_eq_fresh_impl_x_notin_free_evars in Heqy.
       subst. set_solver. } (* TODO: this should be auto... *)
-    fromMLGoal. wf_auto2.
+    fromMLGoal.
 
 
    (* TODO: mlIntro for supporting 'all' *)
@@ -126,8 +126,8 @@ Section ProofSystemTheorems.
     * mlClear "H0". fromMLGoal. wf_auto2.
       remember (fresh_evar patt_bott) as x.
       pose proof (universal_generalization Γ ⌈patt_free_evar x⌉ x AnyReasoning (pile_any _)) 
-        as H1.
-      cbn in H1. case_match. 2: congruence. apply H1. reflexivity.
+        as H1'.
+      cbn in H1'. case_match. 2: congruence. apply H1'. reflexivity.
       gapply defined_evar.
       { apply pile_any. }
       { exact HΓ. }
@@ -144,7 +144,8 @@ Section ProofSystemTheorems.
     intros Γ φ φ' HΓ MF WF1 WF2 Def.
     toMLGoal. wf_auto2.
     mlIntro "H0".
-    mlRewriteBy "H0" at 1; cbn; wf_auto2.
+    mlRewriteBy "H0" at 1; cbn; try_wfauto2; try assumption.
+    { rewrite MF. reflexivity. }
       mlClear "H0". unfold patt_in.
       assert (Γ ⊢ ( φ' and φ' <---> φ') ) as H1.
       {
@@ -245,11 +246,9 @@ Section ProofSystemTheorems.
   Proof.
     intros φ φ' x Γ NotIn HΓ MF WFp1 WFp2 WF2.
     assert (well_formed (φ^[evar:0↦φ'])) as WFF.
-    { wf_auto2. apply bevar_subst_positive; auto.
-        now apply mu_free_wfp. }
+    { wf_auto2. now apply mu_free_wfp. }
     assert (well_formed (φ^[evar:0↦patt_free_evar x])) as WFFF. {
-      wf_auto2. apply bevar_subst_positive; auto.
-        now apply mu_free_wfp. }
+      wf_auto2. now apply mu_free_wfp. }
     toMLGoal. wf_auto2.
     mlIntro "H0". mlDestructAnd "H0" as "H1" "H2".
     mlSplitAnd.
@@ -269,7 +268,8 @@ Section ProofSystemTheorems.
     rewrite free_evar_subst_id in H.
     assert (Γ ⊢ φ^[evar:0↦φ'] <---> φ^[evar:0↦patt_free_evar x] --->
                 φ^[evar:0↦patt_free_evar x] ---> φ^[evar:0↦φ'] ) as Hiff. {
-      toMLGoal; wf_auto2.
+      toMLGoal.
+      { clear H. wf_auto2. }
       mlIntro "H1". unfold patt_iff. mlDestructAnd "H1" as "H2" "H3". mlExact "H3".
     }
 
@@ -294,11 +294,9 @@ Section ProofSystemTheorems.
   Proof.
     intros φ φ' x Γ NotIn HΓ MF WFp1 WFp2 WF2.
     assert (well_formed (φ^[evar:0↦φ'])) as WFF.
-    { wf_auto2. apply bevar_subst_positive; auto.
-        now apply mu_free_wfp. }
+    { wf_auto2. now apply mu_free_wfp. }
     assert (well_formed (φ^[evar:0↦patt_free_evar x])) as WFFF. {
-      wf_auto2. apply bevar_subst_positive; auto.
-        now apply mu_free_wfp. }
+      wf_auto2. now apply mu_free_wfp. }
     toMLGoal. wf_auto2.
     mlIntro "H0".
     mlDestructAnd "H0" as "H1" "H2".
@@ -313,7 +311,8 @@ Section ProofSystemTheorems.
     rewrite free_evar_subst_id in H.
     assert (Γ ⊢ φ^[evar:0↦φ'] <---> φ^[evar:0↦patt_free_evar x] --->
                 φ^[evar:0↦φ'] ---> φ^[evar:0↦patt_free_evar x] ) as Hiff. {
-      toMLGoal; wf_auto2.
+      toMLGoal.
+      { clear H. wf_auto2. }
       mlIntro "H1". unfold patt_iff. mlDestructAnd "H1" as "H2" "H3". mlExact "H2".
     }
     apply useAnyReasoning in H.
@@ -496,9 +495,6 @@ Section UnificationProcedure.
       - mlRewrite IHxs at 1. mlDestructAnd "H0".
         mlSplitAnd; [mlAssumption|mlSplitAnd;mlAssumption].
     Unshelve.
-     4-6: apply wf_tail' in Wf3; eapply well_formed_foldr with (g := y) in Wf3;
-          [apply andb_true_iff in Wf3; wf_auto2 | wf_auto2].
-     (* convert patt_and to patt_imp in the goal *)
   Admitted.
 
   Theorem unification_soundness :
