@@ -162,7 +162,9 @@ Proof.
 
   apply Knaster_tarski.
   { eapply pile_trans. 2: apply pile. apply pile_svs_subseteq. set_solver. }
-  { wf_auto2. }
+  { 
+    wf_auto2.
+  }
 
   pose proof (Htmp := @Svar_subst Σ Γ (ϕ₁ ---> ϕ₂) (mu, ϕ₂^{{svar: X ↦ 0}}) X i).
   feed specialize Htmp.

@@ -185,8 +185,9 @@ Ltac wf_auto2_fast_done :=
 Ltac wf_auto2_composite_step :=
   unfold is_true;
   simpl;
-  repeat first [
+  first [
     split |
+    apply free_evar_subst_preserves_no_negative_occurrence |
     apply wf_wfxy00_compose |
     apply wf_lwf_xy_compose |
     apply well_formed_xy_free_evar_subst |
@@ -339,6 +340,9 @@ Ltac wf_auto2_step_parts :=
   split_and?;
   wf_auto2_fast_done;
   try first [
+  apply well_formed_positive_svar_quantify |
+  apply free_evar_subst_preserves_no_negative_occurrence |
+  apply no_negative_occurrence_svar_quantify |
   apply bevar_subst_closed_mu|
   apply bevar_subst_closed_ex|
   apply bevar_subst_positive_2|
@@ -357,6 +361,12 @@ Ltac wf_auto2_step_parts :=
   apply wfc_ex_aux_bsvar_subst
   ];
   try (lazymatch goal with
+  | [ H : well_formed_closed_mu_aux ?p 0 = true |- no_negative_occurrence_db_b _ ?p = true]
+    => apply wfc_impl_no_neg_occ; apply H
+
+  | [ H : well_formed_closed_mu_aux ?p 0 = true |- no_positive_occurrence_db_b _ ?p = true]
+    => apply wfc_impl_no_pos_occ; apply H
+
   | [ H : well_formed_closed_ex_aux ?p _ = true |- well_formed_closed_ex_aux ?p (S ?n) = true ]
     => eapply well_formed_closed_ex_aux_ind;[|apply H]; lia
 

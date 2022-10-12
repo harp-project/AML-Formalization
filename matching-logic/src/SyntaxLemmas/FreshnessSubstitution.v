@@ -466,14 +466,14 @@ Section lemmas.
   Qed.
 
   Lemma free_evar_subst_preserves_no_negative_occurrence x p q n:
-    well_formed_closed_mu_aux q 0 ->
-    no_negative_occurrence_db_b n p ->
-    no_negative_occurrence_db_b n (p^[[evar: x ↦ q]])
+    well_formed_closed_mu_aux q 0 = true ->
+    no_negative_occurrence_db_b n p = true ->
+    no_negative_occurrence_db_b n (p^[[evar: x ↦ q]]) = true
   with
     free_evar_subst_preserves_no_positive_occurrence x p q n:
-    well_formed_closed_mu_aux q 0 ->
-    no_positive_occurrence_db_b n p ->
-    no_positive_occurrence_db_b n (p^[[evar: x ↦ q]])
+    well_formed_closed_mu_aux q 0 = true ->
+    no_positive_occurrence_db_b n p = true ->
+    no_positive_occurrence_db_b n (p^[[evar: x ↦ q]]) = true
   .
   Proof.
   - intros wfq nno.
