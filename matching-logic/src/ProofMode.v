@@ -1,5 +1,7 @@
 From MatchingLogic Require Export
   Logic
+  ProofSystem
+  BasicProofSystemLemmas
   ProofMode_base
   ProofInfo
   ProofMode_propositional

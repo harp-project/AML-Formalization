@@ -17,6 +17,7 @@ From MatchingLogic.Utils Require Import stdpp_ext.
 Import extralibrary.
 From MatchingLogic Require Import Logic
   ProofInfo
+  BasicProofSystemLemmas
   ProofMode_base 
   ProofMode_propositional
   ProofMode_firstorder

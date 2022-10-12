@@ -34,6 +34,7 @@ src/FixpointReasoning.v
 src/StringSignature.v
 src/Logic.v
 
+src/BasicProofSystemLemmas.v
 src/ProofMode_base.v
 src/ProofInfo.v
 src/ProofMode_propositional.v

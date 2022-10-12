@@ -15,6 +15,7 @@ From MatchingLogic Require Import
     IndexManipulation
     wftactics
     ProofInfo
+    BasicProofSystemLemmas
     ProofMode_base
     ProofMode_propositional
 .
