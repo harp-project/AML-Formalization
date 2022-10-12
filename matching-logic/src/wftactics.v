@@ -403,7 +403,7 @@ Ltac print_hyps :=
 
 Ltac wf_auto2_fallback :=
   match goal with
-  | [ |- ?G ] => idtac "Falling back on " G (*; print_hyps*)
+  | [ |- ?G ] => idtac (*"Falling back on " G*) (*; print_hyps*)
   end;
   repeat wf_auto2_decompose_hyps_parts;
   repeat wf_auto2_step_parts
