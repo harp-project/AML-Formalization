@@ -751,7 +751,7 @@ Proof.
       eapply syllogism_meta. 5: eapply IH2.
       1-3: wf_auto2.
 
-      apply Ex_gen; auto.
+      apply BasicProofSystemLemmas.Ex_gen; auto.
       { try_solve_pile. }
       1: {
         unfold exists_quantify.
@@ -772,7 +772,7 @@ Proof.
       rewrite -> evar_quantify_evar_open; auto.
       2: now do 2 apply andb_true_iff in Hwfex as [_ Hwfex].
       useBasicReasoning.
-      apply Ex_quan; auto.
+      apply BasicProofSystemLemmas.Ex_quan; auto.
   -
     assert (Hwfex: well_formed (ex , subst_ctx AC p)).
     { unfold well_formed. simpl.
@@ -855,7 +855,7 @@ Proof.
       Unshelve.
       2: { try_solve_pile. }
 
-      apply Ex_gen; auto.
+      apply BasicProofSystemLemmas.Ex_gen; auto.
       { try_solve_pile. }
       1: {
         unfold exists_quantify.
@@ -875,7 +875,7 @@ Proof.
       erewrite evar_quantify_evar_open; auto.
       2: now do 2 apply andb_true_iff in Hwfex as [_ Hwfex].
       useBasicReasoning.
-      apply Ex_quan; auto.
+      apply BasicProofSystemLemmas.Ex_quan; auto.
       }
 Defined.
 
@@ -1411,12 +1411,12 @@ Qed.
     {
       eapply strip_exists_quantify_l.
       3: {
-        apply Ex_gen.
+        apply BasicProofSystemLemmas.Ex_gen.
         3: {
           eapply syllogism_meta.
           5: {
             useBasicReasoning.
-            apply Ex_quan.
+            apply BasicProofSystemLemmas.Ex_quan.
             abstract (wf_auto2).
           }
           4: {
@@ -1470,12 +1470,12 @@ Qed.
     {
       eapply strip_exists_quantify_l.
       3: {
-        apply Ex_gen.
+        apply BasicProofSystemLemmas.Ex_gen.
         3: {
           eapply syllogism_meta.
           5: {
             useBasicReasoning.
-            apply Ex_quan.
+            apply BasicProofSystemLemmas.Ex_quan.
             abstract (wf_auto2).
           }
           4: {

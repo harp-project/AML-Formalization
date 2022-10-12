@@ -362,7 +362,7 @@ Proof.
       reflexivity.
     }
     rewrite <- Heq.
-    apply Ex_gen.
+    apply BasicProofSystemLemmas.Ex_gen.
     2: {simpl. unfold evar_is_fresh_in in Hx1'. clear -Hx1'. set_solver. }
     1: {
       subst i.
@@ -420,7 +420,7 @@ Proof.
       fromMLGoal.
       replace b0 with ((patt_free_evar x')^{{evar: x' ↦ 0}}).
       2: { simpl. case_match;[reflexivity|congruence]. }
-      apply Ex_gen.
+      apply BasicProofSystemLemmas.Ex_gen.
       2: { simpl. case_match;[|congruence]. simpl.
            unfold evar_is_fresh_in in Hx1'. clear -Hx1'. set_solver.
       }
@@ -457,7 +457,7 @@ Proof.
       }
       subst i.
       useBasicReasoning.
-      apply Ex_quan.
+      apply BasicProofSystemLemmas.Ex_quan.
       { wf_auto2. }
     }
     eapply syllogism_meta.
@@ -819,7 +819,7 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
       { wf_auto2. }
       mlIntro. mlClear "0". fromMLGoal.
       useBasicReasoning.
-      apply Ex_quan. wf_auto2.
+      apply BasicProofSystemLemmas.Ex_quan. wf_auto2.
     - (* Existential Generalization *)
       destruct Hpf as [Hpf2 Hpf3 Hpf4].
       simpl in Hpf2, Hpf3, Hpf4.
@@ -838,7 +838,7 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
 
       apply reorder_meta in IHpf.
       2-4: clear pwi_pf_fp; wf_auto2.
-      apply Ex_gen with (x := x) in IHpf.
+      apply BasicProofSystemLemmas.Ex_gen with (x := x) in IHpf.
       3: { simpl. set_solver. }
       2: { apply pile_evs_svs_kt.
         { set_solver. }
@@ -1493,7 +1493,7 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
       replace b0 with ((patt_free_evar x)^{{evar: x ↦ 0}}).
       2: { simpl. case_match; [|congruence]. reflexivity. }
       
-      apply Ex_gen.
+      apply BasicProofSystemLemmas.Ex_gen.
       3: assumption.
       2: {
         subst x. apply set_evar_fresh_is_fresh'.
@@ -2248,7 +2248,7 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
     
     assert (well_formed (ex, φ)) as WFEX.
     { wf_auto2. now apply mu_free_wfp. }
-    pose proof (EQ := Ex_quan Γ φ Zvar WFEX).
+    pose proof (EQ := BasicProofSystemLemmas.Ex_quan Γ φ Zvar WFEX).
     change constraint in EQ.
     epose proof (PC := prf_conclusion Γ (patt_equal φ' Z) (instantiate (ex , φ) (patt_free_evar Zvar) ---> ex , φ) AnyReasoning ltac:(apply well_formed_equal;wf_auto2) _ EQ).
 
@@ -2281,7 +2281,7 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
         { exact EE. }
     }
 
-    eapply (Ex_gen Γ _ _ Zvar) in HSUB.
+    eapply (BasicProofSystemLemmas.Ex_gen Γ _ _ Zvar) in HSUB.
     3: {
       rewrite HeqZvar. unfold fresh_evar. simpl.
       apply not_elem_of_union.
@@ -2938,7 +2938,7 @@ Proof.
        { wf_auto2. }
        reflexivity.
   }
-  apply Ex_gen.
+  apply BasicProofSystemLemmas.Ex_gen.
   { try_solve_pile. }
   {  simpl.
         pose proof (Hfr := set_evar_fresh_is_fresh ϕ).
@@ -2955,7 +2955,7 @@ Proof.
   { wf_auto2. }
   { wf_auto2. }
   useBasicReasoning.
-  apply Ex_quan.
+  apply BasicProofSystemLemmas.Ex_quan.
   { wf_auto2. }
 Defined.
 
@@ -3007,7 +3007,7 @@ Proof.
         clear. set_solver.
       }
       { wf_auto2. }
-      apply ex_quan_monotone.
+      apply BasicProofSystemLemmas.Ex_quan_monotone.
       { try_solve_pile. }
       mlSimpl.
       toMLGoal.
@@ -3029,7 +3029,7 @@ Proof.
         clear. set_solver.
       }
       { wf_auto2. }
-      apply ex_quan_monotone.
+      apply BasicProofSystemLemmas.Ex_quan_monotone.
       { try_solve_pile. }
       mlSimpl.
       toMLGoal.
@@ -3223,7 +3223,7 @@ Proof.
   mlRewrite ((membership_exists Γ x (⌈ b0 and ϕ ⌉) HΓ ltac:(wf_auto2))) at 1.
   mlIntro "H0".
   remember (fresh_evar ϕ) as y.
-  mlApplyMetaRaw (useAnyReasoning (Ex_quan Γ (patt_free_evar x ∈ml ⌈ b0 and ϕ ⌉) y ltac:(wf_auto2))).
+  mlApplyMetaRaw (useAnyReasoning (BasicProofSystemLemmas.Ex_quan Γ (patt_free_evar x ∈ml ⌈ b0 and ϕ ⌉) y ltac:(wf_auto2))).
   unfold instantiate. mlSimpl. simpl.
   rewrite bevar_subst_not_occur.
   { wf_auto2. }
@@ -3354,7 +3354,7 @@ Proof.
         eapply well_formed_closed_ex_aux_ind; try eassumption; lia.
         reflexivity.
       }
-      apply ex_quan_monotone.
+      apply BasicProofSystemLemmas.Ex_quan_monotone.
       { apply pile_any. }
       {
         unfold evar_open. mlSimpl. simpl.
@@ -3449,7 +3449,7 @@ Proof.
     set_solver.
   }
   { simpl. split_and!; auto; wf_auto2. }
-  apply ex_quan_monotone.
+  apply BasicProofSystemLemmas.Ex_quan_monotone.
   { apply pile_any. }
   unfold evar_open. mlSimpl. simpl.
   rewrite bevar_subst_not_occur.
@@ -3539,7 +3539,7 @@ Proof.
     apply (strip_exists_quantify_l Γ y).
     { simpl. clear -Htmp. set_solver. }
     { simpl. split_and!; try reflexivity. wf_auto2. }
-    apply ex_quan_monotone.
+    apply BasicProofSystemLemmas.Ex_quan_monotone.
     { apply pile_any. }
     {
       unfold evar_open. mlSimpl. simpl.
@@ -3586,7 +3586,7 @@ Proof.
       set_solver.
     }
     { simpl. split_and!; try reflexivity. wf_auto2. }
-    apply ex_quan_monotone.
+    apply BasicProofSystemLemmas.Ex_quan_monotone.
     { apply pile_any. }
     {
       eapply syllogism_meta.
@@ -3726,7 +3726,7 @@ Proof.
     exact HΓ.
   }
 
-  mlApplyMetaRaw (useAnyReasoning (ex_quan_monotone Γ  y _ _ AnyReasoning (pile_any _) Htmp)) in "H0".
+  mlApplyMetaRaw (useAnyReasoning (BasicProofSystemLemmas.Ex_quan_monotone Γ  y _ _ AnyReasoning (pile_any _) Htmp)) in "H0".
   clear Htmp.
 
 
@@ -4352,7 +4352,7 @@ Proof.
   intros Γ i HΓ PI.
   (* remember (fresh_evar ⊥) as x. *)
   toMLGoal. wf_auto2.
-  epose proof (Ex_gen Γ (! ⌈patt_free_evar ev_x⌉) ⊥ ev_x i _ _).
+  epose proof (BasicProofSystemLemmas.Ex_gen Γ (! ⌈patt_free_evar ev_x⌉) ⊥ ev_x i _ _).
   unfold exists_quantify in H. cbn in H. case_match. 2: congruence.
   mlIntro "H". mlApplyMeta H. fold (patt_defined b0) (patt_not ⌈b0⌉).
   mlExact "H".
