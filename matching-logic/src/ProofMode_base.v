@@ -234,34 +234,6 @@ Proof.
   reflexivity.
 Defined.
 
-Lemma wf_fr_connect_strip_last_variable {Σ : Signature}
-  (g : Pattern) (name : string)
-  l
-  :
-  well_formed (fold_right connect g (pmes_of (l ++ [(mkNH _ name pme_variable)]))) = true ->
-  well_formed (fold_right connect (all, g) (pmes_of l)) = true.
-Proof.
-  Print ProofModeEntry.
-  intros H.
-  induction l using rev_ind.
-  {
-    simpl in *. exact H.
-  }
-  {
-    feed specialize IHl.
-    {
-      clear IHl.
-      unfold pmes_of in *.
-      rewrite map_app in H. simpl in H.
-      rewrite map_app. simpl. 
-      rewrite foldr_app in H. simpl in H.
-      rewrite foldr_app. simpl.
-      rewrite map_app in H. simpl in H.
-      rewrite foldr_app in H. simpl in H.
-      simpl in H.
-    }
-  }
-Abort.
 
 Lemma MLGoal_introImpl {Σ : Signature} (Γ : Theory) (l : hypotheses) (name : string) (x g : Pattern)
   (i : ProofInfo) :
@@ -279,42 +251,17 @@ Proof.
   feed specialize H.
   {
     clear H.
-    induction l using rev_ind; simpl in *.
-    {
-      simpl in wfall. exact wfall.
-    }
-    {
-      Unset Printing Notations.
-      feed specialize IHl.
-      {
-        clear IHl.
-        unfold pmes_of in *.
-        rewrite map_app in wfall.
-        rewrite foldr_app in wfall.
-        simpl in wfall.
-        destruct (nh_pme x0) eqn:Heqx0; simpl in wfall.
-        {
-          unfold well_formed,well_formed_closed in *.
-          destruct_and!.
-          simpl in *.
-        }
-      }
-      destruct (nh_pme a) eqn:Heqa.
-      {
-        apply IHl.
-      }
-      simpl in wfall.
-    }
-    simpl.
-    wf_auto2.
+    unfold pmes_of in *.
+    rewrite map_app. simpl.
+    rewrite foldr_app. simpl.
+    exact wfall.
   }
-  { abstract (apply well_formed_imp_proj2 in wfxig; exact wfxig). }
-  { abstract (unfold Pattern.wf in *; unfold patterns_of;
-    rewrite map_app map_app foldr_app; simpl;
-    apply well_formed_imp_proj1 in wfxig; rewrite wfxig; simpl; exact wfl).
-  }
-  unshelve (eapply (cast_proof' _ _ _ _ _ H)).
-  { unfold patterns_of. rewrite map_app foldr_app. simpl. reflexivity. }
+  unfold pmes_of in H.
+  rewrite map_app in H.
+  simpl in H.
+  rewrite foldr_app in H.
+  simpl in H.
+  exact H.
 Defined.
 
 Ltac simplLocalContext :=
