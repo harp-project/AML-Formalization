@@ -69,15 +69,15 @@ Definition foralls_count
   {Σ : Signature} (pmes : list ProofModeEntry) : nat
 := length (filter is_variable pmes).
 
-
-Definition evar_open_0_fresh {Σ : Signature} (p : Pattern) : Pattern
-:= evar_open (fresh_evar p) 0 p.
+Definition evar_open_0_fresh
+  {Σ : Signature} (avoid : EVarSet) (p : Pattern) : Pattern
+:= evar_open (evar_fresh_s (avoid ∪ free_evars p)) 0 p.
 
 Fixpoint evar_open_fresh_iter
-  {Σ : Signature} (n : nat) (p : Pattern) : Pattern
+  {Σ : Signature} (avoid : EVarSet) (n : nat) (p : Pattern) : Pattern
 := match n with
    | 0 => p
-   | (S n') => evar_open_fresh_iter n' (evar_open_0_fresh p)
+   | (S n') => evar_open_fresh_iter avoid n' (evar_open_0_fresh avoid p)
    end.
 
 Fixpoint evar_open_pmes {Σ : Signature}
@@ -302,7 +302,11 @@ Lemma lift_to_mixed_context {Σ : Signature} (Γ : Theory)
   :
   well_formed (MLGoal_to_pattern' concl₁ pmes) ->
   well_formed (MLGoal_to_pattern' concl₂ pmes) ->
+  forall (avoid : EVarSet),
+  free_evars (MLGoal_to_pattern' concl₁ pmes) ⊆ avoid ->
+  free_evars (MLGoal_to_pattern' concl₂ pmes) ⊆ avoid ->
   Γ ⊢i (evar_open_fresh_iter
+         (avoid)
          (foralls_count pmes)
          (concl₂ ---> concl₁)
        ) using i ->
@@ -317,7 +321,7 @@ Proof.
   move: concl₁ concl₂.
   move: pmes Hpml.
   induction pml; simpl;
-    intros pmes Hpml concl₁ concl₂ Hwf1 Hwf2 Heo.
+    intros pmes Hpml concl₁ concl₂ Hwf1 Hwf2 avoid Havoid1 Havoid2 Heo.
   {
     destruct pmes; simpl in *. exact Heo. lia.
   }
@@ -328,7 +332,10 @@ Proof.
     destruct p as [p|]; simpl in *.
     {
       cbn in Heo. unfold decide in Heo.
-      specialize (IHpml pmes ltac:(lia) concl₁ concl₂ ltac:(wf_auto2) ltac:(wf_auto2) Heo). clear Heo.
+      specialize (IHpml pmes ltac:(lia) concl₁ concl₂ ltac:(wf_auto2) ltac:(wf_auto2)).
+      specialize (IHpml avoid ltac:(set_solver) ltac:(set_solver)).
+      specialize (IHpml Heo).
+      clear Heo.
       apply prf_weaken_conclusion_meta.
       { wf_auto2. }
       { wf_auto2. }
@@ -337,24 +344,32 @@ Proof.
     }
     {
       cbn in Heo.
-      remember (fresh_evar (concl₂ ---> concl₁)) as x.
-      remember (evar_fresh_s ((free_evars (foldr connect concl₂ pmes)) ∪ (free_evars (foldr connect concl₁ pmes)))) as y.
-      apply forall_monotone with (x := y).
+      remember (evar_fresh_s (avoid
+                 ∪ (free_evars concl₂ ∪ free_evars concl₁))) as x.
+
+      (*remember (evar_fresh_s ((free_evars (foldr connect concl₂ pmes)) ∪ (free_evars (foldr connect concl₁ pmes)))) as y.*)
+      apply forall_monotone with (x := x).
       { eapply pile_trans. 2: apply pile. try_solve_pile. }
       {
-        subst y.
+        subst x.
         eapply evar_is_fresh_in_richer'.
         2: apply set_evar_fresh_is_fresh'.
-        { clear. set_solver. }
+        { unfold MLGoal_to_pattern' in Havoid1,Havoid2.
+          clear -Havoid1 Havoid2.
+          set_solver.
+        }
       }
       {
-        subst y.
+        subst x.
         eapply evar_is_fresh_in_richer'.
         2: apply set_evar_fresh_is_fresh'.
-        { clear. set_solver. }
+        { unfold MLGoal_to_pattern' in Havoid1,Havoid2.
+          clear -Havoid1 Havoid2.
+          set_solver.
+        }
       }
       rewrite 2!evar_open_foldr_connect.
-      apply IHpml.
+      apply IHpml with (avoid := avoid).
       {
         rewrite length_evar_open_pmes.
         lia.
@@ -363,15 +378,28 @@ Proof.
         simpl.
         apply wf_wfxy00_compose.
         apply wf_wfxy00_decompose in Hwf1.
-        apply wf_all_MLGoal_to_pattern' with (x := y) in Hwf1.
+        apply wf_all_MLGoal_to_pattern' with (x := x) in Hwf1.
         apply Hwf1.
       }
       {
         simpl.
         apply wf_wfxy00_compose.
         apply wf_wfxy00_decompose in Hwf2.
-        apply wf_all_MLGoal_to_pattern' with (x := y) in Hwf2.
+        apply wf_all_MLGoal_to_pattern' with (x := x) in Hwf2.
         apply Hwf2.
+      }
+      {
+        admit.
+      }
+      {
+        admit.
+      }
+      {
+        clear IHpml.
+        rewrite foralls_count_evar_open_pmes.
+        simpl.
+        unfold foralls_count.
+        apply Heo.
       }
       pose proof (Htmp := all_quan_monotone Γ x).
       unfold forall_quantify in Htmp.
