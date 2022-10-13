@@ -79,7 +79,7 @@ Fixpoint evar_open_fresh_iter
    | 0 => p
    | (S n') => evar_open_fresh_iter n' (evar_open_0_fresh p)
    end.
-
+(*
 Definition evar_open_pme {Σ : Signature}
    (idx : nat) (x : evar) (pme : ProofModeEntry)
    : ProofModeEntry
@@ -94,7 +94,18 @@ Definition evar_open_pmes {Σ : Signature}
   : list ProofModeEntry
   := map (evar_open_pme idx x) pmes
 .
-
+*)
+Fixpoint evar_open_pmes {Σ : Signature}
+  (idx : nat) (x : evar) (pmes : list ProofModeEntry)
+  : list ProofModeEntry
+  :=
+  match pmes with
+  | [] => pmes
+  | (pme_pattern p)::pmes'
+    => (pme_pattern (evar_open x idx p))::(evar_open_pmes idx x pmes')
+  | (pme_variable)::pmes'
+    => (pme_variable)::(evar_open_pmes (S idx) x pmes')
+  end.
 (*
 Lemma wf_helper {Σ : Signature} (g : Pattern)
   (pmes : list ProofModeEntry) (x : evar) (m n : nat)
@@ -132,10 +143,45 @@ Proof.
   }
 Qed.
 *)
+
+Lemma evar_open_foldr_connect
+  {Σ : Signature} (g : Pattern) (pmes : list ProofModeEntry)
+  (x : evar) (idx : nat)
+  :
+  (foldr connect g pmes)^{evar:idx↦x}
+  = foldr connect
+          (g^{evar:(idx + foralls_count pmes)↦x})
+          (evar_open_pmes idx x pmes)
+.
+Proof.
+  move: idx.
+  induction pmes; intros idx; cbn.
+  {
+    f_equal. lia.
+  }
+  {
+    destruct a as [p|]; simpl.
+    {
+      unfold evar_open in *.
+      rewrite IHpmes. clear IHpmes.
+      reflexivity.
+    }
+    {
+      unfold evar_open in *.
+      rewrite IHpmes.
+      unfold patt_forall,patt_not.
+      simpl. rewrite Nat.add_succ_r.
+      reflexivity.
+    }
+  }
+Qed.
+
 (* A wrapper around [universal_generalization]. *)
 Lemma lift_to_mixed_context {Σ : Signature} (Γ : Theory)
   (concl₁ concl₂: Pattern) (pmes : list ProofModeEntry)
   (i : ProofInfo)
+  (* TODO relax ExGen *)
+  (pile : ProofInfoLe (ExGen := ⊤, SVSubst := ∅, KT := false, FP := ∅) i)
   :
   well_formed (MLGoal_to_pattern' concl₁ pmes) ->
   well_formed (MLGoal_to_pattern' concl₂ pmes) ->
@@ -175,6 +221,24 @@ Proof.
     {
       cbn in Heo.
       remember (fresh_evar (concl₂ ---> concl₁)) as x.
+      remember (evar_fresh_s ((free_evars (foldr connect concl₂ pmes)) ∪ (free_evars (foldr connect concl₁ pmes)))) as y.
+      apply forall_monotone with (x := y).
+      { eapply pile_trans. 2: apply pile. try_solve_pile. }
+      {
+        subst y.
+        eapply evar_is_fresh_in_richer'.
+        2: apply set_evar_fresh_is_fresh'.
+        { clear. set_solver. }
+      }
+      {
+        subst y.
+        eapply evar_is_fresh_in_richer'.
+        2: apply set_evar_fresh_is_fresh'.
+        { clear. set_solver. }
+      }
+      pose proof (Htmp := all_quan_monotone Γ x).
+      unfold forall_quantify in Htmp.
+
       specialize (IHpmes (concl₂^[evar:0↦patt_free_evar x])
                          (concl₁^[evar:0↦patt_free_evar x])).
       feed specialize IHpmes.
