@@ -79,22 +79,7 @@ Fixpoint evar_open_fresh_iter
    | 0 => p
    | (S n') => evar_open_fresh_iter n' (evar_open_0_fresh p)
    end.
-(*
-Definition evar_open_pme {Σ : Signature}
-   (idx : nat) (x : evar) (pme : ProofModeEntry)
-   : ProofModeEntry
-   := match pme with
-      | pme_variable => pme_variable
-      | pme_pattern p => pme_pattern (evar_open x idx p)
-      end
-.
 
-Definition evar_open_pmes {Σ : Signature}
-  (idx : nat) (x : evar) (pmes : list ProofModeEntry)
-  : list ProofModeEntry
-  := map (evar_open_pme idx x) pmes
-.
-*)
 Fixpoint evar_open_pmes {Σ : Signature}
   (idx : nat) (x : evar) (pmes : list ProofModeEntry)
   : list ProofModeEntry
@@ -106,43 +91,52 @@ Fixpoint evar_open_pmes {Σ : Signature}
   | (pme_variable)::pmes'
     => (pme_variable)::(evar_open_pmes (S idx) x pmes')
   end.
-(*
-Lemma wf_helper {Σ : Signature} (g : Pattern)
-  (pmes : list ProofModeEntry) (x : evar) (m n : nat)
+
+Lemma foralls_count_evar_open_pmes {Σ : Signature}
+  (idx : nat) (x : evar) (pmes : list ProofModeEntry)
   :
-  well_formed_xy m n (all , MLGoal_to_pattern' g pmes) ->
-  well_formed_xy m n (MLGoal_to_pattern' g^[evar:m↦patt_free_evar x]
-    (evar_open_pmes m x pmes)
-  )
+  foralls_count (evar_open_pmes idx x pmes) = foralls_count pmes
 .
 Proof.
-  move: m n.
-  induction pmes; simpl; intros m n H.
+  move: idx.
+  induction pmes; intros idx; simpl.
   {
-    wf_auto2.
+    reflexivity.
   }
   {
-    destruct a as [p|]; simpl in *.
+    destruct a as [p|]; cbn; unfold decide; simpl.
     {
-      specialize (IHpmes m n).
-      feed specialize IHpmes.
-      {
-        wf_auto2.
-      }
-      wf_auto2.
+      unfold foralls_count in IHpmes.
+      rewrite IHpmes.
+      reflexivity.
     }
     {
-      specialize (IHpmes (S m) n).
-      feed specialize IHpmes.
-      {
-        wf_auto2.
-      }
-      clear H.
-      wf_auto2.
+      unfold foralls_count in IHpmes.
+      rewrite IHpmes.
+      reflexivity.
     }
   }
 Qed.
-*)
+
+Lemma length_evar_open_pmes {Σ : Signature}
+  (idx : nat) (x : evar) (pmes : list ProofModeEntry)
+  : length (evar_open_pmes idx x pmes) = length pmes
+.
+Proof.
+  move: idx.
+  induction pmes; simpl; intros idx.
+  { reflexivity. }
+  {
+    destruct a; simpl.
+    {
+      rewrite IHpmes. reflexivity.
+    }
+    {
+      rewrite IHpmes. reflexivity.
+    }
+  }
+Qed.
+
 
 Lemma evar_open_foldr_connect
   {Σ : Signature} (g : Pattern) (pmes : list ProofModeEntry)
@@ -175,6 +169,70 @@ Proof.
     }
   }
 Qed.
+
+
+Lemma wf_helper {Σ : Signature} (g : Pattern)
+  (pmes : list ProofModeEntry) (x : evar) (m n : nat)
+  :
+  well_formed_xy m n (all , MLGoal_to_pattern' g pmes) ->
+  well_formed_xy m n (MLGoal_to_pattern' g^[evar:m↦patt_free_evar x]
+    (evar_open_pmes m x pmes)
+  )
+.
+Proof.
+
+  remember (S(length pmes)) as pml.
+  assert (Hpml : S(length pmes) <= pml) by lia.
+  clear Heqpml.
+
+  move: pmes Hpml m n.
+  induction pml; simpl; intros pmes Hpml m n H.
+  {
+    lia.
+  }
+  destruct pmes.
+  {
+    wf_auto2.
+  }
+  {
+    destruct p as [p|]; simpl in *.
+    {
+      specialize (IHpml pmes ltac:(lia) m n).
+      feed specialize IHpml.
+      {
+        wf_auto2.
+      }
+      wf_auto2.
+    }
+    {
+      unfold MLGoal_to_pattern' in *.
+      cut (well_formed_xy m n
+      (evar_open x m (
+       foldr connect g^[evar:m↦patt_free_evar x] (evar_open_pmes (S m) x pmes))) = true).
+      {
+        clear IHpml.
+        intros H'.
+        wf_auto2.
+      }
+      clear H.
+
+      rewrite evar_open_foldr_connect.
+      unfold evar_open.
+      apply IHpml.
+      specialize (IHpmes (S m) n).
+      feed specialize IHpmes.
+      {
+        wf_auto2.
+      }
+      
+      fold (evar_open x (S m) g) in IHpmes.
+      
+      simpl.
+      wf_auto2.
+    }
+  }
+Qed.
+*)
 
 (* A wrapper around [universal_generalization]. *)
 Lemma lift_to_mixed_context {Σ : Signature} (Γ : Theory)
@@ -235,6 +293,15 @@ Proof.
         eapply evar_is_fresh_in_richer'.
         2: apply set_evar_fresh_is_fresh'.
         { clear. set_solver. }
+      }
+      rewrite 2!evar_open_foldr_connect.
+      apply IHpml.
+      {
+        rewrite length_evar_open_pmes.
+        lia.
+      }
+      {
+        simpl.
       }
       pose proof (Htmp := all_quan_monotone Γ x).
       unfold forall_quantify in Htmp.

@@ -264,6 +264,15 @@ Ltac simplifyWfHypParts H :=
   let t := type of H in
   (* idtac "SimplifyWfHypParts " H " (" t ")"; *)
   lazymatch type of H with
+  | well_formed_positive (bevar_subst (patt_free_evar _) _ _) = true
+    => 
+      apply evar_open_positive in H; simplifyWfHypParts H
+  | well_formed_closed_ex_aux (bevar_subst (patt_free_evar _) ?n _) ?n = true
+    =>
+      apply wfc_ex_aux_body_ex_imp2 in H; simplifyWfHypParts H
+  | well_formed_closed_mu_aux (bevar_subst (patt_free_evar _) _ _) _ = true
+      =>
+        apply wfc_mu_aux_body_ex_imp2 in H; simplifyWfHypParts H
   | well_formed_positive _ = true
     =>
       rewrite ?wfPositiveSimplifications in H;
