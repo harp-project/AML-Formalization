@@ -1190,6 +1190,29 @@ Defined.
     abstract (wf_auto2).
   Defined.
 
+  Definition forall_quantify {Σ : Signature} x p : Pattern
+  := all, p^{{evar:x↦0}}.
+
+  (*
+    Γ ⊢ φ₁ → φ₂
+    -----------------------
+    Γ ⊢ (∀x. φ₁) → (∀x. φ₂)
+  *)
+  Lemma all_quan_monotone {Σ : Signature} Γ x ϕ₁ ϕ₂ (i : ProofInfo)
+    (pile : ProofInfoLe ( (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)) i) :
+    Γ ⊢i ϕ₁ ---> ϕ₂ using i ->
+    Γ ⊢i (forall_quantify x ϕ₁) ---> (forall_quantify x ϕ₂) using i.
+  Proof.
+    intros H.
+    unfold forall_quantify.
+    unfold patt_forall.
+    apply modus_tollens.
+    pose proof (Htmp := ex_quan_monotone Γ x (! ϕ₂) (! ϕ₁) i pile).
+    unfold exists_quantify in Htmp. mlSimpl in Htmp.
+    apply Htmp. clear Htmp.
+    apply modus_tollens.
+    exact H.
+  Defined.
 
 Close Scope string_scope.
 Close Scope list_scope.
