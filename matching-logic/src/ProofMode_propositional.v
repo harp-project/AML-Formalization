@@ -361,6 +361,17 @@ Proof.
       }
       {
         simpl.
+        apply wf_wfxy00_compose.
+        apply wf_wfxy00_decompose in Hwf1.
+        apply wf_all_MLGoal_to_pattern' with (x := y) in Hwf1.
+        apply Hwf1.
+      }
+      {
+        simpl.
+        apply wf_wfxy00_compose.
+        apply wf_wfxy00_decompose in Hwf2.
+        apply wf_all_MLGoal_to_pattern' with (x := y) in Hwf2.
+        apply Hwf2.
       }
       pose proof (Htmp := all_quan_monotone Γ x).
       unfold forall_quantify in Htmp.
