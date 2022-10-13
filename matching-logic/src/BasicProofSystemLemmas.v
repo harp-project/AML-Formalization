@@ -1214,6 +1214,30 @@ Defined.
     exact H.
   Defined.
 
+  (*
+    Γ ⊢ φ₁ → φ₂
+    -----------------------
+    Γ ⊢ (∀x. φ₁) → (∀x. φ₂)
+  *)
+  Lemma forall_monotone {Σ : Signature} Γ x ϕ₁ ϕ₂ (i : ProofInfo)
+    (pile : ProofInfoLe ( (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)) i) :
+    x ∉ free_evars ϕ₁ ->
+    x ∉ free_evars ϕ₂ ->
+    Γ ⊢i (evar_open x 0 ϕ₁) ---> (evar_open x 0 ϕ₂) using i ->
+    Γ ⊢i (patt_forall ϕ₁) ---> (patt_forall ϕ₂) using i.
+  Proof.
+    intros Hxn1 Hxn2 H.
+    rewrite -[ϕ₁](evar_quantify_evar_open x 0).
+    { assumption. }
+    { wf_auto2. }
+    rewrite -[ϕ₂](evar_quantify_evar_open x 0).
+    { assumption. }
+    { wf_auto2. }
+    apply all_quan_monotone.
+    { exact pile. }
+    exact H.
+  Qed.
+
 Close Scope string_scope.
 Close Scope list_scope.
 Close Scope ml_scope.
