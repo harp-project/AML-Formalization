@@ -54,8 +54,8 @@ Lemma mlUseBasicReasoning
   mkMLGoal Σ Γ l g BasicReasoning ->
   mkMLGoal Σ Γ l g i.
 Proof.
-  intros H wf1 wf2.
-  specialize (H wf1 wf2).
+  intros H wfa.
+  specialize (H wfa).
   apply useBasicReasoning.
   exact H.
 Defined.
@@ -289,8 +289,8 @@ Lemma mlUseGenericReasoning
   mkMLGoal Σ Γ l g i ->
   mkMLGoal Σ Γ l g i'.
 Proof.
-  intros pile H wf1 wf2.
-  specialize (H wf1 wf2).
+  intros pile H wfa.
+  specialize (H wfa).
   simpl in *.
   destruct i.
   eapply useGenericReasoning.
@@ -305,18 +305,15 @@ Tactic Notation "gapply" uconstr(pf) "in" ident(H) :=
 
 
 (* Extracts well-formedness assumptions about (local) goal and (local) hypotheses. *)
-Tactic Notation "mlExtractWF" ident(wfl) ident(wfg) :=
+Tactic Notation "mlExtractWF" ident(wfa) :=
 match goal with
 | [ |- ?g ] =>
-  let wfl' := fresh "wfl'" in
-  let wfg' := fresh "wfg'" in
-  intros wfg' wfl';
-  pose proof (wfl := wfl');
-  pose proof (wfg := wfg');
-  revert wfg' wfl';
+  let wfa' := fresh "wfa'" in
+  intros wfa';
+  pose proof (wfa := wfa');
+  revert wfa';
   fold g;
-  rewrite /mlConclusion in wfg;
-  rewrite /mlHypotheses in wfl
+  cbn in wfa
 end.
 
 Local Example ex_extractWfAssumptions {Σ : Signature} Γ (p : Pattern) :
@@ -325,10 +322,9 @@ Local Example ex_extractWfAssumptions {Σ : Signature} Γ (p : Pattern) :
 Proof.
   intros wfp.
   toMLGoal.
-  { auto. }
-  mlExtractWF wfl wfg.
+  { wf_auto2. }
+  mlExtractWF wfa.
   (* These two asserts by assumption only test presence of the two hypotheses *)
-  assert (Pattern.wf []) by assumption.
   assert (well_formed (p ---> p)) by assumption.
 Abort.
 
