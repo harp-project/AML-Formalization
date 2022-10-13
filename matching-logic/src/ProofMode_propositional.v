@@ -217,8 +217,8 @@ Proof.
   assert (Hpml : S(length pmes) <= pml) by lia.
   clear Heqpml.
 
-  move: pmes Hpml m n.
-  induction pml; simpl; intros pmes Hpml m n H.
+  move: pmes Hpml m n g.
+  induction pml; simpl; intros pmes Hpml m n g H.
   {
     lia.
   }
@@ -230,7 +230,7 @@ Proof.
   {
     destruct p as [p|]; simpl in *.
     {
-      specialize (IHpml pmes ltac:(lia) m n).
+      specialize (IHpml pmes ltac:(lia) m n g).
       feed specialize IHpml.
       {
         wf_auto2.
@@ -247,24 +247,68 @@ Proof.
         intros H'.
         wf_auto2.
       }
-      clear H.
+      
 
       rewrite evar_open_foldr_connect.
       unfold evar_open.
       (* rewrite foralls_count_evar_open_pmes. *)
       cbn. unfold decide. cbn.
-      rewrite -plus_Snm_nSm. cbn.
+      (*rewrite -plus_Snm_nSm. cbn.*)
+      rewrite evar_open_pmes_comm_higher.
+      rewrite foralls_count_evar_open_pmes.
+      rewrite -[foralls_count pmes](foralls_count_evar_open_pmes m x).
+
       apply IHpml.
-      specialize (IHpmes (S m) n).
-      feed specialize IHpmes.
+      {
+        rewrite length_evar_open_pmes. lia.
+      }
+      clear IHpml.
+
+      assert (H' : well_formed_xy m n (evar_open x m (evar_open x (S m) (foldr connect g pmes))) = true).
       {
         wf_auto2.
       }
+      clear H.
+      rewrite evar_open_foldr_connect in H'.
+      cbn in H'.
+      rewrite evar_open_foldr_connect in H'.
+      cbn in H'.
+      rewrite foralls_count_evar_open_pmes in H'.
+
+      cut (well_formed_xy m n (evar_open x m
+      (
+       foldr connect
+         g^[evar:m + S (length (filter is_variable pmes))↦
+         patt_free_evar x] (evar_open_pmes m x pmes))) = true
+      ).
+      {
+        intros H''. wf_auto2.
+      }
+      fold (foralls_count pmes).
+      rewrite -plus_Snm_nSm. simpl.
+      unfold evar_open in *.
+
+      rewrite evar_open_pmes_comm_higher in H'.
+      remember (m + foralls_count pmes) as m'.
+      assert (Hm'm: m' >= m) by lia.
+      remember (evar_open_pmes m x pmes) as pmes'.
+      clear -H' Hm'm.
+      induction pmes'; cbn in *.
+      {
+        assumption.
+        rewrite plus_comm in H'. simpl in H'.
+        rewrite plus_comm. simpl.
+        assumption.
+      }
+      {
+
+      }
+
+
+      rewrite evar_open_foldr_connect.
+      rewrite foralls_count_evar_open_pmes.
       
-      fold (evar_open x (S m) g) in IHpmes.
-      
-      simpl.
-      wf_auto2.
+
     }
   }
 Qed.
