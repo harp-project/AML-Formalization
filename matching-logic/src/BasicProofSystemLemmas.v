@@ -1145,6 +1145,52 @@ Defined.
     { exact Hϕ. }
   Defined.
 
+  (*
+    Γ ⊢ φ₁ → φ₂
+    -----------------------
+    Γ ⊢ (∃x. φ₁) → (∃x. φ₂)
+  *)
+  Lemma ex_quan_monotone {Σ : Signature} Γ x ϕ₁ ϕ₂ (i : ProofInfo)
+    (pile : ProofInfoLe ( (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)) i) :
+    Γ ⊢i ϕ₁ ---> ϕ₂ using i ->
+    Γ ⊢i (exists_quantify x ϕ₁) ---> (exists_quantify x ϕ₂) using i.
+  Proof.
+    intros H.
+    pose proof (Hwf := proved_impl_wf Γ _ (proj1_sig H)).
+    assert (wfϕ₁: well_formed ϕ₁ = true) by wf_auto2.
+    assert (wfϕ₂: well_formed ϕ₂ = true) by wf_auto2.
+    apply BasicProofSystemLemmas.Ex_gen.
+    { exact pile. }
+    { simpl. rewrite free_evars_evar_quantify. clear. set_solver. }
+
+    unfold exists_quantify.
+    eapply syllogism_meta. 4: apply H.
+    { wf_auto2. }
+    { wf_auto2. }
+    { wf_auto2. }
+    clear H wfϕ₁ ϕ₁ Hwf.
+
+    (* We no longer need to use [cast_proof] to avoid to ugly eq_sym terms;
+       however, without [cast_proof'] the [replace] tactics does not work,
+       maybe because of implicit parameters.
+     *)
+    eapply (cast_proof').
+    {
+      replace ϕ₂ with (instantiate (ex, ϕ₂^{{evar: x ↦ 0}}) (patt_free_evar x)) at 1.
+      2: { unfold instantiate.
+         rewrite bevar_subst_evar_quantify_free_evar.
+         now do 2 apply andb_true_iff in wfϕ₂ as [_ wfϕ₂].
+         reflexivity.
+      }
+      reflexivity.
+    }
+          (* i =  gpi *)
+    useBasicReasoning.
+    apply BasicProofSystemLemmas.Ex_quan.
+    abstract (wf_auto2).
+  Defined.
+
+
 Close Scope string_scope.
 Close Scope list_scope.
 Close Scope ml_scope.

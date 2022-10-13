@@ -34,9 +34,157 @@ Open Scope string_scope.
 Open Scope list_scope.
 Open Scope ml_scope.
 
+(*
+Lemma nested_const_fa {Σ : Signature} Γ a l:
+  well_formed a ->
+  Pattern.wf l ->
+  Γ ⊢i (a ---> (fold_right connect a l))
+  using BasicReasoning.
+Proof.
+  intros wfa wfl.
+  induction l; simpl.
+  - apply A_impl_A. exact wfa.
+  - pose proof (wfa0l := wfl).
+    unfold Pattern.wf in wfl. simpl in wfl. apply andb_prop in wfl. destruct wfl as [wfa0 wfl].
+    specialize (IHl wfl).
+    assert (H1 : Γ ⊢i ((foldr patt_imp a l) ---> (a0 ---> (foldr patt_imp a l))) using BasicReasoning).
+    {
+      apply P1; wf_auto2.
+    }
+    eapply syllogism_meta.
+    5: apply H1. 4: assumption. all: wf_auto2.
+Defined.
+*)
+
+Definition is_variable {Σ : Signature} (pme: ProofModeEntry) : Prop :=
+  pme = pme_variable
+.
+
+#[global]
+Instance is_variable_dec {Σ : Signature} (pme: ProofModeEntry)
+: Decision (is_variable pme).
+Proof. unfold is_variable. solve_decision. Defined.
+
+Definition foralls_count
+  {Σ : Signature} (pmes : list ProofModeEntry) : nat
+:= length (filter is_variable pmes).
 
 
-(* Before this point, lemmas do not depend on proof mode. *)
+Definition evar_open_0_fresh {Σ : Signature} (p : Pattern) : Pattern
+:= evar_open (fresh_evar p) 0 p.
+
+Fixpoint evar_open_fresh_iter
+  {Σ : Signature} (n : nat) (p : Pattern) : Pattern
+:= match n with
+   | 0 => p
+   | (S n') => evar_open_fresh_iter n' (evar_open_0_fresh p)
+   end.
+
+Definition evar_open_pme {Σ : Signature}
+   (idx : nat) (x : evar) (pme : ProofModeEntry)
+   : ProofModeEntry
+   := match pme with
+      | pme_variable => pme_variable
+      | pme_pattern p => pme_pattern (evar_open x idx p)
+      end
+.
+
+Definition evar_open_pmes {Σ : Signature}
+  (idx : nat) (x : evar) (pmes : list ProofModeEntry)
+  : list ProofModeEntry
+  := map (evar_open_pme idx x) pmes
+.
+
+(*
+Lemma wf_helper {Σ : Signature} (g : Pattern)
+  (pmes : list ProofModeEntry) (x : evar) (m n : nat)
+  :
+  well_formed_xy m n (all , MLGoal_to_pattern' g pmes) ->
+  well_formed_xy m n (MLGoal_to_pattern' g^[evar:m↦patt_free_evar x]
+    (evar_open_pmes m x pmes)
+  )
+.
+Proof.
+  move: m n.
+  induction pmes; simpl; intros m n H.
+  {
+    wf_auto2.
+  }
+  {
+    destruct a as [p|]; simpl in *.
+    {
+      specialize (IHpmes m n).
+      feed specialize IHpmes.
+      {
+        wf_auto2.
+      }
+      wf_auto2.
+    }
+    {
+      specialize (IHpmes (S m) n).
+      feed specialize IHpmes.
+      {
+        wf_auto2.
+      }
+      clear H.
+      wf_auto2.
+    }
+  }
+Qed.
+*)
+(* A wrapper around [universal_generalization]. *)
+Lemma lift_to_mixed_context {Σ : Signature} (Γ : Theory)
+  (concl₁ concl₂: Pattern) (pmes : list ProofModeEntry)
+  (i : ProofInfo)
+  :
+  well_formed (MLGoal_to_pattern' concl₁ pmes) ->
+  well_formed (MLGoal_to_pattern' concl₂ pmes) ->
+  Γ ⊢i (evar_open_fresh_iter
+         (foralls_count pmes)
+         (concl₂ ---> concl₁)
+       ) using i ->
+  Γ ⊢i ((fold_right connect concl₂ pmes) --->
+        (fold_right connect concl₁ pmes)) using i
+.
+Proof.
+  remember (length pmes) as pml.
+  assert (Hpml : length pmes <= pml) by lia.
+  clear Heqpml.
+
+  move: concl₁ concl₂.
+  move: pmes Hpml.
+  induction pml; simpl;
+    intros pmes Hpml concl₁ concl₂ Hwf1 Hwf2 Heo.
+  {
+    destruct pmes; simpl in *. exact Heo. lia.
+  }
+  {
+    destruct pmes.
+    { exact Heo. }
+
+    destruct p as [p|]; simpl in *.
+    {
+      cbn in Heo. unfold decide in Heo.
+      specialize (IHpml pmes ltac:(lia) concl₁ concl₂ ltac:(wf_auto2) ltac:(wf_auto2) Heo). clear Heo.
+      apply prf_weaken_conclusion_meta.
+      { wf_auto2. }
+      { wf_auto2. }
+      { wf_auto2. }
+      exact IHpml.
+    }
+    {
+      cbn in Heo.
+      remember (fresh_evar (concl₂ ---> concl₁)) as x.
+      specialize (IHpmes (concl₂^[evar:0↦patt_free_evar x])
+                         (concl₁^[evar:0↦patt_free_evar x])).
+      feed specialize IHpmes.
+      {
+        wf_auto2.
+      }
+    }
+  }
+Qed.
+
 
 Lemma MLGoal_exactn {Σ : Signature}
   (Γ : Theory)

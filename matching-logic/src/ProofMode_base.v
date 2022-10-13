@@ -164,56 +164,6 @@ Proof.
   fromMLGoal.
 Abort.
 
-Lemma cast_proof' {Σ : Signature} (Γ : Theory) (ϕ ψ : Pattern) (i : ProofInfo) (e : ψ = ϕ) :
-  Γ ⊢i ϕ using i ->
-  Γ ⊢i ψ using i.
-Proof.
-  intros [pf Hpf].
-  unshelve (eexists).
-  {
-    apply (cast_proof e).
-    exact pf.
-  }
-  { abstract(
-    destruct Hpf as [Hpf2 Hpf3 Hpf4];
-    constructor; [
-    (
-      rewrite elem_of_subseteq in Hpf2;
-      rewrite elem_of_subseteq;
-      intros x Hx;
-      specialize (Hpf2 x);
-      apply Hpf2; clear Hpf2;
-      rewrite elem_of_gset_to_coGset in Hx;
-      rewrite uses_of_ex_gen_correct in Hx;
-      rewrite elem_of_gset_to_coGset;
-      rewrite uses_of_ex_gen_correct;
-      rewrite indifferent_to_cast_uses_ex_gen in Hx;
-      exact Hx
-    )|
-    (
-      rewrite elem_of_subseteq in Hpf3;
-      rewrite elem_of_subseteq;
-      intros x Hx;
-      specialize (Hpf3 x);
-      apply Hpf3; clear Hpf3;
-      rewrite elem_of_gset_to_coGset in Hx;
-      rewrite uses_of_svar_subst_correct in Hx;
-      rewrite elem_of_gset_to_coGset;
-      rewrite uses_of_svar_subst_correct;
-      rewrite indifferent_to_cast_uses_svar_subst in Hx;
-      exact Hx
-    )|
-    (
-      rewrite indifferent_to_cast_uses_kt;
-      apply Hpf4
-    )|
-    (
-      rewrite framing_patterns_cast_proof;
-      destruct i; assumption
-    )
-    ]).
-  }
-Defined.
 
 Lemma cast_proof_ml_hyps {Σ : Signature}
   Γ hyps hyps'
