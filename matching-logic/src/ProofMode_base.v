@@ -145,10 +145,24 @@ Ltac toMLGoal :=
   | [ |- ?G ⊢i ?phi using ?pi]
     => cut (of_MLGoal (MLGoal_from_goal G phi pi));
        unfold MLGoal_from_goal;
-       [(unfold of_MLGoal; simpl; let H := fresh "H" in intros H; apply H; clear H; [|reflexivity])|]
+       [(unfold of_MLGoal; simpl; let H := fresh "H" in intros H; apply H; clear H; cbn)|]
   end.
 
-Ltac fromMLGoal := unfold of_MLGoal; simpl; intros _ _.
+Ltac fromMLGoal := unfold of_MLGoal; cbn; intros _.
+
+Local Example ex_toMLGoal {Σ : Signature} Γ (p : Pattern) :
+  well_formed p ->
+  Γ ⊢i p ---> p using BasicReasoning.
+Proof.
+  intros wfp.
+  toMLGoal.
+  { wf_auto2. }
+  match goal with
+  | [ |- of_MLGoal (mkMLGoal Σ Γ [] (p ---> p) BasicReasoning) ] => idtac
+  | _ => fail
+  end.
+  fromMLGoal.
+Abort.
 
 Lemma cast_proof' {Σ : Signature} (Γ : Theory) (ϕ ψ : Pattern) (i : ProofInfo) (e : ψ = ϕ) :
   Γ ⊢i ϕ using i ->
@@ -285,26 +299,13 @@ Tactic Notation "_failIfUsed" constr(name) :=
   end.
 
 Tactic Notation "mlIntro" constr(name') :=
-_failIfUsed name'; apply MLGoal_intro with (name := name'); simplLocalContext.
+_failIfUsed name'; apply MLGoal_introImpl with (name := name'); simplLocalContext.
 
 Tactic Notation "mlIntro" :=
   let hyps := _getHypNames in
   let name' := eval cbv in (fresh hyps) in
   mlIntro name'.
 
-Local Example ex_toMLGoal {Σ : Signature} Γ (p : Pattern) :
-  well_formed p ->
-  Γ ⊢i p ---> p using BasicReasoning.
-Proof.
-  intros wfp.
-  toMLGoal.
-  { wf_auto2. }
-  match goal with
-  | [ |- of_MLGoal (mkMLGoal Σ Γ [] (p ---> p) BasicReasoning) ] => idtac
-  | _ => fail
-  end.
-  fromMLGoal.
-Abort.
 
 Local Example ex_mlIntro {Σ : Signature} Γ a (i : ProofInfo) :
   well_formed a ->
