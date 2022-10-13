@@ -170,12 +170,44 @@ Proof.
   }
 Qed.
 
+Lemma evar_open_pmes_comm_higher {Σ : Signature} m x pmes :
+  evar_open_pmes m x (evar_open_pmes (S m) x pmes)
+  = evar_open_pmes m x (evar_open_pmes m x pmes)
+.
+Proof.
+  move: m.
+  induction pmes; simpl; intros m.
+  { reflexivity. }
+  {
+    destruct a as [p|]; cbn.
+    {
+      unfold evar_open.
+      rewrite bevar_subst_comm_higher.
+      { lia. }
+      { reflexivity. }
+      { reflexivity. }
+      simpl.
+      f_equal.
+      apply IHpmes.
+    }
+    {
+      rewrite IHpmes.
+      reflexivity.
+    }
+  }
+Qed.
 
+
+(*
+  Example: pmes = single forall
+  well_formed (∀, (∀, g)) ->
+  well_formed  (evar_) 
+*)
 Lemma wf_helper {Σ : Signature} (g : Pattern)
   (pmes : list ProofModeEntry) (x : evar) (m n : nat)
   :
   well_formed_xy m n (all , MLGoal_to_pattern' g pmes) ->
-  well_formed_xy m n (MLGoal_to_pattern' g^[evar:m↦patt_free_evar x]
+  well_formed_xy m n (MLGoal_to_pattern' g^[evar:m + (foralls_count pmes)↦patt_free_evar x]
     (evar_open_pmes m x pmes)
   )
 .
@@ -192,6 +224,7 @@ Proof.
   }
   destruct pmes.
   {
+    cbn. rewrite Nat.add_0_r.
     wf_auto2.
   }
   {
@@ -208,7 +241,7 @@ Proof.
       unfold MLGoal_to_pattern' in *.
       cut (well_formed_xy m n
       (evar_open x m (
-       foldr connect g^[evar:m↦patt_free_evar x] (evar_open_pmes (S m) x pmes))) = true).
+       foldr connect g^[evar:m + (foralls_count (pme_variable :: pmes))↦patt_free_evar x] (evar_open_pmes (S m) x pmes))) = true).
       {
         clear IHpml.
         intros H'.
@@ -218,6 +251,9 @@ Proof.
 
       rewrite evar_open_foldr_connect.
       unfold evar_open.
+      (* rewrite foralls_count_evar_open_pmes. *)
+      cbn. unfold decide. cbn.
+      rewrite -plus_Snm_nSm. cbn.
       apply IHpml.
       specialize (IHpmes (S m) n).
       feed specialize IHpmes.
