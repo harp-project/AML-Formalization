@@ -323,30 +323,22 @@ Abort.
 
 Lemma MLGoal_revertLast {Σ : Signature} (Γ : Theory) (l : hypotheses) (x g : Pattern) (n : string) i :
   mkMLGoal Σ Γ l (x ---> g) i ->
-  mkMLGoal Σ Γ (l ++ [mkNH _ n x]) g i.
+  mkMLGoal Σ Γ (l ++ [mkNH _ n (pme_pattern x)]) g i.
 Proof.
   intros H.
   unfold of_MLGoal in H. simpl in H.
-  unfold of_MLGoal. simpl. intros wfxig wfl.
-
-  unfold patterns_of in wfl.
-  rewrite map_app in wfl.
+  unfold of_MLGoal. simpl. intros wfall.
+  
+  cbn in wfall. cbn in H.
   feed specialize H.
   {
-    abstract (
-        apply wfapp_proj_2 in wfl;
-        unfold Pattern.wf in wfl;
-        simpl in wfl;
-        rewrite andbT in wfl;
-        wf_auto2
-      ).
+    rewrite map_app in wfall. simpl in wfall.
+    rewrite foldr_app in wfall. simpl in wfall.
+    exact wfall.
   }
-  {
-    abstract (apply wfapp_proj_1 in wfl; exact wfl).
-  }
-
-  eapply cast_proof'.
-  { unfold patterns_of. rewrite map_app.  rewrite foldr_app. simpl. reflexivity. }
+  cbn.
+  rewrite map_app. simpl.
+  rewrite foldr_app. simpl.
   exact H.
 Defined.
 
