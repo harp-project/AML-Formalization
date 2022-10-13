@@ -197,13 +197,7 @@ Proof.
   }
 Qed.
 
-
-(*
-  Example: pmes = single forall
-  well_formed (∀, (∀, g)) ->
-  well_formed  (evar_) 
-*)
-Lemma wf_helper {Σ : Signature} (g : Pattern)
+Lemma wf_all_MLGoal_to_pattern' {Σ : Signature} (g : Pattern)
   (pmes : list ProofModeEntry) (x : evar) (m n : nat)
   :
   well_formed_xy m n (all , MLGoal_to_pattern' g pmes) ->
@@ -212,7 +206,6 @@ Lemma wf_helper {Σ : Signature} (g : Pattern)
   )
 .
 Proof.
-
   remember (S(length pmes)) as pml.
   assert (Hpml : S(length pmes) <= pml) by lia.
   clear Heqpml.
@@ -247,13 +240,10 @@ Proof.
         intros H'.
         wf_auto2.
       }
-      
 
       rewrite evar_open_foldr_connect.
       unfold evar_open.
-      (* rewrite foralls_count_evar_open_pmes. *)
       cbn. unfold decide. cbn.
-      (*rewrite -plus_Snm_nSm. cbn.*)
       rewrite evar_open_pmes_comm_higher.
       rewrite foralls_count_evar_open_pmes.
       rewrite -[foralls_count pmes](foralls_count_evar_open_pmes m x).
@@ -290,29 +280,18 @@ Proof.
 
       rewrite evar_open_pmes_comm_higher in H'.
       remember (m + foralls_count pmes) as m'.
-      assert (Hm'm: m' >= m) by lia.
       remember (evar_open_pmes m x pmes) as pmes'.
-      clear -H' Hm'm.
-      induction pmes'; cbn in *.
-      {
-        assumption.
-        rewrite plus_comm in H'. simpl in H'.
-        rewrite plus_comm. simpl.
-        assumption.
-      }
-      {
-
-      }
-
-
+      remember (g^[evar: S m' ↦ patt_free_evar x]) as g'.
+      fold (evar_open x m (foldr connect g' pmes')).
       rewrite evar_open_foldr_connect.
+      simpl.
+      subst.
+      unfold evar_open.
       rewrite foralls_count_evar_open_pmes.
-      
-
+      exact H'.
     }
   }
 Qed.
-*)
 
 (* A wrapper around [universal_generalization]. *)
 Lemma lift_to_mixed_context {Σ : Signature} (Γ : Theory)
