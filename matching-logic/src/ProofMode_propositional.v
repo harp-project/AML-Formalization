@@ -470,6 +470,29 @@ Proof.
   }
 Qed.
 
+Lemma wfc_ex_aux_foldr_connect {Σ : Signature} g pmes k :
+  well_formed_closed_ex_aux (foldr connect g pmes) k = true ->
+  well_formed_closed_ex_aux g (k + (foralls_count pmes)) = true
+.
+Proof.
+  move: k g.
+  induction pmes; cbn; intros k g H.
+  {
+    rewrite plus_0_r. exact H.
+  }
+  {
+    destruct a; unfold decide; simpl in *.
+    {
+      destruct_and!.
+      rewrite IHpmes;[assumption|reflexivity].
+    }
+    {
+      destruct_and!.
+      rewrite -plus_Snm_nSm.
+      rewrite IHpmes;[assumption|reflexivity].
+    }
+  }
+Qed.
 
 (* A wrapper around [universal_generalization].
    What if [pmes = [variable; pattern 0]] ?
@@ -703,6 +726,7 @@ Proof.
           with (0 + foralls_count pmes)
           by reflexivity
         .  
+        (*
         rewrite -2!evar_open_foldr_connect.
         unfold MLGoal_to_pattern' in *.
         assert (well_formed_closed_ex_aux (foldr connect concl₁ pmes) 0).
@@ -714,7 +738,7 @@ Proof.
           rewrite bevar_occur_foldr_connect'.
         }
         Search well_formed_closed_ex_aux bevar_occur.
-
+        *)
         (*
         assert (Hxnotin : x ∉ free_evars (foldr connect concl₁ pmes)^{evar:0↦x}).
         {
@@ -752,6 +776,25 @@ Proof.
           apply Hwf2.
         }
         {
+          simpl.
+
+          assert (concl₁^{evar:foralls_count pmes↦x} = concl₁).
+          {
+            unfold evar_open.
+            apply bevar_subst_not_occur.
+            apply wfc_ex_lower;[assumption|].
+            unfold MLGoal_to_pattern' in Hwf1.
+            clear -Hwf1.
+            Search well_formed_closed_ex_aux connect.
+            unfold well_formed,well_formed_closed in Hwf1.
+            destruct_and!.
+            clear -H2. simpl in H2.
+            rewrite 2!andb_true_r in H2.
+            
+            wf_auto2.
+          }
+          (**)
+
           unfold MLGoal_to_pattern'.
           replace (foralls_count pmes)
             with (0 + (foralls_count pmes))
