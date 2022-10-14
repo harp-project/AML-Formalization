@@ -714,7 +714,12 @@ Ltac _mlCut g' :=
     [(
       let H := fresh "H" in
       intros H;
-      unshelve (eapply (lift_to_mixed_context _ _ _ _ _ _ _ _ H))
+      apply MLGoal_lift_to_mixed_context with (concl₂ := g');
+      [
+        (try_solve_pile)|(cbn)|(cbn; unfold decide; cbn)|(exact H)
+      ]
+       (*;
+      unshelve (eapply (MLGoal_lift_to_mixed_context _ _ _ _ _ _ _ H)) *)
     )|]
   end
 .
@@ -724,7 +729,7 @@ Tactic Notation "mlCut" constr(g') :=
 .
 
 #[local]
-Example ex_ltmc {Σ : Signature}
+Example ex_mlCut {Σ : Signature}
   (Γ : Theory) (a b c : Pattern) (s1 s2 : symbols)
   :
   well_formed a ->
@@ -744,12 +749,10 @@ Proof.
   mlIntro "H2".
   mlIntroForall "z".
   mlCut (patt_sym s1).
-  Set Printing All.
-  lazymatch goal with
-  | [ |- @of_MLGoal ?S (mkMLGoal ?S ?T ?l ?g ?i)] =>
-    cut (@of_MLGoal S (mkMLGoal S T l (patt_sym s1) i))
-  end.
-Qed.
+  { wf_auto2. }
+  { apply Himpl. }
+  (* now the conclusion is [patt_sym s1] *)
+Abort.
 
 Lemma MLGoal_exactn {Σ : Signature}
   (Γ : Theory)
