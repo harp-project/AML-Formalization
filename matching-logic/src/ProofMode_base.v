@@ -301,4 +301,65 @@ match goal with
    apply MLGoal_revertLast
 end.
 
+Lemma MLGoal_introForall {Σ : Signature} (Γ : Theory) (l : hypotheses) (name : string) (g : Pattern)
+  (i : ProofInfo) :
+  mkMLGoal _ Γ (l ++ [mkNH _ name (pme_variable)]) g i ->
+  mkMLGoal _ Γ l (all, g) i.
+Proof.
+  intros H.
+  unfold of_MLGoal in H. simpl in H.
+  unfold of_MLGoal.
+  unfold MLGoal_to_pattern.
+  unfold MLGoal_to_pattern'.
+  unfold MLGoal_to_pattern in H.
+  unfold MLGoal_to_pattern' in H.
+  simpl. simpl in H. intros wfall.
+  feed specialize H.
+  {
+    clear H.
+    unfold pmes_of in *.
+    rewrite map_app. simpl.
+    rewrite foldr_app. simpl.
+    exact wfall.
+  }
+  unfold pmes_of in H.
+  rewrite map_app in H.
+  simpl in H.
+  rewrite foldr_app in H.
+  simpl in H.
+  exact H.
+Defined.
+
+
+Tactic Notation "mlIntroForall" constr(name') :=
+  _failIfUsed name';
+  apply MLGoal_introForall with (name := name');
+  simplLocalContext
+.
+
+Tactic Notation "mlIntroForall" :=
+  let hyps := _getHypNames in
+  let name' := eval cbv in (fresh hyps) in
+  mlIntroForall name'
+.
+
+#[local]
+Example ex_introForall
+  {Σ : Signature} (Γ : Theory) (a b c : Pattern)
+  :
+  well_formed a ->
+  well_formed b ->
+  well_formed c ->
+  Γ ⊢ all, (a ---> (all, (b ---> c)))
+.
+Proof.
+  intros wfa wfb wfc.
+  toMLGoal.
+  { wf_auto2. }
+  mlIntroForall "x"%string.
+  mlIntro "H1"%string.
+  mlIntroForall "y"%string.
+  mlIntro "H2"%string.
+Abort.
+
 Close Scope ml_scope.
