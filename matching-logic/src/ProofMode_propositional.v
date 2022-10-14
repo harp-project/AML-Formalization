@@ -625,7 +625,7 @@ Proof.
   1,2: clear; set_solver.
 Defined.
 
-Lemma wf_lift_helper {Σ : Signature} hyps concl₁ concl₂ x y:
+Lemma wf_lift_helper' {Σ : Signature} hyps concl₁ concl₂ x y:
   well_formed_xy (x + foralls_count (pmes_of hyps)) y concl₂ ->
   well_formed_xy (x) y (foldr connect concl₁ (map nh_pme hyps)) ->
   well_formed_xy (x) y (foldr connect concl₂ (map nh_pme hyps))
@@ -658,16 +658,25 @@ Proof.
   }
 Qed.
 
-Print hypotheses.
+Lemma wf_lift_helper {Σ : Signature} hyps concl₁ concl₂ :
+  well_formed_xy (foralls_count (pmes_of hyps)) 0 concl₂ ->
+  well_formed (foldr connect concl₁ (map nh_pme hyps)) ->
+  well_formed (foldr connect concl₂ (map nh_pme hyps))
+.
+Proof.
+  intros wf1 wf2.
+  rewrite wf_wfxy00.
+  rewrite wf_wfxy00 in wf2.
+  apply wf_lift_helper' with (concl₁ := concl₁); simpl; try assumption.
+Qed.
+
 Lemma MLGoal_lift_to_mixed_context {Σ : Signature} (Γ : Theory)
   (concl₁ concl₂: Pattern) (hyps : hypotheses)
   (i : ProofInfo)
   (* TODO relax ExGen *)
   (pile : ProofInfoLe (ExGen := ⊤, SVSubst := ∅, KT := false, FP := ∅) i)
   :
-  well_formed_xy (foralls_count (pmes_of hyps)) 0 concl₂ -> (*
-  well_formed (MLGoal_to_pattern' concl₁ (pmes_of hyps)) ->
-  well_formed (MLGoal_to_pattern' concl₂ (pmes_of hyps)) -> *)
+  well_formed_xy (foralls_count (pmes_of hyps)) 0 concl₂ ->
   Γ ⊢i (evar_open_fresh_iter
          (free_evars (MLGoal_to_pattern' concl₁ (pmes_of hyps)) ∪ free_evars (MLGoal_to_pattern' concl₂ (pmes_of hyps)))
          (foralls_count (pmes_of hyps))
@@ -678,13 +687,24 @@ Lemma MLGoal_lift_to_mixed_context {Σ : Signature} (Γ : Theory)
 .
 Proof.
   intros wfxy Himpl H.
+  mlExtractWF wf'.
   (*intros wf1 wf2 Himpl H.*)
   feed specialize H.
   {
     cbn.
+    apply wf_lift_helper with (concl₁ := concl₁).
+    wf_auto2.
     wf_auto2.
   }
-Defined,
+  unfold of_MLGoal. intros _. cbn.
+  cbn in *.
+  pose proof (Htmp := lift_to_mixed_context Γ concl₁ concl₂).
+  specialize (Htmp (map nh_pme hyps) _ pile).
+  eapply MP.
+  2: apply Htmp.
+  1,4: assumption.
+  1,2: wf_auto2.
+Defined.
 
 
 Ltac _mlCut g' :=
