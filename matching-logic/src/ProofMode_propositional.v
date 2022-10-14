@@ -364,6 +364,47 @@ Proof.
   }
 Qed.
 
+Lemma bevar_occur_foldr_connect
+  {Σ : Signature} (g : Pattern) (pmes : list ProofModeEntry) (k : nat) :
+  well_formed_closed_ex_aux (MLGoal_to_pattern' g pmes) k ->
+  bevar_occur (foldr connect g pmes) k
+  = bevar_occur g (k + (foralls_count pmes))
+.
+Proof.
+  move: g k.
+  induction pmes; cbn; intros g k Hwf.
+  {
+    rewrite plus_0_r. reflexivity.
+  }
+  {
+    destruct a as [p|]; unfold decide; simpl.
+    {
+      assert (Hbopk : bevar_occur p k = false).
+      {
+        simpl in Hwf.
+        apply wfc_ex_aux_implies_not_bevar_occur.
+        wf_auto2.
+      }
+      rewrite Hbopk. simpl.
+      rewrite IHpmes.
+      {
+        simpl in Hwf. unfold MLGoal_to_pattern'.
+        wf_auto2.
+      }
+      reflexivity.
+    }
+    {
+      rewrite 2!orb_false_r.
+      rewrite IHpmes.
+      {
+        wf_auto2.
+      }
+      rewrite Nat.add_succ_r. simpl.
+      reflexivity.
+    }
+  }
+Qed.
+
 (* A wrapper around [universal_generalization]. *)
 Lemma lift_to_mixed_context {Σ : Signature} (Γ : Theory)
   (concl₁ concl₂: Pattern) (pmes : list ProofModeEntry)
@@ -583,7 +624,77 @@ Proof.
         }
       }
       {
-        
+        simpl in Hocc.
+        apply orb_false_iff in Hocc.
+        destruct Hocc as [Hocc2 Hocc1].
+
+        assert (Hxnotin : x ∉ free_evars (foldr connect concl₁ pmes)^{evar:0↦x}).
+        {
+          intros HContra.
+          rewrite free_evars_evar_open'' in HContra.
+          destruct HContra as [[_ HContra]|HContra].
+          {
+
+          }
+        }
+            
+        apply IHpml with (avoid := (avoid)).
+        {
+          rewrite length_evar_open_pmes.
+          lia.
+        }
+        {
+          simpl.
+          apply wf_wfxy00_compose.
+          apply wf_wfxy00_decompose in Hwf1.
+          apply wf_all_MLGoal_to_pattern' with (x := x) in Hwf1.
+          apply Hwf1.
+        }
+        {
+          simpl.
+          apply wf_wfxy00_compose.
+          apply wf_wfxy00_decompose in Hwf2.
+          apply wf_all_MLGoal_to_pattern' with (x := x) in Hwf2.
+          apply Hwf2.
+        }
+        {
+          unfold MLGoal_to_pattern'.
+          replace (foralls_count pmes)
+            with (0 + (foralls_count pmes))
+            by reflexivity
+          .
+          rewrite -evar_open_foldr_connect.
+          
+          (*pose proof (Hfeeo := free_evars_evar_open (foldr connect concl₁ pmes) x 0).*)
+          unfold MLGoal_to_pattern' in Havoid1.
+
+          pose proof (Htmp := free_evars_evar_open'' (foldr connect concl₁ pmes) 0 x x).
+          destruct Htmp as [Htmp1 Htmp2].
+          
+          feed specialize Htmp.
+          {
+            left.
+            split;[reflexivity|].
+          }
+          eapply transitivity.
+          { apply Hfeeo. }
+          clear -Havoid1.
+          set_solver.
+        }
+        {
+          unfold MLGoal_to_pattern'.
+          replace (foralls_count pmes)
+            with (0 + (foralls_count pmes))
+            by reflexivity
+          .
+          rewrite -evar_open_foldr_connect.
+          pose proof (Hfeeo := free_evars_evar_open (foldr connect concl₂ pmes) x 0).
+          unfold MLGoal_to_pattern' in Havoid2.
+          eapply transitivity.
+          { apply Hfeeo. }
+          clear -Havoid2.
+          set_solver.
+        }
       }
 
     }
