@@ -442,8 +442,40 @@ Proof.
 Qed.
 
 
+Lemma bevar_occur_foldr_connect''
+  {Σ : Signature} (g : Pattern) (pmes : list ProofModeEntry) (k : nat) :
+  bevar_occur g (k + (foralls_count pmes)) = true ->
+  bevar_occur (foldr connect g pmes) k = true
+.
+Proof.
+  move: g k.
+  induction pmes; cbn; intros g k H.
+  {
+    rewrite plus_0_r in H. exact H.
+  }
+  {
+    destruct a as [p|]; unfold decide in *; simpl in *.
+    {
+      simpl.
+      rewrite IHpmes.
+      { exact H. }
+      rewrite orb_true_r. reflexivity.
+    }
+    {
+      rewrite 2!orb_false_r.
+      rewrite IHpmes;[|reflexivity].
+      rewrite Nat.add_succ_r in H. simpl in H.
+      exact H.
+    }
+  }
+Qed.
 
-(* A wrapper around [universal_generalization]. *)
+
+(* A wrapper around [universal_generalization].
+   What if [pmes = [variable; pattern 0]] ?
+   That is, we have the formula
+   (∀, 0 -> s1) ---> (∀, 0 -> s2)
+*)
 Lemma lift_to_mixed_context {Σ : Signature} (Γ : Theory)
   (concl₁ concl₂: Pattern) (pmes : list ProofModeEntry)
   (i : ProofInfo)
@@ -497,7 +529,7 @@ Proof.
       remember (evar_fresh_s (avoid
                  ∪ (free_evars concl₂ ∪ free_evars concl₁))) as x.
 
-      (*remember (evar_fresh_s ((free_evars (foldr connect concl₂ pmes)) ∪ (free_evars (foldr connect concl₁ pmes)))) as y.*)
+
       apply forall_monotone with (x := x).
       { eapply pile_trans. 2: apply pile. try_solve_pile. }
       {
@@ -520,6 +552,7 @@ Proof.
       }
       rewrite 2!evar_open_foldr_connect.
       simpl.
+      
 
       destruct (bevar_occur (concl₂ ---> concl₁) ((foralls_count pmes))) eqn:Hocc.
       {
@@ -665,25 +698,33 @@ Proof.
         apply orb_false_iff in Hocc.
         destruct Hocc as [Hocc2 Hocc1].
 
+        Search bevar_subst well_formed_closed_ex_aux.
+        replace (foralls_count pmes)
+          with (0 + foralls_count pmes)
+          by reflexivity
+        .  
+        rewrite -2!evar_open_foldr_connect.
         unfold MLGoal_to_pattern' in *.
-        
+        assert (well_formed_closed_ex_aux (foldr connect concl₁ pmes) 0).
+        {
+          apply wfc_ex_lower.
+          2: { wf_auto2. }
+          Check bevar_occur_foldr_connect''.
+          Search bevar_occur connect.
+          rewrite bevar_occur_foldr_connect'.
+        }
+        Search well_formed_closed_ex_aux bevar_occur.
+
+        (*
         assert (Hxnotin : x ∉ free_evars (foldr connect concl₁ pmes)^{evar:0↦x}).
         {
           intros HContra.
           rewrite free_evars_evar_open'' in HContra.
           destruct HContra as [[_ HContra]|HContra].
           {
-            unfold is_true in HContra.
-            cut (bevar_occur (foldr connect concl₁ pmes) 0 = false).
+            rewrite bevar_occur_foldr_connect' in HContra.
             {
-              congruence.
-            }
-            clear HContra.
-            apply wfc_ex_aux_implies_not_bevar_occur.
-            wf_auto2.
-            revert HContra.
-            rewrite bevar_occur_foldr_connect in HContra.
-            {
+              unfold MLGoal_to_pattern'.
               wf_auto2.
             }
             Check bevar_occur_foldr_connect.
@@ -717,11 +758,27 @@ Proof.
             by reflexivity
           .
           rewrite -evar_open_foldr_connect.
+          cut (x ∉ free_evars (foldr connect concl₁ pmes)^{evar:0↦x}).
+          {
+            intros H''.
+            assert (H''' : x ∉ free_evars (foldr connect concl₁ pmes)).
+            {
+              rewrite free_evars_evar_open'' in H''. 
+              intros HContra. apply H''.
+              right. apply HContra.
+            }
+            pose proof (Hfeeo := free_evars_evar_open (foldr connect concl₁ pmes) x 0).
+            clear IHpml.
+            unfold MLGoal_to_pattern' in *.
+            clear -Havoid1 H'' Hocc1.
+            rewrite free_evars_evar_open'' in H''.
+            set_solver.
+          }
           
           (*pose proof (Hfeeo := free_evars_evar_open (foldr connect concl₁ pmes) x 0).*)
           unfold MLGoal_to_pattern' in Havoid1.
 
-          pose proof (Htmp := free_evars_evar_open'' (foldr connect concl₁ pmes) 0 x x).
+          
           destruct Htmp as [Htmp1 Htmp2].
           
           feed specialize Htmp.
