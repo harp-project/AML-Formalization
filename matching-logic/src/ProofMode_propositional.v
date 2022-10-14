@@ -598,7 +598,7 @@ Proof.
       }
     }
   }
-Qed.
+Defined.
 
 
 Lemma lift_to_mixed_context {Σ : Signature} (Γ : Theory)
@@ -623,18 +623,112 @@ Proof.
   6: apply H.
   1,2,3: assumption.
   1,2: clear; set_solver.
+Defined.
+
+Lemma wf_lift_helper {Σ : Signature} hyps concl₁ concl₂ x y:
+  well_formed_xy (x + foralls_count (pmes_of hyps)) y concl₂ ->
+  well_formed_xy (x) y (foldr connect concl₁ (map nh_pme hyps)) ->
+  well_formed_xy (x) y (foldr connect concl₂ (map nh_pme hyps))
+.
+Proof.
+  move: x y.
+  induction hyps; cbn; intros x y wf1 wf2.
+  {
+    rewrite Nat.add_0_r in wf1.
+    wf_auto2.
+  }
+  {
+    destruct a as [name h].
+    destruct h as [p|]; unfold decide in *; simpl in *.
+    {
+      specialize (IHhyps x y).
+      feed specialize IHhyps.
+      { wf_auto2. }
+      { wf_auto2. }
+      wf_auto2.
+    }
+    {
+      specialize (IHhyps (S x) y).
+      rewrite Nat.add_succ_r in wf1.
+      feed specialize IHhyps.
+      { simpl. wf_auto2. }
+      { wf_auto2. }
+      wf_auto2.
+    }
+  }
 Qed.
+
+Print hypotheses.
+Lemma MLGoal_lift_to_mixed_context {Σ : Signature} (Γ : Theory)
+  (concl₁ concl₂: Pattern) (hyps : hypotheses)
+  (i : ProofInfo)
+  (* TODO relax ExGen *)
+  (pile : ProofInfoLe (ExGen := ⊤, SVSubst := ∅, KT := false, FP := ∅) i)
+  :
+  well_formed_xy (foralls_count (pmes_of hyps)) 0 concl₂ -> (*
+  well_formed (MLGoal_to_pattern' concl₁ (pmes_of hyps)) ->
+  well_formed (MLGoal_to_pattern' concl₂ (pmes_of hyps)) -> *)
+  Γ ⊢i (evar_open_fresh_iter
+         (free_evars (MLGoal_to_pattern' concl₁ (pmes_of hyps)) ∪ free_evars (MLGoal_to_pattern' concl₂ (pmes_of hyps)))
+         (foralls_count (pmes_of hyps))
+         (concl₂ ---> concl₁)
+       ) using i ->
+  (mkMLGoal Σ Γ hyps concl₂ i) ->
+  (mkMLGoal Σ Γ hyps concl₁ i)
+.
+Proof.
+  intros wfxy Himpl H.
+  (*intros wf1 wf2 Himpl H.*)
+  feed specialize H.
+  {
+    cbn.
+    wf_auto2.
+  }
+Defined,
+
+
+Ltac _mlCut g' :=
+  lazymatch goal with
+  | [ |- @of_MLGoal ?S (mkMLGoal ?S ?T ?l ?g ?i)] =>
+    cut (@of_MLGoal S (mkMLGoal S T l g' i));
+    [(
+      let H := fresh "H" in
+      intros H;
+      unshelve (eapply (lift_to_mixed_context _ _ _ _ _ _ _ _ H))
+    )|]
+  end
+.
+
+Tactic Notation "mlCut" constr(g') :=
+  _mlCut g'
+.
 
 #[local]
 Example ex_ltmc {Σ : Signature}
   (Γ : Theory) (a b c : Pattern) (s1 s2 : symbols)
   :
+  well_formed a ->
+  well_formed b ->
+  well_formed c ->
   Γ ⊢ (patt_sym s1 ---> patt_sym s2) ->
-  Γ ⊢ all, a $ b0 ---> all, b0 $ b $ b1 ---> all, patt_sym s1 ->
-  Γ ⊢ all, a $ b0 ---> all, b0 $ b $ b1 ---> all, patt_sym s2
+  Γ ⊢ all, (a $ b0 ---> all, (b0 $ b $ b1 ---> all, (patt_sym s1))) ->
+  Γ ⊢ all, (a $ b0 ---> all, (b0 $ b $ b1 ---> all, (patt_sym s2)))
 .
 Proof.
-
+  intros wfa wfb wfc Himpl H.
+  toMLGoal.
+  { wf_auto2. }
+  mlIntroForall "x".
+  mlIntro "H1".
+  mlIntroForall "y".
+  mlIntro "H2".
+  mlIntroForall "z".
+  mlCut (patt_sym s1).
+  Set Printing All.
+  lazymatch goal with
+  | [ |- @of_MLGoal ?S (mkMLGoal ?S ?T ?l ?g ?i)] =>
+    cut (@of_MLGoal S (mkMLGoal S T l (patt_sym s1) i))
+  end.
 Qed.
 
 Lemma MLGoal_exactn {Σ : Signature}
