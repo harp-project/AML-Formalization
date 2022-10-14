@@ -721,42 +721,42 @@ Proof.
         apply orb_false_iff in Hocc.
         destruct Hocc as [Hocc2 Hocc1].
 
-        Search bevar_subst well_formed_closed_ex_aux.
         replace (foralls_count pmes)
           with (0 + foralls_count pmes)
           by reflexivity
         .  
-        (*
-        rewrite -2!evar_open_foldr_connect.
-        unfold MLGoal_to_pattern' in *.
-        assert (well_formed_closed_ex_aux (foldr connect concl₁ pmes) 0).
+        
+        assert (Hr1 : concl₁^{evar:foralls_count pmes↦x} = concl₁).
         {
-          apply wfc_ex_lower.
-          2: { wf_auto2. }
-          Check bevar_occur_foldr_connect''.
-          Search bevar_occur connect.
-          rewrite bevar_occur_foldr_connect'.
+          unfold evar_open.
+          apply bevar_subst_not_occur.
+          apply wfc_ex_lower;[assumption|].
+          unfold MLGoal_to_pattern' in Hwf1.
+          clear -Hwf1.
+          unfold well_formed,well_formed_closed in Hwf1.
+          destruct_and!.
+          clear -H2. simpl in H2.
+          rewrite 2!andb_true_r in H2.
+          apply wfc_ex_aux_foldr_connect in H2.
+          simpl in H2. exact H2.
         }
-        Search well_formed_closed_ex_aux bevar_occur.
-        *)
-        (*
-        assert (Hxnotin : x ∉ free_evars (foldr connect concl₁ pmes)^{evar:0↦x}).
+        assert (Hr2 : concl₂^{evar:foralls_count pmes↦x} = concl₂).
         {
-          intros HContra.
-          rewrite free_evars_evar_open'' in HContra.
-          destruct HContra as [[_ HContra]|HContra].
-          {
-            rewrite bevar_occur_foldr_connect' in HContra.
-            {
-              unfold MLGoal_to_pattern'.
-              wf_auto2.
-            }
-            Check bevar_occur_foldr_connect.
-          }
+          unfold evar_open.
+          apply bevar_subst_not_occur.
+          apply wfc_ex_lower;[assumption|].
+          unfold MLGoal_to_pattern' in Hwf2.
+          clear -Hwf2.
+          unfold well_formed,well_formed_closed in Hwf2.
+          destruct_and!.
+          clear -H2. simpl in H2.
+          rewrite 2!andb_true_r in H2.
+          apply wfc_ex_aux_foldr_connect in H2.
+          simpl in H2. exact H2.
         }
-        *)
-            
-        apply IHpml with (avoid := (avoid)).
+        rewrite Hr1 Hr2.
+
+        apply IHpml with (avoid := (avoid (*∪ {[x]}*))).
         {
           rewrite length_evar_open_pmes.
           lia.
@@ -766,6 +766,9 @@ Proof.
           apply wf_wfxy00_compose.
           apply wf_wfxy00_decompose in Hwf1.
           apply wf_all_MLGoal_to_pattern' with (x := x) in Hwf1.
+          simpl in Hwf1.
+          unfold evar_open in Hr1.
+          rewrite Hr1 in Hwf1.
           apply Hwf1.
         }
         {
@@ -773,80 +776,97 @@ Proof.
           apply wf_wfxy00_compose.
           apply wf_wfxy00_decompose in Hwf2.
           apply wf_all_MLGoal_to_pattern' with (x := x) in Hwf2.
+          unfold evar_open in Hr2.
+          rewrite Hr2 in Hwf2.
           apply Hwf2.
         }
         {
+          (* TODO extract a lemma*)
+          rewrite 2!union_empty_r in Havoid1.
           simpl.
 
-          assert (concl₁^{evar:foralls_count pmes↦x} = concl₁).
-          {
-            unfold evar_open.
-            apply bevar_subst_not_occur.
-            apply wfc_ex_lower;[assumption|].
-            unfold MLGoal_to_pattern' in Hwf1.
-            clear -Hwf1.
-            Search well_formed_closed_ex_aux connect.
-            unfold well_formed,well_formed_closed in Hwf1.
-            destruct_and!.
-            clear -H2. simpl in H2.
-            rewrite 2!andb_true_r in H2.
-            
-            wf_auto2.
-          }
-          (**)
 
-          unfold MLGoal_to_pattern'.
-          replace (foralls_count pmes)
-            with (0 + (foralls_count pmes))
-            by reflexivity
-          .
-          rewrite -evar_open_foldr_connect.
-          cut (x ∉ free_evars (foldr connect concl₁ pmes)^{evar:0↦x}).
-          {
-            intros H''.
-            assert (H''' : x ∉ free_evars (foldr connect concl₁ pmes)).
-            {
-              rewrite free_evars_evar_open'' in H''. 
-              intros HContra. apply H''.
-              right. apply HContra.
-            }
-            pose proof (Hfeeo := free_evars_evar_open (foldr connect concl₁ pmes) x 0).
-            clear IHpml.
-            unfold MLGoal_to_pattern' in *.
-            clear -Havoid1 H'' Hocc1.
-            rewrite free_evars_evar_open'' in H''.
-            set_solver.
-          }
-          
-          (*pose proof (Hfeeo := free_evars_evar_open (foldr connect concl₁ pmes) x 0).*)
-          unfold MLGoal_to_pattern' in Havoid1.
+          unfold evar_open in Hr1, Hr2.
+          rewrite Hr1 Hr2 in Heo.
 
-          
-          destruct Htmp as [Htmp1 Htmp2].
-          
-          feed specialize Htmp.
-          {
-            left.
-            split;[reflexivity|].
-          }
-          eapply transitivity.
-          { apply Hfeeo. }
+
           clear -Havoid1.
-          set_solver.
+          remember 0 as k.
+          clear -Havoid1.
+          move: k avoid Havoid1.
+          induction pmes; simpl in *; intros k avoid Havoid1.
+          { set_solver. }
+          {
+            destruct a as [p|]; simpl in *.
+            {
+              cut (free_evars p^{evar:k↦x} ⊆ avoid ∪ {[x]}).
+              {
+                intros H'. set_solver.
+              }
+              clear IHpmes.
+              pose proof (Htmp := free_evars_evar_open'' p k).
+              set_solver.
+            }
+            {
+              rewrite 2!union_empty_r.
+              apply IHpmes.
+              clear -Havoid1.
+              set_solver.
+            }
+          }
         }
         {
-          unfold MLGoal_to_pattern'.
-          replace (foralls_count pmes)
-            with (0 + (foralls_count pmes))
-            by reflexivity
-          .
-          rewrite -evar_open_foldr_connect.
-          pose proof (Hfeeo := free_evars_evar_open (foldr connect concl₂ pmes) x 0).
-          unfold MLGoal_to_pattern' in Havoid2.
-          eapply transitivity.
-          { apply Hfeeo. }
+          rewrite 2!union_empty_r in Havoid2.
+          simpl.
           clear -Havoid2.
-          set_solver.
+          remember 0 as k.
+          clear -Havoid2.
+          move: k avoid Havoid2.
+          induction pmes; simpl in *; intros k avoid Havoid2.
+          { set_solver. }
+          {
+            destruct a as [p|]; simpl in *.
+            {
+              cut (free_evars p^{evar:k↦x} ⊆ avoid ∪ {[x]}).
+              {
+                intros H'. set_solver.
+              }
+              clear IHpmes.
+              pose proof (Htmp := free_evars_evar_open'' p k).
+              set_solver.
+            }
+            {
+              rewrite 2!union_empty_r.
+              apply IHpmes.
+              clear -Havoid2.
+              set_solver.
+            }
+          }
+        }
+        {
+          unfold evar_open in Hr1,Hr2.
+          rewrite Hr1 Hr2 in Heo.
+          unfold evar_open_fresh. simpl. unfold evar_open.
+          rewrite foralls_count_evar_open_pmes.
+
+          clear IHpml.
+          simpl.
+          fold (foralls_count pmes) in Heo.
+          remember (foralls_count pmes) as fcp.
+          remember (concl₂ ---> concl₁) as phi.
+          clear -Heo.
+          match goal with
+          | [|- _ ⊢i ?p using _] =>
+            match type of Heo with
+            | _ ⊢i ?q using _ =>
+              cut (p = q)
+            end
+          end.
+          {
+            intros H. rewrite H. exact Heo.
+          }
+          clear Heo.
+          
         }
       }
 
