@@ -716,7 +716,10 @@ Ltac _mlCut g' :=
       intros H;
       apply MLGoal_lift_to_mixed_context with (concl₂ := g');
       [
-        (try_solve_pile)|(cbn)|(cbn; unfold decide; cbn)|(exact H)
+        (try_solve_pile)|
+        (cbn; unfold decide; cbn)|
+        (cbn; unfold decide; cbn)|
+        (exact H)
       ]
        (*;
       unshelve (eapply (MLGoal_lift_to_mixed_context _ _ _ _ _ _ _ H)) *)
@@ -752,6 +755,37 @@ Proof.
   { wf_auto2. }
   { apply Himpl. }
   (* now the conclusion is [patt_sym s1] *)
+  fromMLGoal.
+  apply H.
+Qed.
+
+
+#[local]
+Example ex_mlCut2 {Σ : Signature}
+  (Γ : Theory) (a b c : Pattern) (s1 s2 : symbols)
+  :
+  well_formed a ->
+  well_formed b ->
+  well_formed c ->
+  Γ ⊢ (patt_sym s1 ---> patt_sym s2) ->
+  Γ ⊢ all, (a $ b0 ---> all, (b0 $ b $ b1 ---> all, (patt_sym s1 $ b1))) ->
+  Γ ⊢ all, (a $ b0 ---> all, (b0 $ b $ b1 ---> all, (patt_sym s2 $ b1)))
+.
+Proof.
+  intros wfa wfb wfc Himpl H.
+  toMLGoal.
+  { wf_auto2. }
+  mlIntroForall "x".
+  mlIntro "H1".
+  mlIntroForall "y".
+  mlIntro "H2".
+  mlIntroForall "z".
+  mlCut (patt_sym s1 $ b1).
+  { wf_auto2. }
+  { 
+    (* TODO have Framing available there. *)
+    admit.
+  }
 Abort.
 
 Lemma MLGoal_exactn {Σ : Signature}
