@@ -77,8 +77,18 @@ Fixpoint evar_open_fresh_iter
   {Σ : Signature} (avoid : EVarSet) (n : nat) (p : Pattern) : Pattern
 := match n with
    | 0 => p
-   | (S n') => evar_open_fresh_iter avoid n' (evar_open_0_fresh avoid p)
-   end.
+   | (S n') => (evar_open_0_fresh avoid (evar_open_fresh_iter avoid n' p))
+   end
+.
+(*
+Fixpoint evar_open_fresh_iter
+   {Σ : Signature} (avoid : EVarSet) (n : nat) (p : Pattern) : Pattern
+ := match n with
+    | 0 => p
+    | (S n') => evar_open_fresh_iter avoid n' (evar_open_0_fresh avoid p)
+    end
+.
+*) 
 
 Fixpoint evar_open_pmes {Σ : Signature}
   (idx : nat) (x : evar) (pmes : list ProofModeEntry)
@@ -326,8 +336,31 @@ Proof.
     destruct pmes; simpl in *. exact Heo. lia.
   }
   {
+    
     destruct pmes.
     { exact Heo. }
+    
+    (*
+    (* Trying it from reverse. *)
+    destruct (rev pmes) eqn:Heqrev.
+    {
+      assert (Hrr : rev (rev pmes) = rev []).
+      {
+        apply f_equal. apply Heqrev.
+      }
+      rewrite rev_involutive in Hrr.
+      simpl in Hrr.
+      destruct pmes.
+      { exact Heo. }
+      inversion Hrr.
+    }
+    assert (Hrr : rev (rev pmes) = rev (p::l)).
+    {
+      apply f_equal. apply Heqrev.
+    }
+    rewrite -[pmes]rev_involutive.
+    rewrite Heqrev.
+    *)
 
     destruct p as [p|]; simpl in *.
     {
@@ -369,6 +402,7 @@ Proof.
         }
       }
       rewrite 2!evar_open_foldr_connect.
+      simpl.
       apply IHpml with (avoid := avoid).
       {
         rewrite length_evar_open_pmes.
@@ -396,8 +430,10 @@ Proof.
       }
       {
         clear IHpml.
-        rewrite foralls_count_evar_open_pmes.
         simpl.
+        rewrite foralls_count_evar_open_pmes.
+        fold (foralls_count pmes) in Heo.
+        unfold evar_open.
         unfold foralls_count.
         apply Heo.
       }
