@@ -405,6 +405,44 @@ Proof.
   }
 Qed.
 
+
+Lemma bevar_occur_foldr_connect'
+  {Σ : Signature} (g : Pattern) (pmes : list ProofModeEntry) (k : nat) :
+  bevar_occur (MLGoal_to_pattern' patt_bott pmes) k = false ->
+  bevar_occur (foldr connect g pmes) k
+  = bevar_occur g (k + (foralls_count pmes))
+.
+Proof.
+  move: g k.
+  induction pmes; cbn; intros g k Hwf.
+  {
+    rewrite plus_0_r. reflexivity.
+  }
+  {
+    destruct a as [p|]; unfold decide; simpl.
+    {
+      simpl in Hwf.
+      apply orb_false_iff in Hwf.
+      destruct Hwf as [Hwf1 Hwf2].
+      rewrite Hwf1. simpl.
+      rewrite IHpmes.
+      { exact Hwf2. }
+      reflexivity.
+    }
+    {
+      rewrite 2!orb_false_r.
+      simpl in Hwf.
+      rewrite 2!orb_false_r in Hwf.
+      rewrite IHpmes.
+      { exact Hwf. }
+      rewrite Nat.add_succ_r. simpl.
+      reflexivity.
+    }
+  }
+Qed.
+
+
+
 (* A wrapper around [universal_generalization]. *)
 Lemma lift_to_mixed_context {Σ : Signature} (Γ : Theory)
   (concl₁ concl₂: Pattern) (pmes : list ProofModeEntry)
@@ -438,7 +476,6 @@ Proof.
     destruct pmes; simpl in *. exact Heo. lia.
   }
   {
-    
     destruct pmes.
     { exact Heo. }
     
@@ -628,15 +665,31 @@ Proof.
         apply orb_false_iff in Hocc.
         destruct Hocc as [Hocc2 Hocc1].
 
+        unfold MLGoal_to_pattern' in *.
+        
         assert (Hxnotin : x ∉ free_evars (foldr connect concl₁ pmes)^{evar:0↦x}).
         {
           intros HContra.
           rewrite free_evars_evar_open'' in HContra.
           destruct HContra as [[_ HContra]|HContra].
           {
-
+            unfold is_true in HContra.
+            cut (bevar_occur (foldr connect concl₁ pmes) 0 = false).
+            {
+              congruence.
+            }
+            clear HContra.
+            apply wfc_ex_aux_implies_not_bevar_occur.
+            wf_auto2.
+            revert HContra.
+            rewrite bevar_occur_foldr_connect in HContra.
+            {
+              wf_auto2.
+            }
+            Check bevar_occur_foldr_connect.
           }
         }
+        *)
             
         apply IHpml with (avoid := (avoid)).
         {
