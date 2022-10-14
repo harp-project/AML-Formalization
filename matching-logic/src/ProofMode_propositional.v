@@ -625,6 +625,18 @@ Proof.
   1,2: clear; set_solver.
 Qed.
 
+#[local]
+Example ex_ltmc {Σ : Signature}
+  (Γ : Theory) (a b c : Pattern) (s1 s2 : symbols)
+  :
+  Γ ⊢ (patt_sym s1 ---> patt_sym s2) ->
+  Γ ⊢ all, a $ b0 ---> all, b0 $ b $ b1 ---> all, patt_sym s1 ->
+  Γ ⊢ all, a $ b0 ---> all, b0 $ b $ b1 ---> all, patt_sym s2
+.
+Proof.
+
+Qed.
+
 Lemma MLGoal_exactn {Σ : Signature}
   (Γ : Theory)
   (l₁ l₂ : hypotheses)
