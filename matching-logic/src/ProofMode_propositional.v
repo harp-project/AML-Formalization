@@ -465,7 +465,7 @@ Proof.
   }
 Qed.
 
-Lemma lift_to_mixed_context {Σ : Signature} (Γ : Theory)
+Lemma lift_to_mixed_context' {Σ : Signature} (Γ : Theory)
   (concl₁ concl₂: Pattern) (pmes : list ProofModeEntry)
   (i : ProofInfo)
   (* TODO relax ExGen *)
@@ -600,6 +600,30 @@ Proof.
   }
 Qed.
 
+
+Lemma lift_to_mixed_context {Σ : Signature} (Γ : Theory)
+  (concl₁ concl₂: Pattern) (pmes : list ProofModeEntry)
+  (i : ProofInfo)
+  (* TODO relax ExGen *)
+  (pile : ProofInfoLe (ExGen := ⊤, SVSubst := ∅, KT := false, FP := ∅) i)
+  :
+  well_formed (MLGoal_to_pattern' concl₁ pmes) ->
+  well_formed (MLGoal_to_pattern' concl₂ pmes) ->
+  Γ ⊢i (evar_open_fresh_iter
+         (free_evars (MLGoal_to_pattern' concl₁ pmes) ∪ free_evars (MLGoal_to_pattern' concl₂ pmes))
+         (foralls_count pmes)
+         (concl₂ ---> concl₁)
+       ) using i ->
+  Γ ⊢i ((fold_right connect concl₂ pmes) --->
+        (fold_right connect concl₁ pmes)) using i
+.
+Proof.
+  intros wf1 wf2 H.
+  eapply lift_to_mixed_context'.
+  6: apply H.
+  1,2,3: assumption.
+  1,2: clear; set_solver.
+Qed.
 
 Lemma MLGoal_exactn {Σ : Signature}
   (Γ : Theory)
