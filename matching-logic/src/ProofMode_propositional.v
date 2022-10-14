@@ -542,9 +542,9 @@ Proof.
             simpl.
             rewrite IHfcp.
             {
-              Search bevar_occur evar_open.
+              apply bevar_occur_Sn_bevar_occur_bsvar_subst_n.
+              exact Hocc.
             }
-            
             clear IHfcp.
             f_equal.
             remember (evar_fresh_s
@@ -559,12 +559,31 @@ Proof.
             (avoid ∪ {[x]}
              ∪ free_evars phi^[evar:S fcp↦patt_free_evar x])))
             as y'.
-            assert (y = y').
+            assert (Hyy' : y = y').
             {
               subst. unfold evar_fresh_s,evar_fresh.
-              Check bevar_occur.
-              
+              assert (Hx : x ∈ free_evars phi^[evar:S fcp↦patt_free_evar x]).
+              {
+                pose proof (Htmp := free_evars_evar_open'' phi (S fcp) x).
+                unfold evar_open in Htmp.
+                set_solver.
+              }
+              f_equal. f_equal.
+              set_solver.
             }
+            rewrite Hyy'.
+            clear.
+            rewrite [(phi^[evar:S fcp↦patt_free_evar x]^[evar:fcp↦patt_free_evar y'])]bevar_subst_comm_higher.
+            { lia. }
+            { reflexivity. }
+            { reflexivity. }
+            simpl.
+            reflexivity.
+          }
+        }
+      }
+      {
+        
       }
 
     }
