@@ -34,28 +34,6 @@ Open Scope string_scope.
 Open Scope list_scope.
 Open Scope ml_scope.
 
-(*
-Lemma nested_const_fa {Σ : Signature} Γ a l:
-  well_formed a ->
-  Pattern.wf l ->
-  Γ ⊢i (a ---> (fold_right connect a l))
-  using BasicReasoning.
-Proof.
-  intros wfa wfl.
-  induction l; simpl.
-  - apply A_impl_A. exact wfa.
-  - pose proof (wfa0l := wfl).
-    unfold Pattern.wf in wfl. simpl in wfl. apply andb_prop in wfl. destruct wfl as [wfa0 wfl].
-    specialize (IHl wfl).
-    assert (H1 : Γ ⊢i ((foldr patt_imp a l) ---> (a0 ---> (foldr patt_imp a l))) using BasicReasoning).
-    {
-      apply P1; wf_auto2.
-    }
-    eapply syllogism_meta.
-    5: apply H1. 4: assumption. all: wf_auto2.
-Defined.
-*)
-
 Definition is_variable {Σ : Signature} (pme: ProofModeEntry) : Prop :=
   pme = pme_variable
 .
@@ -787,6 +765,107 @@ Proof.
     admit.
   }
 Abort.
+
+Lemma evar_open_fresh_iter_impl {Σ : Signature} avoid m a b :
+  evar_open_fresh_iter avoid m (a ---> b)
+  = (evar_open_fresh_iter avoid m a ---> evar_open_fresh_iter avoid m b)
+.
+Proof.
+  move: a b avoid.
+  induction m; intros a b avoid; simpl.
+  { reflexivity. }
+  {
+    rewrite IHm.
+    reflexivity.
+  }
+Qed.
+
+Lemma evar_open_fresh_iter_wfc_aux:
+  ∀ {Σ : Signature} (db2 : nat) (phi : Pattern) avoid,
+	well_formed_closed_ex_aux phi 0 →
+  evar_open_fresh_iter avoid db2 phi = phi
+.
+Proof.
+  intros.
+  move: avoid phi H.
+  induction db2; intros avoid phi Hwf.
+  {
+    simpl. reflexivity.
+  }
+  {
+    simpl.
+    rewrite (evar_open_wfc_aux db2).
+    { lia. }
+    { eapply well_formed_closed_ex_aux_ind;[|apply Hwf]. lia. }
+    apply IHdb2.
+    apply Hwf.
+  }
+Qed.
+
+Lemma well_formed_evar_open_fresh_iter {Σ : Signature} avoid m p:
+  well_formed_xy m 0 p ->
+  well_formed (evar_open_fresh_iter avoid m p)
+.
+Proof.
+  move: p avoid.
+  induction m; simpl; intros p avoid H.
+  {
+    wf_auto2.
+  }
+  {
+    apply IHm.
+    wf_auto2.
+  }
+Qed.
+
+Lemma nested_const_fa' {Σ : Signature} Γ a l avoid (m : nat) (x : evar) :
+  well_formed a = true ->
+  well_formed_xy m 0 ((fold_right connect patt_bott l)) = true ->
+  Γ ⊢i evar_open_fresh_iter avoid m (a ---> (fold_right connect a l))
+  using AnyReasoning.
+Proof.
+  (*intros wfa wfl.*)
+  move: m avoid.
+  induction l; simpl; intros m avoid wfa wfl.
+  - rewrite evar_open_fresh_iter_impl. useBasicReasoning. apply A_impl_A.
+    assert (Hweak : well_formed_xy m 0 a = true).
+    { wf_auto2. eapply well_formed_closed_ex_aux_ind;[|apply H2]. lia. }
+    clear wfa.
+    move: a Hweak wfl avoid.
+    induction m; simpl; intros a Hweak wfl avoid.
+    { wf_auto2. }
+    { apply IHm.
+      { wf_auto2. }
+      { wf_auto2. }
+    }
+  - 
+    simpl in *.
+    destruct a0 as [p|].
+    {
+      specialize (IHl m avoid ltac:(wf_auto2) ltac:(wf_auto2)).
+      simpl in *.
+      rewrite 2!evar_open_fresh_iter_impl.
+      rewrite evar_open_fresh_iter_impl in IHl.
+
+      assert (H2 : Γ ⊢i ((evar_open_fresh_iter avoid m (foldr connect a l)) ---> ((evar_open_fresh_iter avoid m p) ---> (evar_open_fresh_iter avoid m (foldr connect a l)))) using BasicReasoning).
+      {
+        simpl in wfl.
+        apply P1.
+        wf_auto2.
+        apply well_formed_evar_open_fresh_iter.
+        wf_auto2.
+      }
+      eapply syllogism_meta.
+      5: useBasicReasoning; apply H2.
+      4: apply IHl. all: wf_auto2.
+    }
+    {
+      specialize (IHl (S m) avoid ltac:(wf_auto2)).
+      simpl in wfl.
+      specialize (IHl ltac:(wf_auto2)).
+      simpl in IHl.
+    }
+Defined.
 
 Lemma MLGoal_exactn {Σ : Signature}
   (Γ : Theory)
