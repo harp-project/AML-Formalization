@@ -888,6 +888,23 @@ Proof.
       specialize (IHl (S m) avoid a' ltac:(wf_auto2)).
       specialize (IHl ltac:(wf_auto2)).
       rewrite evar_open_fresh_iter_impl in IHl.
+      unfold evar_open_fresh_iter in *.
+      rewrite evar_open_fresh_iter_base_forall.
+      simpl in IHl.
+      rewrite evar_open_foldr_connect in IHl.
+      remember (avoid ∪ {[evar_fresh_s avoid]}) as avoid'.
+
+      assert (Ha' : forall idx avoid'', a'^{evar:idx↦evar_fresh_s avoid''} = a').
+      {
+        intros idx avoid''.
+        eapply evar_open_wfc_aux with (db1 := 0).
+        { lia. }
+        { wf_auto2. }
+      }
+      rewrite 2!Ha' in IHl.
+
+      (* HERE *)
+      
 
       apply IHl.
       
