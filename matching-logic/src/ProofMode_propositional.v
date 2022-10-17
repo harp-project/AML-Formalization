@@ -909,6 +909,7 @@ Proof.
 Qed.
 
 Lemma nested_const_fa' {Σ : Signature} Γ a l avoid (m : nat) (x : evar) :
+  free_evars (a ---> (fold_right connect a l)) ⊆ avoid ->
   well_formed a = true ->
   well_formed_xy m 0 ((fold_right connect patt_bott l)) = true ->
   Γ ⊢i evar_open_fresh_iter avoid m (a ---> (fold_right connect a l))
@@ -916,12 +917,12 @@ Lemma nested_const_fa' {Σ : Signature} Γ a l avoid (m : nat) (x : evar) :
 Proof.
   (*intros wfa wfl.*)
   move: m avoid a.
-  induction l; simpl; intros m avoid a' wfa wfl.
+  induction l; simpl; intros m avoid a' Havoid wfa wfl.
   - unfold evar_open_fresh_iter.
     rewrite evar_open_fresh_iter_impl. useBasicReasoning. apply A_impl_A.
     assert (Hweak : well_formed_xy m 0 a' = true).
     { wf_auto2. eapply well_formed_closed_ex_aux_ind;[|apply H2]. lia. }
-    clear wfa.
+    clear wfa Havoid.
     move: a' Hweak wfl avoid.
     induction m; simpl; intros a Hweak wfl avoid.
     { wf_auto2. }
@@ -935,7 +936,9 @@ Proof.
     unfold evar_open_fresh_iter in IHl.
     destruct a as [p|].
     {
-      specialize (IHl m avoid a' ltac:(wf_auto2) ltac:(wf_auto2)).
+      simpl in Havoid.
+      specialize (IHl m avoid a' ltac:(set_solver)).
+      specialize (IHl ltac:(wf_auto2) ltac:(wf_auto2)).
       simpl in *.
       rewrite 2!evar_open_fresh_iter_impl.
       rewrite evar_open_fresh_iter_impl in IHl.
@@ -956,7 +959,8 @@ Proof.
       simpl.
       rewrite evar_open_fresh_iter_impl.
       simpl in wfl.
-      specialize (IHl (S m) avoid a' ltac:(wf_auto2)).
+      simpl in Havoid.
+      specialize (IHl (S m) avoid a' ltac:(set_solver) ltac:(wf_auto2)).
       specialize (IHl ltac:(wf_auto2)).
       rewrite evar_open_fresh_iter_impl in IHl.
       unfold evar_open_fresh_iter in *.
@@ -984,6 +988,11 @@ Proof.
         apply forall_quantify_evar_open.
         {
           subst x'.
+          apply evar_fresh_nth_notin_free_evars_evar_open_fresh_iter_base.
+          intros m0.
+          pose proof (H0 := evar_fresh_nth_avoid avoid m0).
+          clear -H0 Havoid.
+          set_solver.
         }
         2: wf_auto2.
       }
