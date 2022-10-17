@@ -47,15 +47,19 @@ Definition foralls_count
   {Σ : Signature} (pmes : list ProofModeEntry) : nat
 := length (filter is_variable pmes).
 
-Fixpoint evar_open_fresh_iter
-  {Σ : Signature} (avoid : EVarSet) (n : nat) (p : Pattern) : Pattern
+Fixpoint evar_open_fresh_iter_base
+  {Σ : Signature} (avoid : EVarSet) (base : nat) (n : nat) (p : Pattern) : Pattern
 := match n with
    | 0 => p
    | (S n') =>
      let x := (evar_fresh_s avoid) in
-    (evar_open_fresh_iter (avoid ∪ {[x]}) n' (evar_open x n' p))
+    (evar_open_fresh_iter_base (avoid ∪ {[x]}) base n' (evar_open x (base + n') p))
    end
 .
+
+Definition evar_open_fresh_iter
+  {Σ : Signature} (avoid : EVarSet) (n : nat) (p : Pattern) : Pattern
+  := evar_open_fresh_iter_base avoid 0 n p.
 
 Fixpoint evar_open_pmes {Σ : Signature}
   (idx : nat) (x : evar) (pmes : list ProofModeEntry)
@@ -469,6 +473,7 @@ Proof.
 
   move: concl₁ concl₂.
   move: pmes Hpml.
+  unfold evar_open_fresh_iter.
   induction pml; simpl;
     intros pmes Hpml concl₁ concl₂ Hwf1 Hwf2 avoid Havoid1 Havoid2 Heo.
   {
@@ -571,7 +576,7 @@ Proof.
         simpl.
         rewrite foralls_count_evar_open_pmes.
         fold (foralls_count pmes) in Heo.
-        unfold evar_open.
+        unfold decide in Heo.
         apply Heo.
       }
     }
