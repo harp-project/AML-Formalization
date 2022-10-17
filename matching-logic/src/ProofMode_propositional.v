@@ -1017,6 +1017,25 @@ Proof.
   }
 Qed.
 
+Lemma evar_open_evar_open_fresh_iter_base
+  {Σ : Signature} avoid m n phi :
+  (evar_open_fresh_iter_base avoid (S n) m phi)^{evar:n↦(evar_fresh_nth avoid m)}
+  = evar_open_fresh_iter_base avoid n (S m) phi
+.
+Proof.
+  move: phi n avoid.
+  induction m; simpl; intros phi n avoid.
+  {
+    rewrite Nat.add_0_r.
+    reflexivity.
+  }
+  {
+    rewrite IHm. clear IHm. simpl.
+    rewrite Nat.add_succ_r.
+    reflexivity.
+  }
+Qed.
+
 Lemma nested_const_fa' {Σ : Signature} Γ a l avoid (m : nat) (x : evar) :
   free_evars (a ---> (fold_right connect a l)) ⊆ avoid ->
   well_formed a = true ->
@@ -1124,11 +1143,26 @@ Proof.
             wf_auto2.
           }
           {
-            clear -H0. Print evar_open_pmes.
+            clear -H0.
+            apply wfcex_pmes_evar_open_pmes in H0.
+            exact H0.
           }
         }
       }
       apply forall_gen.
+      {
+        simpl.
+        subst x'.
+        unfold evar_is_fresh_in.
+        apply evar_fresh_nth_notin_free_evars_evar_open_fresh_iter_base.
+        intros m0.
+        pose proof (H := evar_fresh_nth_avoid avoid m0).
+        clear -H Havoid.
+        set_solver.
+      }
+      { apply pile_any. }
+      rewrite evar_open_foldr_connect.
+      Search foldr connect evar_open_pmes.
       rewrite evar_open_fresh_iter_impl.
       (* HERE *)
       
