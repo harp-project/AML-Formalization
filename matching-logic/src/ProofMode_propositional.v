@@ -818,6 +818,19 @@ Proof.
   }
 Qed.
 
+(*
+Lemma evar_open_fresh_iter_forall {Σ : Signature} avoid m p l:
+  evar_open_fresh_iter avoid m (all , foldr connect p l)
+  = all, (evar_open_fresh_iter avoid (S m) (foldr connect p l))
+.
+Proof.
+  move: l p avoid.
+  induction m; simpl; intros l p avoid.
+  {
+    simpl.
+  }
+Qed.*)
+
 Lemma nested_const_fa' {Σ : Signature} Γ a l avoid (m : nat) (x : evar) :
   well_formed a = true ->
   well_formed_xy m 0 ((fold_right connect patt_bott l)) = true ->
@@ -825,13 +838,13 @@ Lemma nested_const_fa' {Σ : Signature} Γ a l avoid (m : nat) (x : evar) :
   using AnyReasoning.
 Proof.
   (*intros wfa wfl.*)
-  move: m avoid.
-  induction l; simpl; intros m avoid wfa wfl.
+  move: m avoid a.
+  induction l; simpl; intros m avoid a' wfa wfl.
   - rewrite evar_open_fresh_iter_impl. useBasicReasoning. apply A_impl_A.
-    assert (Hweak : well_formed_xy m 0 a = true).
+    assert (Hweak : well_formed_xy m 0 a' = true).
     { wf_auto2. eapply well_formed_closed_ex_aux_ind;[|apply H2]. lia. }
     clear wfa.
-    move: a Hweak wfl avoid.
+    move: a' Hweak wfl avoid.
     induction m; simpl; intros a Hweak wfl avoid.
     { wf_auto2. }
     { apply IHm.
@@ -840,14 +853,14 @@ Proof.
     }
   - 
     simpl in *.
-    destruct a0 as [p|].
+    destruct a as [p|].
     {
-      specialize (IHl m avoid ltac:(wf_auto2) ltac:(wf_auto2)).
+      specialize (IHl m avoid a' ltac:(wf_auto2) ltac:(wf_auto2)).
       simpl in *.
       rewrite 2!evar_open_fresh_iter_impl.
       rewrite evar_open_fresh_iter_impl in IHl.
 
-      assert (H2 : Γ ⊢i ((evar_open_fresh_iter avoid m (foldr connect a l)) ---> ((evar_open_fresh_iter avoid m p) ---> (evar_open_fresh_iter avoid m (foldr connect a l)))) using BasicReasoning).
+      assert (H2 : Γ ⊢i ((evar_open_fresh_iter avoid m (foldr connect a' l)) ---> ((evar_open_fresh_iter avoid m p) ---> (evar_open_fresh_iter avoid m (foldr connect a' l)))) using BasicReasoning).
       {
         simpl in wfl.
         apply P1.
@@ -860,10 +873,25 @@ Proof.
       4: apply IHl. all: wf_auto2.
     }
     {
-      specialize (IHl (S m) avoid ltac:(wf_auto2)).
+      simpl.
+      rewrite evar_open_fresh_iter_impl.
       simpl in wfl.
+      specialize (IHl (S m) avoid a' ltac:(wf_auto2)).
       specialize (IHl ltac:(wf_auto2)).
+      rewrite evar_open_fresh_iter_impl in IHl.
+
+      apply IHl.
+      
+      
+      rewrite evar_open_fresh_iter_impl in IHl.
       simpl in IHl.
+      rewrite evar_open_fresh_iter_wfc_aux in IHl.
+      { 
+        
+        wf_auto2.
+      Search well_formed_closed_ex_aux bevar_subst.
+      }
+      fold bevar_subst in IHl.
     }
 Defined.
 
