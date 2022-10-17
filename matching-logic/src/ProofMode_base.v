@@ -87,12 +87,13 @@ Definition MLGoal_from_goal
   MLGoal
   := mkMLGoal Σ Γ nil goal pi.
 
-Definition connect {Σ : Signature} := (fun h => fun i =>
-match h with
-| pme_pattern p => patt_imp p i
-| pme_variable => patt_forall i
-end
-).
+Definition connect {Σ : Signature} (h : ProofModeEntry) (i : Pattern) :=
+  (
+    match h with
+    | pme_pattern p => patt_imp p i
+    | pme_variable => patt_forall i
+    end
+  ).
 
 Definition MLGoal_to_pattern'
   {Σ : Signature} (concl: Pattern) (pmes : list ProofModeEntry)

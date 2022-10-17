@@ -1256,8 +1256,9 @@ Defined.
     evar_is_fresh_in x ϕ₁ ->
     ProofInfoLe ( (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)) i ->
     Γ ⊢i ϕ₁ ---> ϕ₂ using i ->
-    Γ ⊢i ϕ₁ ---> all, (ϕ₂^{{evar: x ↦ 0}}) using i.
+    Γ ⊢i ϕ₁ ---> forall_quantify x ϕ₂ using i.
   Proof.
+    Set Printing All.
     intros Hfr pile Himp.
     pose proof (Hwf := proved_impl_wf _ _ (proj1_sig Himp)).
     pose proof (wfϕ₁ := well_formed_imp_proj1 _ _ Hwf).

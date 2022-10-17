@@ -45,7 +45,7 @@ Proof. unfold is_variable. solve_decision. Defined.
 
 Definition foralls_count
   {Σ : Signature} (pmes : list ProofModeEntry) : nat
-:= length (filter is_variable pmes).
+  := length (filter is_variable pmes).
 
 Fixpoint evar_open_fresh_iter_base
   {Σ : Signature} (avoid : EVarSet) (base : nat) (n : nat) (p : Pattern) : Pattern
@@ -53,7 +53,8 @@ Fixpoint evar_open_fresh_iter_base
    | 0 => p
    | (S n') =>
      let x := (evar_fresh_s avoid) in
-    (evar_open_fresh_iter_base (avoid ∪ {[x]}) base n' (evar_open x (base + n') p))
+     let p' := (evar_open x (base + n') p) in
+    (evar_open_fresh_iter_base (avoid ∪ {[x]}) base n' p')
    end
 .
 
@@ -771,14 +772,16 @@ Proof.
   }
 Abort.
 
-Lemma evar_open_fresh_iter_impl {Σ : Signature} avoid m a b :
-  evar_open_fresh_iter avoid m (a ---> b)
-  = (evar_open_fresh_iter avoid m a ---> evar_open_fresh_iter avoid m b)
+Lemma evar_open_fresh_iter_impl {Σ : Signature} avoid m a b base :
+  evar_open_fresh_iter_base avoid base m  (a ---> b)
+  = (evar_open_fresh_iter_base avoid base m a ---> evar_open_fresh_iter_base avoid base m b)
 .
 Proof.
   move: a b avoid.
   induction m; intros a b avoid; simpl.
-  { reflexivity. }
+  { 
+    reflexivity.
+  }
   {
     rewrite IHm.
     reflexivity.
@@ -902,7 +905,7 @@ Proof.
         { wf_auto2. }
       }
       rewrite 2!Ha' in IHl.
-
+      
       (* HERE *)
       
 
