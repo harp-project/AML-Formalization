@@ -2,7 +2,7 @@ From Coq Require Import ssreflect ssrfun ssrbool.
 
 From Ltac2 Require Import Ltac2 Control.
 
-From Coq Require Import Ensembles Bool String.
+From Coq Require Import Ensembles Bool String Btauto.
 From Coq.Logic Require Import FunctionalExtensionality Eqdep_dec.
 From Equations Require Import Equations.
 
@@ -450,6 +450,52 @@ Proof.
       destruct_and!.
       rewrite -plus_Snm_nSm.
       rewrite IHpmes;[assumption|reflexivity].
+    }
+  }
+Qed.
+
+Fixpoint wfcex_pmes {Σ : Signature}
+  (idx : nat) (pmes : list ProofModeEntry)
+  : bool
+  :=
+  match pmes with
+  | [] => true
+  | (pme_pattern p)::pmes'
+    => well_formed_closed_ex_aux p idx
+       && wfcex_pmes idx pmes'
+  | (pme_variable)::pmes'
+    => wfcex_pmes (S idx) pmes'
+  end.
+
+
+Lemma wfc_ex_aux_foldr_connect' {Σ : Signature} g pmes k :
+  well_formed_closed_ex_aux (foldr connect g pmes) k 
+  = well_formed_closed_ex_aux g (k + (foralls_count pmes))
+  && wfcex_pmes k pmes
+.
+Proof.
+  move: k g.
+  induction pmes; cbn; intros k g.
+  {
+    rewrite plus_0_r. rewrite andb_true_r. reflexivity.
+  }
+  {
+    destruct a; unfold decide; simpl in *.
+    {
+      rewrite IHpmes.
+      unfold foralls_count.
+      remember (
+        well_formed_closed_ex_aux p k) as A.
+      remember (well_formed_closed_ex_aux g (k + length (filter is_variable pmes))) as B.
+      remember (wfcex_pmes k pmes) as C.
+      clear. btauto.
+    }
+    {
+      rewrite IHpmes.
+      rewrite -plus_Snm_nSm.
+      unfold foralls_count.
+      remember (well_formed_closed_ex_aux g (S k + length (filter is_variable pmes))) as A.
+      btauto.
     }
   }
 Qed.
@@ -950,7 +996,6 @@ Lemma nested_const_fa' {Σ : Signature} Γ a l avoid (m : nat) (x : evar) :
   Γ ⊢i evar_open_fresh_iter avoid m (a ---> (fold_right connect a l))
   using AnyReasoning.
 Proof.
-  (*intros wfa wfl.*)
   move: m avoid a.
   induction l; simpl; intros m avoid a' Havoid wfa wfl.
   - unfold evar_open_fresh_iter.
@@ -1030,6 +1075,23 @@ Proof.
           set_solver.
         }
         {
+          wf_auto2_decompose_hyps_parts.
+          (* This is a way how to give a name to a hypothesis that should exists somewhere *)
+          assert (H'' : well_formed_closed_ex_aux
+            (evar_open_fresh_iter_base avoid' 0 m
+             (foldr connect a' (evar_open_pmes m (evar_fresh_s avoid) l))) 0 =
+            true) by assumption
+          .
+          clear -H''.
+          rewrite wfce_eofib.
+          rewrite wfce_eofib in H''.
+          simpl in H''.
+          apply wfc_ex_aux_foldr_connect in H''.
+          rewrite foralls_count_evar_open_pmes in H''.
+          clear -H5.
+          Search well_formed_closed_ex_aux connect.
+          cut ()
+          
           Search (well_formed_closed_ex_aux (evar_open_fresh_iter_base _ _ _ _) _).
         }
       }
