@@ -1047,7 +1047,7 @@ Proof.
   }
 Qed.
 
-Lemma nested_const_fa' {Σ : Signature} Γ a l avoid (m : nat) (x : evar) :
+Lemma nested_const_fa' {Σ : Signature} Γ a l avoid (m : nat) :
   free_evars (a ---> (fold_right connect a l)) ⊆ avoid ->
   well_formed a = true ->
   well_formed_xy m 0 ((fold_right connect patt_bott l)) = true ->
@@ -1189,6 +1189,19 @@ Proof.
       apply IHl.
     }
 Defined.
+
+Lemma nested_const_fa {Σ : Signature} Γ a l avoid :
+  free_evars (a ---> (fold_right connect a l)) ⊆ avoid ->
+  well_formed a = true ->
+  well_formed ((fold_right connect patt_bott l)) = true ->
+  Γ ⊢i (a ---> (fold_right connect a l))
+  using AnyReasoning.
+Proof.
+  intros.
+  apply (nested_const_fa' Γ a l avoid 0).
+  1,2: assumption.
+  { wf_auto2. }
+Qed.
 
 Lemma MLGoal_exactn {Σ : Signature}
   (Γ : Theory)
