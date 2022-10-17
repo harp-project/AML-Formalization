@@ -989,6 +989,34 @@ Proof.
   }
 Qed.
 
+Lemma wfcex_pmes_evar_open_pmes {Σ : Signature}
+  m x l
+  :
+  wfcex_pmes m (evar_open_pmes m x l) = true ->
+  wfcex_pmes (S m) l = true
+.
+Proof.
+  move: x m.
+  induction l; cbn; intros x m H.
+  { reflexivity. }
+  {
+    destruct a as [p|].
+    {
+      simpl in *.
+      destruct_and!.
+      specialize (IHl x m).
+      feed specialize IHl.
+      { wf_auto2. }
+      wf_auto2.
+    }
+    {
+      simpl in *.
+      specialize (IHl x (S m) H).
+      exact IHl.
+    }
+  }
+Qed.
+
 Lemma nested_const_fa' {Σ : Signature} Γ a l avoid (m : nat) (x : evar) :
   free_evars (a ---> (fold_right connect a l)) ⊆ avoid ->
   well_formed a = true ->
@@ -1086,13 +1114,18 @@ Proof.
           rewrite wfce_eofib.
           rewrite wfce_eofib in H''.
           simpl in H''.
-          apply wfc_ex_aux_foldr_connect in H''.
+          rewrite wfc_ex_aux_foldr_connect' in H''.
+          rewrite wfc_ex_aux_foldr_connect'.
+          simpl.
           rewrite foralls_count_evar_open_pmes in H''.
-          clear -H5.
-          Search well_formed_closed_ex_aux connect.
-          cut ()
-          
-          Search (well_formed_closed_ex_aux (evar_open_fresh_iter_base _ _ _ _) _).
+          destruct_and!.
+          split_and.
+          {
+            wf_auto2.
+          }
+          {
+            clear -H0. Print evar_open_pmes.
+          }
         }
       }
       apply forall_gen.
