@@ -47,6 +47,12 @@ Definition foralls_count
   {Σ : Signature} (pmes : list ProofModeEntry) : nat
   := length (filter is_variable pmes).
 
+Fixpoint evar_fresh_nth {Σ : Signature} (avoid : EVarSet) (n : nat) : evar :=
+  match n with
+  | 0 => evar_fresh_s avoid
+  | (S n') => evar_fresh_nth (avoid ∪ {[(evar_fresh_s avoid)]}) n'
+  end.
+
 Fixpoint evar_open_fresh_iter_base
   {Σ : Signature} (avoid : EVarSet) (base : nat) (n : nat) (p : Pattern) : Pattern
 := match n with
@@ -802,6 +808,8 @@ Proof.
   }
   {
     simpl.
+    unfold evar_open_fresh_iter.
+    simpl.
     rewrite (evar_open_wfc_aux db2).
     { lia. }
     { eapply well_formed_closed_ex_aux_ind;[|apply Hwf]. lia. }
@@ -843,6 +851,63 @@ Proof.
   }
 Qed.
 
+Lemma forall_quantify_evar_open {Σ : Signature} x' p :
+  x' ∉ free_evars p ->
+  well_formed_closed_ex_aux p 1 ->
+  (forall_quantify x' (evar_open x' 0 p))
+  = (all , p)
+.
+Proof.
+  intros H1 H2.
+  unfold forall_quantify, patt_forall.
+  by rewrite evar_quantify_evar_open.
+Qed.
+
+Lemma evar_fresh_nth_avoid {Σ : Signature} avoid m :
+ evar_fresh_nth (avoid) m ∉ avoid
+.
+Proof.
+  move: avoid.
+  induction m; simpl; intros avoid.
+  {
+    apply set_evar_fresh_is_fresh'.
+  }
+  {
+    specialize (IHm (avoid ∪ {[evar_fresh_s avoid]})).
+    set_solver.
+  }
+Qed.
+
+Lemma evar_fresh_nth_notin_free_evars_evar_open_fresh_iter_base
+  {Σ : Signature} (avoid : EVarSet) (base : nat) (p : Pattern)
+  :
+  (forall m, (evar_fresh_nth avoid m) ∉ (free_evars p)) ->
+  forall m, (evar_fresh_nth avoid m)
+  ∉ free_evars (evar_open_fresh_iter_base avoid base m p)
+.
+Proof.
+  intros H m.
+  move: p base avoid H.
+  induction m; simpl; intros p base avoid H.
+  { exact (H 0). }
+  {
+    apply IHm.
+    intros m0.
+    apply evar_open_fresh_notin.
+    3: {
+      pose proof (H0 := evar_fresh_nth_avoid (avoid ∪ {[evar_fresh_s avoid]}) m0).
+      clear -H0.
+      set_solver.
+    }
+    1: {
+      exact (H (S m0)).
+    }
+    {
+      exact (H 0).
+    }
+  }
+Qed.
+
 Lemma nested_const_fa' {Σ : Signature} Γ a l avoid (m : nat) (x : evar) :
   well_formed a = true ->
   well_formed_xy m 0 ((fold_right connect patt_bott l)) = true ->
@@ -852,7 +917,8 @@ Proof.
   (*intros wfa wfl.*)
   move: m avoid a.
   induction l; simpl; intros m avoid a' wfa wfl.
-  - rewrite evar_open_fresh_iter_impl. useBasicReasoning. apply A_impl_A.
+  - unfold evar_open_fresh_iter.
+    rewrite evar_open_fresh_iter_impl. useBasicReasoning. apply A_impl_A.
     assert (Hweak : well_formed_xy m 0 a' = true).
     { wf_auto2. eapply well_formed_closed_ex_aux_ind;[|apply H2]. lia. }
     clear wfa.
@@ -865,6 +931,8 @@ Proof.
     }
   - 
     simpl in *.
+    unfold evar_open_fresh_iter.
+    unfold evar_open_fresh_iter in IHl.
     destruct a as [p|].
     {
       specialize (IHl m avoid a' ltac:(wf_auto2) ltac:(wf_auto2)).
@@ -905,7 +973,22 @@ Proof.
         { wf_auto2. }
       }
       rewrite 2!Ha' in IHl.
-      
+
+      remember (evar_fresh_nth avoid m) as x'.
+      replace
+        (all , evar_open_fresh_iter_base avoid 1 m (foldr connect a' l))
+      with
+        (forall_quantify x' (evar_open x' 0 (evar_open_fresh_iter_base avoid 1 m (foldr connect a' l))))
+      .
+      2: {
+        apply forall_quantify_evar_open.
+        {
+          subst x'.
+        }
+        2: wf_auto2.
+      }
+      apply forall_gen.
+      rewrite evar_open_fresh_iter_impl.
       (* HERE *)
       
 
