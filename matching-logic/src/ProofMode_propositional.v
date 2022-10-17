@@ -908,6 +908,41 @@ Proof.
   }
 Qed.
 
+Lemma wfce_eofib {Σ : Signature} avoid base m phi :
+  well_formed_closed_ex_aux
+    (evar_open_fresh_iter_base avoid base m phi) base
+  = well_formed_closed_ex_aux phi (base+m)
+.
+Proof.
+  move: avoid base phi.
+  induction m; simpl; intros avoid base phi.
+  {
+    rewrite Nat.add_0_r. reflexivity.
+  }
+  {
+    rewrite IHm.
+    rewrite Nat.add_succ_r.
+    remember (well_formed_closed_ex_aux phi^{evar:base + m↦evar_fresh_s avoid} (base + m))
+      as b
+    .
+    destruct b.
+    {
+      symmetry in Heqb. symmetry.
+      apply wfc_ex_aux_body_ex_imp2 in Heqb.
+      exact Heqb.
+    }
+    {
+      symmetry in Heqb.
+      symmetry.
+      rewrite -not_true_iff_false.
+      rewrite -not_true_iff_false in Heqb.
+      intros HContra. apply Heqb.
+      apply wfc_ex_aux_body_ex_imp1.
+      apply HContra.
+    }
+  }
+Qed.
+
 Lemma nested_const_fa' {Σ : Signature} Γ a l avoid (m : nat) (x : evar) :
   free_evars (a ---> (fold_right connect a l)) ⊆ avoid ->
   well_formed a = true ->
@@ -994,7 +1029,9 @@ Proof.
           clear -H0 Havoid.
           set_solver.
         }
-        2: wf_auto2.
+        {
+          Search (well_formed_closed_ex_aux (evar_open_fresh_iter_base _ _ _ _) _).
+        }
       }
       apply forall_gen.
       rewrite evar_open_fresh_iter_impl.
