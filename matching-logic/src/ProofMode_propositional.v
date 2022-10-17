@@ -840,15 +840,15 @@ Proof.
   }
 Qed.
 
-Lemma evar_open_fresh_iter_wfc_aux:
-  ∀ {Σ : Signature} (db2 : nat) (phi : Pattern) avoid,
+Lemma evar_open_fresh_iter_base_wfc_aux:
+  ∀ {Σ : Signature} (db2 : nat) (phi : Pattern) avoid base,
 	well_formed_closed_ex_aux phi 0 →
-  evar_open_fresh_iter avoid db2 phi = phi
+  evar_open_fresh_iter_base avoid base db2 phi = phi
 .
 Proof.
   intros.
-  move: avoid phi H.
-  induction db2; intros avoid phi Hwf.
+  move: avoid base phi H.
+  induction db2; intros avoid base phi Hwf.
   {
     simpl. reflexivity.
   }
@@ -862,6 +862,17 @@ Proof.
     apply IHdb2.
     apply Hwf.
   }
+Qed.
+
+Lemma evar_open_fresh_iter_wfc_aux:
+  ∀ {Σ : Signature} (db2 : nat) (phi : Pattern) avoid,
+	well_formed_closed_ex_aux phi 0 →
+  evar_open_fresh_iter avoid db2 phi = phi
+.
+Proof.
+  intros.
+  apply evar_open_fresh_iter_base_wfc_aux.
+  assumption.
 Qed.
 
 Lemma well_formed_evar_open_fresh_iter {Σ : Signature} avoid m p:
@@ -1161,24 +1172,21 @@ Proof.
         set_solver.
       }
       { apply pile_any. }
-      rewrite evar_open_foldr_connect.
-      Search foldr connect evar_open_pmes.
-      rewrite evar_open_fresh_iter_impl.
-      (* HERE *)
-      
 
+      subst x'.
+      rewrite evar_open_evar_open_fresh_iter_base.
+      simpl.
+      subst avoid'.
+
+      rewrite [evar_open_fresh_iter_base avoid 0 m a']evar_open_fresh_iter_base_wfc_aux.
+      { wf_auto2. }
+      rewrite [evar_open_fresh_iter_base _ 0 m a']evar_open_fresh_iter_base_wfc_aux in IHl.
+      { wf_auto2. }
+
+      rewrite evar_open_foldr_connect. simpl.
+      rewrite [evar_open _ _ a']evar_open_wfc.
+      { wf_auto2. }
       apply IHl.
-      
-      
-      rewrite evar_open_fresh_iter_impl in IHl.
-      simpl in IHl.
-      rewrite evar_open_fresh_iter_wfc_aux in IHl.
-      { 
-        
-        wf_auto2.
-      Search well_formed_closed_ex_aux bevar_subst.
-      }
-      fold bevar_subst in IHl.
     }
 Defined.
 
