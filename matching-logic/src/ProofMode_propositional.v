@@ -823,18 +823,22 @@ Proof.
   }
 Qed.
 
-(*
-Lemma evar_open_fresh_iter_forall {Σ : Signature} avoid m p l:
-  evar_open_fresh_iter avoid m (all , foldr connect p l)
-  = all, (evar_open_fresh_iter avoid (S m) (foldr connect p l))
+Lemma evar_open_fresh_iter_base_forall {Σ : Signature} avoid base m p l:
+  evar_open_fresh_iter_base avoid base m (all , foldr connect p l)
+  = all, (evar_open_fresh_iter_base avoid (S base) m (foldr connect p l))
 .
 Proof.
-  move: l p avoid.
-  induction m; simpl; intros l p avoid.
+  move: l p avoid base.
+  induction m; simpl; intros l p avoid base.
   {
-    simpl.
+    reflexivity.
   }
-Qed.*)
+  {
+    mlSimpl.
+    rewrite evar_open_foldr_connect. simpl.
+    rewrite IHm. simpl. reflexivity.
+  }
+Qed.
 
 Lemma nested_const_fa' {Σ : Signature} Γ a l avoid (m : nat) (x : evar) :
   well_formed a = true ->
