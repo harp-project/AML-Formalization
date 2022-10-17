@@ -1238,6 +1238,50 @@ Defined.
     exact H.
   Qed.
 
+
+  (*
+     This is basically [universal_generalization]
+    but under an implication.
+    Γ ⊢ φ → ψ
+    -------------
+    Γ ⊢ φ → ∀x. ψ
+
+    I wonder if we could get an iterative version [forall_gen_iter]?
+    Like,
+    Γ ⊢ φ₁ → ... → φₖ → ψ
+    ----------------------------
+    Γ ⊢ φ₁ → ... → φₖ → ∀x. ψ
+  *)
+  Lemma forall_gen {Σ : Signature} Γ ϕ₁ ϕ₂ x (i : ProofInfo):
+    evar_is_fresh_in x ϕ₁ ->
+    ProofInfoLe ( (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)) i ->
+    Γ ⊢i ϕ₁ ---> ϕ₂ using i ->
+    Γ ⊢i ϕ₁ ---> all, (ϕ₂^{{evar: x ↦ 0}}) using i.
+  Proof.
+    intros Hfr pile Himp.
+    pose proof (Hwf := proved_impl_wf _ _ (proj1_sig Himp)).
+    pose proof (wfϕ₁ := well_formed_imp_proj1 _ _ Hwf).
+    pose proof (wfϕ₂ := well_formed_imp_proj2 _ _ Hwf).
+
+    eapply prf_strenghten_premise_meta_meta.
+    4: { useBasicReasoning. apply not_not_intro. wf_auto2. }
+    1-3: wf_auto2.
+    unfold patt_forall.
+    apply modus_tollens.
+
+    eapply cast_proof'.
+    {
+      replace (! ϕ₂^{{evar: x ↦ 0}})
+              with ((! ϕ₂)^{{evar: x ↦ 0}})
+                   by reflexivity.
+      reflexivity.
+    }
+    apply BasicProofSystemLemmas.Ex_gen.
+    { exact pile. }
+    { simpl. unfold evar_is_fresh_in in Hfr. clear -Hfr. set_solver. }
+    apply modus_tollens; assumption.
+  Defined.
+
 Close Scope string_scope.
 Close Scope list_scope.
 Close Scope ml_scope.
