@@ -1190,18 +1190,187 @@ Proof.
     }
 Defined.
 
-Lemma nested_const_fa {Σ : Signature} Γ a l avoid :
-  free_evars (a ---> (fold_right connect a l)) ⊆ avoid ->
+Lemma nested_const_fa {Σ : Signature} Γ a l :
   well_formed a = true ->
   well_formed ((fold_right connect patt_bott l)) = true ->
   Γ ⊢i (a ---> (fold_right connect a l))
   using AnyReasoning.
 Proof.
   intros.
-  apply (nested_const_fa' Γ a l avoid 0).
-  1,2: assumption.
+  apply (nested_const_fa' Γ a l (free_evars (a ---> foldr connect a l)) 0).
+  { apply reflexivity. }
+  { assumption. }
   { wf_auto2. }
+Defined.
+
+
+Fixpoint wfcmu_pmes {Σ : Signature}
+  (idx : nat) (pmes : list ProofModeEntry)
+  : bool
+  :=
+  match pmes with
+  | [] => true
+  | (pme_pattern p)::pmes'
+    => well_formed_closed_mu_aux p idx
+       && wfcmu_pmes idx pmes'
+  | (pme_variable)::pmes'
+    => wfcmu_pmes idx pmes'
+  end.
+
+Fixpoint wfp_pmes {Σ : Signature}
+  (pmes : list ProofModeEntry)
+  : bool
+  :=
+  match pmes with
+  | [] => true
+  | (pme_pattern p)::pmes'
+    => well_formed_positive p
+       && wfp_pmes pmes'
+  | (pme_variable)::pmes'
+    => wfp_pmes pmes'
+  end
+.
+
+
+Lemma wfc_mu_aux_foldr_connect {Σ : Signature} g pmes k :
+  well_formed_closed_mu_aux (foldr connect g pmes) k 
+  = well_formed_closed_mu_aux g k
+  && wfcmu_pmes k pmes
+.
+Proof.
+  move: g k.
+  induction pmes; cbn; intros g k.
+  {
+    rewrite andb_true_r. reflexivity.
+  }
+  {
+    destruct a as [p|]; simpl.
+    {
+      rewrite IHpmes. clear IHpmes.
+      remember (well_formed_closed_mu_aux g (k + length (filter is_variable pmes))) as B.
+      btauto.
+    }
+    {
+      rewrite IHpmes. clear IHpmes.
+      btauto.
+    }
+  }
 Qed.
+
+Lemma wfp_foldr_connect {Σ : Signature} g pmes :
+  well_formed_positive (foldr connect g pmes) 
+  = well_formed_positive g
+  && wfp_pmes pmes
+.
+Proof.
+  move: g.
+  induction pmes; cbn; intros g.
+  {
+    rewrite andb_true_r. reflexivity.
+  }
+  {
+    destruct a as [p|]; simpl.
+    {
+      rewrite IHpmes. clear IHpmes.
+      btauto.
+    }
+    {
+      rewrite IHpmes. clear IHpmes.
+      btauto.
+    }
+  }
+Qed.
+
+Lemma evar_open_pmes_app {Σ : Signature} idx x l₁ l₂:
+  evar_open_pmes idx x (l₁ ++ l₂)
+  = (evar_open_pmes idx x l₁)
+  ++ (evar_open_pmes (idx + foralls_count l₁) x l₂)
+.
+Proof.
+  move: idx l₂.
+  induction l₁; cbn; intros idx l₂.
+  {
+    rewrite Nat.add_0_r. reflexivity.
+  }
+  {
+    destruct a as [p|]; simpl.
+    {
+      rewrite IHl₁. clear IHl₁. unfold foralls_count.
+      reflexivity.
+    }
+    {
+      rewrite IHl₁. clear IHl₁. unfold foralls_count.
+      rewrite Nat.add_succ_r. simpl.
+      reflexivity.
+    }
+  }
+Qed.
+
+Lemma nested_const_middle_fa {Σ : Signature} Γ a l₁ l₂ :
+  well_formed ((fold_right connect a (l₁ ++ (pme_pattern a) :: l₂))) ->
+  Γ ⊢i (fold_right connect a (l₁ ++ (pme_pattern a) :: l₂))
+  using AnyReasoning.
+Proof.
+  remember (S (length l₁)) as len.
+  assert (Hlen : S (length l₁) <= len) by lia.
+  clear Heqlen.
+  move: a l₁ l₂ Hlen.
+  induction len; intros a l₁ l₂ Hlen H.
+  {
+    lia.
+  }
+  destruct l₁; cbn in *.
+  {
+    apply nested_const_fa.
+    { wf_auto2. }
+    {
+      unfold well_formed,well_formed_closed in *.
+      rewrite wfp_foldr_connect.
+      rewrite wfc_ex_aux_foldr_connect'.
+      rewrite wfc_mu_aux_foldr_connect.
+      simpl. simpl in H.
+      rewrite wfp_foldr_connect in H.
+      rewrite wfc_ex_aux_foldr_connect' in H.
+      rewrite wfc_mu_aux_foldr_connect in H.
+      simpl in H.
+      wf_auto2.
+    }
+  }
+  {
+    destruct p as [p|]; simpl.
+    {
+      eapply MP. 2: useBasicReasoning; apply P1.
+      2,3: wf_auto2.
+      apply IHlen.
+      { lia. }
+      { wf_auto2. }
+    }
+    {
+      remember (fresh_evar (foldr connect a (l₁ ++ pme_pattern a :: l₂))) as x.
+      replace (foldr connect a (l₁ ++ pme_pattern a :: l₂))
+        with (evar_quantify x 0 (evar_open x 0 (foldr connect a (l₁ ++ pme_pattern a :: l₂))))
+      .
+      2: {
+        apply evar_quantify_evar_open.
+        { subst x. apply set_evar_fresh_is_fresh. }
+        wf_auto2.
+      }
+      apply universal_generalization.
+      { apply pile_any. }
+      { wf_auto2. }
+      rewrite evar_open_foldr_connect.
+      simpl.
+      rewrite evar_open_pmes_app. simpl.
+      simpl in H.
+      unfold foralls_count. rewrite filter_app. rewrite app_length.
+      cbn. unfold decide.
+      remember (a^{evar:length (filter is_variable l₁) + length (filter is_variable l₂)↦x}) as a''.
+      remember (a^{evar:length (filter is_variable l₁)↦x}) as a'.
+
+      apply IHlen.
+    }
+  }
+Defined.
 
 Lemma MLGoal_exactn {Σ : Signature}
   (Γ : Theory)
