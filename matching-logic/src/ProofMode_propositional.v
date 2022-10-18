@@ -1306,16 +1306,68 @@ Proof.
   }
 Qed.
 
+Lemma wfp_pmes_app {Σ : Signature} l1 l2:
+  wfp_pmes (l1 ++ l2) = wfp_pmes l1 && wfp_pmes l2
+.
+Proof.
+  induction l1; simpl.
+  {
+    reflexivity.
+  }
+  {
+    destruct a as [p|].
+    {
+      rewrite IHl1. rewrite andb_assoc. reflexivity.
+    }
+    {
+      exact IHl1.
+    }
+  }
+Qed.
+
+Lemma wfp_pmes_evar_open {Σ : Signature} l idx x:
+  wfp_pmes (evar_open_pmes idx x l) = wfp_pmes l
+.
+Proof.
+  move: idx x.
+  induction l; simpl; intros idx x.
+  { reflexivity. }
+  {
+    destruct a as [p|]; simpl.
+    {
+      rewrite IHl.
+      f_equal.
+      Search (well_formed_positive (evar_open _ _ _)).
+      remember (well_formed_positive p) as b.
+      symmetry in Heqb.
+      destruct b.
+      {
+        apply wfp_evar_open. exact Heqb.
+      }
+      {
+        rewrite -not_true_iff_false. rewrite -not_true_iff_false in Heqb.
+        intros HContra. apply Heqb.
+        apply evar_open_positive in HContra.
+        exact HContra.
+      }
+    }
+    {
+      rewrite IHl. reflexivity.
+    }
+  }
+Qed.
+
 Lemma nested_const_middle_fa {Σ : Signature} Γ a l₁ l₂ :
+  well_formed_closed_ex_aux a (foralls_count l₁) ->
   well_formed ((fold_right connect a (l₁ ++ (pme_pattern a) :: l₂))) ->
-  Γ ⊢i (fold_right connect a (l₁ ++ (pme_pattern a) :: l₂))
+  Γ ⊢i (fold_right connect (a) (l₁ ++ (pme_pattern a) :: l₂))
   using AnyReasoning.
 Proof.
   remember (S (length l₁)) as len.
   assert (Hlen : S (length l₁) <= len) by lia.
   clear Heqlen.
   move: a l₁ l₂ Hlen.
-  induction len; intros a l₁ l₂ Hlen H.
+  induction len; intros a l₁ l₂ Hlen Ha H.
   {
     lia.
   }
@@ -1344,6 +1396,7 @@ Proof.
       apply IHlen.
       { lia. }
       { wf_auto2. }
+      { wf_auto2. }
     }
     {
       remember (fresh_evar (foldr connect a (l₁ ++ pme_pattern a :: l₂))) as x.
@@ -1366,6 +1419,34 @@ Proof.
       cbn. unfold decide.
       remember (a^{evar:length (filter is_variable l₁) + length (filter is_variable l₂)↦x}) as a''.
       remember (a^{evar:length (filter is_variable l₁)↦x}) as a'.
+
+      unfold decide in Ha. cbn in Ha.
+
+      specialize (IHlen a' (evar_open_pmes 0 x l₁)).
+      specialize (IHlen (evar_open_pmes (length (filter is_variable l₁)) x l₂)).
+      feed specialize IHlen.
+      { rewrite length_evar_open_pmes. lia. }
+      { rewrite foralls_count_evar_open_pmes. wf_auto2. }
+      { subst a' a''.
+        clear -H. unfold well_formed,well_formed_closed in *.
+        simpl in *.
+        rewrite wfc_ex_aux_foldr_connect'.
+        rewrite wfc_mu_aux_foldr_connect.
+        rewrite wfp_foldr_connect.
+        rewrite wfp_pmes_app.
+        rewrite wfc_ex_aux_foldr_connect' in H.
+        rewrite wfc_mu_aux_foldr_connect in H.
+        rewrite wfp_foldr_connect in H.
+        rewrite wfp_pmes_app in H.
+        simpl in *.
+        wf_auto2.
+        Search (well_formed_xy _ _ (foldr connect _ _) = true). }
+
+
+
+      rewrite evar_open_wfc_aux in Heqa''.
+      { wf_auto2. }
+      Search (evar_open _ _ ?p = ?p).
 
       apply IHlen.
     }
