@@ -1357,6 +1357,25 @@ Proof.
   }
 Qed.
 
+Lemma wfcmu_pmes_app {Σ : Signature} idx l1 l2:
+  wfcmu_pmes idx (l1 ++ l2) = wfcmu_pmes idx l1 && wfcmu_pmes idx l2
+.
+Proof.
+  induction l1; simpl.
+  {
+    reflexivity.
+  }
+  {
+    destruct a as [p|].
+    {
+      rewrite IHl1. rewrite andb_assoc. reflexivity.
+    }
+    {
+      exact IHl1.
+    }
+  }
+Qed.
+
 Lemma nested_const_middle_fa {Σ : Signature} Γ a l₁ l₂ :
   well_formed_closed_ex_aux a (foralls_count l₁) ->
   well_formed ((fold_right connect a (l₁ ++ (pme_pattern a) :: l₂))) ->
@@ -1434,6 +1453,7 @@ Proof.
         rewrite wfc_mu_aux_foldr_connect.
         rewrite wfp_foldr_connect.
         rewrite wfp_pmes_app.
+        rewrite wfp_pmes_evar_open.
         rewrite wfc_ex_aux_foldr_connect' in H.
         rewrite wfc_mu_aux_foldr_connect in H.
         rewrite wfp_foldr_connect in H.

@@ -259,6 +259,18 @@ Ltac partsDecomposeWfGoal :=
             lwf_xy_decompose)
 .
 
+Ltac2 mutable simplify_wf_hyp_part_hook
+:= (fun (h : ident) => () ).
+
+(* We give a name to the wrapper so that it is shown in the profile (when profiling). *)
+Ltac _simplify_wf_hyp_part_hook H :=
+  let tac := ltac2:(h |- simplify_wf_hyp_part_hook (Option.get (Ltac1.to_ident h))) in
+  tac H
+.
+
+Tactic Notation "simplify_wf_hyp_part_hook" ident(H) :=
+  _simplify_wf_hyp_part_hook H
+.
 
 Ltac simplifyWfHypParts H :=
   let t := type of H in
@@ -309,7 +321,7 @@ Ltac simplifyWfHypParts H :=
     =>
       rewrite lwf_xy_decompose in H;
       destruct_andb? H
-  | _ => idtac
+  | _ => simplify_wf_hyp_part_hook H
   end
 .
 
