@@ -1580,6 +1580,55 @@ Ltac2 Set simplify_wf_hyp_part_hook as oldhook := fun (h : ident) =>
   oldhook h
 .
 
+Lemma top_holds_in_any_context {Σ : Signature} Γ l:
+  well_formed (foldr connect patt_top l) ->
+  Γ ⊢i foldr connect patt_top l using AnyReasoning
+.
+Proof.
+  remember (S (length l)) as len.
+  assert (Hlen : S (length l) <= len) by lia.
+  clear Heqlen.
+  move: l Hlen.
+  induction len; intros l Hlen Hwf.
+  {
+    lia.
+  }
+  destruct l; cbn in *.
+  { useBasicReasoning. apply A_impl_A. wf_auto2. }
+
+  destruct p as [p|]; simpl.
+  {
+    eapply MP. 2: useBasicReasoning; apply P1.
+    {
+      apply IHlen.
+      { lia. }
+      { wf_auto2. }
+    }
+    1,2: wf_auto2.
+  }
+  {
+    remember (fresh_evar (foldr connect patt_top l)) as x.
+    replace (foldr connect patt_top l)
+      with (evar_quantify x 0 (evar_open x 0 (foldr connect patt_top l)))
+    .
+    2: {
+      apply evar_quantify_evar_open.
+      { subst x. apply set_evar_fresh_is_fresh. }
+      wf_auto2.
+    }
+    apply universal_generalization.
+    { apply pile_any. }
+    { wf_auto2. }
+    rewrite evar_open_foldr_connect. simpl. mlSimpl.
+    apply IHlen.
+    {
+      rewrite length_evar_open_pmes. lia.
+    }
+    {
+      wf_auto2.
+    }
+  }
+Qed.
 
 Lemma nested_const_middle_fa {Σ : Signature} Γ a l₁ l₂ :
   well_formed_closed_ex_aux a (foralls_count l₁) = true ->
@@ -1587,6 +1636,21 @@ Lemma nested_const_middle_fa {Σ : Signature} Γ a l₁ l₂ :
   Γ ⊢i (fold_right connect (a) (l₁ ++ (pme_pattern a) :: l₂))
   using AnyReasoning.
 Proof.
+  intros Ha H.
+  rewrite foldr_app. simpl.
+  eapply MP.
+  2: apply lift_to_mixed_context with (concl₂ := patt_top).
+  {
+    assert (Hwf: well_formed (foldr connect patt_bott l₁)).
+    { wf_auto2. }
+    clear -Hwf.
+    
+    
+  }
+  Check nested_const_fa.
+  Check lift_to_mixed_context.
+
+
   remember (S (length l₁)) as len.
   assert (Hlen : S (length l₁) <= len) by lia.
   clear Heqlen.
@@ -1612,6 +1676,7 @@ Proof.
       { wf_auto2. }
     }
     {
+      unfold decide in Ha. simpl in Ha.
       remember (fresh_evar (foldr connect a (l₁ ++ pme_pattern a :: l₂))) as x.
       replace (foldr connect a (l₁ ++ pme_pattern a :: l₂))
         with (evar_quantify x 0 (evar_open x 0 (foldr connect a (l₁ ++ pme_pattern a :: l₂))))
@@ -1624,6 +1689,7 @@ Proof.
       apply universal_generalization.
       { apply pile_any. }
       { wf_auto2. }
+      
       rewrite evar_open_foldr_connect.
       simpl.
       rewrite evar_open_pmes_app. simpl.
@@ -1652,6 +1718,20 @@ Proof.
           wf_auto2.
         }
       }
+      
+
+      remember (length (filter is_variable l₂)) as len2.
+      destruct len2.
+      {
+        rewrite Nat.add_0_r in Heqa''.
+        subst a'' a'.
+        apply IHlen.
+      }
+      assert (a'' = a').
+      {
+        destruct len2.
+      }
+      
 
       apply IHlen.
     }
