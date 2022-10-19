@@ -843,6 +843,19 @@ Proof.
   }
 Qed.
 
+Lemma evar_open_fresh_iter_top {Σ : Signature} avoid m  base :
+  evar_open_fresh_iter_base avoid base m patt_top
+  = patt_top
+.
+Proof.
+  move: avoid.
+  induction m; intros avoid; simpl.
+  { reflexivity. }
+  {
+    rewrite IHm. reflexivity.
+  }
+Qed.
+
 Lemma evar_open_fresh_iter_base_wfc_aux:
   ∀ {Σ : Signature} (db2 : nat) (phi : Pattern) avoid base,
 	well_formed_closed_ex_aux phi 0 →
@@ -1630,6 +1643,15 @@ Proof.
   }
 Qed.
 
+Check evar_open_pmes.
+Lemma evar_open_fresh_iter_base_foldr_connect
+  {Σ : Signature} (base idx : nat) (a : Pattern) l:
+  evar_open_fresh_iter_base evs base idx (foldr connect a l)
+  = foldr
+      connect
+      (evar_open_fresh_iter_base evs base idx a)
+      (evar_open_pmes ) 
+
 Lemma nested_const_middle_fa {Σ : Signature} Γ a l₁ l₂ :
   well_formed_closed_ex_aux a (foralls_count l₁) = true ->
   well_formed ((fold_right connect a (l₁ ++ (pme_pattern a) :: l₂))) = true ->
@@ -1641,11 +1663,20 @@ Proof.
   eapply MP.
   2: apply lift_to_mixed_context with (concl₂ := patt_top).
   {
-    assert (Hwf: well_formed (foldr connect patt_bott l₁)).
+    apply top_holds_in_any_context.
     { wf_auto2. }
-    clear -Hwf.
+  }
+  4: {
+    unfold evar_open_fresh_iter.
+    rewrite 2!evar_open_fresh_iter_impl.
+    rewrite evar_open_fresh_iter_top.
+    remember (free_evars (MLGoal_to_pattern' (a ---> foldr connect a l₂) l₁)
+    ∪ free_evars (MLGoal_to_pattern' Top l₁)) as evs.
+
+    Search evar_open_fresh_iter foldr connect.
     
-    
+    simpl.
+    Check nested_const_fa.
   }
   Check nested_const_fa.
   Check lift_to_mixed_context.
