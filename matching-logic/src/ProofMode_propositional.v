@@ -9,6 +9,8 @@ From Equations Require Import Equations.
 Require Import Coq.Program.Tactics.
 
 From MatchingLogic Require Import
+    wftactics
+    ProofSystem
     Utils.extralibrary
     Logic
     DerivedOperators_Syntax
@@ -739,7 +741,8 @@ Proof.
   eapply MP.
   2: apply Htmp.
   1,4: assumption.
-  1,2: wf_auto2.
+  { wf_auto2. }
+  { wf_auto2. }
 Defined.
 
 
@@ -1024,6 +1027,52 @@ Proof.
       simpl in *.
       specialize (IHl x (S m) H).
       exact IHl.
+    }
+  }
+Qed.
+
+Lemma wfc_ex_aux_body_iff' :
+  forall {Σ : Signature} (phi : Pattern) (n : nat) (x : evar),
+	well_formed_closed_ex_aux phi (S n) 
+  = well_formed_closed_ex_aux phi^{evar:n↦x} n
+.
+Proof.
+  intros.
+  remember (well_formed_closed_ex_aux phi^{evar:n↦x} n) as b.
+  symmetry in Heqb.
+  destruct b.
+  {
+    apply wfc_ex_aux_body_iff in Heqb.
+    exact Heqb.
+  }
+  {
+    rewrite -not_true_iff_false.
+    rewrite -not_true_iff_false in Heqb.
+    intros HContra. apply Heqb.
+    rewrite wfc_ex_aux_body_iff in HContra.
+    exact HContra.
+  }
+Qed.
+
+Lemma wfcex_pmes_evar_open_pmes_iff {Σ : Signature}
+  m x l
+  :
+  wfcex_pmes m (evar_open_pmes m x l)
+  = wfcex_pmes (S m) l
+.
+Proof.
+  move: x m.
+  induction l; cbn; intros x m.
+  { reflexivity. }
+  {
+    destruct a as [p|]; simpl.
+    {
+      rewrite IHl.
+      rewrite -wfc_ex_aux_body_iff'.
+      reflexivity.
+    }
+    {
+      rewrite IHl. reflexivity.
     }
   }
 Qed.
@@ -1376,9 +1425,165 @@ Proof.
   }
 Qed.
 
+
+Lemma foralls_count_app {Σ : Signature} l1 l2:
+  foralls_count (l1 ++ l2) = foralls_count l1 + foralls_count l2
+.
+Proof.
+  unfold foralls_count.
+  rewrite filter_app.
+  rewrite app_length.
+  reflexivity.
+Qed.
+
+Lemma foralls_count_cons_pattern {Σ : Signature} l p:
+  foralls_count ((pme_pattern p)::l) = (foralls_count l)
+.
+Proof.
+  cbn. unfold decide.
+  reflexivity.
+Qed.
+
+Lemma foralls_count_cons_variable {Σ : Signature} l:
+  foralls_count ((pme_variable)::l) = S (foralls_count l)
+.
+Proof.
+  cbn. unfold decide.
+  reflexivity.
+Qed.
+
+Lemma wfcex_pmes_app {Σ : Signature} k l1 l2:
+  wfcex_pmes k (l1 ++ l2)
+  = wfcex_pmes k l1 && wfcex_pmes (k + foralls_count l1) l2
+.
+Proof.
+  move: k l2.
+  induction l1; cbn; intros k l2.
+  { rewrite Nat.add_0_r. reflexivity. }
+  {
+    destruct a as [p|];cbn; unfold decide.
+    {
+      rewrite IHl1. unfold foralls_count.
+      rewrite !andb_assoc.
+      reflexivity.
+    }
+    {
+      rewrite IHl1. unfold foralls_count. simpl.
+      rewrite Nat.add_succ_r.
+      reflexivity.
+    }
+  }
+Qed.
+
+Lemma wfc_mu_aux_body_iff' {Σ : Signature}:
+	 ∀ (phi : Pattern) (n : nat) (X : svar),
+     well_formed_closed_mu_aux phi^{svar:n↦X} n      
+     = well_formed_closed_mu_aux phi (S n)
+.
+Proof.
+  intros.
+  remember (well_formed_closed_mu_aux phi (S n)) as b.
+  symmetry in Heqb.
+  destruct b.
+  {
+    apply wfc_mu_aux_body_iff. exact Heqb.
+  }
+  {
+    rewrite -not_true_iff_false.
+    rewrite -not_true_iff_false in Heqb.
+    intros HContra. apply Heqb. clear Heqb.
+    rewrite -wfc_mu_aux_body_iff in HContra.
+    exact HContra.
+  }
+Qed.
+      
+Lemma wfc_mu_aux_body_ex_iff' {Σ : Signature}:
+	 ∀ (phi : Pattern) (n n' : nat) (x : evar),
+     well_formed_closed_mu_aux phi^{evar:n'↦x} n      
+     = well_formed_closed_mu_aux phi n
+.
+Proof.
+  intros.
+  remember (well_formed_closed_mu_aux phi n) as b.
+  symmetry in Heqb.
+  destruct b.
+  {
+    apply wfc_mu_aux_body_ex_imp1.
+    exact Heqb.
+  }
+  {
+    rewrite -not_true_iff_false.
+    rewrite -not_true_iff_false in Heqb.
+    intros HContra. apply Heqb. clear Heqb.
+    apply wfc_mu_aux_body_ex_imp2 in HContra.
+    exact HContra.
+  }
+Qed.
+
+Lemma wfcmu_pmes_evar_open_pmes {Σ : Signature} m m' x l:
+  wfcmu_pmes m (evar_open_pmes m' x l)
+  = wfcmu_pmes m l
+.
+Proof.
+  move: m m' x.
+  induction l; cbn; intros m m' x.
+  { reflexivity. }
+  {
+    destruct a as [p|]; simpl.
+    {
+      rewrite wfc_mu_aux_body_ex_iff'.
+      rewrite IHl.
+      reflexivity.
+    }
+    {
+      rewrite IHl.
+      reflexivity.
+    }
+  }
+Qed.
+
+Definition wf_simpl_rules := (
+  @wfc_ex_aux_foldr_connect',
+  @wfc_mu_aux_foldr_connect,
+  @wfp_foldr_connect,
+  @wfp_pmes_app,
+  @wfp_pmes_evar_open,
+  @wfcmu_pmes_app,
+  @foralls_count_app,
+  @foralls_count_evar_open_pmes,
+  @foralls_count_cons_pattern,
+  @foralls_count_cons_variable,
+  @wfcex_pmes_app,
+  @wfcex_pmes_evar_open_pmes_iff,
+  @wfcmu_pmes_evar_open_pmes
+).
+
+Ltac wf_simpl_goal :=
+  rewrite ?wf_simpl_rules
+.
+
+Ltac _wf_simpl_hyp H :=
+  rewrite ?wf_simpl_rules in H
+.
+
+Tactic Notation "wf_simpl_hyp" ident(H) :=
+  _wf_simpl_hyp H
+.
+
+Ltac2 Set simplify_wf_goal_hook as oldhook := fun () =>
+  try ltac1:(wf_simpl_goal);
+  oldhook ()
+.
+
+Ltac2 Set simplify_wf_hyp_part_hook as oldhook := fun (h : ident) =>
+  ltac1:(h |- wf_simpl_hyp h) (Ltac1.of_ident h);
+  oldhook h
+.
+
+
 Lemma nested_const_middle_fa {Σ : Signature} Γ a l₁ l₂ :
-  well_formed_closed_ex_aux a (foralls_count l₁) ->
-  well_formed ((fold_right connect a (l₁ ++ (pme_pattern a) :: l₂))) ->
+  well_formed_closed_ex_aux a (foralls_count l₁) = true ->
+  well_formed ((fold_right connect a (l₁ ++ (pme_pattern a) :: l₂))) = true ->
   Γ ⊢i (fold_right connect (a) (l₁ ++ (pme_pattern a) :: l₂))
   using AnyReasoning.
 Proof.
@@ -1394,18 +1599,7 @@ Proof.
   {
     apply nested_const_fa.
     { wf_auto2. }
-    {
-      unfold well_formed,well_formed_closed in *.
-      rewrite wfp_foldr_connect.
-      rewrite wfc_ex_aux_foldr_connect'.
-      rewrite wfc_mu_aux_foldr_connect.
-      simpl. simpl in H.
-      rewrite wfp_foldr_connect in H.
-      rewrite wfc_ex_aux_foldr_connect' in H.
-      rewrite wfc_mu_aux_foldr_connect in H.
-      simpl in H.
-      wf_auto2.
-    }
+    { wf_auto2. }
   }
   {
     destruct p as [p|]; simpl.
@@ -1447,26 +1641,17 @@ Proof.
       { rewrite length_evar_open_pmes. lia. }
       { rewrite foralls_count_evar_open_pmes. wf_auto2. }
       { subst a' a''.
-        clear -H. unfold well_formed,well_formed_closed in *.
-        simpl in *.
-        rewrite wfc_ex_aux_foldr_connect'.
-        rewrite wfc_mu_aux_foldr_connect.
-        rewrite wfp_foldr_connect.
-        rewrite wfp_pmes_app.
-        rewrite wfp_pmes_evar_open.
-        rewrite wfc_ex_aux_foldr_connect' in H.
-        rewrite wfc_mu_aux_foldr_connect in H.
-        rewrite wfp_foldr_connect in H.
-        rewrite wfp_pmes_app in H.
-        simpl in *.
+        
+        clear -H.
+        fold (foralls_count l₁).
+
         wf_auto2.
-        Search (well_formed_xy _ _ (foldr connect _ _) = true). }
-
-
-
-      rewrite evar_open_wfc_aux in Heqa''.
-      { wf_auto2. }
-      Search (evar_open _ _ ?p = ?p).
+        {
+          apply wfc_ex_aux_bsvar_subst_le;[lia|idtac|].
+          wf_auto2.
+          wf_auto2.
+        }
+      }
 
       apply IHlen.
     }
