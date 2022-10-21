@@ -1067,6 +1067,7 @@ Defined.
 
 
 Tactic Notation "mlExactn" constr(n) :=
+  _ensureProofMode;
   _mlReshapeHypsByIdx n;
   apply MLGoal_exactn.
 
@@ -1085,7 +1086,11 @@ Proof.
 Defined.
 
 Tactic Notation "mlExact" constr(name')
-:= eapply MLGoal_exact with (name := name'); simpl; apply f_equal; reflexivity.
+:=
+  _ensureProofMode;
+  eapply MLGoal_exact with (name := name');
+  simpl; apply f_equal; reflexivity
+.
 
 Local Example ex_mlExact {Σ : Signature} Γ a b c:
   well_formed a = true ->
@@ -1340,12 +1345,14 @@ Defined.
 
 
 Tactic Notation "mlApplyn" constr(n) :=
+  _ensureProofMode;
   _mlReshapeHypsByIdx n;
   apply MLGoal_weakenConclusion;
   _mlReshapeHypsBack.
 
 
 Tactic Notation "mlApply" constr(name') :=
+  _ensureProofMode;
   _mlReshapeHypsByName name';
   apply MLGoal_weakenConclusion;
   _mlReshapeHypsBack.
@@ -1616,12 +1623,14 @@ Tactic Notation "_mlAssert_nocheck" "(" constr(name) ":" constr(t) ")" :=
 
 (* TODO: make this bind tigther. *)
 Tactic Notation "mlAssert" "(" constr(name) ":" constr(t) ")" :=
+  _ensureProofMode;
   _failIfUsed name;
   _mlAssert_nocheck (name : t)
 .
 
 
 Tactic Notation "mlAssert" "(" constr (t) ")" :=
+  _ensureProofMode;
   let hyps := _getHypNames in
   let name := eval lazy in (fresh hyps) in
   mlAssert (name : (t)).
@@ -1656,6 +1665,7 @@ Ltac _getGoalTheory :=
   end.
 
 Tactic Notation "mlAssert" "(" constr(name) ":" constr(t) ")" "using" "first" constr(n) :=
+  _ensureProofMode;
   _failIfUsed name;
   lazymatch goal with
   | |- @of_MLGoal ?Sgm (@mkMLGoal ?Sgm ?Ctx ?l ?g ?i) =>
@@ -1685,6 +1695,7 @@ Tactic Notation "mlAssert" "(" constr(name) ":" constr(t) ")" "using" "first" co
   end.
 
 Tactic Notation "mlAssert" "(" constr(t) ")" "using" "first" constr(n)  :=
+  _ensureProofMode;
   let hyps := _getHypNames in
   let name := eval cbv in (fresh hyps) in
   mlAssert (name : t) using first n.
@@ -1880,6 +1891,7 @@ Proof.
 Defined.
 
 Tactic Notation "mlAdd" constr(n) "as" constr(name') :=
+  _ensureProofMode;
   _failIfUsed name';
   match goal with
   | |- @of_MLGoal ?Sgm (@mkMLGoal ?Sgm ?Ctx ?l ?g ?i) =>
@@ -1887,6 +1899,7 @@ Tactic Notation "mlAdd" constr(n) "as" constr(name') :=
   end.
 
 Tactic Notation "mlAdd" constr(n) :=
+  _ensureProofMode;
   let hyps := _getHypNames in
   let name := eval cbv in (fresh hyps) in
   mlAdd n as name.
@@ -1899,8 +1912,7 @@ Local Example ex_mlAdd {Σ : Signature} Γ l g h i:
   Γ ⊢i h using i ->
   Γ ⊢i g using i.
 Proof.
-  intros WFl WFg WFh H H0. toMLGoal.
-  { wf_auto2. }
+  intros WFl WFg WFh H H0.
   mlAdd H0 as "H0".
   mlAdd H.
   mlApply "0".
@@ -1965,7 +1977,8 @@ Proof.
 Defined.
 
 
-Tactic Notation "mlClear" constr(name) := 
+Tactic Notation "mlClear" constr(name) :=
+  _ensureProofMode;
   _mlReshapeHypsByName name; apply mlGoal_clear_hyp; _mlReshapeHypsBack.
 
 Local Example ex_mlClear {Σ : Signature} Γ a b c:
@@ -2349,6 +2362,7 @@ Proof.
 Defined.
 
 Tactic Notation "mlDestructOr" constr(name) "as" constr(name1) constr(name2) :=
+  _ensureProofMode;
   _failIfUsed name1; _failIfUsed name2;
   match goal with
   | |- @of_MLGoal ?Sgm (@mkMLGoal ?Sgm ?Ctx ?l ?g ?i) =>
@@ -2362,6 +2376,7 @@ Tactic Notation "mlDestructOr" constr(name) "as" constr(name1) constr(name2) :=
   end.
 
 Tactic Notation "mlDestructOr" constr(name) :=
+  _ensureProofMode;
   let hyps := _getHypNames in
   let name0 := eval cbv in (fresh hyps) in
   let name1 := eval cbv in (fresh (name0 :: hyps)) in
@@ -2720,8 +2735,8 @@ Proof.
   { assumption. }
 Defined.
 
-Ltac mlLeft := apply MLGoal_left.
-Ltac mlRight := apply MLGoal_right.
+Ltac mlLeft := _ensureProofMode; apply MLGoal_left.
+Ltac mlRight := _ensureProofMode; apply MLGoal_right.
 
 Local Example ex_mlLeft {Σ : Signature} Γ a:
   well_formed a ->
@@ -2951,10 +2966,12 @@ Ltac2 mlApplyMetaIn (t : constr) (name : constr) :=
 .
 
 Ltac _mlApplyMeta t :=
+  _ensureProofMode;
   let ff := ltac2:(t' |- mlApplyMeta (Option.get (Ltac1.to_constr(t')))) in
   ff t.
 
 Ltac _mlApplyMetaIn t name :=
+  _ensureProofMode;
   let ff := ltac2:(t' name' |- mlApplyMetaIn (Option.get (Ltac1.to_constr(t'))) (Option.get (Ltac1.to_constr(name')))) in
   ff t name
 .
@@ -3071,6 +3088,7 @@ Proof.
 Defined.
 
 Tactic Notation "mlDestructAnd" constr(name) "as" constr(name1) constr(name2) :=
+  _ensureProofMode;
   _failIfUsed name1; _failIfUsed name2;
   eapply cast_proof_ml_hyps;
   f_equal;
@@ -3079,6 +3097,7 @@ Tactic Notation "mlDestructAnd" constr(name) "as" constr(name1) constr(name2) :=
   _mlReshapeHypsBack.
 
 Tactic Notation "mlDestructAnd" constr(name) :=
+  _ensureProofMode;
   let hyps := _getHypNames in
   let name0 := eval cbv in (fresh hyps) in
   let name1 := eval cbv in (fresh (name0 :: hyps)) in
@@ -3224,6 +3243,7 @@ Proof.
 Defined.
 
 Ltac mlExFalso :=
+  _ensureProofMode;
   mlApplyMeta bot_elim
 .
 
@@ -3546,7 +3566,10 @@ Proof.
   { abstract (wf_auto2). }
 Defined.
 
-Ltac mlSplitAnd := apply MLGoal_splitAnd.
+Ltac mlSplitAnd :=
+  _ensureProofMode;
+  apply MLGoal_splitAnd
+.
 
 Local Lemma ex_mlSplitAnd {Σ : Signature} Γ a b c:
   well_formed a ->
@@ -4070,6 +4093,7 @@ Ltac tryExact l idx :=
 
 #[global]
 Ltac mlAssumption :=
+  _ensureProofMode; (* maybe useless? *)
   match goal with
     | [ |- @of_MLGoal ?Sgm (@mkMLGoal ?Sgm ?Ctx ?l ?g ?i) ] 
       =>
@@ -4218,6 +4242,7 @@ Proof.
 Defined.
 
 Tactic Notation "mlExactMeta" uconstr(t) :=
+  _ensureProofMode;
   apply (@MLGoal_ExactMeta _ _ _ _ _ t).
 
 Goal forall (Σ : Signature) Γ, Γ ⊢i Top using BasicReasoning.

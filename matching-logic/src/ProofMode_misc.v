@@ -51,6 +51,7 @@ Ltac2 mlApplyMetaGeneralized (t : constr) :=
 .
 
 Ltac _mlApplyMetaGeneralized t :=
+  _ensureProofMode;
   let ff := ltac2:(t' |- mlApplyMetaGeneralized (Option.get (Ltac1.to_constr(t')))) in
   ff t;
   rewrite [foldr patt_and _ _]/=
@@ -2978,6 +2979,7 @@ Ltac try_solve_pile2 fallthrough :=
 
 #[global]
 Ltac mlTauto :=
+  _ensureProofMode;
   unshelve(
     try (
       toNNF; (try_solve_pile2 shelve);

@@ -250,13 +250,30 @@ Tactic Notation "_failIfUsed" constr(name) :=
     end
   end.
 
+Ltac _enterProofMode :=
+  toMLGoal;[wf_auto2|]
+.
+
+Ltac _ensureProofMode :=
+  lazymatch goal with
+  | [ |- of_MLGoal (mkMLGoal _ _ _ _ _)] => idtac
+  | _ => _enterProofMode
+  end
+.
+
 Tactic Notation "mlIntro" constr(name') :=
-_failIfUsed name'; apply MLGoal_intro with (name := name'); simplLocalContext.
+  _ensureProofMode;
+  _failIfUsed name';
+  apply MLGoal_intro with (name := name');
+  simplLocalContext
+.
 
 Tactic Notation "mlIntro" :=
+  _ensureProofMode;
   let hyps := _getHypNames in
   let name' := eval cbv in (fresh hyps) in
-  mlIntro name'.
+  mlIntro name'
+.
 
 Local Example ex_toMLGoal {Σ : Signature} Γ (p : Pattern) :
   well_formed p ->
@@ -277,9 +294,12 @@ Local Example ex_mlIntro {Σ : Signature} Γ a (i : ProofInfo) :
   Γ ⊢i a ---> a ---> a ---> a ---> a using i.
 Proof.
   intros wfa.
+  (* This happens automatically *)
+  (*
   toMLGoal.
   { wf_auto2. }
-
+  *)
+  
   mlIntro "h"%string.
   Fail mlIntro "h"%string.
   mlIntro "h'"%string.
