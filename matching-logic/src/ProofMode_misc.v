@@ -57,9 +57,8 @@ Ltac _mlApplyMetaGeneralized t :=
   rewrite [foldr patt_and _ _]/=
 .
 
-
 Tactic Notation "mlApplyMeta" constr(t) :=
-  _mlApplyMetaGeneralized t
+  (mlApplyMeta t) || (_mlApplyMetaGeneralized t)
 .
 
 #[local]
@@ -313,7 +312,15 @@ Proof.
   }
 Defined.
 
-Tactic Notation "mlApply" constr(name') :=
+Tactic Notation "_mlApplyBasic" constr(name') :=
+  _ensureProofMode;
+  _mlReshapeHypsByName name';
+  apply MLGoal_weakenConclusion;
+  _mlReshapeHypsBack;
+  cbn.
+
+
+Tactic Notation "_mlApplyGen" constr(name') :=
   _ensureProofMode;
   _mlReshapeHypsByName name';
   apply MLGoal_weakenConclusionGen;
@@ -341,10 +348,14 @@ Proof.
   mlIntro "H2".
   mlIntro "H3".
 
-  mlApply "H3".
-  mlApply "H2".
+  _mlApplyGen "H3".
+  _mlApplyGen "H2".
   mlExact "H1".
 Defined.
+
+Tactic Notation "mlApply" constr(name') :=
+  (_mlApplyBasic name') || (_mlApplyGen name')
+.
 
 Section FOL_helpers.
 
