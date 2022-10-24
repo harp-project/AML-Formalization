@@ -58,7 +58,7 @@ Ltac _mlApplyMetaGeneralized t :=
 .
 
 
-Tactic Notation "mlApplyMetaGeneralized" constr(t) :=
+Tactic Notation "mlApplyMeta" constr(t) :=
   _mlApplyMetaGeneralized t
 .
 
@@ -77,8 +77,143 @@ Proof.
   toMLGoal.
   { wf_auto2. }
   mlIntro "H1".
-  mlApplyMetaGeneralized H.
+  mlApplyMeta H.
   mlExact "H1".
+Defined.
+
+Lemma foldr_andb_init_true i l:
+  foldr andb i l = true -> i = true.
+Proof.
+  move: i.
+  induction l; cbn; intros i H.
+  { assumption. }
+  {
+    rewrite andb_true_iff in H.
+    destruct H as [H1 H2].
+    apply IHl.
+    exact H2.
+  }
+Qed.
+
+Lemma foldr_andb_true_iff i l:
+  foldr andb i l = i && foldr andb true l.
+Proof.
+  move: i.
+  induction l; cbn; intros i.
+  {
+    rewrite andb_true_r. reflexivity.
+  }
+  {
+    rewrite IHl.
+    rewrite !andb_assoc.
+    rewrite [a && i]andb_comm.
+    reflexivity.
+  }
+Qed.
+
+
+Lemma MLGoal_weakenConclusionGen {Σ : Signature} Γ l₁ l₂ name g' i
+    (x : Pattern) (xs : list Pattern)
+  :
+  well_formed x ->
+  Pattern.wf xs ->
+  forall (r : ImpReshapeS g' (x::xs)),
+  mkMLGoal Σ Γ (l₁ ++ (mkNH _ name ((untagPattern (irs_flattened _ _ r)))) :: l₂) ((foldr (patt_and) x xs)) i ->
+  mkMLGoal Σ Γ (l₁ ++ (mkNH _ name ((untagPattern (irs_flattened _ _ r)))) :: l₂) g' i.
+Proof.
+  intros wfx wfxs r H.
+  intros Hwf1 Hwf2. cbn in *.
+
+  assert (wfr : well_formed r).
+  {
+    clear H.
+    destruct r as [f pf].
+    rewrite pf.
+    rewrite pf in Hwf2.
+    rewrite 2!map_app in Hwf2.
+    rewrite foldr_app in Hwf2.
+    cbn in Hwf2.
+    apply foldr_andb_init_true in Hwf2.
+    wf_auto2.
+  }
+
+  
+  assert (wffa: foldr andb true (map well_formed (map nh_patt (l₁ ++ (mkNH _ name r) :: l₂)))).
+  {
+    cbn.
+    destruct r as [f pf].
+    rewrite pf in Hwf2.
+    rewrite 2!map_app in Hwf2.
+    rewrite foldr_app in Hwf2.
+    rewrite 2!map_app.
+    rewrite foldr_app.
+    cbn in Hwf2. cbn.
+    rewrite foldr_andb_true_iff in Hwf2.
+    rewrite foldr_andb_true_iff.
+    wf_auto2.
+  }
+
+  feed specialize H.
+  {
+    cbn. wf_auto2.
+  }
+  { cbn. assumption. }
+  cbn in H.
+
+
+  assert (Hwfl₁ : wf (map nh_patt l₁) = true).
+  {
+    cbn.
+    destruct r as [f pf].
+    rewrite pf in Hwf2.
+    rewrite 2!map_app in Hwf2.
+    rewrite foldr_app in Hwf2.
+    rewrite foldr_andb_true_iff in Hwf2.
+    cbn in *.
+    rewrite map_app in H.
+    rewrite map_app in wffa.
+    wf_auto2.
+  }
+
+  assert (Hwfl₂ : wf (map nh_patt l₂) = true).
+  {
+    cbn.
+    destruct r as [f pf].
+    rewrite pf in Hwf2.
+    rewrite 2!map_app in Hwf2.
+    rewrite foldr_app in Hwf2.
+    rewrite foldr_andb_true_iff in Hwf2.
+    cbn in *.
+    rewrite map_app in H.
+    rewrite map_app in wffa.
+    wf_auto2.
+  }
+
+  rewrite map_app.
+  cbn. rewrite map_app in H. cbn in H.
+  rewrite irs_pf.
+
+  eapply prf_strenghten_premise_iter_meta_meta.
+  6: {
+    useBasicReasoning.
+    apply lhs_imp_to_and.
+    1-3: wf_auto2.
+  }
+  1-5: wf_auto2.
+
+  apply prf_weaken_conclusion_iter_under_implication_iter_meta.
+  1-4: wf_auto2.
+
+  eapply prf_strenghten_premise_iter_meta_meta.
+  6: {
+    useBasicReasoning.
+    apply lhs_and_to_imp.
+    1-3: wf_auto2.
+  }
+  1-5: wf_auto2.
+
+  rewrite irs_pf in H.
+  exact H.
 Defined.
 
 Section FOL_helpers.
