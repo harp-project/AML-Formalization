@@ -112,16 +112,14 @@ Proof.
 Qed.
 
 
-Lemma MLGoal_weakenConclusionGen {Σ : Signature} Γ l₁ l₂ name g' i
+Lemma MLGoal_weakenConclusionGen' {Σ : Signature} Γ l₁ l₂ name g' i
     (x : Pattern) (xs : list Pattern)
   :
-  well_formed x ->
-  Pattern.wf xs ->
   forall (r : ImpReshapeS g' (x::xs)),
   mkMLGoal Σ Γ (l₁ ++ (mkNH _ name ((untagPattern (irs_flattened _ _ r)))) :: l₂) ((foldr (patt_and) x xs)) i ->
   mkMLGoal Σ Γ (l₁ ++ (mkNH _ name ((untagPattern (irs_flattened _ _ r)))) :: l₂) g' i.
 Proof.
-  intros wfx wfxs r H.
+  intros r H.
   intros Hwf1 Hwf2. cbn in *.
 
   assert (wfr : well_formed r).
@@ -137,7 +135,7 @@ Proof.
     wf_auto2.
   }
 
-  
+ 
   assert (wffa: foldr andb true (map well_formed (map nh_patt (l₁ ++ (mkNH _ name r) :: l₂)))).
   {
     cbn.
@@ -150,6 +148,25 @@ Proof.
     cbn in Hwf2. cbn.
     rewrite foldr_andb_true_iff in Hwf2.
     rewrite foldr_andb_true_iff.
+    wf_auto2.
+  }
+
+
+  assert (well_formed x).
+  {
+    rewrite irs_pf in Hwf2.
+    rewrite 2!map_app in Hwf2.
+    rewrite foldr_app in Hwf2.
+    rewrite foldr_andb_true_iff in Hwf2.
+    wf_auto2.
+  }
+
+  assert (Pattern.wf xs).
+  {
+    rewrite irs_pf in Hwf2.
+    rewrite 2!map_app in Hwf2.
+    rewrite foldr_app in Hwf2.
+    rewrite foldr_andb_true_iff in Hwf2.
     wf_auto2.
   }
 
@@ -214,6 +231,119 @@ Proof.
 
   rewrite irs_pf in H.
   exact H.
+Defined.
+
+Lemma MLGoal_weakenConclusionGen {Σ : Signature} Γ l₁ l₂ name g' i
+    (x : Pattern) (xs : list Pattern)
+  :
+  forall (r : ImpReshapeS g' (x::xs)),
+  mkMLGoal Σ Γ (l₁ ++ (mkNH _ name ((untagPattern (irs_flattened _ _ r)))) :: l₂)
+    (
+      match (rev xs) with
+      | [] => x
+      | yk::ys => (foldr (patt_and) yk (x::(rev ys)))
+      end
+    )
+    i ->
+  mkMLGoal Σ Γ (l₁ ++ (mkNH _ name ((untagPattern (irs_flattened _ _ r)))) :: l₂) g' i.
+Proof.
+  intros r H.
+  apply MLGoal_weakenConclusionGen'.
+  intros wf1 wf2. cbn.
+
+  feed specialize H.
+  {
+    cbn. clear H.
+    destruct (rev xs) eqn:Heqxs.
+    {
+      wf_auto2.
+    }
+    {
+      apply (f_equal (@rev Pattern)) in Heqxs.
+      rewrite rev_involutive in Heqxs.
+      simpl in Heqxs.
+      subst xs.
+      wf_auto2.
+    }
+  }
+  {
+    cbn. clear H. cbn in *.
+    wf_auto2.
+  }
+  cbn in *.
+  destruct (rev xs) eqn:Heqxs.
+  {
+    apply (f_equal (@rev Pattern)) in Heqxs.
+    rewrite rev_involutive in Heqxs.
+    simpl in Heqxs.
+    subst xs.
+    cbn in *.
+    exact H.
+  }
+  {
+    apply (f_equal (@rev Pattern)) in Heqxs.
+    rewrite rev_involutive in Heqxs.
+    simpl in Heqxs.
+    subst xs.
+
+    eapply prf_weaken_conclusion_iter_meta_meta.
+    5: apply H.
+    4: {
+      rewrite foldr_app. cbn.
+      toMLGoal.
+      {
+        wf_auto2.
+      }
+      mlIntro "H1".
+      mlDestructAnd "H1" as "Hx" "Hf".
+      useBasicReasoning.
+      mlAdd (foldr_and_weaken_last Γ p (p and x) (rev l) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)) as "Hw".
+      mlAssert ("Hw'": (foldr patt_and p (rev l) ---> foldr patt_and (p and x) (rev l))).
+      { wf_auto2. }
+      {
+        mlApply "Hw".
+        mlIntro "Hp".
+        mlSplitAnd;[mlExact "Hp" | mlExact "Hx"].
+      }
+      mlClear "Hw".
+      mlApply "Hw'".
+      mlExact "Hf".
+    }
+    1,2,3: wf_auto2.
+  }
+Defined.
+
+Tactic Notation "mlApply" constr(name') :=
+  _ensureProofMode;
+  _mlReshapeHypsByName name';
+  apply MLGoal_weakenConclusionGen;
+  _mlReshapeHypsBack;
+  cbn.
+
+#[local]
+Example ex_mlApplyGeneralized  {Σ : Signature} Γ a b c d e f g:
+  well_formed a ->
+  well_formed b ->
+  well_formed c ->
+  well_formed d ->
+  well_formed e ->
+  well_formed f ->
+  well_formed g ->
+  Γ ⊢ ((a and b and c and d and e) --->
+       (a ---> b ---> c ---> d ---> e ---> f) --->
+       (f ---> g) --->
+       g).
+Proof.
+  intros wfa wfb wfc wfd wfe wff wfg.
+  toMLGoal.
+  { wf_auto2. }
+  mlIntro "H1".
+  mlIntro "H2".
+  mlIntro "H3".
+
+  mlApply "H3".
+  mlApply "H2".
+  mlExact "H1".
 Defined.
 
 Section FOL_helpers.
