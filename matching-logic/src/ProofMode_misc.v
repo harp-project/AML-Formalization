@@ -3078,12 +3078,14 @@ Ltac2 rec constr_to_int (x : constr) : int :=
 
 
 Tactic Notation "mlRewrite" constr(Hiff) "at" constr(atn) :=
+  _ensureProofMode;
   (let ff := ltac2:(hiff atn |-
                       mlRewrite
                         (Option.get (Ltac1.to_constr(hiff)))
                         (constr_to_int (Option.get (Ltac1.to_constr(atn))))
                    ) in
-   ff Hiff atn).
+   ff Hiff atn);
+   fold AnyReasoning.
 
 Lemma pf_iff_equiv_sym_nowf {Σ : Signature} Γ A B i :
   Γ ⊢i (A <---> B) using i ->
