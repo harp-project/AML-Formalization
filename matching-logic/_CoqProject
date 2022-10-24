@@ -47,6 +47,8 @@ src/Theories/Definedness_Syntax.v
 src/Theories/Definedness_Semantics.v
 src/Theories/Definedness_ProofSystem.v
 
+src/Theories/DeductionTheorem.v
+
 src/Theories/Sorts_Syntax.v
 src/Theories/Sorts_Semantics.v
 src/Theories/Sorts_ProofSystem.v

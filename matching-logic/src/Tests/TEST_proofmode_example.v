@@ -47,10 +47,10 @@ Proof.
   unfold overlaps_with.
   toMLGoal. wf_auto2.
   unfold patt_equal, patt_iff.
-  mlRewrite (@patt_total_and Σ syntax Γ
+  mlRewrite (useAnyReasoning (patt_total_and Γ
                                 (pY ---> pX)
                                 (pX ---> pY) HΓ
-                                ltac:(wf_auto2) ltac:(wf_auto2)) at 1.
+                                ltac:(wf_auto2) ltac:(wf_auto2))) at 1.
   fold AnyReasoning.
   mlIntro "H0".
   mlIntro "H1".
