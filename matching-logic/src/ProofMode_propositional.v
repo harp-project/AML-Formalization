@@ -555,7 +555,6 @@ Proof.
       cbn in Heo.
       remember (evar_fresh_s (avoid)) as x.
 
-
       apply forall_monotone with (x := x).
       { eapply pile_trans. 2: apply pile. try_solve_pile. }
       {
@@ -1143,6 +1142,7 @@ Proof.
       rewrite 2!evar_open_fresh_iter_impl.
       rewrite evar_open_fresh_iter_impl in IHl.
 
+      
       assert (H2 : Γ ⊢i ((evar_open_fresh_iter avoid m (foldr connect a' l)) ---> ((evar_open_fresh_iter avoid m p) ---> (evar_open_fresh_iter avoid m (foldr connect a' l)))) using BasicReasoning).
       {
         simpl in wfl.
@@ -1151,6 +1151,7 @@ Proof.
         apply well_formed_evar_open_fresh_iter.
         wf_auto2.
       }
+      Check @syllogism.
       eapply syllogism_meta.
       5: useBasicReasoning; apply H2.
       4: apply IHl. all: wf_auto2.
@@ -1222,6 +1223,7 @@ Proof.
           }
         }
       }
+      Check @const.
       apply forall_gen.
       {
         simpl.
@@ -1859,121 +1861,7 @@ Proof.
   all: assumption.
 Defined.
 
-Lemma prf_contraction {Σ : Signature} Γ a b:
-  well_formed a ->
-  well_formed b ->
-  Γ ⊢i ((a ---> a ---> b) ---> (a ---> b)) using BasicReasoning.
-Proof.
-  intros wfa wfb.
-  assert (H1 : Γ ⊢i (a ---> ((a ---> b) ---> b)) using BasicReasoning).
-  {
-    apply modus_ponens; assumption.
-  }
-  assert (H2 : Γ ⊢i ((a ---> ((a ---> b) ---> b)) ---> ((a ---> (a ---> b)) ---> (a ---> b))) using BasicReasoning).
-  {
-    apply P2; wf_auto2.
-  }
-  eapply MP. 2: apply H2. apply H1.
-Defined.
 
-Lemma prf_weaken_conclusion_under_implication {Σ : Signature} Γ a b c:
-  well_formed a ->
-  well_formed b ->
-  well_formed c ->
-  Γ ⊢i ((a ---> b) ---> ((a ---> (b ---> c)) ---> (a ---> c))) using BasicReasoning.
-Proof.
-  intros wfa wfb wfc.
-  assert (H1 : Γ ⊢i ((a ---> (b ---> c)) ---> (b ---> (a ---> c))) using BasicReasoning).
-  {
-    apply reorder; wf_auto2.
-  }
-  assert (H2 : Γ ⊢i (((b ---> (a ---> c)) ---> (a ---> c)) ---> ((a ---> (b ---> c)) ---> (a ---> c))) using BasicReasoning).
-  {
-    apply prf_strenghten_premise_meta;[wf_auto2|wf_auto2|wf_auto2|].
-    apply H1.
-  }
-  eapply prf_weaken_conclusion_meta_meta.
-  4: apply H2. 1-3: wf_auto2. clear H1 H2.
-
-  assert (H3 : Γ ⊢i ((a ---> b) ---> ((b ---> (a ---> c)) ---> (a ---> (a ---> c)))) using BasicReasoning).
-  {
-    apply syllogism; wf_auto2.
-  }
-  assert (H4 : Γ ⊢i ((a ---> (a ---> c)) ---> (a ---> c)) using BasicReasoning).
-  {
-    apply prf_contraction; wf_auto2.
-  }
-  assert (Hiter: ((a ---> b) ---> (b ---> a ---> c) ---> a ---> c)
-                 = foldr patt_imp (a ---> c) [(a ---> b); (b ---> a ---> c)]) by reflexivity.
-
-  eapply (cast_proof' _ _ _ _ Hiter).
-
-  eapply prf_weaken_conclusion_iter_meta_meta.
-  5: apply H3. 4: apply H4. all: wf_auto2.
-Defined.
-
-Lemma prf_weaken_conclusion_under_implication_meta {Σ : Signature} Γ a b c (i : ProofInfo):
-  well_formed a ->
-  well_formed b ->
-  well_formed c ->
-  Γ ⊢i (a ---> b) using i ->
-  Γ ⊢i ((a ---> (b ---> c)) ---> (a ---> c)) using i.
-Proof.
-  intros wfa wfb wfc H.
-  eapply MP.
-  2: { useBasicReasoning. apply prf_weaken_conclusion_under_implication; wf_auto2. }
-  exact H.
-Defined.
-
-Lemma prf_weaken_conclusion_under_implication_meta_meta {Σ : Signature} Γ a b c i:
-  well_formed a ->
-  well_formed b ->
-  well_formed c ->
-  Γ ⊢i a ---> b using i ->
-  Γ ⊢i a ---> b ---> c using i ->
-  Γ ⊢i a ---> c using i.
-Proof.
-  intros wfa wfb wfc H1 H2.
-  eapply MP.
-  { apply H2. }
-  { apply prf_weaken_conclusion_under_implication_meta.
-    4: { apply H1. }
-    all: wf_auto2.
-  }
-Defined.
-
-Lemma prf_weaken_conclusion_iter_under_implication {Σ : Signature} Γ l g g':
-  Pattern.wf l ->
-  well_formed g ->
-  well_formed g' ->
-  Γ ⊢i (((g ---> g') ---> (foldr patt_imp g l)) ---> ((g ---> g') ---> (foldr patt_imp g' l)))
-  using BasicReasoning.
-Proof.
-  intros wfl wfg wfg'.
-  pose proof (H1 := prf_weaken_conclusion_iter Γ l g g' wfl wfg wfg').
-  remember ((g ---> g')) as a.
-  remember (foldr patt_imp g l) as b.
-  remember (foldr patt_imp g' l) as c.
-  assert (well_formed a) by (subst; wf_auto2).
-  assert (well_formed b) by (subst; wf_auto2).
-  assert (well_formed c) by (subst; wf_auto2).
-  pose proof (H2' := prf_weaken_conclusion_under_implication Γ a b c ltac:(assumption) ltac:(assumption) ltac:(assumption)).
-  apply reorder_meta in H2'. 2,3,4: subst;wf_auto2.
-  eapply MP. 2: apply H2'. apply H1.
-Defined.
-
-Lemma prf_weaken_conclusion_iter_under_implication_meta {Σ : Signature} Γ l g g' (i : ProofInfo):
-  Pattern.wf l ->
-  well_formed g ->
-  well_formed g' ->
-  Γ ⊢i ((g ---> g') ---> (foldr patt_imp g l)) using i->
-  Γ ⊢i ((g ---> g') ---> (foldr patt_imp g' l)) using i.
-Proof.
-  intros wfl wfg wfg' H.
-  eapply MP.
-  2: { useBasicReasoning. apply prf_weaken_conclusion_iter_under_implication; wf_auto2. }
-  { exact H. }
-Defined.
 
 Lemma MLGoal_weakenConclusion_under_first_implication {Σ : Signature} Γ l name g g' i:
   mkMLGoal Σ Γ (mkNH _ name (g ---> g') :: l) g i ->
@@ -1987,36 +1875,6 @@ Proof.
   apply prf_weaken_conclusion_iter_under_implication_meta; assumption.
 Defined.
 
-Lemma prf_weaken_conclusion_iter_under_implication_iter {Σ : Signature} Γ l₁ l₂ g g':
-  Pattern.wf l₁ ->
-  Pattern.wf l₂ ->
-  well_formed g ->
-  well_formed g' ->
-  Γ ⊢i ((foldr patt_imp g (l₁ ++ (g ---> g') :: l₂)) --->
-       (foldr patt_imp g' (l₁ ++ (g ---> g') :: l₂)))
-  using BasicReasoning.
-Proof.
-  intros wfl₁ wfl₂ wfg wfg'.
-  induction l₁; simpl.
-  - apply prf_weaken_conclusion_iter_under_implication; auto.
-  - pose proof (wfal₁ := wfl₁). unfold Pattern.wf in wfl₁. simpl in wfl₁. apply andb_prop in wfl₁.
-    destruct wfl₁ as [wfa wfl₁]. specialize (IHl₁ wfl₁).
-    eapply prf_weaken_conclusion_meta. 4: assumption. all: wf_auto2.
-Defined.
-
-Lemma prf_weaken_conclusion_iter_under_implication_iter_meta {Σ : Signature} Γ l₁ l₂ g g' i:
-  Pattern.wf l₁ ->
-  Pattern.wf l₂ ->
-  well_formed g ->
-  well_formed g' ->
-  Γ ⊢i (foldr patt_imp g (l₁ ++ (g ---> g') :: l₂)) using i ->
-  Γ ⊢i (foldr patt_imp g' (l₁ ++ (g ---> g') :: l₂)) using i.
-Proof.
-  intros wfl₁ wfl₂ wfg wfg' H.
-  eapply MP.
-  { apply H. }
-  { useBasicReasoning. apply prf_weaken_conclusion_iter_under_implication_iter; wf_auto2. }
-Defined.
 
 Lemma MLGoal_weakenConclusion {Σ : Signature} Γ l₁ l₂ name g g' i:
   mkMLGoal Σ Γ (l₁ ++ (mkNH _ name (g ---> g')) :: l₂) g i ->
