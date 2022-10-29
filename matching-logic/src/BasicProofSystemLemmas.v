@@ -1518,6 +1518,50 @@ Proof.
   { apply prf_add_lemma_under_implication_meta. 4: apply H. all: wf_auto2. }
 Defined.
 
+Lemma P2inv {Σ : Signature} Γ A B C :
+  well_formed A ->
+  well_formed B ->
+  well_formed C ->
+  Γ ⊢i (((A ---> B) ---> (A ---> C)) ---> (A ---> B ---> C)) using BasicReasoning.
+Proof.
+  intros wfA wfB wfC.
+  replace (((A ---> B) ---> (A ---> C)) ---> (A ---> B ---> C))
+  with (foldr patt_imp C [((A ---> B) ---> (A ---> C));A;B])
+  by reflexivity.
+  apply prf_add_lemma_under_implication_meta_meta with (h := (A ---> B)).
+  1-3: solve [wf_auto2].
+  {
+    replace (foldr patt_imp (A ---> B) [(A ---> B) ---> A ---> C; A; B])
+    with (foldr patt_imp (B) ([(A ---> B) ---> A ---> C; A] ++ (B::[A])))
+    by reflexivity.
+    apply nested_const_middle.
+    1,2,3: solve [wf_auto2].
+  }
+  apply prf_add_lemma_under_implication_meta_meta with (h := (A ---> C)).
+  1-3: solve [wf_auto2].
+  {
+    replace (foldr patt_imp (A ---> C) ([(A ---> B) ---> A ---> C; A; B] ++ [A ---> B]))
+    with (foldr patt_imp (A ---> C) ([] ++ [(A ---> B) ---> A ---> C; A; B; A ---> B]))
+    by reflexivity.
+    apply prf_weaken_conclusion_iter_under_implication_iter_meta.
+    1-4: solve [wf_auto2].
+    
+    replace (foldr patt_imp (A ---> B) ([] ++ [(A ---> B) ---> A ---> C; A; B; A ---> B]))
+    with (foldr patt_imp (A ---> B) ([(A ---> B) ---> A ---> C; A; B] ++ [A ---> B]))
+    by reflexivity.
+    apply nested_const_middle.
+    1,2,3: solve [wf_auto2].
+  }
+  apply prf_weaken_conclusion_iter_under_implication_iter_meta.
+  1-4: solve [wf_auto2].
+  simpl.
+  replace (((A ---> B) ---> A ---> C) ---> A ---> B ---> (A ---> B) ---> (A ---> C) ---> A)
+  with (foldr patt_imp A ([(A ---> B) ---> A ---> C] ++ [A;B;A--->B;A--->C]))
+  by reflexivity.
+  apply nested_const_middle.
+  1-3: solve [wf_auto2].
+Defined.
+
 
 Close Scope string_scope.
 Close Scope list_scope.
