@@ -1388,6 +1388,7 @@ Proof.
   assert (well_formed a) by (subst; wf_auto2).
   assert (well_formed b) by (subst; wf_auto2).
   assert (well_formed c) by (subst; wf_auto2).
+
   pose proof (H2' := prf_weaken_conclusion_under_implication Γ a b c ltac:(assumption) ltac:(assumption) ltac:(assumption)).
   apply reorder_meta in H2'. 2,3,4: subst;wf_auto2.
   eapply MP. 2: apply H2'. apply H1.
@@ -1437,6 +1438,86 @@ Proof.
   { apply H. }
   { useBasicReasoning. apply prf_weaken_conclusion_iter_under_implication_iter; wf_auto2. }
 Defined.
+
+
+Lemma prf_impl_distr_meta {Σ : Signature} Γ a b c i:
+  well_formed a ->
+  well_formed b ->
+  well_formed c ->
+  Γ ⊢i (a ---> (b ---> c)) using i ->
+  Γ ⊢i ((a ---> b) ---> (a ---> c)) using i.
+Proof.
+  intros wfa wfb wfc H.
+  eapply MP.
+  { apply H. }
+  { useBasicReasoning. apply P2; wf_auto2. }
+Defined.
+
+Lemma prf_add_lemma_under_implication {Σ : Signature} Γ l g h:
+  Pattern.wf l ->
+  well_formed g ->
+  well_formed h ->
+  Γ ⊢i ((foldr patt_imp h l) --->
+       ((foldr patt_imp g (l ++ [h])) --->
+        (foldr patt_imp g l)))
+  using BasicReasoning.
+Proof.
+  intros wfl wfg wfh.
+  induction l; simpl.
+  - apply modus_ponens; auto.
+  - pose proof (wfal := wfl).
+    unfold Pattern.wf in wfl. apply andb_prop in wfl. destruct wfl as [wfa wfl].
+    specialize (IHl wfl).
+    assert (H1: Γ ⊢i a --->
+                    foldr patt_imp h l --->
+                    foldr patt_imp g (l ++ [h]) --->
+                    foldr patt_imp g l
+            using BasicReasoning).
+    { apply prf_add_assumption; try_wfauto2. assumption. }
+
+    assert (H2 : Γ ⊢i (a ---> foldr patt_imp h l) --->
+                     (a ---> foldr patt_imp g (l ++ [h]) --->
+                     foldr patt_imp g l)
+            using BasicReasoning).
+    { apply prf_impl_distr_meta;[wf_auto2|wf_auto2|wf_auto2|]. apply H1. }
+
+    assert (H3 : Γ ⊢i ((a ---> foldr patt_imp g (l ++ [h]) ---> foldr patt_imp g l)
+                        ---> ((a ---> foldr patt_imp g (l ++ [h])) ---> (a ---> foldr patt_imp g l)))
+            using BasicReasoning).
+    { apply P2; wf_auto2. }
+
+    eapply prf_weaken_conclusion_meta_meta.
+    4: apply H3. 4: apply H2. all: wf_auto2.
+Defined.
+
+
+Lemma prf_add_lemma_under_implication_meta {Σ : Signature} Γ l g h i:
+  Pattern.wf l ->
+  well_formed g ->
+  well_formed h ->
+  Γ ⊢i (foldr patt_imp h l) using i ->
+  Γ ⊢i ((foldr patt_imp g (l ++ [h])) ---> (foldr patt_imp g l)) using i.
+Proof.
+  intros WFl WFg WGh H.
+  eapply MP.
+  { apply H. }
+  { useBasicReasoning. apply prf_add_lemma_under_implication. all: wf_auto2. }
+Defined.
+
+Lemma prf_add_lemma_under_implication_meta_meta {Σ : Signature} Γ l g h i:
+  Pattern.wf l ->
+  well_formed g ->
+  well_formed h ->
+  Γ ⊢i (foldr patt_imp h l) using i ->
+  Γ ⊢i (foldr patt_imp g (l ++ [h])) using i ->
+  Γ ⊢i (foldr patt_imp g l) using i.
+Proof.
+  intros WFl WFg WGh H H0.
+  eapply MP.
+  { apply H0. }
+  { apply prf_add_lemma_under_implication_meta. 4: apply H. all: wf_auto2. }
+Defined.
+
 
 Close Scope string_scope.
 Close Scope list_scope.
