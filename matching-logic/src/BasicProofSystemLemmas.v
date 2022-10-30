@@ -1312,6 +1312,188 @@ Proof.
 Defined.
 
 
+Lemma lhs_imp_to_and {Σ : Signature} Γ (g x : Pattern) (xs : list Pattern):
+  well_formed g ->
+  well_formed x ->
+  Pattern.wf xs ->
+  Γ ⊢i (foldr patt_imp g (x :: xs)) ---> (foldr patt_and x xs ---> g)
+  using BasicReasoning.
+Proof.
+  intros wfg wfx wfxs.
+  induction xs; simpl.
+  {
+    apply A_impl_A.
+    wf_auto2.
+  }
+  {
+    pose proof (wfaxs := wfxs).
+    unfold Pattern.wf in wfxs.
+    simpl in wfxs.
+    apply andb_prop in wfxs as [wfa wfxs].
+    fold (Pattern.wf xs) in wfxs.
+    specialize (IHxs wfxs).
+    simpl in IHxs.
+    assert (Hwffa: well_formed (foldr patt_and x xs)).
+    { apply well_formed_foldr_and; assumption. }
+    eapply MP;[exact IHxs|].
+    clear IHxs.
+    remember (foldr patt_imp g xs) as b.
+    remember (foldr patt_and x xs) as c.
+    pose proof (Htmp := pf_conj_elim_l Γ a c ltac:(wf_auto2) ltac:(wf_auto2)).
+    eapply MP;[exact Htmp|]; clear Htmp.
+    pose proof (Htmp := pf_conj_elim_r Γ a c ltac:(wf_auto2) ltac:(wf_auto2)).
+    eapply MP;[exact Htmp|]; clear Htmp.
+
+    replace ((a and c ---> c) --->
+    (a and c ---> a) --->
+    ((x ---> b) ---> c ---> g) ---> (x ---> a ---> b) ---> a and c ---> g)
+    with (foldr patt_imp g [(a and c ---> c); (a and c ---> a); ((x ---> b) ---> c ---> g);
+      (x ---> a ---> b); (a and c)
+    ]) by reflexivity.
+
+    (* mlAssert(c) *)
+    apply prf_add_lemma_under_implication_meta_meta with (h := c).
+    1-3: solve [wf_auto2].
+    {
+      replace (foldr patt_imp c
+      [a and c ---> c; a and c ---> a; (x ---> b) ---> c ---> g;
+      x ---> a ---> b; a and c])
+      with (foldr patt_imp c
+      ([] ++ [a and c ---> c; a and c ---> a; (x ---> b) ---> c ---> g;
+      x ---> a ---> b; a and c]))
+      by reflexivity.
+      apply prf_weaken_conclusion_iter_under_implication_iter_meta.
+      1-4: solve [wf_auto2].
+
+      replace (foldr patt_imp (a and c)
+      ([] ++
+       [a and c ---> c; a and c ---> a; (x ---> b) ---> c ---> g;
+       x ---> a ---> b; a and c]))
+      with (foldr patt_imp (a and c)
+      ([a and c ---> c; a and c ---> a; (x ---> b) ---> c ---> g;
+       x ---> a ---> b] ++ [a and c]))
+      by reflexivity.
+      apply nested_const_middle.
+      1,2,3: solve [wf_auto2].
+    }
+
+    (* mlAssert(a) *)
+    apply prf_add_lemma_under_implication_meta_meta with (h := a).
+    1-3: solve [wf_auto2].
+    {
+      replace (foldr patt_imp a
+      ([a and c ---> c; a and c ---> a; (x ---> b) ---> c ---> g;
+       x ---> a ---> b; a and c] ++ [c]))
+      with (foldr patt_imp a
+      ([a and c ---> c] ++ [a and c ---> a; (x ---> b) ---> c ---> g;
+       x ---> a ---> b; a and c; c]))
+      by reflexivity.
+      apply prf_weaken_conclusion_iter_under_implication_iter_meta.
+      1-4: wf_auto2.
+
+      replace (foldr patt_imp (a and c)
+      ([a and c ---> c] ++
+       [a and c ---> a; (x ---> b) ---> c ---> g; x ---> a ---> b; a and c; c]))
+      with (foldr patt_imp (a and c)
+      ([a and c ---> c; a and c ---> a; (x ---> b) ---> c ---> g; x ---> a ---> b] ++ [a and c; c]))
+      by reflexivity.
+      apply nested_const_middle.
+      1-3: solve [wf_auto2].
+    }
+
+    simpl.
+    replace ((a and c ---> c) --->
+    (a and c ---> a) --->
+    ((x ---> b) ---> c ---> g) --->
+    (x ---> a ---> b) ---> a and c ---> c ---> a ---> g)
+    with (foldr patt_imp g [(a and c ---> c);(a and c ---> a);
+      ((x ---> b) ---> (c ---> g)); (x ---> (a ---> b)); a and c; c; a])
+    by reflexivity.
+
+    apply prf_add_lemma_under_implication_meta_meta with (h := (c ---> g)).
+    1-3: solve [wf_auto2].
+    {
+      replace (foldr patt_imp (c ---> g)
+      [a and c ---> c; a and c ---> a; (x ---> b) ---> c ---> g;
+      x ---> a ---> b; a and c; c; a])
+      with (foldr patt_imp (c ---> g)
+      ([a and c ---> c; a and c ---> a] ++ [(x ---> b) ---> c ---> g;
+      x ---> a ---> b; a and c; c; a]))
+      by reflexivity.
+      apply prf_weaken_conclusion_iter_under_implication_iter_meta.
+      1-4: solve [wf_auto2].
+
+      replace (foldr patt_imp (x ---> b)
+      ([a and c ---> c; a and c ---> a] ++
+       [(x ---> b) ---> c ---> g; x ---> a ---> b; a and c; c; a]))
+      with (foldr patt_imp b
+      ([a and c ---> c; a and c ---> a] ++
+       [(x ---> b) ---> c ---> g; x ---> a ---> b; a and c; c; a; x]))
+      by reflexivity.
+
+      apply prf_add_lemma_under_implication_meta_meta with (h := (a ---> b)).
+      1-3: solve [wf_auto2].
+      {
+        replace (foldr patt_imp (a ---> b)
+        ([a and c ---> c; a and c ---> a] ++
+         [(x ---> b) ---> c ---> g; x ---> a ---> b; a and c; c; a; x]))
+        with (foldr patt_imp (a ---> b)
+        ([a and c ---> c; a and c ---> a;
+          (x ---> b) ---> c ---> g] ++ [x ---> a ---> b; a and c; c; a; x]))
+        by reflexivity.
+        apply prf_weaken_conclusion_iter_under_implication_iter_meta.
+        1-4: solve [wf_auto2].
+
+        replace (foldr patt_imp x
+        ([a and c ---> c; a and c ---> a; (x ---> b) ---> c ---> g] ++
+         [x ---> a ---> b; a and c; c; a; x]))
+        with (foldr patt_imp x
+        ([a and c ---> c; a and c ---> a; (x ---> b) ---> c ---> g;
+          x ---> a ---> b; a and c; c; a] ++ [x]))
+        by reflexivity.
+        apply nested_const_middle.
+        1-3: solve [wf_auto2].
+      }
+
+      replace (foldr patt_imp b
+      (([a and c ---> c; a and c ---> a] ++
+        [(x ---> b) ---> c ---> g; x ---> a ---> b; a and c; c; a; x]) ++
+       [a ---> b]))
+      with (foldr patt_imp b
+      (([a and c ---> c; a and c ---> a; 
+        (x ---> b) ---> c ---> g; x ---> a ---> b; a and c; c; a; x]) ++
+       [a ---> b]))
+      by reflexivity.
+      apply prf_weaken_conclusion_iter_under_implication_iter_meta.
+      1-4: wf_auto2.
+
+      replace (foldr patt_imp a
+      ([a and c ---> c; a and c ---> a; (x ---> b) ---> c ---> g;
+       x ---> a ---> b; a and c; c; a; x] ++ [a ---> b]))
+      with (foldr patt_imp a
+      ([a and c ---> c; a and c ---> a; (x ---> b) ---> c ---> g;
+       x ---> a ---> b; a and c; c] ++ [a; x; a ---> b]))
+      by reflexivity.
+      apply nested_const_middle.
+      1-3: solve [wf_auto2].
+    }
+
+    apply prf_weaken_conclusion_iter_under_implication_iter_meta.
+    1-4: solve [wf_auto2].
+
+    replace (foldr patt_imp c
+    ([a and c ---> c; a and c ---> a; (x ---> b) ---> c ---> g;
+     x ---> a ---> b; a and c; c; a] ++ [c ---> g]))
+    with (foldr patt_imp c
+    ([a and c ---> c; a and c ---> a; (x ---> b) ---> c ---> g;
+     x ---> a ---> b; a and c] ++ [c; a; c ---> g]))
+    by reflexivity.
+    apply nested_const_middle.
+    1-3: solve [wf_auto2].
+  }
+Defined.
+
+
 (* **************************************************************** *)
 (*                      FO stuff                                    *)
 (* **************************************************************** *)
@@ -1563,6 +1745,20 @@ Defined.
     { simpl. unfold evar_is_fresh_in in Hfr. clear -Hfr. set_solver. }
     apply modus_tollens; assumption.
   Defined.
+
+
+  Lemma forall_gen_iter {Σ : Signature} Γ ϕ₁ ϕ₂ x l (i : ProofInfo):
+  evar_is_fresh_in x ϕ₁ ->
+  ProofInfoLe ( (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)) i ->
+  Γ ⊢i foldr patt_imp ϕ₂ l using i ->
+  Γ ⊢i foldr patt_imp (forall_quantify x ϕ₂) l using i.
+  Proof.
+    intros Hfr Hpile H.
+    Search "imp" "and".
+    Check lhs_impl_to_and.
+
+  Defined.
+
 
   (*
      Γ ⊢ (∀x. φ) → φ[y/x]  
