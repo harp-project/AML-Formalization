@@ -1034,257 +1034,6 @@ Defined.
 
 
 
-  (*
-    Γ ⊢ φ₁ → φ₂
-    -------------------- (x ∉ FV(φ₂))
-    Γ ⊢ (∃x. φ₁) → φ₂
-  *)
-  Lemma Ex_gen {Σ : Signature} (Γ : Theory) (ϕ₁ ϕ₂ : Pattern) (x : evar) (i : ProofInfo)
-      {pile : ProofInfoLe (
-              {| pi_generalized_evars := {[x]};
-                 pi_substituted_svars := ∅;
-                 pi_uses_kt := false ;
-                 pi_framing_patterns := ∅ ;
-              |}) i} :
-    x ∉ free_evars ϕ₂ ->
-    Γ ⊢i ϕ₁ ---> ϕ₂ using i ->
-    Γ ⊢i (exists_quantify x ϕ₁ ---> ϕ₂) using i.
-  Proof.
-    intros Hfev [pf Hpf].
-    unshelve (eexists).
-    {
-      apply ProofSystem.Ex_gen.
-      { pose proof (pf' := pf). apply proved_impl_wf in pf'.  wf_auto2. }
-      { pose proof (pf' := pf). apply proved_impl_wf in pf'.  wf_auto2. }
-      { exact pf. }
-      { exact Hfev. }
-    }
-    {
-      simpl.
-      constructor; simpl.
-      {
-        rewrite elem_of_subseteq. intros x0 Hx0.
-        rewrite elem_of_gset_to_coGset in Hx0.
-        rewrite elem_of_union in Hx0.
-        destruct Hx0.
-        {
-          rewrite elem_of_singleton in H. subst.
-          eapply pile_impl_allows_gen_x.
-          apply pile.
-        }
-        {
-          inversion Hpf.
-          apply pwi_pf_ge.
-          rewrite elem_of_gset_to_coGset.
-          assumption.
-        }
-      }
-      {
-        inversion Hpf.
-        apply pwi_pf_svs.
-      }
-      {
-        inversion Hpf.
-        apply pwi_pf_kt.
-      }
-      {
-        inversion Hpf.
-        apply pwi_pf_fp.
-      }
-    }
-  Defined.
-
-  (*
-     Γ ⊢ φ[y/x] → ∃x. φ
-   *)
-  Lemma Ex_quan {Σ : Signature} (Γ : Theory) (ϕ : Pattern) (y : evar) :
-    well_formed (patt_exists ϕ) ->
-    Γ ⊢i (instantiate (patt_exists ϕ) (patt_free_evar y) ---> (patt_exists ϕ))
-    using BasicReasoning.
-  Proof.
-    intros Hwf.
-    unshelve (eexists).
-    {
-      apply ProofSystem.Ex_quan. apply Hwf.
-    }
-    {
-      abstract (
-        constructor; simpl;
-        [( set_solver )
-        |( set_solver )
-        |( reflexivity )
-        |( set_solver )
-        ]
-      ).
-    }
-  Defined.
-
-  (*
-    Γ ⊢ φ
-    --------------
-    Γ ⊢ ∀x. φ
-  *)
-  Lemma universal_generalization {Σ : Signature} Γ ϕ x (i : ProofInfo) :
-    ProofInfoLe ( (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)) i ->
-    well_formed ϕ ->
-    Γ ⊢i ϕ using i ->
-    Γ ⊢i patt_forall (ϕ^{{evar: x ↦ 0}}) using i.
-  Proof.
-    intros pile wfϕ Hϕ.
-    unfold patt_forall.
-    unfold patt_not at 1.
-    replace (! ϕ^{{evar: x ↦ 0}})
-      with ((! ϕ)^{{evar: x ↦ 0}})
-      by reflexivity.
-    apply Ex_gen.
-    { exact pile. }
-    { simpl. set_solver. }
-    unfold patt_not.
-    apply A_implies_not_not_A_alt.
-    { wf_auto2. }
-    { exact Hϕ. }
-  Defined.
-
-  (*
-    Γ ⊢ φ₁ → φ₂
-    -----------------------
-    Γ ⊢ (∃x. φ₁) → (∃x. φ₂)
-  *)
-  Lemma ex_quan_monotone {Σ : Signature} Γ x ϕ₁ ϕ₂ (i : ProofInfo)
-    (pile : ProofInfoLe ( (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)) i) :
-    Γ ⊢i ϕ₁ ---> ϕ₂ using i ->
-    Γ ⊢i (exists_quantify x ϕ₁) ---> (exists_quantify x ϕ₂) using i.
-  Proof.
-    intros H.
-    pose proof (Hwf := proved_impl_wf Γ _ (proj1_sig H)).
-    assert (wfϕ₁: well_formed ϕ₁ = true) by wf_auto2.
-    assert (wfϕ₂: well_formed ϕ₂ = true) by wf_auto2.
-    apply BasicProofSystemLemmas.Ex_gen.
-    { exact pile. }
-    { simpl. rewrite free_evars_evar_quantify. clear. set_solver. }
-
-    unfold exists_quantify.
-    eapply syllogism_meta. 4: apply H.
-    { wf_auto2. }
-    { wf_auto2. }
-    { wf_auto2. }
-    clear H wfϕ₁ ϕ₁ Hwf.
-
-    (* We no longer need to use [cast_proof] to avoid to ugly eq_sym terms;
-       however, without [cast_proof'] the [replace] tactics does not work,
-       maybe because of implicit parameters.
-     *)
-    eapply (cast_proof').
-    {
-      replace ϕ₂ with (instantiate (ex, ϕ₂^{{evar: x ↦ 0}}) (patt_free_evar x)) at 1.
-      2: { unfold instantiate.
-         rewrite bevar_subst_evar_quantify_free_evar.
-         now do 2 apply andb_true_iff in wfϕ₂ as [_ wfϕ₂].
-         reflexivity.
-      }
-      reflexivity.
-    }
-          (* i =  gpi *)
-    useBasicReasoning.
-    apply BasicProofSystemLemmas.Ex_quan.
-    abstract (wf_auto2).
-  Defined.
-
-  Definition forall_quantify {Σ : Signature} x p : Pattern
-  := all, p^{{evar:x↦0}}.
-
-  (*
-    Γ ⊢ φ₁ → φ₂
-    -----------------------
-    Γ ⊢ (∀x. φ₁) → (∀x. φ₂)
-  *)
-  Lemma all_quan_monotone {Σ : Signature} Γ x ϕ₁ ϕ₂ (i : ProofInfo)
-    (pile : ProofInfoLe ( (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)) i) :
-    Γ ⊢i ϕ₁ ---> ϕ₂ using i ->
-    Γ ⊢i (forall_quantify x ϕ₁) ---> (forall_quantify x ϕ₂) using i.
-  Proof.
-    intros H.
-    unfold forall_quantify.
-    unfold patt_forall.
-    apply modus_tollens.
-    pose proof (Htmp := ex_quan_monotone Γ x (! ϕ₂) (! ϕ₁) i pile).
-    unfold exists_quantify in Htmp. mlSimpl in Htmp.
-    apply Htmp. clear Htmp.
-    apply modus_tollens.
-    exact H.
-  Defined.
-
-  (*
-    Γ ⊢ φ₁ → φ₂
-    -----------------------
-    Γ ⊢ (∀x. φ₁) → (∀x. φ₂)
-  *)
-  Lemma forall_monotone {Σ : Signature} Γ x ϕ₁ ϕ₂ (i : ProofInfo)
-    (pile : ProofInfoLe ( (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)) i) :
-    x ∉ free_evars ϕ₁ ->
-    x ∉ free_evars ϕ₂ ->
-    Γ ⊢i (evar_open x 0 ϕ₁) ---> (evar_open x 0 ϕ₂) using i ->
-    Γ ⊢i (patt_forall ϕ₁) ---> (patt_forall ϕ₂) using i.
-  Proof.
-    intros Hxn1 Hxn2 H.
-    rewrite -[ϕ₁](evar_quantify_evar_open x 0).
-    { assumption. }
-    { wf_auto2. }
-    rewrite -[ϕ₂](evar_quantify_evar_open x 0).
-    { assumption. }
-    { wf_auto2. }
-    apply all_quan_monotone.
-    { exact pile. }
-    exact H.
-  Qed.
-
-
-  (*
-     This is basically [universal_generalization]
-    but under an implication.
-    Γ ⊢ φ → ψ
-    -------------
-    Γ ⊢ φ → ∀x. ψ
-
-    I wonder if we could get an iterative version [forall_gen_iter]?
-    Like,
-    Γ ⊢ φ₁ → ... → φₖ → ψ
-    ----------------------------
-    Γ ⊢ φ₁ → ... → φₖ → ∀x. ψ
-  *)
-  Lemma forall_gen {Σ : Signature} Γ ϕ₁ ϕ₂ x (i : ProofInfo):
-    evar_is_fresh_in x ϕ₁ ->
-    ProofInfoLe ( (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)) i ->
-    Γ ⊢i ϕ₁ ---> ϕ₂ using i ->
-    Γ ⊢i ϕ₁ ---> forall_quantify x ϕ₂ using i.
-  Proof.
-    Set Printing All.
-    intros Hfr pile Himp.
-    pose proof (Hwf := proved_impl_wf _ _ (proj1_sig Himp)).
-    pose proof (wfϕ₁ := well_formed_imp_proj1 _ _ Hwf).
-    pose proof (wfϕ₂ := well_formed_imp_proj2 _ _ Hwf).
-
-    eapply prf_strenghten_premise_meta_meta.
-    4: { useBasicReasoning. apply not_not_intro. wf_auto2. }
-    1-3: wf_auto2.
-    unfold patt_forall.
-    apply modus_tollens.
-
-    eapply cast_proof'.
-    {
-      replace (! ϕ₂^{{evar: x ↦ 0}})
-              with ((! ϕ₂)^{{evar: x ↦ 0}})
-                   by reflexivity.
-      reflexivity.
-    }
-    apply BasicProofSystemLemmas.Ex_gen.
-    { exact pile. }
-    { simpl. unfold evar_is_fresh_in in Hfr. clear -Hfr. set_solver. }
-    apply modus_tollens; assumption.
-  Defined.
-
-
-
 Lemma prf_contraction {Σ : Signature} Γ a b:
 well_formed a ->
 well_formed b ->
@@ -1562,6 +1311,280 @@ Proof.
   1-3: solve [wf_auto2].
 Defined.
 
+
+(* **************************************************************** *)
+(*                      FO stuff                                    *)
+(* **************************************************************** *)
+
+  (*
+    Γ ⊢ φ₁ → φ₂
+    -------------------- (x ∉ FV(φ₂))
+    Γ ⊢ (∃x. φ₁) → φ₂
+  *)
+  Lemma Ex_gen {Σ : Signature} (Γ : Theory) (ϕ₁ ϕ₂ : Pattern) (x : evar) (i : ProofInfo)
+      {pile : ProofInfoLe (
+              {| pi_generalized_evars := {[x]};
+                 pi_substituted_svars := ∅;
+                 pi_uses_kt := false ;
+                 pi_framing_patterns := ∅ ;
+              |}) i} :
+    x ∉ free_evars ϕ₂ ->
+    Γ ⊢i ϕ₁ ---> ϕ₂ using i ->
+    Γ ⊢i (exists_quantify x ϕ₁ ---> ϕ₂) using i.
+  Proof.
+    intros Hfev [pf Hpf].
+    unshelve (eexists).
+    {
+      apply ProofSystem.Ex_gen.
+      { pose proof (pf' := pf). apply proved_impl_wf in pf'.  wf_auto2. }
+      { pose proof (pf' := pf). apply proved_impl_wf in pf'.  wf_auto2. }
+      { exact pf. }
+      { exact Hfev. }
+    }
+    {
+      simpl.
+      constructor; simpl.
+      {
+        rewrite elem_of_subseteq. intros x0 Hx0.
+        rewrite elem_of_gset_to_coGset in Hx0.
+        rewrite elem_of_union in Hx0.
+        destruct Hx0.
+        {
+          rewrite elem_of_singleton in H. subst.
+          eapply pile_impl_allows_gen_x.
+          apply pile.
+        }
+        {
+          inversion Hpf.
+          apply pwi_pf_ge.
+          rewrite elem_of_gset_to_coGset.
+          assumption.
+        }
+      }
+      {
+        inversion Hpf.
+        apply pwi_pf_svs.
+      }
+      {
+        inversion Hpf.
+        apply pwi_pf_kt.
+      }
+      {
+        inversion Hpf.
+        apply pwi_pf_fp.
+      }
+    }
+  Defined.
+
+  (*
+     Γ ⊢ φ[y/x] → ∃x. φ
+   *)
+  Lemma Ex_quan {Σ : Signature} (Γ : Theory) (ϕ : Pattern) (y : evar) :
+    well_formed (patt_exists ϕ) ->
+    Γ ⊢i (instantiate (patt_exists ϕ) (patt_free_evar y) ---> (patt_exists ϕ))
+    using BasicReasoning.
+  Proof.
+    intros Hwf.
+    unshelve (eexists).
+    {
+      apply ProofSystem.Ex_quan. apply Hwf.
+    }
+    {
+      abstract (
+        constructor; simpl;
+        [( set_solver )
+        |( set_solver )
+        |( reflexivity )
+        |( set_solver )
+        ]
+      ).
+    }
+  Defined.
+
+  (*
+    Γ ⊢ φ
+    --------------
+    Γ ⊢ ∀x. φ
+  *)
+  Lemma universal_generalization {Σ : Signature} Γ ϕ x (i : ProofInfo) :
+    ProofInfoLe ( (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)) i ->
+    well_formed ϕ ->
+    Γ ⊢i ϕ using i ->
+    Γ ⊢i patt_forall (ϕ^{{evar: x ↦ 0}}) using i.
+  Proof.
+    intros pile wfϕ Hϕ.
+    unfold patt_forall.
+    unfold patt_not at 1.
+    replace (! ϕ^{{evar: x ↦ 0}})
+      with ((! ϕ)^{{evar: x ↦ 0}})
+      by reflexivity.
+    apply Ex_gen.
+    { exact pile. }
+    { simpl. set_solver. }
+    unfold patt_not.
+    apply A_implies_not_not_A_alt.
+    { wf_auto2. }
+    { exact Hϕ. }
+  Defined.
+
+  (*
+    Γ ⊢ φ₁ → φ₂
+    -----------------------
+    Γ ⊢ (∃x. φ₁) → (∃x. φ₂)
+  *)
+  Lemma ex_quan_monotone {Σ : Signature} Γ x ϕ₁ ϕ₂ (i : ProofInfo)
+    (pile : ProofInfoLe ( (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)) i) :
+    Γ ⊢i ϕ₁ ---> ϕ₂ using i ->
+    Γ ⊢i (exists_quantify x ϕ₁) ---> (exists_quantify x ϕ₂) using i.
+  Proof.
+    intros H.
+    pose proof (Hwf := proved_impl_wf Γ _ (proj1_sig H)).
+    assert (wfϕ₁: well_formed ϕ₁ = true) by wf_auto2.
+    assert (wfϕ₂: well_formed ϕ₂ = true) by wf_auto2.
+    apply BasicProofSystemLemmas.Ex_gen.
+    { exact pile. }
+    { simpl. rewrite free_evars_evar_quantify. clear. set_solver. }
+
+    unfold exists_quantify.
+    eapply syllogism_meta. 4: apply H.
+    { wf_auto2. }
+    { wf_auto2. }
+    { wf_auto2. }
+    clear H wfϕ₁ ϕ₁ Hwf.
+
+    (* We no longer need to use [cast_proof] to avoid to ugly eq_sym terms;
+       however, without [cast_proof'] the [replace] tactics does not work,
+       maybe because of implicit parameters.
+     *)
+    eapply (cast_proof').
+    {
+      replace ϕ₂ with (instantiate (ex, ϕ₂^{{evar: x ↦ 0}}) (patt_free_evar x)) at 1.
+      2: { unfold instantiate.
+         rewrite bevar_subst_evar_quantify_free_evar.
+         now do 2 apply andb_true_iff in wfϕ₂ as [_ wfϕ₂].
+         reflexivity.
+      }
+      reflexivity.
+    }
+          (* i =  gpi *)
+    useBasicReasoning.
+    apply BasicProofSystemLemmas.Ex_quan.
+    abstract (wf_auto2).
+  Defined.
+
+  Definition forall_quantify {Σ : Signature} x p : Pattern
+  := all, p^{{evar:x↦0}}.
+
+  (*
+    Γ ⊢ φ₁ → φ₂
+    -----------------------
+    Γ ⊢ (∀x. φ₁) → (∀x. φ₂)
+  *)
+  Lemma all_quan_monotone {Σ : Signature} Γ x ϕ₁ ϕ₂ (i : ProofInfo)
+    (pile : ProofInfoLe ( (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)) i) :
+    Γ ⊢i ϕ₁ ---> ϕ₂ using i ->
+    Γ ⊢i (forall_quantify x ϕ₁) ---> (forall_quantify x ϕ₂) using i.
+  Proof.
+    intros H.
+    unfold forall_quantify.
+    unfold patt_forall.
+    apply modus_tollens.
+    pose proof (Htmp := ex_quan_monotone Γ x (! ϕ₂) (! ϕ₁) i pile).
+    unfold exists_quantify in Htmp. mlSimpl in Htmp.
+    apply Htmp. clear Htmp.
+    apply modus_tollens.
+    exact H.
+  Defined.
+
+  (*
+    Γ ⊢ φ₁ → φ₂
+    -----------------------
+    Γ ⊢ (∀x. φ₁) → (∀x. φ₂)
+  *)
+  Lemma forall_monotone {Σ : Signature} Γ x ϕ₁ ϕ₂ (i : ProofInfo)
+    (pile : ProofInfoLe ( (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)) i) :
+    x ∉ free_evars ϕ₁ ->
+    x ∉ free_evars ϕ₂ ->
+    Γ ⊢i (evar_open x 0 ϕ₁) ---> (evar_open x 0 ϕ₂) using i ->
+    Γ ⊢i (patt_forall ϕ₁) ---> (patt_forall ϕ₂) using i.
+  Proof.
+    intros Hxn1 Hxn2 H.
+    rewrite -[ϕ₁](evar_quantify_evar_open x 0).
+    { assumption. }
+    { wf_auto2. }
+    rewrite -[ϕ₂](evar_quantify_evar_open x 0).
+    { assumption. }
+    { wf_auto2. }
+    apply all_quan_monotone.
+    { exact pile. }
+    exact H.
+  Qed.
+
+
+  (*
+     This is basically [universal_generalization]
+    but under an implication.
+    Γ ⊢ φ → ψ
+    -------------
+    Γ ⊢ φ → ∀x. ψ
+
+    I wonder if we could get an iterative version [forall_gen_iter]?
+    Like,
+    Γ ⊢ φ₁ → ... → φₖ → ψ
+    ----------------------------
+    Γ ⊢ φ₁ → ... → φₖ → ∀x. ψ
+  *)
+  Lemma forall_gen {Σ : Signature} Γ ϕ₁ ϕ₂ x (i : ProofInfo):
+    evar_is_fresh_in x ϕ₁ ->
+    ProofInfoLe ( (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)) i ->
+    Γ ⊢i ϕ₁ ---> ϕ₂ using i ->
+    Γ ⊢i ϕ₁ ---> forall_quantify x ϕ₂ using i.
+  Proof.
+    intros Hfr pile Himp.
+    pose proof (Hwf := proved_impl_wf _ _ (proj1_sig Himp)).
+    pose proof (wfϕ₁ := well_formed_imp_proj1 _ _ Hwf).
+    pose proof (wfϕ₂ := well_formed_imp_proj2 _ _ Hwf).
+
+    eapply prf_strenghten_premise_meta_meta.
+    4: { useBasicReasoning. apply not_not_intro. wf_auto2. }
+    1-3: wf_auto2.
+    unfold patt_forall.
+    apply modus_tollens.
+
+    eapply cast_proof'.
+    {
+      replace (! ϕ₂^{{evar: x ↦ 0}})
+              with ((! ϕ₂)^{{evar: x ↦ 0}})
+                   by reflexivity.
+      reflexivity.
+    }
+    apply BasicProofSystemLemmas.Ex_gen.
+    { exact pile. }
+    { simpl. unfold evar_is_fresh_in in Hfr. clear -Hfr. set_solver. }
+    apply modus_tollens; assumption.
+  Defined.
+
+  (*
+     Γ ⊢ (∀x. φ) → φ[y/x]  
+   *)
+   Lemma Forall_variable_substitution {Σ : Signature} (Γ : Theory) (ϕ : Pattern) (y : evar) :
+   well_formed (patt_forall ϕ) ->
+   Γ ⊢i ((patt_forall ϕ) ---> instantiate (patt_exists ϕ) (patt_free_evar y))
+   using BasicReasoning.
+  Proof.
+    intros Hwf.
+    eapply prf_weaken_conclusion_meta_meta.
+    4: apply not_not_elim.
+    1-4: solve [wf_auto2].
+    unfold patt_forall.
+    apply modus_tollens.
+    simpl.
+    replace (! ϕ^[evar:0↦patt_free_evar y])
+    with ((! ϕ)^[evar:0↦patt_free_evar y])
+    by reflexivity.
+    apply Ex_quan.
+    solve [wf_auto2].
+  Defined.
 
 Close Scope string_scope.
 Close Scope list_scope.
