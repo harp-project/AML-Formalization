@@ -1159,7 +1159,7 @@ Defined.
     pose proof (Hwf := proved_impl_wf Γ _ (proj1_sig H)).
     assert (wfϕ₁: well_formed ϕ₁ = true) by wf_auto2.
     assert (wfϕ₂: well_formed ϕ₂ = true) by wf_auto2.
-    apply BasicProofSystemLemmas.Ex_gen.
+    apply Ex_gen.
     { exact pile. }
     { simpl. rewrite free_evars_evar_quantify. clear. set_solver. }
 
@@ -1277,7 +1277,7 @@ Defined.
                    by reflexivity.
       reflexivity.
     }
-    apply BasicProofSystemLemmas.Ex_gen.
+    apply Ex_gen.
     { exact pile. }
     { simpl. unfold evar_is_fresh_in in Hfr. clear -Hfr. set_solver. }
     apply modus_tollens; assumption.
