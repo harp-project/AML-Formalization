@@ -8,7 +8,7 @@ From Equations Require Import Equations.
 
 Require Import Coq.Program.Tactics.
 
-From MatchingLogic Require Import Syntax DerivedOperators_Syntax ProofSystem IndexManipulation wftactics Logic ProofMode BasicProofSystemLemmas.
+From MatchingLogic Require Import Syntax DerivedOperators_Syntax ProofSystem IndexManipulation wftactics Logic ProofMode BasicProofSystemLemmas ProofInfo.
 
 From stdpp Require Import list tactics fin_sets coGset gmap sets.
 
@@ -1501,7 +1501,7 @@ Proof.
       assert (H2 : Γ ⊢i ((evar_open_fresh_iter avoid m (foldr connect a' l)) ---> ((evar_open_fresh_iter avoid m p) ---> (evar_open_fresh_iter avoid m (foldr connect a' l)))) using BasicReasoning).
       {
         simpl in wfl.
-        apply P1.
+        apply ProofInfo.P1.
         wf_auto2.
         apply well_formed_evar_open_fresh_iter.
         wf_auto2.
@@ -1966,7 +1966,7 @@ Proof.
 
   destruct p as [p|]; simpl.
   {
-    eapply MP. 2: useBasicReasoning; apply P1.
+    eapply MP. 2: useBasicReasoning; apply ProofInfo.P1.
     {
       apply IHlen.
       { lia. }
@@ -1998,6 +1998,7 @@ Proof.
   }
 Qed.
 
+(*
 Check evar_open_pmes.
 Lemma evar_open_fresh_iter_base_foldr_connect
   {Σ : Signature} (base idx : nat) (a : Pattern) l:
@@ -2005,36 +2006,14 @@ Lemma evar_open_fresh_iter_base_foldr_connect
   = foldr
       connect
       (evar_open_fresh_iter_base evs base idx a)
-      (evar_open_pmes ) 
-
+      (evar_open_pmes ).
+*)
 Lemma nested_const_middle_fa {Σ : Signature} Γ a l₁ l₂ :
   well_formed_closed_ex_aux a (foralls_count l₁) = true ->
   well_formed ((fold_right connect a (l₁ ++ (pme_pattern a) :: l₂))) = true ->
   Γ ⊢i (fold_right connect (a) (l₁ ++ (pme_pattern a) :: l₂))
   using AnyReasoning.
 Proof.
-  intros Ha H.
-  rewrite foldr_app. simpl.
-  eapply MP.
-  2: apply lift_to_mixed_context with (concl₂ := patt_top).
-  {
-    apply top_holds_in_any_context.
-    { wf_auto2. }
-  }
-  4: {
-    unfold evar_open_fresh_iter.
-    rewrite 2!evar_open_fresh_iter_impl.
-    rewrite evar_open_fresh_iter_top.
-    remember (free_evars (MLGoal_to_pattern' (a ---> foldr connect a l₂) l₁)
-    ∪ free_evars (MLGoal_to_pattern' Top l₁)) as evs.
-
-    Search evar_open_fresh_iter foldr connect.
-    
-    simpl.
-    Check nested_const_fa.
-  }
-  Check nested_const_fa.
-  Check lift_to_mixed_context.
 
 
   remember (S (length l₁)) as len.
@@ -2054,7 +2033,7 @@ Proof.
   {
     destruct p as [p|]; simpl.
     {
-      eapply MP. 2: useBasicReasoning; apply P1.
+      eapply MP. 2: useBasicReasoning; apply ProofInfo.P1.
       2,3: wf_auto2.
       apply IHlen.
       { lia. }
@@ -2116,12 +2095,13 @@ Proof.
       assert (a'' = a').
       {
         destruct len2.
+        admit. admit.
       }
-      
 
-      apply IHlen.
+      (* apply IHlen. *)
+      admit.
     }
   }
-Defined.
+Abort.
 
 Close Scope ml_scope.
