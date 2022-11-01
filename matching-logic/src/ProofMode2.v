@@ -203,6 +203,30 @@ Proof.
 Defined.
 
 
+(* Extracts well-formedness assumptions about (local) goal and (local) hypotheses. *)
+Tactic Notation "mlExtractWF" ident(wfa) :=
+match goal with
+| [ |- ?g ] =>
+  let wfa' := fresh "wfa'" in
+  intros wfa';
+  pose proof (wfa := wfa');
+  revert wfa';
+  fold g;
+  cbn in wfa
+end.
+
+Local Example ex_extractWfAssumptions {Σ : Signature} Γ (p : Pattern) :
+  well_formed p ->
+  Γ ⊢i p ---> p using BasicReasoning.
+Proof.
+  intros wfp.
+  toMLGoal.
+  { wf_auto2. }
+  mlExtractWF wfa.
+  (* These two asserts by assumption only test presence of the two hypotheses *)
+  assert (well_formed (p ---> p)) by assumption.
+Abort.
+
 Lemma MLGoal_introImpl {Σ : Signature} (Γ : Theory) (l : hypotheses) (name : string) (x g : Pattern)
   (i : ProofInfo) :
   mkMLGoal _ Γ (l ++ [mkNH _ name (pme_pattern x)]) g i ->
