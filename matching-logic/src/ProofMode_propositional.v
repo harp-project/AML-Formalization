@@ -34,29 +34,6 @@ Open Scope string_scope.
 Open Scope list_scope.
 Open Scope ml_scope.
 
-Lemma A_or_notA {Σ : Signature} Γ A :
-  well_formed A ->
-  Γ ⊢i A or ! A using BasicReasoning.
-Proof.
-  intros wfA.
-  unfold patt_or.
-  apply A_impl_A. wf_auto2.
-Defined.
-
-Lemma P4m_meta {Σ : Signature} (Γ : Theory) (A B : Pattern) (i : ProofInfo) :
-  well_formed A ->
-  well_formed B ->
-  Γ ⊢i A ---> B using i ->
-  Γ ⊢i A ---> !B using i ->
-  Γ ⊢i !A using i.
-Proof.
-  intros wfA wfB AimpB AimpnB.
-  pose proof (H1 := P4m Γ A B wfA wfB).
-  assert (H2 : Γ ⊢i (A ---> ! B) ---> ! A using i).
-  { eapply MP. 2: { apply useBasicReasoning; apply H1. } exact AimpB. }
-  eapply MP. 2: { apply H2. } exact AimpnB.
-Defined.
-
 Lemma MLGoal_exactn {Σ : Signature}
   (Γ : Theory)
   (l₁ l₂ : hypotheses)
