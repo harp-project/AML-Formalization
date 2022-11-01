@@ -17,6 +17,7 @@ From MatchingLogic Require Import
     ProofInfo
     ProofMode_base
     ProofMode_propositional
+    BasicProofSystemLemmas
 .
 
 From stdpp Require Import list tactics fin_sets coGset gmap sets.

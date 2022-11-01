@@ -20,7 +20,8 @@ From Coq.micromega Require Import Lia.
 
 From stdpp Require Import base fin_sets sets propset proof_irrel option list coGset finite infinite gmap.
 
-From MatchingLogic Require Import Logic
+From MatchingLogic Require Import BasicProofSystemLemmas
+                                  Logic
                                   DerivedOperators_Syntax
                                   ProofMode.
 From MatchingLogic.Theories Require Import Definedness_Syntax Definedness_ProofSystem.
@@ -893,7 +894,7 @@ Proof.
       { wf_auto2. }
       mlIntro. mlClear "0". fromMLGoal.
       eapply useGenericReasoning.
-      2: apply (hypothesis Γ axiom0 i H).
+      2: apply (BasicProofSystemLemmas.hypothesis Γ axiom0 i H).
       apply pile_evs_svs_kt.
       {
         set_solver.

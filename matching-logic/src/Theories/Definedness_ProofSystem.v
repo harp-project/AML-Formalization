@@ -14,9 +14,11 @@ From Coq.micromega Require Import Lia.
 
 From stdpp Require Import base fin_sets sets propset proof_irrel option list coGset finite infinite gmap.
 
-From MatchingLogic Require Import Logic
+From MatchingLogic Require Import BasicProofSystemLemmas
+                                  Logic
                                   DerivedOperators_Syntax
-                                  ProofMode.
+                                  ProofMode
+                                  .
 From MatchingLogic.Theories Require Import Definedness_Syntax.
 From MatchingLogic.Utils Require Import stdpp_ext.
 Import extralibrary.
@@ -97,7 +99,7 @@ Lemma use_defined_axiom Γ:
   using BasicReasoning.
 Proof.
   intros HΓ.
-  apply hypothesis; auto. unfold theory,theory_of_NamedAxioms in HΓ. simpl in HΓ.
+  apply BasicProofSystemLemmas.hypothesis; auto. unfold theory,theory_of_NamedAxioms in HΓ. simpl in HΓ.
   eapply elem_of_weaken.
   2: { apply HΓ. }
   unfold axiom.
@@ -362,7 +364,7 @@ Proof.
       reflexivity.
     }
     rewrite <- Heq.
-    apply Ex_gen.
+    apply BasicProofSystemLemmas.Ex_gen.
     2: {simpl. unfold evar_is_fresh_in in Hx1'. clear -Hx1'. set_solver. }
     1: {
       subst i.
@@ -420,7 +422,7 @@ Proof.
       fromMLGoal.
       replace b0 with ((patt_free_evar x')^{{evar: x' ↦ 0}}).
       2: { simpl. case_match;[reflexivity|congruence]. }
-      apply Ex_gen.
+      apply BasicProofSystemLemmas.Ex_gen.
       2: { simpl. case_match;[|congruence]. simpl.
            unfold evar_is_fresh_in in Hx1'. clear -Hx1'. set_solver.
       }
@@ -457,7 +459,7 @@ Proof.
       }
       subst i.
       useBasicReasoning.
-      apply Ex_quan.
+      apply BasicProofSystemLemmas.Ex_quan.
       { wf_auto2. }
     }
     eapply syllogism_meta.
@@ -703,7 +705,7 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
         { wf_auto2. }
         mlIntro. mlClear "0". fromMLGoal.
         eapply useGenericReasoning.
-        2: apply (hypothesis Γ axiom0 i H).
+        2: apply (BasicProofSystemLemmas.hypothesis Γ axiom0 i H).
         apply pile_evs_svs_kt.
         {
           set_solver.
@@ -819,7 +821,7 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
       { wf_auto2. }
       mlIntro. mlClear "0". fromMLGoal.
       useBasicReasoning.
-      apply Ex_quan. wf_auto2.
+      apply BasicProofSystemLemmas.Ex_quan. wf_auto2.
     - (* Existential Generalization *)
       destruct Hpf as [Hpf2 Hpf3 Hpf4].
       simpl in Hpf2, Hpf3, Hpf4.
@@ -838,7 +840,7 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
 
       apply reorder_meta in IHpf.
       2-4: clear pwi_pf_fp; wf_auto2.
-      apply Ex_gen with (x := x) in IHpf.
+      apply BasicProofSystemLemmas.Ex_gen with (x := x) in IHpf.
       3: { simpl. set_solver. }
       2: { apply pile_evs_svs_kt.
         { clear -Hpf2. set_solver. }
@@ -1493,7 +1495,7 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
       replace b0 with ((patt_free_evar x)^{{evar: x ↦ 0}}).
       2: { simpl. case_match; [|congruence]. reflexivity. }
       
-      apply Ex_gen.
+      apply BasicProofSystemLemmas.Ex_gen.
       3: assumption.
       2: {
         subst x. apply set_evar_fresh_is_fresh'.
@@ -1863,7 +1865,7 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
         remember_constraint as i.
         assert (Γ' ⊢i (φ1 <---> φ2) using i). {
           subst i. useBasicReasoning.
-          apply hypothesis.
+          apply BasicProofSystemLemmas.hypothesis.
           - abstract (now apply well_formed_iff).
           - abstract (rewrite HeqΓ'; apply elem_of_union_r; constructor).
         }
@@ -2106,7 +2108,7 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
 
     remember_constraint as i'.
     assert (Γ' ⊢i (φ1 <---> φ2) using i'). {
-      subst i'. useBasicReasoning. apply hypothesis.
+      subst i'. useBasicReasoning. apply BasicProofSystemLemmas.hypothesis.
       - abstract (now apply well_formed_iff).
       - abstract (rewrite HeqΓ'; apply elem_of_union_r; constructor).
     }
@@ -2175,7 +2177,7 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
       remember (Γ ∪ {[ (φ1 <---> φ2) ]}) as Γ'.
       assert (Γ' ⊢i (φ1 <---> φ2) using i'). {
         subst i'. useBasicReasoning.
-        apply hypothesis. apply well_formed_iff; auto.
+        apply BasicProofSystemLemmas.hypothesis. apply well_formed_iff; auto.
         rewrite HeqΓ'. apply elem_of_union_r. constructor.
       }
       apply pf_iff_equiv_sym in H; auto.
@@ -2247,8 +2249,8 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
     }
     
     assert (well_formed (ex, φ)) as WFEX.
-    { wf_auto2. now apply mu_free_wfp. }
-    pose proof (EQ := Ex_quan Γ φ Zvar WFEX).
+    { wf_auto2. }
+    pose proof (EQ := BasicProofSystemLemmas.Ex_quan Γ φ Zvar WFEX).
     change constraint in EQ.
     epose proof (PC := prf_conclusion Γ (patt_equal φ' Z) (instantiate (ex , φ) (patt_free_evar Zvar) ---> ex , φ) AnyReasoning ltac:(apply well_formed_equal;wf_auto2) _ EQ).
 
@@ -2281,7 +2283,7 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
         { exact EE. }
     }
 
-    eapply (Ex_gen Γ _ _ Zvar) in HSUB.
+    eapply (BasicProofSystemLemmas.Ex_gen Γ _ _ Zvar) in HSUB.
     3: {
       rewrite HeqZvar. unfold fresh_evar. simpl.
       apply not_elem_of_union.
@@ -2841,13 +2843,13 @@ Lemma floor_monotonic {Σ : Signature} {syntax : Syntax} Γ ϕ₁ ϕ₂ i :
 Proof.
   intros HΓ pile wfϕ₁ wfϕ₂ H.
   unfold patt_total.
-  apply ProofMode_propositional.modus_tollens.
+  apply BasicProofSystemLemmas.modus_tollens.
   apply ceil_monotonic.
   { assumption. }
   { exact pile. }
   { wf_auto2. }
   { wf_auto2. }
-  apply ProofMode_propositional.modus_tollens.
+  apply BasicProofSystemLemmas.modus_tollens.
   exact H.
 Defined.
 
@@ -2863,7 +2865,7 @@ Proof.
   { wf_auto2. }
   mlRewrite (useBasicReasoning i (not_not_iff Γ (⌈ ϕ ⌉) ltac:(wf_auto2))) at 1.
   fromMLGoal.
-  apply ProofMode_propositional.modus_tollens.
+  apply BasicProofSystemLemmas.modus_tollens.
   exact H.
   eapply pile_trans;[|apply Hpile].
   try_solve_pile.
@@ -2941,7 +2943,7 @@ Proof.
        { wf_auto2. }
        reflexivity.
   }
-  apply Ex_gen.
+  apply BasicProofSystemLemmas.Ex_gen.
   { try_solve_pile. }
   {  simpl.
         pose proof (Hfr := set_evar_fresh_is_fresh ϕ).
@@ -2958,7 +2960,7 @@ Proof.
   { wf_auto2. }
   { wf_auto2. }
   useBasicReasoning.
-  apply Ex_quan.
+  apply BasicProofSystemLemmas.Ex_quan.
   { wf_auto2. }
 Defined.
 
@@ -3069,7 +3071,7 @@ Proof.
   { wf_auto2. }
   2: { wf_auto2. }
   3: {
-    apply ProofMode_propositional.modus_tollens.
+    apply BasicProofSystemLemmas.modus_tollens.
     {
       apply ceil_monotonic.
       { exact HΓ. }
@@ -3774,12 +3776,12 @@ Proof.
 
   eassert (Htmp: Γ ⊢i (! (ex, b0 ∈ml ϕ)) ---> (! (patt_free_evar x ∈ml ⌈ ϕ ⌉)) using _).
   {
-    apply ProofMode_propositional.modus_tollens.
+    apply BasicProofSystemLemmas.modus_tollens.
     apply membership_symbol_ceil_left; assumption.
   }
   mlApplyMeta Htmp.
   fromMLGoal.
-  apply ProofMode_propositional.modus_tollens.
+  apply BasicProofSystemLemmas.modus_tollens.
 
   pose proof (Hfr' := @set_evar_fresh_is_fresh Σ ϕ).
   eapply cast_proof'.
@@ -3873,7 +3875,7 @@ Proof.
   unfold patt_total at 1.
   unfold patt_total at 2.
   unfold patt_or.
-  apply ProofMode_propositional.modus_tollens.
+  apply BasicProofSystemLemmas.modus_tollens.
 
   assert (Γ ⊢i (! ! ⌊ ϕ ⌋) <---> ⌊ ϕ ⌋ using (ExGen := ⊤, SVSubst := ∅, KT := false, FP := ⊤)).
   { toMLGoal.
@@ -3984,7 +3986,7 @@ Proof.
         mlExact "H0".
       }
       assert (Htmp: ((Γ ∪ {[! ϕ]})) ⊢i ! ϕ using i').
-      { gapply hypothesis. subst i'. try_solve_pile. wf_auto2. clear. set_solver. }
+      { gapply BasicProofSystemLemmas.hypothesis. subst i'. try_solve_pile. wf_auto2. clear. set_solver. }
       apply phi_impl_total_phi_meta in Htmp.
       2: { wf_auto2. }
       2: { subst i'. apply pile_refl.  }
@@ -4021,7 +4023,7 @@ Proof.
           useBasicReasoning. apply top_holds.
         + toMLGoal. wf_auto2.
           mlIntro "H0". mlClear "H0". fromMLGoal.
-          gapply hypothesis.
+          gapply BasicProofSystemLemmas.hypothesis.
           { try_solve_pile. }
           { wf_auto2. }
           clear. set_solver.
@@ -4055,7 +4057,7 @@ Proof.
     - toMLGoal. wf_auto2. mlIntro "H0". mlDestructOr "H0" as "H0'" "H0'".
       + assert (Γ ∪ {[ϕ₁ ---> ϕ₂]} ⊢i ϕ₁ ---> ϕ₂ using ( (ExGen := ∅, SVSubst := ∅, KT := false, FP := defFP))).
         {
-          gapply hypothesis.
+          gapply BasicProofSystemLemmas.hypothesis.
           { try_solve_pile. }
           { wf_auto2. }
           clear. set_solver.
@@ -4398,7 +4400,7 @@ Proof.
   intros Γ i HΓ PI.
   (* remember (fresh_evar ⊥) as x. *)
   toMLGoal. wf_auto2.
-  epose proof (Ex_gen Γ (! ⌈patt_free_evar ev_x⌉) ⊥ ev_x i _ _).
+  epose proof (BasicProofSystemLemmas.Ex_gen Γ (! ⌈patt_free_evar ev_x⌉) ⊥ ev_x i _ _).
   unfold exists_quantify in H. cbn in H. case_match. 2: congruence.
   mlIntro "H". mlApplyMeta H. fold (patt_defined b0) (patt_not ⌈b0⌉).
   mlExact "H".
