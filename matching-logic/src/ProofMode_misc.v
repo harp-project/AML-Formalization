@@ -2703,6 +2703,37 @@ Section FOL_helpers.
 
 End FOL_helpers.
 
+Lemma collapse_free_evar_subst {Σ : Signature} φ ψ x y:
+  y ∉ free_evars φ ->
+  φ^[[evar: x ↦ patt_free_evar y]]^[[evar: y ↦ ψ]] =
+  φ^[[evar: x ↦ ψ]].
+Proof.
+  induction φ; simpl; auto; intro Hin.
+  * repeat (case_match; simpl); auto. congruence. set_solver.
+  * rewrite IHφ1. set_solver. rewrite IHφ2. set_solver. reflexivity.
+  * rewrite IHφ1. set_solver. rewrite IHφ2. set_solver. reflexivity.
+  * rewrite IHφ. set_solver. reflexivity.
+  * rewrite IHφ. set_solver. reflexivity.
+Qed.
+
+Lemma foldr_is_context {Σ : Signature} l C p x :
+  x ∉ free_evars (foldr patt_imp (pcPattern C) l) ->
+  foldr patt_imp (emplace C p) l =
+  emplace
+    {|pcEvar := x;
+      pcPattern := foldr patt_imp (pcPattern C)^[[evar: pcEvar C ↦ patt_free_evar x]] l |} p.
+Proof.
+  revert C p x. induction l; intros C p x Hin; cbn.
+  {
+    rewrite collapse_free_evar_subst; auto.
+  }
+  {
+    simpl in Hin.
+    rewrite free_evar_subst_no_occurrence.
+    * simpl in Hin. apply count_evar_occurrences_0. set_solver.
+    * f_equal. apply IHl. set_solver.
+  }
+Qed.
 
 Lemma prf_equiv_congruence_iter {Σ : Signature} (Γ : Theory) (p q : Pattern) (C : PatternCtx) l
   (wfp : well_formed p)
@@ -2723,6 +2754,16 @@ Lemma prf_equiv_congruence_iter {Σ : Signature} (Γ : Theory) (p q : Pattern) (
   Γ ⊢i (foldr patt_imp (emplace C p) l) <---> (foldr patt_imp (emplace C q) l) using ( gpi).
 Proof.
   intros wfl Himp.
+  remember (fresh_evar (foldr patt_imp (pcPattern C) l)) as x.
+  rewrite -> foldr_is_context with (x := x).
+  2: { rewrite Heqx. solve_free_evars_inclusion 1. }
+  rewrite -> foldr_is_context with (x := x).
+  2: { rewrite Heqx. solve_free_evars_inclusion 1. }
+  unshelve (eapply prf_equiv_congruence); auto.
+  unfold PC_wf in wfC. wf_auto2.
+  simpl.
+  eapply pile_trans. 2: exact pile.
+
   induction l; simpl in *.
   - unshelve(eapply prf_equiv_congruence); assumption.
   - pose proof (wfal := wfl).
