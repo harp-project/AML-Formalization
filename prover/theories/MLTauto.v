@@ -9,10 +9,11 @@ From Equations Require Import Equations.
 From stdpp Require Import base option.
 
 From MatchingLogic Require Import
-     Utils.wflexprod
-     extralibrary
-     Logic
-     ProofMode
+  BasicProofSystemLemmas
+  Utils.wflexprod
+  extralibrary
+  Logic
+  ProofMode
 .
 
 
