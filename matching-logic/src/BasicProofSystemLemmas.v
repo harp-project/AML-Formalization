@@ -1186,7 +1186,7 @@ Defined.
     }
           (* i =  gpi *)
     useBasicReasoning.
-    apply BasicProofSystemLemmas.Ex_quan.
+    apply Ex_quan.
     abstract (wf_auto2).
   Defined.
 
