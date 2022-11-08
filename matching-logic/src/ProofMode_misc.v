@@ -2735,6 +2735,16 @@ Proof.
   }
 Qed.
 
+Lemma max_exists_in_new_context {Σ : Signature} l x C :
+maximal_exists_depth_of_evar_in_pattern x
+                    (foldr patt_imp
+                       (pcPattern C)^[[evar:pcEvar C↦
+                       patt_free_evar x]] l) =
+maximal_exists_depth_of_evar_in_pattern (pcEvar C) (pcPattern C).
+Proof.
+
+Admitted.
+
 Lemma prf_equiv_congruence_iter {Σ : Signature} (Γ : Theory) (p q : Pattern) (C : PatternCtx) l
   (wfp : well_formed p)
   (wfq : well_formed q)
@@ -2763,6 +2773,10 @@ Proof.
   unfold PC_wf in wfC. wf_auto2.
   simpl.
   eapply pile_trans. 2: exact pile.
+  rewrite max_exists_in_new_context. Print evar_fresh_seq.
+  Print evar_fresh_s.
+  Search evar_fresh_seq.
+  Search ProofInfoLe derives_using.
 
   induction l; simpl in *.
   - unshelve(eapply prf_equiv_congruence); assumption.
