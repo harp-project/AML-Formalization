@@ -45,14 +45,7 @@ Proof.
     apply ProofSystem.hypothesis. apply Hwf. apply Hin.
   }
   {
-    abstract (
-      constructor; simpl;
-      [( set_solver )
-      |( set_solver )
-      |( reflexivity )
-      |( set_solver )
-      ]
-    ).
+    abstract (solve_pim_simple).
   }
 Defined.
 
@@ -475,19 +468,12 @@ Lemma not_not_impl_intro {Σ : Signature} (Γ : Theory) (A B : Pattern) :
   using BasicReasoning.
 Proof.
   intros WFA WFB.
-
   epose (S1 := syllogism Γ (! ! A) A B _ _ _).
-
   epose (MP1 := MP (not_not_elim _ A _) S1).
-
   epose(NNB := not_not_intro Γ B _).
-
   epose(P1 := (P1 Γ (B ---> ! (! B)) (! ! A) _ _)).
-
   epose(MP2 := MP NNB P1).
-
   epose(P2' := (P2 Γ (! ! A) B (! !B) _ _ _)).
-
   epose(MP3 := MP MP2 P2').
 
   eapply @syllogism_meta with (B := (! (! A) ---> B)).
@@ -610,17 +596,14 @@ Lemma A_impl_not_not_B {Σ : Signature} Γ A B :
   using BasicReasoning.
 Proof.
   intros WFA WFB.
-
   assert (H0 : Γ ⊢i (! !B ---> B) using BasicReasoning).
   {
     apply not_not_elim. wf_auto2.
   }
-
   assert (H1 : Γ ⊢i ((A ---> ! !B) ---> (! !B ---> B) ---> (A ---> B)) using BasicReasoning).
   {
     apply syllogism; wf_auto2.
   }
-
   eapply MP.
   2: { 
     apply reorder_meta.
@@ -2017,26 +2000,6 @@ Proof.
   apply modus_ponens; wf_auto2.
 Defined.
 
-(* TODO rename or remove *)
-Lemma helper {Σ : Signature} Γ p q r:
-  well_formed p ->
-  well_formed q ->
-  well_formed r ->
-  Γ ⊢i (p ---> (q ---> ((p ---> (q ---> r)) ---> r))) using BasicReasoning.
-Proof.
-  intros wfp wfq wfr.
-  eapply cast_proof'.
-  {
-    rewrite [(p ---> q ---> (p ---> q ---> r) ---> r)]tofold. repeat rewrite consume.
-    replace ((([] ++ [p]) ++ [q]) ++ [p ---> (q ---> r)]) with ([p;q;p--->(q ---> r)]) by reflexivity.
-    replace ([p;q;p--->(q ---> r)]) with ([p] ++ [q; p ---> (q ---> r)] ++ []) by reflexivity.
-    reflexivity.
-  }
-  apply prf_reorder_iter_meta; try_wfauto2.
-  simpl.
-  apply modus_ponens; wf_auto2.
-Defined.
-
 Lemma reorder_last_to_head {Σ : Signature} Γ g x l:
   Pattern.wf l ->
   well_formed g ->
@@ -2906,7 +2869,7 @@ Lemma useGenericReasoning''  {Σ : Signature} (Γ : Theory) (ϕ : Pattern) i' i:
   Γ ⊢i ϕ using i.
 Proof.
   intros H pile.
-  eapply useGenericReasoning'.
+  eapply useGenericReasoning.
   { apply pile. }
   apply H.
 Defined.
@@ -2926,7 +2889,7 @@ Ltac2 try_solve_pile_basic () :=
         try (solve
           [ apply pile_any
           | apply pile_refl
-          | apply pile_basic_generic'
+          | apply pile_basic_generic
        ])
     | [|- _] => ()
     end

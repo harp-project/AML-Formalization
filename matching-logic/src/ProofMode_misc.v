@@ -363,7 +363,7 @@ Section FOL_helpers.
 
   Lemma Framing_left (Γ : Theory) (ϕ₁ ϕ₂ ψ : Pattern) (i : ProofInfo)
     (wfψ : well_formed ψ)
-    {pile : ProofInfoLe ((ExGen := ∅, SVSubst := ∅, KT := false, FP := {[(exist _ ψ wfψ)]})) i}
+    {pile : ProofInfoLe ((ExGen := ∅, SVSubst := ∅, KT := false)) i}
     :
     Γ ⊢i ϕ₁ ---> ϕ₂ using i ->
     Γ ⊢i ϕ₁ $ ψ ---> ϕ₂ $ ψ using i.
@@ -376,7 +376,7 @@ Section FOL_helpers.
       exact pf.
     }
     {
-      destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4].
+      destruct Hpf as [Hpf1 Hpf2 Hpf3].
       constructor; simpl.
       {
         assumption.
@@ -387,43 +387,12 @@ Section FOL_helpers.
       {
         assumption.
       }
-      {
-        destruct i.
-        simpl in *.
-        apply pile_evs_svs_kt_back in pile.
-        destruct_and!.
-        (*
-        destruct pi_framing_patterns0.
-        { exfalso. set_solver. } *)
-        clear H H1 H0.
-        rewrite elem_of_subseteq.
-        intros p0 Hp0.
-        rewrite elem_of_gset_to_coGset in Hp0.
-        rewrite elem_of_union in Hp0.
-        destruct Hp0 as [Hp0|Hp0].
-        {
-          subst.
-          remember ((@sval) Pattern (λ p : Pattern, well_formed p = true)) as F.
-          rewrite elem_of_subseteq in H3.
-          specialize (H3 (exist _ ψ wfψ)).
-          feed specialize H3.
-          {
-            clear. set_solver.
-          }
-          subst F.
-          clear -Hp0 H3.
-          set_solver.
-        }
-        {
-          set_solver.
-        }
-      }
     }
   Defined.
 
   Lemma Framing_right (Γ : Theory) (ϕ₁ ϕ₂ ψ : Pattern) (i : ProofInfo)
     (wfψ : well_formed ψ)
-    {pile : ProofInfoLe ((ExGen := ∅, SVSubst := ∅, KT := false, FP := {[(exist _ ψ wfψ)]})) i}
+    {pile : ProofInfoLe ((ExGen := ∅, SVSubst := ∅, KT := false)) i}
     :
     Γ ⊢i ϕ₁ ---> ϕ₂ using i ->
     Γ ⊢i ψ $ ϕ₁ ---> ψ $ ϕ₂ using i.
@@ -436,7 +405,7 @@ Section FOL_helpers.
       exact pf.
     }
     {
-      destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4].
+      destruct Hpf as [Hpf1 Hpf2 Hpf3].
       constructor; simpl.
       {
         assumption.
@@ -446,33 +415,6 @@ Section FOL_helpers.
       }
       {
         assumption.
-      }
-      {
-        destruct i.
-        simpl in *.
-        apply pile_evs_svs_kt_back in pile.
-        destruct_and!.
-        clear H H1 H0.
-        rewrite elem_of_subseteq.
-        intros p0 Hp0.
-        rewrite elem_of_gset_to_coGset in Hp0.
-        rewrite elem_of_union in Hp0.
-        destruct Hp0 as [Hp0|Hp0].
-        {
-          subst.
-          remember ((@sval) Pattern (λ p : Pattern, well_formed p = true)) as F.
-          rewrite elem_of_subseteq in H3.
-          specialize (H3 (exist _ ψ wfψ)).
-          feed specialize H3.
-          {
-            clear. set_solver.
-          }
-          subst F.
-          clear -Hp0 H3. set_solver.
-        }
-        {
-          set_solver.
-        }
       }
     }
   Defined.
@@ -487,19 +429,7 @@ Section FOL_helpers.
       apply ProofSystem.Prop_bott_left. exact wfϕ.
     }
     {
-      constructor; simpl.
-      {
-        set_solver.
-      }
-      {
-        set_solver.
-      }
-      {
-        reflexivity.
-      }
-      {
-        apply reflexivity.
-      }
+      abstract(solve_pim_simple).
     }
   Defined.
 
@@ -513,94 +443,48 @@ Section FOL_helpers.
       apply ProofSystem.Prop_bott_right. exact wfϕ.
     }
     {
-      constructor; simpl.
-      {
-        set_solver.
-      }
-      {
-        set_solver.
-      }
-      {
-        reflexivity.
-      }
-      {
-        apply reflexivity.
-      }
+      abstract(solve_pim_simple).
     }
   Defined.
 
   Arguments Prop_bott_left _ (_%ml) _ : clear implicits.
   Arguments Prop_bott_right _ (_%ml) _ : clear implicits.
 
-  Fixpoint frames_of_AC (C : Application_context)
-    : coWfpSet :=
-  match C with
-  | box => ∅
-  | ctx_app_l C' p wfp => {[(exist _ p wfp)]} ∪ (frames_of_AC C')
-  | ctx_app_r p C' wfp => {[(exist _ p wfp)]} ∪ (frames_of_AC C')
-  end.
-
-
   (* TODO rename into Prop_bot_ctx *)
-  Lemma Prop_bot (Γ : Theory) (C : Application_context) :
+  Lemma Prop_bot_ctx (Γ : Theory) (C : Application_context) :
     Γ ⊢i ((subst_ctx C patt_bott) ---> patt_bott)
-    using (ExGen := ∅, SVSubst := ∅, KT := false, FP := frames_of_AC C).
+    using (ExGen := ∅, SVSubst := ∅, KT := false).
   Proof.
-    remember (frames_of_AC C) as foC.
-    move: foC HeqfoC.
-    induction C; intros foC HeqfoC; simpl in *.
+    induction C; simpl in *.
     - apply useBasicReasoning.
       apply bot_elim.
       wf_auto2.
     - eapply syllogism_meta.
       5: { apply useBasicReasoning. apply (Prop_bott_left Γ p ltac:(wf_auto2)). }
-      4: { simpl. subst foC.  eapply useGenericReasoning.
-           2: eapply Framing_left with (wfψ := Prf).
+      4: { simpl. eapply useGenericReasoning.
+           2: eapply (Framing_left _ _ _ _ _ Prf).
            1: apply pile_refl.
-           1: {
-            eapply pile_evs_svs_kt.
-            { apply reflexivity. }
-            { apply reflexivity. }
-            { reflexivity. }
-            { clear. set_solver. }
-           }
            eapply useGenericReasoning.
-           2: apply IHC.
-           2: reflexivity.
-           apply pile_evs_svs_kt.
-           { apply reflexivity. }
-           { apply reflexivity. }
-           { reflexivity. }
-           { clear. set_solver. }
+           2: apply IHC. try_solve_pile.
       }
       all: try solve [wf_auto2].
        - eapply syllogism_meta.
            5: { apply useBasicReasoning. apply (Prop_bott_right Γ p ltac:(wf_auto2)). }
-           4: { simpl. subst foC.  eapply useGenericReasoning.
-                2: eapply Framing_right with (wfψ := Prf).
+           4: { simpl. eapply useGenericReasoning.
+                2: eapply (Framing_right _ _ _ _ _ Prf).
                 1: apply pile_refl.
-                1: {
-                 eapply pile_evs_svs_kt.
-                 { apply reflexivity. }
-                 { apply reflexivity. }
-                 { reflexivity. }
-                 { clear. set_solver. }
-                }
                 eapply useGenericReasoning.
                 2: apply IHC.
-                2: reflexivity.
-                apply pile_evs_svs_kt.
-                { apply reflexivity. }
-                { apply reflexivity. }
-                { reflexivity. }
-                { clear. set_solver. }
+                try_solve_pile.
            }
-           all: wf_auto2.
+  Unshelve.
+    1-3: wf_auto2.
+    1-2: try_solve_pile.
   Defined.
 
   Lemma Framing (Γ : Theory) (C : Application_context) (A B : Pattern) (i : ProofInfo)
     {pile : ProofInfoLe
-     ((ExGen := ∅, SVSubst := ∅, KT := false, FP := frames_of_AC C))
+     ((ExGen := ∅, SVSubst := ∅, KT := false))
      i
     }
     :
@@ -618,35 +502,23 @@ Section FOL_helpers.
     induction C; intros WFA WFB H; simpl in *.
     - exact H.
     - destruct i.
-      apply pile_evs_svs_kt_back in pile.
-      destruct_and!. simpl in *.
-      apply Framing_left with (wfψ := Prf).
-      {
-        apply pile_evs_svs_kt; try assumption.
-        set_solver.
+      unshelve (eapply (Framing_left _ _ _ _ _ Prf)).
+      { 
+        try_solve_pile.
       }
       apply IHC.
-      2,3: assumption.
-      2: exact H.
-      apply pile_evs_svs_kt; try assumption.
-      set_solver.
+      1-3: assumption.
     - destruct i.
-      apply pile_evs_svs_kt_back in pile.
-      destruct_and!. simpl in *.
-      apply Framing_right with (wfψ := Prf).
+      unshelve (eapply (Framing_right _ _ _ _ _ Prf)).
       {
-        apply pile_evs_svs_kt; try assumption.
-        set_solver.
+        try_solve_pile.
       }
       apply IHC.
-      2,3: assumption.
-      2: exact H.
-      apply pile_evs_svs_kt; try assumption.
-      set_solver.
+      1-3: assumption.
   Defined.
 
   Lemma A_implies_not_not_A_ctx (Γ : Theory) (A : Pattern) (C : Application_context)
-    (i : ProofInfo) {pile : ProofInfoLe ((ExGen := ∅, SVSubst := ∅, KT := false, FP := frames_of_AC C)) i}
+    (i : ProofInfo) {pile : ProofInfoLe ((ExGen := ∅, SVSubst := ∅, KT := false)) i}
     :
     well_formed A ->
     Γ ⊢i A using i ->
@@ -657,18 +529,19 @@ Section FOL_helpers.
     epose proof (ANNA := A_implies_not_not_A_alt Γ _ i _ H).
     replace (! (! A)) with ((! A) ---> Bot) in ANNA by reflexivity.
     epose proof (EF := Framing _ C (! A) Bot _ ANNA).
-    epose proof (PB := Prop_bot Γ C).
-    apply liftPi with (i₂ := i) in PB. 2: apply _.
+    epose proof (PB := Prop_bot_ctx Γ C).
+    apply liftProofInfoLe with (i₂ := i) in PB. 2: try_solve_pile.
     epose (TRANS := syllogism_meta _ _ _ EF PB).
     apply TRANS.
 
     Unshelve.
     all: wf_auto2.
+    all: set_solver.
   Defined.
 
   Lemma ctx_bot_prop (Γ : Theory) (C : Application_context) (A : Pattern) 
     (i : ProofInfo)
-    {pile : ProofInfoLe ((ExGen := ∅, SVSubst := ∅, KT := false, FP := frames_of_AC C)) i}
+    {pile : ProofInfoLe ((ExGen := ∅, SVSubst := ∅, KT := false)) i}
   :
     well_formed A ->
     Γ ⊢i (A ---> Bot) using i ->
@@ -676,12 +549,13 @@ Section FOL_helpers.
   Proof.
     intros WFA H.
     epose proof (FR := Framing Γ C A Bot _ H).
-    epose proof (BPR := Prop_bot Γ C).
-    apply liftPi with (i₂ := i) in BPR. 2: apply _.
+    epose proof (BPR := Prop_bot_ctx Γ C).
+    apply liftProofInfoLe with (i₂ := i) in BPR. 2: try_solve_pile.
     epose proof (TRANS := syllogism_meta _ _ _ FR BPR).
     exact TRANS.
     Unshelve.
     all: wf_auto2.
+    all: set_solver.
   Defined.
 
 End FOL_helpers.
@@ -689,7 +563,7 @@ End FOL_helpers.
 Lemma prf_prop_bott_iff {Σ : Signature} Γ AC:
   Γ ⊢i ((subst_ctx AC patt_bott) <---> patt_bott)
   using (
-  (ExGen := ∅, SVSubst := ∅, KT := false, FP := frames_of_AC AC)).
+  (ExGen := ∅, SVSubst := ∅, KT := false)).
 Proof.
   apply pf_iff_split.
   1,2: wf_auto2.
@@ -720,10 +594,7 @@ Proof.
     apply Prop_disj_left; assumption.
   }
   {
-    abstract (
-      constructor; simpl;
-      [(set_solver)|(set_solver)|(reflexivity)|(set_solver)]
-    ).
+    abstract (solve_pim_simple).
   }
 Defined.
 
@@ -739,10 +610,7 @@ Proof.
     apply Prop_disj_right; assumption.
   }
   {
-    abstract (
-      constructor; simpl;
-      [(set_solver)|(set_solver)|(reflexivity)|(set_solver)]
-    ).
+    abstract (solve_pim_simple).
   }
 Defined.
 
@@ -751,7 +619,7 @@ Lemma prf_prop_or_iff {Σ : Signature} Γ AC p q:
   well_formed q ->
   Γ ⊢i ((subst_ctx AC (p or q)) <---> ((subst_ctx AC p) or (subst_ctx AC q)))
   using (
-  (ExGen := ∅, SVSubst := ∅, KT := false, FP := frames_of_AC AC)).
+  (ExGen := ∅, SVSubst := ∅, KT := false)).
 Proof.
   intros wfp wfq.
   induction AC; simpl.
@@ -762,12 +630,10 @@ Proof.
     apply pf_iff_split; try_wfauto2.
     + pose proof (H := IH1).
       apply useGenericReasoning with (i := i) in H.
-      2: { subst i. 
-        apply pile_evs_svs_kt; auto. set_solver.
-      }
+      2: { try_solve_pile. }
       rewrite Heqi in H.
-      apply Framing_left with (ψ := p0) (wfψ := Prf) in H.
-      2: { apply pile_evs_svs_kt; auto. set_solver. }
+      apply Framing_left with (ψ := p0)in H; auto.
+      2: { apply pile_refl. }
       eapply syllogism_meta. 4: subst i; apply H.
       all: try_wfauto2.
       remember (subst_ctx AC p) as p'.
@@ -775,18 +641,18 @@ Proof.
       subst i.
       eapply useGenericReasoning.
       2: eapply Prop_disj_left. all: subst; try_wfauto2.
-      { apply pile_evs_svs_kt; auto. set_solver. }
+      { try_solve_pile. }
     + eapply prf_disj_elim_meta_meta; try_wfauto2.
       * subst i. 
-        apply Framing_left with (wfψ := Prf).
-        { apply pile_evs_svs_kt; auto. set_solver. }
+        apply Framing_left with (ψ := p0); auto.
+        { try_solve_pile. }
         eapply prf_weaken_conclusion_meta_meta.
         4: { gapply IH2. try_solve_pile. }
         1-3: wf_auto2.
         useBasicReasoning.
         apply disj_left_intro; wf_auto2.
       * subst i.
-        apply Framing_left with (wfψ := Prf).
+        apply Framing_left with (ψ := p0); auto.
         { try_solve_pile. }
         eapply prf_weaken_conclusion_meta_meta. 4: gapply IH2; try_solve_pile. all: try_wfauto2.
         useBasicReasoning.
@@ -798,7 +664,7 @@ Proof.
     + pose proof (H := IH1).
       apply useGenericReasoning with (i := i) in H.
       2: { subst i. try_solve_pile. }
-      eapply Framing_right with (ψ := p0)(wfψ := Prf) in H.
+      eapply Framing_right with (ψ := p0)in H; auto.
       eapply syllogism_meta. 4: apply H.
       all: try_wfauto2.
       2: { subst i. try_solve_pile. }
@@ -808,14 +674,14 @@ Proof.
       apply Prop_disj_right. all: subst; try_wfauto2.
     + eapply prf_disj_elim_meta_meta; try_wfauto2.
       * subst i.
-        apply Framing_right with (wfψ := Prf).
+        apply Framing_right with (ψ := p0); auto.
         { try_solve_pile. }
         eapply prf_weaken_conclusion_meta_meta.
         4: gapply IH2; try_solve_pile. all: try_wfauto2.
         useBasicReasoning.
         apply disj_left_intro; wf_auto2.
       * subst i.
-        apply Framing_right with (wfψ := Prf).
+        apply Framing_right with (ψ := p0); auto.
         { try_solve_pile. }
         eapply prf_weaken_conclusion_meta_meta.
         4: gapply IH2; try_solve_pile.
@@ -839,14 +705,7 @@ Proof.
     apply ProofSystem.Singleton_ctx. apply Hwf.
   }
   {
-    abstract (
-      constructor; simpl;
-      [( set_solver )
-      |( set_solver )
-      |( reflexivity )
-      |( set_solver )
-      ]
-    ).
+    abstract (solve_pim_simple).
   }
 Defined.
 
@@ -858,14 +717,7 @@ Proof.
     apply ProofSystem.Existence.
   }
   {
-    abstract (
-      constructor; simpl;
-      [( set_solver )
-      |( set_solver )
-      |( reflexivity )
-      |( set_solver )
-      ]
-    ).
+    abstract (solve_pim_simple).
   }
 Defined.
 
@@ -882,13 +734,7 @@ Proof.
     { exact wfϕ. }
     { exact wfψ. }
   }
-  {
-    constructor; simpl.
-    { set_solver. }
-    { set_solver. }
-    { reflexivity. }
-    { set_solver. }
-  }
+  { abstract(solve_pim_simple). }
 Defined.
 
 Lemma Prop_ex_right {Σ : Signature} (Γ : Theory) (ϕ ψ : Pattern) :
@@ -904,13 +750,7 @@ Proof.
     { exact wfϕ. }
     { exact wfψ. }
   }
-  {
-    constructor; simpl.
-    { set_solver. }
-    { set_solver. }
-    { reflexivity. }
-    { set_solver. }
-  }
+  { abstract(solve_pim_simple). }
 Defined.
 
 
@@ -930,7 +770,6 @@ Lemma prf_prop_ex_iff {Σ : Signature} Γ AC p x:
   {| pi_generalized_evars := {[x]};
      pi_substituted_svars := ∅;
      pi_uses_kt := false ;
-     pi_framing_patterns := frames_of_AC AC
   |}).
 Proof.
   intros Hx Hwf.
@@ -974,17 +813,8 @@ Proof.
       apply Hwf.
     }
 
-    (* TODO automate this *)
     assert (Hwfeo: well_formed (p^{evar: 0 ↦ x})).
-    {
-      unfold well_formed.
-      unfold well_formed,well_formed_closed in Hwf. apply andb_prop in Hwf. simpl in Hwf.
-      rewrite wfp_evar_open.
-      { apply Hwf. }
-      unfold well_formed_closed.
-      destruct_and!.
-      split_and!; auto.
-    }
+    { wf_auto2. }
 
 
     (* TODO automate this. The problem is that [well_formed_app] and others do not have [= true];
@@ -993,13 +823,7 @@ Proof.
        mechanism for extension...
      *)
     assert(Hwf'p0: well_formed (exists_quantify x (subst_ctx AC (p^{evar: 0 ↦ x}) $ p0))).
-    {
-      unfold exists_quantify.
-      apply wf_ex_evar_quantify.
-      apply well_formed_app.
-      2: { apply Prf. }
-      auto.
-    }
+    { wf_auto2. }
 
     apply pf_iff_iff in IHAC; auto.
 
@@ -1007,7 +831,7 @@ Proof.
     apply pf_iff_split; auto.
     + pose proof (H := IH1).
       change constraint in IH1.
-      apply Framing_left with (ψ := p0) (wfψ := Prf) in IH1.
+      apply Framing_left with (ψ := p0) in IH1; auto.
       2: { try_solve_pile. }
 
       eapply syllogism_meta. 4: apply IH1.
@@ -1022,7 +846,7 @@ Proof.
     + clear IH1.
 
       change constraint in IH2.
-      apply Framing_left with (ψ := p0) (wfψ := Prf) in IH2.
+      apply Framing_left with (ψ := p0) in IH2; auto.
       2: { try_solve_pile. }
       eapply syllogism_meta. 5: eapply IH2.
       1-3: wf_auto2.
@@ -1051,16 +875,7 @@ Proof.
       apply Ex_quan; auto.
   -
     assert (Hwfex: well_formed (ex , subst_ctx AC p)).
-    { unfold well_formed. simpl.
-      pose proof (Hwf' := Hwf).
-      unfold well_formed in Hwf. simpl in Hwf.
-      apply andb_prop in Hwf. destruct Hwf as [Hwfp Hwfc].
-      apply (wp_sctx AC p) in Hwfp. rewrite Hwfp. simpl. clear Hwfp.
-      unfold well_formed_closed. unfold well_formed_closed in Hwfc. simpl in Hwfc. simpl.
-      split_and!.
-      + apply wcmu_sctx. destruct_and!. assumption.
-      + apply wcex_sctx. destruct_and!. assumption.
-    }
+    { clear Hx. wf_auto2. }
 
     assert(Hxfr1: evar_is_fresh_in x (subst_ctx AC p)).
     { simpl in Hx.
@@ -1082,16 +897,9 @@ Proof.
       apply Hwf.
     }
 
-    (* TODO automate this *)
     assert (Hwfeo: well_formed (p^{evar: 0 ↦ x})).
     {
-      unfold well_formed.
-      unfold well_formed,well_formed_closed in Hwf. apply andb_prop in Hwf. simpl in Hwf.
-      rewrite wfp_evar_open.
-      { apply Hwf. }
-      unfold well_formed_closed.
-      destruct_and!.
-      split_and!; auto.
+      wf_auto2.
     }
 
     (* TODO automate this. The problem is that [well_formed_app] and others do not have [= true];
@@ -1101,9 +909,7 @@ Proof.
      *)
     assert(Hwf'p0: well_formed (exists_quantify x (p0 $ subst_ctx AC (p^{evar: 0 ↦ x})))).
     {
-      unfold exists_quantify.
-      apply wf_ex_evar_quantify.
-      apply well_formed_app; auto.
+      wf_auto2.
     }
 
     apply pf_iff_iff in IHAC; auto.
@@ -1112,7 +918,7 @@ Proof.
     apply pf_iff_split; auto.
     + pose proof (H := IH1).
       change constraint in IH1.
-      apply Framing_right with (wfψ := Prf) in IH1.
+      apply Framing_right with (ψ := p0) in IH1; auto.
       2: try_solve_pile.
       eapply syllogism_meta. 4: apply IH1.
       1-3: wf_auto2.

@@ -603,17 +603,15 @@ Section proof_info.
     (* pwi_pf_fp : gset_to_coGset (@framing_patterns Σ Γ ϕ pwi_pf) ⊆ (pi_framing_patterns pi) ; *)
   }.
 
-  Class ProofLe (i₁ i₂ : ProofInfo) :=
-  { pi_le :
+  Definition ProofLe (i₁ i₂ : ProofInfo) :=
     forall (Γ : Theory) (ϕ : Pattern) (pf : Γ ⊢r ϕ),
-      @ProofInfoMeaning Γ ϕ pf i₁ -> @ProofInfoMeaning Γ ϕ pf i₂ ;
-  }.
+      @ProofInfoMeaning Γ ϕ pf i₁ -> @ProofInfoMeaning Γ ϕ pf i₂.
 
 
   Lemma ProofInfoLe_ProofLe (i₁ i₂ : ProofInfo) :
     ProofInfoLe i₁ i₂ -> ProofLe i₁ i₂.
   Proof.
-    intros H. constructor. intros Γ φ pf Hpf. destruct Hpf.
+    intros H. intros Γ φ pf Hpf. destruct Hpf.
     destruct H as [HEV [HSV HKT] ].
     constructor. 1-2: set_solver.
     apply implb_true_iff.
@@ -622,13 +620,36 @@ Section proof_info.
     tauto.
   Qed.
 
+End proof_info.
+
+  Ltac convert_implb :=
+  unfold is_true in *;
+  match goal with
+  | |- context G [implb _ _ = true] => rewrite implb_true_iff
+  | H : context G [implb _ _ = true] |- _ => rewrite implb_true_iff in H
+  end.
+
+  Ltac destruct_pile :=
+    match goal with
+    | H : @ProofInfoLe _ _ _ |- _ => destruct H as [? [? ?] ]
+    end.
+
+  (** To solve goals shaped like: ProofInfoLe i₁ i₂ *)
+  Ltac try_solve_pile :=
+    assumption + (* optimization *)
+    (repeat destruct_pile;
+    split; [try set_solver|split;[try set_solver| try (repeat convert_implb; set_solver)] ]).
+
+Section proof_info.
+  Context {Σ : Signature}.
+  Import Notations_private.
   (*
   #[global]
   Instance
   *)
-  Lemma pile_refl (i : ProofInfo) : ProofLe i i.
+  Lemma pile_refl (i : ProofInfo) : ProofInfoLe i i.
   Proof.
-    constructor. intros Γ ϕ pf H. exact H.
+    try_solve_pile. 
   Qed.
 
   (*
@@ -636,23 +657,18 @@ Section proof_info.
   Instance
   *)
   Lemma pile_trans
-    (i₁ i₂ i₃ : ProofInfo) (PILE12 : ProofLe i₁ i₂) (PILE23 : ProofLe i₂ i₃)
-  : ProofLe i₁ i₃.
+    (i₁ i₂ i₃ : ProofInfo) (PILE12 : ProofInfoLe i₁ i₂) (PILE23 : ProofInfoLe i₂ i₃)
+  : ProofInfoLe i₁ i₃.
   Proof.
-    destruct PILE12 as [PILE12].
-    destruct PILE23 as [PILE23].
-    constructor. intros Γ ϕ pf.
-    specialize (PILE12 Γ ϕ pf).
-    specialize (PILE23 Γ ϕ pf).
-    tauto.
+    try_solve_pile.
   Qed.
 
-  Definition BasicReasoning : ProofInfo := ((@mkProofInfo ∅ ∅ false)).
-  Definition AnyReasoning : ProofInfo := (@mkProofInfo ⊤ ⊤ true).
+  Definition BasicReasoning : ProofInfo := ((@mkProofInfo _ ∅ ∅ false)).
+  Definition AnyReasoning : ProofInfo := (@mkProofInfo _ ⊤ ⊤ true).
 
 
   Definition derives_using Γ ϕ pi
-  := ({pf : Γ ⊢r ϕ | @ProofInfoMeaning _ _ pf pi }).
+  := ({pf : Γ ⊢r ϕ | @ProofInfoMeaning _ _ _ pf pi }).
 
   Definition derives Γ ϕ
   := derives_using Γ ϕ AnyReasoning.
@@ -683,9 +699,11 @@ End Notations.
 Ltac2 clear_piles () :=
   repeat (
     lazy_match! goal with
-    | [ h : @ProofLe _ _ _ |- _]
+    | [ h : @ProofInfoLe _ _ _ |- _]
       => clear $h
-    | [ h : @ProofInfoMeaning _ _ _ _ _ |- _]
+      | [ h : @ProofLe _ _ _ |- _]
+      => clear $h
+      | [ h : @ProofInfoMeaning _ _ _ _ _ |- _]
       => clear $h
     end
   )

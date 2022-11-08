@@ -45,7 +45,6 @@ Lemma Knaster_tarski {Σ : Signature}
         {| pi_generalized_evars := ∅;
            pi_substituted_svars := ∅;
            pi_uses_kt := true ;
-           pi_framing_patterns := ∅ ;
         |}) i} :
 well_formed (mu, ϕ) ->
 Γ ⊢i (instantiate (mu, ϕ) ψ) ---> ψ using i ->
@@ -71,12 +70,8 @@ unshelve (eexists).
   }
   {
     destruct Hpf as [Hpf2 Hpf3 Hpf4].
-    pose proof (Hpile := pile_impl_uses_kt _ _ _ _ pile).
+    pose proof (Hpile := pile_impl_uses_kt _ _ _ pile).
     exact Hpile.
-  }
-  {
-    destruct Hpf as [Hpf2 Hpf3 Hpf4 Hpf5].
-    apply Hpf5.
   }
 }
 Defined.
@@ -87,7 +82,6 @@ Lemma Svar_subst {Σ : Signature}
         {| pi_generalized_evars := ∅;
            pi_substituted_svars := {[X]};
            pi_uses_kt := false ;
-           pi_framing_patterns := ∅ ;
         |}) i} :
   well_formed ψ ->
   Γ ⊢i ϕ using i ->
@@ -110,17 +104,13 @@ Proof.
   }
   {
     destruct Hpf as [Hpf2 Hpf3 Hpf4].
-    pose proof (Hpile := pile_impl_allows_svsubst_X _ _ _ _ _ pile).
+    pose proof (Hpile := pile_impl_allows_svsubst_X _ _ _ _ pile).
     clear -Hpile Hpf3.
     set_solver.
   }
   {
     destruct Hpf as [Hpf2 Hpf3 Hpf4].
     exact Hpf4.
-  }
-  {
-    destruct Hpf as [Hpf2 Hpf3 Hpf4 Hpf5].
-    exact Hpf5.
   }
 }
 Defined.
@@ -139,16 +129,12 @@ Proof.
   }
   {
     simpl.
-    constructor; simpl.
-    { set_solver. }
-    { set_solver. }
-    { reflexivity. }
-    { apply reflexivity. }
+    abstract(solve_pim_simple).
   }
 Defined.
 
 Lemma mu_monotone {Σ : Signature} Γ ϕ₁ ϕ₂ X (i : ProofInfo):
-  ProofInfoLe ( (ExGen := ∅, SVSubst := {[X]}, KT := true, FP := ∅)) i ->
+  ProofInfoLe ( (ExGen := ∅, SVSubst := {[X]}, KT := true)) i ->
   svar_has_negative_occurrence X ϕ₁ = false ->
   svar_has_negative_occurrence X ϕ₂ = false ->
   Γ ⊢i ϕ₁ ---> ϕ₂ using i->
@@ -161,14 +147,14 @@ Proof.
   assert(wfϕ₂ : well_formed ϕ₂) by wf_auto2.
 
   apply Knaster_tarski.
-  { eapply pile_trans. 2: apply pile. apply pile_svs_subseteq. set_solver. }
+  { try_solve_pile. }
   { 
     wf_auto2.
   }
 
   pose proof (Htmp := @Svar_subst Σ Γ (ϕ₁ ---> ϕ₂) (mu, ϕ₂^{{svar: X ↦ 0}}) X i).
   feed specialize Htmp.
-  { eapply pile_trans. 2: apply pile. apply pile_kt_impl. simpl. reflexivity. }
+  { try_solve_pile. }
   { wf_auto2. }
   { exact Himp. }
   unfold free_svar_subst in Htmp.

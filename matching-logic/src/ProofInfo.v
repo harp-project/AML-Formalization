@@ -29,6 +29,7 @@ Set Default Proof Mode "Classic".
 
 Open Scope ml_scope.
 
+(** For goals shaped like ProoInforMeeaning _ _ _ BasicReasoning *)
 Ltac solve_pim_simple := constructor; simpl;[(set_solver)|(set_solver)|(reflexivity)].
 
 
@@ -155,7 +156,7 @@ Defined.
     intros pile. destruct i₁, i₂.
     repeat split.
     {
-      destruct pile as [pile].
+      unfold ProofLe in pile.
       rewrite elem_of_subseteq.
       intros x Hx.
       remember (fresh_evar (patt_free_evar x)) as y.
@@ -175,7 +176,7 @@ Defined.
       set_solver.
     }
     {
-      destruct pile as [pile].
+      unfold ProofLe in pile.
       rewrite elem_of_subseteq.
       intros X HX.
       pose (pf1 := A_impl_A ∅ (patt_free_svar X) ltac:(wf_auto2)).
@@ -194,7 +195,7 @@ Defined.
       set_solver.
     }
     {
-      destruct pile as [pile].
+      unfold ProofLe in pile.
       pose (pf1 := A_impl_A ∅ patt_bott ltac:(wf_auto2)).
       pose (pf2 := ProofSystem.Knaster_tarski ∅ (patt_bound_svar 0) patt_bott ltac:(wf_auto2) (proj1_sig pf1)).
       destruct pi_uses_kt.
@@ -215,38 +216,28 @@ Defined.
   Qed.
 
 Lemma useGenericReasoning  {Σ : Signature} (Γ : Theory) (ϕ : Pattern) i' i:
-  (ProofLe i' i) ->
+  (ProofInfoLe i' i) ->
   Γ ⊢i ϕ using i' ->
   Γ ⊢i ϕ using i.
 Proof.
   intros pile [pf Hpf].
   exists pf.
-  destruct Hpf as [Hpf2 Hpf3 Hpf4].
-  simpl in *.
-  destruct i.
-  pose proof (Htmp := ProofLe_ProofInfoLe).
-  specialize (Htmp _ _ pile).
-  destruct Htmp as [Hevs [Hsvs Hkt ] ].
-  constructor; simpl.
-  { clear -Hpf2 Hevs. set_solver. }
-  { clear -Hpf3 Hsvs. set_solver. }
-  { unfold implb in *. repeat case_match; try reflexivity; try assumption. inversion Hpf4. }
-Defined.
 
-Lemma useGenericReasoning'  {Σ : Signature} (Γ : Theory) (ϕ : Pattern) i' i:
-  (ProofLe i' i) ->
-  Γ ⊢i ϕ using i' ->
-  Γ ⊢i ϕ using i.
-Proof.
-  intros H.
-  destruct i'.
-  apply useGenericReasoning.
-  exact H.
-Qed.
+  destruct Hpf as [Hpf2 Hpf3 Hpf4].
+  destruct i, i'; cbn in *.
+  destruct pile as [H [H0 H1] ].
+  constructor; simpl.
+  { set_solver. }
+  { set_solver. }
+  { simpl in *. apply implb_true_iff.
+    unfold is_true in *. rewrite implb_true_iff in Hpf4 H1.
+    set_solver.
+  }
+Defined.
 
 Lemma mlUseGenericReasoning
   {Σ : Signature} (Γ : Theory) (l : hypotheses) (g : Pattern) (i i' : ProofInfo) :
-  ProofLe i i' ->
+  ProofInfoLe i i' ->
   mkMLGoal Σ Γ l g i ->
   mkMLGoal Σ Γ l g i'.
 Proof.
@@ -294,30 +285,18 @@ Proof.
 Abort.
 
 Lemma pile_any {Σ : Signature} i:
-  ProofLe i AnyReasoning.
+  ProofInfoLe i AnyReasoning.
 Proof.
-  unfold AnyReasoning.
-  destruct i.
-  apply ProofInfoLe_ProofLe. split. 2: split.
-  { clear. set_solver. }
-  { clear. set_solver. }
-  { unfold implb. destruct pi_uses_kt; reflexivity. }
+  try_solve_pile.
 Qed.
 
 Tactic Notation "aapply" uconstr(pf)
 := gapply pf; try apply pile_any.
 
-Ltac try_solve_pile := try (solve [(apply ProofInfoLe_ProofLe; auto; try apply empty_subseteq; try apply top_subseteq; try set_solver)]).
-
-
 Lemma pile_basic_generic {Σ : Signature} i:
-  ProofLe BasicReasoning i.
+  ProofInfoLe BasicReasoning i.
 Proof.
-  apply ProofInfoLe_ProofLe.
-  split. 2: split. all: simpl.
-  { set_solver. }
-  { set_solver. }
-  { trivial. }
+  try_solve_pile.
 Qed.
 
 Tactic Notation "_mlReshapeHypsByIdx" constr(n) :=
@@ -368,27 +347,27 @@ Proof.
 Defined.
 
 Lemma pile_impl_allows_gen_x {Σ : Signature} x gpi svs kt:
-  ProofLe ( (ExGen := {[x]}, SVSubst := svs, KT := kt)) ( gpi) ->
+  ProofInfoLe ( (ExGen := {[x]}, SVSubst := svs, KT := kt)) ( gpi) ->
   x ∈ pi_generalized_evars gpi.
 Proof.
-  destruct gpi. intro H. apply ProofLe_ProofInfoLe in H.
-  destruct H. set_solver.
+  destruct gpi. intro H.
+  destruct_pile. set_solver.
 Qed.
 
 Lemma pile_impl_uses_kt {Σ : Signature} gpi evs svs:
-  ProofLe ( (ExGen := evs, SVSubst := svs, KT := true)) ( gpi) ->
+  ProofInfoLe ( (ExGen := evs, SVSubst := svs, KT := true)) ( gpi) ->
   pi_uses_kt gpi.
 Proof.
-  destruct gpi. intro H. apply ProofLe_ProofInfoLe in H.
-  destruct H. set_solver.
+  destruct gpi. intro H.
+  destruct_pile. set_solver.
 Qed.
 
 Lemma pile_impl_allows_svsubst_X {Σ : Signature} gpi evs X kt:
-  ProofLe ( (ExGen := evs, SVSubst := {[X]}, KT := kt)) ( gpi) ->
+  ProofInfoLe ( (ExGen := evs, SVSubst := {[X]}, KT := kt)) ( gpi) ->
   X ∈ pi_substituted_svars gpi.
 Proof.
-  destruct gpi. intro H. apply ProofLe_ProofInfoLe in H.
-  destruct H. set_solver.
+  destruct gpi. intro H.
+  destruct_pile. set_solver.
 Qed.
 
 Lemma liftProofLe {Σ : Signature} (Γ : Theory) (ϕ : Pattern) (i₁ i₂ : ProofInfo)

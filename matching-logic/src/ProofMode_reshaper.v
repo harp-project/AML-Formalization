@@ -118,10 +118,6 @@ Section with_signature.
         rewrite indifferent_to_cast_uses_kt.
         apply Hpf4.
       }
-      {
-        rewrite framing_patterns_cast_proof.
-        destruct i;assumption.
-      }
     }
   Defined.
 
@@ -368,10 +364,6 @@ Section with_signature.
       {
         rewrite indifferent_to_cast_uses_kt.
         apply Hpf4.
-      }
-      {
-        rewrite framing_patterns_cast_proof.
-        destruct i;assumption.
       }
     }
   Defined.
