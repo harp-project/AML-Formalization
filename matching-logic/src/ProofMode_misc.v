@@ -1050,6 +1050,16 @@ Section FOL_helpers.
     unfold evar_open in IHφ. now rewrite IHφ.
   Qed.
 
+  Lemma svar_open_exist_depth φ X : forall dbi,
+    maximal_exists_depth φ^{svar: dbi ↦ X} = maximal_exists_depth φ.
+  Proof.
+    induction φ; cbn; trivial; intro.
+    case_match; auto.
+    1-2: now rewrite IHφ1; rewrite IHφ2.
+    now rewrite IHφ.
+    now rewrite IHφ.
+  Qed.
+
   Fixpoint maximal_mu_depth (ψ : Pattern) : nat :=
     match ψ with
     | patt_bott => 0
@@ -1072,6 +1082,15 @@ Section FOL_helpers.
     1-2: now rewrite IHφ1; rewrite IHφ2.
     now rewrite IHφ.
     unfold evar_open in IHφ. now rewrite IHφ.
+  Qed.
+
+  Lemma svar_open_mu_depth φ X : forall dbi,
+    maximal_mu_depth φ^{svar: dbi ↦ X} = maximal_mu_depth φ.
+  Proof.
+    induction φ; cbn; trivial; intro.
+    case_match; auto.
+    1-2: now rewrite IHφ1; rewrite IHφ2.
+    now rewrite IHφ.
   Qed.
 
   Lemma svar_fresh_seq_max (SvS : SVarSet) (n1 n2 : nat) :
@@ -1361,9 +1380,53 @@ Section FOL_helpers.
     { abstract (wf_auto2). }
   Defined.
 
+  Fixpoint mu_in_evar_path (E : evar) (ψ : Pattern) : bool :=
+    match ψ with
+    | patt_bott => false
+    | patt_sym _ => false
+    | patt_bound_evar _ => false
+    | patt_bound_svar _ => false
+    | patt_free_svar _ => false
+    | patt_free_evar E' => false
+    | patt_imp ψ₁ ψ₂ => mu_in_evar_path E ψ₁||mu_in_evar_path E ψ₂
+    | patt_app ψ₁ ψ₂ => mu_in_evar_path E ψ₁||mu_in_evar_path E ψ₂
+    | patt_exists ψ' => mu_in_evar_path E ψ'
+    | patt_mu ψ' => ltb 0 (count_evar_occurrences E ψ')
+    end.
+
+  Lemma mu_in_evar_path_evar_open φ x y : forall dbi,
+    x <> y ->
+    mu_in_evar_path x φ^{evar: dbi ↦ y} = mu_in_evar_path x φ.
+  Proof.
+    induction φ; intros dbi HN; cbn; auto.
+    case_match; auto.
+    1-2: rewrite IHφ1; auto; rewrite IHφ2; auto.
+    rewrite IHφ; auto.
+    rewrite count_evar_occurrences_bevar_subst; auto.
+    cbn. case_match; auto. congruence.
+  Qed.
+
+  Lemma mu_in_evar_path_svar_open φ x Y : forall dbi,
+    mu_in_evar_path x φ^{svar: dbi ↦ Y} = mu_in_evar_path x φ.
+  Proof.
+    induction φ; intros dbi; cbn; auto.
+    case_match; auto.
+    1-2: rewrite IHφ1; auto; rewrite IHφ2; auto.
+    rewrite IHφ; auto.
+    rewrite count_evar_occurrences_svar_open; auto.
+  Qed.
+
+  Lemma count_occurences_not_in_path φ x:
+    count_evar_occurrences x φ = 0 -> mu_in_evar_path x φ = false.
+  Proof.
+    induction φ; intro H; cbn in *; auto.
+    1-2: rewrite IHφ1; try lia; rewrite IHφ2; try lia.
+    now rewrite H.
+  Qed.
+
   Lemma eq_prf_equiv_congruence
     (sz : nat)
-    Γ p q kt evs svs
+    Γ p q evs svs
     (wfp : well_formed p)
     (wfq : well_formed q)
     E ψ
@@ -1384,13 +1447,18 @@ Section FOL_helpers.
     (Hel1 : fresh_evars el ({[E]} ∪ free_evars ψ ∪ free_evars p ∪ free_evars q))
     (Hel2 : length el ≥ maximal_exists_depth ψ)
     (Hel3 : forall x, x ∈ el -> x ∈ evs)
-    (pile: ProofInfoLe (ExGen := evs, SVSubst := svs, KT := kt) gpi)
+    sl
+    (Hsl1 : fresh_svars sl (free_svars ψ ∪ free_svars p ∪ free_svars q))
+    (Hsl2 : length sl ≥ maximal_mu_depth ψ)
+    (Hsl3 : forall X, X ∈ sl -> X ∈ svs)
+    (pile: ProofInfoLe (ExGen := evs, SVSubst := svs, KT := mu_in_evar_path E ψ) gpi)
     (pf : Γ ⊢i (p <---> q) using ( gpi)) :
         Γ ⊢i (((ψ^[[evar: E ↦ p]]) <---> (ψ^[[evar: E ↦ q]]))) using ( gpi).
   Proof.
-
-    move: ψ wfψ Hsz kt evs svs gpi pile pf el Hel1 Hel2 Hel3.
-    induction sz; intros ψ wfψ Hsz kt evs svs gpi pile pf el Hel1 Hel2 Hel3.
+(* TODO: if there were a size function for coEVarSet/coSVarSet, then
+         Hel3/Hsl3 would be not necessary *)
+    move: ψ wfψ Hsz evs svs gpi pile pf el Hel1 Hel2 Hel3 sl Hsl1 Hsl2 Hsl3.
+    induction sz; intros ψ wfψ Hsz evs svs gpi pile pf el Hel1 Hel2 Hel3 sl Hsl1 Hsl2 Hsl3.
     abstract (destruct ψ; simpl in Hsz; lia).
 
     lazymatch type of pile with
@@ -1438,10 +1506,19 @@ Section FOL_helpers.
       assert (size' ψ2 <= sz) by abstract(lia).
       
       simpl in *.
-      epose proof (Hf1 := fresh_evars_bigger ({[E]}∪free_evars ψ1 ∪ free_evars p ∪ free_evars q) Hel1 ltac:(set_solver)).
-      pose proof (pf₁ := IHsz ψ1 ltac:(assumption) ltac:(assumption) kt evs svs gpi pile pf el Hf1 ltac:(lia) Hel3).
-      epose proof (Hf2 := fresh_evars_bigger ({[E]}∪free_evars ψ2 ∪ free_evars p ∪ free_evars q) Hel1 ltac:(set_solver)).
-      pose proof (pf₂ := IHsz ψ2 ltac:(assumption) ltac:(assumption) kt evs svs gpi pile pf el Hf2 ltac:(lia) Hel3).
+      pose proof (Hef1 := fresh_evars_bigger ({[E]}∪free_evars ψ1 ∪ free_evars p ∪ free_evars q) Hel1 ltac:(set_solver)).
+      
+      pose proof (Hsf1 := fresh_svars_bigger (free_svars ψ1 ∪ free_svars p ∪ free_svars q) Hsl1 ltac:(set_solver)).
+      
+      unshelve (epose proof (pf₁ := IHsz ψ1 ltac:(assumption) ltac:(assumption) evs svs gpi _ pf el Hef1 ltac:(lia) Hel3 sl Hsf1 ltac:(lia) Hsl3)).
+      { clear - i' pile. try_solve_pile. }
+
+      epose proof (Hef2 := fresh_evars_bigger ({[E]}∪free_evars ψ2 ∪ free_evars p ∪ free_evars q) Hel1 ltac:(set_solver)).
+
+      pose proof (Hsf2 := fresh_svars_bigger (free_svars ψ2 ∪ free_svars p ∪ free_svars q) Hsl1 ltac:(set_solver)).
+
+      unshelve (epose proof (pf₂ := IHsz ψ2 ltac:(assumption) ltac:(assumption) evs svs gpi _ pf el Hef2 ltac:(lia) Hel3 sl Hsf2 ltac:(lia) Hsl3)).
+      { clear -i' pile. try_solve_pile. }
 
       unshelve (eapply congruence_app); try assumption.
     }
@@ -1458,11 +1535,20 @@ Section FOL_helpers.
       { clear -wfψ. abstract (wf_auto2). }
       assert (size' ψ2 <= sz) by abstract(lia).
 
+      pose proof (Hef1 := fresh_evars_bigger ({[E]}∪free_evars ψ1 ∪ free_evars p ∪ free_evars q) Hel1 ltac:(set_solver)).
+      
+      pose proof (Hsf1 := fresh_svars_bigger (free_svars ψ1 ∪ free_svars p ∪ free_svars q) Hsl1 ltac:(set_solver)).
+      
       simpl in *.
-      epose proof (Hf1 := fresh_evars_bigger ({[E]}∪free_evars ψ1 ∪ free_evars p ∪ free_evars q) Hel1 ltac:(set_solver)).
-      pose proof (pf₁ := IHsz ψ1 ltac:(assumption) ltac:(assumption) kt evs svs gpi pile pf el Hf1 ltac:(lia) Hel3).
-      epose proof (Hf2 := fresh_evars_bigger ({[E]}∪free_evars ψ2 ∪ free_evars p ∪ free_evars q) Hel1 ltac:(set_solver)).
-      pose proof (pf₂ := IHsz ψ2 ltac:(assumption) ltac:(assumption) kt evs svs gpi pile pf el Hf2 ltac:(lia) Hel3).
+      unshelve (epose proof (pf₁ := IHsz ψ1 ltac:(assumption) ltac:(assumption) evs svs gpi _ pf el Hef1 ltac:(lia) Hel3 sl Hsf1 ltac:(lia) Hsl3)).
+      { clear -i' pile. try_solve_pile. }
+
+      epose proof (Hef2 := fresh_evars_bigger ({[E]}∪free_evars ψ2 ∪ free_evars p ∪ free_evars q) Hel1 ltac:(set_solver)).
+
+      pose proof (Hsf2 := fresh_svars_bigger (free_svars ψ2 ∪ free_svars p ∪ free_svars q) Hsl1 ltac:(set_solver)).
+
+      unshelve(epose proof (pf₂ := IHsz ψ2 ltac:(assumption) ltac:(assumption) evs svs gpi _ pf el Hef2 ltac:(lia) Hel3 sl Hsf2 ltac:(lia) Hsl3)).
+      { clear -i' pile. try_solve_pile. }
 
       apply prf_equiv_of_impl_of_equiv.
       { abstract (wf_auto2). }
@@ -1491,7 +1577,15 @@ Section FOL_helpers.
       simpl in Hel2.
       erewrite <- evar_open_exist_depth with (x:=x) (dbi:=0) in Hel2.
 
-      pose proof (IH := IHsz (ψ^{evar: 0 ↦ x}) ltac:(assumption) ltac:(assumption) kt (evs ∪ {[x]}) svs gpi pile pf els HVars ltac:(lia) ltac:(set_solver)).
+      unshelve (epose proof (IH := IHsz (ψ^{evar: 0 ↦ x}) ltac:(assumption) ltac:(assumption) (evs ∪ {[x]}) svs gpi _ pf els HVars ltac:(lia) ltac:(set_solver) sl)).
+      { rewrite mu_in_evar_path_evar_open.
+        2: try_solve_pile.
+        destruct Hel1 as [_ ?]. clear -all_evars_fresh0. set_solver.
+      }
+      feed specialize IH.
+      { now rewrite free_svars_evar_open. }
+      { rewrite evar_open_mu_depth. lia. }
+      { assumption. }
 
       eapply congruence_ex with (x := x); try assumption.
       {
@@ -1510,89 +1604,49 @@ Section FOL_helpers.
       }
     }
     {
-      pose proof (frX := set_svar_fresh_is_fresh' SvS).
-      remember (svar_fresh (elements SvS)) as X.
-
-      simpl in HEinψ.
+      destruct sl as [ | X sls].
+      simpl in Hsl2. lia.
 
       assert (well_formed (ψ^{svar: 0 ↦ X}) = true) by (abstract(clear -wfψ;wf_auto2)).
       assert (size' (ψ^{svar: 0 ↦ X}) <= sz) by abstract(rewrite svar_open_size'; lia).
-      pose proof (IH := IHsz (ψ^{svar: 0 ↦ X}) ltac:(assumption) ltac:(assumption)).
-      specialize (IH EvS ({[X]} ∪ SvS)).
+
+      simpl in *.
+
+      unshelve (epose proof (IH := IHsz (ψ^{svar: 0 ↦ X}) ltac:(assumption) ltac:(assumption) evs svs gpi _ pf el)).
+      { rewrite mu_in_evar_path_svar_open.
+        destruct (decide (count_evar_occurrences E ψ = 0)).
+        * subst i'. rewrite e in pile.
+          apply count_occurences_not_in_path in e.
+          cbn in *. now rewrite e.
+        * assert (ltb 0 (count_evar_occurrences E ψ)) by (apply ltb_lt; lia).
+          subst i'. clear -pile H1. rewrite H1 in pile.
+          try_solve_pile.
+      }
       feed specialize IH.
       {
-        abstract (
-          subst i';
-          eapply pile_trans;
-          [|apply pile];
-          apply pile_evs_svs_kt;
-          [
-            (
-            simpl;
-            rewrite medoeip_svar_open;
-            apply reflexivity
-            )
-          |(
-            simpl;
-            rewrite mmdoeip_svar_open;
-            rewrite mmdoeip_S_in;[exact HEinψ|];
-            simpl;
-            unfold svar_fresh_s;
-            rewrite -HeqX;
-            clear;
-            set_solver
-          )
-          |(
-            clear IH;
-            repeat case_match; simpl in *; try reflexivity;
-            pose proof (Htmp := n);
-            rewrite mmdoeip_svar_open in Htmp;
-            pose proof (Htmp2 := e);
-            rewrite mmdoeip_S_in in Htmp2;
-            [exact HEinψ|];
-            inversion Htmp2
-          )
-          |(simp frames_on_the_way_to_hole'; subst X; clear; pi_set_solver)]).
+        now rewrite free_evars_svar_open.
       }
       {
-        exact p_sub_EvS.
+        rewrite svar_open_exist_depth. lia.
       }
       {
-        exact q_sub_EvS.
+        assumption.
+      }
+      specialize (IH sls).
+      feed specialize IH.
+      {
+        constructor.
+        * destruct Hsl1. apply svar_duplicates0.
+        * destruct Hsl1. intros.
+          pose proof (free_svars_svar_open ψ X 0).
+          specialize (all_svars_fresh0 X0 ltac:(now right)).
+          simpl in *. destruct svar_duplicates0. set_solver.
       }
       {
-        exact E_in_EvS.
+        rewrite svar_open_mu_depth. lia.
       }
       {
-        abstract (
-          rewrite free_evars_svar_open;
-          simpl in ψ_sub_EvS;
-          apply ψ_sub_EvS
-        ).
-      }
-      {
-        clear -p_sub_SvS.
-        abstract (set_solver).
-      }
-      {
-        clear -q_sub_SvS.
-        abstract (set_solver).
-      }
-      {
-        rewrite elem_of_subseteq.
-        intros X'.
-        rewrite free_svars_svar_open''.
-        intros [[H1 H2]|H1].
-        {
-          abstract (subst X'; clear; set_solver).
-        }
-        {
-          abstract (
-            simpl in ψ_sub_SvS;
-            clear -H1 ψ_sub_SvS;
-            set_solver
-          ).
-        }
+        intros. apply Hsl3. now right. 
       }
 
       apply pf_iff_free_evar_subst_svar_open_to_bsvar_subst_free_evar_subst in IH.
@@ -1617,12 +1671,12 @@ Section FOL_helpers.
           }
           3: {
             abstract (
-              clear -ψ_sub_SvS p_sub_SvS frX wfψ wfp;
+              clear -wfψ wfp;
               wf_auto2; intros; wf_auto2;
               cbn in *;
               pose proof (Htmp := free_svars_free_evar_subst ψ E p);
               unfold svar_is_fresh_in;
-              clear -Htmp ψ_sub_SvS p_sub_SvS frX;
+              clear -Htmp;
               set_solver
             ).
           }
@@ -1769,11 +1823,11 @@ Section FOL_helpers.
      (
        (ExGen := list_to_set (evar_fresh_seq (free_evars (pcPattern C) ∪ free_evars p ∪ free_evars q ∪ {[pcEvar C]}) (maximal_exists_depth_of_evar_in_pattern (pcEvar C) (pcPattern C))),
        SVSubst := list_to_set (svar_fresh_seq (free_svars (pcPattern C) ∪ free_svars p ∪ free_svars q) (maximal_mu_depth_of_evar_in_pattern (pcEvar C) (pcPattern C))),
-       KT := if decide (0 = (maximal_mu_depth_of_evar_in_pattern (pcEvar C) (pcPattern C))) is left _ then false else true,
-       FP := gset_to_coGset (@frames_on_the_way_to_hole' Σ (free_evars (pcPattern C) ∪ free_evars p ∪ free_evars q ∪ {[pcEvar C]}) (free_svars (pcPattern C) ∪ free_svars p ∪ free_svars q) (pcEvar C) (pcPattern C) p q wfC wfp wfq))
+       KT := if decide (0 = (maximal_mu_depth_of_evar_in_pattern (pcEvar C) (pcPattern C))) is left _ then false else true
       )
-     ( gpi)
-    ):
+      gpi
+     )
+    ) :
       Γ ⊢i (p <---> q) using ( gpi) ->
       Γ ⊢i (((emplace C p) <---> (emplace C q))) using ( gpi).
   Proof.

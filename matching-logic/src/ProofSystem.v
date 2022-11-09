@@ -629,6 +629,20 @@ End proof_info.
   | H : context G [implb _ _ = true] |- _ => rewrite implb_true_iff in H
   end.
 
+  Ltac convert_orb :=
+  unfold is_true in *;
+  match goal with
+  | |- context G [orb _ _ = true] => rewrite orb_true_iff
+  | H : context G [orb _ _ = true] |- _ => rewrite orb_true_iff in H
+  end.
+
+  Ltac convert_andb :=
+  unfold is_true in *;
+  match goal with
+  | |- context G [orb _ _ = true] => rewrite andb_true_iff
+  | H : context G [orb _ _ = true] |- _ => rewrite andb_true_iff in H
+  end.
+
   Ltac destruct_pile :=
     match goal with
     | H : @ProofInfoLe _ _ _ |- _ => destruct H as [? [? ?] ]
@@ -638,7 +652,12 @@ End proof_info.
   Ltac try_solve_pile :=
     assumption + (* optimization *)
     (repeat destruct_pile;
-    split; [try set_solver|split;[try set_solver| try (repeat convert_implb; set_solver)] ]).
+    simpl in *;
+    split; [try set_solver|split;[try set_solver
+    |try (repeat convert_implb;
+          repeat convert_orb;
+          repeat convert_andb;
+          set_solver)] ]).
 
 Section proof_info.
   Context {Σ : Signature}.
