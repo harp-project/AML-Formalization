@@ -1453,28 +1453,18 @@ Qed.
     all_svars_fresh : forall X, X ∈ l -> X ∉ s;
   }.
 
-  Lemma congruence_ex_helper Γ E ψ x p q gpi (EvS: gset evar) (SvS : gset svar) el sl
+  Lemma congruence_ex_helper Γ E ψ x p q gpi kt evs svs
     (HxneqE : x ≠ E)
     (wfψ : well_formed (ex , ψ))
     (wfp : well_formed p)
     (wfq : well_formed q)
-    (Heqx : x ∈ el)
-    (HEinψ: E ∈ free_evars ψ)
+    (Heqx : x ∉ free_evars ψ ∪ free_evars p ∪ free_evars q)
+    (Heqx2 : x ∈ evs)
     (i': ProofInfo)
-    (p_sub_EvS: free_evars p ⊆ EvS)
-    (q_sub_EvS: free_evars q ⊆ EvS)
-    (ψ_sub_EvS : free_evars ψ ⊆ EvS)
-    (Hfreshel : fresh_evars el EvS)
-    (Hfreshsl : fresh_svars sl SvS)
     (Heqi': i' =
-            (ExGen := list_to_set el,
-             SVSubst := list_to_set sl,
-             KT := (if
-                     decide
-                       (0 =
-                        maximal_mu_depth_of_evar_in_pattern E (ex , ψ))
-                    is left _ then false
-                    else true)
+            (ExGen := evs,
+             SVSubst := svs,
+             KT := kt
             ))
     (pile: ProofInfoLe i' gpi)
     (IH: Γ ⊢i ψ^{evar: 0 ↦ x}^[[evar: E ↦ p]] <---> ψ^{evar: 0 ↦ x}^[[evar: E ↦ q]]
@@ -1522,10 +1512,6 @@ Qed.
         }
         {
           abstract (
-            simpl;
-            destruct Hfreshel;
-            specialize (all_evars_fresh0 x Heqx);
-            pose proof (Htmp1 := set_evar_fresh_is_fresh' EvS);
             pose proof (Htmp2 := free_evars_free_evar_subst ψ q E);
             set_solver
           ).
@@ -1533,11 +1519,7 @@ Qed.
       }
       {
         abstract (
-          simpl;
-          destruct Hfreshel;
-          specialize (all_evars_fresh0 x Heqx);
-          pose proof (Htmp1 := @set_evar_fresh_is_fresh' _ EvS);
-          pose proof (Htmp := @free_evars_free_evar_subst Σ ψ p E);
+          pose proof (Htmp2 := free_evars_free_evar_subst ψ p E);
           set_solver
         ).
       }
@@ -1569,30 +1551,20 @@ Qed.
             subst i';
             eapply pile_trans;
             [|apply pile];
-            split; simpl; [|split; auto; set_solver]; 
-            rewrite medoeip_S_in;
-            [assumption|];
-            simpl;
-            unfold evar_fresh_s;
-            rewrite -Heqx;
-            clear;
+            split; simpl; [|split; auto; set_solver];
             set_solver
           ).
         }
         {
           abstract (
-            simpl;
-            pose proof (Htmp1 := set_evar_fresh_is_fresh' EvS);
-            pose proof (Htmp := free_evars_free_evar_subst ψ p E);
+            pose proof (Htmp2 := free_evars_free_evar_subst ψ p E);
             set_solver
           ).
         }
       }
       {
         abstract (
-          simpl;
-          pose proof (Htmp1 := set_evar_fresh_is_fresh' EvS);
-          pose proof (Htmp := free_evars_free_evar_subst ψ q E);
+          pose proof (Htmp2 := free_evars_free_evar_subst ψ q E);
           set_solver
         ).
       }
