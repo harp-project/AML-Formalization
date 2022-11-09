@@ -1441,44 +1441,47 @@ Section FOL_helpers.
 }
 Qed.
 
+  Class fresh_evars (l : list evar) (s : gset evar) :=
+  {
+    evar_duplicates : NoDup l;
+    all_evars_fresh : forall x, x ∈ l -> x ∉ s;
+  }.
 
-  Lemma congruence_ex_helper Γ E ψ x p q gpi exdepth mudepth EvS SvS
+  Class fresh_svars (l : list svar) (s : gset svar) :=
+  {
+    svar_duplicates : NoDup l;
+    all_svars_fresh : forall X, X ∈ l -> X ∉ s;
+  }.
+
+  Lemma congruence_ex_helper Γ E ψ x p q gpi (EvS: gset evar) (SvS : gset svar) el sl
     (HxneqE : x ≠ E)
     (wfψ : well_formed (ex , ψ))
     (wfp : well_formed p)
     (wfq : well_formed q)
-    (Heqx : x = evar_fresh (elements EvS))
+    (Heqx : x ∈ el)
     (HEinψ: E ∈ free_evars ψ)
     (i': ProofInfo)
     (p_sub_EvS: free_evars p ⊆ EvS)
     (q_sub_EvS: free_evars q ⊆ EvS)
     (ψ_sub_EvS : free_evars ψ ⊆ EvS)
+    (Hfreshel : fresh_evars el EvS)
+    (Hfreshsl : fresh_svars sl SvS)
     (Heqi': i' =
-            (ExGen := list_to_set
-                        (evar_fresh_seq EvS
-                           (maximal_exists_depth_of_evar_in_pattern' exdepth E
-                              (ex , ψ))),
-             SVSubst := list_to_set
-                          (svar_fresh_seq SvS
-                             (maximal_mu_depth_of_evar_in_pattern' mudepth E
-                                (ex , ψ))),
+            (ExGen := list_to_set el,
+             SVSubst := list_to_set sl,
              KT := (if
                      decide
                        (0 =
-                        maximal_mu_depth_of_evar_in_pattern' mudepth E (ex , ψ))
+                        maximal_mu_depth_of_evar_in_pattern E (ex , ψ))
                     is left _ then false
-                    else true),
-             FP := ∅
+                    else true)
             ))
-    (pile: ProofInfoLe i' ( gpi))
+    (pile: ProofInfoLe i' gpi)
     (IH: Γ ⊢i ψ^{evar: 0 ↦ x}^[[evar: E ↦ p]] <---> ψ^{evar: 0 ↦ x}^[[evar: E ↦ q]]
        using  gpi) :
     (Γ ⊢i (ex , ψ^[[evar: E ↦ p]]) <---> (ex , ψ^[[evar: E ↦ q]]) using  gpi).
   Proof.
-    apply pf_evar_open_free_evar_subst_equiv_sides in IH.
-    2: { exact HxneqE. }
-    2: { exact wfp. }
-    2: { exact wfq. }
+    apply pf_evar_open_free_evar_subst_equiv_sides in IH; auto.
     unshelve (epose proof (IH1 := pf_iff_proj1 Γ _ _ _ _ _ IH)).
     { abstract (wf_auto2). }
     { abstract (wf_auto2). }
@@ -1513,23 +1516,15 @@ Qed.
             subst i';
             eapply pile_trans;
             [|apply pile];
-            apply pile_evs_svs_kt;
-            [(
-            simpl;
-            rewrite medoeip_S_in;
-            [assumption|];
-            simpl;
-            unfold evar_fresh_s;
-            rewrite -Heqx;
-            clear;
+            split; simpl; [|split; auto; set_solver];
             set_solver
-            )|(clear; set_solver)
-            |reflexivity|(clear; set_solver)]
           ).
         }
         {
           abstract (
             simpl;
+            destruct Hfreshel;
+            specialize (all_evars_fresh0 x Heqx);
             pose proof (Htmp1 := set_evar_fresh_is_fresh' EvS);
             pose proof (Htmp2 := free_evars_free_evar_subst ψ q E);
             set_solver
@@ -1539,6 +1534,8 @@ Qed.
       {
         abstract (
           simpl;
+          destruct Hfreshel;
+          specialize (all_evars_fresh0 x Heqx);
           pose proof (Htmp1 := @set_evar_fresh_is_fresh' _ EvS);
           pose proof (Htmp := @free_evars_free_evar_subst Σ ψ p E);
           set_solver
@@ -1572,20 +1569,15 @@ Qed.
             subst i';
             eapply pile_trans;
             [|apply pile];
-            apply pile_evs_svs_kt;
-            [(
-              simpl;
-              rewrite medoeip_S_in;
-              [assumption|];
-              simpl;
-              unfold evar_fresh_s;
-              rewrite -Heqx;
-              clear;
-              set_solver
-            )
-           |(clear; set_solver)
-           |(reflexivity)|(clear; set_solver)
-            ]).
+            split; simpl; [|split; auto; set_solver]; 
+            rewrite medoeip_S_in;
+            [assumption|];
+            simpl;
+            unfold evar_fresh_s;
+            rewrite -Heqx;
+            clear;
+            set_solver
+          ).
         }
         {
           abstract (
