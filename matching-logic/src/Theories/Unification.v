@@ -50,52 +50,46 @@ Section ProofSystemTheorems.
     mlSplitAnd; mlExact "H1".
   Defined.
 
-  Lemma membership_imp_equal :
-    forall Γ φ φ',
-      theory ⊆ Γ -> mu_free φ' ->
-      well_formed φ -> well_formed φ' ->
-      Γ ⊢ (ex , (φ =ml b0)) ->
-      Γ ⊢ (ex , (φ' =ml b0)) ->
-      Γ ⊢ (φ ∈ml φ') ---> (φ =ml φ') .
+
+  Lemma membership_imp_equal Γ φ φ' :
+    theory ⊆ Γ -> mu_free φ' ->
+    well_formed φ -> well_formed φ' ->
+    Γ ⊢ (ex , (φ =ml b0)) --->
+        (ex , (φ' =ml b0)) --->
+        (φ ∈ml φ') ---> (φ =ml φ').
   Proof.
-    intros Γ φ φ' HΓ Mufree Wf1 Wf2 Funφ Funφ'.
-    unfold patt_in, patt_equal.
+    intros HΓ Mufree Wf1 Wf2.
     toMLGoal. wf_auto2.
 
-    (* TODO: proposal: functional_reasoning tactic, which replaces a pattern with a 
-                       free variable *)
+    mlIntro "fun0". mlIntro "fun1".
     epose proof (@forall_functional_subst _ _ (⌈ b0 and φ' ⌉ ---> ⌊ b0 <---> φ' ⌋) φ 
                     Γ HΓ ltac:(wf_auto2) ltac:(wf_auto2) _ ltac:(wf_auto2)) as H.
     Unshelve.
-    2: { cbn. case_match; auto. apply andb_true_iff in Wf2 as [_ Wf2].
-         apply andb_true_iff in Wf2 as [_ Wf2].
-         (* NOTE: using eapply breaks the proof *)
-         apply well_formed_closed_ex_aux_ind with (ind_evar2 := 1)in Wf2.
-         rewrite Wf2. auto. lia.
-    } (* TODO: this should be auto... *)
-    simpl in H.
-    repeat rewrite bevar_subst_not_occur in H. wf_auto2. (* TODO: cast_proof? *)
+    2: wf_auto2.
+    mlSimpl in H. simpl in H.
+    repeat rewrite bevar_subst_not_occur in H. wf_auto2.
     mlApplyMeta H. clear H.
     mlSplitAnd.
-    2: fromMLGoal; assumption.
+    2: mlExact "fun0".
 
+    (* TODO: proposal: functional_reasoning tactic, which replaces a pattern with a 
+                       free variable *)
     epose proof (forall_functional_subst (all, (⌈ b0 and b1 ⌉ ---> ⌊ b0 <---> b1 ⌋)) φ'
                     Γ HΓ ltac:(wf_auto2) ltac:(wf_auto2) _ ltac:(wf_auto2)) as H.
     Unshelve.
-    2: { cbn. do 2 case_match; auto; lia. }
+    2: wf_auto2.
     mlApplyMeta H. clear H.
 
     mlSplitAnd.
-    2: fromMLGoal; assumption.
+    2: mlExact "fun1".
     remember (fresh_evar patt_bott) as x.
     remember (fresh_evar (patt_free_evar x)) as y.
     assert (x <> y) as XY.
-    { intro. apply x_eq_fresh_impl_x_notin_free_evars in Heqy.
-      subst. set_solver. } (* TODO: this should be auto... *)
+    { solve_fresh_neq. }
+    mlClear "fun0". mlClear "fun1".
     fromMLGoal.
 
-
-   (* TODO: mlIntro for supporting 'all' *)
+    (* TODO: mlIntro for supporting 'all' *)
 
     pose proof (universal_generalization Γ (all , (⌈ b0 and patt_free_evar x ⌉ ---> ⌊ b0 <---> patt_free_evar x ⌋)) x AnyReasoning (pile_any _)) as H1.
     simpl in H1.
@@ -111,6 +105,110 @@ Section ProofSystemTheorems.
     { wf_auto2. }
     clear H1.
     now apply overlapping_variables_equal.
+  Defined.
+
+  Lemma membership_imp_equal_meta Γ φ φ' :
+      theory ⊆ Γ -> mu_free φ' ->
+      well_formed φ -> well_formed φ' ->
+      Γ ⊢ (ex , (φ =ml b0)) ->
+      Γ ⊢ (ex , (φ' =ml b0)) ->
+      Γ ⊢ (φ ∈ml φ') ---> (φ =ml φ') .
+  Proof.
+    intros HΓ Mufree Wf1 Wf2 H0 H1.
+    toMLGoal.
+    { wf_auto2. }
+    mlAdd H1 as "H1".
+    mlAdd H0 as "H0".
+    fromMLGoal.
+    apply membership_imp_equal; assumption.
+  Defined.
+
+  Lemma membership_impl_subseteq Γ g ψ :
+    theory ⊆ Γ -> mu_free ψ -> mu_free g ->
+    well_formed g -> well_formed ψ ->
+    Γ ⊢ (ex , (g =ml b0)) ->
+    Γ ⊢ (g ∈ml ψ) ->
+    Γ ⊢ (g ⊆ml ψ).
+  Proof.
+    intros HΓ Hmfψ Hmfg wfg wfψ Hfung H.
+  
+    apply phi_impl_total_phi_meta.
+    { wf_auto2. }
+    { apply pile_any. }
+  
+    apply membership_elimination.
+    { apply pile_any. }
+    { wf_auto2. }
+    { set_solver. }
+  
+    remember (fresh_evar (b0 ∈ml (g ---> ψ))) as x.
+  
+    rewrite <- evar_quantify_evar_open with (phi := b0 ∈ml (g ---> ψ)) (n := 0) (x := x).
+    2: {
+      subst x.
+      eapply evar_is_fresh_in_richer'.
+      2: { apply set_evar_fresh_is_fresh'. }
+      clear. set_solver.
+    }
+    2: { cbn. split_and!; try reflexivity; fold well_formed_closed_ex_aux; wf_auto2. }
+    apply universal_generalization;[apply pile_any|wf_auto2|].
+    mlSimpl. unfold evar_open. simpl.
+  
+    rewrite bevar_subst_not_occur.
+    { wf_auto2. }
+    rewrite bevar_subst_not_occur.
+    { wf_auto2. }
+  
+    pose proof (Htmp := membership_imp Γ x g ψ).
+    feed specialize Htmp.
+    { set_solver. }
+    { wf_auto2. }
+    { wf_auto2. }
+    apply useAnyReasoning in Htmp.
+  
+    toMLGoal.
+    { wf_auto2. }
+    mlRewrite Htmp at 1. clear Htmp. fold AnyReasoning.
+  
+    mlIntro "H".
+  
+    pose proof (Htmp := membership_imp_equal_meta Γ (patt_free_evar x) g).
+    feed specialize Htmp.
+    { assumption. }
+    { assumption. }
+    { wf_auto2. }
+    { wf_auto2. }
+    {
+      pose proof (Hex := Ex_quan Γ (patt_free_evar x =ml b0) x).
+      feed specialize Hex.
+      { wf_auto2. }
+      apply useAnyReasoning in Hex.
+      toMLGoal.
+      { wf_auto2. }
+      mlApplyMeta Hex. unfold instantiate. mlSimpl. simpl.
+      fromMLGoal.
+      aapply patt_equal_refl.
+      { wf_auto2. }
+    }
+    { assumption. }
+  
+    mlApplyMeta Htmp in "H". clear Htmp.
+    mlRevertLast.
+    mlRewrite (patt_eq_comm (patt_free_evar x) g Γ HΓ ltac:(wf_auto2) ltac:(wf_auto2)) at 1. fold AnyReasoning.
+    mlIntro "H".
+    mlApplyMeta (equality_elimination2 Γ g (patt_free_evar x) (b0 ∈ml ψ)) in "H". mlSimpl. simpl.
+    rewrite bevar_subst_not_occur.
+    { wf_auto2. }
+    rewrite bevar_subst_not_occur.
+    { wf_auto2. }
+    mlApply "H".
+    mlClear "H".
+    fromMLGoal.
+    assumption.
+    { wf_auto2. }
+    { wf_auto2. }
+    { cbn. split_and!;[assumption|reflexivity|reflexivity]. }
+    { assumption. }
   Defined.
 
   Lemma functional_pattern_defined :
@@ -132,29 +230,6 @@ Section ProofSystemTheorems.
       { apply pile_any. }
       { exact HΓ. }
     * mlExact "H0".
-  Defined.
-
-  Lemma equal_imp_membership :
-    forall Γ φ φ',
-      theory ⊆ Γ -> mu_free φ' ->
-      well_formed φ -> well_formed φ' ->
-      Γ ⊢ ⌈ φ' ⌉  ->
-      Γ ⊢ (φ =ml φ') ---> (φ ∈ml φ') .
-  Proof.
-    intros Γ φ φ' HΓ MF WF1 WF2 Def.
-    toMLGoal. wf_auto2.
-    mlIntro "H0".
-    mlRewriteBy "H0" at 1; cbn; try_wfauto2; try assumption.
-    { rewrite MF. reflexivity. }
-      mlClear "H0". unfold patt_in.
-      assert (Γ ⊢ ( φ' and φ' <---> φ') ) as H1.
-      {
-        toMLGoal. wf_auto2.
-        mlSplitAnd; mlIntro "H1".
-        - mlDestructAnd "H1" as "H2" "H3". mlExact "H3".
-        - mlSplitAnd; mlExact "H1".
-      }
-      now mlRewrite H1 at 1.
   Defined.
 
   Lemma membership_equal_equal :
@@ -181,7 +256,7 @@ Section ProofSystemTheorems.
     mlApplyMetaRaw (useAnyReasoning (not_not_intro Γ ((φ ∈ml φ' <---> φ =ml φ' ))
                     ltac:(wf_auto2))).
     mlSplitAnd; mlIntro.
-    * mlApplyMeta membership_imp_equal; auto. mlExactn 0.
+    * mlApplyMeta membership_imp_equal_meta; auto. mlExactn 0.
     * mlApplyMeta equal_imp_membership; auto. mlExactn 0.
       Unshelve.
       toMLGoal. wf_auto2.
@@ -209,7 +284,7 @@ Section ProofSystemTheorems.
     replace (⌈ φ and φ' ⌉) with (φ ∈ml φ') by auto.
     mlDestructAnd "H0" as "H2" "H3". mlSplitAnd.
     * mlExact "H2".
-    * mlApplyMeta membership_imp_equal; auto.
+    * mlApplyMeta membership_imp_equal_meta; auto.
       mlExact "H1".
   Defined.
 
