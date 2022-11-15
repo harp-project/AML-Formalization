@@ -1587,6 +1587,14 @@ Section FOL_helpers.
       }
     }
     {
+      destruct (decide (E ∈ free_evars ψ)) as [HEinψ|HEnotinψ].
+      2: {
+        rewrite free_evar_subst_no_occurrence; auto.
+        rewrite free_evar_subst_no_occurrence; auto.
+        gapply pf_iff_equiv_refl. try_solve_pile.
+        { abstract (wf_auto2). }
+      }
+
       destruct sl as [ | X sls].
       simpl in Hsl2. lia.
 
@@ -1647,7 +1655,6 @@ Section FOL_helpers.
       { clear -wfψ wfp. abstract (wf_auto2). }
       { clear -wfψ wfq. abstract (wf_auto2). }
 
-      Check svar_quantify_svar_open.
       rewrite <- (svar_quantify_svar_open X 0 (ψ^[[evar:E↦p]])).
       rewrite <- (svar_quantify_svar_open X 0 (ψ^[[evar:E↦q]])).
       2: {
@@ -1669,48 +1676,22 @@ Section FOL_helpers.
           unfold svar_open.
           apply IH2.
         }
-        3: {
+        2-3:
           abstract (
-            clear -wfψ wfp;
+            destruct Hsl1 as [_ Hsl1];
+            specialize (Hsl1 X ltac:(now left));
+            clear -wfψ wfp wfq Hsl1;
             wf_auto2; intros; wf_auto2;
             cbn in *;
-            pose proof (Htmp := free_svars_free_evar_subst ψ E p);
+            pose proof (Htmp1 := free_svars_free_evar_subst ψ E p);
+            pose proof (Htmp2 := free_svars_free_evar_subst ψ E q);
             unfold svar_is_fresh_in;
-            clear -Htmp;
             set_solver
           ).
-        }
-        2: {
-          abstract (
-            clear -ψ_sub_SvS q_sub_SvS frX wfψ wfq;
-            wf_auto2; intros; wf_auto2;
-            simpl in *;
-            pose proof (Htmp := free_svars_free_evar_subst ψ E q);
-            unfold svar_is_fresh_in;
-            clear -Htmp ψ_sub_SvS q_sub_SvS frX;
-            set_solver
-          ).
-        }
         {
-          abstract (
-            subst i';
-            eapply pile_trans;[|apply pile];
-            apply pile_evs_svs_kt;
-            [(clear; set_solver)
-            |(simpl;
-              rewrite mmdoeip_S_in;
-              [(exact HEinψ)|];
-              simpl;
-              unfold svar_fresh_s;
-              rewrite -HeqX;
-              clear;
-              set_solver
-          )|(repeat case_match; simpl in *; try reflexivity;
-          pose proof (Htmp := e);
-          rewrite mmdoeip_S_in in Htmp;
-          [exact HEinψ|];
-          inversion Htmp)|(clear; set_solver)]
-          ).
+          abstract (apply count_evar_occurrences_not_0 in HEinψ;
+          apply Nat.ltb_lt in HEinψ; subst i'; rewrite HEinψ in pile;
+          try_solve_pile).
         }
       }
       3: {
@@ -1719,47 +1700,23 @@ Section FOL_helpers.
           unfold svar_open.
           apply IH1.
         }
-        3: {
+        2-3:
           abstract (
-            clear -ψ_sub_SvS q_sub_SvS frX wfψ wfq;
-            wf_auto2; intros; wf_auto2; simpl in *;
-            pose proof (Htmp := free_svars_free_evar_subst ψ E q);
-            clear -Htmp ψ_sub_SvS q_sub_SvS frX;
+            destruct Hsl1 as [_ Hsl1];
+            specialize (Hsl1 X ltac:(now left));
+            clear -wfψ wfp wfq Hsl1;
+            wf_auto2; intros; wf_auto2;
+            cbn in *;
+            pose proof (Htmp1 := free_svars_free_evar_subst ψ E p);
+            pose proof (Htmp2 := free_svars_free_evar_subst ψ E q);
             unfold svar_is_fresh_in;
             set_solver
           ).
-        }
-        2: {
-          abstract (
-            clear -ψ_sub_SvS p_sub_SvS frX wfψ wfp;
-            wf_auto2; intros; wf_auto2; simpl in *;
-            pose proof (Htmp := free_svars_free_evar_subst ψ E p);
-            clear -Htmp ψ_sub_SvS p_sub_SvS frX;
-            unfold svar_is_fresh_in;
-            set_solver
-          ).
-        }
-        {
-          abstract (
-            subst i';
-            eapply pile_trans;[|apply pile];
-            apply pile_evs_svs_kt;
-            [(clear; set_solver)
-            |(simpl;
-              rewrite mmdoeip_S_in;
-              [(exact HEinψ)|];
-              simpl;
-              unfold svar_fresh_s;
-              rewrite -HeqX;
-              clear;
-              set_solver
-            )|(repeat case_match; simpl in *; try reflexivity;
-            pose proof (Htmp := e);
-            rewrite mmdoeip_S_in in Htmp;
-            [exact HEinψ|];
-            inversion Htmp)|(clear; set_solver)]
-          ).
-        }
+          {
+            abstract (apply count_evar_occurrences_not_0 in HEinψ;
+            apply Nat.ltb_lt in HEinψ; subst i'; rewrite HEinψ in pile;
+            try_solve_pile).
+          }
       }
       {
         cut (X ∉ free_svars ψ^[[evar:E↦p]]).
@@ -1771,7 +1728,9 @@ Section FOL_helpers.
         }
         abstract (
           pose proof (Htmp := free_svars_free_evar_subst ψ E p);
-          clear -H Htmp frX ψ_sub_SvS p_sub_SvS;
+          destruct Hsl1 as [_ Hsl1];
+          specialize (Hsl1 X ltac:(now left));
+          clear -H Htmp ψ Hsl1;
           set_solver
         ).
       }
@@ -1784,32 +1743,12 @@ Section FOL_helpers.
         }
         abstract (
           pose proof (Htmp := free_svars_free_evar_subst ψ E q);
-          clear -H Htmp frX ψ_sub_SvS q_sub_SvS;
+          destruct Hsl1 as [_ Hsl1];
+          specialize (Hsl1 X ltac:(now left));
+          clear -H Htmp ψ Hsl1;
           set_solver
         ).
       }
-    }
-    {
-      clear -wfψ wfp.
-      abstract (wf_auto2).
-    }
-    {
-      clear -wfψ wfq.
-      abstract (wf_auto2).
-    }
-    {
-      abstract (
-        pose proof (Htmp := free_svars_free_evar_subst ψ E p);
-        clear -H Htmp frX ψ_sub_SvS p_sub_SvS;
-        set_solver
-      ).
-    }
-    {
-      abstract (
-        pose proof (Htmp := free_svars_free_evar_subst ψ E q);
-        clear -H Htmp frX ψ_sub_SvS q_sub_SvS;
-        set_solver
-      ).
     }
   Defined.
 

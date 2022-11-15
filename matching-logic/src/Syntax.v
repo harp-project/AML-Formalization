@@ -840,8 +840,7 @@ Section with_signature.
       2: eassumption.
       lia.
     - repeat case_match; auto.
-      apply free_evar_subst_no_occurrence.
-      apply count_evar_occurrences_0. assumption.
+      apply free_evar_subst_no_occurrence. assumption.
     - rewrite IHϕ1; auto. rewrite IHϕ2; auto.
     - rewrite IHϕ1; auto. rewrite IHϕ2; auto.
     - rewrite IHϕ; auto.

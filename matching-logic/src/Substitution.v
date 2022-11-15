@@ -1197,257 +1197,257 @@ intro H. apply bevar_subst_bsvar_subst; auto.
 Qed.
 
 Corollary svar_open_bevar_subst m phi1 phi2 dbi X
-: well_formed_closed phi2 ->
-  phi1^[evar: dbi ↦ phi2]^{svar: m ↦ X}
-  = phi1^{svar: m ↦ X}^[evar: dbi ↦ phi2].
+  : well_formed_closed phi2 ->
+    phi1^[evar: dbi ↦ phi2]^{svar: m ↦ X}
+    = phi1^{svar: m ↦ X}^[evar: dbi ↦ phi2].
 Proof.
-intro H. apply eq_sym, bevar_subst_bsvar_subst; auto.
+  intro H. apply eq_sym, bevar_subst_bsvar_subst; auto.
 Qed.
 
 Corollary svar_open_bsvar_subst_higher m phi1 phi2 dbi X
-: well_formed_closed phi2 ->
-  m < dbi ->
-  phi1^[svar: dbi ↦ phi2]^{svar: m ↦ X}
-  = phi1^{svar: m ↦ X}^[svar: pred dbi ↦ phi2].
+  : well_formed_closed phi2 ->
+    m < dbi ->
+    phi1^[svar: dbi ↦ phi2]^{svar: m ↦ X}
+    = phi1^{svar: m ↦ X}^[svar: pred dbi ↦ phi2].
 Proof.
-intros H H0. apply bsvar_subst_comm_higher; auto.
-unfold well_formed_closed in *. destruct_and!. auto.
+  intros H H0. apply bsvar_subst_comm_higher; auto.
+  unfold well_formed_closed in *. destruct_and!. auto.
 Qed.
 
 Corollary svar_open_bsvar_subst_lower m phi1 phi2 dbi X
-: well_formed_closed phi2 ->
-  m > dbi ->
-  phi1^[svar: dbi ↦ phi2]^{svar: m ↦ X}
-  = phi1^{svar: S m ↦ X}^[svar: dbi ↦ phi2].
+  : well_formed_closed phi2 ->
+    m > dbi ->
+    phi1^[svar: dbi ↦ phi2]^{svar: m ↦ X}
+    = phi1^{svar: S m ↦ X}^[svar: dbi ↦ phi2].
 Proof.
-intros H H0. apply bsvar_subst_comm_lower; auto.
-unfold well_formed_closed in *. destruct_and!. auto.
+  intros H H0. apply bsvar_subst_comm_lower; auto.
+  unfold well_formed_closed in *. destruct_and!. auto.
 Qed.
 
 Corollary evar_open_bevar_subst_higher m phi1 phi2 dbi X
-: well_formed_closed_ex_aux phi2 0 ->
-  m < dbi ->
-  phi1^[evar: dbi ↦ phi2]^{evar: m ↦ X}
-  = phi1^{evar: m ↦ X}^[evar: pred dbi ↦ phi2].
+  : well_formed_closed_ex_aux phi2 0 ->
+    m < dbi ->
+    phi1^[evar: dbi ↦ phi2]^{evar: m ↦ X}
+    = phi1^{evar: m ↦ X}^[evar: pred dbi ↦ phi2].
 Proof.
-intros H H0. apply bevar_subst_comm_higher; auto.
+  intros H H0. apply bevar_subst_comm_higher; auto.
 Qed.
 
 Corollary evar_open_bevar_subst_lower m phi1 phi2 dbi X
-: well_formed_closed phi2 ->
-  m > dbi ->
-  phi1^[evar: dbi ↦ phi2]^{evar: m ↦ X}
-  = phi1^{evar: S m ↦ X}^[evar: dbi ↦ phi2].
+  : well_formed_closed phi2 ->
+    m > dbi ->
+    phi1^[evar: dbi ↦ phi2]^{evar: m ↦ X}
+    = phi1^{evar: S m ↦ X}^[evar: dbi ↦ phi2].
 Proof.
-intros H H0. apply bevar_subst_comm_lower; auto.
-unfold well_formed_closed in *. destruct_and!. auto.
+  intros H H0. apply bevar_subst_comm_lower; auto.
+  unfold well_formed_closed in *. destruct_and!. auto.
 Qed.
 
 
 
 Lemma free_svars_bsvar_subst' :
-forall φ ψ dbi X,
-  (X ∈ free_svars (φ^[svar: dbi ↦ ψ])) <->
-  ((X ∈ (free_svars ψ) /\ bsvar_occur φ dbi) \/ (X ∈ (free_svars φ))).
+  forall φ ψ dbi X,
+    (X ∈ free_svars (φ^[svar: dbi ↦ ψ])) <->
+    ((X ∈ (free_svars ψ) /\ bsvar_occur φ dbi) \/ (X ∈ (free_svars φ))).
 Proof.
-induction φ; intros ψ dbi X; simpl.
-- split; intros H; auto.
-  destruct H.
-  destruct H. congruence. assumption.
-- split; intros H; auto.
-  destruct H; auto.
-  destruct H; congruence.
-- split; intros H; auto.
-  destruct H; auto.
-  destruct H; congruence.
-- case_match; split; intros H'.
-  + simpl in H'. set_solver.
-  + destruct H' as [H'|H'].
-    * destruct H'; auto. case_match; auto; subst. lia. congruence.
-    * set_solver.
-  + left. split; auto. case_match; auto.
-  + simpl in H. set_solver.
-  + simpl in H. set_solver.
-  + destruct H' as [H'|H'].
-    * destruct H'. case_match; try lia; congruence.
-    * set_solver.
-- split; intros H'; auto.
-  destruct H' as [H'|H'].
-  + destruct H'. congruence.
-  + set_solver.
-- rewrite elem_of_union.
-  rewrite elem_of_union.
-  rewrite IHφ1.
-  rewrite IHφ2.
-  split; intros H.
-  + destruct H.
-    * destruct H.
-      -- left. destruct H.
-         split; auto. rewrite H0. auto.
-      -- right. left. assumption.
-    * destruct H.
-      -- left. destruct H.
-         split; auto. rewrite H0. apply orbT.
-      -- right. right. assumption.
-  + destruct H.
-    * destruct H as [H1 H2].
-      destruct (decide (bsvar_occur φ1 dbi)).
-      -- left. left. split; assumption.
-      -- destruct (decide (bsvar_occur φ2 dbi)).
-         2: { apply orb_prop in H2. destruct H2.
-              rewrite H in n. congruence.
-              rewrite H in n0. congruence.
-         }
-         right.
-         left. split; assumption.
-    * destruct H.
-      -- left. right. assumption.
-      -- right. right. assumption.
-- split; intros H; auto.
-  destruct H.
-  + destruct H. congruence.
-  + set_solver.
-- rewrite elem_of_union.
-  rewrite elem_of_union.
-  rewrite IHφ1.
-  rewrite IHφ2.
-  split; intros H.
-  + destruct H.
-    * destruct H.
-      -- left. destruct H.
-         split; auto. rewrite H0. auto.
-      -- right. left. assumption.
-    * destruct H.
-      -- left. destruct H.
-         split; auto. rewrite H0. apply orbT.
-      -- right. right. assumption.
-  + destruct H.
-    * destruct H as [H1 H2].
-      destruct (decide (bsvar_occur φ1 dbi)).
-      -- left. left. split; assumption.
-      -- destruct (decide (bsvar_occur φ2 dbi)).
-         2: { apply orb_prop in H2. destruct H2.
-              rewrite H in n. congruence.
-              rewrite H in n0. congruence.
-         }
-         right.
-         left. split; assumption.
-    * destruct H.
-      -- left. right. assumption.
-      -- right. right. assumption.
-- rewrite IHφ. auto.
-- rewrite IHφ. auto.
+  induction φ; intros ψ dbi X; simpl.
+  - split; intros H; auto.
+    destruct H.
+    destruct H. congruence. assumption.
+  - split; intros H; auto.
+    destruct H; auto.
+    destruct H; congruence.
+  - split; intros H; auto.
+    destruct H; auto.
+    destruct H; congruence.
+  - case_match; split; intros H'.
+    + simpl in H'. set_solver.
+    + destruct H' as [H'|H'].
+      * destruct H'; auto. case_match; auto; subst. lia. congruence.
+      * set_solver.
+    + left. split; auto. case_match; auto.
+    + simpl in H. set_solver.
+    + simpl in H. set_solver.
+    + destruct H' as [H'|H'].
+      * destruct H'. case_match; try lia; congruence.
+      * set_solver.
+  - split; intros H'; auto.
+    destruct H' as [H'|H'].
+    + destruct H'. congruence.
+    + set_solver.
+  - rewrite elem_of_union.
+    rewrite elem_of_union.
+    rewrite IHφ1.
+    rewrite IHφ2.
+    split; intros H.
+    + destruct H.
+      * destruct H.
+        -- left. destruct H.
+          split; auto. rewrite H0. auto.
+        -- right. left. assumption.
+      * destruct H.
+        -- left. destruct H.
+          split; auto. rewrite H0. apply orbT.
+        -- right. right. assumption.
+    + destruct H.
+      * destruct H as [H1 H2].
+        destruct (decide (bsvar_occur φ1 dbi)).
+        -- left. left. split; assumption.
+        -- destruct (decide (bsvar_occur φ2 dbi)).
+          2: { apply orb_prop in H2. destruct H2.
+                rewrite H in n. congruence.
+                rewrite H in n0. congruence.
+          }
+          right.
+          left. split; assumption.
+      * destruct H.
+        -- left. right. assumption.
+        -- right. right. assumption.
+  - split; intros H; auto.
+    destruct H.
+    + destruct H. congruence.
+    + set_solver.
+  - rewrite elem_of_union.
+    rewrite elem_of_union.
+    rewrite IHφ1.
+    rewrite IHφ2.
+    split; intros H.
+    + destruct H.
+      * destruct H.
+        -- left. destruct H.
+          split; auto. rewrite H0. auto.
+        -- right. left. assumption.
+      * destruct H.
+        -- left. destruct H.
+          split; auto. rewrite H0. apply orbT.
+        -- right. right. assumption.
+    + destruct H.
+      * destruct H as [H1 H2].
+        destruct (decide (bsvar_occur φ1 dbi)).
+        -- left. left. split; assumption.
+        -- destruct (decide (bsvar_occur φ2 dbi)).
+          2: { apply orb_prop in H2. destruct H2.
+                rewrite H in n. congruence.
+                rewrite H in n0. congruence.
+          }
+          right.
+          left. split; assumption.
+      * destruct H.
+        -- left. right. assumption.
+        -- right. right. assumption.
+  - rewrite IHφ. auto.
+  - rewrite IHφ. auto.
 Qed.
 
 Lemma free_evars_bevar_subst' :
-forall φ ψ dbi X,
-  (X ∈ free_evars (φ^[evar: dbi ↦ ψ])) <->
-  ((X ∈ (free_evars ψ) /\ bevar_occur φ dbi) \/ (X ∈ (free_evars φ))).
+  forall φ ψ dbi X,
+    (X ∈ free_evars (φ^[evar: dbi ↦ ψ])) <->
+    ((X ∈ (free_evars ψ) /\ bevar_occur φ dbi) \/ (X ∈ (free_evars φ))).
 Proof.
-induction φ; intros ψ dbi X; simpl.
-- split; intros H; auto.
-  destruct H.
-  destruct H. congruence. assumption.
-- split; intros H; auto.
-  destruct H; auto.
-  destruct H; congruence.
-- case_match; split; intros H'.
-  + simpl in H'. set_solver.
-  + destruct H' as [H'|H'].
-    * destruct H'; auto. case_match; auto; subst. lia. congruence.
-    * set_solver.
-  + left. split; auto. case_match; auto.
-  + simpl in H'. set_solver.
-  + simpl in H'. set_solver.
-  + destruct H' as [H'|H'].
-    * destruct H'. case_match; try lia; congruence.
-    * set_solver.
-- split; intros H; auto.
-  destruct H; auto.
-  destruct H; congruence.
-- split; intros H; auto.
-  destruct H.
-  + destruct H. congruence.
-  + set_solver.
-- rewrite elem_of_union.
-  rewrite elem_of_union.
-  rewrite IHφ1.
-  rewrite IHφ2.
-  split; intros H.
-  + destruct H.
-    * destruct H.
-      -- left. destruct H.
-         split; auto. rewrite H0. auto.
-      -- right. left. assumption.
-    * destruct H.
-      -- left. destruct H.
-         split; auto. rewrite H0. apply orbT.
-      -- right. right. assumption.
-  + destruct H.
-    * destruct H as [H1 H2].
-      destruct (decide (bevar_occur φ1 dbi)).
-      -- left. left. split; assumption.
-      -- destruct (decide (bevar_occur φ2 dbi)).
-         2: { apply orb_prop in H2. destruct H2.
-              rewrite H in n. congruence.
-              rewrite H in n0. congruence.
-         }
-         right.
-         left. split; assumption.
-    * destruct H.
-      -- left. right. assumption.
-      -- right. right. assumption.
-- split; intros H; auto.
-  destruct H.
-  + destruct H. congruence.
-  + set_solver.
-- rewrite elem_of_union.
-  rewrite elem_of_union.
-  rewrite IHφ1.
-  rewrite IHφ2.
-  split; intros H.
-  + destruct H.
-    * destruct H.
-      -- left. destruct H.
-         split; auto. rewrite H0. auto.
-      -- right. left. assumption.
-    * destruct H.
-      -- left. destruct H.
-         split; auto. rewrite H0. apply orbT.
-      -- right. right. assumption.
-  + destruct H.
-    * destruct H as [H1 H2].
-      destruct (decide (bevar_occur φ1 dbi)).
-      -- left. left. split; assumption.
-      -- destruct (decide (bevar_occur φ2 dbi)).
-         2: { apply orb_prop in H2. destruct H2.
-              rewrite H in n. congruence.
-              rewrite H in n0. congruence.
-         }
-         right.
-         left. split; assumption.
-    * destruct H.
-      -- left. right. assumption.
-      -- right. right. assumption.
-- rewrite IHφ. auto.
-- rewrite IHφ. auto.
+  induction φ; intros ψ dbi X; simpl.
+  - split; intros H; auto.
+    destruct H.
+    destruct H. congruence. assumption.
+  - split; intros H; auto.
+    destruct H; auto.
+    destruct H; congruence.
+  - case_match; split; intros H'.
+    + simpl in H'. set_solver.
+    + destruct H' as [H'|H'].
+      * destruct H'; auto. case_match; auto; subst. lia. congruence.
+      * set_solver.
+    + left. split; auto. case_match; auto.
+    + simpl in H'. set_solver.
+    + simpl in H'. set_solver.
+    + destruct H' as [H'|H'].
+      * destruct H'. case_match; try lia; congruence.
+      * set_solver.
+  - split; intros H; auto.
+    destruct H; auto.
+    destruct H; congruence.
+  - split; intros H; auto.
+    destruct H.
+    + destruct H. congruence.
+    + set_solver.
+  - rewrite elem_of_union.
+    rewrite elem_of_union.
+    rewrite IHφ1.
+    rewrite IHφ2.
+    split; intros H.
+    + destruct H.
+      * destruct H.
+        -- left. destruct H.
+          split; auto. rewrite H0. auto.
+        -- right. left. assumption.
+      * destruct H.
+        -- left. destruct H.
+          split; auto. rewrite H0. apply orbT.
+        -- right. right. assumption.
+    + destruct H.
+      * destruct H as [H1 H2].
+        destruct (decide (bevar_occur φ1 dbi)).
+        -- left. left. split; assumption.
+        -- destruct (decide (bevar_occur φ2 dbi)).
+          2: { apply orb_prop in H2. destruct H2.
+                rewrite H in n. congruence.
+                rewrite H in n0. congruence.
+          }
+          right.
+          left. split; assumption.
+      * destruct H.
+        -- left. right. assumption.
+        -- right. right. assumption.
+  - split; intros H; auto.
+    destruct H.
+    + destruct H. congruence.
+    + set_solver.
+  - rewrite elem_of_union.
+    rewrite elem_of_union.
+    rewrite IHφ1.
+    rewrite IHφ2.
+    split; intros H.
+    + destruct H.
+      * destruct H.
+        -- left. destruct H.
+          split; auto. rewrite H0. auto.
+        -- right. left. assumption.
+      * destruct H.
+        -- left. destruct H.
+          split; auto. rewrite H0. apply orbT.
+        -- right. right. assumption.
+    + destruct H.
+      * destruct H as [H1 H2].
+        destruct (decide (bevar_occur φ1 dbi)).
+        -- left. left. split; assumption.
+        -- destruct (decide (bevar_occur φ2 dbi)).
+          2: { apply orb_prop in H2. destruct H2.
+                rewrite H in n. congruence.
+                rewrite H in n0. congruence.
+          }
+          right.
+          left. split; assumption.
+      * destruct H.
+        -- left. right. assumption.
+        -- right. right. assumption.
+  - rewrite IHφ. auto.
+  - rewrite IHφ. auto.
 Qed.
 
 
 Lemma free_svars_bsvar_subst :
-forall φ ψ dbi,
-free_svars (φ^[svar: dbi ↦ ψ]) ⊆ union (free_svars ψ) (free_svars φ).
+  forall φ ψ dbi,
+  free_svars (φ^[svar: dbi ↦ ψ]) ⊆ union (free_svars ψ) (free_svars φ).
 Proof.
-induction φ; intros ψ dbi; simpl; try set_solver.
-case_match; simpl; set_solver.
+  induction φ; intros ψ dbi; simpl; try set_solver.
+  case_match; simpl; set_solver.
 Qed.
 
 Lemma free_evars_bevar_subst :
-forall φ ψ dbi,
-free_evars (φ^[evar: dbi ↦ ψ]) ⊆ union (free_evars ψ) (free_evars φ).
+  forall φ ψ dbi,
+  free_evars (φ^[evar: dbi ↦ ψ]) ⊆ union (free_evars ψ) (free_evars φ).
 Proof.
-induction φ; intros ψ dbi Hwf; simpl; try set_solver.
-case_match; simpl; set_solver.
+  induction φ; intros ψ dbi Hwf; simpl; try set_solver.
+  case_match; simpl; set_solver.
 Qed.
 
 Lemma free_svars_svar_open'' :
@@ -1455,18 +1455,18 @@ forall φ dbi X Y,
   (X ∈ free_svars (φ^{svar: dbi ↦ Y})) <->
   (((X = Y) /\ (bsvar_occur φ dbi)) \/ (X ∈ (free_svars φ))).
 Proof.
-intros φ dbi X Y.
-unfold svar_open.
-pose proof (Htmp := free_svars_bsvar_subst' φ (patt_free_svar Y) dbi X).
-simpl in Htmp.
-assert (X ∈ @singleton _ SVarSet _ Y <-> X = Y) by set_solver.
-tauto.
+  intros φ dbi X Y.
+  unfold svar_open.
+  pose proof (Htmp := free_svars_bsvar_subst' φ (patt_free_svar Y) dbi X).
+  simpl in Htmp.
+  assert (X ∈ @singleton _ SVarSet _ Y <-> X = Y) by set_solver.
+  tauto.
 Qed.
 
 Corollary free_svars_svar_open ϕ X dbi :
-free_svars (ϕ^{svar: dbi ↦ X}) ⊆ union (singleton X) (free_svars ϕ).
+  free_svars (ϕ^{svar: dbi ↦ X}) ⊆ union (singleton X) (free_svars ϕ).
 Proof.
-apply free_svars_bsvar_subst; auto.
+  apply free_svars_bsvar_subst; auto.
 Qed.
 
 Lemma free_evars_evar_open'' :
@@ -1474,59 +1474,59 @@ forall φ dbi x y,
   (x ∈ free_evars (φ^{evar: dbi ↦ y})) <->
   ((x = y /\ bevar_occur φ dbi) \/ (x ∈ (free_evars φ))).
 Proof.
-intros φ dbi x y.
-unfold evar_open.
-pose proof (Htmp := free_evars_bevar_subst' φ (patt_free_evar y) dbi x).
-simpl in Htmp.
-assert (x ∈ @singleton _ EVarSet _ y <-> x = y) by set_solver;
-tauto.
+  intros φ dbi x y.
+  unfold evar_open.
+  pose proof (Htmp := free_evars_bevar_subst' φ (patt_free_evar y) dbi x).
+  simpl in Htmp.
+  assert (x ∈ @singleton _ EVarSet _ y <-> x = y) by set_solver;
+  tauto.
 Qed.
 
 Corollary free_evars_evar_open ϕ x dbi :
-free_evars (ϕ^{evar: dbi ↦ x}) ⊆ union (singleton x) (free_evars ϕ).
+  free_evars (ϕ^{evar: dbi ↦ x}) ⊆ union (singleton x) (free_evars ϕ).
 Proof.
-apply free_evars_bevar_subst; auto.
+  apply free_evars_bevar_subst; auto.
 Qed.
 
 Lemma free_evars_evar_open' ϕ x dbi:
-free_evars ϕ ⊆ free_evars (ϕ^{evar: dbi ↦ x}).
+  free_evars ϕ ⊆ free_evars (ϕ^{evar: dbi ↦ x}).
 Proof.
-move: dbi.
-induction ϕ; intros dbi; simpl; try apply empty_subseteq.
-- apply PreOrder_Reflexive.
-- apply union_least.
-  + eapply PreOrder_Transitive. apply IHϕ1.
-    apply union_subseteq_l.
-  + eapply PreOrder_Transitive. apply IHϕ2.
-    apply union_subseteq_r.
-- apply union_least.
-  + eapply PreOrder_Transitive. apply IHϕ1.
-    apply union_subseteq_l.
-  + eapply PreOrder_Transitive. apply IHϕ2.
-    apply union_subseteq_r.
-- set_solver.
-- set_solver.
+  move: dbi.
+  induction ϕ; intros dbi; simpl; try apply empty_subseteq.
+  - apply PreOrder_Reflexive.
+  - apply union_least.
+    + eapply PreOrder_Transitive. apply IHϕ1.
+      apply union_subseteq_l.
+    + eapply PreOrder_Transitive. apply IHϕ2.
+      apply union_subseteq_r.
+  - apply union_least.
+    + eapply PreOrder_Transitive. apply IHϕ1.
+      apply union_subseteq_l.
+    + eapply PreOrder_Transitive. apply IHϕ2.
+      apply union_subseteq_r.
+  - set_solver.
+  - set_solver.
 Qed.
 
 Lemma free_evar_subst_no_occurrence x p q:
-count_evar_occurrences x p = 0 ->
-p^[[evar:x ↦ q]] = p.
+  x ∉ free_evars p ->
+  p^[[evar:x ↦ q]] = p.
 Proof.
-intros H.
-remember (size' p) as sz.
-assert (Hsz: size' p <= sz) by lia.
-clear Heqsz.
+  intros H.
+  remember (size' p) as sz.
+  assert (Hsz: size' p <= sz) by lia.
+  clear Heqsz.
 
-move: p Hsz H.
-induction sz; intros p Hsz H; destruct p; simpl in *; try lia; auto.
-- simpl in H. simpl.
-  destruct (decide (x = x0)).
-  + subst x0. destruct (decide (x = x)). simpl in H. inversion H. contradiction.
-  + reflexivity.
-- rewrite IHsz. lia. lia. rewrite IHsz. lia. lia. reflexivity.
-- rewrite IHsz. lia. lia. rewrite IHsz. lia. lia. reflexivity.
-- f_equal. rewrite IHsz. lia. exact H. reflexivity.
-- rewrite IHsz; auto. lia.
+  move: p Hsz H.
+  induction sz; intros p Hsz H; destruct p; simpl in *; try lia; auto.
+  - simpl in H. simpl.
+    destruct (decide (x = x0)).
+    + subst x0. set_solver.
+    + reflexivity.
+  - rewrite IHsz. lia. set_solver. rewrite IHsz. lia. set_solver. reflexivity.
+  - rewrite IHsz. lia. set_solver. rewrite IHsz. lia. set_solver. reflexivity.
+  - f_equal. rewrite IHsz. lia. exact H. reflexivity.
+  - rewrite IHsz; auto. lia.
 Qed.
 
 
@@ -1885,7 +1885,7 @@ split_and!; simpl.
 - apply evar_quantify_closed_ex. assumption.
 Qed.
 
-Theorem evar_quantify_not_free :
+Theorem evar_quantify_no_occurrence :
 forall φ x n, x ∉ (free_evars (φ^{{evar: x ↦ n}})).
 Proof.
 induction φ; intros x' n'; simpl.
@@ -1906,20 +1906,19 @@ induction φ; intros x' n'; simpl; try set_solver.
 case_match; simpl; set_solver.
 Qed.
 
-(* FIXME: rename! *)
-Lemma evar_quantify_noop :
-forall φ x n, count_evar_occurrences x φ = 0 ->
-φ^{{evar: x ↦ n}} = φ.
+Lemma evar_quantify_not_free_evars :
+  forall φ x n,
+  x ∉ free_evars φ ->
+  φ^{{evar: x ↦ n}} = φ.
 Proof.
-induction φ; intros x' n' H; simpl; auto.
-- simpl in H.
-  destruct (decide (x = x')).
-  + subst x'. destruct (decide (x = x)). simpl in H. inversion H. contradiction.
-  + simpl in H. destruct (decide (x' = x)); cbn; auto. congruence.
-- simpl in H. rewrite IHφ1. lia. rewrite IHφ2. lia. reflexivity.
-- simpl in H. rewrite IHφ1. lia. rewrite IHφ2. lia. reflexivity.
-- simpl in H. rewrite IHφ. lia. reflexivity.
-- simpl in H. rewrite IHφ. lia. reflexivity.
+  induction φ; intros x' n' H; simpl; auto.
+  - destruct (decide (x = x')).
+    + set_solver.
+    + destruct (decide (x' = x)); cbn; auto. set_solver.
+  - rewrite IHφ1. set_solver. rewrite IHφ2. set_solver. reflexivity.
+  - rewrite IHφ1. set_solver. rewrite IHφ2. set_solver. reflexivity.
+  - rewrite IHφ. set_solver. reflexivity.
+  - rewrite IHφ. set_solver. reflexivity.
 Qed.
 
 
@@ -2934,7 +2933,7 @@ Lemma Private_no_negative_occurrence_svar_quantify ϕ level X:
 
   Lemma free_evar_subst_free_evar_subst φ ψ η x n :
     well_formed_closed_ex_aux ψ n ->
-    count_evar_occurrences x η = 0 ->
+    x ∉ free_evars η ->
     φ^[[evar:x ↦ ψ]]^[evar:n ↦ η] =
     φ^[evar:n ↦ η]^[[evar:x ↦ ψ]].
   Proof.
@@ -2952,36 +2951,25 @@ Lemma Private_no_negative_occurrence_svar_quantify ϕ level X:
   Defined.
 
   Lemma subst_svar_evar_svar ϕ x ψ n :
-    count_evar_occurrences x ϕ = 0 ->
+    x ∉ free_evars ϕ ->
     ϕ^[svar:n↦patt_free_evar x]^[[evar:x↦ψ]] = ϕ^[svar:n↦ψ].
   Proof.
     intro H.
     generalize dependent n.
-    induction ϕ; try reflexivity.
-    + cbn in H. destruct decide in H.
-      - congruence.
-      - cbn. destruct decide.
-        * congruence.
-        * reflexivity.
-    + intro. simpl. destruct compare_nat.
+    induction ϕ; try reflexivity; intro n'.
+    + cbn. destruct (decide (x = x0)).
+      - set_solver.
+      - reflexivity.
+    + simpl. destruct compare_nat.
       - reflexivity.
       - simpl. destruct decide.
         * reflexivity.
         * congruence.
       - reflexivity.
-    + simpl in H. apply plus_is_O in H. destruct H as [H1 H2].
-      intro. specialize IHϕ1 with n. specialize IHϕ2 with n.
-      apply IHϕ1 in H1. apply IHϕ2 in H2.
-      simpl. rewrite H1 H2. reflexivity.
-    + simpl in H. apply plus_is_O in H. destruct H as [H1 H2].
-      intro. specialize IHϕ1 with n. specialize IHϕ2 with n.
-      apply IHϕ1 in H1. apply IHϕ2 in H2.
-      simpl. rewrite H1 H2. reflexivity.
-    + simpl in H. intro. specialize IHϕ with n. apply IHϕ in H. simpl. rewrite H. reflexivity.
-    + simpl in H. intro.
-      simpl. f_equal.
-      pose proof (HS := IHϕ H (S n)).
-      assumption.
+    + simpl in *. rewrite IHϕ1. 2: rewrite IHϕ2. 1-2: set_solver. reflexivity.
+    + simpl in *. rewrite IHϕ1. 2: rewrite IHϕ2. 1-2: set_solver. reflexivity.
+    + simpl in *. rewrite IHϕ. set_solver. reflexivity.
+    + simpl in *. rewrite IHϕ. set_solver. reflexivity.
   Defined.
 
   Lemma no_neg_svar_subst ϕ x n :

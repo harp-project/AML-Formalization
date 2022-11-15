@@ -39,9 +39,9 @@ Proof.
     { set_solver. }
     simpl. rewrite IHAC.
     rewrite [p^[[evar: Xfr1 ↦ ϕ]]]free_evar_subst_no_occurrence.
-    { apply count_evar_occurrences_0. set_solver. }
+    { set_solver. }
     rewrite [p^[[evar: Xfr2 ↦ ϕ]]]free_evar_subst_no_occurrence.
-    { apply count_evar_occurrences_0. set_solver. }
+    { set_solver. }
     reflexivity.
   - simpl in HXfr1. simpl in HXfr2.
     feed specialize IHAC.
@@ -49,9 +49,9 @@ Proof.
     { set_solver. }
     simpl. rewrite IHAC.
     rewrite [p^[[evar: Xfr1 ↦ ϕ]]]free_evar_subst_no_occurrence.
-    { apply count_evar_occurrences_0. set_solver. }
+    { set_solver. }
     rewrite [p^[[evar: Xfr2 ↦ ϕ]]]free_evar_subst_no_occurrence.
-    { apply count_evar_occurrences_0. set_solver. }
+    { set_solver. }
     reflexivity.
 Qed.
 
