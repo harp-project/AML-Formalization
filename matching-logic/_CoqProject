@@ -50,6 +50,7 @@ src/Theories/Definedness_Syntax.v
 src/Theories/Definedness_Semantics.v
 src/Theories/Definedness_ProofSystem.v
 
+src/Theories/FOEquality_ProofSystem.v
 src/Theories/DeductionTheorem.v
 src/Theories/Nat.v
 

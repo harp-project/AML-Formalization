@@ -4037,35 +4037,6 @@ Proof.
 Defined.
 
 (* TODO: Put in a different file? *)
-Lemma bott_and {Σ : Signature} Γ ϕ :
-  well_formed ϕ ->
-  Γ ⊢ ⊥ and ϕ <---> ⊥.
-Proof.
-  intro wfϕ.
-  toMLGoal.
-  { wf_auto2. }
-  mlSplitAnd.
-  + mlIntro "H". mlDestructAnd "H" as "B" "P". mlExact "B".
-  + mlIntro "H". mlExFalso. mlExact "H".
-Defined.
-
-(* TODO: Put in a different file? *)
-Lemma top_and {Σ : Signature} Γ ϕ :
-  well_formed ϕ ->
-  Γ ⊢ Top and ϕ <---> ϕ.
-Proof.
-  intro wfϕ.
-  toMLGoal.
-  { wf_auto2. }
-  mlSplitAnd.
-  + mlIntro "H". mlDestructAnd "H" as "T" "P". mlExact "P".
-  + mlIntro "H".
-    mlSplitAnd.
-    * mlClear "H". fromMLGoal. aapply top_holds.
-    * mlExact "H".
-Defined.
-
-(* TODO: Put in a different file? *)
 Lemma predicate_propagate_right {Σ : Signature} {syntax : Syntax} Γ ϕ ψ P :
   theory ⊆ Γ ->
   well_formed ϕ ->

@@ -3233,6 +3233,33 @@ Proof.
   * mlSplitAnd; mlAssumption.
 Defined.
 
+Lemma bott_and {Σ : Signature} Γ ϕ :
+  well_formed ϕ ->
+  Γ ⊢ ⊥ and ϕ <---> ⊥.
+Proof.
+  intro wfϕ.
+  toMLGoal.
+  { wf_auto2. }
+  mlSplitAnd.
+  + mlIntro "H". mlDestructAnd "H" as "B" "P". mlExact "B".
+  + mlIntro "H". mlExFalso. mlExact "H".
+Defined.
+
+Lemma top_and {Σ : Signature} Γ ϕ :
+  well_formed ϕ ->
+  Γ ⊢ Top and ϕ <---> ϕ.
+Proof.
+  intro wfϕ.
+  toMLGoal.
+  { wf_auto2. }
+  mlSplitAnd.
+  + mlIntro "H". mlDestructAnd "H" as "T" "P". mlExact "P".
+  + mlIntro "H".
+    mlSplitAnd.
+    * mlClear "H". fromMLGoal. aapply top_holds.
+    * mlExact "H".
+Defined.
+
 Lemma MLGoal_ExactMeta {Σ:Signature} : forall Γ l g i,
   Γ ⊢i g using i ->
   mkMLGoal Σ Γ l g i.

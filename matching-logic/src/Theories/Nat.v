@@ -28,57 +28,14 @@ Set Default Proof Mode "Classic".
 From MatchingLogic Require Import
   Theories.DeductionTheorem
   Theories.Sorts_Syntax
-  Theories.Unification.
+  FOEquality_ProofSystem
+  Sorts_ProofSystem.
 
 Import MatchingLogic.Theories.Sorts_Syntax.Notations.
 
 Open Scope ml_scope.
 Open Scope string_scope.
 Open Scope list_scope.
-
-(* TODO: Put in a different file? *)
-Lemma ex_sort_impl_ex {Σ : Signature} {syntax : Syntax} Γ ϕ s :
-  well_formed (ex , ϕ) ->
-  theory ⊆ Γ ->
-  Γ ⊢ ex (patt_sym s) , ϕ ---> (ex , ϕ).
-Proof.
-  intros wfϕ HΓ.
-
-  unfold "ex _ , _".
-
-  unfold nest_ex; simpl.
-
-  remember (fresh_evar (b0 ∈ml 〚 patt_sym s 〛 and ϕ)) as x.
-  rewrite <- evar_quantify_evar_open with (n := 0) (x := x) (phi := b0 ∈ml 〚 patt_sym s 〛 and ϕ).
-  2: {
-    subst x. eapply evar_is_fresh_in_richer'.
-    2: apply set_evar_fresh_is_fresh'.
-    clear. set_solver.
-  }
-  2: {
-    wf_auto2.
-  }
-
-  gapply Ex_gen.
-  { apply pile_any. }
-  { apply pile_any. }
-  {
-    subst x. eapply evar_is_fresh_in_richer'.
-    2: { apply set_evar_fresh_is_fresh'. }
-    clear. set_solver.
-  }
-
-  mlSimpl. unfold evar_open. simpl.
-
-  toMLGoal.
-  { wf_auto2. }
-  mlIntro "H".
-  mlDestructAnd "H" as "H0" "H1".
-  mlClear "H0".
-
-  mlApplyMeta Ex_quan. simpl.
-  mlExact "H1".
-Defined.
 
 Section nat_syntax.
 
