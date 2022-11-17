@@ -4036,6 +4036,240 @@ Proof.
       { reflexivity. }
 Defined.
 
+(* TODO: Put in a different file? *)
+Lemma predicate_propagate_right {Σ : Signature} {syntax : Syntax} Γ ϕ ψ P :
+  theory ⊆ Γ ->
+  well_formed ϕ ->
+  well_formed ψ ->
+  well_formed P ->
+  mu_free ϕ ->
+  mu_free ψ ->
+  mu_free P ->
+  Γ ⊢ is_predicate_pattern ψ ->
+  Γ ⊢ ψ and P $ ϕ <---> P $ (ψ and ϕ).
+Proof.
+  intros HΓ wfϕ wfψ wfP mϕ mψ mP predψ.
+  toMLGoal.
+  { wf_auto2. }
+  mlAdd predψ as "P"; clear predψ.
+  unfold is_predicate_pattern.
+  mlDestructOr "P" as "T" "B".
+  {
+    mlRewriteBy "T" at 1.
+    { set_solver. }
+    {
+      simpl. split_and!; reflexivity || assumption.
+    }
+    mlRewriteBy "T" at 1.
+    { set_solver. }
+    {
+      simpl. split_and!; reflexivity || assumption.
+    }
+    mlClear "T".
+    pose proof (Ht := top_and Γ (P $ ϕ) ltac:(wf_auto2)).
+    mlRewrite Ht at 1; clear Ht.
+    pose proof (Ht := top_and Γ ϕ ltac:(wf_auto2)).
+    mlRewrite Ht at 1; clear Ht.
+    fromMLGoal.
+    aapply pf_iff_equiv_refl; wf_auto2.
+  }
+  {
+    mlRewriteBy "B" at 1.
+    { set_solver. }
+    {
+      simpl. split_and!; reflexivity || assumption.
+    }
+    mlRewriteBy "B" at 1.
+    { set_solver. }
+    {
+      simpl. split_and!; reflexivity || assumption.
+    }
+    mlClear "B".
+    pose proof (Hb := bott_and Γ (P $ ϕ) ltac:(wf_auto2)).
+    mlRewrite Hb at 1; clear Hb.
+    pose proof (Hb := bott_and Γ ϕ ltac:(wf_auto2)).
+    mlRewrite Hb at 1; clear Hb.
+    fromMLGoal.
+    apply pf_iff_equiv_sym;[wf_auto2|wf_auto2|].
+    pose proof (Hiff := prf_prop_bott_iff).
+    specialize Hiff with (AC := ctx_app_r P box ltac:(wf_auto2)).
+    simpl in Hiff.
+    aapply Hiff.
+  }
+Defined.
+
+Lemma equal_imp_membership {Σ : Signature} {syntax : Syntax} Γ φ φ' :
+  theory ⊆ Γ -> mu_free φ' ->
+  well_formed φ -> well_formed φ' ->
+  Γ ⊢ ⌈ φ' ⌉  ->
+  Γ ⊢ (φ =ml φ') ---> (φ ∈ml φ').
+Proof.
+  intros HΓ MF WF1 WF2 Def.
+  toMLGoal. wf_auto2.
+  mlIntro "H0".
+  mlRewriteBy "H0" at 1; cbn; try_wfauto2; try assumption.
+  { rewrite MF. reflexivity. }
+    mlClear "H0". unfold patt_in.
+    assert (Γ ⊢ ( φ' and φ' <---> φ') ) as H1.
+    {
+      toMLGoal. wf_auto2.
+      mlSplitAnd; mlIntro "H1".
+      - mlDestructAnd "H1" as "H2" "H3". mlExact "H3".
+      - mlSplitAnd; mlExact "H1".
+    }
+    now mlRewrite H1 at 1.
+Defined.
+
+Lemma phi_impl_ex_in_phi {Σ : Signature} {syntax : Syntax} Γ ϕ:
+  theory ⊆ Γ ->
+  well_formed ϕ ->
+  Γ ⊢ ϕ ---> (ex , b0 ∈ml ϕ and b0).
+Proof.
+  intros HΓ wfϕ.
+  aapply membership_elimination;[wf_auto2|set_solver|].
+  remember (fresh_evar ϕ) as x.
+  rewrite <- evar_quantify_evar_open with (x := x) (n := 0) (phi := b0 ∈ml (ϕ ---> (ex , b0 ∈ml ϕ and b0))).
+  2: {
+    subst x.
+    eapply evar_is_fresh_in_richer'.
+    2: apply set_evar_fresh_is_fresh'.
+    clear. set_solver.
+  }
+  2: wf_auto2.
+  aapply universal_generalization;[wf_auto2|].
+  unfold evar_open. mlSimpl. simpl.
+  rewrite bevar_subst_not_occur;[wf_auto2|].
+  rewrite bevar_subst_not_occur;[wf_auto2|].
+  toMLGoal.
+  { wf_auto2. }
+  pose proof (H := membership_imp Γ x ϕ (ex , b0 ∈ml ϕ and b0)).
+  feed specialize H.
+  { set_solver. }
+  { wf_auto2. }
+  { wf_auto2. }
+  apply pf_iff_proj2 in H;[|wf_auto2|wf_auto2].
+  mlApplyMeta H; clear H.
+  mlIntro "H".
+  pose proof (H := membership_exists Γ x (b0 ∈ml ϕ and b0)).
+  feed specialize H.
+  { set_solver. }
+  { wf_auto2. }
+  apply useAnyReasoning in H.
+  mlRewrite H at 1; clear H.
+  pose proof (H := Ex_quan).
+  specialize H with (y := x).
+  mlApplyMeta H; clear H.
+  unfold instantiate. mlSimpl. simpl.
+  rewrite bevar_subst_not_occur;[wf_auto2|].
+  pose proof (H := membership_and_iff Γ x (patt_free_evar x ∈ml ϕ) (patt_free_evar x)).
+  feed specialize H.
+  { wf_auto2. }
+  { wf_auto2. }
+  { set_solver. }
+  apply useAnyReasoning in H.
+  mlRewrite H at 1; clear H.
+  mlSplitAnd.
+  + fromMLGoal.
+    aapply ceil_monotonic;[set_solver|wf_auto2|wf_auto2|].
+    toMLGoal. wf_auto2.
+    mlIntro "H".
+    mlSplitAnd.
+    * mlDestructAnd "H" as "x" "p". mlExact "x".
+    * mlApplyMeta phi_impl_defined_phi;[mlExact "H"|set_solver].
+  + mlClear "H".
+    mlApplyMeta equal_imp_membership.
+    fromMLGoal.
+    aapply patt_equal_refl.
+    wf_auto2.
+    aapply defined_evar.
+    set_solver.
+    reflexivity.
+    set_solver.
+Defined.
+
+Lemma membership_symbol_right {Σ : Signature} {syntax : Syntax} Γ ϕ ψ x :
+  theory ⊆ Γ ->
+  well_formed ϕ ->
+  well_formed ψ ->
+  mu_free ϕ ->
+  mu_free ψ ->
+  Γ ⊢ (patt_free_evar x ∈ml ψ $ ϕ) ---> (ex , (b0 ∈ml ϕ and patt_free_evar x ∈ml ψ $ b0)).
+Proof.
+  intros HΓ wfϕ wfψ mϕ mψ.
+  toMLGoal.
+  { wf_auto2. }
+  mlIntro "H0".
+  mlAssert ("H1" : (patt_free_evar x ∈ml ψ $ (ex , b0 ∈ml ϕ and b0))).
+  { wf_auto2. }
+  {
+    fromMLGoal.
+    aapply membership_monotone;[set_solver|wf_auto2|wf_auto2|].
+    apply Framing_right with (wfψ := wfψ);[apply pile_any|].
+    aapply phi_impl_ex_in_phi;[set_solver|wf_auto2].
+  } mlClear "H0".
+  mlAssert ("H2" : (patt_free_evar x ∈ml (ex, ψ $ (b0 ∈ml ϕ and b0)))).
+  { wf_auto2. }
+  {
+    fromMLGoal.
+    aapply membership_monotone;[set_solver|wf_auto2|wf_auto2|].
+    toMLGoal.
+    { wf_auto2. }
+    mlIntro "H".
+    mlApplyMeta Prop_ex_right.
+    mlExact "H".
+  } mlClear "H1".
+  pose proof (H := membership_exists Γ x (ψ $ (b0 ∈ml ϕ and b0))).
+  feed specialize H.
+  { set_solver. }
+  { wf_auto2. }
+  apply useAnyReasoning in H.
+  mlRevertLast.
+  mlRewrite H at 1; clear H.
+  fromMLGoal.
+  remember (fresh_evar ((patt_free_evar x) and ϕ and ψ)) as y.
+  rewrite <- evar_quantify_evar_open with (x := y) (n := 0) (phi := patt_free_evar x ∈ml ψ $ (b0 ∈ml ϕ and b0)).
+  2: {
+    subst y.
+    eapply evar_is_fresh_in_richer'.
+    2: apply set_evar_fresh_is_fresh'.
+    clear. set_solver.
+  }
+  2: wf_auto2.
+  rewrite <- evar_quantify_evar_open with (x := y) (n := 0) (phi := b0 ∈ml ϕ and patt_free_evar x ∈ml ψ $ b0).
+  2: {
+    subst y.
+    eapply evar_is_fresh_in_richer'.
+    2: apply set_evar_fresh_is_fresh'.
+    clear. set_solver.
+  }
+  2: wf_auto2.
+  aapply ex_quan_monotone.
+  mlSimpl. unfold evar_open. simpl.
+  repeat (rewrite bevar_subst_not_occur;[wf_auto2|]).
+
+  toMLGoal.
+  { wf_auto2. }
+  pose proof (H := predicate_propagate_right Γ (patt_free_evar y) (patt_free_evar y ∈ml ϕ) ψ).
+  feed specialize H.
+  { set_solver. }
+  { wf_auto2. }
+  { wf_auto2. }
+  { wf_auto2. }
+  { reflexivity. }
+  { simpl. split_and!;reflexivity || assumption. }
+  { assumption. }
+  { aapply ceil_is_predicate;[set_solver|wf_auto2]. }
+  mlRewrite <- H at 1; clear H.
+
+  mlIntro "H".
+  mlApplyMeta membership_and_1 in "H";[|set_solver].
+  mlDestructAnd "H" as "H0" "H1".
+  mlApplyMeta ceil_and_x_ceil_phi_impl_ceil_phi in "H0";[|set_solver].
+  mlSplitAnd.
+  + mlExact "H0".
+  + mlExact "H1".
+Defined.
+
 Lemma disj_equals_greater_1 {Σ : Signature} {syntax : Syntax} Γ ϕ₁ ϕ₂:
   theory ⊆ Γ ->
   well_formed ϕ₁ ->
