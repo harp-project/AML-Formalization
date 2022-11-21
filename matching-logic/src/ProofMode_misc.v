@@ -32,6 +32,10 @@ Open Scope ml_scope.
 Open Scope string_scope.
 Open Scope list_scope.
 
+
+Search patt_exists patt_imp.
+Search patt_exists patt_not.
+
 Ltac2 _callCompletedTransformedAndCast
   (t : constr) (transform : constr) (tac : constr -> unit) :=
   let tac' := (fun (t' : constr) =>
@@ -2053,36 +2057,24 @@ Proof.
   wf_auto2.
 Qed.
 
+Search hypotheses.
+
 Lemma MLGoal_rewriteIff
   {Σ : Signature} (Γ : Theory) (p q : Pattern) (C : PatternCtx) l (gpi : ProofInfo)
   (wfC : PC_wf C)
   (pf : Γ ⊢i p <---> q using ( gpi)) :
   mkMLGoal Σ Γ l (emplace C q) ( gpi) ->
   (ProofInfoLe
-  (
-     (ExGen := list_to_set
-                 (evar_fresh_seq
-                    (free_evars (pcPattern C) ∪ free_evars p ∪ free_evars q
-                     ∪ {[pcEvar C]})
-                    (maximal_exists_depth_of_evar_in_pattern 
-                       (pcEvar C) (pcPattern C))),
-      SVSubst := list_to_set
-                   (svar_fresh_seq
-                      (free_svars (pcPattern C) ∪ free_svars p
-                       ∪ free_svars q)
-                      (maximal_mu_depth_of_evar_in_pattern 
-                         (pcEvar C) (pcPattern C))),
-      KT := (if
-              decide
-                (0 =
-                 maximal_mu_depth_of_evar_in_pattern (pcEvar C) (pcPattern C))
-             is left _
-             then false
-             else true
-             ),
-      FP := gset_to_coGset (@frames_on_the_way_to_hole' Σ (free_evars (pcPattern C) ∪ free_evars p ∪ free_evars q ∪ {[pcEvar C]}) (free_svars (pcPattern C) ∪ free_svars p ∪ free_svars q) (pcEvar C) (pcPattern C) p q wfC (extract_wfp Γ p q ( gpi) pf) (extract_wfq Γ p q ( gpi) pf))
-      ))
-      ( gpi)) ->
+    (ExGen := list_to_set (evar_fresh_seq
+                           (free_evars (foldr patt_imp (pcPattern C) (patterns_of l))
+                            ∪free_evars p ∪ free_evars q ∪ 
+                            {[fresh_evar (foldr patt_imp (pcPattern C) (patterns_of l))]}) (maximal_exists_depth (foldr patt_imp (pcPattern C) (patterns_of l)))),
+  SVSubst := list_to_set (svar_fresh_seq
+                          (free_svars (foldr patt_imp (pcPattern C) (patterns_of l)) ∪
+                          free_svars p ∪ free_svars q) (maximal_mu_depth (foldr patt_imp (pcPattern C) (patterns_of l)))),
+  KT := mu_in_evar_path (pcEvar C) (pcPattern C)
+ )
+      gpi) ->
   mkMLGoal Σ Γ l (emplace C p) ( gpi).
 Proof.
   rename pf into Hpiffq.
@@ -2105,14 +2097,9 @@ Proof.
   2: apply pf_iff_proj2.
   2: abstract (wf_auto2).
   3: eapply prf_equiv_congruence_iter.
-  5: apply Hpiffq.
-  4: assumption.
-  1: apply H.
-  1: {
-    pose proof (proved_impl_wf _ _ (proj1_sig H)).
-    wf_auto2.
-  }
-  exact pile.
+  8: apply Hpiffq.
+  all: try assumption.
+  all: wf_auto2.
 Defined.
 
 
@@ -2174,7 +2161,6 @@ Local Ltac reduce_free_evar_subst_step_2 star :=
       | [ |- context ctx [?p^[[evar: star ↦ ?q]] ] ]
         =>
           progress rewrite -> (@free_evar_subst_no_occurrence _ star p q) by (
-            apply count_evar_occurrences_0;
             subst star;
             eapply evar_is_fresh_in_richer';
             [|apply set_evar_fresh_is_fresh'];
@@ -2213,9 +2199,8 @@ Local Ltac clear_obvious_equalities_2 :=
 
 Ltac simplify_emplace_2 star :=
   unfold emplace;
-  simpl;
   (* unfold free_evar_subst; *)
-  simpl;
+  cbn;
   repeat break_match_goal;
   clear_obvious_equalities_2; try contradiction;
   try (solve_fresh_contradictions_2 star);
@@ -2236,24 +2221,8 @@ Ltac simplify_emplace_2 star :=
 
  Ltac simplify_pile_side_condition star :=
   try apply pile_any;
-  cbn;
   simplify_emplace_2 star;
-  repeat (rewrite (mmdoeip_notin, medoeip_notin);
-  [(simplify_pile_side_condition_helper star)|]);
-  simpl;
-  repeat (
-    lazymatch goal with
-    | [H: context [maximal_mu_depth_of_evar_in_pattern' _ _ _] |- _ ]
-      => rewrite mmdoeip_notin in H;
-         [(simplify_pile_side_condition_helper star)|]
-    | [H: context [maximal_exists_depth_of_evar_in_pattern' _ _ _] |- _ ]
-      => rewrite medoeip_notin in H;
-         [(simplify_pile_side_condition_helper star)|]
-    end
-  );
-  simpl in *;
-  try lia;
-  try apply pile_any.
+  try_solve_pile.
 
 Ltac2 Type HeatResult := {
   star_ident : ident ;
@@ -2271,7 +2240,7 @@ Ltac2 heat :=
      (fun ctx =>
         found.(contents) := Some ctx; ()
      );
-    match found.(contents) with
+     match found.(contents) with
     | None => Control.backtrack_tactic_failure "Cannot heat"
     | Some ctx
       => (
@@ -2291,7 +2260,7 @@ Ltac2 heat :=
              ))
            | ()
            ];
-         { star_ident := star_ident; star_eq := star_eq; pc := pc; ctx := ctx; ctx_pat := ctxpat; equality := heq1 }
+           { star_ident := star_ident; star_eq := star_eq; pc := pc; ctx := ctx; ctx_pat := ctxpat; equality := heq1 }
          )
     end
 .
@@ -2305,8 +2274,9 @@ Ltac2 mlRewrite (hiff : constr) (atn : int) :=
     unfold AnyReasoning;
     lazy_match! goal with
     | [ |- of_MLGoal (@mkMLGoal ?sgm ?g ?l ?p ( ?gpi))]
-      => let hr : HeatResult := heat atn a p in
-         if ml_debug_rewrite then
+      =>
+        let hr : HeatResult := heat atn a p in
+        if ml_debug_rewrite then
            Message.print (Message.of_constr (hr.(ctx_pat)))
          else () ;
          let heq := Control.hyp (hr.(equality)) in
