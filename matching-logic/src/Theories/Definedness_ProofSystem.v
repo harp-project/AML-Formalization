@@ -39,23 +39,18 @@ Context
 .
 
 
-Definition defFP : coWfpSet := {[(exist (λ p, well_formed p = true) (patt_sym (Definedness_Syntax.inj definedness)) erefl)]}.
-
-Definition BasicReasoningWithDefFP := ( (ExGen := ∅, SVSubst := ∅, KT := false, FP := defFP)). 
+Definition defFP : coWfpSet := {[(exist (λ p, well_formed p = true) (patt_sym (Definedness_Syntax.inj definedness)) erefl)]}. 
 
 Lemma phi_impl_total_phi_meta Γ ϕ i:
   well_formed ϕ ->
-  ProofInfoLe BasicReasoningWithDefFP i -> 
+  ProofInfoLe BasicReasoning i -> 
   Γ ⊢i ϕ using i ->
   Γ ⊢i ⌊ ϕ ⌋ using i.
 Proof.
   intros wfϕ pile Hϕ.
   pose proof (ANNA := A_implies_not_not_A_ctx Γ (ϕ) AC_patt_defined).
   apply ANNA.
-  { simpl.
-    eapply pile_trans;[|apply pile].
-    apply pile_evs_svs_kt; try set_solver.
-  }
+  { simpl. try_solve_pile. }
   { apply wfϕ. }
   exact Hϕ.
 Defined.
@@ -64,7 +59,7 @@ Lemma patt_iff_implies_equal :
   forall (φ1 φ2 : Pattern) Γ i,
     well_formed φ1 ->
     well_formed φ2 ->
-    ProofInfoLe BasicReasoningWithDefFP i ->
+    ProofInfoLe BasicReasoning i ->
     Γ ⊢i (φ1 <---> φ2) using i ->
     Γ ⊢i φ1 =ml φ2 using i .
 Proof.
@@ -80,7 +75,7 @@ Lemma patt_equal_refl :
   forall φ Γ,
   well_formed φ ->
   Γ ⊢i φ =ml φ
-  using BasicReasoningWithDefFP.
+  using BasicReasoning.
 Proof.
   intros φ Γ WF. pose proof (IFF := pf_iff_equiv_refl Γ φ WF).
   eapply useBasicReasoning in IFF.
@@ -106,12 +101,12 @@ Proof.
   reflexivity.
 Defined.
 
-Definition BasicReasoningWithDefinedness := (ExGen := {[ev_x]}, SVSubst := ∅, KT := false, FP := defFP).
+Definition BasicReasoningWithDefinedness := (ExGen := {[ev_x]}, SVSubst := ∅, KT := false).
 
 Lemma defined_evar Γ x:
   theory ⊆ Γ ->
   Γ ⊢i ⌈ patt_free_evar x ⌉
-  using  (ExGen := {[ev_x]} ∪ {[x]}, SVSubst := ∅, KT := false, FP := defFP).
+  using  (ExGen := {[ev_x]} ∪ {[x]}, SVSubst := ∅, KT := false).
 Proof.
   intros HΓ.
   assert(S1: Γ ⊢i patt_defined p_x using BasicReasoningWithDefinedness).
@@ -129,76 +124,52 @@ Proof.
     with (⌈ patt_free_evar x ⌉^{{evar: x ↦ 0}}) in S1'.
   2: { simpl. repeat case_match; auto; contradiction. }
   eapply MP.
-  2: { eapply useGenericReasoning with (evs := {[x]}) (svs := ∅) (kt := false)(fp := ∅).
-    apply pile_evs_svs_kt.
-    { clear. unfold ev_x.
-      rewrite elem_of_subseteq.
-      intros x0 Hx0. rewrite elem_of_singleton in Hx0. subst x0.
-      set_solver.
-    }
-    { apply reflexivity. }
-    { reflexivity. }
-    { clear. set_solver. }
+  2: { eapply useGenericReasoning with (i' := (ExGen := {[x]}, SVSubst := ∅, KT := false)).
+    { try_solve_pile. }
     apply forall_variable_substitution with (x := x).
     wf_auto2.
   }
   eapply useGenericReasoning.
   2: { apply S1'. }
-  apply pile_evs_svs_kt.
-  { set_solver. }
-  { apply reflexivity. }
-  { reflexivity. }
-  { apply reflexivity. }
+  { try_solve_pile. }
 Defined.
   
-Lemma in_context_impl_defined Γ AC ϕ:
+Lemma in_context_impl_defined Γ AC ϕ x:
   theory ⊆ Γ ->
+  x ∉ (free_evars ϕ ∪ AC_free_evars AC) ->
   well_formed ϕ ->
   Γ ⊢i (subst_ctx AC ϕ) ---> ⌈ ϕ ⌉
-  using  (ExGen := {[ev_x]} ∪ {[(evar_fresh (elements (free_evars ϕ ∪ AC_free_evars AC )))]}, SVSubst := ∅, KT := false, FP := defFP ∪ frames_of_AC AC).
+  using  (ExGen := {[ev_x]} ∪ {[x]}, SVSubst := ∅, KT := false).
 Proof.
-  intros HΓ Hwfϕ.
+  intros HΓ Hx Hwfϕ.
   assert(S1: Γ ⊢i patt_defined p_x using BasicReasoning).
   {
     apply use_defined_axiom.
     apply HΓ.
   }
 
-  remember (evar_fresh (elements (free_evars ϕ ∪ AC_free_evars AC ))) as x'.
-
   pose proof (S1' := S1).
-  apply useBasicReasoning with (i := (ExGen := {[ev_x; x']}, SVSubst := ∅, KT := false, FP := defFP ∪ frames_of_AC AC)) in S1'.
+  apply useBasicReasoning with (i := (ExGen := {[ev_x; x]}, SVSubst := ∅, KT := false)) in S1'.
   apply universal_generalization with (x := ev_x) in S1'.
   3: { wf_auto2. }
-  2: {
-    apply pile_evs_svs_kt.
-    { set_solver. }
-    { apply reflexivity. }
-    { reflexivity. }
-    { clear. set_solver. }
+  2: { try_solve_pile. }
+
+  assert (Hx1': evar_is_fresh_in x ϕ).
+  {
+    unfold evar_is_fresh_in. set_solver.
   }
 
-  assert (Hx1': evar_is_fresh_in x' ϕ).
-  { rewrite Heqx'.
-    eapply not_elem_of_larger_impl_not_elem_of.
-    2: { apply set_evar_fresh_is_fresh'. }
-    clear. set_solver.
+  assert (Hx'2: x ∉ AC_free_evars AC).
+  { 
+    unfold evar_is_fresh_in. set_solver.
   }
 
-  assert (Hx'2: x' ∉ AC_free_evars AC).
-  { rewrite Heqx'.
-    eapply not_elem_of_larger_impl_not_elem_of.
-    2: apply set_evar_fresh_is_fresh'.
-    clear.
-    set_solver.
-  }
-  
-  remember ( (ExGen := {[ev_x; x']}, SVSubst := ∅, KT := false, FP := defFP ∪ frames_of_AC AC)) as i.
-  assert (S1'' : Γ ⊢i ⌈ patt_free_evar x' ⌉ using i).
+  remember ( (ExGen := {[ev_x; x]}, SVSubst := ∅, KT := false)) as i.
+  assert (S1'' : Γ ⊢i ⌈ patt_free_evar x ⌉ using i).
   {
     (* For some reason, Coq cannot infer the implicit argument 'syntax' automatically *)
     replace ((patt_defined p_x)^{{evar: ev_x ↦ 0}})
-      with (⌈ patt_free_evar x' ⌉^{{evar: x' ↦ 0}}) in S1'.
+      with (⌈ patt_free_evar x ⌉^{{evar: x ↦ 0}}) in S1'.
     2: { simpl. repeat case_match; auto; contradiction. }
 
     eapply MP.
@@ -206,15 +177,10 @@ Proof.
     eapply useGenericReasoning.
     2: apply forall_variable_substitution.
     2: wf_auto2.
-    subst i.
-    apply pile_evs_svs_kt.
-    { set_solver. }
-    { apply reflexivity. }
-    { reflexivity. }
-    { clear. set_solver. }
+    { try_solve_pile. }
   }
   
-  assert(S2: Γ ⊢i ⌈ patt_free_evar x' ⌉ or ⌈ ϕ ⌉ using i).
+  assert(S2: Γ ⊢i ⌈ patt_free_evar x ⌉ or ⌈ ϕ ⌉ using i).
   {
     toMLGoal.
     { wf_auto2. }
@@ -223,9 +189,9 @@ Proof.
     apply S1''.
   }
 
-  assert(S3: Γ ⊢i ⌈ patt_free_evar x' or ϕ ⌉ using i).
+  assert(S3: Γ ⊢i ⌈ patt_free_evar x or ϕ ⌉ using i).
   {
-    pose proof (Htmp := (prf_prop_or_iff Γ AC_patt_defined) (patt_free_evar x') ϕ ltac:(auto) ltac:(auto)).
+    pose proof (Htmp := (prf_prop_or_iff Γ AC_patt_defined) (patt_free_evar x) ϕ ltac:(auto) ltac:(auto)).
     simpl in Htmp.
     apply pf_conj_elim_r_meta in Htmp.
     2-3: wf_auto2.
@@ -241,9 +207,9 @@ Proof.
     }
   }
 
-  assert(S4: Γ ⊢i ⌈ ((patt_free_evar x') and (! ϕ)) or ϕ ⌉ using i).
+  assert(S4: Γ ⊢i ⌈ ((patt_free_evar x) and (! ϕ)) or ϕ ⌉ using i).
   {
-    assert(Htmp1: Γ ⊢i (patt_free_evar x' or ϕ) ---> (patt_free_evar x' and ! ϕ or ϕ) using i).
+    assert(Htmp1: Γ ⊢i (patt_free_evar x or ϕ) ---> (patt_free_evar x and ! ϕ or ϕ) using i).
     {
       toMLGoal.
       { wf_auto2. }
@@ -260,17 +226,12 @@ Proof.
           mlExactn 1.
     }
 
-    assert(Htmp2: Γ ⊢i (⌈ patt_free_evar x' or ϕ ⌉) ---> (⌈ patt_free_evar x' and ! ϕ or ϕ ⌉) using i).
+    assert(Htmp2: Γ ⊢i (⌈ patt_free_evar x or ϕ ⌉) ---> (⌈ patt_free_evar x and ! ϕ or ϕ ⌉) using i).
     {
       unshelve (eapply Framing_right).
       { wf_auto2. }
       {
-        subst i.
-        apply pile_evs_svs_kt.
-        { set_solver. }
-        { apply reflexivity. }
-        { reflexivity. }
-        {  unfold defFP. simpl. pi_set_solver. }
+        try_solve_pile.
       }
       apply Htmp1.
     }
@@ -280,9 +241,9 @@ Proof.
     1: apply S3.
   }
 
-  assert(S5: Γ ⊢i ⌈ (patt_free_evar x' and (! ϕ)) ⌉ or ⌈ ϕ ⌉ using i).
+  assert(S5: Γ ⊢i ⌈ (patt_free_evar x and (! ϕ)) ⌉ or ⌈ ϕ ⌉ using i).
   {
-    pose proof (Htmp := (prf_prop_or_iff Γ AC_patt_defined) (patt_free_evar x' and ! ϕ) ϕ ltac:(auto) ltac:(auto)).
+    pose proof (Htmp := (prf_prop_or_iff Γ AC_patt_defined) (patt_free_evar x and ! ϕ) ϕ ltac:(auto) ltac:(auto)).
     simpl in Htmp.
     apply pf_conj_elim_l_meta in Htmp;[|wf_auto2|wf_auto2].
     apply useGenericReasoning with (i := i) in Htmp.
@@ -297,21 +258,21 @@ Proof.
     1: apply S4.
   }
 
-  assert(S6: Γ ⊢i subst_ctx AC (patt_free_evar x' and ϕ) ---> ! ⌈ patt_free_evar x' and ! ϕ ⌉ using i).
+  assert(S6: Γ ⊢i subst_ctx AC (patt_free_evar x and ϕ) ---> ! ⌈ patt_free_evar x and ! ϕ ⌉ using i).
   {
-    pose proof (Htmp := Singleton_ctx Γ AC AC_patt_defined ϕ x').
+    pose proof (Htmp := Singleton_ctx Γ AC AC_patt_defined ϕ x).
     simpl in Htmp.
     unfold patt_and in Htmp at 1.
     apply not_not_elim_meta in Htmp.
     3: { wf_auto2. }
     2: { wf_auto2. }
-    replace (patt_sym (Definedness_Syntax.inj definedness) $ (patt_free_evar x' and ! ϕ))%ml
-      with (patt_defined (patt_free_evar x' and ! ϕ)) in Htmp by reflexivity.
+    replace (patt_sym (Definedness_Syntax.inj definedness) $ (patt_free_evar x and ! ϕ))%ml
+      with (patt_defined (patt_free_evar x and ! ϕ)) in Htmp by reflexivity.
     
     toMLGoal.
     { wf_auto2. }
     mlIntro.
-    remember (ExGen := {[ev_x; x']}, SVSubst := ∅, KT := false, FP := defFP ∪ frames_of_AC AC) as gpi.
+    remember (ExGen := {[ev_x; x]}, SVSubst := ∅, KT := false) as gpi.
     rewrite Heqi.
     mlAdd (useBasicReasoning gpi Htmp).
     mlApply "1". mlIntro. mlApply "2".
@@ -320,7 +281,7 @@ Proof.
 
   pose proof (S7 := S5). unfold patt_or in S7.
 
-  assert(S8: Γ ⊢i subst_ctx AC (patt_free_evar x' and ϕ) ---> ⌈ ϕ ⌉ using i).
+  assert(S8: Γ ⊢i subst_ctx AC (patt_free_evar x and ϕ) ---> ⌈ ϕ ⌉ using i).
   {
     eapply syllogism_meta.
     5: apply S7.
@@ -329,14 +290,9 @@ Proof.
   }
   assert (S9: Γ ⊢i all, (subst_ctx AC (patt_bound_evar 0 and ϕ) ---> ⌈ ϕ ⌉) using i).
   {
-    eapply universal_generalization with (x := x') in S8.
+    eapply universal_generalization with (x := x) in S8.
     3: { wf_auto2. }
-    2: { subst i. apply pile_evs_svs_kt.
-      { set_solver. }
-      { apply reflexivity. }
-      { reflexivity. }
-      { clear. set_solver. }
-    }
+    2: { try_solve_pile. }
     simpl in S8.
 
     rewrite evar_quantify_subst_ctx in S8;[assumption|].
@@ -352,7 +308,7 @@ Proof.
     unfold patt_forall in S9.
     unfold patt_not in S9 at 1.
 
-    assert (Heq: (subst_ctx AC (patt_free_evar x' and ϕ))^{{evar: x' ↦ 0}} = subst_ctx AC (b0 and ϕ)).
+    assert (Heq: (subst_ctx AC (patt_free_evar x and ϕ))^{{evar: x ↦ 0}} = subst_ctx AC (b0 and ϕ)).
     {
       rewrite evar_quantify_subst_ctx;[assumption|].
       f_equal.
@@ -364,14 +320,7 @@ Proof.
     rewrite <- Heq.
     apply Ex_gen.
     2: {simpl. unfold evar_is_fresh_in in Hx1'. clear -Hx1'. set_solver. }
-    1: {
-      subst i.
-      apply pile_evs_svs_kt.
-      { set_solver. }
-      { apply reflexivity. }
-      { reflexivity. }
-      { clear. set_solver. }
-    }
+    1: { try_solve_pile. }
     assumption.
   }
 
@@ -387,7 +336,7 @@ Proof.
     {  mlApply "1".
         subst i.
        (* TODO mlAdd should do the cast automatically *)
-       mlAdd (useBasicReasoning (ExGen := {[ev_x; x']}, SVSubst := ∅, KT := false, FP := defFP ∪ frames_of_AC AC) (Existence Γ)).
+       mlAdd (useBasicReasoning (ExGen := {[ev_x; x]}, SVSubst := ∅, KT := false) (Existence Γ)).
        mlExactn 0.
     }
     mlApply "2". mlExactn 1.
@@ -404,7 +353,7 @@ Proof.
   assert (S12: Γ ⊢i ϕ ---> ex, (b0 and ϕ) using i).
   {
 
-    assert(well_formed (ex , ((patt_free_evar x')^{{evar: x' ↦ 0}} and ϕ))).
+    assert(well_formed (ex , ((patt_free_evar x)^{{evar: x ↦ 0}} and ϕ))).
     {
       unfold well_formed,well_formed_closed in *. simpl in *.
       destruct_and!. split_and!; auto.
@@ -418,24 +367,19 @@ Proof.
       mlIntro.
       mlDestructAnd "0".
       fromMLGoal.
-      replace b0 with ((patt_free_evar x')^{{evar: x' ↦ 0}}).
+      replace b0 with ((patt_free_evar x)^{{evar: x ↦ 0}}).
       2: { simpl. case_match;[reflexivity|congruence]. }
       apply Ex_gen.
       2: { simpl. case_match;[|congruence]. simpl.
            unfold evar_is_fresh_in in Hx1'. clear -Hx1'. set_solver.
       }
       1: {
-        subst i.
-        apply pile_evs_svs_kt.
-        { set_solver. }
-        { apply reflexivity. }
-        { reflexivity. }
-        { clear. set_solver. }
+        try_solve_pile.
       }
       toMLGoal.
       { wf_auto2. }
       do 2 mlIntro.
-      mlAssert ((patt_free_evar x' and ϕ)) using first 2.
+      mlAssert ((patt_free_evar x and ϕ)) using first 2.
       { wf_auto2. }
       { unfold patt_and. unfold patt_not at 1. mlIntro.
         mlDestructOr "2".
@@ -446,8 +390,8 @@ Proof.
       fromMLGoal.
       case_match;[|congruence].
 
-      replace (patt_free_evar x' and ϕ)
-        with (instantiate (ex, (patt_bound_evar 0 and ϕ)) (patt_free_evar x')).
+      replace (patt_free_evar x and ϕ)
+        with (instantiate (ex, (patt_bound_evar 0 and ϕ)) (patt_free_evar x)).
       2: {
         simpl. rewrite bevar_subst_not_occur.
         { unfold well_formed, well_formed_closed in *.
@@ -470,18 +414,14 @@ Proof.
   {
     apply Framing.
     {
-      subst i. apply pile_evs_svs_kt.
-      { set_solver. }
-      { set_solver. }
-      { reflexivity. }
-      { clear. set_solver. }
+      try_solve_pile.
     }
     apply S12.
   }
 
   assert(S14: Γ ⊢i (subst_ctx AC (ex, (b0 and ϕ))) ---> (⌈ ϕ ⌉) using i).
   {
-    pose proof (Htmp := prf_prop_ex_iff Γ AC (b0 and ϕ) x').
+    pose proof (Htmp := prf_prop_ex_iff Γ AC (b0 and ϕ) x).
     feed specialize Htmp.
     { unfold evar_is_fresh_in in *.
       rewrite free_evars_subst_ctx. clear -Hx1' Hx'2. simpl. set_solver.
@@ -515,17 +455,7 @@ Proof.
       eapply syllogism_meta.
       5: { apply S10. }
       4: { subst i. eapply useGenericReasoning. 2: apply Htmp.
-        apply pile_evs_svs_kt.
-        {
-          set_solver.
-        }
-        {
-          apply reflexivity.
-        }
-        {
-          reflexivity.
-        }
-        { clear. set_solver. }
+        try_solve_pile.
       }
       1-3: wf_auto2.
     }
@@ -548,17 +478,16 @@ Proof.
   set_solver.
 Qed.
 
-Lemma phi_impl_defined_phi Γ ϕ:
+Lemma phi_impl_defined_phi Γ ϕ x:
   theory ⊆ Γ ->
+  x ∉ free_evars ϕ ->
   well_formed ϕ ->
   Γ ⊢i ϕ ---> ⌈ ϕ ⌉
   using 
-                     (ExGen := {[ev_x;
-                               evar_fresh
-                                 (elements (free_evars ϕ) )]},
-                      SVSubst := ∅, KT := false, FP := defFP).
+                     (ExGen := {[ev_x;x]},
+                      SVSubst := ∅, KT := false).
 Proof.
-  intros HΓ wfϕ.
+  intros HΓ Hx wfϕ.
   eapply cast_proof'.
   {
     replace ϕ with (subst_ctx box ϕ) at 1 by reflexivity.
@@ -566,88 +495,54 @@ Proof.
   }
   eapply useGenericReasoning.
   2: {
-    apply in_context_impl_defined; assumption.  
+    apply in_context_impl_defined; try assumption.
+    cbn. instantiate (1:=x). set_solver.
   }
   {
-    simpl.
-    apply pile_evs_svs_kt.
-    { 
-      cut (elements (free_evars ϕ ∪ ∅) = elements (free_evars ϕ)).
-      {
-        intros H'. rewrite H'. apply reflexivity.
-      }
-      rewrite elements_union_empty.
-      reflexivity.
-    }
-    {
-      apply reflexivity.
-    }
-    {
-      reflexivity.
-    }
-    {
-      clear. set_solver.
-    }
+    simpl. replace (free_evars ϕ ∪ ∅) with (free_evars ϕ) by set_solver.
+    try_solve_pile.
   }
 Defined.
 
-Lemma total_phi_impl_phi Γ ϕ:
+Lemma total_phi_impl_phi Γ ϕ x:
   theory ⊆ Γ ->
+  x ∉ free_evars ϕ -> 
   well_formed ϕ ->
   Γ ⊢i ⌊ ϕ ⌋ ---> ϕ
   using 
-  (ExGen := {[ev_x;
-            evar_fresh
-              (elements (free_evars ϕ) )]},
-   SVSubst := ∅, KT := false, FP := defFP).
+  (ExGen := {[ev_x; x]},
+   SVSubst := ∅, KT := false).
 Proof.
-  intros HΓ wfϕ.
+  intros HΓ Hx wfϕ.
   unfold patt_total.
-  pose proof (Htmp := phi_impl_defined_phi Γ (! ϕ) HΓ ltac:(wf_auto2)).
+  pose proof (Htmp := phi_impl_defined_phi Γ (! ϕ) x HΓ ltac:(set_solver) ltac:(wf_auto2)).
   apply A_impl_not_not_B_meta.
   1,2: wf_auto2.
   apply modus_tollens.
-  simpl in Htmp.
-  cut (free_evars ϕ ∪ ∅ = free_evars ϕ).
-  {
-    intros H'. rewrite H' in Htmp. apply Htmp.
-  }
-  set_solver.
+  simpl in Htmp. assumption.
 Defined.
 
-Lemma total_phi_impl_phi_meta Γ ϕ i:
+Lemma total_phi_impl_phi_meta Γ ϕ i x:
   theory ⊆ Γ ->
+  x ∉ free_evars ϕ ->
   well_formed ϕ ->
-  ProofInfoLe (
-  (ExGen := {[ev_x;
-            evar_fresh
-              (elements (free_evars ϕ) )]},
-   SVSubst := ∅, KT := false, FP := defFP)) i ->
+  ProofInfoLe
+  (ExGen := {[ev_x; x]},
+   SVSubst := ∅, KT := false) i ->
   Γ ⊢i ⌊ ϕ ⌋ using i ->
   Γ ⊢i ϕ using i.
 Proof.
-  intros HΓ wfϕ pile H.
+  intros HΓ Hx wfϕ pile H.
   eapply MP.
   1: exact H.
   eapply useGenericReasoning.
   2: apply total_phi_impl_phi.
   {
     eapply pile_trans. 2: apply pile.
-    apply pile_evs_svs_kt.
-    { apply reflexivity. }
-    { apply reflexivity. }
-    { reflexivity. }
-    { apply reflexivity. }
+    try_solve_pile.
   }
-  1: exact HΓ.
-  exact wfϕ.
+  all: assumption.
 Defined.
-
-Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
-  match pi_framing_patterns gpi with
-  | CoFinGset _ => ⊤
-  | FinGSet fp => gset_to_coGset (list_to_set (map (fun (psi : wfPattern) => evar_fresh (elements (free_evars ψ ∪ free_evars (proj1_sig psi)))) (elements fp)))
-  end.
 
   Theorem deduction_theorem_noKT Γ ϕ ψ
     (gpi : ProofInfo)
@@ -655,24 +550,26 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
     well_formed ϕ ->
     well_formed ψ ->
     theory ⊆ Γ ->
+    (* x ∈ pi_generalized_evars gpi -> *)
     pi_generalized_evars gpi ## (gset_to_coGset (free_evars ψ)) ->
     pi_substituted_svars gpi ## (gset_to_coGset (free_svars ψ)) ->
     pi_uses_kt gpi = false ->
     Γ ⊢i ⌊ ψ ⌋ ---> ϕ
-    using 
-    (ExGen :=
+    using AnyReasoning.
+    (* (ExGen :=
       (
-        {[ev_x; evar_fresh (elements (free_evars ψ))]}
+        {[ev_x; x]}
         ∪ pi_generalized_evars gpi
         ∪ gset_to_coGset (free_evars ψ)
-        ∪ (dt_exgen_from_fp ψ gpi)
       ),
      SVSubst := (pi_substituted_svars gpi ∪ (gset_to_coGset (free_svars ψ))),
-     KT := false,
-     FP := ⊤ (* TODO relax *)
-    ).
+     KT := false
+    ). *)
+    (** TODO: for this proof, the free variables in patterns of Framing need to be
+              traced!!!!
+     **)
   Proof.
-    intros wfϕ wfψ HΓ HnoExGen HnoSvarSubst HnoKT.
+    intros wfϕ wfψ HΓ Hgen Hsubst Hkt.
     destruct pf as [pf Hpf]. simpl.
     induction pf.
     - (* hypothesis *)
@@ -683,19 +580,11 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
       + subst.
         eapply useGenericReasoning.
         2: {
-          apply total_phi_impl_phi; assumption.
+          apply total_phi_impl_phi; try assumption.
+          instantiate (1 := evar_fresh (elements (free_evars ψ))).
+          apply set_evar_fresh_is_fresh'.
         }
-        {
-          apply pile_evs_svs_kt.
-          {
-            clear. set_solver.
-          }
-          {
-            clear. set_solver.
-          }
-          { reflexivity. }
-          { clear. set_solver. }
-        }
+        { try_solve_pile. }
 
       + assert (axiom0 ∈ Γ).
         { clear -e n. set_solver. }
@@ -704,17 +593,7 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
         mlIntro. mlClear "0". fromMLGoal.
         eapply useGenericReasoning.
         2: apply (hypothesis Γ axiom0 i H).
-        apply pile_evs_svs_kt.
-        {
-          set_solver.
-        }
-        {
-          set_solver.
-        }
-        {
-          simpl. reflexivity.
-        }
-        { clear. set_solver. }
+        try_solve_pile.
     - (* P1 *)
       toMLGoal.
       { wf_auto2. }
@@ -754,7 +633,6 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
           destruct (uses_kt pf1) eqn:Hktpf1;[|reflexivity]. simpl in *.
           exact Hpf4.
         }
-        { clear -pwi_pf_fp. set_solver. }
       }
       { assumption. }
       feed specialize IHpf2.
@@ -767,50 +645,17 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
           rewrite orb_comm in Hpf4. simpl in *.
           exact Hpf4.
         }
-        {
-          clear -pwi_pf_fp. set_solver.
-        }
       }
       { wf_auto2. }
-      
-      (*
-      (* simplify the constraint *)
-      unfold dt_exgen_from_fp. simpl.
-      rewrite map_app.
-      rewrite list_to_set_app_L.
-      simpl.
-      *)
-
-      (*
-      (* weaken the induction hypotheses so that their constraint
-         matches the constraint of the goal *)
-      apply useGenericReasoning with (i := i') in IHpf1.
-      2: {
-        subst i'.
-        apply pile_evs_svs_kt.
-        { clear. set_solver. }
-        { clear. set_solver. }
-        { reflexivity. }
-      }
-
-      apply useGenericReasoning with (i := i') in IHpf2.
-      2: {
-        subst i'.
-        apply pile_evs_svs_kt.
-        { clear. set_solver. }
-        { clear. set_solver. }
-        { reflexivity. }
-      }
-      *)
 
       toMLGoal.
       { wf_auto2. }
       mlIntro.
-      mlAdd IHpf2.
+      subst i'. mlAdd IHpf2.
       mlAssert ((phi1 ---> phi2)).
       { wf_auto2. }
       { mlApply "1". mlExactn 1. }
-      mlApply "2".
+      mlApply "2". (* TODO: proof infos are transformed? Why? *)
       mlAdd IHpf1.
       mlApply "3".
       mlExactn 2.
@@ -832,22 +677,18 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
         { clear -Hpf2. set_solver. }
         { clear -Hpf3. set_solver. }
         { apply Hpf4. }
-        { clear -pwi_pf_fp. set_solver. }
       }
-      { clear pwi_pf_fp. wf_auto2. }
+      { wf_auto2. }
+
 
       apply reorder_meta in IHpf.
-      2-4: clear pwi_pf_fp; wf_auto2.
+      2-4: wf_auto2.
+
       apply Ex_gen with (x := x) in IHpf.
       3: { simpl. set_solver. }
-      2: { apply pile_evs_svs_kt.
-        { clear -Hpf2. set_solver. }
-        { set_solver. }
-        { reflexivity. }
-        { clear. set_solver. }
-      }
+      2: { try_solve_pile. }
       apply reorder_meta in IHpf.
-      2-4: clear pwi_pf_fp; wf_auto2.
+      2-4: wf_auto2.
       exact IHpf.
       
     - (* Propagation of ⊥, left *)
@@ -910,10 +751,9 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
         { set_solver. }
         { set_solver. }
         { apply Hpf4. }
-        { clear -pwi_pf_fp. set_solver. }
       }
       { wf_auto2. }
-
+      
       remember_constraint as i'.
 
       (*
@@ -928,9 +768,9 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
       *)
       assert (S2: Γ ⊢i phi1 ---> (phi2 or ⌈ ! ψ ⌉) using i').
       { toMLGoal.
-        { clear pwi_pf_fp; wf_auto2. }
+        { wf_auto2. }
         mlAdd IHpf. mlIntro.
-        mlAdd (useBasicReasoning i' (A_or_notA Γ (⌈ ! ψ ⌉) ltac:(clear pwi_pf_fp; wf_auto2))).
+        mlAdd (useBasicReasoning i' (A_or_notA Γ (⌈ ! ψ ⌉) ltac:(wf_auto2))).
         mlDestructOr "0".
         - mlRight. mlExact "3".
         - mlLeft.
@@ -942,29 +782,27 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
         replace (⌈ ! ψ ⌉ $ psi)
           with (subst_ctx (ctx_app_l AC_patt_defined psi ltac:(assumption)) (! ψ))
           by reflexivity.
-        subst i'.
+        subst i'. Check in_context_impl_defined.
         gapply in_context_impl_defined; auto.
         (*eapply useGenericReasoning. *)
         (*2: apply in_context_impl_defined; auto.*)
-        apply pile_evs_svs_kt.
+        split. 2: split.
         {
           replace (free_evars (! ψ)) with (free_evars (ψ)).
           2: {
             simpl. set_solver.
           }
           simpl.
-          replace (free_evars psi ∪ (∅ ∪ ∅)) with (free_evars psi) by (clear; set_solver).
-          clear -pwi_pf_fp.
-          unfold dt_exgen_from_fp.
-          case_match.
-          2: {
-            set_solver.
-          }
-          set_solver.
+          instantiate (1 := evar_fresh (elements (free_evars ψ ∪ free_evars psi))). set_solver.
         }
         { clear. set_solver. }
         { reflexivity. }
-        { clear. set_solver. }
+        {
+          cbn. 
+          replace (free_evars ψ ∪ ∅ ∪ (free_evars psi ∪ (∅ ∪ ∅))) with
+                  (free_evars ψ ∪ free_evars psi) by set_solver.
+          apply set_evar_fresh_is_fresh'.
+        }
       }
 
       assert (S4: Γ ⊢i (phi1 $ psi) ---> ((phi2 or ⌈ ! ψ ⌉) $ psi) using i').
@@ -978,12 +816,12 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
       {
         pose proof (Htmp := prf_prop_or_iff Γ (ctx_app_l box psi ltac:(assumption)) phi2 (⌈! ψ ⌉)).
         feed specialize Htmp.
-        { clear pwi_pf_fp;wf_auto2. }
-        { clear pwi_pf_fp;wf_auto2. }
+        { wf_auto2. }
+        { wf_auto2. }
         simpl in Htmp.
         apply pf_iff_proj1 in Htmp.
-        3: clear pwi_pf_fp; wf_auto2.
-        2: clear pwi_pf_fp; wf_auto2.
+        3: wf_auto2.
+        2: wf_auto2.
         subst i'.
         eapply syllogism_meta.
         5: {
@@ -991,13 +829,13 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
           clear. try_solve_pile.
         }
         4: assumption.
-        all: clear pwi_pf_fp; wf_auto2.
+        all: wf_auto2.
       }
 
       assert (S6: Γ ⊢i ((phi2 $ psi) or (⌈ ! ψ ⌉ $ psi)) ---> ((phi2 $ psi) or (⌈ ! ψ ⌉)) using i').
       {
         toMLGoal.
-        { clear pwi_pf_fp; wf_auto2. }
+        { wf_auto2. }
         mlIntro. mlAdd S3.
         (* TODO we need a tactic for adding  something with stronger constraint. *)
         mlAdd (useBasicReasoning i' (A_or_notA Γ (phi2 $ psi) ltac:(auto))).
@@ -1009,10 +847,10 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
       assert (S7: Γ ⊢i (phi1 $ psi) ---> ((phi2 $ psi)  or ⌈ ! ψ ⌉) using i').
       {
         toMLGoal.
-        { clear pwi_pf_fp; wf_auto2. }
+        { wf_auto2. }
         mlAdd S5. mlAdd S6. mlIntro.
         mlAssert (((phi2 $ psi) or (⌈ ! ψ ⌉ $ psi))).
-        { clear pwi_pf_fp; wf_auto2. }
+        { wf_auto2. }
         { mlApply "0". mlExactn 2. }
         mlDestructOr "3".
         - mlLeft. mlExactn 3.
@@ -1020,15 +858,15 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
       }
 
       toMLGoal.
-      { clear pwi_pf_fp; wf_auto2. }
+      { wf_auto2. }
       do 2 mlIntro. mlAdd S7.
       mlAssert ((phi2 $ psi or ⌈ ! ψ ⌉)).
-      { clear pwi_pf_fp; wf_auto2. }
+      { wf_auto2. }
       { mlApply "2". mlExactn 2. }
       mlDestructOr "3".
       + mlExactn 3.
       + mlAssert ((phi2 $ psi or ⌈ ! ψ ⌉)).
-        { clear pwi_pf_fp; wf_auto2. }
+        { wf_auto2. }
         { mlApply "2". mlExactn 2. }
         mlAdd (useBasicReasoning i' (A_or_notA Γ (phi2 $ psi) ltac:(auto))).
         mlDestructOr "4".
@@ -1053,7 +891,6 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
       assert (well_formed (phi1 ---> phi2)).
       { unfold well_formed,well_formed_closed in *. simpl in *.
         destruct_and!. split_and!; auto. }
-      simpl in HnoExGen. simpl in HnoSvarSubst. simpl in HnoKT.
 
       destruct Hpf as [Hpf2 Hpf3 Hpf4].
       simpl in Hpf2,Hpf3,Hpf4.
@@ -1063,7 +900,6 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
         { set_solver. }
         { set_solver. }
         { apply Hpf4. }
-        { clear -pwi_pf_fp. set_solver. }
       }
       { wf_auto2. }
 
@@ -1082,9 +918,9 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
       *)
       assert (S2: Γ ⊢i phi1 ---> (phi2 or ⌈ ! ψ ⌉) using i').
       { toMLGoal.
-        { clear pwi_pf_fp; wf_auto2. }
+        { wf_auto2. }
         mlAdd IHpf. mlIntro.
-        mlAdd (useBasicReasoning i' (A_or_notA Γ (⌈ ! ψ ⌉) ltac:(clear pwi_pf_fp;wf_auto2))).
+        mlAdd (useBasicReasoning i' (A_or_notA Γ (⌈ ! ψ ⌉) ltac:(wf_auto2))).
         mlDestructOr "2".
         - mlRight. mlExactn 0.
         - mlLeft.
@@ -1097,27 +933,20 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
       assert (S3: Γ ⊢i (psi $ ⌈ ! ψ ⌉) ---> ⌈ ! ψ ⌉ using i').
       {
         replace (psi $ ⌈ ! ψ ⌉)
-          with (subst_ctx (ctx_app_r psi AC_patt_defined ltac:(assumption)) (! ψ))
+        with (subst_ctx (ctx_app_r psi AC_patt_defined ltac:(assumption)) (! ψ))
           by reflexivity.
-          subst i'.
-          gapply in_context_impl_defined; auto.
+        subst i'.
+        gapply in_context_impl_defined; auto.
 
-          apply pile_evs_svs_kt.
-          {
-            replace (free_evars (! ψ)) with (free_evars (ψ)).
-            2: {
-              simpl. set_solver.
-            }
-            simpl.
-            replace (free_evars psi ∪ (∅ ∪ ∅)) with (free_evars psi) by set_solver.
+        instantiate (1 := evar_fresh (elements (free_evars ψ ∪ free_evars psi))).
+        { try_solve_pile. }
+        {
+          cbn. 
+          replace (free_evars ψ ∪ ∅ ∪ (free_evars psi ∪ (∅ ∪ ∅))) with
+                  (free_evars ψ ∪ free_evars psi) by set_solver.
+          apply set_evar_fresh_is_fresh'.
+        }
 
-            clear -pwi_pf_fp.
-            unfold dt_exgen_from_fp.
-            case_match; set_solver.
-          }
-          { clear. set_solver. }
-          { reflexivity. }
-          { clear. set_solver. }
       }
 
       assert (S4: Γ ⊢i (psi $ phi1) ---> (psi $ (phi2 or ⌈ ! ψ ⌉)) using i').
@@ -1126,7 +955,7 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
            Like: unshelve (eapply H); try_wfauto
         *)
         unshelve (eapply Framing_right).
-        { clear pwi_pf_fp; wf_auto2. }
+        { wf_auto2. }
         2: exact S2.
         subst i'. try_solve_pile.
       }
@@ -1135,22 +964,22 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
       {
         pose proof (Htmp := prf_prop_or_iff Γ (ctx_app_r psi box ltac:(assumption)) phi2 (⌈! ψ ⌉)).
         feed specialize Htmp.
-        { clear pwi_pf_fp; wf_auto2. }
-        { clear pwi_pf_fp; wf_auto2. }
+        { wf_auto2. }
+        { wf_auto2. }
         simpl in Htmp.
         apply pf_iff_proj1 in Htmp.
-        2,3: clear pwi_pf_fp; wf_auto2.
+        2,3: wf_auto2.
         subst i'.
         eapply syllogism_meta.
         5: gapply Htmp; try_solve_pile.
         4: assumption.
-        all: clear pwi_pf_fp; wf_auto2.
+        all: wf_auto2.
       }
 
       assert (S6: Γ ⊢i ((psi $ phi2) or (psi $ ⌈ ! ψ ⌉)) ---> ((psi $ phi2) or (⌈ ! ψ ⌉)) using i').
       {
         toMLGoal.
-        { clear pwi_pf_fp; wf_auto2. }
+        { wf_auto2. }
         mlIntro. mlAdd S3.
         mlAdd (useBasicReasoning i' (A_or_notA Γ (psi $ phi2) ltac:(auto))).
         mlDestructOr "2".
@@ -1161,10 +990,10 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
       assert (S7: Γ ⊢i (psi $ phi1) ---> ((psi $ phi2)  or ⌈ ! ψ ⌉) using i').
       {
         toMLGoal.
-        { clear pwi_pf_fp; wf_auto2. }
+        { wf_auto2. }
         mlAdd S5. mlAdd S6. mlIntro.
         mlAssert (((psi $ phi2) or (psi $ ⌈ ! ψ ⌉))).
-        { clear pwi_pf_fp; wf_auto2. }
+        { wf_auto2. }
         { mlApply "0". mlExactn 2. }
         mlDestructOr "3".
         - mlLeft. mlExactn 3.
@@ -1172,15 +1001,15 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
       }
 
       toMLGoal.
-      { clear pwi_pf_fp; wf_auto2. }
+      { wf_auto2. }
       do 2 mlIntro. mlAdd S7.
       mlAssert ((psi $ phi2 or ⌈ ! ψ ⌉)).
-      { clear pwi_pf_fp; wf_auto2. }
+      { wf_auto2. }
       { mlApply "2". mlExactn 2. }
       mlDestructOr "3".
       + mlExactn 3.
       + mlAssert ((psi $ phi2 or ⌈ ! ψ ⌉)).
-        { clear pwi_pf_fp; wf_auto2. }
+        { wf_auto2. }
         { mlApply "2". mlExactn 2. }
         mlAdd (useBasicReasoning i' (A_or_notA Γ (psi $ phi2) ltac:(auto))).
         mlDestructOr "4".
@@ -1190,7 +1019,6 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
           mlApply "0".
           mlExactn 5.
     - (* Set variable substitution *)
-      simpl in HnoExGen. simpl in HnoSvarSubst. simpl in IHpf.
       destruct Hpf as [Hpf2 Hpf3 Hpf4].
       simpl in Hpf2, Hpf3, Hpf4.
       feed specialize IHpf.
@@ -1199,10 +1027,9 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
         { exact Hpf2. }
         { clear -Hpf3. set_solver. }
         { exact Hpf4. }
-        { clear -pwi_pf_fp. set_solver. }
       }
       {
-        clear pwi_pf_fp; wf_auto2.
+        wf_auto2.
       }
       
       remember_constraint as i'.
@@ -1212,7 +1039,7 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
       2: {  simpl.
            rewrite [ψ^[[svar: X ↦ psi]]]free_svar_subst_fresh.
            {
-             clear -HnoSvarSubst Hpf3. unfold svar_is_fresh_in. set_solver.
+            unfold svar_is_fresh_in. set_solver.
            }
            reflexivity.
       }
@@ -1222,19 +1049,9 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
       }
       {
         subst i'.
-        apply pile_evs_svs_kt.
-        {
-          clear. set_solver.
-        }
-        {
-          clear -Hpf3. set_solver.
-        }
-        {
-           reflexivity.
-        }
-        { clear. set_solver. }
+        try_solve_pile.
       }
-      { clear pwi_pf_fp; wf_auto2. }
+      { wf_auto2. }
 
     - (* Prefixpoint *)
       toMLGoal.
@@ -1243,10 +1060,9 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
       apply useBasicReasoning.
       apply Pre_fixp. wf_auto2.
     - (* Knaster-Tarski *)
-      simpl in HnoKT.
       destruct Hpf as [Hpf2 Hpf3 Hpf4].
       simpl in Hpf2, Hpf3, Hpf4.
-      clear -Hpf4 HnoKT.
+      clear -Hkt Hpf4.
       exfalso. congruence.
     - (* Existence *)
       toMLGoal.
@@ -1263,12 +1079,11 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
   Defined.
 
   Lemma membership_introduction Γ ϕ i:
-    ProofInfoLe (
+    ProofInfoLe 
     (ExGen := {[ev_x; fresh_evar ϕ]},
      SVSubst := ∅,
-     KT := false,
-     FP := defFP
-    )) i ->
+     KT := false
+    ) i ->
     well_formed ϕ ->
     theory ⊆ Γ ->
     Γ ⊢i ϕ using i ->
@@ -1342,27 +1157,14 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
     3: { wf_auto2. }
     1: { simpl in S9. case_match;[|congruence]. exact S9. }
     eapply pile_trans. 2: apply pile.
-    apply pile_evs_svs_kt.
-    {
-      clear. set_solver.
-    }
-    {
-      apply reflexivity.
-    }
-    {
-      reflexivity.
-    }
-    {
-      clear. set_solver.
-    }
+    try_solve_pile.
   Defined.
 
   Lemma membership_elimination Γ ϕ i:
     ProofInfoLe (
     (ExGen := {[ev_x; fresh_evar ϕ]},
     SVSubst := ∅,
-     KT := false,
-     FP := defFP
+     KT := false
     )) i ->
 
     well_formed ϕ ->
@@ -1392,11 +1194,7 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
       2: apply forall_variable_substitution.
       2: { wf_auto2. }
       eapply pile_trans. 2: apply pile.
-      apply pile_evs_svs_kt.
-      { clear. set_solver. }
-      { apply reflexivity. }
-      { reflexivity. }
-      { clear. set_solver. }
+      try_solve_pile.
     }
 
     assert(well_formed (all , b0 ∈ml ϕ^{{evar: x ↦ 0}})) by wf_auto2.
@@ -1413,11 +1211,7 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
     eapply useGenericReasoning in S5.
     2: {
       eapply pile_trans. 2: apply pile.
-      apply pile_evs_svs_kt.
-      { clear. set_solver. }
-      { apply reflexivity. }
-      { reflexivity. }
-      { clear. set_solver. }
+      try_solve_pile.
     }
 
     assert (S6: Γ ⊢i ⌈ patt_free_evar x and ϕ ⌉ ---> (patt_free_evar x ---> ϕ) using i).
@@ -1477,11 +1271,7 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
     3: wf_auto2.
     2: {
       eapply pile_trans. 2: apply pile.
-      apply pile_evs_svs_kt.
-      { clear. set_solver. }
-      { apply reflexivity. }
-      { reflexivity. }
-      { clear. set_solver. }
+      try_solve_pile.
     }
 
     assert (S9: Γ ⊢i (ex, patt_bound_evar 0) ---> ϕ using i).
@@ -1501,19 +1291,7 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
       {
         eapply pile_trans.
         2: apply pile.
-        apply pile_evs_svs_kt.
-        {
-          clear. set_solver.
-        }
-        {
-          apply reflexivity.
-        }
-        {
-          reflexivity.
-        }
-        {
-          clear. set_solver.
-        }
+        try_solve_pile.
       }
     }
 
@@ -1587,7 +1365,7 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
     well_formed ϕ = true ->
     theory ⊆ Γ ->
     Γ ⊢i ((!(patt_free_evar x ∈ml ϕ)) ---> (patt_free_evar x ∈ml (! ϕ)))%ml
-    using  (ExGen := {[ev_x; x]}, SVSubst := ∅, KT := false, FP := defFP).
+    using  (ExGen := {[ev_x; x]}, SVSubst := ∅, KT := false).
   Proof.
     intros wfϕ HΓ.
     pose proof (S1 := defined_evar Γ x HΓ).
@@ -1617,7 +1395,8 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
       eapply Framing_right in H.
       eapply MP. 2: apply H.
       1: assumption.
-      { unfold defFP. try_solve_pile. }
+      { wf_auto2. }
+      { try_solve_pile. }
     }
 
     pose proof (Htmp := prf_prop_or_iff Γ AC_patt_defined (patt_free_evar x and ϕ) (patt_free_evar x and ! ϕ)
@@ -1635,7 +1414,7 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
     well_formed ϕ ->
     theory ⊆ Γ ->
     Γ ⊢i ((patt_free_evar x) ∈ml (! ϕ)) <---> ! ((patt_free_evar x) ∈ml ϕ)
-    using  (ExGen := {[ev_x; x]}, SVSubst := ∅, KT := false, FP := defFP).
+    using  (ExGen := {[ev_x; x]}, SVSubst := ∅, KT := false).
   Proof.
     intros Hwf HΓ.
     apply pf_iff_split.
@@ -1649,12 +1428,12 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
     well_formed ϕ₂ ->
     theory ⊆ Γ ->
     Γ ⊢i (patt_free_evar x ∈ml (ϕ₁ or ϕ₂)) ---> ((patt_free_evar x ∈ml ϕ₁) or (patt_free_evar x ∈ml ϕ₂))
-    using BasicReasoningWithDefFP.
+    using BasicReasoning.
   Proof.
     intros wfϕ₁ wfϕ₂ HΓ.
     unfold patt_in.
     eapply syllogism_meta.
-    5: gapply Prop_disj_right; try_solve_pile.
+    5: gapply Prop_disj_right. 5: try_solve_pile.
     1,2,3,5,6,7: wf_auto2.
     unshelve (eapply Framing_right).
     { wf_auto2. }
@@ -1678,7 +1457,7 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
     well_formed ϕ₂ ->
     theory ⊆ Γ ->
     Γ ⊢i ((patt_free_evar x ∈ml ϕ₁) or (patt_free_evar x ∈ml ϕ₂)) ---> (patt_free_evar x ∈ml (ϕ₁ or ϕ₂))
-    using BasicReasoningWithDefFP.
+    using BasicReasoning.
   Proof.
     intros wfϕ₁ wfϕ₂ HΓ.
     unfold patt_in.
@@ -1692,7 +1471,7 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
     simpl.
     unshelve (eapply Framing_right).
     { wf_auto2. }
-    { unfold BasicReasoningWithDefFP. try_solve_pile. }
+    { unfold BasicReasoning. try_solve_pile. }
 
     toMLGoal.
     { wf_auto2. }
@@ -1710,7 +1489,7 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
     well_formed ϕ₂ ->
     theory ⊆ Γ ->
     Γ ⊢i (patt_free_evar x ∈ml (ϕ₁ or ϕ₂)) <---> ((patt_free_evar x ∈ml ϕ₁) or (patt_free_evar x ∈ml ϕ₂))
-    using BasicReasoningWithDefFP.
+    using BasicReasoning.
   Proof.
     intros wfϕ₁ wfϕ₂ HΓ.
     apply pf_iff_split.
@@ -1725,7 +1504,7 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
     well_formed ϕ₂ ->
     theory ⊆ Γ ->
     Γ ⊢i (patt_free_evar x ∈ml (ϕ₁ and ϕ₂)) ---> ((patt_free_evar x ∈ml ϕ₁) and (patt_free_evar x ∈ml ϕ₂))
-    using  (ExGen := {[ev_x; x]}, SVSubst := ∅, KT := false, FP := defFP).
+    using  (ExGen := {[ev_x; x]}, SVSubst := ∅, KT := false).
   Proof.
     intros wfϕ₁ wfϕ₂ HΓ.
 
@@ -1758,7 +1537,7 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
     well_formed ϕ₂ ->
     theory ⊆ Γ ->
     Γ ⊢i ((patt_free_evar x ∈ml ϕ₁) and (patt_free_evar x ∈ml ϕ₂)) ---> (patt_free_evar x ∈ml (ϕ₁ and ϕ₂))
-    using  (ExGen := {[ev_x; x]}, SVSubst := ∅, KT := false, FP := defFP).
+    using  (ExGen := {[ev_x; x]}, SVSubst := ∅, KT := false).
   Proof.
     intros wfϕ₁ wfϕ₂ HΓ.
 
@@ -1793,7 +1572,7 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
     well_formed ϕ₂ ->
     theory ⊆ Γ ->
     Γ ⊢i (patt_free_evar x ∈ml (ϕ₁ and ϕ₂)) <---> ((patt_free_evar x ∈ml ϕ₁) and (patt_free_evar x ∈ml ϕ₂))
-    using  (ExGen := {[ev_x; x]}, SVSubst := ∅, KT := false, FP := defFP).
+    using  (ExGen := {[ev_x; x]}, SVSubst := ∅, KT := false).
   Proof.
     intros wfϕ₁ wfϕ₂ HΓ.
     apply pf_iff_split.
@@ -1801,8 +1580,6 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
     + apply membership_and_1; assumption.
     + apply membership_and_2; assumption.
   Defined.
-
-  Arguments frames_on_the_way_to_hole' {Σ} EvS SvS E ψ p q wfψ wfp wfq.
 
   Lemma equality_elimination_basic Γ φ1 φ2 C
     (HΓ : theory ⊆ Γ)
@@ -1812,7 +1589,8 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
     mu_free (pcPattern C) ->
     Γ ⊢i (φ1 =ml φ2) --->
       (emplace C φ1) <---> (emplace C φ2)
-    using (
+    using AnyReasoning.
+      (* using (
     (ExGen := {[ev_x]}
               ∪ {[evar_fresh (elements (free_evars φ1 ∪ free_evars φ2))]}
               ∪ (gset_to_coGset (free_evars φ1))
@@ -1851,7 +1629,7 @@ Definition dt_exgen_from_fp (ψ : Pattern) (gpi : ProofInfo) : coEVarSet :=
             then false
             else true),
      FP := ⊤
-    )).
+    )). *)
   Proof.
     intros Hmf.
 
