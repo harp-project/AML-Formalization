@@ -1571,7 +1571,8 @@ Section FOL_helpers.
     * rewrite IHφ1. 2: rewrite IHφ2. all: set_solver.
   Qed.
 
-  (* Lemma congruence_mu : *)
+
+  Definition mu_in_evar_path E ψ sdepth := negb (Nat.eqb 0 (maximal_mu_depth_to sdepth E ψ)).
 
   Lemma eq_prf_equiv_congruence
     (sz : nat)
@@ -1603,7 +1604,7 @@ Section FOL_helpers.
     (pile: ProofInfoLe
            (ExGen := evs,
             SVSubst := svs,
-            KT := negb (Nat.eqb 0 (maximal_mu_depth_to sdepth E ψ))) gpi)
+            KT := mu_in_evar_path E ψ sdepth) gpi)
     (pf : Γ ⊢i (p <---> q) using ( gpi)) :
         Γ ⊢i (((ψ^[[evar: E ↦ p]]) <---> (ψ^[[evar: E ↦ q]]))) using ( gpi).
   Proof.
@@ -1664,6 +1665,7 @@ Section FOL_helpers.
       
       unshelve (epose proof (pf₁ := IHsz edepth sdepth ψ1 ltac:(assumption) ltac:(assumption) evs svs gpi _ pf el Hef1 _ Hel3 sl Hsf1 _ Hsl3)). 2-3: lia.
       { clear - i' pile. try_solve_pile.
+        cbn in *. unfold mu_in_evar_path in *. cbn in *.
         do 2 case_match; cbn in *; auto. lia. }
 
       epose proof (Hef2 := fresh_evars_bigger (free_evars ψ2 ∪ free_evars p ∪ free_evars q ∪ {[E]}) Hel1 ltac:(set_solver)).
@@ -1672,6 +1674,7 @@ Section FOL_helpers.
 
       unshelve (epose proof (pf₂ := IHsz edepth sdepth ψ2 ltac:(assumption) ltac:(assumption) evs svs gpi _ pf el Hef2 ltac:(lia) Hel3 sl Hsf2 ltac:(lia) Hsl3)).
       { clear - i' pile. try_solve_pile.
+        cbn in *. unfold mu_in_evar_path in *. cbn in *.
         do 2 case_match; cbn in *; auto. lia. }
 
       unshelve (eapply congruence_app); try assumption.
@@ -1696,6 +1699,7 @@ Section FOL_helpers.
       simpl in *.
       unshelve (epose proof (pf₁ := IHsz edepth sdepth ψ1 ltac:(assumption) ltac:(assumption) evs svs gpi _ pf el Hef1 ltac:(lia) Hel3 sl Hsf1 ltac:(lia) Hsl3)).
       { clear - i' pile. try_solve_pile.
+        cbn in *. unfold mu_in_evar_path in *. cbn in *.
         do 2 case_match; cbn in *; auto. lia. }
 
       epose proof (Hef2 := fresh_evars_bigger (free_evars ψ2 ∪ free_evars p ∪ free_evars q ∪ {[E]}) Hel1 ltac:(set_solver)).
@@ -1704,6 +1708,7 @@ Section FOL_helpers.
 
       unshelve(epose proof (pf₂ := IHsz edepth sdepth ψ2 ltac:(assumption) ltac:(assumption) evs svs gpi _ pf el Hef2 ltac:(lia) Hel3 sl Hsf2 ltac:(lia) Hsl3)).
       { clear - i' pile. try_solve_pile.
+        cbn in *. unfold mu_in_evar_path in *. cbn in *.
         do 2 case_match; cbn in *; auto. lia. }
 
       apply prf_equiv_of_impl_of_equiv.
@@ -1744,7 +1749,9 @@ Section FOL_helpers.
         destruct Hel1 as [_ ?]. clear -all_evars_fresh0. set_solver.
       }
       unshelve (epose proof (IH := IHsz edepth sdepth (ψ^{evar: 0 ↦ x}) ltac:(assumption) ltac:(assumption) (evs ∪ {[x]}) svs gpi _ pf els HVars _ ltac:(set_solver) sl)).
-      { rewrite evar_open_mu_depth.
+      {
+        cbn in *. unfold mu_in_evar_path in *. cbn in *.
+        rewrite evar_open_mu_depth.
         2: try_solve_pile.
         auto.
       }
@@ -1790,7 +1797,9 @@ Section FOL_helpers.
 
       simpl in *.
 
-      subst i'. rewrite maximal_mu_depth_to_S in pile. assumption.
+      subst i'.
+      cbn in *. unfold mu_in_evar_path in *. cbn in *.
+      rewrite maximal_mu_depth_to_S in pile. assumption.
 
       unshelve (epose proof (IH := IHsz edepth sdepth (ψ^{svar: 0 ↦ X}) ltac:(assumption) ltac:(assumption) evs svs gpi _ pf el)).
       { 
@@ -1983,9 +1992,9 @@ Section FOL_helpers.
     (wfq : well_formed q = true)
     (wfC: PC_wf C)
     (pile : ProofInfoLe
-       (ExGen := list_to_set (evar_fresh_seq (free_evars (pcPattern C) ∪ free_evars p ∪ free_evars q ∪ {[pcEvar C]}) (maximal_exists_depth (pcPattern C))),
-       SVSubst := list_to_set (svar_fresh_seq (free_svars (pcPattern C) ∪ free_svars p ∪ free_svars q) (maximal_mu_depth (pcPattern C))),
-       KT := mu_in_evar_path (pcEvar C) (pcPattern C)
+       (ExGen := list_to_set (evar_fresh_seq (free_evars (pcPattern C) ∪ free_evars p ∪ free_evars q ∪ {[pcEvar C]}) (maximal_exists_depth_to 0 (pcEvar C) (pcPattern C))),
+       SVSubst := list_to_set (svar_fresh_seq (free_svars (pcPattern C) ∪ free_svars p ∪ free_svars q) (maximal_mu_depth_to 0 (pcEvar C) (pcPattern C))),
+       KT := mu_in_evar_path (pcEvar C) (pcPattern C) 0
        )
       gpi
     ) :
@@ -2005,20 +2014,21 @@ Section FOL_helpers.
     unfold emplace. simpl.
     eapply eq_prf_equiv_congruence with 
       (el := evar_fresh_seq (free_evars ψ ∪ free_evars p ∪ free_evars q ∪ {[E]})
-      (maximal_exists_depth ψ))
+      (maximal_exists_depth_to 0 E ψ))
       (sl := svar_fresh_seq (free_svars ψ ∪ free_svars p ∪ free_svars q)
-      (maximal_mu_depth ψ))
+      (maximal_mu_depth_to 0 E ψ))
       (evs := list_to_set (evar_fresh_seq (free_evars ψ ∪ free_evars p ∪ free_evars q ∪ {[E]})
-      (maximal_exists_depth ψ)))
+      (maximal_exists_depth_to 0 E ψ)))
       (svs := list_to_set (svar_fresh_seq (free_svars ψ ∪ free_svars p ∪ free_svars q)
-      (maximal_mu_depth ψ))); try assumption.
+      (maximal_mu_depth_to 0 E ψ))); try assumption.
     { apply reflexivity. }
     { abstract (apply evar_fresh_seq_correct). }
-    { abstract (pose proof (evar_fresh_seq_length (free_evars ψ ∪ free_evars p ∪ free_evars q ∪ {[E]}) (maximal_exists_depth ψ)); lia). }
+    { instantiate (1 := 0); abstract (pose proof (evar_fresh_seq_length (free_evars ψ ∪ free_evars p ∪ free_evars q ∪ {[E]}) (maximal_exists_depth_to 0 E ψ)); lia). }
     { intros. set_solver. }
     { abstract (apply svar_fresh_seq_correct). }
-    { abstract (pose proof (svar_fresh_seq_length (free_svars ψ ∪ free_svars p ∪ free_svars q) (maximal_mu_depth ψ)); lia). }
+    { instantiate (1 := 0); abstract (pose proof (svar_fresh_seq_length (free_svars ψ ∪ free_svars p ∪ free_svars q) (maximal_mu_depth_to 0 E ψ)); lia). }
     { intros. set_solver. }
+    { try_solve_pile. }
   Defined.
 
 End FOL_helpers.
