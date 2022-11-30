@@ -2046,7 +2046,9 @@ Proof.
   * rewrite IHφ. set_solver. reflexivity.
 Qed.
 
-Lemma foldr_is_context {Σ : Signature} l C p x :
+Definition free_evars_of_list {Σ : Signature} l := foldr (λ x0 acc, free_evars x0 ∪ acc) ∅ l.
+
+(* Lemma foldr_is_context {Σ : Signature} l C p x :
   x ∉ free_evars (foldr patt_imp (pcPattern C) l) ->
   foldr patt_imp (emplace C p) l =
   emplace
@@ -2063,67 +2065,174 @@ Proof.
     * simpl in Hin. set_solver.
     * f_equal. apply IHl. set_solver.
   }
+Qed. *)
+
+Lemma fresh_foldr_is_context {Σ : Signature} l C p:
+  pcEvar C ∉ free_evars_of_list l ->
+  foldr patt_imp (emplace C p) l =
+  emplace
+    {|pcEvar := pcEvar C;
+      pcPattern := foldr patt_imp (pcPattern C) l |} p.
+Proof.
+  revert C p. induction l; intros C p Hin; cbn.
+  {
+    auto.
+  }
+  {
+    simpl in Hin.
+    rewrite free_evar_subst_no_occurrence.
+    * simpl in Hin. set_solver.
+    * f_equal. apply IHl. set_solver.
+  }
 Qed.
 
-(** NOTE: the following 5 lemmas are very spacific for prf_equiv_congruence_iter  *)
-Lemma free_evars_foldr {Σ : Signature} l ψ φ x :
-  free_evars (foldr patt_imp ψ^[[evar:x ↦ φ]] l) ⊆
-  free_evars (foldr patt_imp ψ l) ∪ free_evars φ.
+(** NOTE: the following lemmas are very specific for prf_equiv_congruence_iter  *)
+
+(* Lemma free_evars_replace {Σ : Signature} ψ y x :
+  x ∈ free_evars ψ ->
+  free_evars ψ^[[evar:x ↦ patt_free_evar y]] ∪ {[x]} =
+  free_evars ψ ∪ {[y]}.
 Proof.
-  induction l; simpl.
-  * apply free_evars_free_evar_subst.
+  induction ψ; intros H; cbn in *; auto.
+  2-5, 7: set_solver.
+  * destruct decide; simpl; set_solver.
+  * replace (free_evars ψ1^[[evar:x↦patt_free_evar y]]
+  ∪ free_evars ψ2^[[evar:x↦patt_free_evar y]] ∪ {[x]}) with
+  ((free_evars ψ1^[[evar:x↦patt_free_evar y]] ∪ {[x]})
+∪ (free_evars ψ2^[[evar:x↦patt_free_evar y]] ∪ {[x]})) by (clear;set_solver).
+    rewrite IHψ1. 2: rewrite IHψ2. 1-2: set_solver.
+  
+Qed. *)
+
+(* Lemma free_evars_foldr_replace {Σ : Signature} l ψ y x :
+  x ∈ free_evars ψ ->
+  free_evars (foldr patt_imp ψ^[[evar:x ↦ patt_free_evar y]] l) =
+  free_evars (foldr patt_imp ψ l) ∪ {[y]}.
+Proof.
+  induction l; intro H; simpl.
+  * free_evars_free_evar_subst.
   * set_solver.
-Qed.
+Qed. *)
 
-Lemma maximal_exists_depth_foldr {Σ : Signature} l ψ x y:
-  maximal_exists_depth (foldr patt_imp ψ^[[evar:x ↦ patt_free_evar y]] l) =
-  maximal_exists_depth (foldr patt_imp ψ l).
-Proof.
-  induction l; simpl.
-  * apply evar_replace_exist_depth.
-  * lia. 
-Qed.
-
-Lemma free_svars_foldr {Σ : Signature} l ψ φ x :
+(* Lemma free_svars_foldr {Σ : Signature} l ψ φ x :
   free_svars (foldr patt_imp ψ^[[evar:x ↦ φ]] l) ⊆
   free_svars (foldr patt_imp ψ l) ∪ free_svars φ.
 Proof.
   induction l; simpl.
   * apply free_svars_free_evar_subst.
   * set_solver.
+Qed. *)
+
+Lemma maximal_exists_depth_foldr_notin {Σ : Signature} l ψ x edepth:
+  x ∉ free_evars_of_list l ->
+  maximal_exists_depth_to edepth x (foldr patt_imp ψ l) =
+  maximal_exists_depth_to edepth x ψ.
+Proof.
+  induction l; simpl; intros Hin.
+  * reflexivity.
+  * assert (x ∉ free_evars a) as Ha by set_solver.
+    assert (x ∉ free_evars_of_list l) as HIND by set_solver.
+    apply IHl in HIND. rewrite HIND.
+    rewrite maximal_exists_depth_to_0; auto.
 Qed.
 
-Lemma maximal_mu_depth_foldr {Σ : Signature} l ψ x y:
-  maximal_mu_depth (foldr patt_imp ψ^[[evar:x ↦ patt_free_evar y]] l) =
-  maximal_mu_depth (foldr patt_imp ψ l).
+Lemma maximal_mu_depth_foldr_notin {Σ : Signature} l ψ x edepth:
+  x ∉ free_evars_of_list l ->
+  maximal_mu_depth_to edepth x (foldr patt_imp ψ l) =
+  maximal_mu_depth_to edepth x ψ.
+Proof.
+  induction l; simpl; intros Hin.
+  * reflexivity.
+  * assert (x ∉ free_evars a) as Ha by set_solver.
+    assert (x ∉ foldr (λ (x : Pattern) (acc : EVarSet), free_evars x ∪ acc) ∅ l) as HIND by set_solver.
+    apply IHl in HIND. rewrite HIND.
+    rewrite maximal_mu_depth_to_0; auto.
+Qed.
+
+(* Lemma maximal_exists_depth_foldr_in {Σ : Signature} l ψ x edepth:
+  maximal_exists_depth_to edepth x (foldr patt_imp ψ l) ≥
+  maximal_exists_depth_to edepth x ψ.
 Proof.
   induction l; simpl.
-  * apply evar_replace_mu_depth.
+  * auto.
   * lia.
-Qed.
+Qed. *)
 
-Lemma mu_in_evar_path_foldr {Σ : Signature} l φ x y:
-  x ∉ free_evars (foldr patt_imp φ l) ->
-  mu_in_evar_path x (foldr patt_imp φ^[[evar:y↦patt_free_evar x]] l) =
-  mu_in_evar_path y φ.
+(* Lemma maximal_mu_depth_foldr_in {Σ : Signature} l ψ x edepth:
+  maximal_mu_depth_to edepth x (foldr patt_imp ψ l) ≥
+  maximal_mu_depth_to edepth x ψ.
 Proof.
-  induction l; simpl; intro H.
-  * rewrite mu_in_evar_path_evar_replace. set_solver. reflexivity.
-  * rewrite IHl. set_solver.
-    rewrite count_occurences_not_in_path. apply count_evar_occurrences_0. set_solver.
-    auto.
-Qed.
+  induction l; simpl.
+  * auto.
+  * lia.
+Qed. *)
+
+(* Lemma maximal_exists_depth_fresh_context {Σ : Signature} ψ x y edepth :
+  y ∉ free_evars ψ ->
+  maximal_exists_depth_to edepth x ψ =
+  maximal_exists_depth_to edepth y (ψ^[[evar: x ↦ patt_free_evar y]]).
+Proof.
+  move: edepth.
+  induction ψ; intros edepth H; simpl; auto.
+  * do 2 case_match; simpl in *; case_match; subst; try congruence; auto. set_solver.
+  * rewrite IHψ1. set_solver. rewrite IHψ2. set_solver. reflexivity.
+  * rewrite IHψ1. set_solver. rewrite IHψ2. set_solver. reflexivity.
+Qed. *)
+
+(* Lemma maximal_mu_depth_fresh_context {Σ : Signature} ψ x y edepth :
+  y ∉ free_evars ψ ->
+  maximal_mu_depth_to edepth x ψ =
+  maximal_mu_depth_to edepth y (ψ^[[evar: x ↦ patt_free_evar y]]).
+Proof.
+  move: edepth.
+  induction ψ; intros edepth H; simpl; auto.
+  * do 2 case_match; simpl in *; case_match; subst; try congruence; auto. set_solver.
+  * rewrite IHψ1. set_solver. rewrite IHψ2. set_solver. reflexivity.
+  * rewrite IHψ1. set_solver. rewrite IHψ2. set_solver. reflexivity.
+Qed. *)
+
+(* Lemma foldr_free_evars {Σ : Signature} φ l :
+  free_evars (foldr patt_imp φ l) =
+  free_evars_of_list l ∪ free_evars φ.
+Proof.
+  induction l; simpl; set_solver.
+Qed. *)
+
+(* Lemma evar_fresh_seq_longer {Σ : Signature} S0 n1 n2 :
+  n1 ≥ n2 ->
+  forall x, x ∈ evar_fresh_seq S0 n2 -> x ∈ evar_fresh_seq S0 n1.
+Proof.
+  move: n2 S0. induction n1; destruct n2; intros S0 H x HIn; auto.
+  * lia.
+  * cbn in HIn. set_solver.
+  * cbn in *. apply elem_of_cons in HIn as [HF | HT].
+    - subst. set_solver.
+    - apply IHn1 in HT. set_solver. lia.
+Qed. *)
+
+(* Lemma svar_fresh_seq_longer {Σ : Signature} S0 n1 n2 :
+  n1 ≥ n2 ->
+  forall x, x ∈ svar_fresh_seq S0 n2 -> x ∈ svar_fresh_seq S0 n1.
+Proof.
+  move: n2 S0. induction n1; destruct n2; intros S0 H x HIn; auto.
+  * lia.
+  * cbn in HIn. set_solver.
+  * cbn in *. apply elem_of_cons in HIn as [HF | HT].
+    - subst. set_solver.
+    - apply IHn1 in HT. set_solver. lia.
+Qed. *)
 
 Lemma prf_equiv_congruence_iter {Σ : Signature} (Γ : Theory) (p q : Pattern) (C : PatternCtx) l
   (wfp : well_formed p)
   (wfq : well_formed q)
   (wfC : PC_wf C)
+  (VarsC : pcEvar C ∉ free_evars_of_list l)
   (gpi : ProofInfo)
   (pile : ProofInfoLe
-    (ExGen := list_to_set (evar_fresh_seq (free_evars (foldr patt_imp (pcPattern C) l) ∪free_evars p ∪ free_evars q ∪ {[fresh_evar (foldr patt_imp (pcPattern C) l)]}) (maximal_exists_depth (foldr patt_imp (pcPattern C) l))),
+    (ExGen := list_to_set (evar_fresh_seq (free_evars (foldr patt_imp (pcPattern C) l) ∪ free_evars p ∪ free_evars q ∪ {[pcEvar C]}) (maximal_exists_depth_to 0 (pcEvar C) (pcPattern C))),
      SVSubst := list_to_set (svar_fresh_seq (free_svars (foldr patt_imp (pcPattern C) l) ∪
-                free_svars p ∪ free_svars q) (maximal_mu_depth (foldr patt_imp (pcPattern C) l))),
-     KT := mu_in_evar_path (pcEvar C) (pcPattern C)
+                free_svars p ∪ free_svars q) (maximal_mu_depth_to 0 (pcEvar C) (pcPattern C))),
+     KT := mu_in_evar_path (pcEvar C) (pcPattern C) 0
     )
     gpi
   ):
@@ -2132,57 +2241,129 @@ Lemma prf_equiv_congruence_iter {Σ : Signature} (Γ : Theory) (p q : Pattern) (
   Γ ⊢i (foldr patt_imp (emplace C p) l) <---> (foldr patt_imp (emplace C q) l) using  gpi.
 Proof.
   intros wfl Himp.
-  remember (fresh_evar (foldr patt_imp (pcPattern C) l)) as x.
-  rewrite -> foldr_is_context with (x := x).
-  2: { rewrite Heqx. solve_free_evars_inclusion 1. }
-  rewrite -> foldr_is_context with (x := x).
-  2: { rewrite Heqx. solve_free_evars_inclusion 1. }
+  rewrite -> fresh_foldr_is_context. 2: assumption.
+  rewrite -> fresh_foldr_is_context. 2: assumption.
+  
   eapply eq_prf_equiv_congruence with
+    (edepth := 0) (sdepth := 0)
     (el := evar_fresh_seq
     (free_evars (foldr patt_imp (pcPattern C) l)
      ∪
-     free_evars p ∪ free_evars q ∪ {[x]})
-    (maximal_exists_depth (foldr patt_imp (pcPattern C) l)))
+     free_evars p ∪ free_evars q ∪ {[pcEvar C]})
+    (maximal_exists_depth_to 0 (pcEvar C) (foldr patt_imp (pcPattern C) l)))
     (sl := svar_fresh_seq (free_svars (foldr patt_imp (pcPattern C) l) ∪
-    free_svars p ∪ free_svars q) (maximal_mu_depth (foldr patt_imp (pcPattern C) l)))
+    free_svars p ∪ free_svars q) (maximal_mu_depth_to 0 (pcEvar C) (foldr patt_imp (pcPattern C) l)))
     (evs := list_to_set (evar_fresh_seq
     (free_evars (foldr patt_imp (pcPattern C) l)
-     ∪ free_evars p ∪ free_evars q ∪ {[x]})
-    (maximal_exists_depth (foldr patt_imp (pcPattern C) l))))
+     ∪ free_evars p ∪ free_evars q ∪ {[pcEvar C]})
+    (maximal_exists_depth_to 0 (pcEvar C) (foldr patt_imp (pcPattern C) l))))
     (svs := list_to_set (svar_fresh_seq (free_svars (foldr patt_imp (pcPattern C) l) ∪
-    free_svars p ∪ free_svars q) (maximal_mu_depth (foldr patt_imp (pcPattern C) l))));
+    free_svars p ∪ free_svars q) (maximal_mu_depth_to 0 (pcEvar C) (foldr patt_imp (pcPattern C) l))));
   auto; simpl.
   wf_auto2. 1-3: unfold PC_wf in wfC; wf_auto2.
   {
-    apply @fresh_evars_bigger with (s := (free_evars (foldr patt_imp (pcPattern C) l) ∪ free_evars p ∪ free_evars q ∪ {[x]})).
-    apply evar_fresh_seq_correct. clear. 
-    pose proof (free_evars_foldr l (pcPattern C) (patt_free_evar x) (pcEvar C)).
-    set_solver.
+    apply evar_fresh_seq_correct.
   }
   {
-    rewrite maximal_exists_depth_foldr.
     rewrite evar_fresh_seq_length. lia.
   }
   {
     intros. set_solver.
   }
   {
-    apply @fresh_svars_bigger with (s := (free_svars (foldr patt_imp (pcPattern C) l) ∪ free_svars p ∪ free_svars q)).
-    apply svar_fresh_seq_correct. clear. 
-    pose proof (free_svars_foldr l (pcPattern C) (patt_free_evar x) (pcEvar C)).
-    set_solver.
+    apply svar_fresh_seq_correct.
   }
-  {
-    rewrite maximal_mu_depth_foldr.
+  { 
     rewrite svar_fresh_seq_length. lia.
   }
   {
     intros. set_solver.
   }
-  { rewrite mu_in_evar_path_foldr. 2: exact pile.
-    rewrite Heqx. now apply x_eq_fresh_impl_x_notin_free_evars.
+  { 
+    destruct pile as [HEV [HSV HKT] ].
+    constructor; simpl in *. 2: constructor; simpl in *.
+    {
+      clear -HEV VarsC.
+      rewrite (maximal_exists_depth_foldr_notin); assumption.
+    }
+    {
+      clear -HSV VarsC.
+      rewrite (maximal_mu_depth_foldr_notin); assumption.
+      
+    }
+    {
+      clear -HKT VarsC.
+      unfold mu_in_evar_path.
+      rewrite (maximal_mu_depth_foldr_notin); assumption.
+    }
   }
 Defined.
+
+
+(* Lemma prf_equiv_congruence_iter_all_contexts {Σ : Signature} (Γ : Theory) (p q : Pattern) (C : PatternCtx) l
+  (wfp : well_formed p)
+  (wfq : well_formed q)
+  (wfC : PC_wf C)
+  (gpi : ProofInfo)
+  (pile : ProofInfoLe
+    (ExGen := list_to_set (evar_fresh_seq (free_evars (foldr patt_imp (pcPattern C) l) ∪ free_evars p ∪ free_evars q ∪ {[fresh_evar (foldr patt_imp (pcPattern C) l)]}) (maximal_exists_depth_to 0 (pcEvar C) (pcPattern C))),
+     SVSubst := list_to_set (svar_fresh_seq (free_svars (foldr patt_imp (pcPattern C) l) ∪
+                free_svars p ∪ free_svars q) (maximal_mu_depth_to 0 (pcEvar C) (pcPattern C))),
+     KT := mu_in_evar_path (pcEvar C) (pcPattern C) 0
+    )
+    gpi
+  ):
+  Pattern.wf l ->
+  Γ ⊢i p <---> q using ( gpi) ->
+  Γ ⊢i (foldr patt_imp (emplace C p) l) <---> (foldr patt_imp (emplace C q) l) using  gpi.
+Proof.
+  intros wfl Himp.
+  destruct (decide ((pcEvar C) ∈ free_evars (pcPattern C))) as [HIN | HIN].
+  2: {
+    clear -HIN wfC wfl. unfold emplace; simpl.
+    rewrite free_evar_subst_no_occurrence. assumption.
+    rewrite free_evar_subst_no_occurrence. assumption.
+    gapply pf_iff_equiv_refl. try_solve_pile. unfold PC_wf in wfC. wf_auto2.
+  }
+  remember (fresh_evar (foldr patt_imp (pcPattern C) l)) as x.
+  remember ({|pcEvar := x; pcPattern := (pcPattern C)^[[evar: pcEvar C ↦ patt_free_evar x]]|}) as newC.
+  assert (forall p, emplace C p = emplace newC p). {
+    intro p0.
+    unfold emplace. subst newC. cbn.
+    rewrite collapse_free_evar_subst. 2: reflexivity.
+    eapply not_elem_of_larger_impl_not_elem_of.
+    2: apply x_eq_fresh_impl_x_notin_free_evars; eassumption.
+    rewrite foldr_free_evars. set_solver.
+  }
+  rewrite (H p) (H q).
+  assert (x ∉ free_evars (pcPattern C)). {
+    eapply not_elem_of_larger_impl_not_elem_of.
+    2: apply x_eq_fresh_impl_x_notin_free_evars; eassumption.
+    rewrite foldr_free_evars. set_solver.
+  }
+  assert (x ∉ free_evars_of_list l). {
+    eapply not_elem_of_larger_impl_not_elem_of.
+    2: apply x_eq_fresh_impl_x_notin_free_evars; eassumption.
+    rewrite foldr_free_evars. set_solver.
+  }
+  apply prf_equiv_congruence_iter; try eassumption.
+  * subst newC. unfold PC_wf in *. wf_auto2.
+  * subst newC. auto.
+  * subst newC.
+    rewrite -maximal_exists_depth_fresh_context; auto; simpl.
+    rewrite -maximal_mu_depth_fresh_context; auto.
+    unfold mu_in_evar_path.
+    rewrite -maximal_mu_depth_fresh_context; auto.
+    destruct pile as [HEV [HSV HKT] ].
+    constructor. 2: constructor. 3: assumption.
+    - clear -HEV HIN. cbn in *.
+      Search free_evar_subst eq free_evars.
+      pose proof (free_evars_foldr l (pcPattern C) (patt_free_evar x) 
+      (pcEvar C)).
+      cbn in *.
+      Search evar_fresh_seq.
+      set_solver.
+Qed. *)
 
 Lemma extract_wfp {Σ : Signature} (Γ : Theory) (p q : Pattern) (i : ProofInfo):
   Γ ⊢i p <---> q using i ->
@@ -2204,23 +2385,18 @@ Proof.
   wf_auto2.
 Qed.
 
-Search hypotheses.
-
 Lemma MLGoal_rewriteIff
   {Σ : Signature} (Γ : Theory) (p q : Pattern) (C : PatternCtx) l (gpi : ProofInfo)
   (wfC : PC_wf C)
+  (VarsC : pcEvar C ∉ free_evars_of_list (patterns_of l))
   (pf : Γ ⊢i p <---> q using ( gpi)) :
   mkMLGoal Σ Γ l (emplace C q) ( gpi) ->
   (ProofInfoLe
-    (ExGen := list_to_set (evar_fresh_seq
-                           (free_evars (foldr patt_imp (pcPattern C) (patterns_of l))
-                            ∪free_evars p ∪ free_evars q ∪ 
-                            {[fresh_evar (foldr patt_imp (pcPattern C) (patterns_of l))]}) (maximal_exists_depth (foldr patt_imp (pcPattern C) (patterns_of l)))),
-  SVSubst := list_to_set (svar_fresh_seq
-                          (free_svars (foldr patt_imp (pcPattern C) (patterns_of l)) ∪
-                          free_svars p ∪ free_svars q) (maximal_mu_depth (foldr patt_imp (pcPattern C) (patterns_of l)))),
-  KT := mu_in_evar_path (pcEvar C) (pcPattern C)
- )
+    (ExGen := list_to_set (evar_fresh_seq (free_evars (foldr patt_imp (pcPattern C) (patterns_of l)) ∪ free_evars p ∪ free_evars q ∪ {[pcEvar C]}) (maximal_exists_depth_to 0 (pcEvar C) (pcPattern C))),
+     SVSubst := list_to_set (svar_fresh_seq (free_svars (foldr patt_imp (pcPattern C) (patterns_of l)) ∪
+                free_svars p ∪ free_svars q) (maximal_mu_depth_to 0 (pcEvar C) (pcPattern C))),
+     KT := mu_in_evar_path (pcEvar C) (pcPattern C) 0
+  )
       gpi) ->
   mkMLGoal Σ Γ l (emplace C p) ( gpi).
 Proof.
@@ -2244,11 +2420,10 @@ Proof.
   2: apply pf_iff_proj2.
   2: abstract (wf_auto2).
   3: eapply prf_equiv_congruence_iter.
-  8: apply Hpiffq.
+  9: apply Hpiffq.
   all: try assumption.
   all: wf_auto2.
 Defined.
-
 
 
 
@@ -2380,8 +2555,12 @@ Ltac2 Type HeatResult := {
   equality : ident ;
 }.
 
+(** NOTE: with the new MLGoal_rewriteIff, we also need the variables
+          used in the list of hypotheses (l) for the fresh name
+          generation.
+*)
 Ltac2 heat :=
-  fun (n : int) (a : constr) (phi : constr) : HeatResult =>
+  fun (n : int) (a : constr) (phi : constr) (l : constr) : HeatResult =>
     let found : (Pattern.context option) ref := { contents := None } in
      for_nth_match n a phi
      (fun ctx =>
@@ -2391,7 +2570,7 @@ Ltac2 heat :=
     | None => Control.backtrack_tactic_failure "Cannot heat"
     | Some ctx
       => (
-         let fr := constr:(fresh_evar $phi) in
+         let fr := constr:(fresh_evar (foldr patt_imp $phi (patterns_of $l))) in
          let star_ident := Fresh.in_goal ident:(star) in
          let star_eq := Fresh.in_goal ident:(star_eq) in
          (*set ($star_ident := $fr);*)
@@ -2407,10 +2586,15 @@ Ltac2 heat :=
              ))
            | ()
            ];
-           { star_ident := star_ident; star_eq := star_eq; pc := pc; ctx := ctx; ctx_pat := ctxpat; equality := heq1 }
+          { star_ident := star_ident; star_eq := star_eq; pc := pc; ctx := ctx; ctx_pat := ctxpat; equality := heq1 }
          )
     end
 .
+
+Ltac solve_fresh :=
+  eapply not_elem_of_larger_impl_not_elem_of;
+  [|apply x_eq_fresh_impl_x_notin_free_evars; reflexivity];
+  simpl; clear; set_solver.
 
 Ltac2 mlRewrite (hiff : constr) (atn : int) :=
   let thiff := Constr.type hiff in
@@ -2422,7 +2606,7 @@ Ltac2 mlRewrite (hiff : constr) (atn : int) :=
     lazy_match! goal with
     | [ |- of_MLGoal (@mkMLGoal ?sgm ?g ?l ?p ( ?gpi))]
       =>
-        let hr : HeatResult := heat atn a p in
+        let hr : HeatResult := heat atn a p l in
         if ml_debug_rewrite then
            Message.print (Message.of_constr (hr.(ctx_pat)))
          else () ;
@@ -2433,8 +2617,14 @@ Ltac2 mlRewrite (hiff : constr) (atn : int) :=
          Std.clear [hr.(equality)];
          let wfC := Fresh.in_goal ident:(wfC) in
          assert (wfC : PC_wf $pc = true) > [ ltac1:(unfold PC_wf; simpl; wf_auto2); Control.shelve () | ()] ;
+         let star := (hr.(star_ident)) in
+         let varsC := Fresh.in_goal ident:(VarsC) in
+         assert (VarsC : pcEvar $pc ∉ free_evars_of_list (patterns_of $l)) > [
+                  subst $star; ltac1:(solve_fresh)
+                | ()];
          let wfCpf := Control.hyp wfC in
-         apply (@MLGoal_rewriteIff $sgm $g _ _ $pc $l $gpi $wfCpf $hiff)  >
+         let varsCpf := Control.hyp varsC in
+         apply (@MLGoal_rewriteIff $sgm $g _ _ $pc $l $gpi $wfCpf $varsCpf $hiff)  >
          [
          (lazy_match! goal with
          | [ |- of_MLGoal (@mkMLGoal ?sgm ?g ?l ?p _)]
@@ -2451,7 +2641,7 @@ Ltac2 mlRewrite (hiff : constr) (atn : int) :=
              let heq2_pf := Control.hyp heq2 in
              eapply (@cast_proof_ml_goal _ $g) >
                [ rewrite $heq2_pf; reflexivity | ()];
-             Std.clear [wfC; heq2 ; (hr.(star_ident)); (hr.(star_eq))]
+             Std.clear [wfC; varsC; heq2 ; (hr.(star_ident)); (hr.(star_eq))]
          end)
          | (ltac1:(star |- simplify_pile_side_condition star) (Ltac1.of_ident (hr.(star_ident))))
          ]
