@@ -16,6 +16,71 @@ Import ProofSystem.Notations.
 Derive NoConfusion for Pattern.
 Derive Subterm for Pattern.
 
+Fixpoint elevel_of {Σ : Signature} (ϕ : Pattern) : nat :=
+  match ϕ with
+  | patt_bott => 0
+  | patt_bound_evar _ => 0
+  | patt_free_evar _ => 0
+  | patt_bound_svar _ => 0
+  | patt_free_svar _ => 0
+  | patt_sym _ => 0
+  | patt_imp ϕ₁ ϕ₂ => Nat.max (elevel_of ϕ₁) (elevel_of ϕ₂)
+  | patt_app ϕ₁ ϕ₂ => Nat.max (elevel_of ϕ₁) (elevel_of ϕ₂)
+  | patt_exists ϕ' => S (elevel_of ϕ')
+  | patt_mu ϕ' => elevel_of ϕ'
+  end
+  .
+
+Fixpoint slevel_of {Σ : Signature} (ϕ : Pattern) : nat :=
+  match ϕ with
+  | patt_bott => 0
+  | patt_bound_evar _ => 0
+  | patt_free_evar _ => 0
+  | patt_bound_svar _ => 0
+  | patt_free_svar _ => 0
+  | patt_sym _ => 0
+  | patt_imp ϕ₁ ϕ₂ => Nat.max (slevel_of ϕ₁) (slevel_of ϕ₂)
+  | patt_app ϕ₁ ϕ₂ => Nat.max (slevel_of ϕ₁) (slevel_of ϕ₂)
+  | patt_exists ϕ' => slevel_of ϕ'
+  | patt_mu ϕ' => S (slevel_of ϕ')
+  end
+.
+
+Section to_named.
+  Context
+    {Σ : Signature}
+    (nth_evar : nat -> evar)
+    (nth_svar : nat -> svar)
+  .
+
+  Fixpoint l2n_pat
+    (elevel : nat)
+    (slevel : nat)
+    (ϕ : Pattern) : NamedPattern :=
+    match ϕ with
+    | patt_bott => npatt_bott
+    | patt_sym s => npatt_sym s
+    | patt_free_evar x => npatt_evar x
+    | patt_free_svar X => npatt_svar X
+    | patt_bound_evar n => npatt_evar (nth_evar (elevel + n))
+    | patt_bound_svar N => npatt_svar (nth_svar (slevel + N))
+    | patt_app ϕ₁ ϕ₂ =>
+        npatt_app
+          (l2n_pat (elevel_of ϕ₁) (slevel_of ϕ₁) ϕ₁)
+          (l2n_pat (elevel_of ϕ₂) (slevel_of ϕ₂) ϕ₂)
+    | patt_imp ϕ₁ ϕ₂ =>
+        npatt_imp 
+          (l2n_pat (elevel_of ϕ₁) (slevel_of ϕ₁) ϕ₁)
+          (l2n_pat (elevel_of ϕ₂) (slevel_of ϕ₂) ϕ₂)
+    | patt_exists ϕ' =>
+        npatt_exists (nth_evar elevel) (l2n_pat (elevel_of ϕ') (slevel_of ϕ') ϕ')
+    | patt_mu ϕ' =>
+        npatt_exists (nth_evar elevel) (l2n_pat (elevel_of ϕ') (slevel_of ϕ') ϕ')
+    end
+  .
+
+End to_named.
+
 Ltac invert_tuples :=
   repeat (match goal with
           | [H: (?x1,?y1)=(?x2,?y2) |- _] => inversion H; clear H; subst
