@@ -2534,17 +2534,44 @@ Ltac simplify_emplace_2 star :=
  *)
 
  
- Ltac simplify_pile_side_condition_helper star :=
+ (* Ltac simplify_pile_side_condition_helper star :=
   subst star;
   unfold fresh_evar,evar_fresh_s;
   eapply evar_is_fresh_in_richer';
   [|apply set_evar_fresh_is_fresh'];
-  clear; simpl; set_solver.
+  clear; simpl; set_solver. *)
 
- Ltac simplify_pile_side_condition star :=
+Ltac solve_fresh :=
+  (eapply not_elem_of_larger_impl_not_elem_of;
+  [|apply x_eq_fresh_impl_x_notin_free_evars; reflexivity];
+  simpl; clear; set_solver) +
+  by (unfold evar_is_fresh_in;
+  eapply evar_is_fresh_in_richer'; [|apply set_evar_fresh_is_fresh'];
+  clear; set_solver).
+
+Ltac rewrite_0_depths star :=
+  unfold mu_in_evar_path; cbn;
+  repeat rewrite (maximal_exists_depth_to_0 star);
+  repeat rewrite (maximal_mu_depth_to_0 star);
+  repeat match goal with
+  | [ |- context ctx [decide (star = star)] ] =>
+    destruct (decide (star = star)); try congruence
+  | [ |- context ctx [decide (?x = star)] ] =>
+    destruct (decide (x = star)); try congruence
+  | [ |- context ctx [decide (star = ?x)] ] =>
+    destruct (decide (star = x)); try congruence
+  | _ => idtac
+  end;
+  cbn.
+
+Ltac try_solve_conplex_pile star :=
   try apply pile_any;
   simplify_emplace_2 star;
-  try_solve_pile.
+  (rewrite_0_depths star);
+  match goal with
+  | |- star ∉ free_evars _ => subst star; solve_fresh
+  | |- ProofInfoLe _ _ => try_solve_pile
+  end.
 
 Ltac2 Type HeatResult := {
   star_ident : ident ;
@@ -2590,11 +2617,6 @@ Ltac2 heat :=
          )
     end
 .
-
-Ltac solve_fresh :=
-  eapply not_elem_of_larger_impl_not_elem_of;
-  [|apply x_eq_fresh_impl_x_notin_free_evars; reflexivity];
-  simpl; clear; set_solver.
 
 Ltac2 mlRewrite (hiff : constr) (atn : int) :=
   let thiff := Constr.type hiff in
@@ -2643,7 +2665,7 @@ Ltac2 mlRewrite (hiff : constr) (atn : int) :=
                [ rewrite $heq2_pf; reflexivity | ()];
              Std.clear [wfC; varsC; heq2 ; (hr.(star_ident)); (hr.(star_eq))]
          end)
-         | (ltac1:(star |- simplify_pile_side_condition star) (Ltac1.of_ident (hr.(star_ident))))
+         | (ltac1:(star |- try_solve_conplex_pile star) (Ltac1.of_ident (hr.(star_ident))))
          ]
     end
   end.
