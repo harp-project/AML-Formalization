@@ -3556,7 +3556,7 @@ Proof.
     mlClear "H0".
     mlRevertLast.
     pose proof (Htmp := def_propagate_not Γ (⌈ φ ⌉) HΓ ltac:(wf_auto2)).
-    eapply liftProofInfoLe in Htmp. 2: apply pile_any.
+    use AnyReasoning in Htmp.
     mlRewrite Htmp at 1.
     clear Htmp.
     mlIntro "H0".
@@ -3754,7 +3754,7 @@ Proof.
   feed specialize H.
   { set_solver. }
   { wf_auto2. }
-  eapply liftProofInfoLe in H. 2: apply pile_any.
+  use AnyReasoning in H.
   mlRewrite H at 1; clear H.
   pose proof (H := Ex_quan).
   specialize H with (y := x).
@@ -3766,7 +3766,7 @@ Proof.
   { wf_auto2. }
   { wf_auto2. }
   { set_solver. }
-  eapply liftProofInfoLe in H. 2: apply pile_any.
+  use AnyReasoning in H.
   mlRewrite H at 1; clear H.
   mlSplitAnd.
   + fromMLGoal.
@@ -3823,7 +3823,7 @@ Proof.
   feed specialize H.
   { set_solver. }
   { wf_auto2. }
-  eapply liftProofInfoLe in H. 2: apply pile_any.
+  use AnyReasoning in H.
   mlRevertLast.
   mlRewrite H at 1; clear H.
   fromMLGoal.
@@ -4118,14 +4118,14 @@ Proof.
     mlIntro "H2".
     pose proof (MH := ProofMode_propositional.nimpl_eq_and Γ pY pX
                   ltac:(wf_auto2) ltac:(wf_auto2)).
-    eapply liftProofInfoLe in MH. 2: apply pile_any.
+    use AnyReasoning in MH.
     mlRevertLast.
     mlRewrite MH at 1. fold AnyReasoning.
     unshelve (epose proof (MH1 := Singleton_ctx Γ 
            (⌈_⌉ $ᵣ □)
            (⌈_⌉ $ᵣ □) pX y ltac:(wf_auto2))). 1-2: wf_auto2.
     rewrite -HeqpY in MH1.
-    eapply liftProofInfoLe in MH1. 2: apply pile_any. simpl in MH1.
+    use AnyReasoning in MH1. simpl in MH1.
     (* TODO: having mlExactMeta would help here *)
     mlRevertLast. unfold patt_defined. unfold patt_not in *.
     mlIntro "H1". mlIntro "H2".
@@ -4135,15 +4135,15 @@ Proof.
     mlIntro "H2".
     pose proof (MH := ProofMode_propositional.nimpl_eq_and Γ pX pY
                   ltac:(wf_auto2) ltac:(wf_auto2)).
-    mlRevertLast. eapply liftProofInfoLe in MH. 2: apply pile_any.
+    mlRevertLast. use AnyReasoning in MH.
     mlRewrite MH at 1.
     pose proof (MH1 := patt_and_comm Γ pY pX ltac:(wf_auto2) ltac:(wf_auto2)).
-    mlRevertLast. eapply liftProofInfoLe in MH1. 2: apply pile_any. mlRewrite MH1 at 1.
+    mlRevertLast. use AnyReasoning in MH1. mlRewrite MH1 at 1.
     unshelve (epose proof (Singleton_ctx Γ 
            (⌈_⌉ $ᵣ □)
            (⌈_⌉ $ᵣ □) pY x ltac:(wf_auto2)) as MH2). 1-2: wf_auto2.
     rewrite -HeqpX in MH2.
-    eapply liftProofInfoLe in MH2. 2: apply pile_any.
+    use AnyReasoning in MH2.
     mlIntro "H1". mlIntro "H2".
     mlApplyMeta MH2. simpl. mlSplitAnd. mlExact "H1". mlExact "H2".
 Unshelve.
@@ -4267,8 +4267,7 @@ Proof.
   intros Γ t WF HΓ.
   unfold "∈ml". toMLGoal. wf_auto2.
   mlIntro "mH".
-  pose proof (and_singleton Γ t WF). eapply liftProofInfoLe in H.
-  2: apply pile_any.
+  pose proof (and_singleton Γ t WF). use AnyReasoning in H.
   mlRewrite H at 1.
   remember (fresh_evar t) as x.
   mlAssert ("mH1" : ((all, ⌈patt_bound_evar 0⌉) and ex, t =ml b0)). wf_auto2. {

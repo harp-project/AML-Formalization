@@ -228,7 +228,7 @@ Section nat.
       { set_solver. }
       { wf_auto2. }
       { wf_auto2. }
-      eapply liftProofInfoLe in Htmp. 2: apply pile_any.
+      use AnyReasoning in Htmp.
 
       toMLGoal.
       { wf_auto2. }

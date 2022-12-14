@@ -394,4 +394,7 @@ Proof.
     all: eassumption.
 Qed.
 
+Tactic Notation "use" constr(i) "in" ident(H) :=
+  apply liftProofInfoLe with (i₂ := i) in H; [|try_solve_pile].
+
 Close Scope ml_scope.

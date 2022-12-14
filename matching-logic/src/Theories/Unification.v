@@ -85,7 +85,7 @@ Section ProofSystemTheorems.
     toMLGoal. wf_auto2.
     mlIntro.
     pose proof (bott_not_defined Γ) as H.
-    eapply liftProofInfoLe in H. 2: apply pile_any.
+    use AnyReasoning in H.
     mlApplyMeta H.
     fromMLGoal. wf_auto2.
 
@@ -95,7 +95,7 @@ Section ProofSystemTheorems.
     toMLGoal. wf_auto2.
     pose proof (not_not_intro Γ ((φ ∈ml φ' <---> φ =ml φ' ))
     ltac:(wf_auto2)) as H0.
-    eapply liftProofInfoLe in H0. 2: apply pile_any.
+    use AnyReasoning in H0.
     mlApplyMetaRaw H0.
     mlSplitAnd; mlIntro.
     * mlApplyMeta membership_imp_equal_meta; auto. mlExactn 0.
@@ -122,7 +122,7 @@ Section ProofSystemTheorems.
     {
       pose proof (phi_impl_defined_phi Γ (φ and φ') (fresh_evar (φ and φ')) HΓ
                     ltac:(solve_fresh) ltac:(wf_auto2)) as H.
-      eapply liftProofInfoLe in H. 2: apply pile_any.
+      use AnyReasoning in H.
       mlApplyMetaRaw H.
       mlExact "H0".
     }
@@ -193,7 +193,7 @@ Section ProofSystemTheorems.
       mlIntro "H1". unfold patt_iff. mlDestructAnd "H1" as "H2" "H3". mlExact "H3".
     }
 
-    eapply liftProofInfoLe in H. 2: apply pile_any.
+    use AnyReasoning in H.
     epose proof (syllogism_meta _ _ _ H Hiff).
     (* TODO: mlApplyMetaRaw buggy?
              Tries to match the longest conclusion, not the shortest *)
@@ -235,7 +235,7 @@ Section ProofSystemTheorems.
       { clear H. wf_auto2. }
       mlIntro "H1". unfold patt_iff. mlDestructAnd "H1" as "H2" "H3". mlExact "H2".
     }
-    eapply liftProofInfoLe in H. 2: apply pile_any.
+    use AnyReasoning in H.
     epose proof (syllogism_meta _ _ _ H Hiff).
     (* TODO: mlApplyMetaRaw buggy?
              Tries to match the longest conclusion, not the shortest *)

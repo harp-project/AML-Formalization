@@ -147,7 +147,7 @@ Proof.
   { set_solver. }
   { wf_auto2. }
   { wf_auto2. }
-  eapply liftProofInfoLe in Htmp. 2: apply pile_any.
+  use AnyReasoning in Htmp.
 
   toMLGoal.
   { wf_auto2. }
@@ -165,7 +165,7 @@ Proof.
     pose proof (Hex := Ex_quan Γ (patt_free_evar x =ml b0) x).
     feed specialize Hex.
     { wf_auto2. }
-    eapply liftProofInfoLe in Hex. 2: apply pile_any.
+    use AnyReasoning in Hex.
     toMLGoal.
     { wf_auto2. }
     mlApplyMeta Hex. unfold instantiate. mlSimpl. simpl.
