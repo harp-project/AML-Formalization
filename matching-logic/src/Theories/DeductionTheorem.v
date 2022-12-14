@@ -113,9 +113,9 @@ Proof.
 
       eapply syllogism_meta.
       4: {
-        unshelve(eapply Framing_left;[|apply IH1]).
+        unshelve(eapply Framing_left;[| |apply IH1]).
         { wf_auto2. }
-        { eapply pile_trans;[|apply pile]. apply pile_any. }
+        { try_solve_pile. }
       }
       { wf_auto2. }
       { wf_auto2. }
@@ -181,9 +181,7 @@ Proof.
 
       rewrite free_evar_subst_free_evar_subst.
       { wf_auto2. }
-      {
-        apply count_evar_occurrences_0.
-        subst; clear; simpl.
+      { subst x. simpl.
         rewrite not_elem_of_singleton.
         solve_fresh_neq.
       }
@@ -191,8 +189,6 @@ Proof.
       rewrite free_evar_subst_free_evar_subst.
       { wf_auto2. }
       {
-        apply count_evar_occurrences_0.
-        subst; clear; simpl.
         rewrite not_elem_of_singleton.
         solve_fresh_neq.
       }
@@ -353,7 +349,7 @@ Proof.
 
       eapply syllogism_meta.
       4: {
-        unshelve(eapply Framing_left;[|apply IH1]).
+        unshelve(eapply Framing_left;[| |apply IH1]).
         { wf_auto2. }
         { eapply pile_trans;[|apply pile]. apply pile_any. }
       }
@@ -421,8 +417,6 @@ Proof.
       rewrite free_evar_subst_free_evar_subst.
       { wf_auto2. }
       {
-        apply count_evar_occurrences_0.
-        subst; clear; simpl.
         rewrite not_elem_of_singleton.
         solve_fresh_neq.
       }
@@ -430,8 +424,6 @@ Proof.
       rewrite free_evar_subst_free_evar_subst.
       { wf_auto2. }
       {
-        apply count_evar_occurrences_0.
-        subst; clear; simpl.
         rewrite not_elem_of_singleton.
         solve_fresh_neq.
       }
@@ -594,7 +586,7 @@ Lemma pred_and_ctx_and {Σ : Signature} {syntax : Syntax} Γ ctx ϕ ψ i :
   well_formed ψ ->
   well_formed (pcPattern ctx) ->
   Γ ⊢i is_predicate_pattern ψ using i ->
-  Γ ⊢i ψ and (emplace ctx ϕ) <---> ψ and (emplace ctx (ψ and ϕ)) using (ExGen := ∅, SVSubst := ∅, KT := false, FP := ∅).
+  Γ ⊢i ψ and (emplace ctx ϕ) <---> ψ and (emplace ctx (ψ and ϕ)) using i.
 Proof.
   intros wfm wfψ wfc Hp.
 
@@ -636,7 +628,7 @@ Proof.
       * mlExact "1".
       * mlExact "3".
     }
-    { apply pf_iff_split;[wf_auto2|wf_auto2|aapply A_impl_A|aapply A_impl_A];wf_auto2. }
+    { apply pf_iff_split;[wf_auto2|wf_auto2|aapply A_impl_A|aapply A_impl_A];wf_auto2; set_solver. }
   + pose proof (IH1 := IHsz cpatt1).
     feed specialize IH1.
     { wf_auto2. }
