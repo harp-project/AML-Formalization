@@ -20,7 +20,8 @@ From Coq.micromega Require Import Lia.
 
 From stdpp Require Import base fin_sets sets propset proof_irrel option list coGset finite infinite gmap.
 
-From MatchingLogic Require Import Logic
+From MatchingLogic Require Import BasicProofSystemLemmas
+                                  Logic
                                   DerivedOperators_Syntax
                                   ProofMode.
 From MatchingLogic.Theories Require Import Definedness_Syntax Definedness_ProofSystem.
@@ -734,7 +735,6 @@ Proof.
     toMLGoal.
     { wf_auto2. admit. }
     mlRewrite (useBasicReasoning i (@patt_and_comm Σ Γ ψ (mu , ϕ) wfψ wfm)) at 1.
-    2: { eapply pile_trans;[|apply pile]. try_solve_pile. }
     fromMLGoal.
     apply lhs_from_and.
     { wf_auto2. }
@@ -757,7 +757,6 @@ Proof.
       wf_auto2. admit.
     }
     mlRewrite (useBasicReasoning i (@patt_and_comm Σ Γ ((mu , ϕ) ^ [ψ ---> (mu , ψ and ϕ)]) ψ Htmp wfψ)) at 1.
-    2: { eapply pile_trans;[|apply pile]. try_solve_pile. }
     
     mlIntro "H".
     mlApplyMeta Pre_fixp.
@@ -786,14 +785,13 @@ Proof.
     toMLGoal.
     { wf_auto2. admit. }
     rewrite subst_svar_evar_svar in H.
-    { apply count_evar_occurrences_0. subst. apply set_evar_fresh_is_fresh'. }
+    { subst x. solve_fresh. }
     rewrite subst_svar_evar_svar in H.
-    { apply count_evar_occurrences_0. subst. apply set_evar_fresh_is_fresh'. }
+    { subst x. solve_fresh. }
     clear Htmp.
-    unshelve(epose proof (Htmp := @liftPi _ _ _ _ i _ H)).
+    unshelve(epose proof (Htmp := @liftProofInfoLe _ _ _ _ i _ H)).
     { eapply pile_trans;[|apply pile]. apply pile_any. }
     mlRewrite Htmp at 1.
-    2: { eapply pile_trans;[|apply pile]. apply pile_any. }
 
     clear Heqx x H Htmp.
 
@@ -827,12 +825,12 @@ Proof.
 
     rewrite subst_svar_evar_svar in H.
     {
-      apply count_evar_occurrences_0. subst. apply set_evar_fresh_is_fresh'.
+      subst x. solve_fresh.
     }
     
     rewrite subst_svar_evar_svar in H.
     {
-      apply count_evar_occurrences_0. subst. apply set_evar_fresh_is_fresh'.
+      subst x. solve_fresh.
     }
 
     mlIntro "H".
@@ -865,18 +863,11 @@ Proof.
     + subst.
       eapply useGenericReasoning.
       2: {
-        apply total_phi_impl_phi; assumption.
+        apply total_phi_impl_phi; try assumption.
+        instantiate (1 := fresh_evar ψ). solve_fresh.
       }
       {
-        apply pile_evs_svs_kt.
-        {
-          clear. set_solver.
-        }
-        {
-          clear. set_solver.
-        }
-        { reflexivity. }
-        { clear. set_solver. }
+        try_solve_pile.
       }
 
     + assert (axiom0 ∈ Γ).
@@ -885,18 +876,8 @@ Proof.
       { wf_auto2. }
       mlIntro. mlClear "0". fromMLGoal.
       eapply useGenericReasoning.
-      2: apply (hypothesis Γ axiom0 i H).
-      apply pile_evs_svs_kt.
-      {
-        set_solver.
-      }
-      {
-        set_solver.
-      }
-      {
-        simpl. reflexivity.
-      }
-      { clear. set_solver. }
+      2: apply (BasicProofSystemLemmas.hypothesis Γ axiom0 i H).
+      try_solve_pile.
   - (* P1 *)
     toMLGoal.
     { wf_auto2. }
@@ -936,7 +917,6 @@ Proof.
         destruct (uses_kt pf1) eqn:Hktpf1;[|reflexivity]. simpl in *.
         exact Hpf4.
       }
-      { clear -pwi_pf_fp. set_solver. }
     }
     { assumption. }
     feed specialize IHpf2.
@@ -948,9 +928,6 @@ Proof.
         destruct (uses_kt pf2) eqn:Hktpf2;[|reflexivity].
         rewrite orb_comm in Hpf4. simpl in *.
         exact Hpf4.
-      }
-      {
-        clear -pwi_pf_fp. set_solver.
       }
     }
     { wf_auto2. }
@@ -1014,22 +991,16 @@ Proof.
       { clear -Hpf2. set_solver. }
       { clear -Hpf3. set_solver. }
       { apply Hpf4. }
-      { clear -pwi_pf_fp. set_solver. }
     }
-    { clear pwi_pf_fp. wf_auto2. }
+    { wf_auto2. }
 
     apply reorder_meta in IHpf.
-    2-4: clear pwi_pf_fp; wf_auto2.
+    2-4:  wf_auto2.
     apply Ex_gen with (x := x) in IHpf.
     3: { simpl. set_solver. }
-    2: { apply pile_evs_svs_kt.
-      { clear -Hpf2. set_solver. }
-      { set_solver. }
-      { reflexivity. }
-      { clear. set_solver. }
-    }
+    2: { try_solve_pile. }
     apply reorder_meta in IHpf.
-    2-4: clear pwi_pf_fp; wf_auto2.
+    2-4: wf_auto2.
     exact IHpf.
     
   - (* Propagation of ⊥, left *)
@@ -1092,7 +1063,6 @@ Proof.
       { set_solver. }
       { set_solver. }
       { apply Hpf4. }
-      { clear -pwi_pf_fp. set_solver. }
     }
     { wf_auto2. }
 
@@ -1110,9 +1080,9 @@ Proof.
     *)
     assert (S2: Γ ⊢i phi1 ---> (phi2 or ⌈ ! ψ ⌉) using i').
     { toMLGoal.
-      { clear pwi_pf_fp; wf_auto2. }
+      {  wf_auto2. }
       mlAdd IHpf. mlIntro.
-      mlAdd (useBasicReasoning i' (A_or_notA Γ (⌈ ! ψ ⌉) ltac:(clear pwi_pf_fp; wf_auto2))).
+      mlAdd (useBasicReasoning i' (A_or_notA Γ (⌈ ! ψ ⌉) ltac:(wf_auto2))).
       mlDestructOr "0".
       - mlRight. mlExact "3".
       - mlLeft.
@@ -1126,7 +1096,9 @@ Proof.
         by reflexivity.
       subst i'.
       gapply in_context_impl_defined; auto.
+      instantiate (1 := fresh_evar (ψ ---> psi)).
       try_solve_pile.
+      solve_fresh.
     }
 
     assert (S4: Γ ⊢i (phi1 $ psi) ---> ((phi2 or ⌈ ! ψ ⌉) $ psi) using i').
@@ -1140,12 +1112,12 @@ Proof.
     {
       pose proof (Htmp := prf_prop_or_iff Γ (ctx_app_l box psi ltac:(assumption)) phi2 (⌈! ψ ⌉)).
       feed specialize Htmp.
-      { clear pwi_pf_fp;wf_auto2. }
-      { clear pwi_pf_fp;wf_auto2. }
+      { wf_auto2. }
+      { wf_auto2. }
       simpl in Htmp.
       apply pf_iff_proj1 in Htmp.
-      3: clear pwi_pf_fp; wf_auto2.
-      2: clear pwi_pf_fp; wf_auto2.
+      3: wf_auto2.
+      2: wf_auto2.
       subst i'.
       eapply syllogism_meta.
       5: {
@@ -1153,13 +1125,13 @@ Proof.
         clear. try_solve_pile.
       }
       4: assumption.
-      all: clear pwi_pf_fp; wf_auto2.
+      all: wf_auto2.
     }
 
     assert (S6: Γ ⊢i ((phi2 $ psi) or (⌈ ! ψ ⌉ $ psi)) ---> ((phi2 $ psi) or (⌈ ! ψ ⌉)) using i').
     {
       toMLGoal.
-      { clear pwi_pf_fp; wf_auto2. }
+      { wf_auto2. }
       mlIntro. mlAdd S3.
       (* TODO we need a tactic for adding  something with stronger constraint. *)
       mlAdd (useBasicReasoning i' (A_or_notA Γ (phi2 $ psi) ltac:(auto))).
@@ -1171,10 +1143,10 @@ Proof.
     assert (S7: Γ ⊢i (phi1 $ psi) ---> ((phi2 $ psi)  or ⌈ ! ψ ⌉) using i').
     {
       toMLGoal.
-      { clear pwi_pf_fp; wf_auto2. }
+      { wf_auto2. }
       mlAdd S5. mlAdd S6. mlIntro.
       mlAssert (((phi2 $ psi) or (⌈ ! ψ ⌉ $ psi))).
-      { clear pwi_pf_fp; wf_auto2. }
+      { wf_auto2. }
       { mlApply "0". mlExactn 2. }
       mlDestructOr "3".
       - mlLeft. mlExactn 3.
@@ -1182,15 +1154,15 @@ Proof.
     }
 
     toMLGoal.
-    { clear pwi_pf_fp; wf_auto2. }
+    { wf_auto2. }
     do 2 mlIntro. mlAdd S7.
     mlAssert ((phi2 $ psi or ⌈ ! ψ ⌉)).
-    { clear pwi_pf_fp; wf_auto2. }
+    { wf_auto2. }
     { mlApply "2". mlExactn 2. }
     mlDestructOr "3".
     + mlExactn 3.
     + mlAssert ((phi2 $ psi or ⌈ ! ψ ⌉)).
-      { clear pwi_pf_fp; wf_auto2. }
+      { wf_auto2. }
       { mlApply "2". mlExactn 2. }
       mlAdd (useBasicReasoning i' (A_or_notA Γ (phi2 $ psi) ltac:(auto))).
       mlDestructOr "4".
@@ -1225,7 +1197,6 @@ Proof.
       { set_solver. }
       { set_solver. }
       { apply Hpf4. }
-      { clear -pwi_pf_fp. set_solver. }
     }
     { wf_auto2. }
 
@@ -1244,9 +1215,9 @@ Proof.
     *)
     assert (S2: Γ ⊢i phi1 ---> (phi2 or ⌈ ! ψ ⌉) using i').
     { toMLGoal.
-      { clear pwi_pf_fp; wf_auto2. }
+      { wf_auto2. }
       mlAdd IHpf. mlIntro.
-      mlAdd (useBasicReasoning i' (A_or_notA Γ (⌈ ! ψ ⌉) ltac:(clear pwi_pf_fp;wf_auto2))).
+      mlAdd (useBasicReasoning i' (A_or_notA Γ (⌈ ! ψ ⌉) ltac:(wf_auto2))).
       mlDestructOr "2".
       - mlRight. mlExactn 0.
       - mlLeft.
@@ -1263,7 +1234,8 @@ Proof.
         by reflexivity.
         subst i'.
         gapply in_context_impl_defined; auto.
-        try_solve_pile.
+        instantiate (1 := fresh_evar (ψ ---> psi)).
+        try_solve_pile. solve_fresh.
     }
 
     assert (S4: Γ ⊢i (psi $ phi1) ---> (psi $ (phi2 or ⌈ ! ψ ⌉)) using i').
@@ -1272,7 +1244,7 @@ Proof.
         Like: unshelve (eapply H); try_wfauto
       *)
       unshelve (eapply Framing_right).
-      { clear pwi_pf_fp; wf_auto2. }
+      { wf_auto2. }
       2: exact S2.
       subst i'. try_solve_pile.
     }
@@ -1281,22 +1253,22 @@ Proof.
     {
       pose proof (Htmp := prf_prop_or_iff Γ (ctx_app_r psi box ltac:(assumption)) phi2 (⌈! ψ ⌉)).
       feed specialize Htmp.
-      { clear pwi_pf_fp; wf_auto2. }
-      { clear pwi_pf_fp; wf_auto2. }
+      { wf_auto2. }
+      { wf_auto2. }
       simpl in Htmp.
       apply pf_iff_proj1 in Htmp.
-      2,3: clear pwi_pf_fp; wf_auto2.
+      2,3: wf_auto2.
       subst i'.
       eapply syllogism_meta.
       5: gapply Htmp; try_solve_pile.
       4: assumption.
-      all: clear pwi_pf_fp; wf_auto2.
+      all: wf_auto2.
     }
 
     assert (S6: Γ ⊢i ((psi $ phi2) or (psi $ ⌈ ! ψ ⌉)) ---> ((psi $ phi2) or (⌈ ! ψ ⌉)) using i').
     {
       toMLGoal.
-      { clear pwi_pf_fp; wf_auto2. }
+      { wf_auto2. }
       mlIntro. mlAdd S3.
       mlAdd (useBasicReasoning i' (A_or_notA Γ (psi $ phi2) ltac:(auto))).
       mlDestructOr "2".
@@ -1307,10 +1279,10 @@ Proof.
     assert (S7: Γ ⊢i (psi $ phi1) ---> ((psi $ phi2)  or ⌈ ! ψ ⌉) using i').
     {
       toMLGoal.
-      { clear pwi_pf_fp; wf_auto2. }
+      { wf_auto2. }
       mlAdd S5. mlAdd S6. mlIntro.
       mlAssert (((psi $ phi2) or (psi $ ⌈ ! ψ ⌉))).
-      { clear pwi_pf_fp; wf_auto2. }
+      { wf_auto2. }
       { mlApply "0". mlExactn 2. }
       mlDestructOr "3".
       - mlLeft. mlExactn 3.
@@ -1318,15 +1290,15 @@ Proof.
     }
 
     toMLGoal.
-    { clear pwi_pf_fp; wf_auto2. }
+    { wf_auto2. }
     do 2 mlIntro. mlAdd S7.
     mlAssert ((psi $ phi2 or ⌈ ! ψ ⌉)).
-    { clear pwi_pf_fp; wf_auto2. }
+    { wf_auto2. }
     { mlApply "2". mlExactn 2. }
     mlDestructOr "3".
     + mlExactn 3.
     + mlAssert ((psi $ phi2 or ⌈ ! ψ ⌉)).
-      { clear pwi_pf_fp; wf_auto2. }
+      { wf_auto2. }
       { mlApply "2". mlExactn 2. }
       mlAdd (useBasicReasoning i' (A_or_notA Γ (psi $ phi2) ltac:(auto))).
       mlDestructOr "4".
@@ -1345,10 +1317,9 @@ Proof.
       { exact Hpf2. }
       { clear -Hpf3. set_solver. }
       { exact Hpf4. }
-      { clear -pwi_pf_fp. set_solver. }
     }
     {
-      clear pwi_pf_fp; wf_auto2.
+      wf_auto2.
     }
     
     remember_constraint as i'.
@@ -1367,20 +1338,9 @@ Proof.
       apply IHpf.
     }
     {
-      subst i'.
-      apply pile_evs_svs_kt.
-      {
-        clear. set_solver.
-      }
-      {
-        clear -Hpf3. set_solver.
-      }
-      {
-        reflexivity.
-      }
-      { clear. set_solver. }
+      subst i'. try_solve_pile.
     }
-    { clear pwi_pf_fp; wf_auto2. }
+    { wf_auto2. }
 
   - (* Prefixpoint *)
     toMLGoal.
@@ -1391,30 +1351,30 @@ Proof.
   - (* Knaster-Tarski *)
     destruct Hpf as [Hpf2 Hpf3 Hpf4].
     apply lhs_to_and.
-    1-3: clear Hpf2 Hpf3 Hpf4 pwi_pf_fp; wf_auto2.
+    1-3: clear Hpf2 Hpf3 Hpf4; wf_auto2.
     remember_constraint as pi.
 
     epose proof (Htmp := @mu_and_predicate_propagation _ _ pi Γ phi ⌊ ψ ⌋ _ _ _ _).
     feed specialize Htmp.
     { apply set_svar_fresh_is_fresh. }
     { subst pi. simpl. try_solve_pile. }
-    { eapply (liftPi _ _ _ _ (@floor_is_predicate _ _ _ _ _ _)). }
+    { eapply (liftProofInfoLe _ _ _ _ (@floor_is_predicate _ _ _ _ _ _)). }
     toMLGoal.
-    { clear Hpf2 Hpf3 Hpf4 pwi_pf_fp; wf_auto2. }
+    { clear Hpf2 Hpf3 Hpf4; wf_auto2. }
     mlIntro.
     apply pf_iff_proj2 in Htmp.
     mlApplyMeta Htmp in "0". clear Htmp.
     fromMLGoal.
     apply Knaster_tarski.
     { subst pi. try_solve_pile. }
-    1,3,4:clear Hpf2 Hpf3 Hpf4 pwi_pf_fp; wf_auto2.
+    1,3,4:clear Hpf2 Hpf3 Hpf4; wf_auto2.
     1: admit.
 
     unfold instantiate.
     mlSimpl.
     apply lhs_from_and.
 
-    1-3:clear Hpf2 Hpf3 Hpf4 pwi_pf_fp; wf_auto2.
+    1-3:clear Hpf2 Hpf3 Hpf4; wf_auto2. 
     
     rewrite -> well_formed_bsvar_subst with (k := 0).
     simpl in IHpf.

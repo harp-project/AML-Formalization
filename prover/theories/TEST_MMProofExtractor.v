@@ -6,7 +6,7 @@ From Coq Require Import Strings.String.
 From Equations Require Import Equations.
 
 From stdpp Require Export base.
-From MatchingLogic Require Import Syntax StringSignature ProofSystem ProofMode wftactics.
+From MatchingLogic Require Import BasicProofSystemLemmas Syntax StringSignature ProofSystem ProofMode wftactics.
 From MatchingLogicProver Require Import MMProofExtractor Named.
 
 From stdpp Require Import base finite gmap mapset listset_nodup numbers.

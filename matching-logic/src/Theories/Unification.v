@@ -12,8 +12,8 @@ From Coq.Classes Require Import Morphisms_Prop.
 From Coq.Unicode Require Import Utf8.
 From Coq.micromega Require Import Lia.
 
-From MatchingLogic Require Import Logic ProofMode.
-From MatchingLogic.Theories Require Import Definedness_Syntax Definedness_ProofSystem.
+From MatchingLogic Require Import BasicProofSystemLemmas Logic ProofMode.
+From MatchingLogic.Theories Require Import Definedness_Syntax Definedness_ProofSystem FOEquality_ProofSystem.
 From MatchingLogic.Utils Require Import stdpp_ext.
 
 Require Import MatchingLogic.wftactics.
@@ -50,69 +50,6 @@ Section ProofSystemTheorems.
     mlSplitAnd; mlExact "H1".
   Defined.
 
-  Lemma membership_imp_equal :
-    forall Γ φ φ',
-      theory ⊆ Γ -> mu_free φ' ->
-      well_formed φ -> well_formed φ' ->
-      Γ ⊢ (ex , (φ =ml b0)) ->
-      Γ ⊢ (ex , (φ' =ml b0)) ->
-      Γ ⊢ (φ ∈ml φ') ---> (φ =ml φ') .
-  Proof.
-    intros Γ φ φ' HΓ Mufree Wf1 Wf2 Funφ Funφ'.
-    unfold patt_in, patt_equal.
-    toMLGoal. wf_auto2.
-
-    (* TODO: proposal: functional_reasoning tactic, which replaces a pattern with a 
-                       free variable *)
-    epose proof (@forall_functional_subst _ _ (⌈ b0 and φ' ⌉ ---> ⌊ b0 <---> φ' ⌋) φ 
-                    Γ HΓ ltac:(wf_auto2) ltac:(wf_auto2) _ ltac:(wf_auto2)) as H.
-    Unshelve.
-    2: { cbn. case_match; auto. apply andb_true_iff in Wf2 as [_ Wf2].
-         apply andb_true_iff in Wf2 as [_ Wf2].
-         (* NOTE: using eapply breaks the proof *)
-         apply well_formed_closed_ex_aux_ind with (ind_evar2 := 1)in Wf2.
-         rewrite Wf2. auto. lia.
-    } (* TODO: this should be auto... *)
-    simpl in H.
-    repeat rewrite bevar_subst_not_occur in H. wf_auto2. (* TODO: cast_proof? *)
-    mlApplyMeta H. clear H.
-    mlSplitAnd.
-    2: fromMLGoal; assumption.
-
-    epose proof (forall_functional_subst (all, (⌈ b0 and b1 ⌉ ---> ⌊ b0 <---> b1 ⌋)) φ'
-                    Γ HΓ ltac:(wf_auto2) ltac:(wf_auto2) _ ltac:(wf_auto2)) as H.
-    Unshelve.
-    2: { cbn. do 2 case_match; auto; lia. }
-    mlApplyMeta H. clear H.
-
-    mlSplitAnd.
-    2: fromMLGoal; assumption.
-    remember (fresh_evar patt_bott) as x.
-    remember (fresh_evar (patt_free_evar x)) as y.
-    assert (x <> y) as XY.
-    { intro. apply x_eq_fresh_impl_x_notin_free_evars in Heqy.
-      subst. set_solver. } (* TODO: this should be auto... *)
-    fromMLGoal.
-
-
-   (* TODO: mlIntro for supporting 'all' *)
-
-    pose proof (universal_generalization Γ (all , (⌈ b0 and patt_free_evar x ⌉ ---> ⌊ b0 <---> patt_free_evar x ⌋)) x AnyReasoning (pile_any _)) as H1.
-    simpl in H1.
-    rewrite decide_eq_same in H1.
-    apply H1.
-    { wf_auto2. }
-    clear H1.
-    pose proof (@universal_generalization _ Γ (⌈ (patt_free_evar y) and (patt_free_evar x) ⌉ ---> ⌊ (patt_free_evar y) <---> (patt_free_evar x) ⌋) y AnyReasoning (pile_any _)) as H1.
-    simpl in H1.
-    rewrite decide_eq_same in H1.
-    destruct (decide (y = x)) eqn:Heqyx;[congruence|].
-    apply H1.
-    { wf_auto2. }
-    clear H1.
-    now apply overlapping_variables_equal.
-  Defined.
-
   Lemma functional_pattern_defined :
     forall Γ φ, theory ⊆ Γ -> well_formed φ ->
        Γ ⊢ (ex , (φ =ml b0)) ---> ⌈ φ ⌉.
@@ -134,29 +71,6 @@ Section ProofSystemTheorems.
     * mlExact "H0".
   Defined.
 
-  Lemma equal_imp_membership :
-    forall Γ φ φ',
-      theory ⊆ Γ -> mu_free φ' ->
-      well_formed φ -> well_formed φ' ->
-      Γ ⊢ ⌈ φ' ⌉  ->
-      Γ ⊢ (φ =ml φ') ---> (φ ∈ml φ') .
-  Proof.
-    intros Γ φ φ' HΓ MF WF1 WF2 Def.
-    toMLGoal. wf_auto2.
-    mlIntro "H0".
-    mlRewriteBy "H0" at 1; cbn; try_wfauto2; try assumption.
-    { rewrite MF. reflexivity. }
-      mlClear "H0". unfold patt_in.
-      assert (Γ ⊢ ( φ' and φ' <---> φ') ) as H1.
-      {
-        toMLGoal. wf_auto2.
-        mlSplitAnd; mlIntro "H1".
-        - mlDestructAnd "H1" as "H2" "H3". mlExact "H3".
-        - mlSplitAnd; mlExact "H1".
-      }
-      now mlRewrite H1 at 1.
-  Defined.
-
   Lemma membership_equal_equal :
     forall Γ φ φ',
       theory ⊆ Γ -> mu_free φ' ->
@@ -170,18 +84,21 @@ Section ProofSystemTheorems.
 
     toMLGoal. wf_auto2.
     mlIntro.
-    mlApplyMetaRaw (useAnyReasoning (bott_not_defined Γ)).
+    pose proof (bott_not_defined Γ) as H.
+    eapply liftProofInfoLe in H. 2: apply pile_any.
+    mlApplyMeta H.
     fromMLGoal. wf_auto2.
 
     apply ceil_monotonic; auto.
-    { apply pile_any. }
     { wf_auto2. }
 
     toMLGoal. wf_auto2.
-    mlApplyMetaRaw (useAnyReasoning (not_not_intro Γ ((φ ∈ml φ' <---> φ =ml φ' ))
-                    ltac:(wf_auto2))).
+    pose proof (not_not_intro Γ ((φ ∈ml φ' <---> φ =ml φ' ))
+    ltac:(wf_auto2)) as H0.
+    eapply liftProofInfoLe in H0. 2: apply pile_any.
+    mlApplyMetaRaw H0.
     mlSplitAnd; mlIntro.
-    * mlApplyMeta membership_imp_equal; auto. mlExactn 0.
+    * mlApplyMeta membership_imp_equal_meta; auto. mlExactn 0.
     * mlApplyMeta equal_imp_membership; auto. mlExactn 0.
       Unshelve.
       toMLGoal. wf_auto2.
@@ -203,13 +120,16 @@ Section ProofSystemTheorems.
     { wf_auto2. }
     (* Why can we only mlApplyMetaRaw here, and not after mlRevert? *)
     {
-      mlApplyMetaRaw (useAnyReasoning (phi_impl_defined_phi Γ (φ and φ') HΓ ltac:(wf_auto2))).
+      pose proof (phi_impl_defined_phi Γ (φ and φ') (fresh_evar (φ and φ')) HΓ
+                    ltac:(solve_fresh) ltac:(wf_auto2)) as H.
+      eapply liftProofInfoLe in H. 2: apply pile_any.
+      mlApplyMetaRaw H.
       mlExact "H0".
     }
     replace (⌈ φ and φ' ⌉) with (φ ∈ml φ') by auto.
     mlDestructAnd "H0" as "H2" "H3". mlSplitAnd.
     * mlExact "H2".
-    * mlApplyMeta membership_imp_equal; auto.
+    * mlApplyMeta membership_imp_equal_meta; auto.
       mlExact "H1".
   Defined.
 
@@ -273,7 +193,7 @@ Section ProofSystemTheorems.
       mlIntro "H1". unfold patt_iff. mlDestructAnd "H1" as "H2" "H3". mlExact "H3".
     }
 
-    apply useAnyReasoning in H.
+    eapply liftProofInfoLe in H. 2: apply pile_any.
     epose proof (syllogism_meta _ _ _ H Hiff).
     (* TODO: mlApplyMetaRaw buggy?
              Tries to match the longest conclusion, not the shortest *)
@@ -315,7 +235,7 @@ Section ProofSystemTheorems.
       { clear H. wf_auto2. }
       mlIntro "H1". unfold patt_iff. mlDestructAnd "H1" as "H2" "H3". mlExact "H2".
     }
-    apply useAnyReasoning in H.
+    eapply liftProofInfoLe in H. 2: apply pile_any.
     epose proof (syllogism_meta _ _ _ H Hiff).
     (* TODO: mlApplyMetaRaw buggy?
              Tries to match the longest conclusion, not the shortest *)

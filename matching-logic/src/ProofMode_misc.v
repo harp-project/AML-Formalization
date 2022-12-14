@@ -22,6 +22,7 @@ From MatchingLogic Require Import Logic
   ProofMode_firstorder
   ProofMode_fixpoint
   ProofMode_reshaper
+  BasicProofSystemLemmas
 .
 
 Import MatchingLogic.Logic.Notations.

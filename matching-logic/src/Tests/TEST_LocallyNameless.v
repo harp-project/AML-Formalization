@@ -4,7 +4,8 @@ Require Import Coq.Logic.Classical_Prop.
 
 From stdpp Require Import base fin_sets sets propset finite.
 
-From MatchingLogic Require Import Logic
+From MatchingLogic Require Import BasicProofSystemLemmas
+                                  Logic
                                   ProofMode.
 From MatchingLogic.Theories Require Import Definedness_Syntax
                                            Definedness_Semantics
@@ -283,10 +284,10 @@ Module test_3.
       Γₙₐₜ ⊢i sym_tt ∈ml sym_even $ sym_succ $ sym_succ $ sym_succ $ sym_succ $ sym_zero using AnyReasoning.
     Proof.
       assert (Γₙₐₜ ⊢i ruleA using AnyReasoning) as RA.
-      { gapply hypothesis; [ apply pile_any | wf_auto2 | set_solver ]. } 
+      { gapply BasicProofSystemLemmas.hypothesis; [ apply pile_any | wf_auto2 | set_solver ]. } 
       (* TODO: <- create a tactic for the previous assertion *)
       assert (Γₙₐₜ ⊢i ruleC using AnyReasoning) as RC.
-      { gapply hypothesis; [ apply pile_any | wf_auto2 | set_solver ]. }
+      { gapply BasicProofSystemLemmas.hypothesis; [ apply pile_any | wf_auto2 | set_solver ]. }
       apply universal_generalization with (x := "X") in RA as RA1. (* revert Meta *)
       2: apply pile_any. 2: auto.
       unfold ruleA in RA1.

@@ -247,23 +247,60 @@ Definition lwfCexSimplifications := (
   @lwf_cex_app
 ).
 
+Ltac2 mutable simplify_wf_hyp_part_hook
+:= (fun (h : ident) => () ).
+
+Ltac _simplify_wf_hyp_part_hook H :=
+  let tac := ltac2:(h |- simplify_wf_hyp_part_hook (Option.get (Ltac1.to_ident h))) in
+  tac H
+.
+
+Tactic Notation "simplify_wf_hyp_part_hook" ident(H) :=
+  _simplify_wf_hyp_part_hook H
+.
+
+Ltac2 mutable simplify_wf_goal_hook
+:= (fun () => () ).
+
+Ltac _simplify_wf_goal_hook :=
+  ltac2:(simplify_wf_goal_hook ())
+.
+
+Tactic Notation "simplify_wf_goal_hook" :=
+  _simplify_wf_goal_hook
+.
+
+
 Ltac partsDecomposeWfGoal :=
   rewrite -?wfxy00_wf;
-  rewrite !(wfPositiveSimplifications,
+  rewrite ?(wfPositiveSimplifications,
             wfCexSimplifications,
             wfCmuSimplifications,
             wfSimplifications,
             lwfPositiveSimplifications,
             lwfCmuSimplifications,
             lwfCexSimplifications,
-            lwf_xy_decompose)
+            lwf_xy_decompose);
+  try simplify_wf_goal_hook
 .
 
 
 Ltac simplifyWfHypParts H :=
   let t := type of H in
   (* idtac "SimplifyWfHypParts " H " (" t ")"; *)
+  first
+    [ (progress (simplify_wf_hyp_part_hook H; destruct_andb? H))
+    | (
   lazymatch type of H with
+  | well_formed_positive (bevar_subst (patt_free_evar _) _ _) = true
+    => 
+      apply evar_open_positive in H; simplifyWfHypParts H
+  | well_formed_closed_ex_aux (bevar_subst (patt_free_evar _) ?n _) ?n = true
+    =>
+      apply wfc_ex_aux_body_ex_imp2 in H; simplifyWfHypParts H
+  | well_formed_closed_mu_aux (bevar_subst (patt_free_evar _) _ _) _ = true
+      =>
+        apply wfc_mu_aux_body_ex_imp2 in H; simplifyWfHypParts H
   | well_formed_positive _ = true
     =>
       rewrite ?wfPositiveSimplifications in H;
@@ -302,6 +339,7 @@ Ltac simplifyWfHypParts H :=
       destruct_andb? H
   | _ => idtac
   end
+  )]
 .
 
 Ltac toBeRunOnAllHypsParts h := simplifyWfHypParts h.
@@ -403,7 +441,7 @@ Ltac print_hyps :=
 
 Ltac wf_auto2_fallback :=
   match goal with
-  | [ |- ?G ] => idtac "Falling back on " G (*; print_hyps*)
+  | [ |- ?G ] => idtac (*"Falling back on " G*) (*; print_hyps*)
   end;
   repeat wf_auto2_decompose_hyps_parts;
   repeat wf_auto2_step_parts

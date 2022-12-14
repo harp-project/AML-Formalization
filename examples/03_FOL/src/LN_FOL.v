@@ -1,4 +1,5 @@
-From MatchingLogic Require Export Logic 
+From MatchingLogic Require Export BasicProofSystemLemmas
+                                  Logic 
                                   Theories.Definedness_Syntax
                                   Theories.Definedness_ProofSystem
                                   ProofMode
@@ -1352,7 +1353,7 @@ Section FOL_ML_correspondence.
       gapply H0. apply pile_any.
     * simpl in H. inversion H.
     * assert (from_FOL_theory Γ ⊢_ML axiom (AxFun F) ). {
-        gapply hypothesis. apply pile_any. apply ax_wf. apply ax_in.
+        gapply BasicProofSystemLemmas.hypothesis. apply pile_any. apply ax_wf. apply ax_in.
       } simpl in H1, H0.
       simpl. remember (@patt_sym sig (sym_fun F)) as start.
       assert (forall n ψ, start^[evar: n ↦ ψ] = start) as HIND. 
@@ -1469,7 +1470,7 @@ Section FOL_ML_correspondence.
     from_FOL_theory Γ ⊢_ML convert_form φ .
   Proof.
     intros φ Γ IH. induction IH; intros.
-    * gapply hypothesis. apply pile_any.
+    * gapply BasicProofSystemLemmas.hypothesis. apply pile_any.
       now apply wf_form_FOL_ML. now apply in_FOL_theory.
     * simpl. useBasicReasoning. apply P1; auto.
     * useBasicReasoning. apply P2; auto.

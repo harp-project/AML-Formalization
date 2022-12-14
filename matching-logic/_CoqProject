@@ -34,6 +34,7 @@ src/FixpointReasoning.v
 src/StringSignature.v
 src/Logic.v
 
+src/BasicProofSystemLemmas.v
 src/ProofMode_base.v
 src/ProofInfo.v
 src/ProofMode_propositional.v
@@ -43,11 +44,15 @@ src/ProofMode_reshaper.v
 src/ProofMode_misc.v
 src/ProofMode.v
 
+src/ProofMode2.v
+
 src/Theories/Definedness_Syntax.v
 src/Theories/Definedness_Semantics.v
 src/Theories/Definedness_ProofSystem.v
 
+src/Theories/FOEquality_ProofSystem.v
 src/Theories/DeductionTheorem.v
+src/Theories/Nat.v
 
 src/Theories/Sorts_Syntax.v
 src/Theories/Sorts_Semantics.v

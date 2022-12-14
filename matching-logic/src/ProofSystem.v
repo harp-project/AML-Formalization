@@ -699,6 +699,7 @@ Section proof_info.
 
 End proof_info.
 
+
 Module Notations.
 
 Notation "Γ '⊢i' ϕ 'using' pi"
@@ -748,3 +749,50 @@ Ltac2 Set proved_hook_wfauto as oldhook
 Ltac2 Set hook_wfauto
 := (fun () => Message.print (Message.of_string "hook_wfauto p2w")).
 *)
+
+Lemma cast_proof' {Σ : Signature} (Γ : Theory) (ϕ ψ : Pattern) (i : ProofInfo) (e : ψ = ϕ) :
+derives_using Γ ϕ i ->
+derives_using Γ ψ i.
+Proof.
+intros [pf Hpf].
+unshelve (eexists).
+{
+  apply (cast_proof e).
+  exact pf.
+}
+{ abstract(
+  destruct Hpf as [Hpf2 Hpf3 Hpf4];
+  constructor; [
+  (
+    rewrite elem_of_subseteq in Hpf2;
+    rewrite elem_of_subseteq;
+    intros x Hx;
+    specialize (Hpf2 x);
+    apply Hpf2; clear Hpf2;
+    rewrite elem_of_gset_to_coGset in Hx;
+    rewrite uses_of_ex_gen_correct in Hx;
+    rewrite elem_of_gset_to_coGset;
+    rewrite uses_of_ex_gen_correct;
+    rewrite indifferent_to_cast_uses_ex_gen in Hx;
+    exact Hx
+  )|
+  (
+    rewrite elem_of_subseteq in Hpf3;
+    rewrite elem_of_subseteq;
+    intros x Hx;
+    specialize (Hpf3 x);
+    apply Hpf3; clear Hpf3;
+    rewrite elem_of_gset_to_coGset in Hx;
+    rewrite uses_of_svar_subst_correct in Hx;
+    rewrite elem_of_gset_to_coGset;
+    rewrite uses_of_svar_subst_correct;
+    rewrite indifferent_to_cast_uses_svar_subst in Hx;
+    exact Hx
+  )|
+  (
+    rewrite indifferent_to_cast_uses_kt;
+    apply Hpf4
+  )
+  ]).
+}
+Defined.
