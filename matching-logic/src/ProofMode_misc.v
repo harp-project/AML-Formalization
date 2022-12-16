@@ -2142,7 +2142,6 @@ Qed.
 Lemma MLGoal_rewriteIff
   {Σ : Signature} (Γ : Theory) (p q : Pattern) (C : PatternCtx) l (gpi : ProofInfo)
   (wfC : PC_wf C)
-  (VarsC : pcEvar C ∉ free_evars_of_list (patterns_of l))
   (pf : Γ ⊢i p <---> q using ( gpi)) :
   mkMLGoal Σ Γ l (emplace C q) ( gpi) ->
   (ProofInfoLe
@@ -2371,7 +2370,7 @@ Ltac2 heat :=
          )
     end
 .
-
+Check MLGoal_rewriteIff.
 Ltac2 mlRewrite (hiff : constr) (atn : int) :=
   let thiff := Constr.type hiff in
   (* we have to unfold [derives] otherwise this might not match *)
@@ -2393,14 +2392,8 @@ Ltac2 mlRewrite (hiff : constr) (atn : int) :=
          Std.clear [hr.(equality)];
          let wfC := Fresh.in_goal ident:(wfC) in
          assert (wfC : PC_wf $pc = true) > [ ltac1:(unfold PC_wf; simpl; wf_auto2); Control.shelve () | ()] ;
-         let star := (hr.(star_ident)) in
-         let varsC := Fresh.in_goal ident:(VarsC) in
-         assert (VarsC : pcEvar $pc ∉ free_evars_of_list (patterns_of $l)) > [
-                  subst $star; ltac1:(solve_fresh)
-                | ()];
          let wfCpf := Control.hyp wfC in
-         let varsCpf := Control.hyp varsC in
-         apply (@MLGoal_rewriteIff $sgm $g _ _ $pc $l $gpi $wfCpf $varsCpf $hiff)  >
+         apply (@MLGoal_rewriteIff $sgm $g _ _ $pc $l $gpi $wfCpf $hiff)  >
          [
          (lazy_match! goal with
          | [ |- of_MLGoal (@mkMLGoal ?sgm ?g ?l ?p _)]
@@ -2417,7 +2410,7 @@ Ltac2 mlRewrite (hiff : constr) (atn : int) :=
              let heq2_pf := Control.hyp heq2 in
              eapply (@cast_proof_ml_goal _ $g) >
                [ rewrite $heq2_pf; reflexivity | ()];
-             Std.clear [wfC; varsC; heq2 ; (hr.(star_ident)); (hr.(star_eq))]
+             Std.clear [wfC; heq2 ; (hr.(star_ident)); (hr.(star_eq))]
          end)
          | (ltac1:(star |- try_solve_conplex_pile star) (Ltac1.of_ident (hr.(star_ident))))
          ]

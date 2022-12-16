@@ -1,6 +1,5 @@
 From MatchingLogic Require Import Logic ProofMode.
 
-
 From Coq Require Import String.
 
 (** Importing this file opens the necessary scope for the proof mode to work
@@ -166,6 +165,7 @@ Section compute.
     (* axioms *)
     Definition defined : Pattern := Definedness_Syntax.axiom AxDefinedness.
 
+(* rewrite example *)
 Lemma ex2_pm1 {Σ : Signature} (A B C D : Pattern) (Γ : Theory) :
   well_formed (A ---> B ---> C ---> D) = true ->
   Γ ⊢ ((B $ C) <---> D) ->
@@ -178,6 +178,7 @@ Proof.
   mlIntro "H1". mlExact "H1".
 Defined.
 
+(* example with the induction-based iterated congruence lemma for a smaller context *)
 Lemma ex2_pm2 {Σ : Signature} (A B C D : Pattern) (Γ : Theory) :
   well_formed (A ---> B ---> C ---> D) = true ->
   Γ ⊢ ((B $ C) <---> D) ->
@@ -186,7 +187,7 @@ Lemma ex2_pm2 {Σ : Signature} (A B C D : Pattern) (Γ : Theory) :
 Proof.
   intros Hwf H.
   remember (patt_free_evar (fresh_evar (A $ B $ C $ D))) as x.
-  pose proof (prf_equiv_congruence_iter2 Γ (B $ C) D {|pcPattern := A $ x; pcEvar := (fresh_evar (A $ B $ C $ D))|} [A] ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) AnyReasoning ltac:(try_solve_pile) ltac:(wf_auto2) H).
+  pose proof (prf_equiv_congruence_iter Γ (B $ C) D {|pcPattern := A $ x; pcEvar := (fresh_evar (A $ B $ C $ D))|} [A] ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) AnyReasoning ltac:(try_solve_pile) ltac:(wf_auto2) H).
   subst x.
   cbn in H0. destruct decide. 2: congruence.
   do 2 rewrite free_evar_subst_no_occurrence in H0. 2-4: solve_fresh.
@@ -196,6 +197,7 @@ Proof.
   - mlAssumption.
 Defined.
 
+(* example with the complex context-based iterated congruence lemma for a smaller context *)
 Lemma ex2_pm3 {Σ : Signature} (A B C D : Pattern) (Γ : Theory) :
   well_formed (A ---> B ---> C ---> D) = true ->
   Γ ⊢ ((B $ C) <---> D) ->
@@ -204,7 +206,7 @@ Lemma ex2_pm3 {Σ : Signature} (A B C D : Pattern) (Γ : Theory) :
 Proof.
   intros Hwf H.
   remember (patt_free_evar (fresh_evar (A $ B $ C $ D))) as x.
-  pose proof (prf_equiv_congruence_iter Γ (B $ C) D {|pcPattern := A $ x; pcEvar := (fresh_evar (A $ B $ C $ D))|} [A] ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(solve_fresh) AnyReasoning ltac:(try_solve_pile) ltac:(wf_auto2) H).
+  pose proof (prf_equiv_congruence_iter_no_ind Γ (B $ C) D {|pcPattern := A $ x; pcEvar := (fresh_evar (A $ B $ C $ D))|} [A] ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(solve_fresh) AnyReasoning ltac:(try_solve_pile) ltac:(wf_auto2) H).
   subst x.
   cbn in H0. destruct decide. 2: congruence.
   do 2 rewrite free_evar_subst_no_occurrence in H0. 2-4: solve_fresh.
@@ -214,6 +216,7 @@ Proof.
   - mlAssumption.
 Defined.
 
+(* example with the congruence lemma for a smaller context *)
 Lemma ex2_pm4 {Σ : Signature} (A B C D : Pattern) (Γ : Theory) :
   well_formed (A ---> B ---> C ---> D) = true ->
   Γ ⊢ ((B $ C) <---> D) ->
@@ -243,7 +246,8 @@ Defined.
 
 
 (* These should reflect the idea of mlRewrite: *)
-
+(* Numbers should be similar as for mlRewrite *)
+(* example with the induction-based iterated congruence lemma for a bigger context *)
 Lemma ex3_pm2 {Σ : Signature} (A B C D : Pattern) (Γ : Theory) :
   well_formed (A ---> B ---> C ---> D) = true ->
   Γ ⊢ ((B $ C) <---> D) ->
@@ -252,7 +256,7 @@ Lemma ex3_pm2 {Σ : Signature} (A B C D : Pattern) (Γ : Theory) :
 Proof.
   intros Hwf H.
   remember (patt_free_evar (fresh_evar (A $ B $ C $ D))) as x.
-  pose proof (prf_equiv_congruence_iter2 Γ (B $ C) D {|pcPattern := A $ x ---> A $ D; pcEvar := (fresh_evar (A $ B $ C $ D))|} [A] ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) AnyReasoning ltac:(try_solve_pile) ltac:(wf_auto2) H).
+  pose proof (prf_equiv_congruence_iter Γ (B $ C) D {|pcPattern := A $ x ---> A $ D; pcEvar := (fresh_evar (A $ B $ C $ D))|} [A] ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) AnyReasoning ltac:(try_solve_pile) ltac:(wf_auto2) H).
   subst x.
   cbn in H0. destruct decide. 2: congruence.
   do 4 rewrite free_evar_subst_no_occurrence in H0. 2-16: solve_fresh.
@@ -263,6 +267,7 @@ Proof.
   do 2 mlIntro. mlExact "1".
 Defined.
 
+(* example with the complex context-based iterated congruence lemma for a bigger context *)
 Lemma ex3_pm3 {Σ : Signature} (A B C D : Pattern) (Γ : Theory) :
   well_formed (A ---> B ---> C ---> D) = true ->
   Γ ⊢ ((B $ C) <---> D) ->
@@ -271,7 +276,7 @@ Lemma ex3_pm3 {Σ : Signature} (A B C D : Pattern) (Γ : Theory) :
 Proof.
   intros Hwf H.
   remember (patt_free_evar (fresh_evar (A $ B $ C $ D))) as x.
-  pose proof (prf_equiv_congruence_iter Γ (B $ C) D {|pcPattern := A $ x ---> A $ D; pcEvar := (fresh_evar (A $ B $ C $ D))|} [A] ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(solve_fresh) AnyReasoning ltac:(try_solve_pile) ltac:(wf_auto2) H).
+  pose proof (prf_equiv_congruence_iter_no_ind Γ (B $ C) D {|pcPattern := A $ x ---> A $ D; pcEvar := (fresh_evar (A $ B $ C $ D))|} [A] ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(solve_fresh) AnyReasoning ltac:(try_solve_pile) ltac:(wf_auto2) H).
   subst x.
   cbn in H0. destruct decide. 2: congruence.
   do 4 rewrite free_evar_subst_no_occurrence in H0. 2-16: solve_fresh.
@@ -282,6 +287,8 @@ Proof.
   do 2 mlIntro. mlExact "1".
 Defined.
 
+(* Numbers should be similar as for mlRewrite *)
+(* example with the congruence lemma for a big context *)
 Lemma ex3_pm4 {Σ : Signature} (A B C D : Pattern) (Γ : Theory) :
   well_formed (A ---> B ---> C ---> D) = true ->
   Γ ⊢ ((B $ C) <---> D) ->
@@ -321,7 +328,7 @@ Definition proof2_pm3 : nat := proof_size_info (ex3_pm3 X Y Z (Y $ Z) ∅ ltac:(
 Definition proof2_pm4 : nat := proof_size_info (ex3_pm4 X Y Z (Y $ Z) ∅ ltac:(wf_auto2) premise).
 
 End compute.
-
+(*
 Extraction Language Haskell.
 
 From Coq Require Extraction.
@@ -329,4 +336,4 @@ Require Import ExtrHaskellBasic.
 Require Import ExtrHaskellString.
 Extraction "Test.hs" proof_pm1 proof_pm3  proof_pm2  proof_pm4
                                proof2_pm3 proof2_pm2 proof2_pm4.
-
+*)

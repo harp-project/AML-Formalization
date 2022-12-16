@@ -1,5 +1,5 @@
 From Coq Require Export ssrbool.
-From stdpp Require Export list.
+From stdpp Require Export list fin_sets.
 
 From MatchingLogic Require Export
   Logic
