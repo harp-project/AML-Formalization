@@ -2146,7 +2146,7 @@ _mlReshapeHypsByName name';
 lazy_match! goal with
 | [ |- @of_MLGoal ?sgm (@mkMLGoal ?sgm ?g (?l₁ ++ (mkNH _ _ (?a' =ml ?a))::?l₂) ?p AnyReasoning)]
   => 
-    let hr : HeatResult := heat atn a' p l₁ in
+    let hr : HeatResult := heat atn a' p in
     let heq := Control.hyp (hr.(equality)) in
     let pc := (hr.(pc)) in
     eapply (@cast_proof_ml_goal _ $g) >
