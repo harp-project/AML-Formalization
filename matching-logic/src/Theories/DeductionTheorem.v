@@ -20,8 +20,7 @@ From Coq.micromega Require Import Lia.
 
 From stdpp Require Import base fin_sets sets propset proof_irrel option list coGset finite infinite gmap.
 
-From MatchingLogic Require Import BasicProofSystemLemmas
-                                  Logic
+From MatchingLogic Require Import Logic
                                   DerivedOperators_Syntax
                                   ProofMode.
 From MatchingLogic.Theories Require Import Definedness_Syntax Definedness_ProofSystem.
