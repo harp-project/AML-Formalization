@@ -1768,7 +1768,7 @@ Defined.
       apply IHl.
   Defined.
 
-  (* TODO: this should NOT be done this way. There should be a general lemma, which can propagate another "foldr" lemma inside l₁, since there are other theorems that use the same scheme *)
+  (* TODO: this should NOT be done this way probably. There should be a general lemma, which can propagate another "foldr" lemma inside l₁, since there are other theorems that use the same scheme *)
   Lemma equality_elimination_basic_ar_iter Γ φ₁ φ₂ l₁ l₂ C :
     theory ⊆ Γ ->
     well_formed φ₁ ->

@@ -455,7 +455,6 @@ Section FOL_helpers.
   Arguments Prop_bott_left _ (_%ml) _ : clear implicits.
   Arguments Prop_bott_right _ (_%ml) _ : clear implicits.
 
-  (* TODO rename into Prop_bot_ctx *)
   Lemma Prop_bot_ctx (Γ : Theory) (C : Application_context) :
     Γ ⊢i ((subst_ctx C patt_bott) ---> patt_bott)
     using (ExGen := ∅, SVSubst := ∅, KT := false).
@@ -1904,6 +1903,7 @@ Section FOL_helpers.
     }
   Defined.
 
+  (* Correctness of evar_fresh_seq *)
   Lemma evar_fresh_seq_correct n s:
     fresh_evars (evar_fresh_seq s n) s.
   Proof.
@@ -1919,6 +1919,7 @@ Section FOL_helpers.
         + apply Fresh in H. set_solver.
   Qed.
 
+  (* Correctness of svar_fresh_seq *)
   Lemma svar_fresh_seq_correct n s:
     fresh_svars (svar_fresh_seq s n) s.
   Proof.
