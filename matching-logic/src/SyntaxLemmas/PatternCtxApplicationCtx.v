@@ -188,14 +188,15 @@ Proof.
   apply ApplicationContext2PatternCtx2ApplicationContext'.
 Qed.
 
+(* TODO: This needs to use count_evar_occurrences, because the prover depends on it *)
 Fixpoint is_implicative_context' (box_evar : evar) (phi : Pattern) : bool :=
 match phi with
 | patt_bott => true
 | patt_free_evar _ => true
 | patt_imp phi1 phi2 =>
-(if decide(box_evar ∈ free_evars phi1) is left _
+(if decide(count_evar_occurrences box_evar phi1 <> 0) is left _
 then is_implicative_context' box_evar phi1 else true) &&
-(if decide(box_evar ∈ free_evars phi2) is left _
+(if decide(count_evar_occurrences box_evar phi2 <> 0) is left _
 then is_implicative_context' box_evar phi2 else true)
 | _ => false
 end.

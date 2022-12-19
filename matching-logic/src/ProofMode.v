@@ -5,6 +5,7 @@ From MatchingLogic Require Export
   Logic
   ProofMode_base
   ProofInfo
+  BasicProofSystemLemmas
   ProofMode_propositional
   ProofMode_firstorder
   ProofMode_fixpoint
