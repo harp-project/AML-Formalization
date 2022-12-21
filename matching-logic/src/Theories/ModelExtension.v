@@ -324,9 +324,6 @@ Section with_syntax.
 
     Definition lift_set (xs : propset (Domain M)) : (propset (Domain Mext))
     := cel <$> (@fmap propset _ _ _ inl xs).
-    Check lift_value.
-    Check lift_set.
-    Check Valuation.
 
     (* Valuations lifted from the original model to the extended model. *)
     Definition lift_val (ρ : @Valuation Σ M) : 

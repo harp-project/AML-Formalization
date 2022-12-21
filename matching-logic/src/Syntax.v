@@ -733,7 +733,6 @@ Section with_signature.
       reflexivity.
   Qed.
 
-  Locate svar_quantify.
   
 
    Lemma wfp_free_svar_subst ϕ ψ X:

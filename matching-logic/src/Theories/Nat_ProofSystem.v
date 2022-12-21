@@ -29,7 +29,9 @@ From MatchingLogic Require Import
   Theories.DeductionTheorem
   Theories.Sorts_Syntax
   FOEquality_ProofSystem
-  Sorts_ProofSystem.
+  Sorts_ProofSystem
+  Nat_Syntax
+.
 
 Import MatchingLogic.Theories.Sorts_Syntax.Notations.
 
@@ -37,59 +39,14 @@ Open Scope ml_scope.
 Open Scope string_scope.
 Open Scope list_scope.
 
-Section nat_syntax.
-
-  Context {Σ : Signature}.
-
-  Inductive Symbols := sNat | sZero | sSucc.
-
-  Class Syntax :=
-    { inj : Symbols -> symbols;
-      imported_sorts :> Sorts_Syntax.Syntax;
-    }.
-  Context {self : Syntax}.
-
-  Definition Nat := patt_sym (inj sNat).
-  Definition Zero := patt_sym (inj sZero).
-  Definition Succ := patt_sym (inj sSucc).
-
-End nat_syntax.
-
 Section nat.
   Context
     {Σ : Signature}
-    {syntax : Syntax}
+    {syntax : Nat_Syntax.Syntax}
   .
 
-  Inductive AxiomName := 
-  | AxFun1
-  | AxFun2
-  | AxNoConfusion1
-  | AxNoConfusion2
-  | AxInductiveDomain.
-
-  Definition axiom (name : AxiomName) : Pattern :=
-    match name with
-    | AxFun1 => ex Nat , Zero =ml b0
-    | AxFun2 => all Nat, ex Nat, Succ $ b1 =ml b0
-    | AxNoConfusion1 => all Nat, !(Zero =ml Succ $ b0)
-    | AxNoConfusion2 => all Nat, all Nat, (Succ $ b1 =ml Succ $ b0 ---> b1 =ml b0)
-    | AxInductiveDomain => 〚 Nat 〛 =ml mu , Zero or Succ $ B0
-    end.
-
-  Program Definition named_axioms : NamedAxioms :=
-    {|
-      NAName := AxiomName;
-      NAAxiom := axiom;
-    |}.
-  Next Obligation.
-    destruct name; simpl; wf_auto2.
-  Qed.
-
-  Definition theory := Definedness_Syntax.theory ∪ theory_of_NamedAxioms named_axioms.
-
   Lemma use_nat_axiom ax Γ :
-    theory ⊆ Γ ->
+    Nat_Syntax.theory ⊆ Γ ->
     Γ ⊢ axiom ax.
   Proof.
     intro HΓ.
@@ -98,11 +55,16 @@ Section nat.
     { destruct ax; wf_auto2. }
     {
       apply elem_of_weaken with (X := theory_of_NamedAxioms named_axioms).
-      unfold theory_of_NamedAxioms, named_axioms, axiom; simpl.
-      apply elem_of_PropSet.
-      exists ax.
-      reflexivity.
-      set_solver.
+      {
+        unfold theory_of_NamedAxioms, named_axioms, axiom; simpl.
+        apply elem_of_PropSet.
+        exists ax.
+        reflexivity.
+      }
+      {
+        unfold theory in HΓ.
+        set_solver.
+      }
     }
   Defined.
 
@@ -123,7 +85,7 @@ Section nat.
       mlSimpl.
       simpl.
       apply ceil_monotonic.
-      { set_solver. }
+      { unfold theory. set_solver. }
       { wf_auto2. }
       { wf_auto2. }
       apply and_weaken.
@@ -139,7 +101,7 @@ Section nat.
     { wf_auto2. }
     { wf_auto2. }
     { wf_auto2. }
-    { set_solver. }
+    { unfold theory. set_solver. }
     { set_solver. }
     { set_solver. }
   Defined.
@@ -159,7 +121,7 @@ Section nat.
 
     mlAdd (use_nat_axiom AxInductiveDomain theory ltac:(reflexivity)) as "ind". unfold axiom.
     mlRewriteBy "ind" at 1.
-    { set_solver. }
+    { unfold theory. set_solver. }
     { reflexivity. }
 
     mlClear "ind".
@@ -183,12 +145,12 @@ Section nat.
       mlRevertLast.
       mlApplyMeta total_phi_impl_phi.
       2: instantiate (1 := fresh_evar ⊥); solve_fresh.
-      2: set_solver.
+      2: { unfold theory. set_solver. }
 
       fromMLGoal.
 
       apply membership_impl_subseteq.
-      { set_solver. }
+      { unfold theory. set_solver. }
       { reflexivity. }
       { reflexivity. }
       { wf_auto2. }
@@ -197,7 +159,7 @@ Section nat.
         toMLGoal.
         { wf_auto2. }
         mlApplyMeta ex_sort_impl_ex.
-        2: set_solver.
+        2: { unfold theory. set_solver. }
         mlAdd (use_nat_axiom AxFun1 theory ltac:(reflexivity)) as "f"; unfold axiom.
         mlExact "f".
       }
@@ -208,7 +170,7 @@ Section nat.
       apply membership_elimination.
       { apply pile_any. }
       { wf_auto2. }
-      { set_solver. }
+      { unfold theory. set_solver. }
 
       remember (fresh_evar (b0 ∈ml (Succ $ patt_free_svar X ---> patt_free_svar X))) as x.
 
@@ -225,7 +187,7 @@ Section nat.
 
       pose proof (Htmp := membership_imp theory x (Succ $ patt_free_svar X) (patt_free_svar X)).
       feed specialize Htmp.
-      { set_solver. }
+      { unfold theory. set_solver. }
       { wf_auto2. }
       { wf_auto2. }
       use AnyReasoning in Htmp.
@@ -239,7 +201,7 @@ Section nat.
 
       pose proof (Htmp := membership_symbol_right theory (patt_free_svar X) Succ x).
       feed specialize Htmp.
-      { set_solver. }
+      { unfold theory. set_solver. }
       { wf_auto2. }
       { wf_auto2. }
       { reflexivity. }
@@ -278,12 +240,13 @@ Section nat.
 
       pose proof (M := membership_imp_equal theory (patt_free_evar x) (Succ $ patt_free_evar y)).
       feed specialize M.
-      { set_solver. }
+      { unfold theory. set_solver. }
       { reflexivity. }
       { wf_auto2. }
       { wf_auto2. }
 
-      apply total_phi_impl_phi_meta with (x := fresh_evar ⊥) in XN;[|set_solver|set_solver|wf_auto2|apply pile_any].
+      apply total_phi_impl_phi_meta with (x := fresh_evar ⊥) in XN;
+      [|unfold theory; set_solver|set_solver|wf_auto2|apply pile_any].
 
       mlAdd M as "M". clear M.
       mlApplyMeta and_impl' in "M".
@@ -299,7 +262,7 @@ Section nat.
           fromMLGoal.
           aapply patt_equal_refl.
           { wf_auto2. }
-        + mlApplyMeta ex_sort_impl_ex;[|set_solver].
+        + mlApplyMeta ex_sort_impl_ex;[|unfold theory; set_solver].
           mlAdd (use_nat_axiom AxFun2 theory ltac:(set_solver)) as "H"; unfold axiom.
           unfold "all _ , _", nest_ex; simpl; fold Nat.
           rewrite <- evar_quantify_evar_open with (x := y) (n := 0) (phi := b0 ∈ml 〚 Nat 〛 ---> (ex Nat , Succ $ b1 =ml b0)).
@@ -313,7 +276,7 @@ Section nat.
           mlApply "H". mlClear "H". mlClear "H0".
           unfold patt_in.
           fromMLGoal.
-          aapply ceil_monotonic;[set_solver|wf_auto2|wf_auto2|].
+          aapply ceil_monotonic;[unfold theory; set_solver|wf_auto2|wf_auto2|].
           toMLGoal. wf_auto2.
           mlIntro "yX".
           mlDestructAnd "yX" as "y" "X".
@@ -324,7 +287,7 @@ Section nat.
       }
       mlClear "M".
 
-      mlRewriteBy "M0" at 1;[set_solver|reflexivity|]. mlClear "M0".
+      mlRewriteBy "M0" at 1;[unfold theory; set_solver|reflexivity|]. mlClear "M0".
 
       apply forall_elim with (x := y) in S.
       2: { wf_auto2. }
@@ -341,7 +304,7 @@ Section nat.
       mlSplitAnd.
       + mlClear "H0".
         fromMLGoal.
-        aapply ceil_monotonic;[set_solver|wf_auto2|wf_auto2|].
+        aapply ceil_monotonic;[unfold theory; set_solver|wf_auto2|wf_auto2|].
         toMLGoal. wf_auto2.
         mlAdd XN as "H".
         mlIntro "yX".

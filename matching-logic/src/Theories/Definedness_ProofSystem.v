@@ -783,7 +783,7 @@ Defined.
         replace (⌈ ! ψ ⌉ $ psi)
           with (subst_ctx (ctx_app_l AC_patt_defined psi ltac:(assumption)) (! ψ))
           by reflexivity.
-        subst i'. Check in_context_impl_defined.
+        subst i'.
         gapply in_context_impl_defined; auto.
         (*eapply useGenericReasoning. *)
         (*2: apply in_context_impl_defined; auto.*)
@@ -1810,10 +1810,10 @@ Defined.
     have Hmf1 : well_formed_positive ψ = true by apply mu_free_wfp. 
     have Hmf2 : mu_free (pcPattern {| pcEvar := x; pcPattern := ψ^{evar:0↦x} |}) by apply mu_free_evar_open.
     have H0 := equality_elimination_basic Γ φ1 φ2 {|pcEvar := x; pcPattern := ψ^{evar:0 ↦ x}|} HΓ WF1 WF2 ltac:(wf_auto2) Hmf2.
-    Check pf_conj_elim_l.
+
     toMLGoal. wf_auto2.
       mlIntro.
-      Search patt_imp patt_iff.
+
       mlApplyMeta (pf_conj_elim_l Γ
          (ψ^{evar:0↦x}^[[evar:x↦φ1]] ---> ψ^{evar:0↦x}^[[evar:x↦φ2]])
          (ψ^{evar:0↦x}^[[evar:x↦φ2]] ---> ψ^{evar:0↦x}^[[evar:x↦φ1]])
@@ -4034,7 +4034,7 @@ Lemma patt_defined_and {Σ : Signature} {syntax : Syntax}:
 Proof.
   intros Γ φ ψ HΓ Wf1 Wf2. toMLGoal. wf_auto2.
   unfold patt_and.
-  Check liftProofInfoLe.
+
   epose proof (liftProofInfoLe _ _ _ AnyReasoning (defined_not_iff_not_total Γ (! φ or ! ψ) HΓ ltac:(wf_auto2))) as H.
   mlRewrite H at 1.
   mlIntro "H0".
