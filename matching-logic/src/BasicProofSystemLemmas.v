@@ -52,8 +52,7 @@ Proof.
       constructor; simpl;
       [( set_solver )
       |( set_solver )
-      |( reflexivity )
-      |( set_solver )
+      |( reflexivity)
       ]
     ).
   }
@@ -1040,12 +1039,7 @@ Defined.
     Γ ⊢ (∃x. φ₁) → φ₂
   *)
   Lemma Ex_gen {Σ : Signature} (Γ : Theory) (ϕ₁ ϕ₂ : Pattern) (x : evar) (i : ProofInfo)
-      {pile : ProofInfoLe (
-              {| pi_generalized_evars := {[x]};
-                 pi_substituted_svars := ∅;
-                 pi_uses_kt := false ;
-                 pi_framing_patterns := ∅ ;
-              |}) i} :
+      {pile : ProofInfoLe (ExGen := {[x]}, SVSubst := ∅, KT := false) i} :
     x ∉ free_evars ϕ₂ ->
     Γ ⊢i ϕ₁ ---> ϕ₂ using i ->
     Γ ⊢i (exists_quantify x ϕ₁ ---> ϕ₂) using i.
@@ -1087,10 +1081,6 @@ Defined.
         inversion Hpf.
         apply pwi_pf_kt.
       }
-      {
-        inversion Hpf.
-        apply pwi_pf_fp.
-      }
     }
   Defined.
 
@@ -1113,7 +1103,6 @@ Defined.
         [( set_solver )
         |( set_solver )
         |( reflexivity )
-        |( set_solver )
         ]
       ).
     }
@@ -1125,7 +1114,7 @@ Defined.
     Γ ⊢ ∀x. φ
   *)
   Lemma universal_generalization {Σ : Signature} Γ ϕ x (i : ProofInfo) :
-    ProofInfoLe ( (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)) i ->
+    ProofInfoLe (ExGen := {[x]}, SVSubst := ∅, KT := false) i ->
     well_formed ϕ ->
     Γ ⊢i ϕ using i ->
     Γ ⊢i patt_forall (ϕ^{{evar: x ↦ 0}}) using i.
@@ -1151,7 +1140,7 @@ Defined.
     Γ ⊢ (∃x. φ₁) → (∃x. φ₂)
   *)
   Lemma ex_quan_monotone {Σ : Signature} Γ x ϕ₁ ϕ₂ (i : ProofInfo)
-    (pile : ProofInfoLe ( (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)) i) :
+    (pile : ProofInfoLe (ExGen := {[x]}, SVSubst := ∅, KT := false) i) :
     Γ ⊢i ϕ₁ ---> ϕ₂ using i ->
     Γ ⊢i (exists_quantify x ϕ₁) ---> (exists_quantify x ϕ₂) using i.
   Proof.
@@ -1199,7 +1188,7 @@ Defined.
     Γ ⊢ (∀x. φ₁) → (∀x. φ₂)
   *)
   Lemma all_quan_monotone {Σ : Signature} Γ x ϕ₁ ϕ₂ (i : ProofInfo)
-    (pile : ProofInfoLe ( (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)) i) :
+    (pile : ProofInfoLe (ExGen := {[x]}, SVSubst := ∅, KT := false) i) :
     Γ ⊢i ϕ₁ ---> ϕ₂ using i ->
     Γ ⊢i (forall_quantify x ϕ₁) ---> (forall_quantify x ϕ₂) using i.
   Proof.
@@ -1220,7 +1209,7 @@ Defined.
     Γ ⊢ (∀x. φ₁) → (∀x. φ₂)
   *)
   Lemma forall_monotone {Σ : Signature} Γ x ϕ₁ ϕ₂ (i : ProofInfo)
-    (pile : ProofInfoLe ( (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)) i) :
+    (pile : ProofInfoLe (ExGen := {[x]}, SVSubst := ∅, KT := false) i) :
     x ∉ free_evars ϕ₁ ->
     x ∉ free_evars ϕ₂ ->
     Γ ⊢i (evar_open x 0 ϕ₁) ---> (evar_open x 0 ϕ₂) using i ->
@@ -1254,7 +1243,7 @@ Defined.
   *)
   Lemma forall_gen {Σ : Signature} Γ ϕ₁ ϕ₂ x (i : ProofInfo):
     evar_is_fresh_in x ϕ₁ ->
-    ProofInfoLe ( (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)) i ->
+    ProofInfoLe (ExGen := {[x]}, SVSubst := ∅, KT := false) i ->
     Γ ⊢i ϕ₁ ---> ϕ₂ using i ->
     Γ ⊢i ϕ₁ ---> forall_quantify x ϕ₂ using i.
   Proof.

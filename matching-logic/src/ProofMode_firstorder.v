@@ -51,7 +51,6 @@ Section with_signature.
               {| pi_generalized_evars := {[x]};
                  pi_substituted_svars := ∅;
                  pi_uses_kt := false ;
-                 pi_framing_patterns := ∅ ;
               |}) i} :
     x ∉ free_evars ϕ₂ ->
     Γ ⊢i ϕ₁ ---> ϕ₂ using i ->
@@ -94,10 +93,6 @@ Section with_signature.
         inversion Hpf.
         apply pwi_pf_kt.
       }
-      {
-        inversion Hpf.
-        apply pwi_pf_fp.
-      }
     }
   Defined.
 
@@ -115,14 +110,7 @@ Section with_signature.
       apply ProofSystem.Ex_quan. apply Hwf.
     }
     {
-      abstract (
-        constructor; simpl;
-        [( set_solver )
-        |( set_solver )
-        |( reflexivity )
-        |( set_solver )
-        ]
-      ).
+      abstract (solve_pim_simple).
     }
   Defined.
 
@@ -132,7 +120,7 @@ Section with_signature.
     Γ ⊢ ∀x. φ
   *)
   Lemma universal_generalization Γ ϕ x (i : ProofInfo) :
-    ProofInfoLe ( (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)) i ->
+    ProofInfoLe ( (ExGen := {[x]}, SVSubst := ∅, KT := false)) i ->
     well_formed ϕ ->
     Γ ⊢i ϕ using i ->
     Γ ⊢i patt_forall (ϕ^{{evar: x ↦ 0}}) using i.
@@ -158,7 +146,7 @@ Section with_signature.
   Lemma forall_variable_substitution Γ ϕ x:
     well_formed ϕ ->
     Γ ⊢i (all, ϕ^{{evar: x ↦ 0}}) ---> ϕ
-    using ( (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)).
+    using ( (ExGen := {[x]}, SVSubst := ∅, KT := false)).
   Proof.
     intros wfϕ.
 
@@ -198,7 +186,7 @@ Section with_signature.
     Γ ⊢ (∃x. φ₁) → (∃x. φ₂)
   *)
   Lemma ex_quan_monotone Γ x ϕ₁ ϕ₂ (i : ProofInfo)
-    (pile : ProofInfoLe ( (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)) i) :
+    (pile : ProofInfoLe ( (ExGen := {[x]}, SVSubst := ∅, KT := false)) i) :
     Γ ⊢i ϕ₁ ---> ϕ₂ using i ->
     Γ ⊢i (exists_quantify x ϕ₁) ---> (exists_quantify x ϕ₂) using i.
   Proof.
@@ -244,7 +232,7 @@ Section with_signature.
     well_formed ϕ₁ = true ->
     well_formed ϕ₂ = true ->
     Γ ⊢i (exists_quantify x (ϕ₁ and ϕ₂)) ---> (exists_quantify x ϕ₁)
-    using ( (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)).
+    using ( (ExGen := {[x]}, SVSubst := ∅, KT := false)).
   Proof.
     intros wfϕ₁ wfϕ₂.
     apply ex_quan_monotone.
@@ -262,7 +250,7 @@ Section with_signature.
     well_formed ϕ₁ = true ->
     well_formed ϕ₂ = true ->
     Γ ⊢i (exists_quantify x (ϕ₁ and ϕ₂)) ---> (exists_quantify x ϕ₂)
-    using ( (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)).
+    using ( (ExGen := {[x]}, SVSubst := ∅, KT := false)).
   Proof.
     intros wfϕ₁ wfϕ₂.
     apply ex_quan_monotone.
@@ -320,7 +308,7 @@ Section with_signature.
     well_formed (ex, ϕ₁) ->
     well_formed ϕ₂ ->
     Γ ⊢i ((ex, ϕ₁) and ϕ₂) ---> (ex, (ϕ₁ and ϕ₂))
-    using ( (ExGen := {[fresh_evar (ϕ₂ ---> ex , (ϕ₁ and ϕ₂))]}, SVSubst := ∅, KT := false, FP := ∅)).
+    using ( (ExGen := {[fresh_evar (ϕ₂ ---> ex , (ϕ₁ and ϕ₂))]}, SVSubst := ∅, KT := false)).
   Proof.
     intros wfϕ₁ wfϕ₂.
     toMLGoal.
@@ -371,7 +359,7 @@ Section with_signature.
     well_formed (ex, ϕ₁) ->
     well_formed ϕ₂ ->
     Γ ⊢i (ex, (ϕ₁ and ϕ₂)) ---> ((ex, ϕ₁) and ϕ₂)
-    using ( (ExGen := {[fresh_evar ((ϕ₁ and ϕ₂))]}, SVSubst := ∅, KT := false, FP := ∅)).
+    using ( (ExGen := {[fresh_evar ((ϕ₁ and ϕ₂))]}, SVSubst := ∅, KT := false)).
   Proof.
     intros wfϕ₁ wfϕ₂.
     toMLGoal.
@@ -438,7 +426,7 @@ Section with_signature.
     well_formed (ex, ϕ₁) ->
     well_formed ϕ₂ ->
     Γ ⊢i (ex, (ϕ₁ and ϕ₂)) <---> ((ex, ϕ₁) and ϕ₂)
-    using ( (ExGen := {[fresh_evar ((ϕ₁ and ϕ₂))]}, SVSubst := ∅, KT := false, FP := ∅)).
+    using ( (ExGen := {[fresh_evar ((ϕ₁ and ϕ₂))]}, SVSubst := ∅, KT := false)).
   Proof.
     intros wfϕ₁ wfϕ₂.
     apply conj_intro_meta.
@@ -464,7 +452,7 @@ Section with_signature.
   *)
   Lemma forall_gen Γ ϕ₁ ϕ₂ x (i : ProofInfo):
     evar_is_fresh_in x ϕ₁ ->
-    ProofInfoLe ( (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)) i ->
+    ProofInfoLe ( (ExGen := {[x]}, SVSubst := ∅, KT := false)) i ->
     Γ ⊢i ϕ₁ ---> ϕ₂ using i ->
     Γ ⊢i ϕ₁ ---> all, (ϕ₂^{{evar: x ↦ 0}}) using i.
   Proof.
@@ -501,7 +489,7 @@ Section with_signature.
   *)
   Lemma forall_variable_substitution' Γ ϕ x (i : ProofInfo):
     well_formed ϕ ->
-    (ProofInfoLe ( (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)) i) ->
+    (ProofInfoLe ( (ExGen := {[x]}, SVSubst := ∅, KT := false)) i) ->
     Γ ⊢i (all, ϕ^{{evar: x ↦ 0}}) ---> ϕ using i.
   Proof.
     intros wfϕ pile.
@@ -517,7 +505,7 @@ Section with_signature.
   Lemma forall_elim Γ ϕ x (i : ProofInfo):
     well_formed (ex, ϕ) ->
     evar_is_fresh_in x ϕ ->
-    ProofInfoLe ( (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)) i ->
+    ProofInfoLe ( (ExGen := {[x]}, SVSubst := ∅, KT := false)) i ->
     Γ ⊢i (all, ϕ) using i ->
     Γ ⊢i (ϕ^{evar: 0 ↦ x}) using i.
   Proof.
@@ -564,7 +552,7 @@ Section with_signature.
   Lemma prenex_forall_imp Γ ϕ₁ ϕ₂ i:
     well_formed (ex, ϕ₁) ->
     well_formed ϕ₂ ->
-    ProofInfoLe ( (ExGen := {[fresh_evar (ϕ₁ ---> ϕ₂)]}, SVSubst := ∅, KT := false, FP := ∅)) i ->
+    ProofInfoLe ( (ExGen := {[fresh_evar (ϕ₁ ---> ϕ₂)]}, SVSubst := ∅, KT := false)) i ->
     Γ ⊢i (all, (ϕ₁ ---> ϕ₂)) using i ->
     Γ ⊢i (ex, ϕ₁) ---> (ϕ₂) using i.
   Proof.
@@ -601,32 +589,11 @@ Section with_signature.
     unfold evar_open in *. simpl in *. exact H.
   Defined.
 
-  (* TODO move this somewhere else *)
-  Lemma evar_fresh_in_foldr x g l:
-    evar_is_fresh_in x (foldr patt_imp g l) <-> evar_is_fresh_in x g /\ evar_is_fresh_in_list x l.
-  Proof.
-    induction l; simpl; split; intros H.
-    - split;[assumption|]. unfold evar_is_fresh_in_list. apply Forall_nil. exact I.
-    - destruct H as [H _]. exact H.
-    - unfold evar_is_fresh_in_list,evar_is_fresh_in in *. simpl in *.
-      split;[set_solver|].
-      apply Forall_cons.
-      destruct IHl as [IHl1 IHl2].
-      split;[set_solver|].
-      apply IHl1. set_solver.
-    - unfold evar_is_fresh_in_list,evar_is_fresh_in in *. simpl in *.
-      destruct IHl as [IHl1 IHl2].
-      destruct H as [H1 H2].
-      inversion H2; subst.
-      specialize (IHl2 (conj H1 H4)).
-      set_solver.
-  Qed.
-
   Lemma Ex_gen_lifted (Γ : Theory) (ϕ₁ : Pattern) (l : hypotheses) (n : string) (g : Pattern) (x : evar)
     (i : ProofInfo) :
     evar_is_fresh_in x g ->
     evar_is_fresh_in_list x (patterns_of l) ->
-    ProofInfoLe ( (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)) i ->
+    ProofInfoLe ( (ExGen := {[x]}, SVSubst := ∅, KT := false)) i ->
     bevar_occur ϕ₁ 0 = false ->
     mkMLGoal Σ Γ (mkNH _ n ϕ₁::l) g i -> 
     mkMLGoal Σ Γ (mkNH _ n (exists_quantify x ϕ₁)::l) g i.
@@ -658,7 +625,7 @@ Section with_signature.
     well_formed (ex, ϕ₁) ->
     well_formed (ex, ϕ₂) ->
     well_formed ϕ₃ ->
-    ProofInfoLe ( (ExGen := {[(evar_fresh (elements (free_evars ϕ₁ ∪ free_evars ϕ₂ ∪ free_evars (ex, ϕ₃))))]}, SVSubst := ∅, KT := false, FP := ∅)) i ->
+    ProofInfoLe ( (ExGen := {[(evar_fresh (elements (free_evars ϕ₁ ∪ free_evars ϕ₂ ∪ free_evars (ex, ϕ₃))))]}, SVSubst := ∅, KT := false)) i ->
     Γ ⊢i (all, (ϕ₁ and ϕ₃ ---> ϕ₂)) using i ->
     Γ ⊢i (ex, ϕ₁) ---> ϕ₃ ---> (ex, ϕ₂) using i.
   Proof.
@@ -685,7 +652,7 @@ Section with_signature.
   Lemma existential_instantiation :
     forall Γ (φ : Pattern) x y, well_formed φ -> x <> y ->  y ∉ free_evars φ ->
       Γ ⊢i exists_quantify x φ ---> φ^[[evar: x ↦ patt_free_evar y]]
-      using (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅).
+      using (ExGen := {[x]}, SVSubst := ∅, KT := false).
   Proof.
     intros Γ φ x y WF xNy Hy.
     apply Ex_gen. apply pile_refl.
@@ -698,7 +665,7 @@ Section with_signature.
 
   Lemma MLGoal_IntroVar : forall Γ l g i x,
     x ∉ free_evars g ->
-    ProofInfoLe ( (ExGen := {[x]}, SVSubst := ∅, KT := false, FP := ∅)) i ->
+    ProofInfoLe ( (ExGen := {[x]}, SVSubst := ∅, KT := false)) i ->
     mkMLGoal Σ Γ l (g^{evar: 0 ↦ x}) i ->
     mkMLGoal Σ Γ l (all , g) i.
   Proof.

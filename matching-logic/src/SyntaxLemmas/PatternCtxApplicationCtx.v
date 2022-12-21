@@ -87,9 +87,9 @@ Fixpoint PatternCtx2ApplicationContext'
 (match p as q return well_formed q -> Application_context with
 | patt_app p1 p2 =>
 fun wf =>
-if decide (count_evar_occurrences box_evar p1 = 0) is left _ then
+if decide (box_evar ∉ free_evars p1) is left _ then
 @ctx_app_r Σ p1 (@PatternCtx2ApplicationContext' box_evar p2 (well_formed_app_2 _ _ wf)) (well_formed_app_1 _ _ wf)
-else if decide (count_evar_occurrences box_evar p2 = 0) is left _ then
+else if decide  (box_evar ∉ free_evars p2) is left _ then
     @ctx_app_l Σ (@PatternCtx2ApplicationContext' box_evar p1 (well_formed_app_1 _ _ wf)) p2 (well_formed_app_2 _ _ wf)
   else
     box
@@ -112,12 +112,12 @@ Proof.
   - rewrite decide_eq_same. reflexivity.
   - simpl in H. apply not_elem_of_union in H.
   rewrite IHAC;[exact (proj1 H)|].
-  rewrite count_evar_occurrences_0; [exact (proj2 H)|].
+  rewrite (proj1 (count_evar_occurrences_0 x p)); [exact (proj2 H)|].
   reflexivity.
   - simpl in H. apply not_elem_of_union in H.
   rewrite IHAC;[exact (proj2 H)|].
-  rewrite count_evar_occurrences_0; [exact (proj1 H)|].
-reflexivity.
+  rewrite (proj1 (count_evar_occurrences_0 x p)); [exact (proj1 H)|].
+  reflexivity.
 Qed.
 
 Lemma ApplicationContext2PatternCtx2ApplicationContext'
@@ -140,10 +140,11 @@ Proof.
   apply not_elem_of_union in Hnotin'.
   destruct Hnotin' as [HnotinAC Hnotinp].
   assert (Hcount1: count_evar_occurrences boxvar (subst_ctx AC (patt_free_evar boxvar)) = 1).
-  { rewrite count_evar_occurrences_subst_ctx; [exact HnotinAC|reflexivity]. }
-  rewrite Hcount1.
-  destruct (decide (1 = 0)); [inversion e|simpl].
-  clear n.
+  { rewrite count_evar_occurrences_subst_ctx; [exact HnotinAC|lia]. }
+  assert (Hcount1': count_evar_occurrences boxvar (subst_ctx AC (patt_free_evar boxvar)) > 0) by lia.
+  apply count_evar_occurrences_not_0 in Hcount1'.
+  destruct decide. set_solver.
+  clear n Hcount1'.
 
   assert (HoneOcc : count_evar_occurrences boxvar (ApplicationContext2Pattern boxvar (ctx_app_l AC p Prf)) = 1).
   { apply ApplicationContext2Pattern_one_occ. simpl. exact Hnotin. }
@@ -151,8 +152,7 @@ Proof.
   rewrite Hcount1 in HoneOcc.
   assert (Hcount0: count_evar_occurrences boxvar p = 0).
   { lia. }
-  rewrite Hcount0.
-  rewrite decide_eq_same.
+  destruct decide. 2: contradiction.
   f_equal.
   2: { apply proof_irrelevance. }
   rewrite IHAC;[assumption|reflexivity].
@@ -173,8 +173,7 @@ Proof.
   assert (Hcount0: count_evar_occurrences boxvar p = 0).
   { lia. }
 
-  rewrite Hcount0.
-  rewrite decide_eq_same.
+  destruct decide. 2: contradiction. 
 
   f_equal.
   2: { apply proof_irrelevance. }
@@ -189,6 +188,7 @@ Proof.
   apply ApplicationContext2PatternCtx2ApplicationContext'.
 Qed.
 
+(* TODO: This needs to use count_evar_occurrences, because the prover depends on it *)
 Fixpoint is_implicative_context' (box_evar : evar) (phi : Pattern) : bool :=
 match phi with
 | patt_bott => true
@@ -221,7 +221,6 @@ Proof.
     2: { fold free_evar_subst.
       rewrite free_evar_subst_no_occurrence.
       2: { reflexivity. }
-      apply count_evar_occurrences_0.
       eapply evar_is_fresh_in_richer'.
       2: { apply set_evar_fresh_is_fresh'. }
       clear. set_solver.
@@ -249,7 +248,6 @@ Proof.
     { fold free_evar_subst.
       rewrite free_evar_subst_no_occurrence.
       2: { reflexivity. }
-      apply count_evar_occurrences_0.
       eapply evar_is_fresh_in_richer'.
       2: { apply set_evar_fresh_is_fresh'. }
       clear. set_solver.

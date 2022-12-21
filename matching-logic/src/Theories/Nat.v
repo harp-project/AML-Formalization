@@ -113,7 +113,7 @@ Section nat.
     unfold patt_in.
     unfold nest_ex; simpl; fold Nat.
     unfold patt_subseteq.
-    apply deduction_theorem with (gpi := (ExGen := {[fresh_evar ⊥]}, SVSubst := ∅, KT := false, FP := ⊤)).
+    apply deduction_theorem with (gpi := (ExGen := {[fresh_evar ⊥]}, SVSubst := ∅, KT := false)).
     rewrite <- evar_quantify_evar_open with (n := 0) (phi := (⌈ b0 and 〚 Nat 〛 ⌉ ---> ⌈ b0 and patt_free_svar X ⌉)) (x := fresh_evar ⊥).
     apply universal_generalization.
     { try_solve_pile. }
@@ -124,7 +124,6 @@ Section nat.
       simpl.
       apply ceil_monotonic.
       { set_solver. }
-      { try_solve_pile. }
       { wf_auto2. }
       { wf_auto2. }
       apply and_weaken.
@@ -183,6 +182,7 @@ Section nat.
     { (* Base case *)
       mlRevertLast.
       mlApplyMeta total_phi_impl_phi.
+      2: instantiate (1 := fresh_evar ⊥); solve_fresh.
       2: set_solver.
 
       fromMLGoal.
@@ -228,7 +228,7 @@ Section nat.
       { set_solver. }
       { wf_auto2. }
       { wf_auto2. }
-      apply useAnyReasoning in Htmp.
+      use AnyReasoning in Htmp.
 
       toMLGoal.
       { wf_auto2. }
@@ -283,7 +283,7 @@ Section nat.
       { wf_auto2. }
       { wf_auto2. }
 
-      apply total_phi_impl_phi_meta in XN;[|set_solver|wf_auto2|apply pile_any].
+      apply total_phi_impl_phi_meta with (x := fresh_evar ⊥) in XN;[|set_solver|set_solver|wf_auto2|apply pile_any].
 
       mlAdd M as "M". clear M.
       mlApplyMeta and_impl' in "M".

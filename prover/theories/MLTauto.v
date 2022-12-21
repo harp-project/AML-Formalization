@@ -245,13 +245,9 @@ Section ml_tauto.
       apply andb_prop in wfp1. destruct wfp1 as [wfp11 wfp12].
       apply andb_prop in wfp2. destruct wfp2 as [wfp21 wfp22].
       assert (well_formed p1').
-      { unfold well_formed, well_formed_closed.
-        destruct_and!. split_and!; assumption.
-      }
+      { wf_auto2. }
       assert (well_formed p2').
-      { unfold well_formed, well_formed_closed.
-        destruct_and!. split_and!; assumption.
-      }
+      { wf_auto2. }
       pose proof (IHsz p1' ltac:(lia) H1).
       pose proof (IHsz p2' ltac:(lia) H2).
       auto.
@@ -263,9 +259,9 @@ Section ml_tauto.
       apply andb_prop in wfp1. destruct wfp1 as [wfp11 wfp12].
       apply andb_prop in wfp2. destruct wfp2 as [wfp21 wfp22].
       assert (well_formed p1').
-      { unfold well_formed, well_formed_closed. destruct_and!. split_and!; assumption. }
+      { wf_auto2. }
       assert (well_formed p2').
-      { unfold well_formed, well_formed_closed. destruct_and!. split_and!; assumption. }
+      { wf_auto2. }
       pose proof (IHsz p1' ltac:(lia) H1).
       pose proof (IHsz p2' ltac:(lia) H2).
       auto.
@@ -282,13 +278,9 @@ Section ml_tauto.
       apply andb_prop in wfp1. destruct wfp1 as [wfp11 wfp12].
       apply andb_prop in wfp2. destruct wfp2 as [wfp21 wfp22].
       assert (well_formed p1).
-      { unfold well_formed, well_formed_closed.
-        destruct_and!. split_and!; assumption.
-      }
+      { wf_auto2. }
       assert (well_formed p2).
-      { unfold well_formed, well_formed_closed.
-        destruct_and!. split_and!; assumption.
-      }
+      { wf_auto2. }
       pose proof (IHsz p2 ltac:(lia) H1).
       auto.
   Qed.
@@ -367,7 +359,6 @@ Section ml_tauto.
       apply (Modus_ponens_alt _ _ _ Hctx); auto 20
     .
 
-
     move: p Hwfp Hsz.
     induction sz; intros p Hwfp Hsz; destruct p; simpl in Hsz; try lia;
       funelim (negate _); try inversion e; subst;
@@ -379,13 +370,9 @@ Section ml_tauto.
       apply andb_prop in Hwf1. destruct Hwf1 as [Hwf11 Hwf12].
       apply andb_prop in Hwf2. destruct Hwf2 as [Hwf21 Hwf22].
       assert (wfp1': well_formed p1').
-      { unfold well_formed, well_formed_closed.
-        destruct_and!. split_and!; assumption.
-      }
+      { wf_auto2. }
       assert (wfp2': well_formed p2').
-      { unfold well_formed, well_formed_closed.
-        destruct_and!. split_and!; assumption.
-      }
+      { wf_auto2. }
 
       simpl in Hsz.
       pose proof (IHp1' := IHsz p1' ltac:(auto) ltac:(lia)).
@@ -404,22 +391,12 @@ Section ml_tauto.
 
       assert (Hcount_p1': count_evar_occurrences star p1' = 0).
       {
-        rewrite count_evar_occurrences_0.
-        subst.
-        eapply evar_is_fresh_in_richer'.
-        2: apply set_evar_fresh_is_fresh'.
-        solve_free_evars_inclusion 5.
-        reflexivity.
+        apply count_evar_occurrences_0. subst star. solve_fresh.
       }
 
       assert (Hcount_p2': count_evar_occurrences star p2' = 0).
       {
-        rewrite count_evar_occurrences_0.
-        subst.
-        eapply evar_is_fresh_in_richer'.
-        2: apply set_evar_fresh_is_fresh'.
-        solve_free_evars_inclusion 5.
-        reflexivity.
+        apply count_evar_occurrences_0. subst star. solve_fresh.
       }
 
       assert (Hcount_np1': count_evar_occurrences star (negate p1') = 0).
@@ -427,6 +404,22 @@ Section ml_tauto.
 
       assert (Hcount_np2': count_evar_occurrences star (negate p2') = 0).
       { rewrite negate_count_evar_occurrences. apply Hcount_p2'. }
+
+      assert (Hcount_p1'': star ∉ free_evars p1').
+      {
+        by apply count_evar_occurrences_0.
+      }
+
+      assert (Hcount_p2'': star ∉ free_evars p2').
+      {
+        by apply count_evar_occurrences_0.
+      }
+
+      assert (Hcount_np1'': star ∉ free_evars (negate p1') ).
+      { by apply count_evar_occurrences_0. }
+
+      assert (Hcount_np2'': star ∉ free_evars (negate p2')).
+      { by apply count_evar_occurrences_0. }
 
       unfold patt_iff. unfold patt_iff in Heqstar.
 
@@ -536,13 +529,9 @@ Section ml_tauto.
       apply andb_prop in Hwf1. destruct Hwf1 as [Hwf11 Hwf12].
       apply andb_prop in Hwf2. destruct Hwf2 as [Hwf21 Hwf22].
       assert (wfp1': well_formed p1').
-      { unfold well_formed, well_formed_closed.
-        destruct_and!. split_and!; assumption.
-      }
+      { wf_auto2. }
       assert (wfp2': well_formed p2').
-      { unfold well_formed, well_formed_closed.
-        destruct_and!. split_and!; assumption.
-      }
+      { wf_auto2. }
 
       simpl in Hsz.
       pose proof (IHp1' := IHsz p1' ltac:(auto) ltac:(lia)).
@@ -561,29 +550,23 @@ Section ml_tauto.
 
       assert (Hcount_p1': count_evar_occurrences star p1' = 0).
       {
-        rewrite count_evar_occurrences_0.
-        subst.
-        eapply evar_is_fresh_in_richer'.
-        2: apply set_evar_fresh_is_fresh'.
-        solve_free_evars_inclusion 5.
-        reflexivity.
+        apply count_evar_occurrences_0. subst star. solve_fresh.
       }
+      apply count_evar_occurrences_0 in Hcount_p1' as Hcount_p1''.
 
       assert (Hcount_p2': count_evar_occurrences star p2' = 0).
       {
-        rewrite count_evar_occurrences_0.
-        subst.
-        eapply evar_is_fresh_in_richer'.
-        2: apply set_evar_fresh_is_fresh'.
-        solve_free_evars_inclusion 5.
-        reflexivity.
+        apply count_evar_occurrences_0. subst star. solve_fresh.
       }
+      apply count_evar_occurrences_0 in Hcount_p2' as Hcount_p2''.
 
       assert (Hcount_np1': count_evar_occurrences star (negate p1') = 0).
       { rewrite negate_count_evar_occurrences. apply Hcount_p1'. }
+      apply count_evar_occurrences_0 in Hcount_np1' as Hcount_np1''.
 
       assert (Hcount_np2': count_evar_occurrences star (negate p2') = 0).
       { rewrite negate_count_evar_occurrences. apply Hcount_p2'. }
+      apply count_evar_occurrences_0 in Hcount_np2' as Hcount_np2''.
 
       unfold patt_iff. unfold patt_iff in Heqstar.
 
@@ -700,13 +683,9 @@ Section ml_tauto.
       apply andb_prop in Hwf1. destruct Hwf1 as [Hwf11 Hwf12].
       apply andb_prop in Hwf2. destruct Hwf2 as [Hwf21 Hwf22].
       assert (wfp1: well_formed p1).
-      { unfold well_formed, well_formed_closed.
-        destruct_and!. split_and!; assumption.
-      }
+      { wf_auto2. }
       assert (wfp2: well_formed p2).
-      { unfold well_formed, well_formed_closed.
-        destruct_and!. split_and!; assumption.
-      }
+      { wf_auto2. }
 
       simpl in Hsz.
       pose proof (IHp2 := IHsz p2 ltac:(auto) ltac:(lia)).
@@ -720,27 +699,20 @@ Section ml_tauto.
 
       assert (Hcount_p1: count_evar_occurrences star p1 = 0).
       {
-        rewrite count_evar_occurrences_0.
-        subst.
-        eapply evar_is_fresh_in_richer'.
-        2: apply set_evar_fresh_is_fresh'.
-        solve_free_evars_inclusion 5.
-        reflexivity.
+        apply count_evar_occurrences_0. subst star. solve_fresh.
       }
+      apply count_evar_occurrences_0 in Hcount_p1 as Hcount_p1'.
 
       assert (Hcount_p2: count_evar_occurrences star p2 = 0).
       {
-        rewrite count_evar_occurrences_0.
-        subst.
-        eapply evar_is_fresh_in_richer'.
-        2: apply set_evar_fresh_is_fresh'.
-        solve_free_evars_inclusion 5.
-        reflexivity.
+        apply count_evar_occurrences_0. subst star. solve_fresh.
       }
+      apply count_evar_occurrences_0 in Hcount_p2 as Hcount_p2'.
 
       assert (Hcount_np2: count_evar_occurrences star (negate p2) = 0).
       { rewrite negate_count_evar_occurrences. apply Hcount_p2. }
-      
+      apply count_evar_occurrences_0 in Hcount_np2 as Hcount_np2'.
+
       unfold patt_iff. unfold patt_iff in Heqstar.
 
       assert (Step1: (Γ ⊢ ((! (p1 ---> p2) ---> p1 and ! p2)
@@ -1119,56 +1091,28 @@ Section ml_tauto.
       apply andb_prop in wfp. destruct wfp as [wf1 wf2].
       apply andb_prop in wf1. destruct wf1 as [wf11 wf12].
       apply andb_prop in wf2. destruct wf2 as [wf21 wf22].
-      unfold well_formed,well_formed_closed.
-      destruct_and!. split_and!; assumption.
+      wf_auto2.
     - subst. clear abstract'.
       unfold aoisz_mns_lexprod.
       unfold aoisz_mns_lexprod'.
       apply left_lex'.
       funelim (and_or_imp_size (p1 and p2)); try inversion e; subst; solve_match_impossibilities.
       lia.
-    - subst. clear abstract'.
-      unfold well_formed,well_formed_closed in wfp.
-      simpl in wfp.
-      rewrite !andbT in wfp.
-      apply andb_prop in wfp. destruct wfp as [wf1 wf2].
-      apply andb_prop in wf1. destruct wf1 as [wf11 wf12].
-      apply andb_prop in wf2. destruct wf2 as [wf21 wf22].
-      unfold well_formed,well_formed_closed.
-      destruct_and!. split_and!; assumption.
-
+    - wf_auto2.
     - subst. clear abstract'.
       unfold aoisz_mns_lexprod.
       unfold aoisz_mns_lexprod'.
       apply left_lex'. unfold ltof.
       funelim (and_or_imp_size (p1 and p2)); try inversion e; subst; solve_match_impossibilities.
       lia.
-    - subst. clear abstract'.
-      unfold well_formed,well_formed_closed in wfp.
-      simpl in wfp.
-      rewrite !andbT in wfp.
-      apply andb_prop in wfp. destruct wfp as [wf1 wf2].
-      apply andb_prop in wf1. destruct wf1 as [wf11 wf12].
-      apply andb_prop in wf2. destruct wf2 as [wf21 wf22].
-      unfold well_formed,well_formed_closed.
-      destruct_and!. split_and!; assumption.
-
+    - wf_auto2.
     - subst. clear abstract'.
       unfold aoisz_mns_lexprod.
       unfold aoisz_mns_lexprod'.
       apply left_lex'. unfold ltof.
       funelim (and_or_imp_size (p1 or p2)); try inversion e; subst; solve_match_impossibilities.
       lia.
-    - subst. clear abstract'.
-      unfold well_formed,well_formed_closed in wfp.
-      simpl in wfp.
-      rewrite !andbT in wfp.
-      apply andb_prop in wfp. destruct wfp as [wf1 wf2].
-      apply andb_prop in wf1. destruct wf1 as [wf11 wf12].
-      apply andb_prop in wf2. destruct wf2 as [wf21 wf22].
-      unfold well_formed,well_formed_closed.
-      destruct_and!. split_and!; assumption.
-      
+    - wf_auto2.      
     - subst. clear abstract'.
       unfold aoisz_mns_lexprod.
       unfold aoisz_mns_lexprod'.
@@ -1345,13 +1289,7 @@ Section ml_tauto.
     - subst.
       clear abstract' n0 n1.
       apply wf_negate.
-      unfold well_formed,well_formed_closed in wfp.
-      simpl in wfp.
-      apply andb_prop in wfp. destruct wfp as [wf1 wf2].
-      apply andb_prop in wf1. destruct wf1 as [wf11 wf12].
-      apply andb_prop in wf2. destruct wf2 as [wf21 wf22].
-      unfold well_formed,well_formed_closed.
-      destruct_and!. split_and!; assumption.
+      wf_auto2.
       
     - subst.
       clear abstract'.
@@ -1368,13 +1306,7 @@ Section ml_tauto.
       rewrite and_or_imp_size_negate. lia.
     - subst.
       clear abstract' n n0 n1.
-      unfold well_formed,well_formed_closed in wfp.
-      simpl in wfp.
-      apply andb_prop in wfp. destruct wfp as [wf1 wf2].
-      apply andb_prop in wf1. destruct wf1 as [wf11 wf12].
-      apply andb_prop in wf2. destruct wf2 as [wf21 wf22].
-      unfold well_formed,well_formed_closed.
-      destruct_and!. split_and!; assumption.
+      wf_auto2.
 
     - subst.
       clear abstract'.
@@ -1401,8 +1333,7 @@ Section ml_tauto.
     destruct wfp' as [wf'p wf'c].
     apply andb_prop in wf'p. apply andb_prop in wf'c.
     destruct wf'p as [wf'p1 wf'p2]. destruct wf'c as [wf'c1 wf'c2].
-    unfold well_formed, well_formed_closed.
-    destruct_and!. split_and!; assumption.
+    wf_auto2.
   Qed.
 
   Lemma wf_and_proj2 p q:
@@ -1417,8 +1348,7 @@ Section ml_tauto.
     destruct wfp' as [wf'p wf'c].
     apply andb_prop in wf'p. apply andb_prop in wf'c.
     destruct wf'p as [wf'p1 wf'p2]. destruct wf'c as [wf'c1 wf'c2].
-    unfold well_formed, well_formed_closed.
-    destruct_and!. split_and!; assumption.
+    wf_auto2.
   Qed.
 
 
@@ -1434,8 +1364,7 @@ Section ml_tauto.
     destruct wfp' as [wf'p wf'c].
     apply andb_prop in wf'p. apply andb_prop in wf'c.
     destruct wf'p as [wf'p1 wf'p2]. destruct wf'c as [wf'c1 wf'c2].
-    unfold well_formed, well_formed_closed.
-    destruct_and!. split_and!; assumption.
+    wf_auto2.
   Qed.
 
   Lemma wf_or_proj2 p q:
@@ -1450,8 +1379,7 @@ Section ml_tauto.
     destruct wfp' as [wf'p wf'c].
     apply andb_prop in wf'p. apply andb_prop in wf'c.
     destruct wf'p as [wf'p1 wf'p2]. destruct wf'c as [wf'c1 wf'c2].
-    unfold well_formed, well_formed_closed.
-    destruct_and!. split_and!; assumption.
+    wf_auto2.
   Qed.
 
   Lemma wf_not_proj p:
@@ -1476,8 +1404,7 @@ Section ml_tauto.
     destruct wfp' as [wf'p wf'c].
     apply andb_prop in wf'p. apply andb_prop in wf'c.
     destruct wf'p as [wf'p1 wf'p2]. destruct wf'c as [wf'c1 wf'c2].
-    unfold well_formed, well_formed_closed.
-    destruct_and!. split_and!; assumption.
+    wf_auto2.
   Qed.
 
   Lemma wf_imp_proj2 p q:
@@ -1491,8 +1418,7 @@ Section ml_tauto.
     destruct wfp' as [wf'p wf'c].
     apply andb_prop in wf'p. apply andb_prop in wf'c.
     destruct wf'p as [wf'p1 wf'p2]. destruct wf'c as [wf'c1 wf'c2].
-    unfold well_formed, well_formed_closed.
-    destruct_and!. split_and!; assumption.
+    wf_auto2.
   Qed.
 
 

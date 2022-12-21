@@ -577,8 +577,15 @@ Section proof_info.
       pi_generalized_evars : coEVarSet ;
       pi_substituted_svars : coSVarSet ;
       pi_uses_kt : bool ;
-      pi_framing_patterns : coWfpSet ; 
+      (* pi_framing_patterns : coWfpSet ;  *)
     }.
+
+  Definition ProofInfoLe (i₁ i₂ : ProofInfo) : Prop :=
+    pi_generalized_evars i₁ ⊆ pi_generalized_evars i₂ /\
+    pi_substituted_svars i₁ ⊆ pi_substituted_svars i₂ /\
+    (pi_uses_kt i₁ ==> pi_uses_kt i₂)
+  .
+
 
   (* A proof together with some properties of it. *)
   Record ProofInfoMeaning
@@ -593,22 +600,75 @@ Section proof_info.
     pwi_pf_ge : gset_to_coGset (@uses_of_ex_gen Σ Γ ϕ pwi_pf) ⊆ pi_generalized_evars pi ;
     pwi_pf_svs : gset_to_coGset (@uses_of_svar_subst Σ Γ ϕ pwi_pf) ⊆ pi_substituted_svars pi ;
     pwi_pf_kt : implb (@uses_kt Σ Γ ϕ pwi_pf) (pi_uses_kt pi) ;
-    pwi_pf_fp : gset_to_coGset (@framing_patterns Σ Γ ϕ pwi_pf) ⊆ (pi_framing_patterns pi) ;
+    (* pwi_pf_fp : gset_to_coGset (@framing_patterns Σ Γ ϕ pwi_pf) ⊆ (pi_framing_patterns pi) ; *)
   }.
 
-  Class ProofInfoLe (i₁ i₂ : ProofInfo) :=
-  { pi_le :
+  Definition ProofLe (i₁ i₂ : ProofInfo) :=
     forall (Γ : Theory) (ϕ : Pattern) (pf : Γ ⊢r ϕ),
-      @ProofInfoMeaning Γ ϕ pf i₁ -> @ProofInfoMeaning Γ ϕ pf i₂ ;
-  }.
+      @ProofInfoMeaning Γ ϕ pf i₁ -> @ProofInfoMeaning Γ ϕ pf i₂.
 
+
+  Lemma ProofInfoLe_ProofLe (i₁ i₂ : ProofInfo) :
+    ProofInfoLe i₁ i₂ -> ProofLe i₁ i₂.
+  Proof.
+    intros H. intros Γ φ pf Hpf. destruct Hpf.
+    destruct H as [HEV [HSV HKT] ].
+    constructor. 1-2: set_solver.
+    apply implb_true_iff.
+    pose proof (proj1 (implb_true_iff _ _) HKT).
+    pose proof (proj1 (implb_true_iff _ _) pwi_pf_kt0).
+    tauto.
+  Qed.
+
+End proof_info.
+
+  Ltac convert_implb :=
+  unfold is_true in *;
+  match goal with
+  | |- context G [implb _ _ = true] => rewrite implb_true_iff
+  | H : context G [implb _ _ = true] |- _ => rewrite implb_true_iff in H
+  end.
+
+  Ltac convert_orb :=
+  unfold is_true in *;
+  match goal with
+  | |- context G [orb _ _ = true] => rewrite orb_true_iff
+  | H : context G [orb _ _ = true] |- _ => rewrite orb_true_iff in H
+  end.
+
+  Ltac convert_andb :=
+  unfold is_true in *;
+  match goal with
+  | |- context G [orb _ _ = true] => rewrite andb_true_iff
+  | H : context G [orb _ _ = true] |- _ => rewrite andb_true_iff in H
+  end.
+
+  Ltac destruct_pile :=
+    match goal with
+    | H : @ProofInfoLe _ _ _ |- _ => destruct H as [? [? ?] ]
+    end.
+
+  (** To solve goals shaped like: ProofInfoLe i₁ i₂ *)
+  Ltac try_solve_pile :=
+    assumption + (* optimization *)
+    (repeat destruct_pile;
+    simpl in *;
+    split; [try set_solver|split;[try set_solver
+    |try (repeat convert_implb;
+          repeat convert_orb;
+          repeat convert_andb;
+          set_solver)] ]).
+
+Section proof_info.
+  Context {Σ : Signature}.
+  Import Notations_private.
   (*
   #[global]
   Instance
   *)
   Lemma pile_refl (i : ProofInfo) : ProofInfoLe i i.
   Proof.
-    constructor. intros Γ ϕ pf H. exact H.
+    try_solve_pile. 
   Qed.
 
   (*
@@ -619,20 +679,15 @@ Section proof_info.
     (i₁ i₂ i₃ : ProofInfo) (PILE12 : ProofInfoLe i₁ i₂) (PILE23 : ProofInfoLe i₂ i₃)
   : ProofInfoLe i₁ i₃.
   Proof.
-    destruct PILE12 as [PILE12].
-    destruct PILE23 as [PILE23].
-    constructor. intros Γ ϕ pf.
-    specialize (PILE12 Γ ϕ pf).
-    specialize (PILE23 Γ ϕ pf).
-    tauto.
+    try_solve_pile.
   Qed.
 
-  Definition BasicReasoning : ProofInfo := ((@mkProofInfo ∅ ∅ false ∅)).
-  Definition AnyReasoning : ProofInfo := (@mkProofInfo ⊤ ⊤ true ⊤).
+  Definition BasicReasoning : ProofInfo := ((@mkProofInfo _ ∅ ∅ false)).
+  Definition AnyReasoning : ProofInfo := (@mkProofInfo _ ⊤ ⊤ true).
 
 
   Definition derives_using Γ ϕ pi
-  := ({pf : Γ ⊢r ϕ | @ProofInfoMeaning _ _ pf pi }).
+  := ({pf : Γ ⊢r ϕ | @ProofInfoMeaning _ _ _ pf pi }).
 
   Definition derives Γ ϕ
   := derives_using Γ ϕ AnyReasoning.
@@ -653,20 +708,22 @@ Notation "Γ '⊢i' ϕ 'using' pi"
 Notation "Γ ⊢ ϕ" := (derives Γ ϕ)
 (at level 95, no associativity).
 
-Notation "'ExGen' ':=' evs ',' 'SVSubst' := svs ',' 'KT' := bkt ',' 'FP' := fpl"
-  := (@mkProofInfo _ evs svs bkt fpl) (at level 95, no associativity).
+Notation "'ExGen' ':=' evs ',' 'SVSubst' := svs ',' 'KT' := bkt"
+  := (@mkProofInfo _ evs svs bkt) (at level 95, no associativity).
 
 End Notations.
 
 (* We cannot turn a proof into wellformedness hypotheses
-   if there is a ProofInfoLe hypothesis depending on the proof
+   if there is a ProofLe hypothesis depending on the proof
   *)
 Ltac2 clear_piles () :=
   repeat (
     lazy_match! goal with
     | [ h : @ProofInfoLe _ _ _ |- _]
       => clear $h
-    | [ h : @ProofInfoMeaning _ _ _ _ _ |- _]
+      | [ h : @ProofLe _ _ _ |- _]
+      => clear $h
+      | [ h : @ProofInfoMeaning _ _ _ _ _ |- _]
       => clear $h
     end
   )
@@ -735,10 +792,6 @@ unshelve (eexists).
   (
     rewrite indifferent_to_cast_uses_kt;
     apply Hpf4
-  )|
-  (
-    rewrite framing_patterns_cast_proof;
-    destruct i; assumption
   )
   ]).
 }

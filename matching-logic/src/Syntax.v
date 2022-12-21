@@ -840,8 +840,7 @@ Section with_signature.
       2: eassumption.
       lia.
     - repeat case_match; auto.
-      apply free_evar_subst_no_occurrence.
-      apply count_evar_occurrences_0. assumption.
+      apply free_evar_subst_no_occurrence. assumption.
     - rewrite IHϕ1; auto. rewrite IHϕ2; auto.
     - rewrite IHϕ1; auto. rewrite IHϕ2; auto.
     - rewrite IHϕ; auto.
@@ -1011,6 +1010,26 @@ Section with_signature.
     intros p.
     apply evar_is_fresh_in_dec.
   Defined.
+
+  Lemma evar_fresh_in_foldr x g l:
+  evar_is_fresh_in x (foldr patt_imp g l) <-> evar_is_fresh_in x g /\ evar_is_fresh_in_list x l.
+  Proof.
+  induction l; simpl; split; intros H.
+  - split;[assumption|]. unfold evar_is_fresh_in_list. apply Forall_nil. exact I.
+  - destruct H as [H _]. exact H.
+  - unfold evar_is_fresh_in_list,evar_is_fresh_in in *. simpl in *.
+    split;[set_solver|].
+    apply Forall_cons.
+    destruct IHl as [IHl1 IHl2].
+    split;[set_solver|].
+    apply IHl1. set_solver.
+  - unfold evar_is_fresh_in_list,evar_is_fresh_in in *. simpl in *.
+    destruct IHl as [IHl1 IHl2].
+    destruct H as [H1 H2].
+    inversion H2; subst.
+    specialize (IHl2 (conj H1 H4)).
+    set_solver.
+  Qed.
 
   Global Instance svar_is_fresh_in_dec (X : svar) (p : Pattern) :
     Decision (svar_is_fresh_in X p).

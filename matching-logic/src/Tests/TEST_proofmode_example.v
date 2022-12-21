@@ -47,11 +47,10 @@ Proof.
   unfold overlaps_with.
   toMLGoal. wf_auto2.
   unfold patt_equal, patt_iff.
-  mlRewrite (useAnyReasoning (patt_total_and Γ
-                                (pY ---> pX)
-                                (pX ---> pY) HΓ
-                                ltac:(wf_auto2) ltac:(wf_auto2))) at 1.
-  fold AnyReasoning.
+  pose proof (patt_total_and Γ (pY ---> pX) (pX ---> pY) HΓ 
+                        ltac:(wf_auto2) ltac:(wf_auto2)) as H1.
+  use AnyReasoning in H1.
+  mlRewrite H1 at 1.
   mlIntro "H0".
   mlIntro "H1".
   mlDestructOr "H1" as "H1'" "H1'".
@@ -60,15 +59,15 @@ Proof.
     mlIntro "H2".
     pose proof (MH := @ProofMode_propositional.nimpl_eq_and _ Γ pY pX
                   ltac:(wf_auto2) ltac:(wf_auto2)).
-    apply useAnyReasoning in MH.
+    use AnyReasoning in MH.
     mlRevertLast.
-    mlRewrite MH at 1. fold AnyReasoning.
+    mlRewrite MH at 1.
     (* TODO: it is increadibly inconvienient to define concrete contexts *)
     unshelve (epose proof (MH1 := @Singleton_ctx _ Γ 
            (⌈_⌉ $ᵣ □)
            (⌈_⌉ $ᵣ □) pX y ltac:(wf_auto2))). 1-2: wf_auto2.
     rewrite -HeqpY in MH1.
-    apply useAnyReasoning in MH1. simpl in MH1.
+    use AnyReasoning in MH1. simpl in MH1.
     (* TODO: having mlExactMeta would help here *)
     mlIntro "H2".
     mlApplyMeta MH1.
@@ -80,14 +79,14 @@ Proof.
     mlIntro "H2".
     pose proof (MH := @ProofMode_propositional.nimpl_eq_and _ Γ pX pY
                   ltac:(wf_auto2) ltac:(wf_auto2)).
-    mlRevertLast. apply useAnyReasoning in MH. mlRewrite MH at 1.
+    mlRevertLast. use AnyReasoning in MH. mlRewrite MH at 1.
     pose proof (MH1 := @patt_and_comm _ Γ pY pX ltac:(wf_auto2) ltac:(wf_auto2)).
-    mlRevertLast. apply useAnyReasoning in MH1. mlRewrite MH1 at 1.
+    mlRevertLast. use AnyReasoning in MH1. mlRewrite MH1 at 1.
     unshelve (epose proof (@Singleton_ctx _ Γ 
            (⌈_⌉ $ᵣ □)
            (⌈_⌉ $ᵣ □) pY x ltac:(wf_auto2)) as MH2). 1-2: wf_auto2.
     rewrite -HeqpX in MH2.
-    apply useAnyReasoning in MH2.
+    use AnyReasoning in MH2.
     mlIntro "H1". mlIntro "H2".
     mlApplyMeta MH2. simpl. mlSplitAnd. mlExact "H1". mlExact "H2".
 Defined.

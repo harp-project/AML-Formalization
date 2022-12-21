@@ -1022,26 +1022,6 @@ Proof.
   apply modus_ponens; wf_auto2.
 Defined.
 
-(* TODO rename or remove *)
-Lemma helper {Σ : Signature} Γ p q r:
-  well_formed p ->
-  well_formed q ->
-  well_formed r ->
-  Γ ⊢i (p ---> (q ---> ((p ---> (q ---> r)) ---> r))) using BasicReasoning.
-Proof.
-  intros wfp wfq wfr.
-  eapply cast_proof'.
-  {
-    rewrite [(p ---> q ---> (p ---> q ---> r) ---> r)]tofold. repeat rewrite consume.
-    replace ((([] ++ [p]) ++ [q]) ++ [p ---> (q ---> r)]) with ([p;q;p--->(q ---> r)]) by reflexivity.
-    replace ([p;q;p--->(q ---> r)]) with ([p] ++ [q; p ---> (q ---> r)] ++ []) by reflexivity.
-    reflexivity.
-  }
-  apply prf_reorder_iter_meta; try_wfauto2.
-  simpl.
-  apply modus_ponens; wf_auto2.
-Defined.
-
 Lemma reorder_last_to_head {Σ : Signature} Γ g x l:
   Pattern.wf l ->
   well_formed g ->
@@ -1911,7 +1891,7 @@ Lemma useGenericReasoning''  {Σ : Signature} (Γ : Theory) (ϕ : Pattern) i' i:
   Γ ⊢i ϕ using i.
 Proof.
   intros H pile.
-  eapply useGenericReasoning'.
+  eapply useGenericReasoning.
   { apply pile. }
   apply H.
 Defined.
@@ -1931,7 +1911,7 @@ Ltac2 try_solve_pile_basic () :=
         try (solve
           [ apply pile_any
           | apply pile_refl
-          | apply pile_basic_generic'
+          | apply pile_basic_generic
        ])
     | [|- _] => ()
     end

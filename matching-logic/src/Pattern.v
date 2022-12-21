@@ -424,42 +424,6 @@ Qed.
     free_svars (patt_exists ϕ) = free_svars ϕ.
   Proof. done. Qed.
 
-
-
-
-  Fixpoint count_evar_occurrences (x : evar) (p : Pattern) :=
-    match p with
-    | patt_free_evar x' => if decide (x' = x) is left _ then 1 else 0 
-    | patt_free_svar _ => 0
-    | patt_bound_evar _ => 0
-    | patt_bound_svar _ => 0
-    | patt_sym _ => 0
-    | patt_app phi1 phi2 => count_evar_occurrences x phi1 + count_evar_occurrences x phi2 
-    | patt_bott => 0
-    | patt_imp phi1 phi2 => count_evar_occurrences x phi1 + count_evar_occurrences x phi2 
-    | patt_exists phi' => count_evar_occurrences x phi'
-    | patt_mu phi' => count_evar_occurrences x phi'
-    end.
-
-  Lemma count_evar_occurrences_0 (x : evar) (p : Pattern) :
-    x ∉ free_evars p ->
-    count_evar_occurrences x p = 0.
-  Proof.
-    intros H.
-    induction p; simpl in H; simpl; auto.
-    - apply not_elem_of_singleton_1 in H.
-      destruct (decide (x0 = x)). subst. contradiction. reflexivity.
-    - apply not_elem_of_union in H. destruct H as [H1 H2].
-      rewrite IHp1; [assumption|].
-      rewrite IHp2; [assumption|].
-      reflexivity.
-    - apply not_elem_of_union in H. destruct H as [H1 H2].
-      rewrite IHp1; [assumption|].
-      rewrite IHp2; [assumption|].
-      reflexivity.
-  Qed.
-
-
   Lemma wfc_impl_no_neg_pos_occ p m:
     well_formed_closed_mu_aux p m ->
     (no_negative_occurrence_db_b m p && no_positive_occurrence_db_b m p) = true.
@@ -522,15 +486,88 @@ Qed.
   Qed.
 
 
-Lemma wf_imp_wfc ϕ:
-well_formed ϕ -> well_formed_closed ϕ.
-Proof.
-intros H. apply andb_prop in H. tauto.
-Qed.
+  Lemma wf_imp_wfc ϕ:
+    well_formed ϕ -> well_formed_closed ϕ.
+  Proof.
+    intros H. apply andb_prop in H. tauto.
+  Qed.
 
 
-Definition evar_is_fresh_in x ϕ := x ∉ free_evars ϕ.
-Definition svar_is_fresh_in x ϕ := x ∉ free_svars ϕ.
+  Definition evar_is_fresh_in x ϕ := x ∉ free_evars ϕ.
+  Definition svar_is_fresh_in x ϕ := x ∉ free_svars ϕ.
+
+  (** This function is used for linear contexts *)
+  Fixpoint count_evar_occurrences (x : evar) (p : Pattern) :=
+    match p with
+    | patt_free_evar x' => if decide (x' = x) is left _ then 1 else 0 
+    | patt_free_svar _ => 0
+    | patt_bound_evar _ => 0
+    | patt_bound_svar _ => 0
+    | patt_sym _ => 0
+    | patt_app phi1 phi2 => count_evar_occurrences x phi1 + count_evar_occurrences x phi2 
+    | patt_bott => 0
+    | patt_imp phi1 phi2 => count_evar_occurrences x phi1 + count_evar_occurrences x phi2 
+    | patt_exists phi' => count_evar_occurrences x phi'
+    | patt_mu phi' => count_evar_occurrences x phi'
+    end.
+
+  Lemma count_evar_occurrences_0 (x : evar) (p : Pattern) :
+    x ∉ free_evars p <->
+    count_evar_occurrences x p = 0.
+  Proof.
+    split.
+    {
+    intros H.
+    induction p; simpl in H; simpl; auto.
+    - apply not_elem_of_singleton_1 in H.
+      destruct (decide (x0 = x)). subst. contradiction. reflexivity.
+    - apply not_elem_of_union in H. destruct H as [H1 H2].
+      rewrite IHp1; [assumption|].
+      rewrite IHp2; [assumption|].
+      reflexivity.
+    - apply not_elem_of_union in H. destruct H as [H1 H2].
+      rewrite IHp1; [assumption|].
+      rewrite IHp2; [assumption|].
+      reflexivity.
+    }
+    {
+      intros H.
+      induction p; simpl in H; simpl; auto.
+      2-5, 7: set_solver.
+      - destruct (decide (x0 = x)); set_solver.
+      - apply plus_is_O in H as [H0 H1]. set_solver.
+      - apply plus_is_O in H as [H0 H1]. set_solver.
+    }
+  Qed.
+
+  Lemma count_evar_occurrences_not_0 (x : evar) (p : Pattern) :
+    x ∈ free_evars p <->
+    count_evar_occurrences x p > 0.
+  Proof.
+    split.
+    {
+    intros H.
+    induction p; simpl in H; simpl; auto.
+    2-5, 7: set_solver.
+    - destruct decide. lia. set_solver.
+    - apply elem_of_union in H as [H | H].
+      + apply IHp1 in H. lia.
+      + apply IHp2 in H. lia.
+    - apply elem_of_union in H as [H | H].
+      + apply IHp1 in H. lia.
+      + apply IHp2 in H. lia.
+    }
+    {
+      intros H.
+      induction p; simpl in H; simpl; auto.
+      2-5, 7: lia.
+      - destruct (decide (x0 = x)). set_solver. lia.
+      - assert (count_evar_occurrences x p1 > 0 ∨ count_evar_occurrences x p2 > 0) by lia.
+        set_solver.
+      - assert (count_evar_occurrences x p1 > 0 ∨ count_evar_occurrences x p2 > 0) by lia.
+      set_solver.
+    }
+  Qed.
 
 End syntax.
 

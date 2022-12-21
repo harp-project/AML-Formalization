@@ -63,3 +63,4 @@ src/Theories/ModelExtension.v
 
 src/Tests/TEST_LocallyNameless.v
 src/Tests/TEST_proofmode_example.v
+src/Tests/TEST_proofmode_proof_size.v

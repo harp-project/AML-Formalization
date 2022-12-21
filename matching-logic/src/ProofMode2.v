@@ -861,7 +861,7 @@ Lemma lift_to_mixed_context' {Σ : Signature} (Γ : Theory)
   (concl₁ concl₂: Pattern) (pmes : list ProofModeEntry)
   (i : ProofInfo)
   (* TODO relax ExGen *)
-  (pile : ProofInfoLe (ExGen := ⊤, SVSubst := ∅, KT := false, FP := ∅) i)
+  (pile : ProofInfoLe (ExGen := ⊤, SVSubst := ∅, KT := false) i)
   :
   well_formed (MLGoal_to_pattern' concl₁ pmes) ->
   well_formed (MLGoal_to_pattern' concl₂ pmes) ->
@@ -998,7 +998,7 @@ Lemma lift_to_mixed_context {Σ : Signature} (Γ : Theory)
   (concl₁ concl₂: Pattern) (pmes : list ProofModeEntry)
   (i : ProofInfo)
   (* TODO relax ExGen *)
-  (pile : ProofInfoLe (ExGen := ⊤, SVSubst := ∅, KT := false, FP := ∅) i)
+  (pile : ProofInfoLe (ExGen := ⊤, SVSubst := ∅, KT := false) i)
   :
   well_formed (MLGoal_to_pattern' concl₁ pmes) ->
   well_formed (MLGoal_to_pattern' concl₂ pmes) ->
@@ -1067,7 +1067,7 @@ Lemma MLGoal_lift_to_mixed_context {Σ : Signature} (Γ : Theory)
   (concl₁ concl₂: Pattern) (hyps : hypotheses)
   (i : ProofInfo)
   (* TODO relax ExGen *)
-  (pile : ProofInfoLe (ExGen := ⊤, SVSubst := ∅, KT := false, FP := ∅) i)
+  (pile : ProofInfoLe (ExGen := ⊤, SVSubst := ∅, KT := false) i)
   :
   well_formed_xy (foralls_count (pmes_of hyps)) 0 concl₂ ->
   Γ ⊢i (evar_open_fresh_iter

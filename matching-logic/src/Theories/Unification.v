@@ -12,7 +12,7 @@ From Coq.Classes Require Import Morphisms_Prop.
 From Coq.Unicode Require Import Utf8.
 From Coq.micromega Require Import Lia.
 
-From MatchingLogic Require Import BasicProofSystemLemmas Logic ProofMode.
+From MatchingLogic Require Import Logic ProofMode.
 From MatchingLogic.Theories Require Import Definedness_Syntax Definedness_ProofSystem FOEquality_ProofSystem.
 From MatchingLogic.Utils Require Import stdpp_ext.
 
@@ -84,16 +84,19 @@ Section ProofSystemTheorems.
 
     toMLGoal. wf_auto2.
     mlIntro.
-    mlApplyMetaRaw (useAnyReasoning (bott_not_defined Γ)).
+    pose proof (bott_not_defined Γ) as H.
+    use AnyReasoning in H.
+    mlApplyMeta H.
     fromMLGoal. wf_auto2.
 
     apply ceil_monotonic; auto.
-    { apply pile_any. }
     { wf_auto2. }
 
     toMLGoal. wf_auto2.
-    mlApplyMetaRaw (useAnyReasoning (not_not_intro Γ ((φ ∈ml φ' <---> φ =ml φ' ))
-                    ltac:(wf_auto2))).
+    pose proof (not_not_intro Γ ((φ ∈ml φ' <---> φ =ml φ' ))
+    ltac:(wf_auto2)) as H0.
+    use AnyReasoning in H0.
+    mlApplyMetaRaw H0.
     mlSplitAnd; mlIntro.
     * mlApplyMeta membership_imp_equal_meta; auto. mlExactn 0.
     * mlApplyMeta equal_imp_membership; auto. mlExactn 0.
@@ -117,7 +120,10 @@ Section ProofSystemTheorems.
     { wf_auto2. }
     (* Why can we only mlApplyMetaRaw here, and not after mlRevert? *)
     {
-      mlApplyMetaRaw (useAnyReasoning (phi_impl_defined_phi Γ (φ and φ') HΓ ltac:(wf_auto2))).
+      pose proof (phi_impl_defined_phi Γ (φ and φ') (fresh_evar (φ and φ')) HΓ
+                    ltac:(solve_fresh) ltac:(wf_auto2)) as H.
+      use AnyReasoning in H.
+      mlApplyMetaRaw H.
       mlExact "H0".
     }
     replace (⌈ φ and φ' ⌉) with (φ ∈ml φ') by auto.
@@ -187,7 +193,7 @@ Section ProofSystemTheorems.
       mlIntro "H1". unfold patt_iff. mlDestructAnd "H1" as "H2" "H3". mlExact "H3".
     }
 
-    apply useAnyReasoning in H.
+    use AnyReasoning in H.
     epose proof (syllogism_meta _ _ _ H Hiff).
     (* TODO: mlApplyMetaRaw buggy?
              Tries to match the longest conclusion, not the shortest *)
@@ -229,7 +235,7 @@ Section ProofSystemTheorems.
       { clear H. wf_auto2. }
       mlIntro "H1". unfold patt_iff. mlDestructAnd "H1" as "H2" "H3". mlExact "H2".
     }
-    apply useAnyReasoning in H.
+    use AnyReasoning in H.
     epose proof (syllogism_meta _ _ _ H Hiff).
     (* TODO: mlApplyMetaRaw buggy?
              Tries to match the longest conclusion, not the shortest *)

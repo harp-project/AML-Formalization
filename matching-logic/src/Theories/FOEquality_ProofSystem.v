@@ -147,7 +147,7 @@ Proof.
   { set_solver. }
   { wf_auto2. }
   { wf_auto2. }
-  apply useAnyReasoning in Htmp.
+  use AnyReasoning in Htmp.
 
   toMLGoal.
   { wf_auto2. }
@@ -165,7 +165,7 @@ Proof.
     pose proof (Hex := Ex_quan Γ (patt_free_evar x =ml b0) x).
     feed specialize Hex.
     { wf_auto2. }
-    apply useAnyReasoning in Hex.
+    use AnyReasoning in Hex.
     toMLGoal.
     { wf_auto2. }
     mlApplyMeta Hex. unfold instantiate. mlSimpl. simpl.
@@ -179,7 +179,7 @@ Proof.
   mlRevertLast.
   mlRewrite (patt_eq_comm (patt_free_evar x) g Γ HΓ ltac:(wf_auto2) ltac:(wf_auto2)) at 1. fold AnyReasoning.
   mlIntro "H".
-  mlApplyMeta (equality_elimination2 Γ g (patt_free_evar x) (b0 ∈ml ψ)) in "H". mlSimpl. simpl.
+  mlApplyMeta (equality_elimination_proj Γ g (patt_free_evar x) (b0 ∈ml ψ)) in "H". mlSimpl. simpl.
   rewrite bevar_subst_not_occur.
   { wf_auto2. }
   rewrite bevar_subst_not_occur.
