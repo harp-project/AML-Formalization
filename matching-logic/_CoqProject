@@ -52,6 +52,7 @@ src/Theories/Definedness_ProofSystem.v
 
 src/Theories/FOEquality_ProofSystem.v
 src/Theories/DeductionTheorem.v
+src/Theories/Nat_Syntax.v
 src/Theories/Nat.v
 
 src/Theories/Sorts_Syntax.v
