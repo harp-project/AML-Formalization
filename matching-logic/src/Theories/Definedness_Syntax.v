@@ -46,8 +46,6 @@ Section definedness.
 
   Context {syntax : Syntax}.
 
-  Check (ex, patt_bott).
-
   Definition patt_defined (phi : Pattern) : Pattern :=
     patt_sym (inj definedness) $ phi.
 

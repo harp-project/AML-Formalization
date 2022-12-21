@@ -3068,7 +3068,7 @@ Proof.
   }
   apply well_formed_and; wf_auto2.
 Defined.
-Locate MP.
+
 #[local]
 Ltac tryExact l idx :=
   match l with

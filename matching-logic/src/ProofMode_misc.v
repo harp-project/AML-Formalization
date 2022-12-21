@@ -34,9 +34,6 @@ Open Scope string_scope.
 Open Scope list_scope.
 
 
-Search patt_exists patt_imp.
-Search patt_exists patt_not.
-
 Ltac2 _callCompletedTransformedAndCast
   (t : constr) (transform : constr) (tac : constr -> unit) :=
   let tac' := (fun (t' : constr) =>
@@ -2371,7 +2368,7 @@ Ltac2 heat :=
          )
     end
 .
-Check MLGoal_rewriteIff.
+
 Ltac2 mlRewrite (hiff : constr) (atn : int) :=
   let thiff := Constr.type hiff in
   (* we have to unfold [derives] otherwise this might not match *)

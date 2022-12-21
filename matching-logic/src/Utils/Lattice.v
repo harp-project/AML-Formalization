@@ -411,7 +411,6 @@ From Coq Require Import Logic.FunctionalExtensionality Logic.PropExtensionality.
 Section propset_lattice.
   Variable U : Type.
 
-  Locate "⊆".
   Program Definition PropsetOrderedSet : OrderedSet (propset U) :=
   {| leq := subseteq;
   |}.

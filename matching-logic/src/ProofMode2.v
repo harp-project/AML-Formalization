@@ -1754,7 +1754,6 @@ Proof.
     {
       rewrite IHl.
       f_equal.
-      Search (well_formed_positive (evar_open _ _ _)).
       remember (well_formed_positive p) as b.
       symmetry in Heqb.
       destruct b.
