@@ -905,7 +905,63 @@ Section with_model.
       }
     Qed.
 
+    Definition is_nary_total_function
+      (f : Pattern)
+      (ds : list (propset.propset (Domain M)))
+      (c : propset.propset (Domain M))
+      (ρ : @Valuation _ M)
+      :=
+      ∀ (m₁s : list (Domain M)),
+        Forall2
+          (fun (mi : Domain M) (di : propset.propset (Domain M)) => mi ∈ di)
+          m₁s ds ->
+        ∃ (m₂ : Domain M),
+          m₂ ∈ c /\
+          (fold_left (fun x y => app_ext x {[y]}) m₁s (eval ρ f)) = {[ m₂ ]}
+    .
 
+    Lemma is_1ary_total_function_iff_is_total_function
+      (f : Pattern)
+      (d : propset.propset (Domain M))
+      (c : propset.propset (Domain M))
+      (ρ : @Valuation _ M)
+      :
+      is_nary_total_function f [d] c ρ
+      <->
+      is_total_function f d c ρ
+    .
+    Proof.
+      unfold is_nary_total_function,is_total_function.
+      split; intros H.
+      {
+        intros m₁ Hm₁d.
+        specialize (H [m₁]).
+        feed specialize H.
+        {
+          constructor.
+          { exact Hm₁d. }
+          { constructor. }
+        }
+        destruct H as [m₂ [H1 H2] ].
+        exists m₂.
+        split;[exact H1|].
+        clear H1.
+        cbn in H2.
+        exact H2.
+      }
+      {
+        intros m₁s Hm₁s.
+        inversion Hm₁s as [|m₁ m₁s']. subst.
+        specialize (H m₁ ltac:(assumption)).
+        destruct H as [m₂ [H2 H3] ].
+        inversion H1. subst.
+        exists m₂.
+        split;[exact H2|].
+        cbn.
+        exact H3.
+      }
+    Qed.
+        
   End with_model.
 
 

@@ -1020,3 +1020,10 @@ Proof.
     (g := fun wp => (match proj1_sig wp with patt_free_evar x => Some x | _ => None end) ).
   intros x. reflexivity.
 Defined.
+
+Definition patt_app_iter {Σ : Signature} (p : Pattern) (l : list Pattern) : Pattern
+:= fold_left (fun b p' => patt_app b p') l p.
+
+Lemma patt_app_iter_2_eq {Σ : Signature} (p q r : Pattern) :
+  patt_app_iter p [q;r] = patt_app (patt_app p q) r.
+Proof. simpl. reflexivity. Qed.
