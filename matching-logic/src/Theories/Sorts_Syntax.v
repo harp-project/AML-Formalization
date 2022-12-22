@@ -143,6 +143,28 @@ Section sorts.
             ((nest_ex (nest_ex f) $ b1) =ml (nest_ex (nest_ex f) $ b0))
              ---> (b1 =ml b0))).
 
+
+  Definition patt_nary_total_function
+  (phi : Pattern) (from : list Pattern) (to : Pattern) : Pattern
+  := let n := length from in
+     foldr
+      (fun b p' => all b, p') (* all x1, ..., all xn,  *)
+      (ex (Nat.iter n nest_ex to), (* ex to, *)
+          (patt_app_iter
+            (Nat.iter (S n) nest_ex phi)
+            (reverse (map patt_bound_evar (seq 1 n)))
+          ) =ml b0
+      )
+      from
+  .
+
+  Lemma ex_pntf1 (f s1 s2 sr : Pattern) :
+    patt_nary_total_function f [s1; s2] sr
+    = (all s1, (all s2, (ex (nest_ex (nest_ex sr)), (((nest_ex (nest_ex (nest_ex f)) $ b2) $ b1) =ml b0) ))).
+  Proof.
+    cbn. reflexivity.
+  Qed.
+
 End sorts.
 
 Module Notations.
