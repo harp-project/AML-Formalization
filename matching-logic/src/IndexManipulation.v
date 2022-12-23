@@ -152,6 +152,27 @@ Section index_manipulation.
       rewrite -> IHφ; auto.
   Qed.
 
+  Lemma nest_ex_gt' : forall φ dbi dbi2 ψ, dbi2 >= dbi -> well_formed_closed ψ ->
+    (nest_ex_aux dbi 1 φ)^[evar: (S dbi2) ↦ ψ] = nest_ex_aux dbi 1 (φ^[evar: dbi2 ↦ ψ]).
+  Proof.
+    intros.
+    replace (S dbi2) with (dbi2 + 1) by lia.
+    rewrite nest_ex_gt.
+    { exact H. }
+    { exact H0. }
+    reflexivity.
+  Qed.
+
+  Lemma nest_mu_gt' : forall φ dbi dbi2 ψ, dbi2 >= dbi -> well_formed_closed ψ ->
+    (nest_mu_aux dbi 1 φ)^[svar: (S dbi2) ↦ ψ] = nest_mu_aux dbi 1 (φ^[svar: dbi2 ↦ ψ]).
+  Proof.
+    intros.
+    replace (S dbi2) with (dbi2 + 1) by lia.
+    rewrite nest_mu_gt.
+    { exact H. }
+    { exact H0. }
+    reflexivity.
+  Qed.
 
 (** NESTING AND QUANTIFICATION **)
 
