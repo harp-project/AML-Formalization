@@ -125,6 +125,8 @@ Proof.
   intro.
   toMLGoal. wf_auto2.
   mlIntroAll (fresh_evar ϕ).
+  rewrite bevar_subst_not_occur. 2: wf_auto2.
+  mlIntro "A". mlSplitAnd; mlAssumption.
 Qed.
 
 (* Iterated congruence lemma proved without induction *)
