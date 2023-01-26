@@ -200,6 +200,22 @@ Proof.
   by fromMLGoal.
 Qed.
 
+Local Example forall_revert_3 {Σ : Signature} Γ ϕ ψ ξ:
+  well_formed ξ -> well_formed ϕ -> well_formed (ex, ψ) ->
+  Γ ⊢ (ξ ---> ϕ ---> all, ψ) ->
+  Γ ⊢ all, ξ ---> ϕ ---> ψ.
+Proof.
+  intros.
+  remember (fresh_evar (ξ $ ψ $ ϕ)) as x.
+  toMLGoal. wf_auto2.
+  mlIntroAll x.
+  do 2 mlIntro. mlRevertAll x.
+  fold (evar_open x 0 ψ).
+  rewrite evar_quantify_evar_open. 2: subst x; solve_fresh.
+  2: wf_auto2.
+  by fromMLGoal.
+Qed.
+
 
 (* Iterated congruence lemma proved without induction *)
 Lemma prf_equiv_congruence_iter_no_ind {Σ : Signature} (Γ : Theory) (p q : Pattern) (C : PatternCtx) l
