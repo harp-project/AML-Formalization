@@ -115,14 +115,14 @@ Qed.
 Tactic Notation "mlIntroAll" constr(x) :=
 _ensureProofMode;
 apply (MLGoal_forallIntro _ _ _ x);
-[   try subst x; try solve_fresh
-  | try subst x; try solve_fresh
+[   try subst x; try solve_fresh; try solve_free_evars_inclusion 10
+  | try subst x; try solve_fresh; try solve_free_evars_inclusion 10
   | try subst x; try_solve_pile
   | unfold evar_open; mlSimpl; repeat rewrite bevar_subst_not_occur by wf_auto2
 ].
 
 
-Local Example Forall_test {Σ : Signature} Γ ϕ:
+Local Example forall_test_1 {Σ : Signature} Γ ϕ:
   well_formed ϕ ->
   Γ ⊢ all , (ϕ ---> ϕ and ϕ).
 Proof.
@@ -130,6 +130,19 @@ Proof.
   toMLGoal. wf_auto2.
   mlIntroAll (fresh_evar ϕ).
   mlIntro "A". mlSplitAnd; mlAssumption.
+Qed.
+
+Local Example forall_test_2 {Σ : Signature} Γ ϕ ψ x:
+  well_formed ϕ -> well_formed (ex, ψ) ->
+  x ∉ free_evars ϕ ->
+  x ∉ free_evars ψ ->
+  Γ ⊢ ϕ ---> ψ^{evar:0 ↦ x} ->
+  Γ ⊢ (ϕ ---> all, ψ).
+Proof.
+  intros.
+  toMLGoal. wf_auto2.
+  mlIntro. mlIntroAll x.
+  by fromMLGoal.
 Qed.
 
 Lemma revert_forall_iter {Σ : Signature} (Γ : Theory) :
@@ -170,7 +183,7 @@ Tactic Notation "mlRevertAll" constr(x) :=
   _ensureProofMode;
   apply (MLGoal_revertAll _ _ _ x);[try_solve_pile|].
 
-Local Example forall_revert_1 {Σ : Signature} Γ ϕ ψ x:
+Local Example revert_test {Σ : Signature} Γ ϕ ψ x:
   well_formed ϕ -> well_formed (ex, ψ) ->
   x ∉ free_evars ϕ ->
   x ∉ free_evars ψ ->
@@ -184,7 +197,7 @@ Proof.
   by fromMLGoal.
 Qed.
 
-Local Example forall_revert_2 {Σ : Signature} Γ ϕ ψ:
+Local Example forall_revert_test_1 {Σ : Signature} Γ ϕ ψ:
   well_formed ϕ -> well_formed (ex, ψ) ->
   Γ ⊢ (ϕ ---> all, ψ) ->
   Γ ⊢ all, ϕ ---> ψ.
@@ -200,7 +213,7 @@ Proof.
   by fromMLGoal.
 Qed.
 
-Local Example forall_revert_3 {Σ : Signature} Γ ϕ ψ ξ:
+Local Example forall_revert_test_2 {Σ : Signature} Γ ϕ ψ ξ:
   well_formed ξ -> well_formed ϕ -> well_formed (ex, ψ) ->
   Γ ⊢ (ξ ---> ϕ ---> all, ψ) ->
   Γ ⊢ all, ξ ---> ϕ ---> ψ.
