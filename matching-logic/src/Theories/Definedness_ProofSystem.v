@@ -4225,7 +4225,7 @@ Tactic Notation "mlSpec" constr(name') :=
 
 Goal forall (Σ : Signature) (syntax : Syntax) Γ φ t, 
   theory ⊆ Γ -> mu_free φ -> well_formed t -> well_formed (ex , φ) ->
-  Γ ⊢i all , φ ---> (ex , t =ml b0) ---> φ^[evar: 0 ↦ t] using AnyReasoning.
+  Γ ⊢i (all , φ) ---> (ex , t =ml b0) ---> φ^[evar: 0 ↦ t] using AnyReasoning.
 Proof.
   intros. toMLGoal. wf_auto2.
   mlIntro "mH". mlIntro "mH0".
