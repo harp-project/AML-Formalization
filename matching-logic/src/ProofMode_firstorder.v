@@ -903,3 +903,32 @@ Proof.
   1: wf_auto2.
   by fromMLGoal.
 Qed.
+
+Local Example destruct_or_f {Σ : Signature} Γ ϕ₁ ϕ₂ ψ:
+  well_formed (ex, ϕ₁) -> well_formed (ex, ϕ₂) -> well_formed (ex, ψ) ->
+  Γ ⊢ all, ϕ₁ ---> ψ -> Γ ⊢ all, ϕ₂ ---> ψ ->
+  Γ ⊢ all, ϕ₁ or ϕ₂ ---> ψ.
+Proof.
+  intros.
+  remember (fresh_evar (ψ $ ϕ₁ $ ϕ₂)) as x.
+  toMLGoal. wf_auto2.
+  mlIntroAll x.
+  mlIntro. mlDestructOr "0".
+  * mlRevertLast. mlRevertAll x. simpl.
+    fold (evar_open x 0 ψ).
+    rewrite evar_quantify_evar_open. 1: subst x; solve_fresh.
+    1: wf_auto2.
+    fold (evar_open x 0 ϕ₁).
+    rewrite evar_quantify_evar_open. 1: subst x; solve_fresh.
+    1: wf_auto2.
+    by fromMLGoal.
+  * mlAdd H3.
+    mlRevertLast. mlRevertAll x. simpl.
+    fold (evar_open x 0 ψ).
+    rewrite evar_quantify_evar_open. 1: subst x; solve_fresh.
+    1: wf_auto2.
+    fold (evar_open x 0 ϕ₁).
+    rewrite evar_quantify_evar_open. 1: subst x; solve_fresh.
+    1: wf_auto2.
+    mlAssumption.
+Qed.
