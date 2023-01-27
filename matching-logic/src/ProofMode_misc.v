@@ -2292,14 +2292,6 @@ Ltac simplify_emplace_2 star :=
   [|apply set_evar_fresh_is_fresh'];
   clear; simpl; set_solver. *)
 
-Ltac solve_fresh :=
-  (eapply not_elem_of_larger_impl_not_elem_of;
-  [|apply x_eq_fresh_impl_x_notin_free_evars; reflexivity];
-  simpl; clear; set_solver) +
-  by (unfold evar_is_fresh_in;
-  eapply evar_is_fresh_in_richer'; [|apply set_evar_fresh_is_fresh'];
-  clear; set_solver).
-
 Ltac rewrite_0_depths star :=
   unfold mu_in_evar_path; cbn;
   repeat rewrite (maximal_exists_depth_to_0 star);

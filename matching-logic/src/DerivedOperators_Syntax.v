@@ -358,8 +358,8 @@ Module Notations.
   Notation "a 'and' b" := (patt_and   a b) (at level 72, right associativity) : ml_scope.
   Notation "a <---> b" := (patt_iff a b) (at level 74, no associativity) : ml_scope.
   Notation "'Top'" := patt_top : ml_scope.
-  Notation "'all' , phi" := (patt_forall phi) (at level 70) : ml_scope.
-  Notation "'nu' , phi" := (patt_nu phi) (at level 70) : ml_scope.
+  Notation "'all' , phi" := (patt_forall phi) (at level 80) : ml_scope.
+  Notation "'nu' , phi" := (patt_nu phi) (at level 80) : ml_scope.
 
 End Notations.
 

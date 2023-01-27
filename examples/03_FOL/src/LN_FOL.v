@@ -1406,7 +1406,7 @@ Section FOL_ML_correspondence.
                   auto; try lia.
               all: eapply well_formed_closed_ex_aux_ind; try eassumption; lia.
         }
-        assert (from_FOL_theory Γ ⊢_ML (all , A and ex , patt_equal (convert_term h) BoundVarSugar.b0 ) ). {
+        assert (from_FOL_theory Γ ⊢_ML ((all , A) and ex , patt_equal (convert_term h) BoundVarSugar.b0 ) ). {
           apply conj_intro_meta; auto.
           unfold well_formed. simpl. rewrite positive_term_FOL_ML.
           unfold well_formed_closed. simpl. apply wf_increase_term with (n' := 1) in E2. 2: lia.
