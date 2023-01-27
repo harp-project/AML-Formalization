@@ -127,7 +127,7 @@ Proof.
   eapply MP.
   2: { eapply useGenericReasoning with (i' := (ExGen := {[x]}, SVSubst := ∅, KT := false)).
     { try_solve_pile. }
-    apply forall_variable_substitution with (x := x).
+    gapply forall_variable_substitution. try_solve_pile.
     wf_auto2.
   }
   eapply useGenericReasoning.

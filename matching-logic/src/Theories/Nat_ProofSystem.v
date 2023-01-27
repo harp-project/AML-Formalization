@@ -296,7 +296,6 @@ Section nat.
         2: { apply set_evar_fresh_is_fresh'. }
         clear. set_solver.
       }
-      2: { apply pile_any. }
       unfold evar_open in S. mlSimpl in S. simpl in S.
       mlAdd S as "S". clear S.
       mlApplyMeta and_impl' in "S".
