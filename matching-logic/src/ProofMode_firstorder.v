@@ -142,17 +142,15 @@ Section with_signature.
 
   (*
    Γ ⊢ (∀x. φ) → φ
+   DO NOT use quantification here instead of opening
   *)
   Lemma forall_variable_substitution Γ ϕ x:
-    well_formed ϕ ->
-    Γ ⊢i (all, ϕ) ---> ϕ using BasicReasoning.
+    well_formed (ex, ϕ) ->
+    Γ ⊢i (all, ϕ) ---> ϕ^{evar:0 ↦ x} using BasicReasoning.
   Proof.
     intros wfϕ.
 
     unfold patt_forall.
-    replace (! ϕ^{{evar: x ↦ 0}})
-      with ((! ϕ)^{{evar: x ↦ 0}})
-      by reflexivity.
     apply double_neg_elim_meta.
     { wf_auto2. }
     { wf_auto2. }
@@ -163,16 +161,11 @@ Section with_signature.
     mlApply "0".
     mlIntro.
     mlApply "2".
-    pose proof (Htmp := Ex_quan Γ ((!ϕ)^{{evar: x ↦ 0}}) x).
+    pose proof (Htmp := Ex_quan Γ (!ϕ) x ltac:(wf_auto2)).
     rewrite /instantiate in Htmp.
-    rewrite bevar_subst_evar_quantify_free_evar in Htmp.
-    {
-      simpl. split_and!. now do 2 apply andb_true_iff in wfϕ as [_ wfϕ]. reflexivity.
-    }
-    specialize (Htmp ltac:(wf_auto2)).
     useBasicReasoning.
     mlAdd Htmp.
-    mlApply "3".
+    mlApply "3". mlSimpl.
     mlIntro.
     mlApply "1".
     mlExactn 4.
@@ -487,8 +480,8 @@ Section with_signature.
    instead of a concrete [using] clause.
   *)
   Lemma forall_variable_substitution' Γ ϕ x (i : ProofInfo):
-    well_formed ϕ ->
-    Γ ⊢i (all, ϕ^{{evar: x ↦ 0}}) ---> ϕ using i.
+    well_formed (ex, ϕ) ->
+    Γ ⊢i (all, ϕ) ---> ϕ^{evar:0 ↦ x} using i.
   Proof.
     intros wfϕ.
     pose proof (Htmp := forall_variable_substitution Γ ϕ x wfϕ).
@@ -502,19 +495,14 @@ Section with_signature.
   *)
   Lemma forall_elim Γ ϕ x (i : ProofInfo):
     well_formed (ex, ϕ) ->
-    evar_is_fresh_in x ϕ ->
     Γ ⊢i (all, ϕ) using i ->
     Γ ⊢i (ϕ^{evar: 0 ↦ x}) using i.
   Proof.
-    intros wfϕ frϕ H.
+    intros wfϕ H.
     destruct i.
     eapply MP.
     2: eapply forall_variable_substitution'.
     2: wf_auto2.
-    instantiate (1 := x).
-    rewrite evar_quantify_evar_open.
-      { apply frϕ. }
-      { wf_auto2. }
     apply H.
   Defined.
 
@@ -577,7 +565,6 @@ Section with_signature.
     }
     eapply forall_elim with (x := x) in H.
     2: wf_auto2.
-    2: { subst x. apply set_evar_fresh_is_fresh. }
     unfold evar_open in *. simpl in *. exact H.
   Defined.
 
@@ -725,10 +712,10 @@ Section with_signature.
     try_solve_pile.
     mlIntro "H".
     mlDestructAnd "H".
-    pose proof (forall_variable_substitution Γ (ϕ₁ ---> ϕ₂) x ltac:(wf_auto2)) as H0.
-    simpl in H0.
-    rewrite (evar_quantify_fresh _ _ ϕ₁) in H0.
-    by unfold evar_is_fresh_in.
+    pose proof (forall_variable_substitution Γ (ϕ₁ ---> ϕ₂^{{evar: x↦0}}) x ltac:(wf_auto2)) as H0.
+    cbn in H0. fold (evar_open x 0 ϕ₂^{{evar:x ↦ 0}}) in H0.
+    rewrite evar_open_evar_quantify in H0. wf_auto2.
+    rewrite bevar_subst_not_occur in H0. wf_auto2.
     mlRevertLast.
     mlApplyMeta H0. mlAssumption.
   Defined.
@@ -773,14 +760,13 @@ Section with_signature.
   Defined.
 
   (* NOTE: this is not too good with quantification in the concusion.
-           Opening would be better in the premise, but that does not work!
-           The drawback of this is that a quantification is applied in the 
-           conclusion, thus pattern matching with it will be harder. *)
+           Opening is better, when there is no condition about the
+           freshness of variables (i.e. Ex_gen is not used). *)
   Lemma specialize_forall (Γ : Theory) :
     forall (l₁ l₂ : list Pattern) (ϕ ψ : Pattern) x i,
-      well_formed ϕ -> well_formed ψ -> Pattern.wf l₁ -> Pattern.wf l₂ ->
-      Γ ⊢i foldr patt_imp ϕ (l₁ ++ ψ :: l₂) using i ->
-      Γ ⊢i foldr patt_imp ϕ (l₁ ++ (all, ψ^{{evar: x ↦ 0}}) :: l₂) using i.
+      well_formed ϕ -> well_formed (ex, ψ) -> Pattern.wf l₁ -> Pattern.wf l₂ ->
+      Γ ⊢i foldr patt_imp ϕ (l₁ ++ ψ^{evar:0 ↦ x} :: l₂) using i ->
+      Γ ⊢i foldr patt_imp ϕ (l₁ ++ (all, ψ) :: l₂) using i.
   Proof.
     intros.
     eapply prf_strenghten_premise_iter_meta_meta. 7: eassumption.
@@ -790,25 +776,24 @@ Section with_signature.
   Defined.
 
   Lemma MLGoal_specializeAll Γ l₁ l₂ (g ψ : Pattern) x i name :
-    well_formed ψ -> (* unavoidable with quantification, but could be avoided with opening (see comment above) *)
-    mkMLGoal _ Γ (l₁ ++ (mkNH _ name ψ) :: l₂) g i ->
-    mkMLGoal _ Γ (l₁ ++ (mkNH _ name (all, ψ^{{evar:x ↦ 0}})) :: l₂) g i.
+    mkMLGoal _ Γ (l₁ ++ (mkNH _ name (ψ^{evar:0 ↦ x})) :: l₂) g i ->
+    mkMLGoal _ Γ (l₁ ++ (mkNH _ name (all, ψ)) :: l₂) g i.
   Proof.
-    unfold of_MLGoal in *. simpl in *. intros Hψ H Hwf1 Hwfl.
+    unfold of_MLGoal in *. simpl in *. intros H Hwf Hwfl.
     unfold patterns_of in *. rewrite map_app. rewrite map_app in Hwfl.
     simpl in *.
-    apply (specialize_forall Γ).
+    eapply (specialize_forall Γ _ _ _ _ x).
     1-4: wf_auto2.
-    rewrite map_app in H.
+    rewrite map_app in H. simpl in H.
     apply H; wf_auto2.
   Defined.
 
-  (* But this is more efficient in proof term size, than the version below based on specialize: *)
+  (* This is more efficient in proof term size, than the version below based on specialize: *)
   Lemma revert_forall_iter (Γ : Theory) :
     forall (l : list Pattern) (ϕ : Pattern) x,
     Pattern.wf l ->
-    well_formed ϕ ->
-    Γ ⊢i foldr patt_imp (all , ϕ^{{evar: x ↦ 0}}) l ---> foldr patt_imp ϕ l
+    well_formed (ex, ϕ) ->
+    Γ ⊢i foldr patt_imp (all , ϕ) l ---> foldr patt_imp ϕ^{evar: 0 ↦ x} l
       using BasicReasoning.
   Proof.
     intros l ϕ x Wfl Wfϕ. apply prf_weaken_conclusion_iter_meta. 1-3: wf_auto2.
@@ -818,22 +803,26 @@ Section with_signature.
   Lemma revert_forall_iter_meta (Γ : Theory) :
     forall (l : list Pattern) (ϕ : Pattern) x i,
     Pattern.wf l ->
-    well_formed ϕ ->
-    Γ ⊢i foldr patt_imp (all , ϕ^{{evar: x ↦ 0}}) l using i ->
-    Γ ⊢i foldr patt_imp ϕ l using i.
+    well_formed (ex, ϕ) ->
+    Γ ⊢i foldr patt_imp (all , ϕ) l using i ->
+    Γ ⊢i foldr patt_imp (ϕ^{evar: 0 ↦ x}) l using i.
   Proof.
     intros l ϕ x i Wfl Wfϕ H.
     eapply MP. 2: gapply revert_forall_iter. 3-4: wf_auto2. 2: try_solve_pile.
     exact H.
   Defined.
 
+  (* Here, we change opening in the conclusion to quantification in the premise
+     to simplify pattern matching for the tactic *)
   Lemma MLGoal_revertAll Γ l g (x : evar) i :
     mkMLGoal _ Γ l (all, g^{{evar:x ↦ 0}}) i ->
     mkMLGoal _ Γ l g i.
   Proof.
     unfold of_MLGoal in *. simpl in *. intros H Hwf1 Hwfl.
-    apply (revert_forall_iter_meta Γ _ _ x). 1-2: wf_auto2.
-    apply H; wf_auto2.
+    specialize (H ltac:(wf_auto2) ltac:(wf_auto2)).
+    apply revert_forall_iter_meta with (x := x) in H. 2-3: wf_auto2.
+    rewrite evar_open_evar_quantify in H. wf_auto2.
+    assumption.
   Defined.
 
   Lemma ex_quan_iter (Γ : Theory) :
@@ -1001,11 +990,11 @@ Proof.
     mlAssumption.
 Qed.
 
-
 Tactic Notation "mlSpecialize" constr(name') "with" constr(var) :=
 _ensureProofMode;
 _mlReshapeHypsByName name';
-apply MLGoal_specializeAll;[wf_auto2|_mlReshapeHypsBack].
+apply (MLGoal_specializeAll _ _ _ _ _ var);
+_mlReshapeHypsBack.
 
 (* revert is a corollary of specialize: *)
 Local Lemma Private_revert_forall_iter {Σ : Signature} (Γ : Theory) :
@@ -1018,6 +1007,7 @@ Proof.
   intros l ϕ x Wfl Wfϕ. apply prf_weaken_conclusion_iter_meta. 1-3: wf_auto2.
   mlIntro "H".
   mlSpecialize "H" with x.
+  rewrite evar_open_evar_quantify. wf_auto2.
   mlAssumption.
 Qed.
 
@@ -1026,24 +1016,16 @@ _ensureProofMode;
 apply (MLGoal_exists _ _ _ var);
 try (rewrite evar_open_evar_quantify;[by wf_auto2|]).
 
-Local Lemma exists_test_1 {Σ : Signature} Γ ϕ x :
-  well_formed ϕ ->
-  Γ ⊢ (all, ϕ^{{evar: x ↦ 0}}) ---> (ex, ϕ^{{evar: x ↦ 0}}).
-  (* This would not hold: Γ ⊢ (all, ϕ) ---> (ex, ϕ) because of the
-  clash of quantification and opening! *)
+Local Lemma exists_test_1 {Σ : Signature} Γ ϕ :
+  well_formed (ex, ϕ) ->
+  Γ ⊢ (all, ϕ) ---> (ex, ϕ).
 Proof.
-  intro WF.
-  mlIntro "H".
-  (* we can prove this with x *)
-  mlSpecialize "H" with x.
-  mlExists x. mlAssumption.
-Restart.
   intro WF.
   mlIntro "H".
   remember (fresh_evar patt_bott) as y.
   (* we can prove this with a y which is not necessarily equal to x too, but it is tricky. *)
-  Search evar_quantify.
   mlSpecialize "H" with y.
   mlExists y.
+  mlAssumption.
 Qed.
 
