@@ -2006,7 +2006,7 @@ Proof.
   * rewrite IHφ. set_solver. reflexivity.
 Qed.
 
-Definition free_evars_of_list {Σ : Signature} l := foldr (λ x0 acc, free_evars x0 ∪ acc) ∅ l.
+(* Definition free_evars_of_list {Σ : Signature} l := foldr (λ x0 acc, free_evars x0 ∪ acc) ∅ l. *)
 
 Lemma fresh_foldr_is_context {Σ : Signature} l C p:
   pcEvar C ∉ free_evars_of_list l ->

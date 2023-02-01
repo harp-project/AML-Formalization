@@ -925,6 +925,163 @@ Proof.
   exact H.
 Defined.
 
+(* NOTE: this should hold, but because of the proof system being in Set, 
+it is not straightforward to prove. *)
+Lemma reorder_iter_perm {Σ : Signature} Γ ϕ l₁ l₂:
+  well_formed ϕ -> Pattern.wf l₁ -> Pattern.wf l₂ ->
+  l₁ ⊆ l₂ ->
+  Γ ⊢i foldr patt_imp ϕ l₁ ---> foldr patt_imp ϕ l₂ using BasicReasoning.
+Proof.
+  move: l₂.
+  remember (length l₁) as l.
+  assert (H: length l₁ <= l) by lia. clear Heql. move: l₁ ϕ H.
+  induction l; intros l₁ ϕ Hl l₂ Hwf1 Hwf2 Hwf3 Hs.
+  * destruct l₁. 2: simpl in Hl; lia.
+    apply nested_const; wf_auto2.
+  * destruct l₁ as [| a l₁].
+    1: apply nested_const; wf_auto2.
+    remember (list_difference l₂ [a]) as l₂'.
+    remember (list_difference l₁ [a]) as l₁'.
+Abort.
+
+Lemma reorder_head_to_middle {Σ : Signature} (Γ : Theory) :
+  ∀ (l1 l2 : list Pattern) (g x : Pattern) ,
+    Pattern.wf l1 -> Pattern.wf l2 → well_formed g → well_formed x →
+    Γ ⊢i foldr patt_imp g (l1 ++ x :: l2) --->  foldr patt_imp g (x :: l1 ++ l2)
+      using BasicReasoning.
+Proof.
+  induction l1; intros l2 g x Hwf1 Hwf2 Hwfg Hwfx; simpl.
+  * apply A_impl_A. wf_auto2.
+  * specialize (IHl1 l2 g x ltac:(wf_auto2) Hwf2 Hwfg Hwfx).
+    eapply prf_weaken_conclusion_meta_meta.
+    4: apply reorder. 1-6: wf_auto2.
+    simpl in IHl1.
+    eapply prf_weaken_conclusion_meta. 1-3: wf_auto2.
+    assumption.
+Defined.
+
+Lemma reorder_head_to_middle_meta {Σ : Signature} (Γ : Theory) i :
+  ∀ (l1 l2 : list Pattern) (g x : Pattern) ,
+    Pattern.wf l1 -> Pattern.wf l2 → well_formed g → well_formed x →
+    Γ ⊢i foldr patt_imp g (l1 ++ x :: l2) using i ->
+    Γ ⊢i foldr patt_imp g (x :: l1 ++ l2) using i.
+Proof.
+  intros l1 l2 g x Wf1 Wf2 Wf3 Wf4 H.
+  eapply MP. 2: gapply reorder_head_to_middle.
+  assumption.
+  try_solve_pile.
+  all: wf_auto2.
+Defined.
+
+Lemma reorder_middle_to_head {Σ : Signature} (Γ : Theory) :
+  ∀ (l1 l2 : list Pattern) (g x : Pattern) ,
+    Pattern.wf l1 -> Pattern.wf l2 → well_formed g → well_formed x →
+    Γ ⊢i foldr patt_imp g (x :: l1 ++ l2) ---> foldr patt_imp g (l1 ++ x::l2)
+      using BasicReasoning.
+Proof.
+  induction l1; intros l2 g x Hwf1 Hwf2 Hwfg Hwfx; simpl.
+  * apply A_impl_A. wf_auto2.
+  * specialize (IHl1 l2 g x ltac:(wf_auto2) Hwf2 Hwfg Hwfx).
+    eapply prf_strenghten_premise_meta_meta.
+    4: apply reorder. 1-6: wf_auto2.
+    simpl in IHl1.
+    eapply prf_weaken_conclusion_meta. 1-3: wf_auto2.
+    assumption.
+Defined.
+
+Corollary reorder_middle_to_head_meta {Σ : Signature} (Γ : Theory) i :
+  ∀ (l1 l2 : list Pattern) (g x : Pattern) ,
+    Pattern.wf l1 -> Pattern.wf l2 → well_formed g → well_formed x →
+    Γ ⊢i foldr patt_imp g (x :: l1 ++ l2) using i ->
+    Γ ⊢i foldr patt_imp g (l1 ++ x::l2) using i.
+Proof.
+  intros l1 l2 g x Wf1 Wf2 Wf3 Wf4 H.
+  eapply MP. 2: gapply reorder_middle_to_head.
+  assumption.
+  try_solve_pile.
+  all: wf_auto2.
+Defined.
+
+Corollary reorder_last_to_middle {Σ : Signature} (Γ : Theory) :
+  ∀ (l1 l2 : list Pattern) (g x : Pattern) ,
+    Pattern.wf l1 -> Pattern.wf l2 → well_formed g → well_formed x →
+    Γ ⊢i foldr patt_imp g (l1 ++ x::l2) ---> foldr patt_imp g (l1 ++ l2 ++ [x])
+      using BasicReasoning.
+Proof.
+  intros l1 l2 g x Hwf1 Hwf2 Hwfg Hwfx.
+  eapply prf_weaken_conclusion_meta_meta.
+  5: apply reorder_head_to_middle. 1-3, 5-8: wf_auto2.
+  pose proof (H := reorder_middle_to_head Γ (l1 ++ l2) [] g x); simpl in H.
+  rewrite app_nil_r -app_assoc in H.
+  simpl. apply H. all: wf_auto2.
+Defined.
+
+Corollary reorder_last_to_middle_meta {Σ : Signature} (Γ : Theory) i :
+  ∀ (l1 l2 : list Pattern) (g x : Pattern) ,
+    Pattern.wf l1 -> Pattern.wf l2 → well_formed g → well_formed x →
+    Γ ⊢i foldr patt_imp g (l1 ++ x::l2) using i ->
+    Γ ⊢i foldr patt_imp g (l1 ++ l2 ++ [x]) using i.
+Proof.
+  intros l1 l2 g x Wf1 Wf2 Wf3 Wf4 H.
+  eapply MP. 2: gapply reorder_last_to_middle.
+  assumption.
+  try_solve_pile.
+  all: wf_auto2.
+Defined.
+
+Corollary reorder_middle_to_last {Σ : Signature} (Γ : Theory) :
+  ∀ (l1 l2 : list Pattern) (g x : Pattern) ,
+    Pattern.wf l1 -> Pattern.wf l2 → well_formed g → well_formed x →
+    Γ ⊢i foldr patt_imp g (l1 ++ l2 ++ [x]) ---> foldr patt_imp g (l1 ++ x::l2)
+      using BasicReasoning.
+Proof.
+  intros l1 l2 g x Hwf1 Hwf2 Hwfg Hwfx.
+  eapply prf_strenghten_premise_meta_meta.
+  5: apply reorder_middle_to_head. 1-3, 5-8: wf_auto2.
+  pose proof (H := reorder_head_to_middle Γ (l1 ++ l2) [] g x); simpl in H.
+  rewrite app_nil_r -app_assoc in H.
+  simpl. apply H. all: wf_auto2.
+Defined.
+
+Corollary reorder_middle_to_last_meta {Σ : Signature} (Γ : Theory) i :
+  ∀ (l1 l2 : list Pattern) (g x : Pattern) ,
+    Pattern.wf l1 -> Pattern.wf l2 → well_formed g → well_formed x →
+    Γ ⊢i foldr patt_imp g (l1 ++ l2 ++ [x]) using i ->
+    Γ ⊢i foldr patt_imp g (l1 ++ x::l2) using i.
+Proof.
+  intros l1 l2 g x Wf1 Wf2 Wf3 Wf4 H.
+  eapply MP. 2: gapply reorder_middle_to_last.
+  assumption.
+  try_solve_pile.
+  all: wf_auto2.
+Defined.
+
+Corollary reorder_head_to_last {Σ : Signature} (Γ : Theory) :
+  ∀ (l : list Pattern) (g x : Pattern) ,
+    Pattern.wf l → well_formed g → well_formed x →
+    Γ ⊢i foldr patt_imp g (l ++ [x]) --->  foldr patt_imp g (x :: l)
+      using BasicReasoning.
+Proof.
+  intros l g x Hwf Hwf2 Hwf3.
+  apply (reorder_middle_to_last Γ [] l g x).
+  all: wf_auto2.
+Defined.
+
+Corollary reorder_head_to_last_meta {Σ : Signature} (Γ : Theory) :
+  forall (l : list Pattern) (g x : Pattern) i,
+  Pattern.wf l → well_formed g → well_formed x
+  → Γ ⊢i foldr patt_imp g (l ++ [x]) using i
+  → Γ ⊢i foldr patt_imp g (x :: l) using i.
+Proof.
+  intros l g x i Wfl Wfg Wfx H. eapply MP.
+  2: {
+    pose proof (reorder_head_to_last Γ l g x) as H0.
+    feed specialize H0. 1-3: wf_auto2.
+    use i in H0. exact H0. 
+  }
+  exact H.
+Defined.
+
 Lemma A_impl_not_not_B_meta {Σ : Signature} Γ A B (i : ProofInfo) :
   well_formed A ->
   well_formed B ->
