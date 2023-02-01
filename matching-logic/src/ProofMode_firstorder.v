@@ -171,6 +171,16 @@ Section with_signature.
     mlExactn 4.
   Defined.
 
+  Lemma forall_variable_substitution_meta Γ ϕ x i:
+    well_formed (ex, ϕ) ->
+    Γ ⊢i (all, ϕ) using i -> Γ ⊢i ϕ^{evar:0 ↦ x} using i.
+  Proof.
+    intros WF H. eapply MP.
+    2: gapply forall_variable_substitution.
+    assumption.
+    try_solve_pile.
+    wf_auto2.
+  Defined.
 
   (*
     Γ ⊢ φ₁ → φ₂

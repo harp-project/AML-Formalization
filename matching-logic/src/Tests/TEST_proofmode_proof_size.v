@@ -206,7 +206,10 @@ Lemma ex2_pm3 {Σ : Signature} (A B C D : Pattern) (Γ : Theory) :
 Proof.
   intros Hwf H.
   remember (patt_free_evar (fresh_evar (A $ B $ C $ D))) as x.
-  pose proof (prf_equiv_congruence_iter_no_ind Γ (B $ C) D {|pcPattern := A $ x; pcEvar := (fresh_evar (A $ B $ C $ D))|} [A] ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(solve_fresh) AnyReasoning ltac:(try_solve_pile) ltac:(wf_auto2) H).
+  epose proof (prf_equiv_congruence_iter_no_ind Γ (B $ C) D {|pcPattern := A $ x; pcEvar := (fresh_evar (A $ B $ C $ D))|} [A] ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) _ AnyReasoning ltac:(try_solve_pile) ltac:(wf_auto2) H).
+  Unshelve. 2: {
+    simpl. unfold free_evars_of_list. solve_fresh.
+  }
   subst x.
   cbn in H0. destruct decide. 2: congruence.
   do 2 rewrite free_evar_subst_no_occurrence in H0. 2-4: solve_fresh.
@@ -276,7 +279,11 @@ Lemma ex3_pm3 {Σ : Signature} (A B C D : Pattern) (Γ : Theory) :
 Proof.
   intros Hwf H.
   remember (patt_free_evar (fresh_evar (A $ B $ C $ D))) as x.
-  pose proof (prf_equiv_congruence_iter_no_ind Γ (B $ C) D {|pcPattern := A $ x ---> A $ D; pcEvar := (fresh_evar (A $ B $ C $ D))|} [A] ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(solve_fresh) AnyReasoning ltac:(try_solve_pile) ltac:(wf_auto2) H).
+  epose proof (prf_equiv_congruence_iter_no_ind Γ (B $ C) D {|pcPattern := A $ x ---> A $ D; pcEvar := (fresh_evar (A $ B $ C $ D))|} [A] ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) _ AnyReasoning ltac:(try_solve_pile) ltac:(wf_auto2) H).
+  Unshelve.
+  2: {
+    simpl. unfold free_evars_of_list. solve_fresh.
+  }
   subst x.
   cbn in H0. destruct decide. 2: congruence.
   do 4 rewrite free_evar_subst_no_occurrence in H0. 2-16: solve_fresh.

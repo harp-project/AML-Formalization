@@ -628,7 +628,7 @@ Ltac unify_free_evar_conditions :=
 Ltac simplify_map_app_union :=
   match goal with
   | |- context C [map _ (_ ++ _)] => rewrite map_app
-  | [H : context C [map _ (_ ++ _)] |- _] => idtac 5; rewrite map_app in H
+  | [H : context C [map _ (_ ++ _)] |- _] => rewrite map_app in H
   | |- context C [union_list (_ ++ _)] => rewrite union_list_app
   | [H : context C [union_list (_ ++ _)] |- _] => rewrite union_list_app in H
   end.

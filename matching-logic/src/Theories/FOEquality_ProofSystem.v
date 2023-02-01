@@ -119,7 +119,8 @@ Proof.
   { wf_auto2. }
   { apply pile_any. }
 
-  apply membership_elimination.
+  apply membership_elimination with (x := fresh_evar (g ---> ψ)).
+  { solve_fresh. }
   { apply pile_any. }
   { wf_auto2. }
   { set_solver. }
