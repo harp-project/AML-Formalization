@@ -1070,5 +1070,3 @@ Proof.
   mlExists x.
   mlAssumption.
 Qed.
-
-
