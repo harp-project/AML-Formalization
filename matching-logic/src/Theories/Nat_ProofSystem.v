@@ -167,7 +167,8 @@ Section nat.
     }
     { (* Inductive case *)
       fromMLGoal.
-      apply membership_elimination.
+      apply membership_elimination with (x := ev_x).
+      { solve_free_evars 1. }
       { apply pile_any. }
       { wf_auto2. }
       { unfold theory. set_solver. }
@@ -272,7 +273,10 @@ Section nat.
             clear. set_solver.
           }
           2: wf_auto2.
-          mlApplyMeta forall_variable_substitution in "H". unfold evar_open. mlSimpl. simpl.
+          mlApplyMeta forall_variable_substitution in "H".
+          2-10: case_match;[wf_auto2|congruence].
+          unfold evar_open. mlSimpl. simpl.
+          case_match. 2: congruence.
           mlApply "H". mlClear "H". mlClear "H0".
           unfold patt_in.
           fromMLGoal.
@@ -282,7 +286,7 @@ Section nat.
           mlDestructAnd "yX" as "y" "X".
           mlSplitAnd.
           * mlExact "y".
-          * mlAdd XN as "H". mlApply "H". mlExact "X".
+          * mlAdd XN as "H". mlApply "H". mlExact "X". 
         + mlExact "H0".
       }
       mlClear "M".
@@ -291,11 +295,6 @@ Section nat.
 
       apply forall_elim with (x := y) in S.
       2: { wf_auto2. }
-      2: {
-        subst y. eapply evar_is_fresh_in_richer'.
-        2: { apply set_evar_fresh_is_fresh'. }
-        clear. set_solver.
-      }
       unfold evar_open in S. mlSimpl in S. simpl in S.
       mlAdd S as "S". clear S.
       mlApplyMeta and_impl' in "S".

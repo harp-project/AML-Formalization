@@ -140,8 +140,16 @@ Fixpoint size' (p : Pattern) : nat :=
     | patt_mu phi => free_svars phi
     end.
 
+  Definition free_evars_of_list l : EVarSet :=
+    union_list (map free_evars l).
 
-
+  Lemma free_evars_of_list_foldr :
+    forall l g,
+      free_evars (foldr patt_imp g l) =
+      free_evars g ∪ free_evars_of_list l.
+  Proof.
+    induction l; intro g; set_solver.
+  Qed.
 
   (* for bound set variables *)
   Fixpoint no_negative_occurrence_db_b (dbi : db_index) (ϕ : Pattern) : bool :=

@@ -72,7 +72,7 @@ Example ex_mlApplyMetaGeneralized  {Σ : Signature} Γ a b c d e f:
   well_formed e ->
   well_formed f ->
   Γ ⊢ a ---> b ---> c ---> d ---> e ---> f ->
-  Γ ⊢ (a and b and c and d and e) ---> f.
+  Γ ⊢ (a and (b and (c and (d and e)))) ---> f.
 Proof.
   intros wfa wfb wfc wfd wfe wff H.
   toMLGoal.
@@ -338,7 +338,7 @@ Example ex_mlApplyGeneralized  {Σ : Signature} Γ a b c d e f g:
   well_formed e ->
   well_formed f ->
   well_formed g ->
-  Γ ⊢ ((a and b and c and d and e) --->
+  Γ ⊢ ((a and (b and (c and (d and e)))) --->
        (a ---> b ---> c ---> d ---> e ---> f) --->
        (f ---> g) --->
        g).
@@ -2006,8 +2006,6 @@ Proof.
   * rewrite IHφ. set_solver. reflexivity.
 Qed.
 
-Definition free_evars_of_list {Σ : Signature} l := foldr (λ x0 acc, free_evars x0 ∪ acc) ∅ l.
-
 Lemma fresh_foldr_is_context {Σ : Signature} l C p:
   pcEvar C ∉ free_evars_of_list l ->
   foldr patt_imp (emplace C p) l =
@@ -2022,8 +2020,8 @@ Proof.
   {
     simpl in Hin.
     rewrite free_evar_subst_no_occurrence.
-    * simpl in Hin. set_solver.
-    * f_equal. apply IHl. set_solver.
+    * simpl in Hin. solve_free_evars 5.
+    * f_equal. apply IHl. solve_free_evars 5.
   }
 Qed.
 
@@ -2036,8 +2034,8 @@ Lemma maximal_exists_depth_foldr_notin {Σ : Signature} l ψ x edepth:
 Proof.
   induction l; simpl; intros Hin.
   * reflexivity.
-  * assert (x ∉ free_evars a) as Ha by set_solver.
-    assert (x ∉ free_evars_of_list l) as HIND by set_solver.
+  * assert (x ∉ free_evars a) as Ha by solve_free_evars 1.
+    assert (x ∉ free_evars_of_list l) as HIND by solve_free_evars 1.
     apply IHl in HIND. rewrite HIND.
     rewrite maximal_exists_depth_to_0; auto.
 Qed.
@@ -2049,8 +2047,8 @@ Lemma maximal_mu_depth_foldr_notin {Σ : Signature} l ψ x edepth:
 Proof.
   induction l; simpl; intros Hin.
   * reflexivity.
-  * assert (x ∉ free_evars a) as Ha by set_solver.
-    assert (x ∉ foldr (λ (x : Pattern) (acc : EVarSet), free_evars x ∪ acc) ∅ l) as HIND by set_solver.
+  * assert (x ∉ free_evars a) as Ha by solve_free_evars 1.
+    assert (x ∉ free_evars_of_list l) as HIND by solve_free_evars 1.
     apply IHl in HIND. rewrite HIND.
     rewrite maximal_mu_depth_to_0; auto.
 Qed.
@@ -2307,7 +2305,7 @@ Ltac rewrite_0_depths star :=
   end;
   cbn.
 
-Ltac try_solve_conplex_pile star :=
+Ltac try_solve_complex_pile star :=
   try apply pile_any;
   simplify_emplace_2 star;
   (rewrite_0_depths star);
@@ -2402,7 +2400,7 @@ Ltac2 mlRewrite (hiff : constr) (atn : int) :=
                [ rewrite $heq2_pf; reflexivity | ()];
              Std.clear [wfC; heq2 ; (hr.(star_ident)); (hr.(star_eq))]
          end)
-         | (ltac1:(star |- try_solve_conplex_pile star) (Ltac1.of_ident (hr.(star_ident))))
+         | (ltac1:(star |- try_solve_complex_pile star) (Ltac1.of_ident (hr.(star_ident))))
          ]
     end
   end.

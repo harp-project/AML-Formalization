@@ -142,17 +142,15 @@ Section with_signature.
 
   (*
    Γ ⊢ (∀x. φ) → φ
+   DO NOT use quantification here instead of opening
   *)
   Lemma forall_variable_substitution Γ ϕ x:
-    well_formed ϕ ->
-    Γ ⊢i (all, ϕ^{{evar: x ↦ 0}}) ---> ϕ using BasicReasoning.
+    well_formed (ex, ϕ) ->
+    Γ ⊢i (all, ϕ) ---> ϕ^{evar:0 ↦ x} using BasicReasoning.
   Proof.
     intros wfϕ.
 
     unfold patt_forall.
-    replace (! ϕ^{{evar: x ↦ 0}})
-      with ((! ϕ)^{{evar: x ↦ 0}})
-      by reflexivity.
     apply double_neg_elim_meta.
     { wf_auto2. }
     { wf_auto2. }
@@ -163,21 +161,26 @@ Section with_signature.
     mlApply "0".
     mlIntro.
     mlApply "2".
-    pose proof (Htmp := Ex_quan Γ ((!ϕ)^{{evar: x ↦ 0}}) x).
+    pose proof (Htmp := Ex_quan Γ (!ϕ) x ltac:(wf_auto2)).
     rewrite /instantiate in Htmp.
-    rewrite bevar_subst_evar_quantify_free_evar in Htmp.
-    {
-      simpl. split_and!. now do 2 apply andb_true_iff in wfϕ as [_ wfϕ]. reflexivity.
-    }
-    specialize (Htmp ltac:(wf_auto2)).
     useBasicReasoning.
     mlAdd Htmp.
-    mlApply "3".
+    mlApply "3". mlSimpl.
     mlIntro.
     mlApply "1".
     mlExactn 4.
   Defined.
 
+  Lemma forall_variable_substitution_meta Γ ϕ x i:
+    well_formed (ex, ϕ) ->
+    Γ ⊢i (all, ϕ) using i -> Γ ⊢i ϕ^{evar:0 ↦ x} using i.
+  Proof.
+    intros WF H. eapply MP.
+    2: gapply forall_variable_substitution.
+    assumption.
+    try_solve_pile.
+    wf_auto2.
+  Defined.
 
   (*
     Γ ⊢ φ₁ → φ₂
@@ -487,8 +490,8 @@ Section with_signature.
    instead of a concrete [using] clause.
   *)
   Lemma forall_variable_substitution' Γ ϕ x (i : ProofInfo):
-    well_formed ϕ ->
-    Γ ⊢i (all, ϕ^{{evar: x ↦ 0}}) ---> ϕ using i.
+    well_formed (ex, ϕ) ->
+    Γ ⊢i (all, ϕ) ---> ϕ^{evar:0 ↦ x} using i.
   Proof.
     intros wfϕ.
     pose proof (Htmp := forall_variable_substitution Γ ϕ x wfϕ).
@@ -502,19 +505,14 @@ Section with_signature.
   *)
   Lemma forall_elim Γ ϕ x (i : ProofInfo):
     well_formed (ex, ϕ) ->
-    evar_is_fresh_in x ϕ ->
     Γ ⊢i (all, ϕ) using i ->
     Γ ⊢i (ϕ^{evar: 0 ↦ x}) using i.
   Proof.
-    intros wfϕ frϕ H.
+    intros wfϕ H.
     destruct i.
     eapply MP.
     2: eapply forall_variable_substitution'.
     2: wf_auto2.
-    instantiate (1 := x).
-    rewrite evar_quantify_evar_open.
-      { apply frϕ. }
-      { wf_auto2. }
     apply H.
   Defined.
 
@@ -577,7 +575,6 @@ Section with_signature.
     }
     eapply forall_elim with (x := x) in H.
     2: wf_auto2.
-    2: { subst x. apply set_evar_fresh_is_fresh. }
     unfold evar_open in *. simpl in *. exact H.
   Defined.
 
@@ -675,37 +672,6 @@ Section with_signature.
      set_solver.
   Abort.
 
-  Lemma reorder_head_to_last (Γ : Theory) :
-    ∀ (l : list Pattern) (g x : Pattern) ,
-      Pattern.wf l → well_formed g → well_formed x →
-      Γ ⊢i foldr patt_imp g (l ++ [x]) --->  foldr patt_imp g (x :: l)
-        using BasicReasoning.
-  Proof.
-    induction l; intros g x Wfl Wfg Wfx.
-    - mlIntro "H". mlAssumption.
-    - simpl. mlIntro "H". mlIntro "H0". mlIntro "H1".
-      mlAssert ("H2" : (foldr patt_imp g (x::l))). wf_auto2.
-      {
-        mlApplyMeta IHl. mlApply "H". mlAssumption.
-      }
-      mlApply "H2".  mlAssumption.
-  Qed.
-
-  Lemma reorder_head_to_last_meta (Γ : Theory) :
-    forall (l : list Pattern) (g x : Pattern) i,
-    Pattern.wf l → well_formed g → well_formed x
-    → Γ ⊢i foldr patt_imp g (l ++ [x]) using i
-    → Γ ⊢i foldr patt_imp g (x :: l) using i.
-  Proof.
-    intros l g x i Wfl Wfg Wfx H. eapply MP.
-    2: {
-      pose proof (reorder_head_to_last Γ l g x) as H0.
-      feed specialize H0. 1-3: wf_auto2.
-      use i in H0. exact H0. 
-    }
-    exact H.
-  Qed.
-
   Lemma propagate_forall (Γ : Theory):
     forall ϕ₁ ϕ₂ x,
     well_formed ϕ₁ ->
@@ -725,19 +691,19 @@ Section with_signature.
     try_solve_pile.
     mlIntro "H".
     mlDestructAnd "H".
-    pose proof (forall_variable_substitution Γ (ϕ₁ ---> ϕ₂) x ltac:(wf_auto2)) as H0.
-    simpl in H0.
-    rewrite (evar_quantify_fresh _ _ ϕ₁) in H0.
-    by unfold evar_is_fresh_in.
+    pose proof (forall_variable_substitution Γ (ϕ₁ ---> ϕ₂^{{evar: x↦0}}) x ltac:(wf_auto2)) as H0.
+    cbn in H0. fold (evar_open x 0 ϕ₂^{{evar:x ↦ 0}}) in H0.
+    rewrite evar_open_evar_quantify in H0. wf_auto2.
+    rewrite bevar_subst_not_occur in H0. wf_auto2.
     mlRevertLast.
     mlApplyMeta H0. mlAssumption.
-  Qed.
+  Defined.
 
   Lemma universal_generalization_iter (Γ : Theory):
     forall (l : list Pattern) (ϕ : Pattern) x i,
     Pattern.wf l ->
     well_formed ϕ ->
-    x ∉ free_evars (foldr patt_imp patt_bott l) ->
+    x ∉ free_evars_of_list l ->
     ProofInfoLe (ExGen := {[x]}, SVSubst := ∅, KT := false) i ->
     Γ ⊢i foldr patt_imp ϕ l using i ->
     Γ ⊢i foldr patt_imp (all , ϕ^{{evar: x ↦ 0}}) l using i.
@@ -746,20 +712,20 @@ Section with_signature.
     - by apply universal_generalization.
     - apply reorder_last_to_head_meta in H. 2-4: wf_auto2.
       rewrite foldr_snoc in H. apply (IHl _ x) in H. 2-3: wf_auto2.
-      2: { simpl in Hx. set_solver. }
+      2: { solve_free_evars 5. }
       simpl in H. rewrite evar_quantify_fresh in H.
-      1: { unfold evar_is_fresh_in. set_solver. }
+      1: { solve_free_evars 5. }
       eapply prf_weaken_conclusion_iter_meta_meta in H.
       5: gapply propagate_forall.
       5,9: try_solve_pile.
       2-7: try by wf_auto2.
-      2: simpl in Hx; set_solver.
+      2: solve_free_evars 5.
       apply reorder_head_to_last_meta. 1-3: wf_auto2.
       by rewrite foldr_snoc.
-  Qed.
+    Defined.
 
   Lemma MLGoal_forallIntro Γ l g (x : evar) i :
-    x ∉ free_evars (foldr patt_imp patt_bott (patterns_of l)) ->
+    x ∉ free_evars_of_list (patterns_of l) ->
     x ∉ free_evars g ->
     ProofInfoLe (ExGen := {[x]}, SVSubst := ∅, KT := false) i ->
     mkMLGoal _ Γ l (g^{evar: 0 ↦ x}) i ->
@@ -770,41 +736,152 @@ Section with_signature.
     apply universal_generalization_iter. 1-2: wf_auto2.
     assumption. try_solve_pile.
     apply H; wf_auto2. 
-  Qed.
+  Defined.
 
+  (* NOTE: this is not too good with quantification in the concusion.
+           Opening is better, when there is no condition about the
+           freshness of variables (i.e. Ex_gen is not used). *)
+  Lemma specialize_forall (Γ : Theory) :
+    forall (l₁ l₂ : list Pattern) (ϕ ψ : Pattern) x i,
+      well_formed ϕ -> well_formed (ex, ψ) -> Pattern.wf l₁ -> Pattern.wf l₂ ->
+      Γ ⊢i foldr patt_imp ϕ (l₁ ++ ψ^{evar:0 ↦ x} :: l₂) using i ->
+      Γ ⊢i foldr patt_imp ϕ (l₁ ++ (all, ψ) :: l₂) using i.
+  Proof.
+    intros.
+    eapply prf_strenghten_premise_iter_meta_meta. 7: eassumption.
+    1-5: wf_auto2.
+    apply forall_variable_substitution'.
+    wf_auto2.
+  Defined.
+
+  Lemma MLGoal_specializeAll Γ l₁ l₂ (g ψ : Pattern) x i name :
+    mkMLGoal _ Γ (l₁ ++ (mkNH _ name (ψ^{evar:0 ↦ x})) :: l₂) g i ->
+    mkMLGoal _ Γ (l₁ ++ (mkNH _ name (all, ψ)) :: l₂) g i.
+  Proof.
+    unfold of_MLGoal in *. simpl in *. intros H Hwf Hwfl.
+    unfold patterns_of in *. rewrite map_app. rewrite map_app in Hwfl.
+    simpl in *.
+    eapply (specialize_forall Γ _ _ _ _ x).
+    1-4: wf_auto2.
+    rewrite map_app in H. simpl in H.
+    apply H; wf_auto2.
+  Defined.
+
+  (* This is more efficient in proof term size, than the version below based on specialize: *)
   Lemma revert_forall_iter (Γ : Theory) :
     forall (l : list Pattern) (ϕ : Pattern) x,
     Pattern.wf l ->
-    well_formed ϕ ->
-    Γ ⊢i foldr patt_imp (all , ϕ^{{evar: x ↦ 0}}) l ---> foldr patt_imp ϕ l
+    well_formed (ex, ϕ) ->
+    Γ ⊢i foldr patt_imp (all , ϕ) l ---> foldr patt_imp ϕ^{evar: 0 ↦ x} l
       using BasicReasoning.
   Proof.
     intros l ϕ x Wfl Wfϕ. apply prf_weaken_conclusion_iter_meta. 1-3: wf_auto2.
     apply forall_variable_substitution. wf_auto2.
-  Qed.
+  Defined.
 
   Lemma revert_forall_iter_meta (Γ : Theory) :
     forall (l : list Pattern) (ϕ : Pattern) x i,
     Pattern.wf l ->
-    well_formed ϕ ->
-    ProofInfoLe (ExGen := {[x]}, SVSubst := ∅, KT := false) i ->
-    Γ ⊢i foldr patt_imp (all , ϕ^{{evar: x ↦ 0}}) l using i ->
-    Γ ⊢i foldr patt_imp ϕ l using i.
+    well_formed (ex, ϕ) ->
+    Γ ⊢i foldr patt_imp (all , ϕ) l using i ->
+    Γ ⊢i foldr patt_imp (ϕ^{evar: 0 ↦ x}) l using i.
   Proof.
-    intros l ϕ x i Wfl Wfϕ Hi H.
+    intros l ϕ x i Wfl Wfϕ H.
     eapply MP. 2: gapply revert_forall_iter. 3-4: wf_auto2. 2: try_solve_pile.
     exact H.
-  Qed.
+  Defined.
 
+  (* Here, we change opening in the conclusion to quantification in the premise
+     to simplify pattern matching for the tactic *)
   Lemma MLGoal_revertAll Γ l g (x : evar) i :
-    ProofInfoLe (ExGen := {[x]}, SVSubst := ∅, KT := false) i ->
     mkMLGoal _ Γ l (all, g^{{evar:x ↦ 0}}) i ->
     mkMLGoal _ Γ l g i.
   Proof.
-    unfold of_MLGoal in *. simpl in *. intros Hi H Hwf1 Hwfl.
-    apply (revert_forall_iter_meta Γ _ _ x). 1-2: wf_auto2. try_solve_pile.
+    unfold of_MLGoal in *. simpl in *. intros H Hwf1 Hwfl.
+    specialize (H ltac:(wf_auto2) ltac:(wf_auto2)).
+    apply revert_forall_iter_meta with (x := x) in H. 2-3: wf_auto2.
+    rewrite evar_open_evar_quantify in H. wf_auto2.
+    assumption.
+  Defined.
+
+  Lemma ex_quan_iter (Γ : Theory) :
+    forall (l : list Pattern) (ϕ : Pattern) x,
+    Pattern.wf l ->
+      well_formed (ex, ϕ) ->
+      Γ ⊢i foldr patt_imp ϕ^{evar:0 ↦ x} l ---> foldr patt_imp (ex, ϕ) l
+        using BasicReasoning.
+  Proof.
+    intros l ϕ x Wfl Wfϕ. apply prf_weaken_conclusion_iter_meta.
+    1-3: wf_auto2.
+    apply Ex_quan.
+    wf_auto2.
+  Defined.
+
+  Lemma ex_quan_iter_meta (Γ : Theory) :
+    forall (l : list Pattern) (ϕ : Pattern) x i,
+    Pattern.wf l ->
+      well_formed (ex, ϕ) ->
+      Γ ⊢i foldr patt_imp ϕ^{evar:0 ↦ x} l using i ->
+      Γ ⊢i foldr patt_imp (ex, ϕ) l using i.
+  Proof.
+    intros l ϕ x i Wfl Wfϕ H.
+    eapply MP. exact H.
+    gapply ex_quan_iter.
+    1: try_solve_pile.
+    all: wf_auto2.
+  Defined.
+
+  Lemma MLGoal_exists Γ l g (x : evar) i :
+    mkMLGoal _ Γ l (g^{evar: 0 ↦ x}) i ->
+    mkMLGoal _ Γ l (ex, g) i.
+  Proof.
+    unfold of_MLGoal in *. simpl in *. intros H Hwf1 Hwfl.
+    eapply ex_quan_iter_meta.
+    1-2: wf_auto2.
+    apply H.
+    1-2: wf_auto2.
+  Defined.
+
+  Lemma exists_elim Γ : forall l₁ l₂ g ϕ i x,
+    well_formed (ex, ϕ) -> Pattern.wf l₁ -> Pattern.wf l₂ ->
+    ProofInfoLe (ExGen := {[x]}, SVSubst := ∅, KT := false) i ->
+    x ∉ free_evars ϕ ->
+    x ∉ free_evars g ->
+    x ∉ free_evars_of_list l₁ ->
+    x ∉ free_evars_of_list l₂ ->
+    Γ ⊢i foldr patt_imp g (l₁ ++ ϕ^{evar:0 ↦ x} :: l₂) using i ->
+    Γ ⊢i foldr patt_imp g (l₁ ++ (ex, ϕ) :: l₂) using i.
+  Proof.
+    intros l₁ l₂ g ϕ i x Hwf Hwfl1 Hwfl2 Hi Hin1 Hin2 Hin3 Hin4 H.
+    apply reorder_middle_to_head_meta. 1-4: wf_auto2.
+    apply reorder_head_to_middle_meta in H. 2-5: wf_auto2.
+    pose proof (EG := Ex_gen Γ (ϕ^{evar:0↦x}) (foldr patt_imp g (l₁ ++ l₂)) x).
+    simpl in *. unfold exists_quantify in EG.
+    apply EG in H. 2: try_solve_pile.
+    2: { clear EG H Hi. solve_free_evars 1. }
+    clear EG.
+    rewrite evar_quantify_evar_open in H. assumption. wf_auto2.
+    assumption.
+  Defined.
+
+  Lemma MLGoal_destructEx Γ l₁ l₂ g (x : evar) name ϕ i :
+    ProofInfoLe (ExGen := {[x]}, SVSubst := ∅, KT := false) i ->
+    x ∉ free_evars (foldr patt_imp g (map nh_patt (l₁ ++ l₂))) ->
+    x ∉ free_evars ϕ ->
+    mkMLGoal _ Γ (l₁ ++ (mkNH _ name ϕ^{evar:0 ↦ x}) :: l₂) g i ->
+    mkMLGoal _ Γ (l₁ ++ (mkNH _ name (ex, ϕ)) :: l₂) g i.
+  Proof.
+    unfold of_MLGoal in *. simpl in *. intros Hi Hf1 Hf2 H Hwf Hwfl.
+    unfold patterns_of in *. rewrite map_app. rewrite map_app in Hwfl.
+    simpl in *.
+    rewrite map_app in Hf1.
+    eapply exists_elim with (x := x).
+    1-3: wf_auto2.
+    try_solve_pile.
+    1-4: solve_free_evars 5.
+    rewrite map_app in H. simpl in H.
     apply H; wf_auto2.
-  Qed.
+  Defined.
 
 End with_signature.
 
@@ -824,8 +901,8 @@ Ltac solve_fresh :=
 Tactic Notation "mlIntroAll" constr(x) :=
 _ensureProofMode;
 apply (MLGoal_forallIntro _ _ _ x);
-[   try subst x; try solve_fresh; try solve_free_evars_inclusion 10
-  | try subst x; try solve_fresh; try solve_free_evars_inclusion 10
+[   try subst x; try solve_fresh; try solve_free_evars 10
+  | try subst x; try solve_fresh; try solve_free_evars 10
   | try subst x; try_solve_pile
   | unfold evar_open; mlSimpl;
     repeat (rewrite bevar_subst_not_occur; [by wf_auto2|])
@@ -856,7 +933,7 @@ Qed.
 
 Tactic Notation "mlRevertAll" constr(x) :=
   _ensureProofMode;
-  apply (MLGoal_revertAll _ _ _ x);[try_solve_pile|].
+  apply (MLGoal_revertAll _ _ _ x).
 
 Local Example revert_test {Σ : Signature} Γ ϕ ψ x:
   well_formed ϕ -> well_formed (ex, ψ) ->
@@ -931,4 +1008,65 @@ Proof.
     rewrite evar_quantify_evar_open. 1: subst x; solve_fresh.
     1: wf_auto2.
     mlAssumption.
+Qed.
+
+Tactic Notation "mlSpecialize" constr(name') "with" constr(var) :=
+_ensureProofMode;
+_mlReshapeHypsByName name';
+apply (MLGoal_specializeAll _ _ _ _ _ var);
+_mlReshapeHypsBack.
+
+(* revert is a corollary of specialize: *)
+Local Lemma Private_revert_forall_iter {Σ : Signature} (Γ : Theory) :
+  forall (l : list Pattern) (ϕ : Pattern) x,
+  Pattern.wf l ->
+  well_formed ϕ ->
+  Γ ⊢i foldr patt_imp (all , ϕ^{{evar: x ↦ 0}}) l ---> foldr patt_imp ϕ l
+    using BasicReasoning.
+Proof.
+  intros l ϕ x Wfl Wfϕ. apply prf_weaken_conclusion_iter_meta. 1-3: wf_auto2.
+  mlIntro "H".
+  mlSpecialize "H" with x.
+  rewrite evar_open_evar_quantify. wf_auto2.
+  mlAssumption.
+Qed.
+
+Tactic Notation "mlExists" constr(var) :=
+_ensureProofMode;
+apply (MLGoal_exists _ _ _ var);
+try (rewrite evar_open_evar_quantify;[by wf_auto2|]).
+
+Local Lemma exists_test_1 {Σ : Signature} Γ ϕ :
+  well_formed (ex, ϕ) ->
+  Γ ⊢ (all, ϕ) ---> (ex, ϕ).
+Proof.
+  intro WF.
+  mlIntro "H".
+  remember (fresh_evar patt_bott) as y.
+  (* we can prove this with a y which is not necessarily equal to x too, but it is tricky. *)
+  mlSpecialize "H" with y.
+  mlExists y.
+  mlAssumption.
+Qed.
+
+Tactic Notation "mlDestructEx" constr(name') "as" constr(x) :=
+_ensureProofMode;
+_mlReshapeHypsByName name';
+apply (MLGoal_destructEx _ _ _ _ x name');[
+    try subst x; try_solve_pile
+  | try subst x; try solve_fresh; try solve_free_evars 10 
+  | try subst x; try solve_fresh; try solve_free_evars 10
+  | _mlReshapeHypsBack].
+
+Local Lemma destructEx_Test {Σ : Signature} Γ ϕ ψ :
+  well_formed (ex, ϕ) -> well_formed (ex, ψ) ->
+  Γ ⊢ (ex, ϕ and ψ) ---> ex, ϕ.
+Proof.
+  intros WF1 WF2.
+  mlIntro "H".
+  remember (fresh_evar (ϕ $ ψ)) as x.
+  mlDestructEx "H" as x. mlSimpl.
+  mlDestructAnd "H".
+  mlExists x.
+  mlAssumption.
 Qed.

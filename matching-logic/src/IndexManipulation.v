@@ -610,9 +610,37 @@ End index_manipulation.
 
 Tactic Notation "solve_free_evars_inclusion" int_or_var(depth) :=
   simpl;
-  (do ? [rewrite simpl_free_evars/=]) ;
+  (do ? [rewrite simpl_free_evars/=]);
   auto;
   clear;
+  set_solver.
+
+
+Ltac unify_free_evar_conditions :=
+  match goal with
+  | |- context C [free_evars (foldr _ _ _)] =>
+      rewrite free_evars_of_list_foldr
+  | |- context C [free_evars_of_list _] => unfold free_evars_of_list
+  | [H : context C [free_evars (foldr _ _ _)] |- _] =>
+      rewrite free_evars_of_list_foldr in H
+  | [H: context C [free_evars_of_list _] |- _] => unfold free_evars_of_list in H
+  end.
+Ltac simplify_map_app_union :=
+  match goal with
+  | |- context C [map _ (_ ++ _)] => rewrite map_app
+  | [H : context C [map _ (_ ++ _)] |- _] => rewrite map_app in H
+  | |- context C [union_list (_ ++ _)] => rewrite union_list_app
+  | [H : context C [union_list (_ ++ _)] |- _] => rewrite union_list_app in H
+  end.
+(* same as the previous "solve_free_evars_inclusion", but without clearing,
+   and support for list of free evars *)
+Tactic Notation "solve_free_evars" int_or_var(depth) :=
+  unfold evar_is_fresh_in in *;  
+  repeat unify_free_evar_conditions;
+  repeat simplify_map_app_union;
+  simpl in *;
+  (do ? [rewrite simpl_free_evars/=]);
+  auto;
   set_solver.
 
 Tactic Notation "solve_free_svars_inclusion" int_or_var(depth) :=
