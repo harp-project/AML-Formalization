@@ -14,11 +14,15 @@ Class MLVariables := {
   svar_infinite :> Infinite svar;
 }.
 
-Class Signature := {
-  variables :> MLVariables;
+Class MLSymbols := {
   symbols : Set;
   sym_eqdec :> EqDecision symbols;
   sym_countable :> Countable symbols;
+}.
+
+Class Signature := {
+  variables :> MLVariables;
+  ml_symbols :> MLSymbols;
 }.
 
 (* Later we will define signature morphisms in some file *)

@@ -38,7 +38,7 @@ Global Instance Pattern_countable {Σ : Signature} (sc : Countable symbols) : Co
 Proof.
   set (enc :=
          fix go p : gen_tree (unit
-                              + ((@symbols Σ)
+                              + ((@symbols (@ml_symbols Σ))
                                  + (((@evar variables) + db_index)
                                     + ((@svar variables) + db_index))))%type :=
            match p with
@@ -57,7 +57,7 @@ Proof.
 
   set (dec :=
          fix go (p : gen_tree (unit
-                              + ((@symbols Σ)
+                              + ((@symbols (@ml_symbols Σ))
                                  + (((@evar variables) + db_index)
                                     + ((@svar variables) + db_index))))%type) : Pattern :=
            match p with
