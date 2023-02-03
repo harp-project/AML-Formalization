@@ -753,8 +753,10 @@ Module equivalence_insufficient.
   #[local]
   Instance mySignature : Signature :=
   {| variables := StringMLVariables;
-     symbols := exampleSymbols;
-     sym_eqdec := exampleSymbols_eqdec
+     ml_symbols := {|
+      symbols := exampleSymbols;
+      sym_eqdec := exampleSymbols_eqdec;
+     |};
   |}.
 
   Inductive exampleDomain : Set :=

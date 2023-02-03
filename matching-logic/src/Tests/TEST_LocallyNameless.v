@@ -45,7 +45,9 @@ Module test_1.
   #[local]
   Instance signature : Signature :=
     {| variables := StringMLVariables ;
-       symbols := Symbols ;
+       ml_symbols := {|
+        symbols := Symbols ;
+       |} ;
     |}.
     
   (* Example patterns *)
@@ -127,7 +129,9 @@ Module test_2.
 
     Instance signature : Signature :=
       {| variables := StringMLVariables ;
-         symbols := Symbols ;
+         ml_symbols := {|
+          symbols := Symbols ;
+         |} ;
       |}.
 
     Instance definedness_syntax : Definedness_Syntax.Syntax :=
@@ -244,7 +248,9 @@ Module test_3.
 
     Instance signature : Signature :=
       {| variables := StringMLVariables ;
-         symbols := Symbols ;
+         ml_symbols := {|
+           symbols := Symbols ;
+         |} ;
       |}.
 
     Instance definedness_syntax : Definedness_Syntax.Syntax :=
