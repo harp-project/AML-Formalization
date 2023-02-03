@@ -18,7 +18,6 @@ Section with_signature.
 
 Context {Σ : Signature}.
 
-
 Local Lemma P1_complete (Γ : Theory) (ϕ ψ : Pattern):
   well_formed ϕ -> well_formed ψ ->
   mkMLGoal _ Γ [] (ϕ ---> ψ ---> ϕ) BasicReasoning.
