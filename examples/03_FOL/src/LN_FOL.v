@@ -748,8 +748,10 @@ Section FOL_ML_correspondence.
   Instance sig : Signature := 
   {|
     variables := FOLVars;
-    symbols := Symbols;
-    sym_countable := Symbols_countable;
+    ml_symbols := {|
+      symbols := Symbols;
+      sym_countable := Symbols_countable;
+    |};
   |}.
 
   Instance definedness_syntax : Definedness_Syntax.Syntax :=
@@ -1578,9 +1580,11 @@ Section tests.
   Instance sig2 : Signature := 
   {|
     variables := @FOLVars Σ_vars;
-    symbols := Symbols;
-    sym_eqdec := Symbols_dec;
-    sym_countable := Symbols_countable;
+    ml_symbols := {|
+      symbols := Symbols;
+      sym_eqdec := Symbols_dec;
+      sym_countable := Symbols_countable;
+    |};
   |}.
 
   Instance definedness_syntax2 : Definedness_Syntax.Syntax :=
