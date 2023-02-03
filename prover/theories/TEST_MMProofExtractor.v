@@ -79,7 +79,9 @@ Module MMTest.
   #[local]
   Instance Σ : Signature :=
     {| variables := StringMLVariables ;
-       symbols := Symbol ;
+       ml_symbols := {|
+        symbols := Symbol ;
+       |} ;
     |}.
 
 
