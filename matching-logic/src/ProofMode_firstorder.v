@@ -866,15 +866,16 @@ Section with_signature.
 
   Lemma MLGoal_destructEx Γ l₁ l₂ g (x : evar) name ϕ i :
     ProofInfoLe (ExGen := {[x]}, SVSubst := ∅, KT := false) i ->
-    x ∉ free_evars (foldr patt_imp g (map nh_patt (l₁ ++ l₂))) ->
+    x ∉ free_evars_of_list (map nh_patt l₁) ->
+    x ∉ free_evars_of_list (map nh_patt l₂) ->
     x ∉ free_evars ϕ ->
+    x ∉ free_evars g ->
     mkMLGoal _ Γ (l₁ ++ (mkNH _ name ϕ^{evar:0 ↦ x}) :: l₂) g i ->
     mkMLGoal _ Γ (l₁ ++ (mkNH _ name (ex, ϕ)) :: l₂) g i.
   Proof.
-    unfold of_MLGoal in *. simpl in *. intros Hi Hf1 Hf2 H Hwf Hwfl.
+    unfold of_MLGoal in *. simpl in *. intros Hi Hf1 Hf2 Hf3 Hf4 H Hwf Hwfl.
     unfold patterns_of in *. rewrite map_app. rewrite map_app in Hwfl.
     simpl in *.
-    rewrite map_app in Hf1.
     eapply exists_elim with (x := x).
     1-3: wf_auto2.
     try_solve_pile.
@@ -1054,7 +1055,9 @@ _ensureProofMode;
 _mlReshapeHypsByName name';
 apply (MLGoal_destructEx _ _ _ _ x name');[
     try subst x; try_solve_pile
-  | try subst x; try solve_fresh; try solve_free_evars 10 
+  | try subst x; try solve_fresh; try solve_free_evars 10
+  | try subst x; try solve_fresh; try solve_free_evars 10
+  | try subst x; try solve_fresh; try solve_free_evars 10
   | try subst x; try solve_fresh; try solve_free_evars 10
   | _mlReshapeHypsBack].
 
@@ -1070,3 +1073,5 @@ Proof.
   mlExists x.
   mlAssumption.
 Qed.
+
+  
