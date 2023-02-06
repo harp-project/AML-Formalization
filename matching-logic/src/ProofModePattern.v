@@ -78,10 +78,20 @@ Record MLConstruct {Σ : Signature} := {
     mlc_ebinder_arity : nat;
     mlc_sbinder_arity : nat;
     mlc_expand :
-      vec Pattern_in_context mlc_arity -> (* patterns *)
-      vec VarName mlc_ebinder_arity -> (* bound evars*)
-      vec VarName mlc_sbinder_arity -> (* bound svars*)
-      Pattern_in_context ;
+      list Pattern_in_context -> (* patterns *)
+      list EVarName -> (* bound evars*)
+      list SVarName -> (* bound svars*)
+      option Pattern_in_context ;
+    mlc_expand_almost_total :
+        forall
+            (args : list Pattern_in_context)
+            (ebinders : list EVarName)
+            (sbinders : list SVarName),
+            List.length args = mlc_arity ->
+            List.length ebinders = mlc_ebinder_arity ->
+            List.length sbinders = mlc_sbinder_arity ->
+            exists ϕ_in_context,
+                mlc_expand args ebinders sbinders = Some ϕ_in_context  ;
 }.
 
 Section sec.
@@ -92,7 +102,7 @@ Section sec.
         {string2svar : string -> svar}
         {string2svar_inj : Inj (=) (=) string2svar}
     .
-    Definition mlc_sym
+    Program Definition mlc_sym
         (s : symbols)
         : MLConstruct := {|
             mlc_arity := 0 ;
@@ -101,14 +111,17 @@ Section sec.
             mlc_expand :=
                 fun _ =>
                 fun _ =>
-                fun _ => (
+                fun _ => Some (
                     fun _ =>
-                    patt_sym s
+                        patt_sym s
                 )
         |}
     .
+    Next Obligation.
+        intros. eexists. reflexivity.
+    Qed.
 
-    Definition mlc_bott
+    Program Definition mlc_bott
         : MLConstruct := {|
             mlc_arity := 0 ;
             mlc_ebinder_arity := 0 ;
@@ -116,15 +129,18 @@ Section sec.
             mlc_expand :=
                 fun _ =>
                 fun _ =>
-                fun _ => (
+                fun _ => Some(
                     fun _ =>
                     patt_bott
                 )
         |}
     .
-        
+    Next Obligation.
+        intros. eexists. reflexivity.
+    Qed.
+    
 
-    Definition mlc_evar
+    Program Definition mlc_evar
         {name : EVarName}
         : MLConstruct := {|
             mlc_arity := 0 ;
@@ -133,7 +149,7 @@ Section sec.
             mlc_expand :=
                 fun _ =>
                 fun _ =>
-                fun _ => (
+                fun _ => Some (
                     fun ctx =>
                     match (pc_evm ctx) !! name with
                     | Some n => patt_bound_evar n
@@ -142,8 +158,12 @@ Section sec.
                 )
         |}
     .
+    Next Obligation.
+        intros. eexists. reflexivity.
+    Qed.
 
-    Definition mlc_svar
+
+    Program Definition mlc_svar
         {name : SVarName}
         : MLConstruct := {|
             mlc_arity := 0 ;
@@ -152,7 +172,7 @@ Section sec.
             mlc_expand :=
                 fun _ =>
                 fun _ =>
-                fun _ => (
+                fun _ => Some (
                     fun ctx =>
                     match (pc_svm ctx) !! name with
                     | Some n => patt_bound_svar n
@@ -161,8 +181,12 @@ Section sec.
                 )
         |}
     .
+    Next Obligation.
+        intros. eexists. reflexivity.
+    Qed.
 
-    Definition mlc_app
+
+    Program Definition mlc_app
         : MLConstruct := {|
             mlc_arity := 2 ;
             mlc_ebinder_arity := 0 ;
@@ -170,16 +194,32 @@ Section sec.
             mlc_expand :=
                 fun ps =>
                 fun _ =>
-                fun _ => (
-                    fun ctx =>
-                    patt_app
-                        ((ps !!! (0)%fin) ctx)
-                        ((ps !!! (1)%fin) ctx)
-                )
+                fun _ => 
+                    match ps !! 0 with
+                    | None => None
+                    | Some ϕ₁ =>
+                      match ps !! 1 with
+                      | None => None
+                      | Some ϕ₂ =>
+                        Some (
+                            fun ctx =>
+                            patt_app (ϕ₁ ctx) (ϕ₂ ctx)
+                        )
+                      end
+                    end
         |}
     .
+    Next Obligation.
+        intros.
+        destruct args as [|a1 args].
+        1: { simpl in *; lia. }
+        destruct args as [|a2 args].
+        1: { simpl in *; lia. }
+        eexists. simpl. reflexivity.
+    Qed.
 
-    Definition mlc_imp
+
+    Program Definition mlc_imp
         : MLConstruct := {|
             mlc_arity := 2 ;
             mlc_ebinder_arity := 0 ;
@@ -187,16 +227,31 @@ Section sec.
             mlc_expand :=
                 fun ps =>
                 fun _ =>
-                fun _ => (
-                    fun ctx =>
-                    patt_imp
-                        ((ps !!! (0)%fin) ctx)
-                        ((ps !!! (1)%fin) ctx)
-                )
+                fun _ => 
+                    match ps !! 0 with
+                    | None => None
+                    | Some ϕ₁ =>
+                      match ps !! 1 with
+                      | None => None
+                      | Some ϕ₂ =>
+                        Some (
+                            fun ctx =>
+                            patt_imp (ϕ₁ ctx) (ϕ₂ ctx)
+                        )
+                      end
+                    end
         |}
     .
+    Next Obligation.
+        intros.
+        destruct args as [|a1 args].
+        1: { simpl in *; lia. }
+        destruct args as [|a2 args].
+        1: { simpl in *; lia. }
+        eexists. simpl. reflexivity.
+    Qed.
 
-    Definition mlc_exists
+    Program Definition mlc_exists
         : MLConstruct := {|
             mlc_arity := 1 ;
             mlc_ebinder_arity := 1 ;
@@ -204,18 +259,33 @@ Section sec.
             mlc_expand :=
                 fun ps =>
                 fun evs =>
-                fun _ => (
-                    fun ctx =>
-                        let name := evs !!! (0)%fin in
-                        let ctx' := pc_add_ename ctx name in
-                        let ϕ_in_context := ps !!! (0)%fin in
-                        let ϕ := ϕ_in_context ctx' in
-                        patt_exists ϕ
-                )
+                fun _ =>
+                    match ps !! 0 with
+                    | None => None
+                    | Some ϕ_in_context =>
+                        match evs !! 0 with
+                        | None => None
+                        | Some name =>
+                            Some (
+                                fun ctx =>
+                                    let ctx' := pc_add_ename ctx name in
+                                    let ϕ := ϕ_in_context ctx' in
+                                    patt_exists ϕ
+                            )
+                        end
+                    end
         |}
     .
+    Next Obligation.
+        intros.
+        destruct args as [|a1 args].
+        { simpl in *; lia. }
+        destruct ebinders as [|e1 ebinders].
+        { simpl in *; lia. }
+        eexists. simpl. reflexivity.
+    Qed.
 
-    Definition mlc_mu
+    Program Definition mlc_mu
         : MLConstruct := {|
             mlc_arity := 1 ;
             mlc_ebinder_arity := 0 ;
@@ -223,52 +293,161 @@ Section sec.
             mlc_expand :=
                 fun ps =>
                 fun _ =>
-                fun svs => (
-                    fun ctx =>
-                        let name := svs !!! (0)%fin in
-                        let ctx' := pc_add_sname ctx name in
-                        let ϕ_in_context := ps !!! (0)%fin in
-                        let ϕ := ϕ_in_context ctx' in
-                        patt_mu ϕ
-                )
+                fun svs =>
+                    match ps !! 0 with
+                    | None => None
+                    | Some ϕ_in_context =>
+                        match svs !! 0 with
+                        | None => None
+                        | Some name =>
+                            Some (
+                                fun ctx =>
+                                    let ctx' := pc_add_sname ctx name in
+                                    let ϕ := ϕ_in_context ctx' in
+                                    patt_mu ϕ
+                            )
+                        end
+                    end
         |}
     .
+    Next Obligation.
+        intros.
+        destruct args as [|a1 args].
+        { simpl in *; lia. }
+        destruct sbinders as [|s1 sbinders].
+        { simpl in *; lia. }
+        eexists. simpl. reflexivity.
+    Qed.
 
+    (*
+    Example:
+    ∀ x. ∃ y. x ---> y
+    ∀ x. ∃ y. x /\ y
+    *)
 
-(*
-  Example:
-  ∀ x. ∃ y. x ---> y
-  ∀ x. ∃ y. x /\ y
-*)
-
-Inductive PMPattern {Σ : Signature} : Set :=
-| pmpatt_mu (X : string) (phi : PMPattern)
-| pmpatt_construct
-    (construct : MLConstruct)
-    (args : vec PMPattern (mlc_arity construct))
-    (bound_evars : vec VarName (mlc_ebinder_arity construct))
-    (bound_svars : vec VarName (mlc_sbinder_arity construct))
-.
-
-Equations? PMPattern_size
-    {Σ : Signature}
-    (ϕ : PMPattern)
-    : nat :=
-    PMPattern_size (pmpatt_evar _) := 1 ;
-    PMPattern_size (pmpatt_svar _) := 1 ;
-    PMPattern_size (pmpatt_sym _) := 1 ;
-    PMPattern_size (pmpatt_bott) := 1 ;
-    PMPattern_size (pmpatt_app ϕ₁ ϕ₂) :=
-        S ((PMPattern_size ϕ₁) + (PMPattern_size ϕ₂)) ;
-    PMPattern_size (pmpatt_imp ϕ₁ ϕ₂) :=
-        S ((PMPattern_size ϕ₁) + (PMPattern_size ϕ₂)) ;
-    PMPattern_size (pmpatt_exists _ ϕ') := 
-        S (PMPattern_size ϕ') ;
-    PMPattern_size (pmpatt_mu _ ϕ') := 
-        S (PMPattern_size ϕ') ;
-    PMPattern_size (pmpatt_notation _ args _ _) :=
-        PMPatt
+    Inductive PMPattern : Set :=
+    | pmpatt_inj (ln : Pattern)
+    | pmpatt_construct
+        (construct : MLConstruct)
+        (args : vec PMPattern (mlc_arity construct))
+        (bound_evars : vec EVarName (mlc_ebinder_arity construct))
+        (bound_svars : vec SVarName (mlc_sbinder_arity construct))
     .
+
+
+    Equations PMPattern_size
+        (ϕ : PMPattern)
+        : nat := {
+        PMPattern_size (pmpatt_inj _) := 1 ;
+        PMPattern_size (pmpatt_construct _ args _ _) :=
+            S (@PMPattern_size_vec _ args)
+            where PMPattern_size_vec
+            {arity : nat}
+            (v : vec PMPattern arity)
+            : nat := {
+                @PMPattern_size_vec _ vnil := 1 ;
+                @PMPattern_size_vec _ (vcons x xs) :=
+                    S (PMPattern_size x + PMPattern_size_vec xs)
+            }
+        }
+    .
+
+
+    Equations? PMPattern_to_ln
+    (ϕ : PMPattern)
+    : Pattern_in_context by wf (PMPattern_size ϕ) lt := {
+        PMPattern_to_ln (pmpatt_inj ln) := fun _ => ln ;
+        PMPattern_to_ln (pmpatt_construct construct args bevars bsvars)
+        := mlc_expand construct (PMPattern_vec_to_ln args _) bevars bsvars
+            where PMPattern_vec_to_ln
+            {arity : nat}
+            (v : vec PMPattern arity)
+            (pf : vec_to_list v ⊆ vec_to_list args)
+            : vec Pattern_in_context arity  := {
+                @PMPattern_vec_to_ln _ vnil pf := vnil ;
+                @PMPattern_vec_to_ln _ (vcons x xs) _ :=
+                    vcons
+                    (PMPattern_to_ln x)
+                    (PMPattern_vec_to_ln xs _)
+            }
+        }
+    .
+    Proof.
+        {
+            move: construct bevars bsvars args PMPattern_to_ln PMPattern_vec_to_ln pf.
+            intros construct.
+            remember (mlc_arity construct) as arity in * |-.
+            assert (Harity: mlc_arity construct <= arity) by lia.
+            clear Heqarity.
+            move: Harity.
+
+            induction arity.
+            {
+                intros. destruct construct.
+                simpl in *. subst. simpl in *.
+                exfalso.
+                destruct mlc_arity0.
+                2: {
+                    exfalso. lia.
+                }
+                clear -pf.
+                inv_vec args. simpl. set_solver.
+            }
+            {
+                intros HltSarity.
+                destruct (decide (mlc_arity construct <= arity)) as [H|H].
+                {
+                    specialize (IHarity H).
+                    intros.
+                    auto.
+                }
+                {
+                    assert (HSarity: mlc_arity construct = S arity) by lia.
+                    clear H.
+                    intros.
+                    simp PMPattern_size.
+                    remember args as args'.
+                    rewrite HSarity in args'.
+                    inv_vec args'.
+                }
+
+                specialize (IHargs mlc_expand0).
+
+                simpl in *.
+            }
+            Set Printing Implicit.
+            move: x xs pf.
+            induction n.
+            {
+                intros x Hxxsargs pf.
+                simpl in *.
+                rewrite elem_of_subseteq in pf.
+                specialize (pf x ltac:(left)).
+            }
+            simpl in pf.
+            rewrite elem_of_subseteq in pf.
+            specialize (pf x ltac:(left)).
+            simp PMPattern_size.
+        simp PMPattern_size_clause_2_PMPattern_size_vec.
+        simp PMPattern_size_vec.
+        }
+    Qed.
+
+    Equations? PMPattern_to_ln
+        {Σ : Signature}
+        (ϕ : PMPattern)
+        : Pattern_in_context by wf (PMPattern_size ϕ) lt :=
+    PMPattern_to_ln (pmpatt_inj ln) := fun _ => ln ;
+    PMPattern_to_ln (pmpatt_construct construct args bevars bsvars)
+      := let args' := vmap (fun p => @PMPattern_to_ln Σ p) args in
+         mlc_expand construct args' bevars bsvars
+    .
+    Proof.
+        simp PMPattern_size.
+        clear.
+        Set Printing Implicit.
+        induction args.
+    Qed.
 
 
 Check sum_list.
