@@ -2,11 +2,15 @@ From Coq Require Import ssreflect ssrfun ssrbool.
 
 From Coq.Vectors Require Import Vector.
 
+From Equations Require Import Equations.
+
 From stdpp Require Import
     base
     gmap
+    infinite
     natmap
     option
+    strings
     vector
 .
 From MatchingLogic Require Import
@@ -67,9 +71,75 @@ Inductive PMPattern {Σ : Signature} : Set :=
     (bound_svars : vec VarName (mln_sbinder_arity notation))
 .
 
-Fixpoint pmp2ln_aux
-    {Σ : Signature}
-    (ϕ : PMPattern)
-    (evm : gmap VarName nat)
-    (svm : gmap VarName nat)
-    : Pattern
+Definition incr_values
+    (vm : gmap VarName nat)
+    : gmap VarName nat
+:= fmap (fun n => S n) vm.
+
+Section sec.
+    Context
+        {Σ : Signature}
+        {string2evar : string -> evar}
+        {string2evar_inj : Inj (=) (=) string2evar}
+        {string2svar : string -> svar}
+        {string2svar_inj : Inj (=) (=) string2svar}
+    .
+
+    Check insert.
+
+
+
+    Fixpoint pmp2ln_aux
+        (evm : gmap VarName nat)
+        (svm : gmap VarName nat)
+        (ϕ : PMPattern)
+        : Pattern :=
+        match ϕ with
+        | pmpatt_evar x =>
+            match evm !! x with
+            | Some n => patt_bound_evar n
+            | None => patt_free_evar (string2evar x)
+            end
+        | pmpatt_svar x =>
+            match svm !! x with
+            | Some n => patt_bound_svar n
+            | None => patt_free_svar (string2svar x)
+            end
+        | pmpatt_sym s => patt_sym s
+        | pmpatt_bott => patt_bott
+        | pmpatt_app ϕ₁ ϕ₂ =>
+            patt_app
+                (pmp2ln_aux evm svm ϕ₁)
+                (pmp2ln_aux evm svm ϕ₂)
+        | pmpatt_imp ϕ₁ ϕ₂ =>
+            patt_imp
+                (pmp2ln_aux evm svm ϕ₁)
+                (pmp2ln_aux evm svm ϕ₂)
+        | pmpatt_exists name ϕ' =>
+            patt_exists
+                (pmp2ln_aux
+                    (<[name := 0]>(incr_values evm))
+                    svm ϕ')
+        | pmpatt_mu name ϕ' =>
+            patt_mu
+                (pmp2ln_aux
+                    evm
+                    (<[name := 0]>(incr_values svm))
+                    ϕ')
+        | pmpatt_notation notation args bound_evars bound_svars =>
+            mln_expand
+                notation
+                (vmap (fun ϕ' => pmp2ln_aux evm svm) args)
+                bound_evars
+                bound_svars
+        end
+        .
+    Admitted.
+
+    Definition pmp2ln
+        {Σ : Signature}
+        (ϕ : PMPattern)
+        : Pattern :=
+        pmp2ln_aux ϕ ∅ ∅.
+
+
