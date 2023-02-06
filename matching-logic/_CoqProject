@@ -20,6 +20,7 @@ src/Syntax.v
 src/wftactics.v
 src/NamedAxioms.v
 src/Display.v
+src/ProofModePattern.v
 
 src/Semantics.v
 src/ModelIsomorphism.v
