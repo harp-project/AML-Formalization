@@ -20,14 +20,62 @@ From MatchingLogic Require Import
 
 Require Import String.
 
-Inductive A :=
-| a_a
-| a_b (b: B)
-with
-B :=
-| b_b
-| b_a (a : A)
+Program Definition list_fmap_pfin
+    {A B : Type}
+    (l : list A)
+    (f : forall (x : A) (i : nat) (pf : l !! i = Some x), B)
+    : list B :=
+    (fix go (l' : list A) (i : nat) (l'pf: l' = drop i l /\ i <= base.length l) :=
+        match l' with
+        | [] => []
+        | (x::xs) => (f x i _) :: (go xs (S i) _)
+        end) l 0 _
 .
+Next Obligation.
+    intros. subst.
+    destruct l'pf as [H1 H2].
+    rewrite -(take_drop i l).
+    rewrite -H1.
+    rewrite lookup_app.
+    case_match.
+    {
+        rewrite lookup_take_ge in H;[lia|inversion H].
+    }
+    simpl.
+    rewrite take_length.
+    assert (H0: i - i `min` base.length l = 0).
+    {
+        lia.
+    }
+    {
+        rewrite H0. reflexivity.
+    }
+Defined.
+Next Obligation.
+    intros.
+    destruct l'pf as [H1 H2].
+    
+    destruct l'; inversion Heq_l'; subst; clear Heq_l'.
+    clear f go.
+    move: i H1 H2.
+    induction l; intros i H1 H2; simpl in *.
+    {
+        rewrite drop_nil in H1. inversion H1.
+    }
+    destruct i; simpl in *.
+    {
+        inversion H1. subst. clear H1.
+        rewrite drop_0. split; [reflexivity|lia].
+    }
+    specialize (IHl _ H1 ltac:(lia)).
+    destruct IHl as [IHl1 IHl2].
+    split;[exact IHl1|].
+    lia.
+Defined.
+Next Obligation.
+    intros. rewrite drop_0. split;[reflexivity|lia].
+Defined.
+
 
 Definition VarName := string.
 Definition EVarName := VarName.
@@ -358,20 +406,23 @@ Section sec.
     : Pattern_in_context by wf (PMPattern_size ϕ) lt := {
         PMPattern_to_ln (pmpatt_inj ln) := fun _ => ln ;
         PMPattern_to_ln (pmpatt_construct construct args bevars bsvars)
-        := mlc_expand construct (PMPattern_vec_to_ln args _) bevars bsvars
-            where PMPattern_vec_to_ln
-            {arity : nat}
-            (v : vec PMPattern arity)
-            (pf : vec_to_list v ⊆ vec_to_list args)
-            : vec Pattern_in_context arity  := {
-                @PMPattern_vec_to_ln _ vnil pf := vnil ;
-                @PMPattern_vec_to_ln _ (vcons x xs) _ :=
-                    vcons
-                    (PMPattern_to_ln x)
-                    (PMPattern_vec_to_ln xs _)
+            with mlc_expand construct (list_fmap_pfin (vec_to_list args) (fun p => fun pf => @PMPattern_to_ln p)) bevars bsvars => {
+            | None := _ ;
+            | Some phi := phi
             }
-        }
+        
+    }
     .
+    Proof.
+        simp PMPattern_size.
+        Search elem_of 
+        Check take_drop_middle.
+        pose proof (list_lookup_middle)
+        Search lookup "mid".
+    Qed.
+
+    
+
     Proof.
         {
             move: construct bevars bsvars args PMPattern_to_ln PMPattern_vec_to_ln pf.
