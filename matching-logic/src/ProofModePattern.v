@@ -20,7 +20,7 @@ From MatchingLogic Require Import
 
 Require Import String.
 
-Equations Derive Signature NoConfusion NoConfusionHom for vec.
+(*Equations Derive Signature NoConfusion NoConfusionHom for vec.*)
 
 Equations? list_map_pfin
     {A B : Type}
@@ -511,20 +511,18 @@ Section sec.
         inversion Hcontra.
     Qed.
 
+    (*
+    Obligation Tactic := intros; idtac.
     (*#[tactic="simpl"]*)
+*)
+    Set Equations With UIP.
+
     Equations? PMPattern_to_ln
     (ϕ : PMPattern)
     : Pattern_in_context by wf (PMPattern_size ϕ) lt := {
         PMPattern_to_ln (pmpatt_inj ln) := mkPIC _ (fun _ => ln );
         PMPattern_to_ln (pmpatt_construct construct args bevars bsvars) :=
-            expand_total construct args bevars bsvars (fun p pf => PMPattern_to_ln_with_pf p pf)
-            where PMPattern_to_ln_with_pf
-                (ϕ' : PMPattern)
-                (pf : ϕ' ∈ vec_to_list args)
-                : Pattern_in_context := {
-                    PMPattern_to_ln_with_pf ϕ' _ := PMPattern_to_ln ϕ'
-                }
-            
+            expand_total construct args bevars bsvars (fun p pf => PMPattern_to_ln p)            
     }
     .
    Proof.
@@ -535,7 +533,7 @@ Section sec.
             remember (vec_to_list args) as args'.
             apply elem_of_list_lookup_1 in pf.
             destruct pf as [i Hi].
-            pose proof (Hargs := take_drop_middle args' i ϕ' Hi).
+            pose proof (Hargs := take_drop_middle args' i p Hi).
             subst.
             rewrite -Hargs;
             rewrite fmap_app;
@@ -559,4 +557,5 @@ Section sec.
             ).*)
         }
     Defined.
-    Next Obligation.
+
+End sec.
