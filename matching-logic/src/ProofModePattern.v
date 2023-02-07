@@ -20,61 +20,72 @@ From MatchingLogic Require Import
 
 Require Import String.
 
-Program Definition list_fmap_pfin
+Equations? list_fmap_pfin_aux
+    {A B : Type}
+    (l l' : list A)
+    (i : nat)
+    (f : forall (x : A) (i : nat) (pf : l !! i = Some x), B)
+    (l'pf: l' = drop i l /\ i <= base.length l)
+    : list B :=
+    list_fmap_pfin_aux _ [] _ _ _ := [] ;
+    list_fmap_pfin_aux l (x::xs) i f pf := (f x i _) :: (list_fmap_pfin_aux l xs (S i) f _) .
+Proof.
+    {
+        destruct pf as [H1 H2].
+        rewrite -(take_drop i l).
+        rewrite -H1.
+        rewrite lookup_app.
+        case_match.
+        {
+            rewrite lookup_take_ge in H;[lia|inversion H].
+        }
+        simpl.
+        rewrite take_length.
+        assert (H0: i - i `min` base.length l = 0).
+        {
+            lia.
+        }
+        {
+            rewrite H0. reflexivity.
+        }
+    }
+    {
+        clear f.
+        move: i pf.
+        induction l; intros i pf; simpl in *.
+        {
+            rewrite drop_nil in pf.
+            destruct pf as [H1 H2].
+            inversion H1.
+        }
+        destruct pf as [H1 H2].
+        destruct i; simpl in *.
+        {
+            inversion H1. subst. clear H1.
+            rewrite drop_0. split; [reflexivity|lia].
+        }
+        specialize (IHl i).
+        feed specialize IHl.
+        {
+            split;[assumption|lia].
+        }
+        destruct IHl as [IHl1 IHl2].
+        split;[exact IHl1|].
+        lia.
+    }
+Qed.
+
+Equations? list_fmap_pfin
     {A B : Type}
     (l : list A)
     (f : forall (x : A) (i : nat) (pf : l !! i = Some x), B)
     : list B :=
-    (fix go (l' : list A) (i : nat) (l'pf: l' = drop i l /\ i <= base.length l) :=
-        match l' with
-        | [] => []
-        | (x::xs) => (f x i _) :: (go xs (S i) _)
-        end) l 0 _
-.
-Next Obligation.
-    intros. subst.
-    destruct l'pf as [H1 H2].
-    rewrite -(take_drop i l).
-    rewrite -H1.
-    rewrite lookup_app.
-    case_match.
-    {
-        rewrite lookup_take_ge in H;[lia|inversion H].
-    }
-    simpl.
-    rewrite take_length.
-    assert (H0: i - i `min` base.length l = 0).
-    {
-        lia.
-    }
-    {
-        rewrite H0. reflexivity.
-    }
-Defined.
-Next Obligation.
-    intros.
-    destruct l'pf as [H1 H2].
-    
-    destruct l'; inversion Heq_l'; subst; clear Heq_l'.
-    clear f go.
-    move: i H1 H2.
-    induction l; intros i H1 H2; simpl in *.
-    {
-        rewrite drop_nil in H1. inversion H1.
-    }
-    destruct i; simpl in *.
-    {
-        inversion H1. subst. clear H1.
-        rewrite drop_0. split; [reflexivity|lia].
-    }
-    specialize (IHl _ H1 ltac:(lia)).
-    destruct IHl as [IHl1 IHl2].
-    split;[exact IHl1|].
-    lia.
-Defined.
-Next Obligation.
-    intros. rewrite drop_0. split;[reflexivity|lia].
-Defined.
+    list_fmap_pfin l f := list_fmap_pfin_aux l l 0 f _.
+Proof.
+    rewrite drop_0.
+    split;[reflexivity|lia].
+Qed.
+
 
 
 Definition VarName := string.
@@ -382,6 +393,21 @@ Section sec.
         (bound_svars : vec SVarName (mlc_sbinder_arity construct))
     .
 
+    (*
+
+    Inductive PMPattern : Set :=
+    | pmpatt_inj (ln : Pattern)
+    | pmpatt_construct
+        (construct : MLConstruct)
+        (args : list PMPattern)
+        (bound_evars : list EVarName)
+        (bound_svars : list SVarName)
+        (pfargs : base.length args = mlc_arity construct)
+        (pfbe : base.length bound_evars = mlc_ebinder_arity construct)
+        (pfbs : base.length bound_svars = mlc_sbinder_arity construct)
+    .
+    *)
+
 
     Equations PMPattern_size
         (ϕ : PMPattern)
@@ -406,7 +432,7 @@ Section sec.
     : Pattern_in_context by wf (PMPattern_size ϕ) lt := {
         PMPattern_to_ln (pmpatt_inj ln) := fun _ => ln ;
         PMPattern_to_ln (pmpatt_construct construct args bevars bsvars)
-            with mlc_expand construct (list_fmap_pfin (vec_to_list args) (fun p => fun pf => @PMPattern_to_ln p)) bevars bsvars => {
+            with mlc_expand construct (list_fmap_pfin (vec_to_list args) (fun p => fun i => fun pf => @PMPattern_to_ln p)) bevars bsvars => {
             | None := _ ;
             | Some phi := phi
             }
@@ -414,10 +440,19 @@ Section sec.
     }
     .
     Proof.
-        simp PMPattern_size.
+        {
+            simp PMPattern_size.
+            Set Printing Implicit. Set Printing Coercions.
+            unfold PMPattern_size_clause_2_PMPattern_size_vec.
+            remember (vec_to_list args) as args'.
+            pose proof (Hargs := take_drop_middle args' i p pf).
+            simpl. 
+            rewrite -Hargs.
+            Check @take_drop_middle.
+        }
         Search elem_of 
-        Check take_drop_middle.
-        pose proof (list_lookup_middle)
+        
+        
         Search lookup "mid".
     Qed.
 
