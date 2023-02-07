@@ -48,6 +48,23 @@ Proof.
   }
 Qed.
 
+Lemma length_list_map_pfin
+    {A B : Type}
+    (l : list A)
+    (f : forall (x : A) (pf: x ∈ l), B)
+    :
+    List.length (list_map_pfin l f) = List.length l
+.
+Proof.
+    induction l.
+    {
+        simpl. reflexivity.
+    }
+    {
+        simpl. simp list_map_pfin. simpl. rewrite IHl. reflexivity.
+    }
+Qed.
+
 Definition VarName := string.
 Definition EVarName := VarName.
 Definition SVarName := VarName.
@@ -403,38 +420,203 @@ Section sec.
         }
     Qed.
 
+    (*
+    Definition eq_apply_4
+        {T1 T2 T3 T4 R : Type}
+        (f: T1 -> T2 -> T3 -> T4 -> R)
+        (arg1 : T1)
+        (arg2 : T2)
+        (arg3 : T3)
+        (arg4 : T4)
+        :
+        {r : R & r = f arg1 arg2 arg3 arg4}
+    .
+    Proof.
+        exists (f arg1 arg2 arg3 arg4).
+        reflexivity.
+    Defined.
+*)
+
+Print sigT.
+
+    Equations eq_apply_4
+    {T1 T2 T3 T4 R : Type}
+    (f: T1 -> T2 -> T3 -> T4 -> R)
+    (arg1 : T1)
+    (arg2 : T2)
+    (arg3 : T3)
+    (arg4 : T4)
+    :
+    {r : R & r = f arg1 arg2 arg3 arg4} :=
+    eq_apply_4 f arg1 arg2 arg3 arg4
+      := existT (f arg1 arg2 arg3 arg4) (@eq_refl _ _) .
+    
+    Definition eq_apply_5
+        {T1 T2 T3 T4 T5 R : Type}
+        (f: T1 -> T2 -> T3 -> T4 -> T5 -> R)
+        (arg1 : T1)
+        (arg2 : T2)
+        (arg3 : T3)
+        (arg4 : T4)
+        (arg5 : T5)
+        :
+        {r : R & r = f arg1 arg2 arg3 arg4 arg5}
+    .
+    Proof.
+        exists (f arg1 arg2 arg3 arg4 arg5).
+        reflexivity.
+    Defined.
+
+    Program Definition expand_total
+        (construct : MLConstruct)
+        (args : vec PMPattern (mlc_arity construct))
+        (bevars : vec EVarName (mlc_ebinder_arity construct))
+        (bsvars : vec SVarName (mlc_sbinder_arity construct))
+        (f : forall (p : PMPattern), p ∈ (vec_to_list args) -> Pattern_in_context)
+        : Pattern_in_context :=
+        match (eq_apply_4 mlc_expand construct (list_map_pfin (vec_to_list args) (fun p => fun pf => f p pf)) bevars bsvars) with
+        | existT None Hcontra => @False_rec _ _
+        | existT (Some phi) _ => phi
+        end.
+    Next Obligation.
+        intros.
+        cbn in Hcontra.
+        match type of Hcontra  with
+        | _ = mlc_expand _ (list_map_pfin _ ?x) _ _ => remember x as some_lambda
+        end.
+        clear Heqsome_lambda.
+        match type of Hcontra with
+        | None = mlc_expand ?a1 ?a2 ?a3 ?a4 
+            =>
+            pose proof (Htmp := mlc_expand_almost_total a1 a2 a3 a4)
+        end.
+        feed specialize Htmp.
+        {
+            rewrite length_list_map_pfin.
+            rewrite vec_to_list_length.
+            reflexivity.
+        }
+        {
+            rewrite vec_to_list_length.
+            reflexivity.
+        }
+        {
+            rewrite vec_to_list_length.
+            reflexivity.
+        }
+        destruct Htmp as [ϕ_in_context Hϕ_in_context].
+        clear Heq_anonymous.
+        rewrite Hϕ_in_context in Hcontra.
+        inversion Hcontra.
+    Qed.
+
+    Equations? PMPattern_to_ln
+    (ϕ : PMPattern)
+    : Pattern_in_context by wf (PMPattern_size ϕ) lt := {
+        PMPattern_to_ln (pmpatt_inj ln) := fun _ => ln ;
+        PMPattern_to_ln (pmpatt_construct construct args bevars bsvars) :=
+            expand_total construct args bevars bsvars (fun p pf => PMPattern_to_ln_with_pf p pf)
+            where PMPattern_to_ln_with_pf
+                (ϕ' : PMPattern)
+                (pf : ϕ' ∈ vec_to_list args)
+                : Pattern_in_context := {
+                    PMPattern_to_ln_with_pf ϕ' _ := PMPattern_to_ln ϕ'
+                }
+            
+    }
+    .
+    Proof.
+        {
+            clear PMPattern_to_ln.
+            simp PMPattern_size.
+            rewrite PMPattern_size_clause_2_PMPattern_size_vec_spec.
+            remember (vec_to_list args) as args'.
+            apply elem_of_list_lookup_1 in pf.
+            destruct pf as [i Hi].
+            pose proof (Hargs := take_drop_middle args' i ϕ' Hi).
+            subst.
+            rewrite -Hargs;
+            rewrite fmap_app;
+            rewrite list_sum_app;
+            simpl;
+            lia.
+
+            (*abstract(
+                simp PMPattern_size;
+                rewrite PMPattern_size_clause_2_PMPattern_size_vec_spec;
+                remember (vec_to_list args) as args';
+                apply elem_of_list_lookup_1 in pf;
+                destruct pf as [i Hi];
+                pose proof (Hargs := take_drop_middle args' i p Hi);
+                subst;
+                rewrite -Hargs;
+                rewrite fmap_app;
+                rewrite list_sum_app;
+                simpl;
+                lia
+            ).*)
+        }
+    Defined.
+
     Equations? PMPattern_to_ln
     (ϕ : PMPattern)
     : Pattern_in_context by wf (PMPattern_size ϕ) lt := {
         PMPattern_to_ln (pmpatt_inj ln) := fun _ => ln ;
         PMPattern_to_ln (pmpatt_construct construct args bevars bsvars)
-            with mlc_expand construct (list_map_pfin (vec_to_list args) (fun p pf => @PMPattern_to_ln p)) bevars bsvars => {
-            | None := _ ;
-            | Some phi := phi
+            with eq_apply_4 mlc_expand construct (list_map_pfin (vec_to_list args) (fun p => fun pf => PMPattern_to_ln p )) bevars bsvars => {
+            | existT None Hcontra := @False_rec _ _ ;
+            | existT (Some phi) _ := phi
             }
-        
     }
     .
     Proof.
         {
-            simp PMPattern_size.
-            remember (vec_to_list args) as args'.
-            apply elem_of_list_lookup_1 in pf.
-            destruct pf as [i Hi].
-            pose proof (Hargs := take_drop_middle args' i p Hi).
-            subst. Set Printing All.
-            unfold PMPattern_size_clause_2_PMPattern_size_vec.
-            funelim (PMPattern_size_clause_2_PMPattern_size_vec)..
-            simp PMPattern_size_clause_2_PMPattern_size_vec.
-            simpl. 
-            rewrite -Hargs.
-            Check @take_drop_middle.
+            abstract(
+                simp PMPattern_size;
+                rewrite PMPattern_size_clause_2_PMPattern_size_vec_spec;
+                remember (vec_to_list args) as args';
+                apply elem_of_list_lookup_1 in pf;
+                destruct pf as [i Hi];
+                pose proof (Hargs := take_drop_middle args' i p Hi);
+                subst;
+                rewrite -Hargs;
+                rewrite fmap_app;
+                rewrite list_sum_app;
+                simpl;
+                lia
+            ).
         }
-        Search elem_of 
-        
-        
-        Search lookup "mid".
-    Qed.
+        {
+            cbn in Hcontra.
+            match type of Hcontra  with
+            | _ = mlc_expand _ (list_map_pfin _ ?x) _ _ => remember x as some_lambda
+            end.
+            clear Heqsome_lambda.
+            clear PMPattern_to_ln.
+            match type of Hcontra with
+            | None = mlc_expand ?a1 ?a2 ?a3 ?a4 
+              =>
+                pose proof (Htmp := mlc_expand_almost_total a1 a2 a3 a4)
+            end.
+            feed specialize Htmp.
+            {
+                rewrite length_list_map_pfin.
+                rewrite vec_to_list_length.
+                reflexivity.
+            }
+            {
+                rewrite vec_to_list_length.
+                reflexivity.
+            }
+            {
+                rewrite vec_to_list_length.
+                reflexivity.
+            }
+            destruct Htmp as [ϕ_in_context Hϕ_in_context].
+            rewrite Hϕ_in_context in Hcontra.
+            inversion Hcontra.
+        }
+    Defined.
 
     
 
