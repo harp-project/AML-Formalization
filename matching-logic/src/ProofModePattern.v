@@ -20,129 +20,33 @@ From MatchingLogic Require Import
 
 Require Import String.
 
-Equations? list_fmap_pfin_aux
-    {A B : Type}
-    (l l' : list A)
-    (i : nat)
-    (f : forall (x : A) (i : nat) (pf : l !! i = Some x), B)
-    (l'pf: l' = drop i l /\ i <= base.length l)
-    : list B :=
-    list_fmap_pfin_aux _ [] _ _ _ := [] ;
-    list_fmap_pfin_aux l (x::xs) i f pf := (f x i _) :: (list_fmap_pfin_aux l xs (S i) f _) .
-Proof.
-    {
-        destruct pf as [H1 H2].
-        rewrite -(take_drop i l).
-        rewrite -H1.
-        rewrite lookup_app.
-        case_match.
-        {
-            rewrite lookup_take_ge in H;[lia|inversion H].
-        }
-        simpl.
-        rewrite take_length.
-        assert (H0: i - i `min` base.length l = 0).
-        {
-            lia.
-        }
-        {
-            rewrite H0. reflexivity.
-        }
-    }
-    {
-        clear f.
-        move: i pf.
-        induction l; intros i pf; simpl in *.
-        {
-            rewrite drop_nil in pf.
-            destruct pf as [H1 H2].
-            inversion H1.
-        }
-        destruct pf as [H1 H2].
-        destruct i; simpl in *.
-        {
-            inversion H1. subst. clear H1.
-            rewrite drop_0. split; [reflexivity|lia].
-        }
-        specialize (IHl i).
-        feed specialize IHl.
-        {
-            split;[assumption|lia].
-        }
-        destruct IHl as [IHl1 IHl2].
-        split;[exact IHl1|].
-        lia.
-    }
-Qed.
+Equations Derive Signature NoConfusion NoConfusionHom for vec.
 
-Equations? list_fmap_pfin
+Equations? list_map_pfin
     {A B : Type}
     (l : list A)
-    (f : forall (x : A) (i : nat) (pf : l !! i = Some x), B)
+    (f : forall (x : A) (pf: x ∈ l), B)
     : list B :=
-    list_fmap_pfin l f := list_fmap_pfin_aux l l 0 f _.
+    list_map_pfin [] _ := [] ;
+    list_map_pfin (x::xs) f := (f x _)::(list_map_pfin xs (fun x H => f x _)) .
 Proof.
-    rewrite drop_0.
-    split;[reflexivity|lia].
-Qed.
-
-Lemma lookup_app_Some_1:
-    ∀ {A : Type} (l1 l2 : list A) (i : nat) (x : A),
-    l1 !! i = Some x ->
-    (l1 ++ l2) !! i = Some x
-.
-Proof.
-    intros. rewrite lookup_app_Some. left. exact H.
-Qed.
-
-Definition list_fmap_pfin_lift_app_1
-    {A B : Type} (l1 l2 : list A)
-    (f : forall (x : A) (i : nat) (pf : (l1 ++ l2) !! i = Some x), B)
-    :
-    forall (x : A) (i : nat) (pf : l1 !! i = Some x), B
-.
-Proof.
-    intros. eapply f. apply lookup_app_Some_1. exact pf.
-Defined.
-
-
-Definition list_fmap_pfin_lift_app_2
-    {A B : Type} (l1 l2 : list A)
-    (f : forall (x : A) (i : nat) (pf : (l1 ++ l2) !! i = Some x), B)
-    :
-    forall (x : A) (i : nat) (pf : l2 !! i = Some x), B
-.
-Proof.
-    intros.
-    specialize (f x (List.length l1 + i)).
-    apply f.
-    rewrite lookup_app.
-    case_match.
     {
-        rewrite lookup_ge_None_2 in H.
-        { lia. }
-        inversion H.
+        left.
     }
-    assert (Hi: base.length l1 + i - base.length l1 = i) by lia.
-    rewrite Hi.
-    exact pf.
-Defined.
-
-Lemma list_fmap_pfin_app
-    {A B : Type}
-    (l1 l2 : list A)
-    (f : forall (x : A) (i : nat) (pf : (l1 ++ l2) !! i = Some x), B)
-    :
-    list_fmap_pfin (l1 ++ l2) f
-    = (list_fmap_pfin l1 (list_fmap_pfin_lift_app_1 l1 l2 f))
-    ++ (list_fmap_pfin l2 (list_fmap_pfin_lift_app_2 l1 l2 f))
-.
-Proof.
-    simp list_fmap_pfin.
+    {
+        right. exact H.
+    }
 Qed.
 
-
-
+Lemma list_map_pfin_spec {A B : Type} (f : A -> B) (l : list A) :
+    list_map_pfin l (fun (x : A) (_ : x ∈ l) => f x) = List.map f l.
+Proof.
+  funelim (list_map_pfin l _).
+  { reflexivity. }
+  {
+    simp list_map_pfin. rewrite H. reflexivity.
+  }
+Qed.
 
 Definition VarName := string.
 Definition EVarName := VarName.
@@ -477,18 +381,34 @@ Section sec.
             : nat := {
                 @PMPattern_size_vec _ vnil := 1 ;
                 @PMPattern_size_vec _ (vcons x xs) :=
-                    S (PMPattern_size x + PMPattern_size_vec xs)
+                    (PMPattern_size x + PMPattern_size_vec xs)
             }
         }
     .
 
+    Lemma PMPattern_size_clause_2_PMPattern_size_vec_spec
+        a e s a' ar args':
+        PMPattern_size_clause_2_PMPattern_size_vec PMPattern_size a e s a' ar args'
+        = S (list_sum (fmap (fun p => PMPattern_size p) (vec_to_list args')))
+    .
+    Proof.
+        Check fun_elim.
+        induction args'; simpl.
+        {
+            reflexivity.
+        }
+        {
+            rewrite IHargs'. simpl.
+            unfold fmap. lia.
+        }
+    Qed.
 
     Equations? PMPattern_to_ln
     (ϕ : PMPattern)
     : Pattern_in_context by wf (PMPattern_size ϕ) lt := {
         PMPattern_to_ln (pmpatt_inj ln) := fun _ => ln ;
         PMPattern_to_ln (pmpatt_construct construct args bevars bsvars)
-            with mlc_expand construct (list_fmap_pfin (vec_to_list args) (fun p => fun i => fun pf => @PMPattern_to_ln p)) bevars bsvars => {
+            with mlc_expand construct (list_map_pfin (vec_to_list args) (fun p pf => @PMPattern_to_ln p)) bevars bsvars => {
             | None := _ ;
             | Some phi := phi
             }
@@ -498,10 +418,14 @@ Section sec.
     Proof.
         {
             simp PMPattern_size.
-            Set Printing Implicit. Set Printing Coercions.
-            unfold PMPattern_size_clause_2_PMPattern_size_vec.
             remember (vec_to_list args) as args'.
-            pose proof (Hargs := take_drop_middle args' i p pf).
+            apply elem_of_list_lookup_1 in pf.
+            destruct pf as [i Hi].
+            pose proof (Hargs := take_drop_middle args' i p Hi).
+            subst. Set Printing All.
+            unfold PMPattern_size_clause_2_PMPattern_size_vec.
+            funelim (PMPattern_size_clause_2_PMPattern_size_vec)..
+            simp PMPattern_size_clause_2_PMPattern_size_vec.
             simpl. 
             rewrite -Hargs.
             Check @take_drop_middle.
