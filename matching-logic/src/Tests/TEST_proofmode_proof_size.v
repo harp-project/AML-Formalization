@@ -145,7 +145,9 @@ Section compute.
 
   Instance signature : Signature :=
     {| variables := StringMLVariables ;
-       symbols := Symbols ;
+       ml_symbols := {|
+         symbols := Symbols ;
+       |} ;
     |}.
 
   Instance definedness_syntax : Definedness_Syntax.Syntax :=

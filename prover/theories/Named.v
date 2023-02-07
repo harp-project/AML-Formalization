@@ -39,7 +39,7 @@ Fixpoint nsize' (p : NamedPattern) : nat :=
 Proof.
   set (enc :=
          fix go p : gen_tree (unit
-                              + ((@symbols Σ)
+                              + ((@symbols (@ml_symbols Σ))
                                  + (((@evar variables))
                                     + ((@svar variables)))))%type :=
            match p with
@@ -56,7 +56,7 @@ Proof.
 
   set (dec :=
          fix go (p : gen_tree (unit
-                              + ((@symbols Σ)
+                              + ((@symbols (@ml_symbols Σ))
                                  + (((@evar variables) )
                                     + ((@svar variables)))))%type) : NamedPattern :=
            match p with
@@ -660,8 +660,10 @@ Section named_test.
 
   Definition sig : Signature :=
     {| variables := StringMLVariables;
-       symbols := Symbols;
-       sym_eqdec := Symbols_dec;
+       ml_symbols := {|
+         symbols := Symbols;
+         sym_eqdec := Symbols_dec;
+       |} ;
     |}.
 
   (* Consider the following pattern in locally nameless representation:

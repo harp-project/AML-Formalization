@@ -18,7 +18,8 @@ do
     runner_hs="$(basename $hs_file ".hs")_main.hs"
     str_name="$(basename "$hs_file" "_mm.hs")"
     printf "module Main where\n  import Proof\n  main = Prelude.putStrLn Proof.$str_name" > "$runner_hs"
-    ghc "$patched_hs_file" "$runner_hs" -o runner
+    # https://github.com/coq/coq/issues/15180
+    ghc -XNoPolyKinds "$patched_hs_file" "$runner_hs" -o runner
     mm_file="$(basename "$hs_file" "_mm.hs").mm"
     ./runner > "$mm_file"
     #continue
