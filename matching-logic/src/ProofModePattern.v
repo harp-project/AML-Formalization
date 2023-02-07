@@ -93,9 +93,10 @@ Definition pc_add_sname
     mkPContext (pc_evm ctx) ((<[name := 0]>(incr_values (pc_svm ctx))))
 .
 
-Definition Pattern_in_context
-    {Σ : Signature} :=
-    PContext -> Pattern
+Record Pattern_in_context
+    {Σ : Signature} := mkPIC {
+      pic_pic: PContext -> Pattern;
+    }
 .
 
 (*
@@ -148,8 +149,10 @@ Section sec.
                 fun _ =>
                 fun _ =>
                 fun _ => Some (
+                    mkPIC _ (
                     fun _ =>
                         patt_sym s
+                    )
                 )
         |}
     .
@@ -165,10 +168,10 @@ Section sec.
             mlc_expand :=
                 fun _ =>
                 fun _ =>
-                fun _ => Some(
+                fun _ => Some(                mkPIC _ (
                     fun _ =>
                     patt_bott
-                )
+                ))
         |}
     .
     Next Obligation.
@@ -185,13 +188,13 @@ Section sec.
             mlc_expand :=
                 fun _ =>
                 fun _ =>
-                fun _ => Some (
+                fun _ => Some (mkPIC _ (
                     fun ctx =>
                     match (pc_evm ctx) !! name with
                     | Some n => patt_bound_evar n
                     | None => patt_free_evar (string2evar name)
                     end
-                )
+                ))
         |}
     .
     Next Obligation.
@@ -208,13 +211,13 @@ Section sec.
             mlc_expand :=
                 fun _ =>
                 fun _ =>
-                fun _ => Some (
+                fun _ => Some (mkPIC _ (
                     fun ctx =>
                     match (pc_svm ctx) !! name with
                     | Some n => patt_bound_svar n
                     | None => patt_free_svar (string2svar name)
                     end
-                )
+                ))
         |}
     .
     Next Obligation.
@@ -237,9 +240,10 @@ Section sec.
                       match ps !! 1 with
                       | None => None
                       | Some ϕ₂ =>
-                        Some (
-                            fun ctx =>
-                            patt_app (ϕ₁ ctx) (ϕ₂ ctx)
+                        Some (mkPIC _ (
+                            fun ctx => 
+                            patt_app (pic_pic ϕ₁ ctx) (pic_pic ϕ₂ ctx)
+                            )
                         )
                       end
                     end
@@ -270,10 +274,10 @@ Section sec.
                       match ps !! 1 with
                       | None => None
                       | Some ϕ₂ =>
-                        Some (
+                        Some ( mkPIC _ (
                             fun ctx =>
-                            patt_imp (ϕ₁ ctx) (ϕ₂ ctx)
-                        )
+                            patt_imp (pic_pic ϕ₁ ctx) (pic_pic ϕ₂ ctx)
+                        ))
                       end
                     end
         |}
@@ -302,12 +306,12 @@ Section sec.
                         match evs !! 0 with
                         | None => None
                         | Some name =>
-                            Some (
+                            Some ( mkPIC _ (
                                 fun ctx =>
                                     let ctx' := pc_add_ename ctx name in
-                                    let ϕ := ϕ_in_context ctx' in
+                                    let ϕ := pic_pic ϕ_in_context ctx' in
                                     patt_exists ϕ
-                            )
+                            ))
                         end
                     end
         |}
@@ -336,12 +340,12 @@ Section sec.
                         match svs !! 0 with
                         | None => None
                         | Some name =>
-                            Some (
+                            Some ( mkPIC _ (
                                 fun ctx =>
                                     let ctx' := pc_add_sname ctx name in
-                                    let ϕ := ϕ_in_context ctx' in
+                                    let ϕ := pic_pic ϕ_in_context ctx' in
                                     patt_mu ϕ
-                            )
+                            ))
                         end
                     end
         |}
@@ -409,7 +413,6 @@ Section sec.
         = S (list_sum (fmap (fun p => PMPattern_size p) (vec_to_list args')))
     .
     Proof.
-        Check fun_elim.
         induction args'; simpl.
         {
             reflexivity.
@@ -436,8 +439,6 @@ Section sec.
         reflexivity.
     Defined.
 *)
-
-Print sigT.
 
     Equations eq_apply_4
     {T1 T2 T3 T4 R : Type}
@@ -510,10 +511,11 @@ Print sigT.
         inversion Hcontra.
     Qed.
 
+    (*#[tactic="simpl"]*)
     Equations? PMPattern_to_ln
     (ϕ : PMPattern)
     : Pattern_in_context by wf (PMPattern_size ϕ) lt := {
-        PMPattern_to_ln (pmpatt_inj ln) := fun _ => ln ;
+        PMPattern_to_ln (pmpatt_inj ln) := mkPIC _ (fun _ => ln );
         PMPattern_to_ln (pmpatt_construct construct args bevars bsvars) :=
             expand_total construct args bevars bsvars (fun p pf => PMPattern_to_ln_with_pf p pf)
             where PMPattern_to_ln_with_pf
@@ -525,7 +527,7 @@ Print sigT.
             
     }
     .
-    Proof.
+   Proof.
         {
             clear PMPattern_to_ln.
             simp PMPattern_size.
@@ -557,249 +559,4 @@ Print sigT.
             ).*)
         }
     Defined.
-
-    Equations? PMPattern_to_ln
-    (ϕ : PMPattern)
-    : Pattern_in_context by wf (PMPattern_size ϕ) lt := {
-        PMPattern_to_ln (pmpatt_inj ln) := fun _ => ln ;
-        PMPattern_to_ln (pmpatt_construct construct args bevars bsvars)
-            with eq_apply_4 mlc_expand construct (list_map_pfin (vec_to_list args) (fun p => fun pf => PMPattern_to_ln p )) bevars bsvars => {
-            | existT None Hcontra := @False_rec _ _ ;
-            | existT (Some phi) _ := phi
-            }
-    }
-    .
-    Proof.
-        {
-            abstract(
-                simp PMPattern_size;
-                rewrite PMPattern_size_clause_2_PMPattern_size_vec_spec;
-                remember (vec_to_list args) as args';
-                apply elem_of_list_lookup_1 in pf;
-                destruct pf as [i Hi];
-                pose proof (Hargs := take_drop_middle args' i p Hi);
-                subst;
-                rewrite -Hargs;
-                rewrite fmap_app;
-                rewrite list_sum_app;
-                simpl;
-                lia
-            ).
-        }
-        {
-            cbn in Hcontra.
-            match type of Hcontra  with
-            | _ = mlc_expand _ (list_map_pfin _ ?x) _ _ => remember x as some_lambda
-            end.
-            clear Heqsome_lambda.
-            clear PMPattern_to_ln.
-            match type of Hcontra with
-            | None = mlc_expand ?a1 ?a2 ?a3 ?a4 
-              =>
-                pose proof (Htmp := mlc_expand_almost_total a1 a2 a3 a4)
-            end.
-            feed specialize Htmp.
-            {
-                rewrite length_list_map_pfin.
-                rewrite vec_to_list_length.
-                reflexivity.
-            }
-            {
-                rewrite vec_to_list_length.
-                reflexivity.
-            }
-            {
-                rewrite vec_to_list_length.
-                reflexivity.
-            }
-            destruct Htmp as [ϕ_in_context Hϕ_in_context].
-            rewrite Hϕ_in_context in Hcontra.
-            inversion Hcontra.
-        }
-    Defined.
-
-    
-
-    Proof.
-        {
-            move: construct bevars bsvars args PMPattern_to_ln PMPattern_vec_to_ln pf.
-            intros construct.
-            remember (mlc_arity construct) as arity in * |-.
-            assert (Harity: mlc_arity construct <= arity) by lia.
-            clear Heqarity.
-            move: Harity.
-
-            induction arity.
-            {
-                intros. destruct construct.
-                simpl in *. subst. simpl in *.
-                exfalso.
-                destruct mlc_arity0.
-                2: {
-                    exfalso. lia.
-                }
-                clear -pf.
-                inv_vec args. simpl. set_solver.
-            }
-            {
-                intros HltSarity.
-                destruct (decide (mlc_arity construct <= arity)) as [H|H].
-                {
-                    specialize (IHarity H).
-                    intros.
-                    auto.
-                }
-                {
-                    assert (HSarity: mlc_arity construct = S arity) by lia.
-                    clear H.
-                    intros.
-                    simp PMPattern_size.
-                    remember args as args'.
-                    rewrite HSarity in args'.
-                    inv_vec args'.
-                }
-
-                specialize (IHargs mlc_expand0).
-
-                simpl in *.
-            }
-            Set Printing Implicit.
-            move: x xs pf.
-            induction n.
-            {
-                intros x Hxxsargs pf.
-                simpl in *.
-                rewrite elem_of_subseteq in pf.
-                specialize (pf x ltac:(left)).
-            }
-            simpl in pf.
-            rewrite elem_of_subseteq in pf.
-            specialize (pf x ltac:(left)).
-            simp PMPattern_size.
-        simp PMPattern_size_clause_2_PMPattern_size_vec.
-        simp PMPattern_size_vec.
-        }
-    Qed.
-
-    Equations? PMPattern_to_ln
-        {Σ : Signature}
-        (ϕ : PMPattern)
-        : Pattern_in_context by wf (PMPattern_size ϕ) lt :=
-    PMPattern_to_ln (pmpatt_inj ln) := fun _ => ln ;
-    PMPattern_to_ln (pmpatt_construct construct args bevars bsvars)
-      := let args' := vmap (fun p => @PMPattern_to_ln Σ p) args in
-         mlc_expand construct args' bevars bsvars
-    .
-    Proof.
-        simp PMPattern_size.
-        clear.
-        Set Printing Implicit.
-        induction args.
-    Qed.
-
-
-Check sum_list.
-Check vec_to_list.
-Fixpoint PMPattern_size
-    {Σ : Signature}
-    (ϕ : PMPattern)
-    : nat :=
-    match ϕ with
-    | pmpatt_evar _ => 1
-    | pmpatt_svar _ => 1
-    | pmpatt_sym _ => 1
-    | pmpatt_bott => 1
-    | pmpatt_app ϕ₁ ϕ₂ =>
-        1 + (PMPattern_size ϕ₁) + (PMPattern_size ϕ₂)
-    | pmpatt_imp ϕ₁ ϕ₂ =>
-        1 + (PMPattern_size ϕ₁) + (PMPattern_size ϕ₂)
-    | pmpatt_exists _ ϕ' => 1 + (PMPattern_size ϕ')
-    | pmpatt_mu _ ϕ' => 1 + (PMPattern_size ϕ')
-    | pmpatt_notation _ args _ _ =>
-        1 + sum_list (fmap PMPattern_size (vec_to_list args))
-    end
-.
-
-Equations Derive NoConfusion for PMPattern.
-Equations Derive Subterm for PMPattern.
-
-Check PMPattern_subterm.
-
-
-    Check insert.
-
-    Print PMPattern_direct_subterm.
-
-    Equations? pmp2ln_aux 
-        (ϕ : PMPattern)
-    : Pattern by wf ϕ (PMPattern_direct_subterm Σ) :=
-    pmp2ln_aux (pmpatt_evar x) := patt_bound_evar 0 ;
-    pmp2ln_aux _ := patt_bound_evar 0 .
-
-
-    Equations? pmp2ln_aux 
-        (evm : gmap VarName nat)
-        (svm : gmap VarName nat)
-        (ϕ : PMPattern)
-    : Pattern by wf ϕ PMPattern_subterm :=
-    pmp2ln_aux evm svm (pmpatt_evar x) :=
-        match evm !! x with
-        | Some n => patt_bound_evar n
-        | None => patt_free_evar (string2evar x)
-        end.
-
-
-    Fixpoint pmp2ln_aux
-        (evm : gmap VarName nat)
-        (svm : gmap VarName nat)
-        (ϕ : PMPattern)
-        : Pattern :=
-        match ϕ with
-        | pmpatt_evar x =>
-            match evm !! x with
-            | Some n => patt_bound_evar n
-            | None => patt_free_evar (string2evar x)
-            end
-        | pmpatt_svar x =>
-            match svm !! x with
-            | Some n => patt_bound_svar n
-            | None => patt_free_svar (string2svar x)
-            end
-        | pmpatt_sym s => patt_sym s
-        | pmpatt_bott => patt_bott
-        | pmpatt_app ϕ₁ ϕ₂ =>
-            patt_app
-                (pmp2ln_aux evm svm ϕ₁)
-                (pmp2ln_aux evm svm ϕ₂)
-        | pmpatt_imp ϕ₁ ϕ₂ =>
-            patt_imp
-                (pmp2ln_aux evm svm ϕ₁)
-                (pmp2ln_aux evm svm ϕ₂)
-        | pmpatt_exists name ϕ' =>
-            patt_exists
-                (pmp2ln_aux
-                    (<[name := 0]>(incr_values evm))
-                    svm ϕ')
-        | pmpatt_mu name ϕ' =>
-            patt_mu
-                (pmp2ln_aux
-                    evm
-                    (<[name := 0]>(incr_values svm))
-                    ϕ')
-        | pmpatt_notation notation args bound_evars bound_svars =>
-            mlc_expand
-                notation
-                (vmap (fun ϕ' => pmp2ln_aux evm svm) args)
-                bound_evars
-                bound_svars
-        end
-        .
-    Admitted.
-
-    Definition pmp2ln
-        {Σ : Signature}
-        (ϕ : PMPattern)
-        : Pattern :=
-        pmp2ln_aux ϕ ∅ ∅.
-
-
+    Next Obligation.
