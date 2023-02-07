@@ -86,6 +86,62 @@ Proof.
     split;[reflexivity|lia].
 Qed.
 
+Lemma lookup_app_Some_1:
+    ∀ {A : Type} (l1 l2 : list A) (i : nat) (x : A),
+    l1 !! i = Some x ->
+    (l1 ++ l2) !! i = Some x
+.
+Proof.
+    intros. rewrite lookup_app_Some. left. exact H.
+Qed.
+
+Definition list_fmap_pfin_lift_app_1
+    {A B : Type} (l1 l2 : list A)
+    (f : forall (x : A) (i : nat) (pf : (l1 ++ l2) !! i = Some x), B)
+    :
+    forall (x : A) (i : nat) (pf : l1 !! i = Some x), B
+.
+Proof.
+    intros. eapply f. apply lookup_app_Some_1. exact pf.
+Defined.
+
+
+Definition list_fmap_pfin_lift_app_2
+    {A B : Type} (l1 l2 : list A)
+    (f : forall (x : A) (i : nat) (pf : (l1 ++ l2) !! i = Some x), B)
+    :
+    forall (x : A) (i : nat) (pf : l2 !! i = Some x), B
+.
+Proof.
+    intros.
+    specialize (f x (List.length l1 + i)).
+    apply f.
+    rewrite lookup_app.
+    case_match.
+    {
+        rewrite lookup_ge_None_2 in H.
+        { lia. }
+        inversion H.
+    }
+    assert (Hi: base.length l1 + i - base.length l1 = i) by lia.
+    rewrite Hi.
+    exact pf.
+Defined.
+
+Lemma list_fmap_pfin_app
+    {A B : Type}
+    (l1 l2 : list A)
+    (f : forall (x : A) (i : nat) (pf : (l1 ++ l2) !! i = Some x), B)
+    :
+    list_fmap_pfin (l1 ++ l2) f
+    = (list_fmap_pfin l1 (list_fmap_pfin_lift_app_1 l1 l2 f))
+    ++ (list_fmap_pfin l2 (list_fmap_pfin_lift_app_2 l1 l2 f))
+.
+Proof.
+    simp list_fmap_pfin.
+Qed.
+
+
 
 
 Definition VarName := string.
