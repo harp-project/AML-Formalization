@@ -2232,6 +2232,11 @@ Ltac mlExFalso :=
   mlApplyMeta bot_elim
 .
 
+Tactic Notation "mlDestructBot" constr(name') :=
+  _ensureProofMode;
+  _mlReshapeHypsByName name';
+  mlExFalso; mlExact name';
+  _mlReshapeHypsBack.
 
 Lemma weird_lemma  {Σ : Signature} Γ A B L R:
   well_formed A ->
@@ -3274,6 +3279,16 @@ Proof.
   mlExFalso.
   mlApply "H1".
   mlExact "H0".
+Defined.
+
+Local Example destruct_bot_test {Σ : Signature} p Γ i :
+  well_formed p ->
+  Γ ⊢i ⊥ ---> Top using i.
+Proof.
+  intro WF. toMLGoal.
+  { wf_auto2. }
+  mlIntro "H".
+  mlDestructBot "H".
 Defined.
 
 (**********************************************************************************)
