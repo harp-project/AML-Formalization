@@ -10,6 +10,7 @@
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
+        coqPackages = pkgs.coqPackages_8_16;
 
       in {
 
@@ -37,9 +38,28 @@
                 doCheck = false;
             };
 
+        packages.unicoq = coq: pkgs.stdenv.mkDerivation {
+          name = "coq${coq.coq-version}-unicoq-0.0-git";
+          src = fetchTarball { url = https://github.com/unicoq/unicoq/archive/v1.6-8.16.tar.gz ; sha256="04ax4ybg6wp2x1j6nxrghqyi9kw6h0i9wzhdw1jfv15r85bwji4p"; };
+
+          #patches = [ ./unicoq-num.patch ];
+
+          buildInputs = [ coq ] ++ (with coq.ocamlPackages; [ ocaml findlib camlp4 num ]);
+
+          configurePhase = "coq_makefile -f _CoqProject -o Makefile";
+          enableParallelBuilding = true;
+          installFlags = [ "COQLIB=$(out)/lib/coq/${coq.coq-version}/" ];
+
+          #postInstall = ''
+          #  install -d $OCAMLFIND_DESTDIR
+          #  ln -s $out/lib/coq/${coq.coq-version}/user-contrib/Unicoq $OCAMLFIND_DESTDIR/
+          #  install -m 0644 META src/unicoq.a $OCAMLFIND_DESTDIR/Unicoq
+          #'';
+        };
+
         # The 'matching logic in Coq' library
         packages.coq-matching-logic
-        = pkgs.coqPackages.callPackage 
+        = coqPackages.callPackage 
         ( { coq, stdenv }:
         stdenv.mkDerivation {
           name = "coq-matching-logic";
@@ -55,9 +75,9 @@
 
           propagatedBuildInputs = [
             coq
-            pkgs.coqPackages.equations
-            pkgs.coqPackages.stdpp
-            pkgs.coqPackages.LibHyps
+            coqPackages.equations
+            coqPackages.stdpp
+            #(self.packages.${system}.unicoq coq)
           ];
           enableParallelBuilding = true;
           installFlags = [ "COQLIB=$(out)/lib/coq/${coq.coq-version}/" ];
@@ -65,7 +85,7 @@
 
         # Documentation of the 'matching logic in Coq' library
         packages.coq-matching-logic-doc
-        = pkgs.coqPackages.callPackage 
+        = coqPackages.callPackage 
         ( { coq, stdenv }:
         stdenv.mkDerivation {
           name = "coq-matching-logic-doc";
@@ -105,7 +125,7 @@
 
         # Example: FOL embedded in matching logic
         packages.coq-matching-logic-example-fol
-        = pkgs.coqPackages.callPackage 
+        = coqPackages.callPackage 
         ( { coq, stdenv }:
         stdenv.mkDerivation {
           name = "coq-matching-logic-example-fol";
@@ -127,7 +147,7 @@
 
         # Example: ProofMode tutorial
         packages.coq-matching-logic-example-proofmode
-        = pkgs.coqPackages.callPackage 
+        = coqPackages.callPackage 
         ( { coq, stdenv }:
         stdenv.mkDerivation {
           name = "coq-matching-logic-example-proofmode";
@@ -149,7 +169,7 @@
         
         # Metamath exporter: Build & Test
         packages.coq-matching-logic-mm-exporter
-        = pkgs.coqPackages.callPackage 
+        = coqPackages.callPackage 
         ( { coq, stdenv }:
         stdenv.mkDerivation {
           name = "coq-matching-logic-mm-exporter";
