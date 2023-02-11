@@ -8,9 +8,11 @@ From stdpp Require Import
     base
     gmap
     infinite
+    list
     natmap
     option
     strings
+    sets
     vector
 .
 From MatchingLogic Require Import
@@ -79,6 +81,19 @@ Record PContext := mkPContext {
     pc_svm : gmap SVarName nat ;
 }.
 
+Fixpoint min_list (d : nat) (l : list nat) : nat :=
+    match l with
+    | [] => d
+    | (x::xs) => min_list (Nat.min d x) xs
+    end
+.
+Definition bound_value (m : gmap VarName nat) : nat :=
+    let indices : gset nat :=
+        ((@map_to_set VarName nat (gmap VarName nat) _ nat (gset nat) _ _ _ (fun x y => y) m))
+    in
+    S (max_list (elements indices))
+.
+
 Definition pc_add_ename
     (ctx : PContext)
     (name : EVarName) :=
@@ -95,7 +110,10 @@ Record Pattern_in_context
     {Σ : Signature} := mkPIC {
       pic_pic: PContext -> Pattern;
       pic_wf : forall (pc : PContext),
-        Pattern.well_formed (pic_pic pc) ;
+        let phi := pic_pic pc in
+        well_formed_positive phi /\ (* TODO no_negative, no_positive_occurrence*)
+        well_formed_closed_ex_aux phi (bound_value (pc_evm pc)) /\
+        well_formed_closed_mu_aux phi (bound_value (pc_svm pc)) ;
     }
 .
 
@@ -283,7 +301,26 @@ Section sec.
     .
    Proof.
         {
-            intros. exact wfpf.
+            intros.
+            pose proof (wfpf' := wfpf).
+            unfold well_formed in wfpf'.
+            unfold is_true in wfpf'.
+            apply andb_prop in wfpf'.
+            destruct wfpf' as [wfp wfc].
+            unfold well_formed_closed in wfc.
+            apply andb_prop in wfc.
+            destruct wfc as [wfcs wfce].
+            split.
+            { apply wfp. }
+            split.
+            {
+                eapply well_formed_closed_ex_aux_ind;[| apply wfce].
+                lia.
+            }
+            {
+                eapply well_formed_closed_mu_aux_ind;[| apply wfcs].
+                lia.
+            }
         }
         {
             clear PMPattern_to_ln.
@@ -313,11 +350,14 @@ Section sec.
                     fun _ =>
                         patt_sym s
                     ) (
-                        fun _ => eq_refl
+                        fun _ => _
                     )
                 )
         |}
     .
+    Next Obligation.
+        intros. repeat split;reflexivity.
+    Qed.
     Next Obligation.
         intros. eexists. reflexivity.
     Qed.
@@ -332,11 +372,14 @@ Section sec.
                     fun _ =>
                     patt_bott
                 )  (
-                    fun _ => eq_refl
+                    fun _ => _
                 )
                 )
         |}
     .
+    Next Obligation.
+        intros. repeat split;reflexivity.
+    Qed.
     Next Obligation.
         intros. eexists. reflexivity.
     Qed.
@@ -354,9 +397,36 @@ Section sec.
                     | Some n => patt_bound_evar n
                     | None => patt_free_evar (string2evar name)
                     end
-                ))
+                ) _ )
         |}
     .
+    Next Obligation.
+        intros. simpl in phi.
+        remember (pc_evm pc !! name) as oidx.
+        destruct oidx.
+        2: {
+            repeat split; reflexivity.
+        }
+        unfold phi. clear phi. simpl.
+        repeat split; try reflexivity.
+        destruct (decide (d < bound_value (pc_evm pc))) as [y|n].
+        { reflexivity. }
+        unfold bound_value in n.
+        exfalso. apply n. clear n.
+        remember (elements (map_to_set _ _)) as l'.
+        destruct d as [|d].
+        { lia. }
+        cut (d < max_list l').
+        {
+            intros ?. lia.
+        }
+        apply max_list_elem_of_le.
+        rewrite Heql'. clear Heql'.
+        rewrite elem_of_elements.
+        rewrite elem_of_map_to_set.
+        exists name. exists (S d). rewrite Heqoidx.
+        split; reflexivity.
+    Qed.
     Next Obligation.
         intros. eexists. reflexivity.
     Qed.
@@ -374,9 +444,39 @@ Section sec.
                     | Some n => patt_bound_svar n
                     | None => patt_free_svar (string2svar name)
                     end
-                ))
+                ) _ )
         |}
     .
+    Next Obligation.
+        (* This proof is very siimlar to the proof of
+           the first obligation of [mlc_evar]
+        *)
+        intros. simpl in phi.
+        remember (pc_svm pc !! name) as oidx.
+        destruct oidx.
+        2: {
+            repeat split; reflexivity.
+        }
+        unfold phi. clear phi. simpl.
+        repeat split; try reflexivity.
+        destruct (decide (d < bound_value (pc_svm pc))) as [y|n].
+        { reflexivity. }
+        unfold bound_value in n.
+        exfalso. apply n. clear n.
+        remember (elements (map_to_set _ _)) as l'.
+        destruct d as [|d].
+        { lia. }
+        cut (d < max_list l').
+        {
+            intros ?. lia.
+        }
+        apply max_list_elem_of_le.
+        rewrite Heql'. clear Heql'.
+        rewrite elem_of_elements.
+        rewrite elem_of_map_to_set.
+        exists name. exists (S d). rewrite Heqoidx.
+        split; reflexivity.
+    Qed.
     Next Obligation.
         intros. eexists. reflexivity.
     Qed.
