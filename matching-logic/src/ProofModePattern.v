@@ -109,11 +109,13 @@ Record Pattern_in_context
  (2) how many element variables it binds
  (3) how many set variables it binds.
 *)
-Record MLConstruct {Σ : Signature} := {
+Record MLConstruct
+    (mlc_arity : nat)
+    (mlc_ebinder_arity : nat)
+    (mlc_sbinder_arity : nat)
+    {Σ : Signature} := {
     (*mlc_level : nat ;*)
-    mlc_arity : nat ;
-    mlc_ebinder_arity : nat;
-    mlc_sbinder_arity : nat;
+
     mlc_expand :
       list Pattern_in_context -> (* patterns *)
       list EVarName -> (* bound evars*)
@@ -143,10 +145,11 @@ Section sec.
     Inductive PMPattern : Set :=
     | pmpatt_inj (ln : Pattern)
     | pmpatt_construct
-        (construct : MLConstruct)
-        (args : vec PMPattern (mlc_arity construct))
-        (bound_evars : vec EVarName (mlc_ebinder_arity construct))
-        (bound_svars : vec SVarName (mlc_sbinder_arity construct))
+        {a ea sa : nat}
+        (construct : MLConstruct a ea sa)
+        (args : vec PMPattern a)
+        (bound_evars : vec EVarName ea)
+        (bound_svars : vec SVarName sa)
     .
 
     Equations PMPattern_size
@@ -167,8 +170,8 @@ Section sec.
     .
 
     Lemma PMPattern_size_clause_2_PMPattern_size_vec_spec
-        a e s a' ar args':
-        PMPattern_size_clause_2_PMPattern_size_vec PMPattern_size a e s a' ar args'
+        (ar1 ea1 sa1 : nat) (con : MLConstruct ar1 ea1 sa1) a e s ar args':
+        @PMPattern_size_clause_2_PMPattern_size_vec PMPattern_size ar1 ea1 sa1 con a e s  ar args'
         = S (list_sum (fmap (fun p => PMPattern_size p) (vec_to_list args')))
     .
     Proof.
@@ -210,14 +213,34 @@ Section sec.
         reflexivity.
     Defined.
 
+
+    Definition eq_apply_7
+    {T1 T2 T3 T4 T5 T6 T7 R : Type}
+    (f: T1 -> T2 -> T3 -> T4 -> T5 -> T6 -> T7 -> R)
+    (arg1 : T1)
+    (arg2 : T2)
+    (arg3 : T3)
+    (arg4 : T4)
+    (arg5 : T5)
+    (arg6 : T6)
+    (arg7 : T7)
+    :
+    {r : R & r = f arg1 arg2 arg3 arg4 arg5 arg6 arg7}
+    .
+    Proof.
+        exists (f arg1 arg2 arg3 arg4 arg5 arg6 arg7).
+        reflexivity.
+    Defined.
+
     Program Definition expand_total
-        (construct : MLConstruct)
-        (args : vec PMPattern (mlc_arity construct))
-        (bevars : vec EVarName (mlc_ebinder_arity construct))
-        (bsvars : vec SVarName (mlc_sbinder_arity construct))
+        {ar ea sa : nat}
+        (construct : @MLConstruct ar ea sa Σ)
+        (args : vec PMPattern ar)
+        (bevars : vec EVarName ea)
+        (bsvars : vec SVarName sa)
         (f : forall (p : PMPattern), p ∈ (vec_to_list args) -> Pattern_in_context)
         : Pattern_in_context :=
-        match (eq_apply_4 mlc_expand construct (list_map_pfin (vec_to_list args) (fun p => fun pf => f p pf)) bevars bsvars) with
+        match (eq_apply_4 (mlc_expand ar ea sa) construct (list_map_pfin (vec_to_list args) (fun p => fun pf => f p pf)) bevars bsvars) with
         | existT None Hcontra => @False_rec _ _
         | existT (Some phi) _ => phi
         end.
@@ -225,13 +248,13 @@ Section sec.
         intros.
         cbn in Hcontra.
         match type of Hcontra  with
-        | _ = mlc_expand _ (list_map_pfin _ ?x) _ _ => remember x as some_lambda
+        | _ = mlc_expand _ _ _ _ (list_map_pfin _ ?x) _ _ => remember x as some_lambda
         end.
         clear Heqsome_lambda.
         match type of Hcontra with
-        | None = mlc_expand ?a1 ?a2 ?a3 ?a4 
+        | None = mlc_expand ?a1 ?a2 ?a3 ?a4 ?a5 ?a6 ?a7 
             =>
-            pose proof (Htmp := mlc_expand_almost_total a1 a2 a3 a4)
+            pose proof (Htmp := mlc_expand_almost_total a1 a2 a3 a4 a5 a6 a7)
         end.
         feed specialize Htmp.
         {
@@ -282,10 +305,7 @@ Section sec.
 
     Program Definition mlc_sym
         (s : symbols)
-        : MLConstruct := {|
-            mlc_arity := 0 ;
-            mlc_ebinder_arity := 0 ;
-            mlc_sbinder_arity := 0 ;
+        : MLConstruct 0 0 0 := {|
             mlc_expand :=
                 fun _ =>
                 fun _ =>
@@ -302,10 +322,7 @@ Section sec.
     Qed.
 
     Program Definition mlc_bott
-        : MLConstruct := {|
-            mlc_arity := 0 ;
-            mlc_ebinder_arity := 0 ;
-            mlc_sbinder_arity := 0 ;
+        : MLConstruct 0 0 0 := {|
             mlc_expand :=
                 fun _ =>
                 fun _ =>
@@ -321,11 +338,8 @@ Section sec.
     
 
     Program Definition mlc_evar
-        {name : EVarName}
-        : MLConstruct := {|
-            mlc_arity := 0 ;
-            mlc_ebinder_arity := 0 ;
-            mlc_sbinder_arity := 0 ;
+        (name : EVarName)
+        : MLConstruct 0 0 0 := {|
             mlc_expand :=
                 fun _ =>
                 fun _ =>
@@ -344,11 +358,8 @@ Section sec.
 
 
     Program Definition mlc_svar
-        {name : SVarName}
-        : MLConstruct := {|
-            mlc_arity := 0 ;
-            mlc_ebinder_arity := 0 ;
-            mlc_sbinder_arity := 0 ;
+        (name : SVarName)
+        : MLConstruct 0 0 0:= {|
             mlc_expand :=
                 fun _ =>
                 fun _ =>
@@ -367,10 +378,7 @@ Section sec.
 
 
     Program Definition mlc_app
-        : MLConstruct := {|
-            mlc_arity := 2 ;
-            mlc_ebinder_arity := 0 ;
-            mlc_sbinder_arity := 0 ;
+        : MLConstruct 2 0 0 := {|
             mlc_expand :=
                 fun ps =>
                 fun _ =>
@@ -401,10 +409,7 @@ Section sec.
 
 
     Program Definition mlc_imp
-        : MLConstruct := {|
-            mlc_arity := 2 ;
-            mlc_ebinder_arity := 0 ;
-            mlc_sbinder_arity := 0 ;
+        : MLConstruct 2 0 0 := {|
             mlc_expand :=
                 fun ps =>
                 fun _ =>
@@ -433,10 +438,7 @@ Section sec.
     Qed.
 
     Program Definition mlc_exists
-        : MLConstruct := {|
-            mlc_arity := 1 ;
-            mlc_ebinder_arity := 1 ;
-            mlc_sbinder_arity := 0 ;
+        : MLConstruct 1 1 0 := {|
             mlc_expand :=
                 fun ps =>
                 fun evs =>
@@ -467,10 +469,7 @@ Section sec.
     Qed.
 
     Program Definition mlc_mu
-        : MLConstruct := {|
-            mlc_arity := 1 ;
-            mlc_ebinder_arity := 0 ;
-            mlc_sbinder_arity := 1 ;
+        : MLConstruct 1 0 1 := {|
             mlc_expand :=
                 fun ps =>
                 fun _ =>
@@ -500,5 +499,20 @@ Section sec.
         eexists. simpl. reflexivity.
     Qed.
 
+    Section examples.
+        Context
+            {s1 : symbols}
+        .
+
+        Local Example ex_1 : PMPattern :=
+            pmpatt_construct (mlc_sym s1) vnil vnil vnil
+        .
+
+
+        Local Example Ex_2 : PMPattern :=
+            pmpatt_construct (mlc_imp)
+                [# ex_1; ex_1] vnil vnil.
+
+    End examples.
 
 End sec.
