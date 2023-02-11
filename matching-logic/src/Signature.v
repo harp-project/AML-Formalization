@@ -1,7 +1,11 @@
 From Coq Require Import ssreflect ssrfun ssrbool.
 
-From stdpp Require Import countable infinite.
-From stdpp Require Import pmap gmap mapset fin_sets propset.
+From Coq Require Import String.
+
+From stdpp Require Import
+  countable
+  infinite
+.
 
 Class MLVariables := {
   evar : Set;
@@ -12,6 +16,12 @@ Class MLVariables := {
   svar_eqdec :> EqDecision svar;
   svar_countable :> Countable svar;
   svar_infinite :> Infinite svar;
+
+  string2evar : string -> evar ;
+  string2evar_inj : Inj (=) (=) string2evar ;
+  string2svar : string -> svar ;
+  string2svar_inj : Inj (=) (=) string2svar ;
+
 }.
 
 Class MLSymbols := {
