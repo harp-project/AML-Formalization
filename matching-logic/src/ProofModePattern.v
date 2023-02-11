@@ -81,6 +81,21 @@ Record PContext := mkPContext {
     pc_svm : gmap SVarName nat ;
 }.
 
+Definition renaming_function
+    (new_key old_key some_key : VarName) : VarName :=
+    match (decide (some_key = old_key)) with
+    | left _ => new_key
+    | right _ => some_key
+    end.
+
+
+Definition update_key
+    (new_key old_key : VarName)
+    (m : gmap VarName nat)
+    : gmap VarName nat
+    := kmap (renaming_function new_key old_key) m
+.
+
 Fixpoint min_list (d : nat) (l : list nat) : nat :=
     match l with
     | [] => d
@@ -431,6 +446,23 @@ Section sec.
         intros. eexists. reflexivity.
     Qed.
 
+    Program Definition mlc_evar_rename
+    (new_name old_name : EVarName)
+    : MLConstruct 1 0 0 := {|
+        mlc_expand :=
+            fun ps _ _ =>
+                match ps !! 0 with
+                | None => None
+                | Some ϕ_in_context =>
+                    Some ( mkPIC _ (
+                            fun ctx : PContext =>
+                                let new_ctx := ctx in
+                                pic_pic ϕ_in_context new_ctx
+                        ) _ )
+                end
+    |}
+    .
+
 
     Program Definition mlc_svar
         (name : SVarName)
@@ -497,12 +529,21 @@ Section sec.
                         Some (mkPIC _ (
                             fun ctx => 
                             patt_app (pic_pic ϕ₁ ctx) (pic_pic ϕ₂ ctx)
-                            )
+                            ) _
                         )
                       end
                     end
         |}
     .
+    Next Obligation.
+        intros. simpl in *|-.
+        destruct ϕ₁ as [fϕ₁ Hϕ₁].
+        destruct ϕ₂ as [fϕ₂ Hϕ₂].
+        cbn in *.
+        pose proof (Hϕ₁pc := Hϕ₁ pc).
+        pose proof (Hϕ₂pc := Hϕ₂ pc).
+        naive_solver.
+    Qed.
     Next Obligation.
         intros.
         destruct args as [|a1 args].
@@ -528,11 +569,20 @@ Section sec.
                         Some ( mkPIC _ (
                             fun ctx =>
                             patt_imp (pic_pic ϕ₁ ctx) (pic_pic ϕ₂ ctx)
-                        ))
+                        ) _ )
                       end
                     end
         |}
     .
+    Next Obligation.
+        intros. simpl in *|-.
+        destruct ϕ₁ as [fϕ₁ Hϕ₁].
+        destruct ϕ₂ as [fϕ₂ Hϕ₂].
+        cbn in *.
+        pose proof (Hϕ₁pc := Hϕ₁ pc).
+        pose proof (Hϕ₂pc := Hϕ₂ pc).
+        naive_solver.
+    Qed.
     Next Obligation.
         intros.
         destruct args as [|a1 args].
@@ -541,6 +591,38 @@ Section sec.
         1: { simpl in *; lia. }
         eexists. simpl. reflexivity.
     Qed.
+
+    Lemma S_max_list (l : list nat) :
+        S (max_list l) = match l with [] => 1 | _ => max_list (S <$> l) end
+    .
+    Proof.
+        induction l; cbn.
+        { reflexivity. }
+        destruct l.
+        { cbn. rewrite Nat.max_0_r. reflexivity. }
+        rewrite Nat.succ_max_distr.
+        rewrite IHl.
+        reflexivity.
+    Qed.
+
+    Lemma bound_value_incr_values pc name:
+        bound_value (<[name:=0]>(incr_values (pc_evm pc)))
+        = S (bound_value (pc_evm pc))
+    .
+    Proof.
+        unfold bound_value. apply f_equal.
+        unfold incr_values.
+        destruct pc as [pc_evm0 pc_svm0]. simpl.
+        remember (fun _ y => y) as f.
+        rewrite map_to_set_insert.
+        rewrite S_max_list.
+        unfold fmap.
+        rewrite -fmap_insert.
+        rewrite -list_fmap_insert.
+        Search insert fmap.
+        remember (elements (map_to_set _ _ _)).
+        Search max_list.
+    Abort.
 
     Program Definition mlc_exists
         : MLConstruct 1 1 0 := {|
@@ -555,15 +637,29 @@ Section sec.
                         | None => None
                         | Some name =>
                             Some ( mkPIC _ (
-                                fun ctx =>
+                                fun ctx : PContext =>
                                     let ctx' := pc_add_ename ctx name in
                                     let ϕ := pic_pic ϕ_in_context ctx' in
-                                    patt_exists ϕ
-                            ))
+                                    (* TODO we need to rename [name] into some fresh name in ϕ
+                                       if there is already [name] in the context*)
+                                    patt_exists ϕ 
+                            ) _ )
                         end
                     end
         |}
     .
+    Next Obligation.
+        intros. simpl in *|-.
+        destruct ϕ_in_context as [fϕ Hϕ].
+        cbn in *.
+        pose proof (Hϕpc := Hϕ (pc_add_ename pc name)).
+        clear phi.
+        destruct Hϕpc as [H1 [H2 H3]].
+        split_and!; try assumption.
+        clear H1 H3.
+        simpl in *.
+        naive_solver.
+    Qed.
     Next Obligation.
         intros.
         destruct args as [|a1 args].
@@ -586,7 +682,7 @@ Section sec.
                         | None => None
                         | Some name =>
                             Some ( mkPIC _ (
-                                fun ctx =>
+                                fun ctx : PContext =>
                                     let ctx' := pc_add_sname ctx name in
                                     let ϕ := pic_pic ϕ_in_context ctx' in
                                     patt_mu ϕ
