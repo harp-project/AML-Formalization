@@ -77,6 +77,7 @@
             coq
             coqPackages.equations
             coqPackages.stdpp
+            coqPackages.LibHyps
             #(self.packages.${system}.unicoq coq)
           ];
           enableParallelBuilding = true;

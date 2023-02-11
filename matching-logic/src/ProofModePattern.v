@@ -20,8 +20,6 @@ From MatchingLogic Require Import
 
 Require Import String.
 
-(*Equations Derive Signature NoConfusion NoConfusionHom for vec.*)
-
 Equations? list_map_pfin
     {A B : Type}
     (l : list A)
@@ -96,6 +94,8 @@ Definition pc_add_sname
 Record Pattern_in_context
     {Σ : Signature} := mkPIC {
       pic_pic: PContext -> Pattern;
+      pic_wf : forall (pc : PContext),
+        Pattern.well_formed (pic_pic pc) ;
     }
 .
 
@@ -136,14 +136,10 @@ Record MLConstruct
 Section sec.
     Context
         {Σ : Signature}
-        {string2evar : string -> evar}
-        {string2evar_inj : Inj (=) (=) string2evar}
-        {string2svar : string -> svar}
-        {string2svar_inj : Inj (=) (=) string2svar}
     .
     
     Inductive PMPattern : Set :=
-    | pmpatt_inj (ln : Pattern)
+    | pmpatt_inj (ln : Pattern) (wfpf : Pattern.well_formed ln)
     | pmpatt_construct
         {a ea sa : nat}
         (construct : MLConstruct a ea sa)
@@ -155,7 +151,7 @@ Section sec.
     Equations PMPattern_size
         (ϕ : PMPattern)
         : nat := {
-        PMPattern_size (pmpatt_inj _) := 1 ;
+        PMPattern_size (pmpatt_inj _ _) := 1 ;
         PMPattern_size (pmpatt_construct _ args _ _) :=
             S (@PMPattern_size_vec _ args)
             where PMPattern_size_vec
@@ -280,12 +276,15 @@ Section sec.
     Equations? PMPattern_to_ln
     (ϕ : PMPattern)
     : Pattern_in_context by wf (PMPattern_size ϕ) lt := {
-        PMPattern_to_ln (pmpatt_inj ln) := mkPIC _ (fun _ => ln );
+        PMPattern_to_ln (pmpatt_inj ln _) := mkPIC _ (fun _ => ln ) _;
         PMPattern_to_ln (pmpatt_construct construct args bevars bsvars) :=
             expand_total construct args bevars bsvars (fun p pf => PMPattern_to_ln p)            
     }
     .
    Proof.
+        {
+            intros. exact wfpf.
+        }
         {
             clear PMPattern_to_ln.
             simp PMPattern_size.
@@ -313,6 +312,8 @@ Section sec.
                     mkPIC _ (
                     fun _ =>
                         patt_sym s
+                    ) (
+                        fun _ => eq_refl
                     )
                 )
         |}
@@ -326,10 +327,14 @@ Section sec.
             mlc_expand :=
                 fun _ =>
                 fun _ =>
-                fun _ => Some(                mkPIC _ (
+                fun _ => Some(
+                    mkPIC _ (
                     fun _ =>
                     patt_bott
-                ))
+                )  (
+                    fun _ => eq_refl
+                )
+                )
         |}
     .
     Next Obligation.

@@ -12,4 +12,6 @@ From stdpp Require Import countable infinite strings.
 Definition StringMLVariables : MLVariables :=
   {| evar := string;
      svar := string;
+     string2evar := @id string;
+     string2svar := @id string;
   |}.
