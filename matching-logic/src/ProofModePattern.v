@@ -827,23 +827,119 @@ Section sec.
         reflexivity.
     Qed.
 
+    Lemma map_fold_fmap
+        (X : Type)
+        (g: VarName -> nat -> X -> X)
+        (gcom: forall j1 z1 j2 z2 y, g j1 z1 (g j2 z2 y) = g j2 z2 (g j1 z1 y))
+        (f : nat -> nat)
+        (m : gmap VarName nat)
+        (x : X)
+        : map_fold g x (f <$> m) = map_fold (fun vn n x => g vn (f n) x) x m
+    .
+    Proof.
+        induction m using map_ind.
+        {
+            rewrite fmap_empty. rewrite 2!map_fold_empty. reflexivity.
+        }
+        {
+            rewrite fmap_insert.
+            rewrite map_fold_insert.
+            {
+                intros. apply gcom.
+            }
+            {
+                rewrite lookup_fmap. rewrite H. reflexivity.
+            }
+            rewrite IHm.
+            rewrite map_fold_insert.
+            {
+                intros. apply gcom.
+            }
+            { exact H. }
+            reflexivity.
+        }
+    Qed.
+
+    Instance pred_S_cancel : Cancel (=) Nat.pred S.
+    Proof.
+        intros x. simpl. reflexivity.
+    Qed.
+
+    Lemma map_fold_compose
+        (X : Type)
+        (g: VarName -> nat -> X -> X)
+        (f finv : X -> X)
+        {f_finv_cancel : Cancel (=) finv f}
+        (gcom: forall j1 z1 j2 z2 y, g j1 z1 (g j2 z2 y) = g j2 z2 (g j1 z1 y))
+        (fgcom: forall j1 z1 j2 z2 y, f (g j1 z1 ((g j2 z2 y))) = f (g j2 z2 ((g j1 z1 y))))
+        (m : gmap VarName nat)
+        (x : X)
+        : f (map_fold g x m) = map_fold (fun vn n x => f (g vn n (finv x))) (f x) m
+    .
+    Proof.
+        induction m using map_ind.
+        {
+            rewrite 2!map_fold_empty. reflexivity.
+        }
+        {
+            rewrite map_fold_insert.
+            {
+                intros. apply gcom.
+            }
+            {
+                exact H.
+            }
+            rewrite map_fold_insert.
+            {
+                intros.
+                rewrite 2!cancel.
+                rewrite fgcom.
+                reflexivity.
+            }
+            { exact H. }
+            rewrite -IHm.
+            rewrite cancel.
+            reflexivity.
+        }
+    Qed.
+
     Lemma bound_value_incr_values pc name:
+        pc_evm pc !! name = None ->
         bound_value (<[name:=0]>(incr_values (pc_evm pc)))
         = S (bound_value (pc_evm pc))
     .
     Proof.
+        intros H.
         unfold bound_value. apply f_equal.
         unfold incr_values.
         destruct pc as [pc_evm0 pc_svm0]. simpl.
-        remember (fun _ y => y) as f.
-        rewrite map_to_set_insert.
-        rewrite S_max_list.
-        unfold fmap.
-        rewrite -fmap_insert.
-        rewrite -list_fmap_insert.
-        Search insert fmap.
-        remember (elements (map_to_set _ _ _)).
-        Search max_list.
+        unfold max_value. simpl.
+        rewrite map_fold_insert.
+        {
+            intros. lia.
+        }
+        {
+            simpl in *. rewrite lookup_fmap. rewrite H. reflexivity.
+        }
+        {
+            simpl.
+            rewrite map_fold_fmap.
+            {
+                intros. lia.
+            }
+            under [fun _ n x => S n `max` x]functional_extensionality => vn.
+            {
+                under [fun n x => S n `max` x]functional_extensionality => n.
+                {
+                    under [fun x => S n `max` x]functional_extensionality => x.
+                    {
+
+                    }
+                }
+            }
+            Search Nat.max.
+            Search map_fold fmap.
+        }
     Abort.
 
     Program Definition mlc_exists
