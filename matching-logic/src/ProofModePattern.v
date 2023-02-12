@@ -96,17 +96,65 @@ Definition update_key
     := kmap (renaming_function new_key old_key) m
 .
 
-Fixpoint min_list (d : nat) (l : list nat) : nat :=
-    match l with
-    | [] => d
-    | (x::xs) => min_list (Nat.min d x) xs
-    end
+Definition update_evm_key
+    (new_key old_key : EVarName)
+    (pctx : PContext)
+    : PContext
+    := mkPContext
+        (update_key new_key old_key (pc_evm pctx))
+        (pc_svm pctx)
 .
+
+Definition update_svm_key
+    (new_key old_key : SVarName)
+    (pctx : PContext)
+    : PContext
+    := mkPContext
+        (pc_evm pctx)
+        (update_key new_key old_key (pc_svm pctx))
+.
+
+Definition max_value (d : nat) (m : gmap VarName nat) : nat :=
+    map_fold (fun k v r => Nat.max v r) d m
+.
+
+Lemma max_value_kmap (f : VarName -> VarName) {injF : Inj eq eq f} (d : nat) (m : gmap VarName nat):
+    max_value d (kmap f m) = max_value d m
+.
+Proof.
+    unfold max_value.
+    induction m using map_ind.
+    {
+        rewrite kmap_empty. reflexivity.
+    }
+    {
+        rewrite kmap_insert.
+        rewrite map_fold_insert.
+        {
+            intros.
+            lia.
+        }
+        {
+            rewrite lookup_kmap.
+            exact H.
+        }
+        rewrite Nat.max_comm.
+        rewrite IHm. clear IHm.
+        rewrite map_fold_insert.
+        {
+            intros.
+            lia.
+        }
+        {
+            exact H.
+        }
+        rewrite Nat.max_comm.
+        reflexivity.
+    }
+Qed.
+
 Definition bound_value (m : gmap VarName nat) : nat :=
-    let indices : gset nat :=
-        ((@map_to_set VarName nat (gmap VarName nat) _ nat (gset nat) _ _ _ (fun x y => y) m))
-    in
-    S (max_list (elements indices))
+    S (max_value 0 m)
 .
 
 Definition pc_add_ename
@@ -446,6 +494,88 @@ Section sec.
         intros. eexists. reflexivity.
     Qed.
 
+    Lemma wfp_update_evm_key ϕic new_name old_name pc:
+        well_formed_positive (pic_pic ϕic pc) = true ->
+        well_formed_positive (pic_pic ϕic (update_evm_key new_name old_name pc)) = true.
+    Proof.
+        intros H.
+        destruct ϕic as [pic0 wf0].
+        apply wf0.
+    Qed.
+
+    Instance renaming_function_injective new_name old_name:
+        Inj eq eq (renaming_function new_name old_name).
+    Proof.
+        intros x y H.
+        unfold renaming_function in H.
+        repeat case_match; subst; try congruence.
+    Abort.
+
+    Lemma boud_value_update_key new_name old_name store:
+         bound_value (update_key new_name old_name store)
+         = bound_value store
+    .
+    Proof.
+        unfold bound_value.
+        apply f_equal.
+        unfold update_key.
+        apply leibniz_equiv.
+        apply set_equiv_subseteq.
+        do 2 rewrite elem_of_subseteq.
+        setoid_rewrite elem_of_map_to_set.
+        unfold kmap, renaming_function, prod_map. simpl.
+        split; intros x [name [i [Hi1 Hi2]]]; subst.
+        {
+            Search fmap map_to_list.
+            Search list_to_map fmap.
+            Search lookup list_to_map.
+            Set Printing All.
+            rewrite lookup_fmap in Hi1.
+            unfold prod_map in Hi1.
+            apply elem_of_list_lookup_2 in Hi1.
+            rewrite -elem_of_list_to_map' in Hi1.
+            {
+                intros x'.
+                Search elem_of prod_map.
+                rewrite elem_of_prod_map.
+            }
+            Search list_to_map lookup.
+            simpl in Hi1.
+            eexists. exists x.
+            split;[|reflexivity].
+            p
+            [
+            rewrite list_to_map_fmap in Hi1.
+            Search list_to_map prod_map.
+            Search kmap lookup.
+        }
+        2: {
+
+        }
+        Search equiv subseteq.
+        unfold map_to_set.
+        rewrite equiv_iff_subseteq.
+        Search list_to_set equiv.
+        Print dom.
+        rewrite dom_kmap.
+        Search map_to_set kmap.
+    Qed.
+
+
+    Lemma wfc_update_evm_key ϕic new_name old_name pc:
+        well_formed_closed_ex_aux (pic_pic ϕic pc) (bound_value (pc_evm pc)) = true ->
+        well_formed_closed_ex_aux
+            (pic_pic ϕic (update_evm_key new_name old_name pc))
+            (bound_value (pc_evm pc)) = true
+    .
+    Proof.
+        intros H.
+        destruct ϕic as [pic0 wf0]. simpl in *.
+        specialize (wf0 ((update_evm_key new_name old_name pc))).
+        destruct wf0 as [_ [Hwfcex _]].
+        cbn in *.
+    Qed.
+
     Program Definition mlc_evar_rename
     (new_name old_name : EVarName)
     : MLConstruct 1 0 0 := {|
@@ -456,12 +586,26 @@ Section sec.
                 | Some ϕ_in_context =>
                     Some ( mkPIC _ (
                             fun ctx : PContext =>
-                                let new_ctx := ctx in
+                                let new_ctx := update_evm_key new_name old_name ctx in
                                 pic_pic ϕ_in_context new_ctx
                         ) _ )
                 end
     |}
     .
+    Next Obligation.
+        intros.
+        unfold phi. clear phi.
+        repeat split.
+        {
+            apply wfp_update_evm_key.
+            apply ϕ_in_context. 
+        }
+        {
+            destruct ϕ_in_context.
+            apply ϕ_in_context.
+        }
+        unfold update_evm_key. simpl.
+    Qed.
 
 
     Program Definition mlc_svar
