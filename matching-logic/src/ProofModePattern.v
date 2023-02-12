@@ -572,6 +572,10 @@ Section sec.
         specialize (wf0 ((update_evm_key new_name old_name pc))).
         destruct wf0 as [_ [Hwfcex _]].
         cbn in *.
+        unfold bound_value in *.
+        unfold update_key in Hwfcex.
+        rewrite max_value_kmap in Hwfcex.
+        exact Hwfcex.
     Qed.
 
     Program Definition mlc_evar_rename
