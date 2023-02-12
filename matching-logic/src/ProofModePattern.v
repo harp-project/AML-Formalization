@@ -546,6 +546,14 @@ Section sec.
         apply wf0.
     Qed.
 
+    Lemma wfp_update_svm_key ϕic new_name old_name pc:
+    well_formed_positive (pic_pic ϕic pc) = true ->
+    well_formed_positive (pic_pic ϕic (update_svm_key new_name old_name pc)) = true.
+    Proof.
+        intros H.
+        destruct ϕic as [pic0 wf0].
+        apply wf0.
+    Qed.
 
     Lemma boud_value_update_key new_name old_name store:
          bound_value (update_key new_name old_name store)
@@ -578,6 +586,25 @@ Section sec.
         exact Hwfcex.
     Qed.
 
+
+    Lemma wfc_update_svm_key ϕic new_name old_name pc:
+        well_formed_closed_mu_aux (pic_pic ϕic pc) (bound_value (pc_svm pc)) = true ->
+        well_formed_closed_mu_aux
+            (pic_pic ϕic (update_svm_key new_name old_name pc))
+            (bound_value (pc_svm pc)) = true
+    .
+    Proof.
+        intros H.
+        destruct ϕic as [pic0 wf0]. simpl in *.
+        specialize (wf0 ((update_svm_key new_name old_name pc))).
+        destruct wf0 as [_ [_ Hwfcmu]].
+        cbn in *.
+        unfold bound_value in *.
+        unfold update_key in Hwfcmu.
+        rewrite max_value_kmap in Hwfcmu.
+        exact Hwfcmu.
+    Qed.
+
     Program Definition mlc_evar_rename
     (new_name old_name : EVarName)
     : MLConstruct 1 0 0 := {|
@@ -604,11 +631,64 @@ Section sec.
         }
         {
             destruct ϕ_in_context.
-            apply ϕ_in_context.
+            apply wfc_update_evm_key.
+            apply pic_wf0.
         }
-        unfold update_evm_key. simpl.
+        {
+            destruct ϕ_in_context.
+            simpl in *.
+            pose proof (pic_wf1 := pic_wf0).
+            specialize (pic_wf1 (update_evm_key new_name old_name pc)).
+            destruct pic_wf1 as [Hwfp [Hwfcex Hwfcmu]]. simpl in *.
+            apply Hwfcmu.
+        }
+    Qed.
+    Next Obligation.
+        intros. simpl.
+        destruct args as [|a1 args].
+        1: { simpl in *; lia. }
+        simpl.
+        eexists. reflexivity.
     Qed.
 
+    Program Definition mlc_svar_rename
+    (new_name old_name : SVarName)
+    : MLConstruct 1 0 0 := {|
+        mlc_expand :=
+            fun ps _ _ =>
+                match ps !! 0 with
+                | None => None
+                | Some ϕ_in_context =>
+                    Some ( mkPIC _ (
+                            fun ctx : PContext =>
+                                let new_ctx := update_svm_key new_name old_name ctx in
+                                pic_pic ϕ_in_context new_ctx
+                        ) _ )
+                end
+    |}
+    .
+    Next Obligation.
+        intros.
+        unfold phi. clear phi.
+        repeat split.
+        {
+            apply wfp_update_svm_key.
+            apply ϕ_in_context. 
+        }
+        {
+            destruct ϕ_in_context.
+            simpl in *.
+            pose proof (pic_wf1 := pic_wf0).
+            specialize (pic_wf1 (update_svm_key new_name old_name pc)).
+            destruct pic_wf1 as [Hwfp [Hwfcex Hwfcmu]]. simpl in *.
+            apply Hwfcex.
+        }
+        {
+            destruct ϕ_in_context.
+            apply wfc_update_svm_key.
+            apply pic_wf0.
+        }
+    Qed.
 
     Program Definition mlc_svar
         (name : SVarName)
@@ -641,19 +721,15 @@ Section sec.
         { reflexivity. }
         unfold bound_value in n.
         exfalso. apply n. clear n.
-        remember (elements (map_to_set _ _)) as l'.
         destruct d as [|d].
         { lia. }
-        cut (d < max_list l').
+        cut (d < max_value 0 (pc_svm pc)).
         {
             intros ?. lia.
         }
-        apply max_list_elem_of_le.
-        rewrite Heql'. clear Heql'.
-        rewrite elem_of_elements.
-        rewrite elem_of_map_to_set.
-        exists name. exists (S d). rewrite Heqoidx.
-        split; reflexivity.
+        symmetry in Heqoidx.
+        eapply max_value_in_leq with (name := name).
+        apply Heqoidx.
     Qed.
     Next Obligation.
         intros. eexists. reflexivity.
