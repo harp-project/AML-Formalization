@@ -523,19 +523,15 @@ Section sec.
         { reflexivity. }
         unfold bound_value in n.
         exfalso. apply n. clear n.
-        remember (elements (map_to_set _ _)) as l'.
         destruct d as [|d].
         { lia. }
-        cut (d < max_list l').
+        cut (d < max_value 0 (pc_evm pc)).
         {
             intros ?. lia.
         }
-        apply max_list_elem_of_le.
-        rewrite Heql'. clear Heql'.
-        rewrite elem_of_elements.
-        rewrite elem_of_map_to_set.
-        exists name. exists (S d). rewrite Heqoidx.
-        split; reflexivity.
+        symmetry in Heqoidx.
+        apply max_value_in_leq with (name := name).
+        apply Heqoidx.
     Qed.
     Next Obligation.
         intros. eexists. reflexivity.
@@ -560,47 +556,7 @@ Section sec.
         apply f_equal.
         unfold update_key.
         rewrite max_value_kmap.
-        unfold update_key.
-        apply leibniz_equiv.
-        apply set_equiv_subseteq.
-        do 2 rewrite elem_of_subseteq.
-        setoid_rewrite elem_of_map_to_set.
-        unfold kmap, renaming_function, prod_map. simpl.
-        split; intros x [name [i [Hi1 Hi2]]]; subst.
-        {
-            Search fmap map_to_list.
-            Search list_to_map fmap.
-            Search lookup list_to_map.
-            Set Printing All.
-            rewrite lookup_fmap in Hi1.
-            unfold prod_map in Hi1.
-            apply elem_of_list_lookup_2 in Hi1.
-            rewrite -elem_of_list_to_map' in Hi1.
-            {
-                intros x'.
-                Search elem_of prod_map.
-                rewrite elem_of_prod_map.
-            }
-            Search list_to_map lookup.
-            simpl in Hi1.
-            eexists. exists x.
-            split;[|reflexivity].
-            p
-            [
-            rewrite list_to_map_fmap in Hi1.
-            Search list_to_map prod_map.
-            Search kmap lookup.
-        }
-        2: {
-
-        }
-        Search equiv subseteq.
-        unfold map_to_set.
-        rewrite equiv_iff_subseteq.
-        Search list_to_set equiv.
-        Print dom.
-        rewrite dom_kmap.
-        Search map_to_set kmap.
+        reflexivity.
     Qed.
 
 
