@@ -85,9 +85,22 @@ Definition renaming_function
     (new_key old_key some_key : VarName) : VarName :=
     match (decide (some_key = old_key)) with
     | left _ => new_key
-    | right _ => some_key
+    | right _ => 
+        match (decide (some_key = new_key)) with
+        | left _ => old_key
+        | right _ => some_key
+        end 
     end.
 
+
+#[global]
+Instance renaming_function_injective new_name old_name:
+    Inj eq eq (renaming_function new_name old_name).
+Proof.
+    intros x y H.
+    unfold renaming_function in H.
+    repeat case_match; subst; try congruence.
+Qed.
 
 Definition update_key
     (new_key old_key : VarName)
@@ -503,13 +516,6 @@ Section sec.
         apply wf0.
     Qed.
 
-    Instance renaming_function_injective new_name old_name:
-        Inj eq eq (renaming_function new_name old_name).
-    Proof.
-        intros x y H.
-        unfold renaming_function in H.
-        repeat case_match; subst; try congruence.
-    Abort.
 
     Lemma boud_value_update_key new_name old_name store:
          bound_value (update_key new_name old_name store)
@@ -518,6 +524,8 @@ Section sec.
     Proof.
         unfold bound_value.
         apply f_equal.
+        unfold update_key.
+        rewrite max_value_kmap.
         unfold update_key.
         apply leibniz_equiv.
         apply set_equiv_subseteq.
