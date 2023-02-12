@@ -38,24 +38,24 @@
                 doCheck = false;
             };
 
-        packages.unicoq = coq: pkgs.stdenv.mkDerivation {
-          name = "coq${coq.coq-version}-unicoq-0.0-git";
-          src = fetchTarball { url = https://github.com/unicoq/unicoq/archive/v1.6-8.16.tar.gz ; sha256="04ax4ybg6wp2x1j6nxrghqyi9kw6h0i9wzhdw1jfv15r85bwji4p"; };
-
-          #patches = [ ./unicoq-num.patch ];
-
-          buildInputs = [ coq ] ++ (with coq.ocamlPackages; [ ocaml findlib camlp4 num ]);
-
-          configurePhase = "coq_makefile -f _CoqProject -o Makefile";
-          enableParallelBuilding = true;
-          installFlags = [ "COQLIB=$(out)/lib/coq/${coq.coq-version}/" ];
-
-          #postInstall = ''
-          #  install -d $OCAMLFIND_DESTDIR
-          #  ln -s $out/lib/coq/${coq.coq-version}/user-contrib/Unicoq $OCAMLFIND_DESTDIR/
-          #  install -m 0644 META src/unicoq.a $OCAMLFIND_DESTDIR/Unicoq
-          #'';
-        };
+        # packages.unicoq = coq: pkgs.stdenv.mkDerivation {
+        #  name = "coq${coq.coq-version}-unicoq-0.0-git";
+        #  src = fetchTarball { url = https://github.com/unicoq/unicoq/archive/v1.6-8.16.tar.gz ; sha256="04ax4ybg6wp2x1j6nxrghqyi9kw6h0i9wzhdw1jfv15r85bwji4p"; };
+        #
+        #  #patches = [ ./unicoq-num.patch ];
+        #
+        #  buildInputs = [ coq ] ++ (with coq.ocamlPackages; [ ocaml findlib camlp4 num ]);
+        #
+        #  configurePhase = "coq_makefile -f _CoqProject -o Makefile";
+        #  enableParallelBuilding = true;
+        #  installFlags = [ "COQLIB=$(out)/lib/coq/${coq.coq-version}/" ];
+        # 
+        #  #postInstall = ''
+        #  #  install -d $OCAMLFIND_DESTDIR
+        #  #  ln -s $out/lib/coq/${coq.coq-version}/user-contrib/Unicoq $OCAMLFIND_DESTDIR/
+        #  #  install -m 0644 META src/unicoq.a $OCAMLFIND_DESTDIR/Unicoq
+        #  #'';
+        #};
 
         # The 'matching logic in Coq' library
         packages.coq-matching-logic
