@@ -166,6 +166,40 @@ Proof.
     }
 Qed.
 
+Lemma max_value_in_leq
+    (m : gmap VarName nat)
+    (d : nat)
+    (name : VarName)
+    :
+    m !! name = Some d ->
+    d <= max_value 0 m
+.
+Proof.
+    unfold max_value.
+    move: m.
+    eapply (map_fold_ind (
+        fun resulting_value original_map =>
+        original_map !! name = Some d ->
+        d <= resulting_value
+    ) (fun (_ : VarName) (v r : nat) => v `max` r)).
+    {
+        intros H.
+        rewrite lookup_empty in H. inversion H.
+    }
+    {
+        intros i x m r Hmi IH H.
+        rewrite lookup_insert_Some in H.
+        destruct H as [[H1 H2]|[H1 H2]].
+        {
+            subst. lia.
+        }
+        {
+            specialize (IH H2).
+            lia.
+        }
+    }
+Qed.
+
 Definition bound_value (m : gmap VarName nat) : nat :=
     S (max_value 0 m)
 .
