@@ -956,6 +956,69 @@ Section sec.
         }
     Qed.
 
+    Lemma max_helper_lemma v m:
+    v `max` map_fold (λ (_ : VarName) (v0 r : nat), v0 `max` r) 0 m =
+    v `max` map_fold (λ (_ : VarName) (v0 r : nat), v0 `max` r) v m.
+    Proof.
+        induction m using map_ind.
+        {
+            rewrite 2!map_fold_empty. lia.
+        }
+        {
+            rewrite map_fold_insert.
+            { intros. lia. }
+            { exact H. }
+            rewrite map_fold_insert.
+            { intros. lia. }
+            { exact H. }
+            lia.
+        }
+    Qed.
+
+    Lemma max_value_in_param
+        (m : gmap VarName nat)
+        (name : VarName)
+        (v : nat)
+        :
+        m !! name = Some v ->
+        max_value 0 m = max_value v m
+    .
+    Proof.
+        move: name v.
+        induction m using map_ind; intros name v H'.
+        {
+            rewrite lookup_empty in H'. inversion H'.
+        }
+        {
+            unfold max_value in *.
+            rewrite map_fold_insert.
+            {
+                intros. lia.
+            }
+            {
+                exact H.
+            }
+            rewrite map_fold_insert.
+            {
+                intros. lia.
+            }
+            {
+                exact H.
+            }
+            rewrite lookup_insert_Some in H'.
+            destruct H' as [[H1 H2]|[H1 H2]].
+            2: {
+                specialize (IHm name v H2).
+                rewrite IHm.
+                reflexivity.
+            }
+            {
+                subst.
+                apply max_helper_lemma.
+            }
+        }
+    Qed.
+
     Lemma boundary_value_incr_values pc name:
         pc_evm pc !! name = None ->
         boundary_value (<[name:=0]>(incr_values (pc_evm pc)))
@@ -963,9 +1026,110 @@ Section sec.
     .
     Proof.
         intros H.
+        destruct pc as [pc_evm0 pc_svm0]. simpl in *.
+        unfold boundary_value.
+        repeat case_match; subst.
+        {
+            exfalso.
+            unfold incr_values in e.
+            pose proof (Hcontra := e).
+            pose proof (Hcontra2 := insert_non_empty (incr_values ∅) name 0).
+            contradiction.
+        }
+        {
+            exfalso.
+            pose proof (Hcontra := insert_non_empty (incr_values pc_evm0) name 0).
+            contradiction.
+        }
+        {
+            unfold incr_values.
+            rewrite fmap_empty.
+            unfold max_value.
+            rewrite map_fold_insert.
+            { intros. lia. }
+            { exact H. }
+            {
+                apply f_equal.
+                rewrite map_fold_empty.
+                reflexivity.
+            }
+        }
+        apply f_equal.
+        clear -H n0.
+        
+        move: name H n0.
+        induction pc_evm0 using map_ind; intros name H' n0.
+        { contradiction. }
+        {
+            specialize (IHpc_evm0 i H).
+            destruct (decide (m = ∅)).
+            {
+                subst.
+                clear IHpc_evm0 H n0.
+                rewrite lookup_insert_None in H'.
+                destruct H' as [_ Hiname].
+            }
+        }
+        {
+            unfold max_value.
+            rewrite map_fold_empty.
+            rewrite map_fold_insert.
+            { intros. lia. }
+            {
+                unfold incr_values.
+                rewrite fmap_empty.
+                exact H'.
+            }
+            unfold incr_values.
+            rewrite fmap_empty.
+            rewrite map_fold_empty.
+        }
+
+
+        induction pc_evm0 using map_ind; intros name H'.
+        {
+            unfold boundary_value.
+            repeat case_match.
+            {
+                exfalso.
+                pose proof (Hcontra := insert_non_empty (incr_values ∅) name 0).
+                rewrite e in Hcontra.
+                apply Hcontra.
+                reflexivity.
+            }
+            {
+                exfalso.
+                pose proof (Hcontra := insert_non_empty (incr_values ∅) name 0).
+                rewrite e in Hcontra.
+                apply Hcontra.
+                reflexivity.
+            }
+            {
+                apply f_equal.
+                unfold incr_values.
+                rewrite fmap_empty.
+                unfold max_value.
+                rewrite map_fold_insert.
+                { intros. lia. }
+                { exact H'. }
+                {
+                    rewrite map_fold_empty.
+                    reflexivity.
+                }
+            }
+            {
+                exfalso.
+                contradiction.
+            }
+        }
+        {
+            specialize (IHpc_evm0 i H).
+            unfold boundary_value in *.
+        }
+        
         unfold boundary_value. apply f_equal.
         unfold incr_values.
-        destruct pc as [pc_evm0 pc_svm0]. simpl in *.
+        
         unfold max_value.
         rewrite map_fold_insert.
         {
