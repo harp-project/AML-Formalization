@@ -1019,14 +1019,13 @@ Section sec.
         }
     Qed.
 
-    Lemma boundary_value_incr_values pc name:
-        pc_evm pc !! name = None ->
-        boundary_value (<[name:=0]>(incr_values (pc_evm pc)))
-        = S (boundary_value (pc_evm pc))
+    Lemma boundary_value_incr_values m name:
+        m !! name = None ->
+        boundary_value (<[name:=0]>(incr_values m))
+        = S (boundary_value m)
     .
     Proof.
         intros H.
-        destruct pc as [pc_evm0 pc_svm0]. simpl in *.
         unfold boundary_value.
         repeat case_match; subst.
         {
@@ -1038,7 +1037,7 @@ Section sec.
         }
         {
             exfalso.
-            pose proof (Hcontra := insert_non_empty (incr_values pc_evm0) name 0).
+            pose proof (Hcontra := insert_non_empty (incr_values m) name 0).
             contradiction.
         }
         {
@@ -1058,14 +1057,14 @@ Section sec.
         clear -H n0.
         
         move: name H n0.
-        induction pc_evm0 using map_ind; intros name H' n0.
+        induction m using map_ind; intros name H' n0.
         { contradiction. }
         {
-            specialize (IHpc_evm0 i H).
+            specialize (IHm i H).
             destruct (decide (m = ∅)).
             {
                 subst.
-                clear IHpc_evm0 H n0.
+                clear IHm H n0.
                 rewrite lookup_insert_None in H'.
                 destruct H' as [_ Hiname].
                 unfold incr_values.
@@ -1091,7 +1090,7 @@ Section sec.
                 lia.
             }
             {
-                specialize (IHpc_evm0 n).
+                specialize (IHm n).
                 unfold incr_values in *.
                 rewrite fmap_insert.
                 unfold max_value.
@@ -1119,14 +1118,14 @@ Section sec.
                 {
                     exact H.
                 }
-                unfold max_value in IHpc_evm0.
-                rewrite map_fold_insert in IHpc_evm0.
+                unfold max_value in IHm.
+                rewrite map_fold_insert in IHm.
                 { intros. lia. }
                 {
                     rewrite lookup_fmap.
                     rewrite H. reflexivity.
                 }
-                simpl in IHpc_evm0.
+                simpl in IHm.
                 lia.
             }
         }
