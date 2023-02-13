@@ -618,7 +618,7 @@ Section sec.
     Qed.
 
 
-    Lemma wfc_update_evm_key ϕic new_name old_name pc:
+    Lemma wfcex_update_evm_key ϕic new_name old_name pc:
         well_formed_closed_ex_aux (pic_pic ϕic pc) (boundary_value (pc_evm pc)) = true ->
         well_formed_closed_ex_aux
             (pic_pic ϕic (update_evm_key new_name old_name pc))
@@ -630,12 +630,9 @@ Section sec.
         specialize (wf0 ((update_evm_key new_name old_name pc))).
         destruct wf0 as [_ [Hwfcex _]].
         cbn in *.
-        unfold boundary_value in *.
-        unfold update_key in Hwfcex.
-        rewrite max_value_kmap in Hwfcex.
+        rewrite boundary_value_update_key in Hwfcex.
         exact Hwfcex.
     Qed.
-
 
     Lemma wfc_update_svm_key ϕic new_name old_name pc:
         well_formed_closed_mu_aux (pic_pic ϕic pc) (boundary_value (pc_svm pc)) = true ->
@@ -649,9 +646,7 @@ Section sec.
         specialize (wf0 ((update_svm_key new_name old_name pc))).
         destruct wf0 as [_ [_ Hwfcmu]].
         cbn in *.
-        unfold boundary_value in *.
-        unfold update_key in Hwfcmu.
-        rewrite max_value_kmap in Hwfcmu.
+        rewrite boundary_value_update_key in Hwfcmu.
         exact Hwfcmu.
     Qed.
 
