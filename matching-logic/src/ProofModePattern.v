@@ -634,7 +634,7 @@ Section sec.
         exact Hwfcex.
     Qed.
 
-    Lemma wfc_update_svm_key ϕic new_name old_name pc:
+    Lemma wfcmu_update_svm_key ϕic new_name old_name pc:
         well_formed_closed_mu_aux (pic_pic ϕic pc) (boundary_value (pc_svm pc)) = true ->
         well_formed_closed_mu_aux
             (pic_pic ϕic (update_svm_key new_name old_name pc))
@@ -676,7 +676,7 @@ Section sec.
         }
         {
             destruct ϕ_in_context.
-            apply wfc_update_evm_key.
+            apply wfcex_update_evm_key.
             apply pic_wf0.
         }
         {
@@ -730,7 +730,7 @@ Section sec.
         }
         {
             destruct ϕ_in_context.
-            apply wfc_update_svm_key.
+            apply wfcmu_update_svm_key.
             apply pic_wf0.
         }
     Qed.
@@ -766,6 +766,14 @@ Section sec.
         { reflexivity. }
         unfold boundary_value in n.
         exfalso. apply n. clear n.
+        destruct (decide (pc_svm pc = ∅)) as [y|n] eqn:Heq.
+        {
+            exfalso.
+            rewrite y in Heqoidx.
+            rewrite lookup_empty in Heqoidx.
+            inversion Heqoidx.
+        }
+        rewrite Heq.
         destruct d as [|d].
         { lia. }
         cut (d < max_value 0 (pc_svm pc)).
