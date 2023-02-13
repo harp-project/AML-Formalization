@@ -1068,109 +1068,69 @@ Section sec.
                 clear IHpc_evm0 H n0.
                 rewrite lookup_insert_None in H'.
                 destruct H' as [_ Hiname].
-            }
-        }
-        {
-            unfold max_value.
-            rewrite map_fold_empty.
-            rewrite map_fold_insert.
-            { intros. lia. }
-            {
                 unfold incr_values.
-                rewrite fmap_empty.
-                exact H'.
-            }
-            unfold incr_values.
-            rewrite fmap_empty.
-            rewrite map_fold_empty.
-        }
-
-
-        induction pc_evm0 using map_ind; intros name H'.
-        {
-            unfold boundary_value.
-            repeat case_match.
-            {
-                exfalso.
-                pose proof (Hcontra := insert_non_empty (incr_values ∅) name 0).
-                rewrite e in Hcontra.
-                apply Hcontra.
-                reflexivity.
-            }
-            {
-                exfalso.
-                pose proof (Hcontra := insert_non_empty (incr_values ∅) name 0).
-                rewrite e in Hcontra.
-                apply Hcontra.
-                reflexivity.
-            }
-            {
-                apply f_equal.
-                unfold incr_values.
-                rewrite fmap_empty.
+                rewrite fmap_insert fmap_empty.
                 unfold max_value.
                 rewrite map_fold_insert.
                 { intros. lia. }
-                { exact H'. }
                 {
-                    rewrite map_fold_empty.
+                    rewrite lookup_insert_None.
+                    split;[|exact Hiname].
+                    apply lookup_empty.
+                }
+                rewrite map_fold_insert.
+                { intros. lia. }
+                {
+                    apply lookup_empty.
+                }
+                simpl.
+                rewrite map_fold_insert.
+                { intros. lia. }
+                { apply lookup_empty. }
+                rewrite map_fold_empty.
+                lia.
+            }
+            {
+                specialize (IHpc_evm0 n).
+                unfold incr_values in *.
+                rewrite fmap_insert.
+                unfold max_value.
+                rewrite lookup_insert_None in H'.
+                destruct H' as [HmnNone Hiname].
+                rewrite map_fold_insert.
+                { intros. lia. }
+                {
+                    rewrite lookup_insert_None.
+                    split;[|exact Hiname].
+                    rewrite lookup_fmap.
+                    rewrite HmnNone.
                     reflexivity.
                 }
-            }
-            {
-                exfalso.
-                contradiction.
-            }
-        }
-        {
-            specialize (IHpc_evm0 i H).
-            unfold boundary_value in *.
-        }
-        
-        unfold boundary_value. apply f_equal.
-        unfold incr_values.
-        
-        unfold max_value.
-        rewrite map_fold_insert.
-        {
-            intros. lia.
-        }
-        {
-            simpl in *. rewrite lookup_fmap. rewrite H. reflexivity.
-        }
-        {
-            simpl.
-            rewrite map_fold_fmap.
-            {
-                intros. lia.
-            }
-            rewrite map_fold_compose.
-            {
-                intros. lia.
-            }
-            {
-                intros. lia.
-            }
-            
-            induction pc_evm0 using map_ind.
-            {
-                rewrite 2!map_fold_empty.
-            }
-            under [fun _ n x => S n `max` x]functional_extensionality => vn.
-            {
-                under [fun n x => S n `max` x]functional_extensionality => n.
+                simpl.
+                rewrite map_fold_insert.
+                { intros. lia. }
                 {
-                    under [fun x => S n `max` x]functional_extensionality => x.
-                    {
-                        admit.
-                    }
-                    admit.
+                    rewrite lookup_fmap.
+                    rewrite H.
+                    reflexivity.
                 }
-                admit.
+                rewrite map_fold_insert.
+                { intros. lia. }
+                {
+                    exact H.
+                }
+                unfold max_value in IHpc_evm0.
+                rewrite map_fold_insert in IHpc_evm0.
+                { intros. lia. }
+                {
+                    rewrite lookup_fmap.
+                    rewrite H. reflexivity.
+                }
+                simpl in IHpc_evm0.
+                lia.
             }
-            admit.
         }
-    Abort.
+    Qed.
 
     Program Definition mlc_exists
         : MLConstruct 1 1 0 := {|
