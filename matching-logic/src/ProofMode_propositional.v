@@ -3291,6 +3291,58 @@ Proof.
   mlDestructBot "H".
 Defined.
 
+
+Lemma impl_elim
+  {Σ: Signature}
+  (Γ : Theory)
+  (A B C : Pattern)
+  (Δ : list Pattern)
+  (i : ProofInfo)
+  :
+  Γ ⊢i foldr patt_imp A Δ using i ->
+  Γ ⊢i foldr patt_imp C (Δ ++ [B]) using i ->
+  Γ ⊢i foldr patt_imp C (Δ ++ [A ---> B]) using i
+.
+Proof.
+  intros H1 H2.
+  eapply prf_add_lemma_under_implication_generalized_meta_meta.
+  5: {
+    apply H1.
+  }
+  1-4: wf_auto2.
+  {
+    simpl.
+    replace (Δ ++ [A; A ---> B]) with ((Δ ++ [A; A ---> B]) ++ []).
+    2: {
+      rewrite app_nil_r. reflexivity.
+    }
+    apply prf_add_lemma_under_implication_generalized_meta_meta
+    with (l1 := Δ ++ [A; A ---> B]) (l2 := []) (h := B).
+    1-4: wf_auto2.
+    {
+      replace (Δ ++ [A; A ---> B]) with ((Δ ++ [A]) ++ [A ---> B]).
+      2: {
+        rewrite -app_assoc. simpl. reflexivity.
+      }
+      apply prf_weaken_conclusion_iter_under_implication_iter_meta.
+      1-4: wf_auto2.
+      rewrite -app_assoc. simpl.
+      useBasicReasoning.
+      eapply nested_const_middle.
+      1-3: wf_auto2.      
+    }
+    {
+      rewrite -app_assoc. simpl.
+      apply prf_clear_hyp_meta.
+      1-4: wf_auto2.
+      apply prf_clear_hyp_meta.
+      1-4: wf_auto2.
+      exact H2.
+    }
+  }
+Defined.
+
+
 (**********************************************************************************)
 
 
