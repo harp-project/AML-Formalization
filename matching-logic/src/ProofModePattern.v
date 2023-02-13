@@ -12,6 +12,7 @@ From stdpp Require Import
     natmap
     option
     strings
+    stringmap
     sets
     vector
 .
@@ -80,6 +81,24 @@ Record PContext := mkPContext {
     pc_evm : gmap EVarName nat ;
     pc_svm : gmap SVarName nat ;
 }.
+
+Compute (fresh_string "X" (<["X" := 1]>∅)).
+
+Definition this_or_fresh
+    (this : VarName)
+    (g : gmap VarName nat)
+    : VarName
+    :=
+    fresh_string this g
+.
+
+Lemma this_or_fresh_fresh this g:
+    g !! (this_or_fresh this g) = None.
+Proof.
+    unfold this_or_fresh.
+    apply fresh_string_fresh.
+Qed.
+
 
 Definition renaming_function
     (new_key old_key some_key : VarName) : VarName :=
@@ -1145,10 +1164,9 @@ Section sec.
                         | Some name =>
                             Some ( mkPIC _ (
                                 fun ctx : PContext =>
-                                    let ctx' := pc_add_ename ctx name in
+                                    let name' := this_or_fresh name (pc_evm ctx) in
+                                    let ctx' := pc_add_ename ctx name' in
                                     let ϕ := pic_pic ϕ_in_context ctx' in
-                                    (* TODO we need to rename [name] into some fresh name in ϕ
-                                       if there is already [name] in the context*)
                                     patt_exists ϕ 
                             ) _ )
                         end
@@ -1159,13 +1177,19 @@ Section sec.
         intros. simpl in *|-.
         destruct ϕ_in_context as [fϕ Hϕ].
         cbn in *.
-        pose proof (Hϕpc := Hϕ (pc_add_ename pc name)).
+        pose proof (Hϕpc := Hϕ (pc_add_ename pc (this_or_fresh name (pc_evm pc)))).
         clear phi.
         destruct Hϕpc as [H1 [H2 H3]].
         split_and!; try assumption.
         clear H1 H3.
         simpl in *.
-        naive_solver.
+        rewrite boundary_value_incr_values in H2.
+        2: {
+            apply H2.
+        }
+        {
+            apply this_or_fresh_fresh.
+        }
     Qed.
     Next Obligation.
         intros.
@@ -1190,14 +1214,39 @@ Section sec.
                         | Some name =>
                             Some ( mkPIC _ (
                                 fun ctx : PContext =>
-                                    let ctx' := pc_add_sname ctx name in
+                                    let name' := this_or_fresh name (pc_svm ctx) in
+                                    let ctx' := pc_add_sname ctx name' in
                                     let ϕ := pic_pic ϕ_in_context ctx' in
                                     patt_mu ϕ
-                            ))
+                            ) _ )
                         end
                     end
         |}
     .
+
+    Next Obligation.
+        intros. simpl in *|-.
+        destruct ϕ_in_context as [fϕ Hϕ].
+        cbn in *.
+        pose proof (Hϕpc := Hϕ (pc_add_sname pc (this_or_fresh name (pc_svm pc)))).
+        clear phi.
+        destruct Hϕpc as [H1 [H2 H3]].
+        split_and!; try assumption.
+        2: {
+            clear H1 H2.
+            simpl in *.
+            rewrite boundary_value_incr_values in H3.
+            2: {
+                apply H3.
+            }
+            {
+                apply this_or_fresh_fresh.
+            }
+        }
+        {
+            
+        }
+    Qed.
     Next Obligation.
         intros.
         destruct args as [|a1 args].
