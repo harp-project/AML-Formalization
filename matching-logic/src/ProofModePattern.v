@@ -200,8 +200,11 @@ Proof.
     }
 Qed.
 
-Definition bound_value (m : gmap VarName nat) : nat :=
-    S (max_value 0 m)
+Definition boundary_value (m : gmap VarName nat) : nat :=
+    match (decide (m = ∅)) with
+    | left _ => 0
+    | right _ =>     S (max_value 0 m)
+    end
 .
 
 Definition pc_add_ename
@@ -222,8 +225,8 @@ Record Pattern_in_context
       pic_wf : forall (pc : PContext),
         let phi := pic_pic pc in
         well_formed_positive phi /\ (* TODO no_negative, no_positive_occurrence*)
-        well_formed_closed_ex_aux phi (bound_value (pc_evm pc)) /\
-        well_formed_closed_mu_aux phi (bound_value (pc_svm pc)) ;
+        well_formed_closed_ex_aux phi (boundary_value (pc_evm pc)) /\
+        well_formed_closed_mu_aux phi (boundary_value (pc_svm pc)) ;
     }
 .
 
@@ -519,10 +522,18 @@ Section sec.
         }
         unfold phi. clear phi. simpl.
         repeat split; try reflexivity.
-        destruct (decide (d < bound_value (pc_evm pc))) as [y|n].
+        destruct (decide (d < boundary_value (pc_evm pc))) as [y|n].
         { reflexivity. }
-        unfold bound_value in n.
+        unfold boundary_value in n.
         exfalso. apply n. clear n.
+        destruct (decide (pc_evm pc = ∅)) as [y|n] eqn:Heq.
+        {
+            exfalso.
+            rewrite y in Heqoidx.
+            rewrite lookup_empty in Heqoidx.
+            inversion Heqoidx.
+        }
+        rewrite Heq.
         destruct d as [|d].
         { lia. }
         cut (d < max_value 0 (pc_evm pc)).
@@ -555,24 +566,63 @@ Section sec.
         apply wf0.
     Qed.
 
-    Lemma boud_value_update_key new_name old_name store:
-         bound_value (update_key new_name old_name store)
-         = bound_value store
+    Lemma boundary_value_update_key new_name old_name store:
+         boundary_value (update_key new_name old_name store)
+         = boundary_value store
     .
     Proof.
-        unfold bound_value.
+        unfold boundary_value.
+        destruct (decide (store = ∅)) as [se | sne] eqn:Heq,
+                 (decide (update_key new_name old_name store = ∅)) as [nse | nsne] eqn:Hneq.
+        {
+            reflexivity.
+        }
+        {
+            clear Heq Hneq. subst store.
+            exfalso.
+            unfold update_key in nsne.
+            rewrite kmap_empty in nsne.
+            apply nsne. reflexivity.
+        }
+        {
+            exfalso.
+            clear Heq Hneq.
+            unfold update_key in nse.
+            rewrite kmap_empty_iff in nse.
+            subst store. apply sne. reflexivity.
+        }
         apply f_equal.
         unfold update_key.
-        rewrite max_value_kmap.
-        reflexivity.
+        clear Heq Hneq nsne sne.
+        induction store using map_ind.
+        {
+            rewrite kmap_empty. reflexivity.
+        }
+        {
+            unfold max_value.
+            rewrite kmap_insert.
+            rewrite map_fold_insert.
+            {
+                intros. lia.
+            }
+            {
+                rewrite lookup_kmap. exact H.
+            }
+            unfold max_value in IHstore.
+            rewrite IHstore. clear IHstore.
+            rewrite map_fold_insert.
+            { intros. lia. }
+            { exact H. }
+            reflexivity.
+        }
     Qed.
 
 
     Lemma wfc_update_evm_key ϕic new_name old_name pc:
-        well_formed_closed_ex_aux (pic_pic ϕic pc) (bound_value (pc_evm pc)) = true ->
+        well_formed_closed_ex_aux (pic_pic ϕic pc) (boundary_value (pc_evm pc)) = true ->
         well_formed_closed_ex_aux
             (pic_pic ϕic (update_evm_key new_name old_name pc))
-            (bound_value (pc_evm pc)) = true
+            (boundary_value (pc_evm pc)) = true
     .
     Proof.
         intros H.
@@ -580,7 +630,7 @@ Section sec.
         specialize (wf0 ((update_evm_key new_name old_name pc))).
         destruct wf0 as [_ [Hwfcex _]].
         cbn in *.
-        unfold bound_value in *.
+        unfold boundary_value in *.
         unfold update_key in Hwfcex.
         rewrite max_value_kmap in Hwfcex.
         exact Hwfcex.
@@ -588,10 +638,10 @@ Section sec.
 
 
     Lemma wfc_update_svm_key ϕic new_name old_name pc:
-        well_formed_closed_mu_aux (pic_pic ϕic pc) (bound_value (pc_svm pc)) = true ->
+        well_formed_closed_mu_aux (pic_pic ϕic pc) (boundary_value (pc_svm pc)) = true ->
         well_formed_closed_mu_aux
             (pic_pic ϕic (update_svm_key new_name old_name pc))
-            (bound_value (pc_svm pc)) = true
+            (boundary_value (pc_svm pc)) = true
     .
     Proof.
         intros H.
@@ -599,7 +649,7 @@ Section sec.
         specialize (wf0 ((update_svm_key new_name old_name pc))).
         destruct wf0 as [_ [_ Hwfcmu]].
         cbn in *.
-        unfold bound_value in *.
+        unfold boundary_value in *.
         unfold update_key in Hwfcmu.
         rewrite max_value_kmap in Hwfcmu.
         exact Hwfcmu.
@@ -717,9 +767,9 @@ Section sec.
         }
         unfold phi. clear phi. simpl.
         repeat split; try reflexivity.
-        destruct (decide (d < bound_value (pc_svm pc))) as [y|n].
+        destruct (decide (d < boundary_value (pc_svm pc))) as [y|n].
         { reflexivity. }
-        unfold bound_value in n.
+        unfold boundary_value in n.
         exfalso. apply n. clear n.
         destruct d as [|d].
         { lia. }
@@ -903,17 +953,17 @@ Section sec.
         }
     Qed.
 
-    Lemma bound_value_incr_values pc name:
+    Lemma boundary_value_incr_values pc name:
         pc_evm pc !! name = None ->
-        bound_value (<[name:=0]>(incr_values (pc_evm pc)))
-        = S (bound_value (pc_evm pc))
+        boundary_value (<[name:=0]>(incr_values (pc_evm pc)))
+        = S (boundary_value (pc_evm pc))
     .
     Proof.
         intros H.
-        unfold bound_value. apply f_equal.
+        unfold boundary_value. apply f_equal.
         unfold incr_values.
-        destruct pc as [pc_evm0 pc_svm0]. simpl.
-        unfold max_value. simpl.
+        destruct pc as [pc_evm0 pc_svm0]. simpl in *.
+        unfold max_value.
         rewrite map_fold_insert.
         {
             intros. lia.
@@ -927,18 +977,31 @@ Section sec.
             {
                 intros. lia.
             }
+            rewrite map_fold_compose.
+            {
+                intros. lia.
+            }
+            {
+                intros. lia.
+            }
+            
+            induction pc_evm0 using map_ind.
+            {
+                rewrite 2!map_fold_empty.
+            }
             under [fun _ n x => S n `max` x]functional_extensionality => vn.
             {
                 under [fun n x => S n `max` x]functional_extensionality => n.
                 {
                     under [fun x => S n `max` x]functional_extensionality => x.
                     {
-
+                        admit.
                     }
+                    admit.
                 }
+                admit.
             }
-            Search Nat.max.
-            Search map_fold fmap.
+            admit.
         }
     Abort.
 
