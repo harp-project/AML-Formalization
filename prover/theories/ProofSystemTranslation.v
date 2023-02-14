@@ -82,6 +82,13 @@ Proof.
   apply cancel_inj.
 Qed.
 
+Global Instance list_ascii_of_string_inj:
+  Inj (=) (=) list_ascii_of_string
+.
+Proof.
+  apply cancel_inj.
+Qed.
+
 Global Instance string_app_assoc:
   Assoc (=) String.append
 .
@@ -95,7 +102,7 @@ Proof.
   reflexivity.
 Qed.
 
-Global Instance string_app_inj s2 :
+Global Instance string_app_inj_2 s2 :
   Inj (=) (=) (fun s1 => String.append s1 s2).
 Proof.
   intros s1 s1' H.
@@ -143,15 +150,15 @@ Section ln2named.
     (cancels2 : Cancel (=) svar2string string2svar)
     (sym2string_inj : Inj (=) (=) sym2string)
   .
-
+  
   Fixpoint ln2str (ϕ : Pattern) : string :=
     match ϕ with
     | patt_bound_evar n => "BE" ++ pretty n
     | patt_bound_svar n => "BS" ++ pretty n
     | patt_free_evar x => "FE" ++ evar2string x 
     | patt_free_svar X => "FS" ++ svar2string X
-    | patt_app ϕ₁ ϕ₂ => "A" ++ ln2str ϕ₁ ++ ln2str ϕ₂
-    | patt_imp ϕ₁ ϕ₂ => "I" ++ ln2str ϕ₁ ++ ln2str ϕ₂
+    | patt_app ϕ₁ ϕ₂ => "(" ++ ln2str ϕ₁ ++ ")A(" ++ ln2str ϕ₂ ++ ")"
+    | patt_imp ϕ₁ ϕ₂ => "(" ++ ln2str ϕ₁ ++ ")I(" ++ ln2str ϕ₂ ++ ")"
     | patt_sym s => "S" ++ sym2string s
     | patt_bott => "B"
     | patt_exists ϕ' => "EX" ++ ln2str ϕ'
@@ -166,35 +173,40 @@ Section ln2named.
     move: ϕ₂.
     induction ϕ₁; intros ϕ₂ H;
       destruct ϕ₂; cbn in *; simpl;
-      inversion H as [H']; try congruence.
+      try (solve[(inversion H as [H']; congruence)]).
     {
+      inversion H as [H'].
       apply pretty_nat_inj in H'.
       congruence.
     }
     {
+      inversion H as [H'].
       apply pretty_nat_inj in H'.
       congruence.
     }
     {
+      inversion H as [H'].
       apply sym2string_inj in H'.
       congruence.
     }
     {
-      destruct (decide (ϕ₁1 = ϕ₂1)).
+      inversion H as [H'].
+      rewrite -(string_of_list_ascii_of_string (ln2str ϕ₁1)) in H'.
+      rewrite -(string_of_list_ascii_of_string (ln2str ϕ₁2)) in H'.
+      rewrite -(string_of_list_ascii_of_string (ln2str ϕ₂1)) in H'.
+      rewrite -(string_of_list_ascii_of_string (ln2str ϕ₂2)) in H'.
+      rewrite -2!(string_of_list_ascii_of_string ")A(") in H'.
+      rewrite -2!(string_of_list_ascii_of_string "(") in H'.
+      rewrite -2!(string_of_list_ascii_of_string ")") in H'.
+      rewrite -!string_of_list_ascii_app in H'.
+      destruct (decide (length (list_ascii_of_string (ln2str ϕ₁1)) = length (list_ascii_of_string (ln2str ϕ₂1)))).
       {
-        subst.
-        apply string_app_inj in H'.
-        specialize (IHϕ₁2 _ H').
-        subst.
-        reflexivity.
+        simplify_list_eq.
+        naive_solver.
       }
-      destruct (decide (ϕ₁2 = ϕ₂2)).
       {
-        subst.
-        apply string_app_inj in H'.
-        specialize (IHϕ₁2 _ H').
-        subst.
-        reflexivity.
+        exfalso.
+        congruence.
       }
     }
   Abort.
