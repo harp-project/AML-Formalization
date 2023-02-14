@@ -166,6 +166,50 @@ Section ln2named.
     end
   .
 
+  Equations? ln2named (ϕ : Pattern) : NamedPattern by wf (size' ϕ) lt :=
+  ln2named (patt_bound_evar _) => npatt_bott ;
+  ln2named (patt_bound_svar _) => npatt_bott ;
+  ln2named (patt_free_evar x) => npatt_evar x ;
+  ln2named (patt_free_svar X) => npatt_svar X ;
+  ln2named patt_bott := npatt_bott ;
+  ln2named (patt_sym s) := npatt_sym s ;
+  ln2named (patt_imp ϕ₁ ϕ₂) := npatt_imp (ln2named ϕ₁) (ln2named ϕ₂) ;
+  ln2named (patt_app ϕ₁ ϕ₂) := npatt_app (ln2named ϕ₁) (ln2named ϕ₂) ;
+  ln2named (patt_exists ϕ') :=
+    let x := string2evar (ln2str ϕ') in
+    npatt_exists x (ln2named (evar_open x 0 ϕ')) ;
+  ln2named (patt_mu ϕ') :=
+    let X := string2svar (ln2str ϕ') in
+    npatt_mu X (ln2named (svar_open X 0 ϕ')) .
+  Proof.
+    {
+      simpl. lia.
+    }
+    {
+      simpl. lia.
+    }
+    {
+      simpl. lia.
+    }
+    {
+      simpl. lia.
+    }
+    {
+      rewrite evar_open_size'. simpl. lia.
+    }
+    {
+      rewrite svar_open_size'. simpl. lia.
+    }
+  Qed.
+
+  Fixpoint ln2named (ϕ : Pattern) : NamedPattern :=
+    match ϕ with
+    | patt_exists ϕ' =>
+      let x := string2evar (ln2str ϕ') in
+      npatt_exists x (ln2named (evar_open x 0 ϕ'))
+    | _ => npatt_bott
+    end.
+
   #[global]
   Instance ln2str_inj : Inj (=) (=) ln2str.
   Proof.
@@ -206,7 +250,7 @@ Section ln2named.
       }
       {
         exfalso.
-        congruence.
+        admit.
       }
     }
   Abort.
