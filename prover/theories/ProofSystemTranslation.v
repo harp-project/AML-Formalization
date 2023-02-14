@@ -8,7 +8,7 @@ From stdpp Require Export base gmap fin_sets sets list countable.
 From MatchingLogic Require Import Syntax Semantics StringSignature ProofSystem ProofMode.
 From MatchingLogicProver Require Import Named NamedProofSystem NMatchers.
 
-From stdpp Require Import base finite gmap mapset listset_nodup numbers propset list.
+From stdpp Require Import base finite gmap mapset listset_nodup numbers propset list pretty strings.
 
 Import ProofSystem.Notations.
 
@@ -30,6 +30,180 @@ Ltac case_match_in_hyp H :=
   lazymatch type of H with
   | context [ match ?x with _ => _ end ] => destruct x eqn:?
   end.
+
+Global Instance string_app_empty_rightid :
+  RightId (=) "" String.append
+.
+Proof.
+  intros s.
+  induction s; simpl.
+  { reflexivity. }
+  cbv.
+  fold String.append. (* This is weird. *)
+  rewrite IHs.
+  reflexivity.
+Qed.
+
+Lemma string_of_list_ascii_app l1 l2:
+  string_of_list_ascii (l1 ++ l2)
+  = (string_of_list_ascii l1) +:+ (string_of_list_ascii l2)
+.
+Proof.
+  induction l1; cbn.
+  {
+    unfold String.append. reflexivity.
+  }
+  {
+    rewrite IHl1. clear IHl1.
+    reflexivity.
+  }
+Qed.
+
+Global Instance string_of_list_ascii_of_string_cancel:
+  Cancel (=) string_of_list_ascii list_ascii_of_string
+.
+Proof.
+  intros x.
+  apply string_of_list_ascii_of_string.
+Qed.
+
+Global Instance list_ascii_of_string_of_list_ascii_cancel:
+  Cancel (=) list_ascii_of_string string_of_list_ascii 
+.
+Proof.
+  intros x.
+  apply list_ascii_of_string_of_list_ascii.
+Qed.
+
+Global Instance string_of_list_ascii_inj:
+  Inj (=) (=) string_of_list_ascii
+.
+Proof.
+  apply cancel_inj.
+Qed.
+
+Global Instance string_app_assoc:
+  Assoc (=) String.append
+.
+Proof.
+  intros x y z.
+  rewrite -(string_of_list_ascii_of_string x).
+  rewrite -(string_of_list_ascii_of_string y).
+  rewrite -(string_of_list_ascii_of_string z).
+  rewrite -!string_of_list_ascii_app.
+  rewrite app_assoc.
+  reflexivity.
+Qed.
+
+Global Instance string_app_inj s2 :
+  Inj (=) (=) (fun s1 => String.append s1 s2).
+Proof.
+  intros s1 s1' H.
+  move: s1 s1' H.
+  induction s2; intros s1 s1' H; cbn in *.
+  {
+    do 2 rewrite right_id in H.
+    exact H.
+  }
+  {
+    replace (String a s2)
+      with ((String a EmptyString) +:+ s2) in H
+      by reflexivity.
+    replace (String a s1)
+      with ((String a EmptyString) +:+ s1) in H
+      by reflexivity.
+    rewrite 2!string_app_assoc in H.
+    specialize (IHs2 _ _ H).
+    clear H s2.
+    rename IHs2 into H.
+    rewrite -(string_of_list_ascii_of_string s1).
+    rewrite -(string_of_list_ascii_of_string s1').
+    rewrite -(string_of_list_ascii_of_string s1) in H.
+    rewrite -(string_of_list_ascii_of_string s1') in H.
+    rewrite -(string_of_list_ascii_of_string (String a "")) in H.
+    rewrite [list_ascii_of_string (String a "")]/= in H.
+    rewrite -!string_of_list_ascii_app in H.
+    apply string_of_list_ascii_inj in H.
+    simplify_list_eq.
+    congruence.
+    }
+Qed.
+
+Section ln2named.
+  Context
+    {Σ : Signature}
+    (string2evar : string -> evar)
+    (evar2string : evar -> string)
+    (string2svar : string -> svar)
+    (svar2string : svar -> string)
+    (sym2string : symbols -> string)
+    (cancele1 : Cancel (=) string2evar evar2string)
+    (cancele2 : Cancel (=) evar2string string2evar)
+    (cancels1 : Cancel (=) string2svar svar2string)
+    (cancels2 : Cancel (=) svar2string string2svar)
+    (sym2string_inj : Inj (=) (=) sym2string)
+  .
+
+  Fixpoint ln2str (ϕ : Pattern) : string :=
+    match ϕ with
+    | patt_bound_evar n => "BE" ++ pretty n
+    | patt_bound_svar n => "BS" ++ pretty n
+    | patt_free_evar x => "FE" ++ evar2string x 
+    | patt_free_svar X => "FS" ++ svar2string X
+    | patt_app ϕ₁ ϕ₂ => "A" ++ ln2str ϕ₁ ++ ln2str ϕ₂
+    | patt_imp ϕ₁ ϕ₂ => "I" ++ ln2str ϕ₁ ++ ln2str ϕ₂
+    | patt_sym s => "S" ++ sym2string s
+    | patt_bott => "B"
+    | patt_exists ϕ' => "EX" ++ ln2str ϕ'
+    | patt_mu ϕ' => "MU" ++ ln2str ϕ'
+    end
+  .
+
+  #[global]
+  Instance ln2str_inj : Inj (=) (=) ln2str.
+  Proof.
+    intros ϕ₁ ϕ₂.
+    move: ϕ₂.
+    induction ϕ₁; intros ϕ₂ H;
+      destruct ϕ₂; cbn in *; simpl;
+      inversion H as [H']; try congruence.
+    {
+      apply pretty_nat_inj in H'.
+      congruence.
+    }
+    {
+      apply pretty_nat_inj in H'.
+      congruence.
+    }
+    {
+      apply sym2string_inj in H'.
+      congruence.
+    }
+    {
+      destruct (decide (ϕ₁1 = ϕ₂1)).
+      {
+        subst.
+        apply string_app_inj in H'.
+        specialize (IHϕ₁2 _ H').
+        subst.
+        reflexivity.
+      }
+      destruct (decide (ϕ₁2 = ϕ₂2)).
+      {
+        subst.
+        apply string_app_inj in H'.
+        specialize (IHϕ₁2 _ H').
+        subst.
+        reflexivity.
+      }
+    }
+  Abort.
+  
+
+End ln2named.
+
+Print ML_proof_system.
+
 
 
 (* In an empty context, this rewrites: *)
