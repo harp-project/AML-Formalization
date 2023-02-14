@@ -150,6 +150,14 @@ Section ln2named.
     (cancels2 : Cancel (=) svar2string string2svar)
     (sym2string_inj : Inj (=) (=) sym2string)
   .
+
+  #[local]
+  Instance string2evar_inj : Inj (=) (=) string2evar.
+  Proof. apply cancel_inj. Qed.
+
+  #[local]
+  Instance string2svar_inj : Inj (=) (=) string2svar.
+  Proof. apply cancel_inj. Qed.
   
   Fixpoint ln2str (ϕ : Pattern) : string :=
     match ϕ with
@@ -202,13 +210,133 @@ Section ln2named.
     }
   Qed.
 
-  Fixpoint ln2named (ϕ : Pattern) : NamedPattern :=
-    match ϕ with
-    | patt_exists ϕ' =>
-      let x := string2evar (ln2str ϕ') in
-      npatt_exists x (ln2named (evar_open x 0 ϕ'))
-    | _ => npatt_bott
-    end.
+  Lemma ln2named_bevar_subst ϕ y:
+    ln2named (bevar_subst (patt_free_evar y) 0 ϕ)
+    = named_evar_subst
+      (ln2named (evar_open (string2evar (ln2str ϕ)) 0 ϕ))  
+      (npatt_evar y)
+      (string2evar (ln2str ϕ))
+  .
+  Proof.
+    remember (size' ϕ) as sz.
+    assert (Hsz: size' ϕ <= sz) by lia.
+    clear Heqsz.
+    move: ϕ Hsz y.
+    induction sz; intros ϕ Hsz y.
+    {
+      destruct ϕ; cbn in *; exfalso; lia.
+    }
+    destruct ϕ; cbn in *.
+    {
+      simp ln2named. simpl.
+      destruct (decide (string2evar ("FE" +:+ evar2string x) = x)) as [H|H].
+      2: { reflexivity. }
+      exfalso.
+      rewrite <- (cancel string2evar evar2string x) in H at 2.
+      apply (inj string2evar) in H.
+      match type of H with
+      | ?l = ?r => assert (String.length l = String.length r) by congruence
+      end.
+      simpl in H0.
+      lia.
+    }
+    {
+      simp ln2named. simpl. reflexivity.
+    }
+    {
+      repeat case_match; simpl in *; try lia.
+      {
+        subst.
+        simp ln2named. simpl.
+        case_match.
+        { reflexivity. }
+        contradiction.
+      }
+      {
+        simp ln2named. simpl. reflexivity.
+      }
+    }
+    {
+      simp ln2named. simpl. reflexivity.
+    }
+    {
+      simp ln2named. simpl. reflexivity.
+    }
+    {
+      simp ln2named. simpl.
+      rewrite IHsz;[lia|].
+      remember (ln2named (evar_open (string2evar (ln2str ϕ1)) 0 ϕ1))
+        as ϕ1'.
+      rewrite IHsz;[lia|].
+      remember (ln2named (evar_open (string2evar (ln2str ϕ2)) 0 ϕ2))
+        as ϕ2'.
+      rewrite IHsz;[lia|].
+      rewrite -Heqϕ1'.
+      rewrite IHsz;[lia|].
+      rewrite -Heqϕ2'.
+      remember (string2evar ("(" +:+ ln2str ϕ1 +:+ ")A(" +:+ ln2str ϕ2 +:+ ")")) as y2.
+
+
+    }
+  Abort.
+      
+  Definition pf_ln2named
+    (Γ : Theory)
+    (ϕ : Pattern)
+    (wfϕ : well_formed ϕ)
+    (pf : ML_proof_system Γ ϕ)
+    : NP_ML_proof_system (ln2named <$> Γ) (ln2named ϕ).
+  Proof.
+    induction pf.
+    {
+      apply N_hypothesis.
+      { admit. (* WF *)}
+      {
+        rewrite elem_of_fmap.
+        exists axiom.
+        split;[reflexivity|assumption].
+      }
+    }
+    {
+      simp ln2named.
+      apply N_P1.
+      { admit. (* WF *)}
+      { admit. (* WF *)}
+    }
+    {
+      simp ln2named.
+      apply N_P2.
+      { admit. (* WF *)}
+      { admit. (* WF *)}
+      { admit. (* WF *)}
+    }
+    {
+      simp ln2named.
+      apply N_P3.
+      { admit. (* WF *)}
+    }
+    {
+      simp ln2named.
+      simp ln2named in IHpf2.
+      eapply N_Modus_ponens.
+      4: {
+        apply IHpf2.
+        wf_auto2.
+      }
+      3: {
+        apply IHpf1.
+        wf_auto2.
+      }
+      { admit. (* WF *)}
+      { admit. (* WF *)}
+    }
+    {
+      simp ln2named.
+      simpl.
+      unfold evar_open.
+      apply N_Ex_quan.
+    }
+  Defined.
 
   #[global]
   Instance ln2str_inj : Inj (=) (=) ln2str.
