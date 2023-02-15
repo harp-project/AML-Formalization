@@ -3243,7 +3243,7 @@ Proof.
   eapply cast_proof_ml_hyps.
   {
     rewrite <- (evar_quantify_evar_open y 0 (b0 ∈ml (! ⌈ φ ⌉))).
-    2: { subst y. solve_fresh. }
+    2: { subst x y. solve_fresh. }
     reflexivity.
     unfold well_formed, well_formed_closed in wfφ. destruct_and!.
     simpl; split_and!; auto.

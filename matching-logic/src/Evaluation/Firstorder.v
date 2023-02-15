@@ -62,13 +62,11 @@ Lemma ex3_fol_pm : forall {Σ : Signature} (Γ : Theory) (A B : Pattern) x,
   Γ ⊢ (ex, A^{{evar:x ↦ 0}} and B^{{evar:x↦0}}) ---> ex, A^{{evar:x↦0}}.
 Proof.
   intros Σ Γ A B x WFA WFB Hx1 Hx2.
-  mlIntro "H". mlDestructEx "H" as x. 1-2: shelve.
+  mlIntro "H". mlDestructEx "H" as x.
   mlSimpl. mlExists x. fromMLGoal.
   epose proof (pf_conj_elim_l Γ A _ _ _) as H0.
   eapply useGenericReasoning in H0. exact H0. shelve.
-  Unshelve.  
-  (* 2 variable inclusion *)
-  1-2: cbn; repeat rewrite free_evars_evar_quantify; set_solver.
+  Unshelve.
   (* 2 well_formedness *)
   1-2: wf_auto2.
   (* 1 ProofInfoLe *)
@@ -84,11 +82,9 @@ Lemma ex3_pm : forall {Σ : Signature} (Γ : Theory) (A B : Pattern) x,
   Γ ⊢ (ex, A^{{evar:x ↦ 0}} and B^{{evar:x↦0}}) ---> ex, A^{{evar:x↦0}}.
 Proof.
   intros Σ Γ A B x WFA WFB Hx1 Hx2.
-  mlIntro "H". mlDestructEx "H" as x. 1-2: shelve.
+  mlIntro "H". mlDestructEx "H" as x.
   mlSimpl. mlDestructAnd "H" as "H0" "H1".
   mlExists x. mlAssumption.
-  Unshelve.  
-  1-2: cbn; repeat rewrite free_evars_evar_quantify; set_solver.
 Defined.
 
 Section compute.
