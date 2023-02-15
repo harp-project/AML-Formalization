@@ -42,8 +42,8 @@ complex_proof_sizes = [
 
 main :: IO ()
 main = do
-  putStrLn (show  propositional_proof_sizes)
-  putStrLn (show rewrite_proof_sizes)
-  putStrLn (show fol_proof_sizes)
-  putStrLn (show revert_proof_sizes)
-  putStrLn (show complex_proof_sizes)
+  putStrLn ("Propositional proof: " ++ show  propositional_proof_sizes)
+  putStrLn ("Rewrite-based proof: " ++ show rewrite_proof_sizes)
+  putStrLn ("First-order proof: " ++ show fol_proof_sizes)
+  putStrLn ("Revert size checker proofs: " ++ show revert_proof_sizes)
+  putStrLn ("Complex proofs: " ++ show complex_proof_sizes)
