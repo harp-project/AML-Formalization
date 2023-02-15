@@ -1,7 +1,9 @@
 PATH_TO_COMPILED_LIBRARY ?= ../matching-logic
 DOCDIR ?= /usr/share
 
-default: snippets coqdoc alectryon
+default: coqdoc
+#default: snippets coqdoc alectryon
+
 
 coqdoc: doc/coqdoc
 
