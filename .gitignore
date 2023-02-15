@@ -35,5 +35,14 @@ nra.cache
 # Emacs
 *~
 
+# Proof extraction
+*mm.hs
+*.hi
+
+# Generated makefiles
+*.coq
+*.coq.d
+*.coq.conf
+
 # Generated documentation
 html/*
