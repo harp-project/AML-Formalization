@@ -86,7 +86,7 @@ Section running.
     intros mff wff wfϕ₁ wfϕ₂.
     eapply prf_weaken_conclusion_meta_meta. 1-3: shelve.
     gapply (Ex_quan _ _ x). 1-2: shelve.
-    cbn. rewrite bevar_subst_not_occur; [wf_auto2|].
+    cbn. rewrite bevar_subst_not_occur; [shelve|].
     (* apply lhs_from_and. 1-3: shelve. <- this is proven by the proof mode *)
     apply lhs_from_and_low. 1-3: shelve.
     eapply prf_strenghten_premise_meta_meta.
@@ -96,22 +96,22 @@ Section running.
     epose proof (equality_elimination_basic Γ (ϕ₂^{evar:0 ↦ x}) (ϕ₁^{evar:0 ↦ x}) C _ _ _ _ _).
     subst C. cbn in H.
     destruct decide in H. 2: congruence.
-    repeat rewrite free_evar_subst_no_occurrence in H. 1-2: shelve.
+    repeat rewrite free_evar_subst_no_occurrence in H. (* 2 rewrite *) 1-2: shelve.
     eapply prf_weaken_conclusion_meta_meta in H. 2-4: shelve.
     exact H.
     eapply prf_strenghten_premise_meta_meta. 1-3: shelve.
     gapply pf_conj_elim_r. 1-3: shelve.
     gapply A_impl_A. 1-2: shelve.
   Unshelve.
-    (* 31 subgoals *)
+    (* 32 subgoals *)
     (* 4 proof info goals *)
-    4,12,27,30: try_solve_pile.
+    4,13,28,31: try_solve_pile.
     (* 1 mu_free goal: *)
-    16: subst C; cbn; auto.
+    17: subst C; cbn; auto.
     (* 2 free variable inclusion goal *)
-    16-17: subst y; solve_fresh.
-    (* 24 well_formed goals *)
-    1-24: wf_auto2.
+    17-18: subst y; solve_fresh.
+    (* 25 well_formed goals *)
+    1-25: wf_auto2.
   Defined.
 
 End running.
