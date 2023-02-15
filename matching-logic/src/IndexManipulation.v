@@ -639,9 +639,10 @@ Tactic Notation "solve_free_evars" int_or_var(depth) :=
   repeat unify_free_evar_conditions;
   repeat simplify_map_app_union;
   simpl in *;
+  repeat rewrite free_evars_evar_quantify;
   (do ? [rewrite simpl_free_evars/=]);
   auto;
-  set_solver.
+  set_solver. 
 
 Tactic Notation "solve_free_svars_inclusion" int_or_var(depth) :=
   simpl;

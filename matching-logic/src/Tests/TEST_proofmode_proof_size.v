@@ -192,7 +192,8 @@ Proof.
   pose proof (prf_equiv_congruence_iter Γ (B $ C) D {|pcPattern := A $ x; pcEvar := (fresh_evar (A $ B $ C $ D))|} [A] ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) AnyReasoning ltac:(try_solve_pile) ltac:(wf_auto2) H).
   subst x.
   cbn in H0. destruct decide. 2: congruence.
-  do 2 rewrite free_evar_subst_no_occurrence in H0. 2-4: solve_fresh.
+  rewrite free_evar_subst_no_occurrence in H0.
+  2: rewrite free_evar_subst_no_occurrence in H0. 1-2: solve_fresh.
   apply pf_iff_proj1 in H0. 2-3: wf_auto2.
   do 2 mlIntro. mlApplyMeta H0. mlSplitAnd.
   - mlIntro. mlAssumption.
@@ -214,7 +215,8 @@ Proof.
   }
   subst x.
   cbn in H0. destruct decide. 2: congruence.
-  do 2 rewrite free_evar_subst_no_occurrence in H0. 2-4: solve_fresh.
+  rewrite free_evar_subst_no_occurrence in H0.
+  2: rewrite free_evar_subst_no_occurrence in H0. 1-2: solve_fresh.
   apply pf_iff_proj1 in H0. 2-3: wf_auto2.
   do 2 mlIntro. mlApplyMeta H0. mlSplitAnd.
   - mlIntro. mlAssumption.
@@ -234,7 +236,8 @@ Proof.
   ltac:(try_solve_pile) H).
   subst x.
   cbn in H0. destruct decide. 2: congruence.
-  do 2 rewrite free_evar_subst_no_occurrence in H0. 2-4: solve_fresh.
+  rewrite free_evar_subst_no_occurrence in H0.
+  2: rewrite free_evar_subst_no_occurrence in H0. 1-2: solve_fresh.
   apply pf_iff_proj1 in H0. 2-3: wf_auto2.
   do 2 mlIntro. mlApplyMeta H0. mlSplitAnd.
   - mlIntro. mlAssumption.
@@ -264,7 +267,10 @@ Proof.
   pose proof (prf_equiv_congruence_iter Γ (B $ C) D {|pcPattern := A $ x ---> A $ D; pcEvar := (fresh_evar (A $ B $ C $ D))|} [A] ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) AnyReasoning ltac:(try_solve_pile) ltac:(wf_auto2) H).
   subst x.
   cbn in H0. destruct decide. 2: congruence.
-  do 4 rewrite free_evar_subst_no_occurrence in H0. 2-16: solve_fresh.
+  rewrite free_evar_subst_no_occurrence in H0.
+  2: rewrite free_evar_subst_no_occurrence in H0.
+  3: rewrite free_evar_subst_no_occurrence in H0.
+  4: rewrite free_evar_subst_no_occurrence in H0. 1-4: solve_fresh.
   apply pf_iff_proj2 in H0. 2-3: wf_auto2.
   remember (A ---> A $ B $ C ---> A $ D) as AA.
   remember (A ---> A $ D ---> A $ D ) as BB.
@@ -288,7 +294,10 @@ Proof.
   }
   subst x.
   cbn in H0. destruct decide. 2: congruence.
-  do 4 rewrite free_evar_subst_no_occurrence in H0. 2-16: solve_fresh.
+  rewrite free_evar_subst_no_occurrence in H0.
+  2: rewrite free_evar_subst_no_occurrence in H0.
+  3: rewrite free_evar_subst_no_occurrence in H0.
+  4: rewrite free_evar_subst_no_occurrence in H0. 1-4: solve_fresh.
   apply pf_iff_proj2 in H0. 2-3: wf_auto2.
   remember (A ---> A $ B $ C ---> A $ D) as AA.
   remember (A ---> A $ D ---> A $ D ) as BB.
@@ -310,7 +319,10 @@ Proof.
   ltac:(try_solve_pile) H).
   subst x.
   cbn in H0. destruct decide. 2: congruence.
-  do 4 rewrite free_evar_subst_no_occurrence in H0. 2-16: solve_fresh.
+  rewrite free_evar_subst_no_occurrence in H0.
+  2: rewrite free_evar_subst_no_occurrence in H0.
+  3: rewrite free_evar_subst_no_occurrence in H0.
+  4: rewrite free_evar_subst_no_occurrence in H0. 1-4: solve_fresh.
   apply pf_iff_proj2 in H0. 2-3: wf_auto2.
   remember (A ---> A $ B $ C ---> A $ D) as AA.
   remember (A ---> A $ D ---> A $ D ) as BB.
@@ -322,9 +334,9 @@ Defined.
 Lemma premise :
 ∅ ⊢ Y $ Z <---> Y $ Z.
 Proof.
-gapply pf_iff_equiv_refl.
-apply pile_any.
-wf_auto2.
+  gapply pf_iff_equiv_refl.
+  apply pile_any.
+  wf_auto2.
 Defined.
 
 Definition proof_pm1 : nat := proof_size_info (ex2_pm1 X Y Z (Y $ Z) ∅ ltac:(wf_auto2) premise).

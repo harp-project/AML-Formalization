@@ -1,4 +1,4 @@
-From Coq Require Export ssrbool.
+From Coq Require Export ssrbool ssreflect ssrfun.
 From stdpp Require Export list fin_sets.
 
 From MatchingLogic Require Export

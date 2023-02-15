@@ -81,8 +81,7 @@ Proof.
   unfold exists_quantify. intros.
   mlIntro "H0".
   mlDestructEx "H0" as x.
-  1: by apply evar_quantify_no_occurrence.
-  rewrite evar_open_evar_quantify. 2: wf_auto2.
+  rewrite evar_open_evar_quantify. wf_auto2.
   mlRevertLast. assumption.
 Qed.
 

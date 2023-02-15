@@ -66,3 +66,11 @@ src/Tests/TEST_LocallyNameless.v
 src/Tests/TEST_proofmode_example.v
 src/Tests/TEST_proofmode_proof_size.v
 src/Tests/TEST_ProofMode_relative_completeness.v
+
+
+src/Evaluation/Propositional.v
+src/Evaluation/Rewrite.v
+src/Evaluation/Firstorder.v
+src/Evaluation/Revert_size.v
+src/Evaluation/Complex.v
+src/Evaluation/Extractor.v
