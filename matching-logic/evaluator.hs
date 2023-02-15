@@ -16,6 +16,8 @@ propositional_proof_sizes = [
 rewrite_proof_sizes = [
   ("Framing-based proof",proof_rew_low),
   ("Congruence lemma-based proof", proof_rew_pm1),
+  ("Iterated congruence lemma-based proof", proof_rew_low3),
+  ("mlRewriteIff lemma-based proof", proof_rew_low4),
   ("mlRewrite-based proof", proof_rew_pm2),
   ("mlRewrite-based proof opposite", proof_rew_pm3)
   ]

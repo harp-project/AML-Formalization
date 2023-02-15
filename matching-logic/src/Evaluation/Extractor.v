@@ -41,6 +41,9 @@ Definition proof_rew_low : nat := proof_size_info proof2_low.
 Definition proof_rew_pm1 : nat := proof_size_info proof2_pm.
 Definition proof_rew_pm2 : nat := proof_size_info proof2_pm2.
 Definition proof_rew_pm3 : nat := proof_size_info proof2_pm3.
+Definition proof_rew_low3 : nat := proof_size_info proof2_low3.
+Definition proof_rew_low4 : nat := proof_size_info proof2_low4.
+
 
 Definition proof_fol_low : nat := proof_size_info proof3_low.
 Definition proof_fol_pm1 : nat := proof_size_info proof3_fol_pm.
@@ -56,6 +59,7 @@ Definition proof_complex_pm : nat := proof_size_info proof_running_pm.
 
 Extraction "Test.hs" proof_prop_low proof_prop_pm1 proof_prop_pm2
                      proof_rew_low proof_rew_pm1 proof_rew_pm2 proof_rew_pm3
+                     proof_rew_low3 proof_rew_low4
                      proof_fol_low proof_fol_pm1 proof_fol_pm2
                      proof_derived_rev_small proof_pm_rev_small
                      proof_derived_rev_big proof_pm_rev_big

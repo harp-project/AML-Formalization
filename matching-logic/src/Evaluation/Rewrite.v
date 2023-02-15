@@ -77,6 +77,50 @@ Proof.
   1-2: subst x; solve_fresh.
 Defined.
 
+(** Low-level proof, using the iterated congruence lemma + explosion
+    in proof size because of MP and the bigger context for
+    the congruence lemma *)
+Lemma ex2_low3 {Σ : Signature} (A B C D : Pattern) (Γ : Theory) :
+  well_formed (A ---> B ---> C ---> D) = true ->
+  Γ ⊢ ((B $ C) <---> D) ->
+  Γ ⊢ ((A $ (B $ C)) ---> (A $ D)).
+Proof.
+  intros Hwf H.
+  remember (fresh_evar (A $ B $ C $ D)) as x.
+  epose proof (prf_equiv_congruence_iter _ _ _
+                   {| pcPattern := A $ patt_free_evar x ---> A $ D; pcEvar := x |}
+                    [] _ _ _ _ _ _ H).
+  cbn in H0. destruct decide. 2: congruence.
+  repeat rewrite free_evar_subst_no_occurrence in H0. 1-4: shelve.
+  apply pf_iff_proj2 in H0. eapply MP. 2: exact H0.
+  gapply A_impl_A.
+  Unshelve.
+  1,8: try_solve_pile.
+  1-7: wf_auto2.
+  all: subst x; try solve_fresh.
+Defined.
+
+Lemma ex2_low4 {Σ : Signature} (A B C D : Pattern) (Γ : Theory) :
+  well_formed (A ---> B ---> C ---> D) = true ->
+  Γ ⊢ ((B $ C) <---> D) ->
+  Γ ⊢ ((A $ (B $ C)) ---> (A $ D)).
+Proof.
+  intros Hwf H.
+  remember (fresh_evar (A $ B $ C $ D)) as x.
+  toMLGoal. wf_auto2.
+  epose proof (MLGoal_rewriteIff _ _ _
+                   {| pcPattern := A $ patt_free_evar x ---> A $ D; pcEvar := x |}
+                    [] _ _ H) as H0.
+  cbn in H0. destruct decide. 2: congruence.
+  repeat rewrite free_evar_subst_no_occurrence in H0. 1-4: shelve.
+  apply H0.
+  mlIntro. mlAssumption.
+  Unshelve.
+  try_solve_pile.
+  wf_auto2.
+  all: subst x; try solve_fresh.
+Defined.
+
 From Coq Require Import ssreflect ssrfun ssrbool.
 
 Open Scope string_scope.
@@ -210,6 +254,10 @@ Section compute.
   Definition proof2_pm := ex2_low2 X Y Z (Y $ Z) ∅ ltac:(wf_auto2) premise.
   Definition proof2_pm2 := ex2_pm X Y Z (Y $ Z) ∅ ltac:(wf_auto2) premise.
   Definition proof2_pm3 := ex2_pm2 X Y Z (Y $ Z) ∅ ltac:(wf_auto2) premise.
+
+  Definition proof2_low3 := ex2_low3 X Y Z (Y $ Z) ∅ ltac:(wf_auto2) premise.
+  Definition proof2_low4 := ex2_low4 X Y Z (Y $ Z) ∅ ltac:(wf_auto2) premise.
+
 (* 
   Compute proof_size_info (ex2_low ∅ A B ltac:(wf_auto2) ltac:(wf_auto2)).
   Compute proof_size_info (ex2_pm ∅ A B ltac:(wf_auto2) ltac:(wf_auto2)). *)
