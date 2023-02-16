@@ -567,6 +567,36 @@ Proof.
     - mlExact "H0".
 Defined.
 
+Lemma MLGoal_revert {Σ : Signature} (Γ : Theory) (l1 l2 : hypotheses) (x g : Pattern) (n : string) i :
+  mkMLGoal Σ Γ (l1 ++ l2) (x ---> g) i ->
+  mkMLGoal Σ Γ (l1 ++ (mkNH _ n x) :: l2) g i.
+Proof.
+  intros H.
+  unfold of_MLGoal in H. simpl in H.
+  unfold of_MLGoal. simpl. intros wfxig wfl.
+  unfold patterns_of in *. rewrite -> map_app in *. simpl in *.
+  feed specialize H. 1-2: wf_auto2.
+  apply reorder_middle_to_last_meta. 1-4: wf_auto2.
+  by rewrite app_assoc foldr_snoc.
+Defined.
+
+Tactic Notation "mlRevert" constr(name) :=
+  _ensureProofMode;
+  _mlReshapeHypsByName name;
+  apply (MLGoal_revert _ _ _ _ _ name);
+  _mlReshapeHypsBack.
+
+Local Example Test_revert {Σ : Signature} Γ :
+  forall A B C, well_formed A -> well_formed B -> well_formed C ->
+  Γ ⊢i A ---> B ---> C ---> A using BasicReasoning.
+Proof.
+  intros. toMLGoal. wf_auto2.
+  mlIntro "H". mlIntro "H0". mlIntro "H1".
+  mlRevert "H0". mlRevert "H1".
+  mlIntro "H0". mlIntro "H1".
+  mlExact "H".
+Defined.
+
 Lemma prf_add_lemma_under_implication_generalized {Σ : Signature} Γ l1 l2 g h:
   Pattern.wf l1 ->
   Pattern.wf l2 ->
