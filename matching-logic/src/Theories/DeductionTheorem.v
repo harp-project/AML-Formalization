@@ -581,14 +581,15 @@ Defined.
   As is there is no way to determine the mu requirement and
   propagation of predicates is unproved.
 *)
-Lemma pred_and_ctx_and {Σ : Signature} {syntax : Syntax} Γ ctx ϕ ψ i :
+Lemma pred_and_ctx_and {Σ : Signature} {syntax : Syntax} Γ ctx ϕ ψ:
+  Definedness_Syntax.theory ⊆ Γ ->
   well_formed ϕ ->
   well_formed ψ ->
   well_formed (pcPattern ctx) ->
-  Γ ⊢i is_predicate_pattern ψ using i ->
-  Γ ⊢i ψ and (emplace ctx ϕ) <---> ψ and (emplace ctx (ψ and ϕ)) using i.
+  Γ ⊢ is_predicate_pattern ψ ->
+  Γ ⊢ ψ and (emplace ctx ϕ) <---> ψ and (emplace ctx (ψ and ϕ)).
 Proof.
-  intros wfm wfψ wfc Hp.
+  intros HΓ wfm wfψ wfc Hp.
 
   remember (size' (pcPattern ctx)) as sz.
   assert (Hsz: size' (pcPattern ctx) <= sz) by lia.
@@ -610,7 +611,7 @@ Proof.
   destruct cpatt. all: simpl in *.
 
   (* trivial cases *)
-  2,5,7: apply pf_iff_split;[wf_auto2|wf_auto2|aapply A_impl_A;[try_solve_pile|wf_auto2]|aapply A_impl_A;[try_solve_pile|wf_auto2] ].
+  2,5,7: useBasicReasoning; apply pf_iff_equiv_refl; wf_auto2.
   (* not well formed cases*)
   2,3: cbv in wfc; discriminate wfc.
 
@@ -638,17 +639,61 @@ Proof.
     { wf_auto2. }
     { lia. }
 
-    remember_constraint as pi.
-    assert (H : forall a b c, (Γ ⊢i a and b <---> a and c using pi) = (Γ ⊢i b <---> c using pi)).
-    {
-      intros.
-      admit.
-    }
-    clear H.
-
     toMLGoal.
     { wf_auto2. }
-    admit.
+    pose proof (Htmp := predicate_propagate_right_2 Γ
+      (cpatt2^[[evar:cvar↦ϕ]])
+      ψ
+      (cpatt1^[[evar:cvar↦ϕ]])
+      HΓ
+      ltac:(wf_auto2)
+      ltac:(wf_auto2)
+      ltac:(wf_auto2)
+      Hp
+    ).
+    mlRewrite Htmp at 1.
+    clear Htmp.
+    mlRewrite IH2 at 1.
+    pose proof (Htmp := predicate_propagate_right_2 Γ
+      (cpatt2^[[evar:cvar↦ψ and ϕ]])
+      ψ
+      (cpatt1^[[evar:cvar↦ϕ]])
+      HΓ
+      ltac:(wf_auto2)
+      ltac:(wf_auto2)
+      ltac:(wf_auto2)
+      Hp
+    ).
+    mlRewrite <- Htmp at 1.
+    clear Htmp.
+    pose proof (Htmp := predicate_propagate_left_2 Γ
+      (cpatt2^[[evar:cvar↦ψ and ϕ]])
+      ψ
+      (cpatt1^[[evar:cvar↦ϕ]])
+      HΓ
+      ltac:(wf_auto2)
+      ltac:(wf_auto2)
+      ltac:(wf_auto2)
+      Hp
+    ).
+    mlRewrite Htmp at 1.
+    clear Htmp.
+    mlRewrite IH1 at 1.
+    pose proof (Htmp := predicate_propagate_left_2 Γ
+      (cpatt2^[[evar:cvar↦ψ and ϕ]])
+      ψ
+      (cpatt1^[[evar:cvar↦ψ and ϕ]])
+      HΓ
+      ltac:(wf_auto2)
+      ltac:(wf_auto2)
+      ltac:(wf_auto2)
+      Hp
+    ).
+    mlRewrite <- Htmp at 1.
+    fromMLGoal.
+    useBasicReasoning.
+    apply pf_iff_equiv_refl.
+    wf_auto2.
   + pose proof (IH1 := IHsz cpatt1).
     feed specialize IH1.
     { wf_auto2. }
@@ -657,11 +702,86 @@ Proof.
     feed specialize IH2.
     { wf_auto2. }
     { lia. }
-    admit.
+    toMLGoal.
+    { wf_auto2. }
+    mlSplitAnd.
+    {
+      mlIntro "H1".
+      mlDestructAnd "H1" as "Hψ" "Himp".
+      mlSplitAnd.
+      { mlExact "Hψ". }
+      mlAdd IH2 as "IH2".
+      mlDestructAnd "IH2" as "IH21" "IH22".
+      mlIntro "H".
+      mlAssert ("Htmp": ((ψ and cpatt2^[[evar:cvar↦ψ and ϕ]]) ---> cpatt2^[[evar:cvar↦ψ and ϕ]])).
+      { wf_auto2. }
+      {
+        mlIntro "H0".
+        mlDestructAnd "H0" as "H00" "H01".
+        mlExact "H01".
+      }
+      mlApply "Htmp".
+      mlClear "Htmp".
+      mlAdd IH1 as "IH1".
+      mlDestructAnd "IH1" as "IH11" "IH12".
+      mlApply "IH21".
+      mlSplitAnd. mlExact "Hψ".
+      mlApply "Himp".
+      mlClear "Himp".
+      mlAssert ("Htmp": ((ψ and cpatt1^[[evar:cvar↦ϕ]]) ---> cpatt1^[[evar:cvar↦ϕ]])).
+      { wf_auto2. }
+      {
+        mlIntro "H0".
+        mlDestructAnd "H0" as "H00" "H01".
+        mlExact "H01".
+      }
+      mlApply "Htmp".
+      mlClear "Htmp".
+      mlApply "IH12".
+      mlSplitAnd.
+      { mlExact "Hψ". }
+      { mlExact "H". }
+    }
+    {
+      mlAdd IH1 as "IH1".
+      mlAdd IH2 as "IH2".
+      mlDestructAnd "IH1" as "IH11" "IH12".
+      mlDestructAnd "IH2" as "IH21" "IH22".
+      mlIntro "H1".
+      mlDestructAnd "H1" as "Hψ" "H2".
+      mlSplitAnd. mlExact "Hψ".
+      mlIntro "H3".
+      mlAssert ("IH11'": (ψ and cpatt1^[[evar:cvar↦ψ and ϕ]])).
+      { wf_auto2. }
+      {
+        mlApply "IH11".
+        mlSplitAnd.
+        { mlExact "Hψ". }
+        { mlExact "H3". }
+      }
+      mlClear "IH11".
+      mlAssert ("H4": (ψ and cpatt2^[[evar:cvar↦ψ and ϕ]])).
+      { wf_auto2. }
+      {
+        mlDestructAnd "IH11'" as "IH11'1" "IH11'2".
+        mlSplitAnd. mlExact "Hψ".
+        mlApply "H2".
+        mlExact "IH11'2".
+      }
+      mlAssert ("IH22'": (ψ and cpatt2^[[evar:cvar↦ϕ]])).
+      { wf_auto2. }
+      {
+        mlApply "IH22".
+        mlExact "H4".
+      }
+      mlClear "IH22".
+      mlDestructAnd "IH22'" as "IH22'1" "IH22'2".
+      mlExact "IH22'2".
+    }
   + pose proof (IH := IHsz (ex , cpatt)).
     feed specialize IH.
     { wf_auto2. }
-    { simpl. admit. }
+    { simpl.  admit. }
     admit.
   + pose proof (IH := IHsz (mu , cpatt)).
     feed specialize IH.
