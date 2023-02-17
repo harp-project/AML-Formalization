@@ -880,12 +880,101 @@ Proof.
     { wf_auto2. }
     mlApplyMeta extract_common_from_equivalence_1.
     mlIntro "Hψ".
+    remember (evar_fresh_s (free_evars (cpatt ---> ϕ ---> ψ) ∪ {[cvar]})) as x0.
+    specialize (IHsz (cpatt^{evar:0↦x0})).
+    feed specialize IHsz.
+    {
+      wf_auto2.
+    }
+    {
+      rewrite evar_open_size'. lia.
+    }
+    mlSplitAnd; mlIntro "H".
+    {
+      mlDestructEx "H" as x0.
+      {
+        cbn. rewrite union_empty_r_L.
+        eapply evar_is_fresh_in_richer'.
+        2: { apply set_evar_fresh_is_fresh'. }
+        clear. cbn. set_solver.
+      }
+      {
+        cbn.
+        eapply evar_is_fresh_in_richer'.
+        2: { apply set_evar_fresh_is_fresh'. }
+        clear. cbn.
+        eapply transitivity. apply free_evars_free_evar_subst.
+        set_solver.
+      }
+      {
+        cbn.
+        eapply evar_is_fresh_in_richer'.
+        2: { apply set_evar_fresh_is_fresh'. }
+        clear. cbn.
+        eapply transitivity. apply free_evars_free_evar_subst.
+        set_solver.
+      }
+      mlExists x0. mlSimpl.
+      rewrite evar_open_free_evar_subst_swap.
+      { solve_fresh_neq. }
+      { wf_auto2. }
+      rewrite evar_open_free_evar_subst_swap.
+      { solve_fresh_neq. }
+      { wf_auto2. }
+
+      mlAssert ("Hand": (ψ and (cpatt^{evar:0↦x0}^[[evar:cvar↦ϕ]]))).
+      { wf_auto2. }
+      { mlSplitAnd; mlAssumption. }
+      mlClear "Hψ". mlClear "H".
+      mlRevertLast.
+      mlRewrite IHsz at 1.
+      mlIntro "H".
+      mlDestructAnd "H" as "H1" "H2".
+      mlExact "H2".
+    }
+    {
+      mlDestructEx "H" as x0.
+      {
+        cbn. rewrite union_empty_r_L.
+        eapply evar_is_fresh_in_richer'.
+        2: { apply set_evar_fresh_is_fresh'. }
+        clear. cbn. set_solver.
+      }
+      {
+        cbn.
+        eapply evar_is_fresh_in_richer'.
+        2: { apply set_evar_fresh_is_fresh'. }
+        clear. cbn.
+        eapply transitivity. apply free_evars_free_evar_subst.
+        set_solver.
+      }
+      {
+        cbn.
+        eapply evar_is_fresh_in_richer'.
+        2: { apply set_evar_fresh_is_fresh'. }
+        clear. cbn.
+        eapply transitivity. apply free_evars_free_evar_subst.
+        set_solver.
+      }
+      mlExists x0. mlSimpl.
+      rewrite evar_open_free_evar_subst_swap.
+      { solve_fresh_neq. }
+      { wf_auto2. }
+      rewrite evar_open_free_evar_subst_swap.
+      { solve_fresh_neq. }
+      { wf_auto2. }
+
+      mlAssert ("Hand": (ψ and (cpatt^{evar:0↦x0}^[[evar:cvar↦ψ and ϕ]]))).
+      { wf_auto2. }
+      { mlSplitAnd; mlAssumption. }
+      mlClear "Hψ". mlClear "H".
+      mlRevertLast.
+      mlRewrite <- IHsz at 1.
+      mlIntro "H".
+      mlDestructAnd "H" as "H1" "H2".
+      mlExact "H2".
+    }
     
-  pose proof (IH := IHsz (ex , cpatt)).
-    feed specialize IH.
-    { wf_auto2. }
-    { simpl.  admit. }
-    admit.
   + pose proof (IH := IHsz (mu , cpatt)).
     feed specialize IH.
     { wf_auto2. }
