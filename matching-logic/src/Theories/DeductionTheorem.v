@@ -10,7 +10,7 @@ From Ltac2 Require Import Ltac2.
 
 Require Import Equations.Prop.Equations.
 
-From Coq Require Import String Ensembles Setoid.
+From Coq Require Import String Ensembles Setoid Btauto.
 Require Import Coq.Program.Equality.
 Require Import Coq.Logic.Classical_Prop.
 From Coq.Logic Require Import FunctionalExtensionality Eqdep_dec.
@@ -1044,33 +1044,86 @@ Proof.
     }
 Defined.
 
-Lemma mu_and_predicate_propagation {Σ : Signature} {syntax : Syntax} i Γ ϕ ψ X :
+Lemma mu_and_predicate_propagation {Σ : Signature} {syntax : Syntax} Γ ϕ ψ X :
+  Definedness_Syntax.theory ⊆ Γ ->
   well_formed (mu, ϕ) ->
   well_formed ψ ->
   svar_is_fresh_in X ϕ ->
   svar_is_fresh_in X ψ ->
-  ProofInfoLe AnyReasoning i ->
-  Γ ⊢i is_predicate_pattern ψ using i ->
-  Γ ⊢i (mu, (ψ and ϕ)) <---> (ψ and (mu, ϕ)) using i.
+  Γ ⊢ is_predicate_pattern ψ ->
+  Γ ⊢ (mu, (ψ and ϕ)) <---> (ψ and (mu, ϕ)).
 Proof.
-  intros wfm wfψ fϕ fψ pile Hp.
+  intros HΓ wfm wfψ fϕ fψ Hp.
+
+  assert (well_formed (mu , ψ and ϕ)).
+  {
+    clear -wfm wfψ.
+    unfold well_formed,well_formed_closed in *.
+    cbn in *. fold no_negative_occurrence_db_b.
+    destruct_and!.
+    split_and!; try reflexivity; try assumption.
+    {
+      apply wfc_impl_no_neg_occ.
+      assumption.
+    }
+    {
+      wf_auto2.
+    }
+  }
+
+  assert (svar_has_negative_occurrence X ψ^{svar:0↦X} = false).
+  {
+    clear -wfm wfψ fψ.
+    unfold well_formed,well_formed_closed in *.
+    cbn in *. fold no_negative_occurrence_db_b svar_has_negative_occurrence.
+    repeat rewrite orb_false_iff.
+    destruct_and!.
+    apply positive_negative_occurrence_db_named.
+    { apply wfc_impl_no_neg_occ. assumption. }
+    apply fresh_svar_no_neg.
+    apply fψ.
+  }
+
+  assert (svar_has_negative_occurrence X ψ^[svar:0↦patt_free_svar X] = false).
+  {
+    clear -wfm wfψ fψ.
+    unfold well_formed,well_formed_closed in *.
+    cbn in *. fold no_negative_occurrence_db_b svar_has_negative_occurrence.
+    destruct_and!.
+    apply svar_hno_bsvar_subst.
+    3: { apply fresh_svar_no_neg. exact fψ. }
+    {
+      cbn. congruence.
+    }
+    {
+      cbn. rewrite decide_eq_same. intros _.
+      apply wfc_impl_no_neg_occ. assumption.
+    }
+  }
+
+  assert (svar_has_negative_occurrence X ϕ^{svar:0↦X} = false).
+  {
+    wf_auto2.
+  }
+
 
   apply pf_iff_split.
-  { clear -wfm wfψ. wf_auto2. admit. }
+  { assumption. }
   { wf_auto2. }
   
   (* Makes set_solver work later in the proof. *)
   unfold svar_is_fresh_in in fϕ, fψ.
-  
   {
     toMLGoal.
-    { wf_auto2. admit. }
+    {
+      wf_auto2.
+    }
     mlIntro "H".
     mlSplitAnd; fromMLGoal.
     {
       apply Knaster_tarski.
-      { eapply pile_trans;[|apply pile]. try_solve_pile. }
-      { wf_auto2. admit. }
+      { try_solve_pile. }
+      { wf_auto2. }
       unfold instantiate.
       mlSimpl.
       rewrite -> well_formed_bsvar_subst with (k := 0).
@@ -1086,14 +1139,19 @@ Proof.
       rewrite <- svar_quantify_svar_open with (n := 0) (phi := (ψ and ϕ)) (X := X).
       rewrite <- svar_quantify_svar_open with (n := 0) (phi := ϕ) (X := X) at 2.
       apply mu_monotone.
-      { eapply pile_trans;[|apply pile]. try_solve_pile. }
-      { wf_auto2. admit. }
+      { try_solve_pile. }
+      {
+        unfold well_formed,well_formed_closed in *.
+        cbn in *. fold no_negative_occurrence_db_b svar_has_negative_occurrence.
+        repeat rewrite orb_false_iff.
+        repeat split; try reflexivity; try assumption.
+      }
       { wf_auto2. }
       {
         unfold svar_open.
         mlSimpl.
         gapply pf_conj_elim_r.
-        { eapply pile_trans;[|apply pile]. try_solve_pile. }
+        { try_solve_pile. }
         { wf_auto2. }
         { wf_auto2. }
       }
@@ -1106,34 +1164,36 @@ Proof.
   
   {
     toMLGoal.
-    { wf_auto2. admit. }
-    mlRewrite (useBasicReasoning i (@patt_and_comm Σ Γ ψ (mu , ϕ) wfψ wfm)) at 1.
+    { wf_auto2. }
+    mlRewrite (useBasicReasoning AnyReasoning (@patt_and_comm Σ Γ ψ (mu , ϕ) wfψ wfm)) at 1.
     fromMLGoal.
     apply lhs_from_and.
     { wf_auto2. }
     { wf_auto2. }
-    { wf_auto2. admit. }
+    { wf_auto2. }
 
     apply Knaster_tarski.
-    { eapply pile_trans;[|apply pile]. try_solve_pile. }
+    { try_solve_pile. }
     { wf_auto2. }
 
     apply lhs_to_and.
-    { wf_auto2. admit. }
+    { wf_auto2.
+      fold no_negative_occurrence_db_b.
+      apply wfc_impl_no_neg_occ. wf_auto2.
+    }
     { wf_auto2. }
-    { wf_auto2. admit. }
+    { wf_auto2. }
     
     toMLGoal.
-    { wf_auto2. admit. admit. }
+    { wf_auto2. fold no_negative_occurrence_db_b. apply wfc_impl_no_neg_occ. wf_auto2. }
     assert (Htmp : is_true (well_formed (mu , ϕ) ^ [ψ ---> (mu , ψ and ϕ)])).
     {
-      wf_auto2. admit.
+      wf_auto2. fold no_negative_occurrence_db_b. apply wfc_impl_no_neg_occ. wf_auto2.
     }
-    mlRewrite (useBasicReasoning i (@patt_and_comm Σ Γ ((mu , ϕ) ^ [ψ ---> (mu , ψ and ϕ)]) ψ Htmp wfψ)) at 1.
+    mlRewrite (useBasicReasoning AnyReasoning (@patt_and_comm Σ Γ ((mu , ϕ) ^ [ψ ---> (mu , ψ and ϕ)]) ψ Htmp wfψ)) at 1.
     
     mlIntro "H".
     mlApplyMeta Pre_fixp.
-    2: { wf_auto2. admit. }
     unfold instantiate.
     mlSimpl.
     fromMLGoal.
@@ -1142,17 +1202,20 @@ Proof.
     2: wf_auto2.
 
     remember (evar_fresh_s (free_evars ϕ)) as x.
-    pose proof (H := pred_and_ctx_and Γ
+    pose proof (HH := pred_and_ctx_and Γ
       {|
         pcEvar := x;
         pcPattern := ϕ^[svar:0↦patt_free_evar x];
       |}
-      (ψ ---> (mu , ψ and ϕ)) ψ i).
-    unfold emplace in H. simpl in H.
-    feed specialize H.
-    { wf_auto2. admit. }
+      (ψ ---> (mu , ψ and ϕ)) ψ HΓ).
+    unfold emplace in HH. simpl in HH.
+    feed specialize HH.
     { wf_auto2. }
     { wf_auto2. }
+    { wf_auto2. }
+    {
+      Search mu_in_evar_path.
+    }
     { assumption. }
 
     toMLGoal.
