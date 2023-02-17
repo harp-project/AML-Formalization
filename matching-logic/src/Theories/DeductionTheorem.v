@@ -576,6 +576,72 @@ Proof.
   assumption.
 Defined.
 
+Lemma extract_common_from_equivalence
+  {Σ : Signature} (Γ : Theory) (a b c : Pattern):
+  well_formed a ->
+  well_formed b ->
+  well_formed c ->
+  Γ ⊢i (((a and b) <---> (a and c)) <---> (a ---> (b <---> c))) 
+  using BasicReasoning
+.
+Proof.
+  intros wfa wfb wfc.
+  toMLGoal;[wf_auto2|].
+  mlSplitAnd; mlIntro "H".
+  {
+    mlIntro "Ha".
+    mlDestructAnd "H" as "H1" "H2".
+    mlSplitAnd; mlIntro "H3".
+    {
+      mlAssert ("Htmp": ((a and c) ---> c)).
+      { wf_auto2. }
+      {
+        mlIntro "H'".
+        mlDestructAnd "H'" as "H'1" "H'2".
+        mlExact "H'2".
+      }
+      mlApply "Htmp".
+      mlApply "H1".
+      mlSplitAnd; mlAssumption.
+    }
+    {
+      mlAssert ("Htmp": ((a and b) ---> b)).
+      { wf_auto2. }
+      {
+        mlIntro "H'".
+        mlDestructAnd "H'" as "H'1" "H'2".
+        mlExact "H'2".
+      }
+      mlApply "Htmp".
+      mlApply "H2".
+      mlSplitAnd; mlAssumption.
+    }
+  }
+  {
+    mlSplitAnd; mlIntro "H'"; mlDestructAnd "H'" as "H'1" "H'2".
+    {
+      mlSplitAnd. mlExact "H'1".
+      mlAssert ("Htmp": (b <---> c)).
+      { wf_auto2. }
+      {
+        mlApply "H". mlExact "H'1".
+      }
+      mlDestructAnd "Htmp" as "Htmp1" "Htmp2".
+      mlApply "Htmp1". mlExact "H'2".
+    }
+    {
+      mlSplitAnd. mlExact "H'1".
+      mlAssert ("Htmp": (b <---> c)).
+      { wf_auto2. }
+      {
+        mlApply "H". mlExact "H'1".
+      }
+      mlDestructAnd "Htmp" as "Htmp1" "Htmp2".
+      mlApply "Htmp2". mlExact "H'2".
+    }
+  }
+Defined.
+
 (* TODO:
   This lemma is lemma 88 in in the matching mu logic paper.
   As is there is no way to determine the mu requirement and
@@ -778,7 +844,11 @@ Proof.
       mlDestructAnd "IH22'" as "IH22'1" "IH22'2".
       mlExact "IH22'2".
     }
-  + pose proof (IH := IHsz (ex , cpatt)).
+  + 
+    toMLGoal.
+    { wf_auto2. }
+    Search ((?a and ?b) <---> (?a and ?c)).
+  pose proof (IH := IHsz (ex , cpatt)).
     feed specialize IH.
     { wf_auto2. }
     { simpl.  admit. }
