@@ -975,11 +975,81 @@ Proof.
       mlExact "H2".
     }
     
-  + pose proof (IH := IHsz (mu , cpatt)).
-    feed specialize IH.
+  + remember (svar_fresh_s (free_svars (cpatt ---> ϕ ---> ψ))) as X0.
+    specialize (IHsz (cpatt^{svar:0↦X0})).
+    feed specialize IHsz.
+    {
+      wf_auto2.
+    }
+    {
+      rewrite svar_open_size'. lia.
+    }    
+    toMLGoal.
     { wf_auto2. }
-    { simpl. admit. }
-    assumption.
+    mlApplyMeta extract_common_from_equivalence_1.
+    mlIntro "Hψ".
+    pose proof (Htmp := mu_monotone Γ (ψ and cpatt^{svar:0↦X0}^[[evar:cvar↦ϕ]]) (ψ and cpatt^{svar:0↦X0}^[[evar:cvar↦ψ and ϕ]]) X0 AnyReasoning).
+    feed specialize Htmp.
+    {
+      try_solve_pile.
+    }
+    { 
+      cbn. fold svar_has_positive_occurrence svar_has_negative_occurrence.
+      rewrite !orb_false_r.
+      rewrite orb_false_iff.
+      split.
+      {
+        wf_auto2.
+        eapply svar_is_fresh_in_richer'.
+        2: { apply set_svar_fresh_is_fresh'. }
+        set_solver.
+      }
+      Search svar_has_negative_occurrence free_evar_subst.
+      {
+        wf_auto2.
+        remember (svar_fresh_s (free_svars cpatt ∪ (free_svars ϕ ∪ free_svars ψ))) as X0.
+        eapply svar_is_fresh_in_richer'.
+        2: { apply set_svar_fresh_is_fresh'. }
+        eapply transitivity.
+        { apply free_svars_free_evar_subst. }
+        cut (free_svars
+        cpatt^[svar:0↦patt_free_svar
+                        (svar_fresh_s (free_svars cpatt ∪ (free_svars ϕ ∪ free_svars ψ)))]
+        ⊆ free_svars cpatt ∪ (free_svars ψ)).
+        {
+          clear. intros. set_solver.
+        }
+        eapply transitivity.
+        { apply free_svars_bsvar_subst. }
+        cbn.
+        cut (svar_fresh_s (free_svars cpatt ∪ (free_svars ϕ ∪ free_svars ψ)) ∉ free_svars ψ ∪ free_svars cpatt).
+        { clear. intros. set_solver. }
+        { set_solver. }
+      }
+    }
+    { wf_auto2. fold svar_has_positive_occurrence svar_has_negative_occurrence.
+      rewrite !orb_false_r.
+      rewrite orb_false_iff.
+      split.
+      {
+        wf_auto2.
+        eapply svar_is_fresh_in_richer'.
+        2: { apply set_svar_fresh_is_fresh'. }
+        set_solver.
+      }
+      {
+        wf_auto2.
+        eapply svar_is_fresh_in_richer'.
+        2: { apply set_svar_fresh_is_fresh'. }
+        eapply transitivity.
+        { apply free_svars_free_evar_subst. }
+        { set_solver. }
+      }
+    }
+    {
+      admit. 
+    }
+    Check mu_monotone.
 Admitted.
 
 Lemma mu_and_predicate_propagation {Σ : Signature} {syntax : Syntax} i Γ ϕ ψ X :
