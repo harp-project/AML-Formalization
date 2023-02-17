@@ -1489,12 +1489,12 @@ Defined.
     eapply IHφ in H. apply H.
   Qed.
 
-  Lemma equality_elimination_basic Γ φ1 φ2 C
+  Lemma equality_elimination_basic_mfpath Γ φ1 φ2 C
     (HΓ : theory ⊆ Γ)
     (WF1 : well_formed φ1)
     (WF2 :  well_formed φ2)
     (WFC : PC_wf C) :
-    mu_free (pcPattern C) ->
+    mu_in_evar_path (pcEvar C) (pcPattern C) 0 = false ->
     Γ ⊢i (φ1 =ml φ2) --->
       (emplace C φ1) <---> (emplace C φ2)
     using AnyReasoning.
@@ -1590,7 +1590,7 @@ Defined.
       set_solver.
     }
     {
-      simpl. now apply mu_free_in_path.
+      simpl. exact Hmf.
     }
   }
   {
@@ -1617,19 +1617,34 @@ Defined.
   }
   Defined.
 
+  Lemma equality_elimination_basic Γ φ1 φ2 C
+  (HΓ : theory ⊆ Γ)
+  (WF1 : well_formed φ1)
+  (WF2 :  well_formed φ2)
+  (WFC : PC_wf C) :
+  mu_free (pcPattern C) ->
+  Γ ⊢i (φ1 =ml φ2) --->
+    (emplace C φ1) <---> (emplace C φ2)
+  using AnyReasoning.
+  Proof.
+    intros.
+    apply equality_elimination_basic_mfpath; try assumption.
+    now apply mu_free_in_path.
+  Qed.
+
 
   Lemma equality_elimination_basic_ar Γ φ1 φ2 C:
     theory ⊆ Γ ->
     well_formed φ1 ->
     well_formed φ2 ->
     PC_wf C ->
-    mu_free (pcPattern C) ->
+    mu_in_evar_path (pcEvar C) (pcPattern C) 0 = false ->
     Γ ⊢i (φ1 =ml φ2) --->
       (emplace C φ1) <---> (emplace C φ2)
     using AnyReasoning.
   Proof.
     intros.
-    unshelve (gapply equality_elimination_basic); try assumption.
+    unshelve (gapply equality_elimination_basic_mfpath); try assumption.
     unfold AnyReasoning.
     try_solve_pile.
   Defined.
@@ -1641,7 +1656,7 @@ Defined.
     well_formed φ₂ ->
     Pattern.wf l ->
     PC_wf C ->
-    mu_free (pcPattern C) ->
+    mu_in_evar_path (pcEvar C) (pcPattern C) 0 = false ->
     Γ ⊢i foldr patt_imp ((emplace C φ₁) <---> (emplace C φ₂)) ((φ₁ =ml φ₂) :: l)
     using AnyReasoning.
   Proof.
@@ -1671,7 +1686,7 @@ Defined.
     Pattern.wf l₁ ->
     Pattern.wf l₂ ->
     PC_wf C ->
-    mu_free (pcPattern C) ->
+    mu_in_evar_path (pcEvar C) (pcPattern C) 0 = false ->
     Γ ⊢i foldr patt_imp ((emplace C φ₁) <---> (emplace C φ₂)) (l₁ ++ (φ₁ =ml φ₂)::l₂)
     using AnyReasoning.
   Proof.
@@ -1964,7 +1979,7 @@ End ProofSystemTheorems.
 Lemma MLGoal_rewriteBy {Σ : Signature} {syntax : Syntax}
     (Γ : Theory) (l₁ l₂ : hypotheses) name (φ₁ φ₂ : Pattern) (C : PatternCtx) :
   theory ⊆ Γ ->
-  mu_free (pcPattern C) ->
+  mu_in_evar_path (pcEvar C) (pcPattern C) 0 = false ->
   mkMLGoal Σ Γ (l₁ ++ (mkNH _ name (φ₁ =ml φ₂)) :: l₂) (emplace C φ₂) AnyReasoning ->
   mkMLGoal Σ Γ (l₁ ++ (mkNH _ name (φ₁ =ml φ₂)) :: l₂) (emplace C φ₁) AnyReasoning .
 Proof.
@@ -2097,7 +2112,10 @@ Proof.
   mlIntro "H0". mlIntro "H1".
   mlRewriteBy "H1" at 1.
   { assumption. }
-  { simpl. assumption. }
+  { apply mu_free_in_path.
+    simpl.
+  assumption.
+  }
   mlExactn 0.
 Defined.
 
@@ -2260,27 +2278,60 @@ Defined.
 Lemma def_of_pred_impl_pred {Σ : Signature} {syntax : Syntax} Γ ψ :
   theory ⊆ Γ ->
   well_formed ψ ->
-  mu_free ψ ->
   Γ ⊢i (ψ =ml patt_bott) or (ψ =ml patt_top) using AnyReasoning ->
   Γ ⊢i ⌈ ψ ⌉ ---> ψ using AnyReasoning.
 Proof.
-  intros HΓ wfψ Hmfψ H.
+  intros HΓ wfψ H.
   toMLGoal.
   {wf_auto2. }
   mlAdd H as "H0".
   mlDestructOr "H0" as "H1" "H1".
   - mlRewriteBy "H1" at 2.
     { exact HΓ. }
-    { simpl. rewrite Hmfψ.  reflexivity. }
+    { simpl. unfold mu_in_evar_path. cbn. case_match;[reflexivity|].
+      case_match;[|contradiction].
+      rewrite Nat.max_0_r in H0.
+      rewrite maximal_mu_depth_to_0 in H0.
+      {
+        subst star. clear.
+        eapply evar_is_fresh_in_richer'.
+        2: {
+          apply set_evar_fresh_is_fresh.
+        }
+        {
+          simpl. set_solver.
+        }
+      }
+      inversion H0.
+    }
     mlRewriteBy "H1" at 1.
     { exact HΓ. }
-    { simpl. reflexivity. }
+    { simpl.
+    unfold mu_in_evar_path. cbn. case_match;[reflexivity|].
+      case_match;[|contradiction].
+      simpl in H0. inversion H0.
+    }
     mlClear "H1".
     fromMLGoal.
     aapply bott_not_defined.
   - mlRewriteBy "H1" at 2.
     { exact HΓ. }
-    { simpl. rewrite Hmfψ.  reflexivity. }
+    { simpl. unfold mu_in_evar_path. cbn. case_match;[reflexivity|].
+      case_match;[|contradiction].
+      rewrite Nat.max_0_r in H0.
+      rewrite maximal_mu_depth_to_0 in H0.
+      {
+        subst star. clear.
+        eapply evar_is_fresh_in_richer'.
+        2: {
+          apply set_evar_fresh_is_fresh.
+        }
+        {
+          simpl. set_solver.
+        }
+      }
+      inversion H0.
+    }
     mlClear "H1".
     unfold patt_top. mlIntro. mlIntro. mlExactn 1.
 Defined.
@@ -3585,6 +3636,28 @@ Proof.
     mlExactMeta Hb.
   }
 Defined.
+
+Lemma predicate_propagate_right_2 {Σ : Signature} {syntax : Syntax} Γ ϕ ψ P :
+  theory ⊆ Γ ->
+  well_formed ϕ ->
+  well_formed ψ ->
+  well_formed P ->
+  Γ ⊢ is_predicate_pattern ψ ->
+  Γ ⊢ ψ and P $ ϕ <---> P $ (ψ and ϕ).
+Proof.
+  intros HΓ wfϕ wfψ wfP predψ.
+  toMLGoal.
+  { wf_auto2. }
+  mlSplitAnd; mlIntro "H".
+  {
+    mlDestructAnd "H" as "Hψ" "H2".
+    mlAdd predψ as "Htmp".
+    unfold is_predicate_pattern.
+    mlDestructOr "Htmp" as "Htmp1" "Htmp2".
+    {
+      unfold "=ml".
+    }
+  }
 
 (* TODO: Put in a different file? *)
 Lemma predicate_propagate_right {Σ : Signature} {syntax : Syntax} Γ ϕ ψ P :
