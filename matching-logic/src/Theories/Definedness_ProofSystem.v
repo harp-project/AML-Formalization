@@ -3533,6 +3533,59 @@ Unshelve.
   solve_fresh.
 Defined.
 
+Lemma predicate_elim
+  {Σ : Signature} {syntax : Syntax} Γ (C : PatternCtx) (ψ : Pattern):
+  theory ⊆ Γ ->
+  well_formed (pcPattern C) ->
+  well_formed ψ ->
+  mu_free (pcPattern C) ->
+  Γ ⊢ is_predicate_pattern ψ ->
+  Γ ⊢ emplace C patt_bott ->
+  Γ ⊢ emplace C patt_top ->
+  Γ ⊢ emplace C ψ
+.
+Proof.
+  intros HΓ HwfC Hwfψ HmfC Hpredψ Hb Ht.
+  toMLGoal.
+  { wf_auto2. }
+  mlAdd Hpredψ as "Hψ".
+  mlDestructOr "Hψ" as "H1" "H2".
+  {
+    mlAssert ("H": (emplace C ψ <---> emplace C Top )).
+    { wf_auto2. }
+    {
+      pose proof (Htmp := equality_elimination_basic Γ ψ Top C HΓ ltac:(wf_auto2) ltac:(wf_auto2)).
+      feed specialize Htmp.
+      {
+        unfold PC_wf. exact HwfC.
+      }
+      { exact HmfC. }
+      mlApplyMeta Htmp.
+      mlExact "H1".
+    }
+    mlDestructAnd "H" as "HA" "HB".
+    mlApply "HB".
+    mlExactMeta Ht.
+  }
+  {
+    mlAssert ("H": (emplace C ψ <---> emplace C Bot )).
+    { wf_auto2. }
+    {
+      pose proof (Htmp := equality_elimination_basic Γ ψ Bot C HΓ ltac:(wf_auto2) ltac:(wf_auto2)).
+      feed specialize Htmp.
+      {
+        unfold PC_wf. exact HwfC.
+      }
+      { exact HmfC. }
+      mlApplyMeta Htmp.
+      mlExact "H2".
+    }
+    mlDestructAnd "H" as "HA" "HB".
+    mlApply "HB".
+    mlExactMeta Hb.
+  }
+Defined.
+
 (* TODO: Put in a different file? *)
 Lemma predicate_propagate_right {Σ : Signature} {syntax : Syntax} Γ ϕ ψ P :
   theory ⊆ Γ ->
