@@ -2,7 +2,7 @@
 
 This library contains an embedding of matching logic in the Coq proof system, using the locally-nameless representation.
 
-[Generated html files of the latest version.](https://harp-project.github.io/AML-Formalization/toc.html)
+[Generated html files of the latest version.](https://harp-project.github.io/AML-Formalization/branch/master/coqdoc/  toc.html)
 
 ## Structure of the source files
 
@@ -48,6 +48,7 @@ The entire syntax and semantics of the logic can be used by importing [`Logic.v`
 Fourth, things related to matching logic proof system.
 - [`ProofSystem.v`](src/ProofSystem.v) - the definition of the proof system and its basic properties
 - [`ProofSystemSoundness.v`](src/ProofSystemSoundness.v) - soundness of the proof system, connecting it with the semantics
+- [`BasicProofSystemLemmas.v`](src/BasicProofSystemLemmas.v) - proofs using the proofsystem that are independent of the proof mode
 - [`ProofMode_base.v`](src/ProofMode_base.v) - describes the notations of the matching logic proof mode
 - [`ProofInfo.v`](src/ProofInfo.v) - includes theorems for reasoning about static proof information
 - [`ProofMode_propositional.v`](src/ProofMode_propositional.v) - includes theorems about the validity of propositional patterns
@@ -65,4 +66,6 @@ Fifth, matching logic theories.
   - [`Sorts_Syntax.v`](src/Theories/Sorts_Syntax.v) - definition of syntax for sorts and many-sorted functions and related notions
   - [`Sorts_Semantics.v`](src/Theories/Sorts_Semantics.v) - the semantics of sorts, many-sorted functions, and related notions
   - [`Sorts_ProofSystem.v`](src/Theories/Sorts_ProofSystem.v) - proof using the matching logic proof system about sorts
+  - [`Nat_Syntax.v`](src/Theories/Nat_Syntax.v) - the theory of natural numbers
+  - [`Nat_ProofSystem.v`](src/Theories/Nat_ProofSystem.v) - proofs about the theory of natural numbers
   - [`ModelExtension.v`](src/Theories/ModelExtension.v) - definition of the "open fragment" of matching logic; semantics of formulas from this fragment is preserved when extending the model with new elements
