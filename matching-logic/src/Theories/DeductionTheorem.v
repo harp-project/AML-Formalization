@@ -1004,30 +1004,27 @@ Proof.
         2: { apply set_svar_fresh_is_fresh'. }
         set_solver.
       }
-      Search svar_has_negative_occurrence free_evar_subst.
       {
-        wf_auto2.
-        remember (svar_fresh_s (free_svars cpatt ∪ (free_svars ϕ ∪ free_svars ψ))) as X0.
-        eapply svar_is_fresh_in_richer'.
-        2: { apply set_svar_fresh_is_fresh'. }
-        eapply transitivity.
-        { apply free_svars_free_evar_subst. }
-        cut (free_svars
-        cpatt^[svar:0↦patt_free_svar
-                        (svar_fresh_s (free_svars cpatt ∪ (free_svars ϕ ∪ free_svars ψ)))]
-        ⊆ free_svars cpatt ∪ (free_svars ψ)).
+        rewrite svar_has_negative_occurrence_free_evar_subst.
         {
-          clear. intros. set_solver.
+          subst X0. clear.
+          eapply svar_is_fresh_in_richer'.
+          2: { apply set_svar_fresh_is_fresh'. }
+          simpl. set_solver.
         }
-        eapply transitivity.
-        { apply free_svars_bsvar_subst. }
-        cbn.
-        cut (svar_fresh_s (free_svars cpatt ∪ (free_svars ϕ ∪ free_svars ψ)) ∉ free_svars ψ ∪ free_svars cpatt).
-        { clear. intros. set_solver. }
-        { set_solver. }
+        apply positive_negative_occurrence_db_named.
+        { wf_auto2. }
+        {
+          apply fresh_svar_no_neg.
+          subst X0. clear.
+          eapply svar_is_fresh_in_richer'.
+          2: { apply set_svar_fresh_is_fresh'. }
+          simpl. set_solver.
+        }
       }
     }
-    { wf_auto2. fold svar_has_positive_occurrence svar_has_negative_occurrence.
+    {
+      cbn. fold svar_has_positive_occurrence svar_has_negative_occurrence.
       rewrite !orb_false_r.
       rewrite orb_false_iff.
       split.
@@ -1038,18 +1035,32 @@ Proof.
         set_solver.
       }
       {
-        wf_auto2.
-        eapply svar_is_fresh_in_richer'.
-        2: { apply set_svar_fresh_is_fresh'. }
-        eapply transitivity.
-        { apply free_svars_free_evar_subst. }
-        { set_solver. }
+        rewrite svar_has_negative_occurrence_free_evar_subst.
+        {
+          subst X0. clear.
+          eapply svar_is_fresh_in_richer'.
+          2: { apply set_svar_fresh_is_fresh'. }
+          simpl. set_solver.
+        }
+        apply positive_negative_occurrence_db_named.
+        { wf_auto2. }
+        {
+          apply fresh_svar_no_neg.
+          subst X0. clear.
+          eapply svar_is_fresh_in_richer'.
+          2: { apply set_svar_fresh_is_fresh'. }
+          simpl. set_solver.
+        }
       }
     }
     {
-      admit. 
+      eapply pf_iff_proj1.
+      3: apply IHsz.
+      1,2: wf_auto2.
     }
-    Check mu_monotone.
+    Set Printing All.
+    Search (_^[[evar:_↦_]]^{{svar:_↦_}}).
+  }
 Admitted.
 
 Lemma mu_and_predicate_propagation {Σ : Signature} {syntax : Syntax} i Γ ϕ ψ X :
