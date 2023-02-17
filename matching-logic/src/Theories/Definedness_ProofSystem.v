@@ -3589,7 +3589,7 @@ Lemma predicate_elim
   theory ⊆ Γ ->
   well_formed (pcPattern C) ->
   well_formed ψ ->
-  mu_free (pcPattern C) ->
+  mu_in_evar_path (pcEvar C) (pcPattern C) 0 = false ->
   Γ ⊢ is_predicate_pattern ψ ->
   Γ ⊢ emplace C patt_bott ->
   Γ ⊢ emplace C patt_top ->
@@ -3605,7 +3605,7 @@ Proof.
     mlAssert ("H": (emplace C ψ <---> emplace C Top )).
     { wf_auto2. }
     {
-      pose proof (Htmp := equality_elimination_basic Γ ψ Top C HΓ ltac:(wf_auto2) ltac:(wf_auto2)).
+      pose proof (Htmp := equality_elimination_basic_mfpath Γ ψ Top C HΓ ltac:(wf_auto2) ltac:(wf_auto2)).
       feed specialize Htmp.
       {
         unfold PC_wf. exact HwfC.
@@ -3622,7 +3622,7 @@ Proof.
     mlAssert ("H": (emplace C ψ <---> emplace C Bot )).
     { wf_auto2. }
     {
-      pose proof (Htmp := equality_elimination_basic Γ ψ Bot C HΓ ltac:(wf_auto2) ltac:(wf_auto2)).
+      pose proof (Htmp := equality_elimination_basic_mfpath Γ ψ Bot C HΓ ltac:(wf_auto2) ltac:(wf_auto2)).
       feed specialize Htmp.
       {
         unfold PC_wf. exact HwfC.
@@ -3648,16 +3648,174 @@ Proof.
   intros HΓ wfϕ wfψ wfP predψ.
   toMLGoal.
   { wf_auto2. }
-  mlSplitAnd; mlIntro "H".
+  mlAdd predψ as "Htmp".
+  mlDestructOr "Htmp" as "Htmp1" "Htmp2".
   {
-    mlDestructAnd "H" as "Hψ" "H2".
-    mlAdd predψ as "Htmp".
-    unfold is_predicate_pattern.
-    mlDestructOr "Htmp" as "Htmp1" "Htmp2".
+    mlRewriteBy "Htmp1" at 1.
+    { exact HΓ. }
+    { cbn. unfold mu_in_evar_path. cbn.
+      rewrite !Nat.max_0_r.
+      rewrite !maximal_mu_depth_to_0.
+      {
+        subst star. clear.
+        eapply evar_is_fresh_in_richer'.
+        2: {
+          apply set_evar_fresh_is_fresh.
+        }
+        {
+          cbn. set_solver.
+        }
+      }
+      {
+        subst star. clear.
+        eapply evar_is_fresh_in_richer'.
+        2: {
+          apply set_evar_fresh_is_fresh.
+        }
+        {
+          cbn. set_solver.
+        }
+      }
+      {
+        subst star. clear.
+        eapply evar_is_fresh_in_richer'.
+        2: {
+          apply set_evar_fresh_is_fresh.
+        }
+        {
+          cbn. set_solver.
+        }
+      }
+      {
+        cbn.
+        repeat case_match; try reflexivity; lia.
+      }
+    }
+    mlRewriteBy "Htmp1" at 1.
+    { exact HΓ. }
+    { cbn. unfold mu_in_evar_path. cbn.
+      rewrite !Nat.max_0_r.
+      rewrite !maximal_mu_depth_to_0.
+      {
+        subst star. clear.
+        eapply evar_is_fresh_in_richer'.
+        2: {
+          apply set_evar_fresh_is_fresh.
+        }
+        {
+          cbn. set_solver.
+        }
+      }
+      {
+        subst star. clear.
+        eapply evar_is_fresh_in_richer'.
+        2: {
+          apply set_evar_fresh_is_fresh.
+        }
+        {
+          cbn. set_solver.
+        }
+      }
+      {
+        cbn.
+        repeat case_match; try reflexivity; lia.
+      }
+    }
+    mlClear "Htmp1".
+    mlRewrite (top_and Γ ϕ ltac:(wf_auto2)) at 1.
+    mlRewrite (top_and Γ (P $ ϕ) ltac:(wf_auto2)) at 1.
+    fromMLGoal.
+    useBasicReasoning.
+    apply pf_iff_equiv_refl.
+    wf_auto2.
+  }
+  {
+    mlRewriteBy "Htmp2" at 1.
+    { exact HΓ. }
+    { cbn. unfold mu_in_evar_path. cbn.
+      rewrite !Nat.max_0_r.
+      rewrite !maximal_mu_depth_to_0.
+      {
+        subst star. clear.
+        eapply evar_is_fresh_in_richer'.
+        2: {
+          apply set_evar_fresh_is_fresh.
+        }
+        {
+          cbn. set_solver.
+        }
+      }
+      {
+        subst star. clear.
+        eapply evar_is_fresh_in_richer'.
+        2: {
+          apply set_evar_fresh_is_fresh.
+        }
+        {
+          cbn. set_solver.
+        }
+      }
+      {
+        subst star. clear.
+        eapply evar_is_fresh_in_richer'.
+        2: {
+          apply set_evar_fresh_is_fresh.
+        }
+        {
+          cbn. set_solver.
+        }
+      }
+      {
+        cbn.
+        repeat case_match; try reflexivity; lia.
+      }
+    }
+    mlRewriteBy "Htmp2" at 1.
+    { exact HΓ. }
+    { cbn. unfold mu_in_evar_path. cbn.
+      rewrite !Nat.max_0_r.
+      rewrite !maximal_mu_depth_to_0.
+      {
+        subst star. clear.
+        eapply evar_is_fresh_in_richer'.
+        2: {
+          apply set_evar_fresh_is_fresh.
+        }
+        {
+          cbn. set_solver.
+        }
+      }
+      {
+        subst star. clear.
+        eapply evar_is_fresh_in_richer'.
+        2: {
+          apply set_evar_fresh_is_fresh.
+        }
+        {
+          cbn. set_solver.
+        }
+      }
+      {
+        cbn.
+        repeat case_match; try reflexivity; lia.
+      }
+    }
+    mlClear "Htmp2".
+    mlRewrite (bott_and Γ ϕ ltac:(wf_auto2)) at 1.
+    mlRewrite (bott_and Γ (P $ ϕ) ltac:(wf_auto2)) at 1.
+    fromMLGoal.
+    mlSplitAnd.
     {
-      unfold "=ml".
+      mlIntro "H". mlDestructBot "H".
+    }
+    {
+      fromMLGoal.
+      useBasicReasoning.
+      apply Prop_bott_right.
+      wf_auto2.
     }
   }
+Defined.
 
 (* TODO: Put in a different file? *)
 Lemma predicate_propagate_right {Σ : Signature} {syntax : Syntax} Γ ϕ ψ P :
