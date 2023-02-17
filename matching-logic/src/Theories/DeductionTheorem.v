@@ -673,20 +673,17 @@ Proof.
   all: wf_auto2.
 Defined.
 
-(* TODO:
-  This lemma is lemma 88 in in the matching mu logic paper.
-  As is there is no way to determine the mu requirement and
-  propagation of predicates is unproved.
-*)
+(* Lemma 88 in in the matching mu logic paper.*)
 Lemma pred_and_ctx_and {Σ : Signature} {syntax : Syntax} Γ ctx ϕ ψ:
   Definedness_Syntax.theory ⊆ Γ ->
   well_formed ϕ ->
   well_formed ψ ->
   well_formed (pcPattern ctx) ->
+  mu_in_evar_path (pcEvar ctx) (pcPattern ctx) 0 = false ->
   Γ ⊢ is_predicate_pattern ψ ->
   Γ ⊢ ψ and (emplace ctx ϕ) <---> ψ and (emplace ctx (ψ and ϕ)).
 Proof.
-  intros HΓ wfm wfψ wfc Hp.
+  intros HΓ wfm wfψ wfc Hmf Hp.
 
   remember (size' (pcPattern ctx)) as sz.
   assert (Hsz: size' (pcPattern ctx) <= sz) by lia.
@@ -704,7 +701,7 @@ Proof.
     destruct cpatt; simpl in *; lia.
   }
 
-  intros cpatt wfc Hsz.
+  intros cpatt wfc Hmf Hsz.
   destruct cpatt. all: simpl in *.
 
   (* trivial cases *)
@@ -730,10 +727,30 @@ Proof.
   + pose proof (IH1 := IHsz cpatt1).
     feed specialize IH1.
     { wf_auto2. }
-    { lia. }
+    {
+      unfold mu_in_evar_path in *.
+      simpl in Hmf.
+      case_match. 
+      2: { lia. }
+      rewrite negb_false_iff.
+      eapply (introT (Nat.eqb_spec 0 _)).
+      lia.
+    }
+    {
+      lia.
+    }
     pose proof (IH2 := IHsz cpatt2).
     feed specialize IH2.
     { wf_auto2. }
+    {
+      unfold mu_in_evar_path in *.
+      simpl in Hmf.
+      case_match. 
+      2: { lia. }
+      rewrite negb_false_iff.
+      eapply (introT (Nat.eqb_spec 0 _)).
+      lia.
+    }
     { lia. }
 
     toMLGoal.
@@ -794,10 +811,28 @@ Proof.
   + pose proof (IH1 := IHsz cpatt1).
     feed specialize IH1.
     { wf_auto2. }
+    {
+      unfold mu_in_evar_path in *.
+      simpl in Hmf.
+      case_match. 
+      2: { lia. }
+      rewrite negb_false_iff.
+      eapply (introT (Nat.eqb_spec 0 _)).
+      lia.
+    }
     { lia. }
     pose proof (IH2 := IHsz cpatt2).
     feed specialize IH2.
     { wf_auto2. }
+    {
+      unfold mu_in_evar_path in *.
+      simpl in Hmf.
+      case_match. 
+      2: { lia. }
+      rewrite negb_false_iff.
+      eapply (introT (Nat.eqb_spec 0 _)).
+      lia.
+    }
     { lia. }
     toMLGoal.
     { wf_auto2. }
@@ -885,6 +920,18 @@ Proof.
     feed specialize IHsz.
     {
       wf_auto2.
+    }
+    {
+      unfold mu_in_evar_path in *.
+      simpl in Hmf.
+      case_match. 
+      2: { lia. }
+      rewrite negb_false_iff.
+      eapply (introT (Nat.eqb_spec 0 _)).
+      rewrite evar_open_mu_depth.
+      { solve_fresh_neq. }
+      symmetry in H.
+      exact H.
     }
     {
       rewrite evar_open_size'. lia.
@@ -975,93 +1022,27 @@ Proof.
       mlExact "H2".
     }
     
-  + remember (svar_fresh_s (free_svars (cpatt ---> ϕ ---> ψ))) as X0.
-    specialize (IHsz (cpatt^{svar:0↦X0})).
-    feed specialize IHsz.
+  + 
+    destruct (decide (cvar ∈ free_evars cpatt)).
     {
+      unfold mu_in_evar_path in Hmf.
+      cbn in Hmf.
+      case_match.
+      2: { lia. }
+      rewrite maximal_mu_depth_to_S in H.
+      assumption.
+      inversion H.
+    }
+    {
+      rewrite free_evar_subst_no_occurrence.
+      { assumption. }
+      rewrite free_evar_subst_no_occurrence.
+      { assumption. }
+      useBasicReasoning.
+      apply pf_iff_equiv_refl.
       wf_auto2.
     }
-    {
-      rewrite svar_open_size'. lia.
-    }    
-    toMLGoal.
-    { wf_auto2. }
-    mlApplyMeta extract_common_from_equivalence_1.
-    mlIntro "Hψ".
-    pose proof (Htmp := mu_monotone Γ (ψ and cpatt^{svar:0↦X0}^[[evar:cvar↦ϕ]]) (ψ and cpatt^{svar:0↦X0}^[[evar:cvar↦ψ and ϕ]]) X0 AnyReasoning).
-    feed specialize Htmp.
-    {
-      try_solve_pile.
-    }
-    { 
-      cbn. fold svar_has_positive_occurrence svar_has_negative_occurrence.
-      rewrite !orb_false_r.
-      rewrite orb_false_iff.
-      split.
-      {
-        wf_auto2.
-        eapply svar_is_fresh_in_richer'.
-        2: { apply set_svar_fresh_is_fresh'. }
-        set_solver.
-      }
-      {
-        rewrite svar_has_negative_occurrence_free_evar_subst.
-        {
-          subst X0. clear.
-          eapply svar_is_fresh_in_richer'.
-          2: { apply set_svar_fresh_is_fresh'. }
-          simpl. set_solver.
-        }
-        apply positive_negative_occurrence_db_named.
-        { wf_auto2. }
-        {
-          apply fresh_svar_no_neg.
-          subst X0. clear.
-          eapply svar_is_fresh_in_richer'.
-          2: { apply set_svar_fresh_is_fresh'. }
-          simpl. set_solver.
-        }
-      }
-    }
-    {
-      cbn. fold svar_has_positive_occurrence svar_has_negative_occurrence.
-      rewrite !orb_false_r.
-      rewrite orb_false_iff.
-      split.
-      {
-        wf_auto2.
-        eapply svar_is_fresh_in_richer'.
-        2: { apply set_svar_fresh_is_fresh'. }
-        set_solver.
-      }
-      {
-        rewrite svar_has_negative_occurrence_free_evar_subst.
-        {
-          subst X0. clear.
-          eapply svar_is_fresh_in_richer'.
-          2: { apply set_svar_fresh_is_fresh'. }
-          simpl. set_solver.
-        }
-        apply positive_negative_occurrence_db_named.
-        { wf_auto2. }
-        {
-          apply fresh_svar_no_neg.
-          subst X0. clear.
-          eapply svar_is_fresh_in_richer'.
-          2: { apply set_svar_fresh_is_fresh'. }
-          simpl. set_solver.
-        }
-      }
-    }
-    {
-      eapply pf_iff_proj1.
-      3: apply IHsz.
-      1,2: wf_auto2.
-    }
-    Set Printing All.
-    Search (_^[[evar:_↦_]]^{{svar:_↦_}}).
-  }
-Admitted.
+Defined.
 
 Lemma mu_and_predicate_propagation {Σ : Signature} {syntax : Syntax} i Γ ϕ ψ X :
   well_formed (mu, ϕ) ->
