@@ -642,6 +642,37 @@ Proof.
   }
 Defined.
 
+Lemma extract_common_from_equivalence_1
+  {Σ : Signature} (Γ : Theory) (a b c : Pattern):
+  well_formed a ->
+  well_formed b ->
+  well_formed c ->
+  Γ ⊢i ((a ---> (b <---> c)) ---> ((a and b) <---> (a and c))) 
+  using BasicReasoning
+.
+Proof.
+  intros.
+  eapply pf_conj_elim_r_meta.
+  3: apply extract_common_from_equivalence.
+  all: wf_auto2.
+Defined.
+
+
+Lemma extract_common_from_equivalence_2
+  {Σ : Signature} (Γ : Theory) (a b c : Pattern):
+  well_formed a ->
+  well_formed b ->
+  well_formed c ->
+  Γ ⊢i (((a and b) <---> (a and c)) ---> (a ---> (b <---> c))) 
+  using BasicReasoning
+.
+Proof.
+  intros.
+  eapply pf_conj_elim_l_meta.
+  3: apply extract_common_from_equivalence.
+  all: wf_auto2.
+Defined.
+
 (* TODO:
   This lemma is lemma 88 in in the matching mu logic paper.
   As is there is no way to determine the mu requirement and
@@ -847,7 +878,9 @@ Proof.
   + 
     toMLGoal.
     { wf_auto2. }
-    Search ((?a and ?b) <---> (?a and ?c)).
+    mlApplyMeta extract_common_from_equivalence_1.
+    mlIntro "Hψ".
+    
   pose proof (IH := IHsz (ex , cpatt)).
     feed specialize IH.
     { wf_auto2. }
