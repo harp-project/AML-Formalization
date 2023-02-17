@@ -3839,12 +3839,12 @@ Proof.
     mlRewriteBy "T" at 1.
     { set_solver. }
     {
-      simpl. split_and!; reflexivity || assumption.
+      apply mu_free_in_path. simpl. split_and!; reflexivity || assumption.
     }
     mlRewriteBy "T" at 1.
     { set_solver. }
     {
-      simpl. split_and!; reflexivity || assumption.
+      apply mu_free_in_path. simpl. split_and!; reflexivity || assumption.
     }
     mlClear "T".
     pose proof (Ht := top_and Γ (P $ ϕ) ltac:(wf_auto2)).
@@ -3858,12 +3858,12 @@ Proof.
     mlRewriteBy "B" at 1.
     { set_solver. }
     {
-      simpl. split_and!; reflexivity || assumption.
+      apply mu_free_in_path. simpl. split_and!; reflexivity || assumption.
     }
     mlRewriteBy "B" at 1.
     { set_solver. }
     {
-      simpl. split_and!; reflexivity || assumption.
+      apply mu_free_in_path. simpl. split_and!; reflexivity || assumption.
     }
     mlClear "B".
     pose proof (Hb := bott_and Γ (P $ ϕ) ltac:(wf_auto2)).
@@ -3880,25 +3880,38 @@ Proof.
 Defined.
 
 Lemma equal_imp_membership {Σ : Signature} {syntax : Syntax} Γ φ φ' :
-  theory ⊆ Γ -> mu_free φ' ->
+  theory ⊆ Γ -> 
   well_formed φ -> well_formed φ' ->
   Γ ⊢ ⌈ φ' ⌉  ->
   Γ ⊢ (φ =ml φ') ---> (φ ∈ml φ').
 Proof.
-  intros HΓ MF WF1 WF2 Def.
+  intros HΓ WF1 WF2 Def.
   toMLGoal. wf_auto2.
   mlIntro "H0".
   mlRewriteBy "H0" at 1; cbn; try_wfauto2; try assumption.
-  { rewrite MF. reflexivity. }
-    mlClear "H0". unfold patt_in.
-    assert (Γ ⊢ ( φ' and φ' <---> φ') ) as H1.
+  {
+    unfold mu_in_evar_path. simpl.
+    rewrite decide_eq_same. simpl.
+    case_match;[reflexivity|].
+    rewrite 2!Nat.max_0_r in H.
+    rewrite maximal_mu_depth_to_0 in H.
+    2: { inversion H. }
+    subst star. clear.
+    eapply evar_is_fresh_in_richer'.
+    2: { apply set_evar_fresh_is_fresh. }
     {
-      toMLGoal. wf_auto2.
-      mlSplitAnd; mlIntro "H1".
-      - mlDestructAnd "H1" as "H2" "H3". mlExact "H3".
-      - mlSplitAnd; mlExact "H1".
+      cbn. set_solver.
     }
-    now mlRewrite H1 at 1.
+  }
+  mlClear "H0". unfold patt_in.
+  assert (Γ ⊢ ( φ' and φ' <---> φ') ) as H1.
+  {
+    toMLGoal. wf_auto2.
+    mlSplitAnd; mlIntro "H1".
+    - mlDestructAnd "H1" as "H2" "H3". mlExact "H3".
+    - mlSplitAnd; mlExact "H1".
+  }
+  now mlRewrite H1 at 1.
 Defined.
 
 Lemma phi_impl_ex_in_phi {Σ : Signature} {syntax : Syntax} Γ ϕ:
@@ -3967,9 +3980,8 @@ Proof.
     aapply patt_equal_refl.
     wf_auto2.
     aapply defined_evar.
-    set_solver.
-    reflexivity.
-    set_solver.
+    { exact HΓ. }
+    { exact HΓ. }
 Defined.
 
 Lemma membership_symbol_right {Σ : Signature} {syntax : Syntax} Γ ϕ ψ x :
@@ -4137,7 +4149,7 @@ Proof.
   2: { assumption. }
   mlRewriteBy "H0" at 1.
   { assumption. }
-  { simpl. rewrite mfφ₁. reflexivity. }
+  { apply mu_free_in_path. simpl. rewrite mfφ₁. reflexivity. }
   mlClear "H0".
 
   fromMLGoal.
