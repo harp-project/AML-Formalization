@@ -8,7 +8,7 @@ From Equations Require Import Equations.
 
 Require Import Coq.Program.Tactics.
 
-From MatchingLogic Require Import Syntax DerivedOperators_Syntax ProofSystem IndexManipulation wftactics BasicProofSystemLemmas.
+From MatchingLogic Require Import Syntax DerivedOperators_Syntax ProofSystem IndexManipulation wftactics.
 
 From stdpp Require Import list tactics fin_sets coGset gmap sets.
 
