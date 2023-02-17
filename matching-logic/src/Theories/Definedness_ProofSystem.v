@@ -3817,6 +3817,187 @@ Proof.
   }
 Defined.
 
+
+Lemma predicate_propagate_left_2 {Σ : Signature} {syntax : Syntax} Γ ϕ ψ P :
+  theory ⊆ Γ ->
+  well_formed ϕ ->
+  well_formed ψ ->
+  well_formed P ->
+  Γ ⊢ is_predicate_pattern ψ ->
+  Γ ⊢ ψ and P $ ϕ <---> (ψ and P) $ ϕ.
+Proof.
+  intros HΓ wfϕ wfψ wfP predψ.
+  toMLGoal.
+  { wf_auto2. }
+  mlAdd predψ as "Htmp".
+  mlDestructOr "Htmp" as "Htmp1" "Htmp2".
+  {
+    mlRewriteBy "Htmp1" at 1.
+    { exact HΓ. }
+    { cbn. unfold mu_in_evar_path. cbn.
+      rewrite !Nat.max_0_r.
+      rewrite !maximal_mu_depth_to_0.
+      {
+        subst star. clear.
+        eapply evar_is_fresh_in_richer'.
+        2: {
+          apply set_evar_fresh_is_fresh.
+        }
+        {
+          cbn. set_solver.
+        }
+      }
+      {
+        subst star. clear.
+        eapply evar_is_fresh_in_richer'.
+        2: {
+          apply set_evar_fresh_is_fresh.
+        }
+        {
+          cbn. set_solver.
+        }
+      }
+      {
+        subst star. clear.
+        eapply evar_is_fresh_in_richer'.
+        2: {
+          apply set_evar_fresh_is_fresh.
+        }
+        {
+          cbn. set_solver.
+        }
+      }
+      {
+        cbn.
+        repeat case_match; try reflexivity; lia.
+      }
+    }
+    mlRewriteBy "Htmp1" at 1.
+    { exact HΓ. }
+    { cbn. unfold mu_in_evar_path. cbn.
+      rewrite !Nat.max_0_r.
+      rewrite !maximal_mu_depth_to_0.
+      {
+        subst star. clear.
+        eapply evar_is_fresh_in_richer'.
+        2: {
+          apply set_evar_fresh_is_fresh.
+        }
+        {
+          cbn. set_solver.
+        }
+      }
+      {
+        subst star. clear.
+        eapply evar_is_fresh_in_richer'.
+        2: {
+          apply set_evar_fresh_is_fresh.
+        }
+        {
+          cbn. set_solver.
+        }
+      }
+      {
+        cbn.
+        repeat case_match; try reflexivity; lia.
+      }
+    }
+    mlClear "Htmp1".
+    mlRewrite (top_and Γ P ltac:(wf_auto2)) at 1.
+    mlRewrite (top_and Γ (P $ ϕ) ltac:(wf_auto2)) at 1.
+    fromMLGoal.
+    useBasicReasoning.
+    apply pf_iff_equiv_refl.
+    wf_auto2.
+  }
+  {
+    mlRewriteBy "Htmp2" at 1.
+    { exact HΓ. }
+    { cbn. unfold mu_in_evar_path. cbn.
+      rewrite !Nat.max_0_r.
+      rewrite !maximal_mu_depth_to_0.
+      {
+        subst star. clear.
+        eapply evar_is_fresh_in_richer'.
+        2: {
+          apply set_evar_fresh_is_fresh.
+        }
+        {
+          cbn. set_solver.
+        }
+      }
+      {
+        subst star. clear.
+        eapply evar_is_fresh_in_richer'.
+        2: {
+          apply set_evar_fresh_is_fresh.
+        }
+        {
+          cbn. set_solver.
+        }
+      }
+      {
+        subst star. clear.
+        eapply evar_is_fresh_in_richer'.
+        2: {
+          apply set_evar_fresh_is_fresh.
+        }
+        {
+          cbn. set_solver.
+        }
+      }
+      {
+        cbn.
+        repeat case_match; try reflexivity; lia.
+      }
+    }
+    mlRewriteBy "Htmp2" at 1.
+    { exact HΓ. }
+    { cbn. unfold mu_in_evar_path. cbn.
+      rewrite !Nat.max_0_r.
+      rewrite !maximal_mu_depth_to_0.
+      {
+        subst star. clear.
+        eapply evar_is_fresh_in_richer'.
+        2: {
+          apply set_evar_fresh_is_fresh.
+        }
+        {
+          cbn. set_solver.
+        }
+      }
+      {
+        subst star. clear.
+        eapply evar_is_fresh_in_richer'.
+        2: {
+          apply set_evar_fresh_is_fresh.
+        }
+        {
+          cbn. set_solver.
+        }
+      }
+      {
+        cbn.
+        repeat case_match; try reflexivity; lia.
+      }
+    }
+    mlClear "Htmp2".
+    mlRewrite (bott_and Γ P ltac:(wf_auto2)) at 1.
+    mlRewrite (bott_and Γ (P $ ϕ) ltac:(wf_auto2)) at 1.
+    fromMLGoal.
+    mlSplitAnd.
+    {
+      mlIntro "H". mlDestructBot "H".
+    }
+    {
+      fromMLGoal.
+      useBasicReasoning.
+      apply Prop_bott_left.
+      wf_auto2.
+    }
+  }
+Defined.
+
 (* TODO: Put in a different file? *)
 Lemma predicate_propagate_right {Σ : Signature} {syntax : Syntax} Γ ϕ ψ P :
   theory ⊆ Γ ->
@@ -3878,6 +4059,7 @@ Proof.
     aapply Hiff.
   }
 Defined.
+
 
 Lemma equal_imp_membership {Σ : Signature} {syntax : Syntax} Γ φ φ' :
   theory ⊆ Γ -> 
