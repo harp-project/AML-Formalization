@@ -500,6 +500,103 @@ Proof.
   }
 Defined.
 
+Lemma impl_elim
+  {Σ: Signature}
+  (Γ : Theory)
+  (A B C : Pattern)
+  (l1 l2 : list Pattern)
+  (i : ProofInfo)
+  :
+  Γ ⊢i foldr patt_imp A (l1 ++ l2) using i ->
+  Γ ⊢i foldr patt_imp C (l1 ++ B :: l2) using i ->
+  Γ ⊢i foldr patt_imp C (l1 ++ (A ---> B)::l2) using i
+  .
+Proof.
+  intros H1 H2.
+  assert (HwfA : well_formed A) by wf_auto2.
+  assert (HwfB : well_formed B) by wf_auto2.
+  assert (HwfC : well_formed C) by wf_auto2.
+  apply reorder_last_to_middle_meta in H2. 2-5: wf_auto2.
+  apply reorder_middle_to_last_meta. 1-4: wf_auto2.
+  rewrite app_assoc foldr_snoc in H2. rewrite app_assoc foldr_snoc.
+  eapply prf_add_lemma_under_implication_meta_meta.
+  4: {
+    apply H1.
+  }
+  1-3: wf_auto2.
+  rewrite foldr_snoc.
+  eapply prf_weaken_conclusion_iter_meta_meta. 5: exact H2. 1-3: wf_auto2.
+  clear -HwfA HwfB HwfC.
+  pose proof (syllogism Γ A B C HwfA HwfB HwfC).
+  eapply reorder_meta in H. 2-4: wf_auto2.
+  eapply prf_weaken_conclusion_meta_meta.
+  4: gapply reorder. 1-3, 5-7: wf_auto2. try_solve_pile.
+  by gapply H.
+Defined.
+
+Lemma mlGoal_destructImp {Σ : Signature} Γ l1 l2 name C A B i:
+  mkMLGoal Σ Γ (l1 ++ l2) A i ->
+  mkMLGoal Σ Γ (l1 ++ (mkNH _ name B)::l2) C i ->
+  mkMLGoal Σ Γ (l1 ++ (mkNH _ name (A ---> B))::l2) C i.
+Proof.
+  intros H1 H2.
+  unfold of_MLGoal in *. simpl in *.
+  intros wfg wfl.
+  unfold patterns_of in *. rewrite -> map_app in *.
+  simpl in *.
+  eapply impl_elim. apply H1. 3: apply H2.
+  all: wf_auto2.
+Defined.
+
+Tactic Notation "mlDestructImp" constr(name) :=
+  _ensureProofMode;
+  _mlReshapeHypsByName name;
+  apply (mlGoal_destructImp _ _ _ name);
+  _mlReshapeHypsBack.
+
+Local Example Test_destructImp {Σ : Signature} Γ :
+  forall A B C, well_formed A -> well_formed B -> well_formed C ->
+  Γ ⊢i (A ---> B) ---> (B ---> C) ---> A ---> C using BasicReasoning.
+Proof.
+  intros. toMLGoal. wf_auto2.
+  mlIntro "H". mlIntro "H0". mlIntro "H1".
+  mlDestructImp "H".
+  * mlExact "H1".
+  * mlDestructImp "H0".
+    - mlExact "H".
+    - mlExact "H0".
+Defined.
+
+Lemma MLGoal_revert {Σ : Signature} (Γ : Theory) (l1 l2 : hypotheses) (x g : Pattern) (n : string) i :
+  mkMLGoal Σ Γ (l1 ++ l2) (x ---> g) i ->
+  mkMLGoal Σ Γ (l1 ++ (mkNH _ n x) :: l2) g i.
+Proof.
+  intros H.
+  unfold of_MLGoal in H. simpl in H.
+  unfold of_MLGoal. simpl. intros wfxig wfl.
+  unfold patterns_of in *. rewrite -> map_app in *. simpl in *.
+  feed specialize H. 1-2: wf_auto2.
+  apply reorder_middle_to_last_meta. 1-4: wf_auto2.
+  by rewrite app_assoc foldr_snoc.
+Defined.
+
+Tactic Notation "mlRevert" constr(name) :=
+  _ensureProofMode;
+  _mlReshapeHypsByName name;
+  apply (MLGoal_revert _ _ _ _ _ name);
+  _mlReshapeHypsBack.
+
+Local Example Test_revert {Σ : Signature} Γ :
+  forall A B C, well_formed A -> well_formed B -> well_formed C ->
+  Γ ⊢i A ---> B ---> C ---> A using BasicReasoning.
+Proof.
+  intros. toMLGoal. wf_auto2.
+  mlIntro "H". mlIntro "H0". mlIntro "H1".
+  mlRevert "H0". mlRevert "H1".
+  mlIntro "H0". mlIntro "H1".
+  mlExact "H".
+Defined.
+
 Lemma prf_add_lemma_under_implication_generalized {Σ : Signature} Γ l1 l2 g h:
   Pattern.wf l1 ->
   Pattern.wf l2 ->
