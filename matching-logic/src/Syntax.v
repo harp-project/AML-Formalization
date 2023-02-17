@@ -1135,6 +1135,79 @@ Section with_signature.
     - rewrite IHϕ; auto.
   Qed.
 
+  Lemma svar_has_negative_occurrence_free_evar_subst
+    (ϕ ψ: Pattern) (x : evar) (X : svar) :
+    svar_is_fresh_in X ψ ->
+    svar_has_negative_occurrence X ϕ^[[evar:x↦ψ]] = svar_has_negative_occurrence X ϕ
+  with svar_has_positive_occurrence_free_evar_subst
+    (ϕ ψ: Pattern) (x : evar) (X : svar) :
+    svar_is_fresh_in X ψ ->
+    svar_has_positive_occurrence X ϕ^[[evar:x↦ψ]] = svar_has_positive_occurrence X ϕ
+  .
+  Proof.
+    {
+      intros HXψ.
+      induction ϕ; cbn in *; try reflexivity.
+      {
+        destruct (decide (x = x0)).
+        {
+          apply svar_hno_false_if_fresh.
+          exact HXψ.
+        }
+        {
+          cbn. reflexivity.
+        }
+      }
+      {
+        by rewrite IHϕ1 IHϕ2.
+      }
+      {
+        fold svar_has_positive_occurrence.
+        rewrite IHϕ2.
+        rewrite svar_has_positive_occurrence_free_evar_subst.
+        { exact HXψ. }
+        reflexivity.
+      }
+      {
+        exact IHϕ.
+      }
+      {
+        exact IHϕ.
+      }
+    }
+    {
+      intros HXψ.
+      induction ϕ; cbn in *; try reflexivity.
+      {
+        destruct (decide (x = x0)).
+        {
+          apply svar_hpo_false_if_fresh.
+          exact HXψ.
+        }
+        {
+          cbn. reflexivity.
+        }
+      }
+      {
+        by rewrite IHϕ1 IHϕ2.
+      }
+      {
+        fold svar_has_negative_occurrence.
+        rewrite IHϕ2.
+        rewrite svar_has_negative_occurrence_free_evar_subst.
+        { exact HXψ. }
+        reflexivity.
+      }
+      {
+        exact IHϕ.
+      }
+      {
+        exact IHϕ.
+      }
+    }
+  Qed.
+    
+
 End with_signature.
 
 
