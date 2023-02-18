@@ -1331,6 +1331,59 @@ Proof.
   }
 Qed.
 
+Lemma hbvum_impl_mmdt0 {Σ : Signature} phi dbi x y k:
+  evar_is_fresh_in x phi ->
+  evar_is_fresh_in y phi ->
+  well_formed_closed_mu_aux phi (S dbi) ->
+  maximal_mu_depth_to k y phi^[svar:dbi↦patt_free_evar y] = 0 ->
+  maximal_mu_depth_to k x phi^[svar:dbi↦patt_free_evar x] = 0
+.
+Proof.
+  move: x y dbi k.
+  induction phi; intros x' y dbi k Hfrx' Hfry Hwf H; cbn in *; try reflexivity.
+  {
+    unfold evar_is_fresh_in in *. cbn in *.
+    repeat case_match; subst; try reflexivity.
+    set_solver. 
+  }
+  {
+    repeat case_match; cbn in *; try reflexivity;
+    rewrite decide_eq_same; try reflexivity; subst;
+    case_match; subst; cbn in *; try reflexivity; contradiction.
+  }
+  {
+    unfold evar_is_fresh_in in *. cbn in *.
+    rewrite -> IHphi1 with (y := y).
+    5: lia.
+    4: wf_auto2.
+    3: set_solver.
+    2: set_solver.
+    cbn. apply IHphi2 with (y := y).
+    { set_solver. }
+    { set_solver. }
+    { wf_auto2. }
+    { lia. }
+  }
+  {
+    unfold evar_is_fresh_in in *. cbn in *.
+    rewrite -> IHphi1 with (y := y).
+    5: lia.
+    4: wf_auto2.
+    3: set_solver.
+    2: set_solver.
+    cbn. apply IHphi2 with (y := y).
+    { set_solver. }
+    { set_solver. }
+    { wf_auto2. }
+    { lia. }
+  }
+  {
+    eauto with nocore.
+  }
+  {
+    eauto with nocore.
+  }
+Qed.
 
 Theorem deduction_theorem {Σ : Signature} {syntax : Syntax} Γ ϕ ψ
   (gpi : ProofInfo)
@@ -1344,10 +1397,11 @@ Theorem deduction_theorem {Σ : Signature} {syntax : Syntax} Γ ϕ ψ
   ) ->
   pi_generalized_evars gpi ## (gset_to_coGset (free_evars ψ)) ->
   pi_substituted_svars gpi ## (gset_to_coGset (free_svars ψ)) ->
+  pi_uses_advanced_kt gpi = false ->
   Γ ⊢i ⌊ ψ ⌋ ---> ϕ
   using AnyReasoning.
 Proof.
-  intros wfϕ wfψ HΓ Hmuphi HnoExGen HnoSvarSubst.
+  intros wfϕ wfψ HΓ Hmuphi HnoExGen HnoSvarSubst Hnoakt.
   destruct pf as [pf Hpf]. simpl.
   induction pf.
   - (* hypothesis *)
@@ -1412,6 +1466,20 @@ Proof.
         destruct (uses_kt pf1) eqn:Hktpf1;[|reflexivity]. simpl in *.
         exact Hpf4.
       }
+      {
+        cbn in *.
+        unfold is_true.
+        rewrite implb_true_iff.
+        intro Hakt1.
+        rewrite Hakt1 in pwi_pf_kta. simpl in pwi_pf_kta.
+        unfold is_true in pwi_pf_kta.
+        rewrite andb_true_iff in pwi_pf_kta.
+        destruct pwi_pf_kta as [HH1 HH2].
+        rewrite HH1.
+        simpl.
+        apply kt_unreasonably_implies_somehow.
+        exact Hakt1.
+      }
     }
     { assumption. }
     {
@@ -1430,6 +1498,21 @@ Proof.
         destruct (uses_kt pf2) eqn:Hktpf2;[|reflexivity].
         rewrite orb_comm in Hpf4. simpl in *.
         exact Hpf4.
+      }
+      {
+        cbn in *.
+        unfold is_true.
+        rewrite implb_true_iff.
+        intro Hakt1.
+        rewrite Hakt1 in pwi_pf_kta. rewrite orb_true_r in pwi_pf_kta.
+        simpl in pwi_pf_kta.
+        unfold is_true in pwi_pf_kta.
+        rewrite andb_true_iff in pwi_pf_kta.
+        destruct pwi_pf_kta as [HH1 HH2].
+        rewrite HH1.
+        simpl.
+        apply kt_unreasonably_implies_somehow.
+        exact Hakt1.
       }
     }
     { wf_auto2. }
@@ -1459,7 +1542,7 @@ Proof.
     useBasicReasoning.
     apply Ex_quan. wf_auto2.
   - (* Existential Generalization *)
-    destruct Hpf as [Hpf2 Hpf3 Hpf4].
+    destruct Hpf as [Hpf2 Hpf3 Hpf4 Hpf5].
     simpl in Hpf2, Hpf3, Hpf4.
     (*
     simpl in HnoExGen.
@@ -1470,23 +1553,24 @@ Proof.
       { clear -Hpf2. set_solver. }
       { clear -Hpf3. set_solver. }
       { apply Hpf4. }
+      { apply Hpf5. }
     }
-    { wf_auto2. }
+    { clear Hpf5; wf_auto2. }
     {
       intros.
       rewrite bsvar_subst_not_occur.
-      { wf_auto2. }
+      { clear Hpf5; wf_auto2. }
       apply fresh_impl_no_mu_in_evar_path.
       assumption.
     }
 
     apply reorder_meta in IHpf.
-    2-4:  wf_auto2.
+    2-4:  clear Hpf5; wf_auto2.
     apply Ex_gen with (x := x) in IHpf.
     3: { simpl. set_solver. }
     2: { try_solve_pile. }
     apply reorder_meta in IHpf.
-    2-4: wf_auto2.
+    2-4: clear Hpf5; wf_auto2.
     exact IHpf.
     
   - (* Propagation of ⊥, left *)
@@ -1541,7 +1625,7 @@ Proof.
     assert (well_formed (phi1 ---> phi2)).
     { unfold well_formed,well_formed_closed in *. simpl in *.
       destruct_and!. split_and!; auto. }
-    destruct Hpf as [Hpf2 Hpf3 Hpf4].
+    destruct Hpf as [Hpf2 Hpf3 Hpf4 Hpf5].
     simpl in Hpf2,Hpf3,Hpf4.
     feed specialize IHpf.
     {
@@ -1549,16 +1633,17 @@ Proof.
       { set_solver. }
       { set_solver. }
       { apply Hpf4. }
+      { apply Hpf5. }
     }
     { wf_auto2. }
     {
       intros.
       rewrite bsvar_subst_not_occur.
-      { wf_auto2. }
+      { clear Hpf5; wf_auto2. }
       apply fresh_impl_no_mu_in_evar_path.
       assumption.
     }
-
+    clear Hpf5.
     remember_constraint as i'.
 
     (*
@@ -1682,7 +1767,7 @@ Proof.
       destruct_and!. split_and!; auto. }
     simpl in HnoExGen. simpl in HnoSvarSubst.
 
-    destruct Hpf as [Hpf2 Hpf3 Hpf4].
+    destruct Hpf as [Hpf2 Hpf3 Hpf4 Hpf5].
     simpl in Hpf2,Hpf3,Hpf4.
     feed specialize IHpf.
     {
@@ -1690,16 +1775,18 @@ Proof.
       { set_solver. }
       { set_solver. }
       { apply Hpf4. }
+      { apply Hpf5. }
     }
-    { wf_auto2. }
+    { clear Hpf5; wf_auto2. }
     {
       intros.
       rewrite bsvar_subst_not_occur.
-      { wf_auto2. }
+      { clear Hpf5; wf_auto2. }
       apply fresh_impl_no_mu_in_evar_path.
       assumption.
     }
 
+    clear Hpf5.
 
     remember_constraint as i'.
 
@@ -1809,7 +1896,7 @@ Proof.
         mlExactn 5.
   - (* Set variable substitution *)
     simpl in HnoExGen. simpl in HnoSvarSubst. simpl in IHpf.
-    destruct Hpf as [Hpf2 Hpf3 Hpf4].
+    destruct Hpf as [Hpf2 Hpf3 Hpf4 Hpf5].
     simpl in Hpf2, Hpf3, Hpf4.
     feed specialize IHpf.
     {
@@ -1817,6 +1904,7 @@ Proof.
       { exact Hpf2. }
       { clear -Hpf3. set_solver. }
       { exact Hpf4. }
+      { exact Hpf5. }
     }
     {
       wf_auto2.
@@ -1824,11 +1912,11 @@ Proof.
     {
       intros.
       rewrite bsvar_subst_not_occur.
-      { wf_auto2. }
+      { clear Hpf5; wf_auto2. }
       apply fresh_impl_no_mu_in_evar_path.
       assumption.
     }
-    
+    clear Hpf5.
     remember_constraint as i'.
 
     replace (⌊ ψ ⌋ ---> phi^[[svar: X ↦ psi]])
@@ -1856,34 +1944,55 @@ Proof.
     apply useBasicReasoning.
     apply Pre_fixp. wf_auto2.
   - (* Knaster-Tarski *)
-    destruct Hpf as [Hpf2 Hpf3 Hpf4].
+    destruct Hpf as [Hpf2 Hpf3 Hpf4 Hpf5].
     apply lhs_to_and.
-    1-3: clear Hpf2 Hpf3 Hpf4; wf_auto2.
+    1-3: clear Hpf2 Hpf3 Hpf4 Hpf5; wf_auto2.
     remember_constraint as pi.
     feed specialize IHpf.
     {
       cbn. constructor; try assumption.
-      clear -Hpf4.
-      destruct (uses_kt pf) eqn:H; rewrite H; simpl.
-      2: reflexivity.
-      simpl in Hpf4.
-      assumption.
+      {
+        clear -Hpf4.
+        destruct (uses_kt pf) eqn:H; rewrite H; simpl.
+        2: reflexivity.
+        simpl in Hpf4.
+        assumption.
+      }
+      {
+        unfold is_true.
+        rewrite implb_true_iff. intros HH.
+        cbn in *.
+        unfold is_true in Hpf5.
+        rewrite HH in Hpf5. rewrite orb_true_r in Hpf5. simpl in Hpf5.
+        rewrite Hnoakt in Hpf5. inversion Hpf5.
+      }
     }
-    { clear Hpf2 Hpf3 Hpf4.
+    { clear Hpf2 Hpf3 Hpf4 Hpf5.
       wf_auto2.
     }
     {
       intros.
       rewrite bsvar_subst_not_occur.
-      {  cbn. clear Hpf2 Hpf3 Hpf4. wf_auto2. }
+      {  cbn. clear Hpf2 Hpf3 Hpf4 Hpf5. wf_auto2. }
       apply fresh_impl_no_mu_in_evar_path.
       assumption.
     }
 
+    cbn in *.
+    unfold is_true in Hpf5.
+    rewrite andb_true_r in Hpf5.
+    rewrite Hnoakt in Hpf5.
+    rewrite implb_false_r in Hpf5.
+    destruct (decide (has_bound_variable_under_mu phi = true)) as [Ht|Hf].
+    {
+      rewrite Ht in Hpf5. simpl in Hpf5. inversion Hpf5.
+    }
+    apply not_true_is_false in Hf.
     epose proof (Htmp := @mu_and_predicate_propagation _ _ Γ phi ⌊ ψ ⌋ _ _ _ _).
     feed specialize Htmp.
     { 
       intros.
+      unfold mu_in_evar_path.
       specialize (Hmuphi x).
       feed specialize Hmuphi.
       {
