@@ -141,6 +141,9 @@ Section ml_proof_system.
   induction pf; wf_auto2. Set Printing All.
   Qed.
 
+  Lemma cast_proof {Γ} {ϕ} {ψ} (e : ψ = ϕ) : ML_proof_system Γ ϕ -> ML_proof_system Γ ψ.
+  Proof. intros H. rewrite <- e in H. exact H. Defined.
+
 (* TODO make this return well-formed patterns. *)
 Fixpoint framing_patterns Γ ϕ (pf : Γ ⊢r ϕ) : gset wfPattern :=
   match pf with
@@ -432,6 +435,47 @@ Fixpoint framing_patterns Γ ϕ (pf : Γ ⊢r ϕ) : gset wfPattern :=
     
   Definition proofbpred := forall (Γ : Theory) (ϕ : Pattern),  Γ ⊢r ϕ -> bool.
 
+  Definition indifferent_to_cast (P : proofbpred)
+    := forall (Γ : Theory) (ϕ ψ : Pattern) (e: ψ = ϕ) (pf : Γ ⊢r ϕ),
+         P Γ ψ (cast_proof e pf) = P Γ ϕ pf.
+
+  Lemma indifferent_to_cast_uses_svar_subst SvS:
+    indifferent_to_cast (uses_svar_subst SvS).
+  Proof.
+   unfold indifferent_to_cast. intros Γ ϕ ψ e pf.
+   induction pf; unfold cast_proof; unfold eq_rec_r;
+     unfold eq_rec; unfold eq_rect; unfold eq_sym; simpl; auto;
+     pose proof (e' := e); move: e; rewrite e'; clear e'; intros e;
+     match type of e with
+     | ?x = ?x => replace e with (@erefl _ x) by (apply UIP_dec; intros x' y'; apply Pattern_eqdec)
+     end; simpl; try reflexivity.
+  Qed.
+
+  Lemma indifferent_to_cast_uses_kt:
+    indifferent_to_cast uses_kt.
+  Proof.
+   unfold indifferent_to_cast. intros Γ ϕ ψ e pf.
+   induction pf; unfold cast_proof; unfold eq_rec_r;
+     unfold eq_rec; unfold eq_rect; unfold eq_sym; simpl; auto;
+     pose proof (e' := e); move: e; rewrite e'; clear e'; intros e;
+     match type of e with
+     | ?x = ?x => replace e with (@erefl _ x) by (apply UIP_dec; intros x' y'; apply Pattern_eqdec)
+     end; simpl; try reflexivity.
+  Qed.
+
+
+  Lemma indifferent_to_cast_uses_ex_gen EvS:
+    indifferent_to_cast (uses_ex_gen EvS).
+  Proof.
+   unfold indifferent_to_cast. intros Γ ϕ ψ e pf.
+   induction pf; unfold cast_proof; unfold eq_rec_r;
+     unfold eq_rec; unfold eq_rect; unfold eq_sym; simpl; auto;
+     pose proof (e' := e); move: e; rewrite e'; clear e'; intros e;
+     match type of e with
+     | ?x = ?x => replace e with (@erefl _ x) by (apply UIP_dec; intros x' y'; apply Pattern_eqdec)
+     end; simpl; try reflexivity.
+  Qed.
+
 End ml_proof_system.
 
 
@@ -465,6 +509,18 @@ Fixpoint uses_kt_unreasonably {Σ : Signature} Γ ϕ (pf : ML_proof_system Γ ϕ
   | ProofSystem.Existence _ => false
   | ProofSystem.Singleton_ctx _ _ _ _ _ _ => false
   end.
+
+  Lemma indifferent_to_cast_uses_kt_unreasonably {Σ : Signature}:
+    indifferent_to_cast uses_kt_unreasonably.
+  Proof.
+   unfold indifferent_to_cast. intros Γ ϕ ψ e pf.
+   induction pf; unfold cast_proof; unfold eq_rec_r;
+     unfold eq_rec; unfold eq_rect; unfold eq_sym; simpl; auto;
+     pose proof (e' := e); move: e; rewrite e'; clear e'; intros e;
+     match type of e with
+     | ?x = ?x => replace e with (@erefl _ x) by (apply UIP_dec; intros x' y'; apply Pattern_eqdec)
+     end; simpl; try reflexivity.
+  Qed.
 
 Lemma kt_unreasonably_implies_somehow {Σ : Signature} Γ ϕ (pf : ML_proof_system Γ ϕ) :
   uses_kt_unreasonably Γ ϕ pf -> uses_kt Γ ϕ pf.

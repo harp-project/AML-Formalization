@@ -86,7 +86,7 @@ Section with_signature.
     }
     {
       simpl.
-      destruct Hpf as [Hpf2 Hpf3 Hpf4].
+      destruct Hpf as [Hpf2 Hpf3 Hpf4 Hpf5].
       constructor.
       {
         rewrite elem_of_subseteq in Hpf2.
@@ -117,6 +117,11 @@ Section with_signature.
       {
         rewrite indifferent_to_cast_uses_kt.
         apply Hpf4.
+      }
+      {
+        rewrite indifferent_to_cast_uses_kt_unreasonably.
+        rewrite indifferent_to_cast_uses_kt.
+        apply Hpf5.
       }
     }
   Defined.
@@ -333,7 +338,7 @@ Section with_signature.
     }
     {
       simpl.
-      destruct Hpf as [Hpf2 Hpf3 Hpf4].
+      destruct Hpf as [Hpf2 Hpf3 Hpf4 Hpf5].
       constructor.
       {
         rewrite elem_of_subseteq in Hpf2.
@@ -364,6 +369,11 @@ Section with_signature.
       {
         rewrite indifferent_to_cast_uses_kt.
         apply Hpf4.
+      }
+      {
+        rewrite indifferent_to_cast_uses_kt_unreasonably.
+        rewrite indifferent_to_cast_uses_kt.
+        apply Hpf5.
       }
     }
   Defined.
