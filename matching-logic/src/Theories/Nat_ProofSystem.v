@@ -75,7 +75,7 @@ Section nat.
     unfold patt_in.
     unfold nest_ex; simpl; fold Nat.
     unfold patt_subseteq.
-    apply deduction_theorem with (gpi := (ExGen := {[fresh_evar ⊥]}, SVSubst := ∅, KT := false)).
+    apply deduction_theorem with (gpi := (ExGen := {[fresh_evar ⊥]}, SVSubst := ∅, KT := false, AKT := false)).
     rewrite <- evar_quantify_evar_open with (n := 0) (phi := (⌈ b0 and 〚 Nat 〛 ⌉ ---> ⌈ b0 and patt_free_svar X ⌉)) (x := fresh_evar ⊥).
     apply universal_generalization.
     { try_solve_pile. }
@@ -104,6 +104,8 @@ Section nat.
     { unfold theory. set_solver. }
     { set_solver. }
     { set_solver. }
+    { set_solver. }
+    { set_solver. }
   Defined.
 
   Theorem peano_induction X :
@@ -122,7 +124,7 @@ Section nat.
     mlAdd (use_nat_axiom AxInductiveDomain theory ltac:(reflexivity)) as "ind". unfold axiom.
     mlRewriteBy "ind" at 1.
     { unfold theory. set_solver. }
-    { reflexivity. }
+    { cbn. unfold mu_in_evar_path. cbn. rewrite decide_eq_same. cbn.  reflexivity. }
 
     mlClear "ind".
     unfold "⊆ml".
@@ -291,7 +293,12 @@ Section nat.
       }
       mlClear "M".
 
-      mlRewriteBy "M0" at 1;[unfold theory; set_solver|reflexivity|]. mlClear "M0".
+      mlRewriteBy "M0" at 1;[unfold theory; set_solver|idtac|].
+      {
+        cbn. unfold mu_in_evar_path. cbn. rewrite decide_eq_same. cbn. reflexivity.
+      }
+      
+      mlClear "M0".
 
       apply forall_elim with (x := y) in S.
       2: { wf_auto2. }
