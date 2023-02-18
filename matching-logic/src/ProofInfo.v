@@ -92,7 +92,7 @@ Proof.
     { apply H2. }
   }
   {
-    abstract(
+    
       simpl;
       destruct H1 as [pf1 Hpf1];
       destruct H2 as [pf2 Hpf2];
@@ -101,8 +101,35 @@ Proof.
       [set_solver
       |set_solver
       |(destruct (uses_kt pf1),(uses_kt pf2); simpl in *; congruence)
-      |(destruct (uses_kt_unreasonably pf1),(uses_kt_unreasonably pf2); simpl in *; congruence)]
-    ).
+      |idtac]
+    .
+    unfold is_true in pwi_pf_kt.
+    rewrite implb_true_iff in pwi_pf_kt.
+    unfold is_true in pwi_pf_kta.
+    rewrite implb_true_iff in pwi_pf_kta.
+    unfold is_true in pwi_pf_kt0.
+    rewrite implb_true_iff in pwi_pf_kt0.
+    unfold is_true in pwi_pf_kta0.
+    rewrite implb_true_iff in pwi_pf_kta0.
+    unfold is_true.
+    rewrite implb_true_iff.
+    intro H.
+    rewrite orb_true_iff in H.
+    destruct H as [H|H].
+    {
+      specialize (pwi_pf_kta H).
+      rewrite andb_true_iff in pwi_pf_kta.
+      destruct pwi_pf_kta as [H1 H2].
+      rewrite H1 H2. reflexivity.
+    }
+    {
+      specialize (pwi_pf_kta0 H).
+      rewrite andb_true_iff in pwi_pf_kta0.
+      destruct pwi_pf_kta0 as [H1 H2].
+      rewrite H1 H2.
+      rewrite orb_true_r.
+      reflexivity.
+    }
   }
 Defined.
 
@@ -156,142 +183,6 @@ Defined.
     exact _5.
   Defined.
 
-  Lemma ProofLe_ProofInfoLe {Σ : Signature} i₁ i₂:
-    ProofLe i₁ i₂ ->
-    ProofInfoLe i₁ i₂.
-  Proof.
-    intros pile.
-    repeat split.
-    {
-      destruct i₁, i₂.
-      unfold ProofLe in pile.
-      rewrite elem_of_subseteq.
-      intros x Hx.
-      remember (fresh_evar (patt_free_evar x)) as y.
-      pose (pf1 := A_impl_A ∅ (patt_free_evar y) ltac:(wf_auto2)).
-      pose (pf2 := ProofSystem.Ex_gen ∅ (patt_free_evar y) (patt_free_evar y) x ltac:(wf_auto2) ltac:(wf_auto2) (proj1_sig pf1) ltac:(simpl; rewrite elem_of_singleton; solve_fresh_neq)).
-      specialize (pile ∅ _ pf2).
-      feed specialize pile.
-      {
-        constructor.
-        { simpl. clear -Hx. set_solver. }
-        { simpl. clear. set_solver. }
-        { simpl. reflexivity. }
-        { simpl. reflexivity. }
-      }
-      destruct pile as [Hm2 Hm3 Hm4].
-      simpl in *.
-      clear -Hm2.
-      set_solver.
-    }
-    {
-      destruct i₁, i₂.
-      unfold ProofLe in pile.
-      rewrite elem_of_subseteq.
-      intros X HX.
-      pose (pf1 := A_impl_A ∅ (patt_free_svar X) ltac:(wf_auto2)).
-      pose (pf2 := ProofSystem.Svar_subst ∅ (patt_free_svar X ---> patt_free_svar X) patt_bott X ltac:(wf_auto2) ltac:(wf_auto2) (proj1_sig pf1)).
-      specialize (pile ∅ _ pf2).
-      feed specialize pile.
-      {
-        constructor; simpl.
-        { clear. set_solver. }
-        { clear -HX. set_solver. }
-        { reflexivity. }
-        { simpl. reflexivity. }
-      }
-      destruct pile as [Hp2 Hp3 Hp4].
-      simpl in *.
-      clear -Hp3.
-      set_solver.
-    }
-    {
-      destruct i₁, i₂.
-      unfold ProofLe in pile.
-      pose (pf1 := A_impl_A ∅ patt_bott ltac:(wf_auto2)).
-      pose (pf2 := ProofSystem.Knaster_tarski ∅ (patt_bound_svar 0) patt_bott ltac:(wf_auto2) (proj1_sig pf1)).
-      destruct pi_uses_kt.
-      2: { simpl. reflexivity. }
-      specialize (pile ∅ _ pf2).
-      feed specialize pile.
-      {
-        constructor; simpl.
-        { clear. set_solver. }
-        { clear. set_solver. }
-        { reflexivity. }
-        { simpl. rewrite orb_comm. cbn.
-          unfold has_bound_variable_under_mu,mu_in_evar_path. cbn.
-          rewrite decide_eq_same.
-          reflexivity.
-        }
-      }
-      destruct pile as [Hp2 Hp3 Hp4 Hp5].
-      simpl in Hp4.
-      unfold is_true in *.
-      cbn.
-      rewrite Hp4.
-      reflexivity.
-    }
-    {
-      unfold ProofLe in pile.
-      pose (pf1 := A_impl_A ∅ patt_bott ltac:(wf_auto2)).
-      unshelve(epose (pf2 := ProofSystem.Knaster_tarski ∅ (patt_mu (patt_bound_svar 1)) patt_bott ltac:(wf_auto2) _)).
-      {
-        cbn. apply ProofSystem.Knaster_tarski.
-        { reflexivity. }
-        cbn.
-        apply A_impl_A.
-        reflexivity.
-      }
-      unfold is_true.
-      rewrite implb_true_iff.
-      intros Hi₁.
-      
-      assert (Hktu: uses_kt_unreasonably pf2).
-      {
-        unfold pf2. cbn.
-        rewrite orb_false_r.
-        unfold has_bound_variable_under_mu at 1. cbn.
-        unfold mu_in_evar_path. cbn. rewrite decide_eq_same. cbn.
-        reflexivity.
-      }
-      assert (Hkt: uses_kt pf2).
-      {
-        apply kt_unreasonably_implies_somehow.
-        exact Hktu.
-      }
-      specialize (pile ∅ _ pf2).
-      unfold pi_uses_advanced_kt in *.
-      feed specialize pile.
-      { clear pile.
-        constructor; simpl.
-        { clear. set_solver. }
-        { clear. set_solver. }
-        { 
-          destruct i₁. simpl. unfold is_true in *.
-          rewrite implb_true_iff in pi_kt_akt.
-          apply pi_kt_akt.
-          exact Hi₁.
-        }
-        { simpl. rewrite orb_comm. cbn.
-          unfold has_bound_variable_under_mu,mu_in_evar_path. cbn.
-          rewrite decide_eq_same.
-          cbn.
-          destruct i₁. simpl. assumption.
-        }
-      }
-      destruct pile as [Hp2 Hp3 Hp4 Hp5].
-      simpl in Hp4. destruct i₁. simpl.
-      destruct i₂. cbn in *.
-      rewrite orb_false_r in Hktu.
-      rewrite orb_false_r in Hp5.
-      unfold is_true in Hp5.
-      rewrite implb_true_iff in Hp5.
-      apply Hp5.
-      apply Hktu.
-    }
-  Qed.
-
 Lemma useGenericReasoning  {Σ : Signature} (Γ : Theory) (ϕ : Pattern) i' i:
   (ProofInfoLe i' i) ->
   Γ ⊢i ϕ using i' ->
@@ -313,7 +204,11 @@ Proof.
   {
     simpl in *. apply implb_true_iff.
     unfold is_true in *. rewrite implb_true_iff in Hpf5 H1.
-    set_solver.
+    destruct H1 as [H11 H12].
+    rewrite implb_true_iff in H11.
+    rewrite implb_true_iff in H12.
+    intros H'.
+    naive_solver.
   }
 Defined.
 

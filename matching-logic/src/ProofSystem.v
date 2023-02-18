@@ -685,7 +685,7 @@ Notation "Γ ⊢ ϕ" := (derives Γ ϕ)
 (at level 95, no associativity).
 
 Notation "'ExGen' ':=' evs ',' 'SVSubst' := svs ',' 'KT' := bkt ',' 'AKT' := akt"
-  := (@mkProofInfo _ evs svs bkt akt erefl) (at level 95, no associativity).
+  := (@mkProofInfo _ evs svs bkt akt) (at level 95, no associativity).
 
 End Notations.
 
