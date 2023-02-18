@@ -243,8 +243,21 @@ Defined.
       cbn.
       destruct pi_uses_advanced_kt0.
       { reflexivity. }
-      Search pi_uses_kt.
+      assert (Hktu: uses_kt_unreasonably pf2).
+      {
+        unfold pf2. cbn.
+        rewrite orb_false_r.
+        unfold has_bound_variable_under_mu at 1. cbn.
+        unfold mu_in_evar_path. cbn. rewrite decide_eq_same. cbn.
+        reflexivity.
+      }
+      assert (Hkt: uses_kt pf2).
+      {
+        apply kt_unreasonably_implies_somehow.
+        exact Hktu.
+      }
       specialize (pile ∅ _ pf2).
+      cbn in pile.
       feed specialize pile.
       {
         constructor; simpl.

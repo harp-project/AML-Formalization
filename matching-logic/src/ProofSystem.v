@@ -437,7 +437,7 @@ End ml_proof_system.
 
 Definition has_bound_variable_under_mu {Σ : Signature} (ϕ : Pattern) : bool
 := let x := fresh_evar ϕ in
-  mu_in_evar_path x (bsvar_subst ϕ 0 (patt_free_evar x)) 0
+  mu_in_evar_path x (bsvar_subst (patt_free_evar x) 0 ϕ) 0
 .
 
 Fixpoint uses_kt_unreasonably {Σ : Signature} Γ ϕ (pf : ML_proof_system Γ ϕ) :=
@@ -460,7 +460,7 @@ Fixpoint uses_kt_unreasonably {Σ : Signature} Γ ϕ (pf : ML_proof_system Γ ϕ
   | ProofSystem.Framing_right _ _ _ _ _ m0 => uses_kt_unreasonably _ _ m0
   | ProofSystem.Svar_subst _ _ _ X _ _ m0 => uses_kt_unreasonably _ _ m0
   | ProofSystem.Pre_fixp _ _ _ => false
-  | ProofSystem.Knaster_tarski _ _ phi psi m0 =>
+  | ProofSystem.Knaster_tarski _ phi psi wf m0 =>
     has_bound_variable_under_mu phi || uses_kt_unreasonably _ _ m0
   | ProofSystem.Existence _ => false
   | ProofSystem.Singleton_ctx _ _ _ _ _ _ => false
@@ -558,10 +558,6 @@ Section proof_info.
     pwi_pf_kta : implb (@uses_kt_unreasonably Σ Γ ϕ pwi_pf) (pi_uses_advanced_kt pi) ;
     (* pwi_pf_fp : gset_to_coGset (@framing_patterns Σ Γ ϕ pwi_pf) ⊆ (pi_framing_patterns pi) ; *)
   }.
-
-  Lemma kt_unreasonably_implies_somehow Γ ϕ (pf: ML_proof_system Γ ϕ) i
-    (m : ProofInfoMeaning Γ ϕ pf i):
-    (pwi_pf_kta Γ ϕ pf i m =) -> (pwi_pf_kt Γ ϕ pf i m).
 
   Definition ProofLe (i₁ i₂ : ProofInfo) :=
     forall (Γ : Theory) (ϕ : Pattern) (pf : Γ ⊢r ϕ),
