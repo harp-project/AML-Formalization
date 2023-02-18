@@ -300,7 +300,7 @@ Proof.
   intros pile [pf Hpf].
   exists pf.
 
-  destruct Hpf as [Hpf2 Hpf3 Hpf4].
+  destruct Hpf as [Hpf2 Hpf3 Hpf4 Hpf5].
   destruct i, i'; cbn in *.
   destruct pile as [H [H0 H1] ].
   constructor; simpl.
@@ -308,6 +308,11 @@ Proof.
   { set_solver. }
   { simpl in *. apply implb_true_iff.
     unfold is_true in *. rewrite implb_true_iff in Hpf4 H1.
+    set_solver.
+  }
+  {
+    simpl in *. apply implb_true_iff.
+    unfold is_true in *. rewrite implb_true_iff in Hpf5 H1.
     set_solver.
   }
 Defined.
@@ -424,7 +429,7 @@ Proof.
 Defined.
 
 Lemma pile_impl_allows_gen_x {Σ : Signature} x gpi svs kt:
-  ProofInfoLe ( (ExGen := {[x]}, SVSubst := svs, KT := kt)) ( gpi) ->
+  ProofInfoLe ( (ExGen := {[x]}, SVSubst := svs, KT := kt, AKT := false)) ( gpi) ->
   x ∈ pi_generalized_evars gpi.
 Proof.
   destruct gpi. intro H.
@@ -432,7 +437,7 @@ Proof.
 Qed.
 
 Lemma pile_impl_uses_kt {Σ : Signature} gpi evs svs:
-  ProofInfoLe ( (ExGen := evs, SVSubst := svs, KT := true)) ( gpi) ->
+  ProofInfoLe ( (ExGen := evs, SVSubst := svs, KT := true, AKT := false)) ( gpi) ->
   pi_uses_kt gpi.
 Proof.
   destruct gpi. intro H.
@@ -440,7 +445,7 @@ Proof.
 Qed.
 
 Lemma pile_impl_allows_svsubst_X {Σ : Signature} gpi evs X kt:
-  ProofInfoLe ( (ExGen := evs, SVSubst := {[X]}, KT := kt)) ( gpi) ->
+  ProofInfoLe ( (ExGen := evs, SVSubst := {[X]}, KT := kt, AKT := false)) ( gpi) ->
   X ∈ pi_substituted_svars gpi.
 Proof.
   destruct gpi. intro H.

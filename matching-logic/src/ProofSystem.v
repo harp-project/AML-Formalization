@@ -531,7 +531,6 @@ Section proof_info.
       pi_substituted_svars : coSVarSet ;
       pi_uses_kt : bool ;
       pi_uses_advanced_kt : bool ;
-      pi_kt_akt : implb pi_uses_advanced_kt pi_uses_kt ;
       (* pi_framing_patterns : coWfpSet ;  *)
     }.
 
@@ -556,7 +555,7 @@ Section proof_info.
     pwi_pf_ge : gset_to_coGset (@uses_of_ex_gen Σ Γ ϕ pwi_pf) ⊆ pi_generalized_evars pi ;
     pwi_pf_svs : gset_to_coGset (@uses_of_svar_subst Σ Γ ϕ pwi_pf) ⊆ pi_substituted_svars pi ;
     pwi_pf_kt : implb (@uses_kt Σ Γ ϕ pwi_pf) (pi_uses_kt pi) ;
-    pwi_pf_kta : implb (@uses_kt_unreasonably Σ Γ ϕ pwi_pf) (pi_uses_advanced_kt pi) ;
+    pwi_pf_kta : implb (@uses_kt_unreasonably Σ Γ ϕ pwi_pf) (pi_uses_advanced_kt pi && (@uses_kt Σ Γ ϕ pwi_pf)) ;
     (* pwi_pf_fp : gset_to_coGset (@framing_patterns Σ Γ ϕ pwi_pf) ⊆ (pi_framing_patterns pi) ; *)
   }.
 
@@ -579,9 +578,21 @@ Section proof_info.
     }
     {
       apply implb_true_iff.
-      pose proof (proj1 (implb_true_iff _ _) HKTA).
-      pose proof (proj1 (implb_true_iff _ _) pwi_pf_kta0).
-      tauto.
+      pose proof (H1 := proj1 (implb_true_iff _ _) HKTA).
+      pose proof (H2 := proj1 (implb_true_iff _ _) pwi_pf_kta0).
+      intro H.
+      rewrite andb_true_iff.
+      specialize (H2 H).
+      unfold is_true in pwi_pf_kta0.
+      rewrite implb_true_iff in pwi_pf_kta0.
+      specialize (pwi_pf_kta0 H).
+      split.
+      {
+        apply H1. clear H1.
+        rewrite andb_true_iff in pwi_pf_kta0.
+        apply pwi_pf_kta0.
+      }
+      rewrite andb_true_iff in H2. apply H2.
     }
   Qed.
 
@@ -647,8 +658,8 @@ Section proof_info.
     try_solve_pile.
   Qed.
 
-  Definition BasicReasoning : ProofInfo := ((@mkProofInfo _ ∅ ∅ false false ltac:(reflexivity))).
-  Definition AnyReasoning : ProofInfo := (@mkProofInfo _ ⊤ ⊤ true true ltac:(reflexivity)).
+  Definition BasicReasoning : ProofInfo := ((@mkProofInfo _ ∅ ∅ false false)).
+  Definition AnyReasoning : ProofInfo := (@mkProofInfo _ ⊤ ⊤ true true).
 
 
   Definition derives_using Γ ϕ pi
@@ -673,8 +684,8 @@ Notation "Γ '⊢i' ϕ 'using' pi"
 Notation "Γ ⊢ ϕ" := (derives Γ ϕ)
 (at level 95, no associativity).
 
-Notation "'ExGen' ':=' evs ',' 'SVSubst' := svs ',' 'KT' := bkt"
-  := (@mkProofInfo _ evs svs bkt) (at level 95, no associativity).
+Notation "'ExGen' ':=' evs ',' 'SVSubst' := svs ',' 'KT' := bkt ',' 'AKT' := akt"
+  := (@mkProofInfo _ evs svs bkt akt erefl) (at level 95, no associativity).
 
 End Notations.
 
