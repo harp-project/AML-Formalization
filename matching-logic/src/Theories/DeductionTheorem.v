@@ -1988,21 +1988,42 @@ Proof.
       rewrite Ht in Hpf5. simpl in Hpf5. inversion Hpf5.
     }
     apply not_true_is_false in Hf.
-    epose proof (Htmp := @mu_and_predicate_propagation _ _ Γ phi ⌊ ψ ⌋ _ _ _ _).
+    remember (svar_fresh_s (free_svars ⌊ ψ ⌋ ∪ free_svars phi)) as X.
+    epose proof (Htmp := @mu_and_predicate_propagation _ _ Γ phi ⌊ ψ ⌋ X _ _ _).
     feed specialize Htmp.
     { 
+      unfold has_bound_variable_under_mu in Hf.
+      unfold mu_in_evar_path in Hf.
+      rewrite negb_false_iff in Hf.
+      rewrite Nat.eqb_eq in Hf.
+      symmetry in Hf.
       intros.
       unfold mu_in_evar_path.
-      specialize (Hmuphi x).
-      feed specialize Hmuphi.
-      {
-        cbn.
-      }
-      apply Hmuphi.
+      erewrite hbvum_impl_mmdt0.
+      { reflexivity. }
+      { assumption. }
+      3: { apply Hf. }
+      { apply set_evar_fresh_is_fresh. }
+      { wf_auto2. }
     }
-    { apply set_svar_fresh_is_fresh. }
-    { subst pi. simpl. try_solve_pile. }
-    { eapply (liftProofInfoLe _ _ _ _ (@floor_is_predicate _ _ _ _ _ _)). }
+    {
+      subst X. clear.
+      eapply svar_is_fresh_in_richer'.
+      2: apply set_svar_fresh_is_fresh'.
+      { set_solver. }
+    }
+    {
+      subst X. clear.
+      eapply svar_is_fresh_in_richer'.
+      2: apply set_svar_fresh_is_fresh'.
+      { set_solver. }
+    }
+    {
+      gapply floor_is_predicate.
+      { try_solve_pile. }
+      { exact HΓ. }
+      { wf_auto2. }
+    }
     toMLGoal.
     { clear Hpf2 Hpf3 Hpf4; wf_auto2. }
     mlIntro.
@@ -2011,8 +2032,18 @@ Proof.
     fromMLGoal.
     apply Knaster_tarski.
     { subst pi. try_solve_pile. }
-    1,3,4:clear Hpf2 Hpf3 Hpf4; wf_auto2.
-    1: admit.
+    1,4,5:clear Hpf2 Hpf3 Hpf4 Hpf5; wf_auto2.
+    {
+      fold no_negative_occurrence_db_b.
+      apply wfc_impl_no_neg_occ.
+      wf_auto2.
+    }
+    {
+      fold no_negative_occurrence_db_b.
+      apply wfc_impl_no_neg_occ.
+      wf_auto2.
+    }
+    2: { try_solve_pile. }
 
     unfold instantiate.
     mlSimpl.
@@ -2021,20 +2052,10 @@ Proof.
     1-3:clear Hpf2 Hpf3 Hpf4; wf_auto2. 
     
     rewrite -> well_formed_bsvar_subst with (k := 0).
+    3: wf_auto2.
+    2: lia.
     simpl in IHpf.
     apply IHpf.
-    constructor; try assumption.
-    {
-      clear -Hpf4.
-      destruct (uses_kt pf) eqn:H; rewrite H; simpl.
-      2: reflexivity.
-      simpl in Hpf4.
-      assumption.
-    }
-    { clear -wfϕ; wf_auto2. }
-    { lia. }
-    { clear -wfψ; wf_auto2. } 
-
 
   - (* Existence *)
     toMLGoal.
@@ -2048,7 +2069,10 @@ Proof.
     mlIntro. mlClear "0". fromMLGoal.
     apply useBasicReasoning.
     apply Singleton_ctx. wf_auto2.
-Admitted.
+    Unshelve.
+    2,3: wf_auto2.
+    1: exact HΓ.
+Defined.
 
 Close Scope ml_scope.
 Close Scope string_scope.
