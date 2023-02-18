@@ -1044,121 +1044,21 @@ Proof.
     }
 Defined.
 
-Lemma miep_svar_open {Σ : Signature} x ϕ:
-  evar_is_fresh_in x ϕ ->
-  mu_in_evar_path x ϕ^[svar:0↦patt_free_evar x] 0 = false.
-Proof.
-  induction ϕ; unfold mu_in_evar_path; cbn; intros HH; try reflexivity.
-  {
-    repeat case_match; try reflexivity; try lia.
-  }
-  {
-    unfold maximal_mu_depth_to in *.
-    repeat case_match; try reflexivity; subst; try lia.
-  }
-  {
-    repeat case_match; try reflexivity.
-    unfold evar_is_fresh_in in *. cbn in HH.
-    specialize (IHϕ1 ltac:(clear -HH; set_solver)).
-    specialize (IHϕ2 ltac:(clear -HH; set_solver)).
-    unfold mu_in_evar_path in *.
-    rewrite negb_false_iff in IHϕ1.
-    rewrite negb_false_iff in IHϕ2.
-    apply Nat.eqb_eq in IHϕ1.
-    apply Nat.eqb_eq in IHϕ2.
-    lia.
-  }
-  {
-    repeat case_match; try reflexivity.
-    unfold evar_is_fresh_in in *. cbn in HH.
-    specialize (IHϕ1 ltac:(clear -HH; set_solver)).
-    specialize (IHϕ2 ltac:(clear -HH; set_solver)).
-    unfold mu_in_evar_path in *.
-    rewrite negb_false_iff in IHϕ1.
-    rewrite negb_false_iff in IHϕ2.
-    apply Nat.eqb_eq in IHϕ1.
-    apply Nat.eqb_eq in IHϕ2.
-    lia.
-  }
-  {
-    repeat case_match; try reflexivity.
-    unfold evar_is_fresh_in in *. cbn in HH.
-    specialize (IHϕ ltac:(clear -HH; set_solver)).
-    unfold mu_in_evar_path in *.
-    rewrite negb_false_iff in IHϕ.
-    apply Nat.eqb_eq in IHϕ.
-    lia.
-  }
-  {
-    repeat case_match; try reflexivity.
-    unfold evar_is_fresh_in in *. cbn in HH.
-    specialize (IHϕ ltac:(clear -HH; set_solver)).
-    unfold mu_in_evar_path in *.
-    rewrite negb_false_iff in IHϕ.
-    apply Nat.eqb_eq in IHϕ.
-    lia.
-  }
-Abort.
-
-Lemma mmd_svar_open {Σ : Signature} x ϕ m:
-  well_formed_closed_mu_aux ϕ (S m) ->
-  evar_is_fresh_in x ϕ ->
-  maximal_mu_depth_to m x ϕ^[svar:m↦patt_free_evar x] = 0.
-Proof.
-  unfold evar_is_fresh_in.
-  move: m.
-  induction ϕ; intros m Hwf Hfr; cbn in *; try reflexivity.
-  {
-    case_match; try reflexivity.
-    exfalso. set_solver.
-  }
-  {
-    repeat case_match; cbn in *; try reflexivity;
-    rewrite decide_eq_same; try reflexivity.
-    subst.
-  }
-  {
-    rewrite IHϕ1.
-    { destruct_and!. assumption. }
-    { set_solver. }
-    rewrite IHϕ2.
-    { destruct_and!. assumption. }
-    { set_solver. }
-    reflexivity.
-  }
-  {
-    rewrite IHϕ1.
-    { destruct_and!. assumption. }
-    { set_solver. }
-    rewrite IHϕ2.
-    { destruct_and!. assumption. }
-    { set_solver. }
-    reflexivity.
-  }
-  {
-    rewrite IHϕ.
-    { assumption. }
-    { assumption. }
-    reflexivity.
-  }
-  {
-    rewrite IHϕ.
-    { assumption. }
-    { assumption. }
-    reflexivity.
-  }
-Abort.
-
+(* Lemma 89 *)
 Lemma mu_and_predicate_propagation {Σ : Signature} {syntax : Syntax} Γ ϕ ψ X :
   Definedness_Syntax.theory ⊆ Γ ->
   well_formed (mu, ϕ) ->
   well_formed ψ ->
+  (* "Let X be a set variable that does not occur under any µ-binder in ϕ" *)
+  (forall x, evar_is_fresh_in x ϕ ->
+    mu_in_evar_path x ϕ^[svar:0↦patt_free_evar x] 0 = false
+  ) ->
   svar_is_fresh_in X ϕ ->
   svar_is_fresh_in X ψ ->
   Γ ⊢ is_predicate_pattern ψ ->
   Γ ⊢ (mu, (ψ and ϕ)) <---> (ψ and (mu, ϕ)).
 Proof.
-  intros HΓ wfm wfψ fϕ fψ Hp.
+  intros HΓ wfm wfψ Hϕnomu fϕ fψ Hp.
 
   assert (well_formed (mu , ψ and ϕ)).
   {
@@ -1319,60 +1219,64 @@ Proof.
     { wf_auto2. }
     { wf_auto2. }
     {
-      unfold mu_in_evar_path.
-      rewrite negb_false_iff.
-      rewrite Nat.eqb_eq.
-      Search mu_in_evar_path.
+      apply Hϕnomu.
+      subst x. clear.
+      apply set_evar_fresh_is_fresh.
     }
     { assumption. }
 
+    assert (no_negative_occurrence_db_b 0 ψ = true).
+    {
+      apply wfc_impl_no_neg_occ. wf_auto2.
+    }
+
     toMLGoal.
-    { wf_auto2. admit. }
-    rewrite subst_svar_evar_svar in H.
+    { wf_auto2. }
+    rewrite subst_svar_evar_svar in HH.
     { subst x. solve_fresh. }
-    rewrite subst_svar_evar_svar in H.
+    rewrite subst_svar_evar_svar in HH.
     { subst x. solve_fresh. }
     clear Htmp.
-    unshelve(epose proof (Htmp := @liftProofInfoLe _ _ _ _ i _ H)).
-    { eapply pile_trans;[|apply pile]. apply pile_any. }
+    unshelve(epose proof (Htmp := @liftProofInfoLe _ _ _ _ AnyReasoning _ HH)).
+    { try_solve_pile. }
     mlRewrite Htmp at 1.
 
     clear Heqx x H Htmp.
 
     remember (evar_fresh_s (free_evars ϕ)) as x.
-    pose proof (H := impl_ctx_impl_pos Γ
+    pose proof (HH' := impl_ctx_impl_pos Γ
       {|
         pcEvar := x;
         pcPattern := ϕ^[svar:0↦patt_free_evar x];
       |}
       (ψ and (ψ ---> (mu , ψ and ϕ)))
       (mu , ψ and ϕ)
-      i
+      AnyReasoning
       ).
-    unfold emplace in H. simpl in H.
-    feed specialize H.
-    { wf_auto2. admit. }
-    { wf_auto2. admit. }
+    unfold emplace in HH'. simpl in HH'.
+    feed specialize HH'.
+    { wf_auto2. }
+    { wf_auto2. }
     { wf_auto2. }
     { unfold is_positive_context. cbn.
       unfold well_formed in wfm.
       cbn in wfm.
-      destruct_and! wfm. clear -H2 Heqx.
+      destruct_and! wfm.
       apply no_neg_svar_subst.
-      { subst. eapply evar_is_fresh_in_richer'. 2: apply set_evar_fresh_is_fresh. set_solver. }
+      {  clear -H2 Heqx. subst. eapply evar_is_fresh_in_richer'. 2: apply set_evar_fresh_is_fresh. set_solver. }
       { assumption. }
     }
-    { eapply pile_trans;[|apply pile]. try_solve_pile. }
+    { try_solve_pile. }
     toMLGoal.
-    { wf_auto2. admit. admit. }
+    { wf_auto2. }
     { mlIntro "H". mlDestructAnd "H". mlApply "1". mlExact "0". }
 
-    rewrite subst_svar_evar_svar in H.
+    rewrite subst_svar_evar_svar in HH'.
     {
       subst x. solve_fresh.
     }
     
-    rewrite subst_svar_evar_svar in H.
+    rewrite subst_svar_evar_svar in HH'.
     {
       subst x. solve_fresh.
     }
@@ -1381,9 +1285,9 @@ Proof.
     mlDestructAnd "H" as "H0" "H1".
     mlSplitAnd.
     + mlExact "H0".
-    + mlApplyMeta H. mlExact "H1".
+    + mlApplyMeta HH'. mlExact "H1".
   }
-Admitted. (* TODO: This lemma is awaiting for wf_auto2 to be smart enough for (mu , ϕ and ψ ) *)
+Defined.
 
 Theorem deduction_theorem {Σ : Signature} {syntax : Syntax} Γ ϕ ψ
   (gpi : ProofInfo)
