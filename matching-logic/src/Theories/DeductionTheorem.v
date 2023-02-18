@@ -1289,18 +1289,62 @@ Proof.
   }
 Defined.
 
+Lemma fresh_impl_no_mu_in_evar_path {Σ : Signature} x phi k:
+  evar_is_fresh_in x phi ->
+  mu_in_evar_path x phi k = false.
+Proof.
+  move: k x.
+  induction phi; intros k x' Hx'; unfold mu_in_evar_path in *;
+    cbn in *; try reflexivity.
+  {
+    destruct (decide (x = x')); try reflexivity.
+    unfold evar_is_fresh_in in Hx'. cbn in Hx'.
+    exfalso. set_solver.
+  }
+  {
+    unfold evar_is_fresh_in in *.
+    cbn in Hx'.
+    specialize (IHphi1 k x' ltac:(set_solver)).
+    specialize (IHphi2 k x' ltac:(set_solver)).
+    repeat case_match; try reflexivity; cbn in *; lia.
+  }
+  {
+    unfold evar_is_fresh_in in *.
+    cbn in Hx'.
+    specialize (IHphi1 k x' ltac:(set_solver)).
+    specialize (IHphi2 k x' ltac:(set_solver)).
+    repeat case_match; try reflexivity; cbn in *; lia.
+  }
+  {
+    unfold evar_is_fresh_in in *.
+    cbn in Hx'.
+    specialize (IHphi k x' ltac:(set_solver)).
+    exact IHphi.
+  }
+  {
+    unfold evar_is_fresh_in in *.
+    cbn in Hx'.
+    specialize (IHphi (S k) x' ltac:(set_solver)).
+    exact IHphi.
+  }
+Qed.
+
 Theorem deduction_theorem {Σ : Signature} {syntax : Syntax} Γ ϕ ψ
   (gpi : ProofInfo)
   (pf : Γ ∪ {[ ψ ]} ⊢i ϕ using gpi) :
   well_formed ϕ ->
   well_formed ψ ->
   theory ⊆ Γ ->
+  (forall x : evar,
+    evar_is_fresh_in x ϕ ->
+    mu_in_evar_path x ϕ^[svar:0↦patt_free_evar x] 0 = false
+  ) ->
   pi_generalized_evars gpi ## (gset_to_coGset (free_evars ψ)) ->
   pi_substituted_svars gpi ## (gset_to_coGset (free_svars ψ)) ->
   Γ ⊢i ⌊ ψ ⌋ ---> ϕ
   using AnyReasoning.
 Proof.
-  intros wfϕ wfψ HΓ HnoExGen HnoSvarSubst.
+  intros wfϕ wfψ HΓ Hmuphi HnoExGen HnoSvarSubst.
   destruct pf as [pf Hpf]. simpl.
   induction pf.
   - (* hypothesis *)
@@ -1367,6 +1411,10 @@ Proof.
       }
     }
     { assumption. }
+    {
+      intros.
+      Search mu_in_evar_path.
+    }
     feed specialize IHpf2.
     {
       constructor; simpl.
@@ -1380,35 +1428,6 @@ Proof.
     }
     { wf_auto2. }
     
-    (*
-    (* simplify the constraint *)
-    unfold dt_exgen_from_fp. simpl.
-    rewrite map_app.
-    rewrite list_to_set_app_L.
-    simpl.
-    *)
-
-    (*
-    (* weaken the induction hypotheses so that their constraint
-        matches the constraint of the goal *)
-    apply useGenericReasoning with (i := i') in IHpf1.
-    2: {
-      subst i'.
-      apply pile_evs_svs_kt.
-      { clear. set_solver. }
-      { clear. set_solver. }
-      { reflexivity. }
-    }
-
-    apply useGenericReasoning with (i := i') in IHpf2.
-    2: {
-      subst i'.
-      apply pile_evs_svs_kt.
-      { clear. set_solver. }
-      { clear. set_solver. }
-      { reflexivity. }
-    }
-    *)
 
     toMLGoal.
     { wf_auto2. }
@@ -1801,9 +1820,24 @@ Proof.
     apply lhs_to_and.
     1-3: clear Hpf2 Hpf3 Hpf4; wf_auto2.
     remember_constraint as pi.
+    feed specialize IHpf.
+    {
+      cbn. constructor; try assumption.
+      clear -Hpf4.
+      destruct (uses_kt pf) eqn:H; rewrite H; simpl.
+      2: reflexivity.
+      simpl in Hpf4.
+      assumption.
+    }
+    { clear Hpf2 Hpf3 Hpf4.
+      wf_auto2.
+    }
 
-    epose proof (Htmp := @mu_and_predicate_propagation _ _ pi Γ phi ⌊ ψ ⌋ _ _ _ _).
+    epose proof (Htmp := @mu_and_predicate_propagation _ _ Γ phi ⌊ ψ ⌋ _ _ _ _).
     feed specialize Htmp.
+    {
+      intros.
+    }
     { apply set_svar_fresh_is_fresh. }
     { subst pi. simpl. try_solve_pile. }
     { eapply (liftProofInfoLe _ _ _ _ (@floor_is_predicate _ _ _ _ _ _)). }
