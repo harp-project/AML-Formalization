@@ -73,7 +73,7 @@ Qed.
 
 Local Lemma Ex_gen_complete (Γ : Theory) (ϕ₁ ϕ₂ : Pattern) (x : evar) (i : ProofInfo):
   well_formed ϕ₁ -> well_formed ϕ₂ ->
-  ProofInfoLe (ExGen := {[x]}, SVSubst := ∅, KT := false) i ->
+  ProofInfoLe (ExGen := {[x]}, SVSubst := ∅, KT := false, AKT := false) i ->
   x ∉ free_evars ϕ₂ ->
   mkMLGoal _ Γ [] (ϕ₁ ---> ϕ₂) i ->
   mkMLGoal _ Γ [] (exists_quantify x ϕ₁ ---> ϕ₂) i.
