@@ -20,9 +20,11 @@ From Coq.micromega Require Import Lia.
 
 From stdpp Require Import base fin_sets sets propset proof_irrel option list coGset finite infinite gmap.
 
-From MatchingLogic Require Import Logic
-                                  DerivedOperators_Syntax
-                                  ProofMode.
+From MatchingLogic Require Import
+  Logic
+  DerivedOperators_Syntax
+  ProofMode
+.
 From MatchingLogic.Theories Require Import Definedness_Syntax Definedness_ProofSystem.
 From MatchingLogic.Utils Require Import stdpp_ext.
 Import extralibrary.
@@ -1329,6 +1331,37 @@ Proof.
   }
 Qed.
 
+Definition has_bound_variable_under_mu {Σ : Signature} (ϕ : Pattern) : bool
+:= let x := fresh_evar ϕ in
+   mu_in_evar_path x ϕ^[svar:0↦patt_free_evar x] 0
+.
+
+Fixpoint uses_kt_unreasonably {Σ : Signature} Γ ϕ (pf : ML_proof_system Γ ϕ) :=
+    match pf with
+    | ProofSystem.hypothesis _ _ _ _ => false
+    | ProofSystem.P1 _ _ _ _ _ => false
+    | ProofSystem.P2 _ _ _ _ _ _ _ => false
+    | ProofSystem.P3 _ _ _ => false
+    | ProofSystem.Modus_ponens _ _ _ m0 m1
+      => uses_kt_unreasonably _ _ m0 || uses_kt_unreasonably _ _ m1
+    | ProofSystem.Ex_quan _ _ _ _ => false
+    | ProofSystem.Ex_gen _ _ _ _ _ _ pf' _ => uses_kt_unreasonably _ _ pf'
+    | ProofSystem.Prop_bott_left _ _ _ => false
+    | ProofSystem.Prop_bott_right _ _ _ => false
+    | ProofSystem.Prop_disj_left _ _ _ _ _ _ _ => false
+    | ProofSystem.Prop_disj_right _ _ _ _ _ _ _ => false
+    | ProofSystem.Prop_ex_left _ _ _ _ _ => false
+    | ProofSystem.Prop_ex_right _ _ _ _ _ => false
+    | ProofSystem.Framing_left _ _ _ _ _ m0 => uses_kt_unreasonably _ _ m0
+    | ProofSystem.Framing_right _ _ _ _ _ m0 => uses_kt_unreasonably _ _ m0
+    | ProofSystem.Svar_subst _ _ _ X _ _ m0 => uses_kt_unreasonably _ _ m0
+    | ProofSystem.Pre_fixp _ _ _ => false
+    | ProofSystem.Knaster_tarski _ _ phi psi m0 =>
+      has_bound_variable_under_mu phi || uses_kt_unreasonably _ _ m0
+    | ProofSystem.Existence _ => false
+    | ProofSystem.Singleton_ctx _ _ _ _ _ _ => false
+    end.
+
 Theorem deduction_theorem {Σ : Signature} {syntax : Syntax} Γ ϕ ψ
   (gpi : ProofInfo)
   (pf : Γ ∪ {[ ψ ]} ⊢i ϕ using gpi) :
@@ -1413,7 +1446,10 @@ Proof.
     { assumption. }
     {
       intros.
-      Search mu_in_evar_path.
+      rewrite bsvar_subst_not_occur.
+      { wf_auto2. }
+      apply fresh_impl_no_mu_in_evar_path.
+      exact H1.
     }
     feed specialize IHpf2.
     {
@@ -1427,7 +1463,13 @@ Proof.
       }
     }
     { wf_auto2. }
-    
+    {
+      intros.
+      rewrite bsvar_subst_not_occur.
+      { wf_auto2. }
+      apply fresh_impl_no_mu_in_evar_path.
+      exact H1.
+    }
 
     toMLGoal.
     { wf_auto2. }
@@ -1460,6 +1502,13 @@ Proof.
       { apply Hpf4. }
     }
     { wf_auto2. }
+    {
+      intros.
+      rewrite bsvar_subst_not_occur.
+      { wf_auto2. }
+      apply fresh_impl_no_mu_in_evar_path.
+      assumption.
+    }
 
     apply reorder_meta in IHpf.
     2-4:  wf_auto2.
@@ -1532,6 +1581,13 @@ Proof.
       { apply Hpf4. }
     }
     { wf_auto2. }
+    {
+      intros.
+      rewrite bsvar_subst_not_occur.
+      { wf_auto2. }
+      apply fresh_impl_no_mu_in_evar_path.
+      assumption.
+    }
 
     remember_constraint as i'.
 
@@ -1666,6 +1722,13 @@ Proof.
       { apply Hpf4. }
     }
     { wf_auto2. }
+    {
+      intros.
+      rewrite bsvar_subst_not_occur.
+      { wf_auto2. }
+      apply fresh_impl_no_mu_in_evar_path.
+      assumption.
+    }
 
 
     remember_constraint as i'.
@@ -1788,6 +1851,13 @@ Proof.
     {
       wf_auto2.
     }
+    {
+      intros.
+      rewrite bsvar_subst_not_occur.
+      { wf_auto2. }
+      apply fresh_impl_no_mu_in_evar_path.
+      assumption.
+    }
     
     remember_constraint as i'.
 
@@ -1832,11 +1902,24 @@ Proof.
     { clear Hpf2 Hpf3 Hpf4.
       wf_auto2.
     }
+    {
+      intros.
+      rewrite bsvar_subst_not_occur.
+      {  cbn. clear Hpf2 Hpf3 Hpf4. wf_auto2. }
+      apply fresh_impl_no_mu_in_evar_path.
+      assumption.
+    }
 
     epose proof (Htmp := @mu_and_predicate_propagation _ _ Γ phi ⌊ ψ ⌋ _ _ _ _).
     feed specialize Htmp.
-    {
+    { 
       intros.
+      specialize (Hmuphi x).
+      feed specialize Hmuphi.
+      {
+        cbn.
+      }
+      apply Hmuphi.
     }
     { apply set_svar_fresh_is_fresh. }
     { subst pi. simpl. try_solve_pile. }

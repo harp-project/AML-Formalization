@@ -386,7 +386,7 @@ Fixpoint framing_patterns Γ ϕ (pf : Γ ⊢r ϕ) : gset wfPattern :=
       | Existence _ => false
       | Singleton_ctx _ _ _ _ _ _ => false
       end.
-  
+
   Lemma propositional_implies_no_frame Γ ϕ (pf : Γ ⊢r ϕ) :
     propositional_only Γ ϕ pf = true -> framing_patterns Γ ϕ pf = ∅.
   Proof.
