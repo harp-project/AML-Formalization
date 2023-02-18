@@ -39,14 +39,24 @@ Section ProofSystemTheorems.
     {syntax : Syntax}.
 
   Lemma Prop₃_left: forall Γ φ φ',
-      theory ⊆ Γ -> mu_free φ ->
+      theory ⊆ Γ ->
       well_formed φ -> well_formed φ' ->
       Γ ⊢ (φ and (φ' =ml φ)) ---> (φ and φ').
   Proof.
-    intros Γ φ φ' SubTheory Mufree Wf1 Wf2.
+    intros Γ φ φ' SubTheory Wf1 Wf2.
     toMLGoal. wf_auto2.
     mlIntro "H0". mlDestructAnd "H0" as "H1" "H2".
     mlRewriteBy "H2" at 1. assumption. wf_auto2.
+    {
+      unfold mu_in_evar_path. cbn. rewrite decide_eq_same. cbn.
+      rewrite !Nat.max_0_r.
+      case_match;[reflexivity|].
+      rewrite maximal_mu_depth_to_0 in H.
+      2: { inversion H. }
+      eapply evar_is_fresh_in_richer'.
+      2: apply set_evar_fresh_is_fresh.
+      { clear. set_solver. }
+    }
     mlSplitAnd; mlExact "H1".
   Defined.
 
