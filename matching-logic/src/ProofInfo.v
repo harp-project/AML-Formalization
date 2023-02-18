@@ -2,7 +2,7 @@ From Coq Require Import ssreflect ssrfun ssrbool.
 
 From Ltac2 Require Import Ltac2.
 
-From Coq Require Import Ensembles Bool String.
+From Coq Require Import Ensembles Bool String Btauto.
 From Coq.Logic Require Import FunctionalExtensionality Eqdep_dec.
 From Equations Require Import Equations.
 
@@ -160,9 +160,10 @@ Defined.
     ProofLe i₁ i₂ ->
     ProofInfoLe i₁ i₂.
   Proof.
-    intros pile. destruct i₁, i₂.
+    intros pile.
     repeat split.
     {
+      destruct i₁, i₂.
       unfold ProofLe in pile.
       rewrite elem_of_subseteq.
       intros x Hx.
@@ -184,6 +185,7 @@ Defined.
       set_solver.
     }
     {
+      destruct i₁, i₂.
       unfold ProofLe in pile.
       rewrite elem_of_subseteq.
       intros X HX.
@@ -204,6 +206,7 @@ Defined.
       set_solver.
     }
     {
+      destruct i₁, i₂.
       unfold ProofLe in pile.
       pose (pf1 := A_impl_A ∅ patt_bott ltac:(wf_auto2)).
       pose (pf2 := ProofSystem.Knaster_tarski ∅ (patt_bound_svar 0) patt_bott ltac:(wf_auto2) (proj1_sig pf1)).
@@ -222,8 +225,10 @@ Defined.
           reflexivity.
         }
       }
-      destruct pile as [Hp2 Hp3 Hp4].
+      destruct pile as [Hp2 Hp3 Hp4 Hp5].
       simpl in Hp4.
+      unfold is_true in *.
+      cbn.
       rewrite Hp4.
       reflexivity.
     }
@@ -238,11 +243,10 @@ Defined.
         apply A_impl_A.
         reflexivity.
       }
-      destruct pi_uses_advanced_kt.
-      2: { simpl. reflexivity. }
-      cbn.
-      destruct pi_uses_advanced_kt0.
-      { reflexivity. }
+      unfold is_true.
+      rewrite implb_true_iff.
+      intros Hi₁.
+      
       assert (Hktu: uses_kt_unreasonably pf2).
       {
         unfold pf2. cbn.
@@ -257,23 +261,34 @@ Defined.
         exact Hktu.
       }
       specialize (pile ∅ _ pf2).
-      cbn in pile.
+      unfold pi_uses_advanced_kt in *.
       feed specialize pile.
-      {
+      { clear pile.
         constructor; simpl.
         { clear. set_solver. }
         { clear. set_solver. }
-        { reflexivity. }
+        { 
+          destruct i₁. simpl. unfold is_true in *.
+          rewrite implb_true_iff in pi_kt_akt.
+          apply pi_kt_akt.
+          exact Hi₁.
+        }
         { simpl. rewrite orb_comm. cbn.
           unfold has_bound_variable_under_mu,mu_in_evar_path. cbn.
           rewrite decide_eq_same.
-          reflexivity.
+          cbn.
+          destruct i₁. simpl. assumption.
         }
       }
-      destruct pile as [Hp2 Hp3 Hp4].
-      simpl in Hp4.
-      rewrite Hp4.
-      reflexivity.
+      destruct pile as [Hp2 Hp3 Hp4 Hp5].
+      simpl in Hp4. destruct i₁. simpl.
+      destruct i₂. cbn in *.
+      rewrite orb_false_r in Hktu.
+      rewrite orb_false_r in Hp5.
+      unfold is_true in Hp5.
+      rewrite implb_true_iff in Hp5.
+      apply Hp5.
+      apply Hktu.
     }
   Qed.
 

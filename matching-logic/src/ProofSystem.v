@@ -531,6 +531,7 @@ Section proof_info.
       pi_substituted_svars : coSVarSet ;
       pi_uses_kt : bool ;
       pi_uses_advanced_kt : bool ;
+      pi_kt_akt : implb pi_uses_advanced_kt pi_uses_kt ;
       (* pi_framing_patterns : coWfpSet ;  *)
     }.
 
@@ -646,8 +647,8 @@ Section proof_info.
     try_solve_pile.
   Qed.
 
-  Definition BasicReasoning : ProofInfo := ((@mkProofInfo _ ∅ ∅ false false)).
-  Definition AnyReasoning : ProofInfo := (@mkProofInfo _ ⊤ ⊤ true true).
+  Definition BasicReasoning : ProofInfo := ((@mkProofInfo _ ∅ ∅ false false ltac:(reflexivity))).
+  Definition AnyReasoning : ProofInfo := (@mkProofInfo _ ⊤ ⊤ true true ltac:(reflexivity)).
 
 
   Definition derives_using Γ ϕ pi
