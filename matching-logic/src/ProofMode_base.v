@@ -131,81 +131,6 @@ Ltac toMLGoal :=
 
 Ltac fromMLGoal := unfold of_MLGoal; simpl; intros _ _.
 
-Lemma cast_proof' {Σ : Signature} (Γ : Theory) (ϕ ψ : Pattern) (i : ProofInfo) (e : ψ = ϕ) :
-  Γ ⊢i ϕ using i ->
-  Γ ⊢i ψ using i.
-Proof.
-  intros [pf Hpf].
-  unshelve (eexists).
-  {
-    apply (cast_proof e).
-    exact pf.
-  }
-  { abstract(
-    destruct Hpf as [Hpf2 Hpf3 Hpf4];
-    constructor; [
-    (
-      rewrite elem_of_subseteq in Hpf2;
-      rewrite elem_of_subseteq;
-      intros x Hx;
-      specialize (Hpf2 x);
-      apply Hpf2; clear Hpf2;
-      rewrite elem_of_gset_to_coGset in Hx;
-      rewrite uses_of_ex_gen_correct in Hx;
-      rewrite elem_of_gset_to_coGset;
-      rewrite uses_of_ex_gen_correct;
-      rewrite indifferent_to_cast_uses_ex_gen in Hx;
-      exact Hx
-    )|
-    (
-      rewrite elem_of_subseteq in Hpf3;
-      rewrite elem_of_subseteq;
-      intros x Hx;
-      specialize (Hpf3 x);
-      apply Hpf3; clear Hpf3;
-      rewrite elem_of_gset_to_coGset in Hx;
-      rewrite uses_of_svar_subst_correct in Hx;
-      rewrite elem_of_gset_to_coGset;
-      rewrite uses_of_svar_subst_correct;
-      rewrite indifferent_to_cast_uses_svar_subst in Hx;
-      exact Hx
-    )|
-    (
-      rewrite indifferent_to_cast_uses_kt;
-      apply Hpf4
-    )
-    ]).
-  }
-Defined.
-
-Lemma cast_proof_ml_hyps {Σ : Signature} Γ hyps hyps' (e : patterns_of hyps = patterns_of hyps') goal (i : ProofInfo) :
-  mkMLGoal Σ Γ hyps goal i ->
-  mkMLGoal Σ Γ hyps' goal i.
-Proof.
-  unfold of_MLGoal. simpl. intros H.
-  intros wfg wfhyps'.
-  feed specialize H.
-  { exact wfg. }
-  { rewrite e. exact wfhyps'. }
-  unshelve (eapply (@cast_proof' Σ Γ _ _ i _ H)).
-  rewrite e.
-  reflexivity.
-Defined.
-
-Lemma cast_proof_ml_goal {Σ : Signature} Γ hyps goal goal' (e : goal = goal') (i : ProofInfo):
-  mkMLGoal Σ Γ hyps goal i ->
-  mkMLGoal Σ Γ hyps goal' i .
-Proof.
-  unfold of_MLGoal. simpl. intros H.
-  intros wfgoal' wfhyps.
-  feed specialize H.
-  { rewrite e. exact wfgoal'. }
-  { exact wfhyps. }
-  unshelve (eapply (@cast_proof' Σ Γ _ _ i _ H)).
-  rewrite e.
-  reflexivity.
-Defined.
-
 
 Lemma MLGoal_intro {Σ : Signature} (Γ : Theory) (l : hypotheses) (name : string) (x g : Pattern)
   (i : ProofInfo) :
@@ -222,14 +147,14 @@ Proof.
     rewrite map_app map_app foldr_app; simpl;
     apply well_formed_imp_proj1 in wfxig; rewrite wfxig; simpl; exact wfl).
   }
-  unshelve (eapply (cast_proof' _ _ _ _ _ H)).
-  { unfold patterns_of. rewrite map_app foldr_app. simpl. reflexivity. }
+  unfold patterns_of in H. rewrite map_app foldr_app in H. simpl in H.
+  exact H.
 Defined.
 
 Ltac simplLocalContext :=
   match goal with
     | [ |- @of_MLGoal ?Sgm (mkMLGoal ?Sgm ?Ctx ?l ?g ?i) ]
-      => eapply cast_proof_ml_hyps;[(rewrite {1}[l]/app; reflexivity)|]
+      => rewrite {1}[l]/app
   end.
 
 Ltac _getHypNames :=
@@ -326,9 +251,33 @@ Proof.
     abstract (apply wfapp_proj_1 in wfl; exact wfl).
   }
 
-  eapply cast_proof'.
-  { unfold patterns_of. rewrite map_app.  rewrite foldr_app. simpl. reflexivity. }
+  unfold patterns_of. rewrite map_app.  rewrite foldr_app. simpl.
   exact H.
+Defined.
+
+(* We no longer have the original `cast_proof` thing;
+   however, something we may want to rewrite only in the local hypotheses
+   part of a goal, for which a lemma like this is useful.
+*)
+Lemma cast_proof_ml_hyps {Σ : Signature} Γ hyps hyps' (e : patterns_of hyps = patterns_of hyps') goal (i : ProofInfo) :
+  mkMLGoal Σ Γ hyps goal i ->
+  mkMLGoal Σ Γ hyps' goal i.
+Proof.
+  unfold of_MLGoal. simpl. intros H.
+  intros wfg wfhyps'.
+  feed specialize H.
+  { exact wfg. }
+  { rewrite e. exact wfhyps'. }
+  rewrite -e.
+  exact H.
+Defined.
+
+(* Just a conveniece *)
+Lemma cast_proof' {Σ : Signature} (Γ : Theory) (ϕ ψ : Pattern) (i : ProofInfo) (e : ψ = ϕ) :
+  Γ ⊢i ϕ using i ->
+  Γ ⊢i ψ using i.
+Proof.
+  intros H. rewrite e. exact H.
 Defined.
 
 #[global]

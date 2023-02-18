@@ -176,7 +176,7 @@ Proof.
   assert (Hiter: ((a ---> b) ---> (b ---> a ---> c) ---> a ---> c)
                  = foldr patt_imp (a ---> c) [(a ---> b); (b ---> a ---> c)]) by reflexivity.
 
-  eapply (cast_proof' _ _ _ _ Hiter).
+  rewrite Hiter.
 
   eapply prf_weaken_conclusion_iter_meta_meta.
   5: apply H3. 4: apply H4. all: wf_auto2.
@@ -867,8 +867,11 @@ Proof.
   pose proof (H1 := Constructive_dilemma Γ p r q r wfp wfr wfq wfr).
   assert (Γ ⊢i ((r or r) ---> r) using BasicReasoning).
   { unfold patt_or. apply P4i'. wf_auto2. }
-  eapply cast_proof' in H1.
-  2: { rewrite -> tofold. do 3 rewrite -> consume. reflexivity. }
+  Check tofold.
+  replace ((p ---> r) ---> (q ---> r) ---> p or q ---> r or r)
+  with (foldr patt_imp ((p ---> r) ---> (q ---> r) ---> p or q ---> r or r) [])
+  in H1 by reflexivity.
+  do 3 rewrite -> consume in H1.
   eapply prf_weaken_conclusion_iter_meta_meta in H1. 5: apply H.
   { apply H1. }
   all: wf_auto2.
@@ -934,8 +937,8 @@ Proof.
     assert (H : Γ ⊢i (a ---> a0 ---> foldr patt_imp g l) ---> (a0 ---> a ---> foldr patt_imp g l) using BasicReasoning).
     { apply reorder; wf_auto2. }
 
-    eapply cast_proof'.
-    { rewrite -> tofold. rewrite -> consume. reflexivity. }
+    rewrite (tofold ((a ---> a0 ---> foldr patt_imp g l) ---> a0 ---> foldr patt_imp g l)).
+    rewrite consume.
     pose proof (H0 := prf_strenghten_premise_iter_meta_meta Γ [] []).
     simpl in H0. simpl.
     specialize (H0 (a0 ---> a ---> foldr patt_imp g l) (a ---> a0 ---> foldr patt_imp g l)).
@@ -1105,14 +1108,10 @@ Lemma not_concl {Σ : Signature} Γ p q:
   Γ ⊢i (p ---> (q ---> ((p ---> ! q) ---> ⊥))) using BasicReasoning.
 Proof.
   intros wfp wfq.
-  eapply cast_proof'.
-  {
-    rewrite [(p ---> q ---> (p ---> ! q) ---> ⊥)]tofold.
-    do 3 rewrite consume.
-    rewrite [(((nil ++ [p]) ++ [q]) ++ [p ---> ! q])]/=.
-    replace ([p; q; p--->!q]) with ([p] ++ [q; p ---> !q] ++ []) by reflexivity.
-    reflexivity.
-  }
+  rewrite [(p ---> q ---> (p ---> ! q) ---> ⊥)]tofold.
+  do 3 rewrite consume.
+  rewrite [(((nil ++ [p]) ++ [q]) ++ [p ---> ! q])]/=.
+  replace ([p; q; p--->!q]) with ([p] ++ [q; p ---> !q] ++ []) by reflexivity.
   apply prf_reorder_iter_meta; try_wfauto2.
   simpl.
   fold (! q).

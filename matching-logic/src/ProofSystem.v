@@ -2,7 +2,7 @@ From Coq Require Import ssreflect ssrfun ssrbool.
 
 From Ltac2 Require Import Ltac2.
 
-From Coq Require Import Logic.Classical_Prop Logic.Eqdep_dec.
+From Coq Require Import Logic.Classical_Prop Logic.Eqdep_dec Btauto.
 From MatchingLogic.Utils Require Import stdpp_ext Lattice.
 From MatchingLogic Require Import Syntax NamedAxioms DerivedOperators_Syntax wftactics.
 From stdpp Require Import base fin_sets sets propset gmap.
@@ -141,8 +141,8 @@ Section ml_proof_system.
   induction pf; wf_auto2. Set Printing All.
   Qed.
 
-Lemma cast_proof {Γ} {ϕ} {ψ} (e : ψ = ϕ) : ML_proof_system Γ ϕ -> ML_proof_system Γ ψ.
-Proof. intros H. rewrite <- e in H. exact H. Defined.
+  Lemma cast_proof {Γ} {ϕ} {ψ} (e : ψ = ϕ) : ML_proof_system Γ ϕ -> ML_proof_system Γ ψ.
+  Proof. intros H. rewrite <- e in H. exact H. Defined.
 
 (* TODO make this return well-formed patterns. *)
 Fixpoint framing_patterns Γ ϕ (pf : Γ ⊢r ϕ) : gset wfPattern :=
@@ -386,7 +386,7 @@ Fixpoint framing_patterns Γ ϕ (pf : Γ ⊢r ϕ) : gset wfPattern :=
       | Existence _ => false
       | Singleton_ctx _ _ _ _ _ _ => false
       end.
-  
+
   Lemma propositional_implies_no_frame Γ ϕ (pf : Γ ⊢r ϕ) :
     propositional_only Γ ϕ pf = true -> framing_patterns Γ ϕ pf = ∅.
   Proof.
@@ -432,16 +432,6 @@ Fixpoint framing_patterns Γ ϕ (pf : Γ ⊢r ϕ) : gset wfPattern :=
     induction pf; simpl; intros H; try reflexivity; try congruence.
     { destruct_and!. rewrite IHpf1;[assumption|]. rewrite IHpf2;[assumption|]. set_solver. }
   Qed.
-
-  Lemma framing_patterns_cast_proof Γ ϕ ψ (pf : Γ ⊢r ϕ) (e : ψ = ϕ) :
-    @framing_patterns Γ ψ (cast_proof e pf) = @framing_patterns Γ ϕ pf.
-  Proof.
-    induction pf; unfold cast_proof,eq_rec_r,eq_rec,eq_rect,eq_sym;simpl in *;
-    pose proof (e' := e); move: e; rewrite e'; clear e'; intros e;
-    match type of e with
-    | ?x = ?x => replace e with (@erefl _ x) by (apply UIP_dec; intros x' y'; apply Pattern_eqdec)
-    end; simpl; try reflexivity.
-  Qed.
     
   Definition proofbpred := forall (Γ : Theory) (ϕ : Pattern),  Γ ⊢r ϕ -> bool.
 
@@ -486,60 +476,78 @@ Fixpoint framing_patterns Γ ϕ (pf : Γ ⊢r ϕ) : gset wfPattern :=
      end; simpl; try reflexivity.
   Qed.
 
-  Lemma indifferent_to_cast_propositional_only :
-    indifferent_to_cast propositional_only.
-  Proof.
-    unfold indifferent_to_cast. intros Γ ϕ ψ e pf.
-    induction pf; unfold cast_proof; unfold eq_rec_r;
-      unfold eq_rec; unfold eq_rect; unfold eq_sym; simpl; auto;
-      pose proof (e' := e); move: e; rewrite e'; clear e'; intros e;
-      match type of e with
-      | ?x = ?x => replace e with (@erefl _ x) by (apply UIP_dec; intros x' y'; apply Pattern_eqdec)
-      end; simpl; try reflexivity.
-  Qed.
-
-  Definition indifferent_to_prop (P : proofbpred) :=
-      (forall Γ phi psi wfphi wfpsi, P Γ _ (P1 Γ phi psi wfphi wfpsi) = false)
-   /\ (forall Γ phi psi xi wfphi wfpsi wfxi, P Γ _ (P2 Γ phi psi xi wfphi wfpsi wfxi) = false)
-   /\ (forall Γ phi wfphi, P Γ _ (P3 Γ phi wfphi) = false)
-   /\ (forall Γ phi1 phi2 pf1 pf2,
-        P Γ _ (Modus_ponens Γ phi1 phi2 pf1 pf2)
-        = P Γ _ pf1 || P Γ _ pf2
-      ).
-
-  Lemma indifferent_to_prop_uses_svar_subst SvS:
-    indifferent_to_prop (uses_svar_subst SvS).
-  Proof.
-    split;[auto|].
-    split;[auto|].
-    split;[auto|].
-    intros. simpl. reflexivity.
-  Qed.
-
-  Lemma indifferent_to_prop_uses_kt:
-    indifferent_to_prop uses_kt.
-  Proof.
-    split;[auto|].
-    split;[auto|].
-    split;[auto|].
-    intros. simpl. reflexivity.
-  Qed.
-
-
-  Lemma indifferent_to_prop_uses_ex_gen EvS:
-    indifferent_to_prop (uses_ex_gen EvS).
-  Proof.
-    split;[auto|].
-    split;[auto|].
-    split;[auto|].
-    intros. simpl. reflexivity.
-  Qed.
-
-
 End ml_proof_system.
+
+
+Definition has_bound_variable_under_mu {Σ : Signature} (ϕ : Pattern) : bool
+:= let x := fresh_evar ϕ in
+  mu_in_evar_path x (bsvar_subst (patt_free_evar x) 0 ϕ) 0
+.
+
+Fixpoint uses_kt_unreasonably {Σ : Signature} Γ ϕ (pf : ML_proof_system Γ ϕ) :=
+  match pf with
+  | ProofSystem.hypothesis _ _ _ _ => false
+  | ProofSystem.P1 _ _ _ _ _ => false
+  | ProofSystem.P2 _ _ _ _ _ _ _ => false
+  | ProofSystem.P3 _ _ _ => false
+  | ProofSystem.Modus_ponens _ _ _ m0 m1
+    => uses_kt_unreasonably _ _ m0 || uses_kt_unreasonably _ _ m1
+  | ProofSystem.Ex_quan _ _ _ _ => false
+  | ProofSystem.Ex_gen _ _ _ _ _ _ pf' _ => uses_kt_unreasonably _ _ pf'
+  | ProofSystem.Prop_bott_left _ _ _ => false
+  | ProofSystem.Prop_bott_right _ _ _ => false
+  | ProofSystem.Prop_disj_left _ _ _ _ _ _ _ => false
+  | ProofSystem.Prop_disj_right _ _ _ _ _ _ _ => false
+  | ProofSystem.Prop_ex_left _ _ _ _ _ => false
+  | ProofSystem.Prop_ex_right _ _ _ _ _ => false
+  | ProofSystem.Framing_left _ _ _ _ _ m0 => uses_kt_unreasonably _ _ m0
+  | ProofSystem.Framing_right _ _ _ _ _ m0 => uses_kt_unreasonably _ _ m0
+  | ProofSystem.Svar_subst _ _ _ X _ _ m0 => uses_kt_unreasonably _ _ m0
+  | ProofSystem.Pre_fixp _ _ _ => false
+  | ProofSystem.Knaster_tarski _ phi psi wf m0 =>
+    has_bound_variable_under_mu phi || uses_kt_unreasonably _ _ m0
+  | ProofSystem.Existence _ => false
+  | ProofSystem.Singleton_ctx _ _ _ _ _ _ => false
+  end.
+
+  Lemma indifferent_to_cast_uses_kt_unreasonably {Σ : Signature}:
+    indifferent_to_cast uses_kt_unreasonably.
+  Proof.
+   unfold indifferent_to_cast. intros Γ ϕ ψ e pf.
+   induction pf; unfold cast_proof; unfold eq_rec_r;
+     unfold eq_rec; unfold eq_rect; unfold eq_sym; simpl; auto;
+     pose proof (e' := e); move: e; rewrite e'; clear e'; intros e;
+     match type of e with
+     | ?x = ?x => replace e with (@erefl _ x) by (apply UIP_dec; intros x' y'; apply Pattern_eqdec)
+     end; simpl; try reflexivity.
+  Qed.
+
+Lemma kt_unreasonably_implies_somehow {Σ : Signature} Γ ϕ (pf : ML_proof_system Γ ϕ) :
+  uses_kt_unreasonably Γ ϕ pf -> uses_kt Γ ϕ pf.
+Proof.
+  induction pf; cbn; auto with nocore.
+  { intros H. unfold is_true in *. rewrite orb_true_iff in H.
+    destruct H as [H|H].
+    {
+      specialize (IHpf1 H).
+      rewrite IHpf1.
+      reflexivity.
+    }
+    {
+      specialize (IHpf2 H).
+      rewrite IHpf2.
+      rewrite orb_true_r.
+      reflexivity.
+    }
+  }
+  {
+    intros _. reflexivity.
+  }
+Qed.
 
 Arguments uses_svar_subst {Σ} S {Γ} {ϕ} pf : rename.
 Arguments uses_kt {Σ} {Γ} {ϕ} pf : rename.
+Arguments uses_kt_unreasonably {Σ} {Γ} {ϕ} pf : rename.
 Arguments uses_ex_gen {Σ} E {Γ} {ϕ} pf : rename.
 
 Module Notations_private.
@@ -566,6 +574,7 @@ Section proof_info.
   Defined.
 
 
+
   Definition coEVarSet := coGset evar.
   Definition coSVarSet := coGset svar.
   Definition WfpSet := gmap.gset wfPattern.
@@ -577,13 +586,15 @@ Section proof_info.
       pi_generalized_evars : coEVarSet ;
       pi_substituted_svars : coSVarSet ;
       pi_uses_kt : bool ;
+      pi_uses_advanced_kt : bool ;
       (* pi_framing_patterns : coWfpSet ;  *)
     }.
 
   Definition ProofInfoLe (i₁ i₂ : ProofInfo) : Prop :=
     pi_generalized_evars i₁ ⊆ pi_generalized_evars i₂ /\
     pi_substituted_svars i₁ ⊆ pi_substituted_svars i₂ /\
-    (pi_uses_kt i₁ ==> pi_uses_kt i₂)
+    (pi_uses_kt i₁ ==> pi_uses_kt i₂) /\
+    (pi_uses_advanced_kt i₁ ==> pi_uses_advanced_kt i₂)
   .
 
 
@@ -600,6 +611,7 @@ Section proof_info.
     pwi_pf_ge : gset_to_coGset (@uses_of_ex_gen Σ Γ ϕ pwi_pf) ⊆ pi_generalized_evars pi ;
     pwi_pf_svs : gset_to_coGset (@uses_of_svar_subst Σ Γ ϕ pwi_pf) ⊆ pi_substituted_svars pi ;
     pwi_pf_kt : implb (@uses_kt Σ Γ ϕ pwi_pf) (pi_uses_kt pi) ;
+    pwi_pf_kta : implb (@uses_kt_unreasonably Σ Γ ϕ pwi_pf) (pi_uses_advanced_kt pi && (@uses_kt Σ Γ ϕ pwi_pf)) ;
     (* pwi_pf_fp : gset_to_coGset (@framing_patterns Σ Γ ϕ pwi_pf) ⊆ (pi_framing_patterns pi) ; *)
   }.
 
@@ -612,12 +624,32 @@ Section proof_info.
     ProofInfoLe i₁ i₂ -> ProofLe i₁ i₂.
   Proof.
     intros H. intros Γ φ pf Hpf. destruct Hpf.
-    destruct H as [HEV [HSV HKT] ].
+    destruct H as [HEV [HSV [HKT HKTA] ] ].
     constructor. 1-2: set_solver.
-    apply implb_true_iff.
-    pose proof (proj1 (implb_true_iff _ _) HKT).
-    pose proof (proj1 (implb_true_iff _ _) pwi_pf_kt0).
-    tauto.
+    {
+      apply implb_true_iff.
+      pose proof (proj1 (implb_true_iff _ _) HKT).
+      pose proof (proj1 (implb_true_iff _ _) pwi_pf_kt0).
+      tauto.
+    }
+    {
+      apply implb_true_iff.
+      pose proof (H1 := proj1 (implb_true_iff _ _) HKTA).
+      pose proof (H2 := proj1 (implb_true_iff _ _) pwi_pf_kta0).
+      intro H.
+      rewrite andb_true_iff.
+      specialize (H2 H).
+      unfold is_true in pwi_pf_kta0.
+      rewrite implb_true_iff in pwi_pf_kta0.
+      specialize (pwi_pf_kta0 H).
+      split.
+      {
+        apply H1. clear H1.
+        rewrite andb_true_iff in pwi_pf_kta0.
+        apply pwi_pf_kta0.
+      }
+      rewrite andb_true_iff in H2. apply H2.
+    }
   Qed.
 
 End proof_info.
@@ -682,8 +714,8 @@ Section proof_info.
     try_solve_pile.
   Qed.
 
-  Definition BasicReasoning : ProofInfo := ((@mkProofInfo _ ∅ ∅ false)).
-  Definition AnyReasoning : ProofInfo := (@mkProofInfo _ ⊤ ⊤ true).
+  Definition BasicReasoning : ProofInfo := ((@mkProofInfo _ ∅ ∅ false false)).
+  Definition AnyReasoning : ProofInfo := (@mkProofInfo _ ⊤ ⊤ true true).
 
 
   Definition derives_using Γ ϕ pi
@@ -708,8 +740,8 @@ Notation "Γ '⊢i' ϕ 'using' pi"
 Notation "Γ ⊢ ϕ" := (derives Γ ϕ)
 (at level 95, no associativity).
 
-Notation "'ExGen' ':=' evs ',' 'SVSubst' := svs ',' 'KT' := bkt"
-  := (@mkProofInfo _ evs svs bkt) (at level 95, no associativity).
+Notation "'ExGen' ':=' evs ',' 'SVSubst' := svs ',' 'KT' := bkt ',' 'AKT' := akt"
+  := (@mkProofInfo _ evs svs bkt akt) (at level 95, no associativity).
 
 End Notations.
 
@@ -749,50 +781,3 @@ Ltac2 Set proved_hook_wfauto as oldhook
 Ltac2 Set hook_wfauto
 := (fun () => Message.print (Message.of_string "hook_wfauto p2w")).
 *)
-
-Lemma cast_proof' {Σ : Signature} (Γ : Theory) (ϕ ψ : Pattern) (i : ProofInfo) (e : ψ = ϕ) :
-derives_using Γ ϕ i ->
-derives_using Γ ψ i.
-Proof.
-intros [pf Hpf].
-unshelve (eexists).
-{
-  apply (cast_proof e).
-  exact pf.
-}
-{ abstract(
-  destruct Hpf as [Hpf2 Hpf3 Hpf4];
-  constructor; [
-  (
-    rewrite elem_of_subseteq in Hpf2;
-    rewrite elem_of_subseteq;
-    intros x Hx;
-    specialize (Hpf2 x);
-    apply Hpf2; clear Hpf2;
-    rewrite elem_of_gset_to_coGset in Hx;
-    rewrite uses_of_ex_gen_correct in Hx;
-    rewrite elem_of_gset_to_coGset;
-    rewrite uses_of_ex_gen_correct;
-    rewrite indifferent_to_cast_uses_ex_gen in Hx;
-    exact Hx
-  )|
-  (
-    rewrite elem_of_subseteq in Hpf3;
-    rewrite elem_of_subseteq;
-    intros x Hx;
-    specialize (Hpf3 x);
-    apply Hpf3; clear Hpf3;
-    rewrite elem_of_gset_to_coGset in Hx;
-    rewrite uses_of_svar_subst_correct in Hx;
-    rewrite elem_of_gset_to_coGset;
-    rewrite uses_of_svar_subst_correct;
-    rewrite indifferent_to_cast_uses_svar_subst in Hx;
-    exact Hx
-  )|
-  (
-    rewrite indifferent_to_cast_uses_kt;
-    apply Hpf4
-  )
-  ]).
-}
-Defined.

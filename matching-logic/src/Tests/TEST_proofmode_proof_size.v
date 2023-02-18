@@ -26,7 +26,8 @@ Lemma prf_equiv_congruence_iter_no_ind {Σ : Signature} (Γ : Theory) (p q : Pat
     (ExGen := list_to_set (evar_fresh_seq (free_evars (foldr patt_imp (pcPattern C) l) ∪ free_evars p ∪ free_evars q ∪ {[pcEvar C]}) (maximal_exists_depth_to 0 (pcEvar C) (pcPattern C))),
      SVSubst := list_to_set (svar_fresh_seq (free_svars (foldr patt_imp (pcPattern C) l) ∪
                 free_svars p ∪ free_svars q) (maximal_mu_depth_to 0 (pcEvar C) (pcPattern C))),
-     KT := mu_in_evar_path (pcEvar C) (pcPattern C) 0
+     KT := mu_in_evar_path (pcEvar C) (pcPattern C) 0,
+     AKT := mu_in_evar_path (pcEvar C) (pcPattern C) 0
     )
     gpi
   ):

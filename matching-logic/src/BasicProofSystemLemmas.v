@@ -53,6 +53,7 @@ Proof.
       [( set_solver )
       |( set_solver )
       |( reflexivity)
+      |( reflexivity)
       ]
     ).
   }
@@ -1196,7 +1197,7 @@ Defined.
     Γ ⊢ (∃x. φ₁) → φ₂
   *)
   Lemma Ex_gen {Σ : Signature} (Γ : Theory) (ϕ₁ ϕ₂ : Pattern) (x : evar) (i : ProofInfo)
-      {pile : ProofInfoLe (ExGen := {[x]}, SVSubst := ∅, KT := false) i} :
+      {pile : ProofInfoLe (ExGen := {[x]}, SVSubst := ∅, KT := false, AKT := false) i} :
     x ∉ free_evars ϕ₂ ->
     Γ ⊢i ϕ₁ ---> ϕ₂ using i ->
     Γ ⊢i (exists_quantify x ϕ₁ ---> ϕ₂) using i.
@@ -1238,6 +1239,10 @@ Defined.
         inversion Hpf.
         apply pwi_pf_kt.
       }
+      {
+        inversion Hpf.
+        apply pwi_pf_kta.
+      }
     }
   Defined.
 
@@ -1260,6 +1265,7 @@ Defined.
         [( set_solver )
         |( set_solver )
         |( reflexivity )
+        |( reflexivity )
         ]
       ).
     }
@@ -1271,7 +1277,7 @@ Defined.
     Γ ⊢ ∀x. φ
   *)
   Lemma universal_generalization {Σ : Signature} Γ ϕ x (i : ProofInfo) :
-    ProofInfoLe (ExGen := {[x]}, SVSubst := ∅, KT := false) i ->
+    ProofInfoLe (ExGen := {[x]}, SVSubst := ∅, KT := false, AKT := false) i ->
     well_formed ϕ ->
     Γ ⊢i ϕ using i ->
     Γ ⊢i patt_forall (ϕ^{{evar: x ↦ 0}}) using i.
@@ -1297,7 +1303,7 @@ Defined.
     Γ ⊢ (∃x. φ₁) → (∃x. φ₂)
   *)
   Lemma ex_quan_monotone {Σ : Signature} Γ x ϕ₁ ϕ₂ (i : ProofInfo)
-    (pile : ProofInfoLe (ExGen := {[x]}, SVSubst := ∅, KT := false) i) :
+    (pile : ProofInfoLe (ExGen := {[x]}, SVSubst := ∅, KT := false, AKT := false) i) :
     Γ ⊢i ϕ₁ ---> ϕ₂ using i ->
     Γ ⊢i (exists_quantify x ϕ₁) ---> (exists_quantify x ϕ₂) using i.
   Proof.
@@ -1316,21 +1322,13 @@ Defined.
     { wf_auto2. }
     clear H wfϕ₁ ϕ₁ Hwf.
 
-    (* We no longer need to use [cast_proof] to avoid to ugly eq_sym terms;
-       however, without [cast_proof'] the [replace] tactics does not work,
-       maybe because of implicit parameters.
-     *)
-    eapply (cast_proof').
-    {
-      replace ϕ₂ with (instantiate (ex, ϕ₂^{{evar: x ↦ 0}}) (patt_free_evar x)) at 1.
-      2: { unfold instantiate.
-         rewrite bevar_subst_evar_quantify_free_evar.
-         now do 2 apply andb_true_iff in wfϕ₂ as [_ wfϕ₂].
-         reflexivity.
-      }
-      reflexivity.
+    replace ϕ₂ with (instantiate (ex, ϕ₂^{{evar: x ↦ 0}}) (patt_free_evar x)) at 1.
+    2: { unfold instantiate.
+        rewrite bevar_subst_evar_quantify_free_evar.
+        now do 2 apply andb_true_iff in wfϕ₂ as [_ wfϕ₂].
+        reflexivity.
     }
-          (* i =  gpi *)
+    (* i =  gpi *)
     useBasicReasoning.
     apply Ex_quan.
     abstract (wf_auto2).
@@ -1345,7 +1343,7 @@ Defined.
     Γ ⊢ (∀x. φ₁) → (∀x. φ₂)
   *)
   Lemma all_quan_monotone {Σ : Signature} Γ x ϕ₁ ϕ₂ (i : ProofInfo)
-    (pile : ProofInfoLe (ExGen := {[x]}, SVSubst := ∅, KT := false) i) :
+    (pile : ProofInfoLe (ExGen := {[x]}, SVSubst := ∅, KT := false, AKT := false) i) :
     Γ ⊢i ϕ₁ ---> ϕ₂ using i ->
     Γ ⊢i (forall_quantify x ϕ₁) ---> (forall_quantify x ϕ₂) using i.
   Proof.
@@ -1366,7 +1364,7 @@ Defined.
     Γ ⊢ (∀x. φ₁) → (∀x. φ₂)
   *)
   Lemma forall_monotone {Σ : Signature} Γ x ϕ₁ ϕ₂ (i : ProofInfo)
-    (pile : ProofInfoLe (ExGen := {[x]}, SVSubst := ∅, KT := false) i) :
+    (pile : ProofInfoLe (ExGen := {[x]}, SVSubst := ∅, KT := false, AKT := false) i) :
     x ∉ free_evars ϕ₁ ->
     x ∉ free_evars ϕ₂ ->
     Γ ⊢i (evar_open x 0 ϕ₁) ---> (evar_open x 0 ϕ₂) using i ->
@@ -1400,11 +1398,10 @@ Defined.
   *)
   Lemma forall_gen {Σ : Signature} Γ ϕ₁ ϕ₂ x (i : ProofInfo):
     evar_is_fresh_in x ϕ₁ ->
-    ProofInfoLe (ExGen := {[x]}, SVSubst := ∅, KT := false) i ->
+    ProofInfoLe (ExGen := {[x]}, SVSubst := ∅, KT := false, AKT := false) i ->
     Γ ⊢i ϕ₁ ---> ϕ₂ using i ->
     Γ ⊢i ϕ₁ ---> forall_quantify x ϕ₂ using i.
   Proof.
-    Set Printing All.
     intros Hfr pile Himp.
     pose proof (Hwf := proved_impl_wf _ _ (proj1_sig Himp)).
     pose proof (wfϕ₁ := well_formed_imp_proj1 _ _ Hwf).
@@ -1416,13 +1413,9 @@ Defined.
     unfold patt_forall.
     apply modus_tollens.
 
-    eapply cast_proof'.
-    {
-      replace (! ϕ₂^{{evar: x ↦ 0}})
-              with ((! ϕ₂)^{{evar: x ↦ 0}})
-                   by reflexivity.
-      reflexivity.
-    }
+    replace (! ϕ₂^{{evar: x ↦ 0}})
+            with ((! ϕ₂)^{{evar: x ↦ 0}})
+                  by reflexivity.
     apply Ex_gen.
     { exact pile. }
     { simpl. unfold evar_is_fresh_in in Hfr. clear -Hfr. set_solver. }

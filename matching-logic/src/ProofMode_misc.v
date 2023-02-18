@@ -365,7 +365,7 @@ Section FOL_helpers.
 
   Lemma Framing_left (Γ : Theory) (ϕ₁ ϕ₂ ψ : Pattern) (i : ProofInfo)
     (wfψ : well_formed ψ)
-    {pile : ProofInfoLe ((ExGen := ∅, SVSubst := ∅, KT := false)) i}
+    {pile : ProofInfoLe ((ExGen := ∅, SVSubst := ∅, KT := false, AKT := false)) i}
     :
     Γ ⊢i ϕ₁ ---> ϕ₂ using i ->
     Γ ⊢i ϕ₁ $ ψ ---> ϕ₂ $ ψ using i.
@@ -378,8 +378,11 @@ Section FOL_helpers.
       exact pf.
     }
     {
-      destruct Hpf as [Hpf1 Hpf2 Hpf3].
+      destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf5].
       constructor; simpl.
+      {
+        assumption.
+      }
       {
         assumption.
       }
@@ -394,7 +397,7 @@ Section FOL_helpers.
 
   Lemma Framing_right (Γ : Theory) (ϕ₁ ϕ₂ ψ : Pattern) (i : ProofInfo)
     (wfψ : well_formed ψ)
-    {pile : ProofInfoLe ((ExGen := ∅, SVSubst := ∅, KT := false)) i}
+    {pile : ProofInfoLe ((ExGen := ∅, SVSubst := ∅, KT := false, AKT := false)) i}
     :
     Γ ⊢i ϕ₁ ---> ϕ₂ using i ->
     Γ ⊢i ψ $ ϕ₁ ---> ψ $ ϕ₂ using i.
@@ -409,6 +412,9 @@ Section FOL_helpers.
     {
       destruct Hpf as [Hpf1 Hpf2 Hpf3].
       constructor; simpl.
+      {
+        assumption.
+      }
       {
         assumption.
       }
@@ -454,7 +460,7 @@ Section FOL_helpers.
 
   Lemma Prop_bot_ctx (Γ : Theory) (C : Application_context) :
     Γ ⊢i ((subst_ctx C patt_bott) ---> patt_bott)
-    using (ExGen := ∅, SVSubst := ∅, KT := false).
+    using (ExGen := ∅, SVSubst := ∅, KT := false, AKT := false).
   Proof.
     induction C; simpl in *.
     - apply useBasicReasoning.
@@ -485,7 +491,7 @@ Section FOL_helpers.
 
   Lemma Framing (Γ : Theory) (C : Application_context) (A B : Pattern) (i : ProofInfo)
     {pile : ProofInfoLe
-     ((ExGen := ∅, SVSubst := ∅, KT := false))
+     ((ExGen := ∅, SVSubst := ∅, KT := false, AKT := false))
      i
     }
     :
@@ -519,7 +525,7 @@ Section FOL_helpers.
   Defined.
 
   Lemma A_implies_not_not_A_ctx (Γ : Theory) (A : Pattern) (C : Application_context)
-    (i : ProofInfo) {pile : ProofInfoLe ((ExGen := ∅, SVSubst := ∅, KT := false)) i}
+    (i : ProofInfo) {pile : ProofInfoLe ((ExGen := ∅, SVSubst := ∅, KT := false, AKT := false)) i}
     :
     well_formed A ->
     Γ ⊢i A using i ->
@@ -542,7 +548,7 @@ Section FOL_helpers.
 
   Lemma ctx_bot_prop (Γ : Theory) (C : Application_context) (A : Pattern) 
     (i : ProofInfo)
-    {pile : ProofInfoLe ((ExGen := ∅, SVSubst := ∅, KT := false)) i}
+    {pile : ProofInfoLe ((ExGen := ∅, SVSubst := ∅, KT := false, AKT := false)) i}
   :
     well_formed A ->
     Γ ⊢i (A ---> Bot) using i ->
@@ -564,7 +570,7 @@ End FOL_helpers.
 Lemma prf_prop_bott_iff {Σ : Signature} Γ AC:
   Γ ⊢i ((subst_ctx AC patt_bott) <---> patt_bott)
   using (
-  (ExGen := ∅, SVSubst := ∅, KT := false)).
+  (ExGen := ∅, SVSubst := ∅, KT := false, AKT := false)).
 Proof.
   apply pf_iff_split.
   1,2: wf_auto2.
@@ -620,7 +626,7 @@ Lemma prf_prop_or_iff {Σ : Signature} Γ AC p q:
   well_formed q ->
   Γ ⊢i ((subst_ctx AC (p or q)) <---> ((subst_ctx AC p) or (subst_ctx AC q)))
   using (
-  (ExGen := ∅, SVSubst := ∅, KT := false)).
+  (ExGen := ∅, SVSubst := ∅, KT := false, AKT := false)).
 Proof.
   intros wfp wfq.
   induction AC; simpl.
@@ -771,6 +777,7 @@ Lemma prf_prop_ex_iff {Σ : Signature} Γ AC p x:
   {| pi_generalized_evars := {[x]};
      pi_substituted_svars := ∅;
      pi_uses_kt := false ;
+     pi_uses_advanced_kt := false ;
   |}).
 Proof.
   intros Hx Hwf.
@@ -1099,143 +1106,6 @@ Section FOL_helpers.
     now rewrite IHφ.
   Qed.
 
-  Fixpoint maximal_mu_depth_to (depth : nat) (E : evar) (ψ : Pattern) : nat :=
-    match ψ with
-    | patt_bott => 0
-    | patt_sym _ => 0
-    | patt_bound_evar _ => 0
-    | patt_bound_svar _ => 0
-    | patt_free_svar _ => 0
-    | patt_free_evar E' =>
-      match (decide (E' = E)) with
-      | left _ => depth
-      | right _ => 0
-      end
-    | patt_imp ψ₁ ψ₂
-      => Nat.max
-        (maximal_mu_depth_to depth E ψ₁)
-        (maximal_mu_depth_to depth E ψ₂)
-    | patt_app ψ₁ ψ₂
-      => Nat.max
-        (maximal_mu_depth_to depth E ψ₁)
-        (maximal_mu_depth_to depth E ψ₂)
-    | patt_exists ψ' =>
-      maximal_mu_depth_to depth E ψ'
-    | patt_mu ψ' =>
-      maximal_mu_depth_to (S depth) E ψ'
-    end.
-
-  Lemma maximal_mu_depth_to_svar_open depth E n X ψ:
-  maximal_mu_depth_to depth E (ψ^{svar: n ↦ X})
-    = maximal_mu_depth_to depth E ψ.
-  Proof.
-    unfold svar_open.
-    move: depth n.
-    induction ψ; intros depth n'; simpl; try reflexivity; auto.
-    {
-      case_match; simpl; try reflexivity.
-    }
-  Qed.
-
-  Lemma evar_open_mu_depth depth E n x ψ:
-    E <> x ->
-    maximal_mu_depth_to depth E (ψ^{evar: n ↦ x})
-    = maximal_mu_depth_to depth E ψ.
-  Proof.
-    intros Hne.
-    unfold evar_open.
-    move: depth n.
-    induction ψ; intros depth n'; simpl; try reflexivity; auto.
-    {
-      case_match; simpl; try reflexivity.
-      case_match; simpl; try reflexivity.
-      subst. contradiction.
-    }
-  Qed.
-
-  Lemma svar_open_mu_depth depth E n X ψ:
-    maximal_mu_depth_to depth E (ψ^{svar: n ↦ X})
-    = maximal_mu_depth_to depth E ψ.
-  Proof.
-    unfold svar_open.
-    move: depth n.
-    induction ψ; intros depth n'; simpl; try reflexivity; auto.
-    {
-      case_match; simpl; try reflexivity.
-    }
-  Qed.
-
-  Lemma maximal_mu_depth_to_0 E ψ depth:
-    E ∉ free_evars ψ ->
-    maximal_mu_depth_to depth E ψ = 0.
-  Proof.
-    intros Hnotin.
-    move: E depth Hnotin.
-    induction ψ; intros E depth Hnotin; simpl in *; try reflexivity.
-    { case_match. set_solver. reflexivity. }
-    { rewrite IHψ1. set_solver. rewrite IHψ2. set_solver. reflexivity. }
-    { rewrite IHψ1. set_solver. rewrite IHψ2. set_solver. reflexivity. }
-    { rewrite IHψ. exact Hnotin. reflexivity. }
-    { rewrite IHψ. exact Hnotin. reflexivity. }
-  Qed.
-
-  Lemma maximal_mu_depth_to_S E ψ depth:
-    E ∈ free_evars ψ ->
-    maximal_mu_depth_to (S depth) E ψ
-    = S (maximal_mu_depth_to depth E ψ).
-  Proof.
-    intros Hin.
-    move: E depth Hin.
-    induction ψ; intros E depth Hin; simpl in *; try set_solver.
-    { case_match. reflexivity. set_solver. }
-    {
-      destruct (decide (E ∈ free_evars ψ1)),(decide (E ∈ free_evars ψ2)).
-      {
-        rewrite IHψ1. assumption. rewrite IHψ2. assumption. simpl. reflexivity.
-      }
-      {
-        rewrite IHψ1. assumption.
-        apply maximal_mu_depth_to_0 with (depth := S depth) in n
-          as n'.
-        apply maximal_mu_depth_to_0 with (depth := depth) in n.
-        rewrite n. lia. 
-      }
-      {
-        rewrite IHψ2. assumption.
-        apply maximal_mu_depth_to_0 with (depth := S depth) in n
-          as n'.
-        apply maximal_mu_depth_to_0 with (depth := depth) in n.
-        rewrite n. lia. 
-      }
-      {
-        exfalso. set_solver.
-      }
-    }
-    {
-      destruct (decide (E ∈ free_evars ψ1)),(decide (E ∈ free_evars ψ2)).
-      {
-        rewrite IHψ1. assumption. rewrite IHψ2. assumption. simpl. reflexivity.
-      }
-      {
-        rewrite IHψ1. assumption.
-        apply maximal_mu_depth_to_0 with (depth := S depth) in n
-          as n'.
-        apply maximal_mu_depth_to_0 with (depth := depth) in n.
-        rewrite n. lia. 
-      }
-      {
-        rewrite IHψ2. assumption.
-        apply maximal_mu_depth_to_0 with (depth := S depth) in n
-          as n'.
-        apply maximal_mu_depth_to_0 with (depth := depth) in n.
-        rewrite n. lia. 
-      }
-      {
-        exfalso. set_solver.
-      }
-    }
-  Qed.
-
   Lemma svar_fresh_seq_max (SvS : SVarSet) (n1 n2 : nat) :
     (@list_to_set svar SVarSet _ _ _ (svar_fresh_seq SvS n1)) ⊆ (list_to_set (svar_fresh_seq SvS (n1 `max` n2))).
   Proof.
@@ -1314,7 +1184,7 @@ Section FOL_helpers.
     (wfq : well_formed q)
     (Heqx : x ∉ free_evars ψ ∪ free_evars p ∪ free_evars q)
     (Heqx2 : x ∈ evs)
-    (pile: ProofInfoLe (ExGen := evs, SVSubst := svs, KT := kt) gpi)
+    (pile: ProofInfoLe (ExGen := evs, SVSubst := svs, KT := kt, AKT := false) gpi)
     (IH: Γ ⊢i ψ^{evar: 0 ↦ x}^[[evar: E ↦ p]] <---> ψ^{evar: 0 ↦ x}^[[evar: E ↦ q]]
        using  gpi) :
     (Γ ⊢i (ex , ψ^[[evar: E ↦ p]]) <---> (ex , ψ^[[evar: E ↦ q]]) using  gpi).
@@ -1535,9 +1405,6 @@ Section FOL_helpers.
     * rewrite IHφ1. 2: rewrite IHφ2. all: set_solver.
   Qed.
 
-
-  Definition mu_in_evar_path E ψ sdepth := negb (Nat.eqb 0 (maximal_mu_depth_to sdepth E ψ)).
-
   Lemma eq_prf_equiv_congruence
     (sz : nat)
     Γ p q evs svs
@@ -1568,7 +1435,8 @@ Section FOL_helpers.
     (pile: ProofInfoLe
            (ExGen := evs,
             SVSubst := svs,
-            KT := mu_in_evar_path E ψ sdepth) gpi)
+            KT := mu_in_evar_path E ψ sdepth,
+            AKT := mu_in_evar_path E ψ sdepth (* TODO relax*)) gpi)
     (pf : Γ ⊢i (p <---> q) using ( gpi)) :
         Γ ⊢i (((ψ^[[evar: E ↦ p]]) <---> (ψ^[[evar: E ↦ q]]))) using ( gpi).
   Proof.
@@ -1740,7 +1608,14 @@ Section FOL_helpers.
       }
       { apply Hel3. now left. }
       { eapply pile_trans;[|apply pile].
-        unfold i'. now apply pile_refl.
+        unfold i'.
+        repeat constructor; cbn.
+        { apply reflexivity. }
+        { apply reflexivity. }
+        { unfold is_true.
+          rewrite implb_true_iff.
+          intros H00. apply H00.
+        }
       }
     }
     {
@@ -1954,7 +1829,8 @@ Section FOL_helpers.
     (pile : ProofInfoLe
        (ExGen := list_to_set (evar_fresh_seq (free_evars (pcPattern C) ∪ free_evars p ∪ free_evars q ∪ {[pcEvar C]}) (maximal_exists_depth_to 0 (pcEvar C) (pcPattern C))),
        SVSubst := list_to_set (svar_fresh_seq (free_svars (pcPattern C) ∪ free_svars p ∪ free_svars q) (maximal_mu_depth_to 0 (pcEvar C) (pcPattern C))),
-       KT := mu_in_evar_path (pcEvar C) (pcPattern C) 0
+       KT := mu_in_evar_path (pcEvar C) (pcPattern C) 0,
+       AKT := mu_in_evar_path (pcEvar C) (pcPattern C) 0 (* TODO: relax*)
        )
       gpi
     ) :
@@ -2067,7 +1943,8 @@ Lemma prf_equiv_congruence_iter {Σ : Signature} (Γ : Theory) (p q : Pattern) (
   (pile : ProofInfoLe
     (ExGen := list_to_set (evar_fresh_seq (free_evars (pcPattern C) ∪ free_evars p ∪ free_evars q ∪ {[pcEvar C]}) (maximal_exists_depth_to 0 (pcEvar C) (pcPattern C))),
       SVSubst := list_to_set (svar_fresh_seq (free_svars (pcPattern C) ∪ free_svars p ∪ free_svars q) (maximal_mu_depth_to 0 (pcEvar C) (pcPattern C))),
-      KT := mu_in_evar_path (pcEvar C) (pcPattern C) 0
+      KT := mu_in_evar_path (pcEvar C) (pcPattern C) 0,
+      AKT := mu_in_evar_path (pcEvar C) (pcPattern C) 0 (* TODO relax *)
     )
     ( gpi)
   ):
@@ -2144,7 +2021,8 @@ Lemma MLGoal_rewriteIff
     (ExGen := list_to_set (evar_fresh_seq (free_evars (pcPattern C) ∪ free_evars p ∪ free_evars q ∪ {[pcEvar C]}) (maximal_exists_depth_to 0 (pcEvar C) (pcPattern C))),
      SVSubst := list_to_set (svar_fresh_seq (free_svars (pcPattern C) ∪
                 free_svars p ∪ free_svars q) (maximal_mu_depth_to 0 (pcEvar C) (pcPattern C))),
-     KT := mu_in_evar_path (pcEvar C) (pcPattern C) 0
+     KT := mu_in_evar_path (pcEvar C) (pcPattern C) 0,
+     AKT := mu_in_evar_path (pcEvar C) (pcPattern C) 0 (* TODO: relax*)
   )
       gpi) ->
   mkMLGoal Σ Γ l (emplace C p) ( gpi).
@@ -2358,6 +2236,13 @@ Ltac2 heat :=
          )
     end
 .
+
+Lemma cast_proof_ml_goal {Σ : Signature} Γ hyps goal goal' (e : goal = goal') (i : ProofInfo):
+  mkMLGoal Σ Γ hyps goal i ->
+  mkMLGoal Σ Γ hyps goal' i .
+Proof.
+  rewrite e. intros H. exact H.
+Defined.
 
 Ltac2 mlRewrite (hiff : constr) (atn : int) :=
   let thiff := Constr.type hiff in

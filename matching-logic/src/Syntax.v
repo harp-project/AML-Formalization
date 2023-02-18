@@ -1135,6 +1135,221 @@ Section with_signature.
     - rewrite IHϕ; auto.
   Qed.
 
+  Lemma svar_has_negative_occurrence_free_evar_subst
+    (ϕ ψ: Pattern) (x : evar) (X : svar) :
+    svar_is_fresh_in X ψ ->
+    svar_has_negative_occurrence X ϕ^[[evar:x↦ψ]] = svar_has_negative_occurrence X ϕ
+  with svar_has_positive_occurrence_free_evar_subst
+    (ϕ ψ: Pattern) (x : evar) (X : svar) :
+    svar_is_fresh_in X ψ ->
+    svar_has_positive_occurrence X ϕ^[[evar:x↦ψ]] = svar_has_positive_occurrence X ϕ
+  .
+  Proof.
+    {
+      intros HXψ.
+      induction ϕ; cbn in *; try reflexivity.
+      {
+        destruct (decide (x = x0)).
+        {
+          apply svar_hno_false_if_fresh.
+          exact HXψ.
+        }
+        {
+          cbn. reflexivity.
+        }
+      }
+      {
+        by rewrite IHϕ1 IHϕ2.
+      }
+      {
+        fold svar_has_positive_occurrence.
+        rewrite IHϕ2.
+        rewrite svar_has_positive_occurrence_free_evar_subst.
+        { exact HXψ. }
+        reflexivity.
+      }
+      {
+        exact IHϕ.
+      }
+      {
+        exact IHϕ.
+      }
+    }
+    {
+      intros HXψ.
+      induction ϕ; cbn in *; try reflexivity.
+      {
+        destruct (decide (x = x0)).
+        {
+          apply svar_hpo_false_if_fresh.
+          exact HXψ.
+        }
+        {
+          cbn. reflexivity.
+        }
+      }
+      {
+        by rewrite IHϕ1 IHϕ2.
+      }
+      {
+        fold svar_has_negative_occurrence.
+        rewrite IHϕ2.
+        rewrite svar_has_negative_occurrence_free_evar_subst.
+        { exact HXψ. }
+        reflexivity.
+      }
+      {
+        exact IHϕ.
+      }
+      {
+        exact IHϕ.
+      }
+    }
+  Qed.
+    
+
+  Fixpoint maximal_mu_depth_to (depth : nat) (E : evar) (ψ : Pattern) : nat :=
+    match ψ with
+    | patt_bott => 0
+    | patt_sym _ => 0
+    | patt_bound_evar _ => 0
+    | patt_bound_svar _ => 0
+    | patt_free_svar _ => 0
+    | patt_free_evar E' =>
+      match (decide (E' = E)) with
+      | left _ => depth
+      | right _ => 0
+      end
+    | patt_imp ψ₁ ψ₂
+      => Nat.max
+        (maximal_mu_depth_to depth E ψ₁)
+        (maximal_mu_depth_to depth E ψ₂)
+    | patt_app ψ₁ ψ₂
+      => Nat.max
+        (maximal_mu_depth_to depth E ψ₁)
+        (maximal_mu_depth_to depth E ψ₂)
+    | patt_exists ψ' =>
+      maximal_mu_depth_to depth E ψ'
+    | patt_mu ψ' =>
+      maximal_mu_depth_to (S depth) E ψ'
+    end.
+
+  Lemma maximal_mu_depth_to_svar_open depth E n X ψ:
+  maximal_mu_depth_to depth E (ψ^{svar: n ↦ X})
+    = maximal_mu_depth_to depth E ψ.
+  Proof.
+    unfold svar_open.
+    move: depth n.
+    induction ψ; intros depth n'; simpl; try reflexivity; auto.
+    {
+      case_match; simpl; try reflexivity.
+    }
+  Qed.
+
+  Lemma evar_open_mu_depth depth E n x ψ:
+    E <> x ->
+    maximal_mu_depth_to depth E (ψ^{evar: n ↦ x})
+    = maximal_mu_depth_to depth E ψ.
+  Proof.
+    intros Hne.
+    unfold evar_open.
+    move: depth n.
+    induction ψ; intros depth n'; simpl; try reflexivity; auto.
+    {
+      case_match; simpl; try reflexivity.
+      case_match; simpl; try reflexivity.
+      subst. contradiction.
+    }
+  Qed.
+
+  Lemma svar_open_mu_depth depth E n X ψ:
+    maximal_mu_depth_to depth E (ψ^{svar: n ↦ X})
+    = maximal_mu_depth_to depth E ψ.
+  Proof.
+    unfold svar_open.
+    move: depth n.
+    induction ψ; intros depth n'; simpl; try reflexivity; auto.
+    {
+      case_match; simpl; try reflexivity.
+    }
+  Qed.
+
+  Lemma maximal_mu_depth_to_0 E ψ depth:
+    E ∉ free_evars ψ ->
+    maximal_mu_depth_to depth E ψ = 0.
+  Proof.
+    intros Hnotin.
+    move: E depth Hnotin.
+    induction ψ; intros E depth Hnotin; simpl in *; try reflexivity.
+    { case_match. set_solver. reflexivity. }
+    { rewrite IHψ1. set_solver. rewrite IHψ2. set_solver. reflexivity. }
+    { rewrite IHψ1. set_solver. rewrite IHψ2. set_solver. reflexivity. }
+    { rewrite IHψ. exact Hnotin. reflexivity. }
+    { rewrite IHψ. exact Hnotin. reflexivity. }
+  Qed.
+
+  Lemma maximal_mu_depth_to_S E ψ depth:
+    E ∈ free_evars ψ ->
+    maximal_mu_depth_to (S depth) E ψ
+    = S (maximal_mu_depth_to depth E ψ).
+  Proof.
+    intros Hin.
+    move: E depth Hin.
+    induction ψ; intros E depth Hin; simpl in *; try set_solver.
+    { case_match. reflexivity. set_solver. }
+    {
+      destruct (decide (E ∈ free_evars ψ1)),(decide (E ∈ free_evars ψ2)).
+      {
+        rewrite IHψ1. assumption. rewrite IHψ2. assumption. simpl. reflexivity.
+      }
+      {
+        rewrite IHψ1. assumption.
+        apply maximal_mu_depth_to_0 with (depth := S depth) in n
+          as n'.
+        apply maximal_mu_depth_to_0 with (depth := depth) in n.
+        rewrite n. lia. 
+      }
+      {
+        rewrite IHψ2. assumption.
+        apply maximal_mu_depth_to_0 with (depth := S depth) in n
+          as n'.
+        apply maximal_mu_depth_to_0 with (depth := depth) in n.
+        rewrite n. lia. 
+      }
+      {
+        exfalso. set_solver.
+      }
+    }
+    {
+      destruct (decide (E ∈ free_evars ψ1)),(decide (E ∈ free_evars ψ2)).
+      {
+        rewrite IHψ1. assumption. rewrite IHψ2. assumption. simpl. reflexivity.
+      }
+      {
+        rewrite IHψ1. assumption.
+        apply maximal_mu_depth_to_0 with (depth := S depth) in n
+          as n'.
+        apply maximal_mu_depth_to_0 with (depth := depth) in n.
+        rewrite n. lia. 
+      }
+      {
+        rewrite IHψ2. assumption.
+        apply maximal_mu_depth_to_0 with (depth := S depth) in n
+          as n'.
+        apply maximal_mu_depth_to_0 with (depth := depth) in n.
+        rewrite n. lia. 
+      }
+      {
+        exfalso. set_solver.
+      }
+    }
+  Qed.
+
+  Definition mu_in_evar_path E ψ sdepth
+  := negb (Nat.eqb 0 (maximal_mu_depth_to sdepth E ψ)).
+
+
+
 End with_signature.
 
 
