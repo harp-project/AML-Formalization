@@ -1331,36 +1331,6 @@ Proof.
   }
 Qed.
 
-Definition has_bound_variable_under_mu {Σ : Signature} (ϕ : Pattern) : bool
-:= let x := fresh_evar ϕ in
-   mu_in_evar_path x ϕ^[svar:0↦patt_free_evar x] 0
-.
-
-Fixpoint uses_kt_unreasonably {Σ : Signature} Γ ϕ (pf : ML_proof_system Γ ϕ) :=
-    match pf with
-    | ProofSystem.hypothesis _ _ _ _ => false
-    | ProofSystem.P1 _ _ _ _ _ => false
-    | ProofSystem.P2 _ _ _ _ _ _ _ => false
-    | ProofSystem.P3 _ _ _ => false
-    | ProofSystem.Modus_ponens _ _ _ m0 m1
-      => uses_kt_unreasonably _ _ m0 || uses_kt_unreasonably _ _ m1
-    | ProofSystem.Ex_quan _ _ _ _ => false
-    | ProofSystem.Ex_gen _ _ _ _ _ _ pf' _ => uses_kt_unreasonably _ _ pf'
-    | ProofSystem.Prop_bott_left _ _ _ => false
-    | ProofSystem.Prop_bott_right _ _ _ => false
-    | ProofSystem.Prop_disj_left _ _ _ _ _ _ _ => false
-    | ProofSystem.Prop_disj_right _ _ _ _ _ _ _ => false
-    | ProofSystem.Prop_ex_left _ _ _ _ _ => false
-    | ProofSystem.Prop_ex_right _ _ _ _ _ => false
-    | ProofSystem.Framing_left _ _ _ _ _ m0 => uses_kt_unreasonably _ _ m0
-    | ProofSystem.Framing_right _ _ _ _ _ m0 => uses_kt_unreasonably _ _ m0
-    | ProofSystem.Svar_subst _ _ _ X _ _ m0 => uses_kt_unreasonably _ _ m0
-    | ProofSystem.Pre_fixp _ _ _ => false
-    | ProofSystem.Knaster_tarski _ _ phi psi m0 =>
-      has_bound_variable_under_mu phi || uses_kt_unreasonably _ _ m0
-    | ProofSystem.Existence _ => false
-    | ProofSystem.Singleton_ctx _ _ _ _ _ _ => false
-    end.
 
 Theorem deduction_theorem {Σ : Signature} {syntax : Syntax} Γ ϕ ψ
   (gpi : ProofInfo)
