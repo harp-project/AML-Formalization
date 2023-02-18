@@ -46,6 +46,7 @@ Lemma Knaster_tarski {Σ : Signature}
         {| pi_generalized_evars := ∅;
            pi_substituted_svars := ∅;
            pi_uses_kt := true ;
+           pi_uses_advanced_kt := has_bound_variable_under_mu ϕ ; (* TODO depends on ϕ*)
         |}) i} :
 well_formed (mu, ϕ) ->
 Γ ⊢i (instantiate (mu, ϕ) ψ) ---> ψ using i ->
@@ -70,9 +71,32 @@ unshelve (eexists).
     apply Hpf3.
   }
   {
-    destruct Hpf as [Hpf2 Hpf3 Hpf4].
-    pose proof (Hpile := pile_impl_uses_kt _ _ _ pile).
-    exact Hpile.
+    destruct Hpf as [Hpf2 Hpf3 Hpf4 Hpf5].
+    unfold is_true in Hpf4.
+    rewrite implb_true_iff in Hpf4.
+    destruct i. cbn in *.
+    destruct pile as [Hpile1 [Hpile2 [Hpile3 Hpile4 ] ] ]. cbn in *.
+    exact Hpile3.
+  }
+  {
+    destruct Hpf as [Hpf2 Hpf3 Hpf4 Hpf5].
+    unfold is_true in Hpf4.
+    rewrite implb_true_iff in Hpf4.
+    destruct i. cbn in *.
+    destruct pile as [Hpile1 [Hpile2 [Hpile3 Hpile4 ] ] ]. cbn in *.
+    unfold is_true.
+    rewrite implb_true_iff. intros H1.
+    rewrite andb_true_r.
+    rewrite orb_true_iff in H1.
+    destruct H1 as [H1|H1].
+    {
+      rewrite H1 in Hpile4. simpl in Hpile4.
+      exact Hpile4.
+    }
+    {
+      rewrite H1 in Hpf5. simpl in Hpf5.
+      destruct_and!. assumption.
+    }
   }
 }
 Defined.
@@ -83,6 +107,7 @@ Lemma Svar_subst {Σ : Signature}
         {| pi_generalized_evars := ∅;
            pi_substituted_svars := {[X]};
            pi_uses_kt := false ;
+           pi_uses_advanced_kt := false ;
         |}) i} :
   well_formed ψ ->
   Γ ⊢i ϕ using i ->
@@ -113,6 +138,10 @@ Proof.
     destruct Hpf as [Hpf2 Hpf3 Hpf4].
     exact Hpf4.
   }
+  {
+    destruct Hpf as [Hpf2 Hpf3 Hpf4 Hpf5].
+    exact Hpf5.
+  }
 }
 Defined.
 
@@ -135,7 +164,7 @@ Proof.
 Defined.
 
 Lemma mu_monotone {Σ : Signature} Γ ϕ₁ ϕ₂ X (i : ProofInfo):
-  ProofInfoLe ( (ExGen := ∅, SVSubst := {[X]}, KT := true)) i ->
+  ProofInfoLe ( (ExGen := ∅, SVSubst := {[X]}, KT := true, AKT := has_bound_variable_under_mu ϕ₁^{{svar:X↦0}})) i ->
   svar_has_negative_occurrence X ϕ₁ = false ->
   svar_has_negative_occurrence X ϕ₂ = false ->
   Γ ⊢i ϕ₁ ---> ϕ₂ using i->

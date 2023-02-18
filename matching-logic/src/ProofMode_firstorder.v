@@ -849,7 +849,7 @@ Section with_signature.
 
   Lemma exists_elim Γ : forall l₁ l₂ g ϕ i x,
     well_formed (ex, ϕ) -> Pattern.wf l₁ -> Pattern.wf l₂ ->
-    ProofInfoLe (ExGen := {[x]}, SVSubst := ∅, KT := false) i ->
+    ProofInfoLe (ExGen := {[x]}, SVSubst := ∅, KT := false, AKT := false) i ->
     x ∉ free_evars ϕ ->
     x ∉ free_evars g ->
     x ∉ free_evars_of_list l₁ ->
@@ -870,7 +870,7 @@ Section with_signature.
   Defined.
 
   Lemma MLGoal_destructEx Γ l₁ l₂ g (x : evar) name ϕ i :
-    ProofInfoLe (ExGen := {[x]}, SVSubst := ∅, KT := false) i ->
+    ProofInfoLe (ExGen := {[x]}, SVSubst := ∅, KT := false, AKT := false) i ->
     x ∉ free_evars_of_list (map nh_patt l₁) ->
     x ∉ free_evars_of_list (map nh_patt l₂) ->
     x ∉ free_evars ϕ ->

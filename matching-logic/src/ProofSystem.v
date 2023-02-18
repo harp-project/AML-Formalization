@@ -687,9 +687,6 @@ Notation "Γ ⊢ ϕ" := (derives Γ ϕ)
 Notation "'ExGen' ':=' evs ',' 'SVSubst' := svs ',' 'KT' := bkt ',' 'AKT' := akt"
   := (@mkProofInfo _ evs svs bkt akt) (at level 95, no associativity).
 
-Notation "'ExGen' ':=' evs ',' 'SVSubst' := svs ',' 'KT' := bkt"
-  := (@mkProofInfo _ evs svs bkt false) (at level 95, no associativity).
-
 End Notations.
 
 (* We cannot turn a proof into wellformedness hypotheses
