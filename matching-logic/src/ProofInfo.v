@@ -30,7 +30,7 @@ Set Default Proof Mode "Classic".
 Open Scope ml_scope.
 
 (** For goals shaped like ProoInforMeeaning _ _ _ BasicReasoning *)
-Ltac solve_pim_simple := constructor; simpl;[(set_solver)|(set_solver)|(reflexivity)].
+Ltac solve_pim_simple := constructor; simpl;[(set_solver)|(set_solver)|(reflexivity)|(reflexivity)].
 
 
 Lemma useBasicReasoning {Σ : Signature} {Γ : Theory} {ϕ : Pattern} (i : ProofInfo) :
@@ -42,11 +42,15 @@ Proof.
   remember (proj1_sig H) as _H.
   exists (_H).
   clear Heq_H.
-  abstract (
-    destruct Hpf as [Hpf1 Hpf2 Hpf3];
+  destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf4].
   destruct i; constructor; simpl in *;
-  [set_solver|set_solver|idtac];
-  (destruct (uses_kt _H); simpl in *; try congruence)).
+  [set_solver|set_solver|idtac|idtac].
+  {
+    (destruct (uses_kt _H); simpl in *; try congruence).
+  }
+  {
+    (destruct (uses_kt_unreasonably _H); simpl in *; try congruence).
+  }
 Defined.
 
 
@@ -94,7 +98,10 @@ Proof.
       destruct H2 as [pf2 Hpf2];
       destruct Hpf1,Hpf2;
       constructor; simpl;
-      [set_solver|set_solver|(destruct (uses_kt pf1),(uses_kt pf2); simpl in *; congruence)]
+      [set_solver
+      |set_solver
+      |(destruct (uses_kt pf1),(uses_kt pf2); simpl in *; congruence)
+      |(destruct (uses_kt_unreasonably pf1),(uses_kt_unreasonably pf2); simpl in *; congruence)]
     ).
   }
 Defined.
@@ -169,6 +176,7 @@ Defined.
         { simpl. clear -Hx. set_solver. }
         { simpl. clear. set_solver. }
         { simpl. reflexivity. }
+        { simpl. reflexivity. }
       }
       destruct pile as [Hm2 Hm3 Hm4].
       simpl in *.
@@ -188,6 +196,7 @@ Defined.
         { clear. set_solver. }
         { clear -HX. set_solver. }
         { reflexivity. }
+        { simpl. reflexivity. }
       }
       destruct pile as [Hp2 Hp3 Hp4].
       simpl in *.
@@ -207,6 +216,46 @@ Defined.
         { clear. set_solver. }
         { clear. set_solver. }
         { reflexivity. }
+        { simpl. rewrite orb_comm. cbn.
+          unfold has_bound_variable_under_mu,mu_in_evar_path. cbn.
+          rewrite decide_eq_same.
+          reflexivity.
+        }
+      }
+      destruct pile as [Hp2 Hp3 Hp4].
+      simpl in Hp4.
+      rewrite Hp4.
+      reflexivity.
+    }
+    {
+      unfold ProofLe in pile.
+      pose (pf1 := A_impl_A ∅ patt_bott ltac:(wf_auto2)).
+      unshelve(epose (pf2 := ProofSystem.Knaster_tarski ∅ (patt_mu (patt_bound_svar 1)) patt_bott ltac:(wf_auto2) _)).
+      {
+        cbn. apply ProofSystem.Knaster_tarski.
+        { reflexivity. }
+        cbn.
+        apply A_impl_A.
+        reflexivity.
+      }
+      destruct pi_uses_advanced_kt.
+      2: { simpl. reflexivity. }
+      cbn.
+      destruct pi_uses_advanced_kt0.
+      { reflexivity. }
+      Search pi_uses_kt.
+      specialize (pile ∅ _ pf2).
+      feed specialize pile.
+      {
+        constructor; simpl.
+        { clear. set_solver. }
+        { clear. set_solver. }
+        { reflexivity. }
+        { simpl. rewrite orb_comm. cbn.
+          unfold has_bound_variable_under_mu,mu_in_evar_path. cbn.
+          rewrite decide_eq_same.
+          reflexivity.
+        }
       }
       destruct pile as [Hp2 Hp3 Hp4].
       simpl in Hp4.
