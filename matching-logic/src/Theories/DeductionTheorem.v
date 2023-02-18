@@ -1044,6 +1044,111 @@ Proof.
     }
 Defined.
 
+Lemma miep_svar_open {Σ : Signature} x ϕ:
+  evar_is_fresh_in x ϕ ->
+  mu_in_evar_path x ϕ^[svar:0↦patt_free_evar x] 0 = false.
+Proof.
+  induction ϕ; unfold mu_in_evar_path; cbn; intros HH; try reflexivity.
+  {
+    repeat case_match; try reflexivity; try lia.
+  }
+  {
+    unfold maximal_mu_depth_to in *.
+    repeat case_match; try reflexivity; subst; try lia.
+  }
+  {
+    repeat case_match; try reflexivity.
+    unfold evar_is_fresh_in in *. cbn in HH.
+    specialize (IHϕ1 ltac:(clear -HH; set_solver)).
+    specialize (IHϕ2 ltac:(clear -HH; set_solver)).
+    unfold mu_in_evar_path in *.
+    rewrite negb_false_iff in IHϕ1.
+    rewrite negb_false_iff in IHϕ2.
+    apply Nat.eqb_eq in IHϕ1.
+    apply Nat.eqb_eq in IHϕ2.
+    lia.
+  }
+  {
+    repeat case_match; try reflexivity.
+    unfold evar_is_fresh_in in *. cbn in HH.
+    specialize (IHϕ1 ltac:(clear -HH; set_solver)).
+    specialize (IHϕ2 ltac:(clear -HH; set_solver)).
+    unfold mu_in_evar_path in *.
+    rewrite negb_false_iff in IHϕ1.
+    rewrite negb_false_iff in IHϕ2.
+    apply Nat.eqb_eq in IHϕ1.
+    apply Nat.eqb_eq in IHϕ2.
+    lia.
+  }
+  {
+    repeat case_match; try reflexivity.
+    unfold evar_is_fresh_in in *. cbn in HH.
+    specialize (IHϕ ltac:(clear -HH; set_solver)).
+    unfold mu_in_evar_path in *.
+    rewrite negb_false_iff in IHϕ.
+    apply Nat.eqb_eq in IHϕ.
+    lia.
+  }
+  {
+    repeat case_match; try reflexivity.
+    unfold evar_is_fresh_in in *. cbn in HH.
+    specialize (IHϕ ltac:(clear -HH; set_solver)).
+    unfold mu_in_evar_path in *.
+    rewrite negb_false_iff in IHϕ.
+    apply Nat.eqb_eq in IHϕ.
+    lia.
+  }
+Abort.
+
+Lemma mmd_svar_open {Σ : Signature} x ϕ m:
+  well_formed_closed_mu_aux ϕ (S m) ->
+  evar_is_fresh_in x ϕ ->
+  maximal_mu_depth_to m x ϕ^[svar:m↦patt_free_evar x] = 0.
+Proof.
+  unfold evar_is_fresh_in.
+  move: m.
+  induction ϕ; intros m Hwf Hfr; cbn in *; try reflexivity.
+  {
+    case_match; try reflexivity.
+    exfalso. set_solver.
+  }
+  {
+    repeat case_match; cbn in *; try reflexivity;
+    rewrite decide_eq_same; try reflexivity.
+    subst.
+  }
+  {
+    rewrite IHϕ1.
+    { destruct_and!. assumption. }
+    { set_solver. }
+    rewrite IHϕ2.
+    { destruct_and!. assumption. }
+    { set_solver. }
+    reflexivity.
+  }
+  {
+    rewrite IHϕ1.
+    { destruct_and!. assumption. }
+    { set_solver. }
+    rewrite IHϕ2.
+    { destruct_and!. assumption. }
+    { set_solver. }
+    reflexivity.
+  }
+  {
+    rewrite IHϕ.
+    { assumption. }
+    { assumption. }
+    reflexivity.
+  }
+  {
+    rewrite IHϕ.
+    { assumption. }
+    { assumption. }
+    reflexivity.
+  }
+Abort.
+
 Lemma mu_and_predicate_propagation {Σ : Signature} {syntax : Syntax} Γ ϕ ψ X :
   Definedness_Syntax.theory ⊆ Γ ->
   well_formed (mu, ϕ) ->
@@ -1214,6 +1319,9 @@ Proof.
     { wf_auto2. }
     { wf_auto2. }
     {
+      unfold mu_in_evar_path.
+      rewrite negb_false_iff.
+      rewrite Nat.eqb_eq.
       Search mu_in_evar_path.
     }
     { assumption. }
