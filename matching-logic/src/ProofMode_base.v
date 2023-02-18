@@ -272,6 +272,14 @@ Proof.
   exact H.
 Defined.
 
+(* Just a conveniece *)
+Lemma cast_proof' {Σ : Signature} (Γ : Theory) (ϕ ψ : Pattern) (i : ProofInfo) (e : ψ = ϕ) :
+  Γ ⊢i ϕ using i ->
+  Γ ⊢i ψ using i.
+Proof.
+  intros H. rewrite e. exact H.
+Defined.
+
 #[global]
 Ltac mlRevertLast :=
 match goal with
