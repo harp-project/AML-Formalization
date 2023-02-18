@@ -776,9 +776,9 @@ Defined.
       *)
       assert (S2: Γ ⊢i phi1 ---> (phi2 or ⌈ ! ψ ⌉) using i').
       { toMLGoal.
-        { wf_auto2. }
+        { clear Hpf5. wf_auto2. }
         mlAdd IHpf. mlIntro.
-        mlAdd (useBasicReasoning i' (A_or_notA Γ (⌈ ! ψ ⌉) ltac:(wf_auto2))).
+        mlAdd (useBasicReasoning i' (A_or_notA Γ (⌈ ! ψ ⌉) ltac:(clear Hpf5; wf_auto2))).
         mlDestructOr "0".
         - mlRight. mlExact "3".
         - mlLeft.
@@ -804,7 +804,7 @@ Defined.
           instantiate (1 := evar_fresh (elements (free_evars ψ ∪ free_evars psi))). set_solver.
         }
         { clear. set_solver. }
-        { reflexivity. }
+        { cbn. split; reflexivity. }
         {
           cbn. 
           replace (free_evars ψ ∪ ∅ ∪ (free_evars psi ∪ (∅ ∪ ∅))) with
@@ -825,11 +825,11 @@ Defined.
         pose proof (Htmp := prf_prop_or_iff Γ (ctx_app_l box psi ltac:(assumption)) phi2 (⌈! ψ ⌉)).
         feed specialize Htmp.
         { wf_auto2. }
-        { wf_auto2. }
+        { clear Hpf5; wf_auto2. }
         simpl in Htmp.
         apply pf_iff_proj1 in Htmp.
-        3: wf_auto2.
-        2: wf_auto2.
+        3: clear Hpf5; wf_auto2.
+        2: clear Hpf5; wf_auto2.
         subst i'.
         eapply syllogism_meta.
         5: {
@@ -837,13 +837,13 @@ Defined.
           clear. try_solve_pile.
         }
         4: assumption.
-        all: wf_auto2.
+        all: clear Hpf5; wf_auto2.
       }
 
       assert (S6: Γ ⊢i ((phi2 $ psi) or (⌈ ! ψ ⌉ $ psi)) ---> ((phi2 $ psi) or (⌈ ! ψ ⌉)) using i').
       {
         toMLGoal.
-        { wf_auto2. }
+        { clear Hpf5; wf_auto2. }
         mlIntro. mlAdd S3.
         (* TODO we need a tactic for adding  something with stronger constraint. *)
         mlAdd (useBasicReasoning i' (A_or_notA Γ (phi2 $ psi) ltac:(auto))).
@@ -855,10 +855,10 @@ Defined.
       assert (S7: Γ ⊢i (phi1 $ psi) ---> ((phi2 $ psi)  or ⌈ ! ψ ⌉) using i').
       {
         toMLGoal.
-        { wf_auto2. }
+        { clear Hpf5; wf_auto2. }
         mlAdd S5. mlAdd S6. mlIntro.
         mlAssert (((phi2 $ psi) or (⌈ ! ψ ⌉ $ psi))).
-        { wf_auto2. }
+        { clear Hpf5; wf_auto2. }
         { mlApply "0". mlExactn 2. }
         mlDestructOr "3".
         - mlLeft. mlExactn 3.
@@ -866,10 +866,10 @@ Defined.
       }
 
       toMLGoal.
-      { wf_auto2. }
+      { clear Hpf5; wf_auto2. }
       do 2 mlIntro. mlAdd S7.
       mlAssert ((phi2 $ psi or ⌈ ! ψ ⌉)).
-      { wf_auto2. }
+      {clear Hpf5; wf_auto2. }
       { mlApply "2". mlExactn 2. }
       mlDestructOr "3".
       + mlExactn 3.
@@ -900,14 +900,15 @@ Defined.
       { unfold well_formed,well_formed_closed in *. simpl in *.
         destruct_and!. split_and!; auto. }
 
-      destruct Hpf as [Hpf2 Hpf3 Hpf4].
-      simpl in Hpf2,Hpf3,Hpf4.
+      destruct Hpf as [Hpf2 Hpf3 Hpf4 Hpf5].
+      simpl in Hpf2,Hpf3,Hpf4,Hpf5.
       feed specialize IHpf.
       {
         constructor; simpl.
         { set_solver. }
         { set_solver. }
         { apply Hpf4. }
+        { apply Hpf5. }
       }
       { wf_auto2. }
 
@@ -954,7 +955,6 @@ Defined.
                   (free_evars ψ ∪ free_evars psi) by set_solver.
           apply set_evar_fresh_is_fresh'.
         }
-
       }
 
       assert (S4: Γ ⊢i (psi $ phi1) ---> (psi $ (phi2 or ⌈ ! ψ ⌉)) using i').
@@ -1027,7 +1027,7 @@ Defined.
           mlApply "0".
           mlExactn 5.
     - (* Set variable substitution *)
-      destruct Hpf as [Hpf2 Hpf3 Hpf4].
+      destruct Hpf as [Hpf2 Hpf3 Hpf4 Hpf5].
       simpl in Hpf2, Hpf3, Hpf4.
       feed specialize IHpf.
       {
@@ -1035,6 +1035,7 @@ Defined.
         { exact Hpf2. }
         { clear -Hpf3. set_solver. }
         { exact Hpf4. }
+        { exact Hpf5. }
       }
       {
         wf_auto2.
@@ -1090,7 +1091,8 @@ Defined.
     ProofInfoLe 
     (ExGen := {[ev_x; fresh_evar φ]},
      SVSubst := ∅,
-     KT := false
+     KT := false,
+     AKT := false
     ) i ->
     well_formed φ ->
     theory ⊆ Γ ->
@@ -1202,7 +1204,8 @@ Defined.
     ProofInfoLe 
     (ExGen := {[ev_x; x]},
     SVSubst := ∅,
-     KT := false
+     KT := false,
+     AKT := false
     ) i ->
 
     well_formed φ ->
@@ -1652,7 +1655,7 @@ Defined.
     intros.
     apply equality_elimination_basic_mfpath; try assumption.
     now apply mu_free_in_path.
-  Qed.
+  Defined.
 
 
   Lemma equality_elimination_basic_ar Γ φ1 φ2 C:
@@ -1788,7 +1791,7 @@ Defined.
     {
       simpl. reflexivity.
     }
-  Qed.
+  Defined.
 
   Lemma evar_quantify_equal_simpl : forall φ1 φ2 x n,
       evar_quantify x n (φ1 =ml φ2) = (evar_quantify x n φ1) =ml (evar_quantify x n φ2).
