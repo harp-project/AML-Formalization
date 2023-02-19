@@ -105,7 +105,6 @@ Section nat.
     { set_solver. }
     { set_solver. }
     { set_solver. }
-    { set_solver. }
   Defined.
 
   Theorem peano_induction X :
