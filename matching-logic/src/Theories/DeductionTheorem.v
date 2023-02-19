@@ -2015,7 +2015,7 @@ Proof.
     1: exact HΓ.
 Defined.
 
-Lemma MLGoal_deduct
+Lemma MLGoal_deduct'
   {Σ : Signature}
   {syntax : Syntax}
   (Γ : Theory)
@@ -2047,6 +2047,77 @@ Proof.
   { assumption. }
   { assumption. }
 Defined.
+
+Lemma MLGoal_deduct
+  {Σ : Signature}
+  {syntax : Syntax}
+  (Γ : Theory)
+  (l₁ l₂ : hypotheses)
+  name
+  (ψ g : Pattern)
+  (C : PatternCtx)
+  (i : ProofInfo)
+  :
+  theory ⊆ Γ ->
+  pi_generalized_evars i ## gset_to_coGset (free_evars ψ) ->
+  pi_substituted_svars i ## gset_to_coGset (free_svars ψ) ->
+  pi_uses_advanced_kt i = false ->
+  mkMLGoal Σ (Γ ∪ {[ψ]}) (l₁ ++ l₂) g i ->
+  mkMLGoal Σ Γ (l₁ ++ (mkNH _ name ⌊ ψ ⌋) :: l₂) g AnyReasoning .
+Proof.
+  intros HΓ Hge Hse Hakt H.
+  intros wf1 wf2. cbn in *.
+
+  rewrite map_app in wf2. cbn in wf2.
+  rewrite map_app in wf2. cbn in wf2.
+  rewrite foldr_app in wf2. cbn in wf2.
+  rewrite foldr_andb_true_iff in wf2.
+
+  assert (well_formed ψ).
+  {
+    wf_auto2.
+  }
+  assert (wf (map nh_patt l₁)).
+  {
+    destruct_and!. assumption.
+  }
+  assert (wf (map nh_patt l₂)).
+  {
+    destruct_and!. assumption.
+  }
+  
+  feed specialize H.
+  { wf_auto2. }
+  { cbn in wf2. cbn.
+    rewrite map_app. cbn.
+    rewrite map_app. cbn.
+    rewrite foldr_app. cbn.
+    rewrite foldr_andb_true_iff.
+    destruct_and!.
+    split_and!;assumption.
+  }
+  cbn in *.
+  rewrite map_app.
+  apply reorder_middle_to_head_meta.
+  { wf_auto2. }
+  { wf_auto2. }
+  { wf_auto2. }
+  { wf_auto2. }
+  cbn.
+  eapply deduction_theorem.
+  { 
+    rewrite map_app in H.
+    apply H.
+  }
+  { wf_auto2. }
+  { wf_auto2. }
+  { exact HΓ. }
+  { assumption. }
+  { assumption. }
+  { assumption. }
+Defined.
+
+
 
 Close Scope ml_scope.
 Close Scope string_scope.
