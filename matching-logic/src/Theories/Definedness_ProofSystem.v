@@ -1757,7 +1757,8 @@ Defined.
       mlApplyMeta H0. mlExact "0".
   Defined.
 
-  Lemma patt_eq_sym Γ φ1 φ2:
+  (* TODO: proof infos *)
+  Lemma patt_equal_sym Γ φ1 φ2:
     theory ⊆ Γ ->
     well_formed φ1 -> well_formed φ2 ->
     Γ ⊢i φ1 =ml φ2 ---> φ2 =ml φ1
@@ -1800,15 +1801,15 @@ Defined.
   Definition is_functional φ : Pattern :=
     (ex, φ =ml b0).
 
-  Lemma patt_eq_comm φ φ' Γ:
+  Lemma patt_equal_comm φ φ' Γ:
     theory ⊆ Γ ->
     well_formed φ ->
     well_formed φ' ->
     Γ ⊢ (φ =ml φ') <---> (φ' =ml φ).
   Proof.
     intros HΓ wfφ wfφ'.
-    pose proof (SYM1 := @patt_eq_sym Γ φ' φ HΓ wfφ' wfφ).
-    pose proof (SYM2 := @patt_eq_sym Γ φ φ' HΓ wfφ wfφ').
+    pose proof (SYM1 := @patt_equal_sym Γ φ' φ HΓ wfφ' wfφ).
+    pose proof (SYM2 := @patt_equal_sym Γ φ φ' HΓ wfφ wfφ').
     apply pf_iff_split. 3,4: assumption. 1,2: wf_auto2. 
   Defined.
 
@@ -4352,7 +4353,7 @@ Proof.
   { wf_auto2. }
   mlIntro "H0".
 
-  unshelve(mlApplyMeta patt_eq_sym in "H0").
+  unshelve(mlApplyMeta patt_equal_sym in "H0").
   2: { assumption. }
   mlRewriteBy "H0" at 1.
   { assumption. }
@@ -4685,6 +4686,80 @@ Proof.
   mlClear "mH".
   mlSpec "mH1".
   mlExact "mH1".
+Defined.
+
+Lemma MLGoal_reflexivity {Σ : Signature} {syntax : Syntax} Γ l ϕ i :
+  theory ⊆ Γ ->
+  mkMLGoal _ Γ l (ϕ =ml ϕ) i.
+Proof.
+  intros HΓ. unfold of_MLGoal. simpl. intros wfl wfg.
+  eapply MP. 2: gapply nested_const.
+  2: try_solve_pile. 2-3: wf_auto2.
+  gapply patt_equal_refl. try_solve_pile. wf_auto2.
+Defined.
+
+Tactic Notation "mlReflexivity" :=
+  _ensureProofMode;
+  apply MLGoal_reflexivity; try assumption; set_solver.
+
+Local Example mlReflexivity_test {Σ : Signature} {syntax : Syntax} Γ ϕ ψ :
+  theory ⊆ Γ -> well_formed ϕ -> well_formed ψ ->
+  Γ ⊢i ϕ ---> ψ ---> ψ =ml ψ using BasicReasoning.
+Proof.
+  intros.
+  do 2 mlIntro.
+  mlReflexivity.
+Defined.
+
+(* TODO: strengthen proof info about this: *)
+Lemma MLGoal_symmetry {Σ : Signature} {syntax : Syntax} Γ l ϕ ψ :
+  theory ⊆ Γ ->
+  mkMLGoal _ Γ l (ϕ =ml ψ) AnyReasoning ->
+  mkMLGoal _ Γ l (ψ =ml ϕ) AnyReasoning.
+Proof.
+  unfold of_MLGoal. simpl.
+  intros HΓ H wfl wfg.
+  eapply prf_weaken_conclusion_iter_meta_meta. 5: apply H.
+  1-3,5,6: wf_auto2.
+  apply patt_equal_sym; auto.
+  1-2: wf_auto2.
+Defined.
+
+(* TODO: strengthen proof info about this: *)
+Lemma MLGoal_symmetryIn {Σ : Signature} {syntax : Syntax} name Γ l1 l2 ϕ ψ g  :
+  theory ⊆ Γ ->
+  mkMLGoal _ Γ (l1 ++ (mkNH _ name (ϕ =ml ψ)) :: l2) g AnyReasoning ->
+  mkMLGoal _ Γ (l1 ++ (mkNH _ name (ψ =ml ϕ)) :: l2) g AnyReasoning.
+Proof.
+  unfold of_MLGoal. simpl.
+  intros HΓ H wfl wfg.
+  unfold patterns_of in *. rewrite -> map_app in *. simpl in *.
+  eapply prf_strenghten_premise_iter_meta_meta.
+  6 : apply patt_equal_sym; auto.
+  8: apply H.
+  all: wf_auto2.
+Defined.
+
+
+Tactic Notation "mlSymmetry" :=
+  _ensureProofMode;
+  apply MLGoal_symmetry; [try assumption; set_solver|].
+
+Tactic Notation "mlSymmetry" "in" constr(name) :=
+  _ensureProofMode;
+  _mlReshapeHypsByName name;
+  apply (MLGoal_symmetryIn name); [try assumption; set_solver|];
+  _mlReshapeHypsBack.
+
+Local Example mlSymmetry_test {Σ : Signature} {syntax : Syntax} Γ ϕ ψ :
+  theory ⊆ Γ -> well_formed ϕ -> well_formed ψ ->
+  Γ ⊢i ϕ =ml ψ ---> ϕ =ml ψ using AnyReasoning.
+Proof.
+  intros.
+  mlIntro "H".
+  mlSymmetry.
+  mlSymmetry in "H".
+  mlAssumption.
 Defined.
 
 Close Scope ml_scope.
