@@ -2328,9 +2328,10 @@ Tactic Notation "mlRewrite" "<-" constr(Hiff) "at" constr(atn) :=
 Local Example ex_prf_rewrite_equiv_2 {Σ : Signature} Γ a a' b x:
   well_formed a ->
   well_formed a' ->
-  well_formed b ->
+  well_formed (ex, b) ->
   Γ ⊢ a <---> a' ->
-  Γ ⊢i (a $ a $ b $ a ---> (patt_free_evar x)) <---> (a $ a' $ b $ a' ---> (patt_free_evar x))
+  Γ ⊢i (ex, (a $ a $ b $ a ---> (patt_free_evar x)))
+  <---> (ex, (a $ a' $ b $ a' ---> (patt_free_evar x)))
   using AnyReasoning.
 Proof.
   intros wfa wfa' wfb Hiff.
