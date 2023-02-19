@@ -2055,17 +2055,13 @@ Lemma MLGoal_deduct
   (l₁ l₂ : hypotheses)
   name
   (ψ g : Pattern)
-  (C : PatternCtx)
-  (i : ProofInfo)
   :
   theory ⊆ Γ ->
-  pi_generalized_evars i ## gset_to_coGset (free_evars ψ) ->
-  pi_substituted_svars i ## gset_to_coGset (free_svars ψ) ->
-  pi_uses_advanced_kt i = false ->
-  mkMLGoal Σ (Γ ∪ {[ψ]}) (l₁ ++ l₂) g i ->
+  mkMLGoal Σ (Γ ∪ {[ψ]}) (l₁ ++ l₂) g
+    ((ExGen := ⊤ ∖ gset_to_coGset (free_evars ψ), SVSubst := ⊤ ∖ gset_to_coGset (free_svars ψ), KT := true, AKT := false)) ->
   mkMLGoal Σ Γ (l₁ ++ (mkNH _ name ⌊ ψ ⌋) :: l₂) g AnyReasoning .
 Proof.
-  intros HΓ Hge Hse Hakt H.
+  intros HΓ H.
   intros wf1 wf2. cbn in *.
 
   rewrite map_app in wf2. cbn in wf2.
@@ -2112,12 +2108,61 @@ Proof.
   { wf_auto2. }
   { wf_auto2. }
   { exact HΓ. }
-  { assumption. }
-  { assumption. }
-  { assumption. }
+  { cbn. rewrite union_empty_l_L.
+    unfold disjoint.
+    unfold set_disjoint_instance.
+    intros x Hx HContra.
+    rewrite elem_of_gset_to_coGset in HContra.
+    cbn in Hx.
+    clear -Hx HContra.
+    contradiction.
+  }
+  { cbn. rewrite union_empty_l_L.
+    unfold disjoint.
+    unfold set_disjoint_instance.
+    intros x Hx HContra.
+    rewrite elem_of_gset_to_coGset in HContra.
+    cbn in Hx.
+    clear -Hx HContra.
+    contradiction.
+  }
+  {
+    reflexivity.
+  }
 Defined.
 
 
+Tactic Notation "mlDeduct" constr(name) :=
+  _ensureProofMode;
+  _mlReshapeHypsByName name;
+  apply MLGoal_deduct;
+  [try assumption|_mlReshapeHypsBack]
+.
+
+#[local]
+Example ex_deduct
+  {Σ : Signature} {syntax : Syntax} (Γ : Theory) (ϕ₁ ϕ₂ ϕ₃ : Pattern)
+  : 
+  well_formed ϕ₁ ->
+  well_formed ϕ₂ ->
+  well_formed ϕ₃ ->
+  theory ⊆ Γ ->
+  Γ ⊢ ϕ₁ ---> ⌊ ϕ₂ ⌋ ---> ϕ₃ ---> ϕ₂
+.
+Proof.
+  intros wf1 wf2 wf3 HΓ.
+  mlIntro "H1".
+  mlIntro "H2".
+  mlIntro "H3".
+  mlDeduct "H2".
+  useBasicReasoning.
+  mlClear "H1".
+  mlClear "H3".
+  fromMLGoal.
+  apply hypothesis.
+  { wf_auto2. }
+  { set_solver. }
+Defined.
 
 Close Scope ml_scope.
 Close Scope string_scope.
