@@ -1,9 +1,3 @@
-(*
-  This file contains admits for some cases of well formedness.
-  Those cases are indeed well formed and could be reasoned about by hand.
-  However, time is better spent by making wf_auto2 be able to fix them.
-*)
-
 From Coq Require Import ssreflect ssrfun ssrbool.
 
 From Ltac2 Require Import Ltac2.
@@ -1391,17 +1385,13 @@ Theorem deduction_theorem {Σ : Signature} {syntax : Syntax} Γ ϕ ψ
   well_formed ϕ ->
   well_formed ψ ->
   theory ⊆ Γ ->
-  (forall x : evar,
-    evar_is_fresh_in x ϕ ->
-    mu_in_evar_path x ϕ^[svar:0↦patt_free_evar x] 0 = false
-  ) ->
   pi_generalized_evars gpi ## (gset_to_coGset (free_evars ψ)) ->
   pi_substituted_svars gpi ## (gset_to_coGset (free_svars ψ)) ->
   pi_uses_advanced_kt gpi = false ->
   Γ ⊢i ⌊ ψ ⌋ ---> ϕ
   using AnyReasoning.
 Proof.
-  intros wfϕ wfψ HΓ Hmuphi HnoExGen HnoSvarSubst Hnoakt.
+  intros wfϕ wfψ HΓ HnoExGen HnoSvarSubst Hnoakt.
   destruct pf as [pf Hpf]. simpl.
   induction pf.
   - (* hypothesis *)
@@ -1482,13 +1472,6 @@ Proof.
       }
     }
     { assumption. }
-    {
-      intros.
-      rewrite bsvar_subst_not_occur.
-      { wf_auto2. }
-      apply fresh_impl_no_mu_in_evar_path.
-      exact H1.
-    }
     feed specialize IHpf2.
     {
       constructor; simpl.
@@ -1516,13 +1499,6 @@ Proof.
       }
     }
     { wf_auto2. }
-    {
-      intros.
-      rewrite bsvar_subst_not_occur.
-      { wf_auto2. }
-      apply fresh_impl_no_mu_in_evar_path.
-      exact H1.
-    }
 
     toMLGoal.
     { wf_auto2. }
@@ -1556,13 +1532,6 @@ Proof.
       { apply Hpf5. }
     }
     { clear Hpf5; wf_auto2. }
-    {
-      intros.
-      rewrite bsvar_subst_not_occur.
-      { clear Hpf5; wf_auto2. }
-      apply fresh_impl_no_mu_in_evar_path.
-      assumption.
-    }
 
     apply reorder_meta in IHpf.
     2-4:  clear Hpf5; wf_auto2.
@@ -1636,13 +1605,6 @@ Proof.
       { apply Hpf5. }
     }
     { wf_auto2. }
-    {
-      intros.
-      rewrite bsvar_subst_not_occur.
-      { clear Hpf5; wf_auto2. }
-      apply fresh_impl_no_mu_in_evar_path.
-      assumption.
-    }
     clear Hpf5.
     remember_constraint as i'.
 
@@ -1778,13 +1740,6 @@ Proof.
       { apply Hpf5. }
     }
     { clear Hpf5; wf_auto2. }
-    {
-      intros.
-      rewrite bsvar_subst_not_occur.
-      { clear Hpf5; wf_auto2. }
-      apply fresh_impl_no_mu_in_evar_path.
-      assumption.
-    }
 
     clear Hpf5.
 
@@ -1909,13 +1864,6 @@ Proof.
     {
       wf_auto2.
     }
-    {
-      intros.
-      rewrite bsvar_subst_not_occur.
-      { clear Hpf5; wf_auto2. }
-      apply fresh_impl_no_mu_in_evar_path.
-      assumption.
-    }
     clear Hpf5.
     remember_constraint as i'.
 
@@ -1969,13 +1917,6 @@ Proof.
     }
     { clear Hpf2 Hpf3 Hpf4 Hpf5.
       wf_auto2.
-    }
-    {
-      intros.
-      rewrite bsvar_subst_not_occur.
-      {  cbn. clear Hpf2 Hpf3 Hpf4 Hpf5. wf_auto2. }
-      apply fresh_impl_no_mu_in_evar_path.
-      assumption.
     }
 
     cbn in *.
