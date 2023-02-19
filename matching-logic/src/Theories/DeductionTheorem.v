@@ -2015,6 +2015,39 @@ Proof.
     1: exact HΓ.
 Defined.
 
+Lemma MLGoal_deduct
+  {Σ : Signature}
+  {syntax : Syntax}
+  (Γ : Theory)
+  (l : hypotheses)
+  name
+  (ψ g : Pattern)
+  (C : PatternCtx)
+  (i : ProofInfo)
+  :
+  theory ⊆ Γ ->
+  pi_generalized_evars i ## gset_to_coGset (free_evars ψ) ->
+  pi_substituted_svars i ## gset_to_coGset (free_svars ψ) ->
+  pi_uses_advanced_kt i = false ->
+  mkMLGoal Σ (Γ ∪ {[ψ]}) l g i ->
+  mkMLGoal Σ Γ ((mkNH _ name ⌊ ψ ⌋) :: l) g AnyReasoning .
+Proof.
+  intros HΓ Hge Hse Hakt H.
+  intros wf1 wf2. cbn in *.
+  feed specialize H.
+  { wf_auto2. }
+  { cbn in wf2. cbn. destruct_and!. assumption. }
+  cbn in *.
+  eapply deduction_theorem.
+  { apply H. }
+  { wf_auto2. }
+  { wf_auto2. }
+  { exact HΓ. }
+  { assumption. }
+  { assumption. }
+  { assumption. }
+Defined.
+
 Close Scope ml_scope.
 Close Scope string_scope.
 Close Scope list_scope.
