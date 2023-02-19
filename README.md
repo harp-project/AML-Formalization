@@ -97,9 +97,9 @@ It will detect the nix-provided coq and libraries automatically.
 
 ### Structure
 
-- `matching-logic` library contains a locally-nameless encoding of matching logic in Coq.
-- `examples` folder contain a set of examples about using the matching logic embedding.
-- `prover` defines a proof of concept about extracting matching logic proofs to Metamath.
+- `matching-logic` library contains a locally-nameless encoding of matching logic in Coq, including the soundness theorem and a proof mode for building matching logic proofs interactively.
+- `examples` folder contain a set of examples that use the matching logic library.
+- `prover` contains a proof-of-concept extractors of matching logic proofs to Metamath.
 
 
 ## References
