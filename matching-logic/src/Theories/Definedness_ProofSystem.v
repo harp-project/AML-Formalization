@@ -1813,7 +1813,6 @@ Defined.
     apply pf_iff_split. 3,4: assumption. 1,2: wf_auto2. 
   Defined.
 
-
   Lemma exists_functional_subst φ φ' Γ :
     theory ⊆ Γ ->
     mu_free φ -> well_formed φ' -> well_formed_closed_ex_aux φ 1 -> well_formed_closed_mu_aux φ 0 ->
@@ -4760,6 +4759,57 @@ Proof.
   mlSymmetry.
   mlSymmetry in "H".
   mlAssumption.
+Defined.
+
+
+(* TODO: eliminate mu_free *)
+Lemma patt_equal_trans {Σ : Signature} {syntax : Syntax} Γ φ1 φ2 φ3:
+  theory ⊆ Γ ->
+  well_formed φ1 -> well_formed φ2 -> well_formed φ3 ->
+  mu_free φ1 -> mu_free φ2 -> mu_free φ3 ->
+  Γ ⊢i φ1 =ml φ2 ---> φ2 =ml φ3 ---> φ1 =ml φ3
+  using AnyReasoning.
+Proof.
+  intros HΓ WF1 WF2 WF3 MF1 MF2 MF3.
+  mlIntro "H". mlIntro "H0".
+  mlAssert ("H1" : ⌊ (φ1 <---> φ2) and (φ2 <---> φ3) ⌋). wf_auto2. {
+    pose proof (patt_total_and Γ (φ1 <---> φ2) (φ2 <---> φ3) HΓ ltac:(wf_auto2) ltac:(wf_auto2)).
+    apply pf_iff_proj2 in H. 2-3: wf_auto2.
+    use AnyReasoning in H. mlApplyMeta H. mlSplitAnd; mlAssumption.
+  }
+  mlClear "H". mlClear "H0". fromMLGoal.
+  unshelve (gapply deduction_theorem_noKT). exact BasicReasoning. try_solve_pile.
+  2-3: abstract(wf_auto2).
+  2: exact HΓ.
+  {
+    remember (Γ ∪ {[(φ1 <---> φ2) and (φ2 <---> φ3)]}) as Γ'.
+    assert (Γ' ⊢i ((φ1 <---> φ2) and (φ2 <---> φ3)) using BasicReasoning). {
+      apply BasicProofSystemLemmas.hypothesis. wf_auto2.
+      rewrite HeqΓ'. apply elem_of_union_r. constructor. 
+    }
+    epose proof (pf_conj_elim_l _ _ _ _ _) as H'.
+    eapply MP in H'.
+    2: { exact H. }
+    epose proof (pf_conj_elim_r _ _ _ _ _) as H''.
+    eapply MP in H''.
+    2: { exact H. }
+    clear H.
+    apply pf_iff_equiv_sym in H'; auto.
+    apply pf_iff_equiv_sym in H''; auto.
+    apply patt_iff_implies_equal; auto.
+    2 : {
+    toMLGoal. wf_auto2. mlSplitAnd.
+    * apply pf_iff_proj2 in H'. apply pf_iff_proj2 in H''. 2-5: wf_auto2.
+      mlIntro. mlApplyMeta H''. mlApplyMeta H'. mlAssumption.
+    * apply pf_iff_proj1 in H'. apply pf_iff_proj1 in H''. 2-5: wf_auto2.
+      mlIntro. mlApplyMeta H'. mlApplyMeta H''. mlAssumption.
+    }
+    try_solve_pile.
+  }
+  1-2: set_solver.
+  auto.
+  Unshelve.
+  1-4: wf_auto2.
 Defined.
 
 Close Scope ml_scope.
