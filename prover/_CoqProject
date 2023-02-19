@@ -2,7 +2,6 @@
 
 theories/Matchers.v
 theories/NMatchers.v
-theories/MLTauto.v
 theories/Named.v
 theories/NamedProofSystem.v
 theories/MMProofExtractor.v
