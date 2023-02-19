@@ -1,9 +1,3 @@
-(*
-  This file contains admits for some cases of well formedness.
-  Those cases are indeed well formed and could be reasoned about by hand.
-  However, time is better spent by making wf_auto2 be able to fix them.
-*)
-
 From Coq Require Import ssreflect ssrfun ssrbool.
 
 From Ltac2 Require Import Ltac2.
@@ -1391,17 +1385,13 @@ Theorem deduction_theorem {Σ : Signature} {syntax : Syntax} Γ ϕ ψ
   well_formed ϕ ->
   well_formed ψ ->
   theory ⊆ Γ ->
-  (forall x : evar,
-    evar_is_fresh_in x ϕ ->
-    mu_in_evar_path x ϕ^[svar:0↦patt_free_evar x] 0 = false
-  ) ->
   pi_generalized_evars gpi ## (gset_to_coGset (free_evars ψ)) ->
   pi_substituted_svars gpi ## (gset_to_coGset (free_svars ψ)) ->
   pi_uses_advanced_kt gpi = false ->
   Γ ⊢i ⌊ ψ ⌋ ---> ϕ
   using AnyReasoning.
 Proof.
-  intros wfϕ wfψ HΓ Hmuphi HnoExGen HnoSvarSubst Hnoakt.
+  intros wfϕ wfψ HΓ HnoExGen HnoSvarSubst Hnoakt.
   destruct pf as [pf Hpf]. simpl.
   induction pf.
   - (* hypothesis *)
@@ -1482,13 +1472,6 @@ Proof.
       }
     }
     { assumption. }
-    {
-      intros.
-      rewrite bsvar_subst_not_occur.
-      { wf_auto2. }
-      apply fresh_impl_no_mu_in_evar_path.
-      exact H1.
-    }
     feed specialize IHpf2.
     {
       constructor; simpl.
@@ -1516,13 +1499,6 @@ Proof.
       }
     }
     { wf_auto2. }
-    {
-      intros.
-      rewrite bsvar_subst_not_occur.
-      { wf_auto2. }
-      apply fresh_impl_no_mu_in_evar_path.
-      exact H1.
-    }
 
     toMLGoal.
     { wf_auto2. }
@@ -1556,13 +1532,6 @@ Proof.
       { apply Hpf5. }
     }
     { clear Hpf5; wf_auto2. }
-    {
-      intros.
-      rewrite bsvar_subst_not_occur.
-      { clear Hpf5; wf_auto2. }
-      apply fresh_impl_no_mu_in_evar_path.
-      assumption.
-    }
 
     apply reorder_meta in IHpf.
     2-4:  clear Hpf5; wf_auto2.
@@ -1636,13 +1605,6 @@ Proof.
       { apply Hpf5. }
     }
     { wf_auto2. }
-    {
-      intros.
-      rewrite bsvar_subst_not_occur.
-      { clear Hpf5; wf_auto2. }
-      apply fresh_impl_no_mu_in_evar_path.
-      assumption.
-    }
     clear Hpf5.
     remember_constraint as i'.
 
@@ -1778,13 +1740,6 @@ Proof.
       { apply Hpf5. }
     }
     { clear Hpf5; wf_auto2. }
-    {
-      intros.
-      rewrite bsvar_subst_not_occur.
-      { clear Hpf5; wf_auto2. }
-      apply fresh_impl_no_mu_in_evar_path.
-      assumption.
-    }
 
     clear Hpf5.
 
@@ -1909,13 +1864,6 @@ Proof.
     {
       wf_auto2.
     }
-    {
-      intros.
-      rewrite bsvar_subst_not_occur.
-      { clear Hpf5; wf_auto2. }
-      apply fresh_impl_no_mu_in_evar_path.
-      assumption.
-    }
     clear Hpf5.
     remember_constraint as i'.
 
@@ -1969,13 +1917,6 @@ Proof.
     }
     { clear Hpf2 Hpf3 Hpf4 Hpf5.
       wf_auto2.
-    }
-    {
-      intros.
-      rewrite bsvar_subst_not_occur.
-      {  cbn. clear Hpf2 Hpf3 Hpf4 Hpf5. wf_auto2. }
-      apply fresh_impl_no_mu_in_evar_path.
-      assumption.
     }
 
     cbn in *.
@@ -2072,6 +2013,155 @@ Proof.
     Unshelve.
     2,3: wf_auto2.
     1: exact HΓ.
+Defined.
+
+Lemma MLGoal_deduct'
+  {Σ : Signature}
+  {syntax : Syntax}
+  (Γ : Theory)
+  (l : hypotheses)
+  name
+  (ψ g : Pattern)
+  (C : PatternCtx)
+  (i : ProofInfo)
+  :
+  theory ⊆ Γ ->
+  pi_generalized_evars i ## gset_to_coGset (free_evars ψ) ->
+  pi_substituted_svars i ## gset_to_coGset (free_svars ψ) ->
+  pi_uses_advanced_kt i = false ->
+  mkMLGoal Σ (Γ ∪ {[ψ]}) l g i ->
+  mkMLGoal Σ Γ ((mkNH _ name ⌊ ψ ⌋) :: l) g AnyReasoning .
+Proof.
+  intros HΓ Hge Hse Hakt H.
+  intros wf1 wf2. cbn in *.
+  feed specialize H.
+  { wf_auto2. }
+  { cbn in wf2. cbn. destruct_and!. assumption. }
+  cbn in *.
+  eapply deduction_theorem.
+  { apply H. }
+  { wf_auto2. }
+  { wf_auto2. }
+  { exact HΓ. }
+  { assumption. }
+  { assumption. }
+  { assumption. }
+Defined.
+
+Lemma MLGoal_deduct
+  {Σ : Signature}
+  {syntax : Syntax}
+  (Γ : Theory)
+  (l₁ l₂ : hypotheses)
+  name
+  (ψ g : Pattern)
+  :
+  theory ⊆ Γ ->
+  mkMLGoal Σ (Γ ∪ {[ψ]}) (l₁ ++ l₂) g
+    ((ExGen := ⊤ ∖ gset_to_coGset (free_evars ψ), SVSubst := ⊤ ∖ gset_to_coGset (free_svars ψ), KT := true, AKT := false)) ->
+  mkMLGoal Σ Γ (l₁ ++ (mkNH _ name ⌊ ψ ⌋) :: l₂) g AnyReasoning .
+Proof.
+  intros HΓ H.
+  intros wf1 wf2. cbn in *.
+
+  rewrite map_app in wf2. cbn in wf2.
+  rewrite map_app in wf2. cbn in wf2.
+  rewrite foldr_app in wf2. cbn in wf2.
+  rewrite foldr_andb_true_iff in wf2.
+
+  assert (well_formed ψ).
+  {
+    wf_auto2.
+  }
+  assert (wf (map nh_patt l₁)).
+  {
+    destruct_and!. assumption.
+  }
+  assert (wf (map nh_patt l₂)).
+  {
+    destruct_and!. assumption.
+  }
+  
+  feed specialize H.
+  { wf_auto2. }
+  { cbn in wf2. cbn.
+    rewrite map_app. cbn.
+    rewrite map_app. cbn.
+    rewrite foldr_app. cbn.
+    rewrite foldr_andb_true_iff.
+    destruct_and!.
+    split_and!;assumption.
+  }
+  cbn in *.
+  rewrite map_app.
+  apply reorder_middle_to_head_meta.
+  { wf_auto2. }
+  { wf_auto2. }
+  { wf_auto2. }
+  { wf_auto2. }
+  cbn.
+  eapply deduction_theorem.
+  { 
+    rewrite map_app in H.
+    apply H.
+  }
+  { wf_auto2. }
+  { wf_auto2. }
+  { exact HΓ. }
+  { cbn. rewrite union_empty_l_L.
+    unfold disjoint.
+    unfold set_disjoint_instance.
+    intros x Hx HContra.
+    rewrite elem_of_gset_to_coGset in HContra.
+    cbn in Hx.
+    clear -Hx HContra.
+    contradiction.
+  }
+  { cbn. rewrite union_empty_l_L.
+    unfold disjoint.
+    unfold set_disjoint_instance.
+    intros x Hx HContra.
+    rewrite elem_of_gset_to_coGset in HContra.
+    cbn in Hx.
+    clear -Hx HContra.
+    contradiction.
+  }
+  {
+    reflexivity.
+  }
+Defined.
+
+
+Tactic Notation "mlDeduct" constr(name) :=
+  _ensureProofMode;
+  _mlReshapeHypsByName name;
+  apply MLGoal_deduct;
+  [try assumption|_mlReshapeHypsBack]
+.
+
+#[local]
+Example ex_deduct
+  {Σ : Signature} {syntax : Syntax} (Γ : Theory) (ϕ₁ ϕ₂ ϕ₃ : Pattern)
+  : 
+  well_formed ϕ₁ ->
+  well_formed ϕ₂ ->
+  well_formed ϕ₃ ->
+  theory ⊆ Γ ->
+  Γ ⊢ ϕ₁ ---> ⌊ ϕ₂ ⌋ ---> ϕ₃ ---> ϕ₂
+.
+Proof.
+  intros wf1 wf2 wf3 HΓ.
+  mlIntro "H1".
+  mlIntro "H2".
+  mlIntro "H3".
+  mlDeduct "H2".
+  useBasicReasoning.
+  mlClear "H1".
+  mlClear "H3".
+  fromMLGoal.
+  apply hypothesis.
+  { wf_auto2. }
+  { set_solver. }
 Defined.
 
 Close Scope ml_scope.
