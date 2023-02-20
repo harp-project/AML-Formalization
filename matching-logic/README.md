@@ -69,3 +69,6 @@ Fifth, matching logic theories.
   - [`Nat_Syntax.v`](src/Theories/Nat_Syntax.v) - the theory of natural numbers
   - [`Nat_ProofSystem.v`](src/Theories/Nat_ProofSystem.v) - proofs about the theory of natural numbers
   - [`ModelExtension.v`](src/Theories/ModelExtension.v) - definition of the "open fragment" of matching logic; semantics of formulas from this fragment is preserved when extending the model with new elements
+
+We note, that there is ongoing work on formalizing an algorithm of unification which we include in [Unification.v](src/Experimental/Unification.v).
+
