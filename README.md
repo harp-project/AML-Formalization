@@ -5,7 +5,7 @@ In this project we attempt to fully implement the "Applicative Matching Logic" f
 ## Documentation
 
 - [coqdoc](https://harp-project.github.io/AML-Formalization/branch/master/coqdoc/toc.html)
-
+- [proofmode.md](proofmode.md) - A list of tactic of matching logic proof mode.
 ## For developers
 
 ### Build
