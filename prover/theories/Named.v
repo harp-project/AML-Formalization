@@ -283,7 +283,13 @@ Defined.
   .
   Proof.
     move: x y.
-    induction ϕ; intros x' y Hfry; cbn; try reflexivity.
+    remember (nsize' ϕ) as sz.
+    assert (Hsz: nsize' ϕ <= sz) by lia.
+    clear Heqsz.
+    move: ϕ Hsz.
+    induction sz; cbn; intros ϕ Hsz.
+    { destruct ϕ; cbn in Hsz; lia. }
+    destruct ϕ; intros x' y Hfry; cbn; try reflexivity.
     {
       destruct (decide (x' = x)).
       { subst. cbn. rewrite decide_eq_same. reflexivity. }
@@ -294,30 +300,34 @@ Defined.
       }
     }
     {
-      cbn in Hfry.
-      specialize (IHϕ1 x' y ltac:(set_solver)).
-      specialize (IHϕ2 x' y ltac:(set_solver)).
-      rewrite IHϕ1.
-      rewrite IHϕ2.
+      cbn in Hfry. cbn in Hsz.
+      rewrite IHsz.
+      { lia. }
+      { set_solver. }
+      rewrite IHsz.
+      { lia. }
+      { set_solver. }
       reflexivity.
     }
     {
-      cbn in Hfry.
-      specialize (IHϕ1 x' y ltac:(set_solver)).
-      specialize (IHϕ2 x' y ltac:(set_solver)).
-      rewrite IHϕ1.
-      rewrite IHϕ2.
+      cbn in Hfry. cbn in Hsz.
+      rewrite IHsz.
+      { lia. }
+      { set_solver. }
+      rewrite IHsz.
+      { lia. }
+      { set_solver. }
       reflexivity.
     }
     {
-      cbn in Hfry.
+      cbn in Hfry. cbn in Hsz.
       destruct (decide (x' = x)).
       {
         subst. cbn.
         destruct (decide (y = named_fresh_evar ϕ)).
         {
           subst.
-          rewrite IHϕ.
+          rewrite IHsz.
           rewrite named_evar_subst_noop.
         }
       }
