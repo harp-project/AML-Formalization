@@ -275,7 +275,10 @@ Section ln2named.
       rewrite IHsz;[lia|].
       rewrite -Heqϕ2'.
       remember (string2evar ("(" +:+ ln2str ϕ1 +:+ ")A(" +:+ ln2str ϕ2 +:+ ")")) as y2.
-
+      remember (string2evar (ln2str ϕ1)) as z1.
+      remember (string2evar (ln2str ϕ2)) as z2.
+      f_equal.
+      Print named_evar_subst.
 
     }
   Abort.

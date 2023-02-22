@@ -1,7 +1,10 @@
 From Coq Require Import ssreflect ssrfun ssrbool.
 
 From stdpp Require Import base pmap gmap fin_maps finite.
-From MatchingLogic Require Import Syntax.
+From MatchingLogic Require Import
+  Syntax
+  Utils.stdpp_ext
+.
 
 Require Import String.
 
@@ -112,8 +115,32 @@ Defined.
     | npatt_mu X phi => difference (named_free_svars phi) (singleton X)
     end.
 
-  Definition named_fresh_evar ϕ := evar_fresh (elements (named_free_evars ϕ)).
-  Definition named_fresh_svar ϕ := svar_fresh (elements (named_free_svars ϕ)).
+  Fixpoint named_evars (phi : NamedPattern) : EVarSet :=
+    match phi with
+    | npatt_evar x => singleton x
+    | npatt_svar X => empty
+    | npatt_sym sigma => empty
+    | npatt_app phi1 phi2 => union (named_evars phi1) (named_evars phi2)
+    | npatt_bott => empty
+    | npatt_imp phi1 phi2 => union (named_evars phi1) (named_evars phi2)
+    | npatt_exists x phi => union (named_evars phi) (singleton x)
+    | npatt_mu X phi => named_evars phi
+    end.
+
+  Fixpoint named_svars (phi : NamedPattern) : SVarSet :=
+    match phi with
+    | npatt_evar x => empty
+    | npatt_svar X => singleton X
+    | npatt_sym sigma => empty
+    | npatt_app phi1 phi2 => union (named_svars phi1) (named_svars phi2)
+    | npatt_bott => empty
+    | npatt_imp phi1 phi2 => union (named_svars phi1) (named_svars phi2)
+    | npatt_exists x phi => named_svars phi
+    | npatt_mu X phi => union (named_svars phi) (singleton X)
+    end.
+
+  Definition named_fresh_evar ϕ := evar_fresh (elements (named_evars ϕ)).
+  Definition named_fresh_svar ϕ := svar_fresh (elements (named_svars ϕ)).
 
   (* substitute variable x for psi in phi: phi[psi/x] *)
   Fixpoint named_evar_subst (phi psi : NamedPattern) (x : evar) :=
@@ -150,6 +177,101 @@ Defined.
                                npatt_mu fX (named_svar_subst phi' (npatt_svar fX) X)
                           else npatt_mu X' (named_svar_subst phi' psi X)
     end.
+
+  Lemma named_evar_subst_noop (ϕ : NamedPattern) (x : evar) :
+    x ∉ named_evars ϕ ->
+    named_evar_subst ϕ (npatt_evar x) x = ϕ
+  .
+  Proof.
+    move: x.
+    induction ϕ; intros x' Hx'; cbn; try reflexivity.
+    {
+      destruct (decide (x' = x)).
+      { subst. reflexivity. }
+      { reflexivity. }
+    }
+    {
+      cbn in Hx'.
+      specialize (IHϕ1 x' ltac:(set_solver)).
+      specialize (IHϕ2 x' ltac:(set_solver)).
+      congruence.
+    }
+    {
+      cbn in Hx'.
+      specialize (IHϕ1 x' ltac:(set_solver)).
+      specialize (IHϕ2 x' ltac:(set_solver)).
+      congruence.
+    }
+    {
+      cbn in Hx'.
+      destruct (decide (x' = x)).
+      { subst. exfalso. clear -Hx'. set_solver. }
+      {
+        rewrite IHϕ.
+        { set_solver. }
+        reflexivity.
+      }
+    }
+    {
+      cbn in Hx'.
+      rewrite IHϕ.
+      { exact Hx'. }
+      { reflexivity. }
+    }
+  Qed.
+
+  Lemma named_evar_subst_chain (ϕ ψ: NamedPattern) (x y : evar) :
+    y ∉ named_free_evars ϕ ->
+    named_evar_subst (named_evar_subst ϕ (npatt_evar y) x) ψ y
+    = named_evar_subst ϕ ψ x
+  .
+  Proof.
+    induction ϕ; intros Hfry; cbn; try reflexivity.
+    {
+      destruct (decide (x = x0)).
+      { subst. cbn. rewrite decide_eq_same. reflexivity. }
+      {
+        cbn. destruct (decide (y = x0)).
+        { subst. cbn in Hfry. exfalso. clear -Hfry. set_solver. }
+        { reflexivity. }
+      }
+    }
+    {
+      cbn in Hfry.
+      specialize (IHϕ1 ltac:(set_solver)).
+      specialize (IHϕ2 ltac:(set_solver)).
+      rewrite IHϕ1.
+      rewrite IHϕ2.
+      reflexivity.
+    }
+    {
+      cbn in Hfry.
+      specialize (IHϕ1 ltac:(set_solver)).
+      specialize (IHϕ2 ltac:(set_solver)).
+      rewrite IHϕ1.
+      rewrite IHϕ2.
+      reflexivity.
+    }
+    {
+      cbn in Hfry.
+      destruct (decide (y = x0)).
+      {
+        subst. clear Hfry IHϕ.
+        destruct (decide (x = x0)).
+        {
+          subst. cbn.
+          destruct (decide (x0 = named_fresh_evar ϕ)).
+          {
+            subst.
+          }
+        }
+      }
+      destruct (decide (x = x0)).
+      {
+        subst.
+      }
+    }
+  Qed.
 
   (* Derived named operators *)
   Definition npatt_not (phi : NamedPattern) := npatt_imp phi npatt_bott.
