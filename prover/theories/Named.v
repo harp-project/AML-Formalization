@@ -178,6 +178,62 @@ Defined.
                           else npatt_mu X' (named_svar_subst phi' psi X)
     end.
 
+  Lemma nsize_named_evar_subst_evar (ϕ : NamedPattern) (x y : evar):
+    nsize' (named_evar_subst ϕ (npatt_evar y) x) = nsize' ϕ.
+  Proof.
+    move: x y.
+    induction ϕ; intros x' y; cbn; try reflexivity.
+    {
+      destruct (decide (x' = x)); reflexivity.
+    }
+    {
+      rewrite IHϕ1. rewrite IHϕ2. reflexivity.
+    }
+    {
+      rewrite IHϕ1. rewrite IHϕ2. reflexivity.
+    }
+    {
+      destruct (decide (x' = x)); cbn.
+      {
+        rewrite IHϕ. reflexivity.
+      }
+      {
+        rewrite IHϕ. reflexivity.
+      }
+    }
+    {
+      rewrite IHϕ. reflexivity.
+    }
+  Qed.
+
+  Lemma nsize_named_evar_subst_svar (ϕ : NamedPattern) (X Y : svar):
+    nsize' (named_svar_subst ϕ (npatt_svar Y) X) = nsize' ϕ.
+  Proof.
+    move: X Y.
+    induction ϕ; intros X' Y; cbn; try reflexivity.
+    {
+      destruct (decide (X' = X)); reflexivity.
+    }
+    {
+      rewrite IHϕ1. rewrite IHϕ2. reflexivity.
+    }
+    {
+      rewrite IHϕ1. rewrite IHϕ2. reflexivity.
+    }
+    {
+      rewrite IHϕ. reflexivity.
+    }
+    {
+      destruct (decide (X' = X)); cbn.
+      {
+        rewrite IHϕ. reflexivity.
+      }
+      {
+        rewrite IHϕ. reflexivity.
+      }
+    }
+  Qed.
+
   Lemma named_evar_subst_noop (ϕ : NamedPattern) (x : evar) :
     x ∉ named_evars ϕ ->
     named_evar_subst ϕ (npatt_evar x) x = ϕ
@@ -221,50 +277,50 @@ Defined.
   Qed.
 
   Lemma named_evar_subst_chain (ϕ ψ: NamedPattern) (x y : evar) :
-    y ∉ named_free_evars ϕ ->
+    y ∉ named_evars ϕ ->
     named_evar_subst (named_evar_subst ϕ (npatt_evar y) x) ψ y
     = named_evar_subst ϕ ψ x
   .
   Proof.
-    induction ϕ; intros Hfry; cbn; try reflexivity.
+    move: x y.
+    induction ϕ; intros x' y Hfry; cbn; try reflexivity.
     {
-      destruct (decide (x = x0)).
+      destruct (decide (x' = x)).
       { subst. cbn. rewrite decide_eq_same. reflexivity. }
       {
-        cbn. destruct (decide (y = x0)).
+        cbn. destruct (decide (y = x)).
         { subst. cbn in Hfry. exfalso. clear -Hfry. set_solver. }
         { reflexivity. }
       }
     }
     {
       cbn in Hfry.
-      specialize (IHϕ1 ltac:(set_solver)).
-      specialize (IHϕ2 ltac:(set_solver)).
+      specialize (IHϕ1 x' y ltac:(set_solver)).
+      specialize (IHϕ2 x' y ltac:(set_solver)).
       rewrite IHϕ1.
       rewrite IHϕ2.
       reflexivity.
     }
     {
       cbn in Hfry.
-      specialize (IHϕ1 ltac:(set_solver)).
-      specialize (IHϕ2 ltac:(set_solver)).
+      specialize (IHϕ1 x' y ltac:(set_solver)).
+      specialize (IHϕ2 x' y ltac:(set_solver)).
       rewrite IHϕ1.
       rewrite IHϕ2.
       reflexivity.
     }
     {
       cbn in Hfry.
-      destruct (decide (y = x0)).
+      destruct (decide (x' = x)).
       {
-        subst. clear Hfry IHϕ.
-        destruct (decide (x = x0)).
+        subst. cbn.
+        destruct (decide (y = named_fresh_evar ϕ)).
         {
-          subst. cbn.
-          destruct (decide (x0 = named_fresh_evar ϕ)).
-          {
-            subst.
-          }
+          subst.
+          rewrite IHϕ.
+          rewrite named_evar_subst_noop.
         }
+      }
       }
       destruct (decide (x = x0)).
       {
