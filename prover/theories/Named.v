@@ -207,40 +207,71 @@ Defined.
     := sg_next sg (named_free_svars ϕ)
   .
 
+
+  (* phi[y/x] *)
+  Fixpoint rename_free_evar (phi : NamedPattern) (y x : evar) : NamedPattern :=
+  match phi with
+  | npatt_evar x' => if decide (x = x') is left _ then npatt_evar y else npatt_evar x'
+  | npatt_svar X => npatt_svar X
+  | npatt_sym sigma => npatt_sym sigma
+  | npatt_app phi1 phi2 => npatt_app (rename_free_evar phi1 y x)
+                                     (rename_free_evar phi2 y x)
+  | npatt_bott => npatt_bott
+  | npatt_imp phi1 phi2 => npatt_imp (rename_free_evar phi1 y x)
+                                     (rename_free_evar phi2 y x)
+  | npatt_exists x' phi'
+    => match (decide (x = x')) with
+       | left _ => npatt_exists x' phi' (* no-op *)
+       | right _ => (
+          npatt_exists x' (rename_free_evar phi' y x)
+         )
+       end
+  | npatt_mu X phi'
+    => npatt_mu X (rename_free_evar phi' y x)
+  end.
+
+  Lemma nsize'_rename_free_evar (ϕ : NamedPattern) (y x : evar) :
+    nsize' (rename_free_evar ϕ y x) = nsize' ϕ
+  .
+  Proof.
+    induction ϕ; cbn; repeat case_match; cbn; try reflexivity; lia.
+  Qed.
+
+  (*
   (* substitute variable x for psi in phi: phi[psi/x] *)
   Fixpoint named_evar_subst'
-    (eg : EVarGen) (phi psi : NamedPattern) (x : evar) : NamedPattern :=
+    (eg : EVarGen) (phi ψ : NamedPattern) (x : evar) : NamedPattern :=
     match phi with
-    | npatt_evar x' => if decide (x = x') is left _ then psi else npatt_evar x'
+    | npatt_evar x' => if decide (x = x') is left _ then ψ else npatt_evar x'
     | npatt_svar X => npatt_svar X
     | npatt_sym sigma => npatt_sym sigma
-    | npatt_app phi1 phi2 => npatt_app (named_evar_subst' eg phi1 psi x)
-                                       (named_evar_subst' eg phi2 psi x)
+    | npatt_app phi1 phi2 => npatt_app (named_evar_subst' eg phi1 ψ x)
+                                       (named_evar_subst' eg phi2 ψ x)
     | npatt_bott => npatt_bott
-    | npatt_imp phi1 phi2 => npatt_imp (named_evar_subst' eg phi1 psi x)
-                                       (named_evar_subst' eg phi2 psi x)
+    | npatt_imp phi1 phi2 => npatt_imp (named_evar_subst' eg phi1 ψ x)
+                                       (named_evar_subst' eg phi2 ψ x)
     | npatt_exists x' phi'
-      => (if (decide (x = x')) is left _
-         then (npatt_exists x' phi') (* no-op *)
-         else (
-          if (decide (x' ∈ named_free_evars ψ)) is left _
-          then (
-            let avoid := union (named_free_evars ψ) (named_free_evars ϕ') in
-            let fresh_x := eg_get eg avoid in
-            (*let new_eg := eg_next avoid in*)
-            let renamed_phi' := (named_evar_subst' eg phi' (npatt_evar fresh_x) x) in
-            in (
-              npatt_bott
+      => match (decide (x = x')) with
+         | left _ => (
+            match (decide (x' ∈ named_free_evars ψ)) with
+            | left _ =>
+              let avoid := union (named_free_evars ψ) (named_free_evars phi') in
+              let fresh_x := eg_get eg avoid in
+              let renamed_phi' := (named_evar_subst' eg phi' (npatt_evar fresh_x) x) in
               npatt_exists fresh_x (named_evar_subst' eg renamed_phi' ψ x)
-            )
-          )
-          else
-            npatt_exists x' (named_evar_subst' eg phi' ψ x)
-         ))
+            | right _ => npatt_exists x' (named_evar_subst' eg phi' ψ x)
+            end
+           )
+         | right _ => (
+            npatt_exists x' phi'
+           )
+         end
     | npatt_mu X phi'
-      => npatt_mu X (named_evar_subst' eg phi' psi x)
+      => npatt_mu X (named_evar_subst' eg phi' ψ x)
     end.
+    *)
 
+  (* FIXME this is wrong *)
   (* substitute variable X for psi in phi: phi[psi/X] *)
   Fixpoint named_svar_subst'
     (sg : SVarGen)
