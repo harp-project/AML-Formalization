@@ -486,33 +486,46 @@ Defined.
   Qed.
 
   Equations? named_evar_subst'
-    (eg : EVarGen) (ϕ ψ : NamedPattern) (x : evar) : NamedPattern
+    (eg : EVarGen) (sg : SVarGen) (ϕ ψ : NamedPattern) (x : evar) : NamedPattern
     by wf (nsize' ϕ) lt :=
-    named_evar_subst' eg (npatt_evar x') ψ x with (decide (x = x')) => {
+    named_evar_subst' eg sg (npatt_evar x') ψ x with (decide (x = x')) => {
       | left _ := ψ
       | right _ := npatt_evar x'
     } ;
-    named_evar_subst' eg (npatt_bott) _ _ := npatt_bott ;
-    named_evar_subst' eg (npatt_svar X) _ _ := npatt_svar X ;
-    named_evar_subst' eg (npatt_sym s) _ _ := npatt_sym s ;
-    named_evar_subst' eg (npatt_imp phi1 phi2) ψ x :=
-      npatt_imp (named_evar_subst' eg phi1 ψ x)
-                (named_evar_subst' eg phi2 ψ x) ;
-    named_evar_subst' eg (npatt_app phi1 phi2) ψ x :=
-      npatt_app (named_evar_subst' eg phi1 ψ x)
-                (named_evar_subst' eg phi2 ψ x) ;
-    named_evar_subst' eg (npatt_exists x' ϕ') ψ x with (decide (x = x')) => {
+    named_evar_subst' eg sg (npatt_bott) _ _ := npatt_bott ;
+    named_evar_subst' eg sg (npatt_svar X) _ _ := npatt_svar X ;
+    named_evar_subst' eg sg (npatt_sym s) _ _ := npatt_sym s ;
+    named_evar_subst' eg sg (npatt_imp phi1 phi2) ψ x :=
+      npatt_imp (named_evar_subst' eg sg phi1 ψ x)
+                (named_evar_subst' eg sg phi2 ψ x) ;
+    named_evar_subst' eg sg (npatt_app phi1 phi2) ψ x :=
+      npatt_app (named_evar_subst' eg sg phi1 ψ x)
+                (named_evar_subst' eg sg phi2 ψ x) ;
+    named_evar_subst' eg sg (npatt_exists x' ϕ') ψ x with (decide (x = x')) => {
       | right _ := npatt_exists x' ϕ'
       | left _ with (decide (x' ∈ named_free_evars ψ)) => {
-        | right _ := npatt_exists x' (named_evar_subst' eg ϕ' ψ x)
+        | right _ := npatt_exists x' (named_evar_subst' eg sg ϕ' ψ x)
         | left _ :=
           let avoid := union (named_free_evars ψ) (named_free_evars ϕ') in
           let fresh_x := eg_get eg avoid in
-          let renamed_ϕ' := rename_free_evar ϕ' fresh_x x in
-          npatt_exists fresh_x (named_evar_subst' eg renamed_ϕ' ψ x)
+          let renamed_ϕ' := rename_free_evar ϕ' fresh_x x' in
+          npatt_exists fresh_x (named_evar_subst' eg sg renamed_ϕ' ψ x)
       }
     } ;
-    named_evar_subst' eg (npatt_mu X' ϕ') ψ x
+    named_evar_subst' eg sg (npatt_mu X' ϕ') ψ x
+    with (decide (X' ∈ named_free_svars ψ)) => {
+      | right _ := npatt_mu X' (named_evar_subst' eg sg ϕ' ψ x)
+      | left _ :=
+        let Avoid := union (named_free_svars ψ) (named_free_svars ϕ') in
+        let fresh_X := sg_get sg Avoid in
+        let renamed_ϕ' := rename_free_svar ϕ' fresh_X X' in
+        npatt_mu fresh_X (named_evar_subst' eg sg renamed_ϕ' ψ x)
+    }.
+    Proof.
+      all: cbn; try lia.
+      { unfold renamed_ϕ'. rewrite nsize'_rename_free_evar. lia. }
+      { unfold renamed_ϕ'. rewrite nsize'_rename_free_svar. lia. }
+    Qed.
 
   (* substitute variable x for psi in phi: phi[psi/x] *)
   Fixpoint named_evar_subst'
