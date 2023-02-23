@@ -47,7 +47,7 @@ Section named_proof_system.
 
   (* Existential quantifier *)
   | N_Ex_quan (phi : NamedPattern) (x y : evar) :
-      theory ⊢N npatt_imp (named_evar_subst phi (npatt_evar y) x) (npatt_exists x phi)
+      theory ⊢N npatt_imp (rename_free_evar phi y x) (npatt_exists x phi)
 
   (* Existential generalization *)
   | N_Ex_gen (phi1 phi2 : NamedPattern) (x : evar) :
