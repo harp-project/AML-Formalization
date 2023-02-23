@@ -17,15 +17,16 @@ From MatchingLogic.Utils Require Import stdpp_ext.
 Import extralibrary.
 From MatchingLogic Require Import Logic
   ProofInfo
-  ProofMode_base 
-  ProofMode_propositional
-  ProofMode_firstorder
-  ProofMode_fixpoint
-  ProofMode_reshaper
   BasicProofSystemLemmas
 .
+From MatchingLogic.ProofMode Require Import Basics
+                                            Propositional
+                                            Firstorder
+                                            FixPoint
+                                            Reshaper.
 
-Import MatchingLogic.Logic.Notations.
+Import MatchingLogic.Logic.Notations
+       MatchingLogic.ProofInfo.Notations.
 
 Set Default Proof Mode "Classic".
 
@@ -2247,7 +2248,7 @@ Defined.
 Ltac2 mlRewrite (hiff : constr) (atn : int) :=
   let thiff := Constr.type hiff in
   (* we have to unfold [derives] otherwise this might not match *)
-  lazy_match! (eval unfold ProofSystem.derives in $thiff) with
+  lazy_match! (eval unfold derives in $thiff) with
   | _ ⊢i (?a <---> ?a') using _
     =>
     unfold AnyReasoning;

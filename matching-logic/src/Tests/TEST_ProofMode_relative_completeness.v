@@ -1,4 +1,4 @@
-From MatchingLogic Require Import Logic ProofMode.
+From MatchingLogic Require Import Logic ProofMode.MLPM.
 
 From Coq Require Import String.
 

@@ -6,7 +6,7 @@ From MatchingLogic Require Import
     Logic
     DerivedOperators_Syntax
     ProofSystem
-    ProofMode
+    ProofMode.MLPM
 .
 
 Import

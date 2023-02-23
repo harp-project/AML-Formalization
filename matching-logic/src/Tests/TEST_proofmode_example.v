@@ -12,7 +12,7 @@ From Coq.Classes Require Import Morphisms_Prop.
 From Coq.Unicode Require Import Utf8.
 From Coq.micromega Require Import Lia.
 
-From MatchingLogic Require Import Syntax NamedAxioms DerivedOperators_Syntax ProofSystem ProofMode IndexManipulation Substitution ApplicationContext.
+From MatchingLogic Require Import Syntax NamedAxioms DerivedOperators_Syntax ProofSystem ProofMode.MLPM IndexManipulation Substitution ApplicationContext.
 From MatchingLogic.Theories Require Import Definedness_Syntax Definedness_ProofSystem.
 From MatchingLogic.Utils Require Import stdpp_ext.
 
@@ -23,7 +23,6 @@ From stdpp Require Import base fin_sets sets propset proof_irrel option list coG
 Import MatchingLogic.Syntax.Notations
        MatchingLogic.DerivedOperators_Syntax.Notations
        MatchingLogic.Syntax.BoundVarSugar
-       MatchingLogic.ProofSystem.Notations
        MatchingLogic.Theories.Definedness_Syntax.Notations
        MatchingLogic.ApplicationContext.Notations.
 
@@ -57,7 +56,7 @@ Proof.
   * mlApply "H1'".
     mlClear "H1'".
     mlIntro "H2".
-    pose proof (MH := @ProofMode_propositional.nimpl_eq_and _ Γ pY pX
+    pose proof (MH := nimpl_eq_and Γ pY pX
                   ltac:(wf_auto2) ltac:(wf_auto2)).
     use AnyReasoning in MH.
     mlRevertLast.
@@ -77,7 +76,7 @@ Proof.
   * mlApply "H1'".
     mlClear "H1'".
     mlIntro "H2".
-    pose proof (MH := @ProofMode_propositional.nimpl_eq_and _ Γ pX pY
+    pose proof (MH := nimpl_eq_and Γ pX pY
                   ltac:(wf_auto2) ltac:(wf_auto2)).
     mlRevertLast. use AnyReasoning in MH. mlRewrite MH at 1.
     pose proof (MH1 := @patt_and_comm _ Γ pY pX ltac:(wf_auto2) ltac:(wf_auto2)).

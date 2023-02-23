@@ -8,7 +8,12 @@ From Equations Require Import Equations.
 
 Require Import Coq.Program.Tactics.
 
-From MatchingLogic Require Import Syntax DerivedOperators_Syntax ProofSystem IndexManipulation wftactics.
+From MatchingLogic Require Import Syntax
+                                  DerivedOperators_Syntax
+                                  ProofSystem
+                                  IndexManipulation
+                                  ProofInfo
+                                  wftactics.
 
 From stdpp Require Import list tactics fin_sets coGset gmap sets.
 
@@ -19,11 +24,9 @@ Import extralibrary.
 Import
   MatchingLogic.Syntax.Notations
   MatchingLogic.DerivedOperators_Syntax.Notations
-  MatchingLogic.ProofSystem.Notations
+  MatchingLogic.ProofSystem.Notations_private
+  MatchingLogic.ProofInfo.Notations
 .
-
-(* Exports *)
-Export MatchingLogic.ProofSystem.
 
 Set Default Proof Mode "Classic".
 
@@ -73,7 +76,7 @@ Record MLGoal {Σ : Signature} : Type := mkMLGoal
   { mlTheory : Theory;
     mlHypotheses: hypotheses;
     mlConclusion : Pattern ;
-    mlInfo : ProofSystem.ProofInfo ;
+    mlInfo : ProofInfo ;
   }.
 
 Definition MLGoal_from_goal
@@ -121,7 +124,7 @@ Coercion of_MLGoal {Σ : Signature} (MG : MLGoal) : Type :=
   only printing).
 
 Ltac toMLGoal :=
-  unfold ProofSystem.derives;
+  unfold derives;
   lazymatch goal with
   | [ |- ?G ⊢i ?phi using ?pi]
     => cut (of_MLGoal (MLGoal_from_goal G phi pi));
@@ -130,6 +133,120 @@ Ltac toMLGoal :=
   end.
 
 Ltac fromMLGoal := unfold of_MLGoal; simpl; intros _ _.
+
+Lemma mlUseBasicReasoning
+  {Σ : Signature} (Γ : Theory) (l : hypotheses) (g : Pattern) (i : ProofInfo) :
+  mkMLGoal Σ Γ l g BasicReasoning ->
+  mkMLGoal Σ Γ l g i.
+Proof.
+  intros H wf1 wf2.
+  specialize (H wf1 wf2).
+  apply useBasicReasoning.
+  exact H.
+Defined.
+
+
+Ltac useBasicReasoning :=
+  unfold derives;
+  lazymatch goal with
+  | [ |- of_MLGoal (mkMLGoal _ _ _ _ _) ] => apply mlUseBasicReasoning
+  | [ |- _ ⊢i _ using _ ] => apply useBasicReasoning
+  end.
+
+Lemma mlUseGenericReasoning
+  {Σ : Signature} (Γ : Theory) (l : hypotheses) (g : Pattern) (i i' : ProofInfo) :
+  ProofInfoLe i i' ->
+  mkMLGoal Σ Γ l g i ->
+  mkMLGoal Σ Γ l g i'.
+Proof.
+  intros pile H wf1 wf2.
+  specialize (H wf1 wf2).
+  simpl in *.
+  destruct i.
+  eapply useGenericReasoning.
+  { apply pile. }
+  exact H.
+Defined.
+
+(* Extracts well-formedness assumptions about (local) goal and (local) hypotheses. *)
+Tactic Notation "mlExtractWF" ident(wfl) ident(wfg) :=
+match goal with
+| [ |- ?g ] =>
+  let wfl' := fresh "wfl'" in
+  let wfg' := fresh "wfg'" in
+  intros wfg' wfl';
+  pose proof (wfl := wfl');
+  pose proof (wfg := wfg');
+  revert wfg' wfl';
+  fold g;
+  rewrite /mlConclusion in wfg;
+  rewrite /mlHypotheses in wfl
+end.
+
+Local Example ex_extractWfAssumptions {Σ : Signature} Γ (p : Pattern) :
+  well_formed p ->
+  Γ ⊢i p ---> p using BasicReasoning.
+Proof.
+  intros wfp.
+  toMLGoal.
+  { auto. }
+  mlExtractWF wfl wfg.
+  (* These two asserts by assumption only test presence of the two hypotheses *)
+  assert (Pattern.wf []) by assumption.
+  assert (well_formed (p ---> p)) by assumption.
+Abort.
+
+(* We no longer have the original `cast_proof` thing;
+   however, something we may want to rewrite only in the local hypotheses
+   part of a goal, for which a lemma like this is useful.
+*)
+Lemma cast_proof_ml_hyps {Σ : Signature} Γ hyps hyps' (e : patterns_of hyps = patterns_of hyps') goal (i : ProofInfo) :
+  mkMLGoal Σ Γ hyps goal i ->
+  mkMLGoal Σ Γ hyps' goal i.
+Proof.
+  unfold of_MLGoal. simpl. intros H.
+  intros wfg wfhyps'.
+  feed specialize H.
+  { exact wfg. }
+  { rewrite e. exact wfhyps'. }
+  rewrite -e.
+  exact H.
+Defined.
+
+Tactic Notation "_mlReshapeHypsByIdx" constr(n) :=
+  unshelve (eapply (@cast_proof_ml_hyps _ _ _ _ _ _ _));
+  [shelve|(apply f_equal; rewrite <- (firstn_skipn n); rewrite /firstn; rewrite /skipn; reflexivity)|idtac]
+.
+
+Tactic Notation "_mlReshapeHypsByName" constr(n) :=
+  unshelve (eapply (@cast_proof_ml_hyps _ _ _ _ _ _ _));
+  [shelve|(
+    apply f_equal;
+    lazymatch goal with
+    | [|- _ = ?l] =>
+      lazymatch (eval cbv in (find_hyp n l)) with
+      | Some (?n, _) =>
+        rewrite <- (firstn_skipn n);
+        rewrite /firstn;
+        rewrite /skipn;
+        reflexivity
+      end
+    end
+    )
+  |idtac]
+.
+
+Ltac2 _mlReshapeHypsByName (name' : constr) :=
+  ltac1:(name'' |- _mlReshapeHypsByName name'') (Ltac1.of_constr name')
+.
+
+Tactic Notation "_mlReshapeHypsBack" :=
+  let hyps := fresh "hyps" in rewrite [hyps in mkMLGoal _ _ hyps _]/app
+.
+
+Ltac2 _mlReshapeHypsBack () :=
+  ltac1:(_mlReshapeHypsBack)
+.
 
 
 Lemma MLGoal_intro {Σ : Signature} (Γ : Theory) (l : hypotheses) (name : string) (x g : Pattern)
@@ -252,23 +369,6 @@ Proof.
   }
 
   unfold patterns_of. rewrite map_app.  rewrite foldr_app. simpl.
-  exact H.
-Defined.
-
-(* We no longer have the original `cast_proof` thing;
-   however, something we may want to rewrite only in the local hypotheses
-   part of a goal, for which a lemma like this is useful.
-*)
-Lemma cast_proof_ml_hyps {Σ : Signature} Γ hyps hyps' (e : patterns_of hyps = patterns_of hyps') goal (i : ProofInfo) :
-  mkMLGoal Σ Γ hyps goal i ->
-  mkMLGoal Σ Γ hyps' goal i.
-Proof.
-  unfold of_MLGoal. simpl. intros H.
-  intros wfg wfhyps'.
-  feed specialize H.
-  { exact wfg. }
-  { rewrite e. exact wfhyps'. }
-  rewrite -e.
   exact H.
 Defined.
 

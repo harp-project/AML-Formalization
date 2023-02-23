@@ -6,13 +6,14 @@ From MatchingLogic Require Export Syntax
                                   wftactics
                                   DerivedOperators_Syntax
                                   DerivedOperators_Semantics
-                                  NamedAxioms.
+                                  NamedAxioms
+                                  ProofInfo.
 
 Module Notations.
   Export MatchingLogic.Syntax.Notations
          MatchingLogic.Substitution.Notations
          MatchingLogic.DerivedOperators_Syntax.Notations
-         MatchingLogic.ProofSystem.Notations
-         MatchingLogic.ApplicationContext.Notations.
+         MatchingLogic.ApplicationContext.Notations
+         MatchingLogic.ProofInfo.Notations.
   Export Syntax.BoundVarSugar.
 End Notations.

@@ -15,10 +15,10 @@ From MatchingLogic Require Import
     IndexManipulation
     wftactics
     ProofInfo
-    ProofMode_base
-    ProofMode_propositional
     BasicProofSystemLemmas
 .
+From MatchingLogic.ProofMode Require Import Basics
+                                            Propositional.
 
 From stdpp Require Import list tactics fin_sets coGset gmap sets.
 
@@ -30,7 +30,7 @@ Import
   MatchingLogic.Syntax.Notations
   MatchingLogic.Substitution.Notations
   MatchingLogic.DerivedOperators_Syntax.Notations
-  MatchingLogic.ProofSystem.Notations
+  MatchingLogic.ProofInfo.Notations
 .
 
 Set Default Proof Mode "Classic".
@@ -1078,5 +1078,3 @@ Proof.
   mlExists x.
   mlAssumption.
 Qed.
-
-  

@@ -31,17 +31,17 @@ src/ProofSystem.v
 src/ProofSystemSoundness.v
 src/FixpointReasoning.v
 src/StringSignature.v
+src/ProofInfo.v
 src/Logic.v
 
 src/BasicProofSystemLemmas.v
-src/ProofMode_base.v
-src/ProofInfo.v
-src/ProofMode_propositional.v
-src/ProofMode_firstorder.v
-src/ProofMode_fixpoint.v
-src/ProofMode_reshaper.v
-src/ProofMode_misc.v
-src/ProofMode.v
+src/ProofMode/Basics.v
+src/ProofMode/Propositional.v
+src/ProofMode/Firstorder.v
+src/ProofMode/FixPoint.v
+src/ProofMode/Reshaper.v
+src/ProofMode/Misc.v
+src/ProofMode/MLPM.v
 
 src/Theories/Definedness_Syntax.v
 src/Theories/Definedness_Semantics.v
