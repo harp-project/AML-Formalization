@@ -141,7 +141,7 @@ Defined.
 
   CoInductive EVarGen := mkEvarGen {
     eg_get : gset evar -> evar ;
-    eg_gset_correct : forall evs, eg_get evs ∉ evs ;
+    eg_get_correct : forall evs, eg_get evs ∉ evs ;
     eg_next : gset evar -> EVarGen ;
   }.
 
@@ -160,7 +160,7 @@ Defined.
 
   CoInductive SVarGen := mkSvarGen {
     sg_get : gset svar -> svar ;
-    sg_gset_correct : forall svs, sg_get svs ∉ svs ;
+    sg_get_correct : forall svs, sg_get svs ∉ svs ;
     sg_next : gset svar -> SVarGen ;
   }.
 
@@ -177,6 +177,36 @@ Defined.
     set_solver.
   Qed.
 
+  Definition eg_getf (eg : EVarGen) (ϕ : NamedPattern) : evar
+    := eg_get eg (named_free_evars ϕ)
+  .
+
+  Lemma eg_getf_correct (eg : EVarGen) (ϕ : NamedPattern) :
+    (eg_getf eg ϕ) ∉ (named_free_evars ϕ)
+  .
+  Proof.
+    apply eg_get_correct.
+  Qed.
+
+  Definition eg_nextf (eg : EVarGen) (ϕ : NamedPattern) : EVarGen
+    := eg_next eg (named_free_evars ϕ)
+  .
+
+  Definition sg_getf (sg : SVarGen) (ϕ : NamedPattern) : svar
+    := sg_get sg (named_free_svars ϕ)
+  .
+
+  Lemma sg_getf_correct (sg : SVarGen) (ϕ : NamedPattern) :
+    (sg_getf sg ϕ) ∉ (named_free_svars ϕ)
+  .
+  Proof.
+    apply sg_get_correct.
+  Qed.
+
+  Definition sg_nextf (sg : SVarGen) (ϕ : NamedPattern) : SVarGen
+    := sg_next sg (named_free_svars ϕ)
+  .
+
   Definition named_fresh_evar' avoid ϕ := evar_fresh (elements (named_evars ϕ ∪ avoid)).
   Definition named_fresh_svar' avoid ϕ := svar_fresh (elements (named_svars ϕ ∪ avoid)).
   (*Definition named_fresh_evar ϕ := named_fresh_evar' ∅ ϕ.
@@ -184,7 +214,7 @@ Defined.
 
   (* substitute variable x for psi in phi: phi[psi/x] *)
   Fixpoint named_evar_subst'
-    (avoid : gset evar) (phi psi : NamedPattern) (x : evar) :=
+    (eg : EVarGen) (phi psi : NamedPattern) (x : evar) :=
     match phi with
     | npatt_evar x' => if decide (x = x') is left _ then psi else npatt_evar x'
     | npatt_svar X => npatt_svar X
