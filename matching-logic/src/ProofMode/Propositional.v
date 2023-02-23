@@ -12,10 +12,10 @@ From MatchingLogic Require Import
     Utils.extralibrary
     Logic
     DerivedOperators_Syntax
-    ProofMode_base
     ProofInfo
     BasicProofSystemLemmas
 .
+From MatchingLogic.ProofMode Require Import Basics.
 
 From stdpp Require Import list tactics fin_sets coGset gmap sets.
 
@@ -26,6 +26,7 @@ Import extralibrary.
 Import
   MatchingLogic.Logic.Notations
   MatchingLogic.DerivedOperators_Syntax.Notations
+  MatchingLogic.ProofInfo.Notations
 .
 
 Set Default Proof Mode "Classic".

@@ -15,10 +15,11 @@ From MatchingLogic Require Import
     IndexManipulation
     wftactics
     ProofInfo
-    ProofMode_base
-    ProofMode_propositional
     BasicProofSystemLemmas
 .
+From MatchingLogic.ProofMode Require Import Basics
+                                            Propositional
+                                            Firstorder.
 
 From stdpp Require Import list tactics fin_sets coGset gmap sets.
 
@@ -30,7 +31,7 @@ Import
   MatchingLogic.Syntax.Notations
   MatchingLogic.Substitution.Notations
   MatchingLogic.DerivedOperators_Syntax.Notations
-  MatchingLogic.ProofSystem.Notations
+  MatchingLogic.ProofInfo.Notations
 .
 
 Set Default Proof Mode "Classic".
@@ -48,57 +49,57 @@ Lemma Knaster_tarski {Σ : Signature}
            pi_uses_kt := true ;
            pi_uses_advanced_kt := has_bound_variable_under_mu ϕ ; (* TODO depends on ϕ*)
         |}) i} :
-well_formed (mu, ϕ) ->
-Γ ⊢i (instantiate (mu, ϕ) ψ) ---> ψ using i ->
-Γ ⊢i (mu, ϕ) ---> ψ using i.
+  well_formed (mu, ϕ) ->
+  Γ ⊢i (instantiate (mu, ϕ) ψ) ---> ψ using i ->
+  Γ ⊢i (mu, ϕ) ---> ψ using i.
 Proof.
-intros Hfev [pf Hpf].
-unshelve (eexists).
-{
-  apply ProofSystem.Knaster_tarski.
-  { exact Hfev. }
-  { exact pf. }
-}
-{
-  simpl.
-  constructor; simpl.
+  intros Hfev [pf Hpf].
+  unshelve (eexists).
   {
-    destruct Hpf as [Hpf2 Hpf3 Hpf4].
-    apply Hpf2.
+    apply ProofSystem.Knaster_tarski.
+    { exact Hfev. }
+    { exact pf. }
   }
   {
-    destruct Hpf as [Hpf2 Hpf3 Hpf4].
-    apply Hpf3.
-  }
-  {
-    destruct Hpf as [Hpf2 Hpf3 Hpf4 Hpf5].
-    unfold is_true in Hpf4.
-    rewrite implb_true_iff in Hpf4.
-    destruct i. cbn in *.
-    destruct pile as [Hpile1 [Hpile2 [Hpile3 Hpile4 ] ] ]. cbn in *.
-    exact Hpile3.
-  }
-  {
-    destruct Hpf as [Hpf2 Hpf3 Hpf4 Hpf5].
-    unfold is_true in Hpf4.
-    rewrite implb_true_iff in Hpf4.
-    destruct i. cbn in *.
-    destruct pile as [Hpile1 [Hpile2 [Hpile3 Hpile4 ] ] ]. cbn in *.
-    unfold is_true.
-    rewrite implb_true_iff. intros H1.
-    rewrite andb_true_r.
-    rewrite orb_true_iff in H1.
-    destruct H1 as [H1|H1].
+    simpl.
+    constructor; simpl.
     {
-      rewrite H1 in Hpile4. simpl in Hpile4.
-      exact Hpile4.
+      destruct Hpf as [Hpf2 Hpf3 Hpf4].
+      apply Hpf2.
     }
     {
-      rewrite H1 in Hpf5. simpl in Hpf5.
-      destruct_and!. assumption.
+      destruct Hpf as [Hpf2 Hpf3 Hpf4].
+      apply Hpf3.
+    }
+    {
+      destruct Hpf as [Hpf2 Hpf3 Hpf4 Hpf5].
+      unfold is_true in Hpf4.
+      rewrite implb_true_iff in Hpf4.
+      destruct i. cbn in *.
+      destruct pile as [Hpile1 [Hpile2 [Hpile3 Hpile4 ] ] ]. cbn in *.
+      exact Hpile3.
+    }
+    {
+      destruct Hpf as [Hpf2 Hpf3 Hpf4 Hpf5].
+      unfold is_true in Hpf4.
+      rewrite implb_true_iff in Hpf4.
+      destruct i. cbn in *.
+      destruct pile as [Hpile1 [Hpile2 [Hpile3 Hpile4 ] ] ]. cbn in *.
+      unfold is_true.
+      rewrite implb_true_iff. intros H1.
+      rewrite andb_true_r.
+      rewrite orb_true_iff in H1.
+      destruct H1 as [H1|H1].
+      {
+        rewrite H1 in Hpile4. simpl in Hpile4.
+        exact Hpile4.
+      }
+      {
+        rewrite H1 in Hpf5. simpl in Hpf5.
+        destruct_and!. assumption.
+      }
     }
   }
-}
 Defined.
 
 Lemma Svar_subst {Σ : Signature}
@@ -121,28 +122,28 @@ Proof.
    { exact wfψ. }
    { exact pf. }
   }
-{
-  simpl.
-  constructor; simpl.
   {
-    destruct Hpf as [Hpf2 Hpf3 Hpf4].
-    apply Hpf2.
+    simpl.
+    constructor; simpl.
+    {
+      destruct Hpf as [Hpf2 Hpf3 Hpf4].
+      apply Hpf2.
+    }
+    {
+      destruct Hpf as [Hpf2 Hpf3 Hpf4].
+      pose proof (Hpile := pile_impl_allows_svsubst_X _ _ _ _ pile).
+      clear -Hpile Hpf3.
+      set_solver.
+    }
+    {
+      destruct Hpf as [Hpf2 Hpf3 Hpf4].
+      exact Hpf4.
+    }
+    {
+      destruct Hpf as [Hpf2 Hpf3 Hpf4 Hpf5].
+      exact Hpf5.
+    }
   }
-  {
-    destruct Hpf as [Hpf2 Hpf3 Hpf4].
-    pose proof (Hpile := pile_impl_allows_svsubst_X _ _ _ _ pile).
-    clear -Hpile Hpf3.
-    set_solver.
-  }
-  {
-    destruct Hpf as [Hpf2 Hpf3 Hpf4].
-    exact Hpf4.
-  }
-  {
-    destruct Hpf as [Hpf2 Hpf3 Hpf4 Hpf5].
-    exact Hpf5.
-  }
-}
 Defined.
 
 Lemma Pre_fixp {Σ : Signature}

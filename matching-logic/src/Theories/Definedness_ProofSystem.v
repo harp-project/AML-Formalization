@@ -14,10 +14,7 @@ From Coq.micromega Require Import Lia.
 
 From stdpp Require Import base fin_sets sets propset proof_irrel option list coGset finite infinite gmap.
 
-From MatchingLogic Require Import Logic
-                                  DerivedOperators_Syntax
-                                  ProofMode
-                                  .
+From MatchingLogic Require Import Logic ProofMode.MLPM.
 From MatchingLogic.Theories Require Import Definedness_Syntax.
 From MatchingLogic.Utils Require Import stdpp_ext.
 Import extralibrary.
@@ -4519,7 +4516,7 @@ Proof.
   * mlApply "H1'".
     mlClear "H1'".
     mlIntro "H2".
-    pose proof (MH := ProofMode_propositional.nimpl_eq_and Γ pY pX
+    pose proof (MH := nimpl_eq_and Γ pY pX
                   ltac:(wf_auto2) ltac:(wf_auto2)).
     use AnyReasoning in MH.
     mlRevertLast.
@@ -4536,7 +4533,7 @@ Proof.
   * mlApply "H1'".
     mlClear "H1'".
     mlIntro "H2".
-    pose proof (MH := ProofMode_propositional.nimpl_eq_and Γ pX pY
+    pose proof (MH := nimpl_eq_and Γ pX pY
                   ltac:(wf_auto2) ltac:(wf_auto2)).
     mlRevertLast. use AnyReasoning in MH.
     mlRewrite MH at 1.

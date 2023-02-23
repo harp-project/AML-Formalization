@@ -4,7 +4,7 @@ From MatchingLogic Require Import
     Logic
     DerivedOperators_Syntax
     ProofSystem
-    ProofMode
+    ProofMode.MLPM
 .
 
 From MatchingLogic.Theories Require Import Definedness_Syntax

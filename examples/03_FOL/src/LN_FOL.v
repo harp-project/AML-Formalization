@@ -2,7 +2,7 @@ From MatchingLogic Require Export BasicProofSystemLemmas
                                   Logic 
                                   Theories.Definedness_Syntax
                                   Theories.Definedness_ProofSystem
-                                  ProofMode
+                                  ProofMode.MLPM
                                   .
 Import MatchingLogic.Logic.Notations MatchingLogic.DerivedOperators_Syntax.Notations.
 From Coq Require Import ssreflect ssrfun ssrbool.
@@ -1092,7 +1092,7 @@ Section FOL_ML_correspondence.
 
 
   Notation "Γ ⊢_FOL form" := (Hilbert_proof_sys Γ form) (at level 50).
-  Notation "Γ ⊢_ML form" := (@ProofSystem.derives _ Γ form) (at level 50).
+  Notation "Γ ⊢_ML form" := (derives Γ form) (at level 50).
 
   Theorem in_FOL_theory : forall Γ x,
     List.In x Γ -> convert_form x ∈ from_FOL_theory Γ.

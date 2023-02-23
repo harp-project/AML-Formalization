@@ -45,20 +45,23 @@ Third, we have things related to matching logic semantics.
 
 The entire syntax and semantics of the logic can be used by importing [`Logic.v`](src/Logic.v), which exports the previous modules.
 
-Fourth, things related to matching logic proof system.
+Fourth, we have things related to matching logic proof system.
 - [`ProofSystem.v`](src/ProofSystem.v) - the definition of the proof system and its basic properties
 - [`ProofSystemSoundness.v`](src/ProofSystemSoundness.v) - soundness of the proof system, connecting it with the semantics
 - [`BasicProofSystemLemmas.v`](src/BasicProofSystemLemmas.v) - proofs using the proofsystem that are independent of the proof mode
-- [`ProofMode_base.v`](src/ProofMode_base.v) - describes the notations of the matching logic proof mode
 - [`ProofInfo.v`](src/ProofInfo.v) - includes theorems for reasoning about static proof information
-- [`ProofMode_propositional.v`](src/ProofMode_propositional.v) - includes theorems about the validity of propositional patterns
-- [`ProofMode_firstorder.v`](src/ProofMode_firstorder.v) - includes theorems about the validity of first-order patterns
-- [`ProofMode_fixpoint.v`](src/ProofMode_fixpoint.v) - includes theorems about the validity of fixpoint patterns
-- [`ProofMode_reshaper.v`](src/ProofMode_reshaper.v) - includes theorems about the reordering of implications
-- [`ProofMode_misc.v`](src/ProofMode_misc.v) - includes theorems about the validity of other kinds of patterns
-- [`ProofMode.v`](src/ProofMode.v) - collects the utilities of the proof mode
 
-Fifth, matching logic theories.
+Fifth, we have a number of theorems proved with the proof system and the _Coq proof mode for matching logic_.
+- [`ProofMode/`](src/ProofMode/)
+  - [`Basics.v`](src/ProofMode/Basics.v) - describes the notations of the matching logic proof mode
+  - [`Propositional.v`](src/ProofMode/Propositional.v) - includes theorems about the validity of propositional patterns
+  - [`Firstorder.v`](src/ProofMode/Firstorder.v) - includes theorems about the validity of first-order patterns
+  - [`FixPoint.v`](src/ProofMode/FixPoint.v) - includes theorems about the validity of fixpoint patterns
+  - [`Reshaper.v`](src/ProofMode/Reshaper.v) - includes theorems about the reordering of implications
+  - [`Misc.v`](src/ProofMode/Misc.v) - includes theorems about the validity of other kinds of patterns
+  - [`MLPM.v`](src/ProofMode/MLPM.v) - collects the utilities of the proof mode
+
+Sixth, we have matching logic theories.
 - [`Theories/`](src/Theories/)
   - [`Definedness_Syntax.v`](src/Theories/Definedness_Syntax.v) - theory of definedness, totality, equality, inclusion, membership - syntax and axioms
   - [`Definedness_Semantics.v`](src/Theories/Definedness_Semantics.v) - lemmas about semantics of the above

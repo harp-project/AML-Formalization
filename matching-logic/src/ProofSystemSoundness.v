@@ -175,7 +175,7 @@ Qed.
 (* Soundness theorem *)
 Theorem Soundness :
   forall phi : Pattern, forall theory : Theory,
-  well_formed phi -> (theory ⊢r phi) -> (theory ⊨ phi).
+  well_formed phi -> (theory ⊢H phi) -> (theory ⊨ phi).
 Proof.
   intros phi theory Hwf Hp. unfold satisfies, satisfies_theory, satisfies_model.
   intros m Hv ρ. 

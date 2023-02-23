@@ -13,7 +13,7 @@ From MatchingLogic Require Import
      Semantics
      DerivedOperators_Syntax
      ProofSystem
-     ProofMode
+     ProofMode.MLPM
      Utils.extralibrary
 .
 
@@ -44,7 +44,7 @@ Proof.
 Qed.
 
 Equations match_or {Σ : Signature} (p : Pattern)
-  : ({ p1 : Pattern & {p2 : Pattern & p = patt_or p1 p2}}) + (forall p1 p2, p <> patt_or p1 p2)
+  : ({ p1 : Pattern & {p2 : Pattern & p = patt_or p1 p2} } ) + (forall p1 p2, p <> patt_or p1 p2)
   :=
   match_or (p1 ---> p2) with match_not p1 => {
     | inl (existT p1' e) => inl _
@@ -66,7 +66,7 @@ Lemma match_or_patt_or  {Σ : Signature} p1 p2: is_inl (match_or (patt_or p1 p2)
 Proof. reflexivity. Qed.
 
 Equations?  match_and {Σ : Signature} (p : Pattern)
-  : ({ p1 : Pattern & {p2 : Pattern & p = patt_and p1 p2}}) + (forall p1 p2, p <> patt_and p1 p2)
+  : ({ p1 : Pattern & {p2 : Pattern & p = patt_and p1 p2} } ) + (forall p1 p2, p <> patt_and p1 p2)
   :=
   match_and p with match_not p => {
     | inr _ := inr _ ;
@@ -103,7 +103,7 @@ Proof.
 Qed.
 
 Equations match_imp {Σ : Signature} (p : Pattern)
-  : ({ p1 : Pattern & {p2 : Pattern & p = patt_imp p1 p2}}) + (forall p1 p2, p <> patt_imp p1 p2)
+  : ({ p1 : Pattern & {p2 : Pattern & p = patt_imp p1 p2} } ) + (forall p1 p2, p <> patt_imp p1 p2)
   :=
   match_imp (p1 ---> p2) := inl _ ;
   match_imp _ := inr _.
@@ -125,7 +125,7 @@ Next Obligation. reflexivity. Defined.
 
 
 Equations match_a_impl_b_impl_c {Σ : Signature} (p : Pattern) :
-  ({a : Pattern & {b : Pattern & {c : Pattern & p = patt_imp a (patt_imp b c)}}})
+  ({a : Pattern & {b : Pattern & {c : Pattern & p = patt_imp a (patt_imp b c)} } })
   + (forall (a b c : Pattern), p <> patt_imp a (patt_imp b c)) :=
   match_a_impl_b_impl_c (p1 ---> (p2 ---> p3)) := inl _ ;
   match_a_impl_b_impl_c _ := inr _ .

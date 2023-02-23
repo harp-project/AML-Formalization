@@ -5,7 +5,7 @@ Require Import Coq.Logic.Classical_Prop.
 From stdpp Require Import base fin_sets sets propset finite.
 
 From MatchingLogic Require Import Logic
-                                  ProofMode.
+                                  ProofMode.MLPM.
 From MatchingLogic.Theories Require Import Definedness_Syntax
                                            Definedness_Semantics
                                            Sorts_Syntax

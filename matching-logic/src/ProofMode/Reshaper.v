@@ -15,9 +15,10 @@ From MatchingLogic Require Import
     IndexManipulation
     wftactics
     ProofInfo
-    ProofMode_base
-    ProofMode_propositional
 .
+From MatchingLogic.ProofMode Require Import Basics
+                                            Propositional
+                                            Firstorder.
 
 From stdpp Require Import list tactics fin_sets coGset gmap sets.
 
@@ -28,7 +29,7 @@ Import extralibrary.
 Import
   MatchingLogic.Syntax.Notations
   MatchingLogic.DerivedOperators_Syntax.Notations
-  MatchingLogic.ProofSystem.Notations
+  MatchingLogic.ProofInfo.Notations
 .
 
 Set Default Proof Mode "Classic".

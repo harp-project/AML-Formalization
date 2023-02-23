@@ -5,12 +5,10 @@ From Coq Require Import Logic.PropExtensionality Logic.Eqdep_dec.
 From Equations Require Import Equations.
 
 From stdpp Require Export base gmap fin_sets sets list countable.
-From MatchingLogic Require Import Syntax Semantics StringSignature ProofSystem ProofMode.
+From MatchingLogic Require Import Syntax Semantics StringSignature ProofSystem ProofMode.MLPM.
 From MatchingLogicProver Require Import Named NamedProofSystem NMatchers.
 
 From stdpp Require Import base finite gmap mapset listset_nodup numbers propset list.
-
-Import ProofSystem.Notations.
 
 (* TODO: move this near to the definition of Pattern *)
 Derive NoConfusion for Pattern.
@@ -181,8 +179,8 @@ Fixpoint rename {Σ : Signature}
     intros ??????? H1 H2.
     rewrite elem_of_map in H1.
     rewrite elem_of_map in H2.
-    destruct H1 as [[x11 x12] [H11 H12]].
-    destruct H2 as [[x21 x22] [H21 H22]].
+    destruct H1 as [[x11 x12] [H11 H12] ].
+    destruct H2 as [[x21 x22] [H21 H22] ].
     simpl in *.
     inversion H11; clear H11; inversion H21; clear H21; subst.
     destruct R as [r pf1 pf2]; simpl in *.
@@ -192,8 +190,8 @@ Fixpoint rename {Σ : Signature}
     intros ??????? H1 H2.
     rewrite elem_of_map in H1.
     rewrite elem_of_map in H2.
-    destruct H1 as [[x11 x12] [H11 H12]].
-    destruct H2 as [[x21 x22] [H21 H22]].
+    destruct H1 as [[x11 x12] [H11 H12] ].
+    destruct H2 as [[x21 x22] [H21 H22] ].
     simpl in *.
     inversion H11; clear H11; inversion H21; clear H21; subst.
     destruct R as [r pf1 pf2]; simpl in *.
@@ -212,7 +210,7 @@ Fixpoint rename {Σ : Signature}
     unfold myswap.
     split; intros H.
     {
-      destruct H as [[a1 a2] [H1 H2]].
+      destruct H as [[a1 a2] [H1 H2] ].
       simpl in *.
       naive_solver.
     }
@@ -296,7 +294,7 @@ Fixpoint rename {Σ : Signature}
     1,2: rewrite elem_of_subseteq; intros x0 Hx0.
     {
       rewrite elem_of_map in Hx0.
-      destruct Hx0 as [[x' y'] [Hx'y'1 Hx'y'2]].
+      destruct Hx0 as [[x' y'] [Hx'y'1 Hx'y'2] ].
       rewrite elem_of_filter in Hx'y'2.
       rewrite elem_of_filter.
       rewrite elem_of_map.
@@ -583,8 +581,8 @@ Fixpoint rename {Σ : Signature}
     intros ??????? H1 H2.
     rewrite elem_of_map in H1.
     rewrite elem_of_map in H2.
-    destruct H1 as [w1 [Hw1 H'w1]].
-    destruct H2 as [w2 [Hw2 H'w2]].
+    destruct H1 as [w1 [Hw1 H'w1] ].
+    destruct H2 as [w2 [Hw2 H'w2] ].
     inversion Hw1; clear Hw1; subst.
     inversion Hw2; clear Hw2; subst.
     reflexivity.
@@ -593,8 +591,8 @@ Fixpoint rename {Σ : Signature}
     intros ??????? H1 H2.
     rewrite elem_of_map in H1.
     rewrite elem_of_map in H2.
-    destruct H1 as [w1 [Hw1 H'w1]].
-    destruct H2 as [w2 [Hw2 H'w2]].
+    destruct H1 as [w1 [Hw1 H'w1] ].
+    destruct H2 as [w2 [Hw2 H'w2] ].
     inversion Hw1; clear Hw1; subst.
     inversion Hw2; clear Hw2; subst.
     reflexivity.
@@ -695,7 +693,7 @@ Fixpoint rename {Σ : Signature}
         rewrite elem_of_subseteq.
         intros x0 Hx0.
         rewrite elem_of_map in Hx0.
-        destruct Hx0 as [x' [Hx'1 Hx'2]].
+        destruct Hx0 as [x' [Hx'1 Hx'2] ].
         subst.
         rewrite elem_of_union.
         rewrite elem_of_singleton.
@@ -726,7 +724,7 @@ Fixpoint rename {Σ : Signature}
         rewrite elem_of_subseteq.
         intros [X1 X2] HX1X2.
         rewrite elem_of_map in HX1X2.
-        destruct HX1X2 as [X3 [HX3 HX4]].
+        destruct HX1X2 as [X3 [HX3 HX4] ].
         unfold twice in *.
         simpl in *.
         inversion HX3. clear HX3. subst.
@@ -863,7 +861,7 @@ Fixpoint rename {Σ : Signature}
       destruct (list_find (alpha_equiv nϕ) (cs_history state)) as [[n phi] |] eqn:Heq; simpl.
       {
         rewrite list_find_Some in Heq.
-        destruct Heq as [H1 [H2 H3]].
+        destruct Heq as [H1 [H2 H3] ].
         apply alpha_equiv_sym.
         assumption.
       }
@@ -894,14 +892,14 @@ Fixpoint rename {Σ : Signature}
         destruct Hx1 as [Hx1|Hx1].
         {
           specialize (IHHalpha1 Hx1).
-          destruct IHHalpha1 as [x2 [Hx21 Hx22]].
+          destruct IHHalpha1 as [x2 [Hx21 Hx22] ].
           exists x2.
           rewrite elem_of_union.
           naive_solver.
         }
         {
           specialize (IHHalpha2 Hx1).
-          destruct IHHalpha2 as [x2 [Hx21 Hx22]].
+          destruct IHHalpha2 as [x2 [Hx21 Hx22] ].
           exists x2.
           rewrite elem_of_union.
           naive_solver.
@@ -912,14 +910,14 @@ Fixpoint rename {Σ : Signature}
         destruct Hx1 as [Hx1|Hx1].
         {
           specialize (IHHalpha1 Hx1).
-          destruct IHHalpha1 as [x2 [Hx21 Hx22]].
+          destruct IHHalpha1 as [x2 [Hx21 Hx22] ].
           exists x2.
           rewrite elem_of_union.
           naive_solver.
         }
         {
           specialize (IHHalpha2 Hx1).
-          destruct IHHalpha2 as [x2 [Hx21 Hx22]].
+          destruct IHHalpha2 as [x2 [Hx21 Hx22] ].
           exists x2.
           rewrite elem_of_union.
           naive_solver.
@@ -937,7 +935,7 @@ Fixpoint rename {Σ : Signature}
           {
             set_solver.
           }
-          destruct IHHalpha as [x2 [Hx21 Hx22]].
+          destruct IHHalpha as [x2 [Hx21 Hx22] ].
           rewrite elem_of_union in Hx22.
           rewrite elem_of_filter in Hx22.
           unfold unrelated,related in Hx22.
@@ -974,14 +972,14 @@ Fixpoint rename {Σ : Signature}
         destruct HX1 as [HX1|HX1].
         {
           specialize (IHHalpha1 HX1).
-          destruct IHHalpha1 as [X2 [HX21 HX22]].
+          destruct IHHalpha1 as [X2 [HX21 HX22] ].
           exists X2.
           rewrite elem_of_union.
           naive_solver.
         }
         {
           specialize (IHHalpha2 HX1).
-          destruct IHHalpha2 as [X2 [HX21 HX22]].
+          destruct IHHalpha2 as [X2 [HX21 HX22] ].
           exists X2.
           rewrite elem_of_union.
           naive_solver.
@@ -992,14 +990,14 @@ Fixpoint rename {Σ : Signature}
         destruct HX1 as [HX1|HX1].
         {
           specialize (IHHalpha1 HX1).
-          destruct IHHalpha1 as [X2 [HX21 HX22]].
+          destruct IHHalpha1 as [X2 [HX21 HX22] ].
           exists X2.
           rewrite elem_of_union.
           naive_solver.
         }
         {
           specialize (IHHalpha2 HX1).
-          destruct IHHalpha2 as [X2 [HX21 HX22]].
+          destruct IHHalpha2 as [X2 [HX21 HX22] ].
           exists X2.
           rewrite elem_of_union.
           naive_solver.
@@ -1021,7 +1019,7 @@ Fixpoint rename {Σ : Signature}
           {
             set_solver.
           }
-          destruct IHHalpha as [X2 [HX21 HX22]].
+          destruct IHHalpha as [X2 [HX21 HX22] ].
           rewrite elem_of_union in HX22.
           rewrite elem_of_filter in HX22.
           unfold unrelated,related in HX22.
@@ -1048,9 +1046,9 @@ Fixpoint rename {Σ : Signature}
         rewrite elem_of_subseteq.
         intros x Hx.
         specialize (H1 _ Hx).
-        destruct H1 as [x2 [Hx21 Hx22]].
+        destruct H1 as [x2 [Hx21 Hx22] ].
         rewrite elem_of_map in Hx22.
-        destruct Hx22 as [x0 [Hx01 Hx02]].
+        destruct Hx22 as [x0 [Hx01 Hx02] ].
         inversion Hx01; clear Hx01; subst.
         assumption.
       }
@@ -1058,9 +1056,9 @@ Fixpoint rename {Σ : Signature}
         rewrite elem_of_subseteq.
         intros x Hx.
         specialize (H2 _ Hx).
-        destruct H2 as [x2 [Hx21 Hx22]].
+        destruct H2 as [x2 [Hx21 Hx22] ].
         rewrite elem_of_map in Hx22.
-        destruct Hx22 as [x0 [Hx01 Hx02]].
+        destruct Hx22 as [x0 [Hx01 Hx02] ].
         inversion Hx01; clear Hx01; subst.
         assumption.
       }
@@ -1081,9 +1079,9 @@ Fixpoint rename {Σ : Signature}
         rewrite elem_of_subseteq.
         intros x Hx.
         specialize (H1 _ Hx).
-        destruct H1 as [x2 [Hx21 Hx22]].
+        destruct H1 as [x2 [Hx21 Hx22] ].
         rewrite elem_of_map in Hx22.
-        destruct Hx22 as [x0 [Hx01 Hx02]].
+        destruct Hx22 as [x0 [Hx01 Hx02] ].
         inversion Hx01; clear Hx01; subst.
         assumption.
       }
@@ -1091,9 +1089,9 @@ Fixpoint rename {Σ : Signature}
         rewrite elem_of_subseteq.
         intros x Hx.
         specialize (H2 _ Hx).
-        destruct H2 as [x2 [Hx21 Hx22]].
+        destruct H2 as [x2 [Hx21 Hx22] ].
         rewrite elem_of_map in Hx22.
-        destruct Hx22 as [x0 [Hx01 Hx02]].
+        destruct Hx22 as [x0 [Hx01 Hx02] ].
         inversion Hx01; clear Hx01; subst.
         assumption.
       }
@@ -1173,7 +1171,7 @@ Fixpoint rename {Σ : Signature}
           destruct H' as [H'|H'].
           {
             specialize (IHs1 H').
-            destruct IHs1 as [b [Hb1 Hb2]].
+            destruct IHs1 as [b [Hb1 Hb2] ].
             exists b.
             split.
             {
@@ -1186,12 +1184,12 @@ Fixpoint rename {Σ : Signature}
           {
             unfold fmap in H'.
             rewrite elem_of_list_fmap in H'.
-            destruct H' as [y [Hy1 Hy2]].
+            destruct H' as [y [Hy1 Hy2] ].
             inversion Hy1; clear Hy1; subst.
             unfold list_of_pairs_apply in Hy2.
             unfold fmap in Hy2.
             rewrite elem_of_list_fmap in Hy2.
-            destruct Hy2 as [[b c][Hc1 Hc2]].
+            destruct Hy2 as [[b c][Hc1 Hc2] ].
             simpl in Hc1. subst y.
             unfold filter in Hc2.
             rewrite elem_of_list_filter in Hc2.
@@ -1213,11 +1211,11 @@ Fixpoint rename {Σ : Signature}
         move: a c H'.
         induction s1; intros a' c' H'; simpl.
         {
-          destruct H' as [b [Hb1 Hb2]].
+          destruct H' as [b [Hb1 Hb2] ].
           inversion Hb1.  
         }
         {
-          destruct H' as [b [Hb1 Hb2]].
+          destruct H' as [b [Hb1 Hb2] ].
           rewrite elem_of_app.
           destruct a as [a'' b'']. simpl in *.
           inversion Hb1; clear Hb1; subst.
@@ -1274,8 +1272,8 @@ Fixpoint rename {Σ : Signature}
       rewrite elem_of_list_to_set in H2.
       rewrite list_of_pairs_compose_correct in H1.
       rewrite list_of_pairs_compose_correct in H2.
-      destruct H1 as [B1 [HB11 HB12]].
-      destruct H2 as [B2 [HB21 HB22]].
+      destruct H1 as [B1 [HB11 HB12] ].
+      destruct H2 as [B2 [HB21 HB22] ].
       rewrite elem_of_elements in HB11.
       rewrite elem_of_elements in HB22.
       rewrite elem_of_elements in HB12.
@@ -1295,8 +1293,8 @@ Fixpoint rename {Σ : Signature}
     rewrite elem_of_list_to_set in H2.
     rewrite list_of_pairs_compose_correct in H1.
     rewrite list_of_pairs_compose_correct in H2.
-    destruct H1 as [B1 [HB11 HB12]].
-    destruct H2 as [B2 [HB21 HB22]].
+    destruct H1 as [B1 [HB11 HB12] ].
+    destruct H2 as [B2 [HB21 HB22] ].
     rewrite elem_of_elements in HB11.
     rewrite elem_of_elements in HB22.
     rewrite elem_of_elements in HB12.
@@ -1322,7 +1320,7 @@ Fixpoint rename {Σ : Signature}
       intros [e1 e2] H.
       rewrite elem_of_list_to_set in H.
       rewrite list_of_pairs_compose_correct in H.
-      destruct H as [e' [He'1 He'2]].
+      destruct H as [e' [He'1 He'2] ].
       rewrite elem_of_elements in He'1.
       rewrite elem_of_elements in He'2.
       rewrite elem_of_union in He'1.
@@ -1482,7 +1480,7 @@ Fixpoint rename {Σ : Signature}
         {
           subst. simpl.
           rewrite list_find_Some in H.
-          destruct H as [H1 [H2 H3]].
+          destruct H as [H1 [H2 H3] ].
           apply alpha_equiv_sym.
           apply H2.
         }
@@ -1528,7 +1526,7 @@ Fixpoint rename {Σ : Signature}
         {
           subst. simpl.
           rewrite list_find_Some in H.
-          destruct H as [H1 [H2 H3]].
+          destruct H as [H1 [H2 H3] ].
           apply alpha_equiv_sym.
           apply H2.
         }
@@ -1573,7 +1571,7 @@ Fixpoint rename {Σ : Signature}
         repeat case_match; simpl.
         {
           rewrite list_find_Some in H.
-          destruct H as [H1 [H2 H3]].
+          destruct H as [H1 [H2 H3] ].
           apply alpha_equiv_sym.
           apply H2.
         }
@@ -1595,7 +1593,7 @@ Fixpoint rename {Σ : Signature}
             rewrite elem_of_subseteq.
             intros [e1 e2] He1e2.
             rewrite elem_of_map in He1e2.
-            destruct He1e2 as [x' [H1 H2]].
+            destruct He1e2 as [x' [H1 H2] ].
             unfold twice in H1. inversion H1. subst. clear H1.
             rewrite elem_of_union.
             rewrite elem_of_singleton.
@@ -1636,7 +1634,7 @@ Fixpoint rename {Σ : Signature}
             rewrite elem_of_subseteq.
             intros [e1 e2] He1e2.
             rewrite elem_of_map in He1e2.
-            destruct He1e2 as [x' [H1 H2]].
+            destruct He1e2 as [x' [H1 H2] ].
             unfold twice in H1. inversion H1. subst. clear H1.
             rewrite elem_of_map.
             exists x'.
@@ -1651,7 +1649,7 @@ Fixpoint rename {Σ : Signature}
         repeat case_match; simpl.
         {
           rewrite list_find_Some in H.
-          destruct H as [H1 [H2 H3]].
+          destruct H as [H1 [H2 H3] ].
           apply alpha_equiv_sym.
           apply H2.
         }
@@ -1673,7 +1671,7 @@ Fixpoint rename {Σ : Signature}
             rewrite elem_of_subseteq.
             intros [e1 e2] He1e2.
             rewrite elem_of_map in He1e2.
-            destruct He1e2 as [x' [H1 H2]].
+            destruct He1e2 as [x' [H1 H2] ].
             unfold twice in H1. inversion H1. subst. clear H1.
 
             rewrite elem_of_map.
@@ -1695,7 +1693,7 @@ Fixpoint rename {Σ : Signature}
             rewrite elem_of_subseteq.
             intros [e1 e2] He1e2.
             rewrite elem_of_map in He1e2.
-            destruct He1e2 as [X' [H1 H2]].
+            destruct He1e2 as [X' [H1 H2] ].
             unfold twice in H1. inversion H1. subst. clear H1.
             
             rewrite elem_of_union.

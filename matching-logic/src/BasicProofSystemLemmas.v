@@ -26,6 +26,7 @@ Import extralibrary.
 Import
   MatchingLogic.Logic.Notations
   MatchingLogic.DerivedOperators_Syntax.Notations
+  MatchingLogic.ProofInfo.Notations
 .
 
 Set Default Proof Mode "Classic".
@@ -34,7 +35,121 @@ Open Scope string_scope.
 Open Scope list_scope.
 Open Scope ml_scope.
 
+Lemma MP {Σ : Signature} {Γ : Theory} {ϕ₁ ϕ₂ : Pattern} {i : ProofInfo} :
+  Γ ⊢i ϕ₁ using i ->
+  Γ ⊢i (ϕ₁ ---> ϕ₂) using i ->
+  Γ ⊢i ϕ₂ using i.
+Proof.
+  intros H1 H2.
+  unshelve (eexists).
+  {
+    eapply (ProofSystem.Modus_ponens _ _ _).
+    { apply H1. }
+    { apply H2. }
+  }
+  {
+    
+      simpl;
+      destruct H1 as [pf1 Hpf1];
+      destruct H2 as [pf2 Hpf2];
+      destruct Hpf1,Hpf2;
+      constructor; simpl;
+      [set_solver
+      |set_solver
+      |(destruct (uses_kt pf1),(uses_kt pf2); simpl in *; congruence)
+      |idtac]
+    .
+    unfold is_true in pwi_pf_kt.
+    rewrite implb_true_iff in pwi_pf_kt.
+    unfold is_true in pwi_pf_kta.
+    rewrite implb_true_iff in pwi_pf_kta.
+    unfold is_true in pwi_pf_kt0.
+    rewrite implb_true_iff in pwi_pf_kt0.
+    unfold is_true in pwi_pf_kta0.
+    rewrite implb_true_iff in pwi_pf_kta0.
+    unfold is_true.
+    rewrite implb_true_iff.
+    intro H.
+    rewrite orb_true_iff in H.
+    destruct H as [H|H].
+    {
+      specialize (pwi_pf_kta H).
+      rewrite andb_true_iff in pwi_pf_kta.
+      destruct pwi_pf_kta as [H1 H2].
+      rewrite H1 H2. reflexivity.
+    }
+    {
+      specialize (pwi_pf_kta0 H).
+      rewrite andb_true_iff in pwi_pf_kta0.
+      destruct pwi_pf_kta0 as [H1 H2].
+      rewrite H1 H2.
+      rewrite orb_true_r.
+      reflexivity.
+    }
+  }
+Defined.
 
+Lemma P1 {Σ : Signature} (Γ : Theory) (ϕ ψ : Pattern) :
+  well_formed ϕ ->
+  well_formed ψ ->
+  Γ ⊢i ϕ ---> ψ ---> ϕ 
+  using BasicReasoning.
+Proof.
+  intros wfϕ wfψ.
+  unshelve (eexists).
+  { apply ProofSystem.P1. exact wfϕ. exact wfψ. }
+  { abstract(solve_pim_simple). }
+Defined.
+
+Lemma P2 {Σ : Signature} (Γ : Theory) (ϕ ψ ξ : Pattern) :
+  well_formed ϕ ->
+  well_formed ψ ->
+  well_formed ξ ->
+  Γ ⊢i (ϕ ---> ψ ---> ξ) ---> (ϕ ---> ψ) ---> (ϕ ---> ξ)
+  using BasicReasoning.
+Proof.
+  intros wfϕ wfψ wfξ.
+  unshelve (eexists).
+  { apply ProofSystem.P2. exact wfϕ. exact wfψ. exact wfξ. }
+  { abstract (solve_pim_simple). }
+Defined.
+
+Lemma P3 {Σ : Signature} (Γ : Theory) (ϕ : Pattern) :
+  well_formed ϕ ->
+  Γ ⊢i (((ϕ ---> ⊥) ---> ⊥) ---> ϕ)
+  using BasicReasoning.
+Proof.
+  intros wfϕ.
+  unshelve (eexists).
+  { apply ProofSystem.P3. exact wfϕ. }
+  { abstract ( solve_pim_simple ). }
+Defined.
+
+Lemma A_impl_A {Σ : Signature} (Γ : Theory) (A : Pattern)  :
+  (well_formed A) ->
+  Γ ⊢i (A ---> A)
+  using BasicReasoning.
+Proof. 
+  intros WFA.
+  pose proof (_1 := P2 Γ A (A ---> A) A ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
+  pose proof (_2 := P1 Γ A (A ---> A) ltac:(wf_auto2) ltac:(wf_auto2)).
+  pose proof (_3 := MP _2 _1).
+  pose proof (_4 := P1 Γ A A ltac:(wf_auto2) ltac:(wf_auto2)).
+  pose proof (_5 := MP _4 _3).
+  exact _5.
+Defined.
+
+Lemma prf_add_assumption {Σ : Signature} Γ a b i :
+  well_formed a ->
+  well_formed b ->
+  Γ ⊢i b using i ->
+  Γ ⊢i (a ---> b) using i.
+Proof.
+  intros wfa wfb H.
+  eapply MP.
+  { apply H. }
+  { apply useBasicReasoning. apply P1; wf_auto2. }
+Defined.
 
 Lemma hypothesis {Σ : Signature} (Γ : Theory) (axiom : Pattern) :
   well_formed axiom ->
@@ -1329,7 +1444,7 @@ Defined.
         reflexivity.
     }
     (* i =  gpi *)
-    useBasicReasoning.
+    eapply useBasicReasoning.
     apply Ex_quan.
     abstract (wf_auto2).
   Defined.
@@ -1408,7 +1523,7 @@ Defined.
     pose proof (wfϕ₂ := well_formed_imp_proj2 _ _ Hwf).
 
     eapply prf_strenghten_premise_meta_meta.
-    4: { useBasicReasoning. apply not_not_intro. wf_auto2. }
+    4: { apply useBasicReasoning. apply not_not_intro. wf_auto2. }
     1-3: wf_auto2.
     unfold patt_forall.
     apply modus_tollens.
