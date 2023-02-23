@@ -139,50 +139,65 @@ Defined.
     | npatt_mu X phi => union (named_svars phi) (singleton X)
     end.
 
-  Definition named_fresh_evar ϕ := evar_fresh (elements (named_evars ϕ)).
-  Definition named_fresh_svar ϕ := svar_fresh (elements (named_svars ϕ)).
+  Definition named_fresh_evar' avoid ϕ := evar_fresh (elements (named_evars ϕ ∪ avoid)).
+  Definition named_fresh_svar' avoid ϕ := svar_fresh (elements (named_svars ϕ ∪ avoid)).
+  Definition named_fresh_evar ϕ := named_fresh_evar' ∅ ϕ.
+  Definition named_fresh_svar ϕ := named_fresh_svar' ∅ ϕ.
 
   (* substitute variable x for psi in phi: phi[psi/x] *)
-  Fixpoint named_evar_subst (phi psi : NamedPattern) (x : evar) :=
+  Fixpoint named_evar_subst'
+    (avoid : gset evar) (phi psi : NamedPattern) (x : evar) :=
     match phi with
     | npatt_evar x' => if decide (x = x') is left _ then psi else npatt_evar x'
     | npatt_svar X => npatt_svar X
     | npatt_sym sigma => npatt_sym sigma
-    | npatt_app phi1 phi2 => npatt_app (named_evar_subst phi1 psi x)
-                                       (named_evar_subst phi2 psi x)
+    | npatt_app phi1 phi2 => npatt_app (named_evar_subst' avoid phi1 psi x)
+                                       (named_evar_subst' avoid phi2 psi x)
     | npatt_bott => npatt_bott
-    | npatt_imp phi1 phi2 => npatt_imp (named_evar_subst phi1 psi x)
-                                       (named_evar_subst phi2 psi x)
+    | npatt_imp phi1 phi2 => npatt_imp (named_evar_subst' avoid phi1 psi x)
+                                       (named_evar_subst' avoid phi2 psi x)
     | npatt_exists x' phi' => if decide (x = x') is left _
-                              then let fx := named_fresh_evar phi' in
-                                   npatt_exists fx (named_evar_subst phi' (npatt_evar fx) x)
-                              else npatt_exists x' (named_evar_subst phi' psi x)
-    | npatt_mu X phi' => npatt_mu X (named_evar_subst phi' psi x)
+                              then let fx := named_fresh_evar' avoid phi' in
+                                   npatt_exists fx (named_evar_subst' (avoid ∪ {[fx]}) phi' (npatt_evar fx) x)
+                              else npatt_exists x' (named_evar_subst' avoid phi' psi x)
+    | npatt_mu X phi' => npatt_mu X (named_evar_subst' avoid phi' psi x)
     end.
 
   (* substitute variable X for psi in phi: phi[psi/X] *)
-  Fixpoint named_svar_subst (phi psi : NamedPattern) (X : svar) :=
+  Fixpoint named_svar_subst'
+    (avoid : gset svar)
+    (phi psi : NamedPattern) (X : svar) :=
     match phi with
     | npatt_evar x => npatt_evar x
     | npatt_svar X' => if decide (X = X') is left _ then psi else npatt_svar X'
     | npatt_sym sigma => npatt_sym sigma
-    | npatt_app phi1 phi2 => npatt_app (named_svar_subst phi1 psi X)
-                                       (named_svar_subst phi2 psi X)
+    | npatt_app phi1 phi2 => npatt_app (named_svar_subst' avoid phi1 psi X)
+                                       (named_svar_subst' avoid phi2 psi X)
     | npatt_bott => npatt_bott
-    | npatt_imp phi1 phi2 => npatt_imp (named_svar_subst phi1 psi X)
-                                       (named_svar_subst phi2 psi X)
-    | npatt_exists x phi' => npatt_exists x (named_svar_subst phi' psi X)
+    | npatt_imp phi1 phi2 => npatt_imp (named_svar_subst' avoid phi1 psi X)
+                                       (named_svar_subst' avoid phi2 psi X)
+    | npatt_exists x phi' => npatt_exists x (named_svar_subst' avoid phi' psi X)
     | npatt_mu X' phi' => if decide (X = X') is left _
-                          then let fX := named_fresh_svar phi' in
-                               npatt_mu fX (named_svar_subst phi' (npatt_svar fX) X)
-                          else npatt_mu X' (named_svar_subst phi' psi X)
+                          then let fX := named_fresh_svar' avoid phi' in
+                               npatt_mu fX (named_svar_subst' (avoid ∪ {[fX]}) phi' (npatt_svar fX) X)
+                          else npatt_mu X' (named_svar_subst' avoid phi' psi X)
     end.
 
-  Lemma nsize_named_evar_subst_evar (ϕ : NamedPattern) (x y : evar):
-    nsize' (named_evar_subst ϕ (npatt_evar y) x) = nsize' ϕ.
+  Definition named_evar_subst
+    (phi psi : NamedPattern) (x : evar) : NamedPattern
+    := named_evar_subst' ∅ phi psi x
+  .
+  Definition named_svar_subst
+    (phi psi : NamedPattern) (X : svar) : NamedPattern
+    := named_svar_subst' ∅ phi psi X
+  .
+
+  Lemma nsize_named_evar_subst_evar'
+    avoid (ϕ : NamedPattern) (x y : evar):
+    nsize' (named_evar_subst' avoid ϕ (npatt_evar y) x) = nsize' ϕ.
   Proof.
-    move: x y.
-    induction ϕ; intros x' y; cbn; try reflexivity.
+    move: x y avoid.
+    induction ϕ; intros x' y avoid; cbn; try reflexivity.
     {
       destruct (decide (x' = x)); reflexivity.
     }
@@ -206,11 +221,12 @@ Defined.
     }
   Qed.
 
-  Lemma nsize_named_evar_subst_svar (ϕ : NamedPattern) (X Y : svar):
-    nsize' (named_svar_subst ϕ (npatt_svar Y) X) = nsize' ϕ.
+  Lemma nsize_named_evar_subst_svar'
+    avoid (ϕ : NamedPattern) (X Y : svar):
+    nsize' (named_svar_subst' avoid ϕ (npatt_svar Y) X) = nsize' ϕ.
   Proof.
-    move: X Y.
-    induction ϕ; intros X' Y; cbn; try reflexivity.
+    move: X Y avoid.
+    induction ϕ; intros X' Y avoid; cbn; try reflexivity.
     {
       destruct (decide (X' = X)); reflexivity.
     }
@@ -234,13 +250,13 @@ Defined.
     }
   Qed.
 
-  Lemma named_evar_subst_noop (ϕ : NamedPattern) (x : evar) :
+  Lemma named_evar_subst_noop avoid (ϕ : NamedPattern) (x : evar) :
     x ∉ named_evars ϕ ->
-    named_evar_subst ϕ (npatt_evar x) x = ϕ
+    named_evar_subst' avoid ϕ (npatt_evar x) x = ϕ
   .
   Proof.
-    move: x.
-    induction ϕ; intros x' Hx'; cbn; try reflexivity.
+    move: x avoid.
+    induction ϕ; intros x' avoid Hx'; cbn; try reflexivity.
     {
       destruct (decide (x' = x)).
       { subst. reflexivity. }
@@ -248,14 +264,14 @@ Defined.
     }
     {
       cbn in Hx'.
-      specialize (IHϕ1 x' ltac:(set_solver)).
-      specialize (IHϕ2 x' ltac:(set_solver)).
+      specialize (IHϕ1 x' avoid ltac:(set_solver)).
+      specialize (IHϕ2 x' avoid ltac:(set_solver)).
       congruence.
     }
     {
       cbn in Hx'.
-      specialize (IHϕ1 x' ltac:(set_solver)).
-      specialize (IHϕ2 x' ltac:(set_solver)).
+      specialize (IHϕ1 x' avoid ltac:(set_solver)).
+      specialize (IHϕ2 x' avoid ltac:(set_solver)).
       congruence.
     }
     {
@@ -282,14 +298,14 @@ Defined.
     = named_evar_subst ϕ ψ x
   .
   Proof.
-    move: x y.
+    move: x y ψ.
     remember (nsize' ϕ) as sz.
     assert (Hsz: nsize' ϕ <= sz) by lia.
     clear Heqsz.
     move: ϕ Hsz.
     induction sz; cbn; intros ϕ Hsz.
     { destruct ϕ; cbn in Hsz; lia. }
-    destruct ϕ; intros x' y Hfry; cbn; try reflexivity.
+    destruct ϕ; intros x' y ψ Hfry; cbn; try reflexivity.
     {
       destruct (decide (x' = x)).
       { subst. cbn. rewrite decide_eq_same. reflexivity. }
@@ -328,7 +344,14 @@ Defined.
         {
           subst.
           rewrite IHsz.
-          rewrite named_evar_subst_noop.
+          { lia. }
+          { set_solver. }
+          cut (named_fresh_evar ϕ = named_fresh_evar (named_evar_subst ϕ (npatt_evar (named_fresh_evar ϕ)) x)).
+          { intros H.
+            congruence.
+          }
+          unfold named_fresh_evar.
+          do 2 apply f_equal.
         }
       }
       }
