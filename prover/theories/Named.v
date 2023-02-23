@@ -139,10 +139,48 @@ Defined.
     | npatt_mu X phi => union (named_svars phi) (singleton X)
     end.
 
+  CoInductive EVarGen := mkEvarGen {
+    eg_get : gset evar -> evar ;
+    eg_gset_correct : forall evs, eg_get evs ∉ evs ;
+    eg_next : gset evar -> EVarGen ;
+  }.
+
+  Program CoFixpoint default_EVarGen avoid : EVarGen := {|
+    eg_get := fun evs => evar_fresh (elements (avoid ∪ evs)) ;
+    eg_next := fun evs => default_EVarGen (avoid ∪ evs) ;
+  |}.
+  Next Obligation.
+    intros avoid evs. simpl.
+    assert (H: evar_fresh (elements (avoid ∪ evs)) ∉ (avoid ∪ evs)).
+    {
+      apply set_evar_fresh_is_fresh'.
+    }
+    set_solver.
+  Qed.
+
+  CoInductive SVarGen := mkSvarGen {
+    sg_get : gset svar -> svar ;
+    sg_gset_correct : forall svs, sg_get svs ∉ svs ;
+    sg_next : gset svar -> SVarGen ;
+  }.
+
+  Program CoFixpoint default_SVarGen avoid : SVarGen := {|
+    sg_get := fun svs => svar_fresh (elements (avoid ∪ svs)) ;
+    sg_next := fun svs => default_SVarGen (avoid ∪ svs) ;
+  |}.
+  Next Obligation.
+    intros avoid svs. simpl.
+    assert (H: svar_fresh (elements (avoid ∪ svs)) ∉ (avoid ∪ svs)).
+    {
+      apply set_svar_fresh_is_fresh'.
+    }
+    set_solver.
+  Qed.
+
   Definition named_fresh_evar' avoid ϕ := evar_fresh (elements (named_evars ϕ ∪ avoid)).
   Definition named_fresh_svar' avoid ϕ := svar_fresh (elements (named_svars ϕ ∪ avoid)).
-  Definition named_fresh_evar ϕ := named_fresh_evar' ∅ ϕ.
-  Definition named_fresh_svar ϕ := named_fresh_svar' ∅ ϕ.
+  (*Definition named_fresh_evar ϕ := named_fresh_evar' ∅ ϕ.
+  Definition named_fresh_svar ϕ := named_fresh_svar' ∅ ϕ.*)
 
   (* substitute variable x for psi in phi: phi[psi/x] *)
   Fixpoint named_evar_subst'
@@ -292,20 +330,21 @@ Defined.
     }
   Qed.
 
-  Lemma named_evar_subst_chain (ϕ ψ: NamedPattern) (x y : evar) :
+  Lemma named_evar_subst_chain
+    avoid1 avoid2 (ϕ ψ: NamedPattern) (x y : evar) :
     y ∉ named_evars ϕ ->
-    named_evar_subst (named_evar_subst ϕ (npatt_evar y) x) ψ y
-    = named_evar_subst ϕ ψ x
+    named_evar_subst' avoid2 (named_evar_subst' avoid1 ϕ (npatt_evar y) x) ψ y
+    = named_evar_subst' avoid2 ϕ ψ x
   .
   Proof.
-    move: x y ψ.
+    move: avoid1 avoid2 x y ψ.
     remember (nsize' ϕ) as sz.
     assert (Hsz: nsize' ϕ <= sz) by lia.
     clear Heqsz.
     move: ϕ Hsz.
     induction sz; cbn; intros ϕ Hsz.
     { destruct ϕ; cbn in Hsz; lia. }
-    destruct ϕ; intros x' y ψ Hfry; cbn; try reflexivity.
+    destruct ϕ; intros avoid1 avoid2 x' y ψ Hfry; cbn; try reflexivity.
     {
       destruct (decide (x' = x)).
       { subst. cbn. rewrite decide_eq_same. reflexivity. }
@@ -340,16 +379,19 @@ Defined.
       destruct (decide (x' = x)).
       {
         subst. cbn.
-        destruct (decide (y = named_fresh_evar ϕ)).
+        destruct (decide (y = named_fresh_evar' avoid1 ϕ)).
         {
           subst.
           rewrite IHsz.
           { lia. }
           { set_solver. }
-          cut (named_fresh_evar ϕ = named_fresh_evar (named_evar_subst ϕ (npatt_evar (named_fresh_evar ϕ)) x)).
+          cut (named_fresh_evar' avoid2 ϕ = named_fresh_evar' avoid2 (named_evar_subst' (avoid1 ∪ {[named_fresh_evar' avoid1 ϕ]}) ϕ (npatt_evar (named_fresh_evar' avoid1 ϕ)) x)).
           { intros H.
             congruence.
           }
+          unfold named_fresh_evar'.
+          do 2 apply f_equal.
+          cbn.
           unfold named_fresh_evar.
           do 2 apply f_equal.
         }
