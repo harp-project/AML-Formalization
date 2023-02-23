@@ -212,9 +212,9 @@ Section ln2named.
 
   Lemma ln2named_bevar_subst ϕ y:
     ln2named (bevar_subst (patt_free_evar y) 0 ϕ)
-    = named_evar_subst
+    = rename_free_evar
       (ln2named (evar_open (string2evar (ln2str ϕ)) 0 ϕ))  
-      (npatt_evar y)
+      y
       (string2evar (ln2str ϕ))
   .
   Proof.
@@ -277,6 +277,10 @@ Section ln2named.
       remember (string2evar ("(" +:+ ln2str ϕ1 +:+ ")A(" +:+ ln2str ϕ2 +:+ ")")) as y2.
       remember (string2evar (ln2str ϕ1)) as z1.
       remember (string2evar (ln2str ϕ2)) as z2.
+      rewrite rename_free_evar_chain.
+      {
+        
+      }
       f_equal.
       Print named_evar_subst.
 
