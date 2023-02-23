@@ -9,7 +9,7 @@ From Equations Require Import Equations.
 From stdpp Require Import base option.
 
 From MatchingLogic Require Import
-     Syntax Semantics DerivedOperators_Syntax ProofSystem ProofMode
+     Syntax Semantics DerivedOperators_Syntax ProofSystem ProofMode.MLPM
      Utils.extralibrary
 .
 
@@ -25,7 +25,7 @@ Derive Subterm for NamedPattern.
 Open Scope ml_scope.
 
 Equations nmatch_not {Σ : Signature} (p : NamedPattern)
-  : ({ p' : NamedPattern & p = npatt_not p'}) + (forall p', p <> npatt_not p')
+  : ({ p' : NamedPattern & p = npatt_not p'} ) + (forall p', p <> npatt_not p')
   :=
   nmatch_not (npatt_imp p' npatt_bott) := inl _ ;
   nmatch_not _ := inr _ .
@@ -101,7 +101,7 @@ Qed.
 *)
 
 Equations nmatch_imp {Σ : Signature} (p : NamedPattern)
-  : ({ p1 : NamedPattern & {p2 : NamedPattern & p = npatt_imp p1 p2}})
+  : ({ p1 : NamedPattern & {p2 : NamedPattern & p = npatt_imp p1 p2} })
     + (forall p1 p2, p <> npatt_imp p1 p2)
   :=
   nmatch_imp (npatt_imp p1 p2) := inl _ ;
@@ -125,7 +125,7 @@ Next Obligation. reflexivity. Defined.
 *)
 
 Equations nmatch_a_impl_b_impl_c {Σ : Signature} (p : NamedPattern) :
-  ({a : NamedPattern & {b : NamedPattern & {c : NamedPattern & p = npatt_imp a (npatt_imp b c)}}})
+  ({a : NamedPattern & {b : NamedPattern & {c : NamedPattern & p = npatt_imp a (npatt_imp b c)} } })
   + (forall (a b c : NamedPattern), p <> npatt_imp a (npatt_imp b c)) :=
   nmatch_a_impl_b_impl_c (npatt_imp p1 (npatt_imp p2 p3)) := inl _ ;
   nmatch_a_impl_b_impl_c _ := inr _ .
