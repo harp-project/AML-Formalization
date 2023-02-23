@@ -139,6 +139,18 @@ Defined.
     | npatt_mu X phi => union (named_svars phi) (singleton X)
     end.
 
+  Lemma named_free_evars_subseteq_named_evars ϕ:
+    named_free_evars ϕ ⊆ named_evars ϕ.
+  Proof.
+    induction ϕ; cbn; set_solver.
+  Qed.
+
+  Lemma named_free_svars_subseteq_named_svars ϕ:
+    named_free_svars ϕ ⊆ named_svars ϕ.
+  Proof.
+    induction ϕ; cbn; set_solver.
+  Qed.
+
   CoInductive EVarGen := mkEvarGen {
     eg_get : gset evar -> evar ;
     eg_get_correct : forall evs, eg_get evs ∉ evs ;
@@ -235,6 +247,109 @@ Defined.
   .
   Proof.
     induction ϕ; cbn; repeat case_match; cbn; try reflexivity; lia.
+  Qed.
+
+  Lemma rename_free_evar_id (ϕ : NamedPattern) (y x : evar) :
+    x ∉ named_free_evars ϕ ->
+    rename_free_evar ϕ y x = ϕ
+  .
+  Proof.
+    move: y x.
+    induction ϕ; cbn; intros y x' H; try reflexivity.
+    {
+      destruct (decide (x' = x)).
+      { subst. exfalso. set_solver. }
+      { reflexivity. }
+    }
+    {
+      rewrite IHϕ1. set_solver.
+      rewrite IHϕ2. set_solver.
+      reflexivity.
+    }
+    {
+      rewrite IHϕ1. set_solver.
+      rewrite IHϕ2. set_solver.
+      reflexivity.
+    }
+    {
+      destruct (decide (x' = x));[reflexivity|].
+      rewrite IHϕ. set_solver. reflexivity.
+    }
+    {
+      rewrite IHϕ. assumption. reflexivity.
+    }
+  Qed.
+
+
+  Lemma rename_free_evar_chain (ϕ : NamedPattern) (z y x : evar) :
+    y ∉ named_evars ϕ ->
+    rename_free_evar (rename_free_evar ϕ y x) z y
+    = rename_free_evar ϕ z x.
+  Proof.
+    move: z y x.
+    remember (nsize' ϕ) as sz.
+    assert (Hsz: nsize' ϕ <= sz) by lia.
+    clear Heqsz.
+    move: ϕ Hsz.
+    induction sz; intros ϕ Hsz.
+    { destruct ϕ; cbn in Hsz; lia. }
+    destruct ϕ; intros z y x' Hfry; cbn in Hsz; cbn in Hfry; cbn; try reflexivity.
+    {
+      destruct (decide (x' = x)).
+      { subst. cbn. rewrite decide_eq_same. reflexivity. }
+      { cbn. destruct (decide (y = x));[|reflexivity].
+        subst. cbn in Hfry. exfalso. clear -Hfry. set_solver.
+      }
+    }
+    {
+      rewrite IHsz.
+      { lia. }
+      { set_solver. }
+      rewrite IHsz.
+      { lia. }
+      { set_solver. }
+      reflexivity.
+    }
+    {
+      rewrite IHsz.
+      { lia. }
+      { set_solver. }
+      rewrite IHsz.
+      { lia. }
+      { set_solver. }
+      reflexivity.
+    }
+    {
+      destruct (decide (x' = x)).
+      {
+        subst. cbn.
+        destruct (decide (y = x));[reflexivity|].
+        cbn.
+        rewrite rename_free_evar_id.
+        { 
+          pose proof (named_free_evars_subseteq_named_evars ϕ).  
+          set_solver.
+        }
+        reflexivity.
+      }
+      {
+        cbn.
+        destruct (decide (y = x)).
+        { subst. exfalso. clear -Hfry. set_solver. }
+        {
+          rewrite IHsz.
+          { lia. }
+          { set_solver. }
+          reflexivity.
+        }
+      }
+    }
+    {
+      rewrite IHsz.
+      { lia. }
+      { assumption. }
+      reflexivity.
+    }
   Qed.
 
   (*
