@@ -52,7 +52,13 @@ Section abstract.
   .
   Proof.
     move: y.
-    induction ϕ; intros y wfϕ; cbn in *.
+    remember (size' ϕ) as sz eqn:Heqsz.
+    assert (Hsz: size' ϕ <= sz) by lia.
+    clear Heqsz.
+    move: ϕ Hsz.
+    induction sz; intros ϕ Hsz.
+    { destruct ϕ; cbn in Hsz; lia. }
+    destruct ϕ; intros y wfϕ; cbn in *.
     {
       (* patt_free_evar x*)
       rewrite l2n_fe.
@@ -87,9 +93,11 @@ Section abstract.
     {
       (* patt_app ϕ1 ϕ2 *)
       rewrite l2n_app.
-      rewrite IHϕ1.
+      rewrite IHsz.
+      { lia. }
       { wf_auto2. }
-      rewrite IHϕ2.
+      rewrite IHsz.
+      { lia. }
       { wf_auto2. }
       rewrite rename_free_evar_id.
       { apply ename_fresh_in_ebody. }
@@ -110,9 +118,11 @@ Section abstract.
     {
       (* patt_imp ϕ1 ϕ2 *)
       rewrite l2n_imp.
-      rewrite IHϕ1.
+      rewrite IHsz.
+      { lia. }
       { wf_auto2. }
-      rewrite IHϕ2.
+      rewrite IHsz.
+      { lia. }
       { wf_auto2. }
       rewrite rename_free_evar_id.
       { apply ename_fresh_in_ebody. }
