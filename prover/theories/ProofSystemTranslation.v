@@ -23,7 +23,7 @@ Section abstract.
     (l2n : Pattern -> NamedPattern)
     (l2n_fe : forall x, l2n (patt_free_evar x) = npatt_evar x)
     (l2n_fs : forall X, l2n (patt_free_svar X) = npatt_svar X)
-    (l2n_fb : l2n patt_bott = npatt_bott)
+    (l2n_b : l2n patt_bott = npatt_bott)
     (l2n_sym : forall s, l2n (patt_sym s) = npatt_sym s)
     (l2n_imp : forall ϕ1 ϕ2, l2n (patt_imp ϕ1 ϕ2) = npatt_imp (l2n ϕ1) (l2n ϕ2))
     (l2n_app : forall ϕ1 ϕ2, l2n (patt_app ϕ1 ϕ2) = npatt_app (l2n ϕ1) (l2n ϕ2))
@@ -37,13 +37,104 @@ Section abstract.
 
   Context
     (f : Pattern -> evar -> evar)
+    (ebody_efree: forall x, ebody (patt_free_evar x) = npatt_evar x)
+    (ename_erenames: forall x, ename (patt_free_evar x) <> x)
+    (ebody_sfree: forall X, ebody (patt_free_svar X) = npatt_svar X)
+    (ebody_sym: forall s, ebody (patt_sym s) = npatt_sym s)
+    (ename_fresh_in_ebody: forall ϕ, ename ϕ ∉ named_free_evars (ebody ϕ))
+    (ebody_app : forall ϕ1 ϕ2, ebody (patt_app ϕ1 ϕ2) = npatt_app (ebody ϕ1) (ebody ϕ2))
+    (ebody_bott : ebody patt_bott = npatt_bott )
+    (ebody_imp : forall ϕ1 ϕ2, ebody (patt_imp ϕ1 ϕ2) = npatt_imp (ebody ϕ1) (ebody ϕ2))
   .
   Lemma what_we_want (ϕ : Pattern) (y : evar):
     well_formed ϕ ->
     l2n (evar_open y 0 ϕ) = rename_free_evar (ebody ϕ) (f ϕ y) (ename ϕ)
   .
   Proof.
-
+    move: y.
+    induction ϕ; intros y wfϕ; cbn in *.
+    {
+      (* patt_free_evar x*)
+      rewrite l2n_fe.
+      rewrite rename_free_evar_id.
+      { rewrite ebody_efree. simpl. rewrite elem_of_singleton. apply ename_erenames. }
+      { rewrite ebody_efree. reflexivity. }
+    }
+    {
+      (* patt_free_svar x*)
+      rewrite l2n_fs.
+      rewrite rename_free_evar_id.
+      { rewrite ebody_sfree. simpl. rewrite elem_of_empty. auto. }
+      { rewrite ebody_sfree. reflexivity. }
+    }
+    {
+      (* patt_bound_evar n *)
+      repeat case_match; subst; try lia; try congruence.
+    }
+    {
+      (* patt_bound_svar n *)
+      unfold well_formed,well_formed_closed in wfϕ.
+      cbn in wfϕ.
+      repeat case_match; subst; cbn in wfϕ; try lia; try congruence.
+    }
+    {
+      (* patt_sym s *)
+      rewrite l2n_sym.
+      rewrite rename_free_evar_id.
+      { rewrite ebody_sym. cbn. rewrite elem_of_empty. auto. }
+      { rewrite ebody_sym. reflexivity. }
+    }
+    {
+      (* patt_app ϕ1 ϕ2 *)
+      rewrite l2n_app.
+      rewrite IHϕ1.
+      { wf_auto2. }
+      rewrite IHϕ2.
+      { wf_auto2. }
+      rewrite rename_free_evar_id.
+      { apply ename_fresh_in_ebody. }
+      rewrite rename_free_evar_id.
+      { apply ename_fresh_in_ebody. }
+      rewrite rename_free_evar_id.
+      { apply ename_fresh_in_ebody. }
+      rewrite ebody_app.
+      reflexivity.
+    }
+    {
+      (* patt_bott *)
+      rewrite l2n_b.
+      rewrite rename_free_evar_id.
+      { rewrite ebody_bott. cbn. rewrite elem_of_empty. auto. }
+      { rewrite ebody_bott. reflexivity. }
+    }
+    {
+      (* patt_imp ϕ1 ϕ2 *)
+      rewrite l2n_imp.
+      rewrite IHϕ1.
+      { wf_auto2. }
+      rewrite IHϕ2.
+      { wf_auto2. }
+      rewrite rename_free_evar_id.
+      { apply ename_fresh_in_ebody. }
+      rewrite rename_free_evar_id.
+      { apply ename_fresh_in_ebody. }
+      rewrite rename_free_evar_id.
+      { apply ename_fresh_in_ebody. }
+      rewrite ebody_imp.
+      reflexivity.
+    }
+    {
+      rewrite l2n_ex.
+      fold (evar_open y 1 ϕ).
+      (* The only way to use IHϕ is backwards now,
+         but we need some additional assumptions for that.
+      *)
+      assert (H1: exists nb ϕb, ebody (patt_exists ϕ) = npatt_exists nb ϕb).
+      { admit. }
+      destruct H1 as [nb [ϕb H1]].
+      rewrite H1.
+      rewrite -IHϕ.
+    }
   Qed.
 
 End abstract.
