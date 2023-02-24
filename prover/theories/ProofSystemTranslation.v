@@ -168,18 +168,23 @@ Section ln2named.
     (string2svar : string -> option svar)
     (svar2string : svar -> string)
     (sym2string : symbols -> string)
+    (string2sym : string -> option symbols)
     (s2ev_useful : forall str, exists ev, string2evar ("E" +:+ str) = Some ev)
-    (s2sv_useful : forall str, exists sv, string2svar ("S" +:+ str) = Some sv)
     (s2ev_empty : forall str, (forall str', str <> "E" +:+ str' ) -> string2evar str = None)
+    (s2sv_useful : forall str, exists sv, string2svar ("S" +:+ str) = Some sv)
     (s2sv_empty : forall str, (forall str', str <> "S" +:+ str' ) -> string2svar str = None)
+    (s2sym_useful : forall str, exists sv, string2sym ("Y" +:+ str) = Some sv)
+    (s2sym_empty : forall str, (forall str', str <> "Y" +:+ str' ) -> string2sym str = None)
     (cancele1 : forall ev str, string2evar str = Some ev -> evar2string ev = str)
     (cancele2 : forall ev, string2evar (evar2string ev) = Some ev)
     (cancels1 : forall sv str, string2svar str = Some sv -> svar2string sv = str)
     (cancels2 : forall sv, string2svar (svar2string sv) = Some sv)
+    (cancelsym1 : forall sym str, string2sym str = Some sym -> sym2string sym = str)
+    (cancelsym2 : forall sym, string2sym (sym2string sym) = Some sym)
     (evar_svar_distinct: forall x X, evar2string x <> svar2string X)
     (evar_sym_distinct: forall x s, evar2string x <> sym2string s)
     (sym_svar_distinct: forall s X, sym2string s <> svar2string X)
-    (sym2string_inj : Inj (=) (=) sym2string)
+    (*sym2string_inj : Inj (=) (=) sym2string*)
   .
   #[local]
   Instance evar2string_inj : Inj (=) (=) evar2string.
@@ -217,11 +222,16 @@ Section ln2named.
   .
 
   #[global]
-  Instance ln2str_inj : Inj (=) (=) ln2str.
-  Proof.
+  Lemma ln2str_inj :
+    forall ϕ₁ ϕ₂,
+      well_formed ϕ₁ ->
+      well_formed ϕ₂ ->
+      ln2str ϕ₁ = ln2str ϕ₂ ->
+      ϕ₁ = ϕ₂
+  .
     intros ϕ₁ ϕ₂.
     move: ϕ₂.
-    induction ϕ₁; intros ϕ₂ H;
+    induction ϕ₁; intros ϕ₂ wfϕ₁ wfϕ₂ H;
       try (solve[(destruct ϕ₂; cbn in *; simpl; inversion H as [H']; congruence)]);
       cbn in H.
     {
@@ -240,40 +250,68 @@ Section ln2named.
         eapply evar_svar_distinct.
         exact H.
       }
-      all: try (
+      all: try solve [
         rewrite s2ev_empty in H;
         [intros str' Hstr'; inversion Hstr'|inversion H]
-      ).
-      naive_solver.
+      ].
+      apply cancele1 in H.
+      exfalso. eapply evar_sym_distinct. exact H.
     }
     {
-      inversion H as [H'].
-      apply pretty_nat_inj in H'.
-      congruence.
-    }
-    {
-      inversion H as [H'].
-      apply sym2string_inj in H'.
-      congruence.
-    }
-    {
-      inversion H as [H'].
-      rewrite -(string_of_list_ascii_of_string (ln2str ϕ₁1)) in H'.
-      rewrite -(string_of_list_ascii_of_string (ln2str ϕ₁2)) in H'.
-      rewrite -(string_of_list_ascii_of_string (ln2str ϕ₂1)) in H'.
-      rewrite -(string_of_list_ascii_of_string (ln2str ϕ₂2)) in H'.
-      rewrite -2!(string_of_list_ascii_of_string ")A(") in H'.
-      rewrite -2!(string_of_list_ascii_of_string "(") in H'.
-      rewrite -2!(string_of_list_ascii_of_string ")") in H'.
-      rewrite -!string_of_list_ascii_app in H'.
-      destruct (decide (length (list_ascii_of_string (ln2str ϕ₁1)) = length (list_ascii_of_string (ln2str ϕ₂1)))).
-      {
-        simplify_list_eq.
-        naive_solver.
-      }
+      apply (@f_equal string _ string2svar) in H.
+      rewrite cancels2 in H.
+      destruct ϕ₂; cbn in *.
       {
         exfalso.
-        admit.
+        symmetry in H.
+        apply cancels1 in H.
+        symmetry in H.
+        eapply evar_svar_distinct.
+        exact H.
+      }
+      all: symmetry in H.
+      all: try solve [
+        rewrite s2sv_empty in H;
+        [intros str' Hstr'; inversion Hstr'|inversion H]
+      ].
+      2: {
+        apply cancels1 in H.
+        exfalso. eapply sym_svar_distinct. symmetry. exact H.        
+      }
+      rewrite cancels2 in H.
+      inversion H.
+      reflexivity.
+    }
+    {
+      cbn in wfϕ₁.
+      case_match; try lia; try congruence.
+    }
+    {
+      unfold well_formed,well_formed_closed in wfϕ₁.
+      cbn in wfϕ₁.
+      case_match; try lia; cbn in wfϕ₁; try congruence.
+    }
+    {
+      apply (@f_equal string _ string2sym) in H.
+      rewrite cancelsym2 in H.
+      destruct ϕ₂; cbn in *.
+      all: symmetry in H.
+      all: try solve [
+        rewrite s2sym_empty in H;
+        [intros str' Hstr'; inversion Hstr'|inversion H]
+      ].
+      3: {
+        rewrite cancelsym2 in H.
+        inversion H.
+        reflexivity.
+      }
+      {
+        apply cancelsym1 in H.
+        exfalso. eapply evar_sym_distinct. symmetry. exact H.        
+      }
+      {
+        apply cancelsym1 in H.
+        exfalso. eapply sym_svar_distinct. exact H.        
       }
     }
   Abort.
