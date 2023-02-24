@@ -16,6 +16,56 @@ Import ProofSystem.Notations.
 Derive NoConfusion for Pattern.
 Derive Subterm for Pattern.
 
+
+Section abstract.
+  Context
+    {Σ : Signature}
+    (l2n : Pattern -> NamedPattern)
+    (l2n_fe : forall x, l2n (patt_free_evar x) = npatt_evar x)
+    (l2n_fs : forall X, l2n (patt_free_svar X) = npatt_svar X)
+    (l2n_fb : l2n patt_bott = npatt_bott)
+    (l2n_sym : forall s, l2n (patt_sym s) = npatt_sym s)
+    (l2n_imp : forall ϕ1 ϕ2, l2n (patt_imp ϕ1 ϕ2) = npatt_imp (l2n ϕ1) (l2n ϕ2))
+    (l2n_app : forall ϕ1 ϕ2, l2n (patt_app ϕ1 ϕ2) = npatt_app (l2n ϕ1) (l2n ϕ2))
+    (ename : Pattern -> evar)
+    (ebody : Pattern -> NamedPattern)
+    (l2n_ex : forall ϕ', l2n (patt_exists ϕ') = npatt_exists (ename ϕ') (ebody ϕ'))
+    (sname : Pattern -> svar)
+    (sbody : Pattern -> NamedPattern)
+    (l2n_mu : forall ϕ', l2n (patt_mu ϕ') = npatt_mu (sname ϕ') (sbody ϕ'))
+  .
+
+  Context
+    (f : Pattern -> evar -> evar)
+  .
+  Lemma what_we_want (ϕ : Pattern) (y : evar):
+    well_formed ϕ ->
+    l2n (evar_open y 0 ϕ) = rename_free_evar (ebody ϕ) (f ϕ y) (ename ϕ)
+  .
+  Proof.
+
+  Qed.
+
+End abstract.
+
+Equations? ln2named0 (ϕ : Pattern) : NamedPattern by wf (size' ϕ) lt :=
+  ln2named0 (patt_bound_evar _) => npatt_bott ;
+  ln2named0 (patt_bound_svar _) => npatt_bott ;
+  ln2named0 (patt_free_evar x) => npatt_evar x ;
+  ln2named0 (patt_free_svar X) => npatt_svar X ;
+  ln2named0 patt_bott := npatt_bott ;
+  ln2named0 (patt_sym s) := npatt_sym s ;
+  ln2named0 (patt_imp ϕ₁ ϕ₂) := npatt_imp (ln2named0 ϕ₁) (ln2named0 ϕ₂) ;
+  ln2named0 (patt_app ϕ₁ ϕ₂) := npatt_app (ln2named0 ϕ₁) (ln2named0 ϕ₂) ;
+  ln2named0 (patt_exists ϕ') :=
+  ln2named0 (patt_mu ϕ') := 
+  Proof.
+    all: simpl; try lia.
+    { rewrite evar_open_size'. simpl. lia. }
+    { rewrite svar_open_size'. simpl. lia. }
+  Qed.
+
+
 Ltac invert_tuples :=
   repeat (match goal with
           | [H: (?x1,?y1)=(?x2,?y2) |- _] => inversion H; clear H; subst
@@ -326,11 +376,11 @@ Section ln2named.
   ln2named (patt_sym s) := npatt_sym s ;
   ln2named (patt_imp ϕ₁ ϕ₂) := npatt_imp (ln2named ϕ₁) (ln2named ϕ₂) ;
   ln2named (patt_app ϕ₁ ϕ₂) := npatt_app (ln2named ϕ₁) (ln2named ϕ₂) ;
-  ln2named (patt_exists ϕ') with (string2evar (ln2str ϕ')) => {
+  ln2named (patt_exists ϕ') with (string2evar ("E" +:+ ln2str ϕ')) => {
     | Some x => npatt_exists x (ln2named (evar_open x 0 ϕ'))
     | None => npatt_bott
   } ;
-  ln2named (patt_mu ϕ') with (string2svar (ln2str ϕ')) => {
+  ln2named (patt_mu ϕ') with (string2svar ("S" +:+ ln2str ϕ')) => {
     | Some X => npatt_mu X (ln2named (svar_open X 0 ϕ'))
     | None => npatt_bott
   }.
@@ -425,8 +475,8 @@ Section ln2named.
     remember (size' ϕ) as sz.
     assert (Hsz: size' ϕ <= sz) by lia.
     clear Heqsz.
-    move: ϕ Hsz y.
-    induction sz; intros ϕ Hsz y.
+    move: ϕ Hsz y x.
+    induction sz; intros ϕ Hsz y x.
     {
       destruct ϕ; cbn in *; exfalso; lia.
     }
@@ -438,6 +488,159 @@ Section ln2named.
       destruct (decide (x = x0)) as [H|H].
       2: { reflexivity. }
       subst. exfalso. clear -Hfrx. set_solver.
+    }
+    {
+      cbn in *. simp ln2named. simpl. reflexivity.
+    }
+    {
+      cbn in *.
+      repeat case_match; simpl in *; try lia.
+      {
+        subst.
+        simp ln2named. simpl.
+        case_match.
+        { reflexivity. }
+        contradiction.
+      }
+      {
+        simp ln2named. simpl. reflexivity.
+      }
+    }
+    {
+      cbn in *. simp ln2named. simpl. reflexivity.
+    }
+    {
+      cbn in *. simp ln2named. simpl. reflexivity.
+    }
+    {
+      cbn in *.
+      simp ln2named.
+      cbn.
+      rewrite IHsz.
+      { lia. }
+      { set_solver. }
+      { set_solver. }
+      { wf_auto2. }
+      rewrite IHsz.
+      { lia. }
+      { set_solver. }
+      { set_solver. }
+      { wf_auto2. }
+      reflexivity.
+    }
+    {
+      cbn in *. simp ln2named. simpl. reflexivity.
+    }
+    {
+      cbn in *.
+      simp ln2named.
+      cbn.
+      rewrite IHsz.
+      { lia. }
+      { set_solver. }
+      { set_solver. }
+      { wf_auto2. }
+      rewrite IHsz.
+      { lia. }
+      { set_solver. }
+      { set_solver. }
+      { wf_auto2. }
+      reflexivity.
+    }
+    {
+      cbn in *.
+      simp ln2named.
+      unfold ln2named_unfold_clause_9.
+      destruct (string2evar ("E" +:+ ln2str (bevar_subst (patt_free_evar x) 1 ϕ))) eqn:Heq1,
+               (string2evar ("E" +:+ ln2str (bevar_subst (patt_free_evar y) 1 ϕ))) eqn:Heq2.
+      {
+        cbn.
+        destruct (decide (x = e)).
+        {
+          subst e.
+          fold (evar_open x 1 ϕ).
+          fold (evar_open y 1 ϕ).
+          exfalso. eapply not_s2e_l2s_eo. 3: apply Heq1.
+          { wf_auto2. }
+          { assumption. }
+        }
+        destruct (decide (y = e0)).
+        {
+          subst e0.
+          exfalso. eapply not_s2e_l2s_eo. 3: apply Heq2.
+          { wf_auto2. }
+          { assumption. }
+        }
+        destruct (decide (e = e0)).
+        {
+          subst.
+          apply cancele1 in Heq1.
+          apply cancele1 in Heq2.
+          rewrite Heq2 in Heq1.
+          apply f_equal.
+          fold (evar_open x 1 ϕ).
+          fold (evar_open y 1 ϕ).
+          rewrite -> evar_open_comm_higher at 1.
+          2: { lia. }
+          cbn.
+          unfold evar_open.
+          rewrite IHsz.
+          {
+            fold (evar_open e0 0 ϕ).
+            rewrite evar_open_size'.
+            lia.
+          }
+          {
+            rewrite free_evars_evar_open''.
+            naive_solver.
+          }
+          {
+            rewrite free_evars_evar_open''.
+            naive_solver.
+          }
+          {
+            wf_auto2.
+          }
+          replace 0 with (Nat.pred 1) by reflexivity.
+          rewrite -evar_open_comm_higher.
+          { cbn. lia. }
+          cbn.
+          reflexivity.
+        }
+        (* Huh, it obviously does not hold. *)
+        admit.
+      }
+      admit.
+    }
+    admit.
+  Abort.
+(*
+
+  Lemma ln2named_evar_open ϕ y x:
+    (string2evar ("E" +:+ ln2str ϕ)) = Some x ->
+    x ∉ free_evars ϕ ->
+    y ∉ free_evars ϕ ->
+    well_formed ϕ ->
+    rename_free_evar (ln2named (evar_open x 0 ϕ)) y x = ln2named (evar_open y 0 ϕ)
+  .
+  Proof.
+    unfold evar_open at 1.
+    remember (size' ϕ) as sz.
+    assert (Hsz: size' ϕ <= sz) by lia.
+    clear Heqsz.
+    move: ϕ Hsz y x.
+    induction sz; intros ϕ Hsz y x.
+    {
+      destruct ϕ; cbn in *; exfalso; lia.
+    }
+    intros Hx Hfrx Hfry Hwfϕ.
+    destruct ϕ.
+    {
+      cbn in *.
+      simp ln2named. simpl.
+      destruct (decide (x = x0)) as [H|H].
+      2: { reflexivity. }
+      subst. rewrite elem_of_singleton in Hfry. exfalso. clear -Hfrx. set_solver.
     }
     {
       cbn in *. simp ln2named. simpl. reflexivity.
@@ -562,14 +765,14 @@ Section ln2named.
     }
     admit.
   Abort.
-
-
+*)
+(*
   Lemma ln2named_evar_open ϕ y:
     ln2named (evar_open y 0 ϕ)
     = rename_free_evar
-      (ln2named (evar_open (string2evar (ln2str ϕ)) 0 ϕ))  
+      (ln2named (evar_open (string2evar ("E" +:+ ln2str ϕ)) 0 ϕ))  
       y
-      (string2evar (ln2str ϕ))
+      (string2evar ("E" +:+ ln2str ϕ))
   .
   Proof.
     unfold evar_open at 1.
@@ -666,7 +869,7 @@ Section ln2named.
       f_equal.
     }
   Abort.
-      
+*)      
   Definition pf_ln2named
     (Γ : Theory)
     (ϕ : Pattern)
@@ -718,7 +921,10 @@ Section ln2named.
       { admit. (* WF *)}
     }
     {
+      unfold instantiate.
+      fold (evar_open y 0 phi).
       simp ln2named.
+      Fail apply N_Ex_quan.
       simpl.
       unfold evar_open.
       apply N_Ex_quan.
