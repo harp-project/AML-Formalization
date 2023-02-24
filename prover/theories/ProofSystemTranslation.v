@@ -44,6 +44,13 @@ Proof.
   reflexivity.
 Qed.
 
+Global Instance string_app_empty_leftid :
+  LeftId (=) "" String.append
+.
+Proof.
+  intros s. reflexivity.
+Qed.
+
 Lemma string_of_list_ascii_app l1 l2:
   string_of_list_ascii (l1 ++ l2)
   = (string_of_list_ascii l1) +:+ (string_of_list_ascii l2)
@@ -58,6 +65,7 @@ Proof.
     reflexivity.
   }
 Qed.
+
 
 Global Instance string_of_list_ascii_of_string_cancel:
   Cancel (=) string_of_list_ascii list_ascii_of_string
@@ -136,21 +144,55 @@ Proof.
     }
 Qed.
 
+
+Lemma list_ascii_of_string_app s1 s2:
+  list_ascii_of_string (s1 +:+ s2)
+  = (list_ascii_of_string s1) ++ (list_ascii_of_string s2)
+.
+Proof.
+  induction s1; cbn.
+  {
+    reflexivity.
+  }
+  {
+    cbv. fold list_ascii_of_string. fold String.append.
+    apply f_equal. rewrite IHs1. reflexivity.
+  }
+Qed.
+
 Section ln2named.
   Context
     {Σ : Signature}
-    (string2evar : string -> evar)
+    (string2evar : string -> option evar)
     (evar2string : evar -> string)
-    (string2svar : string -> svar)
+    (string2svar : string -> option svar)
     (svar2string : svar -> string)
     (sym2string : symbols -> string)
-    (cancele1 : Cancel (=) string2evar evar2string)
-    (cancele2 : Cancel (=) evar2string string2evar)
-    (cancels1 : Cancel (=) string2svar svar2string)
-    (cancels2 : Cancel (=) svar2string string2svar)
+    (s2ev_useful : forall str, exists ev, string2evar ("E" +:+ str) = Some ev)
+    (s2sv_useful : forall str, exists sv, string2svar ("S" +:+ str) = Some sv)
+    (s2ev_empty : forall str, (forall str', str <> "E" +:+ str' ) -> string2evar str = None)
+    (s2sv_empty : forall str, (forall str', str <> "S" +:+ str' ) -> string2svar str = None)
+    (cancele1 : forall ev str, string2evar str = Some ev -> evar2string ev = str)
+    (cancele2 : forall ev, string2evar (evar2string ev) = Some ev)
+    (cancels1 : forall sv str, string2svar str = Some sv -> svar2string sv = str)
+    (cancels2 : forall sv, string2svar (svar2string sv) = Some sv)
+    (evar_svar_distinct: forall x X, evar2string x <> svar2string X)
+    (evar_sym_distinct: forall x s, evar2string x <> sym2string s)
+    (sym_svar_distinct: forall s X, sym2string s <> svar2string X)
     (sym2string_inj : Inj (=) (=) sym2string)
   .
+  #[local]
+  Instance evar2string_inj : Inj (=) (=) evar2string.
+  Proof. intros x y Hxy. apply (@f_equal string _ string2evar) in Hxy.
+    do 2 rewrite cancele2 in Hxy. inversion Hxy. reflexivity.
+  Qed.
 
+  #[local]
+  Instance svar2string_inj : Inj (=) (=) svar2string.
+  Proof. intros x y Hxy. apply (@f_equal string _ string2svar) in Hxy.
+    do 2 rewrite cancels2 in Hxy. inversion Hxy. reflexivity.
+  Qed.
+(*
   #[local]
   Instance string2evar_inj : Inj (=) (=) string2evar.
   Proof. apply cancel_inj. Qed.
@@ -158,21 +200,84 @@ Section ln2named.
   #[local]
   Instance string2svar_inj : Inj (=) (=) string2svar.
   Proof. apply cancel_inj. Qed.
-  
+*)  
   Fixpoint ln2str (ϕ : Pattern) : string :=
     match ϕ with
-    | patt_bound_evar n => "BE" ++ pretty n
-    | patt_bound_svar n => "BS" ++ pretty n
-    | patt_free_evar x => "FE" ++ evar2string x 
-    | patt_free_svar X => "FS" ++ svar2string X
+    | patt_bound_evar n => (*"BE" ++ pretty n*) ""
+    | patt_bound_svar n => (*"BS" ++ pretty n*) ""
+    | patt_free_evar x => (*"FE" ++*) evar2string x 
+    | patt_free_svar X => (*"FS" ++*) svar2string X
     | patt_app ϕ₁ ϕ₂ => "(" ++ ln2str ϕ₁ ++ ")A(" ++ ln2str ϕ₂ ++ ")"
     | patt_imp ϕ₁ ϕ₂ => "(" ++ ln2str ϕ₁ ++ ")I(" ++ ln2str ϕ₂ ++ ")"
-    | patt_sym s => "S" ++ sym2string s
+    | patt_sym s => sym2string s
     | patt_bott => "B"
-    | patt_exists ϕ' => "EX" ++ ln2str ϕ'
-    | patt_mu ϕ' => "MU" ++ ln2str ϕ'
+    | patt_exists ϕ' => "X" ++ ln2str ϕ'
+    | patt_mu ϕ' => "M" ++ ln2str ϕ'
     end
   .
+
+  #[global]
+  Instance ln2str_inj : Inj (=) (=) ln2str.
+  Proof.
+    intros ϕ₁ ϕ₂.
+    move: ϕ₂.
+    induction ϕ₁; intros ϕ₂ H;
+      try (solve[(destruct ϕ₂; cbn in *; simpl; inversion H as [H']; congruence)]);
+      cbn in H.
+    {
+      apply (@f_equal string _ string2evar) in H.
+      rewrite cancele2 in H.
+      destruct ϕ₂; cbn in *.
+      {
+        rewrite cancele2 in H.
+        inversion H.
+        reflexivity.
+      }
+      all: symmetry in H.
+      {
+        exfalso.
+        apply cancele1 in H.
+        eapply evar_svar_distinct.
+        exact H.
+      }
+      all: try (
+        rewrite s2ev_empty in H;
+        [intros str' Hstr'; inversion Hstr'|inversion H]
+      ).
+      naive_solver.
+    }
+    {
+      inversion H as [H'].
+      apply pretty_nat_inj in H'.
+      congruence.
+    }
+    {
+      inversion H as [H'].
+      apply sym2string_inj in H'.
+      congruence.
+    }
+    {
+      inversion H as [H'].
+      rewrite -(string_of_list_ascii_of_string (ln2str ϕ₁1)) in H'.
+      rewrite -(string_of_list_ascii_of_string (ln2str ϕ₁2)) in H'.
+      rewrite -(string_of_list_ascii_of_string (ln2str ϕ₂1)) in H'.
+      rewrite -(string_of_list_ascii_of_string (ln2str ϕ₂2)) in H'.
+      rewrite -2!(string_of_list_ascii_of_string ")A(") in H'.
+      rewrite -2!(string_of_list_ascii_of_string "(") in H'.
+      rewrite -2!(string_of_list_ascii_of_string ")") in H'.
+      rewrite -!string_of_list_ascii_app in H'.
+      destruct (decide (length (list_ascii_of_string (ln2str ϕ₁1)) = length (list_ascii_of_string (ln2str ϕ₂1)))).
+      {
+        simplify_list_eq.
+        naive_solver.
+      }
+      {
+        exfalso.
+        admit.
+      }
+    }
+  Abort.
+
 
   Equations? ln2named (ϕ : Pattern) : NamedPattern by wf (size' ϕ) lt :=
   ln2named (patt_bound_evar _) => npatt_bott ;
@@ -183,41 +288,102 @@ Section ln2named.
   ln2named (patt_sym s) := npatt_sym s ;
   ln2named (patt_imp ϕ₁ ϕ₂) := npatt_imp (ln2named ϕ₁) (ln2named ϕ₂) ;
   ln2named (patt_app ϕ₁ ϕ₂) := npatt_app (ln2named ϕ₁) (ln2named ϕ₂) ;
-  ln2named (patt_exists ϕ') :=
-    let x := string2evar (ln2str ϕ') in
-    npatt_exists x (ln2named (evar_open x 0 ϕ')) ;
-  ln2named (patt_mu ϕ') :=
-    let X := string2svar (ln2str ϕ') in
-    npatt_mu X (ln2named (svar_open X 0 ϕ')) .
+  ln2named (patt_exists ϕ') with (string2evar (ln2str ϕ')) => {
+    | Some x => npatt_exists x (ln2named (evar_open x 0 ϕ'))
+    | None => npatt_bott
+  } ;
+  ln2named (patt_mu ϕ') with (string2svar (ln2str ϕ')) => {
+    | Some X => npatt_mu X (ln2named (svar_open X 0 ϕ'))
+    | None => npatt_bott
+  }.
   Proof.
+    all: simpl; try lia.
+    { rewrite evar_open_size'. simpl. lia. }
+    { rewrite svar_open_size'. simpl. lia. }
+  Qed.
+
+  Lemma not_s2e_l2s_eo ϕ x dbi:
+    well_formed_closed_ex_aux ϕ dbi ->
+    x ∉ free_evars ϕ ->
+    ~ (string2evar (ln2str (bevar_subst (patt_free_evar x) dbi ϕ)) = Some x)
+  .
+  Proof.
+    move: x dbi.
+    destruct ϕ; intros x' dbi Hwf Hfrx'; cbn in *; intros HContra.
     {
-      simpl. lia.
+      rewrite elem_of_singleton in Hfrx'.
+      apply Hfrx'. clear Hfrx'.
+      apply cancele1 in HContra.
+      apply (inj evar2string) in HContra. exact HContra.
     }
     {
-      simpl. lia.
+      eapply evar_svar_distinct with (x := x')(X := x).
+      apply cancele1 in HContra. exact HContra.
     }
     {
-      simpl. lia.
+      clear Hfrx'.
+      repeat case_match; try lia; cbn in *.
+      { rewrite s2ev_empty in HContra.
+        { intros str'. intros HContra'. inversion HContra'. }
+        inversion HContra.
+      }
+      { subst. exfalso. clear -Hwf. congruence. }
+      { subst. exfalso. clear -Hwf. congruence. }
     }
     {
-      simpl. lia.
+      rewrite s2ev_empty in HContra.
+      { intros str' HContra'. inversion HContra'. }
+      inversion HContra.
     }
     {
-      rewrite evar_open_size'. simpl. lia.
+      eapply evar_sym_distinct with (x := x') (s := sigma).
+      apply cancele1 in HContra. exact HContra.
     }
     {
-      rewrite svar_open_size'. simpl. lia.
+      rewrite s2ev_empty in HContra.
+      {
+        intros str' HContra'. inversion HContra'.
+      }
+      inversion HContra.
+    }
+    {
+      rewrite s2ev_empty in HContra.
+      {
+        intros str' HContra'. inversion HContra'.
+      }
+      inversion HContra.
+    }
+    {
+      rewrite s2ev_empty in HContra.
+      {
+        intros str' HContra'. inversion HContra'.
+      }
+      inversion HContra.
+    }
+    {
+      rewrite s2ev_empty in HContra.
+      {
+        intros str' HContra'. inversion HContra'.
+      }
+      inversion HContra.
+    }
+    {
+      rewrite s2ev_empty in HContra.
+      {
+        intros str' HContra'. inversion HContra'.
+      }
+      inversion HContra.
     }
   Qed.
 
-  Lemma ln2named_bevar_subst ϕ y:
-    ln2named (bevar_subst (patt_free_evar y) 0 ϕ)
-    = rename_free_evar
-      (ln2named (evar_open (string2evar (ln2str ϕ)) 0 ϕ))  
-      y
-      (string2evar (ln2str ϕ))
+  Lemma ln2named_evar_open ϕ y x:
+    x ∉ free_evars ϕ ->
+    y ∉ free_evars ϕ ->
+    well_formed ϕ ->
+    rename_free_evar (ln2named (evar_open x 0 ϕ)) y x = ln2named (evar_open y 0 ϕ)
   .
   Proof.
+    unfold evar_open at 1.
     remember (size' ϕ) as sz.
     assert (Hsz: size' ϕ <= sz) by lia.
     clear Heqsz.
@@ -226,24 +392,20 @@ Section ln2named.
     {
       destruct ϕ; cbn in *; exfalso; lia.
     }
-    destruct ϕ; cbn in *.
+    intros Hfrx Hfry Hwfϕ.
+    destruct ϕ.
     {
+      cbn in *.
       simp ln2named. simpl.
-      destruct (decide (string2evar ("FE" +:+ evar2string x) = x)) as [H|H].
+      destruct (decide (x = x0)) as [H|H].
       2: { reflexivity. }
-      exfalso.
-      rewrite <- (cancel string2evar evar2string x) in H at 2.
-      apply (inj string2evar) in H.
-      match type of H with
-      | ?l = ?r => assert (String.length l = String.length r) by congruence
-      end.
-      simpl in H0.
-      lia.
+      subst. exfalso. clear -Hfrx. set_solver.
     }
     {
-      simp ln2named. simpl. reflexivity.
+      cbn in *. simp ln2named. simpl. reflexivity.
     }
     {
+      cbn in *.
       repeat case_match; simpl in *; try lia.
       {
         subst.
@@ -257,13 +419,170 @@ Section ln2named.
       }
     }
     {
-      simp ln2named. simpl. reflexivity.
+      cbn in *. simp ln2named. simpl. reflexivity.
     }
     {
-      simp ln2named. simpl. reflexivity.
+      cbn in *. simp ln2named. simpl. reflexivity.
     }
     {
+      cbn in *.
+      simp ln2named.
+      cbn.
+      rewrite IHsz.
+      { lia. }
+      { set_solver. }
+      { set_solver. }
+      { wf_auto2. }
+      rewrite IHsz.
+      { lia. }
+      { set_solver. }
+      { set_solver. }
+      { wf_auto2. }
+      reflexivity.
+    }
+    {
+      cbn in *. simp ln2named. simpl. reflexivity.
+    }
+    {
+      cbn in *.
+      simp ln2named.
+      cbn.
+      rewrite IHsz.
+      { lia. }
+      { set_solver. }
+      { set_solver. }
+      { wf_auto2. }
+      rewrite IHsz.
+      { lia. }
+      { set_solver. }
+      { set_solver. }
+      { wf_auto2. }
+      reflexivity.
+    }
+    {
+      cbn in *.
+      simp ln2named.
+      unfold ln2named_unfold_clause_9.
+      destruct (string2evar (ln2str (bevar_subst (patt_free_evar x) 1 ϕ))) eqn:Heq1,
+               (string2evar (ln2str (bevar_subst (patt_free_evar y) 1 ϕ))) eqn:Heq2.
+      {
+        cbn.
+        destruct (decide (x = e)).
+        {
+          subst e.
+          exfalso. eapply not_s2e_l2s_eo. 3: apply Heq1.
+          { wf_auto2. }
+          { assumption. }
+        }
+        destruct (decide (y = e0)).
+        {
+          subst e0.
+          exfalso. eapply not_s2e_l2s_eo. 3: apply Heq2.
+          { wf_auto2. }
+          { assumption. }
+        }
+        destruct (decide (e = e0)).
+        {
+          subst.
+          apply cancele1 in Heq1.
+          apply cancele1 in Heq2.
+          rewrite Heq2 in Heq1.
+          apply f_equal.
+          unfold evar_open.
+          rewrite IHsz.
+        }
+        fold (evar_open x 1 ϕ).
+        rewrite evar_open_comm_higher.
+        { lia. }
+        cbn.
+        rewrite IHsz.
+        { rewrite evar_open_size'. lia. }
+        { rewrite free_evars_evar_open''.
+          naive_solver.
+        }
+        { rewrite free_evars_evar_open''.
+          intros HContra.
+          destruct HContra as [[HContra1 HContra2]|HContra].
+          {
+            subst.
+          }
+          naive_solver.
+        }
+        { wf_auto2. }
+        Search (evar_open _ _ (evar_open _ _ _)).
+        unfold evar_open.
+        Search 
+        rewrite IHsz.
+      }
+      {
+        rewrite <- e.
+        unfold evar_open.
+        f_equal.
+        { assumption. }
+        rewrite IHsz. reflexivity.
+      }
+      rewrite IHsz.
+    }
+
+  Lemma ln2named_evar_open ϕ y:
+    ln2named (evar_open y 0 ϕ)
+    = rename_free_evar
+      (ln2named (evar_open (string2evar (ln2str ϕ)) 0 ϕ))  
+      y
+      (string2evar (ln2str ϕ))
+  .
+  Proof.
+    unfold evar_open at 1.
+    remember (size' ϕ) as sz.
+    assert (Hsz: size' ϕ <= sz) by lia.
+    clear Heqsz.
+    move: ϕ Hsz y.
+    induction sz; intros ϕ Hsz y.
+    {
+      destruct ϕ; cbn in *; exfalso; lia.
+    }
+    destruct ϕ.
+    {
+      cbn in *.
       simp ln2named. simpl.
+      destruct (decide (string2evar ("FE" +:+ evar2string x) = x)) as [H|H].
+      2: { reflexivity. }
+      exfalso.
+      rewrite <- (cancel string2evar evar2string x) in H at 2.
+      apply (inj string2evar) in H.
+      match type of H with
+      | ?l = ?r => assert (String.length l = String.length r) by congruence
+      end.
+      simpl in H0.
+      lia.
+    }
+    {
+      cbn in *. simp ln2named. simpl. reflexivity.
+    }
+    {
+      cbn in *.
+      repeat case_match; simpl in *; try lia.
+      {
+        subst.
+        simp ln2named. simpl.
+        case_match.
+        { reflexivity. }
+        contradiction.
+      }
+      {
+        simp ln2named. simpl. reflexivity.
+      }
+    }
+    {
+      cbn in *. simp ln2named. simpl. reflexivity.
+    }
+    {
+      cbn in *. simp ln2named. simpl. reflexivity.
+    }
+    {
+      cbn in Hsz.
+      remember (ln2str (patt_app ϕ1 ϕ2)) as zz.
+      cbn. simp ln2named. simpl.
       rewrite IHsz;[lia|].
       remember (ln2named (evar_open (string2evar (ln2str ϕ1)) 0 ϕ1))
         as ϕ1'.
@@ -274,16 +593,37 @@ Section ln2named.
       rewrite -Heqϕ1'.
       rewrite IHsz;[lia|].
       rewrite -Heqϕ2'.
+      (*
       remember (string2evar ("(" +:+ ln2str ϕ1 +:+ ")A(" +:+ ln2str ϕ2 +:+ ")")) as y2.
       remember (string2evar (ln2str ϕ1)) as z1.
       remember (string2evar (ln2str ϕ2)) as z2.
+      *)
       rewrite rename_free_evar_chain.
       {
-        
+        subst ϕ1'. 
+        (* NEED SOME IDEA HERE *)
+        intros HContra.
+        (*
+          Consider [HContra].
+          Then at least one of the following has to hold:
+          - (a) [y2 = z1]
+          - (b) y2 ∈ free_evars ϕ1
+          - (c) there exists some subformula ϕsub of ϕ1
+                nested under some [k] existential quantifiers
+                such that y2 = ln2str ϕsub 
+        *)
+        subst y2. 
+
+        unfold evar_open.
+        rewrite IHsz.
+        { lia. }
+        rewrite IHsz.
+        { lia. }
+        intros HContra.
+        (* NEED SOME IDEA HERE *)
+        subst z1 z2. clear IHsz. 
       }
       f_equal.
-      Print named_evar_subst.
-
     }
   Abort.
       
@@ -344,51 +684,6 @@ Section ln2named.
       apply N_Ex_quan.
     }
   Defined.
-
-  #[global]
-  Instance ln2str_inj : Inj (=) (=) ln2str.
-  Proof.
-    intros ϕ₁ ϕ₂.
-    move: ϕ₂.
-    induction ϕ₁; intros ϕ₂ H;
-      destruct ϕ₂; cbn in *; simpl;
-      try (solve[(inversion H as [H']; congruence)]).
-    {
-      inversion H as [H'].
-      apply pretty_nat_inj in H'.
-      congruence.
-    }
-    {
-      inversion H as [H'].
-      apply pretty_nat_inj in H'.
-      congruence.
-    }
-    {
-      inversion H as [H'].
-      apply sym2string_inj in H'.
-      congruence.
-    }
-    {
-      inversion H as [H'].
-      rewrite -(string_of_list_ascii_of_string (ln2str ϕ₁1)) in H'.
-      rewrite -(string_of_list_ascii_of_string (ln2str ϕ₁2)) in H'.
-      rewrite -(string_of_list_ascii_of_string (ln2str ϕ₂1)) in H'.
-      rewrite -(string_of_list_ascii_of_string (ln2str ϕ₂2)) in H'.
-      rewrite -2!(string_of_list_ascii_of_string ")A(") in H'.
-      rewrite -2!(string_of_list_ascii_of_string "(") in H'.
-      rewrite -2!(string_of_list_ascii_of_string ")") in H'.
-      rewrite -!string_of_list_ascii_app in H'.
-      destruct (decide (length (list_ascii_of_string (ln2str ϕ₁1)) = length (list_ascii_of_string (ln2str ϕ₂1)))).
-      {
-        simplify_list_eq.
-        naive_solver.
-      }
-      {
-        exfalso.
-        admit.
-      }
-    }
-  Abort.
   
 
 End ln2named.
