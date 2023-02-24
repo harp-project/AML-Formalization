@@ -526,41 +526,43 @@ Section ln2named.
           apply cancele1 in Heq2.
           rewrite Heq2 in Heq1.
           apply f_equal.
+          fold (evar_open x 1 ϕ).
+          fold (evar_open y 1 ϕ).
+          rewrite -> evar_open_comm_higher at 1.
+          2: { lia. }
+          cbn.
           unfold evar_open.
           rewrite IHsz.
-        }
-        fold (evar_open x 1 ϕ).
-        rewrite evar_open_comm_higher.
-        { lia. }
-        cbn.
-        rewrite IHsz.
-        { rewrite evar_open_size'. lia. }
-        { rewrite free_evars_evar_open''.
-          naive_solver.
-        }
-        { rewrite free_evars_evar_open''.
-          intros HContra.
-          destruct HContra as [[HContra1 HContra2]|HContra].
           {
-            subst.
+            fold (evar_open e0 0 ϕ).
+            rewrite evar_open_size'.
+            lia.
           }
-          naive_solver.
+          {
+            rewrite free_evars_evar_open''.
+            naive_solver.
+          }
+          {
+            rewrite free_evars_evar_open''.
+            naive_solver.
+          }
+          {
+            wf_auto2.
+          }
+          replace 0 with (Nat.pred 1) by reflexivity.
+          rewrite -evar_open_comm_higher.
+          { cbn. lia. }
+          cbn.
+          reflexivity.
         }
-        { wf_auto2. }
-        Search (evar_open _ _ (evar_open _ _ _)).
-        unfold evar_open.
-        Search 
-        rewrite IHsz.
+        (* Huh, it obviously does not hold. *)
+        admit.
       }
-      {
-        rewrite <- e.
-        unfold evar_open.
-        f_equal.
-        { assumption. }
-        rewrite IHsz. reflexivity.
-      }
-      rewrite IHsz.
+      admit.
     }
+    admit.
+  Abort.
+
 
   Lemma ln2named_evar_open ϕ y:
     ln2named (evar_open y 0 ϕ)
