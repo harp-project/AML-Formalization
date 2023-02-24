@@ -5,7 +5,7 @@ From Coq Require Import Logic.PropExtensionality Logic.Eqdep_dec.
 From Equations Require Import Equations.
 
 From stdpp Require Export base gmap fin_sets sets list countable.
-From MatchingLogic Require Import Syntax Semantics StringSignature ProofSystem ProofMode.
+From MatchingLogic Require Import Syntax Semantics StringSignature ProofSystem ProofMode Utils.stdpp_ext.
 From MatchingLogicProver Require Import Named NamedProofSystem NMatchers.
 
 From stdpp Require Import base finite gmap mapset listset_nodup numbers propset list pretty strings.
@@ -23,6 +23,7 @@ Section abstract.
     (l2n : Pattern -> NamedPattern)
     (l2n_fe : forall x, l2n (patt_free_evar x) = npatt_evar x)
     (l2n_fs : forall X, l2n (patt_free_svar X) = npatt_svar X)
+    (l2n_bs : forall n, l2n (patt_bound_svar n) = npatt_bott)
     (l2n_b : l2n patt_bott = npatt_bott)
     (l2n_sym : forall s, l2n (patt_sym s) = npatt_sym s)
     (l2n_imp : forall ϕ1 ϕ2, l2n (patt_imp ϕ1 ϕ2) = npatt_imp (l2n ϕ1) (l2n ϕ2))
@@ -45,9 +46,17 @@ Section abstract.
     (ebody_app : forall ϕ1 ϕ2, ebody (patt_app ϕ1 ϕ2) = npatt_app (ebody ϕ1) (ebody ϕ2))
     (ebody_bott : ebody patt_bott = npatt_bott )
     (ebody_imp : forall ϕ1 ϕ2, ebody (patt_imp ϕ1 ϕ2) = npatt_imp (ebody ϕ1) (ebody ϕ2))
+    (ebody_ex : forall ϕ, ebody (patt_exists ϕ) = npatt_exists (ename ϕ) (ebody ϕ))
+    (f_ex : forall ϕ y, (f (patt_exists ϕ) y) = (f ϕ y))
+    (ename_ex : forall ϕ, ename (patt_exists ϕ) = ename ϕ)
+    (f_mu : forall ϕ y, (f (patt_mu ϕ) y) = (f ϕ y))
+    (ename_mu : forall ϕ, ename (patt_mu ϕ) = ename ϕ)
+    (ebody_bs : forall n, ebody (patt_bound_svar n) = npatt_bott)
+    (sbody_phi : forall ϕ, sbody ϕ = l2n ϕ)
+    (ebody_mu : forall ϕ, ebody (patt_mu ϕ) = npatt_mu (sname ϕ) (ebody ϕ))
   .
   Lemma what_we_want (ϕ : Pattern) (y : evar):
-    well_formed ϕ ->
+    well_formed_closed_ex_aux ϕ 0 ->
     l2n (evar_open y 0 ϕ) = rename_free_evar (ebody ϕ) (f ϕ y) (ename ϕ)
   .
   Proof.
@@ -79,9 +88,7 @@ Section abstract.
     }
     {
       (* patt_bound_svar n *)
-      unfold well_formed,well_formed_closed in wfϕ.
-      cbn in wfϕ.
-      repeat case_match; subst; cbn in wfϕ; try lia; try congruence.
+      rewrite ebody_bs. cbn. rewrite l2n_bs. reflexivity.
     }
     {
       (* patt_sym s *)
@@ -136,14 +143,58 @@ Section abstract.
     {
       rewrite l2n_ex.
       fold (evar_open y 1 ϕ).
+      (*
+      (* We need `rename_free_evar` to return `npatt_exists`,
+         but the only way to ensure that is to feed it a `patt_exists`.
+         More precisely, we need it to return `npatt_exists (ename (evar_open y 1 ϕ)) ?something).
+         Our best chance is if `ebody` returns this `(ename (evar_open y 1 ϕ))` thing.
+       *)
+      assert (H1: exists ϕb, ebody (patt_exists ϕ) = npatt_exists (ename (evar_open y 1 ϕ)) ϕb).
+      { admit. }
+      destruct H1 as [ϕb H1].
+      rewrite H1.
+      cbn.
+      destruct (decide (ename (patt_exists ϕ) = ename (evar_open y 1 ϕ))) as [Hy|Hn].
+      {
+        apply f_equal.
+        admit.
+      }
+      {
+        apply f_equal. revert Hn.
+      }
+
       (* The only way to use IHϕ is backwards now,
          but we need some additional assumptions for that.
       *)
-      assert (H1: exists nb ϕb, ebody (patt_exists ϕ) = npatt_exists nb ϕb).
-      { admit. }
-      destruct H1 as [nb [ϕb H1]].
-      rewrite H1.
       rewrite -IHϕ.
+      *)
+      erewrite evar_open_wfc_aux with (db1 := 1).
+      3: wf_auto2.
+      2: lia.
+      pose proof (Hee := ebody_ex ϕ).
+      rewrite Hee.
+      cbn.
+      rewrite ename_ex. rewrite decide_eq_same.
+      reflexivity.
+    }
+    {
+      (* patt_mu ϕ *)
+      rewrite l2n_mu.
+      fold (evar_open y 0 ϕ).
+      rewrite evar_open_closed.
+      { wf_auto2. }
+      rewrite ebody_mu.
+      cbn.
+      f_equal.
+      rewrite f_mu.
+      rewrite ename_mu.
+      rewrite -IHsz.
+      { lia. }
+      { wf_auto2. }
+      rewrite evar_open_closed.
+      { wf_auto2. }
+      rewrite sbody_phi.
+      reflexivity.
     }
   Qed.
 
