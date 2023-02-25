@@ -161,9 +161,10 @@ Section abstract.
     (l2n_app : forall ϕ1 ϕ2, l2n (patt_app ϕ1 ϕ2) = npatt_app (l2n ϕ1) (l2n ϕ2))
     (ename : Pattern -> evar)
     (ebody : Pattern -> NamedPattern)
-    (l2n_ex : forall ϕ', l2n (patt_exists ϕ') = npatt_exists (ename ϕ') (ebody ϕ'))
     (sname : Pattern -> svar)
     (sbody : Pattern -> NamedPattern)
+    (l2n_ex : forall ϕ', l2n (patt_exists ϕ') = npatt_exists (ename ϕ') (ebody ϕ'))
+    (l2n_mu : forall ϕ', l2n (patt_mu ϕ') = npatt_mu (sname ϕ') (sbody ϕ'))
   .
 
   Context
@@ -188,15 +189,17 @@ Section abstract.
     (sbody_ex : forall ϕ, well_formed_closed_ex_aux ϕ 1 -> sbody (patt_exists ϕ) = npatt_exists (ename ϕ) (sbody ϕ))
 
     (ebody_ex : forall ϕ, well_formed_closed_ex_aux ϕ 1 -> ebody (patt_exists ϕ) = npatt_exists (ename ϕ) (ebody ϕ))
+    (sbody_mu : forall ϕ, well_formed_closed_mu_aux ϕ 1 -> sbody (patt_mu ϕ) = npatt_mu (sname ϕ) (sbody ϕ))
     (ename_erenames: forall x, ename (patt_free_evar x) <> x)
     (sname_srenames: forall X, sname (patt_free_svar X) <> X)
     (ename_fresh_in_ebody: forall ϕ, ename ϕ ∉ named_free_evars (ebody ϕ))
     (sname_fresh_in_sbody: forall ϕ, sname ϕ ∉ named_free_svars (sbody ϕ))
     (f_ex : forall ϕ y, (f (patt_exists ϕ) y) = (f ϕ y))
-    (ename_ex : forall ϕ, ename (patt_exists ϕ) = ename ϕ)
     (f_mu : forall ϕ y, (f (patt_mu ϕ) y) = (f ϕ y))
+    (ename_ex : forall ϕ, ename (patt_exists ϕ) = ename ϕ)
     (ename_mu : forall ϕ, ename (patt_mu ϕ) = ename ϕ)
-    
+    (sname_ex : forall ϕ, sname (patt_exists ϕ) = sname ϕ)
+    (sname_mu : forall ϕ, sname (patt_mu ϕ) = sname ϕ)
     (*sbody_phi : forall ϕ, sbody ϕ = l2n ϕ*)
     (*sbody_mu : forall ϕ, sbody (patt_mu ϕ) = npatt_mu (sname ϕ) (sbody ϕ)*)
     (fs_ex : forall ϕ Y, (fs (patt_exists ϕ) Y) = (fs ϕ Y))
@@ -516,51 +519,26 @@ Section abstract.
       { wf_auto2. }
       cbn.
       f_equal.
-      rewrite ename_mu.
+      rewrite sname_ex.
 
-      rewrite rename_free_evar_id.
+      rewrite rename_free_svar_id.
       {
         intros HContra.
-        apply ename_fresh_in_ebody in HContra.
+        apply sname_fresh_in_sbody in HContra.
         exact HContra.
       }
       reflexivity.
     }
     {
-      rewrite l2n_ex.
-      fold (evar_open y 1 ϕ).
-      (*
-      (* We need `rename_free_evar` to return `npatt_exists`,
-         but the only way to ensure that is to feed it a `patt_exists`.
-         More precisely, we need it to return `npatt_exists (ename (evar_open y 1 ϕ)) ?something).
-         Our best chance is if `ebody` returns this `(ename (evar_open y 1 ϕ))` thing.
-       *)
-      assert (H1: exists ϕb, ebody (patt_exists ϕ) = npatt_exists (ename (evar_open y 1 ϕ)) ϕb).
-      { admit. }
-      destruct H1 as [ϕb H1].
-      rewrite H1.
-      cbn.
-      destruct (decide (ename (patt_exists ϕ) = ename (evar_open y 1 ϕ))) as [Hy|Hn].
-      {
-        apply f_equal.
-        admit.
-      }
-      {
-        apply f_equal. revert Hn.
-      }
-
-      (* The only way to use IHϕ is backwards now,
-         but we need some additional assumptions for that.
-      *)
-      rewrite -IHϕ.
-      *)
-      erewrite evar_open_wfc_aux with (db1 := 1).
+      rewrite l2n_mu.
+      fold (svar_open Y 1 ϕ).
+      erewrite svar_open_wfc_aux with (db1 := 1).
       3: wf_auto2.
       2: lia.
-      pose proof (Hee := ebody_ex ϕ ltac:(wf_auto2)).
-      rewrite Hee.
+      pose proof (Hsm := sbody_mu ϕ ltac:(wf_auto2)).
+      rewrite Hsm.
       cbn.
-      rewrite ename_ex. rewrite decide_eq_same.
+      rewrite sname_mu. rewrite decide_eq_same.
       reflexivity.
     }
   Qed.
