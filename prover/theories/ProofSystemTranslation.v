@@ -177,7 +177,6 @@ Section abstract.
     (ebody_app : forall ϕ1 ϕ2, well_formed_closed_ex_aux ϕ1 0 -> well_formed_closed_ex_aux ϕ2 0 -> ebody (patt_app ϕ1 ϕ2) = npatt_app (ebody ϕ1) (ebody ϕ2))
     (ebody_imp : forall ϕ1 ϕ2, well_formed_closed_ex_aux ϕ1 0 -> well_formed_closed_ex_aux ϕ2 0 -> ebody (patt_imp ϕ1 ϕ2) = npatt_imp (ebody ϕ1) (ebody ϕ2))
     (ebody_bs : forall n, ebody (patt_bound_svar n) = npatt_bott)
-    (ebody_mu : forall ϕ, well_formed_closed_mu_aux ϕ 1 -> ebody (patt_mu ϕ) = npatt_mu (sname ϕ) (ebody ϕ))
 
     (sbody_bott : sbody patt_bott = npatt_bott )
     (sbody_efree: forall x, sbody (patt_free_evar x) = npatt_evar x)
@@ -211,9 +210,15 @@ Section abstract.
   .
   Lemma what_we_want_evar (ϕ : Pattern) (y : evar)
     (l2n_mu_ind : forall ϕ', (* this is a lemma / mutually inductive hypothesis*)
-    well_formed (patt_mu ϕ') ->
-    size' ϕ' < sz ->
-    l2n (patt_mu ϕ') = npatt_mu (sname ϕ') (ebody ϕ'))
+      well_formed (patt_mu ϕ') ->
+      size' ϕ' < sz ->
+      l2n (patt_mu ϕ') = npatt_mu (sname ϕ') (ebody ϕ')
+    )
+    (ebody_mu : forall ϕ',
+      well_formed (patt_mu ϕ') ->
+      size' ϕ' < sz ->
+      ebody (patt_mu ϕ') = npatt_mu (sname ϕ') (ebody ϕ')
+    )
     :
     size' ϕ <= sz ->
     well_formed ϕ ->
@@ -259,23 +264,35 @@ Section abstract.
       (* patt_app ϕ1 ϕ2 *)
       rewrite l2n_app.
       rewrite IHn.
-      2: { lia. }
-      2: { wf_auto2. }
       {
         intros.
         apply l2n_mu_ind.
         { assumption. }
         { lia. }
       }
+      {
+        intros.
+        apply ebody_mu.
+        { assumption. }
+        { lia. }
+      }
+      { lia. }
+      { wf_auto2. }
       rewrite IHn.
-      2: { lia. }
-      2: { wf_auto2. }
       {
         intros.
         apply l2n_mu_ind.
         { assumption. }
         { lia. }
       }
+      {
+        intros.
+        apply ebody_mu.
+        { assumption. }
+        { lia. }
+      }
+      { lia. }
+      { wf_auto2. }
       rewrite rename_free_evar_id.
       { apply ename_fresh_in_ebody. }
       rewrite rename_free_evar_id.
@@ -298,23 +315,35 @@ Section abstract.
       (* patt_imp ϕ1 ϕ2 *)
       rewrite l2n_imp.
       rewrite IHn.
-      2: { lia. }
-      2: { wf_auto2. }
       {
         intros.
         apply l2n_mu_ind.
         { assumption. }
         { lia. }
       }
+      {
+        intros.
+        apply ebody_mu.
+        { assumption. }
+        { lia. }
+      }
+      { lia. }
+      { wf_auto2. }
       rewrite IHn.
-      2: { lia. }
-      2: { wf_auto2. }
       {
         intros.
         apply l2n_mu_ind.
         { assumption. }
         { lia. }
       }
+      {
+        intros.
+        apply ebody_mu.
+        { assumption. }
+        { lia. }
+      }
+      { lia. }
+      { wf_auto2. }
       rewrite rename_free_evar_id.
       { apply ename_fresh_in_ebody. }
       rewrite rename_free_evar_id.
@@ -373,6 +402,7 @@ Section abstract.
       
       rewrite ebody_mu.
       { wf_auto2. }
+      { lia. }
       cbn.
       f_equal.
       rewrite ename_mu.
@@ -1035,17 +1065,19 @@ Section concrete.
   .
   Fixpoint ln2named_evar_open (sz : nat) (ϕ : Pattern) (y : evar) {struct sz}:
     size' ϕ <= sz ->
-    well_formed ϕ ->
+    well_formed_closed_ex_aux ϕ 1 ->
+    well_formed_closed_mu_aux ϕ 0 ->
     let x := string2evar ("A" +:+ evar2string (ename ϕ)) in
     ln2named (evar_open y 0 ϕ) = rename_free_evar (ln2named (evar_open x 0 ϕ)) (f ϕ y) (ename ϕ)
   with ln2named_svar_open (sz : nat) (ϕ : Pattern) (Y : svar) {struct sz}:
     size' ϕ <= sz ->
-    well_formed ϕ ->
+    well_formed_closed_ex_aux ϕ 0 ->
+    well_formed_closed_mu_aux ϕ 1 ->
     let X := string2svar ("B" +:+ svar2string (sname ϕ)) in
     ln2named (svar_open Y 0 ϕ) = rename_free_svar (ln2named (svar_open X 0 ϕ)) (fs ϕ Y) (sname ϕ)
   .
   Proof.
-    all: intros Hsz Hwf; cbn.
+    all: intros Hsz Hwfex Hwfmu; cbn.
 
     all: set (fun phi' =>
       let x := string2evar ("A" +:+ evar2string (ename phi')) in
@@ -1106,11 +1138,15 @@ Section concrete.
       }
       { intros. simp ln2named. cbn. reflexivity. }
       {
+        (* ebody_mu *)
         intros. unfold ebody. cbn. simp ln2named. cbn.
         fold (evar_open ((string2evar ("A" +:+ evar2string (ename ϕ0)))) 0 ϕ0).
         rewrite -> evar_open_wfc_aux with (phi := ϕ0) (db1 := 0).
         3: { wf_auto2. }
         2: { lia. }
+        f_equal.
+        rewrite -> ln2named_svar_open with (sz := sz).
+        3
         reflexivity.
       }
       { intros. simp ln2named. cbn. reflexivity. }
