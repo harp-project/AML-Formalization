@@ -154,6 +154,7 @@ Section abstract.
     (l2n_fe : forall x, l2n (patt_free_evar x) = npatt_evar x)
     (l2n_fs : forall X, l2n (patt_free_svar X) = npatt_svar X)
     (l2n_bs : forall n, l2n (patt_bound_svar n) = npatt_bott)
+    (l2n_be : forall n, l2n (patt_bound_evar n) = npatt_bott)
     (l2n_b : l2n patt_bott = npatt_bott)
     (l2n_sym : forall s, l2n (patt_sym s) = npatt_sym s)
     (l2n_imp : forall ϕ1 ϕ2, l2n (patt_imp ϕ1 ϕ2) = npatt_imp (l2n ϕ1) (l2n ϕ2))
@@ -174,22 +175,25 @@ Section abstract.
     (ebody_sym: forall s, ebody (patt_sym s) = npatt_sym s)
     (ebody_app : forall ϕ1 ϕ2, well_formed_closed_ex_aux ϕ1 0 -> well_formed_closed_ex_aux ϕ2 0 -> ebody (patt_app ϕ1 ϕ2) = npatt_app (ebody ϕ1) (ebody ϕ2))
     (ebody_imp : forall ϕ1 ϕ2, well_formed_closed_ex_aux ϕ1 0 -> well_formed_closed_ex_aux ϕ2 0 -> ebody (patt_imp ϕ1 ϕ2) = npatt_imp (ebody ϕ1) (ebody ϕ2))
-    
+    (ebody_bs : forall n, ebody (patt_bound_svar n) = npatt_bott)
+
     (sbody_bott : sbody patt_bott = npatt_bott )
     (sbody_efree: forall x, sbody (patt_free_evar x) = npatt_evar x)
     (sbody_sfree: forall X, sbody (patt_free_svar X) = npatt_svar X)
     (sbody_sym: forall s, sbody (patt_sym s) = npatt_sym s)
     (sbody_app : forall ϕ1 ϕ2, well_formed_closed_mu_aux ϕ1 0 -> well_formed_closed_mu_aux ϕ2 0 -> sbody (patt_app ϕ1 ϕ2) = npatt_app (sbody ϕ1) (sbody ϕ2))
     (sbody_imp : forall ϕ1 ϕ2, well_formed_closed_mu_aux ϕ1 0 -> well_formed_closed_mu_aux ϕ2 0 -> sbody (patt_imp ϕ1 ϕ2) = npatt_imp (sbody ϕ1) (sbody ϕ2))
+    (sbody_be : forall n, sbody (patt_bound_evar n) = npatt_bott)
 
     (ebody_ex : forall ϕ, well_formed_closed_ex_aux ϕ 1 -> ebody (patt_exists ϕ) = npatt_exists (ename ϕ) (ebody ϕ))
     (ename_erenames: forall x, ename (patt_free_evar x) <> x)
+    (sname_srenames: forall X, sname (patt_free_svar X) <> X)
     (ename_fresh_in_ebody: forall ϕ, ename ϕ ∉ named_free_evars (ebody ϕ))
     (f_ex : forall ϕ y, (f (patt_exists ϕ) y) = (f ϕ y))
     (ename_ex : forall ϕ, ename (patt_exists ϕ) = ename ϕ)
     (f_mu : forall ϕ y, (f (patt_mu ϕ) y) = (f ϕ y))
     (ename_mu : forall ϕ, ename (patt_mu ϕ) = ename ϕ)
-    (ebody_bs : forall n, ebody (patt_bound_svar n) = npatt_bott)
+    
     (*sbody_phi : forall ϕ, sbody ϕ = l2n ϕ*)
     (ebody_mu : forall ϕ, well_formed_closed_mu_aux ϕ 1 -> ebody (patt_mu ϕ) = npatt_mu (sname ϕ) (ebody ϕ))
     (*sbody_mu : forall ϕ, sbody (patt_mu ϕ) = npatt_mu (sname ϕ) (sbody ϕ)*)
@@ -396,34 +400,36 @@ Section abstract.
     induction sz; intros ϕ Hsz.
     { destruct ϕ; cbn in Hsz; lia. }
     destruct ϕ; intros Y wfϕ; cbn in *.
+    
     {
-      (* patt_free_evar X*)
+      (* patt_free_evar x*)
       rewrite l2n_fe.
       rewrite rename_free_svar_id.
-      { rewrite sbody_efree. simpl. rewrite elem_of_singleton. apply ename_erenames. }
-      { rewrite ebody_efree. reflexivity. }
+      { rewrite sbody_efree. simpl. rewrite elem_of_empty. auto. }
+      { rewrite sbody_efree. reflexivity. }
     }
     {
-      (* patt_free_svar x*)
+      (* patt_free_svar X*)
       rewrite l2n_fs.
-      rewrite rename_free_evar_id.
-      { rewrite ebody_sfree. simpl. rewrite elem_of_empty. auto. }
-      { rewrite ebody_sfree. reflexivity. }
+      rewrite rename_free_svar_id.
+      { rewrite sbody_sfree. simpl. rewrite elem_of_singleton. apply sname_srenames. }
+      { rewrite sbody_sfree. reflexivity. }
     }
     {
       (* patt_bound_evar n *)
-      repeat case_match; subst; try lia; try congruence.
+      rewrite sbody_be. cbn. rewrite l2n_be. reflexivity.
     }
     {
       (* patt_bound_svar n *)
-      rewrite ebody_bs. cbn. rewrite l2n_bs. reflexivity.
+      unfold well_formed_closed in wfϕ. cbn in wfϕ.
+      repeat case_match; subst; try lia; cbn in wfϕ; try congruence.
     }
     {
       (* patt_sym s *)
       rewrite l2n_sym.
-      rewrite rename_free_evar_id.
-      { rewrite ebody_sym. cbn. rewrite elem_of_empty. auto. }
-      { rewrite ebody_sym. reflexivity. }
+      rewrite rename_free_svar_id.
+      { rewrite sbody_sym. cbn. rewrite elem_of_empty. auto. }
+      { rewrite sbody_sym. reflexivity. }
     }
     {
       (* patt_app ϕ1 ϕ2 *)
