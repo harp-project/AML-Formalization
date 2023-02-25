@@ -1055,6 +1055,182 @@ Section concrete.
     { assumption. }
   Qed.
 
+  Lemma ename_not_in_named_free_of_ebody:
+    forall (ϕ0 : Pattern),
+      let x := string2evar ("A" +:+ evar2string (ename ϕ0)) in
+      ename ϕ0 ∉ named_free_evars (ln2named (evar_open x 0 ϕ0))
+  .
+  Proof.
+    (*  *)
+    intros phi0. cbn.
+    intros HContra.
+    apply named_free_evars_ln2named in HContra.
+    destruct HContra as [HContra|HContra].
+    {
+      rewrite free_evars_evar_open'' in HContra.
+      destruct HContra as [[HContra1 HContra2]|HContra].
+      {
+        apply (@f_equal _ _ evar2string) in HContra1.
+        rewrite cancele2 in HContra1.
+        apply (@f_equal _ _ list_ascii_of_string) in HContra1.
+        rewrite list_ascii_of_string_app in HContra1.
+        apply (@f_equal _ _ List.length) in HContra1.
+        rewrite app_length in HContra1. cbn in HContra1.
+        clear -HContra1. lia.
+      }
+      {
+        eapply ename_not_in_free. apply HContra.
+      }
+    }
+    {
+      induction phi0; cbn in HContra.
+      {
+        destruct HContra as [s HContra].
+        apply (@f_equal _ _ evar2string) in HContra.
+        rewrite 2!cancele2 in HContra.
+        inversion HContra.
+      }
+      {
+        destruct HContra as [s HContra].
+        apply (@f_equal _ _ evar2string) in HContra.
+        rewrite 2!cancele2 in HContra.
+        inversion HContra.
+      }
+      {
+        destruct HContra as [s HContra].
+        apply (@f_equal _ _ evar2string) in HContra.
+        rewrite 2!cancele2 in HContra.
+        inversion HContra.
+      }
+      {
+        destruct HContra as [s HContra].
+        apply (@f_equal _ _ evar2string) in HContra.
+        rewrite 2!cancele2 in HContra.
+        inversion HContra.
+      }
+      {
+        destruct HContra as [s HContra].
+        apply (@f_equal _ _ evar2string) in HContra.
+        rewrite 2!cancele2 in HContra.
+        inversion HContra.
+      }
+      {
+        {
+          destruct HContra as [s HContra].
+          apply (@f_equal _ _ evar2string) in HContra.
+          rewrite 2!cancele2 in HContra.
+          apply IHphi0_1.
+          apply (@f_equal _ _ list_ascii_of_string) in HContra.
+          rewrite 2!list_ascii_of_string_app in HContra.
+          assert (HA: firstn 1 (list_ascii_of_string (evar2string (ename phi0_1))) = list_ascii_of_string "A").
+          {
+            cbn in HContra. cbn.
+            destruct (list_ascii_of_string (evar2string (ename phi0_1))) eqn:Heq.
+            {
+              exfalso. apply ename_nonempty in Heq. exact Heq.
+            }
+            {
+              cbn. rewrite take_0.
+              cbn in HContra. inversion HContra.
+              reflexivity.
+            }
+          }
+          remember (firstn (List.length (list_ascii_of_string (evar2string (ename phi0_1))) - 1) (list_ascii_of_string s)) as mys.
+          exists (string_of_list_ascii mys).
+          subst mys.
+          assert (Hs: list_ascii_of_string s = skipn 1 (list_ascii_of_string (evar2string (ename phi0_1)) ++
+            list_ascii_of_string (evar2string (ename phi0_2)))).
+          {
+            rewrite HContra. cbn. rewrite drop_0. reflexivity.
+          }
+          rewrite Hs. clear Hs.
+          remember (ename phi0_1) as ev.
+          match goal with
+          | [ |- ?l = ?r] => cut (evar2string l = evar2string r)
+          end.
+          {
+            intros HH. congruence.
+          }
+          rewrite cancele2.
+          match goal with
+          | [ |- ?l = ?r] => cut (list_ascii_of_string l = list_ascii_of_string r)
+          end.
+          {
+            intros HH. apply list_ascii_of_string_inj in HH. exact HH.
+          }
+          rewrite list_ascii_of_string_app.
+          rewrite list_ascii_of_string_of_list_ascii.
+          remember (list_ascii_of_string (evar2string ev)) as l.
+          rewrite -skipn_firstn_comm.
+          rewrite take_app.
+          rewrite -HA.
+          rewrite (take_drop 1 l).
+          reflexivity.
+        }
+      }
+      {
+        destruct HContra as [s HContra].
+        apply (@f_equal _ _ evar2string) in HContra.
+        rewrite 2!cancele2 in HContra.
+        inversion HContra.
+      }
+      {
+        destruct HContra as [s HContra].
+        apply (@f_equal _ _ evar2string) in HContra.
+        rewrite 2!cancele2 in HContra.
+        apply IHphi0_1.
+        apply (@f_equal _ _ list_ascii_of_string) in HContra.
+        rewrite 2!list_ascii_of_string_app in HContra.
+        assert (HA: firstn 1 (list_ascii_of_string (evar2string (ename phi0_1))) = list_ascii_of_string "A").
+        {
+          cbn in HContra. cbn.
+          destruct (list_ascii_of_string (evar2string (ename phi0_1))) eqn:Heq.
+          {
+            exfalso. apply ename_nonempty in Heq. exact Heq.
+          }
+          {
+            cbn. rewrite take_0.
+            cbn in HContra. inversion HContra.
+            reflexivity.
+          }
+        }
+        remember (firstn (List.length (list_ascii_of_string (evar2string (ename phi0_1))) - 1) (list_ascii_of_string s)) as mys.
+        exists (string_of_list_ascii mys).
+        subst mys.
+        assert (Hs: list_ascii_of_string s = skipn 1 (list_ascii_of_string (evar2string (ename phi0_1)) ++
+          list_ascii_of_string (evar2string (ename phi0_2)))).
+        {
+          rewrite HContra. cbn. rewrite drop_0. reflexivity.
+        }
+        rewrite Hs. clear Hs.
+        remember (ename phi0_1) as ev.
+        match goal with
+        | [ |- ?l = ?r] => cut (evar2string l = evar2string r)
+        end.
+        {
+          intros HH. congruence.
+        }
+        rewrite cancele2.
+        match goal with
+        | [ |- ?l = ?r] => cut (list_ascii_of_string l = list_ascii_of_string r)
+        end.
+        {
+          intros HH. apply list_ascii_of_string_inj in HH. exact HH.
+        }
+        rewrite list_ascii_of_string_app.
+        rewrite list_ascii_of_string_of_list_ascii.
+        remember (list_ascii_of_string (evar2string ev)) as l.
+        rewrite -skipn_firstn_comm.
+        rewrite take_app.
+        rewrite -HA.
+        rewrite (take_drop 1 l).
+        reflexivity.
+      }
+      { auto with nocore. }
+      { auto with nocore. }
+    }
+  Qed.
+
   Context
     (f : Pattern -> evar -> evar)
     (f_ex : forall ϕ y, (f (patt_exists ϕ) y) = (f ϕ y))
@@ -1140,14 +1316,25 @@ Section concrete.
       {
         (* ebody_mu *)
         intros. unfold ebody. cbn. simp ln2named. cbn.
-        fold (evar_open ((string2evar ("A" +:+ evar2string (ename ϕ0)))) 0 ϕ0).
-        rewrite -> evar_open_wfc_aux with (phi := ϕ0) (db1 := 0).
+        fold (evar_open ((string2evar ("A" +:+ evar2string (ename ϕ0)))) 1 ϕ0).
+        rewrite -> evar_open_wfc_aux with (phi := ϕ0) (db1 := 1).
         3: { wf_auto2. }
         2: { lia. }
-        f_equal.
-        rewrite -> ln2named_svar_open with (sz := sz).
-        3
         reflexivity.
+      }
+      {
+        intros. cbn. 
+        intros HContra.
+        apply (@f_equal _ _ evar2string) in HContra.
+        rewrite cancele2 in HContra.
+        apply (@f_equal _ _ list_ascii_of_string) in HContra.
+        rewrite list_ascii_of_string_app in HContra.
+        apply (@f_equal _ _ List.length) in HContra.
+        rewrite app_length in HContra. cbn in HContra.
+        clear -HContra. lia.
+      }
+      {
+        intros ϕ0 HContra. 
       }
       { intros. simp ln2named. cbn. reflexivity. }
     }
@@ -1172,176 +1359,7 @@ Section concrete.
     }
     { intros. reflexivity. }
     { intros. reflexivity. }
-    {
-      (* ∀ ϕ0 : Pattern, ename ϕ0 ∉ named_free_evars (ebody ϕ0) *)
-      intros phi0. unfold ebody.
-      intros HContra.
-      apply named_free_evars_ln2named in HContra.
-      destruct HContra as [HContra|HContra].
-      {
-        rewrite free_evars_evar_open'' in HContra.
-        destruct HContra as [[HContra1 HContra2]|HContra].
-        {
-          apply (@f_equal _ _ evar2string) in HContra1.
-          rewrite cancele2 in HContra1.
-          apply (@f_equal _ _ list_ascii_of_string) in HContra1.
-          rewrite list_ascii_of_string_app in HContra1.
-          apply (@f_equal _ _ List.length) in HContra1.
-          rewrite app_length in HContra1. cbn in HContra1.
-          clear -HContra1. lia.
-        }
-        {
-          eapply ename_not_in_free. apply HContra.
-        }
-      }
-      {
-        induction phi0; cbn in HContra.
-        {
-          destruct HContra as [s HContra].
-          apply (@f_equal _ _ evar2string) in HContra.
-          rewrite 2!cancele2 in HContra.
-          inversion HContra.
-        }
-        {
-          destruct HContra as [s HContra].
-          apply (@f_equal _ _ evar2string) in HContra.
-          rewrite 2!cancele2 in HContra.
-          inversion HContra.
-        }
-        {
-          destruct HContra as [s HContra].
-          apply (@f_equal _ _ evar2string) in HContra.
-          rewrite 2!cancele2 in HContra.
-          inversion HContra.
-        }
-        {
-          destruct HContra as [s HContra].
-          apply (@f_equal _ _ evar2string) in HContra.
-          rewrite 2!cancele2 in HContra.
-          inversion HContra.
-        }
-        {
-          destruct HContra as [s HContra].
-          apply (@f_equal _ _ evar2string) in HContra.
-          rewrite 2!cancele2 in HContra.
-          inversion HContra.
-        }
-        {
-          {
-            destruct HContra as [s HContra].
-            apply (@f_equal _ _ evar2string) in HContra.
-            rewrite 2!cancele2 in HContra.
-            apply IHphi0_1.
-            apply (@f_equal _ _ list_ascii_of_string) in HContra.
-            rewrite 2!list_ascii_of_string_app in HContra.
-            assert (HA: firstn 1 (list_ascii_of_string (evar2string (ename phi0_1))) = list_ascii_of_string "A").
-            {
-              cbn in HContra. cbn.
-              destruct (list_ascii_of_string (evar2string (ename phi0_1))) eqn:Heq.
-              {
-                exfalso. apply ename_nonempty in Heq. exact Heq.
-              }
-              {
-                cbn. rewrite take_0.
-                cbn in HContra. inversion HContra.
-                reflexivity.
-              }
-            }
-            remember (firstn (List.length (list_ascii_of_string (evar2string (ename phi0_1))) - 1) (list_ascii_of_string s)) as mys.
-            exists (string_of_list_ascii mys).
-            subst mys.
-            assert (Hs: list_ascii_of_string s = skipn 1 (list_ascii_of_string (evar2string (ename phi0_1)) ++
-              list_ascii_of_string (evar2string (ename phi0_2)))).
-            {
-              rewrite HContra. cbn. rewrite drop_0. reflexivity.
-            }
-            rewrite Hs. clear Hs.
-            remember (ename phi0_1) as ev.
-            match goal with
-            | [ |- ?l = ?r] => cut (evar2string l = evar2string r)
-            end.
-            {
-              intros HH. congruence.
-            }
-            rewrite cancele2.
-            match goal with
-            | [ |- ?l = ?r] => cut (list_ascii_of_string l = list_ascii_of_string r)
-            end.
-            {
-              intros HH. apply list_ascii_of_string_inj in HH. exact HH.
-            }
-            rewrite list_ascii_of_string_app.
-            rewrite list_ascii_of_string_of_list_ascii.
-            remember (list_ascii_of_string (evar2string ev)) as l.
-            rewrite -skipn_firstn_comm.
-            rewrite take_app.
-            rewrite -HA.
-            rewrite (take_drop 1 l).
-            reflexivity.
-          }
-        }
-        {
-          destruct HContra as [s HContra].
-          apply (@f_equal _ _ evar2string) in HContra.
-          rewrite 2!cancele2 in HContra.
-          inversion HContra.
-        }
-        {
-          destruct HContra as [s HContra].
-          apply (@f_equal _ _ evar2string) in HContra.
-          rewrite 2!cancele2 in HContra.
-          apply IHphi0_1.
-          apply (@f_equal _ _ list_ascii_of_string) in HContra.
-          rewrite 2!list_ascii_of_string_app in HContra.
-          assert (HA: firstn 1 (list_ascii_of_string (evar2string (ename phi0_1))) = list_ascii_of_string "A").
-          {
-            cbn in HContra. cbn.
-            destruct (list_ascii_of_string (evar2string (ename phi0_1))) eqn:Heq.
-            {
-              exfalso. apply ename_nonempty in Heq. exact Heq.
-            }
-            {
-              cbn. rewrite take_0.
-              cbn in HContra. inversion HContra.
-              reflexivity.
-            }
-          }
-          remember (firstn (List.length (list_ascii_of_string (evar2string (ename phi0_1))) - 1) (list_ascii_of_string s)) as mys.
-          exists (string_of_list_ascii mys).
-          subst mys.
-          assert (Hs: list_ascii_of_string s = skipn 1 (list_ascii_of_string (evar2string (ename phi0_1)) ++
-            list_ascii_of_string (evar2string (ename phi0_2)))).
-          {
-            rewrite HContra. cbn. rewrite drop_0. reflexivity.
-          }
-          rewrite Hs. clear Hs.
-          remember (ename phi0_1) as ev.
-          match goal with
-          | [ |- ?l = ?r] => cut (evar2string l = evar2string r)
-          end.
-          {
-            intros HH. congruence.
-          }
-          rewrite cancele2.
-          match goal with
-          | [ |- ?l = ?r] => cut (list_ascii_of_string l = list_ascii_of_string r)
-          end.
-          {
-            intros HH. apply list_ascii_of_string_inj in HH. exact HH.
-          }
-          rewrite list_ascii_of_string_app.
-          rewrite list_ascii_of_string_of_list_ascii.
-          remember (list_ascii_of_string (evar2string ev)) as l.
-          rewrite -skipn_firstn_comm.
-          rewrite take_app.
-          rewrite -HA.
-          rewrite (take_drop 1 l).
-          reflexivity.
-        }
-        { auto with nocore. }
-        { auto with nocore. }
-      }
-    }
+    
     {
       reflexivity.
     }
