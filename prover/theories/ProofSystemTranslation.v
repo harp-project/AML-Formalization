@@ -163,7 +163,7 @@ Section abstract.
     (l2n_ex : forall ϕ', l2n (patt_exists ϕ') = npatt_exists (ename ϕ') (ebody ϕ'))
     (sname : Pattern -> svar)
     (sbody : Pattern -> NamedPattern)
-    (l2n_mu : forall ϕ', l2n (patt_mu ϕ') = npatt_mu (sname ϕ') (ebody ϕ'))
+    (l2n_mu : forall ϕ', well_formed (patt_mu ϕ') -> l2n (patt_mu ϕ') = npatt_mu (sname ϕ') (ebody ϕ'))
   .
 
   Context
@@ -183,7 +183,7 @@ Section abstract.
     (ename_mu : forall ϕ, ename (patt_mu ϕ) = ename ϕ)
     (ebody_bs : forall n, ebody (patt_bound_svar n) = npatt_bott)
     (*sbody_phi : forall ϕ, sbody ϕ = l2n ϕ*)
-    (ebody_mu : forall ϕ, ebody (patt_mu ϕ) = npatt_mu (sname ϕ) (ebody ϕ))
+    (ebody_mu : forall ϕ, well_formed_closed_mu_aux ϕ 1 -> ebody (patt_mu ϕ) = npatt_mu (sname ϕ) (ebody ϕ))
     (*sbody_mu : forall ϕ, sbody (patt_mu ϕ) = npatt_mu (sname ϕ) (sbody ϕ)*)
   .
   Lemma what_we_want (ϕ : Pattern) (y : evar):
@@ -315,11 +315,13 @@ Section abstract.
     {
       (* patt_mu ϕ *)
       rewrite l2n_mu.
+      { wf_auto2. apply no_neg_occ_db_bevar_subst;[reflexivity|assumption]. }
       fold (evar_open y 0 ϕ).
       rewrite evar_open_closed.
       { wf_auto2. }
       
       rewrite ebody_mu.
+      { wf_auto2. }
       cbn.
       f_equal.
       rewrite ename_mu.
@@ -627,7 +629,7 @@ Section concrete.
     replace (ln2named (evar_open (string2evar ("A" +:+ evar2string (ename ϕ)) ) 0 ϕ)) with (ebody ϕ) by (reflexivity).
     set (fun phi' => ln2named (svar_open (string2svar ("B" +:+ svar2string (sname phi'))) 0 phi')) as sbody.
 
-    apply what_we_want with (sbody := sbody)(sname := sname).
+    apply what_we_want with (sname := sname).
     { intros. simp ln2named. reflexivity. }
     { intros. simp ln2named. reflexivity. }
     { intros. simp ln2named. reflexivity. }
@@ -636,7 +638,12 @@ Section concrete.
     { intros. simp ln2named. reflexivity. }
     { intros. simp ln2named. reflexivity. }
     { intros. simp ln2named. cbn. reflexivity. }
-    { intros. simp ln2named. reflexivity. }
+    { intros. cbn. simp ln2named. cbn.
+      f_equal. rewrite svar_open_closed.
+      { wf_auto2. }
+      reflexivity.
+    }
+    { intros. simp ln2named. cbn. reflexivity. }
     { intros. reflexivity. }
     { intros. cbn. 
       intros HContra.
