@@ -578,9 +578,9 @@ Section concrete.
 
   Fixpoint sname (ϕ : Pattern) : svar :=
     match ϕ with
-    | patt_free_svar X => X
-    | patt_free_evar x => string2svar (evar2string x)
-    | patt_sym s => string2svar (sym2string s)
+    | patt_free_svar X => string2svar ("S" +:+ svar2string X)
+    | patt_free_evar x => string2svar ("S" +:+ evar2string x)
+    | patt_sym s => string2svar ("S" +:+ sym2string s)
     | patt_bott => empty_svar
     | patt_bound_evar _ => empty_svar
     | patt_bound_svar _ => empty_svar
@@ -639,6 +639,65 @@ Section concrete.
     }
     { auto with nocore. }
     { auto with nocore. }
+  Qed.
+
+  Lemma sname_not_in_free' ϕ sv:
+    sv ∈ free_svars ϕ ->
+    List.length (list_ascii_of_string (svar2string (sname ϕ))) > List.length (list_ascii_of_string (svar2string sv))
+  .
+  Proof.
+    induction ϕ; cbn; intros Hin.
+    { exfalso. set_solver. }
+    {
+      rewrite elem_of_singleton in Hin. subst sv.
+      rewrite cancels2.
+      rewrite list_ascii_of_string_app. cbn.
+      lia.
+    }
+    { exfalso. set_solver. }
+    { exfalso. set_solver. }
+    { exfalso. set_solver. }
+    {
+      rewrite cancels2.
+      rewrite list_ascii_of_string_app.
+      rewrite app_length.
+      rewrite elem_of_union in Hin.
+      destruct Hin as [Hin|Hin].
+      {
+        specialize (IHϕ1 Hin).
+        lia.
+      }
+      {
+        specialize (IHϕ2 Hin).
+        lia.
+      }
+    }
+    { exfalso. set_solver. }
+    {
+      rewrite cancels2.
+      rewrite list_ascii_of_string_app.
+      rewrite app_length.
+      rewrite elem_of_union in Hin.
+      destruct Hin as [Hin|Hin].
+      {
+        specialize (IHϕ1 Hin).
+        lia.
+      }
+      {
+        specialize (IHϕ2 Hin).
+        lia.
+      }
+    }
+    { auto with nocore. }
+    { auto with nocore. }
+  Qed.
+
+  Lemma sname_not_in_free ϕ:
+    sname ϕ ∉ free_svars ϕ.
+  Proof.
+    intros HContra.
+    apply sname_not_in_free' in HContra.
+    lia.
   Qed.
 
   Lemma ename_not_in_free ϕ:
