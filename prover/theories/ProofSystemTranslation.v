@@ -163,7 +163,6 @@ Section abstract.
     (l2n_ex : forall ϕ', l2n (patt_exists ϕ') = npatt_exists (ename ϕ') (ebody ϕ'))
     (sname : Pattern -> svar)
     (sbody : Pattern -> NamedPattern)
-    (l2n_mu : forall ϕ', well_formed (patt_mu ϕ') -> l2n (patt_mu ϕ') = npatt_mu (sname ϕ') (ebody ϕ'))
   .
 
   Context
@@ -186,15 +185,23 @@ Section abstract.
     (ebody_mu : forall ϕ, well_formed_closed_mu_aux ϕ 1 -> ebody (patt_mu ϕ) = npatt_mu (sname ϕ) (ebody ϕ))
     (*sbody_mu : forall ϕ, sbody (patt_mu ϕ) = npatt_mu (sname ϕ) (sbody ϕ)*)
   .
-  Lemma what_we_want (ϕ : Pattern) (y : evar):
+
+  Context
+    (sz : nat)
+  .
+  Lemma what_we_want_evar (ϕ : Pattern) (y : evar)
+    (l2n_mu : forall ϕ',
+    well_formed (patt_mu ϕ') ->
+    size' ϕ' < sz ->
+    l2n (patt_mu ϕ') = npatt_mu (sname ϕ') (ebody ϕ'))
+    :
+    size' ϕ <= sz ->
     well_formed ϕ ->
     l2n (evar_open y 0 ϕ) = rename_free_evar (ebody ϕ) (f ϕ y) (ename ϕ)
   .
   Proof.
+    intros Hsz.
     move: y.
-    remember (size' ϕ) as sz eqn:Heqsz.
-    assert (Hsz: size' ϕ <= sz) by lia.
-    clear Heqsz.
     move: ϕ Hsz.
     induction sz; intros ϕ Hsz.
     { destruct ϕ; cbn in Hsz; lia. }
@@ -231,12 +238,24 @@ Section abstract.
     {
       (* patt_app ϕ1 ϕ2 *)
       rewrite l2n_app.
-      rewrite IHsz.
-      { lia. }
-      { wf_auto2. }
-      rewrite IHsz.
-      { lia. }
-      { wf_auto2. }
+      rewrite IHn.
+      2: { lia. }
+      2: { wf_auto2. }
+      {
+        intros.
+        apply l2n_mu.
+        { assumption. }
+        { lia. }
+      }
+      rewrite IHn.
+      2: { lia. }
+      2: { wf_auto2. }
+      {
+        intros.
+        apply l2n_mu.
+        { assumption. }
+        { lia. }
+      }
       rewrite rename_free_evar_id.
       { apply ename_fresh_in_ebody. }
       rewrite rename_free_evar_id.
@@ -258,12 +277,24 @@ Section abstract.
     {
       (* patt_imp ϕ1 ϕ2 *)
       rewrite l2n_imp.
-      rewrite IHsz.
-      { lia. }
-      { wf_auto2. }
-      rewrite IHsz.
-      { lia. }
-      { wf_auto2. }
+      rewrite IHn.
+      2: { lia. }
+      2: { wf_auto2. }
+      {
+        intros.
+        apply l2n_mu.
+        { assumption. }
+        { lia. }
+      }
+      rewrite IHn.
+      2: { lia. }
+      2: { wf_auto2. }
+      {
+        intros.
+        apply l2n_mu.
+        { assumption. }
+        { lia. }
+      }
       rewrite rename_free_evar_id.
       { apply ename_fresh_in_ebody. }
       rewrite rename_free_evar_id.
@@ -313,18 +344,19 @@ Section abstract.
       reflexivity.
     }
     {
-      (* patt_mu ϕ *)
-      rewrite l2n_mu.
-      { wf_auto2. apply no_neg_occ_db_bevar_subst;[reflexivity|assumption]. }
       fold (evar_open y 0 ϕ).
       rewrite evar_open_closed.
       { wf_auto2. }
+      rewrite l2n_mu.
+      { wf_auto2. }
+      { lia. }
       
       rewrite ebody_mu.
       { wf_auto2. }
       cbn.
       f_equal.
       rewrite ename_mu.
+
       rewrite rename_free_evar_id.
       {
         intros HContra.
