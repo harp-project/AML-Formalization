@@ -173,9 +173,9 @@ Section abstract.
     (ebody_sfree: forall X, ebody (patt_free_svar X) = npatt_svar X)
     (ebody_sym: forall s, ebody (patt_sym s) = npatt_sym s)
     (ename_fresh_in_ebody: forall ϕ, ename ϕ ∉ named_free_evars (ebody ϕ))
-    (ebody_app : forall ϕ1 ϕ2, ebody (patt_app ϕ1 ϕ2) = npatt_app (ebody ϕ1) (ebody ϕ2))
+    (ebody_app : forall ϕ1 ϕ2, well_formed_closed_ex_aux ϕ1 0 -> well_formed_closed_ex_aux ϕ2 0 -> ebody (patt_app ϕ1 ϕ2) = npatt_app (ebody ϕ1) (ebody ϕ2))
     (ebody_bott : ebody patt_bott = npatt_bott )
-    (ebody_imp : forall ϕ1 ϕ2, ebody (patt_imp ϕ1 ϕ2) = npatt_imp (ebody ϕ1) (ebody ϕ2))
+    (ebody_imp : forall ϕ1 ϕ2, well_formed_closed_ex_aux ϕ1 0 -> well_formed_closed_ex_aux ϕ2 0 -> ebody (patt_imp ϕ1 ϕ2) = npatt_imp (ebody ϕ1) (ebody ϕ2))
     (ebody_ex : forall ϕ, ebody (patt_exists ϕ) = npatt_exists (ename ϕ) (ebody ϕ))
     (f_ex : forall ϕ y, (f (patt_exists ϕ) y) = (f ϕ y))
     (ename_ex : forall ϕ, ename (patt_exists ϕ) = ename ϕ)
@@ -243,6 +243,8 @@ Section abstract.
       rewrite rename_free_evar_id.
       { apply ename_fresh_in_ebody. }
       rewrite ebody_app.
+      { wf_auto2. }
+      { wf_auto2. }
       reflexivity.
     }
     {
@@ -268,6 +270,8 @@ Section abstract.
       rewrite rename_free_evar_id.
       { apply ename_fresh_in_ebody. }
       rewrite ebody_imp.
+      { wf_auto2. }
+      { wf_auto2. }
       reflexivity.
     }
     {
@@ -813,7 +817,22 @@ Section concrete.
       }
     }
     {
-      
+      intros. unfold ebody. cbn.
+      simp ln2named.
+      rewrite cancele2.
+      fold (evar_open ((string2evar
+      ("A" +:+ evar2string (ename ϕ1) +:+ evar2string (ename ϕ2)))) 0 ϕ1).
+      rewrite evar_open_closed.
+      { wf_auto2. }
+      fold (evar_open ((string2evar
+      ("A" +:+ evar2string (ename ϕ1) +:+ evar2string (ename ϕ2)))) 0 ϕ2).
+      rewrite evar_open_closed.
+      { wf_auto2. }
+      rewrite evar_open_closed.
+      { wf_auto2. }
+      rewrite evar_open_closed.
+      { wf_auto2. }
+      reflexivity.
     }
   Qed.
 
