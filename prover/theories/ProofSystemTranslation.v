@@ -1029,30 +1029,94 @@ Section concrete.
     (f : Pattern -> evar -> evar)
     (f_ex : forall ϕ y, (f (patt_exists ϕ) y) = (f ϕ y))
     (f_mu : forall ϕ y, (f (patt_mu ϕ) y) = (f ϕ y))
+    (fs : Pattern -> svar -> svar)
+    (fs_ex : forall ϕ Y, (fs (patt_exists ϕ) Y) = (fs ϕ Y))
+    (fs_mu : forall ϕ Y, (fs (patt_mu ϕ) Y) = (fs ϕ Y))
   .
-  Lemma ln2named_evar_open (ϕ : Pattern) (y : evar):
-    well_formed_closed_ex_aux ϕ 0 ->
+  Fixpoint ln2named_evar_open (sz : nat) (ϕ : Pattern) (y : evar) {struct sz}:
+    size' ϕ <= sz ->
+    well_formed ϕ ->
     let x := string2evar ("A" +:+ evar2string (ename ϕ)) in
     ln2named (evar_open y 0 ϕ) = rename_free_evar (ln2named (evar_open x 0 ϕ)) (f ϕ y) (ename ϕ)
+  with ln2named_svar_open (sz : nat) (ϕ : Pattern) (Y : svar) {struct sz}:
+    size' ϕ <= sz ->
+    well_formed ϕ ->
+    let X := string2svar ("B" +:+ svar2string (sname ϕ)) in
+    ln2named (svar_open Y 0 ϕ) = rename_free_svar (ln2named (svar_open X 0 ϕ)) (fs ϕ Y) (sname ϕ)
   .
   Proof.
-    intros H. cbn.
-    set (fun phi' =>
+    all: intros Hsz Hwf; cbn.
+
+    all: set (fun phi' =>
       let x := string2evar ("A" +:+ evar2string (ename phi')) in
       ln2named (evar_open x 0 phi')
     ) as ebody.
-    replace (ln2named (evar_open (string2evar ("A" +:+ evar2string (ename ϕ)) ) 0 ϕ)) with (ebody ϕ) by (reflexivity).
-    set (fun phi' => ln2named (svar_open (string2svar ("B" +:+ svar2string (sname phi'))) 0 phi')) as sbody.
+    all: replace (ln2named (evar_open (string2evar ("A" +:+ evar2string (ename ϕ)) ) 0 ϕ)) with (ebody ϕ) by (reflexivity).
+    all: set (fun phi' => ln2named (svar_open (string2svar ("B" +:+ svar2string (sname phi'))) 0 phi')) as sbody.
+    all: replace (ln2named (svar_open (string2svar ("B" +:+ svar2string (sname ϕ)) ) 0 ϕ)) with (sbody ϕ) by (reflexivity).
+    {
+      apply what_we_want_evar with (sname := sname)(sz := sz).
+      { intros. simp ln2named. reflexivity. }
+      { intros. simp ln2named. reflexivity. }
+      { intros. simp ln2named. reflexivity. }
+      { intros. simp ln2named. reflexivity. }
+      { intros. simp ln2named. reflexivity. }
+      { intros. simp ln2named. reflexivity. }
+      { intros. simp ln2named. reflexivity. }
+      { intros. simp ln2named. reflexivity. }
+      { intros. simp ln2named. reflexivity. }
+      { intros. simp ln2named. reflexivity. }
+      { intros. simp ln2named. reflexivity. }
+      { intros. simp ln2named. reflexivity. }
+      {
+        intros. unfold ebody. cbn.
+        simp ln2named.
+        rewrite cancele2.
+        fold (evar_open ((string2evar
+        ("A" +:+ evar2string (ename ϕ1) +:+ evar2string (ename ϕ2)))) 0 ϕ1).
+        rewrite evar_open_closed.
+        { wf_auto2. }
+        fold (evar_open ((string2evar
+        ("A" +:+ evar2string (ename ϕ1) +:+ evar2string (ename ϕ2)))) 0 ϕ2).
+        rewrite evar_open_closed.
+        { wf_auto2. }
+        rewrite evar_open_closed.
+        { wf_auto2. }
+        rewrite evar_open_closed.
+        { wf_auto2. }
+        reflexivity.
+      }
+      {
+        intros. unfold ebody. cbn.
+        simp ln2named.
+        rewrite cancele2.
+        fold (evar_open ((string2evar
+        ("A" +:+ evar2string (ename ϕ1) +:+ evar2string (ename ϕ2)))) 0 ϕ1).
+        rewrite evar_open_closed.
+        { wf_auto2. }
+        fold (evar_open ((string2evar
+        ("A" +:+ evar2string (ename ϕ1) +:+ evar2string (ename ϕ2)))) 0 ϕ2).
+        rewrite evar_open_closed.
+        { wf_auto2. }
+        rewrite evar_open_closed.
+        { wf_auto2. }
+        rewrite evar_open_closed.
+        { wf_auto2. }
+        reflexivity.
+      }
+      { intros. simp ln2named. cbn. reflexivity. }
+      {
+        intros. unfold ebody. cbn. simp ln2named. cbn.
+        fold (evar_open ((string2evar ("A" +:+ evar2string (ename ϕ0)))) 0 ϕ0).
+        rewrite -> evar_open_wfc_aux with (phi := ϕ0) (db1 := 0).
+        3: { wf_auto2. }
+        2: { lia. }
+        reflexivity.
+      }
+      { intros. simp ln2named. cbn. reflexivity. }
+    }
 
     apply what_we_want with (sname := sname).
-    { intros. simp ln2named. reflexivity. }
-    { intros. simp ln2named. reflexivity. }
-    { intros. simp ln2named. reflexivity. }
-    { intros. simp ln2named. reflexivity. }
-    { intros. simp ln2named. reflexivity. }
-    { intros. simp ln2named. reflexivity. }
-    { intros. simp ln2named. reflexivity. }
-    { intros. simp ln2named. cbn. reflexivity. }
     { intros. cbn. simp ln2named. cbn.
       f_equal. rewrite svar_open_closed.
       { wf_auto2. }
@@ -1243,52 +1307,10 @@ Section concrete.
       }
     }
     {
-      intros. unfold ebody. cbn.
-      simp ln2named.
-      rewrite cancele2.
-      fold (evar_open ((string2evar
-      ("A" +:+ evar2string (ename ϕ1) +:+ evar2string (ename ϕ2)))) 0 ϕ1).
-      rewrite evar_open_closed.
-      { wf_auto2. }
-      fold (evar_open ((string2evar
-      ("A" +:+ evar2string (ename ϕ1) +:+ evar2string (ename ϕ2)))) 0 ϕ2).
-      rewrite evar_open_closed.
-      { wf_auto2. }
-      rewrite evar_open_closed.
-      { wf_auto2. }
-      rewrite evar_open_closed.
-      { wf_auto2. }
       reflexivity.
     }
-    {
-      reflexivity.
-    }
-    {
-      intros. unfold ebody. cbn.
-      simp ln2named.
-      rewrite cancele2.
-      fold (evar_open ((string2evar
-      ("A" +:+ evar2string (ename ϕ1) +:+ evar2string (ename ϕ2)))) 0 ϕ1).
-      rewrite evar_open_closed.
-      { wf_auto2. }
-      fold (evar_open ((string2evar
-      ("A" +:+ evar2string (ename ϕ1) +:+ evar2string (ename ϕ2)))) 0 ϕ2).
-      rewrite evar_open_closed.
-      { wf_auto2. }
-      rewrite evar_open_closed.
-      { wf_auto2. }
-      rewrite evar_open_closed.
-      { wf_auto2. }
-      reflexivity.
-    }
-    {
-      intros. unfold ebody. cbn. simp ln2named. cbn.
-      fold (evar_open ((string2evar ("A" +:+ evar2string (ename ϕ0)))) 1 ϕ0).
-      rewrite -> evar_open_wfc_aux with (phi := ϕ0) (db1 := 1).
-      3: { wf_auto2. }
-      2: { lia. }
-      reflexivity.
-    }
+    
+    
     {
       intros. cbn. reflexivity.
     }
