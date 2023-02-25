@@ -643,6 +643,7 @@ Section concrete.
     { intros. reflexivity. }
     { intros. reflexivity. }
     {
+      (* ∀ ϕ0 : Pattern, ename ϕ0 ∉ named_free_evars (ebody ϕ0) *)
       intros phi0. unfold ebody.
       intros HContra.
       apply named_free_evars_ln2named in HContra.
@@ -703,9 +704,18 @@ Section concrete.
             apply IHphi0_1.
             apply (@f_equal _ _ list_ascii_of_string) in HContra.
             rewrite 2!list_ascii_of_string_app in HContra.
-            assert (HA: list_ascii_of_string (evar2string (ename phi0_1)) = list_ascii_of_string "A").
+            assert (HA: firstn 1 (list_ascii_of_string (evar2string (ename phi0_1))) = list_ascii_of_string "A").
             {
               cbn in HContra. cbn.
+              destruct (list_ascii_of_string (evar2string (ename phi0_1))) eqn:Heq.
+              {
+                exfalso. apply ename_nonempty in Heq. exact Heq.
+              }
+              {
+                cbn. rewrite take_0.
+                cbn in HContra. inversion HContra.
+                reflexivity.
+              }
             }
             remember (firstn (List.length (list_ascii_of_string (evar2string (ename phi0_1))) - 1) (list_ascii_of_string s)) as mys.
             exists (string_of_list_ascii mys).
@@ -735,14 +745,75 @@ Section concrete.
             remember (list_ascii_of_string (evar2string ev)) as l.
             rewrite -skipn_firstn_comm.
             rewrite take_app.
-
-            subst.
-            Search take drop.
-            inversion HContra.
+            rewrite -HA.
+            rewrite (take_drop 1 l).
+            reflexivity.
           }
         }
-        destruct HContra as [s HContra].
+        {
+          destruct HContra as [s HContra].
+          apply (@f_equal _ _ evar2string) in HContra.
+          rewrite 2!cancele2 in HContra.
+          inversion HContra.
+        }
+        {
+          destruct HContra as [s HContra].
+          apply (@f_equal _ _ evar2string) in HContra.
+          rewrite 2!cancele2 in HContra.
+          apply IHphi0_1.
+          apply (@f_equal _ _ list_ascii_of_string) in HContra.
+          rewrite 2!list_ascii_of_string_app in HContra.
+          assert (HA: firstn 1 (list_ascii_of_string (evar2string (ename phi0_1))) = list_ascii_of_string "A").
+          {
+            cbn in HContra. cbn.
+            destruct (list_ascii_of_string (evar2string (ename phi0_1))) eqn:Heq.
+            {
+              exfalso. apply ename_nonempty in Heq. exact Heq.
+            }
+            {
+              cbn. rewrite take_0.
+              cbn in HContra. inversion HContra.
+              reflexivity.
+            }
+          }
+          remember (firstn (List.length (list_ascii_of_string (evar2string (ename phi0_1))) - 1) (list_ascii_of_string s)) as mys.
+          exists (string_of_list_ascii mys).
+          subst mys.
+          assert (Hs: list_ascii_of_string s = skipn 1 (list_ascii_of_string (evar2string (ename phi0_1)) ++
+            list_ascii_of_string (evar2string (ename phi0_2)))).
+          {
+            rewrite HContra. cbn. rewrite drop_0. reflexivity.
+          }
+          rewrite Hs. clear Hs.
+          remember (ename phi0_1) as ev.
+          match goal with
+          | [ |- ?l = ?r] => cut (evar2string l = evar2string r)
+          end.
+          {
+            intros HH. congruence.
+          }
+          rewrite cancele2.
+          match goal with
+          | [ |- ?l = ?r] => cut (list_ascii_of_string l = list_ascii_of_string r)
+          end.
+          {
+            intros HH. apply list_ascii_of_string_inj in HH. exact HH.
+          }
+          rewrite list_ascii_of_string_app.
+          rewrite list_ascii_of_string_of_list_ascii.
+          remember (list_ascii_of_string (evar2string ev)) as l.
+          rewrite -skipn_firstn_comm.
+          rewrite take_app.
+          rewrite -HA.
+          rewrite (take_drop 1 l).
+          reflexivity.
+        }
+        { auto with nocore. }
+        { auto with nocore. }
       }
+    }
+    {
+      
     }
   Qed.
 
