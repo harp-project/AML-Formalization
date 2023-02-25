@@ -403,8 +403,97 @@ Section concrete.
     (x ∈ free_evars ϕ) \/ (exists (s : string), x = string2evar ("A" +:+ s))
   .
   Proof.
-
-
+    move: x.
+    funelim (ln2named ϕ); cbn; intros x0 Hx.
+    { left. exact Hx. }
+    { left. exact Hx. }
+    { exfalso. clear -Hx. set_solver. }
+    { exfalso. clear -Hx. set_solver. }
+    { exfalso. clear -Hx. set_solver. }
+    {
+      rewrite elem_of_union in Hx.
+      destruct Hx as [Hx|Hx].
+      {
+        specialize (H x0 Hx).
+        destruct H as [H|H].
+        {
+          left. clear -H. set_solver.
+        }
+        {
+          right. exact H.
+        }
+      }
+      {
+        specialize (H0 x0 Hx).
+        destruct H0 as [H0|H0].
+        {
+          left. clear -H0. set_solver.
+        }
+        {
+          right. exact H0.
+        }
+      }
+    }
+    {
+      exfalso. clear -Hx. set_solver.
+    }
+    {
+      rewrite elem_of_union in Hx.
+      destruct Hx as [Hx|Hx].
+      {
+        specialize (H x0 Hx).
+        destruct H as [H|H].
+        {
+          left. clear -H. set_solver.
+        }
+        {
+          right. exact H.
+        }
+      }
+      {
+        specialize (H0 x0 Hx).
+        destruct H0 as [H0|H0].
+        {
+          left. clear -H0. set_solver.
+        }
+        {
+          right. exact H0.
+        }
+      }
+    }
+    {
+      rewrite elem_of_difference in Hx.
+      destruct Hx as [Hx1 Hx2].
+      rewrite elem_of_singleton in Hx2.
+      specialize (H x0 Hx1).
+      destruct H as [H|H].
+      {
+        rewrite free_evars_evar_open'' in H.
+        destruct H as [[H1 H2]|H].
+        {
+          right.
+          subst x0.
+          eexists. reflexivity.
+        }
+        {
+          left. exact H.
+        }
+      }
+      {
+        right. exact H.
+      }
+    }
+    {
+      specialize (H x0 Hx).
+      destruct H as [H|H].
+      {
+        rewrite free_evars_svar_open in H.
+        left. exact H.
+      }
+      {
+        right. exact H.
+      }
+    }
   Qed.
 
 
