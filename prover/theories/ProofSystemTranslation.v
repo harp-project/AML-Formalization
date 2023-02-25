@@ -17,6 +17,136 @@ Derive NoConfusion for Pattern.
 Derive Subterm for Pattern.
 
 
+Global Instance string_app_empty_rightid :
+  RightId (=) "" String.append
+.
+Proof.
+  intros s.
+  induction s; simpl.
+  { reflexivity. }
+  cbv.
+  fold String.append. (* This is weird. *)
+  rewrite IHs.
+  reflexivity.
+Qed.
+
+Global Instance string_app_empty_leftid :
+  LeftId (=) "" String.append
+.
+Proof.
+  intros s. reflexivity.
+Qed.
+
+Lemma string_of_list_ascii_app l1 l2:
+  string_of_list_ascii (l1 ++ l2)
+  = (string_of_list_ascii l1) +:+ (string_of_list_ascii l2)
+.
+Proof.
+  induction l1; cbn.
+  {
+    unfold String.append. reflexivity.
+  }
+  {
+    rewrite IHl1. clear IHl1.
+    reflexivity.
+  }
+Qed.
+
+
+Global Instance string_of_list_ascii_of_string_cancel:
+  Cancel (=) string_of_list_ascii list_ascii_of_string
+.
+Proof.
+  intros x.
+  apply string_of_list_ascii_of_string.
+Qed.
+
+Global Instance list_ascii_of_string_of_list_ascii_cancel:
+  Cancel (=) list_ascii_of_string string_of_list_ascii 
+.
+Proof.
+  intros x.
+  apply list_ascii_of_string_of_list_ascii.
+Qed.
+
+Global Instance string_of_list_ascii_inj:
+  Inj (=) (=) string_of_list_ascii
+.
+Proof.
+  apply cancel_inj.
+Qed.
+
+Global Instance list_ascii_of_string_inj:
+  Inj (=) (=) list_ascii_of_string
+.
+Proof.
+  apply cancel_inj.
+Qed.
+
+Global Instance string_app_assoc:
+  Assoc (=) String.append
+.
+Proof.
+  intros x y z.
+  rewrite -(string_of_list_ascii_of_string x).
+  rewrite -(string_of_list_ascii_of_string y).
+  rewrite -(string_of_list_ascii_of_string z).
+  rewrite -!string_of_list_ascii_app.
+  rewrite app_assoc.
+  reflexivity.
+Qed.
+
+Global Instance string_app_inj_2 s2 :
+  Inj (=) (=) (fun s1 => String.append s1 s2).
+Proof.
+  intros s1 s1' H.
+  move: s1 s1' H.
+  induction s2; intros s1 s1' H; cbn in *.
+  {
+    do 2 rewrite right_id in H.
+    exact H.
+  }
+  {
+    replace (String a s2)
+      with ((String a EmptyString) +:+ s2) in H
+      by reflexivity.
+    replace (String a s1)
+      with ((String a EmptyString) +:+ s1) in H
+      by reflexivity.
+    rewrite 2!string_app_assoc in H.
+    specialize (IHs2 _ _ H).
+    clear H s2.
+    rename IHs2 into H.
+    rewrite -(string_of_list_ascii_of_string s1).
+    rewrite -(string_of_list_ascii_of_string s1').
+    rewrite -(string_of_list_ascii_of_string s1) in H.
+    rewrite -(string_of_list_ascii_of_string s1') in H.
+    rewrite -(string_of_list_ascii_of_string (String a "")) in H.
+    rewrite [list_ascii_of_string (String a "")]/= in H.
+    rewrite -!string_of_list_ascii_app in H.
+    apply string_of_list_ascii_inj in H.
+    simplify_list_eq.
+    congruence.
+    }
+Qed.
+
+
+Lemma list_ascii_of_string_app s1 s2:
+  list_ascii_of_string (s1 +:+ s2)
+  = (list_ascii_of_string s1) ++ (list_ascii_of_string s2)
+.
+Proof.
+  induction s1; cbn.
+  {
+    reflexivity.
+  }
+  {
+    cbv. fold list_ascii_of_string. fold String.append.
+    apply f_equal. rewrite IHs1. reflexivity.
+  }
+Qed.
+
+
 Section abstract.
   Context
     {Σ : Signature}
@@ -200,23 +330,131 @@ Section abstract.
 
 End abstract.
 
-Equations? ln2named0 (ϕ : Pattern) : NamedPattern by wf (size' ϕ) lt :=
-  ln2named0 (patt_bound_evar _) => npatt_bott ;
-  ln2named0 (patt_bound_svar _) => npatt_bott ;
-  ln2named0 (patt_free_evar x) => npatt_evar x ;
-  ln2named0 (patt_free_svar X) => npatt_svar X ;
-  ln2named0 patt_bott := npatt_bott ;
-  ln2named0 (patt_sym s) := npatt_sym s ;
-  ln2named0 (patt_imp ϕ₁ ϕ₂) := npatt_imp (ln2named0 ϕ₁) (ln2named0 ϕ₂) ;
-  ln2named0 (patt_app ϕ₁ ϕ₂) := npatt_app (ln2named0 ϕ₁) (ln2named0 ϕ₂) ;
-  ln2named0 (patt_exists ϕ') :=
-  ln2named0 (patt_mu ϕ') := 
+Section concrete.
+  Context
+    {Σ : Signature}
+    (string2evar : string -> evar)
+    (evar2string : evar -> string)
+    (string2svar : string -> svar)
+    (svar2string : svar -> string)
+    (sym2string : symbols -> string)
+    (cancele1: Cancel (=) string2evar evar2string)
+    (cancele2: Cancel (=) evar2string string2evar)
+    (cancels1: Cancel (=) string2svar svar2string)
+    (cancels2: Cancel (=) svar2string string2svar)
+  .
+
+  Definition empty_evar : evar := string2evar "".
+  Definition empty_svar : svar := string2svar "".
+
+  Fixpoint ename (ϕ : Pattern) : evar :=
+    match ϕ with
+    | patt_free_evar x => string2evar ("E" +:+ evar2string x)
+    | patt_free_svar X => string2evar (svar2string X)
+    | patt_sym s => string2evar (sym2string s)
+    | patt_bott => empty_evar
+    | patt_bound_evar _ => empty_evar
+    | patt_bound_svar _ => empty_evar
+    | patt_app ϕ₁ ϕ₂ => string2evar (evar2string (ename ϕ₁) +:+ evar2string (ename ϕ₂))
+    | patt_imp ϕ₁ ϕ₂ => string2evar (evar2string (ename ϕ₁) +:+ evar2string (ename ϕ₂))
+    | patt_exists ϕ' => ename ϕ'
+    | patt_mu ϕ' => ename ϕ'
+    end.
+
+  Fixpoint sname (ϕ : Pattern) : svar :=
+    match ϕ with
+    | patt_free_svar X => X
+    | patt_free_evar x => string2svar (evar2string x)
+    | patt_sym s => string2svar (sym2string s)
+    | patt_bott => empty_svar
+    | patt_bound_evar _ => empty_svar
+    | patt_bound_svar _ => empty_svar
+    | patt_app ϕ₁ ϕ₂ => string2svar (svar2string (sname ϕ₁) +:+ svar2string (sname ϕ₂))
+    | patt_imp ϕ₁ ϕ₂ => string2svar (svar2string (sname ϕ₁) +:+ svar2string (sname ϕ₂))
+    | patt_exists ϕ' => sname ϕ'
+    | patt_mu ϕ' => sname ϕ'
+    end.
+
+  Equations? ln2named (ϕ : Pattern) : NamedPattern by wf (size' ϕ) lt :=
+    ln2named (patt_bound_evar _) => npatt_bott ;
+    ln2named (patt_bound_svar _) => npatt_bott ;
+    ln2named (patt_free_evar x) => npatt_evar x ;
+    ln2named (patt_free_svar X) => npatt_svar X ;
+    ln2named patt_bott := npatt_bott ;
+    ln2named (patt_sym s) := npatt_sym s ;
+    ln2named (patt_imp ϕ₁ ϕ₂)
+      := npatt_imp (ln2named ϕ₁) (ln2named ϕ₂) ;
+    ln2named (patt_app ϕ₁ ϕ₂)
+      := npatt_app (ln2named ϕ₁) (ln2named ϕ₂) ;
+    ln2named (patt_exists ϕ')
+      := let x := string2evar ("A" +:+ evar2string (ename ϕ')) in
+         npatt_exists (ename ϕ') (ln2named (evar_open x 0 ϕ')) ;
+    ln2named (patt_mu ϕ')
+      := let X := string2svar ("B" +:+ svar2string (sname ϕ')) in
+        npatt_mu (sname ϕ') (ln2named (svar_open X 0 ϕ')) .
   Proof.
-    all: simpl; try lia.
-    { rewrite evar_open_size'. simpl. lia. }
-    { rewrite svar_open_size'. simpl. lia. }
+      all: simpl; try lia.
+      { rewrite evar_open_size'. simpl. lia. }
+      { rewrite svar_open_size'. simpl. lia. }
   Qed.
 
+  Lemma named_free_evars_ln2named (ϕ : Pattern) (x : evar):
+    x ∈ named_free_evars (ln2named ϕ) ->
+    (x ∈ free_evars ϕ) \/ (exists (s : string), x = string2evar ("A" +:+ s))
+  .
+  Proof.
+
+
+  Qed.
+
+
+  Context
+    (f : Pattern -> evar -> evar)
+    (f_ex : forall ϕ y, (f (patt_exists ϕ) y) = (f ϕ y))
+    (f_mu : forall ϕ y, (f (patt_mu ϕ) y) = (f ϕ y))
+  .
+  Lemma ln2named_evar_open (ϕ : Pattern) (y : evar):
+    well_formed_closed_ex_aux ϕ 0 ->
+    let x := string2evar ("A" +:+ evar2string (ename ϕ)) in
+    ln2named (evar_open y 0 ϕ) = rename_free_evar (ln2named (evar_open x 0 ϕ)) (f ϕ y) (ename ϕ)
+  .
+  Proof.
+    intros H. cbn.
+    set (fun phi' => let x := string2evar ("A" +:+ evar2string (ename phi')) in ln2named (evar_open x 0 phi')) as ebody.
+    replace (ln2named (evar_open (string2evar ("A" +:+ evar2string (ename ϕ)) ) 0 ϕ)) with (ebody ϕ) by (reflexivity).
+    set (fun phi' => ln2named (svar_open (string2svar ("B" +:+ svar2string (sname phi'))) 0 phi')) as sbody.
+
+    apply what_we_want with (sbody := sbody)(sname := sname).
+    { intros. simp ln2named. reflexivity. }
+    { intros. simp ln2named. reflexivity. }
+    { intros. simp ln2named. reflexivity. }
+    { intros. simp ln2named. reflexivity. }
+    { intros. simp ln2named. reflexivity. }
+    { intros. simp ln2named. reflexivity. }
+    { intros. simp ln2named. reflexivity. }
+    { intros. simp ln2named. cbn. reflexivity. }
+    { intros. simp ln2named. reflexivity. }
+    { intros. reflexivity. }
+    { intros. cbn. 
+      intros HContra.
+      apply (@f_equal _ _ evar2string) in HContra.
+      rewrite cancele2 in HContra.
+      apply (@f_equal _ _ list_ascii_of_string) in HContra.
+      rewrite list_ascii_of_string_app in HContra.
+      apply (@f_equal _ _ List.length) in HContra.
+      rewrite app_length in HContra. cbn in HContra.
+      clear -HContra. lia.
+    }
+    { intros. reflexivity. }
+    { intros. reflexivity. }
+    {
+      intros phi0. unfold ebody.
+      intros HContra.
+    }
+  Qed.
+
+
+End concrete.
 
 Ltac invert_tuples :=
   repeat (match goal with
@@ -233,134 +471,6 @@ Ltac case_match_in_hyp H :=
   | context [ match ?x with _ => _ end ] => destruct x eqn:?
   end.
 
-Global Instance string_app_empty_rightid :
-  RightId (=) "" String.append
-.
-Proof.
-  intros s.
-  induction s; simpl.
-  { reflexivity. }
-  cbv.
-  fold String.append. (* This is weird. *)
-  rewrite IHs.
-  reflexivity.
-Qed.
-
-Global Instance string_app_empty_leftid :
-  LeftId (=) "" String.append
-.
-Proof.
-  intros s. reflexivity.
-Qed.
-
-Lemma string_of_list_ascii_app l1 l2:
-  string_of_list_ascii (l1 ++ l2)
-  = (string_of_list_ascii l1) +:+ (string_of_list_ascii l2)
-.
-Proof.
-  induction l1; cbn.
-  {
-    unfold String.append. reflexivity.
-  }
-  {
-    rewrite IHl1. clear IHl1.
-    reflexivity.
-  }
-Qed.
-
-
-Global Instance string_of_list_ascii_of_string_cancel:
-  Cancel (=) string_of_list_ascii list_ascii_of_string
-.
-Proof.
-  intros x.
-  apply string_of_list_ascii_of_string.
-Qed.
-
-Global Instance list_ascii_of_string_of_list_ascii_cancel:
-  Cancel (=) list_ascii_of_string string_of_list_ascii 
-.
-Proof.
-  intros x.
-  apply list_ascii_of_string_of_list_ascii.
-Qed.
-
-Global Instance string_of_list_ascii_inj:
-  Inj (=) (=) string_of_list_ascii
-.
-Proof.
-  apply cancel_inj.
-Qed.
-
-Global Instance list_ascii_of_string_inj:
-  Inj (=) (=) list_ascii_of_string
-.
-Proof.
-  apply cancel_inj.
-Qed.
-
-Global Instance string_app_assoc:
-  Assoc (=) String.append
-.
-Proof.
-  intros x y z.
-  rewrite -(string_of_list_ascii_of_string x).
-  rewrite -(string_of_list_ascii_of_string y).
-  rewrite -(string_of_list_ascii_of_string z).
-  rewrite -!string_of_list_ascii_app.
-  rewrite app_assoc.
-  reflexivity.
-Qed.
-
-Global Instance string_app_inj_2 s2 :
-  Inj (=) (=) (fun s1 => String.append s1 s2).
-Proof.
-  intros s1 s1' H.
-  move: s1 s1' H.
-  induction s2; intros s1 s1' H; cbn in *.
-  {
-    do 2 rewrite right_id in H.
-    exact H.
-  }
-  {
-    replace (String a s2)
-      with ((String a EmptyString) +:+ s2) in H
-      by reflexivity.
-    replace (String a s1)
-      with ((String a EmptyString) +:+ s1) in H
-      by reflexivity.
-    rewrite 2!string_app_assoc in H.
-    specialize (IHs2 _ _ H).
-    clear H s2.
-    rename IHs2 into H.
-    rewrite -(string_of_list_ascii_of_string s1).
-    rewrite -(string_of_list_ascii_of_string s1').
-    rewrite -(string_of_list_ascii_of_string s1) in H.
-    rewrite -(string_of_list_ascii_of_string s1') in H.
-    rewrite -(string_of_list_ascii_of_string (String a "")) in H.
-    rewrite [list_ascii_of_string (String a "")]/= in H.
-    rewrite -!string_of_list_ascii_app in H.
-    apply string_of_list_ascii_inj in H.
-    simplify_list_eq.
-    congruence.
-    }
-Qed.
-
-
-Lemma list_ascii_of_string_app s1 s2:
-  list_ascii_of_string (s1 +:+ s2)
-  = (list_ascii_of_string s1) ++ (list_ascii_of_string s2)
-.
-Proof.
-  induction s1; cbn.
-  {
-    reflexivity.
-  }
-  {
-    cbv. fold list_ascii_of_string. fold String.append.
-    apply f_equal. rewrite IHs1. reflexivity.
-  }
-Qed.
 
 Section ln2named.
   Context
