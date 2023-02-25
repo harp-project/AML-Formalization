@@ -344,14 +344,14 @@ Section concrete.
     (cancels2: Cancel (=) svar2string string2svar)
   .
 
-  Definition empty_evar : evar := string2evar "".
-  Definition empty_svar : svar := string2svar "".
+  Definition empty_evar : evar := string2evar "F".
+  Definition empty_svar : svar := string2svar "F".
 
   Fixpoint ename (ϕ : Pattern) : evar :=
     match ϕ with
     | patt_free_evar x => string2evar ("E" +:+ evar2string x)
-    | patt_free_svar X => string2evar (svar2string X)
-    | patt_sym s => string2evar (sym2string s)
+    | patt_free_svar X => string2evar ("E" +:+ svar2string X)
+    | patt_sym s => string2evar ("E" +:+ sym2string s)
     | patt_bott => empty_evar
     | patt_bound_evar _ => empty_evar
     | patt_bound_svar _ => empty_evar
@@ -429,33 +429,9 @@ Section concrete.
   Lemma ename_not_in_free ϕ:
     ename ϕ ∉ free_evars ϕ.
   Proof.
-    induction ϕ; cbn; intros HContra.
-    {
-      rewrite elem_of_singleton in HContra.
-      apply (@f_equal _ _ evar2string) in HContra.
-      rewrite cancele2 in HContra.
-      apply (@f_equal _ _ list_ascii_of_string) in HContra.
-      rewrite list_ascii_of_string_app in HContra.
-      apply (@f_equal _ _ List.length) in HContra.
-      rewrite app_length in HContra. cbn in HContra.
-      clear -HContra. lia.
-    }
-    { set_solver. }
-    { set_solver. }
-    { set_solver. }
-    { set_solver. }
-    {
-      rewrite elem_of_union in HContra.
-      destruct HContra as [HContra|HContra].
-      {
-        remember (string2evar (evar2string (ename ϕ1) +:+ evar2string (ename ϕ2))) as ev.
-        assert (exists ev, ev ∈ free_evars ϕ1 /\ ev = string2evar (evar2string (ename ϕ1) +:+ evar2string (ename ϕ2))).
-        {
-          exi
-        }
-      }
-      rewrite cancele1 in HContra.
-    }
+    intros HContra.
+    apply ename_not_in_free' in HContra.
+    lia.
   Qed.
 
   Equations? ln2named (ϕ : Pattern) : NamedPattern by wf (size' ϕ) lt :=
@@ -579,6 +555,53 @@ Section concrete.
     }
   Qed.
 
+  Lemma ename_nonempty phi:
+    list_ascii_of_string (evar2string (ename phi)) <> []
+  .
+  Proof.
+    induction phi; cbn.
+    {
+      rewrite cancele2. rewrite list_ascii_of_string_app. cbn.
+      discriminate.
+    }
+    {
+      rewrite cancele2. rewrite list_ascii_of_string_app. cbn.
+      discriminate.
+    }
+    {
+      unfold empty_evar.
+      rewrite cancele2.
+      discriminate.
+    }
+    {
+      unfold empty_evar.
+      rewrite cancele2.
+      discriminate.
+    }
+    {
+      rewrite cancele2. rewrite list_ascii_of_string_app. cbn.
+      discriminate.
+    }
+    {
+      rewrite cancele2. rewrite list_ascii_of_string_app.
+      intros HContra.
+      rewrite app_nil in HContra.
+      naive_solver.
+    }
+    {
+      unfold empty_evar.
+      rewrite cancele2.
+      discriminate.
+    }
+    {
+      rewrite cancele2. rewrite list_ascii_of_string_app.
+      intros HContra.
+      rewrite app_nil in HContra.
+      naive_solver.
+    }
+    { assumption. }
+    { assumption. }
+  Qed.
 
   Context
     (f : Pattern -> evar -> evar)
@@ -637,8 +660,88 @@ Section concrete.
           clear -HContra1. lia.
         }
         {
-
+          eapply ename_not_in_free. apply HContra.
         }
+      }
+      {
+        induction phi0; cbn in HContra.
+        {
+          destruct HContra as [s HContra].
+          apply (@f_equal _ _ evar2string) in HContra.
+          rewrite 2!cancele2 in HContra.
+          inversion HContra.
+        }
+        {
+          destruct HContra as [s HContra].
+          apply (@f_equal _ _ evar2string) in HContra.
+          rewrite 2!cancele2 in HContra.
+          inversion HContra.
+        }
+        {
+          destruct HContra as [s HContra].
+          apply (@f_equal _ _ evar2string) in HContra.
+          rewrite 2!cancele2 in HContra.
+          inversion HContra.
+        }
+        {
+          destruct HContra as [s HContra].
+          apply (@f_equal _ _ evar2string) in HContra.
+          rewrite 2!cancele2 in HContra.
+          inversion HContra.
+        }
+        {
+          destruct HContra as [s HContra].
+          apply (@f_equal _ _ evar2string) in HContra.
+          rewrite 2!cancele2 in HContra.
+          inversion HContra.
+        }
+        {
+          {
+            destruct HContra as [s HContra].
+            apply (@f_equal _ _ evar2string) in HContra.
+            rewrite 2!cancele2 in HContra.
+            apply IHphi0_1.
+            apply (@f_equal _ _ list_ascii_of_string) in HContra.
+            rewrite 2!list_ascii_of_string_app in HContra.
+            assert (HA: list_ascii_of_string (evar2string (ename phi0_1)) = list_ascii_of_string "A").
+            {
+              cbn in HContra. cbn.
+            }
+            remember (firstn (List.length (list_ascii_of_string (evar2string (ename phi0_1))) - 1) (list_ascii_of_string s)) as mys.
+            exists (string_of_list_ascii mys).
+            subst mys.
+            assert (Hs: list_ascii_of_string s = skipn 1 (list_ascii_of_string (evar2string (ename phi0_1)) ++
+              list_ascii_of_string (evar2string (ename phi0_2)))).
+            {
+              rewrite HContra. cbn. rewrite drop_0. reflexivity.
+            }
+            rewrite Hs. clear Hs.
+            remember (ename phi0_1) as ev.
+            match goal with
+            | [ |- ?l = ?r] => cut (evar2string l = evar2string r)
+            end.
+            {
+              intros HH. congruence.
+            }
+            rewrite cancele2.
+            match goal with
+            | [ |- ?l = ?r] => cut (list_ascii_of_string l = list_ascii_of_string r)
+            end.
+            {
+              intros HH. apply list_ascii_of_string_inj in HH. exact HH.
+            }
+            rewrite list_ascii_of_string_app.
+            rewrite list_ascii_of_string_of_list_ascii.
+            remember (list_ascii_of_string (evar2string ev)) as l.
+            rewrite -skipn_firstn_comm.
+            rewrite take_app.
+
+            subst.
+            Search take drop.
+            inversion HContra.
+          }
+        }
+        destruct HContra as [s HContra].
       }
     }
   Qed.
