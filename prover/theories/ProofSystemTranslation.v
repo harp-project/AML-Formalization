@@ -163,7 +163,7 @@ Section abstract.
     (l2n_ex : forall ϕ', l2n (patt_exists ϕ') = npatt_exists (ename ϕ') (ebody ϕ'))
     (sname : Pattern -> svar)
     (sbody : Pattern -> NamedPattern)
-    (l2n_mu : forall ϕ', l2n (patt_mu ϕ') = npatt_mu (sname ϕ') (sbody ϕ'))
+    (l2n_mu : forall ϕ', l2n (patt_mu ϕ') = npatt_mu (sname ϕ') (ebody ϕ'))
   .
 
   Context
@@ -182,11 +182,12 @@ Section abstract.
     (f_mu : forall ϕ y, (f (patt_mu ϕ) y) = (f ϕ y))
     (ename_mu : forall ϕ, ename (patt_mu ϕ) = ename ϕ)
     (ebody_bs : forall n, ebody (patt_bound_svar n) = npatt_bott)
-    (sbody_phi : forall ϕ, sbody ϕ = l2n ϕ)
+    (*sbody_phi : forall ϕ, sbody ϕ = l2n ϕ*)
     (ebody_mu : forall ϕ, ebody (patt_mu ϕ) = npatt_mu (sname ϕ) (ebody ϕ))
+    (*sbody_mu : forall ϕ, sbody (patt_mu ϕ) = npatt_mu (sname ϕ) (sbody ϕ)*)
   .
   Lemma what_we_want (ϕ : Pattern) (y : evar):
-    well_formed_closed_ex_aux ϕ 0 ->
+    well_formed ϕ ->
     l2n (evar_open y 0 ϕ) = rename_free_evar (ebody ϕ) (f ϕ y) (ename ϕ)
   .
   Proof.
@@ -305,7 +306,7 @@ Section abstract.
       erewrite evar_open_wfc_aux with (db1 := 1).
       3: wf_auto2.
       2: lia.
-      pose proof (Hee := ebody_ex ϕ wfϕ).
+      pose proof (Hee := ebody_ex ϕ ltac:(wf_auto2)).
       rewrite Hee.
       cbn.
       rewrite ename_ex. rewrite decide_eq_same.
@@ -317,17 +318,17 @@ Section abstract.
       fold (evar_open y 0 ϕ).
       rewrite evar_open_closed.
       { wf_auto2. }
+      
       rewrite ebody_mu.
       cbn.
       f_equal.
-      rewrite f_mu.
       rewrite ename_mu.
-      rewrite -IHsz.
-      { lia. }
-      { wf_auto2. }
-      rewrite evar_open_closed.
-      { wf_auto2. }
-      rewrite sbody_phi.
+      rewrite rename_free_evar_id.
+      {
+        intros HContra.
+        apply ename_fresh_in_ebody in HContra.
+        exact HContra.
+      }
       reflexivity.
     }
   Qed.
@@ -619,7 +620,10 @@ Section concrete.
   .
   Proof.
     intros H. cbn.
-    set (fun phi' => let x := string2evar ("A" +:+ evar2string (ename phi')) in ln2named (evar_open x 0 phi')) as ebody.
+    set (fun phi' =>
+      let x := string2evar ("A" +:+ evar2string (ename phi')) in
+      ln2named (evar_open x 0 phi')
+    ) as ebody.
     replace (ln2named (evar_open (string2evar ("A" +:+ evar2string (ename ϕ)) ) 0 ϕ)) with (ebody ϕ) by (reflexivity).
     set (fun phi' => ln2named (svar_open (string2svar ("B" +:+ svar2string (sname phi'))) 0 phi')) as sbody.
 
