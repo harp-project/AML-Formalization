@@ -176,7 +176,7 @@ Section abstract.
     (ebody_app : forall ϕ1 ϕ2, well_formed_closed_ex_aux ϕ1 0 -> well_formed_closed_ex_aux ϕ2 0 -> ebody (patt_app ϕ1 ϕ2) = npatt_app (ebody ϕ1) (ebody ϕ2))
     (ebody_bott : ebody patt_bott = npatt_bott )
     (ebody_imp : forall ϕ1 ϕ2, well_formed_closed_ex_aux ϕ1 0 -> well_formed_closed_ex_aux ϕ2 0 -> ebody (patt_imp ϕ1 ϕ2) = npatt_imp (ebody ϕ1) (ebody ϕ2))
-    (ebody_ex : forall ϕ, ebody (patt_exists ϕ) = npatt_exists (ename ϕ) (ebody ϕ))
+    (ebody_ex : forall ϕ, well_formed_closed_ex_aux ϕ 1 -> ebody (patt_exists ϕ) = npatt_exists (ename ϕ) (ebody ϕ))
     (f_ex : forall ϕ y, (f (patt_exists ϕ) y) = (f ϕ y))
     (ename_ex : forall ϕ, ename (patt_exists ϕ) = ename ϕ)
     (f_mu : forall ϕ y, (f (patt_mu ϕ) y) = (f ϕ y))
@@ -305,7 +305,7 @@ Section abstract.
       erewrite evar_open_wfc_aux with (db1 := 1).
       3: wf_auto2.
       2: lia.
-      pose proof (Hee := ebody_ex ϕ).
+      pose proof (Hee := ebody_ex ϕ wfϕ).
       rewrite Hee.
       cbn.
       rewrite ename_ex. rewrite decide_eq_same.
@@ -833,6 +833,50 @@ Section concrete.
       rewrite evar_open_closed.
       { wf_auto2. }
       reflexivity.
+    }
+    {
+      reflexivity.
+    }
+    {
+      intros. unfold ebody. cbn.
+      simp ln2named.
+      rewrite cancele2.
+      fold (evar_open ((string2evar
+      ("A" +:+ evar2string (ename ϕ1) +:+ evar2string (ename ϕ2)))) 0 ϕ1).
+      rewrite evar_open_closed.
+      { wf_auto2. }
+      fold (evar_open ((string2evar
+      ("A" +:+ evar2string (ename ϕ1) +:+ evar2string (ename ϕ2)))) 0 ϕ2).
+      rewrite evar_open_closed.
+      { wf_auto2. }
+      rewrite evar_open_closed.
+      { wf_auto2. }
+      rewrite evar_open_closed.
+      { wf_auto2. }
+      reflexivity.
+    }
+    {
+      intros. unfold ebody. cbn. simp ln2named. cbn.
+      fold (evar_open ((string2evar ("A" +:+ evar2string (ename ϕ0)))) 1 ϕ0).
+      rewrite -> evar_open_wfc_aux with (phi := ϕ0) (db1 := 1).
+      3: { wf_auto2. }
+      2: { lia. }
+      reflexivity.
+    }
+    {
+      intros. cbn. reflexivity.
+    }
+    {
+      intros. rewrite f_mu. reflexivity.
+    }
+    {
+      intros. cbn. reflexivity.
+    }
+    {
+      intros. unfold ebody. cbn. simp ln2named. reflexivity.
+    }
+    {
+      intros. unfold sbody. cbn.
     }
   Qed.
 
