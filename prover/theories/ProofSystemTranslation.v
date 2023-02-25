@@ -190,7 +190,7 @@ Section abstract.
     (sz : nat)
   .
   Lemma what_we_want_evar (ϕ : Pattern) (y : evar)
-    (l2n_mu : forall ϕ',
+    (l2n_mu_ind : forall ϕ', (* this is a lemma / mutually inductive hypothesis*)
     well_formed (patt_mu ϕ') ->
     size' ϕ' < sz ->
     l2n (patt_mu ϕ') = npatt_mu (sname ϕ') (ebody ϕ'))
@@ -243,7 +243,7 @@ Section abstract.
       2: { wf_auto2. }
       {
         intros.
-        apply l2n_mu.
+        apply l2n_mu_ind.
         { assumption. }
         { lia. }
       }
@@ -252,7 +252,7 @@ Section abstract.
       2: { wf_auto2. }
       {
         intros.
-        apply l2n_mu.
+        apply l2n_mu_ind.
         { assumption. }
         { lia. }
       }
@@ -282,7 +282,7 @@ Section abstract.
       2: { wf_auto2. }
       {
         intros.
-        apply l2n_mu.
+        apply l2n_mu_ind.
         { assumption. }
         { lia. }
       }
@@ -291,7 +291,7 @@ Section abstract.
       2: { wf_auto2. }
       {
         intros.
-        apply l2n_mu.
+        apply l2n_mu_ind.
         { assumption. }
         { lia. }
       }
@@ -347,7 +347,7 @@ Section abstract.
       fold (evar_open y 0 ϕ).
       rewrite evar_open_closed.
       { wf_auto2. }
-      rewrite l2n_mu.
+      rewrite l2n_mu_ind.
       { wf_auto2. }
       { lia. }
       
@@ -366,6 +366,7 @@ Section abstract.
       reflexivity.
     }
   Qed.
+
 
 End abstract.
 
