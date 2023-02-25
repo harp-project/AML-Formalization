@@ -976,6 +976,55 @@ Section concrete.
     { assumption. }
   Qed.
 
+
+  Lemma sname_nonempty phi:
+    list_ascii_of_string (svar2string (sname phi)) <> []
+  .
+  Proof.
+    induction phi; cbn.
+    {
+      rewrite cancels2. rewrite list_ascii_of_string_app. cbn.
+      discriminate.
+    }
+    {
+      rewrite cancels2. rewrite list_ascii_of_string_app. cbn.
+      discriminate.
+    }
+    {
+      unfold empty_svar.
+      rewrite cancels2.
+      discriminate.
+    }
+    {
+      unfold empty_svar.
+      rewrite cancels2.
+      discriminate.
+    }
+    {
+      rewrite cancels2. rewrite list_ascii_of_string_app. cbn.
+      discriminate.
+    }
+    {
+      rewrite cancels2. rewrite list_ascii_of_string_app.
+      intros HContra.
+      rewrite app_nil in HContra.
+      naive_solver.
+    }
+    {
+      unfold empty_svar.
+      rewrite cancels2.
+      discriminate.
+    }
+    {
+      rewrite cancels2. rewrite list_ascii_of_string_app.
+      intros HContra.
+      rewrite app_nil in HContra.
+      naive_solver.
+    }
+    { assumption. }
+    { assumption. }
+  Qed.
+
   Context
     (f : Pattern -> evar -> evar)
     (f_ex : forall ϕ y, (f (patt_exists ϕ) y) = (f ϕ y))
