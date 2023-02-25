@@ -176,6 +176,7 @@ Section abstract.
     (ebody_app : forall ϕ1 ϕ2, well_formed_closed_ex_aux ϕ1 0 -> well_formed_closed_ex_aux ϕ2 0 -> ebody (patt_app ϕ1 ϕ2) = npatt_app (ebody ϕ1) (ebody ϕ2))
     (ebody_imp : forall ϕ1 ϕ2, well_formed_closed_ex_aux ϕ1 0 -> well_formed_closed_ex_aux ϕ2 0 -> ebody (patt_imp ϕ1 ϕ2) = npatt_imp (ebody ϕ1) (ebody ϕ2))
     (ebody_bs : forall n, ebody (patt_bound_svar n) = npatt_bott)
+    (ebody_mu : forall ϕ, well_formed_closed_mu_aux ϕ 1 -> ebody (patt_mu ϕ) = npatt_mu (sname ϕ) (ebody ϕ))
 
     (sbody_bott : sbody patt_bott = npatt_bott )
     (sbody_efree: forall x, sbody (patt_free_evar x) = npatt_evar x)
@@ -184,18 +185,19 @@ Section abstract.
     (sbody_app : forall ϕ1 ϕ2, well_formed_closed_mu_aux ϕ1 0 -> well_formed_closed_mu_aux ϕ2 0 -> sbody (patt_app ϕ1 ϕ2) = npatt_app (sbody ϕ1) (sbody ϕ2))
     (sbody_imp : forall ϕ1 ϕ2, well_formed_closed_mu_aux ϕ1 0 -> well_formed_closed_mu_aux ϕ2 0 -> sbody (patt_imp ϕ1 ϕ2) = npatt_imp (sbody ϕ1) (sbody ϕ2))
     (sbody_be : forall n, sbody (patt_bound_evar n) = npatt_bott)
+    (sbody_ex : forall ϕ, well_formed_closed_ex_aux ϕ 1 -> sbody (patt_exists ϕ) = npatt_exists (ename ϕ) (sbody ϕ))
 
     (ebody_ex : forall ϕ, well_formed_closed_ex_aux ϕ 1 -> ebody (patt_exists ϕ) = npatt_exists (ename ϕ) (ebody ϕ))
     (ename_erenames: forall x, ename (patt_free_evar x) <> x)
     (sname_srenames: forall X, sname (patt_free_svar X) <> X)
     (ename_fresh_in_ebody: forall ϕ, ename ϕ ∉ named_free_evars (ebody ϕ))
+    (sname_fresh_in_sbody: forall ϕ, sname ϕ ∉ named_free_svars (sbody ϕ))
     (f_ex : forall ϕ y, (f (patt_exists ϕ) y) = (f ϕ y))
     (ename_ex : forall ϕ, ename (patt_exists ϕ) = ename ϕ)
     (f_mu : forall ϕ y, (f (patt_mu ϕ) y) = (f ϕ y))
     (ename_mu : forall ϕ, ename (patt_mu ϕ) = ename ϕ)
     
     (*sbody_phi : forall ϕ, sbody ϕ = l2n ϕ*)
-    (ebody_mu : forall ϕ, well_formed_closed_mu_aux ϕ 1 -> ebody (patt_mu ϕ) = npatt_mu (sname ϕ) (ebody ϕ))
     (*sbody_mu : forall ϕ, sbody (patt_mu ϕ) = npatt_mu (sname ϕ) (sbody ϕ)*)
     (fs_ex : forall ϕ Y, (fs (patt_exists ϕ) Y) = (fs ϕ Y))
     (fs_mu : forall ϕ Y, (fs (patt_mu ϕ) Y) = (fs ϕ Y))
@@ -439,7 +441,7 @@ Section abstract.
       2: { wf_auto2. }
       {
         intros.
-        apply l2n_mu_ind.
+        apply l2n_ex_ind.
         { assumption. }
         { lia. }
       }
@@ -448,17 +450,17 @@ Section abstract.
       2: { wf_auto2. }
       {
         intros.
-        apply l2n_mu_ind.
+        apply l2n_ex_ind.
         { assumption. }
         { lia. }
       }
-      rewrite rename_free_evar_id.
-      { apply ename_fresh_in_ebody. }
-      rewrite rename_free_evar_id.
-      { apply ename_fresh_in_ebody. }
-      rewrite rename_free_evar_id.
-      { apply ename_fresh_in_ebody. }
-      rewrite ebody_app.
+      rewrite rename_free_svar_id.
+      { apply sname_fresh_in_sbody. }
+      rewrite rename_free_svar_id.
+      { apply sname_fresh_in_sbody. }
+      rewrite rename_free_svar_id.
+      { apply sname_fresh_in_sbody. }
+      rewrite sbody_app.
       { wf_auto2. }
       { wf_auto2. }
       reflexivity.
@@ -466,9 +468,9 @@ Section abstract.
     {
       (* patt_bott *)
       rewrite l2n_b.
-      rewrite rename_free_evar_id.
-      { rewrite ebody_bott. cbn. rewrite elem_of_empty. auto. }
-      { rewrite ebody_bott. reflexivity. }
+      rewrite rename_free_svar_id.
+      { rewrite sbody_bott. cbn. rewrite elem_of_empty. auto. }
+      { rewrite sbody_bott. reflexivity. }
     }
     {
       (* patt_imp ϕ1 ϕ2 *)
@@ -478,7 +480,7 @@ Section abstract.
       2: { wf_auto2. }
       {
         intros.
-        apply l2n_mu_ind.
+        apply l2n_ex_ind.
         { assumption. }
         { lia. }
       }
@@ -487,19 +489,41 @@ Section abstract.
       2: { wf_auto2. }
       {
         intros.
-        apply l2n_mu_ind.
+        apply l2n_ex_ind.
         { assumption. }
         { lia. }
       }
-      rewrite rename_free_evar_id.
-      { apply ename_fresh_in_ebody. }
-      rewrite rename_free_evar_id.
-      { apply ename_fresh_in_ebody. }
-      rewrite rename_free_evar_id.
-      { apply ename_fresh_in_ebody. }
-      rewrite ebody_imp.
+      rewrite rename_free_svar_id.
+      { apply sname_fresh_in_sbody. }
+      rewrite rename_free_svar_id.
+      { apply sname_fresh_in_sbody. }
+      rewrite rename_free_svar_id.
+      { apply sname_fresh_in_sbody. }
+      rewrite sbody_imp.
       { wf_auto2. }
       { wf_auto2. }
+      reflexivity.
+    }
+    {
+      fold (svar_open Y 0 ϕ).
+      rewrite svar_open_closed.
+      { wf_auto2. }
+      rewrite l2n_ex_ind.
+      { wf_auto2. }
+      { lia. }
+      
+      rewrite sbody_ex.
+      { wf_auto2. }
+      cbn.
+      f_equal.
+      rewrite ename_mu.
+
+      rewrite rename_free_evar_id.
+      {
+        intros HContra.
+        apply ename_fresh_in_ebody in HContra.
+        exact HContra.
+      }
       reflexivity.
     }
     {
@@ -537,28 +561,6 @@ Section abstract.
       rewrite Hee.
       cbn.
       rewrite ename_ex. rewrite decide_eq_same.
-      reflexivity.
-    }
-    {
-      fold (evar_open y 0 ϕ).
-      rewrite evar_open_closed.
-      { wf_auto2. }
-      rewrite l2n_mu_ind.
-      { wf_auto2. }
-      { lia. }
-      
-      rewrite ebody_mu.
-      { wf_auto2. }
-      cbn.
-      f_equal.
-      rewrite ename_mu.
-
-      rewrite rename_free_evar_id.
-      {
-        intros HContra.
-        apply ename_fresh_in_ebody in HContra.
-        exact HContra.
-      }
       reflexivity.
     }
   Qed.
