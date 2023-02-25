@@ -28,19 +28,19 @@ Section named_proof_system.
   (* FOL reasoning *)
   (* Propositional tautology *)
   | N_P1 (phi psi : NamedPattern) :
-      named_well_formed phi -> named_well_formed psi ->
+      named_well_formed phi = true -> named_well_formed psi = true ->
       theory ⊢N npatt_imp phi (npatt_imp psi phi)
   | N_P2 (phi psi xi : NamedPattern) :
-      named_well_formed phi -> named_well_formed psi -> named_well_formed xi ->
+      named_well_formed phi = true -> named_well_formed psi = true -> named_well_formed xi ->
       theory ⊢N npatt_imp (npatt_imp phi (npatt_imp psi xi))
                           (npatt_imp (npatt_imp phi psi) (npatt_imp phi xi))
   | N_P3 (phi : NamedPattern) :
-      named_well_formed phi ->
+      named_well_formed phi = true ->
       theory ⊢N npatt_imp (npatt_imp (npatt_imp phi npatt_bott) npatt_bott) phi
 
   (* Modus ponens *)
   | N_Modus_ponens (phi1 phi2 : NamedPattern) :
-      named_well_formed phi1 -> named_well_formed (npatt_imp phi1 phi2) ->
+      named_well_formed phi1 = true -> named_well_formed (npatt_imp phi1 phi2) = true ->
       theory ⊢N phi1 ->
       theory ⊢N npatt_imp phi1 phi2 ->
       theory ⊢N phi2
@@ -51,7 +51,8 @@ Section named_proof_system.
 
   (* Existential generalization *)
   | N_Ex_gen (phi1 phi2 : NamedPattern) (x : evar) :
-      named_well_formed phi1 -> named_well_formed phi2 ->
+      named_well_formed phi1 = true ->
+      named_well_formed phi2 = true ->
       theory ⊢N npatt_imp phi1 phi2 ->
       x ∉ named_free_evars phi2 ->
       theory ⊢N npatt_imp (npatt_exists x phi1) phi2
@@ -59,33 +60,39 @@ Section named_proof_system.
   (* Frame reasoning *)
   (* Propagation bottom *)
   | N_Prop_bott_left (phi : NamedPattern) :
-      named_well_formed phi ->
+      named_well_formed phi = true ->
       theory ⊢N npatt_imp (npatt_app npatt_bott phi) npatt_bott
 
   | N_Prop_bott_right (phi : NamedPattern) :
-      named_well_formed phi ->
+      named_well_formed phi = true ->
       theory ⊢N npatt_imp (npatt_app phi npatt_bott) npatt_bott
 
   (* Propagation disjunction *)
   | N_Prop_disj_left (phi1 phi2 psi : NamedPattern) :
-      named_well_formed phi1 -> named_well_formed phi2 -> named_well_formed psi ->
+      named_well_formed phi1 = true ->
+      named_well_formed phi2 = true ->
+      named_well_formed psi = true ->
       theory ⊢N npatt_imp (npatt_app (npatt_or phi1 phi2) psi)
                           (npatt_or (npatt_app phi1 psi) (npatt_app phi2 psi))
 
   | N_Prop_disj_right (phi1 phi2 psi : NamedPattern) :
-      named_well_formed phi1 -> named_well_formed phi2 -> named_well_formed psi ->
+      named_well_formed phi1 = true ->
+      named_well_formed phi2 = true ->
+      named_well_formed psi = true ->
       theory ⊢N npatt_imp (npatt_app psi (npatt_or phi1 phi2))
                           (npatt_or (npatt_app psi phi1) (npatt_app psi phi2))
 
   (* Propagation exist *)
   | N_Prop_ex_left (phi psi : NamedPattern) (x : evar) :
-      named_well_formed (npatt_exists x phi) -> named_well_formed psi ->
+      named_well_formed (npatt_exists x phi) = true -> 
+      named_well_formed psi = true ->
       x ∉ named_free_evars psi ->
       theory ⊢N npatt_imp (npatt_app (npatt_exists x phi) psi)
                           (npatt_exists x (npatt_app phi psi))
 
   | N_Prop_ex_right (phi psi : NamedPattern) (x : evar) :
-      named_well_formed (npatt_exists x phi) -> named_well_formed psi ->
+      named_well_formed (npatt_exists x phi) = true ->
+      named_well_formed psi = true ->
       x ∉ named_free_evars psi ->
       theory ⊢N npatt_imp (npatt_app psi (npatt_exists x phi))
                           (npatt_exists x (npatt_app psi phi))
@@ -102,7 +109,8 @@ Section named_proof_system.
   (* Fixpoint reasoning *)
   (* Set Variable Substitution *)
   | N_Svar_subst (phi psi : NamedPattern) (X : svar) :
-      named_well_formed phi -> named_well_formed psi ->
+      named_well_formed phi = true ->
+      named_well_formed psi = true ->
       theory ⊢N phi -> theory ⊢N named_svar_subst phi psi X
 
   (* Pre-Fixpoint *)

@@ -1,6 +1,7 @@
 -R theories MatchingLogicProver
 
 theories/StringManip.v
+theories/PSTStateful.v
 theories/Matchers.v
 theories/NMatchers.v
 theories/Named.v
