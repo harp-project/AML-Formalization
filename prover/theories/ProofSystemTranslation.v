@@ -375,6 +375,89 @@ Section concrete.
     | patt_mu ϕ' => sname ϕ'
     end.
 
+  Lemma ename_not_in_free' ϕ ev:
+    ev ∈ free_evars ϕ ->
+    List.length (list_ascii_of_string (evar2string (ename ϕ))) > List.length (list_ascii_of_string (evar2string ev))
+  .
+  Proof.
+    induction ϕ; cbn; intros Hin.
+    {
+      rewrite elem_of_singleton in Hin. subst ev.
+      rewrite cancele2.
+      rewrite list_ascii_of_string_app. cbn.
+      lia.
+    }
+    { exfalso. set_solver. }
+    { exfalso. set_solver. }
+    { exfalso. set_solver. }
+    { exfalso. set_solver. }
+    {
+      rewrite cancele2.
+      rewrite list_ascii_of_string_app.
+      rewrite app_length.
+      rewrite elem_of_union in Hin.
+      destruct Hin as [Hin|Hin].
+      {
+        specialize (IHϕ1 Hin).
+        lia.
+      }
+      {
+        specialize (IHϕ2 Hin).
+        lia.
+      }
+    }
+    { exfalso. set_solver. }
+    {
+      rewrite cancele2.
+      rewrite list_ascii_of_string_app.
+      rewrite app_length.
+      rewrite elem_of_union in Hin.
+      destruct Hin as [Hin|Hin].
+      {
+        specialize (IHϕ1 Hin).
+        lia.
+      }
+      {
+        specialize (IHϕ2 Hin).
+        lia.
+      }
+    }
+    { auto with nocore. }
+    { auto with nocore. }
+  Qed.
+
+  Lemma ename_not_in_free ϕ:
+    ename ϕ ∉ free_evars ϕ.
+  Proof.
+    induction ϕ; cbn; intros HContra.
+    {
+      rewrite elem_of_singleton in HContra.
+      apply (@f_equal _ _ evar2string) in HContra.
+      rewrite cancele2 in HContra.
+      apply (@f_equal _ _ list_ascii_of_string) in HContra.
+      rewrite list_ascii_of_string_app in HContra.
+      apply (@f_equal _ _ List.length) in HContra.
+      rewrite app_length in HContra. cbn in HContra.
+      clear -HContra. lia.
+    }
+    { set_solver. }
+    { set_solver. }
+    { set_solver. }
+    { set_solver. }
+    {
+      rewrite elem_of_union in HContra.
+      destruct HContra as [HContra|HContra].
+      {
+        remember (string2evar (evar2string (ename ϕ1) +:+ evar2string (ename ϕ2))) as ev.
+        assert (exists ev, ev ∈ free_evars ϕ1 /\ ev = string2evar (evar2string (ename ϕ1) +:+ evar2string (ename ϕ2))).
+        {
+          exi
+        }
+      }
+      rewrite cancele1 in HContra.
+    }
+  Qed.
+
   Equations? ln2named (ϕ : Pattern) : NamedPattern by wf (size' ϕ) lt :=
     ln2named (patt_bound_evar _) => npatt_bott ;
     ln2named (patt_bound_svar _) => npatt_bott ;
@@ -539,6 +622,24 @@ Section concrete.
     {
       intros phi0. unfold ebody.
       intros HContra.
+      apply named_free_evars_ln2named in HContra.
+      destruct HContra as [HContra|HContra].
+      {
+        rewrite free_evars_evar_open'' in HContra.
+        destruct HContra as [[HContra1 HContra2]|HContra].
+        {
+          apply (@f_equal _ _ evar2string) in HContra1.
+          rewrite cancele2 in HContra1.
+          apply (@f_equal _ _ list_ascii_of_string) in HContra1.
+          rewrite list_ascii_of_string_app in HContra1.
+          apply (@f_equal _ _ List.length) in HContra1.
+          rewrite app_length in HContra1. cbn in HContra1.
+          clear -HContra1. lia.
+        }
+        {
+
+        }
+      }
     }
   Qed.
 
