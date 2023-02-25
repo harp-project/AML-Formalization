@@ -829,6 +829,105 @@ Section concrete.
     }
   Qed.
 
+
+  Lemma named_free_svars_ln2named (ϕ : Pattern) (X : svar):
+    X ∈ named_free_svars (ln2named ϕ) ->
+    (X ∈ free_svars ϕ) \/ (exists (s : string), X = string2svar ("B" +:+ s))
+  .
+  Proof.
+    move: X.
+    funelim (ln2named ϕ); cbn; intros X0 HX.
+    { left. exact HX. }
+    { left. exact HX. }
+    { exfalso. clear -HX. set_solver. }
+    { exfalso. clear -HX. set_solver. }
+    { exfalso. clear -HX. set_solver. }
+    {
+      rewrite elem_of_union in HX.
+      destruct HX as [HX|HX].
+      {
+        specialize (H X0 HX).
+        destruct H as [H|H].
+        {
+          left. clear -H. set_solver.
+        }
+        {
+          right. exact H.
+        }
+      }
+      {
+        specialize (H0 X0 HX).
+        destruct H0 as [H0|H0].
+        {
+          left. clear -H0. set_solver.
+        }
+        {
+          right. exact H0.
+        }
+      }
+    }
+    {
+      exfalso. clear -HX. set_solver.
+    }
+    {
+      rewrite elem_of_union in HX.
+      destruct HX as [HX|HX].
+      {
+        specialize (H X0 HX).
+        destruct H as [H|H].
+        {
+          left. clear -H. set_solver.
+        }
+        {
+          right. exact H.
+        }
+      }
+      {
+        specialize (H0 X0 HX).
+        destruct H0 as [H0|H0].
+        {
+          left. clear -H0. set_solver.
+        }
+        {
+          right. exact H0.
+        }
+      }
+    }
+    {
+      specialize (H X0 HX).
+      destruct H as [H|H].
+      {
+        rewrite free_svars_evar_open in H.
+        left. exact H.
+      }
+      {
+        right. exact H.
+      }
+    }
+    {
+      rewrite elem_of_difference in HX.
+      destruct HX as [HX1 HX2].
+      rewrite elem_of_singleton in HX2.
+      specialize (H X0 HX1).
+      destruct H as [H|H].
+      {
+        rewrite free_svars_svar_open'' in H.
+        destruct H as [[H1 H2]|H].
+        {
+          right.
+          subst X0.
+          eexists. reflexivity.
+        }
+        {
+          left. exact H.
+        }
+      }
+      {
+        right. exact H.
+      }
+    }
+  Qed.
+
   Lemma ename_nonempty phi:
     list_ascii_of_string (evar2string (ename phi)) <> []
   .
