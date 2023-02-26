@@ -24,6 +24,7 @@ Section ProofConversionAbstractStateless.
     (l2n : Pattern -> NamedPattern)
     := mkLn2NamedProperties {
         l2n_imp: forall ϕ₁ ϕ₂, l2n (patt_imp ϕ₁ ϕ₂) = npatt_imp (l2n ϕ₁) (l2n ϕ₂) ;
+        l2n_app: forall ϕ₁ ϕ₂, l2n (patt_app ϕ₁ ϕ₂) = npatt_app (l2n ϕ₁) (l2n ϕ₂) ;
         l2n_bott : l2n patt_bott = npatt_bott ;
         l2n_nwf : forall ϕ, named_well_formed (l2n ϕ) = true;
         ebody : Pattern -> NamedPattern ;
@@ -34,6 +35,17 @@ Section ProofConversionAbstractStateless.
         l2n_eqevar : evar -> Pattern -> evar ;
         l2n_exists_quantify : forall x ϕ, l2n (exists_quantify x ϕ) = npatt_exists (l2n_eqevar x ϕ) (l2n ϕ) ;
         l2n_eqevar_fresh : forall phi1 phi2 x, x ∉ free_evars phi2 -> l2n_eqevar x phi1 ∉ named_free_evars (l2n phi2) ;
+        l2n_ebody_app : forall phi1 phi2, ebody (patt_app phi1 phi2) = npatt_app (ebody phi1) (ebody phi2) ;
+        l2n_ebody : forall phi, ebody phi = l2n phi ;
+        l2n_ename_app_1 : forall phi1 phi2, ename (patt_app phi1 phi2) = ename phi1 ;
+        l2n_ename_app_2 : forall phi1 phi2, ename (patt_app phi1 phi2) = ename phi2 ;
+        l2n_ename_fresh : forall phi psi, ename phi ∉ named_free_evars (l2n psi) ;
+        l2n_svar_subst : forall phi psi X, l2n (free_svar_subst psi X phi) = named_svar_subst (l2n phi) (l2n psi) X ;
+        sname : Pattern -> svar ;
+        sbody : Pattern -> NamedPattern ;
+        l2n_mu : forall ϕ', l2n (patt_mu ϕ') = npatt_mu (sname ϕ') (sbody ϕ') ;
+        l2n_bsvar_subst : forall phi1 phi2, l2n (bsvar_subst phi2 0 phi1) = named_svar_subst (sbody phi1) (l2n phi2) (sname phi1) ;
+        ebody_bound : forall n, ebody (patt_bound_evar n) = npatt_evar (ename (patt_bound_evar n)) ;
   }.
 
   Context
@@ -111,6 +123,121 @@ Section ProofConversionAbstractStateless.
         apply l2n_eqevar_fresh.
         assumption.
       }
+    }
+    {
+        (* Prop_bott_left *)
+        rewrite l2n_imp.
+        rewrite l2n_app.
+        rewrite l2n_bott.
+        apply N_Prop_bott_left.
+        { apply l2n_nwf. }
+    }
+    {
+        (* Prop_bott_right *)
+        rewrite l2n_imp.
+        rewrite l2n_app.
+        rewrite l2n_bott.
+        apply N_Prop_bott_right.
+        { apply l2n_nwf. }
+    }
+    {
+        (* Prop_disj_left *)
+        rewrite l2n_imp.
+        rewrite l2n_app.
+        unfold patt_or, patt_not.
+        rewrite 4!l2n_imp.
+        rewrite l2n_bott.
+        rewrite 2!l2n_app.
+        apply N_Prop_disj_left; apply l2n_nwf.
+    }
+    {
+        (* Prop_disj_right *)
+        rewrite l2n_imp.
+        rewrite l2n_app.
+        unfold patt_or, patt_not.
+        rewrite 4!l2n_imp.
+        rewrite l2n_bott.
+        rewrite 2!l2n_app.
+        apply N_Prop_disj_right; apply l2n_nwf.
+    }
+    {
+        (* Prop_ex_left *)
+        rewrite l2n_imp.
+        rewrite l2n_app.
+        rewrite 2!l2n_ex.
+        rewrite l2n_ebody_app.
+        rewrite 2!l2n_ebody.
+        rewrite l2n_ename_app_1.
+        apply N_Prop_ex_left.
+        { cbn. apply l2n_nwf. }
+        { apply l2n_nwf. }
+        { apply l2n_ename_fresh. }
+    }
+    {
+        (* Prop_ex_right *)
+        rewrite l2n_imp.
+        rewrite l2n_app.
+        rewrite 2!l2n_ex.
+        rewrite l2n_ebody_app.
+        rewrite 2!l2n_ebody.
+        rewrite l2n_ename_app_2.
+        apply N_Prop_ex_right.
+        { cbn. apply l2n_nwf. }
+        { apply l2n_nwf. }
+        { apply l2n_ename_fresh. }
+    }
+    {
+        (* Framing_left *)
+        specialize (IHpf ltac:(wf_auto2)).
+        rewrite l2n_imp.
+        rewrite 2!l2n_app.
+        apply N_Framing_left.
+        rewrite l2n_imp in IHpf.
+        apply IHpf.
+    }
+    {
+        (* Framing_right *)
+        specialize (IHpf ltac:(wf_auto2)).
+        rewrite l2n_imp.
+        rewrite 2!l2n_app.
+        apply N_Framing_right.
+        rewrite l2n_imp in IHpf.
+        apply IHpf.
+    }
+    {
+        (* Svar_subst *)
+        specialize (IHpf ltac:(wf_auto2)).
+        rewrite l2n_svar_subst.
+        apply N_Svar_subst.
+        { apply l2n_nwf. }
+        { apply l2n_nwf. }
+        apply IHpf.
+    }
+    {
+        (* Pre_fixp *)
+        rewrite l2n_imp.
+        unfold instantiate.
+        rewrite l2n_mu.
+        rewrite l2n_bsvar_subst.
+        rewrite l2n_mu.
+        apply N_Pre_fixp.
+    }
+    {
+        (* Knaster_tarski *)
+        specialize (IHpf ltac:(wf_auto2)).
+        rewrite l2n_imp in IHpf.
+        unfold instantiate in IHpf.
+        rewrite l2n_bsvar_subst in IHpf.
+        rewrite l2n_imp.
+        rewrite l2n_mu.
+        apply N_Knaster_tarski.
+        apply IHpf.
+    }
+    {
+        (* Existence *)
+        rewrite l2n_ex.
+        rewrite ebody_bound.
+        apply N_Existence.
     }
     {
         
