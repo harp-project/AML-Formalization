@@ -1,7 +1,9 @@
 From Coq Require Import ssreflect ssrfun ssrbool.
 
+From Equations Require Import Equations.
+
 From stdpp Require Import base pmap gmap fin_maps finite.
-From MatchingLogic Require Import Syntax.
+From MatchingLogic Require Import Syntax Utils.stdpp_ext.
 
 Require Import String.
 
@@ -112,44 +114,467 @@ Defined.
     | npatt_mu X phi => difference (named_free_svars phi) (singleton X)
     end.
 
-  Definition named_fresh_evar ϕ := evar_fresh (elements (named_free_evars ϕ)).
-  Definition named_fresh_svar ϕ := svar_fresh (elements (named_free_svars ϕ)).
-
-  (* substitute variable x for psi in phi: phi[psi/x] *)
-  Fixpoint named_evar_subst (phi psi : NamedPattern) (x : evar) :=
+    Fixpoint named_evars (phi : NamedPattern) : EVarSet :=
     match phi with
-    | npatt_evar x' => if decide (x = x') is left _ then psi else npatt_evar x'
-    | npatt_svar X => npatt_svar X
-    | npatt_sym sigma => npatt_sym sigma
-    | npatt_app phi1 phi2 => npatt_app (named_evar_subst phi1 psi x)
-                                       (named_evar_subst phi2 psi x)
-    | npatt_bott => npatt_bott
-    | npatt_imp phi1 phi2 => npatt_imp (named_evar_subst phi1 psi x)
-                                       (named_evar_subst phi2 psi x)
-    | npatt_exists x' phi' => if decide (x = x') is left _
-                              then let fx := named_fresh_evar phi' in
-                                   npatt_exists fx (named_evar_subst phi' (npatt_evar fx) x)
-                              else npatt_exists x' (named_evar_subst phi' psi x)
-    | npatt_mu X phi' => npatt_mu X (named_evar_subst phi' psi x)
+    | npatt_evar x => singleton x
+    | npatt_svar X => empty
+    | npatt_sym sigma => empty
+    | npatt_app phi1 phi2 => union (named_evars phi1) (named_evars phi2)
+    | npatt_bott => empty
+    | npatt_imp phi1 phi2 => union (named_evars phi1) (named_evars phi2)
+    | npatt_exists x phi => union (named_evars phi) (singleton x)
+    | npatt_mu X phi => named_evars phi
     end.
 
-  (* substitute variable X for psi in phi: phi[psi/X] *)
-  Fixpoint named_svar_subst (phi psi : NamedPattern) (X : svar) :=
+  Fixpoint named_svars (phi : NamedPattern) : SVarSet :=
     match phi with
-    | npatt_evar x => npatt_evar x
-    | npatt_svar X' => if decide (X = X') is left _ then psi else npatt_svar X'
-    | npatt_sym sigma => npatt_sym sigma
-    | npatt_app phi1 phi2 => npatt_app (named_svar_subst phi1 psi X)
-                                       (named_svar_subst phi2 psi X)
-    | npatt_bott => npatt_bott
-    | npatt_imp phi1 phi2 => npatt_imp (named_svar_subst phi1 psi X)
-                                       (named_svar_subst phi2 psi X)
-    | npatt_exists x phi' => npatt_exists x (named_svar_subst phi' psi X)
-    | npatt_mu X' phi' => if decide (X = X') is left _
-                          then let fX := named_fresh_svar phi' in
-                               npatt_mu fX (named_svar_subst phi' (npatt_svar fX) X)
-                          else npatt_mu X' (named_svar_subst phi' psi X)
+    | npatt_evar x => empty
+    | npatt_svar X => singleton X
+    | npatt_sym sigma => empty
+    | npatt_app phi1 phi2 => union (named_svars phi1) (named_svars phi2)
+    | npatt_bott => empty
+    | npatt_imp phi1 phi2 => union (named_svars phi1) (named_svars phi2)
+    | npatt_exists x phi => named_svars phi
+    | npatt_mu X phi => union (named_svars phi) (singleton X)
     end.
+
+  Lemma named_free_evars_subseteq_named_evars ϕ:
+    named_free_evars ϕ ⊆ named_evars ϕ.
+  Proof.
+    induction ϕ; cbn; set_solver.
+  Qed.
+
+  Lemma named_free_svars_subseteq_named_svars ϕ:
+    named_free_svars ϕ ⊆ named_svars ϕ.
+  Proof.
+    induction ϕ; cbn; set_solver.
+  Qed.
+
+  CoInductive EVarGen := mkEvarGen {
+    eg_get : gset evar -> evar ;
+    eg_get_correct : forall evs, eg_get evs ∉ evs ;
+    eg_next : gset evar -> EVarGen ;
+  }.
+
+  Program CoFixpoint default_EVarGen avoid : EVarGen := {|
+    eg_get := fun evs => evar_fresh (elements (avoid ∪ evs)) ;
+    eg_next := fun evs => default_EVarGen (avoid ∪ evs) ;
+  |}.
+  Next Obligation.
+    intros avoid evs. simpl.
+    assert (H: evar_fresh (elements (avoid ∪ evs)) ∉ (avoid ∪ evs)).
+    {
+      apply set_evar_fresh_is_fresh'.
+    }
+    set_solver.
+  Qed.
+
+  CoInductive SVarGen := mkSvarGen {
+    sg_get : gset svar -> svar ;
+    sg_get_correct : forall svs, sg_get svs ∉ svs ;
+    sg_next : gset svar -> SVarGen ;
+  }.
+
+  Program CoFixpoint default_SVarGen avoid : SVarGen := {|
+    sg_get := fun svs => svar_fresh (elements (avoid ∪ svs)) ;
+    sg_next := fun svs => default_SVarGen (avoid ∪ svs) ;
+  |}.
+  Next Obligation.
+    intros avoid svs. simpl.
+    assert (H: svar_fresh (elements (avoid ∪ svs)) ∉ (avoid ∪ svs)).
+    {
+      apply set_svar_fresh_is_fresh'.
+    }
+    set_solver.
+  Qed.
+
+  Definition eg_getf (eg : EVarGen) (ϕ : NamedPattern) : evar
+    := eg_get eg (named_free_evars ϕ)
+  .
+
+  Lemma eg_getf_correct (eg : EVarGen) (ϕ : NamedPattern) :
+    (eg_getf eg ϕ) ∉ (named_free_evars ϕ)
+  .
+  Proof.
+    apply eg_get_correct.
+  Qed.
+
+  Definition eg_nextf (eg : EVarGen) (ϕ : NamedPattern) : EVarGen
+    := eg_next eg (named_free_evars ϕ)
+  .
+
+  Definition sg_getf (sg : SVarGen) (ϕ : NamedPattern) : svar
+    := sg_get sg (named_free_svars ϕ)
+  .
+
+  Lemma sg_getf_correct (sg : SVarGen) (ϕ : NamedPattern) :
+    (sg_getf sg ϕ) ∉ (named_free_svars ϕ)
+  .
+  Proof.
+    apply sg_get_correct.
+  Qed.
+
+  Definition sg_nextf (sg : SVarGen) (ϕ : NamedPattern) : SVarGen
+    := sg_next sg (named_free_svars ϕ)
+  .
+
+
+  (* phi[y/x] *)
+  Fixpoint rename_free_evar (phi : NamedPattern) (y x : evar) : NamedPattern :=
+  match phi with
+  | npatt_evar x' => if decide (x = x') is left _ then npatt_evar y else npatt_evar x'
+  | npatt_svar X => npatt_svar X
+  | npatt_sym sigma => npatt_sym sigma
+  | npatt_app phi1 phi2 => npatt_app (rename_free_evar phi1 y x)
+                                     (rename_free_evar phi2 y x)
+  | npatt_bott => npatt_bott
+  | npatt_imp phi1 phi2 => npatt_imp (rename_free_evar phi1 y x)
+                                     (rename_free_evar phi2 y x)
+  | npatt_exists x' phi'
+    => match (decide (x = x')) with
+       | left _ => npatt_exists x' phi' (* no-op *)
+       | right _ => (
+          npatt_exists x' (rename_free_evar phi' y x)
+         )
+       end
+  | npatt_mu X phi'
+    => npatt_mu X (rename_free_evar phi' y x)
+  end.
+
+  Lemma nsize'_rename_free_evar (ϕ : NamedPattern) (y x : evar) :
+    nsize' (rename_free_evar ϕ y x) = nsize' ϕ
+  .
+  Proof.
+    induction ϕ; cbn; repeat case_match; cbn; try reflexivity; lia.
+  Qed.
+
+  Lemma rename_free_evar_id (ϕ : NamedPattern) (y x : evar) :
+    x ∉ named_free_evars ϕ ->
+    rename_free_evar ϕ y x = ϕ
+  .
+  Proof.
+    move: y x.
+    induction ϕ; cbn; intros y x' H; try reflexivity.
+    {
+      destruct (decide (x' = x)).
+      { subst. exfalso. set_solver. }
+      { reflexivity. }
+    }
+    {
+      rewrite IHϕ1. set_solver.
+      rewrite IHϕ2. set_solver.
+      reflexivity.
+    }
+    {
+      rewrite IHϕ1. set_solver.
+      rewrite IHϕ2. set_solver.
+      reflexivity.
+    }
+    {
+      destruct (decide (x' = x));[reflexivity|].
+      rewrite IHϕ. set_solver. reflexivity.
+    }
+    {
+      rewrite IHϕ. assumption. reflexivity.
+    }
+  Qed.
+
+
+  Lemma rename_free_evar_chain (ϕ : NamedPattern) (z y x : evar) :
+    y ∉ named_evars ϕ ->
+    rename_free_evar (rename_free_evar ϕ y x) z y
+    = rename_free_evar ϕ z x.
+  Proof.
+    move: z y x.
+    remember (nsize' ϕ) as sz.
+    assert (Hsz: nsize' ϕ <= sz) by lia.
+    clear Heqsz.
+    move: ϕ Hsz.
+    induction sz; intros ϕ Hsz.
+    { destruct ϕ; cbn in Hsz; lia. }
+    destruct ϕ; intros z y x' Hfry; cbn in Hsz; cbn in Hfry; cbn; try reflexivity.
+    {
+      destruct (decide (x' = x)).
+      { subst. cbn. rewrite decide_eq_same. reflexivity. }
+      { cbn. destruct (decide (y = x));[|reflexivity].
+        subst. cbn in Hfry. exfalso. clear -Hfry. set_solver.
+      }
+    }
+    {
+      rewrite IHsz.
+      { lia. }
+      { set_solver. }
+      rewrite IHsz.
+      { lia. }
+      { set_solver. }
+      reflexivity.
+    }
+    {
+      rewrite IHsz.
+      { lia. }
+      { set_solver. }
+      rewrite IHsz.
+      { lia. }
+      { set_solver. }
+      reflexivity.
+    }
+    {
+      destruct (decide (x' = x)).
+      {
+        subst. cbn.
+        destruct (decide (y = x));[reflexivity|].
+        cbn.
+        rewrite rename_free_evar_id.
+        { 
+          pose proof (named_free_evars_subseteq_named_evars ϕ).  
+          set_solver.
+        }
+        reflexivity.
+      }
+      {
+        cbn.
+        destruct (decide (y = x)).
+        { subst. exfalso. clear -Hfry. set_solver. }
+        {
+          rewrite IHsz.
+          { lia. }
+          { set_solver. }
+          reflexivity.
+        }
+      }
+    }
+    {
+      rewrite IHsz.
+      { lia. }
+      { assumption. }
+      reflexivity.
+    }
+  Qed.
+
+  (* phi[Y/X] *)
+  Fixpoint rename_free_svar (phi : NamedPattern) (Y X : svar) : NamedPattern :=
+  match phi with
+  | npatt_svar X' => if decide (X = X') is left _ then npatt_svar Y else npatt_svar X'
+  | npatt_evar x => npatt_evar x
+  | npatt_sym sigma => npatt_sym sigma
+  | npatt_app phi1 phi2 => npatt_app (rename_free_svar phi1 Y X)
+                                     (rename_free_svar phi2 Y X)
+  | npatt_bott => npatt_bott
+  | npatt_imp phi1 phi2 => npatt_imp (rename_free_svar phi1 Y X)
+                                     (rename_free_svar phi2 Y X)
+  | npatt_mu X' phi'
+    => match (decide (X = X')) with
+       | left _ => npatt_mu X' phi' (* no-op *)
+       | right _ => (
+          npatt_mu X' (rename_free_svar phi' Y X)
+         )
+       end
+  | npatt_exists x phi'
+    => npatt_exists x (rename_free_svar phi' Y X)
+  end.
+
+  Lemma nsize'_rename_free_svar (ϕ : NamedPattern) (Y X : svar) :
+    nsize' (rename_free_svar ϕ Y X) = nsize' ϕ
+  .
+  Proof.
+    induction ϕ; cbn; repeat case_match; cbn; try reflexivity; lia.
+  Qed.
+
+  Lemma rename_free_svar_id (ϕ : NamedPattern) (Y X : svar) :
+    X ∉ named_free_svars ϕ ->
+    rename_free_svar ϕ Y X = ϕ
+  .
+  Proof.
+    move: Y X.
+    induction ϕ; cbn; intros Y X' H; try reflexivity.
+    {
+      destruct (decide (X' = X)).
+      { subst. exfalso. set_solver. }
+      { reflexivity. }
+    }
+    {
+      rewrite IHϕ1. set_solver.
+      rewrite IHϕ2. set_solver.
+      reflexivity.
+    }
+    {
+      rewrite IHϕ1. set_solver.
+      rewrite IHϕ2. set_solver.
+      reflexivity.
+    }
+    {
+      rewrite IHϕ. assumption. reflexivity.
+    }
+    {
+      destruct (decide (X' = X));[reflexivity|].
+      rewrite IHϕ. set_solver. reflexivity.
+    }
+  Qed.
+
+  Lemma rename_free_svar_chain (ϕ : NamedPattern) (Z Y X : svar) :
+    Y ∉ named_svars ϕ ->
+    rename_free_svar (rename_free_svar ϕ Y X) Z Y
+    = rename_free_svar ϕ Z X.
+  Proof.
+    move: Z Y X.
+    remember (nsize' ϕ) as sz.
+    assert (Hsz: nsize' ϕ <= sz) by lia.
+    clear Heqsz.
+    move: ϕ Hsz.
+    induction sz; intros ϕ Hsz.
+    { destruct ϕ; cbn in Hsz; lia. }
+    destruct ϕ; intros Z Y X' HfrY; cbn in Hsz; cbn in HfrY; cbn; try reflexivity.
+    {
+      destruct (decide (X' = X)).
+      { subst. cbn. rewrite decide_eq_same. reflexivity. }
+      { cbn. destruct (decide (Y = X));[|reflexivity].
+        subst. cbn in HfrY. exfalso. clear -HfrY. set_solver.
+      }
+    }
+    {
+      rewrite IHsz.
+      { lia. }
+      { set_solver. }
+      rewrite IHsz.
+      { lia. }
+      { set_solver. }
+      reflexivity.
+    }
+    {
+      rewrite IHsz.
+      { lia. }
+      { set_solver. }
+      rewrite IHsz.
+      { lia. }
+      { set_solver. }
+      reflexivity.
+    }
+    {
+      rewrite IHsz.
+      { lia. }
+      { assumption. }
+      reflexivity.
+    }
+    {
+      destruct (decide (X' = X)).
+      {
+        subst. cbn.
+        destruct (decide (Y = X));[reflexivity|].
+        cbn.
+        rewrite rename_free_svar_id.
+        { 
+          pose proof (named_free_svars_subseteq_named_svars ϕ).  
+          set_solver.
+        }
+        reflexivity.
+      }
+      {
+        cbn.
+        destruct (decide (Y = X)).
+        { subst. exfalso. clear -HfrY. set_solver. }
+        {
+          rewrite IHsz.
+          { lia. }
+          { set_solver. }
+          reflexivity.
+        }
+      }
+    }
+  Qed.
+
+  Equations? named_evar_subst'
+    (eg : EVarGen) (sg : SVarGen) (ϕ ψ : NamedPattern) (x : evar) : NamedPattern
+    by wf (nsize' ϕ) lt :=
+    named_evar_subst' eg sg (npatt_evar x') ψ x with (decide (x = x')) => {
+      | left _ := ψ
+      | right _ := npatt_evar x'
+    } ;
+    named_evar_subst' eg sg (npatt_bott) _ _ := npatt_bott ;
+    named_evar_subst' eg sg (npatt_svar X) _ _ := npatt_svar X ;
+    named_evar_subst' eg sg (npatt_sym s) _ _ := npatt_sym s ;
+    named_evar_subst' eg sg (npatt_imp phi1 phi2) ψ x :=
+      npatt_imp (named_evar_subst' eg sg phi1 ψ x)
+                (named_evar_subst' eg sg phi2 ψ x) ;
+    named_evar_subst' eg sg (npatt_app phi1 phi2) ψ x :=
+      npatt_app (named_evar_subst' eg sg phi1 ψ x)
+                (named_evar_subst' eg sg phi2 ψ x) ;
+    named_evar_subst' eg sg (npatt_exists x' ϕ') ψ x with (decide (x = x')) => {
+      | right _ := npatt_exists x' ϕ'
+      | left _ with (decide (x' ∈ named_free_evars ψ)) => {
+        | right _ := npatt_exists x' (named_evar_subst' eg sg ϕ' ψ x)
+        | left _ :=
+          let avoid := union (named_free_evars ψ) (named_free_evars ϕ') in
+          let fresh_x := eg_get eg avoid in
+          let renamed_ϕ' := rename_free_evar ϕ' fresh_x x' in
+          npatt_exists fresh_x (named_evar_subst' eg sg renamed_ϕ' ψ x)
+      }
+    } ;
+    named_evar_subst' eg sg (npatt_mu X' ϕ') ψ x
+    with (decide (X' ∈ named_free_svars ψ)) => {
+      | right _ := npatt_mu X' (named_evar_subst' eg sg ϕ' ψ x)
+      | left _ :=
+        let Avoid := union (named_free_svars ψ) (named_free_svars ϕ') in
+        let fresh_X := sg_get sg Avoid in
+        let renamed_ϕ' := rename_free_svar ϕ' fresh_X X' in
+        npatt_mu fresh_X (named_evar_subst' eg sg renamed_ϕ' ψ x)
+    }.
+    Proof.
+      all: cbn; try lia.
+      { unfold renamed_ϕ'. rewrite nsize'_rename_free_evar. lia. }
+      { unfold renamed_ϕ'. rewrite nsize'_rename_free_svar. lia. }
+    Qed.
+
+  Equations? named_svar_subst'
+    (eg : EVarGen) (sg : SVarGen) (ϕ ψ : NamedPattern) (X : svar) : NamedPattern
+    by wf (nsize' ϕ) lt :=
+    named_svar_subst' eg sg (npatt_svar X') ψ X with (decide (X = X')) => {
+      | left _ := ψ
+      | right _ := npatt_svar X'
+    } ;
+    named_svar_subst' eg sg (npatt_bott) _ _ := npatt_bott ;
+    named_svar_subst' eg sg (npatt_evar x) _ _ := npatt_evar x ;
+    named_svar_subst' eg sg (npatt_sym s) _ _ := npatt_sym s ;
+    named_svar_subst' eg sg (npatt_imp phi1 phi2) ψ X :=
+      npatt_imp (named_svar_subst' eg sg phi1 ψ X)
+                (named_svar_subst' eg sg phi2 ψ X) ;
+    named_svar_subst' eg sg (npatt_app phi1 phi2) ψ X :=
+      npatt_app (named_svar_subst' eg sg phi1 ψ X)
+                (named_svar_subst' eg sg phi2 ψ X) ;
+    named_svar_subst' eg sg (npatt_exists x' ϕ') ψ X
+    with (decide (x' ∈ named_free_evars ψ)) => {
+      | right _ := npatt_exists x' (named_svar_subst' eg sg ϕ' ψ X)
+      | left _ :=
+        let avoid := union (named_free_evars ψ) (named_free_evars ϕ') in
+        let fresh_x := eg_get eg avoid in
+        let renamed_ϕ' := rename_free_evar ϕ' fresh_x x' in
+        npatt_exists fresh_x (named_svar_subst' eg sg renamed_ϕ' ψ X)
+    }; 
+    named_svar_subst' eg sg (npatt_mu X' ϕ') ψ X with (decide (X = X')) => {
+      | right _ := npatt_mu X' ϕ'
+      | left _ with (decide (X' ∈ named_free_svars ψ)) => {
+        | right _ := npatt_mu X' (named_svar_subst' eg sg ϕ' ψ X)
+        | left _ :=
+          let Avoid := union (named_free_svars ψ) (named_free_svars ϕ') in
+          let fresh_X := sg_get sg Avoid in
+          let renamed_ϕ' := rename_free_svar ϕ' fresh_X X' in
+          npatt_mu fresh_X (named_svar_subst' eg sg renamed_ϕ' ψ X)
+      }
+    } .
+    Proof.
+      all: cbn; try lia.
+      { unfold renamed_ϕ'. rewrite nsize'_rename_free_evar. lia. }
+      { unfold renamed_ϕ'. rewrite nsize'_rename_free_svar. lia. }
+    Qed.
+
+  Definition named_evar_subst
+    (phi psi : NamedPattern) (x : evar) : NamedPattern
+    := named_evar_subst' (default_EVarGen ∅) (default_SVarGen ∅) phi psi x
+  .
+
+  Definition named_svar_subst
+    (phi psi : NamedPattern) (X : svar) : NamedPattern
+    := named_svar_subst' (default_EVarGen ∅) (default_SVarGen ∅) phi psi X
+  .
 
   (* Derived named operators *)
   Definition npatt_not (phi : NamedPattern) := npatt_imp phi npatt_bott.
