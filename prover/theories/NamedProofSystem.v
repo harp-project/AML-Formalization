@@ -22,7 +22,7 @@ Section named_proof_system.
 
   (* Hypothesis *)
   | N_hypothesis (axiom : NamedPattern) :
-      named_well_formed axiom ->
+      named_well_formed axiom = true ->
       axiom ∈ theory -> theory ⊢N axiom
 
   (* FOL reasoning *)
@@ -31,7 +31,7 @@ Section named_proof_system.
       named_well_formed phi = true -> named_well_formed psi = true ->
       theory ⊢N npatt_imp phi (npatt_imp psi phi)
   | N_P2 (phi psi xi : NamedPattern) :
-      named_well_formed phi = true -> named_well_formed psi = true -> named_well_formed xi ->
+      named_well_formed phi = true -> named_well_formed psi = true -> named_well_formed xi = true ->
       theory ⊢N npatt_imp (npatt_imp phi (npatt_imp psi xi))
                           (npatt_imp (npatt_imp phi psi) (npatt_imp phi xi))
   | N_P3 (phi : NamedPattern) :
