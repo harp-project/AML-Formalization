@@ -46,6 +46,10 @@ Section ProofConversionAbstractStateless.
         l2n_mu : forall ϕ', l2n (patt_mu ϕ') = npatt_mu (sname ϕ') (sbody ϕ') ;
         l2n_bsvar_subst : forall phi1 phi2, l2n (bsvar_subst phi2 0 phi1) = named_svar_subst (sbody phi1) (l2n phi2) (sname phi1) ;
         ebody_bound : forall n, ebody (patt_bound_evar n) = npatt_evar (ename (patt_bound_evar n)) ;
+        l2nctx : Application_context -> Named_Application_context ;
+        l2n_subst_ctx : forall C phi, l2n (subst_ctx C phi) = named_subst_ctx (l2nctx C) (l2n phi) ;
+        l2nfe : evar -> evar ;
+        l2n_free_evar : forall x, l2n (patt_free_evar x) = npatt_evar (l2nfe x) ;
   }.
 
   Context
@@ -240,6 +244,15 @@ Section ProofConversionAbstractStateless.
         apply N_Existence.
     }
     {
-        
+        unfold patt_and,patt_or,patt_not.
+        rewrite !l2n_imp.
+        rewrite !l2n_subst_ctx.
+        rewrite !l2n_imp.
+        rewrite l2n_bott.
+        pose proof (Htmp := N_Singleton_ctx (l2n <$> Γ) (l2nctx C1) (l2nctx C2)).
+        unfold npatt_and,npatt_or,npatt_not in Htmp.
+        rewrite l2n_free_evar.
+        apply Htmp.
     }
   Defined.
+End ProofConversionAbstractStateless.
