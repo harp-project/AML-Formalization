@@ -52,7 +52,6 @@ Section ProofConversionAbstractStateless.
 
   Context
     {Σ : Signature}
-    {State : Type}
     (l2n : Pattern -> (NamedPattern)%type)
     {_ln2named_prop : Ln2NamedProperties l2n}
   .
@@ -62,7 +61,7 @@ Section ProofConversionAbstractStateless.
     (ϕ : Pattern)
     (wfϕ : well_formed ϕ)
     (pf : ML_proof_system Γ ϕ)
-    : NP_ML_proof_system ((fun p => (l2n p)) <$> Γ) (l2n ϕ).
+    : NP_ML_proof_system (l2n <$> Γ) (l2n ϕ).
   Proof.
     induction pf.
     {

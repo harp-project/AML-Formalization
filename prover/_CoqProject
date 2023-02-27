@@ -5,6 +5,7 @@ theories/NMatchers.v
 theories/Named.v
 theories/NamedProofSystem.v
 theories/PSTStateless.v
+theories/PSTReader.v
 theories/MMProofExtractor.v
 theories/TEST_MMProofExtractor.v
 theories/ProofSystemTranslation.v
