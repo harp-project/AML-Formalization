@@ -17,13 +17,14 @@ From stdpp Require Import base finite gmap mapset listset_nodup numbers propset 
 
 Section ProofConversionAbstractReader.
 
+  Print existT.
   Fixpoint covers
     {Σ : Signature}  
     (m : gmap Pattern (evar*svar)%type)
     {ϕ : Pattern}
     {Γ : Theory}
     (pf : ML_proof_system Γ ϕ)
-    : Prop
+    : Type
   :=
   match pf with
   | hypothesis _ _ _ _ => True
@@ -31,9 +32,9 @@ Section ProofConversionAbstractReader.
   | P2 _ _ _ _ _ _ _ => True
   | P3 _ _ _ => True
   | Modus_ponens _ _ _ pf1 pf2
-  => (covers m pf1) /\ (covers m pf2)
-  | Ex_quan _ phi _ _ => exists ev sv, m !! phi = Some (ev,sv)
-  | Ex_gen _ phi1 phi2 x _ _ pf' _ => (exists ev sv, m !! phi1 = Some (ev,sv)) /\ covers m pf'
+  => ((covers m pf1) * (covers m pf2))%type
+  | Ex_quan _ phi y _ => {ev : evar & {sv : svar & m !! phi = Some (ev,sv) } }
+  | Ex_gen _ phi1 phi2 x _ _ pf' _ => ({ev : evar & {sv : svar & m !! phi1 = Some (ev,sv)}} * covers m pf')%type
   | Prop_bott_left _ _ _ => True
   | Prop_bott_right _ _ _ => True
   | Prop_disj_left _ _ _ _ _ _ _ => True
@@ -45,9 +46,9 @@ Section ProofConversionAbstractReader.
   | Framing_left _ _ _ psi wfp pf' => (covers m pf')
   | Framing_right _ _ _ psi wfp pf' => (covers m pf')
   | Svar_subst _ _ _ _ _ _ pf' => (covers m pf')
-  | Pre_fixp _ _ _ => True (* TODO *)
-  | Knaster_tarski _ _ phi psi pf' => True (* TODO *) /\ (covers m pf')
-  | Existence _ => True (* TODO *)
+  | Pre_fixp _ phi _ => {ev : evar & {sv : svar & m !! phi = Some (ev,sv) } }
+  | Knaster_tarski _ _ phi psi pf' => ({ev : evar & {sv : svar & m !! phi = Some (ev,sv)}} * covers m pf')%type
+  | Existence _ => {ev : evar & {sv : svar & m !! (patt_bound_evar 0) = Some (ev,sv) } } (* HERE note that patterns in the map need not be well-formed-closed *)
   | Singleton_ctx _ _ _ _ _ _ => True
   end.
 
@@ -56,18 +57,25 @@ Section ProofConversionAbstractReader.
     (l2n : (gmap Pattern (evar*svar)%type) -> Pattern -> NamedPattern)
     := mkLn2NamedProperties {
         scan : forall {Γ} {ϕ}, ML_proof_system Γ ϕ -> (gmap Pattern (evar*svar)%type) ;
-        scan_covers : forall Γ ϕ (pf : ML_proof_system Γ ϕ), covers (scan pf) pf ;
+        scan_covers : forall {Γ} {ϕ} (pf : ML_proof_system Γ ϕ), covers (scan pf) pf ;
         (*l2n_state_mp : forall Γ phi1 phi2 pf1 pf2, (l2n_state (Modus_ponens Γ phi1 phi2 pf1 pf2)) = (l2n_state pf2) ;*)
         l2n_nwf : forall s ϕ, named_well_formed (l2n s ϕ) = true;
         l2n_imp: forall s ϕ₁ ϕ₂, l2n s (patt_imp ϕ₁ ϕ₂) = npatt_imp (l2n s ϕ₁) (l2n s ϕ₂) ;
         l2n_bott : forall s, l2n s patt_bott = npatt_bott ;
+        l2n_ex : forall s ev sv phi, s !! phi = Some (ev, sv) -> l2n s (patt_exists phi) = npatt_exists ev (l2n s phi) ;
+        l2n_evar_open : forall s ev sv ϕ y,
+          s !! ϕ = Some (ev, sv) ->
+          l2n s (evar_open y 0 ϕ) = rename_free_evar (l2n s ϕ) y ev ;
+        l2n_exists_quantify : forall s ev sv ϕ x,
+          s !! ϕ = Some (ev, sv) ->
+          l2n s (exists_quantify x ϕ) = npatt_exists (x) (l2n s ϕ) ;
         (*
         l2n_app: forall ϕ₁ ϕ₂, l2n (patt_app ϕ₁ ϕ₂) = npatt_app (l2n ϕ₁) (l2n ϕ₂) ;
         
         ebody : Pattern -> NamedPattern ;
         fe : Pattern -> evar -> evar ;
         ename : Pattern -> evar ;
-        l2n_evar_open : forall ϕ y, l2n (evar_open y 0 ϕ) = rename_free_evar (ebody ϕ) (fe ϕ y) (ename ϕ) ;
+        
         l2n_ex : forall ϕ', l2n (patt_exists ϕ') = npatt_exists (ename ϕ') (ebody ϕ') ;
         l2n_eqevar : evar -> Pattern -> evar ;
         l2n_exists_quantify : forall x ϕ, l2n (exists_quantify x ϕ) = npatt_exists (l2n_eqevar x ϕ) (l2n ϕ) ;
@@ -103,10 +111,11 @@ Section ProofConversionAbstractReader.
     (pf : ML_proof_system Γ ϕ)
     : NP_ML_proof_system ((fun p => (l2n (scan pf) p)) <$> Γ) (l2n (scan pf) ϕ).
   Proof.
-    (* I think that the induction has to preserve the state,
-       otherwise on could not use [hypothesis] because they have to be translated with the initial state, right?
-     *)
-    induction pf.
+    pose proof (Hc := scan_covers pf).
+    remember (scan pf) as myscan.
+    clear Heqmyscan.
+    move: myscan Hc.
+    induction pf; intros myscan Hc; cbn in Hc.
     {
       apply N_hypothesis.
       { apply l2n_nwf. }
@@ -129,16 +138,16 @@ Section ProofConversionAbstractReader.
       apply N_P3; apply l2n_nwf.
     }
     {
+      destruct Hc as [Hc1 Hc2].
+      specialize (IHpf1 ltac:(clear -pf1; wf_auto2) myscan Hc1).
+      specialize (IHpf2 ltac:(clear -pf2; wf_auto2) myscan Hc2).
       rewrite !l2n_imp in IHpf2.
       eapply N_Modus_ponens.
       4: {
-        rewrite l2n_state_mp.
         apply IHpf2.
-        wf_auto2.
       }
       3: {
         apply IHpf1.
-        wf_auto2.
       }
       { apply l2n_nwf. }
       { cbn. rewrite 2!l2n_nwf. reflexivity. }
@@ -147,16 +156,21 @@ Section ProofConversionAbstractReader.
       unfold instantiate.
       fold (evar_open y 0 phi).
       rewrite l2n_imp.
-      Fail apply N_Ex_quan.
-      rewrite l2n_evar_open.
-      rewrite l2n_ex.
+      destruct Hc as [ev [sv Hc] ].
+      rewrite -> l2n_ex with (ev := ev)(sv := sv).
+      2: { exact Hc. }
+      rewrite -> l2n_evar_open with (ev := ev) (sv := sv).
+      2: { exact Hc. }
       apply N_Ex_quan.
     }
     {
-      specialize (IHpf ltac:(wf_auto2)).
+      destruct Hc as [Hc1 Hc2].
+      specialize (IHpf ltac:(wf_auto2) myscan Hc2).
       rewrite l2n_imp.
       rewrite l2n_imp in IHpf.
-      rewrite l2n_exists_quantify.
+      destruct Hc1 as [ev [sv Hc1]].
+      rewrite -> l2n_exists_quantify with (ev := ev) (sv := sv).
+      2: { exact Hc1. }
       apply N_Ex_gen.
       { apply l2n_nwf. }
       { apply l2n_nwf. }
