@@ -15,16 +15,55 @@ From MatchingLogicProver Require Import Named NamedProofSystem.
 
 From stdpp Require Import base finite gmap mapset listset_nodup numbers propset list pretty strings.
 
-Section ProofConversionAbstractStateless.
+Section ProofConversionAbstractReader.
+
+  Fixpoint covers
+    {Σ : Signature}  
+    (m : gmap Pattern (evar*svar)%type)
+    {ϕ : Pattern}
+    {Γ : Theory}
+    (pf : ML_proof_system Γ ϕ)
+    : Prop
+  :=
+  match pf with
+  | hypothesis _ _ _ _ => True
+  | P1 _ _ _ _ _ => True
+  | P2 _ _ _ _ _ _ _ => True
+  | P3 _ _ _ => True
+  | Modus_ponens _ _ _ pf1 pf2
+  => (covers m pf1) /\ (covers m pf2)
+  | Ex_quan _ phi _ _ => exists ev sv, m !! phi = Some (ev,sv)
+  | Ex_gen _ phi1 phi2 x _ _ pf' _ => (exists ev sv, m !! phi1 = Some (ev,sv)) /\ covers m pf'
+  | Prop_bott_left _ _ _ => True
+  | Prop_bott_right _ _ _ => True
+  | Prop_disj_left _ _ _ _ _ _ _ => True
+  | Prop_disj_right _ _ _ _ _ _ _ => True
+  | Prop_ex_left _ phi psi _ _ =>
+    (exists ev sv, m !! phi = Some (ev,sv)) /\ (m !! (patt_app phi psi)) = (m !! phi)
+  | Prop_ex_right _ phi psi _ _ =>
+    (exists ev sv, m !! phi = Some (ev,sv)) /\ (m !! (patt_app psi phi)) = (m !! phi)
+  | Framing_left _ _ _ psi wfp pf' => (covers m pf')
+  | Framing_right _ _ _ psi wfp pf' => (covers m pf')
+  | Svar_subst _ _ _ _ _ _ pf' => (covers m pf')
+  | Pre_fixp _ _ _ => True (* TODO *)
+  | Knaster_tarski _ _ phi psi pf' => True (* TODO *) /\ (covers m pf')
+  | Existence _ => True (* TODO *)
+  | Singleton_ctx _ _ _ _ _ _ => True
+  end.
 
   Class Ln2NamedProperties
     {Σ : Signature}
-    (l2n : Pattern -> NamedPattern)
+    (l2n : (gmap Pattern (evar*svar)%type) -> Pattern -> NamedPattern)
     := mkLn2NamedProperties {
-        l2n_imp: forall ϕ₁ ϕ₂, l2n (patt_imp ϕ₁ ϕ₂) = npatt_imp (l2n ϕ₁) (l2n ϕ₂) ;
+        scan : forall {Γ} {ϕ}, ML_proof_system Γ ϕ -> (gmap Pattern (evar*svar)%type) ;
+        scan_covers : forall Γ ϕ (pf : ML_proof_system Γ ϕ), covers (scan pf) pf ;
+        (*l2n_state_mp : forall Γ phi1 phi2 pf1 pf2, (l2n_state (Modus_ponens Γ phi1 phi2 pf1 pf2)) = (l2n_state pf2) ;*)
+        l2n_nwf : forall s ϕ, named_well_formed (l2n s ϕ) = true;
+        l2n_imp: forall s ϕ₁ ϕ₂, l2n s (patt_imp ϕ₁ ϕ₂) = npatt_imp (l2n s ϕ₁) (l2n s ϕ₂) ;
+        l2n_bott : forall s, l2n s patt_bott = npatt_bott ;
+        (*
         l2n_app: forall ϕ₁ ϕ₂, l2n (patt_app ϕ₁ ϕ₂) = npatt_app (l2n ϕ₁) (l2n ϕ₂) ;
-        l2n_bott : l2n patt_bott = npatt_bott ;
-        l2n_nwf : forall ϕ, named_well_formed (l2n ϕ) = true;
+        
         ebody : Pattern -> NamedPattern ;
         fe : Pattern -> evar -> evar ;
         ename : Pattern -> evar ;
@@ -48,11 +87,12 @@ Section ProofConversionAbstractStateless.
         l2n_subst_ctx : forall C phi, l2n (subst_ctx C phi) = named_subst_ctx (l2nctx C) (l2n phi) ;
         l2nfe : evar -> evar ;
         l2n_free_evar : forall x, l2n (patt_free_evar x) = npatt_evar (l2nfe x) ;
+        *)
   }.
 
   Context
     {Σ : Signature}
-    (l2n : Pattern -> (NamedPattern)%type)
+    (l2n : (gmap Pattern (evar*svar)%type) -> Pattern -> NamedPattern)
     {_ln2named_prop : Ln2NamedProperties l2n}
   .
 
@@ -61,8 +101,11 @@ Section ProofConversionAbstractStateless.
     (ϕ : Pattern)
     (wfϕ : well_formed ϕ)
     (pf : ML_proof_system Γ ϕ)
-    : NP_ML_proof_system (l2n <$> Γ) (l2n ϕ).
+    : NP_ML_proof_system ((fun p => (l2n (scan pf) p)) <$> Γ) (l2n (scan pf) ϕ).
   Proof.
+    (* I think that the induction has to preserve the state,
+       otherwise on could not use [hypothesis] because they have to be translated with the initial state, right?
+     *)
     induction pf.
     {
       apply N_hypothesis.
@@ -89,6 +132,7 @@ Section ProofConversionAbstractStateless.
       rewrite !l2n_imp in IHpf2.
       eapply N_Modus_ponens.
       4: {
+        rewrite l2n_state_mp.
         apply IHpf2.
         wf_auto2.
       }
@@ -97,16 +141,13 @@ Section ProofConversionAbstractStateless.
         wf_auto2.
       }
       { apply l2n_nwf. }
-      { replace (npatt_imp (l2n phi1) (l2n phi2))
-        with (l2n (patt_imp phi1 phi2)).
-        2: { rewrite l2n_imp. simpl. reflexivity. }
-        apply l2n_nwf.
-      }
+      { cbn. rewrite 2!l2n_nwf. reflexivity. }
     }
     {
       unfold instantiate.
       fold (evar_open y 0 phi).
       rewrite l2n_imp.
+      Fail apply N_Ex_quan.
       rewrite l2n_evar_open.
       rewrite l2n_ex.
       apply N_Ex_quan.
@@ -252,4 +293,4 @@ Section ProofConversionAbstractStateless.
         apply Htmp.
     }
   Defined.
-End ProofConversionAbstractStateless.
+End ProofConversionAbstractReader.
