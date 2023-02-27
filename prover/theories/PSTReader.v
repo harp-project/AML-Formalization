@@ -84,17 +84,35 @@ match pf with
 | Singleton_ctx _ C1 C2 phi x _ => free_svars phi ∪ AC_free_svars C1 ∪ AC_free_svars C2
 end.
 
-Record ImmutableState {Σ : Signature} := {
+Record ImmutableState
+  {Σ : Signature}
+  {Γ0 : Theory}
+  {ϕ0 : Pattern}
+  (pf : ML_proof_system Γ0 ϕ0)
+  := {
   one_distinct_evar : evar ;
   one_distinct_svar : svar ;
   patterns_from_proof : gset Pattern ;
-  evars_to_avoid : gset evar;
-  svars_to_avoid : gset svar;
+  evars_to_avoid : gset evar ;
+  svars_to_avoid : gset svar ;
+  ode_fresh :
+    forall phi,
+      phi ∈ patterns_from_proof ->
+      one_distinct_evar ∉ free_evars phi ;
 }.
+
+Arguments patterns_from_proof {Σ Γ0 ϕ0} {pf} i.
+Arguments evars_to_avoid {Σ Γ0 ϕ0} {pf} i.
+Arguments svars_to_avoid {Σ Γ0 ϕ0} {pf} i.
+Arguments one_distinct_evar {Σ Γ0 ϕ0} {pf} i.
+Arguments one_distinct_svar {Σ Γ0 ϕ0} {pf} i.
 
 Fixpoint covers'
   {Σ : Signature}
-  (s : ImmutableState)  
+  {Γ0 : Theory}
+  {ϕ0 : Pattern}
+  {pf0 : ML_proof_system Γ0 ϕ0 }
+  (s : @ImmutableState _ Γ0 ϕ0 pf0)  
   {ϕ : Pattern}
   {Γ : Theory}
   (pf : ML_proof_system Γ ϕ)
@@ -128,42 +146,79 @@ end.
 
 Class Ln2NamedProperties
 {Σ : Signature}
-(l2n : ImmutableState -> Pattern -> NamedPattern)
+{Γ0 : Theory}
+{ϕ0 : Pattern}
+(pf0 : ML_proof_system Γ0 ϕ0)
+(l2n : ImmutableState pf0 -> Pattern -> NamedPattern)
 := mkLn2NamedProperties {
-    scan : forall {Γ} {ϕ}, ML_proof_system Γ ϕ -> ImmutableState ;
+    scan : forall {Γ} {ϕ} (pf : ML_proof_system Γ ϕ), (@ImmutableState _ Γ ϕ pf) ;
     scan_covers : forall {Γ} {ϕ} (pf : ML_proof_system Γ ϕ), covers' (scan pf) pf ;
-    l2n_nwf : forall s ϕ, named_well_formed (l2n s ϕ) = true;
-    l2n_imp: forall s ϕ₁ ϕ₂, l2n s (patt_imp ϕ₁ ϕ₂) = npatt_imp (l2n s ϕ₁) (l2n s ϕ₂) ;
-    l2n_app: forall s ϕ₁ ϕ₂, l2n s (patt_app ϕ₁ ϕ₂) = npatt_app (l2n s ϕ₁) (l2n s ϕ₂) ;
-    l2n_bott : forall s, l2n s patt_bott = npatt_bott ;
-    l2n_ex : forall s phi,
-      phi ∈ (patterns_from_proof s) ->
-      l2n s (patt_exists phi) = npatt_exists (one_distinct_evar s) (l2n s phi) ;
-    l2n_mu : forall s phi,
-      phi ∈ (patterns_from_proof s) ->
-      l2n s (patt_mu phi) = npatt_mu (one_distinct_svar s) (l2n s phi) ;
-    l2n_evar_open : forall s ϕ y,
-      ϕ ∈ (patterns_from_proof s) ->
-      l2n s (evar_open y 0 ϕ) = rename_free_evar (l2n s ϕ) y (one_distinct_evar s) ;
-    l2n_exists_quantify : forall s ϕ x,
-      ϕ ∈ (patterns_from_proof s) ->
-      l2n s (exists_quantify x ϕ) = npatt_exists x (l2n s ϕ) ;
-    l2n_avoid : forall s x ϕ,
-      x ∈ evars_to_avoid s ->
-      x ∉ named_free_evars (l2n s ϕ) ;
-    l2n_avoid_distinct_e : forall s ϕ,
-      (one_distinct_evar s) ∉ named_free_evars (l2n s ϕ) ;
-    l2n_svar_subst : forall s phi psi X,
-      l2n s (free_svar_subst psi X phi) = named_svar_subst (l2n s phi) (l2n s psi) X ;
-    l2n_bsvar_subst : forall s ϕ ψ,
-      ϕ ∈ (patterns_from_proof s) ->
-      l2n s (bsvar_subst ψ 0 ϕ) = named_svar_subst (l2n s ϕ) (l2n s ψ) (one_distinct_svar s) ;
-    l2n_bevar : forall s n,
-      patt_bound_evar n ∈ (patterns_from_proof s) ->
-      l2n s (patt_bound_evar n) = npatt_evar (one_distinct_evar s) ;
-    l2nctx : ImmutableState -> Application_context -> Named_Application_context ;
-    l2n_subst_ctx : forall s C phi, l2n s (subst_ctx C phi) = named_subst_ctx (l2nctx s C) (l2n s phi) ;
-    l2n_free_evar : forall s x, l2n s (patt_free_evar x) = npatt_evar x ;
+    l2n_nwf :
+      forall (s : ImmutableState pf0),
+        forall ϕ,
+          named_well_formed (l2n s ϕ) = true;
+    l2n_imp:
+      forall (s : ImmutableState pf0),
+        forall ϕ₁ ϕ₂,
+          l2n s (patt_imp ϕ₁ ϕ₂) = npatt_imp (l2n s ϕ₁) (l2n s ϕ₂) ;
+    l2n_app:
+      forall (s : ImmutableState pf0),
+        forall ϕ₁ ϕ₂,
+          l2n s (patt_app ϕ₁ ϕ₂) = npatt_app (l2n s ϕ₁) (l2n s ϕ₂) ;
+    l2n_bott :
+      forall (s : ImmutableState pf0),
+        l2n s patt_bott = npatt_bott ;
+    l2n_ex :
+      forall (s : ImmutableState pf0),
+        forall phi,
+          phi ∈ (patterns_from_proof s) ->
+          l2n s (patt_exists phi) = npatt_exists (one_distinct_evar s) (l2n s phi) ;
+    l2n_mu :
+    forall (s : ImmutableState pf0),
+      forall phi,
+        phi ∈ (patterns_from_proof s) ->
+        l2n s (patt_mu phi) = npatt_mu (one_distinct_svar s) (l2n s phi) ;
+    l2n_evar_open :
+      forall (s : ImmutableState pf0),
+        forall ϕ y,
+          ϕ ∈ (patterns_from_proof s) ->
+          l2n s (evar_open y 0 ϕ) = rename_free_evar (l2n s ϕ) y (one_distinct_evar s) ;
+    l2n_exists_quantify :
+      forall (s : ImmutableState pf0),
+        forall ϕ x,
+          ϕ ∈ (patterns_from_proof s) ->
+          l2n s (exists_quantify x ϕ) = npatt_exists x (l2n s ϕ) ;
+    l2n_avoid :
+      forall (s : ImmutableState pf0),
+      forall x ϕ,
+        x ∈ evars_to_avoid s ->
+        x ∉ named_free_evars (l2n s ϕ) ;
+    l2n_avoid_distinct_e :
+      forall (s : ImmutableState pf0),  
+        forall ϕ,
+          (one_distinct_evar s) ∉ named_free_evars (l2n s ϕ) ;
+    l2n_svar_subst :
+      forall (s : ImmutableState pf0),
+        forall phi psi X,
+          l2n s (free_svar_subst psi X phi) = named_svar_subst (l2n s phi) (l2n s psi) X ;
+    l2n_bsvar_subst :
+      forall (s : ImmutableState pf0),
+        forall ϕ ψ,
+          ϕ ∈ (patterns_from_proof s) ->
+          l2n s (bsvar_subst ψ 0 ϕ) = named_svar_subst (l2n s ϕ) (l2n s ψ) (one_distinct_svar s) ;
+    l2n_bevar :
+      forall (s : ImmutableState pf0),
+        forall n,
+          patt_bound_evar n ∈ (patterns_from_proof s) ->
+          l2n s (patt_bound_evar n) = npatt_evar (one_distinct_evar s) ;
+    l2nctx :
+      ImmutableState pf0 -> Application_context -> Named_Application_context ;
+    l2n_subst_ctx :
+      forall (s : ImmutableState pf0),
+        forall C phi, l2n s (subst_ctx C phi) = named_subst_ctx (l2nctx s C) (l2n s phi) ;
+    l2n_free_evar :
+      forall (s : ImmutableState pf0),
+        forall x, l2n s (patt_free_evar x) = npatt_evar x ;
 }.
 
 
@@ -172,8 +227,16 @@ Section ProofConversionAbstractReader.
 
   Context
     {Σ : Signature}
-    (l2n : ImmutableState -> Pattern -> NamedPattern)
-    {_ln2named_prop : Ln2NamedProperties l2n}
+    (l2n :
+      forall {Γ0 : Theory} {ϕ0 : Pattern} {pf0 : ML_proof_system Γ0 ϕ0},
+        ImmutableState pf0 ->
+        Pattern ->
+        NamedPattern
+    )
+    {_ln2named_prop :
+      forall {Γ0 : Theory} {ϕ0 : Pattern} {pf0 : ML_proof_system Γ0 ϕ0},
+        Ln2NamedProperties pf0 l2n
+    }
   .
 
   Definition pf_ln2named
@@ -181,12 +244,36 @@ Section ProofConversionAbstractReader.
     (ϕ : Pattern)
     (wfϕ : well_formed ϕ)
     (pf : ML_proof_system Γ ϕ)
-    : NP_ML_proof_system ((fun p => (l2n (scan pf) p)) <$> Γ) (l2n (scan pf) ϕ).
+    : 
+      let l2n0 := (@l2n Γ ϕ pf) in
+      let _ln2named_prop0 := (_ln2named_prop Γ ϕ pf) in
+      let scan0 := (@scan Σ Γ ϕ pf l2n0 _ln2named_prop0 Γ ϕ pf) in
+      NP_ML_proof_system
+        (
+          (fun p =>
+            (@l2n Γ ϕ pf scan0 p)) <$> Γ
+        )
+        (@l2n Γ ϕ pf scan0 ϕ).
   Proof.
-    pose proof (Hc := scan_covers pf).
+    intros l2n0 _ln2named_prop0 scan0.
+    pose proof (Hc := @scan_covers Σ Γ ϕ pf l2n0 _ln2named_prop0 Γ ϕ pf).
     remember (scan pf) as myscan.
     clear Heqmyscan.
+    unfold l2n0. clear l2n0. unfold _ln2named_prop0. clear _ln2named_prop0.
+    unfold scan0. clear scan0.
+    remember (pf) as pf0.
     move: myscan Hc.
+    Set Printing Implicit.
+    rewrite {3}Heqpf0.
+    (*rewrite {1 2 4 5}Heqpf0.*)
+    Set Printing Implicit.
+    clear Heqpf0.
+    remember ϕ as ϕ0.
+    rewrite Heqϕ0 in wfϕ.
+    move: pf.
+    Set Printing Implicit.
+    rewrite {1 4 7}Heqϕ0.
+    clear Heqϕ0.
     induction pf; intros myscan Hc; cbn in Hc.
     {
       apply N_hypothesis.
@@ -384,10 +471,8 @@ Section ProofConversionAbstractReader.
         rewrite !l2n_subst_ctx.
         rewrite !l2n_imp.
         rewrite l2n_bott.
-        pose proof (Htmp := N_Singleton_ctx ((l2n myscan) <$> Γ) (l2nctx myscan C1) (l2nctx myscan C2)).
-        unfold npatt_and,npatt_or,npatt_not in Htmp.
         rewrite l2n_free_evar.
-        apply Htmp.
+        apply N_Singleton_ctx.
     }
   Defined.
 End ProofConversionAbstractReader.
@@ -427,7 +512,7 @@ end.
 Definition l2n_scan
   {Σ : Signature} {Γ : Theory} {ϕ : Pattern}
   (pf : ML_proof_system Γ ϕ)
-  : ImmutableState
+  : ImmutableState Γ ϕ
 :=
   let eop := evars_of_proof pf in
   let sop := svars_of_proof pf in
