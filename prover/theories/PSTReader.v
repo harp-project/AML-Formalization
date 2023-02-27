@@ -88,8 +88,8 @@ Section ProofConversionAbstractReader.
   | Framing_left _ _ _ psi wfp pf' => (covers' s pf')
   | Framing_right _ _ _ psi wfp pf' => (covers' s pf')
   | Svar_subst _ _ _ _ _ _ pf' => (covers' s pf')
-  | Pre_fixp _ phi _ => ϕ ∈ (patterns_from_proof s)
-  | Knaster_tarski _ _ phi psi pf' => ((ϕ ∈ (patterns_from_proof s)) * (covers' s pf'))%type
+  | Pre_fixp _ phi _ => phi ∈ (patterns_from_proof s)
+  | Knaster_tarski _ phi psi _ pf' => ((phi ∈ (patterns_from_proof s)) * (covers' s pf'))%type
   | Existence _ => (patt_bound_evar 0) ∈ (patterns_from_proof s) (* HERE note that patterns in the map need not be well-formed-closed *)
   | Singleton_ctx _ _ _ _ _ _ => True
   end.
@@ -100,13 +100,16 @@ Section ProofConversionAbstractReader.
     := mkLn2NamedProperties {
         scan : forall {Γ} {ϕ}, ML_proof_system Γ ϕ -> ImmutableState ;
         scan_covers : forall {Γ} {ϕ} (pf : ML_proof_system Γ ϕ), covers' (scan pf) pf ;
-        (*l2n_state_mp : forall Γ phi1 phi2 pf1 pf2, (l2n_state (Modus_ponens Γ phi1 phi2 pf1 pf2)) = (l2n_state pf2) ;*)
         l2n_nwf : forall s ϕ, named_well_formed (l2n s ϕ) = true;
         l2n_imp: forall s ϕ₁ ϕ₂, l2n s (patt_imp ϕ₁ ϕ₂) = npatt_imp (l2n s ϕ₁) (l2n s ϕ₂) ;
+        l2n_app: forall s ϕ₁ ϕ₂, l2n s (patt_app ϕ₁ ϕ₂) = npatt_app (l2n s ϕ₁) (l2n s ϕ₂) ;
         l2n_bott : forall s, l2n s patt_bott = npatt_bott ;
         l2n_ex : forall s phi,
           phi ∈ (patterns_from_proof s) ->
           l2n s (patt_exists phi) = npatt_exists (one_distinct_evar s) (l2n s phi) ;
+        l2n_mu : forall s phi,
+          phi ∈ (patterns_from_proof s) ->
+          l2n s (patt_mu phi) = npatt_mu (one_distinct_svar s) (l2n s phi) ;
         l2n_evar_open : forall s ϕ y,
           ϕ ∈ (patterns_from_proof s) ->
           l2n s (evar_open y 0 ϕ) = rename_free_evar (l2n s ϕ) y (one_distinct_evar s) ;
@@ -116,6 +119,19 @@ Section ProofConversionAbstractReader.
         l2n_avoid : forall s x ϕ,
           x ∈ evars_to_avoid s ->
           x ∉ named_free_evars (l2n s ϕ) ;
+        l2n_avoid_distinct_e : forall s ϕ,
+          (one_distinct_evar s) ∉ named_free_evars (l2n s ϕ) ;
+        l2n_svar_subst : forall s phi psi X,
+          l2n s (free_svar_subst psi X phi) = named_svar_subst (l2n s phi) (l2n s psi) X ;
+        l2n_bsvar_subst : forall s ϕ ψ,
+          ϕ ∈ (patterns_from_proof s) ->
+          l2n s (bsvar_subst ψ 0 ϕ) = named_svar_subst (l2n s ϕ) (l2n s ψ) (one_distinct_svar s) ;
+        l2n_bevar : forall s n,
+          patt_bound_evar n ∈ (patterns_from_proof s) ->
+          l2n s (patt_bound_evar n) = npatt_evar (one_distinct_evar s) ;
+        l2nctx : ImmutableState -> Application_context -> Named_Application_context ;
+        l2n_subst_ctx : forall s C phi, l2n s (subst_ctx C phi) = named_subst_ctx (l2nctx s C) (l2n s phi) ;
+        l2n_free_evar : forall s x, l2n s (patt_free_evar x) = npatt_evar x ;
   }.
 
   Context
@@ -236,51 +252,57 @@ Section ProofConversionAbstractReader.
     }
     {
         (* Prop_ex_left *)
+        destruct Hc as [Hc1 Hc2].
         rewrite l2n_imp.
         rewrite l2n_app.
-        rewrite 2!l2n_ex.
-        rewrite l2n_ebody_app.
-        rewrite 2!l2n_ebody.
-        rewrite l2n_ename_app_1.
+        rewrite l2n_ex.
+        { exact Hc1. }
+        rewrite l2n_ex.
+        { exact Hc2. }
+        rewrite l2n_app.
         apply N_Prop_ex_left.
         { cbn. apply l2n_nwf. }
         { apply l2n_nwf. }
-        { apply l2n_ename_fresh. }
+        { apply l2n_avoid_distinct_e. }
     }
     {
         (* Prop_ex_right *)
+        destruct Hc as [Hc1 Hc2].
         rewrite l2n_imp.
         rewrite l2n_app.
-        rewrite 2!l2n_ex.
-        rewrite l2n_ebody_app.
-        rewrite 2!l2n_ebody.
-        rewrite l2n_ename_app_2.
+        rewrite l2n_ex.
+        { exact Hc1. }
+        rewrite l2n_ex.
+        { exact Hc2. }
+        rewrite l2n_app.
         apply N_Prop_ex_right.
         { cbn. apply l2n_nwf. }
         { apply l2n_nwf. }
-        { apply l2n_ename_fresh. }
+        { apply l2n_avoid_distinct_e. }
     }
     {
         (* Framing_left *)
-        specialize (IHpf ltac:(wf_auto2)).
+        specialize (IHpf ltac:(wf_auto2) myscan).
         rewrite l2n_imp.
         rewrite 2!l2n_app.
         apply N_Framing_left.
         rewrite l2n_imp in IHpf.
         apply IHpf.
+        { exact Hc. }
     }
     {
         (* Framing_right *)
-        specialize (IHpf ltac:(wf_auto2)).
+        specialize (IHpf ltac:(wf_auto2) myscan).
         rewrite l2n_imp.
         rewrite 2!l2n_app.
         apply N_Framing_right.
         rewrite l2n_imp in IHpf.
         apply IHpf.
+        { exact Hc. }
     }
     {
         (* Svar_subst *)
-        specialize (IHpf ltac:(wf_auto2)).
+        specialize (IHpf ltac:(wf_auto2) myscan Hc).
         rewrite l2n_svar_subst.
         apply N_Svar_subst.
         { apply l2n_nwf. }
@@ -291,26 +313,33 @@ Section ProofConversionAbstractReader.
         (* Pre_fixp *)
         rewrite l2n_imp.
         unfold instantiate.
-        rewrite l2n_mu.
         rewrite l2n_bsvar_subst.
+        { exact Hc. }
         rewrite l2n_mu.
+        { exact Hc. }
         apply N_Pre_fixp.
     }
     {
         (* Knaster_tarski *)
-        specialize (IHpf ltac:(wf_auto2)).
+        destruct Hc as [Hc1 Hc2]. 
+        specialize (IHpf ltac:(wf_auto2) myscan Hc2).
         rewrite l2n_imp in IHpf.
         unfold instantiate in IHpf.
-        rewrite l2n_bsvar_subst in IHpf.
         rewrite l2n_imp.
         rewrite l2n_mu.
+        { exact Hc1. }
         apply N_Knaster_tarski.
+
+        rewrite l2n_bsvar_subst in IHpf.
+        { exact Hc1. }
         apply IHpf.
     }
     {
         (* Existence *)
         rewrite l2n_ex.
-        rewrite ebody_bound.
+        { exact Hc. }
+        rewrite l2n_bevar.
+        { exact Hc. }
         apply N_Existence.
     }
     {
@@ -319,7 +348,7 @@ Section ProofConversionAbstractReader.
         rewrite !l2n_subst_ctx.
         rewrite !l2n_imp.
         rewrite l2n_bott.
-        pose proof (Htmp := N_Singleton_ctx (l2n <$> Γ) (l2nctx C1) (l2nctx C2)).
+        pose proof (Htmp := N_Singleton_ctx ((l2n myscan) <$> Γ) (l2nctx myscan C1) (l2nctx myscan C2)).
         unfold npatt_and,npatt_or,npatt_not in Htmp.
         rewrite l2n_free_evar.
         apply Htmp.
