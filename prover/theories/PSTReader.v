@@ -54,7 +54,7 @@ Fixpoint svars_of_proof
   {ϕ : Pattern}
   {Γ : Theory}
   (pf : ML_proof_system Γ ϕ)
-  : gset evar
+  : gset svar
 :=
 match pf with
 | hypothesis _ ax _ _ => free_svars ax
@@ -80,6 +80,37 @@ match pf with
 | Knaster_tarski _ _ phi psi pf' => svars_of_proof pf'
 | Existence _ => ∅
 | Singleton_ctx _ C1 C2 phi x _ => free_svars phi ∪ AC_free_svars C1 ∪ AC_free_svars C2
+end.
+
+Fixpoint trigger_patterns
+  {Σ : Signature}
+  {ϕ : Pattern}
+  {Γ : Theory}
+  (pf : ML_proof_system Γ ϕ)
+  : gset Pattern
+:=
+match pf with
+| hypothesis _ _ _ _ => ∅
+| P1 _ _ _ _ _ => ∅
+| P2 _ _ _ _ _ _ _ => ∅
+| P3 _ _ _ => ∅
+| Modus_ponens _ _ _ pf1 pf2
+=> trigger_patterns pf1 ∪ trigger_patterns pf2
+| Ex_quan _ phi y _ => {[phi]}
+| Ex_gen _ phi1 phi2 x _ _ pf' _ => {[phi1]} ∪ trigger_patterns pf'
+| Prop_bott_left _ _ _ => ∅
+| Prop_bott_right _ _ _ => ∅
+| Prop_disj_left _ _ _ _ _ _ _ => ∅
+| Prop_disj_right _ _ _ _ _ _ _ => ∅
+| Prop_ex_left _ phi psi _ _ => {[phi]} ∪ {[patt_app phi psi]}
+| Prop_ex_right _ phi psi _ _ => {[phi]} ∪ {[patt_app psi phi]}
+| Framing_left _ _ _ psi wfp pf' => (trigger_patterns pf')
+| Framing_right _ _ _ psi wfp pf' => (trigger_patterns pf')
+| Svar_subst _ _ _ _ _ _ pf' => ∅
+| Pre_fixp _ phi _ => {[phi]}
+| Knaster_tarski _ phi psi _ pf' => {[phi]} ∪ (trigger_patterns pf')
+| Existence _ => {[(patt_bound_evar 0)]}
+| Singleton_ctx _ _ _ _ _ _ => ∅
 end.
 
 Record ImmutableState {Σ : Signature} := {
