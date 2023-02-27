@@ -477,12 +477,10 @@ Equations? l2n {Σ : Signature} (s : ImmutableState) (ϕ : Pattern) : NamedPatte
       { rewrite svar_open_size'. simpl. lia. }
   Qed.
 
-#[global]
-Program Instance l2n_properties {Σ : Signature} : Ln2NamedProperties l2n :=
-{|
-  scan := @l2n_scan Σ ;
-|}.
-Next Obligation.
+Lemma covers'_l2n_scan: ∀ (Σ : Signature) (Γ : Theory) (ϕ : Pattern) (pf : ML_proof_system Γ ϕ),
+  covers' (l2n_scan pf) pf
+.
+Proof.
   intros.
   assert (He: evars_of_proof pf (*∪ {[evar_fresh_s (evars_of_proof pf)]} *) ⊆ evars_to_avoid (l2n_scan pf)).
   {
@@ -601,3 +599,35 @@ Next Obligation.
     exact I.
   }
 Qed.
+
+#[global]
+Program Instance l2n_properties {Σ : Signature} : Ln2NamedProperties l2n :=
+{|
+  scan := @l2n_scan Σ ;
+|}.
+Next Obligation.
+  intros. apply covers'_l2n_scan.
+Qed.
+Next Obligation.
+  (* well-formedness *)
+  intros.
+Admitted.
+Next Obligation.
+  intros. simp l2n. reflexivity.
+Qed.
+Next Obligation.
+  intros. simp l2n. reflexivity.
+Qed.
+Next Obligation.
+  intros. simp l2n. reflexivity.
+Qed.
+Next Obligation.
+  intros. simp l2n.
+  unfold l2n_unfold_clause_9.
+  destruct (decide (phi ∈ patterns_from_proof s)).
+  {
+    reflexivity.
+  }
+  reflexivity.
+Qed.
+
