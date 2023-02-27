@@ -32,7 +32,7 @@ match pf with
 | Modus_ponens _ _ _ pf1 pf2
 => evars_of_proof pf1 ∪ evars_of_proof pf2
 | Ex_quan _ phi y _ => {[y]} ∪ free_evars phi
-| Ex_gen _ phi1 phi2 x _ _ pf' _ => {[x]} ∪ free_evars phi1 ∪ free_evars phi2
+| Ex_gen _ phi1 phi2 x _ _ pf' _ => {[x]} ∪ (evars_of_proof pf') ∪ free_evars phi1 ∪ free_evars phi2
 | Prop_bott_left _ phi _ => free_evars phi
 | Prop_bott_right _ phi _ => free_evars phi
 | Prop_disj_left _ phi psi xi _ _ _ => free_evars phi ∪ free_evars psi ∪ free_evars xi
@@ -66,7 +66,7 @@ match pf with
 | Modus_ponens _ _ _ pf1 pf2
 => svars_of_proof pf1 ∪ svars_of_proof pf2
 | Ex_quan _ phi y _ => free_svars phi
-| Ex_gen _ phi1 phi2 x _ _ pf' _ => free_svars phi1 ∪ free_svars phi2
+| Ex_gen _ phi1 phi2 x _ _ pf' _ => svars_of_proof pf' ∪ free_svars phi1 ∪ free_svars phi2
 | Prop_bott_left _ phi _ => free_svars phi
 | Prop_bott_right _ phi _ => free_svars phi
 | Prop_disj_left _ phi psi xi _ _ _ => free_svars phi ∪ free_svars psi ∪ free_svars xi
@@ -84,37 +84,6 @@ match pf with
 | Singleton_ctx _ C1 C2 phi x _ => free_svars phi ∪ AC_free_svars C1 ∪ AC_free_svars C2
 end.
 
-Fixpoint trigger_patterns
-  {Σ : Signature}
-  {ϕ : Pattern}
-  {Γ : Theory}
-  (pf : ML_proof_system Γ ϕ)
-  : gset Pattern
-:=
-match pf with
-| hypothesis _ _ _ _ => ∅
-| P1 _ _ _ _ _ => ∅
-| P2 _ _ _ _ _ _ _ => ∅
-| P3 _ _ _ => ∅
-| Modus_ponens _ _ _ pf1 pf2
-=> trigger_patterns pf1 ∪ trigger_patterns pf2
-| Ex_quan _ phi y _ => {[phi]}
-| Ex_gen _ phi1 phi2 x _ _ pf' _ => {[phi1]} ∪ trigger_patterns pf'
-| Prop_bott_left _ _ _ => ∅
-| Prop_bott_right _ _ _ => ∅
-| Prop_disj_left _ _ _ _ _ _ _ => ∅
-| Prop_disj_right _ _ _ _ _ _ _ => ∅
-| Prop_ex_left _ phi psi _ _ => {[phi]} ∪ {[patt_app phi psi]}
-| Prop_ex_right _ phi psi _ _ => {[phi]} ∪ {[patt_app psi phi]}
-| Framing_left _ _ _ psi wfp pf' => (trigger_patterns pf')
-| Framing_right _ _ _ psi wfp pf' => (trigger_patterns pf')
-| Svar_subst _ _ _ _ _ _ pf' => ∅
-| Pre_fixp _ phi _ => {[phi]}
-| Knaster_tarski _ phi psi _ pf' => {[phi]} ∪ (trigger_patterns pf')
-| Existence _ => {[(patt_bound_evar 0)]}
-| Singleton_ctx _ _ _ _ _ _ => ∅
-end.
-
 Record ImmutableState {Σ : Signature} := {
   one_distinct_evar : evar ;
   one_distinct_svar : svar ;
@@ -122,59 +91,6 @@ Record ImmutableState {Σ : Signature} := {
   evars_to_avoid : gset evar;
   svars_to_avoid : gset svar;
 }.
-
-Definition scan
-  {Σ : Signature} {Γ : Theory} {ϕ : Pattern}
-  (pf : ML_proof_system Γ ϕ)
-  : ImmutableState
-:=
-  let eop := evars_of_proof pf in
-  let sop := svars_of_proof pf in
-  let ode := evar_fresh_s eop in
-  let ods := svar_fresh_s sop in
-  {|
-    patterns_from_proof := trigger_patterns pf ;
-    evars_to_avoid := eop ∪ {[ode]} ;
-    svars_to_avoid := sop ∪ {[ods]} ;
-    one_distinct_evar := ode ;
-    one_distinct_svar := ods ;
-  |}.
-
-
-  Equations? l2n {Σ : Signature} (s : ImmutableState) (ϕ : Pattern) : NamedPattern by wf (size' ϕ) lt :=
-    l2n s (patt_bound_evar _) => npatt_bott ;
-    l2n s (patt_bound_svar _) => npatt_bott ;
-    l2n s (patt_free_evar x) => npatt_evar x ;
-    l2n s (patt_free_svar X) => npatt_svar X ;
-    l2n s patt_bott := npatt_bott ;
-    l2n s (patt_sym s') := npatt_sym s' ;
-    l2n s (patt_imp ϕ₁ ϕ₂)
-      := npatt_imp (l2n s ϕ₁) (l2n s ϕ₂) ;
-    l2n s (patt_app ϕ₁ ϕ₂)
-      := npatt_app (l2n s ϕ₁) (l2n s ϕ₂) ;
-    l2n s (patt_exists ϕ') with (decide (ϕ' ∈ patterns_from_proof s)) => {
-      | left _ :=
-        let x := one_distinct_evar s in 
-        npatt_exists x (l2n s (evar_open x 0 ϕ'))
-      | right _ :=
-        let x := evar_fresh_s (free_evars ϕ' ∪ evars_to_avoid s) in
-        npatt_exists x (l2n s (evar_open x 0 ϕ'))
-    } ;
-    l2n s (patt_mu ϕ') with (decide (ϕ' ∈ patterns_from_proof s)) => {
-      | left _ :=
-        let X := one_distinct_svar s in 
-        npatt_mu X (l2n s (svar_open X 0 ϕ'))
-      | right _ :=
-        let X := svar_fresh_s (free_svars ϕ' ∪ svars_to_avoid s) in
-        npatt_mu X (l2n s (svar_open X 0 ϕ'))
-    } .
-  Proof.
-      all: simpl; try lia.
-      { rewrite evar_open_size'. simpl. lia. }
-      { rewrite evar_open_size'. simpl. lia. }
-      { rewrite svar_open_size'. simpl. lia. }
-      { rewrite svar_open_size'. simpl. lia. }
-  Qed.
 
 Fixpoint covers'
   {Σ : Signature}
@@ -475,3 +391,149 @@ Section ProofConversionAbstractReader.
     }
   Defined.
 End ProofConversionAbstractReader.
+
+
+Fixpoint trigger_patterns
+  {Σ : Signature}
+  {ϕ : Pattern}
+  {Γ : Theory}
+  (pf : ML_proof_system Γ ϕ)
+  : gset Pattern
+:=
+match pf with
+| hypothesis _ _ _ _ => ∅
+| P1 _ _ _ _ _ => ∅
+| P2 _ _ _ _ _ _ _ => ∅
+| P3 _ _ _ => ∅
+| Modus_ponens _ _ _ pf1 pf2
+=> trigger_patterns pf1 ∪ trigger_patterns pf2
+| Ex_quan _ phi y _ => {[phi]}
+| Ex_gen _ phi1 phi2 x _ _ pf' _ => {[phi1]} ∪ trigger_patterns pf'
+| Prop_bott_left _ _ _ => ∅
+| Prop_bott_right _ _ _ => ∅
+| Prop_disj_left _ _ _ _ _ _ _ => ∅
+| Prop_disj_right _ _ _ _ _ _ _ => ∅
+| Prop_ex_left _ phi psi _ _ => {[phi]} ∪ {[patt_app phi psi]}
+| Prop_ex_right _ phi psi _ _ => {[phi]} ∪ {[patt_app psi phi]}
+| Framing_left _ _ _ psi wfp pf' => (trigger_patterns pf')
+| Framing_right _ _ _ psi wfp pf' => (trigger_patterns pf')
+| Svar_subst _ _ _ _ _ _ pf' => ∅
+| Pre_fixp _ phi _ => {[phi]}
+| Knaster_tarski _ phi psi _ pf' => {[phi]} ∪ (trigger_patterns pf')
+| Existence _ => {[(patt_bound_evar 0)]}
+| Singleton_ctx _ _ _ _ _ _ => ∅
+end.
+
+Definition l2n_scan
+  {Σ : Signature} {Γ : Theory} {ϕ : Pattern}
+  (pf : ML_proof_system Γ ϕ)
+  : ImmutableState
+:=
+  let eop := evars_of_proof pf in
+  let sop := svars_of_proof pf in
+  let ode := evar_fresh_s eop in
+  let ods := svar_fresh_s sop in
+  {|
+    patterns_from_proof := trigger_patterns pf ;
+    evars_to_avoid := eop ∪ {[ode]} ;
+    svars_to_avoid := sop ∪ {[ods]} ;
+    one_distinct_evar := ode ;
+    one_distinct_svar := ods ;
+  |}.
+
+
+Equations? l2n {Σ : Signature} (s : ImmutableState) (ϕ : Pattern) : NamedPattern by wf (size' ϕ) lt :=
+    l2n s (patt_bound_evar _) => npatt_bott ;
+    l2n s (patt_bound_svar _) => npatt_bott ;
+    l2n s (patt_free_evar x) => npatt_evar x ;
+    l2n s (patt_free_svar X) => npatt_svar X ;
+    l2n s patt_bott := npatt_bott ;
+    l2n s (patt_sym s') := npatt_sym s' ;
+    l2n s (patt_imp ϕ₁ ϕ₂)
+      := npatt_imp (l2n s ϕ₁) (l2n s ϕ₂) ;
+    l2n s (patt_app ϕ₁ ϕ₂)
+      := npatt_app (l2n s ϕ₁) (l2n s ϕ₂) ;
+    l2n s (patt_exists ϕ') with (decide (ϕ' ∈ patterns_from_proof s)) => {
+      | left _ :=
+        let x := one_distinct_evar s in 
+        npatt_exists x (l2n s (evar_open x 0 ϕ'))
+      | right _ :=
+        let x := evar_fresh_s (free_evars ϕ' ∪ evars_to_avoid s) in
+        npatt_exists x (l2n s (evar_open x 0 ϕ'))
+    } ;
+    l2n s (patt_mu ϕ') with (decide (ϕ' ∈ patterns_from_proof s)) => {
+      | left _ :=
+        let X := one_distinct_svar s in 
+        npatt_mu X (l2n s (svar_open X 0 ϕ'))
+      | right _ :=
+        let X := svar_fresh_s (free_svars ϕ' ∪ svars_to_avoid s) in
+        npatt_mu X (l2n s (svar_open X 0 ϕ'))
+    } .
+  Proof.
+      all: simpl; try lia.
+      { rewrite evar_open_size'. simpl. lia. }
+      { rewrite evar_open_size'. simpl. lia. }
+      { rewrite svar_open_size'. simpl. lia. }
+      { rewrite svar_open_size'. simpl. lia. }
+  Qed.
+
+#[global]
+Program Instance l2n_properties {Σ : Signature} : Ln2NamedProperties l2n :=
+{|
+  scan := @l2n_scan Σ ;
+|}.
+Next Obligation.
+  intros.
+  assert (He: evars_of_proof pf (*∪ {[evar_fresh_s (evars_of_proof pf)]} *) ⊆ evars_to_avoid (l2n_scan pf)).
+  {
+    cbn. set_solver.
+  }
+  assert (Hs: svars_of_proof pf (* ∪ {[svar_fresh_s (svars_of_proof pf)]} *) ⊆ svars_to_avoid (l2n_scan pf)).
+  {
+    cbn. set_solver.
+  }
+  assert (Hc : trigger_patterns pf ⊆ patterns_from_proof (l2n_scan pf)).
+  { cbn. set_solver. }
+  remember (l2n_scan pf) as sc.
+  clear Heqsc.
+  move: He Hs Hc.
+  induction pf; cbn; intros He Hs Hc.
+  {
+     (* hypothesis*)
+    exact I.
+  }
+  {
+    (* P1 *)
+    exact I.
+  }
+  {
+    (* P2 *)
+    exact I.
+  }
+  {
+    (* P3 *)
+    exact I.
+  }
+  {
+    (* MP *)
+    feed specialize IHpf1.
+    { clear -He. set_solver. }
+    { clear -Hs. set_solver. }
+    { clear -Hc. set_solver. }
+    feed specialize IHpf2.
+    { clear -He. set_solver. }
+    { clear -Hs. set_solver. }
+    { clear -Hc. set_solver. }
+    split; assumption.
+  }
+  {
+    (* Ex_quan *) 
+    set_solver.
+  }
+  {
+    (* Ex_gen *)
+    feed specialize IHpf.
+    { clear -He. set_solver. }
+    { clear -Hs. set_solver. }
+  }
+Qed.
