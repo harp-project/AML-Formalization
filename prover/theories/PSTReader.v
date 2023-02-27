@@ -15,124 +15,158 @@ From MatchingLogicProver Require Import Named NamedProofSystem.
 
 From stdpp Require Import base finite gmap mapset listset_nodup numbers propset list pretty strings.
 
+Fixpoint evars_of_proof
+  {Σ : Signature}  
+  {ϕ : Pattern}
+  {Γ : Theory}
+  (pf : ML_proof_system Γ ϕ)
+  : gset evar
+:=
+match pf with
+| hypothesis _ ax _ _ => free_evars ax
+| P1 _ phi psi _ _ => free_evars phi ∪ free_evars psi
+| P2 _ phi psi xi _ _ _ => free_evars phi ∪ free_evars psi ∪ free_evars xi
+| P3 _ phi _ => free_evars phi
+| Modus_ponens _ _ _ pf1 pf2
+=> evars_of_proof pf1 ∪ evars_of_proof pf2
+| Ex_quan _ phi y _ => {[y]} ∪ free_evars phi
+| Ex_gen _ phi1 phi2 x _ _ pf' _ => {[x]} ∪ free_evars phi1 ∪ free_evars phi2
+| Prop_bott_left _ phi _ => free_evars phi
+| Prop_bott_right _ phi _ => free_evars phi
+| Prop_disj_left _ phi psi xi _ _ _ => free_evars phi ∪ free_evars psi ∪ free_evars xi
+| Prop_disj_right _ phi psi xi _ _ _ => free_evars phi ∪ free_evars psi ∪ free_evars xi
+| Prop_ex_left _ phi psi _ _ =>
+  free_evars phi ∪ free_evars psi
+| Prop_ex_right _ phi psi _ _ =>
+  free_evars phi ∪ free_evars psi
+| Framing_left _ _ _ psi wfp pf' => free_evars psi ∪ (evars_of_proof pf')
+| Framing_right _ _ _ psi wfp pf' => free_evars psi ∪ (evars_of_proof pf')
+| Svar_subst _ _ psi _ _ _ pf' => free_evars psi ∪ (evars_of_proof pf')
+| Pre_fixp _ phi _ => free_evars phi
+| Knaster_tarski _ _ phi psi pf' => evars_of_proof pf'
+| Existence _ => ∅
+| Singleton_ctx _ C1 C2 phi x _ => {[x]} ∪ free_evars phi ∪ AC_free_evars C1 ∪ AC_free_evars C2
+end.
+
+
+Fixpoint svars_of_proof
+  {Σ : Signature}  
+  {ϕ : Pattern}
+  {Γ : Theory}
+  (pf : ML_proof_system Γ ϕ)
+  : gset evar
+:=
+match pf with
+| hypothesis _ ax _ _ => free_svars ax
+| P1 _ phi psi _ _ => free_svars phi ∪ free_svars psi
+| P2 _ phi psi xi _ _ _ => free_svars phi ∪ free_svars psi ∪ free_svars xi
+| P3 _ phi _ => free_svars phi
+| Modus_ponens _ _ _ pf1 pf2
+=> svars_of_proof pf1 ∪ svars_of_proof pf2
+| Ex_quan _ phi y _ => free_svars phi
+| Ex_gen _ phi1 phi2 x _ _ pf' _ => free_svars phi1 ∪ free_svars phi2
+| Prop_bott_left _ phi _ => free_svars phi
+| Prop_bott_right _ phi _ => free_svars phi
+| Prop_disj_left _ phi psi xi _ _ _ => free_svars phi ∪ free_svars psi ∪ free_svars xi
+| Prop_disj_right _ phi psi xi _ _ _ => free_svars phi ∪ free_svars psi ∪ free_svars xi
+| Prop_ex_left _ phi psi _ _ =>
+  free_svars phi ∪ free_svars psi
+| Prop_ex_right _ phi psi _ _ =>
+  free_svars phi ∪ free_svars psi
+| Framing_left _ _ _ psi wfp pf' => free_svars psi ∪ (svars_of_proof pf')
+| Framing_right _ _ _ psi wfp pf' => free_svars psi ∪ (svars_of_proof pf')
+| Svar_subst _ _ psi X _ _ pf' =>  {[X]} ∪ free_svars psi ∪ (svars_of_proof pf')
+| Pre_fixp _ phi _ => free_svars phi
+| Knaster_tarski _ _ phi psi pf' => svars_of_proof pf'
+| Existence _ => ∅
+| Singleton_ctx _ C1 C2 phi x _ => free_svars phi ∪ AC_free_svars C1 ∪ AC_free_svars C2
+end.
+
+Record ImmutableState {Σ : Signature} := {
+  one_distinct_evar : evar ;
+  one_distinct_svar : svar ;
+  patterns_from_proof : gset Pattern ;
+  evars_to_avoid : gset evar;
+}.
+
+
+Fixpoint covers'
+  {Σ : Signature}
+  (s : ImmutableState)  
+  {ϕ : Pattern}
+  {Γ : Theory}
+  (pf : ML_proof_system Γ ϕ)
+  : Type
+:=
+match pf with
+| hypothesis _ _ _ _ => True
+| P1 _ _ _ _ _ => True
+| P2 _ _ _ _ _ _ _ => True
+| P3 _ _ _ => True
+| Modus_ponens _ _ _ pf1 pf2
+=> ((covers' s pf1) * (covers' s pf2))%type
+| Ex_quan _ phi y _ => phi ∈ (patterns_from_proof s)
+| Ex_gen _ phi1 phi2 x _ _ pf' _ => ((phi1 ∈ (patterns_from_proof s)) * (x ∈ evars_to_avoid s) * covers' s pf')%type
+| Prop_bott_left _ _ _ => True
+| Prop_bott_right _ _ _ => True
+| Prop_disj_left _ _ _ _ _ _ _ => True
+| Prop_disj_right _ _ _ _ _ _ _ => True
+| Prop_ex_left _ phi psi _ _ =>
+((phi ∈ (patterns_from_proof s)) * ((patt_app phi psi) ∈ (patterns_from_proof s)))%type
+| Prop_ex_right _ phi psi _ _ =>
+((phi ∈ (patterns_from_proof s)) * ((patt_app psi phi) ∈ (patterns_from_proof s)))%type
+| Framing_left _ _ _ psi wfp pf' => (covers' s pf')
+| Framing_right _ _ _ psi wfp pf' => (covers' s pf')
+| Svar_subst _ _ _ _ _ _ pf' => (covers' s pf')
+| Pre_fixp _ phi _ => phi ∈ (patterns_from_proof s)
+| Knaster_tarski _ phi psi _ pf' => ((phi ∈ (patterns_from_proof s)) * (covers' s pf'))%type
+| Existence _ => (patt_bound_evar 0) ∈ (patterns_from_proof s) (* HERE note that patterns in the map need not be well-formed-closed *)
+| Singleton_ctx _ _ _ _ _ _ => True
+end.
+
+Class Ln2NamedProperties
+{Σ : Signature}
+(l2n : ImmutableState -> Pattern -> NamedPattern)
+:= mkLn2NamedProperties {
+    scan : forall {Γ} {ϕ}, ML_proof_system Γ ϕ -> ImmutableState ;
+    scan_covers : forall {Γ} {ϕ} (pf : ML_proof_system Γ ϕ), covers' (scan pf) pf ;
+    l2n_nwf : forall s ϕ, named_well_formed (l2n s ϕ) = true;
+    l2n_imp: forall s ϕ₁ ϕ₂, l2n s (patt_imp ϕ₁ ϕ₂) = npatt_imp (l2n s ϕ₁) (l2n s ϕ₂) ;
+    l2n_app: forall s ϕ₁ ϕ₂, l2n s (patt_app ϕ₁ ϕ₂) = npatt_app (l2n s ϕ₁) (l2n s ϕ₂) ;
+    l2n_bott : forall s, l2n s patt_bott = npatt_bott ;
+    l2n_ex : forall s phi,
+      phi ∈ (patterns_from_proof s) ->
+      l2n s (patt_exists phi) = npatt_exists (one_distinct_evar s) (l2n s phi) ;
+    l2n_mu : forall s phi,
+      phi ∈ (patterns_from_proof s) ->
+      l2n s (patt_mu phi) = npatt_mu (one_distinct_svar s) (l2n s phi) ;
+    l2n_evar_open : forall s ϕ y,
+      ϕ ∈ (patterns_from_proof s) ->
+      l2n s (evar_open y 0 ϕ) = rename_free_evar (l2n s ϕ) y (one_distinct_evar s) ;
+    l2n_exists_quantify : forall s ϕ x,
+      ϕ ∈ (patterns_from_proof s) ->
+      l2n s (exists_quantify x ϕ) = npatt_exists x (l2n s ϕ) ;
+    l2n_avoid : forall s x ϕ,
+      x ∈ evars_to_avoid s ->
+      x ∉ named_free_evars (l2n s ϕ) ;
+    l2n_avoid_distinct_e : forall s ϕ,
+      (one_distinct_evar s) ∉ named_free_evars (l2n s ϕ) ;
+    l2n_svar_subst : forall s phi psi X,
+      l2n s (free_svar_subst psi X phi) = named_svar_subst (l2n s phi) (l2n s psi) X ;
+    l2n_bsvar_subst : forall s ϕ ψ,
+      ϕ ∈ (patterns_from_proof s) ->
+      l2n s (bsvar_subst ψ 0 ϕ) = named_svar_subst (l2n s ϕ) (l2n s ψ) (one_distinct_svar s) ;
+    l2n_bevar : forall s n,
+      patt_bound_evar n ∈ (patterns_from_proof s) ->
+      l2n s (patt_bound_evar n) = npatt_evar (one_distinct_evar s) ;
+    l2nctx : ImmutableState -> Application_context -> Named_Application_context ;
+    l2n_subst_ctx : forall s C phi, l2n s (subst_ctx C phi) = named_subst_ctx (l2nctx s C) (l2n s phi) ;
+    l2n_free_evar : forall s x, l2n s (patt_free_evar x) = npatt_evar x ;
+}.
+
+
 Section ProofConversionAbstractReader.
 
-  Fixpoint covers
-    {Σ : Signature}  
-    (m : gmap Pattern (evar*svar)%type)
-    {ϕ : Pattern}
-    {Γ : Theory}
-    (pf : ML_proof_system Γ ϕ)
-    : Type
-  :=
-  match pf with
-  | hypothesis _ _ _ _ => True
-  | P1 _ _ _ _ _ => True
-  | P2 _ _ _ _ _ _ _ => True
-  | P3 _ _ _ => True
-  | Modus_ponens _ _ _ pf1 pf2
-  => ((covers m pf1) * (covers m pf2))%type
-  | Ex_quan _ phi y _ => {ev : evar & {sv : svar & m !! phi = Some (ev,sv) } }
-  | Ex_gen _ phi1 phi2 x _ _ pf' _ => ({ev : evar & {sv : svar & m !! phi1 = Some (ev,sv)}} * covers m pf')%type
-  | Prop_bott_left _ _ _ => True
-  | Prop_bott_right _ _ _ => True
-  | Prop_disj_left _ _ _ _ _ _ _ => True
-  | Prop_disj_right _ _ _ _ _ _ _ => True
-  | Prop_ex_left _ phi psi _ _ =>
-    (exists ev sv, m !! phi = Some (ev,sv)) /\ (m !! (patt_app phi psi)) = (m !! phi)
-  | Prop_ex_right _ phi psi _ _ =>
-    (exists ev sv, m !! phi = Some (ev,sv)) /\ (m !! (patt_app psi phi)) = (m !! phi)
-  | Framing_left _ _ _ psi wfp pf' => (covers m pf')
-  | Framing_right _ _ _ psi wfp pf' => (covers m pf')
-  | Svar_subst _ _ _ _ _ _ pf' => (covers m pf')
-  | Pre_fixp _ phi _ => {ev : evar & {sv : svar & m !! phi = Some (ev,sv) } }
-  | Knaster_tarski _ _ phi psi pf' => ({ev : evar & {sv : svar & m !! phi = Some (ev,sv)}} * covers m pf')%type
-  | Existence _ => {ev : evar & {sv : svar & m !! (patt_bound_evar 0) = Some (ev,sv) } } (* HERE note that patterns in the map need not be well-formed-closed *)
-  | Singleton_ctx _ _ _ _ _ _ => True
-  end.
-
-
-  Record ImmutableState {Σ : Signature} := {
-    one_distinct_evar : evar ;
-    one_distinct_svar : svar ;
-    patterns_from_proof : gset Pattern ;
-    evars_to_avoid : gset evar;
-  }.
-
-
-  Fixpoint covers'
-    {Σ : Signature}
-    (s : ImmutableState)  
-    {ϕ : Pattern}
-    {Γ : Theory}
-    (pf : ML_proof_system Γ ϕ)
-    : Type
-  :=
-  match pf with
-  | hypothesis _ _ _ _ => True
-  | P1 _ _ _ _ _ => True
-  | P2 _ _ _ _ _ _ _ => True
-  | P3 _ _ _ => True
-  | Modus_ponens _ _ _ pf1 pf2
-  => ((covers' s pf1) * (covers' s pf2))%type
-  | Ex_quan _ phi y _ => phi ∈ (patterns_from_proof s)
-  | Ex_gen _ phi1 phi2 x _ _ pf' _ => ((phi1 ∈ (patterns_from_proof s)) * (x ∈ evars_to_avoid s) * covers' s pf')%type
-  | Prop_bott_left _ _ _ => True
-  | Prop_bott_right _ _ _ => True
-  | Prop_disj_left _ _ _ _ _ _ _ => True
-  | Prop_disj_right _ _ _ _ _ _ _ => True
-  | Prop_ex_left _ phi psi _ _ =>
-    ((phi ∈ (patterns_from_proof s)) * ((patt_app phi psi) ∈ (patterns_from_proof s)))%type
-  | Prop_ex_right _ phi psi _ _ =>
-    ((phi ∈ (patterns_from_proof s)) * ((patt_app psi phi) ∈ (patterns_from_proof s)))%type
-  | Framing_left _ _ _ psi wfp pf' => (covers' s pf')
-  | Framing_right _ _ _ psi wfp pf' => (covers' s pf')
-  | Svar_subst _ _ _ _ _ _ pf' => (covers' s pf')
-  | Pre_fixp _ phi _ => phi ∈ (patterns_from_proof s)
-  | Knaster_tarski _ phi psi _ pf' => ((phi ∈ (patterns_from_proof s)) * (covers' s pf'))%type
-  | Existence _ => (patt_bound_evar 0) ∈ (patterns_from_proof s) (* HERE note that patterns in the map need not be well-formed-closed *)
-  | Singleton_ctx _ _ _ _ _ _ => True
-  end.
-
-  Class Ln2NamedProperties
-    {Σ : Signature}
-    (l2n : ImmutableState -> Pattern -> NamedPattern)
-    := mkLn2NamedProperties {
-        scan : forall {Γ} {ϕ}, ML_proof_system Γ ϕ -> ImmutableState ;
-        scan_covers : forall {Γ} {ϕ} (pf : ML_proof_system Γ ϕ), covers' (scan pf) pf ;
-        l2n_nwf : forall s ϕ, named_well_formed (l2n s ϕ) = true;
-        l2n_imp: forall s ϕ₁ ϕ₂, l2n s (patt_imp ϕ₁ ϕ₂) = npatt_imp (l2n s ϕ₁) (l2n s ϕ₂) ;
-        l2n_app: forall s ϕ₁ ϕ₂, l2n s (patt_app ϕ₁ ϕ₂) = npatt_app (l2n s ϕ₁) (l2n s ϕ₂) ;
-        l2n_bott : forall s, l2n s patt_bott = npatt_bott ;
-        l2n_ex : forall s phi,
-          phi ∈ (patterns_from_proof s) ->
-          l2n s (patt_exists phi) = npatt_exists (one_distinct_evar s) (l2n s phi) ;
-        l2n_mu : forall s phi,
-          phi ∈ (patterns_from_proof s) ->
-          l2n s (patt_mu phi) = npatt_mu (one_distinct_svar s) (l2n s phi) ;
-        l2n_evar_open : forall s ϕ y,
-          ϕ ∈ (patterns_from_proof s) ->
-          l2n s (evar_open y 0 ϕ) = rename_free_evar (l2n s ϕ) y (one_distinct_evar s) ;
-        l2n_exists_quantify : forall s ϕ x,
-          ϕ ∈ (patterns_from_proof s) ->
-          l2n s (exists_quantify x ϕ) = npatt_exists x (l2n s ϕ) ;
-        l2n_avoid : forall s x ϕ,
-          x ∈ evars_to_avoid s ->
-          x ∉ named_free_evars (l2n s ϕ) ;
-        l2n_avoid_distinct_e : forall s ϕ,
-          (one_distinct_evar s) ∉ named_free_evars (l2n s ϕ) ;
-        l2n_svar_subst : forall s phi psi X,
-          l2n s (free_svar_subst psi X phi) = named_svar_subst (l2n s phi) (l2n s psi) X ;
-        l2n_bsvar_subst : forall s ϕ ψ,
-          ϕ ∈ (patterns_from_proof s) ->
-          l2n s (bsvar_subst ψ 0 ϕ) = named_svar_subst (l2n s ϕ) (l2n s ψ) (one_distinct_svar s) ;
-        l2n_bevar : forall s n,
-          patt_bound_evar n ∈ (patterns_from_proof s) ->
-          l2n s (patt_bound_evar n) = npatt_evar (one_distinct_evar s) ;
-        l2nctx : ImmutableState -> Application_context -> Named_Application_context ;
-        l2n_subst_ctx : forall s C phi, l2n s (subst_ctx C phi) = named_subst_ctx (l2nctx s C) (l2n s phi) ;
-        l2n_free_evar : forall s x, l2n s (patt_free_evar x) = npatt_evar x ;
-  }.
 
   Context
     {Σ : Signature}

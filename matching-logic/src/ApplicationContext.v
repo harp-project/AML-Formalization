@@ -31,6 +31,13 @@ Section with_signature.
     | @ctx_app_r p cc _ => free_evars p ∪ AC_free_evars cc
     end.
 
+  Fixpoint AC_free_svars (AC : Application_context) : SVarSet :=
+    match AC with
+    | box => ∅
+    | @ctx_app_l cc p _ => free_svars p ∪ AC_free_svars cc
+    | @ctx_app_r p cc _ => free_svars p ∪ AC_free_svars cc
+    end.
+
   Fixpoint subst_ctx (C : Application_context) (p : Pattern)
     : Pattern :=
     match C with
