@@ -17,7 +17,6 @@ From stdpp Require Import base finite gmap mapset listset_nodup numbers propset 
 
 Section ProofConversionAbstractReader.
 
-  Print existT.
   Fixpoint covers
     {Σ : Signature}  
     (m : gmap Pattern (evar*svar)%type)
@@ -52,55 +51,76 @@ Section ProofConversionAbstractReader.
   | Singleton_ctx _ _ _ _ _ _ => True
   end.
 
+
+  Record ImmutableState {Σ : Signature} := {
+    one_distinct_evar : evar ;
+    one_distinct_svar : svar ;
+    patterns_from_proof : gset Pattern ;
+    evars_to_avoid : gset evar;
+  }.
+
+
+  Fixpoint covers'
+    {Σ : Signature}
+    (s : ImmutableState)  
+    {ϕ : Pattern}
+    {Γ : Theory}
+    (pf : ML_proof_system Γ ϕ)
+    : Type
+  :=
+  match pf with
+  | hypothesis _ _ _ _ => True
+  | P1 _ _ _ _ _ => True
+  | P2 _ _ _ _ _ _ _ => True
+  | P3 _ _ _ => True
+  | Modus_ponens _ _ _ pf1 pf2
+  => ((covers' s pf1) * (covers' s pf2))%type
+  | Ex_quan _ phi y _ => phi ∈ (patterns_from_proof s)
+  | Ex_gen _ phi1 phi2 x _ _ pf' _ => ((phi1 ∈ (patterns_from_proof s)) * (x ∈ evars_to_avoid s) * covers' s pf')%type
+  | Prop_bott_left _ _ _ => True
+  | Prop_bott_right _ _ _ => True
+  | Prop_disj_left _ _ _ _ _ _ _ => True
+  | Prop_disj_right _ _ _ _ _ _ _ => True
+  | Prop_ex_left _ phi psi _ _ =>
+    ((phi ∈ (patterns_from_proof s)) * ((patt_app phi psi) ∈ (patterns_from_proof s)))%type
+  | Prop_ex_right _ phi psi _ _ =>
+    ((phi ∈ (patterns_from_proof s)) * ((patt_app psi phi) ∈ (patterns_from_proof s)))%type
+  | Framing_left _ _ _ psi wfp pf' => (covers' s pf')
+  | Framing_right _ _ _ psi wfp pf' => (covers' s pf')
+  | Svar_subst _ _ _ _ _ _ pf' => (covers' s pf')
+  | Pre_fixp _ phi _ => ϕ ∈ (patterns_from_proof s)
+  | Knaster_tarski _ _ phi psi pf' => ((ϕ ∈ (patterns_from_proof s)) * (covers' s pf'))%type
+  | Existence _ => (patt_bound_evar 0) ∈ (patterns_from_proof s) (* HERE note that patterns in the map need not be well-formed-closed *)
+  | Singleton_ctx _ _ _ _ _ _ => True
+  end.
+
   Class Ln2NamedProperties
     {Σ : Signature}
-    (l2n : (gmap Pattern (evar*svar)%type) -> Pattern -> NamedPattern)
+    (l2n : ImmutableState -> Pattern -> NamedPattern)
     := mkLn2NamedProperties {
-        scan : forall {Γ} {ϕ}, ML_proof_system Γ ϕ -> (gmap Pattern (evar*svar)%type) ;
-        scan_covers : forall {Γ} {ϕ} (pf : ML_proof_system Γ ϕ), covers (scan pf) pf ;
+        scan : forall {Γ} {ϕ}, ML_proof_system Γ ϕ -> ImmutableState ;
+        scan_covers : forall {Γ} {ϕ} (pf : ML_proof_system Γ ϕ), covers' (scan pf) pf ;
         (*l2n_state_mp : forall Γ phi1 phi2 pf1 pf2, (l2n_state (Modus_ponens Γ phi1 phi2 pf1 pf2)) = (l2n_state pf2) ;*)
         l2n_nwf : forall s ϕ, named_well_formed (l2n s ϕ) = true;
         l2n_imp: forall s ϕ₁ ϕ₂, l2n s (patt_imp ϕ₁ ϕ₂) = npatt_imp (l2n s ϕ₁) (l2n s ϕ₂) ;
         l2n_bott : forall s, l2n s patt_bott = npatt_bott ;
-        l2n_ex : forall s ev sv phi, s !! phi = Some (ev, sv) -> l2n s (patt_exists phi) = npatt_exists ev (l2n s phi) ;
-        l2n_evar_open : forall s ev sv ϕ y,
-          s !! ϕ = Some (ev, sv) ->
-          l2n s (evar_open y 0 ϕ) = rename_free_evar (l2n s ϕ) y ev ;
-        l2n_exists_quantify : forall s ev sv ϕ x,
-          s !! ϕ = Some (ev, sv) ->
-          l2n s (exists_quantify x ϕ) = npatt_exists (x) (l2n s ϕ) ;
-        (*
-        l2n_app: forall ϕ₁ ϕ₂, l2n (patt_app ϕ₁ ϕ₂) = npatt_app (l2n ϕ₁) (l2n ϕ₂) ;
-        
-        ebody : Pattern -> NamedPattern ;
-        fe : Pattern -> evar -> evar ;
-        ename : Pattern -> evar ;
-        
-        l2n_ex : forall ϕ', l2n (patt_exists ϕ') = npatt_exists (ename ϕ') (ebody ϕ') ;
-        l2n_eqevar : evar -> Pattern -> evar ;
-        l2n_exists_quantify : forall x ϕ, l2n (exists_quantify x ϕ) = npatt_exists (l2n_eqevar x ϕ) (l2n ϕ) ;
-        l2n_eqevar_fresh : forall phi1 phi2 x, x ∉ free_evars phi2 -> l2n_eqevar x phi1 ∉ named_free_evars (l2n phi2) ;
-        l2n_ebody_app : forall phi1 phi2, ebody (patt_app phi1 phi2) = npatt_app (ebody phi1) (ebody phi2) ;
-        l2n_ebody : forall phi, ebody phi = l2n phi ;
-        l2n_ename_app_1 : forall phi1 phi2, ename (patt_app phi1 phi2) = ename phi1 ;
-        l2n_ename_app_2 : forall phi1 phi2, ename (patt_app phi1 phi2) = ename phi2 ;
-        l2n_ename_fresh : forall phi psi, ename phi ∉ named_free_evars (l2n psi) ;
-        l2n_svar_subst : forall phi psi X, l2n (free_svar_subst psi X phi) = named_svar_subst (l2n phi) (l2n psi) X ;
-        sname : Pattern -> svar ;
-        sbody : Pattern -> NamedPattern ;
-        l2n_mu : forall ϕ', l2n (patt_mu ϕ') = npatt_mu (sname ϕ') (sbody ϕ') ;
-        l2n_bsvar_subst : forall phi1 phi2, l2n (bsvar_subst phi2 0 phi1) = named_svar_subst (sbody phi1) (l2n phi2) (sname phi1) ;
-        ebody_bound : forall n, ebody (patt_bound_evar n) = npatt_evar (ename (patt_bound_evar n)) ;
-        l2nctx : Application_context -> Named_Application_context ;
-        l2n_subst_ctx : forall C phi, l2n (subst_ctx C phi) = named_subst_ctx (l2nctx C) (l2n phi) ;
-        l2nfe : evar -> evar ;
-        l2n_free_evar : forall x, l2n (patt_free_evar x) = npatt_evar (l2nfe x) ;
-        *)
+        l2n_ex : forall s phi,
+          phi ∈ (patterns_from_proof s) ->
+          l2n s (patt_exists phi) = npatt_exists (one_distinct_evar s) (l2n s phi) ;
+        l2n_evar_open : forall s ϕ y,
+          ϕ ∈ (patterns_from_proof s) ->
+          l2n s (evar_open y 0 ϕ) = rename_free_evar (l2n s ϕ) y (one_distinct_evar s) ;
+        l2n_exists_quantify : forall s ϕ x,
+          ϕ ∈ (patterns_from_proof s) ->
+          l2n s (exists_quantify x ϕ) = npatt_exists x (l2n s ϕ) ;
+        l2n_avoid : forall s x ϕ,
+          x ∈ evars_to_avoid s ->
+          x ∉ named_free_evars (l2n s ϕ) ;
   }.
 
   Context
     {Σ : Signature}
-    (l2n : (gmap Pattern (evar*svar)%type) -> Pattern -> NamedPattern)
+    (l2n : ImmutableState -> Pattern -> NamedPattern)
     {_ln2named_prop : Ln2NamedProperties l2n}
   .
 
@@ -156,28 +176,26 @@ Section ProofConversionAbstractReader.
       unfold instantiate.
       fold (evar_open y 0 phi).
       rewrite l2n_imp.
-      destruct Hc as [ev [sv Hc] ].
-      rewrite -> l2n_ex with (ev := ev)(sv := sv).
+      rewrite -> l2n_ex.
       2: { exact Hc. }
-      rewrite -> l2n_evar_open with (ev := ev) (sv := sv).
+      rewrite -> l2n_evar_open.
       2: { exact Hc. }
       apply N_Ex_quan.
     }
     {
-      destruct Hc as [Hc1 Hc2].
-      specialize (IHpf ltac:(wf_auto2) myscan Hc2).
+      destruct Hc as [[Hc1 Hc2] Hc3].
+      specialize (IHpf ltac:(wf_auto2) myscan Hc3).
       rewrite l2n_imp.
       rewrite l2n_imp in IHpf.
-      destruct Hc1 as [ev [sv Hc1]].
-      rewrite -> l2n_exists_quantify with (ev := ev) (sv := sv).
+      rewrite -> l2n_exists_quantify.
       2: { exact Hc1. }
       apply N_Ex_gen.
       { apply l2n_nwf. }
       { apply l2n_nwf. }
       { apply IHpf. }
       { 
-        apply l2n_eqevar_fresh.
-        assumption.
+        apply l2n_avoid.
+        apply Hc2.
       }
     }
     {
