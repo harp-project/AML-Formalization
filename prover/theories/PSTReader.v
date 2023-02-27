@@ -3,6 +3,8 @@ From Coq Require Import ssreflect ssrfun ssrbool.
 From Coq Require Import Strings.String.
 From Coq Require Import Logic.PropExtensionality Logic.Eqdep_dec.
 
+From Equations Require Import Equations.
+
 From stdpp Require Export base gmap fin_sets sets list countable.
 From MatchingLogic Require Import
   Syntax
@@ -118,8 +120,61 @@ Record ImmutableState {Σ : Signature} := {
   one_distinct_svar : svar ;
   patterns_from_proof : gset Pattern ;
   evars_to_avoid : gset evar;
+  svars_to_avoid : gset svar;
 }.
 
+Definition scan
+  {Σ : Signature} {Γ : Theory} {ϕ : Pattern}
+  (pf : ML_proof_system Γ ϕ)
+  : ImmutableState
+:=
+  let eop := evars_of_proof pf in
+  let sop := svars_of_proof pf in
+  let ode := evar_fresh_s eop in
+  let ods := svar_fresh_s sop in
+  {|
+    patterns_from_proof := trigger_patterns pf ;
+    evars_to_avoid := eop ∪ {[ode]} ;
+    svars_to_avoid := sop ∪ {[ods]} ;
+    one_distinct_evar := ode ;
+    one_distinct_svar := ods ;
+  |}.
+
+
+  Equations? l2n {Σ : Signature} (s : ImmutableState) (ϕ : Pattern) : NamedPattern by wf (size' ϕ) lt :=
+    l2n s (patt_bound_evar _) => npatt_bott ;
+    l2n s (patt_bound_svar _) => npatt_bott ;
+    l2n s (patt_free_evar x) => npatt_evar x ;
+    l2n s (patt_free_svar X) => npatt_svar X ;
+    l2n s patt_bott := npatt_bott ;
+    l2n s (patt_sym s') := npatt_sym s' ;
+    l2n s (patt_imp ϕ₁ ϕ₂)
+      := npatt_imp (l2n s ϕ₁) (l2n s ϕ₂) ;
+    l2n s (patt_app ϕ₁ ϕ₂)
+      := npatt_app (l2n s ϕ₁) (l2n s ϕ₂) ;
+    l2n s (patt_exists ϕ') with (decide (ϕ' ∈ patterns_from_proof s)) => {
+      | left _ :=
+        let x := one_distinct_evar s in 
+        npatt_exists x (l2n s (evar_open x 0 ϕ'))
+      | right _ :=
+        let x := evar_fresh_s (free_evars ϕ' ∪ evars_to_avoid s) in
+        npatt_exists x (l2n s (evar_open x 0 ϕ'))
+    } ;
+    l2n s (patt_mu ϕ') with (decide (ϕ' ∈ patterns_from_proof s)) => {
+      | left _ :=
+        let X := one_distinct_svar s in 
+        npatt_mu X (l2n s (svar_open X 0 ϕ'))
+      | right _ :=
+        let X := svar_fresh_s (free_svars ϕ' ∪ svars_to_avoid s) in
+        npatt_mu X (l2n s (svar_open X 0 ϕ'))
+    } .
+  Proof.
+      all: simpl; try lia.
+      { rewrite evar_open_size'. simpl. lia. }
+      { rewrite evar_open_size'. simpl. lia. }
+      { rewrite svar_open_size'. simpl. lia. }
+      { rewrite svar_open_size'. simpl. lia. }
+  Qed.
 
 Fixpoint covers'
   {Σ : Signature}
