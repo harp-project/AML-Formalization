@@ -417,7 +417,7 @@ match pf with
 | Prop_ex_right _ phi psi _ _ => {[phi]} ∪ {[patt_app psi phi]}
 | Framing_left _ _ _ psi wfp pf' => (trigger_patterns pf')
 | Framing_right _ _ _ psi wfp pf' => (trigger_patterns pf')
-| Svar_subst _ _ _ _ _ _ pf' => ∅
+| Svar_subst _ _ _ _ _ _ pf' => (trigger_patterns pf')
 | Pre_fixp _ phi _ => {[phi]}
 | Knaster_tarski _ phi psi _ pf' => {[phi]} ∪ (trigger_patterns pf')
 | Existence _ => {[(patt_bound_evar 0)]}
@@ -535,5 +535,69 @@ Next Obligation.
     feed specialize IHpf.
     { clear -He. set_solver. }
     { clear -Hs. set_solver. }
+    { clear -Hc. set_solver. }
+    repeat split.
+    { clear -Hc. set_solver. }
+    { clear -He. set_solver. }
+    { exact IHpf. }
+  }
+  {
+    (* Prop_bott_left *)
+    exact I.
+  }
+  {
+    (* Prop_bott_right *)
+    exact I.
+  }
+  {
+    (* Proj_disj_left *)
+    exact I.
+  }
+  {
+    (* Prop_disj_right *)
+    exact I.
+  }
+  {
+    (* Prop_ex_left *)
+    split; set_solver.
+  }
+  {
+    (* Prop_ex_right *)
+    split; set_solver.
+  }
+  {
+    (* Framing_left *)
+    apply IHpf; set_solver.
+  }
+  {
+    (* Framing_right *)
+    apply IHpf; set_solver.
+  }
+  {
+    (* Svar_subst *)
+    apply IHpf.
+    { set_solver. }
+    { set_solver. }
+    { set_solver. }
+  }
+  {
+    (* Pre_fixp *)
+    set_solver.
+  }
+  {
+    (* Knaster_tarski *)
+    split.
+    { set_solver. }
+    {
+      apply IHpf; set_solver.
+    }
+  }
+  {
+    (* Existence *)
+    set_solver.
+  }
+  {
+    (* Singleton_ctx *)
+    exact I.
   }
 Qed.
