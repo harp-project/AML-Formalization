@@ -3486,6 +3486,37 @@ Proof.
   all: wf_auto2.
 Defined.
 
+
+Tactic Notation "mlClassic" constr(p) "as" constr(n1) constr(n2) :=
+  _ensureProofMode;
+  let hyps := _getHypNames in
+  let tmpName := eval cbv in (fresh hyps) in
+  let wfName := fresh "Hwf" in
+  match goal with
+  | |- @of_MLGoal ?Sgm (@mkMLGoal ?Sgm ?Ctx ?l ?g ?i)
+    => assert (wfName : well_formed p = true);
+      [|(
+        mlAdd (useBasicReasoning i (A_or_notA Ctx p wfName)) as tmpName;
+        mlDestructOr tmpName as n1 n2
+      )]
+  end
+.
+
+#[local]
+Example exMlClassic {Σ : Signature} (Γ : Theory) (a : Pattern):
+  well_formed a ->
+  Γ ⊢ (a or !a).
+Proof.
+  intros wfa.
+  toMLGoal.
+  { wf_auto2. }
+  mlClassic (a) as "Hc1" "Hc2".
+  { wf_auto2. }
+  { mlLeft. mlExact "Hc1". }
+  { mlRight. mlExact "Hc2". }
+Defined.
+
+
 (**********************************************************************************)
 
 
