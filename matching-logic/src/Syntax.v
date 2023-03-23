@@ -1234,11 +1234,51 @@ Section with_signature.
       maximal_mu_depth_to (S depth) E ψ'
     end.
 
+
+  Fixpoint maximal_mu_depth_to_sv (depth : nat) (V : svar) (ψ : Pattern) : nat :=
+    match ψ with
+    | patt_bott => 0
+    | patt_sym _ => 0
+    | patt_bound_evar _ => 0
+    | patt_bound_svar _ => 0
+    | patt_free_evar _ => 0
+    | patt_free_svar V' =>
+      match (decide (V' = V)) with
+      | left _ => depth
+      | right _ => 0
+      end
+    | patt_imp ψ₁ ψ₂
+      => Nat.max
+        (maximal_mu_depth_to_sv depth V ψ₁)
+        (maximal_mu_depth_to_sv depth V ψ₂)
+    | patt_app ψ₁ ψ₂
+      => Nat.max
+        (maximal_mu_depth_to_sv depth V ψ₁)
+        (maximal_mu_depth_to_sv depth V ψ₂)
+    | patt_exists ψ' =>
+      maximal_mu_depth_to_sv depth V ψ'
+    | patt_mu ψ' =>
+      maximal_mu_depth_to_sv (S depth) V ψ'
+    end.
+
   Lemma maximal_mu_depth_to_svar_open depth E n X ψ:
   maximal_mu_depth_to depth E (ψ^{svar: n ↦ X})
     = maximal_mu_depth_to depth E ψ.
   Proof.
     unfold svar_open.
+    move: depth n.
+    induction ψ; intros depth n'; simpl; try reflexivity; auto.
+    {
+      case_match; simpl; try reflexivity.
+    }
+  Qed.
+
+
+  Lemma maximal_mu_depth_to_sv_evar_open depth V n X ψ:
+    maximal_mu_depth_to_sv depth V (ψ^{evar: n ↦ X})
+    = maximal_mu_depth_to_sv depth V ψ.
+  Proof.
+    unfold evar_open.
     move: depth n.
     induction ψ; intros depth n'; simpl; try reflexivity; auto.
     {
@@ -1253,6 +1293,22 @@ Section with_signature.
   Proof.
     intros Hne.
     unfold evar_open.
+    move: depth n.
+    induction ψ; intros depth n'; simpl; try reflexivity; auto.
+    {
+      case_match; simpl; try reflexivity.
+      case_match; simpl; try reflexivity.
+      subst. contradiction.
+    }
+  Qed.
+
+  Lemma svar_open_mu_depth_sc depth V n x ψ:
+  V <> x ->
+  maximal_mu_depth_to_sv depth V (ψ^{svar: n ↦ x})
+  = maximal_mu_depth_to_sv depth V ψ.
+  Proof.
+    intros Hne.
+    unfold svar_open.
     move: depth n.
     induction ψ; intros depth n'; simpl; try reflexivity; auto.
     {
@@ -1280,6 +1336,20 @@ Section with_signature.
   Proof.
     intros Hnotin.
     move: E depth Hnotin.
+    induction ψ; intros E depth Hnotin; simpl in *; try reflexivity.
+    { case_match. set_solver. reflexivity. }
+    { rewrite IHψ1. set_solver. rewrite IHψ2. set_solver. reflexivity. }
+    { rewrite IHψ1. set_solver. rewrite IHψ2. set_solver. reflexivity. }
+    { rewrite IHψ. exact Hnotin. reflexivity. }
+    { rewrite IHψ. exact Hnotin. reflexivity. }
+  Qed.
+
+  Lemma maximal_mu_depth_to_sv_0 V ψ depth:
+    V ∉ free_svars ψ ->
+    maximal_mu_depth_to_sv depth V ψ = 0.
+  Proof.
+    intros Hnotin.
+    move: V depth Hnotin.
     induction ψ; intros E depth Hnotin; simpl in *; try reflexivity.
     { case_match. set_solver. reflexivity. }
     { rewrite IHψ1. set_solver. rewrite IHψ2. set_solver. reflexivity. }
@@ -1337,6 +1407,63 @@ Section with_signature.
         apply maximal_mu_depth_to_0 with (depth := S depth) in n
           as n'.
         apply maximal_mu_depth_to_0 with (depth := depth) in n.
+        rewrite n. lia. 
+      }
+      {
+        exfalso. set_solver.
+      }
+    }
+  Qed.
+
+  Lemma maximal_mu_depth_to_sv_S V ψ depth:
+    V ∈ free_svars ψ ->
+    maximal_mu_depth_to_sv (S depth) V ψ
+    = S (maximal_mu_depth_to_sv depth V ψ).
+  Proof.
+    intros Hin.
+    move: V depth Hin.
+    induction ψ; intros V depth Hin; simpl in *; try set_solver.
+    { case_match. reflexivity. set_solver. }
+    {
+      destruct (decide (V ∈ free_svars ψ1)),(decide (V ∈ free_svars ψ2)).
+      {
+        rewrite IHψ1. assumption. rewrite IHψ2. assumption. simpl. reflexivity.
+      }
+      {
+        rewrite IHψ1. assumption.
+        apply maximal_mu_depth_to_sv_0 with (depth := S depth) in n
+          as n'.
+        apply maximal_mu_depth_to_sv_0 with (depth := depth) in n.
+        rewrite n. lia. 
+      }
+      {
+        rewrite IHψ2. assumption.
+        apply maximal_mu_depth_to_sv_0 with (depth := S depth) in n
+          as n'.
+        apply maximal_mu_depth_to_sv_0 with (depth := depth) in n.
+        rewrite n. lia. 
+      }
+      {
+        exfalso. set_solver.
+      }
+    }
+    {
+      destruct (decide (V ∈ free_svars ψ1)),(decide (V ∈ free_svars ψ2)).
+      {
+        rewrite IHψ1. assumption. rewrite IHψ2. assumption. simpl. reflexivity.
+      }
+      {
+        rewrite IHψ1. assumption.
+        apply maximal_mu_depth_to_sv_0 with (depth := S depth) in n
+          as n'.
+        apply maximal_mu_depth_to_sv_0 with (depth := depth) in n.
+        rewrite n. lia. 
+      }
+      {
+        rewrite IHψ2. assumption.
+        apply maximal_mu_depth_to_sv_0 with (depth := S depth) in n
+          as n'.
+        apply maximal_mu_depth_to_sv_0 with (depth := depth) in n.
         rewrite n. lia. 
       }
       {

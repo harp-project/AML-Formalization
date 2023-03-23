@@ -3388,6 +3388,135 @@ Proof.
   mlDestructBot "H".
 Defined.
 
+
+Lemma extract_common_from_equivalence
+  {Σ : Signature} (Γ : Theory) (a b c : Pattern):
+  well_formed a ->
+  well_formed b ->
+  well_formed c ->
+  Γ ⊢i (((a and b) <---> (a and c)) <---> (a ---> (b <---> c))) 
+  using BasicReasoning
+.
+Proof.
+  intros wfa wfb wfc.
+  toMLGoal;[wf_auto2|].
+  mlSplitAnd; mlIntro "H".
+  {
+    mlIntro "Ha".
+    mlDestructAnd "H" as "H1" "H2".
+    mlSplitAnd; mlIntro "H3".
+    {
+      mlAssert ("Htmp": ((a and c) ---> c)).
+      { wf_auto2. }
+      {
+        mlIntro "H'".
+        mlDestructAnd "H'" as "H'1" "H'2".
+        mlExact "H'2".
+      }
+      mlApply "Htmp".
+      mlApply "H1".
+      mlSplitAnd; mlAssumption.
+    }
+    {
+      mlAssert ("Htmp": ((a and b) ---> b)).
+      { wf_auto2. }
+      {
+        mlIntro "H'".
+        mlDestructAnd "H'" as "H'1" "H'2".
+        mlExact "H'2".
+      }
+      mlApply "Htmp".
+      mlApply "H2".
+      mlSplitAnd; mlAssumption.
+    }
+  }
+  {
+    mlSplitAnd; mlIntro "H'"; mlDestructAnd "H'" as "H'1" "H'2".
+    {
+      mlSplitAnd. mlExact "H'1".
+      mlAssert ("Htmp": (b <---> c)).
+      { wf_auto2. }
+      {
+        mlApply "H". mlExact "H'1".
+      }
+      mlDestructAnd "Htmp" as "Htmp1" "Htmp2".
+      mlApply "Htmp1". mlExact "H'2".
+    }
+    {
+      mlSplitAnd. mlExact "H'1".
+      mlAssert ("Htmp": (b <---> c)).
+      { wf_auto2. }
+      {
+        mlApply "H". mlExact "H'1".
+      }
+      mlDestructAnd "Htmp" as "Htmp1" "Htmp2".
+      mlApply "Htmp2". mlExact "H'2".
+    }
+  }
+Defined.
+
+Lemma extract_common_from_equivalence_1
+  {Σ : Signature} (Γ : Theory) (a b c : Pattern):
+  well_formed a ->
+  well_formed b ->
+  well_formed c ->
+  Γ ⊢i ((a ---> (b <---> c)) ---> ((a and b) <---> (a and c))) 
+  using BasicReasoning
+.
+Proof.
+  intros.
+  eapply pf_conj_elim_r_meta.
+  3: apply extract_common_from_equivalence.
+  all: wf_auto2.
+Defined.
+
+
+Lemma extract_common_from_equivalence_2
+  {Σ : Signature} (Γ : Theory) (a b c : Pattern):
+  well_formed a ->
+  well_formed b ->
+  well_formed c ->
+  Γ ⊢i (((a and b) <---> (a and c)) ---> (a ---> (b <---> c))) 
+  using BasicReasoning
+.
+Proof.
+  intros.
+  eapply pf_conj_elim_l_meta.
+  3: apply extract_common_from_equivalence.
+  all: wf_auto2.
+Defined.
+
+
+Tactic Notation "mlClassic" constr(p) "as" constr(n1) constr(n2) :=
+  _ensureProofMode;
+  let hyps := _getHypNames in
+  let tmpName := eval cbv in (fresh hyps) in
+  let wfName := fresh "Hwf" in
+  match goal with
+  | |- @of_MLGoal ?Sgm (@mkMLGoal ?Sgm ?Ctx ?l ?g ?i)
+    => assert (wfName : well_formed p = true);
+      [|(
+        mlAdd (useBasicReasoning i (A_or_notA Ctx p wfName)) as tmpName;
+        mlDestructOr tmpName as n1 n2
+      )]
+  end
+.
+
+#[local]
+Example exMlClassic {Σ : Signature} (Γ : Theory) (a : Pattern):
+  well_formed a ->
+  Γ ⊢ (a or !a).
+Proof.
+  intros wfa.
+  toMLGoal.
+  { wf_auto2. }
+  mlClassic (a) as "Hc1" "Hc2".
+  { wf_auto2. }
+  { mlLeft. mlExact "Hc1". }
+  { mlRight. mlExact "Hc2". }
+Defined.
+
+
 (**********************************************************************************)
 
 

@@ -196,17 +196,17 @@ Proof.
     {
       toMLGoal.
       { wf_auto2. }
-      mlIntro.
-      mlAdd (useBasicReasoning i (A_or_notA Γ φ Hwfφ)).
-      mlDestructOr "1".
-      - mlRight. mlExactn 0.
-      - mlLeft. mlIntro.
-        mlDestructOr "0".
-        + mlDestructOr "1".
-          * mlApply "0". mlExactn 1.
-          * mlApply "4". mlExactn 0.
-        + mlApply "3".
-          mlExactn 1.
+      mlIntro "H0".
+      mlClassic (φ) as "Hφ" "Hnotφ".
+      { wf_auto2. }
+      - mlRight. mlExact "Hφ".
+      - mlLeft. mlIntro "H1".
+        mlDestructOr "H0" as "H01" "H02".
+        + mlDestructOr "H1" as "H10" "H11".
+          * mlApply "H10". mlExact "H01".
+          * mlApply "H11". mlExact "Hnotφ".
+        + mlApply "Hnotφ".
+          mlExact "H02".
     }
 
     assert(Htmp2: Γ ⊢i (⌈ patt_free_evar x or φ ⌉) ---> (⌈ patt_free_evar x and ! φ or φ ⌉) using i).
@@ -527,6 +527,244 @@ Proof.
   all: assumption.
 Defined.
 
+  Lemma framing_left_under_tot_impl Γ ψ phi1 phi2 psi:
+    well_formed ψ = true ->
+    well_formed phi1 = true ->
+    well_formed phi2 = true ->
+    well_formed psi = true ->
+    theory ⊆ Γ ->
+    Γ ⊢ ⌊ ψ ⌋ ---> phi1 ---> phi2 ->
+    Γ ⊢ ⌊ ψ ⌋ ---> (phi1 $ psi) ---> (phi2 $ psi)
+  .
+  Proof.
+    intros Hwfψ Hwfphi1 Hwfphi2 Hwfpsi HΓ H.
+    assert (S2: Γ ⊢ phi1 ---> (phi2 or ⌈ ! ψ ⌉)).
+    { toMLGoal.
+      { wf_auto2. }
+      mlAdd H as "H". mlIntro "Hphi1".
+      mlClassic (⌈ ! ψ ⌉) as "Hcl1" "Hcl2".
+      { wf_auto2. }
+      - mlRight. mlExact "Hcl1".
+      - mlLeft.
+        mlApply "H".
+        mlSplitAnd.
+        { mlExact "Hcl2". }
+        { mlExact "Hphi1". }
+    }
+
+    assert (S3: Γ ⊢ (⌈ ! ψ ⌉ $ psi) ---> ⌈ ! ψ ⌉).
+    {
+      replace (⌈ ! ψ ⌉ $ psi)
+        with (subst_ctx (ctx_app_l AC_patt_defined psi ltac:(assumption)) (! ψ))
+        by reflexivity.
+      remember (evar_fresh (elements (free_evars ψ ∪ free_evars psi))) as x.
+      gapply (in_context_impl_defined _ _ _ x).
+      4: { wf_auto2. }
+      2: { exact HΓ. }
+      1: { apply pile_any. }
+      subst x.
+      cbn.
+      eapply not_elem_of_larger_impl_not_elem_of.
+      2: { apply set_evar_fresh_is_fresh'. }
+      clear.
+      set_solver.
+    }
+
+    assert (S4: Γ ⊢ (phi1 $ psi) ---> ((phi2 or ⌈ ! ψ ⌉) $ psi)).
+    { 
+      unshelve (eapply Framing_left).
+      { wf_auto2. }
+      { apply pile_any. }
+      { exact S2. }
+    }
+
+    assert (S5: Γ ⊢ (phi1 $ psi) ---> ((phi2 $ psi) or (⌈ ! ψ ⌉ $ psi))).
+    {
+      pose proof (Htmp := prf_prop_or_iff Γ (ctx_app_l box psi ltac:(assumption)) phi2 (⌈! ψ ⌉)).
+      feed specialize Htmp.
+      { wf_auto2. }
+      { wf_auto2. }
+      simpl in Htmp.
+      apply pf_iff_proj1 in Htmp.
+      3: { wf_auto2. }
+      2: { wf_auto2. }
+      eapply syllogism_meta.
+      5: {
+        gapply Htmp.
+        apply pile_any.
+      }
+      4: { exact S4. }
+      all: wf_auto2.
+    }
+
+    assert (S6: Γ ⊢ ((phi2 $ psi) or (⌈ ! ψ ⌉ $ psi)) ---> ((phi2 $ psi) or (⌈ ! ψ ⌉))).
+    {
+      toMLGoal.
+      { wf_auto2. }
+      mlIntro "H". mlAdd S3 as "S3".
+      mlClassic (phi2 $ psi) as "Hc1" "Hc2".
+      { wf_auto2. }
+      - mlLeft. mlExact "Hc1".
+      - mlRight. mlApply "S3". mlApply "H". mlExact "Hc2".
+    }
+
+    assert (S7: Γ ⊢ (phi1 $ psi) ---> ((phi2 $ psi)  or ⌈ ! ψ ⌉)).
+    {
+      toMLGoal.
+      { wf_auto2. }
+      mlAdd S5 as "S5".
+      mlAdd S6 as "S6".
+      mlIntro "H".
+      mlAssert ("Ha" : ((phi2 $ psi) or (⌈ ! ψ ⌉ $ psi))).
+      { wf_auto2. }
+      { mlApply "S5". mlExact "H". }
+      mlDestructOr "Ha" as "Ha1" "Ha2".
+      - mlLeft. mlExact "Ha1".
+      - mlApply "S6". mlRight. mlExact "Ha2".
+    }
+
+    toMLGoal.
+    { wf_auto2. }
+    mlIntro "H1".
+    mlIntro "H2".
+    mlAdd S7 as "S7".
+    mlAssert ("Ha" : (phi2 $ psi or ⌈ ! ψ ⌉)).
+    { wf_auto2. }
+    { mlApply "S7". mlExact "H2". }
+    mlDestructOr "Ha" as "Ha1" "Ha2".
+    { mlExact "Ha1". }
+    { mlAssert ("Ha'" : (phi2 $ psi or ⌈ ! ψ ⌉)).
+      { wf_auto2. }
+      { mlApply "S7". mlExact "H2". }
+      mlClassic (phi2 $ psi) as "Hc1" "Hc2".
+      { wf_auto2. }
+      { mlExact "Hc1". }
+      {
+        mlExFalso.
+        mlApply "H1".
+        mlExact "Ha2".
+      }
+    }
+  Defined.
+
+  Lemma framing_right_under_tot_impl Γ ψ phi1 phi2 psi:
+    well_formed ψ = true ->
+    well_formed phi1 = true ->
+    well_formed phi2 = true ->
+    well_formed psi = true ->
+    theory ⊆ Γ ->
+    Γ ⊢ ⌊ ψ ⌋ ---> phi1 ---> phi2 ->
+    Γ ⊢ ⌊ ψ ⌋ ---> (psi $ phi1) ---> (psi $ phi2)
+  .
+  Proof.
+    intros Hwfψ Hwfphi1 Hwfphi2 Hwfpsi HΓ H.
+    assert (S2: Γ ⊢ phi1 ---> (phi2 or ⌈ ! ψ ⌉)).
+    { toMLGoal.
+      { wf_auto2. }
+      mlAdd H as "H". mlIntro "Hphi1".
+      mlClassic (⌈ ! ψ ⌉) as "Hc1" "Hc2".
+      { wf_auto2. }
+      - mlRight. mlExact "Hc1".
+      - mlLeft.
+        mlApply "H".
+        mlSplitAnd.
+        { mlExact "Hc2". }
+        { mlExact "Hphi1". }
+    }
+
+    assert (S3: Γ ⊢ (psi $ ⌈ ! ψ ⌉) ---> ⌈ ! ψ ⌉).
+    {
+      replace (psi $ ⌈ ! ψ ⌉)
+      with (subst_ctx (ctx_app_r psi AC_patt_defined ltac:(assumption)) (! ψ))
+        by reflexivity.
+      
+      remember (evar_fresh (elements (free_evars ψ ∪ free_evars psi))) as x.
+      gapply (in_context_impl_defined _ _ _ x).
+      4: { wf_auto2. }
+      2: { exact HΓ. }
+      1: { apply pile_any. }
+      subst x.
+      cbn.
+      eapply not_elem_of_larger_impl_not_elem_of.
+      2: { apply set_evar_fresh_is_fresh'. }
+      clear.
+      set_solver.
+    }
+
+    assert (S4: Γ ⊢ (psi $ phi1) ---> (psi $ (phi2 or ⌈ ! ψ ⌉))).
+    { 
+      (* TODO: have a variant of apply which automatically solves all wf constraints.
+         Like: unshelve (eapply H); try_wfauto
+      *)
+      unshelve (eapply Framing_right).
+      { wf_auto2. }
+      2: exact S2.
+      apply pile_any.
+    }
+
+    assert (S5: Γ ⊢ (psi $ phi1) ---> ((psi $ phi2) or (psi $ ⌈ ! ψ ⌉))).
+    {
+      pose proof (Htmp := prf_prop_or_iff Γ (ctx_app_r psi box ltac:(assumption)) phi2 (⌈! ψ ⌉)).
+      feed specialize Htmp.
+      { wf_auto2. }
+      { wf_auto2. }
+      simpl in Htmp.
+      apply pf_iff_proj1 in Htmp.
+      2,3: wf_auto2.
+      eapply syllogism_meta.
+      5: gapply Htmp; apply pile_any.
+      1-3: wf_auto2.
+      exact S4.
+    }
+
+    assert (S6: Γ ⊢ ((psi $ phi2) or (psi $ ⌈ ! ψ ⌉)) ---> ((psi $ phi2) or (⌈ ! ψ ⌉))).
+    {
+      toMLGoal.
+      { wf_auto2. }
+      mlIntro "H1". mlAdd S3 as "S3".
+      mlClassic (psi $ phi2) as "Hc1" "Hc2".
+      { wf_auto2. }
+      - mlLeft. mlExact "Hc1".
+      - mlRight. mlApply "S3". mlApply "H1". mlExact "Hc2".
+    }
+
+    assert (S7: Γ ⊢ (psi $ phi1) ---> ((psi $ phi2)  or ⌈ ! ψ ⌉)).
+    {
+      toMLGoal.
+      { wf_auto2. }
+      mlAdd S5 as "S5". mlAdd S6 as "S6". mlIntro "H".
+      (* TODO: a tactic mlFeedImpl *)
+      mlAssert ("Ha" : ((psi $ phi2) or (psi $ ⌈ ! ψ ⌉))).
+      { wf_auto2. }
+      { mlApply "S5". mlExact "H". }
+      mlDestructOr "Ha" as "Ha1" "Ha2".
+      - mlLeft. mlExact "Ha1".
+      - mlApply "S6". mlRight. mlExact "Ha2".
+    }
+
+    toMLGoal.
+    { wf_auto2. }
+    mlIntro "H1".
+    mlIntro "H2".
+    mlAdd S7 as "S7".
+    mlAssert ("Ha" : (psi $ phi2 or ⌈ ! ψ ⌉)).
+    { wf_auto2. }
+    { mlApply "S7". mlExact "H2". }
+    mlDestructOr "Ha" as "Ha1" "Ha2".
+    { mlExact "Ha1". }
+    + mlAssert ("Ha'" : (psi $ phi2 or ⌈ ! ψ ⌉)).
+      { wf_auto2. }
+      { mlApply "S7". mlExact "H2". }
+      mlClassic (psi $ phi2) as "Hc1" "Hc2".
+      { wf_auto2. }
+      { mlExact "Hc1". }
+      {
+        mlExFalso.
+        mlApply "H1".
+        mlExact "Ha2".
+      }
+  Defined.
+
   Theorem deduction_theorem_noKT Γ φ ψ
     (gpi : ProofInfo)
     (pf : Γ ∪ {[ ψ ]} ⊢i φ using  gpi) :
@@ -759,127 +997,11 @@ Defined.
       }
       { clear Hpf5; wf_auto2. }
       
-      remember_constraint as i'.
+      apply framing_left_under_tot_impl.
+      1-4: wf_auto2.
+      { exact HΓ. }
+      { exact IHpf. }
 
-      (*
-      apply useGenericReasoning with (i0 := i') in IHpf.
-      2: {
-        subst i'.
-        apply pile_evs_svs_kt.
-        { clear. set_solver. }
-        { apply reflexivity. }
-        { reflexivity. }
-      }
-      *)
-      assert (S2: Γ ⊢i phi1 ---> (phi2 or ⌈ ! ψ ⌉) using i').
-      { toMLGoal.
-        { clear Hpf5. wf_auto2. }
-        mlAdd IHpf. mlIntro.
-        mlAdd (useBasicReasoning i' (A_or_notA Γ (⌈ ! ψ ⌉) ltac:(clear Hpf5; wf_auto2))).
-        mlDestructOr "0".
-        - mlRight. mlExact "3".
-        - mlLeft.
-          mlApply "4". mlExact "1".
-      }
-
-      assert (S3: Γ ⊢i (⌈ ! ψ ⌉ $ psi) ---> ⌈ ! ψ ⌉ using i').
-      {
-        replace (⌈ ! ψ ⌉ $ psi)
-          with (subst_ctx (ctx_app_l AC_patt_defined psi ltac:(assumption)) (! ψ))
-          by reflexivity.
-        subst i'.
-        gapply in_context_impl_defined; auto.
-        (*eapply useGenericReasoning. *)
-        (*2: apply in_context_impl_defined; auto.*)
-        split. 2: split.
-        {
-          replace (free_evars (! ψ)) with (free_evars (ψ)).
-          2: {
-            simpl. set_solver.
-          }
-          simpl.
-          instantiate (1 := evar_fresh (elements (free_evars ψ ∪ free_evars psi))). set_solver.
-        }
-        { clear. set_solver. }
-        { cbn. split; reflexivity. }
-        {
-          cbn. 
-          replace (free_evars ψ ∪ ∅ ∪ (free_evars psi ∪ (∅ ∪ ∅))) with
-                  (free_evars ψ ∪ free_evars psi) by set_solver.
-          apply set_evar_fresh_is_fresh'.
-        }
-      }
-
-      assert (S4: Γ ⊢i (phi1 $ psi) ---> ((phi2 or ⌈ ! ψ ⌉) $ psi) using i').
-      { 
-        unshelve (eapply Framing_left).
-        { wf_auto2. } 2: exact S2.
-        subst i'. clear. try_solve_pile.
-      }
-
-      assert (S5: Γ ⊢i (phi1 $ psi) ---> ((phi2 $ psi) or (⌈ ! ψ ⌉ $ psi)) using i').
-      {
-        pose proof (Htmp := prf_prop_or_iff Γ (ctx_app_l box psi ltac:(assumption)) phi2 (⌈! ψ ⌉)).
-        feed specialize Htmp.
-        { wf_auto2. }
-        { clear Hpf5; wf_auto2. }
-        simpl in Htmp.
-        apply pf_iff_proj1 in Htmp.
-        3: clear Hpf5; wf_auto2.
-        2: clear Hpf5; wf_auto2.
-        subst i'.
-        eapply syllogism_meta.
-        5: {
-          gapply Htmp.
-          clear. try_solve_pile.
-        }
-        4: assumption.
-        all: clear Hpf5; wf_auto2.
-      }
-
-      assert (S6: Γ ⊢i ((phi2 $ psi) or (⌈ ! ψ ⌉ $ psi)) ---> ((phi2 $ psi) or (⌈ ! ψ ⌉)) using i').
-      {
-        toMLGoal.
-        { clear Hpf5; wf_auto2. }
-        mlIntro. mlAdd S3.
-        (* TODO we need a tactic for adding  something with stronger constraint. *)
-        mlAdd (useBasicReasoning i' (A_or_notA Γ (phi2 $ psi) ltac:(auto))).
-        mlDestructOr "2".
-        - mlLeft. mlExact "3".
-        - mlRight. mlApply "1". mlApply "0". mlExactn 0.
-      }
-
-      assert (S7: Γ ⊢i (phi1 $ psi) ---> ((phi2 $ psi)  or ⌈ ! ψ ⌉) using i').
-      {
-        toMLGoal.
-        { clear Hpf5; wf_auto2. }
-        mlAdd S5. mlAdd S6. mlIntro.
-        mlAssert (((phi2 $ psi) or (⌈ ! ψ ⌉ $ psi))).
-        { clear Hpf5; wf_auto2. }
-        { mlApply "0". mlExactn 2. }
-        mlDestructOr "3".
-        - mlLeft. mlExactn 3.
-        - mlApply "1". mlRight. mlExactn 3.
-      }
-
-      toMLGoal.
-      { clear Hpf5; wf_auto2. }
-      do 2 mlIntro. mlAdd S7.
-      mlAssert ((phi2 $ psi or ⌈ ! ψ ⌉)).
-      {clear Hpf5; wf_auto2. }
-      { mlApply "2". mlExactn 2. }
-      mlDestructOr "3".
-      + mlExactn 3.
-      + mlAssert ((phi2 $ psi or ⌈ ! ψ ⌉)).
-        { wf_auto2. }
-        { mlApply "2". mlExactn 2. }
-        mlAdd (useBasicReasoning i' (A_or_notA Γ (phi2 $ psi) ltac:(auto))).
-        mlDestructOr "4".
-        * mlExactn 0.
-        * mlAdd (useBasicReasoning i' (bot_elim Γ (phi2 $ psi) ltac:(auto))).
-          mlApply "4".
-          mlApply "0".
-          mlExactn 5.
     - (* Framing right *)
       assert (well_formed (phi1)).
       { unfold well_formed,well_formed_closed in *. simpl in *.
@@ -909,120 +1031,11 @@ Defined.
       }
       { wf_auto2. }
 
-
-      remember_constraint as i'.
-
-      (*
-      apply useGenericReasoning with (i := i') in IHpf.
-      2: {
-        subst i'.
-        apply pile_evs_svs_kt.
-        { clear. set_solver. }
-        { apply reflexivity. }
-        { reflexivity. }
-      }
-      *)
-      assert (S2: Γ ⊢i phi1 ---> (phi2 or ⌈ ! ψ ⌉) using i').
-      { toMLGoal.
-        { wf_auto2. }
-        mlAdd IHpf. mlIntro.
-        mlAdd (useBasicReasoning i' (A_or_notA Γ (⌈ ! ψ ⌉) ltac:(wf_auto2))).
-        mlDestructOr "2".
-        - mlRight. mlExactn 0.
-        - mlLeft.
-          mlAssert((phi1 ---> phi2)).
-          { wf_auto2. }
-          { mlApply "0". mlExactn 0. }
-          mlApply "2". mlExactn 2.
-      }
-
-      assert (S3: Γ ⊢i (psi $ ⌈ ! ψ ⌉) ---> ⌈ ! ψ ⌉ using i').
-      {
-        replace (psi $ ⌈ ! ψ ⌉)
-        with (subst_ctx (ctx_app_r psi AC_patt_defined ltac:(assumption)) (! ψ))
-          by reflexivity.
-        subst i'.
-        gapply in_context_impl_defined; auto.
-
-        instantiate (1 := evar_fresh (elements (free_evars ψ ∪ free_evars psi))).
-        { try_solve_pile. }
-        {
-          cbn. 
-          replace (free_evars ψ ∪ ∅ ∪ (free_evars psi ∪ (∅ ∪ ∅))) with
-                  (free_evars ψ ∪ free_evars psi) by set_solver.
-          apply set_evar_fresh_is_fresh'.
-        }
-      }
-
-      assert (S4: Γ ⊢i (psi $ phi1) ---> (psi $ (phi2 or ⌈ ! ψ ⌉)) using i').
-      { 
-        (* TODO: have a variant of apply which automatically solves all wf constraints.
-           Like: unshelve (eapply H); try_wfauto
-        *)
-        unshelve (eapply Framing_right).
-        { wf_auto2. }
-        2: exact S2.
-        subst i'. try_solve_pile.
-      }
-
-      assert (S5: Γ ⊢i (psi $ phi1) ---> ((psi $ phi2) or (psi $ ⌈ ! ψ ⌉)) using i').
-      {
-        pose proof (Htmp := prf_prop_or_iff Γ (ctx_app_r psi box ltac:(assumption)) phi2 (⌈! ψ ⌉)).
-        feed specialize Htmp.
-        { wf_auto2. }
-        { wf_auto2. }
-        simpl in Htmp.
-        apply pf_iff_proj1 in Htmp.
-        2,3: wf_auto2.
-        subst i'.
-        eapply syllogism_meta.
-        5: gapply Htmp; try_solve_pile.
-        4: assumption.
-        all: wf_auto2.
-      }
-
-      assert (S6: Γ ⊢i ((psi $ phi2) or (psi $ ⌈ ! ψ ⌉)) ---> ((psi $ phi2) or (⌈ ! ψ ⌉)) using i').
-      {
-        toMLGoal.
-        { wf_auto2. }
-        mlIntro. mlAdd S3.
-        mlAdd (useBasicReasoning i' (A_or_notA Γ (psi $ phi2) ltac:(auto))).
-        mlDestructOr "2".
-        - mlLeft. mlExactn 0.
-        - mlRight. mlApply "1". mlApply "0". mlExactn 0.
-      }
-
-      assert (S7: Γ ⊢i (psi $ phi1) ---> ((psi $ phi2)  or ⌈ ! ψ ⌉) using i').
-      {
-        toMLGoal.
-        { wf_auto2. }
-        mlAdd S5. mlAdd S6. mlIntro.
-        mlAssert (((psi $ phi2) or (psi $ ⌈ ! ψ ⌉))).
-        { wf_auto2. }
-        { mlApply "0". mlExactn 2. }
-        mlDestructOr "3".
-        - mlLeft. mlExactn 3.
-        - mlApply "1". mlRight. mlExactn 3.
-      }
-
-      toMLGoal.
-      { wf_auto2. }
-      do 2 mlIntro. mlAdd S7.
-      mlAssert ((psi $ phi2 or ⌈ ! ψ ⌉)).
-      { wf_auto2. }
-      { mlApply "2". mlExactn 2. }
-      mlDestructOr "3".
-      + mlExactn 3.
-      + mlAssert ((psi $ phi2 or ⌈ ! ψ ⌉)).
-        { wf_auto2. }
-        { mlApply "2". mlExactn 2. }
-        mlAdd (useBasicReasoning i' (A_or_notA Γ (psi $ phi2) ltac:(auto))).
-        mlDestructOr "4".
-        * mlExactn 0.
-        * mlAdd (useBasicReasoning i' (bot_elim Γ (psi $ phi2) ltac:(auto))).
-          mlApply "4".
-          mlApply "0".
-          mlExactn 5.
+      apply framing_right_under_tot_impl.
+      1-4: wf_auto2.
+      { exact HΓ. }
+      { exact IHpf. }
+      
     - (* Set variable substitution *)
       destruct Hpf as [Hpf2 Hpf3 Hpf4 Hpf5].
       simpl in Hpf2, Hpf3, Hpf4.
