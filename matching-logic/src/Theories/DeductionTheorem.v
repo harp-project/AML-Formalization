@@ -1774,6 +1774,36 @@ Fixpoint all_mu_bound_svars_have_max_depth
   end
 .
 
+Lemma bsvar_occur_bound_svar_depth_is_max
+  {Σ : Signature}
+  (ϕ : Pattern)
+  (idx : db_index)
+  :
+  bsvar_occur ϕ idx = false ->
+  bound_svar_depth_is_max ϕ idx 0
+.
+Proof.
+  induction ϕ; cbn; intros H; try exact I.
+  {
+    repeat case_match; try congruence.
+    { exact I. }
+  }
+  {
+    rewrite orb_false_iff in H.
+    naive_solver.
+  }
+  {
+    rewrite orb_false_iff in H.
+    naive_solver.
+  }
+  {
+    auto with nocore.
+  }
+  {
+    exact H.
+  }
+Qed.
+
 Lemma mu_and_predicate_propagation_iter
   (mudepth : nat) {Σ : Signature} {syntax : Syntax} Γ ϕ ψ X:
   bound_svar_depth_is_max ϕ 0 mudepth ->
@@ -1789,6 +1819,7 @@ with deduction_theorem_iter
   {Σ : Signature} {syntax : Syntax} Γ ϕ ψ
   (gpi : ProofInfo)
   (pf : Γ ∪ {[ ψ ]} ⊢i ϕ using gpi) :
+  all_mu_bound_svars_have_max_depth ϕ mudepth ->
   well_formed ϕ ->
   well_formed ψ ->
   theory ⊆ Γ ->
@@ -1796,8 +1827,300 @@ with deduction_theorem_iter
   pi_substituted_svars gpi ## (gset_to_coGset (free_svars ψ)) ->
   pi_uses_advanced_kt gpi = false ->
   Γ ⊢i ⌊ ψ ⌋ ---> ϕ
-  using AnyReasoning.
+  using AnyReasoning
 .
+Proof.
+  {
+    induction mudepth.
+    {
+      intros Hbsd HΓ wfm wfψ fϕ fψ Hp.
+      apply mu_and_predicate_propagation with (X := X); try assumption.
+      {
+        intros x Hfr.
+        unfold mu_in_evar_path.
+        cbn.
+        clear -Hbsd Hfr.
+        remember 0 as zero.
+        (*rewrite Heqzero.*)
+        rewrite -> Heqzero in Hbsd at 2.
+        clear Heqzero.
+        move: zero Hbsd.
+        induction ϕ; intros zero Hbsd; cbn in *; try reflexivity.
+        {
+          destruct (decide (x0 = x)); try reflexivity.
+          destruct zero; cbn; try reflexivity.
+          unfold evar_is_fresh_in in Hfr.
+          exfalso.
+          clear -Hfr e.
+          set_solver.
+        }
+        {
+          repeat case_match; cbn; try reflexivity; try lia.
+          { cbn in H0. lia. }
+          { cbn in H0. lia. }
+        }
+        {
+          unfold evar_is_fresh_in in *.
+          destruct Hbsd as [Hbsd1 Hbsd2].
+          specialize (IHϕ1 ltac:(set_solver) zero Hbsd1).
+          specialize (IHϕ2 ltac:(set_solver) zero Hbsd2).
+          repeat case_match; cbn in *; try reflexivity; try lia.
+        }
+        {
+          unfold evar_is_fresh_in in *.
+          destruct Hbsd as [Hbsd1 Hbsd2].
+          specialize (IHϕ1 ltac:(set_solver) zero Hbsd1).
+          specialize (IHϕ2 ltac:(set_solver) zero Hbsd2).
+          repeat case_match; cbn in *; try reflexivity; try lia.
+        }
+        {
+          unfold evar_is_fresh_in in *.
+          cbn in *.
+          specialize (IHϕ Hfr zero Hbsd).
+          exact IHϕ.
+        }
+        {
+          unfold evar_is_fresh_in in *.
+          cbn in *.
+          specialize (IHϕ Hfr (S zero)).
+          repeat case_match; cbn in *; try reflexivity.
+          apply IHϕ.
+          Search bsvar_occur bound_svar_depth.
+        }
+      }
+      
+    }
+    intros HΓ wfm wfψ Hϕnomu fϕ fψ Hp.
+
+    assert (well_formed (mu , ψ and ϕ)).
+    {
+      clear -wfm wfψ.
+      unfold well_formed,well_formed_closed in *.
+      cbn in *. fold no_negative_occurrence_db_b.
+      destruct_and!.
+      split_and!; try reflexivity; try assumption.
+      {
+        apply wfc_impl_no_neg_occ.
+        assumption.
+      }
+      {
+        wf_auto2.
+      }
+    }
+
+    assert (svar_has_negative_occurrence X ψ^{svar:0↦X} = false).
+    {
+      clear -wfm wfψ fψ.
+      unfold well_formed,well_formed_closed in *.
+      cbn in *. fold no_negative_occurrence_db_b svar_has_negative_occurrence.
+      repeat rewrite orb_false_iff.
+      destruct_and!.
+      apply positive_negative_occurrence_db_named.
+      { apply wfc_impl_no_neg_occ. assumption. }
+      apply fresh_svar_no_neg.
+      apply fψ.
+    }
+
+    assert (svar_has_negative_occurrence X ψ^[svar:0↦patt_free_svar X] = false).
+    {
+      clear -wfm wfψ fψ.
+      unfold well_formed,well_formed_closed in *.
+      cbn in *. fold no_negative_occurrence_db_b svar_has_negative_occurrence.
+      destruct_and!.
+      apply svar_hno_bsvar_subst.
+      3: { apply fresh_svar_no_neg. exact fψ. }
+      {
+        cbn. congruence.
+      }
+      {
+        cbn. rewrite decide_eq_same. intros _.
+        apply wfc_impl_no_neg_occ. assumption.
+      }
+    }
+
+    assert (svar_has_negative_occurrence X ϕ^{svar:0↦X} = false).
+    {
+      wf_auto2.
+    }
+
+
+    apply pf_iff_split.
+    { assumption. }
+    { wf_auto2. }
+    
+    (* Makes set_solver work later in the proof. *)
+    unfold svar_is_fresh_in in fϕ, fψ.
+    {
+      toMLGoal.
+      {
+        wf_auto2.
+      }
+      mlIntro "H".
+      mlSplitAnd; fromMLGoal.
+      {
+        apply Knaster_tarski.
+        { try_solve_pile. }
+        { wf_auto2. }
+        unfold instantiate.
+        mlSimpl.
+        rewrite -> well_formed_bsvar_subst with (k := 0).
+        toMLGoal.
+        { wf_auto2. }
+        mlIntro.
+        mlDestructAnd "0".
+        mlExact "1".
+        { lia. }
+        { wf_auto2. }
+      }
+      {
+        rewrite <- svar_quantify_svar_open with (n := 0) (phi := (ψ and ϕ)) (X := X).
+        rewrite <- svar_quantify_svar_open with (n := 0) (phi := ϕ) (X := X) at 2.
+        apply mu_monotone.
+        { try_solve_pile. }
+        {
+          unfold well_formed,well_formed_closed in *.
+          cbn in *. fold no_negative_occurrence_db_b svar_has_negative_occurrence.
+          repeat rewrite orb_false_iff.
+          repeat split; try reflexivity; try assumption.
+        }
+        { wf_auto2. }
+        {
+          unfold svar_open.
+          mlSimpl.
+          gapply pf_conj_elim_r.
+          { try_solve_pile. }
+          { wf_auto2. }
+          { wf_auto2. }
+        }
+        { assumption. }
+        { wf_auto2. }
+        { set_solver. }
+        { wf_auto2. }
+      }
+    }
+    
+    {
+      toMLGoal.
+      { wf_auto2. }
+      mlRewrite (useBasicReasoning AnyReasoning (@patt_and_comm Σ Γ ψ (mu , ϕ) wfψ wfm)) at 1.
+      fromMLGoal.
+      apply lhs_from_and.
+      { wf_auto2. }
+      { wf_auto2. }
+      { wf_auto2. }
+
+      apply Knaster_tarski.
+      { try_solve_pile. }
+      { wf_auto2. }
+
+      apply lhs_to_and.
+      { wf_auto2.
+        fold no_negative_occurrence_db_b.
+        apply wfc_impl_no_neg_occ. wf_auto2.
+      }
+      { wf_auto2. }
+      { wf_auto2. }
+      
+      toMLGoal.
+      { wf_auto2. fold no_negative_occurrence_db_b. apply wfc_impl_no_neg_occ. wf_auto2. }
+      assert (Htmp : is_true (well_formed (mu , ϕ) ^ [ψ ---> (mu , ψ and ϕ)])).
+      {
+        wf_auto2. fold no_negative_occurrence_db_b. apply wfc_impl_no_neg_occ. wf_auto2.
+      }
+      mlRewrite (useBasicReasoning AnyReasoning (@patt_and_comm Σ Γ ((mu , ϕ) ^ [ψ ---> (mu , ψ and ϕ)]) ψ Htmp wfψ)) at 1.
+      
+      mlIntro "H".
+      mlApplyMeta Pre_fixp.
+      unfold instantiate.
+      mlSimpl.
+      fromMLGoal.
+      rewrite -> well_formed_bsvar_subst with (φ := ψ) (k := 0).
+      2: auto.
+      2: wf_auto2.
+
+      remember (evar_fresh_s (free_evars ϕ)) as x.
+      pose proof (HH := pred_and_ctx_and Γ
+        {|
+          pcEvar := x;
+          pcPattern := ϕ^[svar:0↦patt_free_evar x];
+        |}
+        (ψ ---> (mu , ψ and ϕ)) ψ HΓ).
+      unfold emplace in HH. simpl in HH.
+      feed specialize HH.
+      { wf_auto2. }
+      { wf_auto2. }
+      { wf_auto2. }
+      {
+        apply Hϕnomu.
+        subst x. clear.
+        apply set_evar_fresh_is_fresh.
+      }
+      { assumption. }
+
+      assert (no_negative_occurrence_db_b 0 ψ = true).
+      {
+        apply wfc_impl_no_neg_occ. wf_auto2.
+      }
+
+      toMLGoal.
+      { wf_auto2. }
+      rewrite subst_svar_evar_svar in HH.
+      { subst x. solve_fresh. }
+      rewrite subst_svar_evar_svar in HH.
+      { subst x. solve_fresh. }
+      clear Htmp.
+      unshelve(epose proof (Htmp := @liftProofInfoLe _ _ _ _ AnyReasoning _ HH)).
+      { try_solve_pile. }
+      mlRewrite Htmp at 1.
+
+      clear Heqx x H Htmp.
+
+      remember (evar_fresh_s (free_evars ϕ)) as x.
+      pose proof (HH' := impl_ctx_impl_pos Γ
+        {|
+          pcEvar := x;
+          pcPattern := ϕ^[svar:0↦patt_free_evar x];
+        |}
+        (ψ and (ψ ---> (mu , ψ and ϕ)))
+        (mu , ψ and ϕ)
+        AnyReasoning
+        ).
+      unfold emplace in HH'. simpl in HH'.
+      feed specialize HH'.
+      { wf_auto2. }
+      { wf_auto2. }
+      { wf_auto2. }
+      { unfold is_positive_context. cbn.
+        unfold well_formed in wfm.
+        cbn in wfm.
+        destruct_and! wfm.
+        apply no_neg_svar_subst.
+        {  clear -H2 Heqx. subst. eapply evar_is_fresh_in_richer'. 2: apply set_evar_fresh_is_fresh. set_solver. }
+        { assumption. }
+      }
+      { try_solve_pile. }
+      toMLGoal.
+      { wf_auto2. }
+      { mlIntro "H". mlDestructAnd "H". mlApply "1". mlExact "0". }
+
+      rewrite subst_svar_evar_svar in HH'.
+      {
+        subst x. solve_fresh.
+      }
+      
+      rewrite subst_svar_evar_svar in HH'.
+      {
+        subst x. solve_fresh.
+      }
+
+      mlIntro "H".
+      mlDestructAnd "H" as "H0" "H1".
+      mlSplitAnd.
+      + mlExact "H0".
+      + mlApplyMeta HH'. mlExact "H1".
+    }
+  }
+Defined.
 
 Lemma MLGoal_deduct'
   {Σ : Signature}
