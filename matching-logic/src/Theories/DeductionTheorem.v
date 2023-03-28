@@ -1713,6 +1713,92 @@ Proof.
     1: exact HΓ.
 Defined.
 
+Fixpoint bound_svar_depth_is_max
+  {Σ : Signature}
+  (ϕ : Pattern)
+  (dbi : db_index)
+  (max_depth : nat)
+: Prop
+:=
+match ϕ with
+| patt_bound_evar _ => True
+| patt_bound_svar idx => 
+  match (decide (idx = dbi)) with
+  | left _ => False
+  | right _ => True
+  end
+| patt_free_evar _ => True
+| patt_free_svar _ => True
+| patt_bott => True
+| patt_sym _ => True
+| patt_imp ϕ₁ ϕ₂
+  => (bound_svar_depth_is_max ϕ₁ dbi max_depth)
+  /\ (bound_svar_depth_is_max ϕ₂ dbi max_depth)
+| patt_app ϕ₁ ϕ₂
+  => (bound_svar_depth_is_max ϕ₁ dbi max_depth)
+  /\ (bound_svar_depth_is_max ϕ₂ dbi max_depth)
+| patt_exists ϕ'
+  => bound_svar_depth_is_max ϕ' dbi max_depth
+| patt_mu ϕ'
+  =>
+  match max_depth with
+  | 0 => bsvar_occur ϕ' (S dbi) = false
+  | S (max_depth') => bound_svar_depth_is_max ϕ' (S dbi) max_depth'
+  end
+end.
+
+Fixpoint all_mu_bound_svars_have_max_depth
+  {Σ : Signature}
+  (ϕ : Pattern)
+  (max_depth : nat)
+  : Prop
+:=
+  match ϕ with
+  | patt_bound_evar _ => True
+  | patt_bound_svar _ => True
+  | patt_free_evar _ => True
+  | patt_free_svar _ => True
+  | patt_bott => True
+  | patt_sym _ => True
+  | patt_imp ϕ₁ ϕ₂
+    => (all_mu_bound_svars_have_max_depth ϕ₁ max_depth)
+    /\ (all_mu_bound_svars_have_max_depth ϕ₂ max_depth)
+  | patt_app ϕ₁ ϕ₂
+    => (all_mu_bound_svars_have_max_depth ϕ₁ max_depth)
+    /\ (all_mu_bound_svars_have_max_depth ϕ₂ max_depth)
+  | patt_exists ϕ' =>
+    all_mu_bound_svars_have_max_depth ϕ' max_depth
+  | patt_mu ϕ'
+    => bound_svar_depth_is_max ϕ' 0 max_depth
+    /\ all_mu_bound_svars_have_max_depth ϕ' max_depth
+  end
+.
+
+Lemma mu_and_predicate_propagation_iter
+  (mudepth : nat) {Σ : Signature} {syntax : Syntax} Γ ϕ ψ X:
+  bound_svar_depth_is_max ϕ 0 mudepth ->
+  Definedness_Syntax.theory ⊆ Γ ->
+  well_formed (mu, ϕ) ->
+  well_formed ψ ->
+  svar_is_fresh_in X ϕ ->
+  svar_is_fresh_in X ψ ->
+  Γ ⊢ is_predicate_pattern ψ ->
+  Γ ⊢ (mu, (ψ and ϕ)) <---> (ψ and (mu, ϕ))
+with deduction_theorem_iter
+  (mudepth : nat)
+  {Σ : Signature} {syntax : Syntax} Γ ϕ ψ
+  (gpi : ProofInfo)
+  (pf : Γ ∪ {[ ψ ]} ⊢i ϕ using gpi) :
+  well_formed ϕ ->
+  well_formed ψ ->
+  theory ⊆ Γ ->
+  pi_generalized_evars gpi ## (gset_to_coGset (free_evars ψ)) ->
+  pi_substituted_svars gpi ## (gset_to_coGset (free_svars ψ)) ->
+  pi_uses_advanced_kt gpi = false ->
+  Γ ⊢i ⌊ ψ ⌋ ---> ϕ
+  using AnyReasoning.
+.
+
 Lemma MLGoal_deduct'
   {Σ : Signature}
   {syntax : Syntax}
