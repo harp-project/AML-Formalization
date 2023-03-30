@@ -1713,6 +1713,7 @@ Proof.
     1: exact HΓ.
 Defined.
 
+
 Fixpoint bound_svar_depth_is_max
   {Σ : Signature}
   (ϕ : Pattern)
@@ -1804,6 +1805,104 @@ Proof.
   }
 Qed.
 
+
+Fixpoint bound_svar_is_lt 
+  {Σ : Signature}
+  (ϕ : Pattern)
+  (limit : nat)
+: Prop
+:=
+match ϕ with
+| patt_bound_evar idx => True
+| patt_bound_svar idx => idx < limit
+| patt_free_evar _ => True
+| patt_free_svar _ => True
+| patt_bott => True
+| patt_sym _ => True
+| patt_imp ϕ₁ ϕ₂
+  => (bound_svar_is_lt ϕ₁ limit)
+  /\ (bound_svar_is_lt ϕ₂ limit)
+| patt_app ϕ₁ ϕ₂
+  => (bound_svar_is_lt ϕ₁ limit)
+  /\ (bound_svar_is_lt ϕ₂ limit)
+| patt_exists ϕ' => bound_svar_is_lt ϕ' limit
+| patt_mu ϕ' => bound_svar_is_lt ϕ' limit
+end.
+
+Fixpoint mu_depth_to_fev_limited
+  {Σ : Signature}
+  (E : evar)
+  (ψ : Pattern)
+  (limit : nat)
+  : Prop
+:=
+match ψ with
+| patt_free_evar E'
+  =>
+  match (decide (E' = E)) with
+  | left _ => limit > 0
+  | right _ => True
+  end
+| patt_free_svar _ => True
+| patt_bound_evar _ => True
+| patt_bound_svar _ => True
+| patt_bott => True
+| patt_sym _ => True
+| patt_imp ϕ₁ ϕ₂
+  => mu_depth_to_fev_limited E ϕ₁ limit
+  /\ mu_depth_to_fev_limited E ϕ₂ limit
+| patt_app ϕ₁ ϕ₂
+  => mu_depth_to_fev_limited E ϕ₁ limit
+  /\ mu_depth_to_fev_limited E ϕ₂ limit
+| patt_exists ϕ'
+  => mu_depth_to_fev_limited E ϕ' limit
+| patt_mu ϕ'
+  => mu_depth_to_fev_limited E ϕ' (Nat.pred limit)
+end.
+
+Lemma mu_depth_to_fev_limited_0
+  {Σ : Signature}
+  (E : evar)
+  (ϕ : Pattern)
+: mu_depth_to_fev_limited E ϕ 0 ->
+  E ∉ free_evars ϕ
+.
+Proof.
+  induction ϕ; cbn; intros H; try set_solver.
+  {
+    case_match.
+    { lia. }
+    { set_solver. }
+  }
+Qed.
+
+Lemma pred_and_ctx_and_iter
+  (mudepth : nat) {Σ : Signature} {syntax : Syntax} Γ ctx ϕ ψ:
+  Definedness_Syntax.theory ⊆ Γ ->
+  well_formed ϕ ->
+  well_formed ψ ->
+  well_formed (pcPattern ctx) ->
+  mu_depth_to_fev_limited (pcEvar ctx) (pcPattern ctx) mudepth ->
+  Γ ⊢ is_predicate_pattern ψ ->
+  Γ ⊢ ψ and (emplace ctx ϕ) <---> ψ and (emplace ctx (ψ and ϕ))
+with mu_and_predicate_propagation_iter
+  (mudepth : nat) {Σ : Signature} {syntax : Syntax} Γ ϕ ψ X:
+  bound_svar_is_lt ϕ mudepth ->
+  Definedness_Syntax.theory ⊆ Γ ->
+  well_formed (mu, ϕ) ->
+  well_formed ψ ->
+  svar_is_fresh_in X ϕ ->
+  svar_is_fresh_in X ψ ->
+  Γ ⊢ is_predicate_pattern ψ ->
+  Γ ⊢ (mu, (ψ and ϕ)) <---> (ψ and (mu, ϕ))
+.
+Proof.
+  {
+    induction mudepth.
+  }
+Defined.
+
+
 Lemma mu_and_predicate_propagation_iter
   (mudepth : nat) {Σ : Signature} {syntax : Syntax} Γ ϕ ψ X:
   bound_svar_depth_is_max ϕ 0 mudepth ->
@@ -1831,7 +1930,8 @@ with deduction_theorem_iter
 .
 Proof.
   {
-    induction mudepth.
+    move: ϕ.
+    induction mudepth; intros ϕ.
     {
       intros Hbsd HΓ wfm wfψ fϕ fψ Hp.
       apply mu_and_predicate_propagation with (X := X); try assumption.
@@ -1885,16 +1985,15 @@ Proof.
           specialize (IHϕ Hfr (S zero)).
           repeat case_match; cbn in *; try reflexivity.
           apply IHϕ.
-          Search bsvar_occur bound_svar_depth.
+          apply bsvar_occur_bound_svar_depth_is_max.
+          exact Hbsd.
         }
       }
-      
     }
-    intros HΓ wfm wfψ Hϕnomu fϕ fψ Hp.
+    intros Hbsd HΓ wfm wfψ fϕ fψ Hp.
 
     assert (well_formed (mu , ψ and ϕ)).
     {
-      clear -wfm wfψ.
       unfold well_formed,well_formed_closed in *.
       cbn in *. fold no_negative_occurrence_db_b.
       destruct_and!.
@@ -1910,7 +2009,6 @@ Proof.
 
     assert (svar_has_negative_occurrence X ψ^{svar:0↦X} = false).
     {
-      clear -wfm wfψ fψ.
       unfold well_formed,well_formed_closed in *.
       cbn in *. fold no_negative_occurrence_db_b svar_has_negative_occurrence.
       repeat rewrite orb_false_iff.
@@ -1923,7 +2021,6 @@ Proof.
 
     assert (svar_has_negative_occurrence X ψ^[svar:0↦patt_free_svar X] = false).
     {
-      clear -wfm wfψ fψ.
       unfold well_formed,well_formed_closed in *.
       cbn in *. fold no_negative_occurrence_db_b svar_has_negative_occurrence.
       destruct_and!.
