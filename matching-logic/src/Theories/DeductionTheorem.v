@@ -1876,6 +1876,41 @@ Proof.
   }
 Qed.
 
+Lemma mu_depth_to_fev_limited_evar_open
+  {Σ : Signature}
+  (E X : evar)
+  (ϕ : Pattern)
+  (dbi : db_index)
+  (mudepth : nat)
+:
+  E <> X ->
+  mu_depth_to_fev_limited E ϕ mudepth ->
+  mu_depth_to_fev_limited E ϕ^{evar:dbi↦X} mudepth
+.
+Proof.
+  move: dbi mudepth.
+  induction ϕ; cbn; intros dbi mudepth Hneq Hmd; try exact I.
+  {
+    exact Hmd.
+  }
+  {
+    case_match; cbn; try exact I.
+    subst. case_match; try exact I; congruence.
+  }
+  {
+    naive_solver.
+  }
+  {
+    naive_solver.
+  }
+  {
+    naive_solver.
+  }
+  {
+    naive_solver.
+  }
+Defined.
+
 Lemma pred_and_ctx_and_iter
   (mudepth : nat) {Σ : Signature} {syntax : Syntax} Γ ctx ϕ ψ:
   Definedness_Syntax.theory ⊆ Γ ->
@@ -1898,7 +1933,358 @@ with mu_and_predicate_propagation_iter
 .
 Proof.
   {
-    induction mudepth.
+    intros HΓ wfm wfψ wfc Hmf Hp.
+    intros.
+    move: ctx wfc Hmf.
+    induction mudepth; intros ctx wfc Hmf.
+    {
+      apply mu_depth_to_fev_limited_0 in Hmf.
+      destruct ctx as [pat ev].
+      cbn in *.
+      rewrite free_evar_subst_no_occurrence.
+      { exact Hmf. }
+      rewrite free_evar_subst_no_occurrence.
+      { exact Hmf. }
+      gapply pf_iff_equiv_refl.
+      { apply pile_any. }
+      { wf_auto2. }
+    }
+    {
+      remember (size' (pcPattern ctx)) as sz.
+      assert (Hsz: size' (pcPattern ctx) <= sz) by lia.
+      clear Heqsz.
+    
+      unfold emplace.
+    
+      destruct ctx as [cvar cpatt].
+      simpl in *.
+    
+      generalize dependent cpatt.
+    
+      induction sz.
+      {
+        destruct cpatt; simpl in *; lia.
+      }
+    
+      intros cpatt wfc Hmf Hsz.
+      destruct cpatt. all: simpl in *.
+    
+      (* trivial cases *)
+      2,5,7: useBasicReasoning; apply pf_iff_equiv_refl; wf_auto2.
+      (* not well formed cases*)
+      2,3: cbv in wfc; discriminate wfc.
+    
+      + destruct (decide (cvar = x)).
+        {
+          apply pf_iff_split; wf_auto2.
+          toMLGoal. wf_auto2. mlIntro. mlDestructAnd "0". mlSplitAnd.
+          { mlExact "1". }
+          {
+            mlSplitAnd.
+            * mlExact "1".
+            * mlExact "2".
+          }
+          toMLGoal. wf_auto2. mlIntro. mlDestructAnd "0". mlDestructAnd "2". mlSplitAnd.
+          * mlExact "1".
+          * mlExact "3".
+        }
+        { apply pf_iff_split;[wf_auto2|wf_auto2|aapply A_impl_A|aapply A_impl_A];wf_auto2; set_solver. }
+      + pose proof (IH1 := IHsz cpatt1).
+        feed specialize IH1.
+        { wf_auto2. }
+        {
+          destruct Hmf. assumption.
+        }
+        {
+          lia.
+        }
+        pose proof (IH2 := IHsz cpatt2).
+        feed specialize IH2.
+        { wf_auto2. }
+        {
+          destruct Hmf. assumption.
+        }
+        { lia. }
+    
+        toMLGoal.
+        { wf_auto2. }
+        pose proof (Htmp := predicate_propagate_right_2 Γ
+          (cpatt2^[[evar:cvar↦ϕ]])
+          ψ
+          (cpatt1^[[evar:cvar↦ϕ]])
+          HΓ
+          ltac:(wf_auto2)
+          ltac:(wf_auto2)
+          ltac:(wf_auto2)
+          Hp
+        ).
+        mlRewrite Htmp at 1.
+        clear Htmp.
+        mlRewrite IH2 at 1.
+        pose proof (Htmp := predicate_propagate_right_2 Γ
+          (cpatt2^[[evar:cvar↦ψ and ϕ]])
+          ψ
+          (cpatt1^[[evar:cvar↦ϕ]])
+          HΓ
+          ltac:(wf_auto2)
+          ltac:(wf_auto2)
+          ltac:(wf_auto2)
+          Hp
+        ).
+        mlRewrite <- Htmp at 1.
+        clear Htmp.
+        pose proof (Htmp := predicate_propagate_left_2 Γ
+          (cpatt2^[[evar:cvar↦ψ and ϕ]])
+          ψ
+          (cpatt1^[[evar:cvar↦ϕ]])
+          HΓ
+          ltac:(wf_auto2)
+          ltac:(wf_auto2)
+          ltac:(wf_auto2)
+          Hp
+        ).
+        mlRewrite Htmp at 1.
+        clear Htmp.
+        mlRewrite IH1 at 1.
+        pose proof (Htmp := predicate_propagate_left_2 Γ
+          (cpatt2^[[evar:cvar↦ψ and ϕ]])
+          ψ
+          (cpatt1^[[evar:cvar↦ψ and ϕ]])
+          HΓ
+          ltac:(wf_auto2)
+          ltac:(wf_auto2)
+          ltac:(wf_auto2)
+          Hp
+        ).
+        mlRewrite <- Htmp at 1.
+        fromMLGoal.
+        useBasicReasoning.
+        apply pf_iff_equiv_refl.
+        wf_auto2.
+      + pose proof (IH1 := IHsz cpatt1).
+        feed specialize IH1.
+        { wf_auto2. }
+        {
+          destruct Hmf. assumption.
+        }
+        { lia. }
+        pose proof (IH2 := IHsz cpatt2).
+        feed specialize IH2.
+        { wf_auto2. }
+        {
+          destruct Hmf. assumption.
+        }
+        { lia. }
+        toMLGoal.
+        { wf_auto2. }
+        mlSplitAnd.
+        {
+          mlIntro "H1".
+          mlDestructAnd "H1" as "Hψ" "Himp".
+          mlSplitAnd.
+          { mlExact "Hψ". }
+          mlAdd IH2 as "IH2".
+          mlDestructAnd "IH2" as "IH21" "IH22".
+          mlIntro "H".
+          mlAssert ("Htmp": ((ψ and cpatt2^[[evar:cvar↦ψ and ϕ]]) ---> cpatt2^[[evar:cvar↦ψ and ϕ]])).
+          { wf_auto2. }
+          {
+            mlIntro "H0".
+            mlDestructAnd "H0" as "H00" "H01".
+            mlExact "H01".
+          }
+          mlApply "Htmp".
+          mlClear "Htmp".
+          mlAdd IH1 as "IH1".
+          mlDestructAnd "IH1" as "IH11" "IH12".
+          mlApply "IH21".
+          mlSplitAnd. mlExact "Hψ".
+          mlApply "Himp".
+          mlClear "Himp".
+          mlAssert ("Htmp": ((ψ and cpatt1^[[evar:cvar↦ϕ]]) ---> cpatt1^[[evar:cvar↦ϕ]])).
+          { wf_auto2. }
+          {
+            mlIntro "H0".
+            mlDestructAnd "H0" as "H00" "H01".
+            mlExact "H01".
+          }
+          mlApply "Htmp".
+          mlClear "Htmp".
+          mlApply "IH12".
+          mlSplitAnd.
+          { mlExact "Hψ". }
+          { mlExact "H". }
+        }
+        {
+          mlAdd IH1 as "IH1".
+          mlAdd IH2 as "IH2".
+          mlDestructAnd "IH1" as "IH11" "IH12".
+          mlDestructAnd "IH2" as "IH21" "IH22".
+          mlIntro "H1".
+          mlDestructAnd "H1" as "Hψ" "H2".
+          mlSplitAnd. mlExact "Hψ".
+          mlIntro "H3".
+          mlAssert ("IH11'": (ψ and cpatt1^[[evar:cvar↦ψ and ϕ]])).
+          { wf_auto2. }
+          {
+            mlApply "IH11".
+            mlSplitAnd.
+            { mlExact "Hψ". }
+            { mlExact "H3". }
+          }
+          mlClear "IH11".
+          mlAssert ("H4": (ψ and cpatt2^[[evar:cvar↦ψ and ϕ]])).
+          { wf_auto2. }
+          {
+            mlDestructAnd "IH11'" as "IH11'1" "IH11'2".
+            mlSplitAnd. mlExact "Hψ".
+            mlApply "H2".
+            mlExact "IH11'2".
+          }
+          mlAssert ("IH22'": (ψ and cpatt2^[[evar:cvar↦ϕ]])).
+          { wf_auto2. }
+          {
+            mlApply "IH22".
+            mlExact "H4".
+          }
+          mlClear "IH22".
+          mlDestructAnd "IH22'" as "IH22'1" "IH22'2".
+          mlExact "IH22'2".
+        }
+      + 
+        toMLGoal.
+        { wf_auto2. }
+        mlApplyMeta extract_common_from_equivalence_1.
+        mlIntro "Hψ".
+        remember (evar_fresh_s (free_evars (cpatt ---> ϕ ---> ψ) ∪ {[cvar]})) as x0.
+        specialize (IHsz (cpatt^{evar:0↦x0})).
+        feed specialize IHsz.
+        {
+          wf_auto2.
+        }
+        {
+          destruct Hmf. assumption.
+          unfold mu_in_evar_path in *.
+          simpl in Hmf.
+          case_match. 
+          2: { lia. }
+          rewrite negb_false_iff.
+          eapply (introT (Nat.eqb_spec 0 _)).
+          rewrite evar_open_mu_depth.
+          { solve_fresh_neq. }
+          symmetry in H.
+          exact H.
+        }
+        {
+          rewrite evar_open_size'. lia.
+        }
+        mlSplitAnd; mlIntro "H".
+        {
+          mlDestructEx "H" as x0.
+          {
+            cbn. rewrite union_empty_r_L.
+            eapply evar_is_fresh_in_richer'.
+            2: { apply set_evar_fresh_is_fresh'. }
+            clear. cbn. set_solver.
+          }
+          {
+            cbn.
+            eapply evar_is_fresh_in_richer'.
+            2: { apply set_evar_fresh_is_fresh'. }
+            clear. cbn.
+            eapply transitivity. apply free_evars_free_evar_subst.
+            set_solver.
+          }
+          {
+            cbn.
+            eapply evar_is_fresh_in_richer'.
+            2: { apply set_evar_fresh_is_fresh'. }
+            clear. cbn.
+            eapply transitivity. apply free_evars_free_evar_subst.
+            set_solver.
+          }
+          mlExists x0. mlSimpl.
+          rewrite evar_open_free_evar_subst_swap.
+          { solve_fresh_neq. }
+          { wf_auto2. }
+          rewrite evar_open_free_evar_subst_swap.
+          { solve_fresh_neq. }
+          { wf_auto2. }
+    
+          mlAssert ("Hand": (ψ and (cpatt^{evar:0↦x0}^[[evar:cvar↦ϕ]]))).
+          { wf_auto2. }
+          { mlSplitAnd; mlAssumption. }
+          mlClear "Hψ". mlClear "H".
+          mlRevertLast.
+          mlRewrite IHsz at 1.
+          mlIntro "H".
+          mlDestructAnd "H" as "H1" "H2".
+          mlExact "H2".
+        }
+        {
+          mlDestructEx "H" as x0.
+          {
+            cbn. rewrite union_empty_r_L.
+            eapply evar_is_fresh_in_richer'.
+            2: { apply set_evar_fresh_is_fresh'. }
+            clear. cbn. set_solver.
+          }
+          {
+            cbn.
+            eapply evar_is_fresh_in_richer'.
+            2: { apply set_evar_fresh_is_fresh'. }
+            clear. cbn.
+            eapply transitivity. apply free_evars_free_evar_subst.
+            set_solver.
+          }
+          {
+            cbn.
+            eapply evar_is_fresh_in_richer'.
+            2: { apply set_evar_fresh_is_fresh'. }
+            clear. cbn.
+            eapply transitivity. apply free_evars_free_evar_subst.
+            set_solver.
+          }
+          mlExists x0. mlSimpl.
+          rewrite evar_open_free_evar_subst_swap.
+          { solve_fresh_neq. }
+          { wf_auto2. }
+          rewrite evar_open_free_evar_subst_swap.
+          { solve_fresh_neq. }
+          { wf_auto2. }
+    
+          mlAssert ("Hand": (ψ and (cpatt^{evar:0↦x0}^[[evar:cvar↦ψ and ϕ]]))).
+          { wf_auto2. }
+          { mlSplitAnd; mlAssumption. }
+          mlClear "Hψ". mlClear "H".
+          mlRevertLast.
+          mlRewrite <- IHsz at 1.
+          mlIntro "H".
+          mlDestructAnd "H" as "H1" "H2".
+          mlExact "H2".
+        }
+        
+      + 
+        destruct (decide (cvar ∈ free_evars cpatt)).
+        {
+          unfold mu_in_evar_path in Hmf.
+          cbn in Hmf.
+          case_match.
+          2: { lia. }
+          rewrite maximal_mu_depth_to_S in H.
+          assumption.
+          inversion H.
+        }
+        {
+          rewrite free_evar_subst_no_occurrence.
+          { assumption. }
+          rewrite free_evar_subst_no_occurrence.
+          { assumption. }
+          useBasicReasoning.
+          apply pf_iff_equiv_refl.
+          wf_auto2.
+        }
+    }
   }
 Defined.
 
