@@ -1837,12 +1837,7 @@ Fixpoint mu_depth_to_fev_limited
   : Prop
 :=
 match ψ with
-| patt_free_evar E'
-  =>
-  match (decide (E' = E)) with
-  | left _ => limit > 0
-  | right _ => True
-  end
+| patt_free_evar _ => True
 | patt_free_svar _ => True
 | patt_bound_evar _ => True
 | patt_bound_svar _ => True
@@ -1857,7 +1852,10 @@ match ψ with
 | patt_exists ϕ'
   => mu_depth_to_fev_limited E ϕ' limit
 | patt_mu ϕ'
-  => mu_depth_to_fev_limited E ϕ' (Nat.pred limit)
+  => match limit with
+     | 0 => evar_is_fresh_in E ϕ'
+     | S limit' => mu_depth_to_fev_limited E ϕ' limit'
+    end
 end.
 
 Lemma mu_depth_to_fev_limited_0
@@ -1911,12 +1909,86 @@ Proof.
   }
 Defined.
 
+(*
+Lemma wfcmu_impl_bound_svar_is_lt
+  {Σ : Signature}
+  (ϕ : Pattern)
+  (mudepth : nat)
+: 
+  well_formed_closed_mu_aux ϕ 0 ->
+  bound_svar_is_lt ϕ (S mudepth)
+.
+Proof.
+  move: mudepth.
+  induction ϕ; cbn; intros mudepth H1; try exact I.
+  {
+    case_match; try lia.
+    { congruence. }
+  }
+  {
+    naive_bsolver.
+  }
+  {
+    naive_bsolver.
+  }
+  {
+    naive_solver.
+  }
+  {
+    apply IHϕ.
+    2: apply H2.
+    destruct mudepth; cbn in *.
+    {
+      apply IHϕ. cbn.
+    }
+    naive_solver.
+  }
+Qed.
+*)
+
+Lemma mu_depth_to_fev_limited_implies_bound_svar_is_lt_evar_open
+  {Σ : Signature}
+  (E : evar)
+  (cpatt ϕ : Pattern)
+  (mudepth : nat)
+:
+  well_formed_closed_mu_aux cpatt 0 ->
+  (mudepth > 0 -> bound_svar_is_lt ϕ mudepth) ->
+  mu_depth_to_fev_limited E cpatt mudepth ->
+  bound_svar_is_lt (cpatt^[[evar:E↦ϕ]]) mudepth
+.
+Proof.
+  move: mudepth.
+  induction cpatt; cbn; intros mudepth Hwf H0 H; try exact I.
+  {
+    repeat case_match; subst; try congruence; cbn; try exact I.
+    apply H0. assumption.
+  }
+  {
+    repeat case_match; try lia. congruence.
+  }
+  {
+    naive_bsolver.
+  }
+  {
+    naive_bsolver.
+  }
+  {
+    naive_solver.
+  }
+  {
+    apply IHcpatt.
+    naive_bsolver.
+  }
+Qed.
+*)
 Lemma pred_and_ctx_and_iter
   (mudepth : nat) {Σ : Signature} {syntax : Syntax} Γ ctx ϕ ψ:
   Definedness_Syntax.theory ⊆ Γ ->
   well_formed ϕ ->
   well_formed ψ ->
   well_formed (pcPattern ctx) ->
+  bound_svar_is_lt ϕ mudepth ->
   mu_depth_to_fev_limited (pcEvar ctx) (pcPattern ctx) mudepth ->
   Γ ⊢ is_predicate_pattern ψ ->
   Γ ⊢ ψ and (emplace ctx ϕ) <---> ψ and (emplace ctx (ψ and ϕ))
@@ -1933,7 +2005,7 @@ with mu_and_predicate_propagation_iter
 .
 Proof.
   {
-    intros HΓ wfm wfψ wfc Hmf Hp.
+    intros HΓ wfm wfψ wfc Hmf0 Hmf Hp.
     intros.
     move: ctx wfc Hmf.
     induction mudepth; intros ctx wfc Hmf.
@@ -2163,17 +2235,13 @@ Proof.
           wf_auto2.
         }
         {
-          destruct Hmf. assumption.
-          unfold mu_in_evar_path in *.
-          simpl in Hmf.
-          case_match. 
-          2: { lia. }
-          rewrite negb_false_iff.
-          eapply (introT (Nat.eqb_spec 0 _)).
-          rewrite evar_open_mu_depth.
-          { solve_fresh_neq. }
-          symmetry in H.
-          exact H.
+          apply mu_depth_to_fev_limited_evar_open.
+          {
+            solve_fresh_neq.
+          }
+          {
+            exact Hmf.
+          }
         }
         {
           rewrite evar_open_size'. lia.
@@ -2266,15 +2334,7 @@ Proof.
         
       + 
         destruct (decide (cvar ∈ free_evars cpatt)).
-        {
-          unfold mu_in_evar_path in Hmf.
-          cbn in Hmf.
-          case_match.
-          2: { lia. }
-          rewrite maximal_mu_depth_to_S in H.
-          assumption.
-          inversion H.
-        }
+        2:
         {
           rewrite free_evar_subst_no_occurrence.
           { assumption. }
@@ -2284,6 +2344,26 @@ Proof.
           apply pf_iff_equiv_refl.
           wf_auto2.
         }
+        {
+          pose proof (Htmp := mu_and_predicate_propagation_iter mudepth Σ syntax Γ).
+          specialize (Htmp (cpatt^[[evar:cvar↦ϕ]]) ψ).
+          remember (svar_fresh_s (free_svars (cpatt^[[evar:cvar↦ϕ]]) ∪ free_svars ψ)) as X.
+          specialize (Htmp X).
+          feed specialize Htmp.
+          {
+            apply mu_depth_to_fev_limited_implies_bound_svar_is_lt_evar_open.
+            2: { exact Hmf. }
+
+          }
+          unfold mu_in_evar_path in Hmf.
+          cbn in Hmf.
+          case_match.
+          2: { lia. }
+          rewrite maximal_mu_depth_to_S in H.
+          assumption.
+          inversion H.
+        }
+        
     }
   }
 Defined.
