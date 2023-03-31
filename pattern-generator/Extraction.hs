@@ -69,17 +69,17 @@ fresh l
   | null l    = "X"
   | otherwise = maximum l ++ "X"
 
-translate :: State -> NamelessPattern -> Maybe NamedPattern
-translate st (Var s)       = Just (NVar s)
-translate st (Bound x)     = Nothing
-translate _  (Sym s)       = Just (NSym s)
-translate _  Bot           = Just NBot
-translate st (Imp ph1 ph2) = let (ph1', ph2') = (translate st ph1, translate st ph2) in NImp <$> ph1' <*> ph2'
-translate st (App ph1 ph2) = let (ph1', ph2') = (translate st ph1, translate st ph2) in NApp <$> ph1' <*> ph2'
-translate st (Exs ph) = NExs y <$> translate st' (bsubst ph 0 (Var y))
-  where
-    y = fresh st
-    st' = st ++ [y]
+-- translate :: State -> NamelessPattern -> Maybe NamedPattern
+-- translate st (Var s)       = Just (NVar s)
+-- translate st (Bound x)     = Nothing
+-- translate _  (Sym s)       = Just (NSym s)
+-- translate _  Bot           = Just NBot
+-- translate st (Imp ph1 ph2) = let (ph1', ph2') = (translate st ph1, translate st ph2) in NImp <$> ph1' <*> ph2'
+-- translate st (App ph1 ph2) = let (ph1', ph2') = (translate st ph1, translate st ph2) in NApp <$> ph1' <*> ph2'
+-- translate st (Exs ph) = NExs y <$> translate st' (bsubst ph 0 (Var y))
+--   where
+--     y = fresh st
+--     st' = st ++ [y]
 
 
 patt1 :: NamelessPattern
@@ -111,7 +111,7 @@ nSubstStateful st (NApp ph1 ph2) x ps = NApp (nSubstStateful st ph1 x ps) (nSubs
 nSubstStateful st (NExs y ph) x ps = NExs z (nSubstStateful st' (rename ph y z) x ps)
   where
     z = fresh st
-    st' = st ++ [z]
+    st' = z : st
 nSubstStateful st x _ _ = x
 
 npatt1_subst :: NamedPattern
@@ -121,8 +121,9 @@ npatt1_subst = nSubstStateful ["X"] npatt1 "X" (NExs "XXXX" (NVar "XXXX"))
 -- Q: Stateful translation, that propagates states? At the end, the final state is returned?
 
 iterateState :: Int -> State -> State
-iterateState 0 st = st
-iterateState n st = iterateState (n - 1) (st ++ [fresh st])
+iterateState n st 
+  | n <= 0    = st
+  | otherwise = iterateState (n - 1) (fresh st : st)
 
 
 -- How about named substitutions taking a state + a depth counter as arguments? They will always rename all bound vars!
@@ -132,7 +133,7 @@ shift st (NApp ph1 ph2) = NApp (shift st ph1) (shift st ph2)
 shift st (NExs x ph) = NExs z (rename (shift st' ph) x z)
   where
     z = fresh st
-    st' = st ++ [z]
+    st' = z : st
 shift _ ph = ph
 
 nsubst2 :: State -> NamedPattern -> String -> NamedPattern -> NamedPattern
@@ -144,7 +145,7 @@ nsubst2 st (NApp ph1 ph2) x ps = NApp (nsubst2 st ph1 x ps) (nsubst2 st ph2 x ps
 nsubst2 st (NExs y ph) x ps = NExs z (nsubst2 st' (rename ph y z) x ps)
   where
     z = fresh st
-    st' = st ++ [z]
+    st' = z : st
 nsubst2 st x _ _ = x
 
 freeVars :: NamelessPattern -> [String]
@@ -160,12 +161,31 @@ availableVarNames = map (return . (:[])) ['A'..'Z']
 availableSymNames :: [Gen String]
 availableSymNames = map (return . (:[])) ['a'..'z']
 
+-- Well-formed generation:
+-- instance Arbitrary NamelessPattern where
+--   arbitrary :: Gen NamelessPattern
+--   arbitrary = sized (ph [])
+--     where ph st 0 = oneof (map (return . Bound) st ++ [liftM Var (oneof availableVarNames), liftM Sym (oneof availableSymNames), return Bot])
+--           ph st n = oneof [liftM2 Imp (subph st) (subph st), liftM2 App (subph st) (subph st), liftM Exs (subph (0 : map (+1) st))]
+--             where subph st = ph st (n `div` 2)
+
+-- Patterns containing only the 0 as dangling
 instance Arbitrary NamelessPattern where
   arbitrary :: Gen NamelessPattern
-  arbitrary = sized (ph [])
+  arbitrary = sized (ph [0])
     where ph st 0 = oneof (map (return . Bound) st ++ [liftM Var (oneof availableVarNames), liftM Sym (oneof availableSymNames), return Bot])
           ph st n = oneof [liftM2 Imp (subph st) (subph st), liftM2 App (subph st) (subph st), liftM Exs (subph (0 : map (+1) st))]
             where subph st = ph st (n `div` 2)
+
+-- Non-well-formed generation
+-- instance Arbitrary NamelessPattern where
+--   arbitrary :: Gen NamelessPattern
+--   arbitrary = sized ph
+--     where ph 0 = oneof [liftM Var (oneof availableVarNames), liftM Bound (oneof (map return [1..100])), liftM Sym (oneof availableSymNames), return Bot]
+--           ph n = oneof [liftM2 Imp subph subph, liftM2 App subph subph, liftM Exs subph]
+--             where subph = ph (n `div` 2)
+
+
 
   -- shrink :: NamelessPattern -> [NamelessPattern]
   -- shrink (Imp ph1 ph2) = [ph1, ph2] ++ [Imp ph1' ph2' | (ph1', ph2') <- shrink (ph1, ph2)]
@@ -174,39 +194,157 @@ instance Arbitrary NamelessPattern where
   shrink x = genericShrink x
   -- shrink ph = [ph]
 
-firstSubst :: NamelessPattern -> NamelessPattern -> String -> Maybe NamedPattern
-firstSubst ph ps x = case (translate st ph, translate st ps) of
-                        (Just ph', Just ps') -> Just $ nsubst2 st ph' x ps'
-                        _ -> Nothing
-  where
-    st = x : freeVars ph ++ freeVars ps -- we have to include x in the state as discussed (to avoid "freeing" a bound variable)
+-- firstSubst :: NamelessPattern -> NamelessPattern -> String -> Maybe NamedPattern
+-- firstSubst ph ps x = case (translate st ph, translate st ps) of
+--                         (Just ph', Just ps') -> Just $ nsubst2 st ph' x ps'
+--                         _ -> Nothing
+--   where
+--     st = x : freeVars ph ++ freeVars ps -- we have to include x in the state as discussed (to avoid "freeing" a bound variable)
 
-secondSubst :: NamelessPattern -> NamelessPattern -> String -> Maybe NamedPattern
-secondSubst ph ps x = translate st (subst ph x ps) 
-  where
-    st = x : freeVars ph ++ freeVars ps -- we have to include x in the state as discussed (to avoid "freeing" a bound variable)
+-- secondSubst :: NamelessPattern -> NamelessPattern -> String -> Maybe NamedPattern
+-- secondSubst ph ps x = translate st (subst ph x ps) 
+--   where
+--     st = x : freeVars ph ++ freeVars ps -- we have to include x in the state as discussed (to avoid "freeing" a bound variable)
 
-data Input = Inp NamelessPattern NamelessPattern String deriving (Show, Eq, Generic)
+-- Inp includes a pattern to substitute in, a pattern to substitute with, a name and an index to substitute
+data Input = Inp NamelessPattern NamelessPattern String Int deriving (Show, Eq, Generic)
+
+well_formed :: NamelessPattern -> Int -> Bool
+well_formed (Bound x) y = x < y
+well_formed (Imp ph1 ph2) y = well_formed ph1 y && well_formed ph2 y
+well_formed (App ph1 ph2) y = well_formed ph1 y && well_formed ph2 y
+well_formed (Exs ph) y = well_formed ph (y + 1)
+well_formed _ _ = True
+
+biggestBound :: NamelessPattern -> Int -- gets the biggest unbound db index
+biggestBound (Bound x) = x
+biggestBound (Imp ph1 ph2) = max (biggestBound ph1) (biggestBound ph2)
+biggestBound (App ph1 ph2) = max (biggestBound ph1) (biggestBound ph2)
+biggestBound (Exs ph) = biggestBound ph - 1
+biggestBound _ = 0
 
 instance Arbitrary Input where
   arbitrary = do
-    ph1 <- arbitrary :: Gen NamelessPattern
-    ph2 <- arbitrary :: Gen NamelessPattern
+    ph1 <- arbitrary :: Gen NamelessPattern -- if well-formed ph1 is needed, use `suchThat arbitrary (flip well_formed 0)`
+    ph2 <- suchThat arbitrary (flip well_formed 0) :: Gen NamelessPattern
+ --   n <- oneof (map return [1..100]) 
     x <- oneof (availableVarNames ++ map return (freeVars ph1 ++ freeVars ph2)) -- availableVarNames are used if the second list is empty
-    return (Inp ph1 ph2 x)
+    return (Inp ph1 ph2 x (biggestBound ph1))
   shrink = genericShrink
 
-prop_subst :: NamelessPattern -> NamelessPattern -> String -> Bool
-prop_subst ph ps x = case (translate st ph, translate st ps, translate st (subst ph x ps)) of
-                      (Just ph', Just ps', Just res) -> nsubst2 st ph' x ps' == res
-                      _ -> False
-  where
-    st = x : freeVars ph ++ freeVars ps -- we have to include x in the state as discussed (to avoid "freeing" a bound variable)
+-- prop_subst :: NamelessPattern -> NamelessPattern -> String -> Bool
+-- prop_subst ph ps x = case (translate st ph, translate st ps, translate st (subst ph x ps)) of
+--                       (Just ph', Just ps', Just res) -> nsubst2 st ph' x ps' == res
+--                       _ -> False
+--   where
+--     st = x : freeVars ph ++ freeVars ps -- we have to include x in the state as discussed (to avoid "freeing" a bound variable)
 -- use: quickCheck (withMaxSuccess 1000 prop_subst) for testing
 
+-- prop_subst2 :: Input -> Bool
+-- prop_subst2 (Inp ph ps x) = case (translate st ph, translate st ps, translate st (subst ph x ps)) of
+--                               (Just ph', Just ps', Just res) -> nsubst2 st ph' x ps' == res
+--                               _ -> False
+--   where
+--     st = x : freeVars ph ++ freeVars ps -- we have to include x in the state as discussed (to avoid "freeing" a bound variable)
+
+
+{-
+  translate (ph[n |-> ps]) ?
+  
+  
+  theory ⊢H (instantiate (patt_exists phi) (patt_free_evar y) ---> (patt_exists phi))
+  ph.[0 |-> y] ---> ex, ph
+                     ^----- new bound variable = fresh st
+
+-- well_formed translate
+  translate (ph.[0 |-> y]) st = (translate (ph.[0 |-> fresh st]) (fresh st : st)).[fresh st |-> y]
+
+-- non-well_formed translates
+  translate (ph.[0 |-> y]) st = (translate ph st).[fresh st |-> y]
+
+  translate (ph.[0 |-> ps]) st = (translate ph st).[fresh st |-> translate ps st]
+  translate (ph.[n |-> ps]) st = (translate ph st).[fresh (iterateState n st) |-> translate ps st]
+
+
+---> ex fresh st, translate (ph.[0 |-> fresh st])
+
+  translate (ph[0 |-> y] ---> ex, ph) = (translate ph).[? |-> y] ---> ex fresh st, translate ph
+
+  theory ⊢N npatt_imp (rename_free_evar ph y x) (npatt_exists x ph)
+
+-}
+translate :: State -> NamelessPattern -> NamedPattern
+translate st (Var s)       = NVar s
+translate st (Bound x)     = undefined -- NVar $ fresh st -- (iterateState x st)
+translate _  (Sym s)       = NSym s
+translate _  Bot           = NBot
+translate st (Imp ph1 ph2) = let (ph1', ph2') = (translate st ph1, translate st ph2) in NImp ph1' ph2'
+translate st (App ph1 ph2) = let (ph1', ph2') = (translate st ph1, translate st ph2) in NApp ph1' ph2'
+translate st (Exs ph) = NExs y $ translate st' (bsubst ph 0 (Var y))
+  where
+    y = fresh st
+    st' = y : st
+
 prop_subst2 :: Input -> Bool
-prop_subst2 (Inp ph ps x) = case (translate st ph, translate st ps, translate st (subst ph x ps)) of
-                              (Just ph', Just ps', Just res) -> nsubst2 st ph' x ps' == res
-                              _ -> False
+prop_subst2 (Inp ph ps x _) = case (translate st ph, translate st ps, translate st (subst ph x ps)) of
+                              (ph', ps', res) -> nsubst2 st ph' x ps' == res
+--                              _ -> False
   where
     st = x : freeVars ph ++ freeVars ps -- we have to include x in the state as discussed (to avoid "freeing" a bound variable)
+
+
+--   translate (ph.[0 |-> y]) st = (translate (ph.[0 |-> fresh st]) (fresh st : st)).[fresh st |-> y]
+prop_bsubst :: Input -> Bool
+prop_bsubst (Inp ph ps _ _) = translate st (bsubst ph 0 ps) == nsubst2 st (translate st (bsubst ph 0 (Var x))) x (translate st ps)
+  where
+    st' = freeVars ph ++ freeVars ps
+    st = x : st'
+    x = fresh st'
+
+
+data AppCtx = Box | LApp AppCtx NamelessPattern | RApp NamelessPattern AppCtx
+  deriving (Show, Eq, Generic)
+
+data NAppCtx = NBox | NLApp NAppCtx NamedPattern | NRApp NamedPattern NAppCtx
+  deriving (Show, Eq)
+
+substCtx :: AppCtx -> NamelessPattern -> NamelessPattern
+substCtx Box ps = ps
+substCtx (LApp c ph) ps = App (substCtx c ps) ph
+substCtx (RApp ph c) ps = App ph (substCtx c ps)
+
+substNCtx :: NAppCtx -> NamedPattern -> NamedPattern
+substNCtx NBox ps = ps
+substNCtx (NLApp c ph) ps = NApp (substNCtx c ps) ph
+substNCtx (NRApp ph c) ps = NApp ph (substNCtx c ps)
+
+translateCtx :: State -> AppCtx -> NAppCtx
+translateCtx st Box         = NBox
+translateCtx st (LApp c ph) = NLApp (translateCtx st c) (translate st ph)
+translateCtx st (RApp ph c) = NRApp (translate st ph) (translateCtx st c)
+
+
+instance Arbitrary AppCtx where
+  arbitrary :: Gen AppCtx
+  arbitrary = sized c
+    where c 0 = return Box
+          c n = oneof [liftM2 LApp subc (suchThat arbitrary (flip well_formed 0)), liftM2 RApp (suchThat arbitrary (flip well_formed 0)) subc]
+            where subc = c (n `div` 2)
+  shrink :: AppCtx -> [AppCtx]
+  shrink = genericShrink
+
+data InputCtx = InpCtx NamelessPattern AppCtx deriving (Show, Generic)
+
+instance Arbitrary InputCtx where
+  arbitrary :: Gen InputCtx
+  arbitrary = do
+    ph <- suchThat arbitrary (flip well_formed 0) :: Gen NamelessPattern
+    c <- arbitrary :: Gen AppCtx
+    return (InpCtx ph c)
+  
+  shrink :: InputCtx -> [InputCtx]
+  shrink = genericShrink
+
+prop_subst_ctx :: InputCtx -> Bool
+prop_subst_ctx (InpCtx ph c) = translate st (substCtx c ph) == substNCtx (translateCtx st c) (translate st ph)
+  where st = freeVars (substCtx c ph)
