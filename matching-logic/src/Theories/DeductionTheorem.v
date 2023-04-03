@@ -1152,6 +1152,8 @@ Proof.
     { wf_auto2. }
     { wf_auto2. }
     {
+      apply mu_in_evar_path_svar_subst_evar.
+      Check mu_in_evar_path_svar_subst_evar.
       Search ϕ.
       (* apply fresh_impl_no_mu_in_evar_path. *)
       apply Hϕnomu.
