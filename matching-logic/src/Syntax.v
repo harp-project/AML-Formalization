@@ -1758,6 +1758,17 @@ Section with_signature.
       end
   end.
 
+  Lemma mu_depth_to_fsv_limited_svar_has_positive_negative_occurrence X ϕ:
+    mu_depth_to_fsv_limited X ϕ 0 ->
+    svar_has_positive_occurrence X ϕ = false
+    /\ svar_has_negative_occurrence X ϕ = false
+  .
+  Proof.
+    induction ϕ; cbn; intros H; split; try reflexivity.
+    {
+      destruct (decide (X = x)).
+    }
+  Qed.
 
   Lemma mu_depth_to_fsv_limited_svar_open
   (E X : svar)
