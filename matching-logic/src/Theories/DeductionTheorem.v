@@ -944,17 +944,16 @@ Proof.
 Defined.
 
 (* Lemma 89 *)
-Lemma mu_and_predicate_propagation {Σ : Signature} {syntax : Syntax} Γ ϕ ψ X :
+Lemma mu_and_predicate_propagation {Σ : Signature} {syntax : Syntax} Γ ϕ ψ :
   Definedness_Syntax.theory ⊆ Γ ->
   well_formed (mu, ϕ) ->
   well_formed ψ ->
   (* "Let X be a set variable that does not occur under any µ-binder in ϕ" *)
-  mu_depth_to_fsv_limited X ϕ 0 ->
-  svar_is_fresh_in X ψ ->
+  bound_svar_is_lt ϕ 1 ->
   Γ ⊢ is_predicate_pattern ψ ->
   Γ ⊢ (mu, (ψ and ϕ)) <---> (ψ and (mu, ϕ)).
 Proof.
-  intros HΓ wfm wfψ HXϕ fψ Hp.
+  intros HΓ wfm wfψ Hbsltϕ1 Hp.
 
   assert (well_formed (mu , ψ and ϕ)).
   {
@@ -971,42 +970,6 @@ Proof.
       wf_auto2.
     }
   }
-
-  assert (HXψ0X: svar_has_negative_occurrence X ψ^{svar:0↦X} = false).
-  {
-    clear -wfm wfψ fψ.
-    unfold well_formed,well_formed_closed in *.
-    cbn in *. fold no_negative_occurrence_db_b svar_has_negative_occurrence.
-    repeat rewrite orb_false_iff.
-    destruct_and!.
-    apply positive_negative_occurrence_db_named.
-    { apply wfc_impl_no_neg_occ. assumption. }
-    apply fresh_svar_no_neg.
-    apply fψ.
-  }
-
-  assert (svar_has_negative_occurrence X ψ^[svar:0↦patt_free_svar X] = false).
-  {
-    clear -wfm wfψ fψ.
-    unfold well_formed,well_formed_closed in *.
-    cbn in *. fold no_negative_occurrence_db_b svar_has_negative_occurrence.
-    destruct_and!.
-    apply svar_hno_bsvar_subst.
-    3: { apply fresh_svar_no_neg. exact fψ. }
-    {
-      cbn. congruence.
-    }
-    {
-      cbn. rewrite decide_eq_same. intros _.
-      apply wfc_impl_no_neg_occ. assumption.
-    }
-  }
-(*
-  assert (svar_has_negative_occurrence X ϕ^{svar:0↦X} = false).
-  {
-    wf_auto2.
-  }
-*)
 
   apply pf_iff_split.
   { assumption. }
@@ -1153,12 +1116,16 @@ Proof.
     { wf_auto2. }
     {
       apply mu_in_evar_path_svar_subst_evar.
-      Check mu_in_evar_path_svar_subst_evar.
-      Search ϕ.
-      (* apply fresh_impl_no_mu_in_evar_path. *)
-      apply Hϕnomu.
-      subst x. clear.
-      apply set_evar_fresh_is_fresh.
+      { wf_auto2. }
+      {
+        subst x. unfold evar_is_fresh_in.
+        eapply evar_is_fresh_in_richer.
+        2: apply set_evar_fresh_is_fresh.
+        { cbn. set_solver. }
+      }
+      {
+        exact Hbsltϕ1.
+      }
     }
     { assumption. }
 
