@@ -1476,6 +1476,60 @@ Section with_signature.
   := negb (Nat.eqb 0 (maximal_mu_depth_to sdepth E ψ)).
 
 
+  Lemma hbvum_impl_mmdt0 phi dbi x y k:
+    evar_is_fresh_in x phi ->
+    evar_is_fresh_in y phi ->
+    well_formed_closed_mu_aux phi (S dbi) ->
+    maximal_mu_depth_to k y phi^[svar:dbi↦patt_free_evar y] = 0 ->
+    maximal_mu_depth_to k x phi^[svar:dbi↦patt_free_evar x] = 0
+  .
+  Proof.
+    move: x y dbi k.
+    induction phi; intros x' y dbi k Hfrx' Hfry Hwf H; cbn in *; try reflexivity.
+    {
+      unfold evar_is_fresh_in in *. cbn in *.
+      repeat case_match; subst; try reflexivity.
+      set_solver. 
+    }
+    {
+      repeat case_match; cbn in *; try reflexivity;
+      rewrite decide_eq_same; try reflexivity; subst;
+      case_match; subst; cbn in *; try reflexivity; contradiction.
+    }
+    {
+      unfold evar_is_fresh_in in *. cbn in *.
+      rewrite -> IHphi1 with (y := y).
+      5: lia.
+      4: wf_auto2.
+      3: set_solver.
+      2: set_solver.
+      cbn. apply IHphi2 with (y := y).
+      { set_solver. }
+      { set_solver. }
+      { wf_auto2. }
+      { lia. }
+    }
+    {
+      unfold evar_is_fresh_in in *. cbn in *.
+      rewrite -> IHphi1 with (y := y).
+      5: lia.
+      4: wf_auto2.
+      3: set_solver.
+      2: set_solver.
+      cbn. apply IHphi2 with (y := y).
+      { set_solver. }
+      { set_solver. }
+      { wf_auto2. }
+      { lia. }
+    }
+    {
+      eauto with nocore.
+    }
+    {
+      eauto with nocore.
+    }
+  Qed.
+
 
 End with_signature.
 
