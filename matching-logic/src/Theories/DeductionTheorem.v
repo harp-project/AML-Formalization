@@ -1624,35 +1624,6 @@ Defined.
 
 *)
 
-Lemma bsvar_occur_bound_svar_depth_is_max
-  {Σ : Signature}
-  (ϕ : Pattern)
-  (idx : db_index)
-  :
-  bsvar_occur ϕ idx = false ->
-  bound_svar_depth_is_max ϕ idx 0
-.
-Proof.
-  induction ϕ; cbn; intros H; try exact I.
-  {
-    repeat case_match; try congruence.
-    { exact I. }
-  }
-  {
-    rewrite orb_false_iff in H.
-    naive_solver.
-  }
-  {
-    rewrite orb_false_iff in H.
-    naive_solver.
-  }
-  {
-    auto with nocore.
-  }
-  {
-    exact H.
-  }
-Qed.
 
 (*
 Lemma mu_depth_to_fev_limited_0
@@ -1673,40 +1644,7 @@ Qed.
 *)
 
 (*
-Lemma wfcmu_impl_bound_svar_is_lt
-  {Σ : Signature}
-  (ϕ : Pattern)
-  (mudepth : nat)
-: 
-  well_formed_closed_mu_aux ϕ 0 ->
-  bound_svar_is_lt ϕ (S mudepth)
-.
-Proof.
-  move: mudepth.
-  induction ϕ; cbn; intros mudepth H1; try exact I.
-  {
-    case_match; try lia.
-    { congruence. }
-  }
-  {
-    naive_bsolver.
-  }
-  {
-    naive_bsolver.
-  }
-  {
-    naive_solver.
-  }
-  {
-    apply IHϕ.
-    2: apply H2.
-    destruct mudepth; cbn in *.
-    {
-      apply IHϕ. cbn.
-    }
-    naive_solver.
-  }
-Qed.
+
 *)
 
 Lemma mu_depth_to_fev_limited_implies_bound_svar_is_lt_evar_open
