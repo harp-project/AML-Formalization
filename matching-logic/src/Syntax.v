@@ -1531,6 +1531,196 @@ Section with_signature.
   Qed.
 
 
+  Lemma fresh_impl_no_mu_in_evar_path x phi k:
+    evar_is_fresh_in x phi ->
+    mu_in_evar_path x phi k = false.
+  Proof.
+    move: k x.
+    induction phi; intros k x' Hx'; unfold mu_in_evar_path in *;
+      cbn in *; try reflexivity.
+    {
+      destruct (decide (x = x')); try reflexivity.
+      unfold evar_is_fresh_in in Hx'. cbn in Hx'.
+      exfalso. set_solver.
+    }
+    {
+      unfold evar_is_fresh_in in *.
+      cbn in Hx'.
+      specialize (IHphi1 k x' ltac:(set_solver)).
+      specialize (IHphi2 k x' ltac:(set_solver)).
+      repeat case_match; try reflexivity; cbn in *; lia.
+    }
+    {
+      unfold evar_is_fresh_in in *.
+      cbn in Hx'.
+      specialize (IHphi1 k x' ltac:(set_solver)).
+      specialize (IHphi2 k x' ltac:(set_solver)).
+      repeat case_match; try reflexivity; cbn in *; lia.
+    }
+    {
+      unfold evar_is_fresh_in in *.
+      cbn in Hx'.
+      specialize (IHphi k x' ltac:(set_solver)).
+      exact IHphi.
+    }
+    {
+      unfold evar_is_fresh_in in *.
+      cbn in Hx'.
+      specialize (IHphi (S k) x' ltac:(set_solver)).
+      exact IHphi.
+    }
+  Qed.
+  (*
+  Fixpoint bound_svar_depth_is_max
+    {Σ : Signature}
+    (ϕ : Pattern)
+    (dbi : db_index)
+    (max_depth : nat)
+  : Prop
+  :=
+  match ϕ with
+  | patt_bound_evar _ => True
+  | patt_bound_svar idx => 
+    match (decide (idx = dbi)) with
+    | left _ => False
+    | right _ => True
+    end
+  | patt_free_evar _ => True
+  | patt_free_svar _ => True
+  | patt_bott => True
+  | patt_sym _ => True
+  | patt_imp ϕ₁ ϕ₂
+    => (bound_svar_depth_is_max ϕ₁ dbi max_depth)
+    /\ (bound_svar_depth_is_max ϕ₂ dbi max_depth)
+  | patt_app ϕ₁ ϕ₂
+    => (bound_svar_depth_is_max ϕ₁ dbi max_depth)
+    /\ (bound_svar_depth_is_max ϕ₂ dbi max_depth)
+  | patt_exists ϕ'
+    => bound_svar_depth_is_max ϕ' dbi max_depth
+  | patt_mu ϕ'
+    =>
+    match max_depth with
+    | 0 => bsvar_occur ϕ' (S dbi) = false
+    | S (max_depth') => bound_svar_depth_is_max ϕ' (S dbi) max_depth'
+    end
+  end.
+
+  Fixpoint all_mu_bound_svars_have_max_depth
+    (ϕ : Pattern)
+    (max_depth : nat)
+    : Prop
+  :=
+    match ϕ with
+    | patt_bound_evar _ => True
+    | patt_bound_svar _ => True
+    | patt_free_evar _ => True
+    | patt_free_svar _ => True
+    | patt_bott => True
+    | patt_sym _ => True
+    | patt_imp ϕ₁ ϕ₂
+      => (all_mu_bound_svars_have_max_depth ϕ₁ max_depth)
+      /\ (all_mu_bound_svars_have_max_depth ϕ₂ max_depth)
+    | patt_app ϕ₁ ϕ₂
+      => (all_mu_bound_svars_have_max_depth ϕ₁ max_depth)
+      /\ (all_mu_bound_svars_have_max_depth ϕ₂ max_depth)
+    | patt_exists ϕ' =>
+      all_mu_bound_svars_have_max_depth ϕ' max_depth
+    | patt_mu ϕ'
+      => bound_svar_depth_is_max ϕ' 0 max_depth
+      /\ all_mu_bound_svars_have_max_depth ϕ' max_depth
+    end
+  . *)
+
+
+  Fixpoint bound_svar_is_lt 
+  {Σ : Signature}
+  (ϕ : Pattern)
+  (limit : nat)
+  : Prop
+  :=
+  match ϕ with
+  | patt_bound_evar idx => True
+  | patt_bound_svar idx => idx < limit
+  | patt_free_evar _ => True
+  | patt_free_svar _ => True
+  | patt_bott => True
+  | patt_sym _ => True
+  | patt_imp ϕ₁ ϕ₂
+  => (bound_svar_is_lt ϕ₁ limit)
+  /\ (bound_svar_is_lt ϕ₂ limit)
+  | patt_app ϕ₁ ϕ₂
+  => (bound_svar_is_lt ϕ₁ limit)
+  /\ (bound_svar_is_lt ϕ₂ limit)
+  | patt_exists ϕ' => bound_svar_is_lt ϕ' limit
+  | patt_mu ϕ' => bound_svar_is_lt ϕ' limit
+  end.
+
+
+  Fixpoint mu_depth_to_fev_limited
+    (E : evar)
+    (ψ : Pattern)
+    (limit : nat)
+    : Prop
+  :=
+  match ψ with
+  | patt_free_evar _ => True
+  | patt_free_svar _ => True
+  | patt_bound_evar _ => True
+  | patt_bound_svar _ => True
+  | patt_bott => True
+  | patt_sym _ => True
+  | patt_imp ϕ₁ ϕ₂
+    => mu_depth_to_fev_limited E ϕ₁ limit
+    /\ mu_depth_to_fev_limited E ϕ₂ limit
+  | patt_app ϕ₁ ϕ₂
+    => mu_depth_to_fev_limited E ϕ₁ limit
+    /\ mu_depth_to_fev_limited E ϕ₂ limit
+  | patt_exists ϕ'
+    => mu_depth_to_fev_limited E ϕ' limit
+  | patt_mu ϕ'
+    => match limit with
+      | 0 => evar_is_fresh_in E ϕ'
+      | S limit' => mu_depth_to_fev_limited E ϕ' limit'
+      end
+  end.
+
+
+  Lemma mu_depth_to_fev_limited_evar_open
+  (E X : evar)
+  (ϕ : Pattern)
+  (dbi : db_index)
+  (mudepth : nat)
+  :
+  E <> X ->
+  mu_depth_to_fev_limited E ϕ mudepth ->
+  mu_depth_to_fev_limited E ϕ^{evar:dbi↦X} mudepth
+  .
+  Proof.
+  move: dbi mudepth.
+  induction ϕ; cbn; intros dbi mudepth Hneq Hmd; try exact I.
+  {
+    case_match; cbn; try exact I.
+  }
+  {
+    naive_solver.
+  }
+  {
+    naive_solver.
+  }
+  {
+    naive_solver.
+  }
+  {
+    repeat case_match; subst.
+    {
+      apply evar_is_fresh_in_evar_open.
+      { exact Hneq. }
+      { exact Hmd. }
+    }
+    { naive_solver. }
+  }
+  Defined.
+
 End with_signature.
 
 
