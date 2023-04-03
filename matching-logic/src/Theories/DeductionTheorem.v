@@ -1228,59 +1228,6 @@ Proof.
   }
 Qed.
 
-Lemma hbvum_impl_mmdt0 {Σ : Signature} phi dbi x y k:
-  evar_is_fresh_in x phi ->
-  evar_is_fresh_in y phi ->
-  well_formed_closed_mu_aux phi (S dbi) ->
-  maximal_mu_depth_to k y phi^[svar:dbi↦patt_free_evar y] = 0 ->
-  maximal_mu_depth_to k x phi^[svar:dbi↦patt_free_evar x] = 0
-.
-Proof.
-  move: x y dbi k.
-  induction phi; intros x' y dbi k Hfrx' Hfry Hwf H; cbn in *; try reflexivity.
-  {
-    unfold evar_is_fresh_in in *. cbn in *.
-    repeat case_match; subst; try reflexivity.
-    set_solver. 
-  }
-  {
-    repeat case_match; cbn in *; try reflexivity;
-    rewrite decide_eq_same; try reflexivity; subst;
-    case_match; subst; cbn in *; try reflexivity; contradiction.
-  }
-  {
-    unfold evar_is_fresh_in in *. cbn in *.
-    rewrite -> IHphi1 with (y := y).
-    5: lia.
-    4: wf_auto2.
-    3: set_solver.
-    2: set_solver.
-    cbn. apply IHphi2 with (y := y).
-    { set_solver. }
-    { set_solver. }
-    { wf_auto2. }
-    { lia. }
-  }
-  {
-    unfold evar_is_fresh_in in *. cbn in *.
-    rewrite -> IHphi1 with (y := y).
-    5: lia.
-    4: wf_auto2.
-    3: set_solver.
-    2: set_solver.
-    cbn. apply IHphi2 with (y := y).
-    { set_solver. }
-    { set_solver. }
-    { wf_auto2. }
-    { lia. }
-  }
-  {
-    eauto with nocore.
-  }
-  {
-    eauto with nocore.
-  }
-Qed.
 
 Theorem deduction_theorem {Σ : Signature} {syntax : Syntax} Γ ϕ ψ
   (gpi : ProofInfo)
@@ -1713,7 +1660,7 @@ Proof.
     1: exact HΓ.
 Defined.
 
-
+(*
 Fixpoint bound_svar_depth_is_max
   {Σ : Signature}
   (ϕ : Pattern)
@@ -1747,6 +1694,7 @@ match ϕ with
   | S (max_depth') => bound_svar_depth_is_max ϕ' (S dbi) max_depth'
   end
 end.
+*)
 
 Fixpoint all_mu_bound_svars_have_max_depth
   {Σ : Signature}
@@ -1857,7 +1805,7 @@ match ψ with
      | S limit' => mu_depth_to_fev_limited E ϕ' limit'
     end
 end.
-
+(*
 Lemma mu_depth_to_fev_limited_0
   {Σ : Signature}
   (E : evar)
@@ -1873,7 +1821,7 @@ Proof.
     { set_solver. }
   }
 Qed.
-
+*)
 Lemma mu_depth_to_fev_limited_evar_open
   {Σ : Signature}
   (E X : evar)
@@ -1981,20 +1929,38 @@ Proof.
     naive_bsolver.
   }
 Qed.
-*)
+
+Lemma mdl_miep {Σ : Signature} (ϕ : Pattern) (E : evar) (d : nat):
+  well_formed ϕ ->
+  mu_depth_to_fev_limited E ϕ d ->
+  mu_in_evar_path E ϕ d = false
+.
+Proof.
+  move: d.
+  Print mu_in_evar_path.
+  induction ϕ; cbn; intros d Hwf H; unfold mu_in_evar_path; cbn; try reflexivity.
+  {
+    destruct (decide (x = E)); try reflexivity.
+    {
+      subst. destruct d; try reflexivity.
+    }
+  }
+
+Qed.
+
 Lemma pred_and_ctx_and_iter
   (mudepth : nat) {Σ : Signature} {syntax : Syntax} Γ ctx ϕ ψ:
   Definedness_Syntax.theory ⊆ Γ ->
   well_formed ϕ ->
   well_formed ψ ->
   well_formed (pcPattern ctx) ->
-  bound_svar_is_lt ϕ mudepth ->
+  all_mu_bound_svars_have_max_depth ϕ mudepth ->
   mu_depth_to_fev_limited (pcEvar ctx) (pcPattern ctx) mudepth ->
   Γ ⊢ is_predicate_pattern ψ ->
   Γ ⊢ ψ and (emplace ctx ϕ) <---> ψ and (emplace ctx (ψ and ϕ))
 with mu_and_predicate_propagation_iter
   (mudepth : nat) {Σ : Signature} {syntax : Syntax} Γ ϕ ψ X:
-  bound_svar_is_lt ϕ mudepth ->
+  all_mu_bound_svars_have_max_depth ϕ mudepth ->
   Definedness_Syntax.theory ⊆ Γ ->
   well_formed (mu, ϕ) ->
   well_formed ψ ->
@@ -2010,16 +1976,10 @@ Proof.
     move: ctx wfc Hmf.
     induction mudepth; intros ctx wfc Hmf.
     {
-      apply mu_depth_to_fev_limited_0 in Hmf.
-      destruct ctx as [pat ev].
-      cbn in *.
-      rewrite free_evar_subst_no_occurrence.
-      { exact Hmf. }
-      rewrite free_evar_subst_no_occurrence.
-      { exact Hmf. }
-      gapply pf_iff_equiv_refl.
-      { apply pile_any. }
-      { wf_auto2. }
+      apply pred_and_ctx_and; try assumption.
+      clear -Hmf wfc.
+      destruct ctx; cbn in *.
+      induction pcPattern; unfold mu_in_evar_path; cbn in *; try reflexivity.
     }
     {
       remember (size' (pcPattern ctx)) as sz.
