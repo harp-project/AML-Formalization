@@ -1684,6 +1684,13 @@ Section with_signature.
       end
   end.
 
+  (*
+  Lemma l x ϕ limit:
+    evar_is_fresh_in x ϕ ->
+    mu_depth_to_fev_limited x ϕ limit ->
+    mu_in_evar_path x ϕ^[svar:0↦patt_free_evar x] 0 = false
+  .
+*)
 
   Lemma mu_depth_to_fev_limited_evar_open
   (E X : evar)
@@ -1720,6 +1727,73 @@ Section with_signature.
     { naive_solver. }
   }
   Qed.
+
+
+
+  Fixpoint mu_depth_to_fsv_limited
+    (X : svar)
+    (ψ : Pattern)
+    (limit : nat)
+    : Prop
+  :=
+  match ψ with
+  | patt_free_evar _ => True
+  | patt_free_svar _ => True
+  | patt_bound_evar _ => True
+  | patt_bound_svar _ => True
+  | patt_bott => True
+  | patt_sym _ => True
+  | patt_imp ϕ₁ ϕ₂
+    => mu_depth_to_fsv_limited X ϕ₁ limit
+    /\ mu_depth_to_fsv_limited X ϕ₂ limit
+  | patt_app ϕ₁ ϕ₂
+    => mu_depth_to_fsv_limited X ϕ₁ limit
+    /\ mu_depth_to_fsv_limited X ϕ₂ limit
+  | patt_exists ϕ'
+    => mu_depth_to_fsv_limited X ϕ' limit
+  | patt_mu ϕ'
+    => match limit with
+      | 0 => svar_is_fresh_in X ϕ'
+      | S limit' => mu_depth_to_fsv_limited X ϕ' limit'
+      end
+  end.
+
+
+  Lemma mu_depth_to_fsv_limited_svar_open
+  (E X : svar)
+  (ϕ : Pattern)
+  (dbi : db_index)
+  (mudepth : nat)
+  :
+  E <> X ->
+  mu_depth_to_fsv_limited E ϕ mudepth ->
+  mu_depth_to_fsv_limited E ϕ^{svar:dbi↦X} mudepth
+  .
+  Proof.
+    move: dbi mudepth.
+    induction ϕ; cbn; intros dbi mudepth Hneq Hmd; try exact I.
+    {
+      case_match; cbn; try exact I.
+    }
+    {
+      naive_solver.
+    }
+    {
+      naive_solver.
+    }
+    {
+      naive_solver.
+    }
+    {
+      repeat case_match; subst.
+      {
+        apply svar_is_fresh_in_svar_open.
+        { exact Hneq. }
+        { exact Hmd. }
+      }
+      { naive_solver. }
+    }
+    Qed.
 
   Example ex_not_wfcmu_impl_bound_svar_is_lt:
     exists
