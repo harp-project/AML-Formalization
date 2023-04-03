@@ -949,16 +949,12 @@ Lemma mu_and_predicate_propagation {Σ : Signature} {syntax : Syntax} Γ ϕ ψ X
   well_formed (mu, ϕ) ->
   well_formed ψ ->
   (* "Let X be a set variable that does not occur under any µ-binder in ϕ" *)
-  (*
-  (forall x, evar_is_fresh_in x ϕ ->
-    mu_in_evar_path x ϕ^[svar:0↦patt_free_evar x] 0 = false
-  ) ->
-  svar_is_fresh_in X ϕ -> *)
+  mu_depth_to_fsv_limited X ϕ 0 ->
   svar_is_fresh_in X ψ ->
   Γ ⊢ is_predicate_pattern ψ ->
   Γ ⊢ (mu, (ψ and ϕ)) <---> (ψ and (mu, ϕ)).
 Proof.
-  intros HΓ wfm wfψ (*Hϕnomu fϕ*) fψ Hp.
+  intros HΓ wfm wfψ HXϕ fψ Hp.
 
   assert (well_formed (mu , ψ and ϕ)).
   {
@@ -1015,59 +1011,85 @@ Proof.
   apply pf_iff_split.
   { assumption. }
   { wf_auto2. }
-  
-  (* Makes set_solver work later in the proof. *)
-  (*unfold svar_is_fresh_in in fϕ, fψ.*)
-  toMLGoal.
   {
-    wf_auto2.
-  }
-  mlIntro "H".
-  mlSplitAnd; fromMLGoal.
-  {
-    apply Knaster_tarski.
-    { try_solve_pile. }
-    { wf_auto2. }
-    unfold instantiate.
-    mlSimpl.
-    rewrite -> well_formed_bsvar_subst with (k := 0).
     toMLGoal.
-    { wf_auto2. }
-    mlIntro.
-    mlDestructAnd "0".
-    mlExact "1".
-    { lia. }
-    { wf_auto2. }
-  }
-  {
-    rewrite <- svar_quantify_svar_open with (n := 0) (phi := (ψ and ϕ)) (X := X).
-    rewrite <- svar_quantify_svar_open with (n := 0) (phi := ϕ) (X := X) at 2.
-    apply mu_monotone.
-    { apply pile_any. }
     {
-      mlSimpl. cbn. fold no_negative_occurrence_db_b svar_has_negative_occurrence.
-      rewrite !orb_false_r.
-      rewrite HXψ0X. cbn.
-      unfold well_formed,well_formed_closed in *.
-      cbn in *. fold no_negative_occurrence_db_b svar_has_negative_occurrence.
-      repeat rewrite orb_false_iff.
-      repeat split; try reflexivity; try assumption.
+      wf_auto2.
     }
-    { wf_auto2. }
+    mlIntro "H".
+    mlSplitAnd; fromMLGoal.
     {
-      unfold svar_open.
-      mlSimpl.
-      gapply pf_conj_elim_r.
+      apply Knaster_tarski.
       { try_solve_pile. }
       { wf_auto2. }
+      unfold instantiate.
+      mlSimpl.
+      rewrite -> well_formed_bsvar_subst with (k := 0).
+      toMLGoal.
+      { wf_auto2. }
+      mlIntro.
+      mlDestructAnd "0".
+      mlExact "1".
+      { lia. }
       { wf_auto2. }
     }
-    { assumption. }
-    { wf_auto2. }
-    { set_solver. }
-    { wf_auto2. }
+    {
+      remember (fresh_svar (ψ and ϕ)) as Y.
+      rewrite <- svar_quantify_svar_open with (n := 0) (phi := (ψ and ϕ)) (X := Y).
+      rewrite <- svar_quantify_svar_open with (n := 0) (phi := ϕ) (X := Y) at 2.
+      apply mu_monotone.
+      { apply pile_any. }
+      {
+        mlSimpl. cbn. fold no_negative_occurrence_db_b svar_has_negative_occurrence.
+        rewrite !orb_false_r.
+        apply orb_false_iff.
+        split.
+        {
+          apply positive_negative_occurrence_db_named.
+          { wf_auto2. }
+          {
+            subst Y. clear. apply svar_hno_false_if_fresh.
+            eapply svar_is_fresh_in_richer'.
+            2: { apply set_svar_fresh_is_fresh. }
+            { cbn.  set_solver. }
+          }
+        }
+        {
+          apply positive_negative_occurrence_db_named.
+          { wf_auto2. }
+          {
+            subst Y. clear. apply svar_hno_false_if_fresh.
+            eapply svar_is_fresh_in_richer'.
+            2: { apply set_svar_fresh_is_fresh. }
+            { cbn.  set_solver. }
+          }
+        }
+      }
+      { wf_auto2. }
+      {
+        unfold svar_open.
+        mlSimpl.
+        gapply pf_conj_elim_r.
+        { try_solve_pile. }
+        { wf_auto2. }
+        { wf_auto2. }
+      }
+      {
+        subst Y. clear.
+        eapply svar_is_fresh_in_richer'.
+        2: { apply set_svar_fresh_is_fresh. }
+        { cbn.  set_solver. }
+      }
+      { wf_auto2. }
+      {
+        subst Y. clear.
+        eapply svar_is_fresh_in_richer'.
+        2: { apply set_svar_fresh_is_fresh. }
+        { cbn.  set_solver. }
+      }
+      { wf_auto2. }
+    }
   }
-  
   {
     toMLGoal.
     { wf_auto2. }
