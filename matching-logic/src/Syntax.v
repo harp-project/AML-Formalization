@@ -1719,7 +1719,57 @@ Section with_signature.
     }
     { naive_solver. }
   }
-  Defined.
+  Qed.
+
+  Example ex_not_wfcmu_impl_bound_svar_is_lt:
+    exists
+    (ϕ : Pattern)
+    (mudepth : nat),
+    well_formed_closed_mu_aux ϕ 0 /\
+    ~ bound_svar_is_lt ϕ (S mudepth)
+  .
+  Proof.
+    exists (patt_mu (patt_mu (patt_bound_svar 1))).
+    exists 0.
+    cbn.
+    case_match; cbn; split.
+    { reflexivity. }
+    { lia. }
+    { lia. }
+    { lia. }
+  Qed.
+
+  (*
+  Lemma bsvar_occur_bound_svar_depth_is_max
+    {Σ : Signature}
+    (ϕ : Pattern)
+    (idx : db_index)
+    :
+    bsvar_occur ϕ idx = false ->
+    bound_svar_depth_is_max ϕ idx 0
+  .
+  Proof.
+    induction ϕ; cbn; intros H; try exact I.
+    {
+      repeat case_match; try congruence.
+      { exact I. }
+    }
+    {
+      rewrite orb_false_iff in H.
+      naive_solver.
+    }
+    {
+      rewrite orb_false_iff in H.
+      naive_solver.
+    }
+    {
+      auto with nocore.
+    }
+    {
+      exact H.
+    }
+  Qed.
+  *)
 
 End with_signature.
 
