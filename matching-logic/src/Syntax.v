@@ -1734,12 +1734,11 @@ Section with_signature.
     }
   Qed.
 
-  (* patt_mu (patt_bound_svar 1)*)
-  Lemma l x ϕ dbi:
+  Lemma mu_in_evar_path_svar_subst_evar x ϕ dbi:
     well_formed_closed_mu_aux ϕ dbi ->
     evar_is_fresh_in x ϕ ->
     bound_svar_is_lt ϕ dbi ->
-    mu_in_evar_path x ϕ^[svar:0↦patt_free_evar x] 0 = false
+    mu_in_evar_path x ϕ^[svar:dbi↦patt_free_evar x] dbi = false
   .
   Proof.
     unfold evar_is_fresh_in.
@@ -1748,6 +1747,7 @@ Section with_signature.
     induction ϕ; cbn; intros dbi Hwf Hfr H; try reflexivity.
     {
       repeat case_match; subst; cbn; try reflexivity; try lia.
+      set_solver.
     }
     {
       repeat case_match; subst; cbn; try reflexivity; try lia.
@@ -1814,16 +1814,8 @@ Section with_signature.
         2: apply H.
         { lia. }
       }
-      pose proof (Htmp1 := maximal_mu_depth_to_not_0 (ϕ^[svar:1↦patt_free_evar x]) x 1 ltac:(lia)).
       exfalso.
-      pose proof (Htmp2 := bound_svar_is_lt_notfree x ϕ dbi Hwf Hfr H).
-
-      clear -H Htmp Hfr.
-      remember 1 as dbi. clear Heqdbi. move: dbi H Htmp.
-      induction ϕ; cbn in *; intros dbi H Htmp; try set_solver.
-      { repeat case_match; cbn in *; try set_solver. lia. }
-      { specialize (IHϕ Hfr _ H). }
-      Search maximal_mu_depth_to.
+      lia.
     }
   Qed.
 
