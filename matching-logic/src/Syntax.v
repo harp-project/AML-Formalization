@@ -1734,20 +1734,22 @@ Section with_signature.
     }
   Qed.
 
+  (* patt_bound_svar 1 *)
+  (* patt_mu (patt_bound_svar 1)*)
   Lemma mu_in_evar_path_svar_subst_evar x ϕ dbi:
-    well_formed_closed_mu_aux ϕ dbi ->
+    well_formed_closed_mu_aux ϕ (S dbi) ->
     evar_is_fresh_in x ϕ ->
-    bound_svar_is_lt ϕ dbi ->
-    mu_in_evar_path x ϕ^[svar:dbi↦patt_free_evar x] dbi = false
+    bound_svar_is_lt ϕ (S dbi) ->
+    mu_in_evar_path x ϕ^[svar:dbi↦patt_free_evar x] 0 = false
   .
   Proof.
     unfold evar_is_fresh_in.
-    unfold mu_in_evar_path, maximal_mu_depth_to.
+    unfold mu_in_evar_path. unfold maximal_mu_depth_to.
     move: dbi.
     induction ϕ; cbn; intros dbi Hwf Hfr H; try reflexivity.
     {
+      (* patt_free_evar *)
       repeat case_match; subst; cbn; try reflexivity; try lia.
-      set_solver.
     }
     {
       repeat case_match; subst; cbn; try reflexivity; try lia.
@@ -1815,7 +1817,10 @@ Section with_signature.
         { lia. }
       }
       exfalso.
-      lia.
+      pose proof (Htmp1 := maximal_mu_depth_to_not_0 (ϕ^[svar:(S dbi)↦patt_free_evar x]) x 1 ltac:(lia)).
+      pose proof (Htmp2 := bound_svar_is_lt_notfree x ϕ (S dbi) Hwf Hfr H).
+      clear -Htmp1 Htmp2.
+      contradiction.
     }
   Qed.
 
@@ -1922,6 +1927,7 @@ Section with_signature.
       end
   end.
 
+  (*
   Lemma mu_depth_to_fsv_limited_svar_has_positive_negative_occurrence X ϕ:
     mu_depth_to_fsv_limited X ϕ 0 ->
     svar_has_positive_occurrence X ϕ = false
@@ -1933,7 +1939,8 @@ Section with_signature.
       destruct (decide (X = x)).
     }
   Qed.
-
+  *)
+  
   Lemma mu_depth_to_fsv_limited_svar_open
   (E X : svar)
   (ϕ : Pattern)
