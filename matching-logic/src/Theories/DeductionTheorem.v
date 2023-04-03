@@ -1065,7 +1065,16 @@ Proof.
           }
         }
       }
-      { wf_auto2. }
+      {
+        apply positive_negative_occurrence_db_named.
+        { wf_auto2. }
+        {
+          subst Y. clear. apply svar_hno_false_if_fresh.
+          eapply svar_is_fresh_in_richer'.
+          2: { apply set_svar_fresh_is_fresh. }
+          { cbn.  set_solver. }
+        }
+      }
       {
         unfold svar_open.
         mlSimpl.
@@ -1129,7 +1138,8 @@ Proof.
     2: auto.
     2: wf_auto2.
 
-    remember (evar_fresh_s (free_evars ϕ)) as x.
+    (* apply Lemma 88 of the paper. *)
+    remember (evar_fresh_s (free_evars (ϕ ---> ψ))) as x.
     pose proof (HH := pred_and_ctx_and Γ
       {|
         pcEvar := x;
@@ -1142,6 +1152,8 @@ Proof.
     { wf_auto2. }
     { wf_auto2. }
     {
+      Search ϕ.
+      (* apply fresh_impl_no_mu_in_evar_path. *)
       apply Hϕnomu.
       subst x. clear.
       apply set_evar_fresh_is_fresh.

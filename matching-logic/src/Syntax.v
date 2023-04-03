@@ -1655,6 +1655,157 @@ Section with_signature.
   | patt_mu ϕ' => bound_svar_is_lt ϕ' limit
   end.
 
+  Lemma maximal_mu_depth_to_not_0 ϕ x m:
+    maximal_mu_depth_to m x ϕ <> 0 ->
+    x ∈ free_evars ϕ
+  .
+  Proof.
+    move: m.
+    induction ϕ; cbn; intros m H; repeat case_match; try set_solver.
+    {
+      destruct (maximal_mu_depth_to m x ϕ1) eqn:Heq; cbn in *.
+      { set_solver. }
+      specialize (IHϕ1 m ltac:(lia)).
+      rewrite elem_of_union. left. exact IHϕ1.
+    }
+    {
+      destruct (maximal_mu_depth_to m x ϕ1) eqn:Heq; cbn in *.
+      { set_solver. }
+      specialize (IHϕ1 m ltac:(lia)).
+      rewrite elem_of_union. left. exact IHϕ1.
+    }
+  Qed.
+
+  Lemma bound_svar_is_lt_lt ϕ dbi1 dbi2:
+    dbi1 < dbi2 ->
+    bound_svar_is_lt ϕ dbi1 ->
+    bound_svar_is_lt ϕ dbi2
+  .
+  Proof.
+    induction ϕ; cbn; intros Hlt H; try exact I.
+    { lia. }
+    { naive_solver. }
+    { naive_solver. }
+    { naive_solver. }
+    { naive_solver. }
+  Qed.
+
+
+  Lemma bound_svar_is_lt_notfree x ϕ dbi:
+    well_formed_closed_mu_aux ϕ (S dbi) ->
+    x ∉ free_evars ϕ ->
+    bound_svar_is_lt ϕ dbi ->
+    x ∉ free_evars ϕ^[svar:dbi↦patt_free_evar x]
+  .
+  Proof.
+    move: dbi.
+    induction ϕ; cbn; intros dbi Hwf Hxϕ Hϕdbi Hcontra; try set_solver.
+    {
+      repeat case_match; cbn in *; try set_solver; subst; lia.
+    }
+    {
+      unfold is_true in Hwf.
+      rewrite andb_true_iff in Hwf.
+      destruct Hwf as [Hwf1 Hwf2].
+      destruct Hϕdbi as [Hϕdbi1 Hϕdbi2].
+      rewrite elem_of_union in Hxϕ.
+      rewrite elem_of_union in Hcontra.
+      destruct Hcontra; naive_solver.
+    }
+    {
+      unfold is_true in Hwf.
+      rewrite andb_true_iff in Hwf.
+      destruct Hwf as [Hwf1 Hwf2].
+      destruct Hϕdbi as [Hϕdbi1 Hϕdbi2].
+      rewrite elem_of_union in Hxϕ.
+      rewrite elem_of_union in Hcontra.
+      destruct Hcontra; naive_solver.
+    }
+    { 
+      eapply IHϕ.
+      { apply Hwf. }
+      { exact Hxϕ. }
+      {
+        eapply bound_svar_is_lt_lt.
+        2: { apply Hϕdbi. }
+        { lia. }
+      }
+      { exact Hcontra. }
+    }
+  Qed.
+
+  (* patt_mu (patt_bound_svar 1)*)
+  Lemma l x ϕ:
+    evar_is_fresh_in x ϕ ->
+    bound_svar_is_lt ϕ 1 ->
+    mu_in_evar_path x ϕ^[svar:0↦patt_free_evar x] 0 = false
+  .
+  Proof.
+    unfold evar_is_fresh_in.
+    unfold mu_in_evar_path, maximal_mu_depth_to.
+    induction ϕ; cbn; intros Hfr H; try reflexivity.
+    {
+      repeat case_match; subst; cbn; try reflexivity; try lia.
+    }
+    {
+      repeat case_match; subst; cbn; try reflexivity; try lia.
+    }
+    {
+      fold maximal_mu_depth_to in *.
+      rewrite negb_false_iff in IHϕ1.
+      rewrite Nat.eqb_eq in IHϕ1.
+      rewrite <- IHϕ1.
+      3: { naive_solver. }
+      2: { cbn in Hfr. set_solver. }
+      rewrite negb_false_iff in IHϕ2.
+      rewrite Nat.eqb_eq in IHϕ2.
+      rewrite <- IHϕ2.
+      3: { naive_solver. }
+      2: { cbn in Hfr. set_solver. }
+      cbn.
+      reflexivity.
+    }
+    {
+      fold maximal_mu_depth_to in *.
+      rewrite negb_false_iff in IHϕ1.
+      rewrite Nat.eqb_eq in IHϕ1.
+      rewrite <- IHϕ1.
+      3: { naive_solver. }
+      2: { cbn in Hfr. set_solver. }
+      rewrite negb_false_iff in IHϕ2.
+      rewrite Nat.eqb_eq in IHϕ2.
+      rewrite <- IHϕ2.
+      3: { naive_solver. }
+      2: { cbn in Hfr. set_solver. }
+      cbn.
+      reflexivity.
+    }
+    {
+      fold maximal_mu_depth_to in *.
+      rewrite negb_false_iff in IHϕ.
+      rewrite Nat.eqb_eq in IHϕ.
+      rewrite <- IHϕ.
+      3: { naive_solver. }
+      2: { cbn in Hfr. set_solver. }
+      reflexivity.
+    }
+    {
+      fold maximal_mu_depth_to in *.
+      rewrite negb_false_iff in IHϕ.
+      rewrite Nat.eqb_eq in IHϕ.
+      case_match; cbn; try reflexivity.
+      specialize (IHϕ Hfr H).
+      pose proof (Htmp := maximal_mu_depth_to_not_0 (ϕ^[svar:1↦patt_free_evar x]) x 1 ltac:(lia)).
+      exfalso.
+      clear -H Htmp Hfr.
+      remember 1 as dbi. clear Heqdbi. move: dbi H Htmp.
+      induction ϕ; cbn in *; intros dbi H Htmp; try set_solver.
+      { repeat case_match; cbn in *; try set_solver. lia. }
+      { specialize (IHϕ Hfr _ H). }
+      Search maximal_mu_depth_to.
+    }
+  Qed.
+
 
   Fixpoint mu_depth_to_fev_limited
     (E : evar)
