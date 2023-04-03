@@ -1735,15 +1735,17 @@ Section with_signature.
   Qed.
 
   (* patt_mu (patt_bound_svar 1)*)
-  Lemma l x ϕ:
+  Lemma l x ϕ dbi:
+    well_formed_closed_mu_aux ϕ dbi ->
     evar_is_fresh_in x ϕ ->
-    bound_svar_is_lt ϕ 1 ->
+    bound_svar_is_lt ϕ dbi ->
     mu_in_evar_path x ϕ^[svar:0↦patt_free_evar x] 0 = false
   .
   Proof.
     unfold evar_is_fresh_in.
     unfold mu_in_evar_path, maximal_mu_depth_to.
-    induction ϕ; cbn; intros Hfr H; try reflexivity.
+    move: dbi.
+    induction ϕ; cbn; intros dbi Hwf Hfr H; try reflexivity.
     {
       repeat case_match; subst; cbn; try reflexivity; try lia.
     }
@@ -1752,51 +1754,70 @@ Section with_signature.
     }
     {
       fold maximal_mu_depth_to in *.
+      specialize (IHϕ1 dbi).
       rewrite negb_false_iff in IHϕ1.
       rewrite Nat.eqb_eq in IHϕ1.
       rewrite <- IHϕ1.
-      3: { naive_solver. }
-      2: { cbn in Hfr. set_solver. }
+      4: { naive_solver. }
+      3: { cbn in Hfr. set_solver. }
+      2: { wf_auto2. }
+      specialize (IHϕ2 dbi).
       rewrite negb_false_iff in IHϕ2.
       rewrite Nat.eqb_eq in IHϕ2.
       rewrite <- IHϕ2.
-      3: { naive_solver. }
-      2: { cbn in Hfr. set_solver. }
+      4: { naive_solver. }
+      3: { cbn in Hfr. set_solver. }
+      2: { wf_auto2. }
       cbn.
       reflexivity.
     }
     {
       fold maximal_mu_depth_to in *.
+      specialize (IHϕ1 dbi).
       rewrite negb_false_iff in IHϕ1.
       rewrite Nat.eqb_eq in IHϕ1.
       rewrite <- IHϕ1.
-      3: { naive_solver. }
-      2: { cbn in Hfr. set_solver. }
+      4: { naive_solver. }
+      3: { cbn in Hfr. set_solver. }
+      2: { wf_auto2. }
+      specialize (IHϕ2 dbi).
       rewrite negb_false_iff in IHϕ2.
       rewrite Nat.eqb_eq in IHϕ2.
       rewrite <- IHϕ2.
-      3: { naive_solver. }
-      2: { cbn in Hfr. set_solver. }
+      4: { naive_solver. }
+      3: { cbn in Hfr. set_solver. }
+      2: { wf_auto2. }
       cbn.
       reflexivity.
     }
     {
       fold maximal_mu_depth_to in *.
+      specialize (IHϕ dbi).
       rewrite negb_false_iff in IHϕ.
       rewrite Nat.eqb_eq in IHϕ.
       rewrite <- IHϕ.
-      3: { naive_solver. }
-      2: { cbn in Hfr. set_solver. }
+      4: { naive_solver. }
+      3: { cbn in Hfr. set_solver. }
+      2: { wf_auto2. }
       reflexivity.
     }
     {
       fold maximal_mu_depth_to in *.
+      specialize (IHϕ (S dbi)).
       rewrite negb_false_iff in IHϕ.
       rewrite Nat.eqb_eq in IHϕ.
       case_match; cbn; try reflexivity.
-      specialize (IHϕ Hfr H).
-      pose proof (Htmp := maximal_mu_depth_to_not_0 (ϕ^[svar:1↦patt_free_evar x]) x 1 ltac:(lia)).
+      specialize (IHϕ Hwf Hfr).
+      feed specialize IHϕ.
+      {
+        eapply bound_svar_is_lt_lt.
+        2: apply H.
+        { lia. }
+      }
+      pose proof (Htmp1 := maximal_mu_depth_to_not_0 (ϕ^[svar:1↦patt_free_evar x]) x 1 ltac:(lia)).
       exfalso.
+      pose proof (Htmp2 := bound_svar_is_lt_notfree x ϕ dbi Hwf Hfr H).
+
       clear -H Htmp Hfr.
       remember 1 as dbi. clear Heqdbi. move: dbi H Htmp.
       induction ϕ; cbn in *; intros dbi H Htmp; try set_solver.
