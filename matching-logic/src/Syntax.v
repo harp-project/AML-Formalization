@@ -1998,6 +1998,9 @@ Section with_signature.
   (* cpatt ==  cvar ---> ⊥ *)
   Lemma bound_svar_is_lt_free_evar_subst
     ϕ iter dbi cvar cpatt:
+    (* without this assumption, a counter example would be:
+      ϕ ≡ B0, iter ≡ 0, dbi ≡ 0, cpatt ≡ patt_free_evar cvar
+    *)
     bound_svar_is_lt ϕ (iter + dbi) ->
     well_formed_closed_mu_aux cpatt (dbi) ->
     cvar ∈ free_evars cpatt ->
@@ -2153,6 +2156,36 @@ Section with_signature.
         replace (iter + S dbi) with (S iter + dbi) by lia.
         exact Hltcpatt.
       }
+    }
+  Qed.
+
+  Lemma bound_svar_is_lt_bevar_subst cpatt x0 dbi limit:
+    bound_svar_is_lt cpatt (limit) ->
+    bound_svar_is_lt cpatt^[evar:dbi↦patt_free_evar x0] limit
+  .
+  Proof.
+    move: dbi limit.
+    induction cpatt;
+      cbn;
+      intros dbi limit Hbs;
+      try exact I.
+    {
+      case_match; cbn in *; lia.
+    }
+    {
+      lia.
+    }
+    {
+      naive_solver.
+    }
+    {
+      naive_solver.
+    }
+    {
+      naive_solver.
+    }
+    {
+      naive_solver.
     }
   Qed.
 
