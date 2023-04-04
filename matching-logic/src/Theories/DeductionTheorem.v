@@ -1608,6 +1608,9 @@ Proof.
           { wf_auto2. }
           { wf_auto2. }
           {
+            apply Hbsψ.
+          }
+          {
             assert (wfccpatt : well_formed_closed_mu_aux cpatt 1).
             { wf_auto2. }
             replace (S iter) with (iter + 1) by lia.
@@ -1616,7 +1619,6 @@ Proof.
               replace (iter + 1) with (S iter) by lia.
               cbn.
               repeat split; try exact I; try assumption.
-              exact Hbs.
             }
             {
               rewrite maximal_mu_depth_to_S in Hmf.
@@ -1631,13 +1633,124 @@ Proof.
           {
             exact Hp.
           }
-          
-          cbn in Hmf.
-          case_match.
-          2: { lia. }
-          rewrite maximal_mu_depth_to_S in H.
-          assumption.
-          inversion H.
+          toMLGoal;[wf_auto2|].
+          mlRewrite <- IHouter1 at 1.
+          mlRewrite <- IHouter2 at 1.
+          clear IHouter1 IHouter2.
+          fromMLGoal.
+          remember (svar_fresh_s (free_svars ψ ∪ free_svars ϕ ∪ free_svars cpatt)) as Z.
+          rewrite <- svar_quantify_svar_open with
+            (X := Z)
+            (n := 0)
+            (phi := (ψ and cpatt^[[evar:cvar↦ϕ]]))
+          .
+          3: { wf_auto2. }
+          2: {
+            subst Z. clear. eapply svar_is_fresh_in_richer'.
+            2: { apply set_svar_fresh_is_fresh'. }
+            { 
+              cbn.
+              pose proof (free_svars_free_evar_subst cpatt cvar ϕ).
+              set_solver.
+            }
+          }
+          rewrite <- svar_quantify_svar_open with
+            (X := Z)
+            (n := 0)
+            (phi := (ψ and cpatt^[[evar:cvar↦ψ and ϕ]]))
+          .
+          3: { wf_auto2. }
+          2: {
+            subst Z. clear. eapply svar_is_fresh_in_richer'.
+            2: { apply set_svar_fresh_is_fresh'. }
+            { 
+              cbn.
+              pose proof (free_svars_free_evar_subst cpatt cvar (ψ and ϕ)).
+              set_solver.
+            }
+          }
+
+          apply mu_iff.
+          { apply pile_any. }
+          {
+            mlSimpl. cbn. fold svar_has_negative_occurrence svar_has_positive_occurrence.
+            rewrite !orb_false_r.
+            rewrite orb_false_iff.
+            split; apply positive_negative_occurrence_db_named.
+            {
+              wf_auto2.
+            }
+            {
+              apply fresh_svar_no_neg.
+              subst Z. clear.
+              eapply svar_is_fresh_in_richer'.
+              2: { apply set_svar_fresh_is_fresh'. }
+              { set_solver. }
+            }
+            {
+              wf_auto2.
+            }
+            {
+              apply fresh_svar_no_neg.
+              subst Z. clear.
+              eapply svar_is_fresh_in_richer'.
+              2: { apply set_svar_fresh_is_fresh'. }
+              { 
+                pose proof (free_svars_free_evar_subst cpatt cvar ϕ).
+                set_solver.
+              }
+            }
+          }
+          {
+            mlSimpl. cbn. fold svar_has_negative_occurrence svar_has_positive_occurrence.
+            rewrite !orb_false_r.
+            rewrite orb_false_iff.
+            split; apply positive_negative_occurrence_db_named.
+            {
+              wf_auto2.
+            }
+            {
+              apply fresh_svar_no_neg.
+              subst Z. clear.
+              eapply svar_is_fresh_in_richer'.
+              2: { apply set_svar_fresh_is_fresh'. }
+              { set_solver. }
+            }
+            {
+              wf_auto2.
+            }
+            {
+              apply fresh_svar_no_neg.
+              subst Z. clear.
+              eapply svar_is_fresh_in_richer'.
+              2: { apply set_svar_fresh_is_fresh'. }
+              { 
+                pose proof (free_svars_free_evar_subst cpatt cvar (ψ and ϕ)).
+                set_solver.
+              }
+            }
+          }
+          mlSimpl.
+          rewrite svar_open_not_occur.
+          { wf_auto2. }
+          unfold svar_open.
+          rewrite <- free_evar_subst_bsvar_subst.
+          2: { wf_auto2. }
+          2: {
+            unfold evar_is_fresh_in. cbn. clear. set_solver.
+          }
+          rewrite <- free_evar_subst_bsvar_subst.
+          2: { wf_auto2. }
+          2: {
+            unfold evar_is_fresh_in. cbn. clear. set_solver.
+          }
+          apply IHsz.
+          { wf_auto2. }
+          {
+            Search bound_svar_is_lt bsvar_subst.
+          }
+          Search (_^[[evar:_↦_]]^[svar:_↦_]).
+          Search svar_open well_formed_closed_mu_aux.
         }
         {
           rewrite free_evar_subst_no_occurrence.
