@@ -1201,7 +1201,9 @@ Lemma pred_and_ctx_and___mu_and_predicate_propagation__iter (iter : nat):
     well_formed ϕ ->
     well_formed ψ ->
     well_formed (pcPattern ctx) ->
+    bound_svar_is_lt ψ (iter) ->
     bound_svar_is_lt ϕ (iter) ->
+    bound_svar_is_lt (pcPattern ctx) (iter) ->
     maximal_mu_depth_to 0 (pcEvar ctx) (pcPattern ctx) < iter ->
     Γ ⊢ is_predicate_pattern ψ ->
     Γ ⊢ ψ and (emplace ctx ϕ) <---> ψ and (emplace ctx (ψ and ϕ))
@@ -1210,6 +1212,7 @@ Lemma pred_and_ctx_and___mu_and_predicate_propagation__iter (iter : nat):
     Definedness_Syntax.theory ⊆ Γ ->
     well_formed (mu, ϕ) ->
     well_formed ψ ->
+    bound_svar_is_lt ψ (S iter) ->
     bound_svar_is_lt ϕ (S iter) ->
     Γ ⊢ is_predicate_pattern ψ ->
     Γ ⊢ (mu, (ψ and ϕ)) <---> (ψ and (mu, ϕ))
@@ -1236,7 +1239,7 @@ Proof.
     split.
     {
       intros Σ syntax Γ ctx ϕ ψ.
-      intros HΓ wfm wfψ wfc Hbs Hmf Hp.
+      intros HΓ wfm wfψ wfc Hbsψ Hbs Hbs2 Hmf Hp.
 
       remember (size' (pcPattern ctx)) as sz.
       assert (Hsz: size' (pcPattern ctx) <= sz) by lia.
@@ -1254,7 +1257,7 @@ Proof.
         destruct cpatt; simpl in *; lia.
       }
 
-      intros cpatt wfc Hmf Hsz.
+      intros cpatt wfc Hbs2 Hmf Hsz.
       destruct cpatt. all: simpl in *.
 
       (* trivial cases *)
@@ -1287,6 +1290,9 @@ Proof.
         feed specialize IH1.
         { wf_auto2. }
         {
+          naive_solver.
+        }
+        {
           lia.
         }
         {
@@ -1295,6 +1301,9 @@ Proof.
         pose proof (IH2 := IHsz cpatt2).
         feed specialize IH2.
         { wf_auto2. }
+        {
+          naive_solver.
+        }
         {
           lia.
         }
@@ -1359,12 +1368,18 @@ Proof.
         feed specialize IH1.
         { wf_auto2. }
         {
+          naive_solver.
+        }
+        {
           lia.
         }
         { lia. }
         pose proof (IH2 := IHsz cpatt2).
         feed specialize IH2.
         { wf_auto2. }
+        {
+          naive_solver.
+        }
         {
           lia.
         }
@@ -1455,6 +1470,10 @@ Proof.
         feed specialize IHsz.
         {
           wf_auto2.
+        }
+        {
+          apply bound_svar_is_lt_bevar_subst.
+          exact Hbs2.
         }
         {
           rewrite evar_open_mu_depth.
@@ -1561,132 +1580,56 @@ Proof.
           feed specialize IHouter1.
           { wf_auto2. }
           { wf_auto2. }
+          { exact Hbsψ. }
           {
             assert (wfccpatt : well_formed_closed_mu_aux cpatt 1).
             { wf_auto2. }
-            assert (Hcvarcpatt: cvar ∈ free_evars cpatt) by assumption.
-            rewrite maximal_mu_depth_to_S in Hmf.
-            { assumption. }
-            assert (Hmf' : maximal_mu_depth_to 0 cvar cpatt < iter) by lia.
-            clear Hmf. rename Hmf' into Hmf.
-
-            clear -Hmf wfm wfccpatt Hbs (*Hcvarcpatt*).
-            replace (S iter) with (iter + 1) in * by lia.
-            remember 1 as dbi.
-            assert (Hdbi: dbi >= 1) by lia.
-            clear Heqdbi.
-            move: dbi Hdbi iter Hmf Hbs wfccpatt.
-            induction cpatt; cbn; intros dbi Hdbi iter Hmf Hbs wfccpatt; try exact I.
+            replace (S iter) with (iter + 1) by lia.
+            apply bound_svar_is_lt_free_evar_subst; try assumption.
             {
-              repeat case_match; subst; cbn; try exact I.
-              2: { contradiction. }
+              replace (iter + 1) with (S iter) by lia.
               exact Hbs.
             }
             {
-              case_match; try lia. congruence.
-            }
-            {
-                split.
-                {
-                  apply IHcpatt1.
-                  { lia. }
-                  { lia. }
-                  { exact Hbs. }
-                  { destruct_and!. assumption. }
-                }
-                apply IHcpatt2.
-                { lia. }
-                { lia. }
-                { exact Hbs. }
-                { destruct_and!. assumption. }
-            }
-            {
-                split.
-                {
-                  apply IHcpatt1.
-                  { lia. }
-                  { lia. }
-                  { exact Hbs. }
-                  { destruct_and!. assumption. }
-                }
-                apply IHcpatt2.
-                { lia. }
-                { lia. }
-                { exact Hbs. }
-                { destruct_and!. assumption. }
-            }
-            {
-              apply IHcpatt.
-              { lia. }
-              { lia. }
+              rewrite maximal_mu_depth_to_S in Hmf.
               { assumption. }
+              { lia. }
+            }
+            {
+              replace (iter + 1) with (S iter) by lia.
+              exact Hbs2.
+            }
+          }
+          {
+            exact Hp.
+          }
+          specialize (IHouter2 (cpatt^[[evar:cvar↦ψ and ϕ]]) ψ HΓ).
+          feed specialize IHouter2.
+          { wf_auto2. }
+          { wf_auto2. }
+          {
+            assert (wfccpatt : well_formed_closed_mu_aux cpatt 1).
+            { wf_auto2. }
+            replace (S iter) with (iter + 1) by lia.
+            apply bound_svar_is_lt_free_evar_subst; try assumption.
+            {
+              replace (iter + 1) with (S iter) by lia.
+              cbn.
+              repeat split; try exact I; try assumption.
+              exact Hbs.
+            }
+            {
+              rewrite maximal_mu_depth_to_S in Hmf.
               { assumption. }
+              { lia. }
             }
             {
-              destruct dbi;[lia|]. clear Hdbi.
-              destruct iter;[lia|].
-              
-              
-              destruct (decide (cvar ∈ free_evars cpatt)).
-              {
-                replace (S iter + S dbi) with (iter + S (S dbi)) in * by lia.
-                (*rewrite maximal_mu_depth_to_S in Hmf.
-                assumption.*)
-                apply IHcpatt.
-                { lia. }
-                { 
-                  rewrite maximal_mu_depth_to_S in Hmf.
-                  { assumption. }
-                  lia.
-                }
-                { assumption. }
-                { exact wfccpatt. }
-              }
-              {
-                apply IHcpatt.
-                { lia. }
-                {
-                  rewrite maximal_mu_depth_to_0.
-                  { assumption. }
-                  { lia. }
-                }
-                {
-                  apply Hbs.
-                }
-                {
-                  
-                  { assumption. }
-                }
-              }
-              {
-                rewrite free_evar_subst_no_occurrence.
-                { assumption. }
-                rewrite bound_svar_is_lt_notfree.
-              }
+              replace (iter + 1) with (S iter) by lia.
+              exact Hbs2.
             }
-            {
-              cbn in wfccpatt.
-              case_match; try lia.
-              2: { congruence. }
-            }
-            {
-              specialize (IHcpatt1 ltac:(wf_auto2) iter ltac:(lia)).
-              specialize (IHcpatt2 ltac:(wf_auto2) iter ltac:(lia)).
-              naive_solver.
-            }
-            {
-              specialize (IHcpatt1 ltac:(wf_auto2) iter ltac:(lia)).
-              specialize (IHcpatt2 ltac:(wf_auto2) iter ltac:(lia)).
-              naive_solver.
-            }
-            {
-              specialize (IHcpatt ltac:(wf_auto2) iter ltac:(lia)).
-              naive_solver.
-            }
-            {
-              specialize (IHcpatt ltac:(wf_auto2) iter ltac:(lia)).
-            }
-            Search bound_svar_is_lt maximal_mu_depth_to.
+          }
+          {
+            exact Hp.
           }
           
           cbn in Hmf.
