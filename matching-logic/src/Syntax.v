@@ -2189,6 +2189,19 @@ Section with_signature.
     }
   Qed.
 
+  Lemma bound_svar_is_lt_bsvar_subst ϕ dbi limit Z:
+    bound_svar_is_lt ϕ limit ->
+    bound_svar_is_lt ϕ^[svar:dbi↦patt_free_svar Z] limit
+  .
+  Proof.
+    move: dbi limit.
+    induction ϕ; cbn; intros dbi limit Hbs; try exact I;
+      try naive_solver.
+    {
+      repeat case_match; cbn; try lia.
+    }
+  Qed.
+
   (*
   Lemma bsvar_occur_bound_svar_depth_is_max
     {Σ : Signature}
