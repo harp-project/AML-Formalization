@@ -1747,10 +1747,17 @@ Proof.
           apply IHsz.
           { wf_auto2. }
           {
-            Search bound_svar_is_lt bsvar_subst.
+            apply bound_svar_is_lt_bsvar_subst.
+            exact Hbs2.
           }
-          Search (_^[[evar:_↦_]]^[svar:_↦_]).
-          Search svar_open well_formed_closed_mu_aux.
+          {
+            fold (svar_open Z 0 cpatt).
+            rewrite svar_open_mu_depth.
+            rewrite maximal_mu_depth_to_S in Hmf.
+            { assumption. }
+            lia.
+          }
+          rewrite svar_open_size'. lia.
         }
         {
           rewrite free_evar_subst_no_occurrence.
@@ -1761,6 +1768,9 @@ Proof.
           apply pf_iff_equiv_refl.
           wf_auto2.
         }
+      }
+      {
+        
       }
     }
 Defined.
