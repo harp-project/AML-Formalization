@@ -1940,7 +1940,7 @@ Section with_signature.
     }
   Qed.
   *)
-  
+
   Lemma mu_depth_to_fsv_limited_svar_open
   (E X : svar)
   (ϕ : Pattern)
@@ -1993,6 +1993,167 @@ Section with_signature.
     { lia. }
     { lia. }
     { lia. }
+  Qed.
+
+  (* cpatt ==  cvar ---> ⊥ *)
+  Lemma bound_svar_is_lt_free_evar_subst
+    ϕ iter dbi cvar cpatt:
+    bound_svar_is_lt ϕ (iter + dbi) ->
+    well_formed_closed_mu_aux cpatt (dbi) ->
+    cvar ∈ free_evars cpatt ->
+    maximal_mu_depth_to 0 cvar cpatt < iter ->
+    bound_svar_is_lt cpatt (iter + dbi) ->
+    bound_svar_is_lt cpatt^[[evar:cvar↦ϕ]] (iter + dbi)
+  .
+  Proof.
+    intros Hltϕ Hwf Hin Hmaxmu Hltcpatt.
+    move: dbi iter Hwf Hin Hmaxmu Hltϕ Hltcpatt.
+    induction cpatt;
+      cbn;
+      intros dbi iter Hwf Hin Hmaxmu Hltϕ Hltcpatt; try exact I.
+    {
+      repeat case_match; subst; cbn; try exact I.
+      2: { contradiction. }
+      exact Hltϕ.
+    }
+    {
+      case_match; try lia.
+    }
+    {
+      destruct
+        (decide (cvar ∈ free_evars cpatt1)) as [Hin1|Hnotin1],
+        (decide (cvar ∈ free_evars cpatt2)) as [Hin2|Hnotin2].
+      4: { exfalso. clear -Hin Hnotin1 Hnotin2. set_solver. }
+      {
+        split.
+        {
+          apply IHcpatt1.
+          { destruct_and!. assumption. }
+          { exact Hin1. }
+          { lia. }
+          { exact Hltϕ. }
+          { apply Hltcpatt. }
+        }
+        {
+          apply IHcpatt2.
+          { destruct_and!. assumption. }
+          { exact Hin2. }
+          { lia. }
+          { exact Hltϕ. }
+          { apply Hltcpatt. }
+        }
+      }
+      {
+        split.
+        {
+          apply IHcpatt1.
+          { destruct_and!. assumption. }
+          { exact Hin1. }
+          { lia. }
+          { exact Hltϕ. }
+          { apply Hltcpatt. }
+        }
+        {
+          rewrite free_evar_subst_no_occurrence.
+          { exact Hnotin2. }
+          { apply Hltcpatt. }
+        }
+      }
+      {
+        split.
+        {
+          rewrite free_evar_subst_no_occurrence.
+          { exact Hnotin1. }
+          { apply Hltcpatt. }
+        }
+        {
+          apply IHcpatt2.
+          { destruct_and!. assumption. }
+          { exact Hin2. }
+          { lia. }
+          { exact Hltϕ. }
+          { apply Hltcpatt. }
+        }
+      }
+    }
+    {
+      destruct
+        (decide (cvar ∈ free_evars cpatt1)) as [Hin1|Hnotin1],
+        (decide (cvar ∈ free_evars cpatt2)) as [Hin2|Hnotin2].
+      4: { exfalso. clear -Hin Hnotin1 Hnotin2. set_solver. }
+      {
+        split.
+        {
+          apply IHcpatt1.
+          { destruct_and!. assumption. }
+          { exact Hin1. }
+          { lia. }
+          { exact Hltϕ. }
+          { apply Hltcpatt. }
+        }
+        {
+          apply IHcpatt2.
+          { destruct_and!. assumption. }
+          { exact Hin2. }
+          { lia. }
+          { exact Hltϕ. }
+          { apply Hltcpatt. }
+        }
+      }
+      {
+        split.
+        {
+          apply IHcpatt1.
+          { destruct_and!. assumption. }
+          { exact Hin1. }
+          { lia. }
+          { exact Hltϕ. }
+          { apply Hltcpatt. }
+        }
+        {
+          rewrite free_evar_subst_no_occurrence.
+          { exact Hnotin2. }
+          { apply Hltcpatt. }
+        }
+      }
+      {
+        split.
+        {
+          rewrite free_evar_subst_no_occurrence.
+          { exact Hnotin1. }
+          { apply Hltcpatt. }
+        }
+        {
+          apply IHcpatt2.
+          { destruct_and!. assumption. }
+          { exact Hin2. }
+          { lia. }
+          { exact Hltϕ. }
+          { apply Hltcpatt. }
+        }
+      }
+    }
+    {
+      apply IHcpatt; assumption.
+    }
+    {
+      destruct iter;[lia|].
+      replace (S iter + dbi) with (iter + S dbi) by lia.
+      apply IHcpatt; try assumption.
+      {
+        rewrite maximal_mu_depth_to_S in Hmaxmu.
+        { exact Hin. }
+        { lia. }
+      }
+      {
+        replace (iter + S dbi) with (S iter + dbi) by lia.
+        exact Hltϕ.
+      }
+      {
+        replace (iter + S dbi) with (S iter + dbi) by lia.
+        exact Hltcpatt.
+      }
+    }
   Qed.
 
   (*
