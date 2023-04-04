@@ -310,6 +310,41 @@ Proof.
   all: abstract(wf_auto2).
 Defined.
 
+Lemma mu_iff {Σ : Signature} Γ ϕ₁ ϕ₂ X (i : ProofInfo):
+  ProofInfoLe ( (ExGen := ∅, SVSubst := {[X]}, KT := true, AKT := true)) i ->
+  svar_has_negative_occurrence X ϕ₁ = false ->
+  svar_has_negative_occurrence X ϕ₂ = false ->
+  Γ ⊢i ϕ₁ <---> ϕ₂ using i->
+  Γ ⊢i (patt_mu (ϕ₁^{{svar: X ↦ 0}})) <---> (patt_mu (ϕ₂^{{svar: X ↦ 0}}))
+  using i.
+Proof.
+  intros.
+  
+  apply pf_iff_split.
+  { wf_auto2. }
+  { wf_auto2. }
+  {
+    apply mu_monotone; try assumption.
+    { try_solve_pile. }
+    { 
+      apply pf_iff_proj1 in H2.
+      { exact H2. }
+      { wf_auto2. }
+      { wf_auto2. }
+    }
+  }
+  {
+    apply mu_monotone; try assumption.
+    { try_solve_pile. }
+    { 
+      apply pf_iff_proj2 in H2.
+      { exact H2. }
+      { wf_auto2. }
+      { wf_auto2. }
+    }
+  }
+Defined.
+
 Close Scope ml_scope.
 Close Scope string_scope.
 Close Scope list_scope.
