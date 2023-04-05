@@ -1193,7 +1193,7 @@ Proof.
   }
 Defined.
 
-Print mu_in_evar_path.
+
 Lemma pred_and_ctx_and___mu_and_predicate_propagation__iter (iter : nat):
   ( forall
     {Σ : Signature} {syntax : Syntax} Γ ctx ϕ ψ,
@@ -1770,9 +1770,249 @@ Proof.
         }
       }
       {
-        
+        intros Σ syntax Γ ϕ ψ.
+        intros HΓ wfm wfψ Hbsltψ Hbsltϕ1 Hp.
+
+        assert (well_formed (mu , ψ and ϕ)).
+        {
+          clear -wfm wfψ.
+          unfold well_formed,well_formed_closed in *.
+          cbn in *. fold no_negative_occurrence_db_b.
+          destruct_and!.
+          split_and!; try reflexivity; try assumption.
+          {
+            apply wfc_impl_no_neg_occ.
+            assumption.
+          }
+          {
+            wf_auto2.
+          }
+        }
+
+        apply pf_iff_split.
+        { assumption. }
+        { wf_auto2. }
+        {
+          toMLGoal.
+          {
+            wf_auto2.
+          }
+          mlIntro "H".
+          mlSplitAnd; fromMLGoal.
+          {
+            apply Knaster_tarski.
+            { try_solve_pile. }
+            { wf_auto2. }
+            unfold instantiate.
+            mlSimpl.
+            rewrite -> well_formed_bsvar_subst with (k := 0).
+            toMLGoal.
+            { wf_auto2. }
+            mlIntro.
+            mlDestructAnd "0".
+            mlExact "1".
+            { lia. }
+            { wf_auto2. }
+          }
+          {
+            remember (fresh_svar (ψ and ϕ)) as Y.
+            rewrite <- svar_quantify_svar_open with (n := 0) (phi := (ψ and ϕ)) (X := Y).
+            rewrite <- svar_quantify_svar_open with (n := 0) (phi := ϕ) (X := Y) at 2.
+            apply mu_monotone.
+            { apply pile_any. }
+            {
+              mlSimpl. cbn. fold no_negative_occurrence_db_b svar_has_negative_occurrence.
+              rewrite !orb_false_r.
+              apply orb_false_iff.
+              split.
+              {
+                apply positive_negative_occurrence_db_named.
+                { wf_auto2. }
+                {
+                  subst Y. clear. apply svar_hno_false_if_fresh.
+                  eapply svar_is_fresh_in_richer'.
+                  2: { apply set_svar_fresh_is_fresh. }
+                  { cbn.  set_solver. }
+                }
+              }
+              {
+                apply positive_negative_occurrence_db_named.
+                { wf_auto2. }
+                {
+                  subst Y. clear. apply svar_hno_false_if_fresh.
+                  eapply svar_is_fresh_in_richer'.
+                  2: { apply set_svar_fresh_is_fresh. }
+                  { cbn.  set_solver. }
+                }
+              }
+            }
+            {
+              apply positive_negative_occurrence_db_named.
+              { wf_auto2. }
+              {
+                subst Y. clear. apply svar_hno_false_if_fresh.
+                eapply svar_is_fresh_in_richer'.
+                2: { apply set_svar_fresh_is_fresh. }
+                { cbn.  set_solver. }
+              }
+            }
+            {
+            unfold svar_open.
+            mlSimpl.
+            gapply pf_conj_elim_r.
+            { try_solve_pile. }
+            { wf_auto2. }
+            { wf_auto2. }
+          }
+          {
+            subst Y. clear.
+            eapply svar_is_fresh_in_richer'.
+            2: { apply set_svar_fresh_is_fresh. }
+            { cbn.  set_solver. }
+          }
+          { wf_auto2. }
+          {
+            subst Y. clear.
+            eapply svar_is_fresh_in_richer'.
+            2: { apply set_svar_fresh_is_fresh. }
+            { cbn.  set_solver. }
+          }
+          { wf_auto2. }
+        }
       }
-    }
+      {
+        toMLGoal.
+        { wf_auto2. }
+        mlRewrite (useBasicReasoning AnyReasoning (@patt_and_comm Σ Γ ψ (mu , ϕ) wfψ wfm)) at 1.
+        fromMLGoal.
+        apply lhs_from_and.
+        { wf_auto2. }
+        { wf_auto2. }
+        { wf_auto2. }
+
+        apply Knaster_tarski.
+        { try_solve_pile. }
+        { wf_auto2. }
+
+        apply lhs_to_and.
+        { wf_auto2.
+          fold no_negative_occurrence_db_b.
+          apply wfc_impl_no_neg_occ. wf_auto2.
+        }
+        { wf_auto2. }
+        { wf_auto2. }
+        
+        toMLGoal.
+        { wf_auto2. fold no_negative_occurrence_db_b. apply wfc_impl_no_neg_occ. wf_auto2. }
+        assert (Htmp : is_true (well_formed (mu , ϕ) ^ [ψ ---> (mu , ψ and ϕ)])).
+        {
+          wf_auto2. fold no_negative_occurrence_db_b. apply wfc_impl_no_neg_occ. wf_auto2.
+        }
+        mlRewrite (useBasicReasoning AnyReasoning (@patt_and_comm Σ Γ ((mu , ϕ) ^ [ψ ---> (mu , ψ and ϕ)]) ψ Htmp wfψ)) at 1.
+        
+        mlIntro "H".
+        mlApplyMeta Pre_fixp.
+        unfold instantiate.
+        mlSimpl.
+        fromMLGoal.
+        rewrite -> well_formed_bsvar_subst with (φ := ψ) (k := 0).
+        2: auto.
+        2: wf_auto2.
+
+        (* apply Lemma 88 of the paper. *)
+        remember (evar_fresh_s (free_evars (ϕ ---> ψ))) as x.
+        pose proof (IH1 := IHiter).
+        destruct IH1 as [IH1 _].
+        specialize (IH1 Σ syntax Γ).
+        specialize (IH1
+          {|
+            pcEvar := x;
+            pcPattern := ϕ^[svar:0↦patt_free_evar x];
+          |}
+          (ψ ---> (mu , ψ and ϕ)) ψ HΓ).
+        cbn in IH1.
+        feed specialize IH1.
+        { wf_auto2. }
+        { wf_auto2. }
+        { wf_auto2. }
+        {
+          apply mu_in_evar_path_svar_subst_evar.
+          { wf_auto2. }
+          {
+            subst x. unfold evar_is_fresh_in.
+            eapply evar_is_fresh_in_richer.
+            2: apply set_evar_fresh_is_fresh.
+            { cbn. set_solver. }
+          }
+          {
+            exact Hbsltϕ1.
+          }
+        }
+        { assumption. }
+
+        assert (no_negative_occurrence_db_b 0 ψ = true).
+        {
+          apply wfc_impl_no_neg_occ. wf_auto2.
+        }
+
+        toMLGoal.
+        { wf_auto2. }
+        rewrite subst_svar_evar_svar in HH.
+        { subst x. solve_fresh. }
+        rewrite subst_svar_evar_svar in HH.
+        { subst x. solve_fresh. }
+        clear Htmp.
+        unshelve(epose proof (Htmp := @liftProofInfoLe _ _ _ _ AnyReasoning _ HH)).
+        { try_solve_pile. }
+        mlRewrite Htmp at 1.
+
+        clear Heqx x H Htmp.
+
+        remember (evar_fresh_s (free_evars ϕ)) as x.
+        pose proof (HH' := impl_ctx_impl_pos Γ
+          {|
+            pcEvar := x;
+            pcPattern := ϕ^[svar:0↦patt_free_evar x];
+          |}
+          (ψ and (ψ ---> (mu , ψ and ϕ)))
+          (mu , ψ and ϕ)
+          AnyReasoning
+          ).
+        unfold emplace in HH'. simpl in HH'.
+        feed specialize HH'.
+        { wf_auto2. }
+        { wf_auto2. }
+        { wf_auto2. }
+        { unfold is_positive_context. cbn.
+          unfold well_formed in wfm.
+          cbn in wfm.
+          destruct_and! wfm.
+          apply no_neg_svar_subst.
+          {  clear -H2 Heqx. subst. eapply evar_is_fresh_in_richer'. 2: apply set_evar_fresh_is_fresh. set_solver. }
+          { assumption. }
+        }
+        { try_solve_pile. }
+        toMLGoal.
+        { wf_auto2. }
+        { mlIntro "H". mlDestructAnd "H". mlApply "1". mlExact "0". }
+
+        rewrite subst_svar_evar_svar in HH'.
+        {
+          subst x. solve_fresh.
+        }
+        
+        rewrite subst_svar_evar_svar in HH'.
+        {
+          subst x. solve_fresh.
+        }
+
+        mlIntro "H".
+        mlDestructAnd "H" as "H0" "H1".
+        mlSplitAnd.
+        + mlExact "H0".
+        + mlApplyMeta HH'. mlExact "H1".
+      }
+  }
 Defined.
 
 
