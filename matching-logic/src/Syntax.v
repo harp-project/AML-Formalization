@@ -2004,7 +2004,7 @@ Section with_signature.
     bound_svar_is_lt ϕ (iter + dbi) ->
     well_formed_closed_mu_aux cpatt (dbi) ->
     cvar ∈ free_evars cpatt ->
-    maximal_mu_depth_to 0 cvar cpatt < iter ->
+    maximal_mu_depth_to 0 cvar cpatt <= iter ->
     bound_svar_is_lt cpatt (iter + dbi) ->
     bound_svar_is_lt cpatt^[[evar:cvar↦ϕ]] (iter + dbi)
   .
@@ -2140,13 +2140,13 @@ Section with_signature.
       apply IHcpatt; assumption.
     }
     {
+      rewrite maximal_mu_depth_to_S in Hmaxmu.
+      { assumption. }
       destruct iter;[lia|].
       replace (S iter + dbi) with (iter + S dbi) by lia.
       apply IHcpatt; try assumption.
       {
-        rewrite maximal_mu_depth_to_S in Hmaxmu.
-        { exact Hin. }
-        { lia. }
+        lia.
       }
       {
         replace (iter + S dbi) with (S iter + dbi) by lia.
