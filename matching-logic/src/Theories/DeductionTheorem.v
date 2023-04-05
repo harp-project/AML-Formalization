@@ -1194,25 +1194,26 @@ Proof.
 Defined.
 
 
-Lemma pred_and_ctx_and___mu_and_predicate_propagation__iter (iter : nat):
+Lemma pred_and_ctx_and___mu_and_predicate_propagation__iter (iter : nat) {Σ : Signature} (ψ : Pattern):
+  bound_svar_is_lt ψ 0 ->
   ( forall
-    {Σ : Signature} {syntax : Syntax} Γ ctx ϕ ψ,
+    {syntax : Syntax} Γ ctx ϕ,
     Definedness_Syntax.theory ⊆ Γ ->
     well_formed ϕ ->
     well_formed ψ ->
     well_formed (pcPattern ctx) ->
-    bound_svar_is_lt ψ (iter) ->
+    (*bound_svar_is_lt ψ (iter) ->*)
     bound_svar_is_lt ϕ (iter) ->
     bound_svar_is_lt (pcPattern ctx) (iter) ->
-    maximal_mu_depth_to 0 (pcEvar ctx) (pcPattern ctx) < iter ->
+    maximal_mu_depth_to 0 (pcEvar ctx) (pcPattern ctx) < S iter ->
     Γ ⊢ is_predicate_pattern ψ ->
     Γ ⊢ ψ and (emplace ctx ϕ) <---> ψ and (emplace ctx (ψ and ϕ))
   ) * ( forall
-    {Σ : Signature} {syntax : Syntax} Γ ϕ ψ,
+    {syntax : Syntax} Γ ϕ,
     Definedness_Syntax.theory ⊆ Γ ->
     well_formed (mu, ϕ) ->
     well_formed ψ ->
-    bound_svar_is_lt ψ (S iter) ->
+    (*bound_svar_is_lt ψ (S iter) ->*)
     bound_svar_is_lt ϕ (S iter) ->
     Γ ⊢ is_predicate_pattern ψ ->
     Γ ⊢ (mu, (ψ and ϕ)) <---> (ψ and (mu, ϕ))
@@ -1221,13 +1222,13 @@ Lemma pred_and_ctx_and___mu_and_predicate_propagation__iter (iter : nat):
 Proof.
   induction iter.
   {
-    split; intros.
+    split; intros Hψ; intros.
     {
       apply pred_and_ctx_and; try assumption.
       {
         unfold mu_in_evar_path.
-        destruct (maximal_mu_depth_to 0 (pcEvar ctx) (pcPattern ctx)).
-        { lia. }
+        destruct (maximal_mu_depth_to 0 (pcEvar ctx) (pcPattern ctx)); cbn.
+        { reflexivity. }
         { lia. }
       }
     }
@@ -1238,8 +1239,8 @@ Proof.
   {
     split.
     {
-      intros Σ syntax Γ ctx ϕ ψ.
-      intros HΓ wfm wfψ wfc Hbsψ Hbs Hbs2 Hmf Hp.
+      intros syntax Γ ctx ϕ.
+      intros HΓ wfm wfψ wfc (*Hbsψ*) Hbs Hbs2 Hmf Hp.
 
       remember (size' (pcPattern ctx)) as sz.
       assert (Hsz: size' (pcPattern ctx) <= sz) by lia.
@@ -1572,20 +1573,21 @@ Proof.
       + 
         destruct (decide (cvar ∈ free_evars cpatt)).
         {
-          pose proof (IHouter := IHiter).
-          destruct IHouter as [_ IHouter1].
-          specialize (IHouter1 Σ syntax Γ).
-          pose proof (IHouter2 := IHouter1).
-          specialize (IHouter1 (cpatt^[[evar:cvar↦ϕ]]) ψ HΓ).
-          feed specialize IHouter1.
-          { wf_auto2. }
-          { wf_auto2. }
-          { exact Hbsψ. }
+          rewrite maximal_mu_depth_to_S in Hmf.
+          { assumption. }
+          (*
+          assert (IH1: Γ ⊢ (mu , ψ and cpatt^[[evar:cvar↦ϕ]]) <--->
+                          ψ and (mu , cpatt^[[evar:cvar↦ϕ]])).
           {
-            assert (wfccpatt : well_formed_closed_mu_aux cpatt 1).
-            { wf_auto2. }
-            replace (S iter) with (iter + 1) by lia.
-            apply bound_svar_is_lt_free_evar_subst; try assumption.
+            destruct iter.
+            {
+              
+              assert (Hmf': maximal_mu_depth_to 0 cvar cpatt = 0) by lia.
+              clear Hmf. rename Hmf' into Hmf.
+              apply mu_and_predicate_propagation; try assumption.
+              { wf_auto2. }
+              replace (1) with (1 + 0) by lia.
+              apply bound_svar_is_lt_free_evar_subst; cbn; try assumption.
             {
               replace (iter + 1) with (S iter) by lia.
               exact Hbs.
@@ -1599,17 +1601,42 @@ Proof.
               replace (iter + 1) with (S iter) by lia.
               exact Hbs2.
             }
+            }
+          }
+          *)
+
+          pose proof (IHouter := IHiter H).
+          destruct IHouter as [_ IHouter1].
+          specialize (IHouter1 syntax Γ).
+          pose proof (IHouter2 := IHouter1).
+          specialize (IHouter1 (cpatt^[[evar:cvar↦ϕ]]) HΓ).
+          feed specialize IHouter1.
+          { wf_auto2. }
+          { wf_auto2. }
+          {
+            assert (wfccpatt : well_formed_closed_mu_aux cpatt 1).
+            { wf_auto2. }
+            replace (S iter) with (iter + 1) by lia.
+            apply bound_svar_is_lt_free_evar_subst; try assumption.
+            {
+              replace (iter + 1) with (S iter) by lia.
+              exact Hbs.
+            }
+            {
+              lia.
+            }
+            {
+              replace (iter + 1) with (S iter) by lia.
+              exact Hbs2.
+            }
           }
           {
             exact Hp.
           }
-          specialize (IHouter2 (cpatt^[[evar:cvar↦ψ and ϕ]]) ψ HΓ).
+          specialize (IHouter2 (cpatt^[[evar:cvar↦ψ and ϕ]]) HΓ).
           feed specialize IHouter2.
           { wf_auto2. }
           { wf_auto2. }
-          {
-            apply Hbsψ.
-          }
           {
             assert (wfccpatt : well_formed_closed_mu_aux cpatt 1).
             { wf_auto2. }
@@ -1619,11 +1646,12 @@ Proof.
               replace (iter + 1) with (S iter) by lia.
               cbn.
               repeat split; try exact I; try assumption.
+              eapply bound_svar_is_lt_lt.
+              2: apply H.
+              { lia. }
             }
             {
-              rewrite maximal_mu_depth_to_S in Hmf.
-              { assumption. }
-              { lia. }
+              lia.
             }
             {
               replace (iter + 1) with (S iter) by lia.
@@ -1753,8 +1781,6 @@ Proof.
           {
             fold (svar_open Z 0 cpatt).
             rewrite svar_open_mu_depth.
-            rewrite maximal_mu_depth_to_S in Hmf.
-            { assumption. }
             lia.
           }
           rewrite svar_open_size'. lia.
@@ -1770,7 +1796,7 @@ Proof.
         }
       }
       {
-        intros Σ syntax Γ ϕ ψ.
+        intros syntax Γ ϕ.
         intros HΓ wfm wfψ Hbsltψ Hbsltϕ1 Hp.
 
         assert (well_formed (mu , ψ and ϕ)).
