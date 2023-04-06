@@ -2202,6 +2202,34 @@ Section with_signature.
     }
   Qed.
 
+  Fixpoint bound_svar_is_banned_under_mus
+  {Σ : Signature}
+  (ϕ : Pattern)
+  (depth : nat)
+  (banned : db_index)
+  : Prop
+  :=
+  match ϕ with
+  | patt_bound_evar idx => True
+  | patt_bound_svar idx => True
+  | patt_free_evar _ => True
+  | patt_free_svar _ => True
+  | patt_bott => True
+  | patt_sym _ => True
+  | patt_imp ϕ₁ ϕ₂
+  => (bound_svar_is_banned_under_mus ϕ₁ depth banned)
+  /\ (bound_svar_is_banned_under_mus ϕ₂ depth banned)
+  | patt_app ϕ₁ ϕ₂
+  => (bound_svar_is_banned_under_mus ϕ₁ depth banned)
+  /\ (bound_svar_is_banned_under_mus ϕ₂ depth banned)
+  | patt_exists ϕ' => bound_svar_is_banned_under_mus ϕ' depth banned
+  | patt_mu ϕ' =>
+    match depth with
+    | 0 => bsvar_occur ϕ' (S banned) = false
+    | (S depth') => bound_svar_is_banned_under_mus ϕ' depth' (S banned)
+    end
+  end.
+
   (*
   Lemma bsvar_occur_bound_svar_depth_is_max
     {Σ : Signature}
