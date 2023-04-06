@@ -1115,16 +1115,27 @@ Proof.
     { wf_auto2. }
     { wf_auto2. }
     {
-      apply mu_in_evar_path_svar_subst_evar.
-      { wf_auto2. }
+      unfold mu_in_evar_path.
+      rewrite negb_false_iff. cbn.
+      case_match; try reflexivity.
+      exfalso.
+      pose proof (Htmp2 := maximal_mu_depth_to_svar_subst_evar_banned x ϕ 0 0 0).
+      cbn in Htmp2.
+      feed specialize Htmp2.
       {
-        subst x. unfold evar_is_fresh_in.
-        eapply evar_is_fresh_in_richer.
-        2: apply set_evar_fresh_is_fresh.
-        { cbn. set_solver. }
+        wf_auto2.
       }
       {
-        exact Hbsltϕ1.
+        subst x. clear.
+        eapply evar_is_fresh_in_richer'.
+        2: apply set_evar_fresh_is_fresh'.
+        {
+          cbn. set_solver.
+        }
+      }
+      { exact Hbsltϕ1. }
+      {
+        lia.
       }
     }
     { assumption. }
