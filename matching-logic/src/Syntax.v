@@ -2327,7 +2327,7 @@ Section with_signature.
   Qed.
 
   Lemma maximal_mu_depth_to_svar_subst_evar_banned x ϕ dbi level d:
-    well_formed_closed_mu_aux ϕ dbi ->
+    well_formed_closed_mu_aux ϕ (S dbi) ->
     evar_is_fresh_in x ϕ ->
     bound_svar_is_banned_under_mus ϕ level dbi ->
     maximal_mu_depth_to d x ϕ^[svar:dbi↦patt_free_evar x] <= (d + level)
@@ -2373,7 +2373,9 @@ Section with_signature.
       destruct level.
       {
         rewrite bsvar_subst_not_occur.
-        { exact Hwf. }
+        { 
+          apply wfc_mu_lower; assumption.
+        }
         rewrite maximal_mu_depth_to_0.
         { exact Hfr. }
         { lia. }
