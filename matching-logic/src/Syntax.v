@@ -417,6 +417,49 @@ Section syntax.
     lia.
   Qed.
 
+
+  Lemma not_bsvar_occur_bsvar_subst_2 phi psi n:
+    well_formed_closed_mu_aux psi 0 -> well_formed_closed_mu_aux phi (S n) ->
+    bsvar_occur (phi^[svar: n ↦ psi]) n = false
+  .
+  Proof.
+    move: psi n.
+    induction phi; cbn; intros psi n' Hwfpsi Hwfphi; try reflexivity.
+    {
+      repeat case_match; cbn in *; repeat case_match; try reflexivity; try lia.
+      {
+        subst.
+        pose proof (Htmp :=  wfc_mu_implies_not_bsvar_occur psi n' Hwfpsi).
+        unfold is_true in Htmp.
+        apply not_true_is_false in Htmp.
+        exact Htmp.
+      }
+      {
+        congruence.
+      }
+    }
+    {
+      unfold is_true in Hwfphi.
+      rewrite andb_true_iff in Hwfphi.
+      destruct Hwfphi as [Hwf1 Hwf2].
+      rewrite orb_false_iff.
+      naive_solver.
+    }
+    {
+      unfold is_true in Hwfphi.
+      rewrite andb_true_iff in Hwfphi.
+      destruct Hwfphi as [Hwf1 Hwf2].
+      rewrite orb_false_iff.
+      naive_solver.
+    }
+    {
+      naive_solver.
+    }
+    {
+      naive_solver.
+    }
+  Qed.
+
   Lemma not_bsvar_occur_bsvar_subst phi psi n:
     well_formed_closed_mu_aux psi 0 -> well_formed_closed_mu_aux phi n ->
     ~ bsvar_occur (phi^[svar: n ↦ psi]) n.
@@ -2478,6 +2521,58 @@ Section with_signature.
         { exact Hwf. }
         { exact Hfr. }
         lia.
+      }
+    }
+  Qed.
+
+  Lemma maximal_mu_depth_to_svar_subst_evar_banned_back_2 x ϕ dbi level d:
+    well_formed_closed_mu_aux ϕ (S dbi) ->
+    evar_is_fresh_in x ϕ ->
+    maximal_mu_depth_to d x ϕ <= (d + level) ->
+    bound_svar_is_banned_under_mus ϕ^[svar:dbi↦patt_free_evar x] level dbi
+  .
+  Proof.
+    unfold evar_is_fresh_in.
+    move: dbi level d.
+    induction ϕ; cbn; intros dbi level d Hwf Hwefr Hmd; try exact I.
+    {
+      repeat case_match; cbn in *; try exact I.
+    }
+    {
+      unfold is_true in Hwf.
+      rewrite andb_true_iff in Hwf.
+      destruct Hwf as [Hwf1 Hwf2].
+      rewrite elem_of_union in Hwefr.
+      apply not_or_and in Hwefr.
+      destruct Hwefr as [Hfr1 Hfr2].
+      specialize (IHϕ1 dbi level d Hwf1 Hfr1 ltac:(lia)).
+      specialize (IHϕ2 dbi level d Hwf2 Hfr2 ltac:(lia)).
+      split; assumption.
+    }
+    {
+      unfold is_true in Hwf.
+      rewrite andb_true_iff in Hwf.
+      destruct Hwf as [Hwf1 Hwf2].
+      rewrite elem_of_union in Hwefr.
+      apply not_or_and in Hwefr.
+      destruct Hwefr as [Hfr1 Hfr2].
+      specialize (IHϕ1 dbi level d Hwf1 Hfr1 ltac:(lia)).
+      specialize (IHϕ2 dbi level d Hwf2 Hfr2 ltac:(lia)).
+      split; assumption.
+    }
+    {
+      eapply IHϕ.
+      3: apply Hmd.
+      2: exact Hwefr.
+      1: exact Hwf.
+    }
+    {
+      destruct level.
+      {
+        pose proof (Htmp := not_bsvar_occur_bsvar_subst ϕ (patt_free_evar x) (S dbi) ltac:(reflexivity)).
+        Search (bsvar_occur (bsvar_subst _ _ _)).
+        Search bsvar_occur.
+        pose proof (H'' := maximal_mu_depth_to_lt (S d) d x ϕ ltac:(lia) ltac:(lia)).
       }
     }
   Qed.
