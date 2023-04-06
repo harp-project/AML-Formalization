@@ -2326,17 +2326,19 @@ Section with_signature.
     }
   Qed.
 
-  Lemma mu_in_evar_path_svar_subst_evar_banned x ϕ dbi:
-    well_formed_closed_mu_aux ϕ (S dbi) ->
+  Lemma mu_in_evar_path_svar_subst_evar_banned x ϕ dbi dbi':
+    dbi' > dbi ->
+    well_formed_closed_mu_aux ϕ dbi' ->
     evar_is_fresh_in x ϕ ->
-    bound_svar_is_banned_under_mus ϕ (S dbi) dbi ->
+    bound_svar_is_banned_under_mus ϕ dbi' dbi ->
+    bsvar_occur ϕ (dbi) = true ->
     mu_in_evar_path x ϕ^[svar:dbi↦patt_free_evar x] 0 = false
   .
   Proof.
     unfold evar_is_fresh_in.
     unfold mu_in_evar_path. unfold maximal_mu_depth_to.
-    move: dbi.
-    induction ϕ; cbn; intros dbi Hwf Hfr H; try reflexivity.
+    move: dbi dbi'.
+    induction ϕ; cbn; intros dbi dbi' Hdbidbi' Hwf Hfr H Hbso; try reflexivity.
     {
       (* patt_free_evar *)
       repeat case_match; subst; cbn; try reflexivity; try lia.
@@ -2346,69 +2348,252 @@ Section with_signature.
     }
     {
       fold maximal_mu_depth_to in *.
-      specialize (IHϕ1 dbi).
+      specialize (IHϕ1 dbi dbi' ltac:(lia)).
       rewrite negb_false_iff in IHϕ1.
       rewrite Nat.eqb_eq in IHϕ1.
-      rewrite <- IHϕ1.
-      4: { naive_solver. }
-      3: { cbn in Hfr. set_solver. }
-      2: { wf_auto2. }
-      specialize (IHϕ2 dbi).
+      specialize (IHϕ2 dbi dbi' ltac:(lia)).
       rewrite negb_false_iff in IHϕ2.
       rewrite Nat.eqb_eq in IHϕ2.
-      rewrite <- IHϕ2.
-      4: { naive_solver. }
-      3: { cbn in Hfr. set_solver. }
-      2: { wf_auto2. }
-      cbn.
-      reflexivity.
+
+      rewrite orb_true_iff in Hbso.
+
+      destruct
+        (decide (bsvar_occur ϕ1 dbi = true)) eqn:Heqϕ1,
+        (decide (bsvar_occur ϕ2 dbi = true)) eqn:Heqϕ2.
+      destruct Hbso as [Hbso|Hbso]; try congruence.
+      {
+        rewrite <- IHϕ1.
+        5: assumption.
+        4: { naive_solver. }
+        3: { cbn in Hfr. set_solver. }
+        2: { wf_auto2. }
+        rewrite <- IHϕ2.
+        5: assumption.
+        4: { naive_solver. }
+        3: { cbn in Hfr. set_solver. }
+        2: { wf_auto2. }
+        cbn.
+        reflexivity.
+      }
+      {
+        rewrite <- IHϕ1.
+        5: assumption.
+        4: { naive_solver. }
+        3: { cbn in Hfr. set_solver. }
+        2: { wf_auto2. }
+        rewrite <- IHϕ2.
+        5: assumption.
+        4: { naive_solver. }
+        3: { cbn in Hfr. set_solver. }
+        2: { wf_auto2. }
+        cbn.
+        reflexivity.
+      }
+      {
+        rewrite <- IHϕ1.
+        5: assumption.
+        4: { naive_solver. }
+        3: { cbn in Hfr. set_solver. }
+        2: { wf_auto2. }
+        cbn.
+        case_match; cbn; try reflexivity.
+        pose proof (Htmp := maximal_mu_depth_to_not_0 ϕ2^[svar:dbi↦patt_free_evar x] x 0 ltac:(lia)).
+        clear Heqϕ1. clear Heqϕ2.
+        apply not_true_is_false in n.
+        rewrite free_evars_bsvar_subst' in Htmp.
+        destruct Htmp as [Htmp|Htmp].
+        {
+          destruct Htmp as [Htmp1 Htmp2].
+          rewrite n in Htmp2.
+          congruence.
+        }
+        {
+          exfalso. clear -Hfr Htmp. set_solver.
+        }
+      }
+      {
+        rewrite <- IHϕ2.
+        5: assumption.
+        4: { naive_solver. }
+        3: { cbn in Hfr. set_solver. }
+        2: { wf_auto2. }
+        rewrite Nat.max_comm.
+        cbn.
+        case_match; cbn; try reflexivity.
+        pose proof (Htmp := maximal_mu_depth_to_not_0 ϕ1^[svar:dbi↦patt_free_evar x] x 0 ltac:(lia)).
+        clear Heqϕ1. clear Heqϕ2.
+        apply not_true_is_false in n.
+        rewrite free_evars_bsvar_subst' in Htmp.
+        destruct Htmp as [Htmp|Htmp].
+        {
+          destruct Htmp as [Htmp1 Htmp2].
+          rewrite n in Htmp2.
+          congruence.
+        }
+        {
+          exfalso. clear -Hfr Htmp. set_solver.
+        }
+      }
+      {
+        case_match; cbn; try reflexivity.
+        exfalso.
+        pose proof (Htmp := maximal_mu_depth_to_not_0 (patt_imp ϕ1 ϕ2)^[svar:dbi↦patt_free_evar x] x 0).
+        cbn in Htmp.
+        specialize (Htmp ltac:(lia)).
+        rewrite elem_of_union in Htmp.
+        do 2 rewrite free_evars_bsvar_subst' in Htmp.
+        cbn in Htmp.
+        clear -Htmp n n0 Hfr.
+        set_solver.
+      }
     }
     {
       fold maximal_mu_depth_to in *.
-      specialize (IHϕ1 dbi).
+      specialize (IHϕ1 dbi dbi' ltac:(lia)).
       rewrite negb_false_iff in IHϕ1.
       rewrite Nat.eqb_eq in IHϕ1.
-      rewrite <- IHϕ1.
-      4: { naive_solver. }
-      3: { cbn in Hfr. set_solver. }
-      2: { wf_auto2. }
-      specialize (IHϕ2 dbi).
+      specialize (IHϕ2 dbi dbi' ltac:(lia)).
       rewrite negb_false_iff in IHϕ2.
       rewrite Nat.eqb_eq in IHϕ2.
-      rewrite <- IHϕ2.
-      4: { naive_solver. }
-      3: { cbn in Hfr. set_solver. }
-      2: { wf_auto2. }
-      cbn.
-      reflexivity.
+
+      rewrite orb_true_iff in Hbso.
+
+      destruct
+        (decide (bsvar_occur ϕ1 dbi = true)) eqn:Heqϕ1,
+        (decide (bsvar_occur ϕ2 dbi = true)) eqn:Heqϕ2.
+      destruct Hbso as [Hbso|Hbso]; try congruence.
+      {
+        rewrite <- IHϕ1.
+        5: assumption.
+        4: { naive_solver. }
+        3: { cbn in Hfr. set_solver. }
+        2: { wf_auto2. }
+        rewrite <- IHϕ2.
+        5: assumption.
+        4: { naive_solver. }
+        3: { cbn in Hfr. set_solver. }
+        2: { wf_auto2. }
+        cbn.
+        reflexivity.
+      }
+      {
+        rewrite <- IHϕ1.
+        5: assumption.
+        4: { naive_solver. }
+        3: { cbn in Hfr. set_solver. }
+        2: { wf_auto2. }
+        rewrite <- IHϕ2.
+        5: assumption.
+        4: { naive_solver. }
+        3: { cbn in Hfr. set_solver. }
+        2: { wf_auto2. }
+        cbn.
+        reflexivity.
+      }
+      {
+        rewrite <- IHϕ1.
+        5: assumption.
+        4: { naive_solver. }
+        3: { cbn in Hfr. set_solver. }
+        2: { wf_auto2. }
+        cbn.
+        case_match; cbn; try reflexivity.
+        pose proof (Htmp := maximal_mu_depth_to_not_0 ϕ2^[svar:dbi↦patt_free_evar x] x 0 ltac:(lia)).
+        clear Heqϕ1. clear Heqϕ2.
+        apply not_true_is_false in n.
+        rewrite free_evars_bsvar_subst' in Htmp.
+        destruct Htmp as [Htmp|Htmp].
+        {
+          destruct Htmp as [Htmp1 Htmp2].
+          rewrite n in Htmp2.
+          congruence.
+        }
+        {
+          exfalso. clear -Hfr Htmp. set_solver.
+        }
+      }
+      {
+        rewrite <- IHϕ2.
+        5: assumption.
+        4: { naive_solver. }
+        3: { cbn in Hfr. set_solver. }
+        2: { wf_auto2. }
+        rewrite Nat.max_comm.
+        cbn.
+        case_match; cbn; try reflexivity.
+        pose proof (Htmp := maximal_mu_depth_to_not_0 ϕ1^[svar:dbi↦patt_free_evar x] x 0 ltac:(lia)).
+        clear Heqϕ1. clear Heqϕ2.
+        apply not_true_is_false in n.
+        rewrite free_evars_bsvar_subst' in Htmp.
+        destruct Htmp as [Htmp|Htmp].
+        {
+          destruct Htmp as [Htmp1 Htmp2].
+          rewrite n in Htmp2.
+          congruence.
+        }
+        {
+          exfalso. clear -Hfr Htmp. set_solver.
+        }
+      }
+      {
+        case_match; cbn; try reflexivity.
+        exfalso.
+        pose proof (Htmp := maximal_mu_depth_to_not_0 (patt_imp ϕ1 ϕ2)^[svar:dbi↦patt_free_evar x] x 0).
+        cbn in Htmp.
+        specialize (Htmp ltac:(lia)).
+        rewrite elem_of_union in Htmp.
+        do 2 rewrite free_evars_bsvar_subst' in Htmp.
+        cbn in Htmp.
+        clear -Htmp n n0 Hfr.
+        set_solver.
+      }
     }
     {
       fold maximal_mu_depth_to in *.
-      specialize (IHϕ dbi).
+      specialize (IHϕ dbi dbi' ltac:(lia)).
       rewrite negb_false_iff in IHϕ.
       rewrite Nat.eqb_eq in IHϕ.
       rewrite <- IHϕ.
       4: { naive_solver. }
       3: { cbn in Hfr. set_solver. }
       2: { wf_auto2. }
+      2: assumption.
       reflexivity.
     }
     {
       fold maximal_mu_depth_to in *.
-      specialize (IHϕ (S dbi)).
+      specialize (IHϕ (S dbi) (S dbi') ltac:(lia)).
       rewrite negb_false_iff in IHϕ.
       rewrite Nat.eqb_eq in IHϕ.
-      case_match; cbn; try reflexivity.
+      repeat case_match; subst; cbn in *; try reflexivity; try lia.
+      exfalso.
       specialize (IHϕ Hwf Hfr).
       feed specialize IHϕ.
       {
         eapply bound_svar_is_banned_under_mus_lt.
-        2: apply H.
-        { lia. }
+        2: { apply H. }
+        lia.
       }
-      exfalso.
+      {
+        exact Hbso.
+      }
+      (* it follows from IHϕ anyway *)
+      clear H1 n0.
+      rewrite maximal_mu_depth_to_S in H1.
+      {
+        rewrite free_evars_bsvar_subst'.
+        cbn. left.
+        split;[set_solver|assumption].
+      }
+      rewrite <- IHϕ in H1.
+      assert (n0 = 0) by lia.
       pose proof (Htmp1 := maximal_mu_depth_to_not_0 (ϕ^[svar:(S dbi)↦patt_free_evar x]) x 1 ltac:(lia)).
-      pose proof (Htmp2 := bound_svar_is_banned_notfree x ϕ (S dbi) dbi).
+      rewrite free_evars_bsvar_subst' in Htmp1.
+      destruct Htmp1 as [[Htmp11 Htmp12]|Htmp1].
+      {
+
+      }
+      pose proof (Htmp2 := bound_svar_is_banned_notfree x ϕ (S dbi)).
       pose proof (Htmp2 := bound_svar_is_lt_notfree x ϕ (S dbi) Hwf Hfr H).
       clear -Htmp1 Htmp2.
       contradiction.
