@@ -2456,14 +2456,28 @@ Section with_signature.
     {
       destruct level.
       {
-        destruct d.
+        pose proof (H'' := maximal_mu_depth_to_lt (S d) d x ϕ^[svar:S dbi↦patt_free_evar x] ltac:(lia) ltac:(lia)).      
+        unfold evar_is_fresh_in in H''.
+        rewrite free_evars_bsvar_subst' in H''.
+        apply not_or_and in H''.
+        destruct H'' as [H1 H2].
+        cbn in H1.
+        apply not_and_or in H1.
+        destruct H1 as [H1|H1].
         {
-          cbn in H.
-          assert (H': maximal_mu_depth_to 1 x ϕ^[svar:S dbi↦patt_free_evar x] = 0) by lia.
-          clear H. rename H' into H.
-          Print maximal_mu_depth_to.
+          exfalso. clear -H1. set_solver.
         }
-        Search maximal_mu_depth_to.
+        {
+          unfold is_true in H1.
+          apply not_true_is_false in H1.
+          exact H1.
+        }
+      }
+      {
+        apply IHϕ with (d := S d).
+        { exact Hwf. }
+        { exact Hfr. }
+        lia.
       }
     }
   Qed.
