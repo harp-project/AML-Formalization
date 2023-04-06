@@ -1223,7 +1223,7 @@ Lemma pred_and_ctx_and___mu_and_predicate_propagation__iter (iter : nat) {Σ : S
     Definedness_Syntax.theory ⊆ Γ ->
     well_formed (mu, ϕ) ->
     well_formed ψ ->
-    bound_svar_is_lt ϕ (S iter) ->
+    bound_svar_is_banned_under_mus ϕ (iter) 0 ->
     Γ ⊢ is_predicate_pattern ψ ->
     Γ ⊢ (mu, (ψ and ϕ)) <---> (ψ and (mu, ϕ))
   )
@@ -1584,6 +1584,13 @@ Proof.
           {
             assert (wfccpatt : well_formed_closed_mu_aux cpatt 1).
             { wf_auto2. }
+            remember (evar_fresh_s (free_evars (cpatt^[[evar:cvar↦ϕ]]))) as x.
+            eapply maximal_mu_depth_to_svar_subst_evar_banned_back_2 with (x := x).
+            { wf_auto2. }
+            {
+              subst. clear. apply set_evar_fresh_is_fresh'.
+            }
+            
             replace (S iter) with (iter + 1) by lia.
             apply bound_svar_is_lt_free_evar_subst; try assumption.
             {
