@@ -2387,6 +2387,87 @@ Section with_signature.
     }
   Qed.
 
+  Lemma maximal_mu_depth_to_lt a b x ϕ:
+    a > b ->
+    maximal_mu_depth_to a x ϕ <= b ->
+    evar_is_fresh_in x ϕ
+  .
+  Proof.
+    unfold evar_is_fresh_in.
+    move: a b.
+    induction ϕ; cbn; intros a b Hab H; try set_solver.
+    {
+      destruct (decide (x0 = x)); subst; try lia; try set_solver.
+    }
+    {
+      specialize (IHϕ1 a b Hab ltac:(lia)).
+      specialize (IHϕ2 a b Hab ltac:(lia)).
+      set_solver.
+    }
+    {
+      specialize (IHϕ1 a b Hab ltac:(lia)).
+      specialize (IHϕ2 a b Hab ltac:(lia)).
+      set_solver.
+    }
+    {
+      eapply IHϕ.
+      2: apply H.
+      lia.
+    }
+  Qed.
+
+  Lemma maximal_mu_depth_to_svar_subst_evar_banned_back x ϕ dbi level d:
+    well_formed_closed_mu_aux ϕ (S dbi) ->
+    evar_is_fresh_in x ϕ ->
+    maximal_mu_depth_to d x ϕ^[svar:dbi↦patt_free_evar x] <= (d + level) ->
+    bound_svar_is_banned_under_mus ϕ level dbi
+  .
+  Proof.
+    unfold evar_is_fresh_in.
+    move: dbi level d.
+    induction ϕ; cbn; intros dbi level d Hwf Hfr H; try exact I.
+    {
+      unfold is_true in Hwf.
+      rewrite andb_true_iff in Hwf.
+      destruct Hwf as [Hwf1 Hwf2].
+      rewrite elem_of_union in Hfr.
+      apply not_or_and in Hfr.
+      destruct Hfr as [Hfr1 Hfr2].
+      specialize (IHϕ1 dbi level d Hwf1 Hfr1 ltac:(lia)).
+      specialize (IHϕ2 dbi level d Hwf2 Hfr2 ltac:(lia)).
+      split; assumption.
+    }
+    {
+      unfold is_true in Hwf.
+      rewrite andb_true_iff in Hwf.
+      destruct Hwf as [Hwf1 Hwf2].
+      rewrite elem_of_union in Hfr.
+      apply not_or_and in Hfr.
+      destruct Hfr as [Hfr1 Hfr2].
+      specialize (IHϕ1 dbi level d Hwf1 Hfr1 ltac:(lia)).
+      specialize (IHϕ2 dbi level d Hwf2 Hfr2 ltac:(lia)).
+      split; assumption.
+    }
+    {
+      eapply IHϕ.
+      3: apply H.
+      1,2: assumption.
+    }
+    {
+      destruct level.
+      {
+        destruct d.
+        {
+          cbn in H.
+          assert (H': maximal_mu_depth_to 1 x ϕ^[svar:S dbi↦patt_free_evar x] = 0) by lia.
+          clear H. rename H' into H.
+          Print maximal_mu_depth_to.
+        }
+        Search maximal_mu_depth_to.
+      }
+    }
+  Qed.
+
   (*
   Lemma bsvar_occur_bound_svar_depth_is_max
     {Σ : Signature}
