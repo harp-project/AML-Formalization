@@ -2569,10 +2569,14 @@ Section with_signature.
     {
       destruct level.
       {
-        pose proof (Htmp := not_bsvar_occur_bsvar_subst ϕ (patt_free_evar x) (S dbi) ltac:(reflexivity)).
-        Search (bsvar_occur (bsvar_subst _ _ _)).
-        Search bsvar_occur.
-        pose proof (H'' := maximal_mu_depth_to_lt (S d) d x ϕ ltac:(lia) ltac:(lia)).
+        pose proof (Htmp := not_bsvar_occur_bsvar_subst_2 ϕ (patt_free_evar x) (S dbi) ltac:(reflexivity) Hwf).
+        apply Htmp.
+      }
+      {
+        eapply IHϕ with (d := (S d)).
+        { assumption. }
+        { assumption. }
+        { lia. }
       }
     }
   Qed.
