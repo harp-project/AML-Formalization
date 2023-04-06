@@ -2203,7 +2203,6 @@ Section with_signature.
   Qed.
 
   Fixpoint bound_svar_is_banned_under_mus
-  {Σ : Signature}
   (ϕ : Pattern)
   (depth : nat)
   (banned : db_index)
@@ -2229,6 +2228,192 @@ Section with_signature.
     | (S depth') => bound_svar_is_banned_under_mus ϕ' depth' (S banned)
     end
   end.
+
+  Lemma bsvar_occur_false_impl_banned ϕ banned n:
+    bsvar_occur ϕ banned = false ->
+    bound_svar_is_banned_under_mus ϕ n banned
+  .
+  Proof.
+    move: banned n.
+    induction ϕ; cbn; intros banned n' H; try exact I.
+    {
+      rewrite orb_false_iff in H.
+      naive_solver.
+    }
+    {
+      rewrite orb_false_iff in H.
+      naive_solver.
+    }
+    {
+      naive_solver.
+    }
+    {
+      destruct n'.
+      { assumption. }
+      { naive_solver. }
+    }
+  Qed.
+
+  Lemma bound_svar_is_banned_under_mus_lt
+    (ϕ : Pattern) (depth1 depth2 : nat) (banned : db_index)
+  :
+    depth1 <= depth2 ->
+    bound_svar_is_banned_under_mus ϕ depth1 banned ->
+    bound_svar_is_banned_under_mus ϕ depth2 banned
+  .
+  Proof.
+    move: depth1 depth2 banned.
+    induction ϕ; cbn; intros depth1 depth2 banned Hlt H;
+      try exact I; try naive_solver.
+    {
+      repeat case_match; subst; try lia; try assumption.
+      {
+        apply bsvar_occur_false_impl_banned.
+        exact H.
+      }
+      {
+        eapply IHϕ.
+        2: apply H.
+        lia.
+      }
+    }
+  Qed.
+
+  Lemma bound_svar_is_banned_notfree x ϕ dbi dbi':
+    dbi > dbi' ->
+    well_formed_closed_mu_aux ϕ dbi' ->
+    x ∉ free_evars ϕ ->
+    bound_svar_is_banned_under_mus ϕ dbi dbi' ->
+    x ∉ free_evars ϕ^[svar:dbi↦patt_free_evar x]
+  .
+  Proof.
+    move: dbi dbi'.
+    induction ϕ; cbn; intros dbi dbi' Hdbidbi' Hwf Hxϕ Hϕdbi Hcontra; try set_solver.
+    {
+      repeat case_match; cbn in *; try set_solver; subst; try lia.
+      { congruence. }
+    }
+    {
+      unfold is_true in Hwf.
+      rewrite andb_true_iff in Hwf.
+      destruct Hwf as [Hwf1 Hwf2].
+      destruct Hϕdbi as [Hϕdbi1 Hϕdbi2].
+      rewrite elem_of_union in Hxϕ.
+      rewrite elem_of_union in Hcontra.
+      destruct Hcontra; naive_solver.
+    }
+    {
+      unfold is_true in Hwf.
+      rewrite andb_true_iff in Hwf.
+      destruct Hwf as [Hwf1 Hwf2].
+      destruct Hϕdbi as [Hϕdbi1 Hϕdbi2].
+      rewrite elem_of_union in Hxϕ.
+      rewrite elem_of_union in Hcontra.
+      destruct Hcontra; naive_solver.
+    }
+    { 
+      destruct dbi;[lia|].
+      eapply bound_svar_is_banned_under_mus_lt with (depth2 := (S (S dbi))) in Hϕdbi.
+      2: lia.
+      eapply IHϕ.
+      4: {
+        apply Hϕdbi.
+      }
+      { lia. }
+      { apply Hwf. }
+      { exact Hxϕ. }
+      { apply Hcontra. }
+    }
+  Qed.
+
+  Lemma mu_in_evar_path_svar_subst_evar_banned x ϕ dbi:
+    well_formed_closed_mu_aux ϕ (S dbi) ->
+    evar_is_fresh_in x ϕ ->
+    bound_svar_is_banned_under_mus ϕ (S dbi) dbi ->
+    mu_in_evar_path x ϕ^[svar:dbi↦patt_free_evar x] 0 = false
+  .
+  Proof.
+    unfold evar_is_fresh_in.
+    unfold mu_in_evar_path. unfold maximal_mu_depth_to.
+    move: dbi.
+    induction ϕ; cbn; intros dbi Hwf Hfr H; try reflexivity.
+    {
+      (* patt_free_evar *)
+      repeat case_match; subst; cbn; try reflexivity; try lia.
+    }
+    {
+      repeat case_match; subst; cbn; try reflexivity; try lia.
+    }
+    {
+      fold maximal_mu_depth_to in *.
+      specialize (IHϕ1 dbi).
+      rewrite negb_false_iff in IHϕ1.
+      rewrite Nat.eqb_eq in IHϕ1.
+      rewrite <- IHϕ1.
+      4: { naive_solver. }
+      3: { cbn in Hfr. set_solver. }
+      2: { wf_auto2. }
+      specialize (IHϕ2 dbi).
+      rewrite negb_false_iff in IHϕ2.
+      rewrite Nat.eqb_eq in IHϕ2.
+      rewrite <- IHϕ2.
+      4: { naive_solver. }
+      3: { cbn in Hfr. set_solver. }
+      2: { wf_auto2. }
+      cbn.
+      reflexivity.
+    }
+    {
+      fold maximal_mu_depth_to in *.
+      specialize (IHϕ1 dbi).
+      rewrite negb_false_iff in IHϕ1.
+      rewrite Nat.eqb_eq in IHϕ1.
+      rewrite <- IHϕ1.
+      4: { naive_solver. }
+      3: { cbn in Hfr. set_solver. }
+      2: { wf_auto2. }
+      specialize (IHϕ2 dbi).
+      rewrite negb_false_iff in IHϕ2.
+      rewrite Nat.eqb_eq in IHϕ2.
+      rewrite <- IHϕ2.
+      4: { naive_solver. }
+      3: { cbn in Hfr. set_solver. }
+      2: { wf_auto2. }
+      cbn.
+      reflexivity.
+    }
+    {
+      fold maximal_mu_depth_to in *.
+      specialize (IHϕ dbi).
+      rewrite negb_false_iff in IHϕ.
+      rewrite Nat.eqb_eq in IHϕ.
+      rewrite <- IHϕ.
+      4: { naive_solver. }
+      3: { cbn in Hfr. set_solver. }
+      2: { wf_auto2. }
+      reflexivity.
+    }
+    {
+      fold maximal_mu_depth_to in *.
+      specialize (IHϕ (S dbi)).
+      rewrite negb_false_iff in IHϕ.
+      rewrite Nat.eqb_eq in IHϕ.
+      case_match; cbn; try reflexivity.
+      specialize (IHϕ Hwf Hfr).
+      feed specialize IHϕ.
+      {
+        eapply bound_svar_is_banned_under_mus_lt.
+        2: apply H.
+        { lia. }
+      }
+      exfalso.
+      pose proof (Htmp1 := maximal_mu_depth_to_not_0 (ϕ^[svar:(S dbi)↦patt_free_evar x]) x 1 ltac:(lia)).
+      pose proof (Htmp2 := bound_svar_is_banned_notfree x ϕ (S dbi) dbi).
+      pose proof (Htmp2 := bound_svar_is_lt_notfree x ϕ (S dbi) Hwf Hfr H).
+      clear -Htmp1 Htmp2.
+      contradiction.
+    }
+  Qed.
 
   (*
   Lemma bsvar_occur_bound_svar_depth_is_max
