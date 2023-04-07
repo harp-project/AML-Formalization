@@ -2719,23 +2719,23 @@ Section with_signature.
   Qed.
 
   Lemma bound_svar_is_banned_under_mus_fevar_subst ϕ ψ cvar level dbi':
-    well_formed_closed_mu_aux ψ (S dbi') ->
+    well_formed_closed_mu_aux ϕ (dbi') = true ->
+    well_formed_closed_mu_aux ψ (S dbi') = true  ->
     bound_svar_is_banned_under_mus ψ level dbi' ->
-    bound_svar_is_banned_under_mus ϕ level dbi' ->
     bound_svar_is_banned_under_mus ϕ^[[evar:cvar↦ψ]] level dbi'
   .
   Proof.
     move: dbi' level.
-    induction ϕ; cbn; intros dbi' level H1 H2 H3; try exact I.
+    induction ϕ; cbn; intros dbi' level H0 H1 H2 (*H3*); try exact I.
     {
       repeat case_match; cbn in *; subst; try exact I.
       assumption.
     }
     {
-      naive_solver.
+      naive_bsolver.
     }
     {
-      naive_solver.
+      naive_bsolver.
     }
     {
       naive_solver.
@@ -2743,10 +2743,17 @@ Section with_signature.
     {
       destruct level; cbn in *.
       {
-        apply bsvar_occur_free_evar_subst; assumption.
+        apply bsvar_occur_free_evar_subst; try assumption.
+        apply wfc_mu_aux_implies_not_bsvar_occur.
+        apply H0.
       }
       {
         apply IHϕ.
+        {
+          eapply well_formed_closed_mu_aux_ind.
+          2: apply H0.
+          { lia. }
+        }
         {
           eapply well_formed_closed_mu_aux_ind.
           2: apply H1.
@@ -2755,9 +2762,6 @@ Section with_signature.
         {
           apply bsvar_occur_false_impl_banned.
           apply wfc_mu_aux_implies_not_bsvar_occur.
-          assumption.
-        }
-        {
           assumption.
         }
       }
