@@ -2796,6 +2796,36 @@ Section with_signature.
     }
   Qed.
 
+  Lemma bound_svar_is_lt_implies_bound_svar_is_banned_under_mus ϕ level dbi n:
+    well_formed_closed_mu_aux ϕ (dbi + n) ->
+    bound_svar_is_lt ϕ (level + n) ->
+    bound_svar_is_banned_under_mus ϕ level (dbi + n)
+  .
+  Proof.
+    move: level dbi n.
+    induction ϕ; cbn; intros level dbi n' H1 H2; try exact I; try naive_bsolver.
+    {
+      destruct level.
+      {
+        apply wfc_mu_aux_implies_not_bsvar_occur.
+        { wf_auto2. }
+      }
+      {
+        replace (S (dbi + n')) with (dbi + S n') by lia.
+        apply IHϕ.
+        {
+          replace (dbi + S n') with (S (dbi + n')) by lia.
+          exact H1.
+        }
+        {
+          replace (level + S n') with (S (level + n')) by lia.
+          cbn in H2.
+          exact H2.
+        }
+      }
+    }
+  Qed.
+
   (*
   Lemma wfcmu_bound_svar_banned_under_mu ϕ level dbi:
     well_formed_closed_mu_aux ϕ (S level) ->
