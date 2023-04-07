@@ -2581,6 +2581,38 @@ Section with_signature.
     }
   Qed.
 
+  Lemma bound_svar_is_banned_under_mus_evar_open x ϕ dbi level dbi':
+    bound_svar_is_banned_under_mus ϕ level dbi' ->
+    bound_svar_is_banned_under_mus ϕ^[evar:dbi↦patt_free_evar x] level dbi'
+  .
+  Proof.
+    move: dbi dbi' level.
+    induction ϕ; cbn; intros dbi dbi' level H; try exact I.
+    {
+      repeat case_match; cbn in *; try exact I.
+    }
+    {
+      naive_solver.
+    }
+    {
+      naive_solver.
+    }
+    {
+      naive_solver.
+    }
+    {
+      destruct level; cbn in *.
+      {
+        apply bsvar_occur_evar_open.
+        assumption.
+      }
+      {
+        apply IHϕ.
+        apply H.
+      }
+    }
+  Qed.
+
   (*
   Lemma bsvar_occur_bound_svar_depth_is_max
     {Σ : Signature}
