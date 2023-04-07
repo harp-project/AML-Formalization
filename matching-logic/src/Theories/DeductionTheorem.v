@@ -1585,7 +1585,8 @@ Proof.
             assert (wfccpatt : well_formed_closed_mu_aux cpatt 1).
             { wf_auto2. }
             remember (evar_fresh_s (free_evars (cpatt^[[evar:cvar↦ϕ]]))) as x.
-            eapply maximal_mu_depth_to_svar_subst_evar_banned_back_2 with (x := x).
+            Check maximal_mu_depth_to_svar_subst_evar_banned_back_2.
+            eapply maximal_mu_depth_to_svar_subst_evar_banned_back_2.
             { wf_auto2. }
             {
               subst. clear. apply set_evar_fresh_is_fresh'.
