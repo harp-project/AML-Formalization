@@ -2581,6 +2581,85 @@ Section with_signature.
     }
   Qed.
 
+  Lemma bsvar_occur_bevar_subst ϕ ψ edbi sdbi:
+    well_formed_closed_mu_aux ψ sdbi ->
+    bsvar_occur ϕ sdbi = false ->
+    bsvar_occur ϕ^[evar:edbi↦ψ] sdbi = false
+  .
+  Proof.
+    move: edbi sdbi.
+    induction ϕ; cbn; intros edbi sdbi Hwf Hnbo; try reflexivity.
+    {
+      case_match; try assumption.
+      subst.
+      apply wfc_mu_aux_implies_not_bsvar_occur.
+      exact Hwf.
+    }
+    {
+      exact Hnbo.
+    }
+    {
+      rewrite orb_false_iff in Hnbo.
+      rewrite orb_false_iff.
+      naive_solver.
+    }
+    {
+      rewrite orb_false_iff in Hnbo.
+      rewrite orb_false_iff.
+      naive_solver.
+    }
+    {
+      naive_solver.
+    }
+    {
+      apply IHϕ.
+      {
+        eapply well_formed_closed_mu_aux_ind.
+        2: apply Hwf.
+        { lia. }
+      }
+      {
+        exact Hnbo.
+      }
+    }
+  Qed.
+
+  Lemma bound_svar_is_banned_under_mus_svar_subst ϕ ψ dbi level dbi':
+    well_formed ψ ->
+    bound_svar_is_banned_under_mus ψ level dbi' ->
+    bound_svar_is_banned_under_mus ϕ level dbi' ->
+    bound_svar_is_banned_under_mus ϕ^[evar:dbi↦ψ] level dbi'
+  .
+  Proof.
+    move: dbi dbi' level.
+    induction ϕ; cbn; intros dbi dbi' level H1 H2 H3; try exact I.
+    {
+      repeat case_match; cbn in *; subst; try exact I.
+      assumption.
+    }
+    {
+      naive_solver.
+    }
+    {
+      naive_solver.
+    }
+    {
+      naive_solver.
+    }
+    {
+      destruct level; cbn in *.
+      {
+        Search bsvar_occur bevar_subst.
+        apply bsvar_occur_evar_open.
+        assumption.
+      }
+      {
+        apply IHϕ.
+        apply H.
+      }
+    }
+  Qed.
+
   Lemma bound_svar_is_banned_under_mus_evar_open x ϕ dbi level dbi':
     bound_svar_is_banned_under_mus ϕ level dbi' ->
     bound_svar_is_banned_under_mus ϕ^[evar:dbi↦patt_free_evar x] level dbi'
@@ -2610,6 +2689,28 @@ Section with_signature.
         apply IHϕ.
         apply H.
       }
+    }
+  Qed.
+
+  Lemma wfcmu_bound_svar_banned_under_mu ϕ level dbi:
+    well_formed_closed_mu_aux ϕ (S level) ->
+    bound_svar_is_banned_under_mus ϕ level dbi
+  .
+  Proof.
+    move: level dbi.
+    induction ϕ; cbn; intros level dbi H; try exact I.
+    {
+      naive_bsolver.
+    }
+    {
+      naive_bsolver.
+    }
+    {
+      naive_solver.
+    }
+    {
+      specialize (IHϕ (S level) dbi H).
+      destruct level.
     }
   Qed.
 
