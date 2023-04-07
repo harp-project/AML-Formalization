@@ -2624,7 +2624,7 @@ Section with_signature.
     }
   Qed.
 
-  Lemma bound_svar_is_banned_under_mus_svar_subst ϕ ψ dbi level dbi':
+  Lemma bound_svar_is_banned_under_mus_bevar_subst ϕ ψ dbi level dbi':
     well_formed_closed_mu_aux ψ (S dbi') ->
     bound_svar_is_banned_under_mus ψ level dbi' ->
     bound_svar_is_banned_under_mus ϕ level dbi' ->
@@ -2670,6 +2670,103 @@ Section with_signature.
     }
   Qed.
 
+
+  Lemma bsvar_occur_free_evar_subst ϕ cvar ψ dbi:
+    well_formed_closed_mu_aux ψ dbi ->
+    bsvar_occur ϕ dbi = false ->
+    bsvar_occur ϕ^[[evar:cvar↦ψ]] dbi = false
+  .
+  Proof.
+    move: dbi.
+    induction ϕ; cbn; intros dbi H1 H2; try reflexivity.
+    {
+      destruct (decide (cvar = x)).
+      {
+        apply wfc_mu_aux_implies_not_bsvar_occur.
+        assumption.
+      }
+      {
+        cbn. reflexivity.
+      }
+    }
+    {
+      exact H2.
+    }
+    {
+      rewrite orb_false_iff in H2.
+      rewrite orb_false_iff.
+      naive_solver.
+    }
+    {
+      rewrite orb_false_iff in H2.
+      rewrite orb_false_iff.
+      naive_solver.
+    }
+    {
+      naive_solver.
+    }
+    {
+      apply IHϕ.
+      {
+        eapply well_formed_closed_mu_aux_ind.
+        2: apply H1.
+        lia.
+      }
+      {
+        assumption.
+      }
+    }
+  Qed.
+
+  Lemma bound_svar_is_banned_under_mus_fevar_subst ϕ ψ cvar level dbi':
+    well_formed_closed_mu_aux ψ (S dbi') ->
+    bound_svar_is_banned_under_mus ψ level dbi' ->
+    bound_svar_is_banned_under_mus ϕ level dbi' ->
+    bound_svar_is_banned_under_mus ϕ^[[evar:cvar↦ψ]] level dbi'
+  .
+  Proof.
+    move: dbi' level.
+    induction ϕ; cbn; intros dbi' level H1 H2 H3; try exact I.
+    {
+      repeat case_match; cbn in *; subst; try exact I.
+      assumption.
+    }
+    {
+      naive_solver.
+    }
+    {
+      naive_solver.
+    }
+    {
+      naive_solver.
+    }
+    {
+      destruct level; cbn in *.
+      {
+        Check free_evar_subst.
+        Search bevar_occur free_evar_subst.
+        Search bsvar_occur.
+        apply bsvar_occur_bevar_subst; try assumption.
+      }
+      {
+        apply IHϕ.
+        {
+          eapply well_formed_closed_mu_aux_ind.
+          2: apply H1.
+          { lia. }
+        }
+        {
+          apply bsvar_occur_false_impl_banned.
+          apply wfc_mu_aux_implies_not_bsvar_occur.
+          assumption.
+        }
+        {
+          assumption.
+        }
+      }
+    }
+Qed.
+
   Lemma bound_svar_is_banned_under_mus_evar_open x ϕ dbi level dbi':
     bound_svar_is_banned_under_mus ϕ level dbi' ->
     bound_svar_is_banned_under_mus ϕ^[evar:dbi↦patt_free_evar x] level dbi'
@@ -2702,6 +2799,7 @@ Section with_signature.
     }
   Qed.
 
+  (*
   Lemma wfcmu_bound_svar_banned_under_mu ϕ level dbi:
     well_formed_closed_mu_aux ϕ (S level) ->
     bound_svar_is_banned_under_mus ϕ level dbi
@@ -2723,6 +2821,7 @@ Section with_signature.
       destruct level.
     }
   Qed.
+  *)
 
   (*
   Lemma bsvar_occur_bound_svar_depth_is_max
