@@ -1585,8 +1585,23 @@ Proof.
             assert (wfccpatt : well_formed_closed_mu_aux cpatt 1).
             { wf_auto2. }
             remember (evar_fresh_s (free_evars (cpatt^[[evar:cvar↦ϕ]]))) as x.
-            Check maximal_mu_depth_to_svar_subst_evar_banned_back_2.
-            eapply maximal_mu_depth_to_svar_subst_evar_banned_back_2.
+            apply bound_svar_is_banned_under_mus_fevar_subst.
+            {
+              wf_auto2.
+            }
+            {
+              replace (0) with (0 + 0) by lia.
+              eapply bound_svar_is_lt_implies_bound_svar_is_banned_under_mus.
+              {
+                cbn. wf_auto2.
+              }
+              {
+                replace (iter + 0) with (iter) by lia.
+              }
+            }
+            Check bound_svar_is_banned_under_mus_svar_subst.
+            apply bound_svar_is_banned_under_mus_svar_subst.
+            apply bound_svar_is_banned_under_mus_evar_open.
             { wf_auto2. }
             {
               subst. clear. apply set_evar_fresh_is_fresh'.
