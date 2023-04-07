@@ -2743,10 +2743,7 @@ Section with_signature.
     {
       destruct level; cbn in *.
       {
-        Check free_evar_subst.
-        Search bevar_occur free_evar_subst.
-        Search bsvar_occur.
-        apply bsvar_occur_bevar_subst; try assumption.
+        apply bsvar_occur_free_evar_subst; assumption.
       }
       {
         apply IHϕ.
@@ -2765,7 +2762,7 @@ Section with_signature.
         }
       }
     }
-Qed.
+  Qed.
 
   Lemma bound_svar_is_banned_under_mus_evar_open x ϕ dbi level dbi':
     bound_svar_is_banned_under_mus ϕ level dbi' ->
