@@ -2625,7 +2625,7 @@ Section with_signature.
   Qed.
 
   Lemma bound_svar_is_banned_under_mus_svar_subst ϕ ψ dbi level dbi':
-    well_formed ψ ->
+    well_formed_closed_mu_aux ψ (S dbi') ->
     bound_svar_is_banned_under_mus ψ level dbi' ->
     bound_svar_is_banned_under_mus ϕ level dbi' ->
     bound_svar_is_banned_under_mus ϕ^[evar:dbi↦ψ] level dbi'
@@ -2649,13 +2649,23 @@ Section with_signature.
     {
       destruct level; cbn in *.
       {
-        Search bsvar_occur bevar_subst.
-        apply bsvar_occur_evar_open.
-        assumption.
+        apply bsvar_occur_bevar_subst; try assumption.
       }
       {
         apply IHϕ.
-        apply H.
+        {
+          eapply well_formed_closed_mu_aux_ind.
+          2: apply H1.
+          { lia. }
+        }
+        {
+          apply bsvar_occur_false_impl_banned.
+          apply wfc_mu_aux_implies_not_bsvar_occur.
+          assumption.
+        }
+        {
+          assumption.
+        }
       }
     }
   Qed.
