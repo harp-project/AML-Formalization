@@ -2,7 +2,7 @@ From Coq Require Import ssreflect ssrfun ssrbool.
 
 From Equations Require Import Equations.
 
-From stdpp Require Import base pmap gmap fin_maps finite.
+From stdpp Require Import base pmap gmap fin_maps.
 From MatchingLogic Require Import Syntax Utils.stdpp_ext.
 
 Require Import String.
@@ -351,6 +351,17 @@ Defined.
     }
   Qed.
 
+  Lemma rename_free_evar_same :
+    forall ϕ x, rename_free_evar ϕ x x = ϕ.
+  Proof.
+    induction ϕ; intros y; simpl; auto.
+    * case_match; subst; auto.
+    * now rewrite IHϕ1 IHϕ2.
+    * now rewrite IHϕ1 IHϕ2.
+    * case_match; auto. now rewrite IHϕ.
+    * now rewrite IHϕ.
+  Qed.
+
   (* phi[Y/X] *)
   Fixpoint rename_free_svar (phi : NamedPattern) (Y X : svar) : NamedPattern :=
   match phi with
@@ -482,22 +493,27 @@ Defined.
     }
   Qed.
 
-  (* CoInductive SVarGen := mkSvarGen {
-    sg_get : gset svar -> svar ;
-    sg_get_correct : forall svs, sg_get svs ∉ svs ;
-    sg_next : gset svar -> SVarGen ;
-  }. *)
+  Lemma rename_free_svar_same :
+    forall ϕ X, rename_free_svar ϕ X X = ϕ.
+  Proof.
+    induction ϕ; intros Y; simpl; auto.
+    * case_match; subst; auto.
+    * now rewrite IHϕ1 IHϕ2.
+    * now rewrite IHϕ1 IHϕ2.
+    * now rewrite IHϕ.
+    * case_match; auto. now rewrite IHϕ.
+  Qed.
 
-  Definition EvarBlacklist := list evar.
-  Definition SvarBlacklist := list svar.
+  Definition EvarBlacklist := gset evar.
+  Definition SvarBlacklist := gset svar.
 
   Fixpoint shift_evars (eg : EvarBlacklist) (ϕ : NamedPattern) : NamedPattern :=
   match ϕ with
   | npatt_imp ϕ1 ϕ2 =>  npatt_imp (shift_evars eg ϕ1) (shift_evars eg ϕ2)
   | npatt_app ϕ1 ϕ2 => npatt_app (shift_evars eg ϕ1) (shift_evars eg ϕ2)
   | npatt_exists x ϕ =>
-      let freshx := evar_fresh eg in
-        npatt_exists freshx (rename_free_evar (shift_evars (freshx :: eg) ϕ) x freshx)
+      let freshx := evar_fresh (elements eg) in
+        npatt_exists freshx (rename_free_evar (shift_evars ({[freshx]} ∪ eg) ϕ) x freshx)
   | npatt_mu X ϕ => npatt_mu X (shift_evars eg ϕ)
   | ψ => ψ
   end.
@@ -508,8 +524,8 @@ Defined.
   | npatt_app ϕ1 ϕ2 => npatt_app (shift_svars sg ϕ1) (shift_svars sg ϕ2)
   | npatt_exists x ϕ => npatt_exists x (shift_svars sg ϕ)
   | npatt_mu X ϕ =>
-      let freshX := svar_fresh sg in
-        npatt_mu freshX (rename_free_svar (shift_svars (freshX :: sg) ϕ) X freshX)
+      let freshX := svar_fresh (elements sg) in
+        npatt_mu freshX (rename_free_svar (shift_svars ({[freshX]} ∪ sg) ϕ) X freshX)
   | ψ => ψ
   end.
 
@@ -525,14 +541,14 @@ Defined.
     named_evar_subst eg (npatt_app ϕ1 ϕ2) x ψ :=
       npatt_app  (named_evar_subst eg ϕ1 x ψ) (named_evar_subst eg ϕ2 x ψ);
     named_evar_subst eg (npatt_exists y ϕ) x ψ :=
-      let freshy := evar_fresh eg in
-        npatt_exists freshy (named_evar_subst (freshy :: eg) (rename_free_evar ϕ y freshy) x ψ);
+      let freshy := evar_fresh (elements eg) in
+        npatt_exists freshy (named_evar_subst ({[freshy]} ∪ eg) (rename_free_evar ϕ y freshy) x ψ);
     named_evar_subst eg (npatt_mu Y ϕ) x ψ := npatt_mu Y (named_evar_subst eg ϕ x ψ);
     named_evar_subst _ ψ _ _ := ψ.
   Proof.
     all: simpl; try lia.
     rewrite nsize'_rename_free_evar. lia.
-  Qed.
+  Defined.
 
   Equations? named_svar_subst (sg : SvarBlacklist)
     (ϕ : NamedPattern) (X : svar) (ψ : NamedPattern)  : NamedPattern 
@@ -547,13 +563,13 @@ Defined.
       npatt_app  (named_svar_subst sg ϕ1 X ψ) (named_svar_subst sg ϕ2 X ψ);
     named_svar_subst sg (npatt_exists y ϕ) X ψ := npatt_exists y (named_svar_subst sg ϕ X ψ);
     named_svar_subst sg (npatt_mu Y ϕ) X ψ := 
-      let freshY := svar_fresh sg in
-       npatt_mu freshY (named_svar_subst (freshY :: sg) (rename_free_svar ϕ Y freshY) X ψ);
+      let freshY := svar_fresh (elements sg) in
+       npatt_mu freshY (named_svar_subst ({[freshY]} ∪ sg) (rename_free_svar ϕ Y freshY) X ψ);
     named_svar_subst _ ψ _ _ := ψ.
   Proof.
     all: simpl; try lia.
     rewrite nsize'_rename_free_svar. lia.
-  Qed.
+  Defined.
 
   Fixpoint iterate {A : Type} (f : A -> A) (n : nat) (a : A) :=
   match n with
@@ -564,9 +580,9 @@ Defined.
   Equations? translate (eg : EvarBlacklist) (sg : SvarBlacklist) (ϕ : Pattern) : NamedPattern
     by wf (size' ϕ) lt :=
     translate eg sg (patt_bound_evar n) :=
-      npatt_evar (evar_fresh (iterate (fun eg => (evar_fresh eg) :: eg) n eg));
+      npatt_evar (evar_fresh (elements (iterate (fun eg => {[evar_fresh (elements eg)]} ∪ eg) n eg)));
     translate eg sg (patt_bound_svar N) :=
-      npatt_svar (svar_fresh (iterate (fun sg => (svar_fresh sg) :: sg) N sg));
+      npatt_svar (svar_fresh (elements (iterate (fun sg => {[svar_fresh (elements sg)]} ∪ sg) N sg)));
     translate _  _ (patt_free_evar x)   := npatt_evar x;
     translate _  _ (patt_free_svar X)   := npatt_svar X;
     translate _  _ (patt_sym s)         := npatt_sym s;
@@ -574,16 +590,133 @@ Defined.
     translate eg sg (patt_imp ϕ1 ϕ2)    := npatt_imp (translate eg sg ϕ1) (translate eg sg ϕ2);
     translate eg sg (patt_app ϕ1 ϕ2)    := npatt_app (translate eg sg ϕ1) (translate eg sg ϕ2);
     translate eg sg (patt_exists ϕ)     :=
-      let freshx := evar_fresh eg in
-        npatt_exists freshx (translate (freshx :: eg) sg (evar_open freshx 0 ϕ));
+      let freshx := evar_fresh (elements eg) in
+        npatt_exists freshx (translate ({[freshx]} ∪ eg) sg (evar_open freshx 0 ϕ));
     translate eg sg (patt_mu ϕ)         :=
-    let freshX := svar_fresh sg in
-      npatt_mu freshX (translate eg (freshX :: sg) (svar_open freshX 0 ϕ)).
+    let freshX := svar_fresh (elements sg) in
+      npatt_mu freshX (translate eg ({[freshX]} ∪ sg) (svar_open freshX 0 ϕ)).
   Proof.
     all: simpl; try lia.
     1: rewrite evar_open_size'; lia.
     1: rewrite svar_open_size'; lia.
+  Defined.
+
+  Lemma shift_translate :
+    forall ϕ eg sg,
+    shift_evars eg (translate eg sg ϕ) = (translate eg sg ϕ).
+  Proof.
+    intros ϕ. remember (size' ϕ) as s.
+    assert (size' ϕ <= s) by lia. clear Heqs. revert ϕ H.
+    induction s; intros ϕ Hs eg sg; destruct ϕ; simpl in Hs; try lia; simpl; simp translate; auto.
+    * simpl. rewrite IHs. 2: rewrite IHs. 1-2: lia. reflexivity.
+    * simpl. rewrite IHs. 2: rewrite IHs. 1-2: lia. reflexivity.
+    * simpl. rewrite rename_free_evar_same. rewrite IHs.
+      rewrite evar_open_size'. lia. reflexivity.
+    * simpl. rewrite IHs. rewrite svar_open_size'. lia. reflexivity.
+  Defined.
+
+  Lemma evar_open_rename_translate :
+    forall ϕ sg eg y n,
+    well_formed_closed_ex_aux ϕ (S n) ->
+    free_evars ϕ ⊆ eg ->
+    translate eg sg (evar_open y n ϕ) =
+    rename_free_evar (translate eg sg ϕ) y (evar_fresh (elements (iterate (fun eg => {[evar_fresh (elements eg)]} ∪ eg) n eg))).
+  Proof.
+    induction ϕ; intros; auto; unfold evar_open; simpl; simp translate.
+    * simpl. case_match; auto. simpl in H0. clear H1.
+      apply eq_sym, X_eq_evar_fresh_impl_X_notin_S in e. induction n; set_solver.
+    * simpl in H. case_match. 2: congruence.
+      case_match; try lia.
+      - cbn. simp translate. case_match; auto. clear H3.
+        assert (n = n0). {
+          clear -e. induction n; destruct n0; auto.
+          * 
+        }  
   Qed.
+
+  Lemma shift_evars_irrelevant :
+    forall ψ eg eg' eg'' sg,
+      well_formed ψ ->
+      shift_evars eg (translate eg'' sg ψ) =
+      shift_evars eg (translate eg' sg ψ).
+  Proof.
+    intros ϕ. remember (size' ϕ) as s.
+    assert (size' ϕ <= s) by lia. clear Heqs. revert ϕ H.
+    induction s; intros ϕ Hs eg eg' eg'' sg Hwf; destruct ϕ; simpl in Hs; try lia; auto.
+    * wf_auto2.
+    * simp translate. simpl. erewrite (IHs ϕ1), (IHs ϕ2). reflexivity. 1, 3: lia.
+      all: wf_auto2.
+    * simp translate. simpl. erewrite (IHs ϕ1), (IHs ϕ2). reflexivity. 1, 3: lia.
+      all: wf_auto2.
+    * simp translate. simpl.
+      remember (evar_fresh _) as x.
+      remember (evar_fresh (elements eg')) as x'.
+      remember (evar_fresh (elements eg'')) as x''. f_equal.
+  Defined.  
+
+  Lemma named_evar_subst_irrelevant :
+    forall ϕ x ψ eg eg' eg'' sg,
+      named_evar_subst eg ϕ x (translate eg'' sg ψ) =
+      named_evar_subst eg ϕ x (translate eg' sg ψ).
+  Proof.
+    intros ϕ. remember (nsize' ϕ) as s.
+    assert (nsize' ϕ <= s) by lia. clear Heqs. revert ϕ H.
+    induction s; intros ϕ Hs x ψ eg eg' eg'' sg; destruct ϕ; simpl in Hs; try lia; auto.
+    * simp named_evar_subst. destruct decide; simpl; auto. 
+  Defined.
+
+  Lemma named_svar_subst_irrelevant :
+    forall x ϕ ψ eg sg sg' sg'',
+      named_svar_subst sg ϕ x (translate eg sg' ψ) =
+      named_svar_subst sg ϕ x (translate eg sg'' ψ).
+  Proof.
+
+  Defined.
+
+  Theorem translate_free_evar_subst :
+    forall x ϕ ψ eg sg,
+      {[x]} ∪ free_evars ψ ∪ free_evars ϕ ⊆ eg ->
+      well_formed ψ ->
+      translate eg sg (free_evar_subst ψ x ϕ) =
+      named_evar_subst eg (translate eg sg ϕ) x (translate eg sg ψ).
+  Proof.
+    intros x ϕ. remember (size' ϕ) as s.
+    assert (size' ϕ <= s) by lia. clear Heqs. revert ϕ H x.
+    induction s; intros ϕ Hsz x ψ eg sg Hfree Hwf; destruct ϕ; simpl in Hsz; try lia; simpl.
+    * simp translate. simp named_evar_subst. case_match; simpl. by rewrite shift_translate. by simp translate.
+    * simp translate. by simp named_evar_subst.
+    * simp translate. remember (evar_fresh _) as y. simp named_evar_subst.
+      assert (x <> y). {
+        apply X_eq_evar_fresh_impl_X_notin_S in Heqy. clear -Heqy Hfree.
+        induction n; simpl in Heqy. set_solver.
+        apply IHn; set_solver.
+      }
+      destruct decide; simpl; auto. congruence.
+    * simp translate. remember (svar_fresh _) as Y.
+      by simp named_evar_subst.
+    * by simp translate.
+    * simp translate. simp named_evar_subst. rewrite IHs. 4: rewrite IHs.
+      all: auto; try lia; set_solver.
+    * by auto.
+    * simp translate. simp named_evar_subst. rewrite IHs. 4: rewrite IHs.
+    all: auto; try lia; set_solver.
+    * simp translate. simpl. simp named_evar_subst. simpl.
+      remember (evar_fresh _) as y. rewrite rename_free_evar_same.
+      rewrite evar_open_free_evar_subst_swap; auto.
+      apply X_eq_evar_fresh_impl_X_notin_S in Heqy. set_solver.
+      rewrite IHs; auto.
+      - rewrite evar_open_size'. lia.
+      - pose proof (free_evars_evar_open ϕ y 0). set_solver.
+      - admit.
+    * simp translate. simp named_evar_subst. simpl.
+      remember (svar_fresh _) as Y.
+      unfold svar_open. rewrite -free_evar_subst_bsvar_subst. wf_auto2.
+      unfold evar_is_fresh_in. set_solver. rewrite IHs.
+      - rewrite svar_open_size'. lia.
+      - pose proof (free_evars_svar_open ϕ 0 Y). set_solver.
+      - assumption.
+      - admit.
+  Admitted.
 
   (* Equations? named_evar_subst'
     (eg : EVarGen) (sg : SVarGen) (ϕ ψ : NamedPattern) (x : evar) : NamedPattern
