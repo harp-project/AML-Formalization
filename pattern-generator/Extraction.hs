@@ -294,6 +294,10 @@ prop_subst2 (Inp ph ps x _) = case (translate st ph, translate st ps, translate 
 
 
 --   translate (ph.[0 |-> y]) st = (translate (ph.[0 |-> fresh st]) (fresh st : st)).[fresh st |-> y]
+{-
+  Generalize this: can be it proved for any unbound index that is the greatest in the nameless pattern?
+    - For this, we need translate to work on non-well-formed patterns
+-}
 prop_bsubst :: Input -> Bool
 prop_bsubst (Inp ph ps _ _) = translate st (bsubst ph 0 ps) == nsubst2 st (translate st (bsubst ph 0 (Var x))) x (translate st ps)
   where
