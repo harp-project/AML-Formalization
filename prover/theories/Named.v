@@ -169,11 +169,12 @@ Defined.
     set_solver.
   Qed.
 
-  CoInductive SVarGen := mkSvarGen {
+  (* CoInductive SVarGen := mkSvarGen {
     sg_get : gset svar -> svar ;
     sg_get_correct : forall svs, sg_get svs ∉ svs ;
     sg_next : gset svar -> SVarGen ;
   }.
+  Print SVarGen.
 
   Program CoFixpoint default_SVarGen avoid : SVarGen := {|
     sg_get := fun svs => svar_fresh (elements (avoid ∪ svs)) ;
@@ -188,22 +189,21 @@ Defined.
     set_solver.
   Qed.
 
-  Definition eg_getf (eg : EVarGen) (ϕ : NamedPattern) : evar
-    := eg_get eg (named_free_evars ϕ)
-  .
+  Definition eg_fresh (eg : EVarGen) (ϕ : NamedPattern) : evar
+    := eg_get eg (named_free_evars ϕ).
 
-  Lemma eg_getf_correct (eg : EVarGen) (ϕ : NamedPattern) :
-    (eg_getf eg ϕ) ∉ (named_free_evars ϕ)
+  Lemma eg_fresh_correct (eg : EVarGen) (ϕ : NamedPattern) :
+    (eg_fresh eg ϕ) ∉ (named_free_evars ϕ)
   .
   Proof.
     apply eg_get_correct.
   Qed.
 
-  Definition eg_nextf (eg : EVarGen) (ϕ : NamedPattern) : EVarGen
+  Definition eg_update (eg : EVarGen) (ϕ : NamedPattern) : EVarGen
     := eg_next eg (named_free_evars ϕ)
   .
 
-  Definition sg_getf (sg : SVarGen) (ϕ : NamedPattern) : svar
+  Definition sg_fresh (sg : SVarGen) (ϕ : NamedPattern) : svar
     := sg_get sg (named_free_svars ϕ)
   .
 
@@ -216,7 +216,7 @@ Defined.
 
   Definition sg_nextf (sg : SVarGen) (ϕ : NamedPattern) : SVarGen
     := sg_next sg (named_free_svars ϕ)
-  .
+  . *)
 
 
   (* phi[y/x] *)
@@ -482,7 +482,110 @@ Defined.
     }
   Qed.
 
-  Equations? named_evar_subst'
+  (* CoInductive SVarGen := mkSvarGen {
+    sg_get : gset svar -> svar ;
+    sg_get_correct : forall svs, sg_get svs ∉ svs ;
+    sg_next : gset svar -> SVarGen ;
+  }. *)
+
+  Definition EvarBlacklist := list evar.
+  Definition SvarBlacklist := list svar.
+
+  Fixpoint shift_evars (eg : EvarBlacklist) (ϕ : NamedPattern) : NamedPattern :=
+  match ϕ with
+  | npatt_imp ϕ1 ϕ2 =>  npatt_imp (shift_evars eg ϕ1) (shift_evars eg ϕ2)
+  | npatt_app ϕ1 ϕ2 => npatt_app (shift_evars eg ϕ1) (shift_evars eg ϕ2)
+  | npatt_exists x ϕ =>
+      let freshx := evar_fresh eg in
+        npatt_exists freshx (rename_free_evar (shift_evars (freshx :: eg) ϕ) x freshx)
+  | npatt_mu X ϕ => npatt_mu X (shift_evars eg ϕ)
+  | ψ => ψ
+  end.
+
+  Fixpoint shift_svars (sg : SvarBlacklist) (ϕ : NamedPattern) : NamedPattern :=
+  match ϕ with
+  | npatt_imp ϕ1 ϕ2 => npatt_imp (shift_svars sg ϕ1) (shift_svars sg ϕ2)
+  | npatt_app ϕ1 ϕ2 => npatt_app (shift_svars sg ϕ1) (shift_svars sg ϕ2)
+  | npatt_exists x ϕ => npatt_exists x (shift_svars sg ϕ)
+  | npatt_mu X ϕ =>
+      let freshX := svar_fresh sg in
+        npatt_mu freshX (rename_free_svar (shift_svars (freshX :: sg) ϕ) X freshX)
+  | ψ => ψ
+  end.
+
+  Equations? named_evar_subst (eg : EvarBlacklist)
+    (ϕ : NamedPattern) (x : evar) (ψ : NamedPattern)  : NamedPattern 
+    by wf (nsize' ϕ) lt :=
+    named_evar_subst eg (npatt_evar y) x ψ with (decide (x = y)) => {
+      | left _  := shift_evars eg ψ (* shifts the bound names in ψ *)
+      | right _ := npatt_evar y
+    };
+    named_evar_subst eg (npatt_imp ϕ1 ϕ2) x ψ :=
+      npatt_imp (named_evar_subst eg ϕ1 x ψ) (named_evar_subst eg ϕ2 x ψ);
+    named_evar_subst eg (npatt_app ϕ1 ϕ2) x ψ :=
+      npatt_app  (named_evar_subst eg ϕ1 x ψ) (named_evar_subst eg ϕ2 x ψ);
+    named_evar_subst eg (npatt_exists y ϕ) x ψ :=
+      let freshy := evar_fresh eg in
+        npatt_exists freshy (named_evar_subst (freshy :: eg) (rename_free_evar ϕ y freshy) x ψ);
+    named_evar_subst eg (npatt_mu Y ϕ) x ψ := npatt_mu Y (named_evar_subst eg ϕ x ψ);
+    named_evar_subst _ ψ _ _ := ψ.
+  Proof.
+    all: simpl; try lia.
+    rewrite nsize'_rename_free_evar. lia.
+  Qed.
+
+  Equations? named_svar_subst (sg : SvarBlacklist)
+    (ϕ : NamedPattern) (X : svar) (ψ : NamedPattern)  : NamedPattern 
+    by wf (nsize' ϕ) lt :=
+    named_svar_subst sg (npatt_svar Y) X ψ with (decide (X = Y)) => {
+      | left _  := shift_svars sg ψ (* shifts the bound names in ψ *)
+      | right _ := npatt_svar Y
+    };
+    named_svar_subst sg (npatt_imp ϕ1 ϕ2) X ψ :=
+      npatt_imp (named_svar_subst sg ϕ1 X ψ) (named_svar_subst sg ϕ2 X ψ);
+    named_svar_subst sg (npatt_app ϕ1 ϕ2) X ψ :=
+      npatt_app  (named_svar_subst sg ϕ1 X ψ) (named_svar_subst sg ϕ2 X ψ);
+    named_svar_subst sg (npatt_exists y ϕ) X ψ := npatt_exists y (named_svar_subst sg ϕ X ψ);
+    named_svar_subst sg (npatt_mu Y ϕ) X ψ := 
+      let freshY := svar_fresh sg in
+       npatt_mu freshY (named_svar_subst (freshY :: sg) (rename_free_svar ϕ Y freshY) X ψ);
+    named_svar_subst _ ψ _ _ := ψ.
+  Proof.
+    all: simpl; try lia.
+    rewrite nsize'_rename_free_svar. lia.
+  Qed.
+
+  Fixpoint iterate {A : Type} (f : A -> A) (n : nat) (a : A) :=
+  match n with
+    | 0 => a
+    | S n' => f (iterate f n' a)
+  end.
+
+  Equations? translate (eg : EvarBlacklist) (sg : SvarBlacklist) (ϕ : Pattern) : NamedPattern
+    by wf (size' ϕ) lt :=
+    translate eg sg (patt_bound_evar n) :=
+      npatt_evar (evar_fresh (iterate (fun eg => (evar_fresh eg) :: eg) n eg));
+    translate eg sg (patt_bound_svar N) :=
+      npatt_svar (svar_fresh (iterate (fun sg => (svar_fresh sg) :: sg) N sg));
+    translate _  _ (patt_free_evar x)   := npatt_evar x;
+    translate _  _ (patt_free_svar X)   := npatt_svar X;
+    translate _  _ (patt_sym s)         := npatt_sym s;
+    translate _  _ patt_bott            := npatt_bott;
+    translate eg sg (patt_imp ϕ1 ϕ2)    := npatt_imp (translate eg sg ϕ1) (translate eg sg ϕ2);
+    translate eg sg (patt_app ϕ1 ϕ2)    := npatt_app (translate eg sg ϕ1) (translate eg sg ϕ2);
+    translate eg sg (patt_exists ϕ)     :=
+      let freshx := evar_fresh eg in
+        npatt_exists freshx (translate (freshx :: eg) sg (evar_open freshx 0 ϕ));
+    translate eg sg (patt_mu ϕ)         :=
+    let freshX := svar_fresh sg in
+      npatt_mu freshX (translate eg (freshX :: sg) (svar_open freshX 0 ϕ)).
+  Proof.
+    all: simpl; try lia.
+    1: rewrite evar_open_size'; lia.
+    1: rewrite svar_open_size'; lia.
+  Qed.
+
+  (* Equations? named_evar_subst'
     (eg : EVarGen) (sg : SVarGen) (ϕ ψ : NamedPattern) (x : evar) : NamedPattern
     by wf (nsize' ϕ) lt :=
     named_evar_subst' eg sg (npatt_evar x') ψ x with (decide (x = x')) => {
@@ -574,7 +677,7 @@ Defined.
   Definition named_svar_subst
     (phi psi : NamedPattern) (X : svar) : NamedPattern
     := named_svar_subst' (default_EVarGen ∅) (default_SVarGen ∅) phi psi X
-  .
+  . *)
 
   (* Derived named operators *)
   Definition npatt_not (phi : NamedPattern) := npatt_imp phi npatt_bott.
