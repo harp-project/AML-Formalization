@@ -789,6 +789,8 @@ Defined.
     | _ => 0
     end.
 
+  (* We use option type to check that a sufficient number of names were given.
+    NOTE: use None for dangling indices too? *)
   Equations? namify (eg : EvarBlacklist) (sg : SvarBlacklist) (evars : list evar) (svars : list svar) (ϕ : Pattern) : option NamedPattern
     by wf (size' ϕ) lt :=
     namify eg sg _ _ (patt_bound_evar n) :=
@@ -800,14 +802,14 @@ Defined.
     namify _  _ _ _ (patt_sym s)         := Some (npatt_sym s);
     namify _  _ _ _ patt_bott            := Some npatt_bott;
     namify eg sg evars svars (patt_imp ϕ1 ϕ2) :=
-      match namify eg sg (take (count_ebinders ϕ1) evars) svars ϕ1,
-            namify eg sg (drop (count_ebinders ϕ1) evars) svars ϕ2 with
+      match namify eg sg (take (count_ebinders ϕ1) evars) (take (count_sbinders ϕ1) svars) ϕ1,
+            namify eg sg (drop (count_ebinders ϕ1) evars) (drop (count_sbinders ϕ1) svars) ϕ2 with
       | Some ϕ1', Some ϕ2' => Some (npatt_imp ϕ1' ϕ2')
       | _, _ => None
       end;
     namify eg sg evars svars (patt_app ϕ1 ϕ2) :=
-      match namify eg sg (take (count_ebinders ϕ1) evars) svars ϕ1,
-            namify eg sg (drop (count_ebinders ϕ1) evars) svars ϕ2 with
+      match namify eg sg (take (count_ebinders ϕ1) evars) (take (count_sbinders ϕ1) svars) ϕ1,
+            namify eg sg (drop (count_ebinders ϕ1) evars) (drop (count_sbinders ϕ1) svars) ϕ2 with
       | Some ϕ1', Some ϕ2' => Some (npatt_app ϕ1' ϕ2')
       | _, _ => None
       end;
@@ -827,7 +829,6 @@ Defined.
     1: rewrite evar_open_size'; lia.
     1: rewrite svar_open_size'; lia.
   Defined.
-
 
   End whitelist_translation.
   (* Equations? named_evar_subst'
