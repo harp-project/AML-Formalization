@@ -615,23 +615,19 @@ Defined.
     * simpl. rewrite IHs. rewrite svar_open_size'. lia. reflexivity.
   Defined.
 
-  Lemma evar_open_rename_translate :
-    forall ϕ sg eg y n,
-    well_formed_closed_ex_aux ϕ (S n) ->
-    free_evars ϕ ⊆ eg ->
-    translate eg sg (evar_open y n ϕ) =
-    rename_free_evar (translate eg sg ϕ) y (evar_fresh (elements (iterate (fun eg => {[evar_fresh (elements eg)]} ∪ eg) n eg))).
+  Lemma rename_shift :
+    forall ϕ x y eg,
+      {[x; y]} ∪ named_free_evars ϕ ⊆ eg ->
+      rename_free_evar (shift_evars eg ϕ) x y = shift_evars eg (rename_free_evar ϕ x y).
   Proof.
-    induction ϕ; intros; auto; unfold evar_open; simpl; simp translate.
-    * simpl. case_match; auto. simpl in H0. clear H1.
-      apply eq_sym, X_eq_evar_fresh_impl_X_notin_S in e. induction n; set_solver.
-    * simpl in H. case_match. 2: congruence.
-      case_match; try lia.
-      - cbn. simp translate. case_match; auto. clear H3.
-        assert (n = n0). {
-          clear -e. induction n; destruct n0; auto.
-          * 
-        }  
+    intros ϕ. remember (nsize' ϕ) as s.
+    assert (nsize' ϕ <= s) by lia. clear Heqs. revert ϕ H.
+    induction s; intros ϕ Hs x y eg; destruct ϕ; simpl in Hs; try lia; auto.
+    * simpl. case_match; auto.
+    * simpl. rewrite IHs. lia. rewrite IHs; now try lia.
+    * simpl. rewrite IHs. lia. rewrite IHs; now try lia.
+    * simpl. case_match.
+      - rewrite IHs. lia.
   Qed.
 
   Lemma shift_evars_irrelevant :
@@ -662,7 +658,7 @@ Defined.
     intros ϕ. remember (nsize' ϕ) as s.
     assert (nsize' ϕ <= s) by lia. clear Heqs. revert ϕ H.
     induction s; intros ϕ Hs x ψ eg eg' eg'' sg; destruct ϕ; simpl in Hs; try lia; auto.
-    * simp named_evar_subst. destruct decide; simpl; auto. 
+    * simp named_evar_subst. destruct decide; simpl; auto.
   Defined.
 
   Lemma named_svar_subst_irrelevant :
@@ -707,7 +703,7 @@ Defined.
       rewrite IHs; auto.
       - rewrite evar_open_size'. lia.
       - pose proof (free_evars_evar_open ϕ y 0). set_solver.
-      - admit.
+      - f_equal. admit.
     * simp translate. simp named_evar_subst. simpl.
       remember (svar_fresh _) as Y.
       unfold svar_open. rewrite -free_evar_subst_bsvar_subst. wf_auto2.
