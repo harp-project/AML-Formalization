@@ -155,11 +155,24 @@ freeVars (Exs ph) = freeVars ph
 freeVars (Var x) = [x]
 freeVars _ = []
 
-availableVarNames :: [Gen String]
-availableVarNames = map (return . (:[])) ['A'..'Z']
+namedFreeVars :: NamedPattern -> [String]
+namedFreeVars (NImp ph1 ph2) = namedFreeVars ph1 ++ namedFreeVars ph2
+namedFreeVars (NApp ph1 ph2) = namedFreeVars ph1 ++ namedFreeVars ph2
+namedFreeVars (NExs x ph) = filter (/=x) (namedFreeVars ph)
+namedFreeVars (NVar x) = [x]
+namedFreeVars _ = []
 
-availableSymNames :: [Gen String]
-availableSymNames = map (return . (:[])) ['a'..'z']
+--availableVarNames :: [Gen String]
+--availableVarNames = map (return . (:[])) ['A'..'Z']
+
+--availableSymNames :: [Gen String]
+--availableSymNames = map (return . (:[])) ['a'..'z']
+
+availableVarNames :: Gen String
+availableVarNames = liftM (:[]) $ chooseEnum ('A', 'Z')
+
+availableSymNames :: Gen String
+availableSymNames = liftM (:[]) $ chooseEnum ('a', 'z')
 
 -- Well-formed generation:
 -- instance Arbitrary NamelessPattern where
@@ -172,8 +185,8 @@ availableSymNames = map (return . (:[])) ['a'..'z']
 -- Patterns containing only the 0 as dangling
 instance Arbitrary NamelessPattern where
   arbitrary :: Gen NamelessPattern
-  arbitrary = sized (ph [0])
-    where ph st 0 = oneof (map (return . Bound) st ++ [liftM Var (oneof availableVarNames), liftM Sym (oneof availableSymNames), return Bot])
+  arbitrary = sized (ph [0..10])
+    where ph st 0 = oneof (map (return . Bound) st ++ [liftM Var availableVarNames, liftM Sym availableSymNames, return Bot])
           ph st n = oneof [liftM2 Imp (subph st) (subph st), liftM2 App (subph st) (subph st), liftM Exs (subph (0 : map (+1) st))]
             where subph st = ph st (n `div` 2)
 
@@ -228,7 +241,7 @@ instance Arbitrary Input where
     ph1 <- arbitrary :: Gen NamelessPattern -- if well-formed ph1 is needed, use `suchThat arbitrary (flip well_formed 0)`
     ph2 <- suchThat arbitrary (flip well_formed 0) :: Gen NamelessPattern
  --   n <- oneof (map return [1..100]) 
-    x <- oneof (availableVarNames ++ map return (freeVars ph1 ++ freeVars ph2)) -- availableVarNames are used if the second list is empty
+    x <- oneof (availableVarNames : map return (freeVars ph1 ++ freeVars ph2)) -- availableVarNames are used if the second list is empty
     return (Inp ph1 ph2 x (biggestBound ph1))
   shrink = genericShrink
 
@@ -275,7 +288,7 @@ instance Arbitrary Input where
 -}
 translate :: State -> NamelessPattern -> NamedPattern
 translate st (Var s)       = NVar s
-translate st (Bound x)     = undefined -- NVar $ fresh st -- (iterateState x st)
+translate st (Bound x)     = NVar $ fresh (iterateState x st)
 translate _  (Sym s)       = NSym s
 translate _  Bot           = NBot
 translate st (Imp ph1 ph2) = let (ph1', ph2') = (translate st ph1, translate st ph2) in NImp ph1' ph2'
@@ -352,3 +365,75 @@ instance Arbitrary InputCtx where
 prop_subst_ctx :: InputCtx -> Bool
 prop_subst_ctx (InpCtx ph c) = translate st (substCtx c ph) == substNCtx (translateCtx st c) (translate st ph)
   where st = freeVars (substCtx c ph)
+
+
+---------------------------------------------------
+---------- translation with whitelists ------------
+---------------------------------------------------
+{-
+  The idea is to have a list of names for all db-indices as a parameter.
+-}
+
+
+standardSubst :: NamedPattern -> String -> NamedPattern -> NamedPattern
+standardSubst (NVar s) x ps
+  | s == x    = ps
+  | otherwise = NVar s
+standardSubst (NImp ph1 ph2) x ps = NImp (standardSubst ph1 x ps) (standardSubst ph2 x ps)
+standardSubst (NApp ph1 ph2) x ps = NApp (standardSubst ph1 x ps) (standardSubst ph2 x ps)
+standardSubst (NExs y ph) x ps
+  | x == y = NExs y ph
+  | x /= y && elem y (namedFreeVars ps) = let z = fresh (x : namedFreeVars ps ++ namedFreeVars ph) in NExs z (standardSubst (rename ph y z) x ps)
+  | otherwise = NExs y (standardSubst ph x ps)
+standardSubst x _ _ = x
+
+
+type Whitelist = [String]
+
+countBinders :: NamelessPattern -> Int
+countBinders (Imp ph1 ph2) = countBinders ph1 + countBinders ph2
+countBinders (App ph1 ph2) = countBinders ph1 + countBinders ph2
+countBinders (Exs ph)      = 1 + countBinders ph
+countBinders x             = 0
+
+namify :: State -> Whitelist -> NamelessPattern -> NamedPattern
+namify st l (Var s)       = NVar s
+namify st l (Bound x)     = NVar $ fresh (iterateState x st) -- A state is still needed to generate names for non-well-formed patterns
+namify _  _ (Sym s)       = NSym s
+namify _  l Bot           = NBot
+namify st l (Imp ph1 ph2) = let (ph1', ph2') = (namify st (take (countBinders ph1) l) ph1, namify st (drop (countBinders ph1) l) ph2) in NImp ph1' ph2'
+namify st l (App ph1 ph2) = let (ph1', ph2') = (namify st (take (countBinders ph1) l) ph1, namify st (drop (countBinders ph1) l) ph2) in NApp ph1' ph2'
+namify st (y:l) (Exs ph)  = NExs y $ namify st l (bsubst ph 0 (Var y)) -- undefined if there were not enough names
+
+
+data NamifyInput = NamifyInput NamelessPattern NamelessPattern String Whitelist Whitelist deriving (Show, Eq, Generic)
+
+instance Arbitrary NamifyInput where
+  arbitrary = do
+    ph1 <- arbitrary :: Gen NamelessPattern -- if well-formed ph1 is needed, use `suchThat arbitrary (flip well_formed 0)`
+    ph2 <- suchThat arbitrary (flip well_formed 0) :: Gen NamelessPattern
+ --   n <- oneof (map return [1..100]) 
+    x <- oneof (availableVarNames : map return (freeVars ph1 ++ freeVars ph2)) -- availableVarNames are used if the second list is empty
+    names1 <- suchThat (vectorOf (countBinders ph1) availableVarNames) (all (not . flip elem (x : freeVars ph1 ++ freeVars ph2)))
+    names2 <- suchThat (vectorOf (countBinders ph2) availableVarNames) (all (not . flip elem (x : freeVars ph1 ++ freeVars ph2)))
+    return (NamifyInput ph1 ph2 x names1 names2)
+  shrink = genericShrink
+
+combine :: Whitelist -> Whitelist -> NamelessPattern -> String -> Whitelist
+combine names1 names2 (Imp ph1 ph2) x = combine (take (countBinders ph1) names1) names2 ph1 x ++ combine (drop (countBinders ph1) names1) names2 ph2 x
+combine names1 names2 (App ph1 ph2) x = combine (take (countBinders ph1) names1) names2 ph1 x ++ combine (drop (countBinders ph1) names1) names2 ph2 x
+combine (y:names1) names2 (Exs ph) x  = y : combine names1 names2 ph x
+combine names1 names2 (Var y) x
+  | x == y    = names2
+  | otherwise = names1
+combine names1 _ _ _                  = names1
+
+prop_freeSubst :: NamifyInput -> Bool
+prop_freeSubst (NamifyInput ph ps x names1 names2) = case (namify st names1 ph, namify st names2 ps, namify st (combine names1 names2 ph x) (subst ph x ps)) of
+                                                          (ph', ps', res) -> standardSubst ph' x ps' == res
+  where
+    st = x : freeVars ph ++ freeVars ps
+
+
+
+
