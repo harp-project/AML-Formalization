@@ -504,6 +504,8 @@ Defined.
     * case_match; auto. now rewrite IHϕ.
   Qed.
 
+  Section blacklist_translation.
+
   Definition EvarBlacklist := gset evar.
   Definition SvarBlacklist := gset svar.
 
@@ -624,11 +626,11 @@ Defined.
     assert (nsize' ϕ <= s) by lia. clear Heqs. revert ϕ H.
     induction s; intros ϕ Hs x y eg; destruct ϕ; simpl in Hs; try lia; auto.
     * simpl. case_match; auto.
-    * simpl. rewrite IHs. lia. rewrite IHs; now try lia.
+    (* * simpl. rewrite IHs. lia. 2: rewrite IHs; now try lia.
     * simpl. rewrite IHs. lia. rewrite IHs; now try lia.
     * simpl. case_match.
-      - rewrite IHs. lia.
-  Qed.
+      - rewrite IHs. lia. *)
+    Abort.
 
   Lemma shift_evars_irrelevant :
     forall ψ eg eg' eg'' sg,
@@ -648,7 +650,7 @@ Defined.
       remember (evar_fresh _) as x.
       remember (evar_fresh (elements eg')) as x'.
       remember (evar_fresh (elements eg'')) as x''. f_equal.
-  Defined.  
+    Abort.
 
   Lemma named_evar_subst_irrelevant :
     forall ϕ x ψ eg eg' eg'' sg,
@@ -659,7 +661,7 @@ Defined.
     assert (nsize' ϕ <= s) by lia. clear Heqs. revert ϕ H.
     induction s; intros ϕ Hs x ψ eg eg' eg'' sg; destruct ϕ; simpl in Hs; try lia; auto.
     * simp named_evar_subst. destruct decide; simpl; auto.
-  Defined.
+  Abort.
 
   Lemma named_svar_subst_irrelevant :
     forall x ϕ ψ eg sg sg' sg'',
@@ -667,7 +669,7 @@ Defined.
       named_svar_subst sg ϕ x (translate eg sg'' ψ).
   Proof.
 
-  Defined.
+  Abort.
 
   Theorem translate_free_evar_subst :
     forall x ϕ ψ eg sg,
@@ -712,8 +714,122 @@ Defined.
       - pose proof (free_evars_svar_open ϕ 0 Y). set_solver.
       - assumption.
       - admit.
-  Admitted.
+    Abort.
 
+  End blacklist_translation.
+
+  Section whitelist_translation.
+
+  Equations? standard_evar_subst 
+    (ϕ : NamedPattern) (x : evar) (ψ : NamedPattern)  : NamedPattern 
+    by wf (nsize' ϕ) lt :=
+    standard_evar_subst (npatt_evar y) x ψ with (decide (x = y)) => {
+      | left _  := ψ
+      | right _ := npatt_evar y
+    };
+    standard_evar_subst (npatt_imp ϕ1 ϕ2) x ψ :=
+      npatt_imp (standard_evar_subst ϕ1 x ψ) (standard_evar_subst ϕ2 x ψ);
+    standard_evar_subst (npatt_app ϕ1 ϕ2) x ψ :=
+      npatt_app  (standard_evar_subst ϕ1 x ψ) (standard_evar_subst ϕ2 x ψ);
+    standard_evar_subst (npatt_exists y ϕ) x ψ with (decide (x = y)) => {
+      | left _  := npatt_exists y ϕ
+      | right _ with (decide (y ∈ named_free_evars ψ)) => { 
+        | left _  := let z := evar_fresh (elements ({[x]} ∪ named_free_evars ϕ ∪ named_free_evars ψ)) in
+          npatt_exists z (standard_evar_subst (rename_free_evar ϕ y z) x ψ)
+        | right _ := npatt_exists y (standard_evar_subst ϕ x ψ)
+      }
+    };
+    standard_evar_subst (npatt_mu Y ϕ) x ψ := npatt_mu Y (standard_evar_subst ϕ x ψ);
+    standard_evar_subst ϕ _ _ := ϕ.
+  Proof.
+    all: simpl; try lia.
+    rewrite nsize'_rename_free_evar. lia.
+  Defined.
+
+  Equations? standard_svar_subst 
+    (ϕ : NamedPattern) (C : svar) (ψ : NamedPattern)  : NamedPattern 
+    by wf (nsize' ϕ) lt :=
+    standard_svar_subst (npatt_svar Y) X ψ with (decide (X = Y)) => {
+      | left _  := ψ
+      | right _ := npatt_svar Y
+    };
+    standard_svar_subst (npatt_imp ϕ1 ϕ2) X ψ :=
+      npatt_imp (standard_svar_subst ϕ1 X ψ) (standard_svar_subst ϕ2 X ψ);
+      standard_svar_subst (npatt_app ϕ1 ϕ2) X ψ :=
+      npatt_app  (standard_svar_subst ϕ1 X ψ) (standard_svar_subst ϕ2 X ψ);
+      standard_svar_subst (npatt_mu Y ϕ) X ψ with (decide (X = Y)) => {
+      | left _  := npatt_mu Y ϕ
+      | right _ with (decide (Y ∈ named_free_svars ψ)) => { 
+        | left _  := let Z := svar_fresh (elements ({[X]} ∪ named_free_svars ϕ ∪ named_free_svars ψ)) in
+          npatt_mu Z (standard_svar_subst (rename_free_svar ϕ Y Z) X ψ)
+        | right _ := npatt_mu Y (standard_svar_subst ϕ X ψ)
+      }
+    };
+    standard_svar_subst (npatt_exists y ϕ) x ψ := npatt_exists y (standard_svar_subst ϕ x ψ);
+    standard_svar_subst ϕ _ _ := ϕ.
+  Proof.
+    all: simpl; try lia.
+    rewrite nsize'_rename_free_svar. lia.
+  Defined.
+
+  Fixpoint count_ebinders (ϕ : Pattern) : nat :=
+    match ϕ with
+    | patt_app ϕ1 ϕ2 => count_ebinders ϕ1 + count_ebinders ϕ2
+    | patt_imp ϕ1 ϕ2 => count_ebinders ϕ1 + count_ebinders ϕ2
+    | patt_exists ϕ => 1 + count_ebinders ϕ
+    | patt_mu ϕ => count_ebinders ϕ
+    | _ => 0
+    end.
+  Fixpoint count_sbinders (ϕ : Pattern) : nat :=
+    match ϕ with
+    | patt_app ϕ1 ϕ2 => count_sbinders ϕ1 + count_sbinders ϕ2
+    | patt_imp ϕ1 ϕ2 => count_sbinders ϕ1 + count_sbinders ϕ2
+    | patt_exists ϕ => count_sbinders ϕ
+    | patt_mu ϕ => 1 + count_sbinders ϕ
+    | _ => 0
+    end.
+
+  Equations? namify (eg : EvarBlacklist) (sg : SvarBlacklist) (evars : list evar) (svars : list svar) (ϕ : Pattern) : option NamedPattern
+    by wf (size' ϕ) lt :=
+    namify eg sg _ _ (patt_bound_evar n) :=
+      Some (npatt_evar (evar_fresh (elements (iterate (fun eg => {[evar_fresh (elements eg)]} ∪ eg) n eg))));
+    namify eg sg _ _ (patt_bound_svar N) :=
+      Some (npatt_svar (svar_fresh (elements (iterate (fun sg => {[svar_fresh (elements sg)]} ∪ sg) N sg))));
+    namify _  _ _ _ (patt_free_evar x)   := Some (npatt_evar x);
+    namify _  _ _ _ (patt_free_svar X)   := Some (npatt_svar X);
+    namify _  _ _ _ (patt_sym s)         := Some (npatt_sym s);
+    namify _  _ _ _ patt_bott            := Some npatt_bott;
+    namify eg sg evars svars (patt_imp ϕ1 ϕ2) :=
+      match namify eg sg (take (count_ebinders ϕ1) evars) svars ϕ1,
+            namify eg sg (drop (count_ebinders ϕ1) evars) svars ϕ2 with
+      | Some ϕ1', Some ϕ2' => Some (npatt_imp ϕ1' ϕ2')
+      | _, _ => None
+      end;
+    namify eg sg evars svars (patt_app ϕ1 ϕ2) :=
+      match namify eg sg (take (count_ebinders ϕ1) evars) svars ϕ1,
+            namify eg sg (drop (count_ebinders ϕ1) evars) svars ϕ2 with
+      | Some ϕ1', Some ϕ2' => Some (npatt_app ϕ1' ϕ2')
+      | _, _ => None
+      end;
+    namify eg sg (y :: evars) svars (patt_exists ϕ) :=
+      match namify eg sg evars svars (evar_open y 0 ϕ) with
+      | Some ϕ' => Some (npatt_exists y ϕ')
+      | None => None
+      end;
+    namify eg sg evars (Y :: svars) (patt_mu ϕ) :=
+      match namify eg sg evars svars (svar_open Y 0 ϕ) with
+      | Some ϕ' => Some (npatt_mu Y ϕ')
+      | None => None
+      end;
+    namify _ _ _ _ _ := None.
+  Proof.
+    all: simpl; try lia.
+    1: rewrite evar_open_size'; lia.
+    1: rewrite svar_open_size'; lia.
+  Defined.
+
+
+  End whitelist_translation.
   (* Equations? named_evar_subst'
     (eg : EVarGen) (sg : SVarGen) (ϕ ψ : NamedPattern) (x : evar) : NamedPattern
     by wf (nsize' ϕ) lt :=
