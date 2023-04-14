@@ -5,8 +5,6 @@ From Equations Require Import Equations.
 From stdpp Require Import base pmap gmap fin_maps.
 From MatchingLogic Require Import Syntax Utils.stdpp_ext.
 
-Require Import String.
-
 Section named.
   Context
     {Σ : Signature}
@@ -790,44 +788,674 @@ Defined.
     end.
 
   (* We use option type to check that a sufficient number of names were given.
-    NOTE: use None for dangling indices too? *)
-  Equations? namify (eg : EvarBlacklist) (sg : SvarBlacklist) (evars : list evar) (svars : list svar) (ϕ : Pattern) : option NamedPattern
+    NOTE: use None for dangling indices too?
+    NOTE: do not use option type, because then inversion would be needed in the proofs,
+    which is disallowed on Set. *)
+  Equations? namify (eg : EvarBlacklist) (sg : SvarBlacklist) (evars : list evar) (svars : list svar) (ϕ : Pattern) : NamedPattern
     by wf (size' ϕ) lt :=
     namify eg sg _ _ (patt_bound_evar n) :=
-      Some (npatt_evar (evar_fresh (elements (iterate (fun eg => {[evar_fresh (elements eg)]} ∪ eg) n eg))));
+      npatt_evar (evar_fresh (elements (iterate (fun eg => {[evar_fresh (elements eg)]} ∪ eg) n eg)));
     namify eg sg _ _ (patt_bound_svar N) :=
-      Some (npatt_svar (svar_fresh (elements (iterate (fun sg => {[svar_fresh (elements sg)]} ∪ sg) N sg))));
-    namify _  _ _ _ (patt_free_evar x)   := Some (npatt_evar x);
-    namify _  _ _ _ (patt_free_svar X)   := Some (npatt_svar X);
-    namify _  _ _ _ (patt_sym s)         := Some (npatt_sym s);
-    namify _  _ _ _ patt_bott            := Some npatt_bott;
+      npatt_svar (svar_fresh (elements (iterate (fun sg => {[svar_fresh (elements sg)]} ∪ sg) N sg)));
+    namify _  _ _ _ (patt_free_evar x)   := npatt_evar x;
+    namify _  _ _ _ (patt_free_svar X)   := npatt_svar X;
+    namify _  _ _ _ (patt_sym s)         := npatt_sym s;
+    namify _  _ _ _ patt_bott            := npatt_bott;
     namify eg sg evars svars (patt_imp ϕ1 ϕ2) :=
       match namify eg sg (take (count_ebinders ϕ1) evars) (take (count_sbinders ϕ1) svars) ϕ1,
             namify eg sg (drop (count_ebinders ϕ1) evars) (drop (count_sbinders ϕ1) svars) ϕ2 with
-      | Some ϕ1', Some ϕ2' => Some (npatt_imp ϕ1' ϕ2')
-      | _, _ => None
+      | ϕ1', ϕ2' => npatt_imp ϕ1' ϕ2'
       end;
     namify eg sg evars svars (patt_app ϕ1 ϕ2) :=
       match namify eg sg (take (count_ebinders ϕ1) evars) (take (count_sbinders ϕ1) svars) ϕ1,
             namify eg sg (drop (count_ebinders ϕ1) evars) (drop (count_sbinders ϕ1) svars) ϕ2 with
-      | Some ϕ1', Some ϕ2' => Some (npatt_app ϕ1' ϕ2')
-      | _, _ => None
+      | ϕ1', ϕ2' => npatt_app ϕ1' ϕ2'
       end;
     namify eg sg (y :: evars) svars (patt_exists ϕ) :=
       match namify eg sg evars svars (evar_open y 0 ϕ) with
-      | Some ϕ' => Some (npatt_exists y ϕ')
-      | None => None
+      | ϕ' => npatt_exists y ϕ'
       end;
     namify eg sg evars (Y :: svars) (patt_mu ϕ) :=
       match namify eg sg evars svars (svar_open Y 0 ϕ) with
-      | Some ϕ' => Some (npatt_mu Y ϕ')
-      | None => None
+      | ϕ' => npatt_mu Y ϕ'
       end;
-    namify _ _ _ _ _ := None.
+    namify eg sg [] svars (patt_exists ϕ) :=
+      let y := evar_fresh (elements eg) in
+      match namify ({[y]} ∪ eg) sg [] svars (evar_open y 0 ϕ) with
+      | ϕ' => npatt_exists y ϕ'
+      end;
+    namify eg sg evars [] (patt_mu ϕ) :=
+      let Y := svar_fresh (elements sg) in
+      match namify eg ({[Y]} ∪ sg) evars [] (svar_open Y 0 ϕ) with
+      | ϕ' => npatt_mu Y ϕ'
+      end.
   Proof.
     all: simpl; try lia.
-    1: rewrite evar_open_size'; lia.
-    1: rewrite svar_open_size'; lia.
+    1,2: rewrite evar_open_size'; lia.
+    1,2: rewrite svar_open_size'; lia.
+  Defined.
+
+  (* NOTE: do not use option type, because then inversion would be needed in the proofs,
+     which is disallowed on Set. *)
+  Fixpoint combine_names (el1 el2 : list evar) (sl1 sl2 : list svar)
+    (ϕ : Pattern) (x : evar + svar) : list evar * list svar :=
+  match ϕ with
+  | patt_app ϕ1 ϕ2 =>
+      match combine_names (take (count_ebinders ϕ1) el1) el2 (take (count_sbinders ϕ1) sl1) sl2 ϕ1 x,
+          combine_names (drop (count_ebinders ϕ1) el1) el2 (drop (count_sbinders ϕ1) sl1) sl2 ϕ2 x with
+      | (el1', sl1'), (el2', sl2') => (el1' ++ el2', sl1' ++ sl2')
+    end
+  | patt_imp ϕ1 ϕ2 =>
+      match combine_names (take (count_ebinders ϕ1) el1) el2 (take (count_sbinders ϕ1) sl1) sl2 ϕ1 x,
+            combine_names (drop (count_ebinders ϕ1) el1) el2 (drop (count_sbinders ϕ1) sl1) sl2 ϕ2 x with
+      | (el1', sl1'), (el2', sl2') => (el1' ++ el2', sl1' ++ sl2')
+      end
+  | patt_exists ϕ =>
+      match el1 with
+      | y::el1' =>
+        match combine_names el1' el2 sl1 sl2 ϕ x with
+        | (el', sl') => (y::el', sl')
+        end
+      | _ => ([], []) (* side condition is needed to avoid this *)
+      end
+  | patt_mu ϕ =>
+      match sl1 with
+      | y::sl1' =>
+        match combine_names el1 el2 sl1' sl2 ϕ x with
+        | (el', sl') => (el', y::sl')
+        end
+      | _ => ([], []) (* side condition is needed to avoid this *)
+      end
+  | patt_free_evar y =>
+      match x with
+      | inl x =>
+        match decide (x = y) with
+        | left _ => (el2, sl2)
+        | _ => (el1, sl1)
+        end
+      | inr x => (el1, sl1)
+      end
+  | patt_free_svar y =>
+      match x with
+      | inr x =>
+        match decide (x = y) with
+        | left _ => (el2, sl2)
+        | _ => (el1, sl1)
+        end
+      | inl x => (el1, sl1)
+      end
+  | _ => (el1, sl1)
+  end.
+
+  Lemma count_ebinders_evar_open :
+    forall ϕ n x, count_ebinders ϕ = count_ebinders (evar_open x n ϕ).
+  Proof.
+    induction ϕ; intros m y; cbn; auto.
+    * by case_match.
+    * by erewrite IHϕ1, IHϕ2.
+    * by erewrite IHϕ1, IHϕ2.
+    * by erewrite IHϕ.
+    * by erewrite IHϕ.
+  Defined.
+
+  Lemma count_sbinders_evar_open :
+    forall ϕ n x, count_sbinders ϕ = count_sbinders (evar_open x n ϕ).
+  Proof.
+    induction ϕ; intros m y; cbn; auto.
+    * by case_match.
+    * by erewrite IHϕ1, IHϕ2.
+    * by erewrite IHϕ1, IHϕ2.
+    * by erewrite IHϕ.
+    * by erewrite IHϕ.
+  Defined.
+
+  Lemma count_sbinders_svar_open :
+    forall ϕ N X, count_sbinders ϕ = count_sbinders (svar_open X N ϕ).
+  Proof.
+    induction ϕ; intros M Y; cbn; auto.
+    * by case_match.
+    * by erewrite IHϕ1, IHϕ2.
+    * by erewrite IHϕ1, IHϕ2.
+    * by erewrite IHϕ.
+    * by erewrite IHϕ.
+  Defined.
+
+  Lemma count_ebinders_svar_open :
+    forall ϕ N X, count_ebinders ϕ = count_ebinders (svar_open X N ϕ).
+  Proof.
+    induction ϕ; intros M Y; cbn; auto.
+    * by case_match.
+    * by erewrite IHϕ1, IHϕ2.
+    * by erewrite IHϕ1, IHϕ2.
+    * by erewrite IHϕ.
+    * by erewrite IHϕ.
+  Defined.
+
+  Lemma combine_evar_evar_open :
+  forall ϕ evarsϕ evarsψ svarsϕ svarsψ n y x,
+    x <> y ->
+    combine_names evarsϕ evarsψ svarsϕ svarsψ (evar_open y n ϕ) (inl x) =
+    combine_names evarsϕ evarsψ svarsϕ svarsψ ϕ (inl x).
+  Proof.
+    intros ϕ. remember (size' ϕ) as s.
+    assert (size' ϕ <= s) by lia. clear Heqs. revert ϕ H.
+    induction s; destruct ϕ; intros; simpl in *; try lia; try reflexivity.
+    * cbn. case_match; simpl; auto.
+      repeat case_match; auto. subst. congruence.
+    * destruct combine_names eqn:EQ1.
+      destruct combine_names eqn:EQ2 at 2.
+      rewrite IHs in EQ1. lia. auto.
+      rewrite -count_ebinders_evar_open -count_sbinders_evar_open in EQ1.
+      rewrite EQ2 in EQ1. inversion EQ1. subst.
+      destruct combine_names eqn:EQ3 at 1.
+      destruct combine_names eqn:EQ4 at 1.
+      rewrite IHs in EQ3. lia. auto.
+      rewrite -count_ebinders_evar_open -count_sbinders_evar_open in EQ3.
+      rewrite EQ3 in EQ4. by inversion EQ4.
+    * destruct combine_names eqn:EQ1.
+      destruct combine_names eqn:EQ2 at 2.
+      rewrite IHs in EQ1. lia. auto.
+      rewrite -count_ebinders_evar_open -count_sbinders_evar_open in EQ1.
+      rewrite EQ2 in EQ1. inversion EQ1. subst.
+      destruct combine_names eqn:EQ3 at 1.
+      destruct combine_names eqn:EQ4 at 1.
+      rewrite IHs in EQ3. lia. auto.
+      rewrite -count_ebinders_evar_open -count_sbinders_evar_open in EQ3.
+      rewrite EQ3 in EQ4. by inversion EQ4.
+    * case_match. reflexivity.
+      rewrite IHs. lia. assumption. reflexivity.
+    * case_match. reflexivity.
+      rewrite IHs. lia. assumption. reflexivity.
+  Defined.
+
+  Lemma combine_evar_svar_open :
+  forall ϕ evarsϕ evarsψ svarsϕ svarsψ n y x,
+    combine_names evarsϕ evarsψ svarsϕ svarsψ (svar_open y n ϕ) (inl x) =
+    combine_names evarsϕ evarsψ svarsϕ svarsψ ϕ (inl x).
+  Proof.
+    intros ϕ. remember (size' ϕ) as s.
+    assert (size' ϕ <= s) by lia. clear Heqs. revert ϕ H.
+    induction s; destruct ϕ; intros; simpl in *; try lia; try reflexivity.
+    * cbn. case_match; simpl; auto.
+    * destruct combine_names eqn:EQ1.
+      destruct combine_names eqn:EQ2 at 2.
+      rewrite IHs in EQ1. lia. auto.
+      rewrite -count_ebinders_svar_open -count_sbinders_svar_open in EQ1.
+      rewrite EQ2 in EQ1. inversion EQ1. subst.
+      destruct combine_names eqn:EQ3 at 1.
+      destruct combine_names eqn:EQ4 at 1.
+      rewrite IHs in EQ3. lia. auto.
+      rewrite -count_ebinders_svar_open -count_sbinders_svar_open in EQ3.
+      rewrite EQ3 in EQ4. by inversion EQ4.
+    * destruct combine_names eqn:EQ1.
+      destruct combine_names eqn:EQ2 at 2.
+      rewrite IHs in EQ1. lia. auto.
+      rewrite -count_ebinders_svar_open -count_sbinders_svar_open in EQ1.
+      rewrite EQ2 in EQ1. inversion EQ1. subst.
+      destruct combine_names eqn:EQ3 at 1.
+      destruct combine_names eqn:EQ4 at 1.
+      rewrite IHs in EQ3. lia. auto.
+      rewrite -count_ebinders_svar_open -count_sbinders_svar_open in EQ3.
+      rewrite EQ3 in EQ4. by inversion EQ4.
+    * case_match. reflexivity.
+      rewrite IHs. lia. reflexivity.
+    * case_match. reflexivity.
+      rewrite IHs. lia. reflexivity.
+  Defined.
+
+  Lemma combine_svar_svar_open :
+  forall ϕ evarsϕ evarsψ svarsϕ svarsψ n y x,
+    x <> y ->
+    combine_names evarsϕ evarsψ svarsϕ svarsψ (svar_open y n ϕ) (inr x) =
+    combine_names evarsϕ evarsψ svarsϕ svarsψ ϕ (inr x).
+  Proof.
+    intros ϕ. remember (size' ϕ) as s.
+    assert (size' ϕ <= s) by lia. clear Heqs. revert ϕ H.
+    induction s; destruct ϕ; intros; simpl in *; try lia; try reflexivity.
+    * cbn. case_match; simpl; auto.
+      repeat case_match; auto. subst. congruence.
+    * destruct combine_names eqn:EQ1.
+      destruct combine_names eqn:EQ2 at 2.
+      rewrite IHs in EQ1. lia. auto.
+      rewrite -count_ebinders_svar_open -count_sbinders_svar_open in EQ1.
+      rewrite EQ2 in EQ1. inversion EQ1. subst.
+      destruct combine_names eqn:EQ3 at 1.
+      destruct combine_names eqn:EQ4 at 1.
+      rewrite IHs in EQ3. lia. auto.
+      rewrite -count_ebinders_svar_open -count_sbinders_svar_open in EQ3.
+      rewrite EQ3 in EQ4. by inversion EQ4.
+    * destruct combine_names eqn:EQ1.
+      destruct combine_names eqn:EQ2 at 2.
+      rewrite IHs in EQ1. lia. auto.
+      rewrite -count_ebinders_svar_open -count_sbinders_svar_open in EQ1.
+      rewrite EQ2 in EQ1. inversion EQ1. subst.
+      destruct combine_names eqn:EQ3 at 1.
+      destruct combine_names eqn:EQ4 at 1.
+      rewrite IHs in EQ3. lia. auto.
+      rewrite -count_ebinders_svar_open -count_sbinders_svar_open in EQ3.
+      rewrite EQ3 in EQ4. by inversion EQ4.
+    * case_match. reflexivity.
+      rewrite IHs. lia. assumption. reflexivity.
+    * case_match. reflexivity.
+      rewrite IHs. lia. assumption. reflexivity.
+  Defined.
+
+  Lemma combine_svar_evar_open :
+  forall ϕ evarsϕ evarsψ svarsϕ svarsψ n y x,
+    combine_names evarsϕ evarsψ svarsϕ svarsψ (evar_open y n ϕ) (inr x) =
+    combine_names evarsϕ evarsψ svarsϕ svarsψ ϕ (inr x).
+  Proof.
+    intros ϕ. remember (size' ϕ) as s.
+    assert (size' ϕ <= s) by lia. clear Heqs. revert ϕ H.
+    induction s; destruct ϕ; intros; simpl in *; try lia; try reflexivity.
+    * cbn. case_match; simpl; auto.
+    * destruct combine_names eqn:EQ1.
+      destruct combine_names eqn:EQ2 at 2.
+      rewrite IHs in EQ1. lia. auto.
+      rewrite -count_ebinders_evar_open -count_sbinders_evar_open in EQ1.
+      rewrite EQ2 in EQ1. inversion EQ1. subst.
+      destruct combine_names eqn:EQ3 at 1.
+      destruct combine_names eqn:EQ4 at 1.
+      rewrite IHs in EQ3. lia. auto.
+      rewrite -count_ebinders_evar_open -count_sbinders_evar_open in EQ3.
+      rewrite EQ3 in EQ4. by inversion EQ4.
+    * destruct combine_names eqn:EQ1.
+      destruct combine_names eqn:EQ2 at 2.
+      rewrite IHs in EQ1. lia. auto.
+      rewrite -count_ebinders_evar_open -count_sbinders_evar_open in EQ1.
+      rewrite EQ2 in EQ1. inversion EQ1. subst.
+      destruct combine_names eqn:EQ3 at 1.
+      destruct combine_names eqn:EQ4 at 1.
+      rewrite IHs in EQ3. lia. auto.
+      rewrite -count_ebinders_evar_open -count_sbinders_evar_open in EQ3.
+      rewrite EQ3 in EQ4. by inversion EQ4.
+    * case_match. reflexivity.
+      rewrite IHs. lia. reflexivity.
+    * case_match. reflexivity.
+      rewrite IHs. lia. reflexivity.
+  Defined.
+
+  (* the following 4 proofs are completely the same (2 cases are swapped in the last 2 proofs) *)
+  Lemma count_ebinders_free_evar_subst :
+    forall ϕ ψ evarsϕ evarsψ svarsϕ svarsψ x l l0,
+    combine_names evarsϕ evarsψ svarsϕ svarsψ ϕ (inl x) = (l, l0) ->
+    length evarsϕ = count_ebinders ϕ ->
+    length svarsϕ = count_sbinders ϕ ->
+    length evarsψ = count_ebinders ψ ->
+    length svarsψ = count_sbinders ψ ->
+    count_ebinders (free_evar_subst ψ x ϕ) = length l.
+  Proof.
+    intros ϕ. remember (size' ϕ) as s.
+    assert (size' ϕ <= s) by lia. clear Heqs. revert ϕ H.
+    induction s; destruct ϕ; intros; simpl in *; try lia; try reflexivity; simp combine_names in *.
+    * case_match; inversion H0; subst; auto.
+    * inversion H0. subst. auto.
+    * inversion H0. subst. auto.
+    * inversion H0. subst. auto.
+    * inversion H0. subst. auto.
+    * destruct combine_names eqn:EQ1.
+      destruct (combine_names _ _ _ _ ϕ2 _) eqn:EQ2.
+      inversion H0. subst.
+      erewrite IHs; eauto. erewrite IHs; eauto.
+      rewrite -app_length. reflexivity. 1,4: lia.
+      all: try rewrite drop_length; try rewrite take_length; lia.
+    * inversion H0. subst. auto.
+    * destruct combine_names eqn:EQ1.
+      destruct (combine_names _ _ _ _ ϕ2 _) eqn:EQ2.
+      inversion H0. subst.
+      erewrite IHs; eauto. erewrite IHs; eauto.
+      rewrite -app_length. reflexivity. 1,4: lia.
+      all: try rewrite drop_length; try rewrite take_length; lia.
+    * destruct evarsϕ. simpl in H1. congruence.
+      destruct combine_names eqn:EQ. inversion H0. subst.
+      simpl. erewrite IHs. reflexivity. lia.
+      eassumption. all: auto.
+    * destruct svarsϕ. simpl in H2. congruence.
+      destruct combine_names eqn:EQ. inversion H0. subst.
+      simpl. erewrite IHs. reflexivity. lia.
+      eassumption. all: auto.
+  Defined.
+
+
+  Lemma count_sbinders_free_evar_subst :
+    forall ϕ ψ evarsϕ evarsψ svarsϕ svarsψ x l l0,
+    combine_names evarsϕ evarsψ svarsϕ svarsψ ϕ (inl x) = (l, l0) ->
+    length evarsϕ = count_ebinders ϕ ->
+    length svarsϕ = count_sbinders ϕ ->
+    length evarsψ = count_ebinders ψ ->
+    length svarsψ = count_sbinders ψ ->
+    count_sbinders (free_evar_subst ψ x ϕ) = length l0.
+  Proof.
+    intros ϕ. remember (size' ϕ) as s.
+    assert (size' ϕ <= s) by lia. clear Heqs. revert ϕ H.
+    induction s; destruct ϕ; intros; simpl in *; try lia; try reflexivity; simp combine_names in *.
+    * case_match; inversion H0; subst; auto.
+    * inversion H0. subst. auto.
+    * inversion H0. subst. auto.
+    * inversion H0. subst. auto.
+    * inversion H0. subst. auto.
+    * destruct combine_names eqn:EQ1.
+      destruct (combine_names _ _ _ _ ϕ2 _) eqn:EQ2.
+      inversion H0. subst.
+      erewrite IHs; eauto. erewrite IHs; eauto.
+      rewrite -app_length. reflexivity. 1,4: lia.
+      all: try rewrite drop_length; try rewrite take_length; lia.
+    * inversion H0. subst. auto.
+    * destruct combine_names eqn:EQ1.
+      destruct (combine_names _ _ _ _ ϕ2 _) eqn:EQ2.
+      inversion H0. subst.
+      erewrite IHs; eauto. erewrite IHs; eauto.
+      rewrite -app_length. reflexivity. 1,4: lia.
+      all: try rewrite drop_length; try rewrite take_length; lia.
+    * destruct evarsϕ. simpl in H1. congruence.
+      destruct combine_names eqn:EQ. inversion H0. subst.
+      simpl. erewrite IHs. reflexivity. lia.
+      eassumption. all: auto.
+    * destruct svarsϕ. simpl in H2. congruence.
+      destruct combine_names eqn:EQ. inversion H0. subst.
+      simpl. erewrite IHs. reflexivity. lia.
+      eassumption. all: auto.
+  Defined.
+
+  Lemma count_ebinders_free_svar_subst :
+    forall ϕ ψ evarsϕ evarsψ svarsϕ svarsψ x l l0,
+    combine_names evarsϕ evarsψ svarsϕ svarsψ ϕ (inr x) = (l, l0) ->
+    length evarsϕ = count_ebinders ϕ ->
+    length svarsϕ = count_sbinders ϕ ->
+    length evarsψ = count_ebinders ψ ->
+    length svarsψ = count_sbinders ψ ->
+    count_ebinders (free_svar_subst ψ x ϕ) = length l.
+  Proof.
+    intros ϕ. remember (size' ϕ) as s.
+    assert (size' ϕ <= s) by lia. clear Heqs. revert ϕ H.
+    induction s; destruct ϕ; intros; simpl in *; try lia; try reflexivity; simp combine_names in *.
+    * inversion H0. subst. auto.
+    * case_match; inversion H0; subst; auto.
+    * inversion H0. subst. auto.
+    * inversion H0. subst. auto.
+    * inversion H0. subst. auto.
+    * destruct combine_names eqn:EQ1.
+      destruct (combine_names _ _ _ _ ϕ2 _) eqn:EQ2.
+      inversion H0. subst.
+      erewrite IHs; eauto. erewrite IHs; eauto.
+      rewrite -app_length. reflexivity. 1,4: lia.
+      all: try rewrite drop_length; try rewrite take_length; lia.
+    * inversion H0. subst. auto.
+    * destruct combine_names eqn:EQ1.
+      destruct (combine_names _ _ _ _ ϕ2 _) eqn:EQ2.
+      inversion H0. subst.
+      erewrite IHs; eauto. erewrite IHs; eauto.
+      rewrite -app_length. reflexivity. 1,4: lia.
+      all: try rewrite drop_length; try rewrite take_length; lia.
+    * destruct evarsϕ. simpl in H1. congruence.
+      destruct combine_names eqn:EQ. inversion H0. subst.
+      simpl. erewrite IHs. reflexivity. lia.
+      eassumption. all: auto.
+    * destruct svarsϕ. simpl in H2. congruence.
+      destruct combine_names eqn:EQ. inversion H0. subst.
+      simpl. erewrite IHs. reflexivity. lia.
+      eassumption. all: auto.
+  Defined.
+
+  Lemma count_sbinders_free_svar_subst :
+    forall ϕ ψ evarsϕ evarsψ svarsϕ svarsψ x l l0,
+    combine_names evarsϕ evarsψ svarsϕ svarsψ ϕ (inr x) = (l, l0) ->
+    length evarsϕ = count_ebinders ϕ ->
+    length svarsϕ = count_sbinders ϕ ->
+    length evarsψ = count_ebinders ψ ->
+    length svarsψ = count_sbinders ψ ->
+    count_sbinders (free_svar_subst ψ x ϕ) = length l0.
+  Proof.
+    intros ϕ. remember (size' ϕ) as s.
+    assert (size' ϕ <= s) by lia. clear Heqs. revert ϕ H.
+    induction s; destruct ϕ; intros; simpl in *; try lia; try reflexivity; simp combine_names in *.
+    * inversion H0. subst. auto.
+    * case_match; inversion H0; subst; auto.
+    * inversion H0. subst. auto.
+    * inversion H0. subst. auto.
+    * inversion H0. subst. auto.
+    * destruct combine_names eqn:EQ1.
+      destruct (combine_names _ _ _ _ ϕ2 _) eqn:EQ2.
+      inversion H0. subst.
+      erewrite IHs; eauto. erewrite IHs; eauto.
+      rewrite -app_length. reflexivity. 1,4: lia.
+      all: try rewrite drop_length; try rewrite take_length; lia.
+    * inversion H0. subst. auto.
+    * destruct combine_names eqn:EQ1.
+      destruct (combine_names _ _ _ _ ϕ2 _) eqn:EQ2.
+      inversion H0. subst.
+      erewrite IHs; eauto. erewrite IHs; eauto.
+      rewrite -app_length. reflexivity. 1,4: lia.
+      all: try rewrite drop_length; try rewrite take_length; lia.
+    * destruct evarsϕ. simpl in H1. congruence.
+      destruct combine_names eqn:EQ. inversion H0. subst.
+      simpl. erewrite IHs. reflexivity. lia.
+      eassumption. all: auto.
+    * destruct svarsϕ. simpl in H2. congruence.
+      destruct combine_names eqn:EQ. inversion H0. subst.
+      simpl. erewrite IHs. reflexivity. lia.
+      eassumption. all: auto.
+  Defined.
+
+  Equations? no_accidental_capture (el : list evar) (sl : list svar) (ϕ : Pattern) : bool
+    by wf (size' ϕ) lt  :=
+    no_accidental_capture el sl (patt_imp ϕ1 ϕ2) :=
+      no_accidental_capture (take (count_ebinders ϕ1) el) (take (count_sbinders ϕ1) sl) ϕ1 &&
+      no_accidental_capture (drop (count_ebinders ϕ1) el) (drop (count_sbinders ϕ1) sl) ϕ2;
+    no_accidental_capture el sl (patt_app ϕ1 ϕ2) :=
+      no_accidental_capture (take (count_ebinders ϕ1) el) (take (count_sbinders ϕ1) sl) ϕ1 &&
+      no_accidental_capture (drop (count_ebinders ϕ1) el) (drop (count_sbinders ϕ1) sl) ϕ2;
+    no_accidental_capture (x::el) sl (patt_exists ϕ) :=
+      match decide (x ∈ free_evars ϕ) with
+      | left _  => false
+      | right _ => no_accidental_capture el sl (evar_open x 0 ϕ)
+      end;
+    no_accidental_capture [] sl (patt_exists ϕ) := false; (* <- ill-formed input list el *)
+    no_accidental_capture el (X::sl) (patt_mu ϕ) :=
+      match decide (X ∈ free_svars ϕ) with
+      | left _  => false
+      | right _ => no_accidental_capture el sl (svar_open X 0 ϕ)
+      end;
+    no_accidental_capture el [] (patt_mu ϕ) := false; (* <- ill-formed input list el *)
+    no_accidental_capture _ _ _ := true.
+  Proof.
+    all: simpl; try lia.
+    rewrite evar_open_size'; lia.
+    rewrite svar_open_size'; lia.
+  Defined.
+
+  Lemma well_formed_namify_free_evars :
+    forall ϕ eg sg evarsϕ svarsϕ, well_formed ϕ ->
+    no_accidental_capture evarsϕ svarsϕ ϕ ->
+    named_free_evars (namify eg sg evarsϕ svarsϕ ϕ) = free_evars ϕ.
+  Proof.
+    intros ϕ. remember (size' ϕ) as s.
+    assert (size' ϕ <= s) by lia. clear Heqs. revert ϕ H.
+    induction s; destruct ϕ; intros; simpl in *; try lia; try reflexivity; simp namify in *; try now wf_auto2.
+    * simpl. revert H1. simp no_accidental_capture. move=> /andP [H1_1 H1_2].
+      rewrite IHs; auto. lia. wf_auto2.
+      rewrite IHs; auto. lia. wf_auto2.
+    * simpl. revert H1. simp no_accidental_capture. move=> /andP [H1_1 H1_2].
+      rewrite IHs; auto. lia. wf_auto2.
+      rewrite IHs; auto. lia. wf_auto2.
+    * destruct evarsϕ; simp namify.
+      - simp no_accidental_capture in H1. congruence.
+      - simpl. simp no_accidental_capture in H1. destruct decide. congruence.
+        rewrite IHs; auto.
+        rewrite evar_open_size'. lia.
+        wf_auto2.
+        clear -n.
+        pose proof (free_evars_evar_open ϕ e 0).
+        pose proof (free_evars_evar_open' ϕ e 0).
+        set_solver.
+    * destruct svarsϕ; simp namify.
+    - simp no_accidental_capture in H1. congruence.
+    - simpl. simp no_accidental_capture in H1. destruct decide. congruence.
+      rewrite IHs; auto.
+      rewrite svar_open_size'. lia.
+      wf_auto2.
+      clear -n.
+      by pose proof (free_evars_svar_open ϕ 0 s0).
+  Qed.
+
+  (* stdpp_ext.v *)
+  Lemma drop_notin :
+    forall {T : Set} (l : list T) n x, x ∉ l -> x ∉ drop n l.
+  Proof.
+    induction l; intros; destruct n; simpl; auto.
+    apply IHl. set_solver.
+  Qed.     
+  
+  (* stdpp_ext.v *)
+  Lemma take_notin :
+    forall {T : Set} (l : list T) n x, x ∉ l -> x ∉ take n l.
+  Proof.
+    induction l; intros; destruct n; simpl; auto. set_solver.
+    set_solver.
+  Qed.
+
+  (* stdpp_ext.v *)
+  Lemma drop_subseteq :
+    forall {T : Set} (l : list T) n, drop n l ⊆ l.
+  Proof.
+    induction l; intros; destruct n; simpl; auto.
+    set_solver.
+  Qed.     
+  
+  (* stdpp_ext.v *)
+  Lemma take_subseteq :
+    forall {T : Set} (l : list T) n, take n l ⊆ l.
+  Proof.
+    induction l; intros; destruct n; simpl; auto. set_solver.
+    set_solver.
+  Qed.    
+
+  (* Always use the functions above with sufficient number of names supplemented, i.e.,
+     for any ϕ, length evars = count_ebinders ϕ and length svars = count_sbinders ϕ *)
+  Theorem free_evar_subst_namify :
+    forall ϕ ψ x evarsϕ evarsψ svarsϕ svarsψ eg sg evars svars,
+      combine_names evarsϕ evarsψ svarsϕ svarsψ ϕ (inl x) = (evars, svars) ->
+      length evarsϕ = count_ebinders ϕ ->
+      length svarsϕ = count_sbinders ϕ ->
+      length evarsψ = count_ebinders ψ ->
+      length svarsψ = count_sbinders ψ ->
+      well_formed ψ ->
+      x ∉ evarsϕ ->
+      x ∈ eg ->
+      no_accidental_capture evarsϕ svarsϕ ϕ ->
+      no_accidental_capture evarsψ svarsψ ψ ->
+      list_to_set evarsϕ ## free_evars ψ ->
+      namify eg sg evars svars (free_evar_subst ψ x ϕ) = 
+      standard_evar_subst (namify eg sg evarsϕ svarsϕ ϕ) x (namify eg sg evarsψ svarsψ ψ) : Set.
+  Proof.
+    intros ϕ. remember (size' ϕ) as s.
+    assert (size' ϕ <= s) by lia. clear Heqs. revert ϕ H.
+    induction s; destruct ϕ; intros Hs ψ y evarsϕ evarsψ svarsϕ svarsψ eg sg evars svars Hcomb 
+      Hl1 Hl2 Hl3 Hl4 Hwf Hnin Hin Hnoa1 Hnoa2 Hdis;
+      simpl in *; try lia; try reflexivity; simp combine_names in *.
+    * case_match.
+      - apply pair_equal_spec in Hcomb as [? ?]; subst.
+        simp namify. simp standard_evar_subst. rewrite H. simpl. reflexivity.
+      - apply pair_equal_spec in Hcomb as [? ?]; subst.
+        simp namify. simp standard_evar_subst. rewrite H. simpl. reflexivity.
+    * simp namify. remember (evar_fresh _) as xx. simp standard_evar_subst.
+      destruct decide; simpl. 2: reflexivity.
+      apply X_eq_evar_fresh_impl_X_notin_S in Heqxx. induction n; set_solver.
+    * intros. simp namify. simp standard_evar_subst. simp no_accidental_capture in Hnoa1.
+      move: Hnoa1 => /andP [Hnoa1_1 Hnoa1_2].
+      erewrite IHs. erewrite IHs. reflexivity. all: auto; try lia.
+      all: try rewrite take_length; try rewrite drop_length; try lia.
+      3: {
+        pose proof (drop_subseteq evarsϕ). set_solver.
+      }
+      5: {
+        pose proof (take_subseteq evarsϕ). set_solver.
+      }
+      2: by apply drop_notin. 3: by apply take_notin.
+      - destruct combine_names eqn:Eq1.
+        destruct (combine_names _ _ _ _ ϕ2 _) eqn:Eq2.
+        apply pair_equal_spec in Hcomb as [? ?]; subst.
+        eapply count_ebinders_free_evar_subst in Eq1 as Eq1'.
+        eapply count_sbinders_free_evar_subst in Eq1 as Eq1''.
+        rewrite Eq1' Eq1''. by rewrite 2!drop_app.
+        all: try rewrite take_length; try rewrite drop_length; try lia.
+        eapply count_sbinders_free_evar_subst in Eq1 as Eq1''.
+        all: try rewrite take_length; try rewrite drop_length; try lia.
+        all: eassumption.
+      - destruct combine_names eqn:Eq1.
+        destruct (combine_names _ _ _ _ ϕ2 _) eqn:Eq2.
+        apply pair_equal_spec in Hcomb as [? ?]; subst.
+        eapply count_ebinders_free_evar_subst in Eq1 as Eq1'.
+        eapply count_sbinders_free_evar_subst in Eq1 as Eq1''.
+        rewrite Eq1' Eq1''. by rewrite 2!take_app.
+        all: try rewrite take_length; try rewrite drop_length; try lia.
+        eapply count_sbinders_free_evar_subst in Eq1 as Eq1''.
+        all: try rewrite take_length; try rewrite drop_length; try lia.
+        all: eassumption.
+    * intros. simp namify. simp standard_evar_subst. simp no_accidental_capture in Hnoa1.
+      move: Hnoa1 => /andP [Hnoa1_1 Hnoa1_2].
+      erewrite IHs. erewrite IHs. reflexivity. all: auto; try lia.
+      all: try rewrite take_length; try rewrite drop_length; try lia.
+      3: {
+        pose proof (drop_subseteq evarsϕ). set_solver.
+      }
+      5: {
+        pose proof (take_subseteq evarsϕ). set_solver.
+      }
+      2: by apply drop_notin. 3: by apply take_notin.
+      - destruct combine_names eqn:Eq1.
+        destruct (combine_names _ _ _ _ ϕ2 _) eqn:Eq2.
+        apply pair_equal_spec in Hcomb as [? ?]; subst.
+        eapply count_ebinders_free_evar_subst in Eq1 as Eq1'.
+        eapply count_sbinders_free_evar_subst in Eq1 as Eq1''.
+        rewrite Eq1' Eq1''. by rewrite 2!drop_app.
+        all: try rewrite take_length; try rewrite drop_length; try lia.
+        eapply count_sbinders_free_evar_subst in Eq1 as Eq1''.
+        all: try rewrite take_length; try rewrite drop_length; try lia.
+        all: eassumption.
+      - destruct combine_names eqn:Eq1.
+        destruct (combine_names _ _ _ _ ϕ2 _) eqn:Eq2.
+        apply pair_equal_spec in Hcomb as [? ?]; subst.
+        eapply count_ebinders_free_evar_subst in Eq1 as Eq1'.
+        eapply count_sbinders_free_evar_subst in Eq1 as Eq1''.
+        rewrite Eq1' Eq1''. by rewrite 2!take_app.
+        all: try rewrite take_length; try rewrite drop_length; try lia.
+        eapply count_sbinders_free_evar_subst in Eq1 as Eq1''.
+        all: try rewrite take_length; try rewrite drop_length; try lia.
+        all: eassumption.
+    * destruct evarsϕ; simp no_accidental_capture in Hnoa1. congruence.
+      destruct decide. congruence. simpl in Hl1.
+      destruct combine_names eqn:Eq. destruct evars. congruence.
+      apply pair_equal_spec in Hcomb as [? ?]; subst.
+      simp namify. simp standard_evar_subst.
+      inversion H. (* TODO: is this inversion okay? *)
+      subst.
+      destruct decide. set_solver.
+      simpl. destruct decide.
+      - simpl in Hdis. pose proof e as He. rewrite well_formed_namify_free_evars in He; auto.
+        set_solver.
+      - simpl. erewrite <- IHs; auto. 3: rewrite combine_evar_evar_open; eassumption.
+        2: rewrite evar_open_size'; lia.
+        2: rewrite -count_ebinders_evar_open; lia.
+        2: by rewrite -count_sbinders_evar_open.
+        by rewrite evar_open_free_evar_subst_swap.
+        set_solver.
+        set_solver.
+    * destruct svarsϕ. simpl in Hl2. congruence.
+      destruct combine_names eqn:Eq. destruct svars.
+      congruence.
+      apply pair_equal_spec in Hcomb as [? ?]; subst.
+      simp namify. simp standard_evar_subst.
+      inversion H0. (* TODO: is this inversion okay? *)
+      subst.
+      erewrite <- IHs; auto. 3: rewrite combine_evar_svar_open; eassumption.
+      2: rewrite svar_open_size'; lia.
+      2: by rewrite -count_ebinders_svar_open.
+      2: rewrite -count_sbinders_svar_open; simpl in Hl2; lia.
+      rewrite free_evar_subst_bsvar_subst; auto.
+      wf_auto2.
+      unfold evar_is_fresh_in. set_solver.
+      simp no_accidental_capture in Hnoa1. destruct decide. congruence. assumption.
   Defined.
 
   End whitelist_translation.
