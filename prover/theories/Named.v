@@ -5,6 +5,38 @@ From Equations Require Import Equations.
 From stdpp Require Import base pmap gmap fin_maps.
 From MatchingLogic Require Import Syntax Utils.stdpp_ext.
 
+  (* stdpp_ext.v *)
+  Lemma drop_notin :
+    forall {T : Set} (l : list T) n x, x ∉ l -> x ∉ drop n l.
+  Proof.
+    induction l; intros; destruct n; simpl; auto.
+    apply IHl. set_solver.
+  Qed.     
+  
+  (* stdpp_ext.v *)
+  Lemma take_notin :
+    forall {T : Set} (l : list T) n x, x ∉ l -> x ∉ take n l.
+  Proof.
+    induction l; intros; destruct n; simpl; auto. set_solver.
+    set_solver.
+  Qed.
+
+  (* stdpp_ext.v *)
+  Lemma drop_subseteq :
+    forall {T : Set} (l : list T) n, drop n l ⊆ l.
+  Proof.
+    induction l; intros; destruct n; simpl; auto.
+    set_solver.
+  Qed.     
+  
+  (* stdpp_ext.v *)
+  Lemma take_subseteq :
+    forall {T : Set} (l : list T) n, take n l ⊆ l.
+  Proof.
+    induction l; intros; destruct n; simpl; auto. set_solver.
+    set_solver.
+  Qed.    
+
 Section named.
   Context
     {Σ : Signature}
@@ -84,6 +116,40 @@ Proof.
   intros x.
   induction x; simpl; congruence.
 Defined.
+
+  Fixpoint named_no_negative_occurrence (X : svar) (ϕ : NamedPattern) : bool :=
+    match ϕ with
+    | npatt_evar _ | npatt_sym _ | npatt_bott => true
+    | npatt_svar Y => true
+    | npatt_app ϕ₁ ϕ₂ => named_no_negative_occurrence X ϕ₁ && named_no_negative_occurrence X ϕ₂
+    | npatt_imp ϕ₁ ϕ₂ => named_no_positive_occurrence X ϕ₁ && named_no_negative_occurrence X ϕ₂
+    | npatt_exists _ ϕ' => named_no_negative_occurrence X ϕ'
+    | npatt_mu _ ϕ' => named_no_negative_occurrence X ϕ'
+    end
+  with
+  named_no_positive_occurrence (X : svar) (ϕ : NamedPattern) : bool :=
+    match ϕ with
+    | npatt_evar _ | npatt_sym _ | npatt_bott => true
+    | npatt_svar Y => negb (if decide (X = Y) is left _ then true else false)
+    | npatt_app ϕ₁ ϕ₂ => named_no_positive_occurrence X ϕ₁ && named_no_positive_occurrence X ϕ₂
+    | npatt_imp ϕ₁ ϕ₂ => named_no_negative_occurrence X ϕ₁ && named_no_positive_occurrence X ϕ₂
+    | npatt_exists _ ϕ' => named_no_positive_occurrence X ϕ'
+    | npatt_mu _ ϕ' => named_no_positive_occurrence X ϕ'
+    end.
+
+  Fixpoint named_well_formed_positive (phi : NamedPattern) : bool :=
+    match phi with
+    | npatt_evar _ => true
+    | npatt_svar _ => true
+    | npatt_sym _ => true
+    | npatt_app psi1 psi2 => named_well_formed_positive psi1 && named_well_formed_positive psi2
+    | npatt_bott => true
+    | npatt_imp psi1 psi2 => named_well_formed_positive psi1 && named_well_formed_positive psi2
+    | npatt_exists _ psi => named_well_formed_positive psi
+    | npatt_mu X psi => named_no_negative_occurrence X psi && named_well_formed_positive psi
+    end.
+
+  Definition named_well_formed := named_well_formed_positive.
 
   Definition EVarMap := gmap db_index evar.
   Definition SVarMap := gmap db_index svar.
@@ -835,6 +901,193 @@ Defined.
     1,2: rewrite svar_open_size'; lia.
   Defined.
 
+  (* Pattern.v *)
+  Lemma negative_occ_svar_open :
+    forall ϕ n x m,
+      m <= n ->
+      no_negative_occurrence_db_b (S n) ϕ ->
+      no_negative_occurrence_db_b n (svar_open x m ϕ)
+  with positive_occ_svar_open :
+    forall ϕ n x m,
+      m <= n ->
+      no_positive_occurrence_db_b (S n) ϕ ->
+      no_positive_occurrence_db_b n (svar_open x m ϕ).
+  Proof.
+    {
+      induction ϕ; intros; trivial.
+      * cbn. case_match; cbn; auto.
+      * cbn in H0. move: H0 => /andP [H0_1 H0_2].
+        cbn. rewrite IHϕ1; auto. rewrite IHϕ2; auto.
+      * move: H0 => /andP [H0_1 H0_2].
+        cbn. rewrite IHϕ2; auto. cbn in positive_occ_svar_open.
+        apply (positive_occ_svar_open ϕ1 n x m) in H0_1; auto.
+      * cbn. rewrite IHϕ; auto.
+      * cbn. rewrite IHϕ; auto. lia.
+    }
+    {
+      induction ϕ; intros; trivial.
+      * cbn. case_match; cbn; auto; case_match; auto; try lia.
+        cbn in H0. case_match; try lia. congruence.
+      * cbn in H0. move: H0 => /andP [H0_1 H0_2].
+        cbn. rewrite IHϕ1; auto. rewrite IHϕ2; auto.
+      * move: H0 => /andP [H0_1 H0_2].
+        cbn. rewrite IHϕ2; auto. cbn in negative_occ_svar_open.
+        apply (negative_occ_svar_open ϕ1 n x m) in H0_1; auto.
+      * cbn. rewrite IHϕ; auto.
+      * cbn. rewrite IHϕ; auto. lia.
+    }
+  Qed.
+
+  Theorem Private_no_negatives_namify :
+    forall ϕ n,
+    (no_negative_occurrence_db_b n ϕ ->
+    (forall eg sg evars svars X, X ∉ free_svars ϕ ->
+    X ∈ sg ->
+    X ∉ svars ->
+    named_no_negative_occurrence X (namify eg sg evars svars (svar_open X n ϕ))))
+  /\
+    (no_positive_occurrence_db_b n ϕ ->
+    forall eg sg evars svars X,
+    X ∉ free_svars ϕ ->
+    X ∈ sg ->
+    X ∉ svars ->
+    named_no_positive_occurrence X (namify eg sg evars svars (svar_open X n ϕ))).
+  Proof.
+    intros ϕ. remember (size' ϕ) as s.
+    assert (size' ϕ <= s) by lia. clear Heqs. revert ϕ H.
+    induction s; destruct ϕ; split; intros; cbn in *; simp namify; cbn; try lia; try reflexivity.
+    * case_match; auto. set_solver.
+    * cbn. case_match; simp namify.
+    * cbn. case_match; simp namify; cbn; case_match; auto.
+      - clear H5. simp namify. cbn.
+        case_match.
+        + clear H5. apply X_eq_svar_fresh_impl_X_notin_S in e.
+          clear -e H2. induction n;set_solver.
+        + auto.
+      - simp namify. cbn. case_match; auto.
+        clear -e H2. apply X_eq_svar_fresh_impl_X_notin_S in e.
+        induction (pred n); set_solver.
+    * move: H0 => /andP [H1_1 H1_2]. cbn. simp namify.
+      simpl. rewrite (proj1 (IHs _ _ _)); auto. lia. set_solver.
+      by apply take_notin.
+      rewrite (proj1 (IHs _ _ _)); auto. lia. set_solver.
+      by apply drop_notin.
+    * move: H0 => /andP [H1_1 H1_2]. cbn. simp namify.
+      simpl. rewrite (proj2 (IHs _ _ _)); auto. lia. set_solver.
+      by apply take_notin.
+      rewrite (proj2 (IHs _ _ _)); auto. lia. set_solver.
+      by apply drop_notin.
+    * move: H0 => /andP [H1_1 H1_2]. cbn. simp namify.
+      simpl. rewrite (proj2 (IHs _ _ _)); auto. lia. set_solver.
+      by apply take_notin.
+      rewrite (proj1 (IHs _ _ _)); auto. lia. set_solver.
+      by apply drop_notin.
+    * move: H0 => /andP [H1_1 H1_2]. cbn.
+      simpl. rewrite (proj1 (IHs _ _ _)); auto. lia. set_solver.
+      by apply take_notin.
+      rewrite (proj2 (IHs _ _ _)); auto. lia. set_solver.
+      by apply drop_notin.
+    * cbn. destruct evars; simp namify; simpl.
+      - rewrite svar_open_evar_open_comm. rewrite (proj1 (IHs _ _ _)); auto.
+        rewrite evar_open_size'. lia.
+        cbn in H2. by apply no_negative_occurrence_evar_open.
+        pose proof (free_svars_evar_open). set_solver.
+      - rewrite svar_open_evar_open_comm. rewrite (proj1 (IHs _ _ _)); auto.
+        rewrite evar_open_size'. lia.
+        cbn in H2. by apply no_negative_occurrence_evar_open.
+        pose proof (free_svars_evar_open). set_solver.
+    * cbn. destruct evars; simp namify; simpl.
+      - rewrite svar_open_evar_open_comm. rewrite (proj2 (IHs _ _ _)); auto.
+        rewrite evar_open_size'. lia.
+        cbn in H2. by apply no_positive_occurrence_evar_open.
+        pose proof (free_svars_evar_open). set_solver.
+      - rewrite svar_open_evar_open_comm. rewrite (proj2 (IHs _ _ _)); auto.
+        rewrite evar_open_size'. lia.
+        cbn in H2. by apply no_positive_occurrence_evar_open.
+        pose proof (free_svars_evar_open). set_solver.
+    * cbn. destruct svars; simp namify; simpl.
+      - rewrite svar_open_bsvar_subst_higher; auto. lia. simpl.
+        cbn in H2.
+        rewrite (proj1 (IHs _ _ _)); auto.
+        rewrite svar_open_size'. lia.
+        apply negative_occ_svar_open; auto. lia.
+        pose proof (free_svars_svar_open ϕ (svar_fresh (elements sg)) 0).
+        pose proof (set_svar_fresh_is_fresh' sg). set_solver.
+        set_solver.
+      - rewrite svar_open_bsvar_subst_higher; auto. lia. simpl.
+        cbn in H2.
+        rewrite (proj1 (IHs _ _ _)); auto.
+        rewrite svar_open_size'. lia.
+        apply negative_occ_svar_open; auto. lia.
+        pose proof (free_svars_svar_open ϕ s0 0). set_solver.
+        pose proof (set_svar_fresh_is_fresh' sg). set_solver.
+    * cbn. destruct svars; simp namify; simpl.
+      - rewrite svar_open_bsvar_subst_higher; auto. lia. simpl.
+        cbn in H2.
+        rewrite (proj2 (IHs _ _ _)); auto.
+        rewrite svar_open_size'. lia.
+        apply positive_occ_svar_open; auto. lia.
+        pose proof (free_svars_svar_open ϕ (svar_fresh (elements sg)) 0).
+        pose proof (set_svar_fresh_is_fresh' sg). set_solver.
+        set_solver.
+      - rewrite svar_open_bsvar_subst_higher; auto. lia. simpl.
+        cbn in H2.
+        rewrite (proj2 (IHs _ _ _)); auto.
+        rewrite svar_open_size'. lia.
+        apply positive_occ_svar_open; auto. lia.
+        pose proof (free_svars_svar_open ϕ s0 0). set_solver.
+        pose proof (set_svar_fresh_is_fresh' sg). set_solver.
+  Defined.
+
+  Corollary no_positives_namify :
+    forall ϕ n,
+    no_positive_occurrence_db_b n ϕ ->
+    forall eg sg evars svars X,
+    X ∉ free_svars ϕ ->
+    X ∈ sg ->
+    X ∉ svars ->
+    named_no_positive_occurrence X (namify eg sg evars svars (svar_open X n ϕ)).
+  Proof.
+    apply Private_no_negatives_namify.
+  Defined.
+
+  Corollary no_negatives_namify :
+    forall ϕ n,
+    no_negative_occurrence_db_b n ϕ ->
+    (forall eg sg evars svars X, X ∉ free_svars ϕ ->
+    X ∈ sg ->
+    X ∉ svars ->
+    named_no_negative_occurrence X (namify eg sg evars svars (svar_open X n ϕ))).
+  Proof.
+    apply Private_no_negatives_namify.
+  Defined.
+
+  Theorem namify_well_formed :
+    forall ϕ evars svars eg sg,
+      well_formed_positive ϕ ->
+      named_well_formed (namify eg sg evars svars ϕ).
+  Proof.
+    intros ϕ. remember (size' ϕ) as s.
+    assert (size' ϕ <= s) by lia. clear Heqs. revert ϕ H.
+    induction s; destruct ϕ; intros; simpl in *; try lia; try reflexivity.
+    * simp namify. simpl. move: H0 =>/andP [H0_1 H0_2].
+      rewrite IHs; auto. lia. rewrite IHs; auto; lia.
+    * simp namify. simpl. move: H0 =>/andP [H0_1 H0_2].
+      rewrite IHs; auto. lia. rewrite IHs; auto; lia.
+    * destruct evars; simp namify; simpl; rewrite IHs; auto.
+      1-2: rewrite evar_open_size'; lia.
+    * destruct svars; simp namify; simpl.
+      1-2: move: H0 => /andP [H0_1 H0_2].
+      - rewrite no_negatives_namify; auto.
+        admit.
+        1-2: set_solver.
+        simpl. rewrite IHs; auto. rewrite svar_open_size'. lia.
+      - rewrite no_negatives_namify; auto.
+        admit.
+        1-2: set_solver.
+        simpl. rewrite IHs; auto. rewrite svar_open_size'. lia.
+  Defined.
+
   (* NOTE: do not use option type, because then inversion would be needed in the proofs,
      which is disallowed on Set. *)
   Fixpoint combine_names (el1 el2 : list evar) (sl1 sl2 : list svar)
@@ -1298,38 +1551,6 @@ Defined.
       by pose proof (free_evars_svar_open ϕ 0 s0).
   Qed.
 
-  (* stdpp_ext.v *)
-  Lemma drop_notin :
-    forall {T : Set} (l : list T) n x, x ∉ l -> x ∉ drop n l.
-  Proof.
-    induction l; intros; destruct n; simpl; auto.
-    apply IHl. set_solver.
-  Qed.     
-  
-  (* stdpp_ext.v *)
-  Lemma take_notin :
-    forall {T : Set} (l : list T) n x, x ∉ l -> x ∉ take n l.
-  Proof.
-    induction l; intros; destruct n; simpl; auto. set_solver.
-    set_solver.
-  Qed.
-
-  (* stdpp_ext.v *)
-  Lemma drop_subseteq :
-    forall {T : Set} (l : list T) n, drop n l ⊆ l.
-  Proof.
-    induction l; intros; destruct n; simpl; auto.
-    set_solver.
-  Qed.     
-  
-  (* stdpp_ext.v *)
-  Lemma take_subseteq :
-    forall {T : Set} (l : list T) n, take n l ⊆ l.
-  Proof.
-    induction l; intros; destruct n; simpl; auto. set_solver.
-    set_solver.
-  Qed.    
-
   (* Always use the functions above with sufficient number of names supplemented, i.e.,
      for any ϕ, length evars = count_ebinders ϕ and length svars = count_sbinders ϕ *)
   Theorem free_evar_subst_namify :
@@ -1563,9 +1784,9 @@ Defined.
     npatt_and (npatt_imp l r) (npatt_imp r l).
   Definition npatt_forall (phi : NamedPattern) (x : evar) :=
     npatt_not (npatt_exists x (npatt_not phi)).
-  Definition npatt_nu (phi : NamedPattern) (X : svar) :=
-    npatt_not (npatt_mu X (npatt_not (named_svar_subst phi (npatt_not (npatt_svar X)) X))).
-
+  (* Definition npatt_nu (phi : NamedPattern) (X : svar) :=
+    npatt_not (npatt_mu X (npatt_not (named_svar_subst phi (npatt_not (npatt_svar X)) X))). *)
+(*
   Check @kmap.
   (* TODO: use kmap. Check kmap. *)
   Definition evm_incr (evm : EVarMap) : EVarMap :=
@@ -1756,25 +1977,7 @@ Defined.
   Definition to_NamedPattern2 (ϕ : Pattern) : NamedPattern :=
     (to_NamedPattern2' ϕ gmap_empty ∅ ∅).1.1.1.
 
-  Fixpoint named_no_negative_occurrence (X : svar) (ϕ : NamedPattern) : bool :=
-    match ϕ with
-    | npatt_evar _ | npatt_sym _ | npatt_bott => true
-    | npatt_svar Y => true
-    | npatt_app ϕ₁ ϕ₂ => named_no_negative_occurrence X ϕ₁ && named_no_negative_occurrence X ϕ₂
-    | npatt_imp ϕ₁ ϕ₂ => named_no_positive_occurrence X ϕ₁ && named_no_negative_occurrence X ϕ₂
-    | npatt_exists _ ϕ' => named_no_negative_occurrence X ϕ'
-    | npatt_mu _ ϕ' => named_no_negative_occurrence X ϕ'
-    end
-  with
-  named_no_positive_occurrence (X : svar) (ϕ : NamedPattern) : bool :=
-    match ϕ with
-    | npatt_evar _ | npatt_sym _ | npatt_bott => true
-    | npatt_svar Y => negb (if decide (X = Y) is left _ then true else false)
-    | npatt_app ϕ₁ ϕ₂ => named_no_positive_occurrence X ϕ₁ && named_no_positive_occurrence X ϕ₂
-    | npatt_imp ϕ₁ ϕ₂ => named_no_negative_occurrence X ϕ₁ && named_no_positive_occurrence X ϕ₂
-    | npatt_exists _ ϕ' => named_no_positive_occurrence X ϕ'
-    | npatt_mu _ ϕ' => named_no_positive_occurrence X ϕ'
-    end.
+ 
 
   Definition SVarMap_injective_prop (svm : SVarMap) : Prop :=
     forall dbi1 dbi2 X1 X2, svm !! dbi1 = Some X1 -> svm !! dbi2 = Some X2 ->
@@ -2029,10 +2232,11 @@ Defined.
 
   where "theory ⊢ pattern" := (ML_proof_system theory pattern).
 
-*)
+*)*)
   
 End named.
 
+(*
 Section named_test.
 
   Definition StringMLVariables : MLVariables :=
@@ -2099,3 +2303,4 @@ Section named_test.
   Compute to_NamedPattern2 phi_mu.
 
 End named_test.
+*)
