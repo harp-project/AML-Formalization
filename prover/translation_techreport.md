@@ -94,7 +94,11 @@ $$
 This pattern is provable by applying $Substitution$ and $Existential Quantifier$. In this case, this pattern is actually the result of a substitution:
 
 $$
-(X \to \exists . X)[]
+(X \to \exists . X)[\exists . 0/X]
+$$
+
+$$
+(\exists x. x) \to \exists x. (\exists y. y) \neq (\exists x. x) \to \exists x. (\exists x. x)
 $$
 
 ## Approaches currently under investigation
