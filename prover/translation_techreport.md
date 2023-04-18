@@ -98,7 +98,7 @@ $$
 $$
 
 $$
-(\exists x. x) \to \exists x. (\exists y. y) \neq (\exists x. x) \to \exists x. (\exists x. x)
+(\exists x. x) \to \exists x. (\exists y. y) \neq (\exists x. x) \to \exists x. (\exists x. x) = (X \to \exists x. X)[\exists x. x/X]
 $$
 
 ## Approaches currently under investigation
