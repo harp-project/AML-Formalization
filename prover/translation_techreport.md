@@ -10,7 +10,7 @@ In this section, we explore the options to define the conversion above. We start
 
 ### Random names
 
-Suppose, that we have the following locally nameless pattern:
+Suppose that we have the following locally nameless pattern:
 
 $$
 \exists . \bot \to \exists . 0
@@ -50,5 +50,45 @@ $$
 \exists . \bot \to \exists . x \Longrightarrow \exists y. \bot \to \exists z. x
 $$
 
-### 
+### Translation of proofs with random names
 
+Suppose that we have to translate an instance of the propositional proof rule $P1 : \phi \to \psi \to \phi$:
+
+$$
+(\exists . f 0) \to \bot \to (\exists . f 0)
+$$
+
+If we do this randomly, there is no assurance that both $\exists$ will be named the same way, which is a requirement by the proof rule.
+
+$$
+(\exists x. f x) \to \bot \to (\exists y. f y)
+$$
+
+The pattern above could not be proved by $P1$.
+
+### Naming the innermost quantifier first
+
+We need to ensure that the locally nameless pattern which correspond to the same metavariables in the proof rules are converted to syntactically equal patterns. One option is to assign names in an innermost manner. Suppose that the variables we generate are $x,y,z$. By rule $Propagation_\exists$ with $C := \Box \cdot \exists . 0$:
+
+$$
+(\exists . 0) \cdot (\exists . 0) \to \exists . 0 \cdot (\exists . 0) \Longrightarrow
+(\exists x. x) \cdot (\exists x. x) \to \exists y. y \cdot (\exists x. x)
+$$
+
+However, the translated pattern does not correspond to an instance of $Propagation_\exists$ in the named proof system! A correct instance would be:
+
+$$
+(\exists x. x) \cdot (\exists x. x) \to \exists x. x \cdot (\exists x. x)
+$$
+
+### Naming on the fly, while traversing the pattern
+
+
+
+## Approaches currently under investigation
+
+### Caching approach
+
+### Naming on the fly, with custom substitutions
+
+### Static analysis-based approach
