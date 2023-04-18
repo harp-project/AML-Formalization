@@ -55,13 +55,13 @@ $$
 Suppose that we have to translate an instance of the propositional proof rule $P1 : \phi \to \psi \to \phi$:
 
 $$
-(\exists . f 0) \to \bot \to (\exists . f 0)
+(\exists . f \cdot 0) \to \bot \to (\exists . f \cdot 0)
 $$
 
 If we do this randomly, there is no assurance that both $\exists$ will be named the same way, which is a requirement by the proof rule.
 
 $$
-(\exists x. f x) \to \bot \to (\exists y. f y)
+(\exists x. f \cdot x) \to \bot \to (\exists y. f \cdot y)
 $$
 
 The pattern above could not be proved by $P1$.
