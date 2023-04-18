@@ -35,19 +35,19 @@ This translation is not sound anymore, because $x$ was accidentally captured.
 If we used different names during the conversion, the accidental capture above is avoided.
 
 $$
-\exists . \bot \to \exists . 1 \qquad\Longrightarrow\qquad \exists x. \bot \to \exists y. y
+\exists . (\bot \to \exists . 1) \qquad\Longrightarrow\qquad \exists x. (\bot \to \exists y. y)
 $$
 
 However, accidental capture can still occur:
 
 $$
-\exists . \bot \to \exists . x \qquad\Longrightarrow\qquad \exists x. \bot \to \exists y. x
+\exists . (\bot \to \exists . x) \qquad\Longrightarrow\qquad \exists x. (\bot \to \exists y. x)
 $$
 
 Thus we can conclude that we need a state (for example, a list of names that are forbidden to use). If we start the previous conversion with $x$ being forbidden, then $x$ will not be captured accidentally:
 
 $$
-\exists . \bot \to \exists . x \qquad\Longrightarrow\qquad \exists y. \bot \to \exists z. x
+\exists . (\bot \to \exists . x) \qquad\Longrightarrow\qquad \exists y. (\bot \to \exists z. x)
 $$
 
 ### Translation of proofs with random names
