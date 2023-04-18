@@ -8,7 +8,7 @@
 
 In this section, we explore the options to define the conversion above. We start with $convertPattern$.
 
-### Random names
+### Names without restriction
 
 Suppose that we have the following locally nameless pattern:
 
@@ -30,7 +30,7 @@ $$
 
 This translation is not sound anymore, because $x$ was accidentally captured.
 
-### Random, but pairwise different names
+### Pairwise different names
 
 If we used different names during the conversion, the accidental capture above is avoided.
 
