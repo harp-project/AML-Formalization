@@ -13,19 +13,19 @@ In this section, we explore the options to define the conversion above. We start
 Suppose that we have the following locally nameless pattern:
 
 $$
-\exists . \bot \to \exists . 0
+\exists . (\bot \to \exists . 0)
 $$
 
 We could assign names to the binders randomly, and obtain:
 
 $$
-\exists x. \bot \to \exists x. x
+\exists x. (\bot \to \exists x. x)
 $$
 
 What if we modify this pattern slightly (we use $\Longrightarrow$ to denote the translation):
 
 $$
-\exists . \bot \to \exists . 1 \qquad\Longrightarrow\qquad \exists x. \bot \to \exists x. x
+\exists . (\bot \to \exists . 1) \qquad\Longrightarrow\qquad \exists x. (\bot \to \exists x. x)
 $$
 
 This translation is not sound anymore, because $x$ was accidentally captured.
