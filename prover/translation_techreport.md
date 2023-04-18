@@ -81,9 +81,9 @@ $$
 (\exists x. x) \cdot (\exists x. x) \to \exists x. (x \cdot \exists x. x)
 $$
 
-### Naming on the fly, while traversing the pattern
+### Naming the outer quantifier first
 
-Another option is to invent names on the fly, while traversing the locally nameless pattern. For example:
+Another option is to invent names on the fly, while traversing the locally nameless pattern. This way, the outer quantifier first will be named. For example:
 
 $$
 (\exists . 0) \to \exists . (\exists . 0)
