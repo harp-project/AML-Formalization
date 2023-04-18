@@ -66,19 +66,19 @@ $$
 
 The pattern above could not be proved by $P1$.
 
-### Naming the innermost quantifier first
+### Naming the inner quantifiers first
 
-We need to ensure that the locally nameless pattern which correspond to the same metavariables in the proof rules are converted to syntactically equal patterns. One option is to assign names in an innermost manner. Suppose that the variables we generate are $x,y,z$. By rule $Propagation_\exists$ with $C := \Box \cdot \exists . 0$:
+We need to ensure that the locally nameless pattern which correspond to the same metavariables in the proof rules are converted to syntactically equal patterns. One option is to assign names in an inside-out manner. Suppose that the variables we generate are $x,y,z$. By rule $Propagation_\exists$ with $C := \Box \cdot \exists . 0$:
 
 $$
-(\exists . 0) \cdot (\exists . 0) \to \exists . 0 \cdot (\exists . 0) \qquad\Longrightarrow\qquad
-(\exists x. x) \cdot (\exists x. x) \to \exists y. y \cdot (\exists x. x)
+(\exists . 0) \cdot (\exists . 0) \to \exists . (0 \cdot \exists . 0) \qquad\Longrightarrow\qquad
+(\exists x. x) \cdot (\exists x. x) \to \exists y. (y \cdot \exists x. x)
 $$
 
 However, the translated pattern does not correspond to an instance of $Propagation_\exists$ in the named proof system! A correct instance would be:
 
 $$
-(\exists x. x) \cdot (\exists x. x) \to \exists x. x \cdot (\exists x. x)
+(\exists x. x) \cdot (\exists x. x) \to \exists x. (x \cdot \exists x. x)
 $$
 
 ### Naming on the fly, while traversing the pattern
