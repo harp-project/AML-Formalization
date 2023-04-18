@@ -25,7 +25,7 @@ $$
 What if we modify this pattern slightly (we use $\Longrightarrow$ to denote the translation):
 
 $$
-\exists . \bot \to \exists . 1 \Longrightarrow \exists x. \bot \to \exists x. x
+\exists . \bot \to \exists . 1 \qquad\Longrightarrow\qquad \exists x. \bot \to \exists x. x
 $$
 
 This translation is not sound anymore, because $x$ was accidentally captured.
@@ -35,19 +35,19 @@ This translation is not sound anymore, because $x$ was accidentally captured.
 If we used different names during the conversion, the accidental capture above is avoided.
 
 $$
-\exists . \bot \to \exists . 1 \Longrightarrow \exists x. \bot \to \exists y. y
+\exists . \bot \to \exists . 1 \qquad\Longrightarrow\qquad \exists x. \bot \to \exists y. y
 $$
 
 However, accidental capture can still occur:
 
 $$
-\exists . \bot \to \exists . x \Longrightarrow \exists x. \bot \to \exists y. x
+\exists . \bot \to \exists . x \qquad\Longrightarrow\qquad \exists x. \bot \to \exists y. x
 $$
 
 Thus we can conclude that we need a state (for example, a list of names that are forbidden to use). If we start the previous conversion with $x$ being forbidden, then $x$ will not be captured accidentally:
 
 $$
-\exists . \bot \to \exists . x \Longrightarrow \exists y. \bot \to \exists z. x
+\exists . \bot \to \exists . x \qquad\Longrightarrow\qquad \exists y. \bot \to \exists z. x
 $$
 
 ### Translation of proofs with random names
@@ -71,7 +71,7 @@ The pattern above could not be proved by $P1$.
 We need to ensure that the locally nameless pattern which correspond to the same metavariables in the proof rules are converted to syntactically equal patterns. One option is to assign names in an innermost manner. Suppose that the variables we generate are $x,y,z$. By rule $Propagation_\exists$ with $C := \Box \cdot \exists . 0$:
 
 $$
-(\exists . 0) \cdot (\exists . 0) \to \exists . 0 \cdot (\exists . 0) \Longrightarrow
+(\exists . 0) \cdot (\exists . 0) \to \exists . 0 \cdot (\exists . 0) \qquad\Longrightarrow\qquad
 (\exists x. x) \cdot (\exists x. x) \to \exists y. y \cdot (\exists x. x)
 $$
 
@@ -83,7 +83,17 @@ $$
 
 ### Naming on the fly, while traversing the pattern
 
+Another option is to invent names on the fly, while traversing the locally nameless pattern. For example:
 
+$$
+(\exists . 0) \to \exists . (\exists . 0)
+$$
+
+This pattern is provable by applying $Substitution$ and $Existential Quantifier$. In this case, this pattern is actually the result of a substitution:
+
+$$
+(X \to \exists . X)[]
+$$
 
 ## Approaches currently under investigation
 
@@ -92,3 +102,6 @@ $$
 ### Naming on the fly, with custom substitutions
 
 ### Static analysis-based approach
+
+## Testing before verification
+
