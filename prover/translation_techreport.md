@@ -1,74 +1,97 @@
 # Converting locally-nameless proofs to named proofs
 
 - To extract matching logic proofs to Metamath, first we need to convert proofs implemented in the locally-nameless proof system to a named proof system.
-- The conversion should be sound that is, if $p : \Gamma \vdash_{LN} \phi$, then $convertProof(p) : convertPatterns(\Gamma) \vdash convertPattern(\phi)$.
-- Disclaimer: this work is not yet about translation to Metamath.
+- The conversion must be **sound**:
+
+$$
+⟦\phi⟧_{LN} = ⟦convertPattern(\phi)⟧
+$$
+
+$$
+p : \Gamma \vdash_{LN} \phi \quad\text{implies}\quad convertProof(p) : convertPatterns(\Gamma) \vdash convertPattern(\phi)
+$$
+
+- Disclaimer: this work is *not yet* about translation to Metamath.
 
 ## Motivating examples
 
-In this section, we explore the options to define the conversion above. We start with $convertPattern$.
+In this section, we explore various options to generate names for binders and define the conversion functions above. We start with $convertPattern$.
 
 ### Names without restriction
 
-Suppose that we have the following locally nameless pattern:
+Consider the following locally nameless pattern:
 
 $$
 \exists . (\bot \to \exists . 0)
 $$
 
-We could assign names to the binders randomly, and obtain:
+We can assign names to its binders *arbitrarily*, and obtain a correct translation:
 
 $$
 \exists x. (\bot \to \exists x. x)
 $$
 
-What if we modify this pattern slightly (we use $\Longrightarrow$ to denote the translation):
+However, choosing names arbitrarily does not work in general. Condider the previous example slightly modified:
 
 $$
-\exists . (\bot \to \exists . 1) \qquad\Longrightarrow\qquad \exists x. (\bot \to \exists x. x)
+\exists . (\bot \to \exists . \mathbf{1})
 $$
 
-This translation is not sound anymore, because $x$ was accidentally captured.
+When choosing names arbitrarily, we may come to the same named pattern as above, which is not a sound conversion as $x$ gets accidentally captured by the inner quantifier.
+
+_Note: In some cases it needs to be guaranteed that the names generated for binders are different._
 
 ### Pairwise different names
 
-If we used different names during the conversion, the accidental capture above is avoided.
+When generating arbitrary but different names to the binders in the previous example, we can avoid the accidental shadowing/capture ($\Longrightarrow$ denoting the pattern translation):
 
 $$
 \exists . (\bot \to \exists . 1) \qquad\Longrightarrow\qquad \exists x. (\bot \to \exists y. y)
 $$
 
-However, accidental capture can still occur:
+However, accidental capture can still occur if the arbitrary name we choose for the binder happens to be among the free variables of the pattern:
 
 $$
 \exists . (\bot \to \exists . x) \qquad\Longrightarrow\qquad \exists x. (\bot \to \exists y. x)
 $$
 
-Thus we can conclude that we need a state (for example, a list of names that are forbidden to use). If we start the previous conversion with $x$ being forbidden, then $x$ will not be captured accidentally:
+_Note: Clearly, the names cannot be chosen arbitrarily. A name generated for a binder must not clash with free names in its body nor with previously generated names for outer binders._
+
+This suggests that the conversion should generate *fresh* names by taking a list of names in use (including the originally free variables as well as the newly generated bound variables).
+
+If we start the previous conversion with $x$ known to be taken, the names generated will be $y$ and $z$, and $x$ will not be captured accidentally:
 
 $$
 \exists . (\bot \to \exists . x) \qquad\Longrightarrow\qquad \exists y. (\bot \to \exists z. x)
 $$
 
-### Translation of proofs with random names
+### Translation of proofs
 
-Suppose that we have to translate an instance of the propositional proof rule $P1 : \phi \to \psi \to \phi$:
+Ideally, the translation of proofs would be just the translation of the patterns appearing in the proof. However, for the named proofs to hold, the various copies of a single pattern must be identical; generating alpha-equivalent patterns is not sufficient for the conversion to be sound. Similar consideration applies to variable names.
+
+For instance, suppose that we have to translate an instance of the propositional proof rule $P1 : \phi \to \psi \to \phi$.
 
 $$
 (\exists . f \cdot 0) \to \bot \to (\exists . f \cdot 0)
 $$
 
-If we do this randomly, there is no assurance that both $\exists$ will be named the same way, which is a requirement by the proof rule.
+If the two instances of pattern $\exists . f \cdot 0$ are not given the same new variable name, the translated pattern cannot not be proved by $P1$:
 
 $$
 (\exists x. f \cdot x) \to \bot \to (\exists y. f \cdot y)
 $$
 
-The pattern above could not be proved by $P1$.
+_Note: We need to ensure that the locally nameless patterns that correspond to the same metavariables in the proof rules are converted to syntactically equal patterns._
+
+We can achieve this by caching translations, by guiding the random name generation with explicit seeds, or by pre-generating the list of variable names using static analysis. We will discuss these approaches in detail down below, but they have in common that they are parametrized by a *state* that determines the translation.
 
 ### Naming the inner quantifiers first
 
-We need to ensure that the locally nameless pattern which correspond to the same metavariables in the proof rules are converted to syntactically equal patterns. One option is to assign names in an inside-out manner. Suppose that the variables we generate are $x,y,z$. By rule $Propagation_\exists$ with $C := \Box \cdot \exists . 0$:
+We investigated stateless options too. These assume that the translation of $\phi$ only depends on $\phi$ but not on its context.
+
+The question here is whether a wise order of visiting the patterns (binders) of the proof can ensure the property stated above.
+
+One option is to assign names in an inside-out (bottom-up) manner. Suppose that the variables we generate are $x,y,z$. By rule $Propagation_\exists$ with $C := \Box \cdot \exists . 0$:
 
 $$
 (\exists . 0) \cdot (\exists . 0) \to \exists . (0 \cdot \exists . 0) \qquad\Longrightarrow\qquad
