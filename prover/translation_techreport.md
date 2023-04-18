@@ -83,6 +83,8 @@ $$
 
 ### Naming the outer quantifier first
 
+NOTE: write down both stateless and stateful (function returning a state and a named pattern).
+
 Another option is to invent names on the fly, while traversing the locally nameless pattern. This way, the outer quantifier first will be named. For example:
 
 $$
