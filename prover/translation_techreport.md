@@ -146,7 +146,11 @@ We can achieve this by caching translations, by guiding the random name generati
 
 If we generate names based on a state, it is a decision point how this state is propagated to the conversion of subpatterns of implications and applications.
 
+### Using the same names in subpatterns
+
 The first option is to use the same state in both subpatterns, however, when this easily could lead us to the violation of either [Requirement 4](#requirement-4) or [Requirement 5](#requirement-5), when combined with the options to translate quantifiers below.
+
+### Different names in subpatterns
 
 Another option is to generate different names for the subpatterns, but in this case even [Requirement 3](#requirement-3) is violated. We refer to the example from there:
 
@@ -187,13 +191,32 @@ $$
 (\exists x. x) \to \exists x. (\exists y. y) \qquad=/=\qquad (\exists x. x) \to \exists x. (\exists x. x) \qquad===\qquad (X \to \exists x. X)[\exists x. x/X]
 $$
 
-## Approaches currently under investigation
+## More complex approaches
 
-
+Based on the points discussed above, we can conclude that a more complex conversion is needed.
 
 ### Caching approach
 
+In our first attempt, we tried to ensure that all alpha-equivalent subpatterns are identical. This is implemented as a caching translation. We use the cache to store locally-nameless (sub)patterns that we already encountered during the recursion, and map them to the named pattern they have been converted to at the first occurance. The algorithm can be described with the following pseudo-code for implication:
+
+```
+convert(phi, cache) =
+  if phi is in cache then
+    cache[phi]
+  else
+    case phi of
+      ...
+      imp phi1 phi2 -> let phi1' := convert(phi1, cache) in
+                         let phi2' := convert(phi2, (phi1, phi1') : cache) in
+                           named_imp phi1' phi2'
+      ...
+```
+
+The disadvantage of this approach is its complexity. Beside a state which is needed to generate names for the binders, a cache also has to be maintained. Moreover, the conversion can be still sound, if not all alpha-equivalent subpatterns are identical.
+
 ### Naming on the fly, with custom substitutions
+
+The second approach is to combine [Name-first](#name-first:-naming-the-outer-quantifiers-first) with [Using the same names in subpatterns](#-using-the-same-names-in-subpatterns). We have already discussed that this approach violates [Requirement 5](#requirement-5), if the standard definition of substitution is used. However, we can create an alternative definition, which is still capture-avoiding
 
 ### Static analysis-based approach
 
