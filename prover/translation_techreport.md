@@ -88,14 +88,14 @@ $$
 > #### Requirement 3
 > **We need to ensure that the locally nameless patterns that correspond to the same metavariables in the proof rules are converted to syntactically equal patterns.**
 
-The same requirement needs to be satisfied by the metavariables denoting names occuring multiple times in a proof rule, for example $Propagation_\exists$. For instance the following translation is wrong:
+The same requirement needs to be satisfied by the metavariables denoting names occuring multiple times in a proof rule, for example $Propagation_\exists :  C[\exists . \phi] \to \exists . C[\phi]$. For instance the following translation is wrong:
 
 $$
 (\exists . 0) \cdot (\exists . 0) \to \exists . (0 \cdot \exists . 0) \qquad\Longrightarrow\qquad
 (\exists x. x) \cdot (\exists x. x) \to \exists y. (y \cdot \exists x. x)
 $$
 
-On the right-hand side of $\to$, the firtst $\exists$ should bind the same variable as in the left-hand side. Acceptable results of the conversion in this case would be:
+On the right-hand side of $\to$, the first $\exists$ should bind the same variable as in the left-hand side. Acceptable results of the conversion in this case would be:
 
 $$
 (\exists x. x) \cdot (\exists x. x) \to \exists x. (x \cdot \exists x. x) \qquad\textsf{ or}\qquad
@@ -107,7 +107,7 @@ $$
 
 ### Substitutions
 
-Finally, the same requirement also needs to be satisfied by substitutions, that is if there is a pattern $\phi[\psi/X]$, then all occurrences of $X$ is replaced by identical $\psi$ instances. For example the following locally nameless pattern can be proven with $Substitution$ and $Existential Quantifier$.
+Finally, the same requirement also needs to be satisfied by substitutions, that is if there is a pattern $\phi[\psi/X]$, then all occurrences of $X$ is replaced by identical $\psi$ instances. For example the following locally nameless pattern can be proven with $Substitution$ (validity of $\phi$ implies the validity of $\phi[\psi/X]$) and $\exists-Quantifier$ ($\phi[x/0] \to \exists . \phi$).
 
 $$
 (\exists . 0) \to \exists . (\exists . 0) \qquad === \qquad (X \to \exists . X)[\exists . 0/X]
@@ -147,7 +147,7 @@ If we generate names based on a state, it is a decision point how this state is 
 
 ### Using the same names in subpatterns
 
-The first option is to use the same state in both subpatterns, however, when this easily could lead us to the violation of either [Requirement 4](#requirement-4) or [Requirement 5](#requirement-5), when combined with the options to translate quantifiers below.
+The first option is to use the same state in both subpatterns; however, this easily could lead us to the violation of either [Requirement 4](#requirement-4) or [Requirement 5](#requirement-5), when combined with the options to translate quantifiers below.
 
 ### Different names in subpatterns
 
@@ -184,7 +184,7 @@ $$
 (X \to \exists . X)[\exists . 0/X] \qquad===\qquad (\exists . 0) \to \exists . (\exists . 0)
 $$
 
-This pattern is provable by applying $Substitution$ and $Existential Quantifier$. However, when converting this pattern, we violate [Requirement 5](#requirement-5):
+This pattern is provable by applying $Substitution$ and $\exists-Quantifier$. However, when converting this pattern, we violate [Requirement 5](#requirement-5):
 
 $$
 (\exists x. x) \to \exists x. (\exists y. y) \qquad=/=\qquad (\exists x. x) \to \exists x. (\exists x. x) \qquad===\qquad (X \to \exists x. X)[\exists x. x/X]
@@ -211,7 +211,7 @@ convert(phi, cache) =
       ...
 ```
 
-The disadvantage of this approach is its complexity. Beside a state which is needed to generate names for the binders, a cache also has to be maintained. Moreover, the conversion can be still sound, if not all alpha-equivalent subpatterns are identical.
+The disadvantage of this approach is its complexity. Beside a state which is needed to generate names for the binders, a cache also has to be maintained. Moreover, the conversion can still be sound, even if some alpha-equivalent subpatterns are not identical.
 
 ### Name-first with custom substitutions
 
