@@ -216,7 +216,7 @@ The disadvantage of this approach is its complexity. Beside a state which is nee
 
 ### Naming on the fly, with custom substitutions
 
-The second approach is to combine [Name-first](#name-first:-naming-the-outer-quantifiers-first) with [Using the same names in subpatterns](#-using-the-same-names-in-subpatterns). We have already discussed that this approach violates [Requirement 5](#requirement-5), if the standard definition of substitution is used. However, we can create an alternative definition, which is still capture-avoiding
+The second approach is to combine [Name-first](#name-first-naming-the-outer-quantifiers-first) with [Using the same names in subpatterns](#-using-the-same-names-in-subpatterns). We have already discussed that this approach violates [Requirement 5](#requirement-5), if the standard definition of substitution is used. However, we can create an alternative definition, which is still capture-avoiding
 
 ### Static analysis-based approach
 
