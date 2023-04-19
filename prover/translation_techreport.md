@@ -84,11 +84,15 @@ $$
 $\textcolor{green}{\textsf{We need to ensure that the locally nameless patterns that correspond to the same metavariables in the proof rules are converted to syntactically equal patterns.}}$
 
 We can achieve this by caching translations, by guiding the random name generation with explicit seeds, or by pre-generating the list of variable names using static analysis. We will discuss these approaches in detail down below, but they have in common that they are parametrized by a *state* that determines the translation.
-(We investigated stateless options too, assuming that the translation of $\phi$ only depends on $\phi$ but not on its context, but these options cannot meet the dependencies/constaints discussed above.)
+(We investigated stateless/pure options too, assuming that the translation of $\phi$ only depends on $\phi$ but not on its context, but these options cannot meet the dependencies/constaints discussed above.)
+
+## Assuming a deterministic name generator
+
+Assume that we can sample new variable names deterministically (the implementation of this may be based on multiple approaches discussed below).
+
+The question here is whether a wise order of visiting the patterns (binders) of the proof can ensure the constraint on the proof translation.
 
 ### Naming the inner quantifiers first
-
-The question here is whether a wise order of visiting the patterns (binders) of the proof can ensure the property stated above.
 
 One option is to assign names in an inside-out (bottom-up) manner. Suppose that the variables we generate are $x,y,z$. By rule $Propagation_\exists$ with $C := \Box \cdot \exists . 0$:
 
