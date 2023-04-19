@@ -86,15 +86,17 @@ $\textcolor{green}{\textsf{We need to ensure that the locally nameless patterns 
 We can achieve this by caching translations, by guiding the random name generation with explicit seeds, or by pre-generating the list of variable names using static analysis. We will discuss these approaches in detail down below, but they have in common that they are parametrized by a *state* that determines the translation.
 (We investigated stateless/pure options too, assuming that the translation of $\phi$ only depends on $\phi$ but not on its context, but these options cannot meet the dependencies/constaints discussed above.)
 
-## Assuming a deterministic name generator
+## Name-first or body-first?
 
-Assume that we can sample new variable names deterministically (the implementation of this may be based on multiple approaches discussed below).
+Assume that the generation of the variable bound by an exists-quantifier can depend on the conversion of its body, an vice versa.
 
-The question here is whether a wise order of visiting the patterns (binders) of the proof can ensure the constraint on the proof translation.
+The question here is whether a wise order of visiting the patterns (binders) of the proof along with the right order of generating the new name and the conversion of the body can ensure the constraint on the proof translation.
 
-### Naming the inner quantifiers first
+### Body-first: naming the inner quantifiers first
 
-One option is to assign names in an inside-out (bottom-up) manner. Suppose that the variables we generate are $x,y,z$. By rule $Propagation_\exists$ with $C := \Box \cdot \exists . 0$:
+One option is to assign names in an inside-out (bottom-up) manner. In this case, we convert the body and based on the result we invent the new quantified name.
+
+Suppose that the variables we generate are $x,y,z$. By rule $Propagation_\exists$ with $C := \Box \cdot \exists . 0$:
 
 $$
 (\exists . 0) \cdot (\exists . 0) \to \exists . (0 \cdot \exists . 0) \qquad\Longrightarrow\qquad
@@ -107,7 +109,7 @@ $$
 (\exists x. x) \cdot (\exists x. x) \to \exists x. (x \cdot \exists x. x)
 $$
 
-### Naming the outer quantifier first
+### Name-foirst: naming the outer quantifiers first
 
 NOTE: write down both stateless and stateful (function returning a state and a named pattern).
 
