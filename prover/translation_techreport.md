@@ -40,7 +40,7 @@ $$
 When choosing names arbitrarily, we may come to the same named pattern as above, which is not a sound conversion as $x$ gets accidentally captured by the inner quantifier.
 
 > #### Requirement 1
-> $\textcolor{green}{\textsf{In some cases it needs to be guaranteed that the names generated for binders are different.}}$
+> **In some cases it needs to be guaranteed that the names generated for binders are different.**
 
 ### Pairwise distinct names
 
@@ -59,7 +59,7 @@ $$
 Clearly, the names cannot be chosen arbitrarily.
 
 > #### Requirement 2
-> $\textcolor{green}{\textsf{A name generated for a binder must not clash with free names in its body nor with previously generated names for outer binders.}}$
+> **A name generated for a binder must not clash with free names in its body nor with previously generated names for outer binders.**
 
 This suggests that the conversion should generate *fresh* names by taking a list of names in use (including the originally free variables as well as the newly generated bound variables).
 
@@ -86,8 +86,7 @@ $$
 $$
 
 > #### Requirement 3
-> $\textcolor{green}{\textsf{We need to ensure that the locally nameless patterns that correspond to the same metavariables in the proof rules are converted to}}$
-> $\textcolor{green}{\textsf{syntactically equal patterns.}}$
+> **We need to ensure that the locally nameless patterns that correspond to the same metavariables in the proof rules are converted to syntactically equal patterns.**
 
 The same requirement needs to be satisfied by the metavariables denoting names occuring multiple times in a proof rule, for example $Propagation_\exists$. For instance the following translation is wrong:
 
@@ -104,7 +103,7 @@ $$
 $$
 
 > #### Requirement 4
-> $\textcolor{green}{\textsf{We need to ensure that the metavariables denoting names, occuring multiple times in a proof rule a converted to identical names.}}$
+> **We need to ensure that the metavariables denoting names, occuring multiple times in a proof rule a converted to identical names.**
 
 ### Substitutions
 
@@ -135,7 +134,7 @@ $$
 *Note that this is a requirement if we suppose that the named substitution is implemented in the standard, capture-avoiding way*.
 
 > #### Requirement 5
-> $\textcolor{green}{\textsf{We need to ensure that the conversion is a homomorphism w.r.t. substutition.}}$
+> **We need to ensure that the conversion is a homomorphism w.r.t. substutition.**
 
 
 
