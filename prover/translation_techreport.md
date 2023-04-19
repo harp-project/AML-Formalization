@@ -213,11 +213,26 @@ convert(phi, cache) =
 
 The disadvantage of this approach is its complexity. Beside a state which is needed to generate names for the binders, a cache also has to be maintained. Moreover, the conversion can be still sound, if not all alpha-equivalent subpatterns are identical.
 
-### Naming on the fly, with custom substitutions
+### Name-first with custom substitutions
 
-The second approach is to combine [Name-first](#name-first-naming-the-outer-quantifiers-first) with [Using the same names in subpatterns](#using-the-same-names-in-subpatterns). We have already discussed that this approach violates [Requirement 5](#requirement-5), if the standard definition of substitution is used. However, we can create an alternative definition, which is still capture-avoiding, by always 
+The second approach is to combine [Name-first](#name-first-naming-the-outer-quantifiers-first) with [Using the same names in subpatterns](#using-the-same-names-in-subpatterns). We have already discussed that this approach violates [Requirement 5](#requirement-5), if the standard definition of substitution is used. However, we can create an alternative definition, which is still capture-avoiding by always renaming all of the bound variables in a pattern based on a state.
+
+The main disadvantage of this approach is that the named substitution is not standard (thus it is also conceptionally different from the version in the Metamath formalisation).
 
 ### Static analysis-based approach
 
+In the third approach, the state for the conversion is a list of names which will be used for the binders. The conversion in this way is the most flexible, because not names need to be generated. Obviously, the names provided should satisfy a number of criteria to avoid violating the requirements above. For this purpose, we can analyse the locally-nameless proof first, and decide what variables can be used.
+
+For example, by $P_1$, we can prove $(\exists . f \cdot 0) \to (\exists . \exists . (0 \to 1)) \to (\exists . f \cdot 0)$. To use this conversion, we need to provide a list of names, so that the after the conversion the two instances corresponding $(\exists . f \cdot 0)$ are identical. One option for such a list could be $[x, y, z, x]$. The result of the conversion is the following pattern: $(\exists x. f \cdot x) \to (\exists y. \exists z. z \to y) \to (\exists x. f \cdot x)$.
+
+This list of names can be produced during proof analysis:
+
+1. Generate as many names as quantifiers in $(\exists . f \cdot 0)$.
+2. Generate as many names as quantifiers in $(\exists . \exists . (0 \to 1))$.
+3. Concatenate the lists generated in steps 1, 2 and 1.
+
+On the one hand, the major advantage of this approach is its flexibility. On the other hand, a lot of side conditions need to be carried while proving the soundness.
+
 ## Testing before verification
 
+Before starting implementing the approaches above in Coq, we implemented them in Haskell, together with some of the requirements above. Thereafter, we utilised Haskell Quickcheck to generate random data to test the requirements for the conversion candidates. Up to now (19th April 2023) We found both [Name-first with custom substitutions](#name-first-with-custom-substitutions) and [Static analysis-based approach](#-tatic-analysis-based-approach) usable, thus we started investigating these.
