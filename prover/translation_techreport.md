@@ -47,7 +47,7 @@ When choosing names arbitrarily, we may come to the same named pattern as above,
 When generating arbitrary but different names to the binders in the previous example, we can avoid the accidental shadowing/capture ($\Longrightarrow$ denoting the pattern translation):
 
 $$
-\exists . (\bot \to \exists . 1) \qquad\Longrightarrow\qquad \exists x. (\bot \to \exists y. y)
+\exists . (\bot \to \exists . 1) \qquad\Longrightarrow\qquad \exists x. (\bot \to \exists y. x)
 $$
 
 However, accidental capture can still occur if the arbitrary name we choose for the binder happens to be among the free variables of the pattern:
