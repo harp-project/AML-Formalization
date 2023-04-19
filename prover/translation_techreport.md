@@ -39,7 +39,8 @@ $$
 
 When choosing names arbitrarily, we may come to the same named pattern as above, which is not a sound conversion as $x$ gets accidentally captured by the inner quantifier.
 
-$\textcolor{green}{\textsf{In some cases it needs to be guaranteed that the names generated for binders are different.}}$
+> #### Requirement 1
+> $\textcolor{green}{\textsf{In some cases it needs to be guaranteed that the names generated for binders are different.}}$
 
 ### Pairwise distinct names
 
@@ -57,7 +58,8 @@ $$
 
 Clearly, the names cannot be chosen arbitrarily.
 
-$\textcolor{green}{\textsf{A name generated for a binder must not clash with free names in its body nor with previously generated names for outer binders.}}$
+> #### Requirement 2
+> $\textcolor{green}{\textsf{A name generated for a binder must not clash with free names in its body nor with previously generated names for outer binders.}}$
 
 This suggests that the conversion should generate *fresh* names by taking a list of names in use (including the originally free variables as well as the newly generated bound variables).
 
@@ -83,8 +85,9 @@ $$
 (\exists x. f \cdot x) \to \bot \to (\exists y. f \cdot y)
 $$
 
-$\textcolor{green}{\textsf{We need to ensure that the locally nameless patterns that correspond to the same metavariables in the proof rules are converted to}}$
-$\textcolor{green}{\textsf{syntactically equal patterns.}}$
+> #### Requirement 3
+> $\textcolor{green}{\textsf{We need to ensure that the locally nameless patterns that correspond to the same metavariables in the proof rules are converted to}}$
+> $\textcolor{green}{\textsf{syntactically equal patterns.}}$
 
 The same requirement needs to be satisfied by the metavariables denoting names occuring multiple times in a proof rule, for example $Propagation_\exists$. For instance the following translation is wrong:
 
@@ -100,7 +103,8 @@ $$
 (\exists x. x) \cdot (\exists y. y) \to \exists x. (x \cdot \exists y. y)
 $$
 
-$\textcolor{green}{\textsf{We need to ensure that the metavariables denoting names, occuring multiple times in a proof rule a converted to identical names.}}$
+> #### Requirement 4
+> $\textcolor{green}{\textsf{We need to ensure that the metavariables denoting names, occuring multiple times in a proof rule a converted to identical names.}}$
 
 ### Substitutions
 
@@ -130,7 +134,8 @@ $$
 
 *Note that this is a requirement if we suppose that the named substitution is implemented in the standard, capture-avoiding way*.
 
-$\textcolor{green}{\textsf{We need to ensure that the conversion is a homomorphism w.r.t. substutition.}}$
+> #### Requirement 5
+> $\textcolor{green}{\textsf{We need to ensure that the conversion is a homomorphism w.r.t. substutition.}}$
 
 
 
@@ -147,18 +152,14 @@ The question here is whether a wise order of visiting the patterns (binders) of 
 
 One option is to assign names in an inside-out (bottom-up) manner. In this case, we convert the body and based on the result we invent the new quantified name.
 
-Suppose that the variables we generate are $x,y,z$. By rule $Propagation_\exists$ with $C := \Box \cdot \exists . 0$:
+Suppose that we generate distict, fresh variables $x, y, z$. If we assigned these names inside-out, we would violate [Requirement 1](#requirement-4) in the example discussed there.
 
 $$
 (\exists . 0) \cdot (\exists . 0) \to \exists . (0 \cdot \exists . 0) \qquad\Longrightarrow\qquad
 (\exists x. x) \cdot (\exists x. x) \to \exists y. (y \cdot \exists x. x)
 $$
 
-However, the translated pattern does not correspond to an instance of $Propagation_\exists$ in the named proof system! A correct instance would be:
-
-$$
-(\exists x. x) \cdot (\exists x. x) \to \exists x. (x \cdot \exists x. x)
-$$
+In this case, the converted pattern does not correspond to an instance of $Propagation_\exists$ in the named proof system!
 
 ### Name-first: naming the outer quantifiers first
 
