@@ -142,7 +142,19 @@ $$
 We can achieve this by caching translations, by guiding the random name generation with explicit seeds, or by pre-generating the list of variable names using static analysis. We will discuss these approaches in detail down below, but they have in common that they are parametrized by a *state* that determines the translation.
 (We investigated stateless/pure options too, assuming that the translation of $\phi$ only depends on $\phi$ but not on its context, but these options cannot meet the dependencies/constaints discussed above.)
 
-## Name-first or body-first?
+## Converting implication and application: using different or identical names in the subpattern?
+
+If we generate names based on a state, it is a decision point how this state is propagated to the conversion of subpatterns of implications and applications.
+
+The first option is to use the same state in both subpatterns, however, when this easily could lead us to the violation of either [Requirement 4](#requirement-4) or [Requirement 5](#requirement-5), when combined with the options to translate quantifiers below.
+
+Another option is to generate different names for the subpatterns, but in this case even [Requirement 3](#requirement-3) is violated. We refer to the example from there:
+
+$$
+(\exists . f \cdot 0) \to \bot \to (\exists . f \cdot 0) \qquad\Longrightarrow (\exists x. f \cdot x) \to \bot \to (\exists y. f \cdot y)
+$$
+
+## Converting quantifiers: Name-first or body-first?
 
 Assume that the generation of the variable bound by an exists-quantifier can depend on the conversion of its body, an vice versa.
 
@@ -152,7 +164,7 @@ The question here is whether a wise order of visiting the patterns (binders) of 
 
 One option is to assign names in an inside-out (bottom-up) manner. In this case, we convert the body and based on the result we invent the new quantified name.
 
-Suppose that we generate distict, fresh variables $x, y, z$. If we assigned these names inside-out, we would violate [Requirement 1](#requirement-4) in the example discussed there.
+Suppose that we generate distict, fresh variables $x, y, z$. If we assigned these names inside-out, we would violate [Requirement 4](#requirement-4) in the example discussed there.
 
 $$
 (\exists . 0) \cdot (\exists . 0) \to \exists . (0 \cdot \exists . 0) \qquad\Longrightarrow\qquad
@@ -163,25 +175,21 @@ In this case, the converted pattern does not correspond to an instance of $Propa
 
 ### Name-first: naming the outer quantifiers first
 
-NOTE: write down both stateless and stateful (function returning a state and a named pattern).
-
 Another option is to invent names on the fly, while traversing the locally nameless pattern. This way, the outer quantifier first will be named. For example:
 
 $$
-(\exists . 0) \to \exists . (\exists . 0)
+(X \to \exists . X)[\exists . 0/X] === (\exists . 0) \to \exists . (\exists . 0)
 $$
 
-This pattern is provable by applying $Substitution$ and $Existential Quantifier$. In this case, this pattern is actually the result of a substitution:
+This pattern is provable by applying $Substitution$ and $Existential Quantifier$. However, when converting this pattern, we violate [Requirement 5](#requirement-5):
 
 $$
-(X \to \exists . X)[\exists . 0/X]
-$$
-
-$$
-(\exists x. x) \to \exists x. (\exists y. y) \neq (\exists x. x) \to \exists x. (\exists x. x) = (X \to \exists x. X)[\exists x. x/X]
+(\exists x. x) \to \exists x. (\exists y. y) =/= (\exists x. x) \to \exists x. (\exists x. x) = (X \to \exists x. X)[\exists x. x/X]
 $$
 
 ## Approaches currently under investigation
+
+
 
 ### Caching approach
 
