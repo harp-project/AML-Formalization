@@ -201,13 +201,13 @@ In our first attempt, we tried to ensure that all alpha-equivalent subpatterns a
 ```
 convert(phi, cache) =
   if phi is in cache then
-    cache[phi]
+    (cache[phi], cache)
   else
     case phi of
       ...
-      imp phi1 phi2 -> let phi1' := convert(phi1, cache) in
-                         let phi2' := convert(phi2, (phi1, phi1') : cache) in
-                           named_imp phi1' phi2'
+      imp phi1 phi2 -> let (phi1', cache1') := convert(phi1, cache) in
+                         let (phi2', cache2') := convert(phi2, (phi1, phi1') : cache1') in
+                           (named_imp phi1' phi2', cache2')
       ...
 ```
 
@@ -235,4 +235,4 @@ On the one hand, the major advantage of this approach is its flexibility. On the
 
 ## Testing before verification
 
-Before starting implementing the approaches above in Coq, we implemented them in Haskell, together with some of the requirements above. Thereafter, we utilised Haskell Quickcheck to generate random data to test the requirements for the conversion candidates. Up to now (19th April 2023) We found both [Name-first with custom substitutions](#name-first-with-custom-substitutions) and [Static analysis-based approach](#-tatic-analysis-based-approach) usable, thus we started investigating these.
+Before starting implementing the approaches above in Coq, we implemented them in Haskell, together with some of the requirements above. Thereafter, we utilised Haskell Quickcheck to generate random data to test the requirements for the conversion candidates. Up to now (19th April 2023) we found both [Name-first with custom substitutions](#name-first-with-custom-substitutions) and [Static analysis-based approach](#-tatic-analysis-based-approach) usable, thus we started investigating these.
