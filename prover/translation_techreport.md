@@ -39,7 +39,7 @@ $$
 
 When choosing names arbitrarily, we may come to the same named pattern as above, which is not a sound conversion as $x$ gets accidentally captured by the inner quantifier.
 
-_Note: In some cases it needs to be guaranteed that the names generated for binders are different._
+> In some cases it needs to be guaranteed that the names generated for binders are different.
 
 ### Pairwise distinct names
 
@@ -55,7 +55,7 @@ $$
 \exists . (\bot \to \exists . x) \qquad\Longrightarrow\qquad \exists x. (\bot \to \exists y. x)
 $$
 
-_Note: Clearly, the names cannot be chosen arbitrarily. A name generated for a binder must not clash with free names in its body nor with previously generated names for outer binders._
+> Clearly, the names cannot be chosen arbitrarily. A name generated for a binder must not clash with free names in its body nor with previously generated names for outer binders.
 
 This suggests that the conversion should generate *fresh* names by taking a list of names in use (including the originally free variables as well as the newly generated bound variables).
 
@@ -81,13 +81,12 @@ $$
 (\exists x. f \cdot x) \to \bot \to (\exists y. f \cdot y)
 $$
 
-_Note: We need to ensure that the locally nameless patterns that correspond to the same metavariables in the proof rules are converted to syntactically equal patterns._
+> We need to ensure that the locally nameless patterns that correspond to the same metavariables in the proof rules are converted to syntactically equal patterns.
 
 We can achieve this by caching translations, by guiding the random name generation with explicit seeds, or by pre-generating the list of variable names using static analysis. We will discuss these approaches in detail down below, but they have in common that they are parametrized by a *state* that determines the translation.
+(We investigated stateless options too, assuming that the translation of $\phi$ only depends on $\phi$ but not on its context, but these options cannot meet the dependencies/constaints discussed above.)
 
 ### Naming the inner quantifiers first
-
-We investigated stateless options too. These assume that the translation of $\phi$ only depends on $\phi$ but not on its context.
 
 The question here is whether a wise order of visiting the patterns (binders) of the proof can ensure the property stated above.
 
