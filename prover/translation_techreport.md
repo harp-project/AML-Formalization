@@ -151,7 +151,7 @@ The first option is to use the same state in both subpatterns, however, when thi
 Another option is to generate different names for the subpatterns, but in this case even [Requirement 3](#requirement-3) is violated. We refer to the example from there:
 
 $$
-(\exists . f \cdot 0) \to \bot \to (\exists . f \cdot 0) \qquad\Longrightarrow (\exists x. f \cdot x) \to \bot \to (\exists y. f \cdot y)
+(\exists . f \cdot 0) \to \bot \to (\exists . f \cdot 0) \qquad\Longrightarrow\qquad (\exists x. f \cdot x) \to \bot \to (\exists y. f \cdot y)
 $$
 
 ## Converting quantifiers: Name-first or body-first?
@@ -178,13 +178,13 @@ In this case, the converted pattern does not correspond to an instance of $Propa
 Another option is to invent names on the fly, while traversing the locally nameless pattern. This way, the outer quantifier first will be named. For example:
 
 $$
-(X \to \exists . X)[\exists . 0/X] === (\exists . 0) \to \exists . (\exists . 0)
+(X \to \exists . X)[\exists . 0/X] \qquad===\qquad (\exists . 0) \to \exists . (\exists . 0)
 $$
 
 This pattern is provable by applying $Substitution$ and $Existential Quantifier$. However, when converting this pattern, we violate [Requirement 5](#requirement-5):
 
 $$
-(\exists x. x) \to \exists x. (\exists y. y) =/= (\exists x. x) \to \exists x. (\exists x. x) = (X \to \exists x. X)[\exists x. x/X]
+(\exists x. x) \to \exists x. (\exists y. y) \qquad=/=\qquad (\exists x. x) \to \exists x. (\exists x. x) \qquad===\qquad (X \to \exists x. X)[\exists x. x/X]
 $$
 
 ## Approaches currently under investigation
