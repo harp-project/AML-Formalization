@@ -41,7 +41,7 @@ When choosing names arbitrarily, we may come to the same named pattern as above,
 
 _Note: In some cases it needs to be guaranteed that the names generated for binders are different._
 
-### Pairwise different names
+### Pairwise distinct names
 
 When generating arbitrary but different names to the binders in the previous example, we can avoid the accidental shadowing/capture ($\Longrightarrow$ denoting the pattern translation):
 
