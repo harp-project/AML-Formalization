@@ -55,11 +55,13 @@ $$
 \exists . (\bot \to \exists . x) \qquad\Longrightarrow\qquad \exists x. (\bot \to \exists y. x)
 $$
 
-$\textcolor{green}{\textsf{Clearly, the names cannot be chosen arbitrarily. A name generated for a binder must not clash with free names in its body nor with previously generated names for outer binders.}}$
+Clearly, the names cannot be chosen arbitrarily.
+
+$\textcolor{green}{\textsf{A name generated for a binder must not clash with free names in its body nor with previously generated names for outer binders.}}$
 
 This suggests that the conversion should generate *fresh* names by taking a list of names in use (including the originally free variables as well as the newly generated bound variables).
 
-If we start the previous conversion with $x$ known to be taken, the names generated will be $y$ and $z$, and $x$ will not be captured accidentally:
+If we start the previous conversion with $x$ known to be taken, it will not be captured accidentally:
 
 $$
 \exists . (\bot \to \exists . x) \qquad\Longrightarrow\qquad \exists y. (\bot \to \exists z. x)
@@ -67,21 +69,70 @@ $$
 
 ### Translation of proofs
 
-Ideally, the translation of proofs would be just the translation of the patterns appearing in the proof. However, for the named proofs to hold, the various copies of a single pattern must be identical; generating alpha-equivalent patterns is not sufficient for the conversion to be sound. Similar consideration applies to variable names.
+Ideally, the translation of proofs would be just the translation of the patterns appearing in the proof (and proving them with the corresponding named proof rules). However, for the named proofs to hold, the various copies of a single pattern must be identical; generating alpha-equivalent patterns is not sufficient for the conversion to be sound. Similar consideration applies to variable names.
 
-For instance, suppose that we have to translate an instance of the propositional proof rule $P1 : \phi \to \psi \to \phi$.
+For instance, suppose that we have to translate an instance of the propositional proof rule $P_1 : \phi \to \psi \to \phi$.
 
 $$
 (\exists . f \cdot 0) \to \bot \to (\exists . f \cdot 0)
 $$
 
-If the two instances of pattern $\exists . f \cdot 0$ are not given the same new variable name, the translated pattern cannot not be proved by $P1$:
+If the two instances of pattern $\exists . f \cdot 0$ are not given the same new variable name, the translated pattern cannot not be proved by $P_1$:
 
 $$
 (\exists x. f \cdot x) \to \bot \to (\exists y. f \cdot y)
 $$
 
-$\textcolor{green}{\textsf{We need to ensure that the locally nameless patterns that correspond to the same metavariables in the proof rules are converted to syntactically equal patterns.}}$
+$\textcolor{green}{\textsf{We need to ensure that the locally nameless patterns that correspond to the same metavariables in the proof rules are converted to}}$
+$\textcolor{green}{\textsf{syntactically equal patterns.}}$
+
+The same requirement needs to be satisfied by the metavariables denoting names occuring multiple times in a proof rule, for example $Propagation_\exists$. For instance the following translation is wrong:
+
+$$
+(\exists . 0) \cdot (\exists . 0) \to \exists . (0 \cdot \exists . 0) \qquad\Longrightarrow\qquad
+(\exists x. x) \cdot (\exists x. x) \to \exists y. (y \cdot \exists x. x)
+$$
+
+On the right-hand side of $\to$, the firtst $\exists$ should bind the same variable as in the left-hand side. Acceptable results of the conversion in this case would be:
+
+$$
+(\exists x. x) \cdot (\exists x. x) \to \exists x. (x \cdot \exists x. x) \qquad\textsf{ or}\qquad
+(\exists x. x) \cdot (\exists y. y) \to \exists x. (x \cdot \exists y. y)
+$$
+
+$\textcolor{green}{\textsf{We need to ensure that the metavariables denoting names, occuring multiple times in a proof rule a converted to identical names.}}$
+
+### Substitutions
+
+Finally, the same requirement also needs to be satisfied by substitutions, that is if there is a pattern $\phi[\psi/X]$, then all occurrences of $X$ is replaced by identical $\psi$ instances. For example the following locally nameless pattern can be proven with $Substitution$ and $Existential Quantifier$.
+
+$$
+(\exists . 0) \to \exists . (\exists . 0) \qquad === \qquad (X \to \exists . X)[\exists . 0/X]
+$$
+
+This pattern could be wrongly converted to:
+
+$$
+(\exists x. x) \to \exists x. (\exists y. y) \qquad =/= \qquad (X \to \exists y. X)[\exists x . x/X]
+$$
+
+While a correct instance would be:
+
+$$
+(\exists y. y) \to \exists x. (\exists y. y) \qquad === \qquad (X \to \exists x. X)[\exists y . y/X]
+$$
+
+Actually, we want to express a homomorphism property of the conversion w.r.t. substitutions:
+
+$$
+convertPattern(\phi[\psi/x]) = convertPattern(\phi)[convertPattern(\psi)/x]
+$$
+
+*Note that this is a requirement if we suppose that the named substitution is implemented in the standard, capture-avoiding way*.
+
+$\textcolor{green}{\textsf{We need to ensure that the conversion is a homomorphism w.r.t. substutition.}}$
+
+
 
 We can achieve this by caching translations, by guiding the random name generation with explicit seeds, or by pre-generating the list of variable names using static analysis. We will discuss these approaches in detail down below, but they have in common that they are parametrized by a *state* that determines the translation.
 (We investigated stateless/pure options too, assuming that the translation of $\phi$ only depends on $\phi$ but not on its context, but these options cannot meet the dependencies/constaints discussed above.)
@@ -109,7 +160,7 @@ $$
 (\exists x. x) \cdot (\exists x. x) \to \exists x. (x \cdot \exists x. x)
 $$
 
-### Name-foirst: naming the outer quantifiers first
+### Name-first: naming the outer quantifiers first
 
 NOTE: write down both stateless and stateful (function returning a state and a named pattern).
 
