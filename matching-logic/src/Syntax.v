@@ -2718,6 +2718,7 @@ Section with_signature.
     }
   Qed.
 
+  (* ϕ ≡ (mu, 0) ---> cvar  *)
   Lemma bound_svar_is_banned_under_mus_fevar_subst ϕ ψ cvar level dbi':
     well_formed_closed_mu_aux ϕ (dbi') = true ->
     well_formed_closed_mu_aux ψ (S dbi') = true  ->
@@ -2826,6 +2827,79 @@ Section with_signature.
           cbn in H2.
           exact H2.
         }
+      }
+    }
+  Qed.
+
+  Example counterexample_1:
+    exists cvar cpatt ϕ dbi iter,
+      well_formed_closed_mu_aux cpatt (S dbi) /\
+      maximal_mu_depth_to 0 cvar cpatt <= iter /\
+      bound_svar_is_banned_under_mus ϕ iter dbi /\
+      bound_svar_is_banned_under_mus cpatt^[[evar:cvar↦ϕ]] iter dbi
+    .
+  Proof.
+    exists (evar_fresh []).
+    exists (patt_imp (patt_mu (patt_bound_svar 0)) (patt_bound_svar 0)).
+    exists (patt_free_evar (evar_fresh [(evar_fresh [])])).
+    exists (0).
+    exists (0).
+    repeat split.
+    {
+      cbn. lia.
+    }
+  Qed.
+
+  (*
+    cpatt ≡ (mu, B0) ---> B0 ( see counterexample_1 )
+  *)
+  Lemma failed_attempt cvar cpatt ϕ dbi iter:
+    well_formed_closed_mu_aux cpatt (S dbi) ->
+    maximal_mu_depth_to 0 cvar cpatt <= iter ->
+    bound_svar_is_banned_under_mus ϕ iter dbi ->
+    bound_svar_is_banned_under_mus cpatt^[[evar:cvar↦ϕ]] iter dbi
+  .
+  Abort.
+
+  Lemma helper cvar cpatt ϕ dbi iter:
+    well_formed_closed_mu_aux ϕ dbi ->
+    maximal_mu_depth_to 0 cvar cpatt <= iter ->
+    bound_svar_is_banned_under_mus cpatt iter dbi ->
+    bound_svar_is_banned_under_mus cpatt^[[evar:cvar↦ϕ]] iter dbi
+  .
+  Proof.
+    move: dbi iter.
+    induction cpatt; cbn; intros dbi iter H1 H2 H3 H4; try exact I.
+    {
+      repeat case_match; cbn in *; subst; try lia; try assumption.
+    }
+    {
+      rewrite elem_of_union in H1.
+      unfold is_true in H2.
+      rewrite andb_true_iff in H2.
+      destruct H2 as [Hwf1 Hwf2].
+      destruct
+        (decide (cvar ∈ free_evars cpatt1)) as [Hin1|Hnotin1],
+        (decide (cvar ∈ free_evars cpatt2)) as [Hin2|Hnotin2]
+      .
+      4: {
+        naive_solver.
+      }
+      {
+        specialize (IHcpatt1 dbi iter Hin1 Hwf1 ltac:(lia) H4).
+        specialize (IHcpatt2 dbi iter Hin2 Hwf2 ltac:(lia) H4).
+        split;assumption.
+      }
+      {
+        specialize (IHcpatt1 dbi iter Hin1 Hwf1 ltac:(lia) H4).
+        clear IHcpatt2.
+        rewrite -> free_evar_subst_no_occurrence with (p := cpatt2).
+        2: assumption.
+        split;[assumption|].
+      }
+      destruct H1 as [H|H].
+      {
+
       }
     }
   Qed.
