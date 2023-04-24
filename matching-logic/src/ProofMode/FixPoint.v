@@ -47,7 +47,7 @@ Lemma Knaster_tarski {Σ : Signature}
         {| pi_generalized_evars := ∅;
            pi_substituted_svars := ∅;
            pi_uses_kt := true ;
-           pi_uses_advanced_kt := has_bound_variable_under_mu ϕ ; (* TODO depends on ϕ*)
+           pi_uses_advanced_kt := ~~ bound_svar_is_banned_under_mus ϕ 0 0 ; (* TODO depends on ϕ*)
         |}) i} :
   well_formed (mu, ϕ) ->
   Γ ⊢i (instantiate (mu, ϕ) ψ) ---> ψ using i ->
@@ -165,7 +165,7 @@ Proof.
 Defined.
 
 Lemma mu_monotone {Σ : Signature} Γ ϕ₁ ϕ₂ X (i : ProofInfo):
-  ProofInfoLe ( (ExGen := ∅, SVSubst := {[X]}, KT := true, AKT := has_bound_variable_under_mu ϕ₁^{{svar:X↦0}})) i ->
+  ProofInfoLe ( (ExGen := ∅, SVSubst := {[X]}, KT := true, AKT := ~~ bound_svar_is_banned_under_mus ϕ₁^{{svar:X↦0}} 0 0)) i ->
   svar_has_negative_occurrence X ϕ₁ = false ->
   svar_has_negative_occurrence X ϕ₂ = false ->
   Γ ⊢i ϕ₁ ---> ϕ₂ using i->

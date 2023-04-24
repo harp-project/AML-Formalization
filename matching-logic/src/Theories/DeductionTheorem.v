@@ -1545,40 +1545,21 @@ Proof.
     rewrite andb_true_r in Hpf5.
     rewrite Hnoakt in Hpf5.
     rewrite implb_false_r in Hpf5.
-    destruct (decide (has_bound_variable_under_mu phi = true)) as [Ht|Hf].
+    rewrite negb_orb in Hpf5.
+    destruct (decide (~~ bound_svar_is_banned_under_mus phi 0 0 = true)) as [Ht|Hf].
     {
       rewrite Ht in Hpf5. simpl in Hpf5. inversion Hpf5.
     }
     apply not_true_is_false in Hf.
+    rewrite Hf in Hpf5.
+    cbn in Hpf5.
+    apply negb_true_iff in Hpf5.
     remember (svar_fresh_s (free_svars ⌊ ψ ⌋ ∪ free_svars phi)) as X.
     epose proof (Htmp := @mu_and_predicate_propagation _ _ Γ phi ⌊ ψ ⌋ _ _ _).
     feed specialize Htmp.
     { 
-      unfold has_bound_variable_under_mu in Hf.
-      unfold mu_in_evar_path in Hf.
       rewrite negb_false_iff in Hf.
-      rewrite Nat.eqb_eq in Hf.
-      symmetry in Hf.
-      intros.
-      unfold mu_in_evar_path.
-      erewrite hbvum_impl_mmdt0.
-      { reflexivity. }
-      { assumption. }
-      3: { apply Hf. }
-      { apply set_evar_fresh_is_fresh. }
-      { wf_auto2. }
-    }
-    {
-      subst X. clear.
-      eapply svar_is_fresh_in_richer'.
-      2: apply set_svar_fresh_is_fresh'.
-      { set_solver. }
-    }
-    {
-      subst X. clear.
-      eapply svar_is_fresh_in_richer'.
-      2: apply set_svar_fresh_is_fresh'.
-      { set_solver. }
+      exact Hf.
     }
     {
       gapply floor_is_predicate.
@@ -1659,63 +1640,6 @@ Proof.
 Qed.
 *)
 
-(*
-
-*)
-
-Lemma mu_depth_to_fev_limited_implies_bound_svar_is_lt_evar_open
-  {Σ : Signature}
-  (E : evar)
-  (cpatt ϕ : Pattern)
-  (mudepth : nat)
-:
-  well_formed_closed_mu_aux cpatt 0 ->
-  (mudepth > 0 -> bound_svar_is_lt ϕ mudepth) ->
-  mu_depth_to_fev_limited E cpatt mudepth ->
-  bound_svar_is_lt (cpatt^[[evar:E↦ϕ]]) mudepth
-.
-Proof.
-  move: mudepth.
-  induction cpatt; cbn; intros mudepth Hwf H0 H; try exact I.
-  {
-    repeat case_match; subst; try congruence; cbn; try exact I.
-    apply H0. assumption.
-  }
-  {
-    repeat case_match; try lia. congruence.
-  }
-  {
-    naive_bsolver.
-  }
-  {
-    naive_bsolver.
-  }
-  {
-    naive_solver.
-  }
-  {
-    apply IHcpatt.
-    naive_bsolver.
-  }
-Qed.
-
-Lemma mdl_miep {Σ : Signature} (ϕ : Pattern) (E : evar) (d : nat):
-  well_formed ϕ ->
-  mu_depth_to_fev_limited E ϕ d ->
-  mu_in_evar_path E ϕ d = false
-.
-Proof.
-  move: d.
-  Print mu_in_evar_path.
-  induction ϕ; cbn; intros d Hwf H; unfold mu_in_evar_path; cbn; try reflexivity.
-  {
-    destruct (decide (x = E)); try reflexivity.
-    {
-      subst. destruct d; try reflexivity.
-    }
-  }
-
-Qed.
 
 Lemma MLGoal_deduct'
   {Σ : Signature}
