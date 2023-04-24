@@ -2647,9 +2647,9 @@ Section with_signature.
   .
   Proof.
     move: dbi dbi' level.
-    induction ϕ; cbn; intros dbi dbi' level H1 H2 H3; try exact I.
+    induction ϕ; cbn; intros dbi dbi' level H1 H2 H3; try reflexivity.
     {
-      repeat case_match; cbn in *; subst; try exact I.
+      repeat case_match; cbn in *; subst; try reflexivity.
       assumption.
     }
     {
@@ -2664,6 +2664,8 @@ Section with_signature.
     {
       destruct level; cbn in *.
       {
+        rewrite negb_true_iff.
+        rewrite negb_true_iff in H3.
         apply bsvar_occur_bevar_subst; try assumption.
       }
       {
@@ -2737,14 +2739,14 @@ Section with_signature.
   Lemma bound_svar_is_banned_under_mus_fevar_subst ϕ ψ cvar level dbi':
     well_formed_closed_mu_aux ϕ (dbi') = true ->
     well_formed_closed_mu_aux ψ (S dbi') = true  ->
-    bound_svar_is_banned_under_mus ψ level dbi' ->
-    bound_svar_is_banned_under_mus ϕ^[[evar:cvar↦ψ]] level dbi'
+    bound_svar_is_banned_under_mus ψ level dbi' = true ->
+    bound_svar_is_banned_under_mus ϕ^[[evar:cvar↦ψ]] level dbi' = true
   .
   Proof.
     move: dbi' level.
-    induction ϕ; cbn; intros dbi' level H0 H1 H2 (*H3*); try exact I.
+    induction ϕ; cbn; intros dbi' level H0 H1 H2 (*H3*); try reflexivity.
     {
-      repeat case_match; cbn in *; subst; try exact I.
+      repeat case_match; cbn in *; subst; try reflexivity.
       assumption.
     }
     {
@@ -2759,6 +2761,7 @@ Section with_signature.
     {
       destruct level; cbn in *.
       {
+        rewrite negb_true_iff.
         apply bsvar_occur_free_evar_subst; try assumption.
         apply wfc_mu_aux_implies_not_bsvar_occur.
         apply H0.
@@ -2785,14 +2788,14 @@ Section with_signature.
   Qed.
 
   Lemma bound_svar_is_banned_under_mus_evar_open x ϕ dbi level dbi':
-    bound_svar_is_banned_under_mus ϕ level dbi' ->
-    bound_svar_is_banned_under_mus ϕ^[evar:dbi↦patt_free_evar x] level dbi'
+    bound_svar_is_banned_under_mus ϕ level dbi' = true ->
+    bound_svar_is_banned_under_mus ϕ^[evar:dbi↦patt_free_evar x] level dbi' = true
   .
   Proof.
     move: dbi dbi' level.
-    induction ϕ; cbn; intros dbi dbi' level H; try exact I.
+    induction ϕ; cbn; intros dbi dbi' level H; try reflexivity.
     {
-      repeat case_match; cbn in *; try exact I.
+      repeat case_match; cbn in *; try reflexivity.
     }
     {
       naive_solver.
@@ -2806,6 +2809,8 @@ Section with_signature.
     {
       destruct level; cbn in *.
       {
+        rewrite negb_true_iff in H.
+        rewrite negb_true_iff.
         apply bsvar_occur_evar_open.
         assumption.
       }
@@ -2819,14 +2824,15 @@ Section with_signature.
   Lemma bound_svar_is_lt_implies_bound_svar_is_banned_under_mus ϕ level dbi n:
     well_formed_closed_mu_aux ϕ (dbi + n) ->
     bound_svar_is_lt ϕ (level + n) ->
-    bound_svar_is_banned_under_mus ϕ level (dbi + n)
+    bound_svar_is_banned_under_mus ϕ level (dbi + n) = true
   .
   Proof.
     move: level dbi n.
-    induction ϕ; cbn; intros level dbi n' H1 H2; try exact I; try naive_bsolver.
+    induction ϕ; cbn; intros level dbi n' H1 H2; try reflexivity; try naive_bsolver.
     {
       destruct level.
       {
+        rewrite negb_true_iff.
         apply wfc_mu_aux_implies_not_bsvar_occur.
         { wf_auto2. }
       }
