@@ -1578,13 +1578,171 @@ Proof.
           specialize (IHouter1 syntax Γ).
           pose proof (IHouter2 := IHouter1).
           specialize (IHouter1 (cpatt^[[evar:cvar↦ϕ]]) HΓ).
+          {
+            (* FIXME this is just an experiment *)
+            destruct cpatt; cbn in *.
+            2,3,4,5,7: solve[useBasicReasoning; apply pf_iff_equiv_refl; wf_auto2].
+            {
+              destruct (decide (cvar = x)).
+              {
+                toMLGoal.
+                { wf_auto2;fold no_negative_occurrence_db_b no_positive_occurrence_db_b.
+                {
+                  apply wfc_impl_no_neg_occ. assumption.
+                }
+                {
+                  apply wfc_impl_no_neg_occ. assumption.
+                }
+                }
+                pose proof (Htmp := extract_common_from_equivalence Γ ψ (mu, ϕ) (mu, ψ and ϕ)).
+                feed specialize Htmp.
+                {
+                  wf_auto2.
+                }
+                {
+                  wf_auto2.
+                }
+                {
+                  wf_auto2;fold no_negative_occurrence_db_b no_positive_occurrence_db_b.
+                  {
+                    apply wfc_impl_no_neg_occ. assumption.
+                  }
+                  {
+                    apply wfc_impl_no_neg_occ. assumption.
+                  }
+                }
+                apply useBasicReasoning with (i := AnyReasoning) in Htmp.
+                mlRewrite Htmp at 1.
+                mlAssert ("H1":(ϕ =ml ϕ and ψ)).
+                { wf_auto2. }
+                {
+                  mlAdd Hp as "H0".
+                  mlDestructOr "H0".
+                  {
+                    mlRewriteBy "0" at 1.
+                    { exact HΓ. }
+                    {
+                      cbn.
+                      unfold mu_in_evar_path. cbn.
+                      rewrite decide_eq_same.
+                      rewrite !Nat.max_0_r.
+                      rewrite !Nat.max_id.
+                      rewrite maximal_mu_depth_to_0.
+                      {
+                        subst star. clear.
+                        eapply evar_is_fresh_in_richer'.
+                        2: { apply set_evar_fresh_is_fresh'. }
+                        { set_solver. }
+                      }
+                      reflexivity.
+                    }
+                    mlClear "0".
+                    mlSplitAnd.
+                    {
+                      fromMLGoal.
+                      gapply patt_equal_refl.
+                      { apply pile_any. }
+                      { wf_auto2. }
+                    }
+                    {
+                      (* We should have an easy way of proving Top *)
+                      fromMLGoal.
+                      gapply top_holds.
+                      apply pile_any.
+                    }
+                  }
+                }
+                Search ((?a and ?b) <---> (?a and ?c)).
+                specialize (IHouter2 ϕ).
+                feed specialize IHouter2.
+                {
+                  exact HΓ.
+                }
+                {
+                  wf_auto2.
+                }
+                {
+                  wf_auto2;fold no_negative_occurrence_db_b no_positive_occurrence_db_b.
+                  {
+                    apply wfc_impl_no_neg_occ. assumption.
+                  }
+                  {
+                    apply wfc_impl_no_neg_occ. assumption.
+                  }
+                }
+                (*
+                apply pf_iff_equiv_sym.
+                {
+                  clear -wfm wfψ. wf_auto2;fold no_negative_occurrence_db_b no_positive_occurrence_db_b.
+                  {
+                    apply wfc_impl_no_neg_occ. assumption.
+                  }
+                  {
+                    apply wfc_impl_no_neg_occ. assumption.
+                  }
+                }
+                {
+                  clear -wfm wfψ. wf_auto2.
+                }
+                apply IHouter2.
+                *)
+              }
+            }
+            (* trivial cases *)
+            2,5,7: useBasicReasoning; apply pf_iff_equiv_refl; wf_auto2.
+      (* not well formed cases*)
+      2,3: cbv in wfc; discriminate wfc.
+
+
+          }
+          assert (cpatt = patt_imp (patt_free_evar cvar) (patt_mu (patt_bound_svar 1))) by admit.
+          subst cpatt.
+          cbn in *.
+          rewrite decide_eq_same in Hmf.
+          rewrite decide_eq_same in IHouter1.
+          rewrite decide_eq_same.
+          rewrite decide_eq_same in IHouter1.
+          (*
+            what if cpatt ≡ cvar ---> (mu, patt_bound_svar 1) ?
+          *)
+          (*
+            what if cpatt ≡ cvar ?
+          *)
+          (*
+          {
+            assert (cpatt = patt_free_evar cvar) by admit.
+            subst. cbn in *. rewrite decide_eq_same. rewrite decide_eq_same in Hmf.
+            rewrite decide_eq_same in IHouter1.
+          }
+          *)
+
+          (*
+          (* what if cpatt ≡ cvar ---> (mu, B0) ---> B0?*)
+          {
+            assert (cpatt = patt_imp (patt_free_evar cvar) (patt_imp (patt_mu (patt_bound_svar 0)) (patt_bound_svar 0))) by admit.
+            subst cpatt. cbn in *.
+            rewrite decide_eq_same.
+            rewrite decide_eq_same in Hmf.
+          }*)
+          
           feed specialize IHouter1.
           { wf_auto2. }
           { wf_auto2. }
           {
+h
             assert (wfccpatt : well_formed_closed_mu_aux cpatt 1).
             { wf_auto2. }
-            remember (evar_fresh_s (free_evars (cpatt^[[evar:cvar↦ϕ]]))) as x.
+            Search well_formed_closed_mu_aux bound_svar_is_banned_under_mus
+              (* what if cpatt ≡ cvar ---> (mu, B0) ---> B0?*)
+            (*{
+              assert (cpatt = patt_imp (patt_free_evar cvar) (patt_imp (patt_mu (patt_bound_svar 0)) (patt_bound_svar 0))) by admit.
+              subst cpatt. cbn in *.
+              rewrite decide_eq_same.
+              repeat case_match; try lia; repeat split; try exact I; try reflexivity.
+            }*)
+            replace (0) with (0 + 0) by lia.
+            Search bound_svar_is_banned_under_mus maximal_mu_depth_to.
+            (*remember (evar_fresh_s (free_evars (cpatt^[[evar:cvar↦ϕ]]))) as x. *)
             apply bound_svar_is_banned_under_mus_fevar_subst.
             {
               wf_auto2.
