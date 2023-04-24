@@ -2249,36 +2249,36 @@ Section with_signature.
   (ϕ : Pattern)
   (depth : nat)
   (banned : db_index)
-  : Prop
+  : bool
   :=
   match ϕ with
-  | patt_bound_evar idx => True
-  | patt_bound_svar idx => True
-  | patt_free_evar _ => True
-  | patt_free_svar _ => True
-  | patt_bott => True
-  | patt_sym _ => True
+  | patt_bound_evar idx => true
+  | patt_bound_svar idx => true
+  | patt_free_evar _ => true
+  | patt_free_svar _ => true
+  | patt_bott => true
+  | patt_sym _ => true
   | patt_imp ϕ₁ ϕ₂
   => (bound_svar_is_banned_under_mus ϕ₁ depth banned)
-  /\ (bound_svar_is_banned_under_mus ϕ₂ depth banned)
+  && (bound_svar_is_banned_under_mus ϕ₂ depth banned)
   | patt_app ϕ₁ ϕ₂
   => (bound_svar_is_banned_under_mus ϕ₁ depth banned)
-  /\ (bound_svar_is_banned_under_mus ϕ₂ depth banned)
+  && (bound_svar_is_banned_under_mus ϕ₂ depth banned)
   | patt_exists ϕ' => bound_svar_is_banned_under_mus ϕ' depth banned
   | patt_mu ϕ' =>
     match depth with
-    | 0 => bsvar_occur ϕ' (S banned) = false
+    | 0 => ~~ (bsvar_occur ϕ' (S banned))
     | (S depth') => bound_svar_is_banned_under_mus ϕ' depth' (S banned)
     end
   end.
 
   Lemma bsvar_occur_false_impl_banned ϕ banned n:
     bsvar_occur ϕ banned = false ->
-    bound_svar_is_banned_under_mus ϕ n banned
+    bound_svar_is_banned_under_mus ϕ n banned = true
   .
   Proof.
     move: banned n.
-    induction ϕ; cbn; intros banned n' H; try exact I.
+    induction ϕ; cbn; intros banned n' H; try reflexivity.
     {
       rewrite orb_false_iff in H.
       naive_solver.
@@ -2292,7 +2292,7 @@ Section with_signature.
     }
     {
       destruct n'.
-      { assumption. }
+      { rewrite negb_true_iff. assumption. }
       { naive_solver. }
     }
   Qed.
@@ -2301,17 +2301,21 @@ Section with_signature.
     (ϕ : Pattern) (depth1 depth2 : nat) (banned : db_index)
   :
     depth1 <= depth2 ->
-    bound_svar_is_banned_under_mus ϕ depth1 banned ->
-    bound_svar_is_banned_under_mus ϕ depth2 banned
+    bound_svar_is_banned_under_mus ϕ depth1 banned = true ->
+    bound_svar_is_banned_under_mus ϕ depth2 banned = true
   .
   Proof.
     move: depth1 depth2 banned.
     induction ϕ; cbn; intros depth1 depth2 banned Hlt H;
-      try exact I; try naive_solver.
+      try reflexivity.
+    { naive_solver. }
+    { naive_solver. }
+    { naive_solver. }
     {
       repeat case_match; subst; try lia; try assumption.
       {
         apply bsvar_occur_false_impl_banned.
+        rewrite negb_true_iff in H.
         exact H.
       }
       {
@@ -2326,7 +2330,7 @@ Section with_signature.
     dbi > dbi' ->
     well_formed_closed_mu_aux ϕ dbi' ->
     x ∉ free_evars ϕ ->
-    bound_svar_is_banned_under_mus ϕ dbi dbi' ->
+    bound_svar_is_banned_under_mus ϕ dbi dbi' = true ->
     x ∉ free_evars ϕ^[svar:dbi↦patt_free_evar x]
   .
   Proof.
@@ -2340,6 +2344,7 @@ Section with_signature.
       unfold is_true in Hwf.
       rewrite andb_true_iff in Hwf.
       destruct Hwf as [Hwf1 Hwf2].
+      rewrite andb_true_iff in Hϕdbi.
       destruct Hϕdbi as [Hϕdbi1 Hϕdbi2].
       rewrite elem_of_union in Hxϕ.
       rewrite elem_of_union in Hcontra.
@@ -2349,6 +2354,7 @@ Section with_signature.
       unfold is_true in Hwf.
       rewrite andb_true_iff in Hwf.
       destruct Hwf as [Hwf1 Hwf2].
+      rewrite andb_true_iff in Hϕdbi.
       destruct Hϕdbi as [Hϕdbi1 Hϕdbi2].
       rewrite elem_of_union in Hxϕ.
       rewrite elem_of_union in Hcontra.
@@ -2372,7 +2378,7 @@ Section with_signature.
   Lemma maximal_mu_depth_to_svar_subst_evar_banned x ϕ dbi level d:
     well_formed_closed_mu_aux ϕ (S dbi) ->
     evar_is_fresh_in x ϕ ->
-    bound_svar_is_banned_under_mus ϕ level dbi ->
+    bound_svar_is_banned_under_mus ϕ level dbi = true ->
     maximal_mu_depth_to d x ϕ^[svar:dbi↦patt_free_evar x] <= (d + level)
   .
   Proof.
@@ -2393,6 +2399,7 @@ Section with_signature.
       rewrite elem_of_union in Hfr.
       apply not_or_and in Hfr.
       destruct Hfr as [Hfr1 Hfr2].
+      rewrite andb_true_iff in Hbs.
       destruct Hbs as [Hbs1 Hbs2].
       destruct_and!.
       specialize (IHϕ1 d dbi level ltac:(wf_auto2) Hfr1 Hbs1).
@@ -2403,6 +2410,7 @@ Section with_signature.
       rewrite elem_of_union in Hfr.
       apply not_or_and in Hfr.
       destruct Hfr as [Hfr1 Hfr2].
+      rewrite andb_true_iff in Hbs.
       destruct Hbs as [Hbs1 Hbs2].
       destruct_and!.
       specialize (IHϕ1 d dbi level ltac:(wf_auto2) Hfr1 Hbs1).
@@ -2417,6 +2425,7 @@ Section with_signature.
       {
         rewrite bsvar_subst_not_occur.
         { 
+          rewrite negb_true_iff in Hbs.
           apply wfc_mu_lower; assumption.
         }
         rewrite maximal_mu_depth_to_0.
@@ -2463,12 +2472,12 @@ Section with_signature.
     well_formed_closed_mu_aux ϕ (S dbi) ->
     evar_is_fresh_in x ϕ ->
     maximal_mu_depth_to d x ϕ^[svar:dbi↦patt_free_evar x] <= (d + level) ->
-    bound_svar_is_banned_under_mus ϕ level dbi
+    bound_svar_is_banned_under_mus ϕ level dbi = true
   .
   Proof.
     unfold evar_is_fresh_in.
     move: dbi level d.
-    induction ϕ; cbn; intros dbi level d Hwf Hfr H; try exact I.
+    induction ϕ; cbn; intros dbi level d Hwf Hfr H; try reflexivity.
     {
       unfold is_true in Hwf.
       rewrite andb_true_iff in Hwf.
@@ -2478,6 +2487,7 @@ Section with_signature.
       destruct Hfr as [Hfr1 Hfr2].
       specialize (IHϕ1 dbi level d Hwf1 Hfr1 ltac:(lia)).
       specialize (IHϕ2 dbi level d Hwf2 Hfr2 ltac:(lia)).
+      rewrite andb_true_iff.
       split; assumption.
     }
     {
@@ -2489,6 +2499,7 @@ Section with_signature.
       destruct Hfr as [Hfr1 Hfr2].
       specialize (IHϕ1 dbi level d Hwf1 Hfr1 ltac:(lia)).
       specialize (IHϕ2 dbi level d Hwf2 Hfr2 ltac:(lia)).
+      rewrite andb_true_iff.
       split; assumption.
     }
     {
@@ -2513,6 +2524,7 @@ Section with_signature.
         {
           unfold is_true in H1.
           apply not_true_is_false in H1.
+          rewrite negb_true_iff.
           exact H1.
         }
       }
@@ -2529,14 +2541,14 @@ Section with_signature.
     well_formed_closed_mu_aux ϕ (S dbi) ->
     evar_is_fresh_in x ϕ ->
     maximal_mu_depth_to d x ϕ <= (d + level) ->
-    bound_svar_is_banned_under_mus ϕ^[svar:dbi↦patt_free_evar x] level dbi
+    bound_svar_is_banned_under_mus ϕ^[svar:dbi↦patt_free_evar x] level dbi = true
   .
   Proof.
     unfold evar_is_fresh_in.
     move: dbi level d.
-    induction ϕ; cbn; intros dbi level d Hwf Hwefr Hmd; try exact I.
+    induction ϕ; cbn; intros dbi level d Hwf Hwefr Hmd; try reflexivity.
     {
-      repeat case_match; cbn in *; try exact I.
+      repeat case_match; cbn in *; try reflexivity.
     }
     {
       unfold is_true in Hwf.
@@ -2547,6 +2559,7 @@ Section with_signature.
       destruct Hwefr as [Hfr1 Hfr2].
       specialize (IHϕ1 dbi level d Hwf1 Hfr1 ltac:(lia)).
       specialize (IHϕ2 dbi level d Hwf2 Hfr2 ltac:(lia)).
+      rewrite andb_true_iff.
       split; assumption.
     }
     {
@@ -2558,6 +2571,7 @@ Section with_signature.
       destruct Hwefr as [Hfr1 Hfr2].
       specialize (IHϕ1 dbi level d Hwf1 Hfr1 ltac:(lia)).
       specialize (IHϕ2 dbi level d Hwf2 Hfr2 ltac:(lia)).
+      rewrite andb_true_iff.
       split; assumption.
     }
     {
@@ -2570,6 +2584,7 @@ Section with_signature.
       destruct level.
       {
         pose proof (Htmp := not_bsvar_occur_bsvar_subst_2 ϕ (patt_free_evar x) (S dbi) ltac:(reflexivity) Hwf).
+        rewrite negb_true_iff.
         apply Htmp.
       }
       {
@@ -2626,9 +2641,9 @@ Section with_signature.
 
   Lemma bound_svar_is_banned_under_mus_bevar_subst ϕ ψ dbi level dbi':
     well_formed_closed_mu_aux ψ (S dbi') ->
-    bound_svar_is_banned_under_mus ψ level dbi' ->
-    bound_svar_is_banned_under_mus ϕ level dbi' ->
-    bound_svar_is_banned_under_mus ϕ^[evar:dbi↦ψ] level dbi'
+    bound_svar_is_banned_under_mus ψ level dbi' = true ->
+    bound_svar_is_banned_under_mus ϕ level dbi' = true ->
+    bound_svar_is_banned_under_mus ϕ^[evar:dbi↦ψ] level dbi' = true
   .
   Proof.
     move: dbi dbi' level.
