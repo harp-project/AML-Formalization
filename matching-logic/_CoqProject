@@ -19,8 +19,9 @@ src/SyntaxLemmas/ApplicationCtxSubstitution.v
 src/Syntax.v
 src/wftactics.v
 src/NamedAxioms.v
-src/Display.v
-src/ProofModePattern.v
+
+src/Experimental/Display.v
+src/Experimental/ProofModePattern.v
 
 src/Semantics.v
 src/ModelIsomorphism.v

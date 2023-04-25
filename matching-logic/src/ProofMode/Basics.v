@@ -15,7 +15,7 @@ From MatchingLogic Require Import
   IndexManipulation
   ProofInfo
   wftactics
-  ProofModePattern
+  (*ProofModePattern*)
 .
 
 From stdpp Require Import list tactics fin_sets coGset gmap sets.
