@@ -77,12 +77,16 @@ Definition incr_values
 := fmap (fun n => S n) vm.
 
 
+(*
+  Represents a context in which a pattern is well-defined.
+  In particular, `pc_evm` is the set of element variables in context.
+*)
 Record PContext := mkPContext {
     pc_evm : gmap EVarName nat ;
     pc_svm : gmap SVarName nat ;
 }.
 
-Compute (fresh_string "X" (<["X" := 1]>∅)).
+(*Compute (fresh_string "X" (<["X" := 1]>∅)).*)
 
 Definition this_or_fresh
     (this : VarName)
