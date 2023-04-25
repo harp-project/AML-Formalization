@@ -2516,6 +2516,34 @@ Proof.
   { wf_auto2. }
 Defined.
 
+Lemma membership_imp_1 {Σ : Signature} {syntax : Syntax} Γ x φ₁ φ₂:
+  theory ⊆ Γ ->
+  well_formed φ₁ ->
+  well_formed φ₂ ->
+  Γ ⊢i (patt_free_evar x ∈ml (φ₁ ---> φ₂)) ---> ((patt_free_evar x ∈ml φ₁) ---> (patt_free_evar x ∈ml φ₂))
+  using (ExGen := {[ev_x; x]}, SVSubst := ∅, KT := false, AKT := false).
+Proof.
+  intros HΓ ??.
+  eapply pf_iff_proj1.
+  3: apply membership_imp.
+  1,2,4,5: solve[wf_auto2].
+  { exact HΓ. }
+Defined.
+
+Lemma membership_imp_2 {Σ : Signature} {syntax : Syntax} Γ x φ₁ φ₂:
+  theory ⊆ Γ ->
+  well_formed φ₁ ->
+  well_formed φ₂ ->
+  Γ ⊢i ((patt_free_evar x ∈ml φ₁) ---> (patt_free_evar x ∈ml φ₂)) ---> (patt_free_evar x ∈ml (φ₁ ---> φ₂))
+  using (ExGen := {[ev_x; x]}, SVSubst := ∅, KT := false, AKT := false).
+Proof.
+  intros HΓ ??.
+  eapply pf_iff_proj2.
+  3: apply membership_imp.
+  1,2,4,5: solve[wf_auto2].
+  { exact HΓ. }
+Defined.
+
 Lemma ceil_propagation_exists_1 {Σ : Signature} {syntax : Syntax} Γ φ:
   theory ⊆ Γ ->
   well_formed (ex, φ) ->
