@@ -172,7 +172,24 @@ Lemma set_builder_full_2
     Γ ⊢ (patt_set_builder ((patt_bound_evar 0) ∈ml ϕ)) ---> ϕ
 .
 Proof.
-
+    intros HΓ wfϕ.
+    unfold patt_set_builder.
+    remember (fresh_evar ϕ) as x.
+    toMLGoal.
+    { wf_auto2. }
+    mlIntro "H".
+    mlDestructEx "H" as x.
+    mlSimpl. cbn.
+    mlDestructAnd "H" as "H1" "H2".
+    unfold evar_open.
+    rewrite bevar_subst_not_occur.
+    { wf_auto2. }
+    mlRevert "H1".
+    mlRevert "H2".
+    fromMLGoal.
+    gapply membership_implies_implication.
+    { apply pile_any. }
+    wf_auto2.
 Defined.
 
 Lemma set_builder_full
