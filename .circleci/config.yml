@@ -35,22 +35,26 @@ jobs:
           name: "Build"
           command: |
             source /home/circleci/.nix-profile/etc/profile.d/nix.sh
-            cachix watch-exec harp-ml-in-coq -- nix --show-trace --print-build-logs build '.#coq-matching-logic' --no-link
+            #cachix watch-exec harp-ml-in-coq -- 
+            nix --show-trace --print-build-logs build '.#coq-matching-logic' --no-link
       - run:
           name: "FOL -- Build"
           command: |
             source /home/circleci/.nix-profile/etc/profile.d/nix.sh
-            cachix watch-exec harp-ml-in-coq -- nix --show-trace --print-build-logs build '.#coq-matching-logic-example-fol' --no-link
+            #cachix watch-exec harp-ml-in-coq --
+            nix --show-trace --print-build-logs build '.#coq-matching-logic-example-fol' --no-link
       - run:
           name: "Prover Build & Test"
           command: |
             source /home/circleci/.nix-profile/etc/profile.d/nix.sh
-            cachix watch-exec harp-ml-in-coq -- nix --show-trace --print-build-logs build '.#coq-matching-logic-mm-exporter' --no-link
+            #cachix watch-exec harp-ml-in-coq --
+            nix --show-trace --print-build-logs build '.#coq-matching-logic-mm-exporter' --no-link
       - run:
           name: "Doc"
           command: |
             source /home/circleci/.nix-profile/etc/profile.d/nix.sh
-            cachix watch-exec harp-ml-in-coq -- nix --show-trace --print-build-logs build '.#coq-matching-logic-doc' --out-link './doc-output'
+            #cachix watch-exec harp-ml-in-coq --
+            nix --show-trace --print-build-logs build '.#coq-matching-logic-doc' --out-link './doc-output'
           no_output_timeout: 60m
       - persist_to_workspace:
           root: ./doc-output
