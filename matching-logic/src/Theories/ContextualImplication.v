@@ -192,6 +192,25 @@ Proof.
     wf_auto2.
 Defined.
 
+
+Lemma set_builder_full_iff
+    {Σ : Signature}
+    {definedness_syntax : Definedness_Syntax.Syntax}
+    (Γ : Theory)
+    (ϕ : Pattern)
+    :
+    Definedness_Syntax.theory ⊆ Γ ->
+    well_formed ϕ ->
+    Γ ⊢ (ϕ) <---> (patt_set_builder ((patt_bound_evar 0) ∈ml ϕ))
+.
+Proof.
+    intros.
+    apply pf_iff_split.
+    1,2: wf_auto2.
+    apply set_builder_full_1; try assumption.
+    apply set_builder_full_2; assumption.
+Defined.
+
 Lemma set_builder_full
     {Σ : Signature}
     {definedness_syntax : Definedness_Syntax.Syntax}
@@ -208,8 +227,8 @@ Proof.
     apply phi_impl_total_phi_meta.
     { wf_auto2. }
     { apply pile_any. }
+    apply set_builder_full_iff; assumption.
 Defined.
-
 
 Definition contextual_implication
     {Σ : Signature}
@@ -233,6 +252,8 @@ Lemma wrap_unwrap_helper
         Γ ⊢ is_predicate_pattern ψ ->
         Γ ⊢ (sc_plug SC (ϕ and ψ)) =ml ((sc_plug SC ϕ) and ψ)
     ) ->
+    (* FIXME I didn't understood from the paper whether ϕ is quantified here,
+       or whether it is the same as in the conclusion. *)
     (forall (ϕ: Pattern),
         well_formed (patt_exists ϕ) ->
         Γ ⊢ (sc_plug SC (patt_exists ϕ)) =ml patt_exists (sc_plug SC ϕ)
@@ -247,4 +268,4 @@ Proof.
 
     destruct SC as [AC pred].
     
-Defined.
+Abort.
