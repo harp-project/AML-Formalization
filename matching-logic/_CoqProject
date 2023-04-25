@@ -59,6 +59,7 @@ src/Theories/Sorts_Semantics.v
 src/Theories/Sorts_ProofSystem.v
 
 src/Theories/Subseteq_ProofSystem.v
+src/Theories/ContextualImplication.v
 
 src/Theories/ModelExtension.v
 
