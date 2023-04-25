@@ -15,7 +15,7 @@ From MatchingLogic Require Import
   IndexManipulation
   ProofInfo
   wftactics
-  (*ProofModePattern*)
+  Experimental.ProofModePattern
 .
 
 From stdpp Require Import list tactics fin_sets coGset gmap sets.
@@ -38,7 +38,7 @@ Open Scope ml_scope.
 Record named_hypothesis {Σ : Signature} := mkNH
   {
     nh_name : string;
-    nh_patt : PMPattern;
+    nh_patt : Pattern; (* PMPattern *)
   }.
 
 Notation "N ∶ P" :=
@@ -59,7 +59,7 @@ Notation "x , y , .. , z ," :=
   (at level 100, left associativity, format "x ',' '//' y ',' '//' .. ',' '//' z ',' '//'", only printing) : ml_scope.
 
 Definition names_of {Σ : Signature} (h : hypotheses) : list string := map nh_name h.
-Definition patterns_of {Σ : Signature} (h : hypotheses) : list PMPattern := map nh_patt h.
+Definition patterns_of {Σ : Signature} (h : hypotheses) : list Pattern (*PMPattern*) := map nh_patt h.
 
 Definition has_name {Σ : Signature} (n : string) (nh : named_hypothesis) : Prop
 := nh_name nh = n.
@@ -88,12 +88,14 @@ Definition MLGoal_from_goal
   MLGoal
   := mkMLGoal Σ Γ nil goal pi.
 
+(*
 Lemma wf_pmp_to_ln
   {Σ : Signature}
   (ϕ : PMPattern)
   :
   Pattern.well_formed (PMPattern_to_ln ϕ)
 .
+*)
 
 
 Coercion of_MLGoal {Σ : Signature} (MG : MLGoal) : Type :=

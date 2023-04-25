@@ -20,7 +20,6 @@ src/Syntax.v
 src/wftactics.v
 src/NamedAxioms.v
 
-src/Experimental/Display.v
 src/Experimental/ProofModePattern.v
 
 src/Semantics.v
