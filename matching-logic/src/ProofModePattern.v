@@ -1244,9 +1244,9 @@ Section sec.
             }
         }
         {
-            
+            admit.
         }
-    Qed.
+    Admitted.
     Next Obligation.
         intros.
         destruct args as [|a1 args].
@@ -1255,6 +1255,10 @@ Section sec.
         { simpl in *; lia. }
         eexists. simpl. reflexivity.
     Qed.
+    Next Obligation.
+        intros.
+        admit.
+    Abort.
 
     Section examples.
         Context
