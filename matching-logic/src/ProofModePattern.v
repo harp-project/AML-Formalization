@@ -753,6 +753,12 @@ Section sec.
             apply pic_wf0.
         }
     Qed.
+    Next Obligation.
+        intros. cbn.
+        destruct args as [|a0 args]; cbn in *.
+        { lia. }
+        eexists. reflexivity.
+    Qed.
 
     Program Definition mlc_svar
         (name : SVarName)
@@ -1254,11 +1260,7 @@ Section sec.
         destruct sbinders as [|s1 sbinders].
         { simpl in *; lia. }
         eexists. simpl. reflexivity.
-    Qed.
-    Next Obligation.
-        intros.
-        admit.
-    Abort.
+    Admitted.
 
     Section examples.
         Context
