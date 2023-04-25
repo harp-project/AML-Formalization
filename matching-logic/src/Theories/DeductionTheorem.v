@@ -944,20 +944,16 @@ Proof.
 Defined.
 
 (* Lemma 89 *)
-Lemma mu_and_predicate_propagation {Σ : Signature} {syntax : Syntax} Γ ϕ ψ X :
+Lemma mu_and_predicate_propagation {Σ : Signature} {syntax : Syntax} Γ ϕ ψ :
   Definedness_Syntax.theory ⊆ Γ ->
   well_formed (mu, ϕ) ->
   well_formed ψ ->
   (* "Let X be a set variable that does not occur under any µ-binder in ϕ" *)
-  (forall x, evar_is_fresh_in x ϕ ->
-    mu_in_evar_path x ϕ^[svar:0↦patt_free_evar x] 0 = false
-  ) ->
-  svar_is_fresh_in X ϕ ->
-  svar_is_fresh_in X ψ ->
+  bound_svar_is_banned_under_mus ϕ 0 0 ->
   Γ ⊢ is_predicate_pattern ψ ->
   Γ ⊢ (mu, (ψ and ϕ)) <---> (ψ and (mu, ϕ)).
 Proof.
-  intros HΓ wfm wfψ Hϕnomu fϕ fψ Hp.
+  intros HΓ wfm wfψ Hbsltϕ1 Hp.
 
   assert (well_formed (mu , ψ and ϕ)).
   {
@@ -975,48 +971,9 @@ Proof.
     }
   }
 
-  assert (svar_has_negative_occurrence X ψ^{svar:0↦X} = false).
-  {
-    clear -wfm wfψ fψ.
-    unfold well_formed,well_formed_closed in *.
-    cbn in *. fold no_negative_occurrence_db_b svar_has_negative_occurrence.
-    repeat rewrite orb_false_iff.
-    destruct_and!.
-    apply positive_negative_occurrence_db_named.
-    { apply wfc_impl_no_neg_occ. assumption. }
-    apply fresh_svar_no_neg.
-    apply fψ.
-  }
-
-  assert (svar_has_negative_occurrence X ψ^[svar:0↦patt_free_svar X] = false).
-  {
-    clear -wfm wfψ fψ.
-    unfold well_formed,well_formed_closed in *.
-    cbn in *. fold no_negative_occurrence_db_b svar_has_negative_occurrence.
-    destruct_and!.
-    apply svar_hno_bsvar_subst.
-    3: { apply fresh_svar_no_neg. exact fψ. }
-    {
-      cbn. congruence.
-    }
-    {
-      cbn. rewrite decide_eq_same. intros _.
-      apply wfc_impl_no_neg_occ. assumption.
-    }
-  }
-
-  assert (svar_has_negative_occurrence X ϕ^{svar:0↦X} = false).
-  {
-    wf_auto2.
-  }
-
-
   apply pf_iff_split.
   { assumption. }
   { wf_auto2. }
-  
-  (* Makes set_solver work later in the proof. *)
-  unfold svar_is_fresh_in in fϕ, fψ.
   {
     toMLGoal.
     {
@@ -1040,17 +997,47 @@ Proof.
       { wf_auto2. }
     }
     {
-      rewrite <- svar_quantify_svar_open with (n := 0) (phi := (ψ and ϕ)) (X := X).
-      rewrite <- svar_quantify_svar_open with (n := 0) (phi := ϕ) (X := X) at 2.
+      remember (fresh_svar (ψ and ϕ)) as Y.
+      rewrite <- svar_quantify_svar_open with (n := 0) (phi := (ψ and ϕ)) (X := Y).
+      rewrite <- svar_quantify_svar_open with (n := 0) (phi := ϕ) (X := Y) at 2.
       apply mu_monotone.
-      { try_solve_pile. }
+      { apply pile_any. }
       {
-        unfold well_formed,well_formed_closed in *.
-        cbn in *. fold no_negative_occurrence_db_b svar_has_negative_occurrence.
-        repeat rewrite orb_false_iff.
-        repeat split; try reflexivity; try assumption.
+        mlSimpl. cbn. fold no_negative_occurrence_db_b svar_has_negative_occurrence.
+        rewrite !orb_false_r.
+        apply orb_false_iff.
+        split.
+        {
+          apply positive_negative_occurrence_db_named.
+          { wf_auto2. }
+          {
+            subst Y. clear. apply svar_hno_false_if_fresh.
+            eapply svar_is_fresh_in_richer'.
+            2: { apply set_svar_fresh_is_fresh. }
+            { cbn.  set_solver. }
+          }
+        }
+        {
+          apply positive_negative_occurrence_db_named.
+          { wf_auto2. }
+          {
+            subst Y. clear. apply svar_hno_false_if_fresh.
+            eapply svar_is_fresh_in_richer'.
+            2: { apply set_svar_fresh_is_fresh. }
+            { cbn.  set_solver. }
+          }
+        }
       }
-      { wf_auto2. }
+      {
+        apply positive_negative_occurrence_db_named.
+        { wf_auto2. }
+        {
+          subst Y. clear. apply svar_hno_false_if_fresh.
+          eapply svar_is_fresh_in_richer'.
+          2: { apply set_svar_fresh_is_fresh. }
+          { cbn.  set_solver. }
+        }
+      }
       {
         unfold svar_open.
         mlSimpl.
@@ -1059,13 +1046,22 @@ Proof.
         { wf_auto2. }
         { wf_auto2. }
       }
-      { assumption. }
+      {
+        subst Y. clear.
+        eapply svar_is_fresh_in_richer'.
+        2: { apply set_svar_fresh_is_fresh. }
+        { cbn.  set_solver. }
+      }
       { wf_auto2. }
-      { set_solver. }
+      {
+        subst Y. clear.
+        eapply svar_is_fresh_in_richer'.
+        2: { apply set_svar_fresh_is_fresh. }
+        { cbn.  set_solver. }
+      }
       { wf_auto2. }
     }
   }
-  
   {
     toMLGoal.
     { wf_auto2. }
@@ -1105,7 +1101,8 @@ Proof.
     2: auto.
     2: wf_auto2.
 
-    remember (evar_fresh_s (free_evars ϕ)) as x.
+    (* apply Lemma 88 of the paper. *)
+    remember (evar_fresh_s (free_evars (ϕ ---> ψ))) as x.
     pose proof (HH := pred_and_ctx_and Γ
       {|
         pcEvar := x;
@@ -1118,9 +1115,28 @@ Proof.
     { wf_auto2. }
     { wf_auto2. }
     {
-      apply Hϕnomu.
-      subst x. clear.
-      apply set_evar_fresh_is_fresh.
+      unfold mu_in_evar_path.
+      rewrite negb_false_iff. cbn.
+      case_match; try reflexivity.
+      exfalso.
+      pose proof (Htmp2 := maximal_mu_depth_to_svar_subst_evar_banned x ϕ 0 0 0).
+      cbn in Htmp2.
+      feed specialize Htmp2.
+      {
+        wf_auto2.
+      }
+      {
+        subst x. clear.
+        eapply evar_is_fresh_in_richer'.
+        2: apply set_evar_fresh_is_fresh'.
+        {
+          cbn. set_solver.
+        }
+      }
+      { exact Hbsltϕ1. }
+      {
+        lia.
+      }
     }
     { assumption. }
 
@@ -1188,99 +1204,6 @@ Proof.
   }
 Defined.
 
-Lemma fresh_impl_no_mu_in_evar_path {Σ : Signature} x phi k:
-  evar_is_fresh_in x phi ->
-  mu_in_evar_path x phi k = false.
-Proof.
-  move: k x.
-  induction phi; intros k x' Hx'; unfold mu_in_evar_path in *;
-    cbn in *; try reflexivity.
-  {
-    destruct (decide (x = x')); try reflexivity.
-    unfold evar_is_fresh_in in Hx'. cbn in Hx'.
-    exfalso. set_solver.
-  }
-  {
-    unfold evar_is_fresh_in in *.
-    cbn in Hx'.
-    specialize (IHphi1 k x' ltac:(set_solver)).
-    specialize (IHphi2 k x' ltac:(set_solver)).
-    repeat case_match; try reflexivity; cbn in *; lia.
-  }
-  {
-    unfold evar_is_fresh_in in *.
-    cbn in Hx'.
-    specialize (IHphi1 k x' ltac:(set_solver)).
-    specialize (IHphi2 k x' ltac:(set_solver)).
-    repeat case_match; try reflexivity; cbn in *; lia.
-  }
-  {
-    unfold evar_is_fresh_in in *.
-    cbn in Hx'.
-    specialize (IHphi k x' ltac:(set_solver)).
-    exact IHphi.
-  }
-  {
-    unfold evar_is_fresh_in in *.
-    cbn in Hx'.
-    specialize (IHphi (S k) x' ltac:(set_solver)).
-    exact IHphi.
-  }
-Qed.
-
-Lemma hbvum_impl_mmdt0 {Σ : Signature} phi dbi x y k:
-  evar_is_fresh_in x phi ->
-  evar_is_fresh_in y phi ->
-  well_formed_closed_mu_aux phi (S dbi) ->
-  maximal_mu_depth_to k y phi^[svar:dbi↦patt_free_evar y] = 0 ->
-  maximal_mu_depth_to k x phi^[svar:dbi↦patt_free_evar x] = 0
-.
-Proof.
-  move: x y dbi k.
-  induction phi; intros x' y dbi k Hfrx' Hfry Hwf H; cbn in *; try reflexivity.
-  {
-    unfold evar_is_fresh_in in *. cbn in *.
-    repeat case_match; subst; try reflexivity.
-    set_solver. 
-  }
-  {
-    repeat case_match; cbn in *; try reflexivity;
-    rewrite decide_eq_same; try reflexivity; subst;
-    case_match; subst; cbn in *; try reflexivity; contradiction.
-  }
-  {
-    unfold evar_is_fresh_in in *. cbn in *.
-    rewrite -> IHphi1 with (y := y).
-    5: lia.
-    4: wf_auto2.
-    3: set_solver.
-    2: set_solver.
-    cbn. apply IHphi2 with (y := y).
-    { set_solver. }
-    { set_solver. }
-    { wf_auto2. }
-    { lia. }
-  }
-  {
-    unfold evar_is_fresh_in in *. cbn in *.
-    rewrite -> IHphi1 with (y := y).
-    5: lia.
-    4: wf_auto2.
-    3: set_solver.
-    2: set_solver.
-    cbn. apply IHphi2 with (y := y).
-    { set_solver. }
-    { set_solver. }
-    { wf_auto2. }
-    { lia. }
-  }
-  {
-    eauto with nocore.
-  }
-  {
-    eauto with nocore.
-  }
-Qed.
 
 Theorem deduction_theorem {Σ : Signature} {syntax : Syntax} Γ ϕ ψ
   (gpi : ProofInfo)
@@ -1508,112 +1431,10 @@ Proof.
       { apply Hpf5. }
     }
     { wf_auto2. }
-    clear Hpf5.
-    remember_constraint as i'.
-
-    (*
-    apply useGenericReasoning with (i0 := i') in IHpf.
-    2: {
-      subst i'.
-      apply pile_evs_svs_kt.
-      { clear. set_solver. }
-      { apply reflexivity. }
-      { reflexivity. }
-    }
-    *)
-    assert (S2: Γ ⊢i phi1 ---> (phi2 or ⌈ ! ψ ⌉) using i').
-    { toMLGoal.
-      {  wf_auto2. }
-      mlAdd IHpf. mlIntro.
-      mlAdd (useBasicReasoning i' (A_or_notA Γ (⌈ ! ψ ⌉) ltac:(wf_auto2))).
-      mlDestructOr "0".
-      - mlRight. mlExact "3".
-      - mlLeft.
-        mlApply "4". mlExact "1".
-    }
-
-    assert (S3: Γ ⊢i (⌈ ! ψ ⌉ $ psi) ---> ⌈ ! ψ ⌉ using i').
-    {
-      replace (⌈ ! ψ ⌉ $ psi)
-        with (subst_ctx (ctx_app_l AC_patt_defined psi ltac:(assumption)) (! ψ))
-        by reflexivity.
-      subst i'.
-      gapply in_context_impl_defined; auto.
-      instantiate (1 := fresh_evar (ψ ---> psi)).
-      try_solve_pile.
-      solve_fresh.
-    }
-
-    assert (S4: Γ ⊢i (phi1 $ psi) ---> ((phi2 or ⌈ ! ψ ⌉) $ psi) using i').
-    { 
-      unshelve (eapply Framing_left).
-      { wf_auto2. } 2: exact S2.
-      subst i'. clear. try_solve_pile.
-    }
-
-    assert (S5: Γ ⊢i (phi1 $ psi) ---> ((phi2 $ psi) or (⌈ ! ψ ⌉ $ psi)) using i').
-    {
-      pose proof (Htmp := prf_prop_or_iff Γ (ctx_app_l box psi ltac:(assumption)) phi2 (⌈! ψ ⌉)).
-      feed specialize Htmp.
-      { wf_auto2. }
-      { wf_auto2. }
-      simpl in Htmp.
-      apply pf_iff_proj1 in Htmp.
-      3: wf_auto2.
-      2: wf_auto2.
-      subst i'.
-      eapply syllogism_meta.
-      5: {
-        gapply Htmp.
-        clear. try_solve_pile.
-      }
-      4: assumption.
-      all: wf_auto2.
-    }
-
-    assert (S6: Γ ⊢i ((phi2 $ psi) or (⌈ ! ψ ⌉ $ psi)) ---> ((phi2 $ psi) or (⌈ ! ψ ⌉)) using i').
-    {
-      toMLGoal.
-      { wf_auto2. }
-      mlIntro. mlAdd S3.
-      (* TODO we need a tactic for adding  something with stronger constraint. *)
-      mlAdd (useBasicReasoning i' (A_or_notA Γ (phi2 $ psi) ltac:(auto))).
-      mlDestructOr "2".
-      - mlLeft. mlExact "3".
-      - mlRight. mlApply "1". mlApply "0". mlExactn 0.
-    }
-
-    assert (S7: Γ ⊢i (phi1 $ psi) ---> ((phi2 $ psi)  or ⌈ ! ψ ⌉) using i').
-    {
-      toMLGoal.
-      { wf_auto2. }
-      mlAdd S5. mlAdd S6. mlIntro.
-      mlAssert (((phi2 $ psi) or (⌈ ! ψ ⌉ $ psi))).
-      { wf_auto2. }
-      { mlApply "0". mlExactn 2. }
-      mlDestructOr "3".
-      - mlLeft. mlExactn 3.
-      - mlApply "1". mlRight. mlExactn 3.
-    }
-
-    toMLGoal.
-    { wf_auto2. }
-    do 2 mlIntro. mlAdd S7.
-    mlAssert ((phi2 $ psi or ⌈ ! ψ ⌉)).
-    { wf_auto2. }
-    { mlApply "2". mlExactn 2. }
-    mlDestructOr "3".
-    + mlExactn 3.
-    + mlAssert ((phi2 $ psi or ⌈ ! ψ ⌉)).
-      { wf_auto2. }
-      { mlApply "2". mlExactn 2. }
-      mlAdd (useBasicReasoning i' (A_or_notA Γ (phi2 $ psi) ltac:(auto))).
-      mlDestructOr "4".
-      * mlExactn 0.
-      * mlAdd (useBasicReasoning i' (bot_elim Γ (phi2 $ psi) ltac:(auto))).
-        mlApply "4".
-        mlApply "0".
-        mlExactn 5.
+    apply framing_left_under_tot_impl.
+    1-4: solve [wf_auto2].
+    { exact HΓ. }
+    { exact IHpf. }
   - (* Framing right *)
     assert (well_formed (phi1)).
     { unfold well_formed,well_formed_closed in *. simpl in *.
@@ -1644,114 +1465,11 @@ Proof.
     }
     { clear Hpf5; wf_auto2. }
 
-    clear Hpf5.
-
-    remember_constraint as i'.
-
-    (*
-    apply useGenericReasoning with (i := i') in IHpf.
-    2: {
-      subst i'.
-      apply pile_evs_svs_kt.
-      { clear. set_solver. }
-      { apply reflexivity. }
-      { reflexivity. }
-    }
-    *)
-    assert (S2: Γ ⊢i phi1 ---> (phi2 or ⌈ ! ψ ⌉) using i').
-    { toMLGoal.
-      { wf_auto2. }
-      mlAdd IHpf. mlIntro.
-      mlAdd (useBasicReasoning i' (A_or_notA Γ (⌈ ! ψ ⌉) ltac:(wf_auto2))).
-      mlDestructOr "2".
-      - mlRight. mlExactn 0.
-      - mlLeft.
-        mlAssert((phi1 ---> phi2)).
-        { wf_auto2. }
-        { mlApply "0". mlExactn 0. }
-        mlApply "2". mlExactn 2.
-    }
-
-    assert (S3: Γ ⊢i (psi $ ⌈ ! ψ ⌉) ---> ⌈ ! ψ ⌉ using i').
-    {
-      replace (psi $ ⌈ ! ψ ⌉)
-        with (subst_ctx (ctx_app_r psi AC_patt_defined ltac:(assumption)) (! ψ))
-        by reflexivity.
-        subst i'.
-        gapply in_context_impl_defined; auto.
-        instantiate (1 := fresh_evar (ψ ---> psi)).
-        try_solve_pile. solve_fresh.
-    }
-
-    assert (S4: Γ ⊢i (psi $ phi1) ---> (psi $ (phi2 or ⌈ ! ψ ⌉)) using i').
-    { 
-      (* TODO: have a variant of apply which automatically solves all wf constraints.
-        Like: unshelve (eapply H); try_wfauto
-      *)
-      unshelve (eapply Framing_right).
-      { wf_auto2. }
-      2: exact S2.
-      subst i'. try_solve_pile.
-    }
-
-    assert (S5: Γ ⊢i (psi $ phi1) ---> ((psi $ phi2) or (psi $ ⌈ ! ψ ⌉)) using i').
-    {
-      pose proof (Htmp := prf_prop_or_iff Γ (ctx_app_r psi box ltac:(assumption)) phi2 (⌈! ψ ⌉)).
-      feed specialize Htmp.
-      { wf_auto2. }
-      { wf_auto2. }
-      simpl in Htmp.
-      apply pf_iff_proj1 in Htmp.
-      2,3: wf_auto2.
-      subst i'.
-      eapply syllogism_meta.
-      5: gapply Htmp; try_solve_pile.
-      4: assumption.
-      all: wf_auto2.
-    }
-
-    assert (S6: Γ ⊢i ((psi $ phi2) or (psi $ ⌈ ! ψ ⌉)) ---> ((psi $ phi2) or (⌈ ! ψ ⌉)) using i').
-    {
-      toMLGoal.
-      { wf_auto2. }
-      mlIntro. mlAdd S3.
-      mlAdd (useBasicReasoning i' (A_or_notA Γ (psi $ phi2) ltac:(auto))).
-      mlDestructOr "2".
-      - mlLeft. mlExactn 0.
-      - mlRight. mlApply "1". mlApply "0". mlExactn 0.
-    }
-
-    assert (S7: Γ ⊢i (psi $ phi1) ---> ((psi $ phi2)  or ⌈ ! ψ ⌉) using i').
-    {
-      toMLGoal.
-      { wf_auto2. }
-      mlAdd S5. mlAdd S6. mlIntro.
-      mlAssert (((psi $ phi2) or (psi $ ⌈ ! ψ ⌉))).
-      { wf_auto2. }
-      { mlApply "0". mlExactn 2. }
-      mlDestructOr "3".
-      - mlLeft. mlExactn 3.
-      - mlApply "1". mlRight. mlExactn 3.
-    }
-
-    toMLGoal.
-    { wf_auto2. }
-    do 2 mlIntro. mlAdd S7.
-    mlAssert ((psi $ phi2 or ⌈ ! ψ ⌉)).
-    { wf_auto2. }
-    { mlApply "2". mlExactn 2. }
-    mlDestructOr "3".
-    + mlExactn 3.
-    + mlAssert ((psi $ phi2 or ⌈ ! ψ ⌉)).
-      { wf_auto2. }
-      { mlApply "2". mlExactn 2. }
-      mlAdd (useBasicReasoning i' (A_or_notA Γ (psi $ phi2) ltac:(auto))).
-      mlDestructOr "4".
-      * mlExactn 0.
-      * mlAdd (useBasicReasoning i' (bot_elim Γ (psi $ phi2) ltac:(auto))).
-        mlApply "4".
-        mlApply "0".
-        mlExactn 5.
+    apply framing_right_under_tot_impl.
+    1-4: solve [wf_auto2].
+    { exact HΓ. }
+    { exact IHpf. }
+    
   - (* Set variable substitution *)
     simpl in HnoExGen. simpl in HnoSvarSubst. simpl in IHpf.
     destruct Hpf as [Hpf2 Hpf3 Hpf4 Hpf5].
@@ -1827,40 +1545,21 @@ Proof.
     rewrite andb_true_r in Hpf5.
     rewrite Hnoakt in Hpf5.
     rewrite implb_false_r in Hpf5.
-    destruct (decide (has_bound_variable_under_mu phi = true)) as [Ht|Hf].
+    rewrite negb_orb in Hpf5.
+    destruct (decide (~~ bound_svar_is_banned_under_mus phi 0 0 = true)) as [Ht|Hf].
     {
       rewrite Ht in Hpf5. simpl in Hpf5. inversion Hpf5.
     }
     apply not_true_is_false in Hf.
+    rewrite Hf in Hpf5.
+    cbn in Hpf5.
+    apply negb_true_iff in Hpf5.
     remember (svar_fresh_s (free_svars ⌊ ψ ⌋ ∪ free_svars phi)) as X.
-    epose proof (Htmp := @mu_and_predicate_propagation _ _ Γ phi ⌊ ψ ⌋ X _ _ _).
+    epose proof (Htmp := @mu_and_predicate_propagation _ _ Γ phi ⌊ ψ ⌋ _ _ _).
     feed specialize Htmp.
     { 
-      unfold has_bound_variable_under_mu in Hf.
-      unfold mu_in_evar_path in Hf.
       rewrite negb_false_iff in Hf.
-      rewrite Nat.eqb_eq in Hf.
-      symmetry in Hf.
-      intros.
-      unfold mu_in_evar_path.
-      erewrite hbvum_impl_mmdt0.
-      { reflexivity. }
-      { assumption. }
-      3: { apply Hf. }
-      { apply set_evar_fresh_is_fresh. }
-      { wf_auto2. }
-    }
-    {
-      subst X. clear.
-      eapply svar_is_fresh_in_richer'.
-      2: apply set_svar_fresh_is_fresh'.
-      { set_solver. }
-    }
-    {
-      subst X. clear.
-      eapply svar_is_fresh_in_richer'.
-      2: apply set_svar_fresh_is_fresh'.
-      { set_solver. }
+      exact Hf.
     }
     {
       gapply floor_is_predicate.
@@ -1917,6 +1616,30 @@ Proof.
     2,3: wf_auto2.
     1: exact HΓ.
 Defined.
+
+(*
+
+*)
+
+
+(*
+Lemma mu_depth_to_fev_limited_0
+  {Σ : Signature}
+  (E : evar)
+  (ϕ : Pattern)
+: mu_depth_to_fev_limited E ϕ 0 ->
+  E ∉ free_evars ϕ
+.
+Proof.
+  induction ϕ; cbn; intros H; try set_solver.
+  {
+    case_match.
+    { lia. }
+    { set_solver. }
+  }
+Qed.
+*)
+
 
 Lemma MLGoal_deduct'
   {Σ : Signature}

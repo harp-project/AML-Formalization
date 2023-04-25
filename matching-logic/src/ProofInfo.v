@@ -392,7 +392,9 @@ Fixpoint uses_kt_unreasonably {Σ : Signature} Γ ϕ (pf : ML_proof_system Γ ϕ
   | ProofSystem.Svar_subst _ _ _ X _ _ m0 => uses_kt_unreasonably _ _ m0
   | ProofSystem.Pre_fixp _ _ _ => false
   | ProofSystem.Knaster_tarski _ phi psi wf m0 =>
-    has_bound_variable_under_mu phi || uses_kt_unreasonably _ _ m0
+    (*has_bound_variable_under_mu phi ||*)
+    ~~ (bound_svar_is_banned_under_mus phi 0 0) ||
+    uses_kt_unreasonably _ _ m0
   | ProofSystem.Existence _ => false
   | ProofSystem.Singleton_ctx _ _ _ _ _ _ => false
   end.
