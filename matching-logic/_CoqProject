@@ -58,6 +58,8 @@ src/Theories/Sorts_Syntax.v
 src/Theories/Sorts_Semantics.v
 src/Theories/Sorts_ProofSystem.v
 
+src/Theories/Subseteq_ProofSystem.v
+
 src/Theories/ModelExtension.v
 
 src/Tests/TEST_LocallyNameless.v
