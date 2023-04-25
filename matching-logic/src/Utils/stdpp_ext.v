@@ -53,6 +53,7 @@ Proof.
     rewrite -> decode_encode. simpl. reflexivity.
 Qed.
 
+#[global]
 Program Instance inj_unit_r {K} : @Inj (K * ()) K (@eq (K * ())) (@eq K) (@fst K ()).
 Next Obligation.
   intros. destruct x,y. simpl in H. subst. destruct u. destruct u0. reflexivity.
