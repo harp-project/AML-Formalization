@@ -319,17 +319,37 @@ Qed.
 Lemma FreshMan_fresh_svar
     {Σ : Signature}
     (avoided_patterns : list Pattern)
+    (aevs : list evar)
+    (asvs : list svar)
     (fm_evars : list evar)
     (fm_svars : list svar)
-    (FM : FreshnessManager avoided_patterns fm_evars fm_svars)
+    (FM : FreshnessManager avoided_patterns aevs asvs fm_evars fm_svars)
     :
-    { X : svar & (FreshnessManager avoided_patterns fm_evars (X::fm_svars))}
+    { X : svar & (FreshnessManager avoided_patterns aevs asvs fm_evars (X::fm_svars))}
 .
 Proof.
     remember (free_svars <$> avoided_patterns) as lsvs.
     remember ((@elements svar SVarSet _) <$> lsvs) as llsvs.
     remember (mjoin llsvs) as svs.
-    remember (svar_fresh (fm_svars ++ svs)) as X.
+    remember (svar_fresh (fm_svars ++ asvs ++ svs)) as X.
+
+
+    assert (He0: forall (Y : svar), Y ∈ asvs -> X <> Y).
+    {
+        intros Y HY HContra.
+        subst Y.
+        subst X.
+        eapply not_elem_of_larger_impl_not_elem_of in HY.
+        3: {
+            apply set_svar_fresh_is_fresh''.
+        }
+        2: {
+            clear. set_solver.
+        }
+        {
+            exact HY.
+        }
+    }
 
     assert (He1: forall (Y : svar), Y ∈ svs -> X <> Y).
     {
@@ -367,6 +387,28 @@ Proof.
 
     exists X.
     constructor.
+    {
+        apply FM.
+    }
+    {
+        intros i j x0 y0 Hi Hj.
+        destruct j; cbn in *.
+        {
+            inversion Hj.
+            subst y0.
+            apply nesym.
+            apply He0.
+            rewrite elem_of_list_lookup.
+            exists i.
+            exact Hi.
+        }
+        {
+            destruct FM.
+            eapply fm_avoids_svar0.
+            { apply Hi. }
+            { apply Hj. }
+        }
+    }
     {
         apply FM.
     }
