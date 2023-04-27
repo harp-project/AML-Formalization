@@ -125,8 +125,6 @@ Proof.
         }
     }
 
-    assert (He3)
-
     exists x.
     constructor.
     {
@@ -166,9 +164,48 @@ Proof.
         destruct i; cbn in *.
         {
             inversion Hi. subst x0.
+            unfold evar_is_fresh_in.
+            intros HContra.
+            assert (HContra': x ∈ elements (free_evars ϕ)).
+            {
+                rewrite elem_of_elements.
+                exact HContra.
+            }
+            assert (Hϕinfmp: ϕ ∈ fm_patterns).
+            {
+                apply elem_of_list_lookup.
+                exists j. apply Hj.
+            }
+            clear Hj.
+            subst evs.
+            setoid_rewrite elem_of_list_join in He1.
+            specialize (He1 x).
+            apply He1.
+            2: reflexivity.
+            exists (elements (free_evars ϕ)).
+            split.
+            {
+                exact HContra'.
+            }
+            subst llevs.
+            unfold fmap.
+            rewrite elem_of_list_fmap.
+            eexists. split. reflexivity.
+            subst levs.
+            unfold fmap.
+            rewrite elem_of_list_fmap.
+            eexists. split. reflexivity.
+            exact Hϕinfmp.
+        }
+        {
+            eapply FM.
+            { apply Hi. }
+            { apply Hj. }
         }
     }
-
+    {
+        apply FM.
+    }
 Qed.
     
 
