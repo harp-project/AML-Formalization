@@ -555,7 +555,9 @@ Lemma FreshMan_export_evars_inclusion
     (fm_svars : list svar)
     (FM : FreshnessManager (ap::avoided_patterns) aevs asvs fm_evars fm_svars)
     :
-    (fm_evars ## elements (free_evars ap)) /\ FreshnessManager avoided_patterns aevs asvs fm_evars fm_svars
+    (fm_evars ## elements (free_evars ap)) /\
+    (fm_svars ## elements (free_svars ap)) /\
+    FreshnessManager avoided_patterns aevs asvs fm_evars fm_svars
 .
 Proof.
     split.
@@ -573,6 +575,23 @@ Proof.
         }
         clear -H HContra.
         unfold evar_is_fresh_in in H.
+        set_solver.
+    }
+    split.
+    {
+        rewrite elem_of_disjoint.
+        intros x Hx HContra.
+        rewrite elem_of_list_lookup in Hx.
+        destruct Hx as [i Hx].
+        destruct FM.
+        assert (H : svar_is_fresh_in x ap).
+        {
+            eapply fm_svars_fresh0 with (j := 0).
+            { apply Hx. }
+            cbn. reflexivity.
+        }
+        clear -H HContra.
+        unfold svar_is_fresh_in in H.
         set_solver.
     }
     {
@@ -618,7 +637,7 @@ Ltac2 rec _fm_export_everything () :=
         =>
         apply FreshMan_export_evars_inclusion in $fm;
         let h := Control.hyp fm in
-        destruct $h as [? fm]
+        destruct $h as [? [? fm]]
     end
     );
     lazy_match! goal with
@@ -647,6 +666,9 @@ Ltac2 fm_solve () :=
     | [ fm : (FreshnessManager ?ps ?aevs ?asvs ?evs ?svs) |- (not (@elem_of evar _ _ ?x (free_evars ?phi)))] =>
         (* This might not be the most scalable approach, but it works for now. *)
         _fm_export_everything (); cbn; ltac1:(set_solver)
+    | [ fm : (FreshnessManager ?ps ?aevs ?asvs ?evs ?svs) |- (not (@elem_of svar _ _ ?x (free_svars ?phi)))] =>
+        (* This might not be the most scalable approach, but it works for now. *)
+        _fm_export_everything (); cbn; ltac1:(set_solver)
     end
 .
 
@@ -655,7 +677,7 @@ Ltac fm_solve := ltac2:(fm_solve ()).
 #[local]
 Example freshman_usage_1
     {Σ : Signature}
-    (ϕ₁ ϕ₂ ϕq ϕw ϕe ϕr ϕt ϕy ϕu ϕi ϕo ϕp : Pattern)
+    (ϕ₁ ϕ₂ ϕq ϕw ϕe ϕr ϕt ϕy ϕu ϕi ϕo ϕp : Pattern) (* Just a bunch of patterns to test scalability*)
     : True.
 Proof.
     mlFreshEvar as x.
@@ -674,6 +696,10 @@ Proof.
         fm_solve.
     }
     assert (x ∉ free_evars (patt_imp ϕ₁ ϕ₂)).
+    {
+        fm_solve.
+    }
+    assert (Y ∉ free_svars (patt_imp ϕ₁ ϕ₂)).
     {
         fm_solve.
     }
