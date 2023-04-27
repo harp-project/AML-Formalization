@@ -56,28 +56,66 @@ Record FreshnessManager
 
 Notation "FreshMan()" := (@FreshnessManager _ _ _ _) : ml_scope.
 
-Program Definition EmptyFreshMan {Σ : Signature} : FreshnessManager [] [] []
-:= @mkFreshnessManager Σ [] [] [] _ _ _ _.
+Program Definition EmptyFreshMan {Σ : Signature} ps : FreshnessManager ps [] []
+:= @mkFreshnessManager Σ ps [] [] _ _ _ _.
 Next Obligation.
     intros Σ i j x y H1 H2 H.
-    rewrite lookup_nil in H1.
-    inversion H1.
+    rewrite lookup_nil in H2.
+    inversion H2.
 Qed.
 Next Obligation.
     intros Σ i j X Y H1 H2 H.
-    rewrite lookup_nil in H1.
-    inversion H1.
+    rewrite lookup_nil in H2.
+    inversion H2.
 Qed.
 Next Obligation.
     intros Σ i j x ϕ H1 H2.
-    rewrite lookup_nil in H1.
-    inversion H1.
+    rewrite lookup_nil in H2.
+    inversion H2.
 Qed.
 Next Obligation.
     intros Σ i j X ϕ H1 H2.
-    rewrite lookup_nil in H1.
-    inversion H1.
+    rewrite lookup_nil in H2.
+    inversion H2.
 Qed.
+
+Ltac2 _is_pattern_hyp (i, value, type) : bool :=
+    lazy_match! type with
+    | @Pattern _ => true
+    | _ => false 
+    end
+.
+
+Ltac2 _project_name (i, _, _) : ident := i.
+
+
+Ltac2 _gather_patterns_from_context () : constr list :=
+    let hs := (Control.hyps ())in
+    let phs := List.filter _is_pattern_hyp hs in
+    let names := List.map _project_name phs in
+    let filtered := names in
+    (List.map Control.hyp filtered)
+.
+
+Ltac2 rec _patterns_to_list (ps : constr list) : constr :=
+    match ps with
+    | [] => constr:(@nil (@Pattern _))
+    | x::xs =>
+        let r := (_patterns_to_list xs) in
+        let rs := constr:($x::$r) in
+        rs
+    end
+.
+
+
+Ltac2 _fm_new () :=
+    let ps := _patterns_to_list (_gather_patterns_from_context ()) in
+    let fm := constr:(@EmptyFreshMan _ $ps) in
+    set $fm as FM
+.
+
+Ltac _fm_new := ltac2:(_fm_new ()).
+
 
 Lemma FreshMan_fresh_evar
     {Σ : Signature}
@@ -345,7 +383,6 @@ Proof.
 Qed.
 
 
-Ltac _fm_new := set EmptyFreshMan as FM.
 Ltac _ensure_fm :=
     lazymatch goal with
     | [ FM : FreshnessManager ?ps ?evs ?svs |- _] => idtac
@@ -385,38 +422,42 @@ Ltac2 rec index_of (x: constr) (l : constr) : constr
     end
 .
 
-Ltac2 fm_distinct () :=
+Ltac2 fm_solve () :=
+    unfold evar_is_fresh_in;
+    unfold svar_is_fresh_in;
     match! goal with
     | [ fm : (FreshnessManager ?ps ?evs ?svs), x : evar, y : evar |- (?x <> ?y)] =>
         let i := (index_of x evs) in
         let j := (index_of y evs) in
         let fmt := (Control.hyp fm) in
         let pf := constr:(fm_evars_nodup $ps $evs $svs $fmt $i $j $x $y) in
-        Message.print (Message.of_constr i );
-        Message.print (Message.of_constr j );
         apply $pf > [reflexivity|reflexivity|ltac1:(lia)]
     | [ fm : (FreshnessManager ?ps ?evs ?svs), x : svar, y : svar |- (?x <> ?y)] =>
         let i := (index_of x svs) in
         let j := (index_of y svs) in
         let fmt := (Control.hyp fm) in
         let pf := constr:(fm_svars_nodup $ps $evs $svs $fmt $i $j $x $y) in
-        Message.print (Message.of_constr i );
-        Message.print (Message.of_constr j );
         apply $pf > [reflexivity|reflexivity|ltac1:(lia)]
+    | [ fm : (FreshnessManager ?ps ?evs ?svs), x : evar |- (?x ∉ ?phi)] =>
+        let i := (index_of x evs) in
+        Message.print (Message.of_constr i );
+        ()
     end
 .
 
-Ltac fm_distinct := ltac2:(fm_distinct ()).
+Ltac fm_solve := ltac2:(fm_solve ()).
 
 #[local]
-Example freshman_usage_1 {Σ : Signature} (ϕ : Pattern) : True.
+Example freshman_usage_1
+    {Σ : Signature}
+    (ϕ₁ ϕ₂ : Pattern) : True.
 Proof.
     mlFreshEvar as x.
     mlFreshEvar as y.
     mlFreshEvar as z.
     assert (x <> z).
     {
-        fm_distinct.
+        fm_solve.
     }
 
     mlFreshSvar as X.
@@ -424,6 +465,6 @@ Proof.
     mlFreshSvar as Z.
     assert (Y <> Z).
     {
-        fm_distinct.
+        fm_solve.
     }
 Abort.
