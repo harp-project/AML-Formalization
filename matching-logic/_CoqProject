@@ -44,6 +44,7 @@ src/ProofMode/FixPoint.v
 src/ProofMode/Reshaper.v
 src/ProofMode/Misc.v
 src/ProofMode/MLPM.v
+src/FreshnessManager.v
 
 src/Theories/Definedness_Syntax.v
 src/Theories/Definedness_Semantics.v
