@@ -531,7 +531,103 @@ Ltac2 rec index_of (x: constr) (l : constr) : constr
         Control.backtrack_tactic_failure "Not found"
     end
 .
-Check @elem_of.
+(*
+Ltac2 _is_subterm_of (x : constr) (y : constr) : bool
+:=
+    match! y with
+    | context [ ?z ] =>
+        (if (Constr.equal x z) then () else Message.print (Message.of_string "failing"); fail);
+        Message.print (Message.of_constr x);
+        Message.print (Message.of_constr z);
+        true
+    | _ => false
+    end
+.
+*)
+
+Lemma FreshMan_export_evars_inclusion
+    {Σ : Signature}
+    (ap : Pattern)
+    (avoided_patterns : list Pattern)
+    (aevs : list evar)
+    (asvs : list svar)
+    (fm_evars : list evar)
+    (fm_svars : list svar)
+    (FM : FreshnessManager (ap::avoided_patterns) aevs asvs fm_evars fm_svars)
+    :
+    (fm_evars ## elements (free_evars ap)) /\ FreshnessManager avoided_patterns aevs asvs fm_evars fm_svars
+.
+Proof.
+    split.
+    {
+        rewrite elem_of_disjoint.
+        intros x Hx HContra.
+        rewrite elem_of_list_lookup in Hx.
+        destruct Hx as [i Hx].
+        destruct FM.
+        assert (H : evar_is_fresh_in x ap).
+        {
+            eapply fm_evars_fresh0 with (j := 0).
+            { apply Hx. }
+            cbn. reflexivity.
+        }
+        clear -H HContra.
+        unfold evar_is_fresh_in in H.
+        set_solver.
+    }
+    {
+        destruct FM.
+        constructor.
+        {
+            intros.
+            eapply fm_avoids_evar0; eassumption.
+        }
+        {
+            intros.
+            eapply fm_avoids_svar0; eassumption.
+        }
+        
+        {
+            intros.
+            eapply fm_evars_nodup0; eassumption.
+        }
+        {
+            intros.
+            eapply fm_svars_nodup0; eassumption.
+        }
+        {
+            intros.
+            eapply fm_evars_fresh0 with (j := S j); try eassumption.
+        }
+        {
+            intros.
+            eapply fm_svars_fresh0 with (j := S j); try eassumption.
+        }
+    }
+Qed.
+
+Ltac2 rec _fm_export_everything () :=
+    lazy_match! goal with
+    | [ fm : (FreshnessManager ?ps ?aevs ?asvs ?evs ?svs) |- _]
+        =>
+        clear -$fm
+    end;
+    repeat (
+    lazy_match! goal with
+    | [ fm : (FreshnessManager ?ps ?aevs ?asvs ?evs ?svs) |- _]
+        =>
+        apply FreshMan_export_evars_inclusion in $fm;
+        let h := Control.hyp fm in
+        destruct $h as [? fm]
+    end
+    );
+    lazy_match! goal with
+    | [ fm : (FreshnessManager ?ps ?aevs ?asvs ?evs ?svs) |- _]
+        =>
+        clear fm
+    end
+.
+
 Ltac2 fm_solve () :=
     unfold evar_is_fresh_in;
     unfold svar_is_fresh_in;
@@ -549,9 +645,8 @@ Ltac2 fm_solve () :=
         let pf := constr:(fm_svars_nodup $ps $aevs $asvs $evs $svs $fmt $i $j $x $y) in
         apply $pf > [reflexivity|reflexivity|ltac1:(lia)]
     | [ fm : (FreshnessManager ?ps ?aevs ?asvs ?evs ?svs) |- (not (@elem_of evar _ _ ?x (free_evars ?phi)))] =>
-        let i := (index_of x evs) in
-        Message.print (Message.of_constr i );
-        ()
+        (* This might not be the most scalable approach, but it works for now. *)
+        _fm_export_everything (); cbn; ltac1:(set_solver)
     end
 .
 
@@ -560,7 +655,8 @@ Ltac fm_solve := ltac2:(fm_solve ()).
 #[local]
 Example freshman_usage_1
     {Σ : Signature}
-    (ϕ₁ ϕ₂ : Pattern) : True.
+    (ϕ₁ ϕ₂ ϕq ϕw ϕe ϕr ϕt ϕy ϕu ϕi ϕo ϕp : Pattern)
+    : True.
 Proof.
     mlFreshEvar as x.
     mlFreshEvar as y.
@@ -577,9 +673,9 @@ Proof.
     {
         fm_solve.
     }
-    assert (x ∉ free_evars ϕ₁).
+    assert (x ∉ free_evars (patt_imp ϕ₁ ϕ₂)).
     {
         fm_solve.
-        admit.
     }
-Abort.
+    exact I.
+Qed.
