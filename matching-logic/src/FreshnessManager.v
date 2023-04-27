@@ -1,5 +1,6 @@
 From Coq Require Import ssreflect ssrfun ssrbool.
 
+From Ltac2 Require Import Ltac2.
 From stdpp Require Import base gmap sets list.
 
 From MatchingLogic.Utils
@@ -13,6 +14,8 @@ Require Import
     Pattern
     Freshness
 .
+
+Set Default Proof Mode "Classic".
 
 
 Record FreshnessManager
@@ -210,20 +213,61 @@ Qed.
     
 
 
-Ltac fm_new := set EmptyFreshMan as FM.
-
-Tactic Notation "mlFreshEvar" "as" ident(X) :=
+Ltac _fm_new := set EmptyFreshMan as FM.
+Ltac _ensure_fm :=
     lazymatch goal with
-    | [ FM : FreshnessManager ?ps ?evs ?svs |- _] =>
-        remember (evar_fresh evs) as X
+    | [ FM : FreshnessManager ?ps ?evs ?svs |- _] => idtac
+    | _ => _fm_new
     end
 .
 
 
+Tactic Notation "mlFreshEvar" "as" ident(X) :=
+    _ensure_fm;
+    lazymatch goal with
+    | [ FM : FreshnessManager ?ps ?evs ?svs |- _] =>
+        apply FreshMan_fresh_evar in FM;
+        destruct FM as [X FM]
+    end
+.
+
+Ltac2 rec index_of (x: constr) (l : constr) : constr
+:=
+    lazy_match! l with
+    | (?y)::(?ys) => 
+        (if Constr.equal x y then constr:(0) else
+            let idx := index_of x ys in
+            constr:(S $idx)
+        )
+    | _ => Control.backtrack_tactic_failure "Not found"
+    end
+.
+
+(* TODO a branch for set variables *)
+Ltac2 fm_distinct () :=
+    match! goal with
+    | [ fm : (FreshnessManager ?ps ?evs ?svs), x : evar, y : evar |- (?x <> ?y)] =>
+        Message.print (Message.of_string "Hello" );
+        let i := (index_of x evs) in
+        let j := (index_of y evs) in
+        let fmt := (Control.hyp fm) in
+        let pf := constr:(fm_evars_nodup $ps $evs $svs $fmt $i $j $x $y) in
+        Message.print (Message.of_constr i );
+        Message.print (Message.of_constr j );
+        apply $pf > [reflexivity|reflexivity|ltac1:(lia)]
+    end
+.
+
+Ltac fm_distinct := ltac2:(fm_distinct ()).
+
 #[local]
 Example freshman_usage_1 {Σ : Signature} (ϕ : Pattern) : True.
 Proof.
-    fm_new.
     mlFreshEvar as x.
-
+    mlFreshEvar as y.
+    mlFreshEvar as z.
+    assert (x <> z).
+    {
+        fm_distinct.
+    }
 Abort.
