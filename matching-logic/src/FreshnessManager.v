@@ -20,7 +20,7 @@ Set Default Proof Mode "Classic".
 
 Record FreshnessManager
     {Σ : Signature}
-    (fm_patterns : list Pattern)
+    (avoided_patterns : list Pattern)
     (fm_evars : list evar)
     (fm_svars : list svar)
     := mkFreshnessManager {
@@ -43,13 +43,13 @@ Record FreshnessManager
     fm_evars_fresh :
         forall (i j : nat) (x : evar) (ϕ : Pattern),
         fm_evars !! i = Some x ->
-        fm_patterns !! j = Some ϕ ->
+        avoided_patterns !! j = Some ϕ ->
         evar_is_fresh_in x ϕ ;
 
     fm_svars_fresh :
         forall (i j : nat) (X : svar) (ϕ : Pattern),
         fm_svars !! i = Some X ->
-        fm_patterns !! j = Some ϕ ->
+        avoided_patterns !! j = Some ϕ ->
         svar_is_fresh_in X ϕ ;
 }.
 
@@ -119,15 +119,15 @@ Ltac _fm_new := ltac2:(_fm_new ()).
 
 Lemma FreshMan_fresh_evar
     {Σ : Signature}
-    (fm_patterns : list Pattern)
+    (avoided_patterns : list Pattern)
     (fm_evars : list evar)
     (fm_svars : list svar)
-    (FM : FreshnessManager fm_patterns fm_evars fm_svars)
+    (FM : FreshnessManager avoided_patterns fm_evars fm_svars)
     :
-    { x : evar & (FreshnessManager fm_patterns (x::fm_evars) fm_svars)}
+    { x : evar & (FreshnessManager avoided_patterns (x::fm_evars) fm_svars)}
 .
 Proof.
-    remember (free_evars <$> fm_patterns) as levs.
+    remember (free_evars <$> avoided_patterns) as levs.
     remember ((@elements evar EVarSet _) <$> levs) as llevs.
     remember (mjoin llevs) as evs.
     remember (evar_fresh (fm_evars ++ evs)) as x.
@@ -212,7 +212,7 @@ Proof.
                 rewrite elem_of_elements.
                 exact HContra.
             }
-            assert (Hϕinfmp: ϕ ∈ fm_patterns).
+            assert (Hϕinfmp: ϕ ∈ avoided_patterns).
             {
                 apply elem_of_list_lookup.
                 exists j. apply Hj.
@@ -252,15 +252,15 @@ Qed.
 
 Lemma FreshMan_fresh_svar
     {Σ : Signature}
-    (fm_patterns : list Pattern)
+    (avoided_patterns : list Pattern)
     (fm_evars : list evar)
     (fm_svars : list svar)
-    (FM : FreshnessManager fm_patterns fm_evars fm_svars)
+    (FM : FreshnessManager avoided_patterns fm_evars fm_svars)
     :
-    { X : svar & (FreshnessManager fm_patterns fm_evars (X::fm_svars))}
+    { X : svar & (FreshnessManager avoided_patterns fm_evars (X::fm_svars))}
 .
 Proof.
-    remember (free_svars <$> fm_patterns) as lsvs.
+    remember (free_svars <$> avoided_patterns) as lsvs.
     remember ((@elements svar SVarSet _) <$> lsvs) as llsvs.
     remember (mjoin llsvs) as svs.
     remember (svar_fresh (fm_svars ++ svs)) as X.
@@ -348,7 +348,7 @@ Proof.
                 rewrite elem_of_elements.
                 exact HContra.
             }
-            assert (Hϕinfmp: ϕ ∈ fm_patterns).
+            assert (Hϕinfmp: ϕ ∈ avoided_patterns).
             {
                 apply elem_of_list_lookup.
                 exists j. apply Hj.
