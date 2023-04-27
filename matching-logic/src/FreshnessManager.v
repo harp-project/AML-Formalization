@@ -21,9 +21,24 @@ Set Default Proof Mode "Classic".
 Record FreshnessManager
     {Σ : Signature}
     (avoided_patterns : list Pattern)
+    (avoided_evars : list evar)
+    (avoided_svars : list svar)
     (fm_evars : list evar)
     (fm_svars : list svar)
     := mkFreshnessManager {
+
+    fm_avoids_evar :
+        forall (i j : nat) (x y : evar),
+        avoided_evars !! i = Some x ->
+        fm_evars !! j = Some y ->
+        x <> y ;
+
+    fm_avoids_svar :
+        forall (i j : nat) (X Y : svar),
+        avoided_svars !! i = Some X ->
+        fm_svars !! j = Some Y ->
+        X <> Y ;
+
 
     fm_evars_nodup :
         forall (i j : nat) (x y : evar),
@@ -31,7 +46,6 @@ Record FreshnessManager
         fm_evars !! j = Some y ->
         i <> j ->
         x <> y ;
-
 
     fm_svars_nodup :
         forall (i j : nat) (X Y : svar),
@@ -54,29 +68,40 @@ Record FreshnessManager
 }.
 
 
-Notation "FreshMan()" := (@FreshnessManager _ _ _ _) : ml_scope.
+(* For some reason this does not work *)
+Notation "FreshMan()" := (@FreshnessManager _ _ _ _ _ _) : ml_scope.
 
-Program Definition EmptyFreshMan {Σ : Signature} ps : FreshnessManager ps [] []
-:= @mkFreshnessManager Σ ps [] [] _ _ _ _.
+Program Definition EmptyFreshMan {Σ : Signature} ps aevs asvs : FreshnessManager ps aevs asvs [] []
+:= @mkFreshnessManager Σ ps aevs asvs [] [] _ _ _ _ _ _.
 Next Obligation.
-    intros Σ i j x y H1 H2 H.
+    intros Σ ps aevs asvs i j x y H1 H2.
     rewrite lookup_nil in H2.
     inversion H2.
 Qed.
 Next Obligation.
-    intros Σ i j X Y H1 H2 H.
+    intros Σ ps aevs asvs i j x y H1 H2.
     rewrite lookup_nil in H2.
     inversion H2.
 Qed.
 Next Obligation.
-    intros Σ i j x ϕ H1 H2.
+    intros Σ ps aevs asvs i j x y H1 H2 H.
     rewrite lookup_nil in H2.
     inversion H2.
 Qed.
 Next Obligation.
-    intros Σ i j X ϕ H1 H2.
+    intros Σ ps aevs asvs i j X Y H1 H2 H.
     rewrite lookup_nil in H2.
     inversion H2.
+Qed.
+Next Obligation.
+    intros Σ ps aevs asvs i j x ϕ H1 H2.
+    rewrite lookup_nil in H1.
+    inversion H1.
+Qed.
+Next Obligation.
+    intros Σ ps aevs asvs i j X ϕ H1 H2.
+    rewrite lookup_nil in H1.
+    inversion H1.
 Qed.
 
 Ltac2 _is_pattern_hyp (i, value, type) : bool :=
@@ -120,17 +145,36 @@ Ltac _fm_new := ltac2:(_fm_new ()).
 Lemma FreshMan_fresh_evar
     {Σ : Signature}
     (avoided_patterns : list Pattern)
+    (aevs : list evar)
+    (asvs : list svar)
     (fm_evars : list evar)
     (fm_svars : list svar)
-    (FM : FreshnessManager avoided_patterns fm_evars fm_svars)
+    (FM : FreshnessManager avoided_patterns aevs asvs fm_evars fm_svars)
     :
-    { x : evar & (FreshnessManager avoided_patterns (x::fm_evars) fm_svars)}
+    { x : evar & (FreshnessManager avoided_patterns aevs asvs (x::fm_evars) fm_svars)}
 .
 Proof.
     remember (free_evars <$> avoided_patterns) as levs.
     remember ((@elements evar EVarSet _) <$> levs) as llevs.
     remember (mjoin llevs) as evs.
-    remember (evar_fresh (fm_evars ++ evs)) as x.
+    remember (evar_fresh (fm_evars ++ aevs ++ evs)) as x.
+
+    assert (He0: forall (y : evar), y ∈ aevs -> x <> y).
+    {
+        intros y Hy HContra.
+        subst y.
+        subst x.
+        eapply not_elem_of_larger_impl_not_elem_of in Hy.
+        3: {
+            apply set_evar_fresh_is_fresh''.
+        }
+        2: {
+            clear. set_solver.
+        }
+        {
+            exact Hy.
+        }
+    }
 
     assert (He1: forall (y : evar), y ∈ evs -> x <> y).
     {
@@ -168,6 +212,28 @@ Proof.
 
     exists x.
     constructor.
+    {
+        intros i j x0 y0 Hi Hj.
+        destruct j; cbn in *.
+        {
+            inversion Hj.
+            subst y0.
+            apply nesym.
+            apply He0.
+            rewrite elem_of_list_lookup.
+            exists i.
+            exact Hi.
+        }
+        {
+            destruct FM.
+            eapply fm_avoids_evar0.
+            { apply Hi. }
+            { apply Hj. }
+        }
+    }
+    {
+        apply FM.
+    }
     {
         intros i j x0 y0 Hi Hj H.
         destruct i,j; cbn in *.
