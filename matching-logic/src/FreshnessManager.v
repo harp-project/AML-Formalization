@@ -135,7 +135,7 @@ Ltac2 rec _patterns_to_list (ps : constr list) : constr :=
 
 Ltac2 _fm_new () :=
     let ps := _patterns_to_list (_gather_patterns_from_context ()) in
-    let fm := constr:(@EmptyFreshMan _ $ps) in
+    let fm := constr:(@EmptyFreshMan _ $ps [] []) in
     set $fm as FM
 .
 
@@ -493,7 +493,7 @@ Qed.
 
 Ltac _ensure_fm :=
     lazymatch goal with
-    | [ FM : FreshnessManager ?ps ?evs ?svs |- _] => idtac
+    | [ FM : FreshnessManager ?ps ?aevs ?asvs ?evs ?svs |- _] => idtac
     | _ => _fm_new
     end
 .
@@ -502,7 +502,7 @@ Ltac _ensure_fm :=
 Tactic Notation "mlFreshEvar" "as" ident(X) :=
     _ensure_fm;
     lazymatch goal with
-    | [ FM : FreshnessManager ?ps ?evs ?svs |- _] =>
+    | [ FM : FreshnessManager ?ps ?aevs ?asvs ?evs ?svs |- _] =>
         apply FreshMan_fresh_evar in FM;
         destruct FM as [X FM]
     end
@@ -512,7 +512,7 @@ Tactic Notation "mlFreshEvar" "as" ident(X) :=
 Tactic Notation "mlFreshSvar" "as" ident(X) :=
     _ensure_fm;
     lazymatch goal with
-    | [ FM : FreshnessManager ?ps ?evs ?svs |- _] =>
+    | [ FM : FreshnessManager ?ps ?aevs ?asvs ?evs ?svs |- _] =>
         apply FreshMan_fresh_svar in FM;
         destruct FM as [X FM]
     end
@@ -526,27 +526,29 @@ Ltac2 rec index_of (x: constr) (l : constr) : constr
             let idx := index_of x ys in
             constr:(S $idx)
         )
-    | _ => Control.backtrack_tactic_failure "Not found"
+    | _ => 
+        Message.print (Message.of_constr x);
+        Control.backtrack_tactic_failure "Not found"
     end
 .
-
+Check @elem_of.
 Ltac2 fm_solve () :=
     unfold evar_is_fresh_in;
     unfold svar_is_fresh_in;
-    match! goal with
-    | [ fm : (FreshnessManager ?ps ?evs ?svs), x : evar, y : evar |- (?x <> ?y)] =>
+    lazy_match! goal with
+    | [ fm : (FreshnessManager ?ps ?aevs ?asvs ?evs ?svs) |- (not (@eq evar ?x ?y))] =>
         let i := (index_of x evs) in
         let j := (index_of y evs) in
         let fmt := (Control.hyp fm) in
-        let pf := constr:(fm_evars_nodup $ps $evs $svs $fmt $i $j $x $y) in
+        let pf := constr:(fm_evars_nodup $ps $aevs $asvs $evs $svs $fmt $i $j $x $y) in
         apply $pf > [reflexivity|reflexivity|ltac1:(lia)]
-    | [ fm : (FreshnessManager ?ps ?evs ?svs), x : svar, y : svar |- (?x <> ?y)] =>
+    | [ fm : (FreshnessManager ?ps ?aevs ?asvs ?evs ?svs) |- (not (@eq svar ?x ?y))] =>
         let i := (index_of x svs) in
         let j := (index_of y svs) in
         let fmt := (Control.hyp fm) in
-        let pf := constr:(fm_svars_nodup $ps $evs $svs $fmt $i $j $x $y) in
+        let pf := constr:(fm_svars_nodup $ps $aevs $asvs $evs $svs $fmt $i $j $x $y) in
         apply $pf > [reflexivity|reflexivity|ltac1:(lia)]
-    | [ fm : (FreshnessManager ?ps ?evs ?svs), x : evar |- (?x ∉ ?phi)] =>
+    | [ fm : (FreshnessManager ?ps ?aevs ?asvs ?evs ?svs) |- (not (@elem_of evar _ _ ?x (free_evars ?phi)))] =>
         let i := (index_of x evs) in
         Message.print (Message.of_constr i );
         ()
@@ -574,5 +576,10 @@ Proof.
     assert (Y <> Z).
     {
         fm_solve.
+    }
+    assert (x ∉ free_evars ϕ₁).
+    {
+        fm_solve.
+        admit.
     }
 Abort.
