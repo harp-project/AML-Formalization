@@ -38,6 +38,8 @@ Class LWP := {
     ;
 }.
 
+Ltac lwp_desugar := repeat rewrite (lwp_not_correct,lwp_or_correct, lwp_and_correct).
+
 Definition lwp_Theory {lwp : LWP} := gset lwp_formula.
 
 Class LwpProvability {lwp : LWP} := {
@@ -69,6 +71,10 @@ Open Scope lwp_scope.
 Module Notations.
 
     Notation "A ---> B" := (lwp_imp A B) (at level 75, right associativity) : lwp_scope.
+    Notation "'Bot'" := lwp_bot : lwp_scope.
+    Notation "! a"     := (lwp_not   a  ) (at level 71, right associativity) : lwp_scope.
+    Notation "a 'or' b" := (lwp_or    a b) (at level 73, left associativity) : lwp_scope.
+    Notation "a 'and' b" := (lwp_and   a b) (at level 72, left associativity) : lwp_scope.
 
 End Notations.
 
@@ -93,5 +99,34 @@ Section with_LWP_and_theory.
         pose proof (_5 := lwp_mp _4 _3).
         exact _5.
     Defined.
+
+    Lemma prf_add_assumption a b :
+        lwp_pf Γ b ->
+        lwp_pf Γ (a ---> b)
+    .
+    Proof.
+        intros H.
+        eapply lwp_mp.
+        { apply H. }
+        { apply lwp_p1. }
+    Defined.
+
+    Lemma P4m A B :
+        lwp_pf Γ ((A ---> B) ---> ((A ---> !B) ---> !A))
+    .
+    Proof.
+        pose (H1 := lwp_p2 Γ A B Bot).
+        pose proof (H2 := (lwp_p2 Γ (A ---> B ---> Bot) (A ---> B) (A ---> Bot))).
+        pose proof (H3 := lwp_mp H1 H2).
+        pose proof (H4 := (lwp_p1 Γ (((A ---> B ---> Bot) ---> A ---> B) ---> (A ---> B ---> Bot) ---> A ---> Bot) (A ---> B))).
+        pose proof (H5 := lwp_mp H3 H4).        
+        pose proof (H6 := (lwp_p2 Γ (A ---> B) ((A ---> B ---> Bot) ---> A ---> B) ((A ---> B ---> Bot) ---> A ---> Bot))).
+        pose proof (H7 := lwp_mp H5 H6).
+        pose proof (H8 := (lwp_p1 Γ (A ---> B) (A ---> B ---> Bot))).
+        pose proof (H9 := lwp_mp H8 H7).
+        lwp_desugar.
+        exact H9.
+    Defined.
+
 
 End with_LWP_and_theory.
