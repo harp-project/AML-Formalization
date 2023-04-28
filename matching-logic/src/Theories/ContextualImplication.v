@@ -16,6 +16,7 @@ From MatchingLogic Require Import
   Logic
   DerivedOperators_Syntax
   ProofMode.MLPM
+  FreshnessManager
 .
 From MatchingLogic.Theories Require Import Definedness_Syntax Definedness_ProofSystem DeductionTheorem Subseteq_ProofSystem.
 From MatchingLogic.Utils Require Import stdpp_ext.
@@ -89,75 +90,71 @@ Lemma set_builder_full_1
 Proof.
     intros HΓ wfϕ.
     unfold patt_set_builder.
-    remember (fresh_evar ϕ) as x.
+    mlFreshEvar as x.
+
+    apply membership_elimination with (x := x).
     {
-        apply membership_elimination with (x := x).
-        {
-            subst x.
-            eapply evar_is_fresh_in_richer'.
-            2: { apply set_evar_fresh_is_fresh'. }
-            clear. cbn. set_solver.
-        }
-        {
-            apply pile_any.
-        }
-        {
-            wf_auto2.
-        }
-        {
-            exact HΓ.
-        }
-        toMLGoal.
-        { wf_auto2. }
-        mlIntroAll x.
+        fm_solve.
+    }
+    {
+        apply pile_any.
+    }
+    {
+        wf_auto2.
+    }
+    {
+        exact HΓ.
+    }
+    toMLGoal.
+    { wf_auto2. }
+    mlIntroAll y.
+    mlSimpl. cbn.
+    mlApplyMeta membership_imp_2.
+    2: exact HΓ.
+    mlIntro "H".
+    mlApplyMeta membership_exists_2.
+    2: exact HΓ.
+    mlExists y.
+    mlApplyMeta membership_and_2.
+    2: exact HΓ.
+    fold bevar_subst.
+    cbn.
+    mlSplitAnd.
+    {
+        mlApplyMeta membership_refl.
+        2: exact HΓ.
+        mlExists y.
         mlSimpl. cbn.
-        mlApplyMeta membership_imp_2.
+        mlReflexivity.
+    }
+    {
+        rewrite -> bevar_subst_not_occur with (n := 1).
+        2: wf_auto2.
+        mlApplyMeta membership_symbol_ceil_right.
         2: exact HΓ.
-        mlIntro "H".
-        mlApplyMeta membership_exists_2.
-        2: exact HΓ.
-        mlExists x.
+        mlExists y.
+        mlSimpl. cbn.
         mlApplyMeta membership_and_2.
+        3: {
+            eapply well_formed_closed_ex_aux_ind with (ind_evar1 := 0).
+            { lia. }
+            apply wfc_ex_aux_bevar_subst.
+            { wf_auto2. }
+            reflexivity.
+        }
         2: exact HΓ.
-        fold bevar_subst.
-        cbn.
         mlSplitAnd.
         {
             mlApplyMeta membership_refl.
             2: exact HΓ.
-            mlExists x.
+            mlExists y.
             mlSimpl. cbn.
             mlReflexivity.
         }
-        {
-            rewrite -> bevar_subst_not_occur with (n := 1).
-            2: wf_auto2.
-            mlApplyMeta membership_symbol_ceil_right.
-            2: exact HΓ.
-            mlExists x.
-            mlSimpl. cbn.
-            mlApplyMeta membership_and_2.
-            3: {
-                eapply well_formed_closed_ex_aux_ind with (ind_evar1 := 0).
-                { lia. }
-                apply wfc_ex_aux_bevar_subst.
-                { wf_auto2. }
-                reflexivity.
-            }
-            2: exact HΓ.
-            mlSplitAnd.
-            {
-                mlApplyMeta membership_refl.
-                2: exact HΓ.
-                mlExists x.
-                mlSimpl. cbn.
-                mlReflexivity.
-            }
-            unfold evar_open.
-            rewrite -> bevar_subst_not_occur at 2.
-            2: wf_auto2.
-            mlExact "H".
-        }
+        unfold evar_open.
+        rewrite -> bevar_subst_not_occur at 2.
+        2: wf_auto2.
+        mlExact "H".
     }
 Defined.
 
@@ -174,7 +171,6 @@ Lemma set_builder_full_2
 Proof.
     intros HΓ wfϕ.
     unfold patt_set_builder.
-    remember (fresh_evar ϕ) as x.
     toMLGoal.
     { wf_auto2. }
     mlIntro "H".
