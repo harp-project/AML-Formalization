@@ -3,7 +3,7 @@ From Coq Require Import ssreflect ssrfun ssrbool.
 From Ltac2 Require Import Ltac2 Control.
 
 From Coq Require Import Bool String.
-From Coq.Logic Require Import FunctionalExtensionality Eqdep_dec.
+From Coq.Logic Require Import FunctionalExtensionality Eqdep_dec ProofIrrelevance.
 From Equations Require Import Equations.
 
 Require Import Coq.Program.Tactics.
@@ -13,11 +13,11 @@ From MatchingLogic Require Import
     Logic
     DerivedOperators_Syntax
     ProofSystem
-    (*ProofMode_base*)
+    AbstractPropositional
     ProofInfo
 .
 
-From stdpp Require Import list tactics fin_sets coGset gmap sets.
+From stdpp Require Import list tactics fin_sets coGset gmap sets mapset.
 
 From MatchingLogic.Utils Require Import stdpp_ext.
 
@@ -125,12 +125,130 @@ Proof.
   { abstract ( solve_pim_simple ). }
 Defined.
 
+Print wfPattern.
+
+Program Definition wfpatt_imp
+  {Σ : Signature} (a b : wfPattern) : wfPattern
+  :=
+  exist _ ((proj1_sig a) ---> (proj1_sig b)) _
+.
+Next Obligation.
+  intros. destruct a,b. cbn. wf_auto2.
+Qed.
+
+Program Definition wfpatt_and
+  {Σ : Signature} (a b : wfPattern) : wfPattern
+  :=
+  exist _ ((proj1_sig a) and (proj1_sig b)) _
+.
+Next Obligation.
+  intros. destruct a,b. cbn. wf_auto2.
+Qed.
+
+Program Definition wfpatt_or
+  {Σ : Signature} (a b : wfPattern) : wfPattern
+  :=
+  exist _ ((proj1_sig a) or (proj1_sig b)) _
+.
+Next Obligation.
+  intros. destruct a,b. cbn. wf_auto2.
+Qed.
+
+Program Definition wfpatt_not
+  {Σ : Signature} (a : wfPattern) : wfPattern
+  :=
+  exist _ (! (proj1_sig a)) _
+.
+Next Obligation.
+  intros. destruct a. cbn. wf_auto2.
+Qed.
+
+Program Definition wfpatt_bot
+  {Σ : Signature} : wfPattern
+  :=
+  exist _ (patt_bott) _
+.
+Next Obligation.
+  intros. cbn. reflexivity.
+Qed.
+
+#[global]
+Program Instance lwp_ml {Σ : Signature} : LWP := {
+  lwp_formula := wfPattern ;
+  lwp_imp := wfpatt_imp ;
+  lwp_bot := wfpatt_bot ;
+  lwp_or := wfpatt_or ;
+  lwp_and := wfpatt_and ;
+  lwp_not := wfpatt_not ;
+}.
+Next Obligation.
+  intros.
+  unfold wfpatt_not,wfpatt_imp.
+  destruct phi.
+  cbn.
+  f_equal.
+  apply proof_irrelevance.
+Qed.
+Next Obligation.
+  intros.
+  destruct phi1, phi2.
+  unfold wfpatt_or,wfpatt_imp,wfpatt_not.
+  cbn.
+  f_equal.
+  apply proof_irrelevance.
+Qed.
+Next Obligation.
+  intros.
+  destruct phi1, phi2.
+  unfold wfpatt_and,wfpatt_or,wfpatt_imp,wfpatt_not.
+  cbn.
+  f_equal.
+  apply proof_irrelevance.
+Qed.
+
+#[global]
+Program Instance lwppf_ml {Σ : Signature} : LwpProvability := {|
+  lwp_pf := fun Γ => fun ϕ =>
+    let Γ' := fmap proj1_sig Γ in
+    let ϕ' := proj1_sig ϕ in
+    Γ' ⊢i ϕ' using BasicReasoning ;
+|}.
+Next Obligation.
+  intros Σ G phi1 phi2.
+  destruct phi1,phi2.
+  cbn.
+  apply P1; assumption.
+Qed.
+Next Obligation.
+  intros Σ G phi1 phi2 phi3.
+  destruct phi1,phi2,phi3.
+  cbn.
+  apply P2; assumption.
+Qed.
+Next Obligation.
+  intros Σ G phi1.
+  destruct phi1.
+  cbn.
+  apply P3; assumption.
+Qed.
+Next Obligation.
+  intros Σ G phi1 phi2 H1 H2.
+  destruct phi1,phi2.
+  cbn in *.
+  eapply MP.
+  2: apply H2.
+  { exact H1. }
+Qed.
+
 Lemma A_impl_A {Σ : Signature} (Γ : Theory) (A : Pattern)  :
   (well_formed A) ->
   Γ ⊢i (A ---> A)
   using BasicReasoning.
 Proof. 
   intros WFA.
+  replace A with (@proj1_sig _ (fun p => well_formed p = true) (exist _ A WFA)) by reflexivity.
+  replace Γ with (proj1_sig <$> ((exist _ ) <$>Γ)).
+  apply AbstractPropositional.A_impl_A.
   pose proof (_1 := P2 Γ A (A ---> A) A ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
   pose proof (_2 := P1 Γ A (A ---> A) ltac:(wf_auto2) ltac:(wf_auto2)).
   pose proof (_3 := MP _2 _1).

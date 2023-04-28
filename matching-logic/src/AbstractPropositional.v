@@ -2,7 +2,7 @@ From Coq Require Import ssreflect ssrfun ssrbool.
 
 From Ltac2 Require Import Ltac2 Control.
 
-From stdpp Require Import list tactics fin_sets coGset gmap sets.
+From stdpp Require Import list tactics fin_sets coGset gmap sets propset.
 
 
 Set Default Proof Mode "Classic".
@@ -22,7 +22,6 @@ Class LWP := {
     lwp_or  : lwp_formula -> lwp_formula -> lwp_formula ;
     lwp_not : lwp_formula -> lwp_formula ;
 
-    (* Maybe, if we want, we can later relax these to equiprovability instead of equality *)
     lwp_not_correct :
         forall phi,
             lwp_not phi = lwp_imp phi lwp_bot
@@ -40,7 +39,7 @@ Class LWP := {
 
 Ltac lwp_desugar := repeat rewrite (lwp_not_correct,lwp_or_correct, lwp_and_correct).
 
-Definition lwp_Theory {lwp : LWP} := gset lwp_formula.
+Definition lwp_Theory {lwp : LWP} := propset.propset lwp_formula.
 
 Class LwpProvability {lwp : LWP} := {
     lwp_pf : lwp_Theory -> lwp_formula -> Type ;
