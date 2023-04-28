@@ -67,9 +67,8 @@ Record FreshnessManager
         svar_is_fresh_in X ϕ ;
 }.
 
-
-(* For some reason this does not work *)
-Notation "FreshMan()" := (@FreshnessManager _ _ _ _ _ _) : ml_scope.
+(* Maybe it is better to show everything, for debugging reasons *)
+(* Notation "FreshMan()" := (@FreshnessManager _ _ _ _ _ _) : ml_scope. *)
 
 Program Definition EmptyFreshMan {Σ : Signature} ps aevs asvs : FreshnessManager ps aevs asvs [] []
 := @mkFreshnessManager Σ ps aevs asvs [] [] _ _ _ _ _ _.
@@ -132,10 +131,62 @@ Ltac2 rec _patterns_to_list (ps : constr list) : constr :=
     end
 .
 
+Ltac2 _is_evar_hyp (i, value, type) : bool :=
+    lazy_match! type with
+    | @evar _ => true
+    | _ => false 
+    end
+.
+
+Ltac2 _gather_evars_from_context () : constr list :=
+    let hs := (Control.hyps ())in
+    let phs := List.filter _is_evar_hyp hs in
+    let names := List.map _project_name phs in
+    let filtered := names in
+    (List.map Control.hyp filtered)
+.
+
+Ltac2 rec _evars_to_list (ps : constr list) : constr :=
+    match ps with
+    | [] => constr:(@nil (@evar _))
+    | x::xs =>
+        let r := (_evars_to_list xs) in
+        let rs := constr:($x::$r) in
+        rs
+    end
+.
+
+
+Ltac2 _is_svar_hyp (i, value, type) : bool :=
+    lazy_match! type with
+    | @svar _ => true
+    | _ => false 
+    end
+.
+
+Ltac2 _gather_svars_from_context () : constr list :=
+    let hs := (Control.hyps ())in
+    let phs := List.filter _is_svar_hyp hs in
+    let names := List.map _project_name phs in
+    let filtered := names in
+    (List.map Control.hyp filtered)
+.
+
+Ltac2 rec _svars_to_list (ps : constr list) : constr :=
+    match ps with
+    | [] => constr:(@nil (@svar _))
+    | x::xs =>
+        let r := (_svars_to_list xs) in
+        let rs := constr:($x::$r) in
+        rs
+    end
+.
 
 Ltac2 _fm_new () :=
     let ps := _patterns_to_list (_gather_patterns_from_context ()) in
-    let fm := constr:(@EmptyFreshMan _ $ps [] []) in
+    let aevs := _evars_to_list (_gather_evars_from_context ()) in
+    let asvs := _svars_to_list (_gather_svars_from_context ()) in
+    let fm := constr:(@EmptyFreshMan _ $ps $aevs $asvs) in
     set $fm as FM
 .
 
@@ -545,6 +596,7 @@ Ltac2 _is_subterm_of (x : constr) (y : constr) : bool
 .
 *)
 
+Print FreshnessManager.
 Lemma FreshMan_export_evars_inclusion
     {Σ : Signature}
     (ap : Pattern)
@@ -647,16 +699,75 @@ Ltac2 rec _fm_export_everything () :=
     end
 .
 
+
+Lemma free_evars_of_list_unfold
+    {Σ : Signature}
+    (ϕ : Pattern)
+    (ϕs : list Pattern)
+    (x : evar)
+    :
+    x ∉ free_evars ϕ /\ x ∉ free_evars_of_list ϕs ->
+    x ∉ free_evars_of_list (ϕ::ϕs)
+.
+Proof.
+    cbn.
+    intros [H1 H2] HContra.
+    rewrite elem_of_union in HContra.
+    destruct HContra as [HContra|HContra].
+    {
+        apply H1. exact HContra.
+    }
+    {
+        unfold free_evars_of_list in H2.
+        apply H2. exact HContra.
+    }
+Qed.
+
 Ltac2 fm_solve () :=
     unfold evar_is_fresh_in;
     unfold svar_is_fresh_in;
-    lazy_match! goal with
+    (* we cannot do lazy_match because we need to try the variant for avoided variables as well as the variant for fresh variables,
+       and we do not have a way how to decide in advance. Although, maybe we could try finding the evar in the avoided variables,
+       and branch on whether it succeeds or not. This is an idea for later refactoring :)*)
+    match! goal with
+    (* evar, x == avoided, y == fresh *)
+    | [ fm : (FreshnessManager ?ps ?aevs ?asvs ?evs ?svs) |- (not (@eq evar ?x ?y))] =>
+        let i := (index_of x aevs) in
+        let j := (index_of y evs) in
+        let fmt := (Control.hyp fm) in
+        let pf := constr:(fm_avoids_evar $ps $aevs $asvs $evs $svs $fmt $i $j $x $y) in
+        apply $pf > [reflexivity|reflexivity]
+    (* evar, x == fresh, y == avoided *)
+    | [ fm : (FreshnessManager ?ps ?aevs ?asvs ?evs ?svs) |- (not (@eq evar ?x ?y))] =>
+        let i := (index_of x evs) in
+        let j := (index_of y aevs) in
+        let fmt := (Control.hyp fm) in
+        let pf := constr:(fm_avoids_evar $ps $aevs $asvs $evs $svs $fmt $j $i $y $x) in
+        apply nesym;
+        apply $pf > [reflexivity|reflexivity]
+    (* evar, x == fresh, y == fresh *)
     | [ fm : (FreshnessManager ?ps ?aevs ?asvs ?evs ?svs) |- (not (@eq evar ?x ?y))] =>
         let i := (index_of x evs) in
         let j := (index_of y evs) in
         let fmt := (Control.hyp fm) in
         let pf := constr:(fm_evars_nodup $ps $aevs $asvs $evs $svs $fmt $i $j $x $y) in
         apply $pf > [reflexivity|reflexivity|ltac1:(lia)]
+    (* svar, x == avoided, y == fresh *)
+    | [ fm : (FreshnessManager ?ps ?aevs ?asvs ?evs ?svs) |- (not (@eq svar ?x ?y))] =>
+        let i := (index_of x asvs) in
+        let j := (index_of y svs) in
+        let fmt := (Control.hyp fm) in
+        let pf := constr:(fm_avoids_svar $ps $aevs $asvs $evs $svs $fmt $i $j $x $y) in
+        apply $pf > [reflexivity|reflexivity]
+    (* svar, x == fresh, y == avoided *)
+    | [ fm : (FreshnessManager ?ps ?aevs ?asvs ?evs ?svs) |- (not (@eq svar ?x ?y))] =>
+        let i := (index_of x svs) in
+        let j := (index_of y asvs) in
+        let fmt := (Control.hyp fm) in
+        let pf := constr:(fm_avoids_svar $ps $aevs $asvs $evs $svs $fmt $j $i $y $x) in
+        apply nesym;
+        apply $pf > [reflexivity|reflexivity]
+    (* x == fresh, y == fresh *)        
     | [ fm : (FreshnessManager ?ps ?aevs ?asvs ?evs ?svs) |- (not (@eq svar ?x ?y))] =>
         let i := (index_of x svs) in
         let j := (index_of y svs) in
@@ -669,6 +780,11 @@ Ltac2 fm_solve () :=
     | [ fm : (FreshnessManager ?ps ?aevs ?asvs ?evs ?svs) |- (not (@elem_of svar _ _ ?x (free_svars ?phi)))] =>
         (* This might not be the most scalable approach, but it works for now. *)
         _fm_export_everything (); cbn; ltac1:(set_solver)
+    | [ fm : (FreshnessManager ?ps ?aevs ?asvs ?evs ?svs) |- (not (@elem_of evar _ _ ?x (free_evars_of_list ?phis)))] =>
+        (* This might not be the most scalable approach, but it works for now. *)        
+        _fm_export_everything (); cbn;
+        repeat (apply free_evars_of_list_unfold; split);
+        ltac1:(set_solver)
     end
 .
 
@@ -677,6 +793,8 @@ Ltac fm_solve := ltac2:(fm_solve ()).
 #[local]
 Example freshman_usage_1
     {Σ : Signature}
+    (x0 y0 : evar)
+    (X0 Y0 : svar)
     (ϕ₁ ϕ₂ ϕq ϕw ϕe ϕr ϕt ϕy ϕu ϕi ϕo ϕp : Pattern) (* Just a bunch of patterns to test scalability*)
     : True.
 Proof.
@@ -700,6 +818,34 @@ Proof.
         fm_solve.
     }
     assert (Y ∉ free_svars (patt_imp ϕ₁ ϕ₂)).
+    {
+        fm_solve.
+    }
+    assert (y ∉ free_evars_of_list [(patt_imp ϕ₁ ϕ₂); (patt_imp ϕ₂ ϕ₁)]).
+    {
+        fm_solve.
+    }
+    assert (y ∉ free_evars_of_list []).
+    {
+        fm_solve.
+    }
+
+    assert (x0 <> y).
+    {
+        fm_solve.
+    }
+
+    assert (y <> x0).
+    {
+        fm_solve.
+    }
+
+    assert (X0 <> Y).
+    {
+        fm_solve.
+    }
+
+    assert (Y <> X0).
     {
         fm_solve.
     }
