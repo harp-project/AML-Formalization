@@ -80,7 +80,7 @@ Local Lemma Ex_gen_complete (Γ : Theory) (ϕ₁ ϕ₂ : Pattern) (x : evar) (i 
 Proof.
   unfold exists_quantify. intros.
   mlIntro "H0".
-  mlDestructEx "H0" as x.
+  _mlDestructExManual "H0" as x.
   rewrite evar_open_evar_quantify. wf_auto2.
   mlRevertLast. assumption.
 Qed.

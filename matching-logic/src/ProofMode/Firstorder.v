@@ -1062,6 +1062,19 @@ Proof.
   mlAssumption.
 Qed.
 
+
+Tactic Notation "_mlDestructExManual" constr(name') "as" constr(x) :=
+  _ensureProofMode;
+  _mlReshapeHypsByName name';
+  apply (MLGoal_destructEx _ _ _ _ x name');[
+    try subst x; try_solve_pile
+  | try subst x; try solve_fresh; try solve_free_evars 10
+  | try subst x; try solve_fresh; try solve_free_evars 10
+  | try subst x; try solve_fresh; try solve_free_evars 10
+  | try subst x; try solve_fresh; try solve_free_evars 10
+  | _mlReshapeHypsBack]
+.
+
 Tactic Notation "mlDestructEx" constr(name') "as" ident(x) :=
   _ensureProofMode;
   _mlReshapeHypsByName name';
@@ -1081,6 +1094,11 @@ Local Lemma destructEx_Test {Σ : Signature} Γ ϕ ψ :
 Proof.
   intros WF1 WF2.
   mlIntro "H".
+  
+  remember (fresh_evar (ϕ and ψ)) as x0.
+  _mlDestructExManual "H" as x0.
+  Undo. Undo.
+  
   mlDestructEx "H" as x.
   mlSimpl.
   mlDestructAnd "H".

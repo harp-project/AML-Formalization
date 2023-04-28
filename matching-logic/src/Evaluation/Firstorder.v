@@ -5,6 +5,7 @@ From MatchingLogic Require Import
     DerivedOperators_Syntax
     ProofSystem
     ProofMode.MLPM
+    FreshnessManager
 .
 
 Import
@@ -16,75 +17,81 @@ Open Scope string_scope.
 Open Scope list_scope.
 Open Scope ml_scope.
 
-(** Low-level proof, using only the proof system *)
-Lemma ex3_low : forall {Σ : Signature} (Γ : Theory) (A B : Pattern) x,
-  well_formed A = true ->
-  well_formed B = true ->
-  x ∉ free_evars A ->
-  x ∉ free_evars B ->
-  Γ ⊢ (ex, A^{{evar:x ↦ 0}} and B^{{evar:x↦0}}) ---> ex, A^{{evar:x↦0}}.
+
+Definition Example3 : Type := 
+  forall (Σ : Signature) (Γ : Theory) (A B : Pattern),
+  well_formed (ex, A) = true ->
+  well_formed (ex, B) = true ->
+  Γ ⊢ (ex, A and B) ---> ex, A
+.
+
+Lemma ex3_low : Example3.
 Proof.
-  intros Σ Γ A B x WFA WFB Hx1 Hx2.
+  unfold Example3.
+  intros Σ Γ A B WFA WFB.
   (* inline proof of ex_quan_monotone *)
-  assert (forall A B, well_formed A -> well_formed B -> x ∉ free_evars A -> x ∉ free_evars B ->
-    Γ ⊢ A ---> B -> Γ ⊢ (ex, A^{{evar:x↦0}}) ---> ex, B^{{evar:x↦0}}) as H. {
-    intros. apply Ex_gen. 1-2: shelve.
+  assert (forall A B x, well_formed (ex, A) -> well_formed (ex, B) -> x ∉ free_evars A -> x ∉ free_evars B ->
+    Γ ⊢ (evar_open x 0 A) ---> (evar_open x 0 B) -> Γ ⊢ (ex, A) ---> ex, B) as H. {
+    intros.
+    apply strip_exists_quantify_l with (x := x).
+    { exact H1. }
+    { shelve. }
+    apply Ex_gen. 1-2: shelve.
     eapply syllogism_meta. 1-3: shelve. exact H3.
-    rewrite <- (evar_open_evar_quantify x 0 B0) at 1. 2: shelve.
-    unfold evar_open. fold (instantiate (ex, B0^{{evar:x↦0}}) (patt_free_evar x)).
-    epose proof (Ex_quan Γ (B0^{{evar:x↦0}}) x _) as H4.
-    eapply useGenericReasoning in H4. exact H4. shelve.
+    epose proof (Htmp := Ex_quan Γ B0 x _).
+    cbn in Htmp.
+    eapply useGenericReasoning in Htmp.
+    apply Htmp.
+    shelve.
   }
-  apply (H (A and B)). 1-4: shelve.
-  epose proof (pf_conj_elim_l Γ A B _ _).
+  mlFreshEvar as x.
+  apply (H (A and B) A x).
+  1-4: shelve.
+  mlSimpl.
+  epose proof (pf_conj_elim_l Γ (A^{evar:0↦x}) (B^{evar:0↦x}) _ _) as H0.
   eapply useGenericReasoning in H0. exact H0. shelve.
   Unshelve.
   (* 9 well_formed goals *)
-  3-7,9-10,13-14: try wf_auto2.
+  1,4-7,9-10,13-14: solve [wf_auto2].
   (* 3 variable membership goals *)
-  4,5: cbn; solve_free_evars 1. 2: { apply evar_quantify_no_occurrence. }
+  2: cbn; solve_free_evars 1. 4: fm_solve. 3: fm_solve.
   (* 3 ProofInfoLe goals *)
   1-3: try_solve_pile.
 Defined.
 
-From Coq Require Import ssreflect ssrfun ssrbool.
-
-Open Scope string_scope.
-Open Scope list_scope.
-Open Scope ml_scope.
 
 (** Proof using only FOL proof mode *)
-Lemma ex3_fol_pm : forall {Σ : Signature} (Γ : Theory) (A B : Pattern) x,
-  well_formed A = true ->
-  well_formed B = true ->
-  x ∉ free_evars A ->
-  x ∉ free_evars B ->
-  Γ ⊢ (ex, A^{{evar:x ↦ 0}} and B^{{evar:x↦0}}) ---> ex, A^{{evar:x↦0}}.
+Lemma ex3_fol_pm : Example3.
 Proof.
-  intros Σ Γ A B x WFA WFB Hx1 Hx2.
-  mlIntro "H". mlDestructEx "H" as x.
-  mlSimpl. mlExists x. fromMLGoal.
-  epose proof (pf_conj_elim_l Γ A _ _ _) as H0.
-  eapply useGenericReasoning in H0. exact H0. shelve.
+  unfold Example3.
+  intros Σ Γ A B WFA WFB.
+  mlIntro "H".
+  mlDestructEx "H" as x.
+  mlSimpl.
+  mlExists x.
+  fromMLGoal.
+  epose proof (pf_conj_elim_l Γ (A^{evar:0↦x}) _ _ _) as H0.
+  eapply useGenericReasoning in H0.
+  { exact H0. }
+  { shelve. }
   Unshelve.
   (* 2 well_formedness *)
   1-2: wf_auto2.
   (* 1 ProofInfoLe *)
-  try_solve_pile.
+  try_solve_pile.  
 Defined.
 
 (** Proof using proof mode *)
-Lemma ex3_pm : forall {Σ : Signature} (Γ : Theory) (A B : Pattern) x,
-  well_formed A = true ->
-  well_formed B = true ->
-  x ∉ free_evars A ->
-  x ∉ free_evars B ->
-  Γ ⊢ (ex, A^{{evar:x ↦ 0}} and B^{{evar:x↦0}}) ---> ex, A^{{evar:x↦0}}.
+Lemma ex3_pm : Example3.
 Proof.
-  intros Σ Γ A B x WFA WFB Hx1 Hx2.
-  mlIntro "H". mlDestructEx "H" as x.
-  mlSimpl. mlDestructAnd "H" as "H0" "H1".
-  mlExists x. mlAssumption.
+  unfold Example3.
+  intros Σ Γ A B wfA wfB.
+  mlIntro "H".
+  mlDestructEx "H" as x.
+  mlSimpl.
+  mlDestructAnd "H" as "H0" "H1".
+  mlExists x.
+  mlAssumption.
 Defined.
 
 Section compute.
@@ -147,8 +154,8 @@ Section compute.
   Definition B : Pattern :=
     patt_app sym_succ sym_zero.
   
-  Definition proof3_low := ex3_low ∅ A B "X" ltac:(wf_auto2) ltac:(wf_auto2) ltac:(set_solver) ltac:(set_solver).
-  Definition proof3_fol_pm := ex3_fol_pm ∅ A B "X" ltac:(wf_auto2) ltac:(wf_auto2) ltac:(set_solver) ltac:(set_solver).
-  Definition proof3_pm := ex3_pm ∅ A B "X" ltac:(wf_auto2) ltac:(wf_auto2) ltac:(set_solver) ltac:(set_solver).
+  Definition proof3_low    := ex3_low    signature ∅ A B ltac:(reflexivity) ltac:(reflexivity).
+  Definition proof3_fol_pm := ex3_fol_pm signature ∅ A B ltac:(reflexivity) ltac:(reflexivity).
+  Definition proof3_pm     := ex3_pm     signature ∅ A B ltac:(reflexivity) ltac:(reflexivity).
 
 End compute.
