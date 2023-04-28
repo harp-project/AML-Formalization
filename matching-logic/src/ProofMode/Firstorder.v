@@ -16,6 +16,7 @@ From MatchingLogic Require Import
     wftactics
     ProofInfo
     BasicProofSystemLemmas
+    FreshnessManager
 .
 From MatchingLogic.ProofMode Require Import Basics
                                             Propositional.
@@ -904,11 +905,12 @@ Ltac solve_fresh :=
   eapply evar_is_fresh_in_richer'; [|apply set_evar_fresh_is_fresh'];
   clear; set_solver).
 
-Tactic Notation "mlIntroAll" constr(x) :=
+Tactic Notation "mlIntroAll" ident(x) :=
 _ensureProofMode;
+mlFreshEvar as x;
 apply (MLGoal_forallIntro _ _ _ x);
-[   try subst x; try solve_fresh; try solve_free_evars 10
-  | try subst x; try solve_fresh; try solve_free_evars 10
+[   fm_solve
+  | fm_solve
   | try subst x; try_solve_pile
   | unfold evar_open; mlSimpl;
     repeat (rewrite bevar_subst_not_occur; [by wf_auto2|])
@@ -920,10 +922,11 @@ Local Example forall_test_1 {Σ : Signature} Γ ϕ:
 Proof.
   intro.
   toMLGoal. wf_auto2.
-  mlIntroAll (fresh_evar ϕ).
+  mlIntroAll x.
   mlIntro "A". mlSplitAnd; mlAssumption.
 Qed.
 
+(* The FreshMan does not handle this case yet
 Local Example forall_test_2 {Σ : Signature} Γ ϕ ψ x:
   well_formed ϕ -> well_formed (ex, ψ) ->
   x ∉ free_evars ϕ ->
@@ -936,6 +939,7 @@ Proof.
   mlIntro. mlIntroAll x.
   by fromMLGoal.
 Qed.
+*)
 
 Tactic Notation "mlRevertAll" constr(x) :=
   _ensureProofMode;
@@ -961,12 +965,12 @@ Local Example forall_revert_test_1 {Σ : Signature} Γ ϕ ψ:
   Γ ⊢ all, ϕ ---> ψ.
 Proof.
   intros.
-  remember (fresh_evar (ψ $ ϕ)) as x.
   toMLGoal. wf_auto2.
   mlIntroAll x.
   mlIntro. mlRevertAll x.
   fold (evar_open x 0 ψ).
-  rewrite evar_quantify_evar_open. 1: subst x; solve_fresh.
+  rewrite evar_quantify_evar_open.
+  { fm_solve. }
   1: wf_auto2.
   by fromMLGoal.
 Qed.
@@ -977,12 +981,12 @@ Local Example forall_revert_test_2 {Σ : Signature} Γ ϕ ψ ξ:
   Γ ⊢ all, ξ ---> ϕ ---> ψ.
 Proof.
   intros.
-  remember (fresh_evar (ξ $ ψ $ ϕ)) as x.
   toMLGoal. wf_auto2.
   mlIntroAll x.
   do 2 mlIntro. mlRevertAll x.
   fold (evar_open x 0 ψ).
-  rewrite evar_quantify_evar_open. 1: subst x; solve_fresh.
+  rewrite evar_quantify_evar_open.
+  { fm_solve. }
   1: wf_auto2.
   by fromMLGoal.
 Qed.
@@ -993,25 +997,28 @@ Local Example destruct_or_f {Σ : Signature} Γ ϕ₁ ϕ₂ ψ:
   Γ ⊢ all, ϕ₁ or ϕ₂ ---> ψ.
 Proof.
   intros.
-  remember (fresh_evar (ψ $ ϕ₁ $ ϕ₂)) as x.
   toMLGoal. wf_auto2.
   mlIntroAll x.
   mlIntro. mlDestructOr "0".
   * mlRevertLast. mlRevertAll x. simpl.
     fold (evar_open x 0 ψ).
-    rewrite evar_quantify_evar_open. 1: subst x; solve_fresh.
+    rewrite evar_quantify_evar_open.
+    { fm_solve. }
     1: wf_auto2.
     fold (evar_open x 0 ϕ₁).
-    rewrite evar_quantify_evar_open. 1: subst x; solve_fresh.
+    rewrite evar_quantify_evar_open.
+    { fm_solve. }
     1: wf_auto2.
     by fromMLGoal.
   * mlAdd H3.
     mlRevertLast. mlRevertAll x. simpl.
     fold (evar_open x 0 ψ).
-    rewrite evar_quantify_evar_open. 1: subst x; solve_fresh.
+    rewrite evar_quantify_evar_open.
+    { fm_solve. }
     1: wf_auto2.
     fold (evar_open x 0 ϕ₁).
-    rewrite evar_quantify_evar_open. 1: subst x; solve_fresh.
+    rewrite evar_quantify_evar_open.
+    { fm_solve. }
     1: wf_auto2.
     mlAssumption.
 Qed.
@@ -1048,32 +1055,34 @@ Local Lemma exists_test_1 {Σ : Signature} Γ ϕ :
 Proof.
   intro WF.
   mlIntro "H".
-  remember (fresh_evar patt_bott) as y.
+  mlFreshEvar as y.
   (* we can prove this with a y which is not necessarily equal to x too, but it is tricky. *)
   mlSpecialize "H" with y.
   mlExists y.
   mlAssumption.
 Qed.
 
-Tactic Notation "mlDestructEx" constr(name') "as" constr(x) :=
-_ensureProofMode;
-_mlReshapeHypsByName name';
-apply (MLGoal_destructEx _ _ _ _ x name');[
+Tactic Notation "mlDestructEx" constr(name') "as" ident(x) :=
+  _ensureProofMode;
+  _mlReshapeHypsByName name';
+  mlFreshEvar as x;
+  apply (MLGoal_destructEx _ _ _ _ x name');[
     try subst x; try_solve_pile
-  | try subst x; try solve_fresh; try solve_free_evars 10
-  | try subst x; try solve_fresh; try solve_free_evars 10
-  | try subst x; try solve_fresh; try solve_free_evars 10
-  | try subst x; try solve_fresh; try solve_free_evars 10
-  | _mlReshapeHypsBack].
-
+  | fm_solve
+  | fm_solve
+  | fm_solve
+  | fm_solve
+  | _mlReshapeHypsBack]
+.
+  
 Local Lemma destructEx_Test {Σ : Signature} Γ ϕ ψ :
   well_formed (ex, ϕ) -> well_formed (ex, ψ) ->
   Γ ⊢ (ex, ϕ and ψ) ---> ex, ϕ.
 Proof.
   intros WF1 WF2.
   mlIntro "H".
-  remember (fresh_evar (ϕ $ ψ)) as x.
-  mlDestructEx "H" as x. mlSimpl.
+  mlDestructEx "H" as x.
+  mlSimpl.
   mlDestructAnd "H".
   mlExists x.
   mlAssumption.

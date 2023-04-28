@@ -164,7 +164,7 @@ Fixpoint size' (p : Pattern) : nat :=
     | patt_mu phi => free_svars phi
     end.
 
-  Definition free_evars_of_list l : EVarSet :=
+  Definition free_evars_of_list (l : list Pattern) : EVarSet :=
     union_list (map free_evars l).
 
   Lemma free_evars_of_list_foldr :
