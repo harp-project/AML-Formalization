@@ -173,8 +173,7 @@ Next Obligation.
 Qed.
 
 #[global]
-Program Instance lwp_ml {Σ : Signature} : LWP := {
-  lwp_formula := wfPattern ;
+Program Instance lwp_ml {Σ : Signature} : LWP wfPattern := {
   lwp_imp := wfpatt_imp ;
   lwp_bot := wfpatt_bot ;
   lwp_or := wfpatt_or ;
@@ -207,32 +206,34 @@ Next Obligation.
 Qed.
 
 #[global]
-Program Instance lwppf_ml {Σ : Signature} : LwpProvability := {|
-  lwp_pf := fun Γ => fun ϕ =>
-    let Γ' := fmap proj1_sig Γ in
-    let ϕ' := proj1_sig ϕ in
-    Γ' ⊢i ϕ' using BasicReasoning ;
+Program Instance lwppf_ml {Σ : Signature} (Γ : Theory) (i : ProofInfo) : @LwpProvability wfPattern lwp_ml :=
+{|
+  lwp_pf := fun ϕ =>
+    Γ ⊢i (proj1_sig ϕ) using i ;
 |}.
 Next Obligation.
-  intros Σ G phi1 phi2.
+  intros Σ G i phi1 phi2.
   destruct phi1,phi2.
   cbn.
+  apply useBasicReasoning.
   apply P1; assumption.
 Qed.
 Next Obligation.
-  intros Σ G phi1 phi2 phi3.
+  intros Σ G i phi1 phi2 phi3.
   destruct phi1,phi2,phi3.
   cbn.
+  apply useBasicReasoning.
   apply P2; assumption.
 Qed.
 Next Obligation.
-  intros Σ G phi1.
+  intros Σ G i phi1.
   destruct phi1.
   cbn.
+  apply useBasicReasoning.
   apply P3; assumption.
 Qed.
 Next Obligation.
-  intros Σ G phi1 phi2 H1 H2.
+  intros Σ G i phi1 phi2 H1 H2.
   destruct phi1,phi2.
   cbn in *.
   eapply MP.
@@ -240,21 +241,98 @@ Next Obligation.
   { exact H1. }
 Qed.
 
+Lemma prove_abstractly {Σ : Signature} (Γ : Theory) (ϕ : wfPattern) (i : ProofInfo):
+  @lwp_pf wfPattern lwp_ml (lwppf_ml Γ i) ϕ ->
+  Γ ⊢i (proj1_sig ϕ) using i
+.
+Proof.
+  intros H.
+  exact H.
+Defined.
+
+Lemma imp_correspondence
+  {Σ : Signature}
+  (A B : Pattern)
+  (wfA : well_formed A = true)
+  (wfB : well_formed B = true)
+  :
+  proj1_sig (lwp_imp (exist _ A wfA) (exist _ B wfB))
+  = patt_imp A B
+.
+Proof.
+  reflexivity.
+Qed.
+
+Lemma bot_correspondence
+  {Σ : Signature}
+  (A B : Pattern)
+  :
+  proj1_sig (lwp_bot)
+  = patt_bott
+.
+Proof.
+  reflexivity.
+Qed.
+
+Lemma not_correspondence
+  {Σ : Signature}
+  (A : Pattern)
+  (wfA : well_formed A = true)
+  :
+  proj1_sig (lwp_not (exist _ A wfA))
+  = patt_not A
+.
+Proof.
+  reflexivity.
+Qed.
+
+Lemma or_correspondence
+  {Σ : Signature}
+  (A B : Pattern)
+  (wfA : well_formed A = true)
+  (wfB : well_formed B = true)
+  :
+  proj1_sig (lwp_or (exist _ A wfA) (exist _ B wfB))
+  = patt_or A B
+.
+Proof.
+  reflexivity.
+Qed.
+
+Lemma and_correspondence
+  {Σ : Signature}
+  (A B : Pattern)
+  (wfA : well_formed A = true)
+  (wfB : well_formed B = true)
+  :
+  proj1_sig (lwp_and (exist _ A wfA) (exist _ B wfB))
+  = patt_and A B
+.
+Proof.
+  reflexivity.
+Qed.
+
+Definition correspondences {Σ : Signature} := (
+  and_correspondence,
+  or_correspondence,
+  not_correspondence,
+  bot_correspondence,
+  imp_correspondence
+).
+
+Tactic Notation "prove" "propositionally" "using" constr(lemma) :=
+  rewrite -!correspondences;
+  apply prove_abstractly;
+  apply lemma
+.
+
 Lemma A_impl_A {Σ : Signature} (Γ : Theory) (A : Pattern)  :
   (well_formed A) ->
   Γ ⊢i (A ---> A)
   using BasicReasoning.
 Proof. 
   intros WFA.
-  replace A with (@proj1_sig _ (fun p => well_formed p = true) (exist _ A WFA)) by reflexivity.
-  replace Γ with (proj1_sig <$> ((exist _ ) <$>Γ)).
-  apply AbstractPropositional.A_impl_A.
-  pose proof (_1 := P2 Γ A (A ---> A) A ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
-  pose proof (_2 := P1 Γ A (A ---> A) ltac:(wf_auto2) ltac:(wf_auto2)).
-  pose proof (_3 := MP _2 _1).
-  pose proof (_4 := P1 Γ A A ltac:(wf_auto2) ltac:(wf_auto2)).
-  pose proof (_5 := MP _4 _3).
-  exact _5.
+  prove propositionally using @AbstractPropositional.A_impl_A. 
 Defined.
 
 Lemma prf_add_assumption {Σ : Signature} Γ a b i :
@@ -264,9 +342,8 @@ Lemma prf_add_assumption {Σ : Signature} Γ a b i :
   Γ ⊢i (a ---> b) using i.
 Proof.
   intros wfa wfb H.
-  eapply MP.
-  { apply H. }
-  { apply useBasicReasoning. apply P1; wf_auto2. }
+  prove propositionally using @AbstractPropositional.prf_add_assumption.
+  assumption.
 Defined.
 
 Lemma hypothesis {Σ : Signature} (Γ : Theory) (axiom : Pattern) :
