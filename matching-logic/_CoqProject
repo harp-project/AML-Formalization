@@ -4,7 +4,6 @@ src/Utils/extralibrary.v
 src/Utils/Lattice.v
 src/Utils/stdpp_ext.v
 
-src/AbstractPropositional.v
 src/Signature.v
 src/Pattern.v
 src/Substitution.v
