@@ -107,7 +107,8 @@ Proof.
   intros. generalize (in_or_app l1 l2 u). tauto.
 Qed.
 
-Hint Resolve sym_not_equal notin_cons_l notin_cons_r notin_app_l notin_app_r.
+#[global]
+Hint Resolve sym_not_equal notin_cons_l notin_cons_r notin_app_l notin_app_r : core.
 
 Lemma in_app_equiv:
   forall (A: Type) (x y: A) (l1 l2 l3 l4: list A),
@@ -116,7 +117,8 @@ Proof.
   intros. generalize (in_or_app l1 l2 x). generalize (in_or_app l3 l4 y).
   generalize (in_app_or l1 l2 x). generalize (in_app_or l3 l4 y). tauto.
 Qed.
-Hint Resolve in_app_equiv.
+#[global]
+Hint Resolve in_app_equiv : core.
 
 Lemma in_app_l:
   forall (A: Type) (x: A) (l1 l2: list A), In x l1 -> In x (l1 ++ l2).
@@ -128,7 +130,8 @@ Lemma in_app_r:
 Proof.
   intros. apply in_or_app. tauto.
 Qed.
-Hint Resolve in_app_l in_app_r.
+#[global]
+Hint Resolve in_app_l in_app_r : core.
 
 Lemma in_cons_other:
   forall (A: Type) (x y: A) (l: list A),
@@ -136,7 +139,8 @@ Lemma in_cons_other:
 Proof.
   intros. elim H; intros. congruence. auto.
 Qed.
-Hint Resolve in_cons_other.
+#[global]
+Hint Resolve in_cons_other : core.
 
 
 Lemma map_append:
@@ -152,7 +156,9 @@ Lemma incl_cons2:
 Proof.
   intros; red; simpl; intros. generalize (H a). tauto.
 Qed.
-Hint Resolve in_app_or in_or_app incl_refl incl_tl incl_cons incl_cons2 incl_app.
+
+#[global]
+Hint Resolve in_app_or in_or_app incl_refl incl_tl incl_cons incl_cons2 incl_app : core.
 
 
 (** ** Peano induction. *)

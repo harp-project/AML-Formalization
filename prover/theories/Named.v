@@ -2,8 +2,8 @@ From Coq Require Import ssreflect ssrfun ssrbool.
 
 From Equations Require Import Equations.
 
-From stdpp Require Import base pmap gmap fin_maps.
-From MatchingLogic Require Import Syntax Utils.stdpp_ext.
+From stdpp Require Import base pmap gmap fin_maps finite.
+From MatchingLogic Require Import Syntax Utils.stdpp_ext StringSignature.
 
   (* stdpp_ext.v *)
   Lemma drop_notin :
@@ -2238,11 +2238,6 @@ End named.
 
 (*
 Section named_test.
-
-  Definition StringMLVariables : MLVariables :=
-    {| evar := string;
-       svar := string;
-    |}.
 
   Inductive Symbols : Set := a.
   Instance Symbols_dec : EqDecision Symbols.

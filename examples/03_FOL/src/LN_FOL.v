@@ -11,7 +11,7 @@ Require Export Coq.Program.Wf
                FunctionalExtensionality
                Logic.PropExtensionality
                Program.Equality.
-From stdpp Require Import countable finite sets.
+From stdpp Require Import countable finite sets strings.
 From MatchingLogic Require Export Utils.extralibrary.
 Require Export Vector PeanoNat String Arith.Lt.
 
@@ -93,9 +93,11 @@ Class preds_signature :=
 Class FOL_variables :=
   {
     vars : Set;
-    var_eqdec :> EqDecision vars;
-    var_countable :> Countable vars;
-    var_infinite :> Infinite vars;
+    var_eqdec :: EqDecision vars;
+    var_countable :: Countable vars;
+    var_infinite :: Infinite vars;
+    var_from_string : string -> vars ;
+    var_from_string_inj :: Inj eq eq var_from_string ;
   }.
 
 Coercion preds : preds_signature >-> Sortclass.
@@ -743,6 +745,8 @@ Section FOL_ML_correspondence.
     svar_countable := var_countable;
     evar_infinite := var_infinite;
     svar_infinite := var_infinite;
+    string2evar := var_from_string;
+    string2svar := var_from_string;
   |}.
 
   Instance sig : Signature := 

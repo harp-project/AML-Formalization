@@ -20,6 +20,8 @@ src/Syntax.v
 src/wftactics.v
 src/NamedAxioms.v
 
+src/Experimental/ProofModePattern.v
+
 src/Semantics.v
 src/ModelIsomorphism.v
 src/PrePredicate.v
@@ -42,6 +44,7 @@ src/ProofMode/FixPoint.v
 src/ProofMode/Reshaper.v
 src/ProofMode/Misc.v
 src/ProofMode/MLPM.v
+src/FreshnessManager.v
 
 src/Theories/Definedness_Syntax.v
 src/Theories/Definedness_Semantics.v
@@ -55,6 +58,9 @@ src/Theories/Nat_ProofSystem.v
 src/Theories/Sorts_Syntax.v
 src/Theories/Sorts_Semantics.v
 src/Theories/Sorts_ProofSystem.v
+
+src/Theories/Subseteq_ProofSystem.v
+src/Theories/ContextualImplication.v
 
 src/Theories/ModelExtension.v
 

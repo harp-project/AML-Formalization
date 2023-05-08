@@ -13,6 +13,7 @@
 | `mlLeft`, `mlRight`                      | choose a branch in a goal that is a disjunction - disjunction introduction |
 | `mlDestructBot`                          | finish a proof by using a false hypothesis - bottom elimination |
 | `mlExfalso`                              | prove that the hypotheses are inconsistent instead of the current goal |
+| `mlClassic phi as "H1" "H2"`             | destruct on the disjunction `phi or neg phi` and save the result as local hypothesis "H1" or "H2"       |
 | `mlExact "H"`                            | finish a proof by using the local hypothesis `"H"` which is the same as the goal |
 | `mlAssumption`                           | finish a proof by using some local hypothesis which is the same as the goal |
 | `mlExactMeta`                            | finish a proof by using a global hypothesis or a lemma which is the same as the goal |
