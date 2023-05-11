@@ -139,12 +139,14 @@ Proof.
   mlIntro "H1". mlExact "H1".
 Defined.
 
+Import PropExtensionality.
+
 Lemma ex2_coq {T : Type} A (B : T -> Prop) C D:
   B C <-> D ->
   A (B C) -> A D.
 Proof.
   intros H.
-  apply PropExtensionality.propositional_extensionality in H.
+  apply propositional_extensionality in H.
   rewrite H.
   intro H1. exact H1.
 Qed.
