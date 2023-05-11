@@ -5,6 +5,7 @@ From MatchingLogic Require Import
     DerivedOperators_Syntax
     ProofSystem
     ProofMode.MLPM
+    FreshnessManager
 .
 
 From MatchingLogic.Theories Require Import Definedness_Syntax
@@ -52,6 +53,31 @@ Section running.
     mlExact "H2". (* .unfold .no-hyps *)
     (* end snippet running *)
   Defined.
+
+  Lemma running_functional_subst (φ φ' : Pattern) :
+    mu_free φ → well_formed φ' → well_formed_closed_ex_aux φ 1 →
+    well_formed_closed_mu_aux φ 0 →
+    Γ ⊢i φ^[evar:0↦φ'] and (ex , φ' =ml b0) ---> (ex , φ)
+              using AnyReasoning.
+  Proof.
+    intros HMF HWF1 HWF2 HWF3.
+    apply mu_free_wfp in HMF as HMFWF.
+    toMLGoal. wf_auto2.
+    mlIntro "H".
+    mlDestructAnd "H" as "H1" "H2".
+    (* TODO: these steps should be automatic with the
+       FreshnessManager *)
+    remember (fresh_evar (φ =ml φ')) as x.
+    _mlDestructExManual "H2" as x. cbn.
+    pose proof (free_evars_bevar_subst φ φ' 0).
+    pose proof (set_evar_fresh_is_fresh (φ =ml φ')). unfold evar_is_fresh_in in H0.
+    simpl in H0. set_solver.
+    (***)
+    mlSimpl. cbn.
+    unfold evar_open. rewrite (bevar_subst_not_occur _ _ φ'). wf_auto2.
+    (* TODO: rewrite with substitutions! *)
+    
+  Qed.
 
   Local Lemma lhs_from_and_low:
     ∀ (a b c : Pattern) (i : ProofInfo),
