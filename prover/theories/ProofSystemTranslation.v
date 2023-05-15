@@ -14,6 +14,45 @@ From stdpp Require Import base finite gmap mapset listset_nodup numbers propset 
 Derive NoConfusion for Pattern.
 Derive Subterm for Pattern.
 
+Print ML_proof_system.
+
+Fixpoint analyse_proof {Σ : Signature} Γ (ϕ : Pattern) (p : ML_proof_system Γ ϕ) : list evar * list svar :=
+  match p with
+  | hypothesis ϕ wfϕ Hin => _ (* we can't generate names here, we don't know where is ϕ in Γ, and their names should be the same *)
+  | P1 ϕ ψ wfϕ wfψ => 
+  | P2 
+  | P3
+  | MP
+  end
+.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 Ltac invert_tuples :=
   repeat (match goal with
           | [H: (?x1,?y1)=(?x2,?y2) |- _] => inversion H; clear H; subst

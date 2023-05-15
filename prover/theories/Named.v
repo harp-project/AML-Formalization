@@ -151,6 +151,20 @@ Defined.
 
   Definition named_well_formed := named_well_formed_positive.
 
+  Inductive Named_Application_context : Type :=
+  | nbox
+  | nctx_app_l (cc : Named_Application_context) (p : NamedPattern) (Prf : named_well_formed p)
+  | nctx_app_r (p : NamedPattern) (cc : Named_Application_context) (Prf : named_well_formed p)
+  .
+
+  Fixpoint named_subst_ctx (C : Named_Application_context) (p : NamedPattern)
+    : NamedPattern :=
+    match C with
+    | nbox => p
+    | @nctx_app_l C' p' prf => npatt_app (named_subst_ctx C' p) p'
+    | @nctx_app_r p' C' prf => npatt_app p' (named_subst_ctx C' p)
+    end.
+
   Definition EVarMap := gmap db_index evar.
   Definition SVarMap := gmap db_index svar.
 
@@ -797,7 +811,8 @@ Defined.
       npatt_app  (standard_evar_subst ϕ1 x ψ) (standard_evar_subst ϕ2 x ψ);
     standard_evar_subst (npatt_exists y ϕ) x ψ with (decide (x = y)) => {
       | left _  := npatt_exists y ϕ
-      | right _ with (decide (y ∈ named_free_evars ψ)) => { 
+      | right _ with 
+        (decide (y ∈ named_free_evars ψ /\ x ∈ named_free_evars ϕ)) => { 
         | left _  := let z := evar_fresh (elements ({[x]} ∪ named_free_evars ϕ ∪ named_free_evars ψ)) in
           npatt_exists z (standard_evar_subst (rename_free_evar ϕ y z) x ψ)
         | right _ := npatt_exists y (standard_evar_subst ϕ x ψ)
@@ -819,11 +834,12 @@ Defined.
     };
     standard_svar_subst (npatt_imp ϕ1 ϕ2) X ψ :=
       npatt_imp (standard_svar_subst ϕ1 X ψ) (standard_svar_subst ϕ2 X ψ);
-      standard_svar_subst (npatt_app ϕ1 ϕ2) X ψ :=
+    standard_svar_subst (npatt_app ϕ1 ϕ2) X ψ :=
       npatt_app  (standard_svar_subst ϕ1 X ψ) (standard_svar_subst ϕ2 X ψ);
-      standard_svar_subst (npatt_mu Y ϕ) X ψ with (decide (X = Y)) => {
+    standard_svar_subst (npatt_mu Y ϕ) X ψ with (decide (X = Y)) => {
       | left _  := npatt_mu Y ϕ
-      | right _ with (decide (Y ∈ named_free_svars ψ)) => { 
+      | right _ with
+        (decide (Y ∈ named_free_svars ψ /\ X ∈ named_free_svars ϕ)) => { 
         | left _  := let Z := svar_fresh (elements ({[X]} ∪ named_free_svars ϕ ∪ named_free_svars ψ)) in
           npatt_mu Z (standard_svar_subst (rename_free_svar ϕ Y Z) X ψ)
         | right _ := npatt_mu Y (standard_svar_subst ϕ X ψ)
@@ -1065,28 +1081,36 @@ Defined.
   Theorem namify_well_formed :
     forall ϕ evars svars eg sg,
       well_formed_positive ϕ ->
+      free_svars ϕ ⊆ sg ->
+      list_to_set svars ## free_svars ϕ ->
       named_well_formed (namify eg sg evars svars ϕ).
   Proof.
     intros ϕ. remember (size' ϕ) as s.
     assert (size' ϕ <= s) by lia. clear Heqs. revert ϕ H.
     induction s; destruct ϕ; intros; simpl in *; try lia; try reflexivity.
     * simp namify. simpl. move: H0 =>/andP [H0_1 H0_2].
-      rewrite IHs; auto. lia. rewrite IHs; auto; lia.
+      rewrite IHs; auto. lia. set_solver. admit.
+      rewrite IHs; auto. lia. set_solver. admit.
     * simp namify. simpl. move: H0 =>/andP [H0_1 H0_2].
-      rewrite IHs; auto. lia. rewrite IHs; auto; lia.
+      rewrite IHs; auto. lia. set_solver. admit.
+      rewrite IHs; auto. lia. set_solver. admit.
     * destruct evars; simp namify; simpl; rewrite IHs; auto.
-      1-2: rewrite evar_open_size'; lia.
+      1,4: rewrite evar_open_size'; lia.
+      1-4: by rewrite free_svars_evar_open.
     * destruct svars; simp namify; simpl.
       1-2: move: H0 => /andP [H0_1 H0_2].
       - rewrite no_negatives_namify; auto.
         admit.
         1-2: set_solver.
-        simpl. rewrite IHs; auto. rewrite svar_open_size'. lia.
+        (* simpl. rewrite IHs; auto. rewrite svar_open_size'. lia. *)
+        pose proof (free_svars_svar_open ϕ (svar_fresh (elements sg)) 0).
+        (* clear -H0 H1. set_solver. *) admit.
+        (* set_solver. *)
       - rewrite no_negatives_namify; auto.
         admit.
-        1-2: set_solver.
-        simpl. rewrite IHs; auto. rewrite svar_open_size'. lia.
-  Defined.
+        simpl in H2.
+        (* simpl. rewrite IHs; auto. rewrite svar_open_size'. lia. *)
+  Admitted.
 
   (* NOTE: do not use option type, because then inversion would be needed in the proofs,
      which is disallowed on Set. *)
@@ -1653,7 +1677,7 @@ Defined.
       subst.
       destruct decide. set_solver.
       simpl. destruct decide.
-      - simpl in Hdis. pose proof e as He. rewrite well_formed_namify_free_evars in He; auto.
+      - simpl in Hdis. pose proof a as He. rewrite well_formed_namify_free_evars in He; auto.
         set_solver.
       - simpl. erewrite <- IHs; auto. 3: rewrite combine_evar_evar_open; eassumption.
         2: rewrite evar_open_size'; lia.
