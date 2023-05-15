@@ -1,6 +1,6 @@
 From Coq Require Import ssreflect ssrfun ssrbool.
 
-From Ltac2 Require Import Ltac2.
+From Ltac2 Require Import Ltac2 Control.
 
 From Coq Require Import Ensembles Bool String.
 From Coq.Logic Require Import FunctionalExtensionality Eqdep_dec.
@@ -1062,8 +1062,8 @@ Proof.
   mlAssumption.
 Qed.
 
-
-Tactic Notation "_mlDestructExManual" constr(name') "as" constr(x) :=
+(*(* The order of these two tactics matter! Do not exchange them! *)
+Tactic Notation "mlDestructEx" constr(name') "as" constr(x) :=
   _ensureProofMode;
   _mlReshapeHypsByName name';
   apply (MLGoal_destructEx _ _ _ _ x name');[
@@ -1074,20 +1074,84 @@ Tactic Notation "_mlDestructExManual" constr(name') "as" constr(x) :=
   | try subst x; try solve_fresh; try solve_free_evars 10
   | _mlReshapeHypsBack]
 .
+(* The order of this and the previous tactic matter! *)
+Tactic Notation "mlDestructEx" constr(name') "as" ident(x) :=
+  tryif ltac2:(hyp ident:(x))
+  then mlDestructEx name' as (constr:(x))
+  else  
+    _ensureProofMode;
+    _mlReshapeHypsByName name';
+    mlFreshEvar as x;
+    apply (MLGoal_destructEx _ _ _ _ x name');[
+      try subst x; try_solve_pile
+    | fm_solve
+    | fm_solve
+    | fm_solve
+    | fm_solve
+    | _mlReshapeHypsBack]
+.*)
+
+Ltac _mlDestructExManual name' x :=
+  _ensureProofMode;
+  _mlReshapeHypsByName name';
+  apply (MLGoal_destructEx _ _ _ _ x name');[
+    try subst x; simpl; try_solve_pile
+  | try subst x; simpl; try solve_fresh; try solve_free_evars 10
+  | try subst x; simpl; try solve_fresh; try solve_free_evars 10
+  | try subst x; simpl; try solve_fresh; try solve_free_evars 10
+  | try subst x; simpl; try solve_fresh; try solve_free_evars 10
+  | _mlReshapeHypsBack].
+
+Ltac _mlDestructExFresh name' x :=
+    _ensureProofMode;
+    _mlReshapeHypsByName name';
+    mlFreshEvar as x;
+    apply (MLGoal_destructEx _ _ _ _ x name');[
+      try subst x; try_solve_pile
+    | fm_solve
+    | fm_solve
+    | fm_solve
+    | fm_solve
+    | _mlReshapeHypsBack].
+
+Tactic Notation "mlDestructEx" constr(name') "as" constr(x) :=
+  _mlDestructExManual name' x.
 
 Tactic Notation "mlDestructEx" constr(name') "as" ident(x) :=
-  _ensureProofMode;
-  _mlReshapeHypsByName name';
-  mlFreshEvar as x;
-  apply (MLGoal_destructEx _ _ _ _ x name');[
-    try subst x; try_solve_pile
-  | fm_solve
-  | fm_solve
-  | fm_solve
-  | fm_solve
-  | _mlReshapeHypsBack]
-.
-  
+  tryif is_var x (* we need to check whether x is a used ident! *)
+  then
+    _mlDestructExManual name' x (* Do not use idtac here, because it breaks tryif for some reason *)
+  else
+    _mlDestructExFresh name' x (* Do not use idtac here, because it breaks tryif for some reason *)
+  .
+
+(* Ltac mlDestructEx name' x :=
+  tryif
+    match type of x with
+    | evar => idtac
+    | _ => fail 1
+    end
+  then _mlDestructExManual name' as x
+  else _mlDestructExFresh name' as x
+. *)
+
+From Ltac2 Require Import Ltac2 Control.
+
+Set Default Proof Mode "Classic".
+
+Local Lemma destructExDouble_Test {Σ : Signature} Γ ϕ ψ :
+  well_formed (ex, ϕ) -> well_formed (ex, ψ) ->
+  Γ ⊢ (ex, ϕ and ψ) ---> (ex, ϕ and ψ) ---> ex, ϕ.
+Proof.
+  intros.
+  mlIntro "H". mlIntro "H0".
+  mlDestructEx "H" as (fresh_evar (ϕ $ ψ)). { cbn. solve_fresh. }
+  mlClear "H". mlDestructEx "H0" as x.
+  mlSimpl. mlDestructAnd "H0" as "H" "H1".
+  mlExists x. mlAssumption.
+Qed.
+
+
 Local Lemma destructEx_Test {Σ : Signature} Γ ϕ ψ :
   well_formed (ex, ϕ) -> well_formed (ex, ψ) ->
   Γ ⊢ (ex, ϕ and ψ) ---> ex, ϕ.
@@ -1096,7 +1160,7 @@ Proof.
   mlIntro "H".
   
   remember (fresh_evar (ϕ and ψ)) as x0.
-  _mlDestructExManual "H" as x0.
+  mlDestructEx "H" as x0.
   Undo. Undo.
   
   mlDestructEx "H" as x.
