@@ -86,7 +86,28 @@ Section running.
     (***)
     mlDestructAnd "H2" as "H2_1" "H2_2".
     mlExists x. mlApply "H2_1". mlAssumption.
-  Qed.
+  Defined.
+
+  Lemma running_forall_functional_subst (φ φ' : Pattern) :
+    mu_free φ → well_formed φ' → well_formed_closed_ex_aux φ 1 →
+    well_formed_closed_mu_aux φ 0 →
+    Γ ⊢i (all , φ) and (ex , φ' =ml b0) ---> φ^[evar:0↦φ']
+              using AnyReasoning.
+  Proof.
+    intros HMF HWF1 HWF2 HWF3.
+    apply mu_free_wfp in HMF as HMFWF.
+    toMLGoal. wf_auto2.
+    mlIntro "H". mlDestructAnd "H" as "H1" "H2".
+    mlAdd (running_functional_subst (! φ) φ' ltac:(simpl;auto) HWF1 ltac:(wf_auto2) ltac:(wf_auto2)) as "H0".
+    mlSimpl.
+    mlApplyMeta Misc.notnot_taut_1. mlIntro "H3".
+    mlAssert ("H5" : (ex , ! φ)).
+    { wf_auto2. }
+    { mlApply "H0". mlSplitAnd; mlAssumption. }
+    mlDestructEx "H5" as x. mlSimpl.
+    mlApply "H5". mlSpecialize "H1" with x.
+    mlAssumption.
+  Defined.
 
   Local Lemma lhs_from_and_low:
     ∀ (a b c : Pattern) (i : ProofInfo),
