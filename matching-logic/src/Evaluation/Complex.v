@@ -12,7 +12,8 @@ From MatchingLogic.Theories Require Import Definedness_Syntax
                                            Definedness_Semantics
                                            Sorts_Syntax
                                            Sorts_Semantics
-                                           Definedness_ProofSystem.
+                                           Definedness_ProofSystem
+                                           DeductionTheorem.
 
 Import
   MatchingLogic.Logic.Notations
@@ -65,18 +66,26 @@ Section running.
     toMLGoal. wf_auto2.
     mlIntro "H".
     mlDestructAnd "H" as "H1" "H2".
-    (* TODO: these steps should be automatic with the
-       FreshnessManager *)
-    remember (fresh_evar (φ =ml φ')) as x.
-    _mlDestructExManual "H2" as x. cbn.
-    pose proof (free_evars_bevar_subst φ φ' 0).
-    pose proof (set_evar_fresh_is_fresh (φ =ml φ')). unfold evar_is_fresh_in in H0.
-    simpl in H0. set_solver.
-    (***)
+    mlDestructEx "H2" as x.
     mlSimpl. cbn.
+
+    (* Using equality elimination: *)
     unfold evar_open. rewrite (bevar_subst_not_occur _ _ φ'). wf_auto2.
-    (* TODO: rewrite with substitutions! *)
-    
+    feed pose proof (equality_elimination_basic Γ φ' (patt_free_evar x) 
+      {|pcEvar := x; pcPattern := φ^{evar:0 ↦ x}|}); auto.
+    { wf_auto2. }
+    { cbn. by apply mu_free_evar_open. }
+    cbn in H.
+    mlApplyMeta H in "H2".
+
+    (* Technical: subst cleanup *)
+    erewrite <-bound_to_free_variable_subst with (m := 1); auto.
+    2: wf_auto2. 2: fm_solve.
+    erewrite <-bound_to_free_variable_subst with (m := 1); auto.
+    2: wf_auto2. 2: fm_solve.
+    (***)
+    mlDestructAnd "H2" as "H2_1" "H2_2".
+    mlExists x. mlApply "H2_1". mlAssumption.
   Qed.
 
   Local Lemma lhs_from_and_low:

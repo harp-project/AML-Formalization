@@ -11,8 +11,7 @@ Require Import
 
 From MatchingLogic
 Require Import
-    Pattern
-    Freshness
+    Syntax
 .
 
 Set Default Proof Mode "Classic".
@@ -776,19 +775,20 @@ Ltac2 fm_solve () :=
         apply $pf > [reflexivity|reflexivity|ltac1:(lia)]
     | [ fm : (FreshnessManager ?ps ?aevs ?asvs ?evs ?svs) |- (not (@elem_of evar _ _ ?x (free_evars ?phi)))] =>
         (* This might not be the most scalable approach, but it works for now. *)
-        _fm_export_everything (); cbn; ltac1:(set_solver)
+        _fm_export_everything (); cbn; ltac1:(pose proof (free_evars_bevar_subst); subst; (solve_fresh + set_solver))
     | [ fm : (FreshnessManager ?ps ?aevs ?asvs ?evs ?svs) |- (not (@elem_of svar _ _ ?x (free_svars ?phi)))] =>
         (* This might not be the most scalable approach, but it works for now. *)
-        _fm_export_everything (); cbn; ltac1:(set_solver)
+        _fm_export_everything (); cbn; ltac1:(pose proof (free_svars_bsvar_subst); subst; set_solver)
     | [ fm : (FreshnessManager ?ps ?aevs ?asvs ?evs ?svs) |- (not (@elem_of evar _ _ ?x (free_evars_of_list ?phis)))] =>
         (* This might not be the most scalable approach, but it works for now. *)        
         _fm_export_everything (); cbn;
         repeat (apply free_evars_of_list_unfold; split);
-        ltac1:(set_solver)
+        ltac1:(pose proof (free_evars_bevar_subst); subst; set_solver)
     end
 .
 
 Ltac fm_solve := ltac2:(fm_solve ()).
+
 
 #[local]
 Example freshman_usage_1
@@ -851,3 +851,26 @@ Proof.
     }
     exact I.
 Qed.
+
+
+Import MatchingLogic.Substitution.Notations
+       MatchingLogic.Syntax.Notations.
+Open Scope ml_scope.
+
+#[local]
+Example freshman_usage_2
+    {Σ : Signature}
+    (x0 y0 : evar)
+    (X0 Y0 : svar)
+    (ϕ₁ ϕ₂ : Pattern)
+    (Hwf1 : well_formed ϕ₁)
+    (Hwf2 : well_formed (patt_exists ϕ₂))
+    : exists x, x ∉ free_evars (ϕ₂^[evar: 0 ↦ ϕ₁]).
+Proof.
+  mlFreshEvar as x. exists x.
+  ltac2:(_fm_export_everything ()).
+  pose proof (free_evars_bevar_subst).
+  set_solver.
+Qed.
+
+Close Scope ml_scope.

@@ -896,15 +896,6 @@ End with_signature.
 Open Scope ml_scope.
 Open Scope string_scope.
 
-
-Ltac solve_fresh :=
-  (eapply not_elem_of_larger_impl_not_elem_of;
-  [|apply x_eq_fresh_impl_x_notin_free_evars; reflexivity];
-  simpl; clear; set_solver) +
-  by (unfold evar_is_fresh_in;
-  eapply evar_is_fresh_in_richer'; [|apply set_evar_fresh_is_fresh'];
-  clear; set_solver).
-
 Tactic Notation "mlIntroAll" ident(x) :=
 _ensureProofMode;
 mlFreshEvar as x;
