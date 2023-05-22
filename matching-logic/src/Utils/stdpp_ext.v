@@ -1,7 +1,18 @@
 (* Extensions to the stdpp library *)
-From Coq Require Import ssreflect ssrfun ssrbool.
+From Coq Require Import ssreflect ssrfun ssrbool String.
 From Coq.Logic Require Import Classical_Prop Classical_Pred_Type Eqdep_dec.
 From stdpp Require Import pmap gmap mapset fin_sets sets list propset coGset.
+
+Fixpoint index_of_helper (x : string) (l : list string) (n : nat) : option nat :=
+  match l with
+  | [] => None
+  | y::ys => match string_dec x y with
+             | left _ => Some n
+             | right _ => index_of_helper x ys (S n)
+             end
+  end.
+
+Definition index_of x l := index_of_helper x l 0.
 
 Lemma decide_eq_same (A : Type) {dec : forall (t1 t2 : A), Decision (t1 = t2)} t:
   decide (t = t) = left erefl.
