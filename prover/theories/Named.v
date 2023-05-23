@@ -192,40 +192,38 @@ Defined.
     | npatt_mu X phi => difference (named_free_svars phi) (singleton X)
     end.
 
-    Fixpoint named_evars (phi : NamedPattern) : EVarSet :=
+
+  Fixpoint named_bound_evars (phi : NamedPattern) : EVarSet :=
     match phi with
-    | npatt_evar x => singleton x
-    | npatt_svar X => empty
-    | npatt_sym sigma => empty
-    | npatt_app phi1 phi2 => union (named_evars phi1) (named_evars phi2)
-    | npatt_bott => empty
-    | npatt_imp phi1 phi2 => union (named_evars phi1) (named_evars phi2)
-    | npatt_exists x phi => union (named_evars phi) (singleton x)
-    | npatt_mu X phi => named_evars phi
+    | npatt_app phi1 phi2 => (named_bound_evars phi1) ∪ (named_bound_evars phi2)
+    | npatt_imp phi1 phi2 => (named_bound_evars phi1) ∪ (named_bound_evars phi2)
+    | npatt_exists x phi => (named_bound_evars phi) ∪ {[x]}
+    | npatt_mu X phi => named_bound_evars phi
+    | _ => empty
     end.
 
-  Fixpoint named_svars (phi : NamedPattern) : SVarSet :=
+  Fixpoint named_bound_svars (phi : NamedPattern) : SVarSet :=
     match phi with
-    | npatt_evar x => empty
-    | npatt_svar X => singleton X
-    | npatt_sym sigma => empty
-    | npatt_app phi1 phi2 => union (named_svars phi1) (named_svars phi2)
-    | npatt_bott => empty
-    | npatt_imp phi1 phi2 => union (named_svars phi1) (named_svars phi2)
-    | npatt_exists x phi => named_svars phi
-    | npatt_mu X phi => union (named_svars phi) (singleton X)
+    | npatt_app phi1 phi2 => (named_bound_svars phi1) ∪ (named_bound_svars phi2)
+    | npatt_imp phi1 phi2 => (named_bound_svars phi1) ∪ (named_bound_svars phi2)
+    | npatt_exists x phi => named_bound_svars phi
+    | npatt_mu X phi => (named_bound_svars phi) ∪ {[X]}
+    | _ => empty
     end.
+
+  Definition named_evars phi := named_free_evars phi ∪ named_bound_evars phi.
+  Definition named_svars phi := named_free_svars phi ∪ named_bound_svars phi. 
 
   Lemma named_free_evars_subseteq_named_evars ϕ:
     named_free_evars ϕ ⊆ named_evars ϕ.
   Proof.
-    induction ϕ; cbn; set_solver.
+    set_solver.
   Qed.
 
   Lemma named_free_svars_subseteq_named_svars ϕ:
     named_free_svars ϕ ⊆ named_svars ϕ.
   Proof.
-    induction ϕ; cbn; set_solver.
+    set_solver.
   Qed.
 
   CoInductive EVarGen := mkEvarGen {
@@ -375,7 +373,7 @@ Defined.
       destruct (decide (x' = x)).
       { subst. cbn. rewrite decide_eq_same. reflexivity. }
       { cbn. destruct (decide (y = x));[|reflexivity].
-        subst. cbn in Hfry. exfalso. clear -Hfry. set_solver.
+        subst. cbn in Hfry. exfalso. clear -Hfry. unfold named_evars in Hfry. set_solver.
       }
     }
     {
@@ -517,7 +515,7 @@ Defined.
       destruct (decide (X' = X)).
       { subst. cbn. rewrite decide_eq_same. reflexivity. }
       { cbn. destruct (decide (Y = X));[|reflexivity].
-        subst. cbn in HfrY. exfalso. clear -HfrY. set_solver.
+        subst. cbn in HfrY. exfalso. clear -HfrY. unfold named_svars in HfrY. set_solver.
       }
     }
     {

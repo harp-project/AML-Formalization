@@ -215,50 +215,37 @@ Section named_proof_system.
         + rewrite IHsz. lia. set_solver. reflexivity.
   Defined.
 
-  Lemma svar_subst_rename ϕ ψ X Y :
+  Lemma standard_svar_subst_fold ϕ ψ X Y :
     Y ∉ named_svars ϕ ->
+    named_bound_svars ϕ ## named_free_svars ψ ->
     standard_svar_subst ϕ X ψ = standard_svar_subst (rename_free_svar ϕ Y X) Y ψ.
   Proof.
     revert X Y ψ.
-    induction ϕ; intros X0 Y0 ψ Hin; simpl; simp standard_svar_subst; try reflexivity.
+    induction ϕ; intros X0 Y0 ψ Hin Hdis; simpl; simp standard_svar_subst; try reflexivity.
     * case_match; simpl; simp standard_svar_subst.
       - destruct (decide (Y0 = Y0)); simpl. reflexivity. congruence.
-      - simpl in Hin. destruct (decide (Y0 = X)); simpl. set_solver. reflexivity.
-    * erewrite IHϕ1. erewrite IHϕ2. reflexivity. all: set_solver.
-    * erewrite IHϕ1. erewrite IHϕ2. reflexivity. all: set_solver.
-    * erewrite IHϕ. reflexivity. set_solver.
+      - simpl in Hin. destruct (decide (Y0 = X)); simpl.
+        unfold named_svars in Hin. set_solver.
+        reflexivity.
+    * erewrite IHϕ1. erewrite IHϕ2. reflexivity.
+      all: unfold named_svars in *; set_solver.
+    * erewrite IHϕ1. erewrite IHϕ2. reflexivity.
+      all: unfold named_svars in *; set_solver.
+    * erewrite IHϕ. reflexivity.
+      all: unfold named_svars in *; set_solver.
     * destruct (decide (X0 = X)); simpl.
       - rewrite standard_evar_subst_id.
         pose proof (named_free_svars_subseteq_named_svars (npatt_mu X0 ϕ)). set_solver. reflexivity.
       - subst. simp standard_svar_subst.
         destruct (decide (Y0 = X)).
-        + subst. set_solver. 
+        + subst. unfold named_svars in *. set_solver.
         + simpl.
           destruct (decide (X ∈ named_free_svars ψ ∧ X0 ∈ named_free_svars ϕ)); simpl.
-          ** destruct a as [Ha1 Ha2].
-             remember (svar_fresh _) as FX.
-             destruct decide; simpl.
-             -- destruct a as [Ha11 Ha22].
-                pose proof (named_free_svars_rename ϕ X0 Y0).
-                simpl in Hin.
-                remember (svar_fresh
-                (elements
-                   ({[Y0]} ∪ named_free_svars (rename_free_svar ϕ Y0 X0) ∪ named_free_svars ψ))) as FX2.
-                (*
-                  issue here:
-                  ϕ[ψ/x] = ϕ[y/x][ψ/y]
-                  ϕ and ϕ[y/x] do not necessarily have the same
-                  free variables (x vs y), thus while generating
-                  new names, x (resp. y) could be generated in
-                  one case, while it cannot in the other one
-                
-                  One option to solve this is to give a blacklist
-                  to the substitution, which additional variables
-                  should be avoided. Proof system could work with
-                  any blacklist.
-                *)
-             --
-          ** 
+          ** destruct a as [Ha1 Ha2]. set_solver.
+          ** destruct decide.
+             set_solver.
+             simpl.
+             erewrite IHϕ. reflexivity. all: unfold named_svars in *; set_solver. 
   Defined.
 
   (* until here *)
@@ -289,22 +276,32 @@ Section named_proof_system.
   Defined.
 
   Lemma alpha_mu Γ ϕ X Y :
-    named_well_formed ϕ = true ->
+    named_well_formed (npatt_mu X ϕ) = true ->
     Y ∉ named_svars ϕ ->
+    named_bound_svars ϕ ## named_free_svars ϕ ->
     Γ ⊢N npatt_imp (npatt_mu X ϕ) (npatt_mu Y (rename_free_svar ϕ Y X)).
   Proof.
-    intros Hwf HIn.
+    intros Hwf Hin Hdis.
     apply N_Knaster_tarski.
-    pose proof N_Pre_fixp.
+    rewrite (standard_svar_subst_fold ϕ _ X Y).
+    * assumption.
+    * simpl. pose proof named_free_svars_rename ϕ X Y.
+      clear -H Hdis. set_solver.
+    * apply N_Pre_fixp.
   Defined.
 
   Lemma alpha_mu_reverse Γ ϕ X Y :
-    named_well_formed ϕ = true ->
+    named_well_formed (npatt_mu X ϕ) = true ->
     Y ∉ named_svars ϕ ->
+    named_bound_svars ϕ ## named_free_svars ϕ ->
     Γ ⊢N npatt_imp (npatt_mu Y (rename_free_svar ϕ Y X)) (npatt_mu X ϕ).
   Proof.
-    intros Hwf HIn.
-
+    intros Hwf HIn Hdis.
+    apply N_Knaster_tarski.
+    rewrite -standard_svar_subst_fold.
+    * assumption.
+    * simpl. pose proof named_free_svars_rename. set_solver.
+    * apply N_Pre_fixp.
   Defined.
 
 
