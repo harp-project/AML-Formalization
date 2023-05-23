@@ -25,7 +25,7 @@ Section sorts_syntax.
 
   Class Syntax :=
     { inj : Symbols -> symbols;
-      imported_definedness :> Definedness_Syntax.Syntax;
+      imported_definedness :: Definedness_Syntax.Syntax;
     }.
 
   Context {self : Syntax}.
@@ -114,7 +114,7 @@ Section sorts.
     now rewrite pm_ezero_increase.
   Defined.
 
-  (* TODO patt_forall_of_sort and patt_exists_of_sorts are duals - a lemma *)
+  (* TODO patt_forall_of_sort and patt_exists_of_sort are duals - a lemma *)
 
   (* TODO a lemma about patt_forall_of_sort *)
 
@@ -145,8 +145,26 @@ Section sorts.
 
 End sorts.
 
+Section sorts.
+  Context {Σ : Signature}.
+  Context {self : Syntax}.
+  Open Scope ml_scope.
+  
+  Definition patt_total_binary_function(phi from1 from2 to : Pattern)
+  : Pattern :=
+    patt_forall_of_sort from1 (
+      patt_forall_of_sort (nest_ex from2) (
+        patt_exists_of_sort (nest_ex (nest_ex to)) (
+          (((nest_ex (nest_ex (nest_ex phi)) $ b2) $ b1) =ml b0)
+        )
+      )
+    )
+  .
+End sorts.
+
 Module Notations.
   Notation "〚 phi 〛" := (patt_inhabitant_set phi) (at level 0) : ml_scope.
   Notation "'all' s ,  phi" := (patt_forall_of_sort s phi) (at level 70) : ml_scope.
   Notation "'ex' s ,  phi" := (patt_exists_of_sort s phi) (at level 70) : ml_scope.
+  Notation "phi : s1 'x' s2 -> s3" :=  (patt_total_binary_function phi s1 s2 s3) (at level 70) : ml_scope.
 End Notations.
