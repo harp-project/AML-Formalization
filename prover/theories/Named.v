@@ -124,7 +124,11 @@ Defined.
     | npatt_app ϕ₁ ϕ₂ => named_no_negative_occurrence X ϕ₁ && named_no_negative_occurrence X ϕ₂
     | npatt_imp ϕ₁ ϕ₂ => named_no_positive_occurrence X ϕ₁ && named_no_negative_occurrence X ϕ₂
     | npatt_exists _ ϕ' => named_no_negative_occurrence X ϕ'
-    | npatt_mu _ ϕ' => named_no_negative_occurrence X ϕ'
+    | npatt_mu Y ϕ' => 
+      match decide (X = Y) with
+      | right _ => named_no_negative_occurrence X ϕ'
+      | left _ => true
+      end
     end
   with
   named_no_positive_occurrence (X : svar) (ϕ : NamedPattern) : bool :=
@@ -134,7 +138,11 @@ Defined.
     | npatt_app ϕ₁ ϕ₂ => named_no_positive_occurrence X ϕ₁ && named_no_positive_occurrence X ϕ₂
     | npatt_imp ϕ₁ ϕ₂ => named_no_negative_occurrence X ϕ₁ && named_no_positive_occurrence X ϕ₂
     | npatt_exists _ ϕ' => named_no_positive_occurrence X ϕ'
-    | npatt_mu _ ϕ' => named_no_positive_occurrence X ϕ'
+    | npatt_mu Y ϕ' =>
+      match decide (X = Y) with
+      | right _ => named_no_positive_occurrence X ϕ'
+      | left _ => true
+      end
     end.
 
   Fixpoint named_well_formed_positive (phi : NamedPattern) : bool :=
@@ -212,7 +220,9 @@ Defined.
     end.
 
   Definition named_evars phi := named_free_evars phi ∪ named_bound_evars phi.
-  Definition named_svars phi := named_free_svars phi ∪ named_bound_svars phi. 
+  Definition named_svars phi := named_free_svars phi ∪ named_bound_svars phi.
+  Arguments named_evars / phi.
+  Arguments named_svars / phi.
 
   Lemma named_free_evars_subseteq_named_evars ϕ:
     named_free_evars ϕ ⊆ named_evars ϕ.
@@ -373,7 +383,7 @@ Defined.
       destruct (decide (x' = x)).
       { subst. cbn. rewrite decide_eq_same. reflexivity. }
       { cbn. destruct (decide (y = x));[|reflexivity].
-        subst. cbn in Hfry. exfalso. clear -Hfry. unfold named_evars in Hfry. set_solver.
+        subst. cbn in Hfry. exfalso. clear -Hfry. set_solver.
       }
     }
     {
@@ -515,7 +525,7 @@ Defined.
       destruct (decide (X' = X)).
       { subst. cbn. rewrite decide_eq_same. reflexivity. }
       { cbn. destruct (decide (Y = X));[|reflexivity].
-        subst. cbn in HfrY. exfalso. clear -HfrY. unfold named_svars in HfrY. set_solver.
+        subst. cbn in HfrY. exfalso. clear -HfrY. set_solver.
       }
     }
     {
@@ -1027,7 +1037,7 @@ Defined.
         apply negative_occ_svar_open; auto. lia.
         pose proof (free_svars_svar_open ϕ (svar_fresh (elements sg)) 0).
         pose proof (set_svar_fresh_is_fresh' sg). set_solver.
-        set_solver.
+        set_solver. by case_match.
       - rewrite svar_open_bsvar_subst_higher; auto. lia. simpl.
         cbn in H2.
         rewrite (proj1 (IHs _ _ _)); auto.
@@ -1035,6 +1045,7 @@ Defined.
         apply negative_occ_svar_open; auto. lia.
         pose proof (free_svars_svar_open ϕ s0 0). set_solver.
         pose proof (set_svar_fresh_is_fresh' sg). set_solver.
+        by case_match.
     * cbn. destruct svars; simp namify; simpl.
       - rewrite svar_open_bsvar_subst_higher; auto. lia. simpl.
         cbn in H2.
@@ -1043,7 +1054,7 @@ Defined.
         apply positive_occ_svar_open; auto. lia.
         pose proof (free_svars_svar_open ϕ (svar_fresh (elements sg)) 0).
         pose proof (set_svar_fresh_is_fresh' sg). set_solver.
-        set_solver.
+        set_solver. by case_match.
       - rewrite svar_open_bsvar_subst_higher; auto. lia. simpl.
         cbn in H2.
         rewrite (proj2 (IHs _ _ _)); auto.
@@ -1051,6 +1062,7 @@ Defined.
         apply positive_occ_svar_open; auto. lia.
         pose proof (free_svars_svar_open ϕ s0 0). set_solver.
         pose proof (set_svar_fresh_is_fresh' sg). set_solver.
+        by case_match.
   Defined.
 
   Corollary no_positives_namify :
@@ -2321,3 +2333,6 @@ Section named_test.
 
 End named_test.
 *)
+
+Arguments named_evars _ / phi.
+Arguments named_svars _ / phi.
