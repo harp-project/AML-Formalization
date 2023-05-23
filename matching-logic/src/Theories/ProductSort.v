@@ -8,6 +8,9 @@ From MatchingLogic Require Import
     Theories.Sorts_Syntax
 .
 
+Import BoundVarSugar.
+Import Definedness_Syntax.Notations.
+
 Inductive Symbols {Σ : Signature} (s1 s2 : symbols) :=
 | ml_prod
 | ml_pair
@@ -36,8 +39,12 @@ Section sorts.
     .
     Import Notations.
     Open Scope ml_scope.
+    Delimit Scope ml_scope with ml. (* TODO move this somewhere else *)
 
-
+    Local Notation "'(' phi1 ',ml' phi2 ')'" := 
+        (patt_app (patt_app (patt_sym (inj (ml_pair s1 s2))) phi1) phi2)
+        : ml_scope
+    .
 
     Inductive AxiomName :=
     | AxPair
@@ -48,6 +55,8 @@ Section sorts.
     | InversePairProj2
     .
 
+    Arguments patt_forall_of_sort {Σ self} sort phi%ml_scope.
+
     Definition axiom (name : AxiomName) : Pattern :=
     match name with
     | AxPair =>
@@ -56,6 +65,34 @@ Section sorts.
             (patt_sym s1)
             (patt_sym s2)
             (patt_sym (inj (ml_prod s1 s2)))
+    | AxProjLeft =>
+        patt_total_function
+            (patt_sym (inj (ml_proj1 s1 s2)))
+            (patt_sym (inj (ml_prod s1 s2)))
+            (patt_sym s1)
+    | AxProjRight =>
+        patt_total_function
+            (patt_sym (inj (ml_proj1 s1 s2)))
+            (patt_sym (inj (ml_prod s1 s2)))
+            (patt_sym s2)
+    | AxInj =>
+        patt_forall_of_sort (patt_sym s1) (
+            patt_forall_of_sort (patt_sym s1) (
+                patt_forall_of_sort (patt_sym s2) (
+                    patt_forall_of_sort (patt_sym s2) (
+                        patt_imp (
+                            ( b3 ,ml b1 ) =ml ( b2 ,ml b0 )%ml
+                        ) (
+                            patt_and (
+                                b3 =ml b2
+                            ) (
+                                b1 =ml b0
+                            )
+                        )
+                    )
+                )
+            )
+        )
     end.
 
     Program Definition named_axioms : NamedAxioms :=
