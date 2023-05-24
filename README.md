@@ -11,7 +11,7 @@ In this project we attempt to fully implement the "Applicative Matching Logic" f
 ### Build
 
 The matching logic library (in the directory `matching-logic/`) depends on:
-- Coq 8.16
+- Coq 8.17
 - stdpp 1.8
 - equations 1.3
 - LibHyps 2.0.4.1
