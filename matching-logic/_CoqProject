@@ -59,6 +59,7 @@ src/Theories/Sorts_Syntax.v
 src/Theories/Sorts_Semantics.v
 src/Theories/Sorts_ProofSystem.v
 src/Theories/ProductSort.v
+src/Theories/ProductSortWithLookup.v
 src/Theories/RecursiveSymbol.v
 
 src/Theories/Subseteq_ProofSystem.v

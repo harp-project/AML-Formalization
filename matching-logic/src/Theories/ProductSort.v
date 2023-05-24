@@ -29,7 +29,7 @@ Class Syntax {Σ : Signature} (s1 s2 : symbols) :=
     inj_inj: Inj (=) (=) inj;
 }.
 
-
+#[global] Existing Instance imported_sorts.
 
 Section sorts.
     Context
@@ -130,6 +130,25 @@ Section sorts.
     destruct name; simpl; wf_auto2.
     Qed.
 
-    Definition Γpair := theory_of_NamedAxioms named_axioms.
+    Definition Γprod := theory_of_NamedAxioms named_axioms.
 
 End sorts.
+
+Module Notations.
+
+    Notation "'mlPair' '{' s1 ',' s2 '}' '(' phi1 ',' phi2 ')'" := 
+        (patt_app (patt_app (patt_sym (inj (ml_pair s1 s2))) phi1) phi2)
+        : ml_scope
+    .
+
+    Notation "'mlProj1' '{' s1 ',' s2 '}' '(' phi ')'" := 
+        (patt_app (patt_sym (inj (ml_proj1 s1 s2))) phi)
+        : ml_scope
+    .
+
+    Notation "'mlProj2' '{' s1 ',' s2 '}' '(' phi ')'" := 
+        (patt_app (patt_sym (inj (ml_proj2 s1 s2))) phi)
+        : ml_scope
+    .
+
+End Notations.
