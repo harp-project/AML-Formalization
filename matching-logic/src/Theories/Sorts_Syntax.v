@@ -25,8 +25,10 @@ Section sorts_syntax.
 
   Class Syntax :=
     { inj : Symbols -> symbols;
-      imported_definedness :: Definedness_Syntax.Syntax;
+      imported_definedness : Definedness_Syntax.Syntax;
     }.
+  
+  #[global] Existing Instance imported_definedness.
 
   Context {self : Syntax}.
 
@@ -166,5 +168,5 @@ Module Notations.
   Notation "〚 phi 〛" := (patt_inhabitant_set phi) (at level 0) : ml_scope.
   Notation "'all' s ,  phi" := (patt_forall_of_sort s phi) (at level 70) : ml_scope.
   Notation "'ex' s ,  phi" := (patt_exists_of_sort s phi) (at level 70) : ml_scope.
-  Notation "phi : s1 'x' s2 -> s3" :=  (patt_total_binary_function phi s1 s2 s3) (at level 70) : ml_scope.
+  Notation "phi : s1 × s2 -> s3" :=  (patt_total_binary_function phi s1 s2 s3) (at level 70) : ml_scope.
 End Notations.

@@ -130,6 +130,6 @@ Section sorts.
     destruct name; simpl; wf_auto2.
     Qed.
 
-    Definition theory := theory_of_NamedAxioms named_axioms.
+    Definition Γpair := theory_of_NamedAxioms named_axioms.
 
 End sorts.
