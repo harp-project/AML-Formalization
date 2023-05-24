@@ -46,13 +46,24 @@ Section sorts.
         : ml_scope
     .
 
+    Local Notation "'(' phi ').ml1'" := 
+        (patt_app (patt_sym (inj (ml_proj1 s1 s2))) phi)
+        : ml_scope
+    .
+
+    Local Notation "'(' phi ').ml2'" := 
+        (patt_app (patt_sym (inj (ml_proj2 s1 s2))) phi)
+        : ml_scope
+    .
+
     Inductive AxiomName :=
     | AxPair
     | AxProjLeft
     | AxProjRight
     | AxInj
-    | InversePairProj1
-    | InversePairProj2
+    | InversePairProja1
+    | InversePairProja2
+    | InversePairProjb
     .
 
     Arguments patt_forall_of_sort {Σ self} sort phi%ml_scope.
@@ -93,6 +104,22 @@ Section sorts.
                 )
             )
         )
+    | InversePairProja1 =>
+        patt_forall_of_sort (patt_sym s1) (
+            patt_forall_of_sort (patt_sym s2) (
+               ( ( b1 ,ml b0 ) ).ml1  =ml b1
+            )
+        )
+    | InversePairProja2 =>
+        patt_forall_of_sort (patt_sym s1) (
+            patt_forall_of_sort (patt_sym s2) (
+               ( ( b1 ,ml b0 ) ).ml2  =ml b0
+            )
+        )
+    | InversePairProjb =>
+        patt_forall_of_sort (patt_sym (inj (ml_prod s1 s2))) (
+             ( (b0).ml1 ,ml (b0).ml2 ) =ml b0
+        )
     end.
 
     Program Definition named_axioms : NamedAxioms :=
@@ -103,6 +130,6 @@ Section sorts.
     destruct name; simpl; wf_auto2.
     Qed.
 
-Definition theory := theory_of_NamedAxioms named_axioms.
+    Definition theory := theory_of_NamedAxioms named_axioms.
 
 End sorts.
