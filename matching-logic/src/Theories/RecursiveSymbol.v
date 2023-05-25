@@ -5,6 +5,7 @@ From stdpp Require Import base sets list.
 
 From MatchingLogic Require Import
     Logic
+    Theories.Sorts_Syntax
     Theories.ProductSortWithLookup
 .
 
@@ -14,9 +15,12 @@ Import Definedness_Syntax.Notations.
 Section rs.
     Context
         {Σ : Signature}
-        (*{pswl_syntax : ProductSort.Syntax} *)
+        {sorts_syntax : Sorts_Syntax.Syntax} 
+        (param_sort : list symbols)
+        (ret_sort : symbols)
     .
 
+    Check Forall2.
     (*
     Check fold_right.
     Definition prod_chain (ss : list symbols) (t : symbol)

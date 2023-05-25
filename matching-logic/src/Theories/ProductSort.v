@@ -24,12 +24,13 @@ Proof. solve_decision. Defined.
 
 Class Syntax {Σ : Signature} (s1 s2 : symbols) :=
 {
-    imported_sorts :: Sorts_Syntax.Syntax;
+    imported_sorts : Sorts_Syntax.Syntax;
     inj: Symbols s1 s2 -> symbols;
     inj_inj: Inj (=) (=) inj;
 }.
 
 #[global] Existing Instance imported_sorts.
+#[global] Existing Instance inj_inj.
 
 Section sorts.
     Context

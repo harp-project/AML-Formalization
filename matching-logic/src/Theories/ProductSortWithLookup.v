@@ -16,21 +16,25 @@ Import ProductSort.Notations.
 
 Inductive Symbols {Σ : Signature} (s1 s2 : symbols) :=
 | ml_sym_lookup
+| ml_sym_product_symbols (s : ProductSort.Symbols s1 s2)
 .
 
 
 #[global]
 Instance Symbols_eqdec {Σ : Signature} s1 s2 : EqDecision (Symbols s1 s2).
-Proof. unfold EqDecision. intros x y. unfold Decision. destruct x. decide equality. (*solve_decision. -- crashes*) Defined.
+Proof. solve_decision. Defined.
 
 Class Syntax {Σ : Signature} (s1 s2 : symbols) :=
 {
-    imported_product :: ProductSort.Syntax s1 s2;
-    inj: Symbols s1 s2 -> symbols;
-    inj_inj: Inj (=) (=) inj;
+    (* imported_product :: ProductSort.Syntax s1 s2; *)
+    imported_sorts : Sorts_Syntax.Syntax ;
+    sym_inj: Symbols s1 s2 -> symbols;
+    sym_inj_inj: Inj (=) (=) sym_inj;
 }.
 
-#[global] Existing Instance imported_product.
+(*#[global] Existing Instance imported_product.*)
+#[global] Existing Instance imported_sorts.
+#[global] Existing Instance sym_inj_inj.
 
 Section pswl.
     Context
@@ -42,8 +46,42 @@ Section pswl.
     Open Scope ml_scope.
     Delimit Scope ml_scope with ml. (* TODO move this somewhere else *)
 
+    (* For some reason, Coq does not terminate on this. Maybe some typeclasses cycle?
+       So I will just define it via ltac.
+    *)
+    (*
+    #[global]
+    Instance imported_product
+        : (ProductSort.Syntax s1 s2)
+    := {|
+        ProductSort.imported_sorts := @imported_sorts Σ s1 s2 syntax;
+    |}.
+    *)
+    #[global]
+    Instance product_syntax
+        : (ProductSort.Syntax s1 s2)
+    .
+    Proof.
+        unshelve(econstructor).
+        {
+            intros s.
+            exact (sym_inj (ml_sym_product_symbols s1 s2 s)).
+        }
+        {
+            exact imported_sorts.
+        }
+        {
+            abstract(
+                intros x y Hxy;
+                apply sym_inj_inj in Hxy;
+                inversion Hxy;
+                subst; reflexivity
+            ).
+        }
+    Defined.
+
     Definition ml_lookup (ϕ k : Pattern)
-        := patt_app (patt_app (patt_sym (inj (ml_sym_lookup s1 s2))) ϕ) k
+        := patt_app (patt_app (patt_sym (sym_inj (ml_sym_lookup s1 s2))) ϕ) k
     .
 
     Inductive AxiomName :=
