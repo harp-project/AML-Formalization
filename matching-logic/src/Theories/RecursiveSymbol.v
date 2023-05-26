@@ -6,11 +6,15 @@ From stdpp Require Import base sets list.
 From MatchingLogic Require Import
     Logic
     Theories.Sorts_Syntax
+    Theories.ProductSort
     Theories.ProductSortWithLookup
 .
 
 Import BoundVarSugar.
 Import Definedness_Syntax.Notations.
+Import ProductSort.Notations.
+
+Delimit Scope ml_scope with ml. (* TODO move this somewhere else *)
 
 Section rs.
     Context
@@ -20,13 +24,38 @@ Section rs.
         (ret_sort : symbols)
     .
 
-    Check Forall2.
-    (*
-    Check fold_right.
-    Definition prod_chain (ss : list symbols) (t : symbol)
-        := fold_right (*...*)
-    *)
+    Inductive Intermediate :=
+    | i_leaf
+        (s_right : symbols)
+    | i_step
+        (s_left : symbols)
+        (s_right : Pattern)
+        (syntax: ProductSortWithLookup.Syntax s_left s_right)
+        (next : Intermediate)
+    .
 
+    Definition im_right (im : Intermediate) : Pattern :=
+        match im with
+        | i_leaf s_right => patt_sym s_right
+        | i_step s_left s_right syntax next =>
+            (mlProd(s_left, s_right))%ml    
+        end
+    .
+
+    Fixpoint im_valid (im : Intermediate) : Prop :=
+        match im with
+        | i_leaf _ => True
+        | i_step s_left s_right syntax next =>
+            s_right = im_right next
+        end
+    .
+
+
+
+    Definition combine (im : Intermediate) (psort : symbol) :=
+        i_
+    .
+    
     (*
       This is going to be tricky.
       We need to define those three operations on lists of things:
@@ -38,5 +67,16 @@ Section rs.
 
     
     *)
+
+(*
+
+    Fixpoint im_valid (im : Intermediate) : Prop :=
+        match im with
+
+    Check fold_right.
+    Definition prod_chain
+        := fold_right (*...*)
+    *)
+
 
 End rs.

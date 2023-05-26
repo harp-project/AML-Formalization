@@ -14,7 +14,7 @@ Import Definedness_Syntax.Notations.
 Import Sorts_Syntax.Notations.
 Import ProductSort.Notations.
 
-Inductive Symbols {Σ : Signature} (s1 s2 : symbols) :=
+Inductive Symbols {Σ : Signature} (s1 s2 : Pattern) :=
 | ml_sym_lookup
 | ml_sym_product_symbols (s : ProductSort.Symbols s1 s2)
 .
@@ -24,7 +24,7 @@ Inductive Symbols {Σ : Signature} (s1 s2 : symbols) :=
 Instance Symbols_eqdec {Σ : Signature} s1 s2 : EqDecision (Symbols s1 s2).
 Proof. solve_decision. Defined.
 
-Class Syntax {Σ : Signature} (s1 s2 : symbols) :=
+Class Syntax {Σ : Signature} (s1 s2 : Pattern) :=
 {
     (* imported_product :: ProductSort.Syntax s1 s2; *)
     imported_sorts : Sorts_Syntax.Syntax ;
