@@ -526,6 +526,68 @@ Section index_manipulation.
       simpl in IHpsi. auto.
   Qed.
 
+  Lemma wfc_ex_nest_ex psi level level' more:
+    well_formed_closed_ex_aux psi level ->
+    well_formed_closed_ex_aux (nest_ex_aux level' more psi) (level+more).
+  Proof.
+    intros H.
+    move: level level' H.
+    induction psi; intros level level' H; simpl in *; auto.
+    - repeat case_match; auto; lia.
+    - destruct_and!.
+      specialize (IHpsi1 level level' ltac:(assumption)).
+      specialize (IHpsi2 level level' ltac:(assumption)).
+      split_and!; auto.
+    - destruct_and!.
+      specialize (IHpsi1 level level' ltac:(assumption)).
+      specialize (IHpsi2 level level' ltac:(assumption)).
+      split_and!; auto.
+    - specialize (IHpsi (S level) (S level') ltac:(assumption)).
+      simpl in IHpsi. auto.
+  Qed.
+
+  Lemma wfc_ex_nest_mu dbi level more ϕ:
+    well_formed_closed_ex_aux (nest_mu_aux level more ϕ) dbi
+    = well_formed_closed_ex_aux ϕ dbi 
+  .
+  Proof.
+    move: dbi level more.
+    induction ϕ; intros dbi level more; cbn; try reflexivity.
+    {
+      rewrite IHϕ1. rewrite IHϕ2. reflexivity.
+    }
+    {
+      rewrite IHϕ1. rewrite IHϕ2. reflexivity.
+    }
+    {
+      rewrite IHϕ. reflexivity.
+    }
+    {
+      rewrite IHϕ. reflexivity.
+    }
+  Qed.
+
+  Lemma wfc_mu_nest_ex dbi level more ϕ:
+    well_formed_closed_mu_aux (nest_ex_aux level more ϕ) dbi
+    = well_formed_closed_mu_aux ϕ dbi 
+  .
+  Proof.
+    move: dbi level more.
+    induction ϕ; intros dbi level more; cbn; try reflexivity.
+    {
+      rewrite IHϕ1. rewrite IHϕ2. reflexivity.
+    }
+    {
+      rewrite IHϕ1. rewrite IHϕ2. reflexivity.
+    }
+    {
+      rewrite IHϕ. reflexivity.
+    }
+    {
+      rewrite IHϕ. reflexivity.
+    }
+  Qed.
+
   Lemma Private_positive_negative_occurrence_db_nest_mu_aux dbi level more ϕ:
     (no_negative_occurrence_db_b dbi (nest_mu_aux level more ϕ)
      = if decide (dbi < level) is left _ then no_negative_occurrence_db_b dbi ϕ
