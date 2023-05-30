@@ -526,6 +526,18 @@ Section index_manipulation.
       simpl in IHpsi. auto.
   Qed.
 
+
+  Lemma wfc_mu_nest_mu' psi level level' less:
+    level >= less ->
+    well_formed_closed_mu_aux psi (level - less) ->
+    well_formed_closed_mu_aux (nest_mu_aux level' less psi) level.
+  Proof.
+    intros H1 H2.
+    replace level with ((level - less) + less) by lia.
+    apply wfc_mu_nest_mu.
+    exact H2.
+  Qed.
+
   Lemma wfc_ex_nest_ex psi level level' more:
     well_formed_closed_ex_aux psi level ->
     well_formed_closed_ex_aux (nest_ex_aux level' more psi) (level+more).
@@ -544,6 +556,20 @@ Section index_manipulation.
       split_and!; auto.
     - specialize (IHpsi (S level) (S level') ltac:(assumption)).
       simpl in IHpsi. auto.
+  Qed.
+
+  Lemma wfc_ex_nest_ex' psi level level' less:
+    level >= less ->
+    well_formed_closed_ex_aux psi (level - less) ->
+    well_formed_closed_ex_aux (nest_ex_aux level' less psi) level.
+  Proof.
+    intros H1 H2.
+    replace level with ((level - less) + less).
+    2: {
+      lia.
+    }
+    apply wfc_ex_nest_ex.
+    exact H2.
   Qed.
 
   Lemma wfc_ex_nest_mu dbi level more ϕ:
