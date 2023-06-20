@@ -352,8 +352,19 @@ Section freshness.
         (@left_id_L SVarSet  ∅ (@union _ _)),
         (@right_id_L SVarSet ∅ (@union _ _))
       ).
-    
 
+    Lemma x_eq_fresh_impl_x_notin_free_evars x ϕ:
+      x = fresh_evar ϕ ->
+      x ∉ free_evars ϕ.
+    Proof.
+      intros H.
+      rewrite H.
+      unfold fresh_evar.
+      apply set_evar_fresh_is_fresh'.
+    Qed.
+    
+    Hint Resolve x_eq_fresh_impl_x_notin_free_evars : core.
+    
 End freshness.
 
 
@@ -493,7 +504,7 @@ Fixpoint svar_fresh_seq {Σ : Signature} (avoid : SVarSet) (n : nat) : list svar
   }
   Qed.
 
-  Lemma svar_fresh_seq_disj {Σ : Signature} S n:
+Lemma svar_fresh_seq_disj {Σ : Signature} S n:
   list_to_set (svar_fresh_seq S n) ## S.
 Proof.
 move: S.
@@ -510,3 +521,11 @@ induction n; intros S; simpl in *; unfold evar_fresh_s in *.
   apply set_svar_fresh_is_fresh'.
 }
 Qed.
+
+Ltac solve_fresh :=
+  (eapply not_elem_of_larger_impl_not_elem_of;
+  [|apply x_eq_fresh_impl_x_notin_free_evars; reflexivity];
+  simpl; clear; set_solver) +
+  by (unfold evar_is_fresh_in;
+  eapply evar_is_fresh_in_richer'; [|apply set_evar_fresh_is_fresh'];
+  clear; set_solver).

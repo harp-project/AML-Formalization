@@ -139,6 +139,18 @@ Proof.
   mlIntro "H1". mlExact "H1".
 Defined.
 
+Import PropExtensionality.
+
+Lemma ex2_coq {T : Type} A (B : T -> Prop) C D:
+  B C <-> D ->
+  A (B C) -> A D.
+Proof.
+  intros H.
+  apply propositional_extensionality in H.
+  rewrite H.
+  intro H1. exact H1.
+Qed.
+
 Lemma ex2_pm2 {Σ : Signature} (A B C D : Pattern) (Γ : Theory) :
   well_formed (A ---> B ---> C ---> D) = true ->
   Γ ⊢ ((B $ C) <---> D) ->
