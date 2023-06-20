@@ -231,7 +231,7 @@ Tactic Notation "_mlReshapeHypsByIdx" constr(n) :=
   [shelve|(apply f_equal; rewrite <- (firstn_skipn n); rewrite /firstn; rewrite /skipn; reflexivity)|idtac]
 .
 
-Tactic Notation "_mlReshapeHypsByName" constr(n) :=
+(* Tactic Notation "_mlReshapeHypsByName" constr(n) :=
   unshelve (eapply (@cast_proof_ml_hyps _ _ _ _ _ _ _));
   [shelve|(
     apply f_equal;
@@ -247,7 +247,16 @@ Tactic Notation "_mlReshapeHypsByName" constr(n) :=
     end
     )
   |idtac]
-.
+. *)
+
+Tactic Notation "_mlReshapeHypsByName" constr(name) :=
+match goal with
+| [ |- @of_MLGoal _ (@mkMLGoal _ _ ?l _ _) ] =>
+  match eval cbv in (index_of name (names_of l)) with
+  | Some ?i => _mlReshapeHypsByIdx i
+  | None => fail "No such name: " name
+  end
+end.
 
 Ltac2 _mlReshapeHypsByName (name' : constr) :=
   ltac1:(name'' |- _mlReshapeHypsByName name'') (Ltac1.of_constr name')
@@ -292,14 +301,23 @@ Ltac _getHypNames :=
   | [ |- of_MLGoal (mkMLGoal _ _ ?l _ _) ] => eval lazy in (names_of l)
   end.
 
-Tactic Notation "_failIfUsed" constr(name) :=
+(* Tactic Notation "_failIfUsed" constr(name) :=
   lazymatch goal with
   | [ |- of_MLGoal (mkMLGoal _ _ ?l _ _) ] =>
     lazymatch (eval cbv in (find_hyp name l)) with
     | Some _ => fail "The name" name "is already used"
     | _ => idtac
     end
-  end.
+  end. *)
+
+Ltac _failIfUsed name :=
+lazymatch goal with
+| [ |- of_MLGoal (mkMLGoal _ _ ?l _ _) ] =>
+  lazymatch (eval cbv in (find (fun x => String.eqb x name) (names_of l))) with
+  | Some _ => fail "The name" name "is already used"
+  | _ => idtac
+  end
+end.
 
 Ltac _enterProofMode :=
   toMLGoal;[wf_auto2|]

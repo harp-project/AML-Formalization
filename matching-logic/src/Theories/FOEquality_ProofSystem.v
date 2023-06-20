@@ -23,12 +23,12 @@ Import extralibrary.
 Import MatchingLogic.Logic.Notations.
 Import MatchingLogic.Theories.Definedness_Syntax.Notations.
 
-Set Default Proof Mode "Classic".
-
 Require Import MatchingLogic.Theories.DeductionTheorem.
 
 Require MatchingLogic.Theories.Sorts_Syntax.
 Import MatchingLogic.Theories.Sorts_Syntax.Notations.
+
+Set Default Proof Mode "Classic".
 
 Open Scope ml_scope.
 Open Scope string_scope.
@@ -65,25 +65,25 @@ Proof.
 
   mlSplitAnd.
   2: mlExact "fun1".
-  remember (fresh_evar patt_bott) as x.
-  remember (fresh_evar (patt_free_evar x)) as y.
-  assert (x <> y) as XY.
+  remember (fresh_evar patt_bott) as xx.
+  remember (fresh_evar (patt_free_evar xx)) as yy.
+  assert (xx <> yy) as XY.
   { solve_fresh_neq. }
   mlClear "fun0". mlClear "fun1".
   fromMLGoal.
 
   (* TODO: mlIntro for supporting 'all' *)
 
-  pose proof (universal_generalization Γ (all , (⌈ b0 and patt_free_evar x ⌉ ---> ⌊ b0 <---> patt_free_evar x ⌋)) x AnyReasoning (pile_any _)) as H1.
+  pose proof (universal_generalization Γ (all , (⌈ b0 and patt_free_evar xx ⌉ ---> ⌊ b0 <---> patt_free_evar xx ⌋)) xx AnyReasoning (pile_any _)) as H1.
   simpl in H1.
   rewrite decide_eq_same in H1.
   apply H1.
   { wf_auto2. }
   clear H1.
-  pose proof (@universal_generalization _ Γ (⌈ (patt_free_evar y) and (patt_free_evar x) ⌉ ---> ⌊ (patt_free_evar y) <---> (patt_free_evar x) ⌋) y AnyReasoning (pile_any _)) as H1.
+  pose proof (@universal_generalization _ Γ (⌈ (patt_free_evar yy) and (patt_free_evar xx) ⌉ ---> ⌊ (patt_free_evar yy) <---> (patt_free_evar xx) ⌋) yy AnyReasoning (pile_any _)) as H1.
   simpl in H1.
   rewrite decide_eq_same in H1.
-  destruct (decide (y = x)) eqn:Heqyx;[congruence|].
+  destruct (decide (yy = xx)) eqn:Heqyx;[congruence|].
   apply H1.
   { wf_auto2. }
   clear H1.
@@ -119,7 +119,7 @@ Proof.
   { wf_auto2. }
   { apply pile_any. }
 
-  apply membership_elimination with (x := fresh_evar (g ---> ψ)).
+  apply membership_elimination with (x := (fresh_evar (g ---> ψ))).
   { solve_fresh. }
   { apply pile_any. }
   { wf_auto2. }

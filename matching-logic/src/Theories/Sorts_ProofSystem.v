@@ -34,9 +34,16 @@ Open Scope ml_scope.
 Open Scope string_scope.
 Open Scope list_scope.
 
-Lemma ex_sort_impl_ex {Σ : Signature} {syntax : Sorts_Syntax.Syntax} Γ ϕ s :
+Set Printing All.
+Lemma ex_sort_impl_ex
+  {Σ : Signature}
+  {syntax : Sorts_Syntax.Syntax}
+  (Γ : Theory)
+  (ϕ : Pattern)
+  (s : symbols)
+  :
   well_formed (ex , ϕ) ->
-  theory ⊆ Γ ->
+  Definedness_Syntax.theory ⊆ Γ ->
   Γ ⊢ ex (patt_sym s) , ϕ ---> (ex , ϕ).
 Proof.
   intros wfϕ HΓ.
