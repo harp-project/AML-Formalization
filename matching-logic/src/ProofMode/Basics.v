@@ -319,8 +319,22 @@ lazymatch goal with
   end
 end.
 
+Ltac _introAllWf :=
+  unfold is_true;
+  repeat (
+    lazymatch goal with
+    | [ |- well_formed _ = true -> _ ] =>
+      let H := fresh "Hwf" in
+      intros H
+    | [ |- Pattern.wf _ = true -> _ ] =>
+      let H := fresh "Hwfl" in
+      intros H
+    end
+  )
+.
+
 Ltac _enterProofMode :=
-  toMLGoal;[wf_auto2|]
+  _introAllWf;toMLGoal;[wf_auto2|]
 .
 
 Ltac _ensureProofMode :=
