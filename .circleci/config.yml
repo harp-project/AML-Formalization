@@ -44,6 +44,12 @@ jobs:
             #cachix watch-exec harp-ml-in-coq --
             nix --show-trace --print-build-logs build '.#coq-matching-logic-example-fol' --no-link
       - run:
+          name: "ProofMode Tutorial -- build"
+          command: |
+            source /home/circleci/.nix-profile/etc/profile.d/nix.sh
+            #cachix watch-exec harp-ml-in-coq --
+            nix --show-trace --print-build-logs build '.#coq-matching-logic-example-proofmode' --no-link
+      - run:
           name: "Prover Build & Test"
           command: |
             source /home/circleci/.nix-profile/etc/profile.d/nix.sh
