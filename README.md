@@ -47,6 +47,10 @@ If you want to work on examples:
 ```sh
 nix develop '.#coq-matching-logic-example-fol'.
 ```
+If you want to go through the proof mode tutorial:
+```sh
+nix develop '.#coq-matching-logic-example-proofmode'
+```
 And so on. To list all packages, run:
 ```sh
 nix flake show
