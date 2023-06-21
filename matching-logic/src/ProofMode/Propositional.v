@@ -104,9 +104,12 @@ Local Example ex_mlExact {Σ : Signature} Γ a b c:
   well_formed c = true ->
   Γ ⊢i a ---> b ---> c ---> b using BasicReasoning.
 Proof.
-  intros wfa wfb wfc.
-  toMLGoal.
-  { wf_auto2. }
+  (* The following are not necessary *)
+  (*
+    intros wfa wfb wfc.
+    toMLGoal.
+    { wf_auto2. }
+  *)
   mlIntro "H1". mlIntro "H2". mlIntro "H3". (* TODO: mlIntros "H1" "H2" "H3".*)
   mlExact "H2".
 Defined.
