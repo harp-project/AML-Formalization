@@ -217,7 +217,8 @@ Example use_rewriteBy {Σ : Signature} {syntax : Definedness_Syntax.Syntax}
     Γ ⊢ (ϕ₁ $ ϕ₄ =ml ϕ₂ $ ϕ₄ ) ---> (ϕ₁ =ml ϕ₂) ---> ((ϕ₃ $ ϕ₁ $ ϕ₄) <---> (ϕ₃ $ ϕ₂ $ ϕ₄))
 .
 Proof.
-    intros HΓ wfϕ₁ wfϕ₂ wfϕ₃ wfϕ₄.
+    intros HΓ.
+    (* Also, all the wfXY hypothesis can be introduced automatically when entering the proof mode (usually also automatically)*)
     mlIntro "H1". mlIntro "H2".
 
     (* We can rewrite using an equality from the local context. *)
@@ -261,7 +262,7 @@ Example use_rewriteBy {Σ : Signature} {syntax : Definedness_Syntax.Syntax}
     Γ ⊢ (ϕ₁ $ ϕ₄ =ml ϕ₂ $ ϕ₄ ) ---> (ϕ₁ =ml ϕ₂) ---> ((ϕ₃ $ ϕ₁ $ ϕ₄) <---> (ϕ₃ $ ϕ₂ $ ϕ₄))
 .
 Proof.
-    intros HΓ Hmf wfϕ₁ wfϕ₂ wfϕ₃ wfϕ₄.
+    intros HΓ Hmf.
     mlIntro "H1". mlIntro "H2".
 
     (* We can rewrite using an equality from the local context. *)
@@ -299,7 +300,6 @@ Example use_mlApply {Σ : Signature} (Γ : Theory) (a b c : Pattern) :
     well_formed c = true ->
     Γ ⊢ (a ---> b $ c) ---> (b $ c ---> c) ---> (a ---> c).
 Proof.
-    intros wfa wfb wfc.
     mlIntro "H1". mlIntro "H2". mlIntro "H3".
     (* strenghtens the concusion using H2 *)
     mlApply "H2".
@@ -322,7 +322,6 @@ Example use_mlApplyMeta {Σ : Signature} (Γ : Theory) (a b c d : Pattern) :
     well_formed d = true ->
     Γ ⊢ a ---> ((ex, c) $ d) ---> b ---> (ex, (c $ d)).
 Proof.
-    intros wfa wfb wfc wfd.
     mlIntro "H1". mlIntro "H2". mlIntro "H3".
 
     Check Prop_ex_left.
