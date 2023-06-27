@@ -6,6 +6,9 @@ In this project we attempt to fully implement the "Applicative Matching Logic" f
 
 - [coqdoc](https://harp-project.github.io/AML-Formalization/branch/master/coqdoc/toc.html)
 - [proofmode.md](proofmode.md) - A list of tactic of matching logic proof mode.
+- [Proof Mode tutorial](examples/02_proofmode/)
+
+
 ## For developers
 
 ### Build
