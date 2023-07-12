@@ -39,15 +39,18 @@ Class Syntax {Σ : Signature} (s1 s2 : Pattern) :=
 Section pswl.
     Context
       {Σ : Signature}
-      (s1 s2 : symbols)
+      (s1 s2 : Pattern)
+      (wfs1 : well_formed s1 = true)
+      (wfs2 : well_formed s2 = true)
       {syntax : Syntax s1 s2}
     .
     Import Notations.
     Open Scope ml_scope.
     Delimit Scope ml_scope with ml. (* TODO move this somewhere else *)
 
-    (* For some reason, Coq does not terminate on this. Maybe some typeclasses cycle?
-       So I will just define it via ltac.
+    (* Typelass resolution does not terminate on this input.
+       TODO: figure out why.
+       So I will just define the instance via ltac.
     *)
     (*
     #[global]
@@ -91,9 +94,9 @@ Section pswl.
     Definition axiom (name : AxiomName) : Pattern :=
     match name with
     | AxKeyValue =>
-        all (patt_sym s1), (
-            all (patt_sym s2), (
-                all (patt_sym s1), (
+        all s1, (
+            all s2, (
+                all s1, (
                     ml_lookup (mlPair { s1 , s2 } (b2 , b1)) b0 =ml (patt_and (b2 =ml b0) b1)
                 )
             )
