@@ -526,6 +526,104 @@ Section index_manipulation.
       simpl in IHpsi. auto.
   Qed.
 
+
+  Lemma wfc_mu_nest_mu' psi level level' less:
+    level >= less ->
+    well_formed_closed_mu_aux psi (level - less) ->
+    well_formed_closed_mu_aux (nest_mu_aux level' less psi) level.
+  Proof.
+    intros H1 H2.
+    replace level with ((level - less) + less) by lia.
+    apply wfc_mu_nest_mu.
+    exact H2.
+  Qed.
+
+  Lemma wfc_ex_nest_ex psi level level' more:
+    well_formed_closed_ex_aux psi level ->
+    well_formed_closed_ex_aux (nest_ex_aux level' more psi) (level+more).
+  Proof.
+    intros H.
+    move: level level' H.
+    induction psi; intros level level' H; simpl in *; auto.
+    - repeat case_match; auto; lia.
+    - destruct_and!.
+      specialize (IHpsi1 level level' ltac:(assumption)).
+      specialize (IHpsi2 level level' ltac:(assumption)).
+      split_and!; auto.
+    - destruct_and!.
+      specialize (IHpsi1 level level' ltac:(assumption)).
+      specialize (IHpsi2 level level' ltac:(assumption)).
+      split_and!; auto.
+    - specialize (IHpsi (S level) (S level') ltac:(assumption)).
+      simpl in IHpsi. auto.
+  Qed.
+
+  Lemma wfc_ex_nest_ex' psi level level' less:
+    level >= less ->
+    well_formed_closed_ex_aux psi (level - less) ->
+    well_formed_closed_ex_aux (nest_ex_aux level' less psi) level.
+  Proof.
+    intros H1 H2.
+    replace level with ((level - less) + less).
+    2: {
+      lia.
+    }
+    apply wfc_ex_nest_ex.
+    exact H2.
+  Qed.
+
+  Lemma wfc_ex_nest_mu dbi level more ϕ:
+    well_formed_closed_ex_aux (nest_mu_aux level more ϕ) dbi
+    = well_formed_closed_ex_aux ϕ dbi 
+  .
+  Proof.
+    move: dbi level more.
+    induction ϕ; intros dbi level more; cbn; try reflexivity.
+    {
+      rewrite IHϕ1. rewrite IHϕ2. reflexivity.
+    }
+    {
+      rewrite IHϕ1. rewrite IHϕ2. reflexivity.
+    }
+    {
+      rewrite IHϕ. reflexivity.
+    }
+    {
+      rewrite IHϕ. reflexivity.
+    }
+  Qed.
+
+  Lemma wfc_mu_nest_ex dbi level more ϕ:
+    well_formed_closed_mu_aux (nest_ex_aux level more ϕ) dbi
+    = well_formed_closed_mu_aux ϕ dbi 
+  .
+  Proof.
+    move: dbi level more.
+    induction ϕ; intros dbi level more; cbn; try reflexivity.
+    {
+      rewrite IHϕ1. rewrite IHϕ2. reflexivity.
+    }
+    {
+      rewrite IHϕ1. rewrite IHϕ2. reflexivity.
+    }
+    {
+      rewrite IHϕ. reflexivity.
+    }
+    {
+      rewrite IHϕ. reflexivity.
+    }
+  Qed.
+
+  Lemma impl_wfc_mu_nest_ex dbi level more ϕ:
+    well_formed_closed_mu_aux ϕ dbi = true ->
+    well_formed_closed_mu_aux (nest_ex_aux level more ϕ) dbi = true
+  .
+  Proof.
+    intros H.
+    rewrite wfc_mu_nest_ex.
+    exact H.
+  Qed.
+
   Lemma Private_positive_negative_occurrence_db_nest_mu_aux dbi level more ϕ:
     (no_negative_occurrence_db_b dbi (nest_mu_aux level more ϕ)
      = if decide (dbi < level) is left _ then no_negative_occurrence_db_b dbi ϕ
@@ -587,6 +685,76 @@ Section index_manipulation.
     - rewrite IHϕ.
       rewrite no_negative_occurrence_db_nest_mu_aux. simpl.
       reflexivity.
+  Qed.
+
+  Lemma no_negative_occurrence_db_nest_ex_aux level more dbi ϕ:
+    no_negative_occurrence_db_b dbi (nest_ex_aux level more ϕ)
+    = no_negative_occurrence_db_b dbi ϕ
+  with no_positive_occurrence_db_nest_ex_aux level more dbi ϕ:
+    no_positive_occurrence_db_b dbi (nest_ex_aux level more ϕ)
+    = no_positive_occurrence_db_b dbi ϕ
+  .
+  Proof.
+    {
+      move: level more dbi.
+      induction ϕ; intros level more dbi; cbn; try reflexivity.
+      {
+        rewrite IHϕ1. rewrite IHϕ2. reflexivity.
+      }
+      {
+        fold no_negative_occurrence_db_b no_positive_occurrence_db_b.
+        rewrite IHϕ2.
+        rewrite no_positive_occurrence_db_nest_ex_aux.
+        reflexivity.
+      }
+      {
+        rewrite IHϕ. reflexivity.
+      }
+      {
+        rewrite IHϕ. reflexivity.
+      }
+    }
+    {
+      move: level more dbi.
+      induction ϕ; intros level more dbi; cbn; try reflexivity.
+      {
+        rewrite IHϕ1. rewrite IHϕ2. reflexivity.
+      }
+      {
+        fold no_negative_occurrence_db_b no_positive_occurrence_db_b.
+        rewrite IHϕ2.
+        rewrite no_negative_occurrence_db_nest_ex_aux.
+        reflexivity.
+      }
+      {
+        rewrite IHϕ. reflexivity.
+      }
+      {
+        rewrite IHϕ. reflexivity.
+      }
+    }
+  Qed.
+
+  Lemma well_formed_positive_nest_ex_aux level more ϕ:
+    well_formed_positive (nest_ex_aux level more ϕ) = well_formed_positive ϕ.
+  Proof.
+    move: level.
+    induction ϕ; intros level; simpl; try reflexivity.
+    - rewrite IHϕ1. rewrite IHϕ2. reflexivity.
+    - rewrite IHϕ1. rewrite IHϕ2. reflexivity.
+    - rewrite IHϕ. reflexivity.
+    - rewrite IHϕ.
+      rewrite no_negative_occurrence_db_nest_ex_aux. simpl.
+      reflexivity.
+  Qed.
+
+  Lemma impl_well_formed_positive_nest_ex_aux level more ϕ:
+    well_formed_positive ϕ = true ->
+    well_formed_positive (nest_ex_aux level more ϕ) = true.
+  Proof.
+    intros H.
+    rewrite well_formed_positive_nest_ex_aux.
+    exact H.
   Qed.
 
   Definition simpl_free_evars :=

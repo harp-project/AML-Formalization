@@ -11,7 +11,7 @@ From MatchingLogic Require Import
 Import BoundVarSugar.
 Import Definedness_Syntax.Notations.
 
-Inductive Symbols {Σ : Signature} (s1 s2 : symbols) :=
+Inductive Symbols {Σ : Signature} (s1 s2 : Pattern) :=
 | ml_prod
 | ml_pair
 | ml_proj1
@@ -22,19 +22,22 @@ Inductive Symbols {Σ : Signature} (s1 s2 : symbols) :=
 Instance Symbols_eqdec {Σ : Signature} s1 s2 : EqDecision (Symbols s1 s2).
 Proof. solve_decision. Defined.
 
-Class Syntax {Σ : Signature} (s1 s2 : symbols) :=
+Class Syntax {Σ : Signature} (s1 s2 : Pattern) :=
 {
-    imported_sorts :: Sorts_Syntax.Syntax;
+    imported_sorts : Sorts_Syntax.Syntax;
     inj: Symbols s1 s2 -> symbols;
     inj_inj: Inj (=) (=) inj;
 }.
 
 #[global] Existing Instance imported_sorts.
+#[global] Existing Instance inj_inj.
 
 Section sorts.
     Context
       {Σ : Signature}
-      (s1 s2 : symbols)
+      (s1 s2 : Pattern)
+      (wfs1 : well_formed s1 = true)
+      (wfs2 : well_formed s2 = true)
       {syntax : Syntax s1 s2}
     .
     Import Notations.
@@ -73,24 +76,24 @@ Section sorts.
     | AxPair =>
         patt_total_binary_function
             (patt_sym (inj (ml_pair s1 s2)))
-            (patt_sym s1)
-            (patt_sym s2)
+            s1
+            s2
             (patt_sym (inj (ml_prod s1 s2)))
     | AxProjLeft =>
         patt_total_function
             (patt_sym (inj (ml_proj1 s1 s2)))
             (patt_sym (inj (ml_prod s1 s2)))
-            (patt_sym s1)
+            s1
     | AxProjRight =>
         patt_total_function
             (patt_sym (inj (ml_proj1 s1 s2)))
             (patt_sym (inj (ml_prod s1 s2)))
-            (patt_sym s2)
+            s2
     | AxInj =>
-        patt_forall_of_sort (patt_sym s1) (
-            patt_forall_of_sort (patt_sym s1) (
-                patt_forall_of_sort (patt_sym s2) (
-                    patt_forall_of_sort (patt_sym s2) (
+        patt_forall_of_sort s1 (
+            patt_forall_of_sort s1 (
+                patt_forall_of_sort s2 (
+                    patt_forall_of_sort s2 (
                         patt_imp (
                             ( b3 ,ml b1 ) =ml ( b2 ,ml b0 )%ml
                         ) (
@@ -105,14 +108,14 @@ Section sorts.
             )
         )
     | InversePairProja1 =>
-        patt_forall_of_sort (patt_sym s1) (
-            patt_forall_of_sort (patt_sym s2) (
+        patt_forall_of_sort s1 (
+            patt_forall_of_sort s2 (
                ( ( b1 ,ml b0 ) ).ml1  =ml b1
             )
         )
     | InversePairProja2 =>
-        patt_forall_of_sort (patt_sym s1) (
-            patt_forall_of_sort (patt_sym s2) (
+        patt_forall_of_sort s1 (
+            patt_forall_of_sort s2 (
                ( ( b1 ,ml b0 ) ).ml2  =ml b0
             )
         )
@@ -135,6 +138,12 @@ Section sorts.
 End sorts.
 
 Module Notations.
+
+
+    Notation "'mlProd' '(' s1 ',' s2 ')'"
+        := (patt_sym (inj (ml_prod s1 s2)))
+        : ml_scope
+    .
 
     Notation "'mlPair' '{' s1 ',' s2 '}' '(' phi1 ',' phi2 ')'" := 
         (patt_app (patt_app (patt_sym (inj (ml_pair s1 s2))) phi1) phi2)

@@ -20,6 +20,7 @@ Require Import
   ApplicationContext
   SyntaxLemmas.FreshnessSubstitution
   SyntacticConstruct
+  IndexManipulation
 .
 
 Set Default Proof Mode "Classic".
@@ -361,7 +362,9 @@ Ltac wf_auto2_unfolds :=
     well_formed_closed,
     well_formed_xy,
     evar_open,
-    svar_open(*,
+    svar_open,
+    nest_ex,
+    nest_mu(*,
     free_evar_subst,
     free_evar_subst*)
   in *
@@ -409,7 +412,10 @@ Ltac wf_auto2_step_parts :=
   apply wcex_sctx|
   apply wfp_bsvar_subst|
   apply wfc_mu_aux_bsvar_subst|
-  apply wfc_ex_aux_bsvar_subst
+  apply wfc_ex_aux_bsvar_subst|
+  apply impl_well_formed_positive_nest_ex_aux|
+  apply impl_wfc_mu_nest_ex|
+  (apply wfc_ex_nest_ex';[lia|cbn])
   ];
   try (lazymatch goal with
   | [ H : well_formed_closed_mu_aux ?p 0 = true |- no_negative_occurrence_db_b _ ?p = true]
