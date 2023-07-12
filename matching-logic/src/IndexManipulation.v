@@ -614,6 +614,16 @@ Section index_manipulation.
     }
   Qed.
 
+  Lemma impl_wfc_mu_nest_ex dbi level more ϕ:
+    well_formed_closed_mu_aux ϕ dbi = true ->
+    well_formed_closed_mu_aux (nest_ex_aux level more ϕ) dbi = true
+  .
+  Proof.
+    intros H.
+    rewrite wfc_mu_nest_ex.
+    exact H.
+  Qed.
+
   Lemma Private_positive_negative_occurrence_db_nest_mu_aux dbi level more ϕ:
     (no_negative_occurrence_db_b dbi (nest_mu_aux level more ϕ)
      = if decide (dbi < level) is left _ then no_negative_occurrence_db_b dbi ϕ
@@ -736,6 +746,15 @@ Section index_manipulation.
     - rewrite IHϕ.
       rewrite no_negative_occurrence_db_nest_ex_aux. simpl.
       reflexivity.
+  Qed.
+
+  Lemma impl_well_formed_positive_nest_ex_aux level more ϕ:
+    well_formed_positive ϕ = true ->
+    well_formed_positive (nest_ex_aux level more ϕ) = true.
+  Proof.
+    intros H.
+    rewrite well_formed_positive_nest_ex_aux.
+    exact H.
   Qed.
 
   Definition simpl_free_evars :=
