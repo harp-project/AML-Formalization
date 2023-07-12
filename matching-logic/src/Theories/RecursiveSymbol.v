@@ -34,7 +34,6 @@ Section rs.
     :=
         fold_right
             (apply_connective connective)
-            (* (fun p acc => ((connective $ p) $ acc))%ml *)
             last
             ps
     .
@@ -74,7 +73,6 @@ Section rs.
         = ((⊥ $ b0) $ ((⊥ $ b1) $ ((⊥ $ b2) $ b3)))%ml
     .
     Proof. reflexivity. Qed.
-
 
     Context
         (param_sort : list Pattern)
@@ -117,7 +115,7 @@ Section rs.
     *)
 
     
-    Check fold_right.
+    (*
     Definition partial_sort_applications : list Pattern :=
         fold_right (fun b a => a) ret_sort param_sort
     .
@@ -149,23 +147,5 @@ Section rs.
         end
     .
 
-
-
-    Definition combine (im : Intermediate) (psort : symbol) :=
-        i_
-    .
-    
-
-
-(*
-
-    Fixpoint im_valid (im : Intermediate) : Prop :=
-        match im with
-
-    Check fold_right.
-    Definition prod_chain
-        := fold_right (*...*)
-    *)
-
-
+        *)
 End rs.
