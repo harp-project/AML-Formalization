@@ -131,8 +131,10 @@ Section sorts.
     |}.
     Next Obligation.
     destruct name; simpl; wf_auto2.
-    Check wfc_mu_nest_mu.
-    Locate nest_ex.
+    all: repeat rewrite well_formed_positive_nest_ex_aux; try assumption.
+    all: repeat rewrite wfc_mu_nest_ex; try assumption.
+    
+    all: unfold nest_ex; repeat (apply wfc_ex_nest_ex';[lia|cbn];wf_auto2).
     Qed.
 
     Definition Γprod := theory_of_NamedAxioms named_axioms.
