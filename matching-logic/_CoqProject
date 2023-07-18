@@ -62,6 +62,8 @@ src/Theories/ProductSort.v
 src/Theories/ProductSortWithLookup.v
 src/Theories/RecursiveSymbol.v
 
+src/Theories/MSA_Syntax.v
+
 src/Theories/Subseteq_ProofSystem.v
 src/Theories/ContextualImplication.v
 
