@@ -3518,12 +3518,94 @@ Proof.
   { mlLeft. mlExact "Hc1". }
   { mlRight. mlExact "Hc2". }
 Defined.
+Lemma MLGoal_conjugate_hyps {Σ : Signature}
+  (Γ : Theory)
+  (l1 l2 l3 : hypotheses)
+  (name1 name2 conj_name : string)
+  (goal p1 p2 : Pattern)
+  (info : ProofInfo):
+  (* well_formed p1 -> well_formed p2 -> 
+  Pattern.wf (map nh_patt (l1 ++ l2 ++ l3)) -> *)
+  mkMLGoal Σ Γ ((mkNH _ conj_name (p1 and p2)) :: (l1 ++ (mkNH _ name1 p1) :: l2 ++ (mkNH _ name2 p2) :: l3)) goal info ->
+  mkMLGoal Σ Γ (l1 ++ (mkNH _ name1 p1) :: l2 ++ (mkNH _ name2 p2) :: l3) goal info.
+Proof.
+  intro h1.
+  mlExtractWF wfl wfg. 
+  fromMLGoal.
+  assert (well_formed p1 /\ well_formed p2) as [wfp1 wfp2].
+  {
+    Search Pattern.wf app cons well_formed.
+    unfold patterns_of in wfl.
+    rewrite map_app in wfl. simpl in wfl. rewrite map_app in wfl. simpl in wfl.
+    pose proof (wfl₁hl₂_proj_h _ _ _ wfl).
+    pose proof (app_assoc (map nh_patt l1) (p1 :: map nh_patt l2) (p2 :: map nh_patt l3)).
+    Search app cons eq.
+    rewrite app_comm_cons app_assoc in wfl.
+    pose proof (wfl₁hl₂_proj_h _ _ _ wfl).
+    wf_auto2.
+  }
 
+  feed specialize h1.
+  simpl. exact wfg.
+  simpl. wf_auto2.
+  (* apply wf_cons. *)
+  simpl in *.
+  apply reorder_last_to_head_meta in h1.
+  2-4: wf_auto2.
+  eapply prf_add_lemma_under_implication_meta_meta with (h:=(p1 and p2)).
+  1-3: wf_auto2.
+  2: assumption.
+  apply prf_conj_split_meta_meta.
+  1-3: wf_auto2.
+  1-2: unfold patterns_of; rewrite map_app; simpl; rewrite map_app; simpl.
+  1-2: unfold patterns_of in *; rewrite map_app in wfl; simpl in *;
+                                rewrite map_app in wfl; simpl in *.
+  - gapply nested_const_middle. try_solve_pile.
+    1-3: wf_auto2.
+  - rewrite app_comm_cons app_assoc.
+    gapply nested_const_middle. try_solve_pile.
+    1-3: wf_auto2.
+Defined.
 
-(**********************************************************************************)
+Tactic Notation "mlConjIntro" constr(name1') constr(name2') "as" constr(conj_name') :=
+  _ensureProofMode;
+  _failIfUsed conj_name';
+  (* eapply cast_proof_ml_hyps;
+  f_equal; *)
+  _mlReshapeHypsByName name2';
+  _mlReshapeHypsByName name1';
+  apply MLGoal_conjugate_hyps with (name1 := name1') (name2 := name2') (conj_name := conj_name');
+  rewrite app_comm_cons;
+  _mlReshapeHypsBack;
+  repeat rewrite app_comm_cons;
+  _mlReshapeHypsBack.
 
+Tactic Notation "mlConjIntro" constr(name1') constr(name2') :=
+  _ensureProofMode;
+  (* eapply cast_proof_ml_hyps;
+  f_equal; *)
+  let hyps := _getHypNames in
+  let conj_name' := eval cbv in (fresh hyps) in
+  mlConjIntro name1' name2' as conj_name'.
 
+  (**********************************************************************************)
 
+Example ex_ml_conj_intro {Σ : Signature} Γ a b c d e f i:
+   well_formed a -> well_formed b ->
+   well_formed c -> well_formed d ->
+   well_formed e -> well_formed f ->
+   Γ ⊢i (a ---> b ---> c ---> d ---> e ---> f ---> (b and e)) using i.
+Proof.
+  intros wfa wfb wfc wfd wfe wff.
+  mlIntro; mlIntro; mlIntro; mlIntro; mlIntro; mlIntro. 
+  mlConjIntro "1" "4" as "CONJUCTION".
+  mlConjIntro "1" "4".
+  (* is this an issue or just a different lemma *)
+  Fail mlConjIntro "0" "0" as "conj with self".
+  (* we force the order or of hypotheses currently *)
+  Fail mlConjIntro "4" "1" as "reverse order".
+  mlExact "CONJUCTION".
+Qed.
 
 (* This is an example and belongs to the end of this file.
    Its only purpose is only to show as many tactics as possible.\
