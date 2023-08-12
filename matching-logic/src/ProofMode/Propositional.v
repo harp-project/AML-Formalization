@@ -367,8 +367,6 @@ Tactic Notation "mlApply" constr(name') :=
   _mlReshapeHypsBack.
 
 
-  
-
 Local Example ex_mlApplyn {Σ : Signature} Γ a b:
   well_formed a ->
   well_formed b ->
@@ -383,7 +381,6 @@ Proof.
   fromMLGoal.
   apply P1; wf_auto2.
 Defined.
-
 
 Lemma Constructive_dilemma {Σ : Signature} Γ p q r s:
   well_formed p ->
@@ -3523,21 +3520,37 @@ Proof.
   { mlRight. mlExact "Hc2". }
 Defined.
 
+Lemma prf_clear_hyps_meta {Σ : Signature} Γ l1 l2 l3 g i:
+  Pattern.wf l1 ->
+  Pattern.wf l2 ->
+  Pattern.wf l3 ->
+  well_formed g ->
+  Γ ⊢i (foldr patt_imp g (l1 ++ l3)) using i ->
+  Γ ⊢i (foldr patt_imp g (l1 ++ l2 ++ l3)) using i.
+Proof.
+  intros. eapply MP.
+  apply H3.
+  useBasicReasoning.
+  induction l2.
+  + simpl. apply A_impl_A. wf_auto2.
+  + simpl. rewrite cons_middle. 
+    apply prf_clear_hyp_meta with (l1 := foldr patt_imp g (l1 ++ l3) :: l1).
+    1-4: wf_auto2.
+    apply IHl2. wf_auto2.
+Defined.
+
 Lemma MLGoal_weakenLocalHypotheses {Σ : Signature} Γ l1 l2 l3 name' name'' h h' g i:
   mkMLGoal Σ Γ (l1 ++ (mkNH _ name' h) :: l2 ++ (mkNH _ name'' (h')) :: l3) g i ->
   mkMLGoal Σ Γ (l1 ++ (mkNH _ name' h) :: l2 ++ (mkNH _ name'' (h ---> h')) :: l3) g i.
 Proof.
     intro H.
     mlExtractWF wfl wfg.
-    
     (* mlAdd H. does not terminate *)
-    
     fromMLGoal.
     assert ( well_formed (h ---> h') /\ well_formed h') as [wfhh' wfh'].
     {
        unfold patterns_of in wfl.
        rewrite map_app in wfl. simpl in wfl. rewrite map_app in wfl. simpl in wfl.
-       
        assert (Pattern.wf (map nh_patt l2)). wf_auto2.
        pose proof (wfapp_proj_1 _ _ wfl).
        rewrite app_comm_cons in wfl.
@@ -3558,67 +3571,45 @@ Proof.
     assert (well_formed h) as wfh. wf_auto2.
     feed specialize H.
     simpl. wf_auto2.
-    simpl.  unfold patterns_of. repeat (rewrite map_app; simpl).
+    simpl. unfold patterns_of. repeat (rewrite map_app; simpl).
          wf_auto2.
     simpl in *.
 
     unfold patterns_of. repeat (rewrite map_app; simpl).
-    
-    (* pose proof prf_strenghten_premise_iter. mp example: 958, add proved to assumption.
-    pose proof prf_strenghten_premise_iter_meta.
-    pose proof prf_strenghten_premise_iter_meta_meta. *)
-    
     eapply prf_add_lemma_under_implication_meta_meta with (h:=h').
     1-3: wf_auto2.
-    1: {
-      
-      apply reorder_middle_to_last_meta.
-      1-4: wf_auto2.
+    + apply reorder_middle_to_last_meta. 1-4: wf_auto2. 
       rewrite -app_assoc. simpl. rewrite app_assoc.
-      apply reorder_middle_to_last_meta.
-      1-4: wf_auto2.
+      apply reorder_middle_to_last_meta. 1-4: wf_auto2.
       rewrite app_assoc.
       apply reorder_last_to_head_meta. 1-3: wf_auto2.
-      rewrite app_comm_cons.
-      rewrite app_assoc. 
+      rewrite app_comm_cons.  rewrite app_assoc. 
       apply reorder_last_to_head_meta. 1-3: wf_auto2.
-      pose proof prf_add_proved_to_assumptions.
-      pose proof prf_add_assumption.
-      pose proof prf_weaken_conclusion.
+      repeat rewrite app_comm_cons.
+      rewrite <- app_nil_l with
+                        (l:= map nh_patt l1).
+      rewrite -app_assoc. rewrite app_comm_cons. simpl.
+      rewrite <- app_nil_r with
+                      (l:= (map nh_patt l1 ++ map nh_patt l2 ++ map nh_patt l3)).
+      apply prf_clear_hyps_meta with
+                      (l1 := (h :: ((h ---> h') :: []))) (l3 := []).
+      1-4: wf_auto2.
       simpl.
-      induction ((map nh_patt l1 ++ map nh_patt l2) ++ map nh_patt l3).
-      -  mlIntro. mlIntro.   
-        mlApply "1". mlExact "0".
-      - (* pose proof BasicProofSystemLemmas.reorder_iter_perm. *)
-        rewrite <- app_nil_l with (l:= (a :: l)).
-         
-        rewrite cons_middle.
-        apply prf_clear_hyp_meta with (l1 := (h :: ((h ---> h') :: []))).
-        1-3: wf_auto2.
-        admit.
-        simpl. exact IHl. 
-      (* 
-      MLGoal_weakenConclusion
-      mlApply "1".
       useBasicReasoning.
-      unfold foldr.      (* eapply modus_ponens. *)
-      toMLGoal. wf_auto2. 
-      admit. *)
-    }
-    1: {
-      unfold patterns_of in H.
+      apply modus_ponens; wf_auto2.
+    + unfold patterns_of in H.
       repeat (rewrite map_app in H; simpl in H).
       simpl. rewrite app_comm_cons. rewrite app_assoc.
-      rewrite <- app_assoc with (l := (map nh_patt l1 ++ h :: map nh_patt l2)).
+      rewrite <- app_assoc with
+                          (l := (map nh_patt l1 ++ h :: map nh_patt l2)).
       simpl.
-      apply prf_clear_hyp_meta with (l1 := (map nh_patt l1 ++ h :: map nh_patt l2)).
+      apply prf_clear_hyp_meta with
+                          (l1 := (map nh_patt l1 ++ h :: map nh_patt l2)).
       1-4:wf_auto2.
-      apply reorder_last_to_middle_meta.
-      1-4:wf_auto2.
+      apply reorder_last_to_middle_meta. 1-4:wf_auto2.
       rewrite -app_assoc.
       assumption.
-    }
-Admitted.
+Defined.
     
 Lemma MLGoal_conjugate_hyps {Σ : Signature}
   (Γ : Theory)
