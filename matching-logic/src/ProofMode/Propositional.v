@@ -366,6 +366,9 @@ Tactic Notation "mlApply" constr(name') :=
   apply MLGoal_weakenConclusion;
   _mlReshapeHypsBack.
 
+
+  
+
 Local Example ex_mlApplyn {Σ : Signature} Γ a b:
   well_formed a ->
   well_formed b ->
@@ -974,6 +977,7 @@ Proof.
   4: apply H.
   all: wf_auto2.
 Defined.
+
 
 Lemma MLGoal_add {Σ : Signature} Γ l name g h i:
   Γ ⊢i h using i ->
@@ -3518,6 +3522,104 @@ Proof.
   { mlLeft. mlExact "Hc1". }
   { mlRight. mlExact "Hc2". }
 Defined.
+
+Lemma MLGoal_weakenLocalHypotheses {Σ : Signature} Γ l1 l2 l3 name' name'' h h' g i:
+  mkMLGoal Σ Γ (l1 ++ (mkNH _ name' h) :: l2 ++ (mkNH _ name'' (h')) :: l3) g i ->
+  mkMLGoal Σ Γ (l1 ++ (mkNH _ name' h) :: l2 ++ (mkNH _ name'' (h ---> h')) :: l3) g i.
+Proof.
+    intro H.
+    mlExtractWF wfl wfg.
+    
+    (* mlAdd H. does not terminate *)
+    
+    fromMLGoal.
+    assert ( well_formed (h ---> h') /\ well_formed h') as [wfhh' wfh'].
+    {
+       unfold patterns_of in wfl.
+       rewrite map_app in wfl. simpl in wfl. rewrite map_app in wfl. simpl in wfl.
+       
+       assert (Pattern.wf (map nh_patt l2)). wf_auto2.
+       pose proof (wfapp_proj_1 _ _ wfl).
+       rewrite app_comm_cons in wfl.
+       pose proof (wfapp_proj_1 _ _ (wfapp_proj_2 _ _ wfl)).
+       rewrite app_assoc in wfl.
+       pose proof (wfl₁hl₂_proj_h _ _ _ wfl).
+       pose proof (wfapp_proj_2 _ _ wfl).
+       wf_auto2.
+    }
+    remember wfl as wfl_save.
+    clear Heqwfl_save.
+    unfold patterns_of in wfl.
+       rewrite map_app in wfl. simpl in wfl. rewrite map_app in wfl. simpl in wfl.
+       
+    assert (Pattern.wf (map nh_patt l1)). wf_auto2. 
+    assert (Pattern.wf (map nh_patt l2)). wf_auto2.
+    assert (Pattern.wf (map nh_patt l3)). wf_auto2.
+    assert (well_formed h) as wfh. wf_auto2.
+    feed specialize H.
+    simpl. wf_auto2.
+    simpl.  unfold patterns_of. repeat (rewrite map_app; simpl).
+         wf_auto2.
+    simpl in *.
+
+    unfold patterns_of. repeat (rewrite map_app; simpl).
+    
+    (* pose proof prf_strenghten_premise_iter. mp example: 958, add proved to assumption.
+    pose proof prf_strenghten_premise_iter_meta.
+    pose proof prf_strenghten_premise_iter_meta_meta. *)
+    
+    eapply prf_add_lemma_under_implication_meta_meta with (h:=h').
+    1-3: wf_auto2.
+    1: {
+      
+      apply reorder_middle_to_last_meta.
+      1-4: wf_auto2.
+      rewrite -app_assoc. simpl. rewrite app_assoc.
+      apply reorder_middle_to_last_meta.
+      1-4: wf_auto2.
+      rewrite app_assoc.
+      apply reorder_last_to_head_meta. 1-3: wf_auto2.
+      rewrite app_comm_cons.
+      rewrite app_assoc. 
+      apply reorder_last_to_head_meta. 1-3: wf_auto2.
+      pose proof prf_add_proved_to_assumptions.
+      pose proof prf_add_assumption.
+      pose proof prf_weaken_conclusion.
+      simpl.
+      induction ((map nh_patt l1 ++ map nh_patt l2) ++ map nh_patt l3).
+      -  mlIntro. mlIntro.   
+        mlApply "1". mlExact "0".
+      - (* pose proof BasicProofSystemLemmas.reorder_iter_perm. *)
+        rewrite <- app_nil_l with (l:= (a :: l)).
+         
+        rewrite cons_middle.
+        apply prf_clear_hyp_meta with (l1 := (h :: ((h ---> h') :: []))).
+        1-3: wf_auto2.
+        admit.
+        simpl. exact IHl. 
+      (* 
+      MLGoal_weakenConclusion
+      mlApply "1".
+      useBasicReasoning.
+      unfold foldr.      (* eapply modus_ponens. *)
+      toMLGoal. wf_auto2. 
+      admit. *)
+    }
+    1: {
+      unfold patterns_of in H.
+      repeat (rewrite map_app in H; simpl in H).
+      simpl. rewrite app_comm_cons. rewrite app_assoc.
+      rewrite <- app_assoc with (l := (map nh_patt l1 ++ h :: map nh_patt l2)).
+      simpl.
+      apply prf_clear_hyp_meta with (l1 := (map nh_patt l1 ++ h :: map nh_patt l2)).
+      1-4:wf_auto2.
+      apply reorder_last_to_middle_meta.
+      1-4:wf_auto2.
+      rewrite -app_assoc.
+      assumption.
+    }
+Admitted.
+    
 Lemma MLGoal_conjugate_hyps {Σ : Signature}
   (Γ : Theory)
   (l1 l2 l3 : hypotheses)
@@ -3538,7 +3640,7 @@ Proof.
     unfold patterns_of in wfl.
     rewrite map_app in wfl. simpl in wfl. rewrite map_app in wfl. simpl in wfl.
     pose proof (wfl₁hl₂_proj_h _ _ _ wfl).
-    pose proof (app_assoc (map nh_patt l1) (p1 :: map nh_patt l2) (p2 :: map nh_patt l3)).
+    (* pose proof (app_assoc (map nh_patt l1) (p1 :: map nh_patt l2) (p2 :: map nh_patt l3)). *)
     Search app cons eq.
     rewrite app_comm_cons app_assoc in wfl.
     pose proof (wfl₁hl₂_proj_h _ _ _ wfl).
@@ -3557,9 +3659,8 @@ Proof.
   2: assumption.
   apply prf_conj_split_meta_meta.
   1-3: wf_auto2.
-  1-2: unfold patterns_of; rewrite map_app; simpl; rewrite map_app; simpl.
-  1-2: unfold patterns_of in *; rewrite map_app in wfl; simpl in *;
-                                rewrite map_app in wfl; simpl in *.
+  1-2: unfold patterns_of; repeat (rewrite map_app; simpl).
+  1-2: unfold patterns_of in *; repeat (rewrite map_app in wfl; simpl in wfl).
   - gapply nested_const_middle. try_solve_pile.
     1-3: wf_auto2.
   - rewrite app_comm_cons app_assoc.
