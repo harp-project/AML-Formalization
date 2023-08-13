@@ -3539,9 +3539,9 @@ Proof.
     apply IHl2. wf_auto2.
 Defined.
 
-Lemma MLGoal_weakenLocalHypotheses {Σ : Signature} Γ l1 l2 l3 name' name'' h h' g i:
-  mkMLGoal Σ Γ (l1 ++ (mkNH _ name' h) :: l2 ++ (mkNH _ name'' (h')) :: l3) g i ->
-  mkMLGoal Σ Γ (l1 ++ (mkNH _ name' h) :: l2 ++ (mkNH _ name'' (h ---> h')) :: l3) g i.
+Lemma MLGoal_ApplyIn {Σ : Signature} Γ l1 l2 l3 name1 name2 h h' g i:
+  mkMLGoal Σ Γ (l1 ++ (mkNH _ name1 h) :: l2 ++ (mkNH _ name2 (h')) :: l3) g i ->
+  mkMLGoal Σ Γ (l1 ++ (mkNH _ name1 h) :: l2 ++ (mkNH _ name2 (h ---> h')) :: l3) g i.
 Proof.
     intro H.
     mlExtractWF wfl wfg.
@@ -3610,7 +3610,34 @@ Proof.
       rewrite -app_assoc.
       assumption.
 Defined.
-    
+Tactic Notation "mlApply" constr(name1') "in" constr(name2') :=
+  _ensureProofMode;
+  (* eapply cast_proof_ml_hyps;
+  f_equal; *)
+  _mlReshapeHypsByName name2';
+  _mlReshapeHypsByName name1';
+  apply MLGoal_ApplyIn with (name1 := name1') (name2 := name2');
+  rewrite -app_comm_cons;
+  _mlReshapeHypsBack;
+  repeat rewrite app_comm_cons;
+  _mlReshapeHypsBack.
+
+Example ex_mlApplyIn {Σ : Signature} Γ a b c d e f i:
+  well_formed a -> well_formed b ->
+  well_formed c -> well_formed d ->
+  well_formed e -> well_formed f ->
+  Γ ⊢i (c---> a ---> c ---> (a ---> b) ---> a ---> b) using i.
+Proof.
+  intros.
+  mlIntro.
+  mlIntro.
+  mlIntro.
+  mlIntro.
+  mlIntro.
+  mlApply "1" in "3".
+  mlAssumption.
+Qed.
+
 Lemma MLGoal_conjugate_hyps {Σ : Signature}
   (Γ : Theory)
   (l1 l2 l3 : hypotheses)
