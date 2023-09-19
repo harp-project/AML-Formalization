@@ -20,11 +20,9 @@ From MatchingLogic Require Import
 
 From stdpp Require Import list tactics fin_sets coGset gmap sets.
 
-From MatchingLogic.Utils Require Import stdpp_ext.
-
-Import extralibrary.
-
 Import
+  MatchingLogic.Utils.stdpp_ext
+  MatchingLogic.Utils.extralibrary
   MatchingLogic.Syntax.Notations
   MatchingLogic.DerivedOperators_Syntax.Notations
   MatchingLogic.ProofSystem.Notations_private
