@@ -651,16 +651,16 @@ Section soundness_completeness.
         induction v. inversion H.
         inversion H; subst.
         + simpl_existT. subst. simpl in Fresh.
-          now apply notin_app_l in Fresh.
+          rewrite in_app_iff in Fresh.
+          tauto.
         + simpl_existT. subst. simpl in Fresh.
-          apply notin_app_r in Fresh. apply IHv; intros; auto.
-    * do 2 rewrite sat_impl. intros. apply notin_app_l in Fresh as Fresh2.
-      apply notin_app_r in Fresh.
-      split; intros H H0.
-      - apply (proj1 (IHφ2 t D I fail rho x dbi Fresh)).
-        apply H. now apply (proj2 (IHφ1 t D I fail rho x dbi Fresh2)).
-      - apply (proj2 (IHφ2 t D I fail rho x dbi Fresh)).
-        apply H. now apply (proj1 (IHφ1 t D I fail rho x dbi Fresh2)).
+          rewrite in_app_iff in Fresh.
+          tauto.
+    * do 2 rewrite sat_impl. intros.
+      rewrite in_app_iff in Fresh.
+      apply Decidable.not_or in Fresh.
+      destruct Fresh as [H1 H2].
+      split; intros H H0; naive_solver.
     * do 2 rewrite sat_exs.
       simpl. split; intro H; destruct H; exists x0;
       remember (var_fresh (form_vars (bsubst_form φ (fvar x) (S dbi)))) as F1;
