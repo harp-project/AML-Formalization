@@ -143,9 +143,10 @@ Ltac2 _toMLGoal () :=
        (unfold MLGoal_from_goal;
         unfold of_MLGoal;
          simpl;
-         let h := Fresh.in_goal ident:(h) in
-         intros h;
-         apply &h >
+         let h := Fresh.in_goal ident:(Halmost) in
+         intros $h;
+         let h_hyp := Control.hyp h in
+         apply $h_hyp >
          [()|reflexivity]
        )
        |unfold MLGoal_from_goal]
@@ -186,12 +187,21 @@ Proof.
 Defined.
 
 
-Ltac useBasicReasoning :=
+Ltac2 _useBasicReasoning () :=
   unfold derives;
-  lazymatch goal with
+  lazy_match! goal with
   | [ |- of_MLGoal (mkMLGoal _ _ _ _ _) ] => apply mlUseBasicReasoning
   | [ |- _ ⊢i _ using _ ] => apply useBasicReasoning
-  end.
+  end
+.
+
+Ltac2 Notation "useBasicReasoning" :=
+  _useBasicReasoning ()
+.
+
+Tactic Notation "useBasicReasoning" :=
+  ltac2:(_useBasicReasoning ())
+.
 
 Lemma mlUseGenericReasoning
   {Σ : Signature} (Γ : Theory) (l : hypotheses) (g : Pattern) (i i' : ProofInfo) :
@@ -256,11 +266,19 @@ Proof.
   exact H.
 Defined.
 
-Tactic Notation "_mlReshapeHypsByIdx" constr(n) :=
-  unshelve (eapply (@cast_proof_ml_hyps _ _ _ _ _ _ _));
-  [shelve|(apply f_equal; rewrite <- (firstn_skipn n); rewrite /firstn; rewrite /skipn; reflexivity)|idtac]
+Ltac2 _mlReshapeHypsByIdx (n:constr) :=
+  ltac1:(unshelve ltac2:(eapply (@cast_proof_ml_hyps _ _ _ _ _ _ _)))>
+  [ltac1:(shelve)|(apply f_equal; rewrite <- (firstn_skipn $n); ltac1:(rewrite /firstn); ltac1:(rewrite /skipn); reflexivity)|()]
 .
 
+Ltac2 Notation "mlReshapeHypsByIdx" n(constr) :=
+  _mlReshapeHypsByIdx n
+.
+
+Tactic Notation "_mlReshapeHypsByIdx" constr(n) :=
+  let f := ltac2:(n |- (_mlReshapeHypsByIdx (Option.get (Ltac1.to_constr n)))) in
+  f n
+.
 (* Tactic Notation "_mlReshapeHypsByName" constr(n) :=
   unshelve (eapply (@cast_proof_ml_hyps _ _ _ _ _ _ _));
   [shelve|(
@@ -279,27 +297,41 @@ Tactic Notation "_mlReshapeHypsByIdx" constr(n) :=
   |idtac]
 . *)
 
-Tactic Notation "_mlReshapeHypsByName" constr(name) :=
-match goal with
-| [ |- @of_MLGoal _ (@mkMLGoal _ _ ?l _ _) ] =>
-  match eval cbv in (index_of name (names_of l)) with
-  | Some ?i => _mlReshapeHypsByIdx i
-  | None => fail "No such name: " name
+Ltac2 __mlReshapeHypsByName (name : constr) :=
+  match! goal with
+  | [ |- @of_MLGoal _ (@mkMLGoal _ _ ?l _ _) ] =>
+    match! (eval cbv in (index_of $name (names_of $l))) with
+    | (Some ?i) => _mlReshapeHypsByIdx i
+    | None => Message.print (Message.concat (Message.of_string "No such name: ") (Message.of_constr name))
+    end
   end
-end.
+.
 
 Ltac2 _mlReshapeHypsByName (name' : constr) :=
-  ltac1:(name'' |- _mlReshapeHypsByName name'') (Ltac1.of_constr name')
+  __mlReshapeHypsByName name'
 .
+
+Tactic Notation "_mlReshapeHypsByName" constr(name) :=
+  let f := ltac2:(name |- _mlReshapeHypsByName (Option.get (Ltac1.to_constr name))) in
+  f name
+.
+
+Ltac2 __mlReshapeHypsBack () :=
+  Control.enter (fun () =>
+    let hyps := Fresh.in_goal ident:(hyps) in
+    ltac1:(hyps |- rewrite [hyps in mkMLGoal _ _ hyps _]/app) (Ltac1.of_ident hyps)
+  )
+.
+
+
+Ltac2 Notation "_mlReshapeHypsBack" :=
+  __mlReshapeHypsBack ()
+.
+
 
 Tactic Notation "_mlReshapeHypsBack" :=
-  let hyps := fresh "hyps" in rewrite [hyps in mkMLGoal _ _ hyps _]/app
+  ltac2:(__mlReshapeHypsBack ())
 .
-
-Ltac2 _mlReshapeHypsBack () :=
-  ltac1:(_mlReshapeHypsBack)
-.
-
 
 Lemma MLGoal_intro {Σ : Signature} (Γ : Theory) (l : hypotheses) (name : string) (x g : Pattern)
   (i : ProofInfo) :
