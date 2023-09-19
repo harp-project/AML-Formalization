@@ -188,11 +188,13 @@ Defined.
 
 
 Ltac2 _useBasicReasoning () :=
-  unfold derives;
-  lazy_match! goal with
-  | [ |- of_MLGoal (mkMLGoal _ _ _ _ _) ] => apply mlUseBasicReasoning
-  | [ |- _ ⊢i _ using _ ] => apply useBasicReasoning
-  end
+  Control.enter ( fun () =>
+    unfold derives;
+    lazy_match! goal with
+    | [ |- of_MLGoal (mkMLGoal _ _ _ _ _) ] => apply mlUseBasicReasoning
+    | [ |- _ ⊢i _ using _ ] => apply useBasicReasoning
+    end
+  )
 .
 
 Ltac2 Notation "useBasicReasoning" :=
