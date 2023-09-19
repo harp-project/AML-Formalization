@@ -11,7 +11,7 @@ Require Export Coq.Program.Wf
                FunctionalExtensionality
                Logic.PropExtensionality
                Program.Equality.
-From stdpp Require Import countable finite sets strings.
+From stdpp Require Import countable finite sets strings list base numbers vector.
 From MatchingLogic Require Export Utils.extralibrary.
 Require Export Vector PeanoNat String Arith.Lt.
 
@@ -462,6 +462,7 @@ Section soundness_completeness.
   Context {Σ_vars : FOL_variables}.
   Context {Σ_funcs : funcs_signature}.
   Context {Σ_preds : preds_signature}.
+
   Notation "rho ⊨_FOL phi" := (sat _ _ _ rho phi) (at level 50).
   Notation "Γ ⊢_FOL form" := (Hilbert_proof_sys Γ form) (at level 50).
 
@@ -486,9 +487,30 @@ Section soundness_completeness.
       clear IH. induction v. inversion H.
       inversion H; subst.
       - simpl_existT. subst. simpl in Fresh.
-        now apply notin_app_l in Fresh.
+        rewrite in_app_iff in Fresh.
+        clear -Fresh. tauto.
       - simpl_existT. subst. simpl in Fresh.
-        apply notin_app_r in Fresh. apply IHv; intros; auto.
+        rewrite in_app_iff in Fresh.
+        intros HContra. apply Fresh. clear Fresh.
+        inversion H; subst; clear H.
+        {
+          simpl_existT.
+          subst.
+          left.
+          apply HContra.
+        }
+        {
+          simpl_existT.
+          subst.
+          clear H3.
+          right.
+          unshelve (eapply dec_stable).
+          {
+            eapply in_dec.
+            solve_decision.
+          }
+          tauto.
+        }
   Qed.
 
   Lemma update_env_comm :
