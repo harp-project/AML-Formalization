@@ -134,16 +134,45 @@ Coercion of_MLGoal {Σ : Signature} (MG : MLGoal) : Type :=
   format "G  'Ⱶ' '//' l -------------------------------------- '//' g '//'",
   only printing).
 
-Ltac toMLGoal :=
+Ltac2 _toMLGoal () :=
   unfold derives;
-  lazymatch goal with
-  | [ |- ?G ⊢i ?phi using ?pi]
-    => cut (of_MLGoal (MLGoal_from_goal G phi pi));
-       unfold MLGoal_from_goal;
-       [(unfold of_MLGoal; simpl; let H := fresh "H" in intros H; apply H; clear H; [|reflexivity])|]
+  lazy_match! goal with
+  | [ |- ?g ⊢i ?phi using ?pi]
+    => (Std.cut constr:(of_MLGoal (MLGoal_from_goal $g $phi $pi));cbn)>
+       [
+       (unfold MLGoal_from_goal;
+        unfold of_MLGoal;
+         simpl;
+         let h := Fresh.in_goal ident:(h) in
+         intros h;
+         apply &h >
+         [()|reflexivity]
+       )
+       |unfold MLGoal_from_goal]
+
   end.
 
-Ltac fromMLGoal := unfold of_MLGoal; simpl; intros _ _.
+Ltac2 Notation "toMLGoal" :=
+  _toMLGoal ()
+.
+
+Tactic Notation "toMLGoal" :=
+  ltac2:(_toMLGoal ())
+.
+
+Ltac2 _fromMLGoal () :=
+  unfold of_MLGoal;
+  simpl;
+  intros _ _
+.
+
+Ltac2 Notation "fromMLGoal" :=
+  _fromMLGoal ()
+.
+
+Tactic Notation "fromMLGoal" :=
+  ltac2:(_fromMLGoal ())
+.
 
 Lemma mlUseBasicReasoning
   {Σ : Signature} (Γ : Theory) (l : hypotheses) (g : Pattern) (i : ProofInfo) :
@@ -200,7 +229,10 @@ Local Example ex_extractWfAssumptions {Σ : Signature} Γ (p : Pattern) :
 Proof.
   intros wfp.
   toMLGoal.
-  { auto. }
+  {
+    wf_auto2.
+  }
+  (*{ wf_auto2. }*)
   mlExtractWF wfl wfg.
   (* These two asserts by assumption only test presence of the two hypotheses *)
   assert (Pattern.wf []) by assumption.
