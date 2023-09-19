@@ -10,6 +10,7 @@
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
+        coqPackages = pkgs.coqPackages;
 
       in {
 
@@ -39,45 +40,31 @@
 
         # The 'matching logic in Coq' library
         packages.coq-matching-logic
-        = pkgs.coqPackages.callPackage 
+        = coqPackages.callPackage 
         ( { coq, stdenv }:
         stdenv.mkDerivation {
           name = "coq-matching-logic";
-          src = pkgs.lib.cleanSource (pkgs.nix-gitignore.gitignoreSourcePure [
-            ".git"
-            ".circleci/"
-            ".github"
-            "result*"
-            "*.nix"
-            "flake.lock"
-            ./.gitignore
-          ] ./matching-logic);
+          src = ./matching-logic;
 
           propagatedBuildInputs = [
             coq
-            pkgs.coqPackages.equations
-            pkgs.coqPackages.stdpp
-            pkgs.coqPackages.LibHyps
+            coqPackages.equations
+            coqPackages.stdpp
+            coqPackages.LibHyps
           ];
           enableParallelBuilding = true;
           installFlags = [ "COQLIB=$(out)/lib/coq/${coq.coq-version}/" ];
+
+          passthru = { inherit coqPackages; };
         } ) { } ;
 
         # Documentation of the 'matching logic in Coq' library
         packages.coq-matching-logic-doc
-        = pkgs.coqPackages.callPackage 
+        = coqPackages.callPackage 
         ( { coq, stdenv }:
         stdenv.mkDerivation {
           name = "coq-matching-logic-doc";
-          src = pkgs.lib.cleanSource (pkgs.nix-gitignore.gitignoreSourcePure [
-            ".git"
-            ".circleci/"
-            ".github"
-            "result*"
-            "*.nix"
-            "flake.lock"
-            ./.gitignore
-          ] ./matching-logic-doc);
+          src = ./matching-logic-doc;
           buildInputs = [
             self.outputs.packages.${system}.alectryon
             self.outputs.packages.${system}.coq-matching-logic
@@ -107,55 +94,43 @@
 
         # Example: FOL embedded in matching logic
         packages.coq-matching-logic-example-fol
-        = pkgs.coqPackages.callPackage 
+        = coqPackages.callPackage 
         ( { coq, stdenv }:
         stdenv.mkDerivation {
           name = "coq-matching-logic-example-fol";
-          src = pkgs.lib.cleanSource (pkgs.nix-gitignore.gitignoreSourcePure [
-            ".git"
-            ".circleci/"
-            ".github"
-            "result*"
-            "*.nix"
-            "flake.lock"
-            ./.gitignore
-          ] ./examples/03_FOL);
+          src = ./examples/03_FOL;
 
           propagatedBuildInputs = [
             self.outputs.packages.${system}.coq-matching-logic
           ];
           installFlags = [ "COQLIB=$(out)/lib/coq/${coq.coq-version}/" ];
+          passthru = { inherit coqPackages; };
         } ) { } ;
 
         # Example: ProofMode tutorial
         packages.coq-matching-logic-example-proofmode
-        = pkgs.coqPackages.callPackage 
+        = coqPackages.callPackage 
         ( { coq, stdenv }:
         stdenv.mkDerivation {
           name = "coq-matching-logic-example-proofmode";
-          src = pkgs.lib.cleanSource (pkgs.nix-gitignore.gitignoreSourcePure [
-            ".git"
-            ".circleci/"
-            ".github"
-            "result*"
-            "*.nix"
-            "flake.lock"
-            ./.gitignore
-          ] ./examples/02_proofmode);
+          src = ./examples/02_proofmode;
+
           propagatedBuildInputs = [
             self.outputs.packages.${system}.coq-matching-logic
           ];
           installFlags = [ "COQLIB=$(out)/lib/coq/${coq.coq-version}/" ];
+          passthru = { inherit coqPackages; };
         } ) { } ;
  
         
         # Metamath exporter: Build & Test
         packages.coq-matching-logic-mm-exporter
-        = pkgs.coqPackages.callPackage 
+        = coqPackages.callPackage 
         ( { coq, stdenv }:
         stdenv.mkDerivation {
           name = "coq-matching-logic-mm-exporter";
-          src = self + "/prover";
+          src = ./prover;
+
           propagatedBuildInputs = [
             self.outputs.packages.${system}.coq-matching-logic
             pkgs.metamath
@@ -171,13 +146,51 @@
           '';
           
           dontInstall = true;
+
+          passthru = { inherit coqPackages; };
         } ) { } ;
 
 
         packages.default = self.outputs.packages.${system}.coq-matching-logic;
         
-        devShell = pkgs.mkShell {
-          buildInputs = self.outputs.packages.${system}.default.buildInputs ++ self.outputs.packages.${system}.default.propagatedBuildInputs;
+        devShells = {
+          coq-matching-logic =
+            let
+              coq-matching-logic = self.outputs.packages.${system}.coq-matching-logic;
+            in
+              pkgs.mkShell {
+                inputsFrom = [coq-matching-logic];
+                packages = [coq-matching-logic.coqPackages.coq-lsp];
+              };
+
+          coq-matching-logic-example-fol =
+            let
+              coq-matching-logic-example-fol = self.outputs.packages.${system}.coq-matching-logic-example-fol;
+            in
+              pkgs.mkShell {
+                inputsFrom = [coq-matching-logic-example-fol];
+                packages = [coq-matching-logic-example-fol.coqPackages.coq-lsp];
+              };
+
+
+          coq-matching-logic-example-proofmode =
+            let
+              coq-matching-logic-example-proofmode = self.outputs.packages.${system}.coq-matching-logic-example-proofmode;
+            in
+              pkgs.mkShell {
+                inputsFrom = [coq-matching-logic-example-proofmode];
+                packages = [coq-matching-logic-example-proofmode.coqPackages.coq-lsp];
+              };
+
+
+          coq-matching-logic-mm-exporter =
+            let
+              coq-matching-logic-mm-exporter = self.outputs.packages.${system}.coq-matching-logic-mm-exporter;
+            in
+              pkgs.mkShell {
+                inputsFrom = [coq-matching-logic-mm-exporter];
+                packages = [coq-matching-logic-mm-exporter.coqPackages.coq-lsp];
+              };
         };
       }
     )
