@@ -1081,7 +1081,8 @@ Proof.
     {
       wf_auto2. fold no_negative_occurrence_db_b. apply wfc_impl_no_neg_occ. wf_auto2.
     }
-    mlRewrite (useBasicReasoning AnyReasoning (@patt_and_comm Σ Γ ((mu , ϕ) ^ [ψ ---> (mu , ψ and ϕ)]) ψ Htmp wfψ)) at 1.
+    cbn in Htmp.
+    mlRewrite (useBasicReasoning AnyReasoning (@patt_and_comm Σ Γ _ ψ Htmp wfψ)) at 1.
     
     mlIntro "H".
     mlApplyMeta Pre_fixp.

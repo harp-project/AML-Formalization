@@ -2116,7 +2116,7 @@ lazy_match! goal with
             eapply (@cast_proof_ml_goal _ $g) >
               [ rewrite $heq2_pf; reflexivity | ()];
             Std.clear [heq2 ; (hr.(star_ident)); (hr.(star_eq))];
-            _mlReshapeHypsBack ()
+            _mlReshapeHypsBack
         end
       ]
 end
