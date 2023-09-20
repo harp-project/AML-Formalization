@@ -221,19 +221,30 @@ Proof.
 Defined.
 
 (* Extracts well-formedness assumptions about (local) goal and (local) hypotheses. *)
+Ltac2 _mlExtractWF (wfl : ident) (wfg : ident) :=
+  Control.enter(fun () =>
+    lazy_match! goal with
+    | [ |- ?g ] =>
+      let wfl' := Fresh.in_goal ident:(wfl') in
+      let wfg' := Fresh.in_goal ident:(wfg') in
+      intros $wfg' $wfl';
+      assert ($wfl := &wfl');
+      assert ($wfg := &wfg');
+      revert $wfg' $wfl';
+      fold $g;
+      unfold mlConclusion in $wfg;
+      unfold mlHypotheses in $wfl
+    end
+).
+
+Ltac2 Notation "mlExtractWF" wfl(ident) wfg(ident) :=
+  _mlExtractWF wfl wfg
+.
+
 Tactic Notation "mlExtractWF" ident(wfl) ident(wfg) :=
-match goal with
-| [ |- ?g ] =>
-  let wfl' := fresh "wfl'" in
-  let wfg' := fresh "wfg'" in
-  intros wfg' wfl';
-  pose proof (wfl := wfl');
-  pose proof (wfg := wfg');
-  revert wfg' wfl';
-  fold g;
-  rewrite /mlConclusion in wfg;
-  rewrite /mlHypotheses in wfl
-end.
+  let f := ltac2:(wfl wfg |- _mlExtractWF (Option.get (Ltac1.to_ident wfl)) (Option.get (Ltac1.to_ident wfg))) in
+  f wfl wfg
+.
 
 Local Example ex_extractWfAssumptions {Σ : Signature} Γ (p : Pattern) :
   well_formed p ->
