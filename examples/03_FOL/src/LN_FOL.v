@@ -1221,11 +1221,27 @@ Section FOL_ML_correspondence.
       - simpl. epose proof (IHv _ _ (start $ convert_term h)%ml _). clear IHv.
         apply H1.
       Unshelve.
-        intros. apply IH. now constructor 2. auto.
-        simpl in H. now apply notin_app_r in H.
-        simpl in H. apply notin_app_l in H. apply IH in H.
-        simpl. intro. apply elem_of_union in H1; inversion H1; contradiction.
-        constructor.
+      {
+        intros. apply IH. right. assumption. assumption.
+      }
+      {
+        cbn in H. rewrite in_app_iff in H.
+        naive_solver.
+      }
+      {
+        cbn in H. rewrite in_app_iff in H.
+        cbn. rewrite elem_of_union. intros HContra.
+        destruct HContra.
+        {
+          contradiction.
+        }
+        {
+          apply IH in H1.
+          { exact H1. }
+          { left. }
+          { naive_solver. }
+        }
+      }
   Qed.
 
   Theorem form_vars_free_vars_notin :
