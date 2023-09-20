@@ -368,11 +368,18 @@ Proof.
   exact wfl₁gg'l₂.
 Defined.
 
-Ltac2 do_mlApplyn (n : constr) :=
+Ltac2 run_in_reshaped_by_idx
+  (n : constr) (f : unit -> unit) : unit :=
   do_ensureProofMode ();
   do_mlReshapeHypsByIdx n;
-  apply MLGoal_weakenConclusion;
+  f ();
   do_mlReshapeHypsBack ()
+.
+
+Ltac2 do_mlApplyn (n : constr) :=
+  run_in_reshaped_by_idx n ( fun () =>
+    apply MLGoal_weakenConclusion
+  )
 .
 
 Ltac2 Notation "mlApplyn" n(constr) :=
@@ -385,11 +392,18 @@ Tactic Notation "mlApplyn" constr(n) :=
 .
 
 
-Ltac2 do_mlApply (name' : constr) :=
+Ltac2 run_in_reshaped_by_name
+  (name : constr) (f : unit -> unit) : unit :=
   do_ensureProofMode ();
-  do_mlReshapeHypsByName name';
-  apply MLGoal_weakenConclusion;
+  do_mlReshapeHypsByName name;
+  f ();
   do_mlReshapeHypsBack ()
+.
+
+Ltac2 do_mlApply (name' : constr) :=
+  run_in_reshaped_by_name name' (fun () =>
+    apply MLGoal_weakenConclusion
+  )
 .
 
 Ltac2 Notation "mlApply" name(constr) :=
@@ -587,11 +601,20 @@ Proof.
   all: wf_auto2.
 Defined.
 
+Ltac2 do_mlDestructImp (name : constr) :=
+  run_in_reshaped_by_name name (fun () =>
+    apply (mlGoal_destructImp _ _ _ $name)
+  )
+.
+
+Ltac2 Notation "mlDestructImp" name(constr) :=
+  do_mlDestructImp name
+.
+
 Tactic Notation "mlDestructImp" constr(name) :=
-  _ensureProofMode;
-  _mlReshapeHypsByName name;
-  apply (mlGoal_destructImp _ _ _ name);
-  _mlReshapeHypsBack.
+  let f := ltac2:(name |- do_mlDestructImp (Option.get (Ltac1.to_constr name))) in
+  f name
+.
 
 Local Example Test_destructImp {Σ : Signature} Γ :
   forall A B C, well_formed A -> well_formed B -> well_formed C ->
@@ -619,11 +642,21 @@ Proof.
   by rewrite app_assoc foldr_snoc.
 Defined.
 
+Ltac2 do_mlRevert (name : constr) :=
+  run_in_reshaped_by_name name (fun () =>
+    apply (MLGoal_revert _ _ _ _ _ $name)
+  )
+.
+
+Ltac2 Notation "mlRevert" name(constr) :=
+  do_mlRevert name
+.
+
 Tactic Notation "mlRevert" constr(name) :=
-  _ensureProofMode;
-  _mlReshapeHypsByName name;
-  apply (MLGoal_revert _ _ _ _ _ name);
-  _mlReshapeHypsBack.
+  let f := ltac2:(name |- do_mlRevert (Option.get (Ltac1.to_constr name))) in
+  f name
+.
+
 
 Local Example Test_revert {Σ : Signature} Γ :
   forall A B C, well_formed A -> well_formed B -> well_formed C ->
@@ -749,24 +782,51 @@ Proof.
   }
 Defined.
 
-Tactic Notation "_mlAssert_nocheck" "(" constr(name) ":" constr(t) ")" :=
-  match goal with
-  | |- @of_MLGoal ?Sgm (@mkMLGoal ?Sgm ?Ctx ?l ?g ?i) =>
-    let Hwf := fresh "Hwf" in
-    assert (Hwf : well_formed t);
-    [idtac|
-      let H := fresh "H" in
-      assert (H : @mkMLGoal Sgm Ctx l t i);
-      [ | (eapply (@mlGoal_assert Sgm Ctx l name g t i Hwf H); rewrite [_ ++ _]/=; clear H)]
+Ltac2 do_mlAssert_nocheck
+  (name : constr) (t : constr) :=
+  lazy_match! goal with
+  | [ |- @of_MLGoal ?sgm (@mkMLGoal ?sgm ?ctx ?l ?g ?i)] =>
+    let hwf := Fresh.in_goal ident:(Hwf) in
+    assert ($hwf : well_formed $t) >
+    [()|
+      let h := Fresh.in_goal ident:(H) in
+      assert ($h : @mkMLGoal $sgm $ctx $l $t $i) >
+      [() |
+        (eapply (@mlGoal_assert $sgm $ctx $l $name $g $t $i &hwf &h);
+         ltac1:(rewrite [_ ++ _]/=); clear $h)]
     ]
   end.
 
+Ltac2 Notation "_mlAssert_nocheck" "(" name(constr) ":" t(constr) ")" :=
+  do_mlAssert_nocheck name t
+.
+
+Tactic Notation "_mlAssert_nocheck" "(" constr(name) ":" constr(t) ")" :=
+  let f := ltac2:(name t |- do_mlAssert_nocheck (Option.get (Ltac1.to_constr name)) (Option.get (Ltac1.to_constr t))) in
+  f name t
+.
+
+Ltac2 do_mlAssert (name : constr) (t : constr) :=
+  do_ensureProofMode ();
+  do_failIfUsed name;
+  do_mlAssert_nocheck name t
+.
+
+Ltac2 Notation "mlAssert" "(" name(constr) ":" t(constr) ")" :=
+  do_mlAssert name t
+.
 
 (* TODO: make this bind tigther. *)
 Tactic Notation "mlAssert" "(" constr(name) ":" constr(t) ")" :=
+  let f := ltac2:(name t |- do_mlAssert (Option.get (Ltac1.to_constr name)) (Option.get (Ltac1.to_constr t))) in
+  f name t
+.
+
+Ltac2 "mlAssert" "(" constr (t) ")" :=
   _ensureProofMode;
-  _failIfUsed name;
-  _mlAssert_nocheck (name : t)
+  let hyps := _getHypNames in
+  let name := eval lazy in (fresh hyps) in
+  mlAssert (name : (t))
 .
 
 
@@ -774,7 +834,8 @@ Tactic Notation "mlAssert" "(" constr (t) ")" :=
   _ensureProofMode;
   let hyps := _getHypNames in
   let name := eval lazy in (fresh hyps) in
-  mlAssert (name : (t)).
+  mlAssert (name : (t))
+.
 
 Local Example ex_mlAssert {Σ : Signature} Γ a:
   well_formed a ->
