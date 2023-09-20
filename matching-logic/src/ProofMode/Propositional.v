@@ -785,16 +785,18 @@ Defined.
 Ltac2 do_mlAssert_nocheck
   (name : constr) (t : constr) :=
   lazy_match! goal with
-  | [ |- @of_MLGoal ?sgm (@mkMLGoal ?sgm ?ctx ?l ?g ?i)] =>
+  | [ |- @of_MLGoal _ (@mkMLGoal ?sgm ?ctx ?l ?g ?i)] =>
     let hwf := Fresh.in_goal ident:(Hwf) in
-    assert ($hwf : well_formed $t) >
-    [()|
+    assert ($hwf : well_formed $t = true) >
+    [()|(
+      let hwf_constr := Control.hyp hwf in
       let h := Fresh.in_goal ident:(H) in
-      assert ($h : @mkMLGoal $sgm $ctx $l $t $i) >
+      assert ($h : @of_MLGoal $sgm (@mkMLGoal $sgm $ctx $l $t $i)) >
       [() |
-        (eapply (@mlGoal_assert $sgm $ctx $l $name $g $t $i &hwf &h);
+        let h_constr := Control.hyp h in
+        (eapply (@mlGoal_assert $sgm $ctx $l $name $g $t $i $hwf_constr $h_constr);
          ltac1:(rewrite [_ ++ _]/=); clear $h)]
-    ]
+    )]
   end.
 
 Ltac2 Notation "_mlAssert_nocheck" "(" name(constr) ":" t(constr) ")" :=
@@ -822,19 +824,20 @@ Tactic Notation "mlAssert" "(" constr(name) ":" constr(t) ")" :=
   f name t
 .
 
-Ltac2 "mlAssert" "(" constr (t) ")" :=
-  _ensureProofMode;
-  let hyps := _getHypNames in
-  let name := eval lazy in (fresh hyps) in
-  mlAssert (name : (t))
+Ltac2 do_mlAssert_autonamed (t : constr) :=
+  do_ensureProofMode ();
+  let hyps := do_getHypNames () in
+  let name := eval lazy in (fresh $hyps) in
+  do_mlAssert name t
 .
 
+Ltac2 Notation "mlAssert" "(" t(constr) ")" :=
+  do_mlAssert_autonamed t
+.
 
-Tactic Notation "mlAssert" "(" constr (t) ")" :=
-  _ensureProofMode;
-  let hyps := _getHypNames in
-  let name := eval lazy in (fresh hyps) in
-  mlAssert (name : (t))
+Tactic Notation "mlAssert" "(" constr(t) ")" :=
+  let f := ltac2:(t |- do_mlAssert_autonamed (Option.get (Ltac1.to_constr t))) in
+  f t
 .
 
 Local Example ex_mlAssert {Σ : Signature} Γ a:
@@ -854,53 +857,86 @@ Proof.
   mlExact "H2".
 Qed.
 
-Ltac _getGoalProofInfo :=
-  lazymatch goal with
-  | |- @of_MLGoal ?Sgm (@mkMLGoal ?Sgm ?Ctx ?l ?g ?i)
+Ltac2 _getGoalProofInfo () : constr :=
+  lazy_match! goal with
+  | [|- @of_MLGoal ?sgm (@mkMLGoal ?sgm ?ctx ?l ?g ?i)]
     => i
   end.
 
-Ltac _getGoalTheory :=
-  lazymatch goal with
-  | |- @of_MLGoal ?Sgm (@mkMLGoal ?Sgm ?Ctx ?l ?g ?i)
-    => Ctx
+
+Ltac2 _getGoalTheory () : constr :=
+  lazy_match! goal with
+  | [|- @of_MLGoal ?sgm (@mkMLGoal ?sgm ?ctx ?l ?g ?i)]
+    => ctx
   end.
 
-Tactic Notation "mlAssert" "(" constr(name) ":" constr(t) ")" "using" "first" constr(n) :=
-  _ensureProofMode;
-  _failIfUsed name;
-  lazymatch goal with
-  | |- @of_MLGoal ?Sgm (@mkMLGoal ?Sgm ?Ctx ?l ?g ?i) =>
-    let l1 := fresh "l1" in
-    let l2 := fresh "l2" in
-    let Heql1 := fresh "Heql1" in
-    let Heql2 := fresh "Heql2" in
-    remember (take n l) as l1 eqn:Heql1 in |-;
-    remember (drop n l) as l2 eqn:Heql2 in |-;
+Ltac2 mlAssert_using_first
+  (name : constr) (t : constr) (n : constr) :=
+  do_ensureProofMode ();
+  do_failIfUsed name;
+  lazy_match! goal with
+  | [|- @of_MLGoal ?sgm (@mkMLGoal ?sgm ?ctx ?l ?g ?i)] =>
+    let l1 := Fresh.in_goal ident:(l1) in
+    let l2 := Fresh.in_goal ident:(l2) in
+    let heql1 := Fresh.in_goal ident:(Heql1) in
+    let heql2 := Fresh.in_goal ident:(Heql2) in
+    remember (take $n $l) as l1 eqn:$heql1 in |-;
+    remember (drop $n $l) as l2 eqn:$heql2 in |-;
     simpl in Heql1; simpl in Heql2;
-    eapply cast_proof_ml_hyps;
+    eapply cast_proof_ml_hyps >
     [(
-      rewrite -[l](take_drop n);
+      ltac1:(l n |- rewrite -[l](take_drop n)) (Ltac1.of_constr l) (Ltac1.of_constr n);
       reflexivity
-    )|];
-    let Hwf := fresh "Hwf" in
-    assert (Hwf : well_formed t);
-    [idtac|
-      let H := fresh "H" in
-      assert (H : @mkMLGoal Sgm Ctx l1 t i) ;
+    )|()];
+    let hwf := Fresh.in_goal ident:(Hwf) in
+    assert ($hwf : well_formed $t = true) >
+    [()|
+      let h := Fresh.in_goal ident:(H) in
+      let l1_constr := Control.hyp l1 in
+      let l2_constr := Control.hyp l2 in
+      let heql1_constr := Control.hyp heql1 in
+      let hwf_constr := Control.hyp hwf in
+      assert ($h : @of_MLGoal $sgm (@mkMLGoal $sgm $ctx $l1_constr $t $i)) >
       [
-        (eapply cast_proof_ml_hyps; [(rewrite Heql1; reflexivity)|]);  clear l1 l2 Heql1 Heql2
-      | apply (cast_proof_ml_hyps _ _ _ (f_equal patterns_of Heql1)) in H;
-        eapply (@mlGoal_assert_generalized Sgm Ctx (take n l) (drop n l) name g t i Hwf H);
-        rewrite [_ ++ _]/=; clear l1 l2 Heql1 Heql2 H] 
+        (eapply cast_proof_ml_hyps>
+         [(rewrite -> $heql1_constr; reflexivity)|()]);
+         clear $l1 $l2 $heql1 $heql2
+      | 
+        let h_constr := Control.hyp h in
+        apply (cast_proof_ml_hyps _ _ _ (f_equal patterns_of $heql1_constr)) in $h;
+        eapply (@mlGoal_assert_generalized $sgm $ctx (take $n $l) (drop $n $l) $name $g $t $i $hwf_constr $h_constr);
+        ltac1:(rewrite [_ ++ _]/=);
+        clear $l1 $l2 $heql1 $heql2 $h
+      ]
     ]
   end.
 
+Ltac2 Notation "mlAssert" "(" name(constr) ":" t(constr) ")" "using" "first" n(constr) :=
+  mlAssert_using_first name t n
+.
+
+Tactic Notation "mlAssert" "(" constr(name) ":" constr(t) ")" "using" "first" constr(n) :=
+  let f := ltac2:(name t n |- mlAssert_using_first (Option.get (Ltac1.to_constr name)) (Option.get (Ltac1.to_constr t)) (Option.get (Ltac1.to_constr n))) in
+  f name t n
+.
+
+
+Ltac2 mlAssert_autonamed_using_first
+  (t : constr) (n : constr) :=
+  do_ensureProofMode ();
+  let hyps := do_getHypNames () in
+  let name := eval cbv in (fresh $hyps) in
+  mlAssert_using_first name t n
+.
+
+Ltac2 Notation "mlAssert" "(" t(constr) ")" "using" "first" n(constr)  :=
+  mlAssert_autonamed_using_first t n
+.
+
 Tactic Notation "mlAssert" "(" constr(t) ")" "using" "first" constr(n)  :=
-  _ensureProofMode;
-  let hyps := _getHypNames in
-  let name := eval cbv in (fresh hyps) in
-  mlAssert (name : t) using first n.
+  let f := ltac2:(t n |- mlAssert_autonamed_using_first (Option.get (Ltac1.to_constr t)) (Option.get (Ltac1.to_constr n))) in
+  f t n
+.
 
 Local Example ex_assert_using {Σ : Signature} Γ p q a b:
   well_formed a = true ->
