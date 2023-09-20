@@ -597,8 +597,9 @@ Section soundness_completeness.
       apply IH; auto. simpl in *.
       clear IH.
       induction v; inversion H; simpl_existT; subst.
-      - simpl in HNIn. now apply notin_app_l in HNIn.
-      - apply IHv; auto. now apply notin_app_r in HNIn.
+      - simpl in HNIn. rewrite in_app_iff in HNIn. apply Decidable.not_or in HNIn.
+        naive_solver.
+      - apply IHv; auto. rewrite in_app_iff in HNIn. apply Decidable.not_or in HNIn. naive_solver.
   Qed.
 
   Theorem fresh_irrelevant_form :
@@ -609,10 +610,11 @@ Section soundness_completeness.
     * do 2 rewrite sat_atom. erewrite VectorSpec.map_ext_in. reflexivity.
       intros. apply fresh_irrelevant_term. simpl in HNIn.
       induction v; inversion H; simpl_existT; subst.
-      - simpl in HNIn. now apply notin_app_l in HNIn.
-      - apply IHv; auto. now apply notin_app_r in HNIn.
-    * do 2 rewrite sat_impl. apply notin_app_r in HNIn as HNIn2. apply notin_app_l in HNIn.
-      now rewrite -> IHφ1, -> IHφ2.
+      - simpl in HNIn. rewrite in_app_iff in HNIn. naive_solver.
+      - apply IHv; auto. rewrite in_app_iff in HNIn. naive_solver.
+    * do 2 rewrite sat_impl.
+      rewrite in_app_iff in HNIn. apply Decidable.not_or in HNIn.
+      naive_solver.
     * do 2 rewrite sat_exs. simpl.
       split; intros H; destruct H as [d0 H]; exists d0.
       - rewrite update_env_comm in H.
@@ -641,9 +643,11 @@ Section soundness_completeness.
         induction v. inversion H.
         inversion H; subst.
         + simpl_existT. subst. simpl in Fresh.
-          now apply notin_app_l in Fresh.
+          rewrite in_app_iff in Fresh.
+          naive_solver.
         + simpl_existT. subst. simpl in Fresh.
-          apply notin_app_r in Fresh. apply IHv; intros; auto.
+          rewrite in_app_iff in Fresh.
+          apply IHv; intros; auto.
 
       - erewrite map_ext_in. exact Sat. intros. simpl.
         apply plugging_terms.
@@ -1258,12 +1262,25 @@ Section FOL_ML_correspondence.
       - simpl. epose proof (IHv _ (start $ convert_term h)%ml _). clear IHv.
         apply H1.
       Unshelve.
-        simpl in H. now apply notin_app_r in H.
-        simpl in H. apply notin_app_l in H. apply term_vars_free_vars_notin in H.
-        simpl. intro. apply elem_of_union in H1; inversion H1; contradiction.
-    * simpl in *. apply notin_app_r in H as H'. apply notin_app_l in H.
-      apply IHφ1 in H. apply IHφ2 in H'.
-      apply sets.not_elem_of_union. auto.
+        {
+          simpl in H.
+          rewrite in_app_iff in H.
+          apply Decidable.not_or in H.
+          destruct H as [H1 H2].
+          exact H2.
+        }
+        {
+          simpl in H.
+          rewrite in_app_iff in H.
+          apply Decidable.not_or in H.
+          destruct H as [H1 H2].
+          apply term_vars_free_vars_notin in H1.
+          cbn. intros HContra. rewrite elem_of_union in HContra.
+          naive_solver.
+        }
+    * simpl in *.
+      rewrite in_app_iff in H.
+      set_solver.
   Qed.
 
   Theorem bevar_subst_corr_term :
