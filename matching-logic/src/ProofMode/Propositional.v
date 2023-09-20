@@ -1951,7 +1951,7 @@ Ltac2 rec fillWithUnderscoresAndCall
     | (?t' -> ?t's) =>
       lazy_match! goal with
       | [|- ?g] =>
-        let h := Fresh.in_goal ident:(h) in
+        let h := Fresh.in_goal ident:(hasserted) in
         assert(h : $t' -> $g) > [(
           let pftprime := Fresh.in_goal ident:(pftprime) in
           intro $pftprime;
