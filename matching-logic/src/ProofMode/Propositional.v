@@ -71,12 +71,20 @@ Proof.
   }
 Defined.
 
+Ltac2 do_mlExactn (n : constr) :=
+  do_ensureProofMode ();
+  do_mlReshapeHypsByIdx n;
+  apply MLGoal_exactn
+.
+
+Ltac2 Notation "mlExactn" n(constr) :=
+  do_mlExactn n
+.
 
 Tactic Notation "mlExactn" constr(n) :=
-  _ensureProofMode;
-  _mlReshapeHypsByIdx n;
-  apply MLGoal_exactn.
-
+  let f := ltac2:(n |- do_mlExactn (Option.get (Ltac1.to_constr n))) in
+  f n
+.
 
 
 Lemma MLGoal_exact {Σ : Signature} Γ l name g idx info:
@@ -91,13 +99,21 @@ Proof.
   apply MLGoal_exactn.
 Defined.
 
-Tactic Notation "mlExact" constr(name')
-:=
-  _ensureProofMode;
-  eapply MLGoal_exact with (name := name');
+Ltac2 do_mlExact (name' : constr) :=
+  do_ensureProofMode ();
+  eapply MLGoal_exact with (name := $name');
   simpl; apply f_equal; reflexivity
 .
 
+Ltac2 Notation "mlExact" name(constr) :=
+  do_mlExact name
+.
+
+Tactic Notation "mlExact" constr(name) :=
+  let f := ltac2:(name |- do_mlExact (Option.get (Ltac1.to_constr name))) in
+  f name
+.
+  
 Local Example ex_mlExact {Σ : Signature} Γ a b c:
   well_formed a = true ->
   well_formed b = true ->
@@ -352,19 +368,38 @@ Proof.
   exact wfl₁gg'l₂.
 Defined.
 
+Ltac2 do_mlApplyn (n : constr) :=
+  do_ensureProofMode ();
+  do_mlReshapeHypsByIdx n;
+  apply MLGoal_weakenConclusion;
+  do_mlReshapeHypsBack ()
+.
+
+Ltac2 Notation "mlApplyn" n(constr) :=
+  do_mlApplyn n
+.
 
 Tactic Notation "mlApplyn" constr(n) :=
-  _ensureProofMode;
-  _mlReshapeHypsByIdx n;
-  apply MLGoal_weakenConclusion;
-  _mlReshapeHypsBack.
+  let f := ltac2:(n |- do_mlApplyn (Option.get (Ltac1.to_constr n))) in
+  f n
+.
 
+
+Ltac2 do_mlApply (name' : constr) :=
+  do_ensureProofMode ();
+  do_mlReshapeHypsByName name';
+  apply MLGoal_weakenConclusion;
+  do_mlReshapeHypsBack ()
+.
+
+Ltac2 Notation "mlApply" name(constr) :=
+  do_mlApply name
+.
 
 Tactic Notation "mlApply" constr(name') :=
-  _ensureProofMode;
-  _mlReshapeHypsByName name';
-  apply MLGoal_weakenConclusion;
-  _mlReshapeHypsBack.
+  let f := ltac2:(name' |- do_mlApply (Option.get (Ltac1.to_constr name'))) in
+  f name'
+.
 
 Local Example ex_mlApplyn {Σ : Signature} Γ a b:
   well_formed a ->

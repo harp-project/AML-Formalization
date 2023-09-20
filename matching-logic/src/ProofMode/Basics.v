@@ -279,17 +279,17 @@ Proof.
   exact H.
 Defined.
 
-Ltac2 _mlReshapeHypsByIdx (n:constr) :=
+Ltac2 do_mlReshapeHypsByIdx (n:constr) :=
   ltac1:(unshelve ltac2:(eapply (@cast_proof_ml_hyps _ _ _ _ _ _ _)))>
   [ltac1:(shelve)|(apply f_equal; rewrite <- (firstn_skipn $n); ltac1:(rewrite /firstn); ltac1:(rewrite /skipn); reflexivity)|()]
 .
 
 Ltac2 Notation "mlReshapeHypsByIdx" n(constr) :=
-  _mlReshapeHypsByIdx n
+  do_mlReshapeHypsByIdx n
 .
 
 Tactic Notation "_mlReshapeHypsByIdx" constr(n) :=
-  let f := ltac2:(n |- (_mlReshapeHypsByIdx (Option.get (Ltac1.to_constr n)))) in
+  let f := ltac2:(n |- (do_mlReshapeHypsByIdx (Option.get (Ltac1.to_constr n)))) in
   f n
 .
 (* Tactic Notation "_mlReshapeHypsByName" constr(n) :=
@@ -310,40 +310,38 @@ Tactic Notation "_mlReshapeHypsByIdx" constr(n) :=
   |idtac]
 . *)
 
-Ltac2 __mlReshapeHypsByName (name : constr) :=
+Ltac2 do_mlReshapeHypsByName (name : constr) :=
   match! goal with
   | [ |- @of_MLGoal _ (@mkMLGoal _ _ ?l _ _) ] =>
     match! (eval cbv in (index_of $name (names_of $l))) with
-    | (Some ?i) => _mlReshapeHypsByIdx i
+    | (Some ?i) => do_mlReshapeHypsByIdx i
     | None => Message.print (Message.concat (Message.of_string "No such name: ") (Message.of_constr name))
     end
   end
 .
 
 Ltac2 _mlReshapeHypsByName (name' : constr) :=
-  __mlReshapeHypsByName name'
+  do_mlReshapeHypsByName name'
 .
 
 Tactic Notation "_mlReshapeHypsByName" constr(name) :=
-  let f := ltac2:(name |- _mlReshapeHypsByName (Option.get (Ltac1.to_constr name))) in
+  let f := ltac2:(name |- do_mlReshapeHypsByName (Option.get (Ltac1.to_constr name))) in
   f name
 .
 
-Ltac2 __mlReshapeHypsBack () :=
+Ltac2 do_mlReshapeHypsBack () :=
   Control.enter (fun () =>
     let hyps := Fresh.in_goal ident:(hyps) in
     ltac1:(hyps |- rewrite [hyps in mkMLGoal _ _ hyps _]/app) (Ltac1.of_ident hyps)
   )
 .
 
-
 Ltac2 Notation "_mlReshapeHypsBack" :=
-  __mlReshapeHypsBack ()
+  do_mlReshapeHypsBack ()
 .
 
-
 Tactic Notation "_mlReshapeHypsBack" :=
-  ltac2:(__mlReshapeHypsBack ())
+  ltac2:(do_mlReshapeHypsBack ())
 .
 
 Lemma MLGoal_intro {Σ : Signature} (Γ : Theory) (l : hypotheses) (name : string) (x g : Pattern)
@@ -365,16 +363,34 @@ Proof.
   exact H.
 Defined.
 
-Ltac simplLocalContext :=
-  match goal with
-    | [ |- @of_MLGoal ?Sgm (mkMLGoal ?Sgm ?Ctx ?l ?g ?i) ]
-      => rewrite {1}[l]/app
+Ltac2 _simplLocalContext () :=
+  lazy_match! goal with
+    | [ |- @of_MLGoal ?sgm (mkMLGoal ?sgm ?ctx ?l ?g ?i) ]
+      => let f := ltac1:(l |- rewrite {1}[l]/app) in
+         (f (Ltac1.of_constr l))
   end.
 
-Ltac _getHypNames :=
-  lazymatch goal with
-  | [ |- of_MLGoal (mkMLGoal _ _ ?l _ _) ] => eval lazy in (names_of l)
+Ltac2 Notation "simplLocalContext" :=
+  _simplLocalContext ()
+.
+
+Tactic Notation "simplLocalContext" :=
+  ltac2:(_simplLocalContext ())
+.
+
+
+Ltac2 do_getHypNames () : constr :=
+  lazy_match! goal with
+  | [ |- of_MLGoal (mkMLGoal _ _ ?l _ _) ]
+    => eval lazy in (names_of $l)
   end.
+
+Ltac2 Notation "getHypNames" :=
+  do_getHypNames ()
+.
+
+(* [do_getHypNames ()] returns a value, which is imho not doable with ltac1 notations *)
+(* Tactic Notation "getHypNames" := ???. *)
 
 (* Tactic Notation "_failIfUsed" constr(name) :=
   lazymatch goal with
@@ -385,52 +401,109 @@ Ltac _getHypNames :=
     end
   end. *)
 
-Ltac _failIfUsed name :=
-lazymatch goal with
+Ltac2 do_failIfUsed (name : constr) :=
+lazy_match! goal with
 | [ |- of_MLGoal (mkMLGoal _ _ ?l _ _) ] =>
-  lazymatch (eval cbv in (find (fun x => String.eqb x name) (names_of l))) with
-  | Some _ => fail "The name" name "is already used"
-  | _ => idtac
+  lazy_match! (eval cbv in (find (fun x => String.eqb x $name) (names_of $l))) with
+  | Some _ => Message.print (
+    Message.concat
+      (Message.of_string "The name ")
+      (Message.concat (Message.of_constr name) (Message.of_string " is already used")));
+      fail
+  | None => ()
   end
 end.
 
-Ltac _introAllWf :=
+Ltac2 Notation "_failIfUsed" name(constr) :=
+  do_failIfUsed name
+.
+
+Tactic Notation "_failIfUsed" constr(name) :=
+  ltac2:(name |- do_failIfUsed (Option.get (Ltac1.to_constr name)))
+.
+
+Ltac2 do_introAllWf () :=
   unfold is_true;
   repeat (
-    lazymatch goal with
+    lazy_match! goal with
     | [ |- well_formed _ = true -> _ ] =>
-      let H := fresh "Hwf" in
-      intros H
+      let h := Fresh.in_goal ident:(Hwf) in
+      intros $h
     | [ |- Pattern.wf _ = true -> _ ] =>
-      let H := fresh "Hwfl" in
-      intros H
+      let h := Fresh.in_goal ident:(Hwfl) in
+      intros $h
     end
   )
 .
 
-Ltac _enterProofMode :=
-  _introAllWf;toMLGoal;[wf_auto2|]
+Ltac2 Notation "_introAllWf" :=
+  do_introAllWf ()
 .
 
-Ltac _ensureProofMode :=
-  lazymatch goal with
-  | [ |- of_MLGoal (mkMLGoal _ _ _ _ _)] => idtac
-  | _ => _enterProofMode
+Tactic Notation "_introAllWf" :=
+  ltac2:(do_introAllWf ())
+.
+
+Ltac2 wf_auto2 () :=
+  ltac1:(wf_auto2)
+.
+
+Ltac2 do_enterProofMode () :=
+  _introAllWf;toMLGoal>[wf_auto2 ()|]
+.
+
+Ltac2 Notation "_enterProofMode" :=
+  do_enterProofMode ()
+.
+
+Tactic Notation "_enterProofMode" :=
+  ltac2:(do_enterProofMode ())
+.
+
+Ltac2 do_ensureProofMode () :=
+  lazy_match! goal with
+  | [ |- of_MLGoal (mkMLGoal _ _ _ _ _)] => ()
+  | [ |- _] => do_enterProofMode ()
   end
 .
 
-Tactic Notation "mlIntro" constr(name') :=
-  _ensureProofMode;
-  _failIfUsed name';
-  apply MLGoal_intro with (name := name');
+Ltac2 Notation "_ensureProofMode" :=
+  do_ensureProofMode ()
+.
+
+Tactic Notation "_ensureProofMode" :=
+  ltac2:(do_ensureProofMode ())
+.
+
+Ltac2 do_mlIntro (name' : constr) :=
+  do_ensureProofMode ();
+  do_failIfUsed name';
+  apply MLGoal_intro with (name := $name');
   simplLocalContext
 .
 
+Ltac2 Notation "mlIntro" name(constr) :=
+  do_mlIntro name
+.
+
+Tactic Notation "mlIntro" constr(name') :=
+  let f := ltac2:(name' |- do_mlIntro (Option.get (Ltac1.to_constr name'))) in
+  f name'
+.
+
+Ltac2 do_mlIntro_anon () :=
+  do_ensureProofMode ();
+  let hyps := do_getHypNames () in
+  let name' := eval cbv in (fresh $hyps) in
+  mlIntro $name'
+.
+
+Ltac2 Notation "mlIntro" :=
+  do_mlIntro_anon ()
+.
+
 Tactic Notation "mlIntro" :=
-  _ensureProofMode;
-  let hyps := _getHypNames in
-  let name' := eval cbv in (fresh hyps) in
-  mlIntro name'
+  ltac2:(do_mlIntro_anon ())
 .
 
 Local Example ex_toMLGoal {Σ : Signature} Γ (p : Pattern) :
