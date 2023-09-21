@@ -2251,20 +2251,24 @@ Ltac2 try_wfa () :=
   )
 .
 
-Ltac2 do_mlApplyMeta (t : constr) :=
-  _ensureProofMode;
-  _callCompletedAndCast t do_mlApplyMetaRaw ;
-  try_solve_pile_basic ();
-  try_wfa ()
+Ltac2 mutable do_mlApplyMeta := fun (t : constr) =>
+  Control.enter (fun () =>
+    _ensureProofMode;
+    _callCompletedAndCast t do_mlApplyMetaRaw ;
+    try_solve_pile_basic ();
+    try_wfa ()
+  )
 .
 
-Ltac2 do_mlApplyMetaIn (t : constr) (name : constr) :=
-  _ensureProofMode;
-  _callCompletedAndCast t (fun t =>
-    do_mlApplyMetaRawIn t name
-  );
-  try_solve_pile_basic ();
-  try_wfa ()
+Ltac2 mutable do_mlApplyMetaIn := fun (t : constr) (name : constr) =>
+  Control.enter (fun () =>
+    _ensureProofMode;
+    _callCompletedAndCast t (fun t =>
+      do_mlApplyMetaRawIn t name
+    );
+    try_solve_pile_basic ();
+    try_wfa ()
+  )
 .
 
 Ltac2 Notation "mlApplyMeta" t(constr) :=

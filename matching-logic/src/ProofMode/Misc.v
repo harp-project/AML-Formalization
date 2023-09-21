@@ -47,21 +47,27 @@ Ltac2 _callCompletedTransformedAndCast
   fillWithUnderscoresAndCall tac' t []
 .
 
-Ltac2 mlApplyMetaGeneralized (t : constr) :=
-  _callCompletedTransformedAndCast t constr:(@reshape_lhs_imp_to_and_forward) _mlApplyMetaRaw ;
-  try_solve_pile_basic ();
-  try_wfa ()
+Ltac2 do_mlApplyMetaGeneralized (t : constr) :=
+  Control.enter(fun () =>
+    _callCompletedTransformedAndCast t constr:(@reshape_lhs_imp_to_and_forward) do_mlApplyMetaRaw ;
+    try_solve_pile_basic ();
+    try_wfa ();
+    ltac1:(rewrite [foldr patt_and _ _]/=)
+  )
 .
 
-Ltac _mlApplyMetaGeneralized t :=
-  _ensureProofMode;
-  let ff := ltac2:(t' |- mlApplyMetaGeneralized (Option.get (Ltac1.to_constr(t')))) in
-  ff t;
-  rewrite [foldr patt_and _ _]/=
+Ltac2 Notation "mlApplyMetaGeneralized" t(constr) :=
+  do_mlApplyMetaGeneralized t
 .
 
-Tactic Notation "mlApplyMeta" constr(t) :=
-  (mlApplyMeta t) || (_mlApplyMetaGeneralized t)
+Tactic Notation "mlApplyMetaGeneralized" constr(t) :=
+  let f := ltac2:(t |- do_mlApplyMetaGeneralized (Option.get (Ltac1.to_constr t))) in
+  f t
+.
+
+
+Ltac2 Set do_mlApplyMeta as old_do_mlApplyMeta := fun  (t : constr) =>
+  orelse (fun () => old_do_mlApplyMeta t) (fun _ => do_mlApplyMetaGeneralized t)
 .
 
 #[local]
@@ -1981,7 +1987,7 @@ Proof.
       { mlApply "0". mlExactn 1. }
       apply pf_iff_proj1 in IHl.
       2,3: wf_auto2.
-      mlApplyMetaRaw IHl.
+      mlApplyMeta IHl.
       mlExactn 2.
     + mlIntro. mlIntro.
       mlAssert ((foldr patt_imp (emplace C q) l)).
@@ -1989,7 +1995,7 @@ Proof.
       { mlApply "0". mlExactn 1. }
       apply pf_iff_proj2 in IHl.
       2,3: wf_auto2.
-      mlApplyMetaRaw IHl.
+      mlApplyMeta IHl.
       mlExactn 2.
 Defined.
 
