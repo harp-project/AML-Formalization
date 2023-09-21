@@ -471,7 +471,7 @@ Section with_signature.
     toMLGoal.
     { wf_auto2. }
     mlIntro.
-    mlApplyMetaRaw (useBasicReasoning _ (not_not_intro Γ ϕ₁ ltac:(wf_auto2))) in "0".
+    mlApplyMetaRaw (useBasicReasoning i (not_not_intro Γ ϕ₁ ltac:(wf_auto2))) in "0".
     fromMLGoal.
     apply modus_tollens.
 
