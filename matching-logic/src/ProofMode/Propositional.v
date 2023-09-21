@@ -959,6 +959,12 @@ Proof.
   mlAssert (p) using first 2.
   { wf_auto2. }
   { admit. }
+
+  remember "H5" as name.
+  (* ltac2:(do_failIfUsed ident:(name)).*)
+  mlAssert (name : p) using first 2.
+  { wf_auto2. }
+  { admit. }
 Abort.
 
 Lemma P4i' {Σ : Signature} (Γ : Theory) (A : Pattern) :
@@ -2245,13 +2251,15 @@ Ltac2 try_wfa () :=
   )
 .
 
-Ltac2 mlApplyMeta (t : constr) :=
+Ltac2 do_mlApplyMeta (t : constr) :=
+  _ensureProofMode;
   _callCompletedAndCast t do_mlApplyMetaRaw ;
   try_solve_pile_basic ();
   try_wfa ()
 .
 
-Ltac2 mlApplyMetaIn (t : constr) (name : constr) :=
+Ltac2 do_mlApplyMetaIn (t : constr) (name : constr) :=
+  _ensureProofMode;
   _callCompletedAndCast t (fun t =>
     do_mlApplyMetaRawIn t name
   );
@@ -2259,14 +2267,20 @@ Ltac2 mlApplyMetaIn (t : constr) (name : constr) :=
   try_wfa ()
 .
 
+Ltac2 Notation "mlApplyMeta" t(constr) :=
+  do_mlApplyMeta t
+.
+
+Ltac2 Notation "mlApplyMeta" t(constr) "in" name(constr) :=
+  do_mlApplyMeta t name
+.
+
 Ltac _mlApplyMeta t :=
-  _ensureProofMode;
-  let ff := ltac2:(t' |- mlApplyMeta (Option.get (Ltac1.to_constr(t')))) in
+  let ff := ltac2:(t' |- do_mlApplyMeta (Option.get (Ltac1.to_constr(t')))) in
   ff t.
 
 Ltac _mlApplyMetaIn t name :=
-  _ensureProofMode;
-  let ff := ltac2:(t' name' |- mlApplyMetaIn (Option.get (Ltac1.to_constr(t'))) (Option.get (Ltac1.to_constr(name')))) in
+  let ff := ltac2:(t' name' |- do_mlApplyMetaIn (Option.get (Ltac1.to_constr(t'))) (Option.get (Ltac1.to_constr(name')))) in
   ff t name
 .
 
@@ -2276,7 +2290,6 @@ Tactic Notation "mlApplyMeta" constr(t) :=
 Tactic Notation "mlApplyMeta" constr(t) "in" constr(name) :=
   _mlApplyMetaIn t name
 .
-
 
 Lemma MLGoal_destructAnd {Σ : Signature} Γ g l₁ l₂ nx x ny y nxy i:
     mkMLGoal Σ Γ (l₁ ++ (mkNH _ nx x)::(mkNH _ ny y)::l₂ ) g i ->

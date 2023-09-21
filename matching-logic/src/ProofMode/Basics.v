@@ -410,7 +410,7 @@ lazy_match! goal with
       (Message.of_string "The name ")
       (Message.concat (Message.of_constr name) (Message.of_string " is already used")));
       fail
-  | None => ()
+  | _ => () (* should not fail on other values*)
   end
 end.
 
