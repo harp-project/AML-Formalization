@@ -71,12 +71,20 @@ Proof.
   }
 Defined.
 
+Ltac2 do_mlExactn (n : constr) :=
+  do_ensureProofMode ();
+  do_mlReshapeHypsByIdx n;
+  apply MLGoal_exactn
+.
+
+Ltac2 Notation "mlExactn" n(constr) :=
+  do_mlExactn n
+.
 
 Tactic Notation "mlExactn" constr(n) :=
-  _ensureProofMode;
-  _mlReshapeHypsByIdx n;
-  apply MLGoal_exactn.
-
+  let f := ltac2:(n |- do_mlExactn (Option.get (Ltac1.to_constr n))) in
+  f n
+.
 
 
 Lemma MLGoal_exact {Σ : Signature} Γ l name g idx info:
@@ -91,13 +99,21 @@ Proof.
   apply MLGoal_exactn.
 Defined.
 
-Tactic Notation "mlExact" constr(name')
-:=
-  _ensureProofMode;
-  eapply MLGoal_exact with (name := name');
+Ltac2 do_mlExact (name' : constr) :=
+  do_ensureProofMode ();
+  eapply MLGoal_exact with (name := $name');
   simpl; apply f_equal; reflexivity
 .
 
+Ltac2 Notation "mlExact" name(constr) :=
+  do_mlExact name
+.
+
+Tactic Notation "mlExact" constr(name) :=
+  let f := ltac2:(name |- do_mlExact (Option.get (Ltac1.to_constr name))) in
+  f name
+.
+  
 Local Example ex_mlExact {Σ : Signature} Γ a b c:
   well_formed a = true ->
   well_formed b = true ->
@@ -352,19 +368,52 @@ Proof.
   exact wfl₁gg'l₂.
 Defined.
 
+Ltac2 run_in_reshaped_by_idx
+  (n : constr) (f : unit -> unit) : unit :=
+  do_ensureProofMode ();
+  do_mlReshapeHypsByIdx n;
+  f ();
+  do_mlReshapeHypsBack ()
+.
+
+Ltac2 do_mlApplyn (n : constr) :=
+  run_in_reshaped_by_idx n ( fun () =>
+    apply MLGoal_weakenConclusion
+  )
+.
+
+Ltac2 Notation "mlApplyn" n(constr) :=
+  do_mlApplyn n
+.
 
 Tactic Notation "mlApplyn" constr(n) :=
-  _ensureProofMode;
-  _mlReshapeHypsByIdx n;
-  apply MLGoal_weakenConclusion;
-  _mlReshapeHypsBack.
+  let f := ltac2:(n |- do_mlApplyn (Option.get (Ltac1.to_constr n))) in
+  f n
+.
 
+
+Ltac2 run_in_reshaped_by_name
+  (name : constr) (f : unit -> unit) : unit :=
+  do_ensureProofMode ();
+  do_mlReshapeHypsByName name;
+  f ();
+  do_mlReshapeHypsBack ()
+.
+
+Ltac2 do_mlApply (name' : constr) :=
+  run_in_reshaped_by_name name' (fun () =>
+    apply MLGoal_weakenConclusion
+  )
+.
+
+Ltac2 Notation "mlApply" name(constr) :=
+  do_mlApply name
+.
 
 Tactic Notation "mlApply" constr(name') :=
-  _ensureProofMode;
-  _mlReshapeHypsByName name';
-  apply MLGoal_weakenConclusion;
-  _mlReshapeHypsBack.
+  let f := ltac2:(name' |- do_mlApply (Option.get (Ltac1.to_constr name'))) in
+  f name'
+.
 
 
 Local Example ex_mlApplyn {Σ : Signature} Γ a b:
@@ -552,11 +601,20 @@ Proof.
   all: wf_auto2.
 Defined.
 
+Ltac2 do_mlDestructImp (name : constr) :=
+  run_in_reshaped_by_name name (fun () =>
+    apply (mlGoal_destructImp _ _ _ $name)
+  )
+.
+
+Ltac2 Notation "mlDestructImp" name(constr) :=
+  do_mlDestructImp name
+.
+
 Tactic Notation "mlDestructImp" constr(name) :=
-  _ensureProofMode;
-  _mlReshapeHypsByName name;
-  apply (mlGoal_destructImp _ _ _ name);
-  _mlReshapeHypsBack.
+  let f := ltac2:(name |- do_mlDestructImp (Option.get (Ltac1.to_constr name))) in
+  f name
+.
 
 Local Example Test_destructImp {Σ : Signature} Γ :
   forall A B C, well_formed A -> well_formed B -> well_formed C ->
@@ -584,11 +642,21 @@ Proof.
   by rewrite app_assoc foldr_snoc.
 Defined.
 
+Ltac2 do_mlRevert (name : constr) :=
+  run_in_reshaped_by_name name (fun () =>
+    apply (MLGoal_revert _ _ _ _ _ $name)
+  )
+.
+
+Ltac2 Notation "mlRevert" name(constr) :=
+  do_mlRevert name
+.
+
 Tactic Notation "mlRevert" constr(name) :=
-  _ensureProofMode;
-  _mlReshapeHypsByName name;
-  apply (MLGoal_revert _ _ _ _ _ name);
-  _mlReshapeHypsBack.
+  let f := ltac2:(name |- do_mlRevert (Option.get (Ltac1.to_constr name))) in
+  f name
+.
+
 
 Local Example Test_revert {Σ : Signature} Γ :
   forall A B C, well_formed A -> well_formed B -> well_formed C ->
@@ -714,32 +782,63 @@ Proof.
   }
 Defined.
 
-Tactic Notation "_mlAssert_nocheck" "(" constr(name) ":" constr(t) ")" :=
-  match goal with
-  | |- @of_MLGoal ?Sgm (@mkMLGoal ?Sgm ?Ctx ?l ?g ?i) =>
-    let Hwf := fresh "Hwf" in
-    assert (Hwf : well_formed t);
-    [idtac|
-      let H := fresh "H" in
-      assert (H : @mkMLGoal Sgm Ctx l t i);
-      [ | (eapply (@mlGoal_assert Sgm Ctx l name g t i Hwf H); rewrite [_ ++ _]/=; clear H)]
-    ]
+Ltac2 do_mlAssert_nocheck
+  (name : constr) (t : constr) :=
+  lazy_match! goal with
+  | [ |- @of_MLGoal _ (@mkMLGoal ?sgm ?ctx ?l ?g ?i)] =>
+    let hwf := Fresh.in_goal ident:(Hwf) in
+    assert ($hwf : well_formed $t = true) >
+    [()|(
+      let hwf_constr := Control.hyp hwf in
+      let h := Fresh.in_goal ident:(H) in
+      assert ($h : @of_MLGoal $sgm (@mkMLGoal $sgm $ctx $l $t $i)) >
+      [() |
+        let h_constr := Control.hyp h in
+        (eapply (@mlGoal_assert $sgm $ctx $l $name $g $t $i $hwf_constr $h_constr);
+         ltac1:(rewrite [_ ++ _]/=); clear $h)]
+    )]
   end.
 
+Ltac2 Notation "_mlAssert_nocheck" "(" name(constr) ":" t(constr) ")" :=
+  do_mlAssert_nocheck name t
+.
+
+Tactic Notation "_mlAssert_nocheck" "(" constr(name) ":" constr(t) ")" :=
+  let f := ltac2:(name t |- do_mlAssert_nocheck (Option.get (Ltac1.to_constr name)) (Option.get (Ltac1.to_constr t))) in
+  f name t
+.
+
+Ltac2 do_mlAssert (name : constr) (t : constr) :=
+  do_ensureProofMode ();
+  do_failIfUsed name;
+  do_mlAssert_nocheck name t
+.
+
+Ltac2 Notation "mlAssert" "(" name(constr) ":" t(constr) ")" :=
+  do_mlAssert name t
+.
 
 (* TODO: make this bind tigther. *)
 Tactic Notation "mlAssert" "(" constr(name) ":" constr(t) ")" :=
-  _ensureProofMode;
-  _failIfUsed name;
-  _mlAssert_nocheck (name : t)
+  let f := ltac2:(name t |- do_mlAssert (Option.get (Ltac1.to_constr name)) (Option.get (Ltac1.to_constr t))) in
+  f name t
 .
 
+Ltac2 do_mlAssert_autonamed (t : constr) :=
+  do_ensureProofMode ();
+  let hyps := do_getHypNames () in
+  let name := eval lazy in (fresh $hyps) in
+  do_mlAssert name t
+.
 
-Tactic Notation "mlAssert" "(" constr (t) ")" :=
-  _ensureProofMode;
-  let hyps := _getHypNames in
-  let name := eval lazy in (fresh hyps) in
-  mlAssert (name : (t)).
+Ltac2 Notation "mlAssert" "(" t(constr) ")" :=
+  do_mlAssert_autonamed t
+.
+
+Tactic Notation "mlAssert" "(" constr(t) ")" :=
+  let f := ltac2:(t |- do_mlAssert_autonamed (Option.get (Ltac1.to_constr t))) in
+  f t
+.
 
 Local Example ex_mlAssert {Σ : Signature} Γ a:
   well_formed a ->
@@ -758,53 +857,86 @@ Proof.
   mlExact "H2".
 Qed.
 
-Ltac _getGoalProofInfo :=
-  lazymatch goal with
-  | |- @of_MLGoal ?Sgm (@mkMLGoal ?Sgm ?Ctx ?l ?g ?i)
+Ltac2 _getGoalProofInfo () : constr :=
+  lazy_match! goal with
+  | [|- @of_MLGoal ?sgm (@mkMLGoal ?sgm ?ctx ?l ?g ?i)]
     => i
   end.
 
-Ltac _getGoalTheory :=
-  lazymatch goal with
-  | |- @of_MLGoal ?Sgm (@mkMLGoal ?Sgm ?Ctx ?l ?g ?i)
-    => Ctx
+
+Ltac2 _getGoalTheory () : constr :=
+  lazy_match! goal with
+  | [|- @of_MLGoal ?sgm (@mkMLGoal ?sgm ?ctx ?l ?g ?i)]
+    => ctx
   end.
 
-Tactic Notation "mlAssert" "(" constr(name) ":" constr(t) ")" "using" "first" constr(n) :=
-  _ensureProofMode;
-  _failIfUsed name;
-  lazymatch goal with
-  | |- @of_MLGoal ?Sgm (@mkMLGoal ?Sgm ?Ctx ?l ?g ?i) =>
-    let l1 := fresh "l1" in
-    let l2 := fresh "l2" in
-    let Heql1 := fresh "Heql1" in
-    let Heql2 := fresh "Heql2" in
-    remember (take n l) as l1 eqn:Heql1 in |-;
-    remember (drop n l) as l2 eqn:Heql2 in |-;
+Ltac2 mlAssert_using_first
+  (name : constr) (t : constr) (n : constr) :=
+  do_ensureProofMode ();
+  do_failIfUsed name;
+  lazy_match! goal with
+  | [|- @of_MLGoal ?sgm (@mkMLGoal ?sgm ?ctx ?l ?g ?i)] =>
+    let l1 := Fresh.in_goal ident:(l1) in
+    let l2 := Fresh.in_goal ident:(l2) in
+    let heql1 := Fresh.in_goal ident:(Heql1) in
+    let heql2 := Fresh.in_goal ident:(Heql2) in
+    remember (take $n $l) as l1 eqn:$heql1 in |-;
+    remember (drop $n $l) as l2 eqn:$heql2 in |-;
     simpl in Heql1; simpl in Heql2;
-    eapply cast_proof_ml_hyps;
+    eapply cast_proof_ml_hyps >
     [(
-      rewrite -[l](take_drop n);
+      ltac1:(l n |- rewrite -[l](take_drop n)) (Ltac1.of_constr l) (Ltac1.of_constr n);
       reflexivity
-    )|];
-    let Hwf := fresh "Hwf" in
-    assert (Hwf : well_formed t);
-    [idtac|
-      let H := fresh "H" in
-      assert (H : @mkMLGoal Sgm Ctx l1 t i) ;
+    )|()];
+    let hwf := Fresh.in_goal ident:(Hwf) in
+    assert ($hwf : well_formed $t = true) >
+    [()|
+      let h := Fresh.in_goal ident:(H) in
+      let l1_constr := Control.hyp l1 in
+      let l2_constr := Control.hyp l2 in
+      let heql1_constr := Control.hyp heql1 in
+      let hwf_constr := Control.hyp hwf in
+      assert ($h : @of_MLGoal $sgm (@mkMLGoal $sgm $ctx $l1_constr $t $i)) >
       [
-        (eapply cast_proof_ml_hyps; [(rewrite Heql1; reflexivity)|]);  clear l1 l2 Heql1 Heql2
-      | apply (cast_proof_ml_hyps _ _ _ (f_equal patterns_of Heql1)) in H;
-        eapply (@mlGoal_assert_generalized Sgm Ctx (take n l) (drop n l) name g t i Hwf H);
-        rewrite [_ ++ _]/=; clear l1 l2 Heql1 Heql2 H] 
+        (eapply cast_proof_ml_hyps>
+         [(rewrite -> $heql1_constr; reflexivity)|()]);
+         clear $l1 $l2 $heql1 $heql2
+      | 
+        let h_constr := Control.hyp h in
+        apply (cast_proof_ml_hyps _ _ _ (f_equal patterns_of $heql1_constr)) in $h;
+        eapply (@mlGoal_assert_generalized $sgm $ctx (take $n $l) (drop $n $l) $name $g $t $i $hwf_constr $h_constr);
+        ltac1:(rewrite [_ ++ _]/=);
+        clear $l1 $l2 $heql1 $heql2 $h
+      ]
     ]
   end.
 
+Ltac2 Notation "mlAssert" "(" name(constr) ":" t(constr) ")" "using" "first" n(constr) :=
+  mlAssert_using_first name t n
+.
+
+Tactic Notation "mlAssert" "(" constr(name) ":" constr(t) ")" "using" "first" constr(n) :=
+  let f := ltac2:(name t n |- mlAssert_using_first (Option.get (Ltac1.to_constr name)) (Option.get (Ltac1.to_constr t)) (Option.get (Ltac1.to_constr n))) in
+  f name t n
+.
+
+
+Ltac2 mlAssert_autonamed_using_first
+  (t : constr) (n : constr) :=
+  do_ensureProofMode ();
+  let hyps := do_getHypNames () in
+  let name := eval cbv in (fresh $hyps) in
+  mlAssert_using_first name t n
+.
+
+Ltac2 Notation "mlAssert" "(" t(constr) ")" "using" "first" n(constr)  :=
+  mlAssert_autonamed_using_first t n
+.
+
 Tactic Notation "mlAssert" "(" constr(t) ")" "using" "first" constr(n)  :=
-  _ensureProofMode;
-  let hyps := _getHypNames in
-  let name := eval cbv in (fresh hyps) in
-  mlAssert (name : t) using first n.
+  let f := ltac2:(t n |- mlAssert_autonamed_using_first (Option.get (Ltac1.to_constr t)) (Option.get (Ltac1.to_constr n))) in
+  f t n
+.
 
 Local Example ex_assert_using {Σ : Signature} Γ p q a b:
   well_formed a = true ->
@@ -825,6 +957,12 @@ Proof.
   { admit. }
 
   mlAssert (p) using first 2.
+  { wf_auto2. }
+  { admit. }
+
+  remember "H5" as name.
+  (* ltac2:(do_failIfUsed ident:(name)).*)
+  mlAssert (name : p) using first 2.
   { wf_auto2. }
   { admit. }
 Abort.
@@ -1000,19 +1138,43 @@ Proof.
   }
 Defined.
 
-Tactic Notation "mlAdd" constr(n) "as" constr(name') :=
-  _ensureProofMode;
-  _failIfUsed name';
-  match goal with
-  | |- @of_MLGoal ?Sgm (@mkMLGoal ?Sgm ?Ctx ?l ?g ?i) =>
-    apply (@MLGoal_add Sgm Ctx l name' g _ i n)
+
+Ltac2 do_mlAdd_as (n : constr) (name' : constr) :=
+  do_ensureProofMode ();
+  do_failIfUsed name';
+  lazy_match! goal with
+  | [|- @of_MLGoal ?sgm (@mkMLGoal ?sgm ?ctx ?l ?g ?i)] =>
+    apply (@MLGoal_add $sgm $ctx $l $name' $g _ $i $n)
   end.
 
+Ltac2 Notation "mlAdd" n(constr) "as" name(constr) :=
+  do_mlAdd_as n name
+.
+
+Tactic Notation "mlAdd" constr(n) "as" constr(name') :=
+  let f := ltac2:(n name |- do_mlAdd_as (Option.get (Ltac1.to_constr n)) (Option.get (Ltac1.to_constr name))) in
+  f n name'
+.
+
+Ltac2 get_fresh_name () : constr :=
+  do_ensureProofMode ();
+  let hyps := do_getHypNames () in
+  let name := eval cbv in (fresh $hyps) in
+  name
+.
+
+Ltac2 do_mlAdd (n : constr) :=
+  do_mlAdd_as n (get_fresh_name ())
+.
+
+Ltac2 Notation "mlAdd" n(constr) :=
+  do_mlAdd n
+.
+
 Tactic Notation "mlAdd" constr(n) :=
-  _ensureProofMode;
-  let hyps := _getHypNames in
-  let name := eval cbv in (fresh hyps) in
-  mlAdd n as name.
+  let f := ltac2:(n |- do_mlAdd (Option.get (Ltac1.to_constr n))) in
+  f n
+.
 
 Local Example ex_mlAdd {Σ : Signature} Γ l g h i:
   Pattern.wf l ->
@@ -1087,9 +1249,20 @@ Proof.
 Defined.
 
 
+Ltac2 do_mlClear (name : constr) :=
+  run_in_reshaped_by_name name (fun () =>
+    apply mlGoal_clear_hyp
+  )
+.
+
+Ltac2 Notation "mlClear" name(constr) :=
+  do_mlClear name
+.
+
 Tactic Notation "mlClear" constr(name) :=
-  _ensureProofMode;
-  _mlReshapeHypsByName name; apply mlGoal_clear_hyp; _mlReshapeHypsBack.
+  let f := ltac2:(name |- do_mlClear (Option.get (Ltac1.to_constr name))) in
+  f name
+.
 
 Local Example ex_mlClear {Σ : Signature} Γ a b c:
   well_formed a ->
@@ -1447,26 +1620,47 @@ Proof.
   }
 Defined.
 
-Tactic Notation "mlDestructOr" constr(name) "as" constr(name1) constr(name2) :=
-  _ensureProofMode;
-  _failIfUsed name1; _failIfUsed name2;
-  match goal with
-  | |- @of_MLGoal ?Sgm (@mkMLGoal ?Sgm ?Ctx ?l ?g ?i) =>
-    let Htd := fresh "Htd" in
+Ltac2 do_mlDestructOr_as (name : constr) (name1 : constr) (name2 : constr) :=
+  do_ensureProofMode ();
+  do_failIfUsed name1;
+  do_failIfUsed name2;
+  lazy_match! goal with
+  | [|- @of_MLGoal ?sgm (@mkMLGoal ?sgm ?ctx ?l ?g ?i)] =>
+    (* let htd := Fresh.in_goal ident:(Htd) in *)
     eapply cast_proof_ml_hyps;
     f_equal;
     _mlReshapeHypsByName name;
-    apply MLGoal_disj_elim with (pqn := name) (pn := name1) (qn := name2);
+    apply MLGoal_disj_elim with (pqn := $name) (pn := $name1) (qn := $name2);
     _mlReshapeHypsBack;
     simpl
-  end.
+  end
+.
+
+Ltac2 Notation "mlDestructOr" name(constr) "as" name1(constr) name2(constr) :=
+  do_mlDestructOr_as name name1 name2
+.
+
+Tactic Notation "mlDestructOr" constr(name) "as" constr(name1) constr(name2) :=
+  let f := ltac2:(name name1 name2 |- do_mlDestructOr_as (Option.get (Ltac1.to_constr name)) (Option.get (Ltac1.to_constr name1)) (Option.get (Ltac1.to_constr name2))) in
+  f name name1 name2
+.
+
+Ltac2 do_mlDestructOr (name : constr) :=
+  do_ensureProofMode ();
+  let hyps := do_getHypNames () in
+  let name0 := eval cbv in (fresh $hyps) in
+  let name1 := eval cbv in (fresh ($name0 :: $hyps)) in
+  mlDestructOr $name as $name0 $name1
+.
+
+Ltac2 Notation "mlDestructOr" name(constr) :=
+  do_mlDestructOr name
+.
 
 Tactic Notation "mlDestructOr" constr(name) :=
-  _ensureProofMode;
-  let hyps := _getHypNames in
-  let name0 := eval cbv in (fresh hyps) in
-  let name1 := eval cbv in (fresh (name0 :: hyps)) in
-  mlDestructOr name as name0 name1.
+  let f := ltac2:(name |- do_mlDestructOr (Option.get (Ltac1.to_constr name))) in
+  f name
+.
 
 Local Example exd {Σ : Signature} Γ a b p q c i:
   well_formed a ->
@@ -1778,14 +1972,18 @@ Proof.
 Defined.
 
 
-Ltac _mlApplyMetaRaw t :=
-  eapply (@MLGoal_applyMeta _ _ _ _ _ t).
+Ltac2 do_mlApplyMetaRaw (t : constr) :=
+  eapply (@MLGoal_applyMeta _ _ _ _ _ $t)
+.
 
-Tactic Notation "mlApplyMetaRaw" uconstr(t) :=
-  _mlApplyMetaRaw t.
+Ltac2 Notation "_mlApplyMetaRaw" t(open_constr) :=
+  do_mlApplyMetaRaw t
+.
 
-Ltac2 _mlApplyMetaRaw (t : constr) :=
-  eapply (@MLGoal_applyMeta _ _ _ _ _ $t).
+Tactic Notation "_mlApplyMetaRaw" uconstr(t) :=
+  let f := ltac2:(t |- do_mlApplyMetaRaw (Option.get (Ltac1.to_constr t))) in
+  f t
+.
 
 Lemma MLGoal_left {Σ : Signature} Γ l x y i:
   mkMLGoal Σ Γ l x i ->
@@ -1821,8 +2019,19 @@ Proof.
   { assumption. }
 Defined.
 
-Ltac mlLeft := _ensureProofMode; apply MLGoal_left.
-Ltac mlRight := _ensureProofMode; apply MLGoal_right.
+Ltac2 mlLeft () :=
+  _ensureProofMode;
+  apply MLGoal_left
+.
+
+Ltac2 mlRight () :=
+  _ensureProofMode;
+  apply MLGoal_right
+.
+
+Ltac mlLeft := ltac2:(mlLeft ()).
+Ltac mlRight := ltac2:(mlRight ()).
+
 
 Local Example ex_mlLeft {Σ : Signature} Γ a:
   well_formed a ->
@@ -1879,22 +2088,35 @@ Proof.
  }
 Defined.
 
-Ltac _mlApplyMetaRawIn t name :=
+Ltac2 do_mlApplyMetaRawIn (t : constr) (name : constr) :=
   eapply cast_proof_ml_hyps;
   f_equal;
-  _mlReshapeHypsByName name;
-  eapply (@MLGoal_applyMetaIn _ _ _ _ name _ _ t);
-  _mlReshapeHypsBack.
-
-Ltac2 _mlApplyMetaRawIn (t : constr) (name : constr) :=
-  ltac1:(t' name' |- _mlApplyMetaRawIn t' name')
-    (Ltac1.of_constr t)
-    (Ltac1.of_constr name)
+  
+  run_in_reshaped_by_name name (fun () =>
+    eapply (@MLGoal_applyMetaIn _ _ _ _ $name _ _ $t)
+  )
 .
 
-Tactic Notation "mlApplyMetaRaw" uconstr(t) "in" constr(name) :=
-  _mlApplyMetaRawIn t name.
+Ltac do_mlApplyMetaRawIn t name :=
+  let f := ltac2:(t name |- do_mlApplyMetaRawIn (Option.get (Ltac1.to_constr t)) (Option.get (Ltac1.to_constr name))) in
+  f t name
+.
 
+Ltac2 do_mlApplyMetaRaw0 (t : constr) (cl : constr option) :=
+  match cl with
+  | None => do_mlApplyMetaRaw t
+  | Some n => do_mlApplyMetaRawIn t n
+  end
+.
+
+Ltac2 Notation "_mlApplyMetaRaw" t(constr) cl(opt(seq("in", constr))) :=
+  do_mlApplyMetaRaw0 t cl
+.
+
+Tactic Notation "mlApplyMetaRaw" constr(t) "in" constr(name) :=
+  let f := ltac2:(t name |- do_mlApplyMetaRawIn (Option.get (Ltac1.to_constr t)) (Option.get (Ltac1.to_constr name))) in
+  f t name
+.
 
 Local Example Private_ex_mlApplyMetaRawIn {Σ : Signature} Γ p q:
   well_formed p ->
@@ -1932,7 +2154,7 @@ Ltac2 Eval (applyRec constr:(Nat.add) [constr:(1);constr:(2)]).
   In particular, I want the proof mode goals to be generated first,
   and the other, uninteresting goals, next.
 *)
-Ltac2 rec fillWithUnderscoresAndCall
+Ltac2 rec fillWithUnderscoresAndCall0
   (tac : constr -> unit) (t : constr) (args : constr list) :=
   (*
   Message.print (
@@ -1952,16 +2174,19 @@ Ltac2 rec fillWithUnderscoresAndCall
       lazy_match! goal with
       | [|- ?g] =>
         let h := Fresh.in_goal ident:(hasserted) in
-        assert(h : $t' -> $g) > [(
+        assert($h : $t' -> $g) > [(
           let pftprime := Fresh.in_goal ident:(pftprime) in
           intro $pftprime;
           let new_t := open_constr:($t ltac2:(Notations.exact0 false (fun () => Control.hyp (pftprime)))) in
-          fillWithUnderscoresAndCall tac new_t args;
+          fillWithUnderscoresAndCall0 tac new_t args;
           Std.clear [pftprime]
-        )|(apply &h)
+        )|(
+          let h_constr := Control.hyp h in
+          apply $h_constr
+          )
         ]
       end
-    | (forall _ : _, _) => fillWithUnderscoresAndCall tac open_constr:($t _) args
+    | (forall _ : _, _) => fillWithUnderscoresAndCall0 tac open_constr:($t _) args
     | ?remainder => throw (Invalid_argument (Some (Message.concat (Message.concat (Message.of_string "Remainder type: ") (Message.of_constr remainder)) (Message.concat (Message.of_string ", of term") (Message.of_constr t)))))
     end
   ) in
@@ -1982,6 +2207,16 @@ Ltac2 rec fillWithUnderscoresAndCall
   end
 .
 
+Ltac2 rec fillWithUnderscoresAndCall
+  (tac : constr -> unit) (twb : Std.constr_with_bindings) (args : constr list)
+  :=
+  let t := Fresh.in_goal ident:(t) in
+  Notations.specialize0 (fun () => twb) (Some (Std.IntroNaming (Std.IntroIdentifier t)));
+  let t_constr := Control.hyp t in
+  fillWithUnderscoresAndCall0 tac t_constr args;
+  clear $t
+.
+
 (*
   We have this double-primed version because we want to be able
   to feed it the proof before feeding it the ProofInfoLe.
@@ -1997,12 +2232,16 @@ Proof.
   apply H.
 Defined.
 
-Ltac2 _callCompletedAndCast (t : constr) (tac : constr -> unit) :=
+Ltac2 _callCompletedAndCast (twb : Std.constr_with_bindings) (tac : constr -> unit) :=
   let tac' := (fun (t' : constr) =>
     let tcast := open_constr:(@useGenericReasoning'' _ _ _ _ _ $t') in
-    fillWithUnderscoresAndCall tac tcast []
+    fillWithUnderscoresAndCall0 tac tcast []
   ) in
-  fillWithUnderscoresAndCall tac' t []
+  let t := Fresh.in_goal ident:(t) in
+  Notations.specialize0 (fun () => twb) (Some (Std.IntroNaming (Std.IntroIdentifier t)));
+  let t_constr := Control.hyp t in
+  fillWithUnderscoresAndCall0 tac' t_constr [];
+  clear $t
 .
 
 Ltac2 try_solve_pile_basic () :=
@@ -2037,28 +2276,43 @@ Ltac2 try_wfa () :=
   )
 .
 
-Ltac2 mlApplyMeta (t : constr) :=
-  _callCompletedAndCast t _mlApplyMetaRaw ;
-  try_solve_pile_basic ();
-  try_wfa ()
+Ltac2 mutable do_mlApplyMeta := fun (twb : Std.constr_with_bindings) =>
+  Control.enter (fun () =>
+    _ensureProofMode;
+    _callCompletedAndCast twb do_mlApplyMetaRaw ;
+    try_solve_pile_basic ();
+    try_wfa ()
+  )
 .
 
-Ltac2 mlApplyMetaIn (t : constr) (name : constr) :=
-  _callCompletedAndCast t (fun t =>
-    _mlApplyMetaRawIn t name
-  );
-  try_solve_pile_basic ();
-  try_wfa ()
+Ltac2 mutable do_mlApplyMetaIn := fun (twb : Std.constr_with_bindings) (name : constr) =>
+  Control.enter (fun () =>
+    _ensureProofMode;
+    _callCompletedAndCast twb (fun t =>
+      do_mlApplyMetaRawIn t name
+    );
+    try_solve_pile_basic ();
+    try_wfa ()
+  )
+.
+
+Ltac2 do_mlApplyMeta0 (twb : Std.constr_with_bindings) (cl : constr option) :=
+  match cl with
+  | None => do_mlApplyMeta twb
+  | Some n => do_mlApplyMetaIn twb n
+  end
+.
+
+Ltac2 Notation "mlApplyMeta" t(seq(constr,with_bindings)) cl(opt(seq("in", constr))) :=
+  do_mlApplyMeta0 t cl
 .
 
 Ltac _mlApplyMeta t :=
-  _ensureProofMode;
-  let ff := ltac2:(t' |- mlApplyMeta (Option.get (Ltac1.to_constr(t')))) in
+  let ff := ltac2:(t' |- do_mlApplyMeta ((Option.get (Ltac1.to_constr(t'))), Std.NoBindings)) in
   ff t.
 
 Ltac _mlApplyMetaIn t name :=
-  _ensureProofMode;
-  let ff := ltac2:(t' name' |- mlApplyMetaIn (Option.get (Ltac1.to_constr(t'))) (Option.get (Ltac1.to_constr(name')))) in
+  let ff := ltac2:(t' name' |- do_mlApplyMetaIn ((Option.get (Ltac1.to_constr(t')), Std.NoBindings)) (Option.get (Ltac1.to_constr(name')))) in
   ff t name
 .
 
@@ -2068,7 +2322,6 @@ Tactic Notation "mlApplyMeta" constr(t) :=
 Tactic Notation "mlApplyMeta" constr(t) "in" constr(name) :=
   _mlApplyMetaIn t name
 .
-
 
 Lemma MLGoal_destructAnd {Σ : Signature} Γ g l₁ l₂ nx x ny y nxy i:
     mkMLGoal Σ Γ (l₁ ++ (mkNH _ nx x)::(mkNH _ ny y)::l₂ ) g i ->
@@ -2173,21 +2426,48 @@ Proof.
  exact H.
 Defined.
 
+Ltac2 mlDestructAnd_as (name : constr) (name1 : constr) (name2 : constr) :=
+  Control.enter(fun () =>
+    _ensureProofMode;
+    _failIfUsed $name1;
+    _failIfUsed $name2;
+    (*
+    eapply cast_proof_ml_hyps;
+    f_equal;
+    *)
+    run_in_reshaped_by_name name (fun () =>
+      apply MLGoal_destructAnd with (nxy := $name) (nx := $name1) (ny := $name2)
+    )
+  )
+.
+
+Ltac2 Notation "mlDestructAnd" name(constr) "as" name1(constr) name2(constr) :=
+  mlDestructAnd_as name name1 name2
+.
+
 Tactic Notation "mlDestructAnd" constr(name) "as" constr(name1) constr(name2) :=
-  _ensureProofMode;
-  _failIfUsed name1; _failIfUsed name2;
-  eapply cast_proof_ml_hyps;
-  f_equal;
-  _mlReshapeHypsByName name;
-  apply MLGoal_destructAnd with (nxy := name) (nx := name1) (ny := name2);
-  _mlReshapeHypsBack.
+  let f := ltac2:(name name1 name2 |- mlDestructAnd_as (Option.get (Ltac1.to_constr name)) (Option.get (Ltac1.to_constr name1)) (Option.get (Ltac1.to_constr name2))) in
+  f name name1 name2
+.
+
+Ltac2 do_mlDestructAnd (name : constr) :=
+  Control.enter(fun () =>
+    _ensureProofMode;
+    let hyps := do_getHypNames () in
+    let name0 := eval cbv in (fresh $hyps) in
+    let name1 := eval cbv in (fresh ($name0 :: $hyps)) in
+    mlDestructAnd $name as $name0 $name1
+  )
+.
+
+Ltac2 Notation "mlDestructAnd" name(constr) :=
+  do_mlDestructAnd name
+.
 
 Tactic Notation "mlDestructAnd" constr(name) :=
-  _ensureProofMode;
-  let hyps := _getHypNames in
-  let name0 := eval cbv in (fresh hyps) in
-  let name1 := eval cbv in (fresh (name0 :: hyps)) in
-  mlDestructAnd name as name0 name1.
+  let f := ltac2:(name |- do_mlDestructAnd (Option.get (Ltac1.to_constr name))) in
+  f name
+.
 
 Local Example ex_mlDestructAnd {Σ : Signature} Γ a b p q:
   well_formed a ->
@@ -2328,16 +2608,36 @@ Proof.
     mlExact "H1".
 Defined.
 
-Ltac mlExFalso :=
+Ltac2 do_mlExFalso ():=
   _ensureProofMode;
   mlApplyMeta bot_elim
 .
 
+Ltac2 Notation "mlExFalso"
+  := do_mlExFalso ()
+.
+
+Ltac mlExFalso :=
+  ltac2:(do_mlExFalso ())
+.
+
+Ltac2 do_mlDestructBot (name' : constr) :=
+  Control.enter(fun () =>
+    run_in_reshaped_by_name name' (fun () =>
+      mlExFalso;
+      do_mlExact name'
+    )
+  )
+.
+
+Ltac2 Notation "mlDestructBot" name(constr) :=
+  do_mlDestructBot name
+.
+
 Tactic Notation "mlDestructBot" constr(name') :=
-  _ensureProofMode;
-  _mlReshapeHypsByName name';
-  mlExFalso; mlExact name';
-  _mlReshapeHypsBack.
+  let f := ltac2:(name |- do_mlDestructBot (Option.get (Ltac1.to_constr name))) in
+  f name'
+.
 
 Lemma weird_lemma  {Σ : Signature} Γ A B L R:
   well_formed A ->
@@ -2657,9 +2957,19 @@ Proof.
   { abstract (wf_auto2). }
 Defined.
 
+Ltac2 do_mlSplitAnd () :=
+  Control.enter(fun () =>
+    _ensureProofMode;
+    apply MLGoal_splitAnd
+  )
+.
+
+Ltac2 Notation "mlSplitAnd" :=
+  do_mlSplitAnd ()
+.
+
 Ltac mlSplitAnd :=
-  _ensureProofMode;
-  apply MLGoal_splitAnd
+  ltac2:(do_mlSplitAnd ())
 .
 
 Local Lemma ex_mlSplitAnd {Σ : Signature} Γ a b c:
@@ -3176,23 +3486,31 @@ Proof.
 Defined.
 
 #[local]
-Ltac tryExact l idx :=
-  match l with
-    | nil => idtac
-    | (?a :: ?m) => try mlExactn idx; tryExact m (idx + 1)
+Ltac2 rec tryExact (l : constr) (idx : constr) :=
+  lazy_match! l with
+    | nil => ()
+    | (?a :: ?m) => try (do_mlExactn idx); tryExact m constr:($idx + 1)
   end.
 
 #[global]
-Ltac mlAssumption :=
-  _ensureProofMode; (* maybe useless? *)
-  match goal with
-    | [ |- @of_MLGoal ?Sgm (@mkMLGoal ?Sgm ?Ctx ?l ?g ?i) ] 
-      =>
-        tryExact l 0
-  end.
+Ltac2 do_mlAssumption () :=
+  Control.enter(fun () =>
+    _ensureProofMode;
+    lazy_match! goal with
+      | [ |- @of_MLGoal ?sgm (@mkMLGoal ?sgm ?ctx ?l ?g ?i) ] 
+        =>
+          tryExact l constr:(0)
+    end
+  )
+.
 
+Ltac2 Notation "mlAssumption" :=
+  do_mlAssumption ()
+.
 
-
+Tactic Notation "mlAssumption" :=
+  ltac2:(do_mlAssumption ())
+.
 
 Lemma impl_eq_or {Σ : Signature} Γ a b:
   well_formed a ->
@@ -3491,19 +3809,31 @@ Proof.
 Defined.
 
 
+Ltac2 do_mlClassic_as (p : constr) (n1 : constr) (n2 : constr) :=
+  Control.enter(fun () => 
+    _ensureProofMode;
+    let hyps := do_getHypNames () in
+    let tmpName := eval cbv in (fresh $hyps) in
+    let wfName := Fresh.in_goal ident:(Hwf) in
+    lazy_match! goal with
+    | [|- @of_MLGoal ?sgm (@mkMLGoal ?sgm ?ctx ?l ?g ?i)]
+      => assert ($wfName : well_formed $p = true)>
+        [()|(
+          let wf_hyp := Control.hyp wfName in
+          mlAdd (useBasicReasoning $i (A_or_notA $ctx $p $wf_hyp)) as $tmpName;
+          mlDestructOr $tmpName as $n1 $n2
+        )]
+    end
+  )
+.
+
+Ltac2 Notation "mlClassic" p(constr) "as" n1(constr) n2(constr) :=
+  do_mlClassic_as p n1 n2
+.
+
 Tactic Notation "mlClassic" constr(p) "as" constr(n1) constr(n2) :=
-  _ensureProofMode;
-  let hyps := _getHypNames in
-  let tmpName := eval cbv in (fresh hyps) in
-  let wfName := fresh "Hwf" in
-  match goal with
-  | |- @of_MLGoal ?Sgm (@mkMLGoal ?Sgm ?Ctx ?l ?g ?i)
-    => assert (wfName : well_formed p = true);
-      [|(
-        mlAdd (useBasicReasoning i (A_or_notA Ctx p wfName)) as tmpName;
-        mlDestructOr tmpName as n1 n2
-      )]
-  end
+  let f := ltac2:(p n1 n2 |- do_mlClassic_as (Option.get (Ltac1.to_constr p)) (Option.get (Ltac1.to_constr n1)) (Option.get (Ltac1.to_constr n2))) in
+  f p n1 n2
 .
 
 #[local]
