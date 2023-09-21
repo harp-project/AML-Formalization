@@ -1319,7 +1319,7 @@ Defined.
           }
           mlApply "3". mlExactn 0.
         - mlRight. unfold patt_and. mlIntro. unfold patt_or.
-          mlApply "3". mlApplyMetaRaw (not_not_elim Γ φ ltac:(auto)).
+          mlApply "3". mlApplyMeta (not_not_elim Γ φ ltac:(auto)).
           mlApply "1". mlIntro. mlApply "2". mlExactn 1.
       }
       apply useBasicReasoning with (i := i) in H.
@@ -1451,15 +1451,20 @@ Defined.
     mlIntro.
     assert (wfφ : well_formed (! φ₁ or ! φ₂)).
     { wf_auto2. }
-    unshelve (mlApplyMetaRaw (useBasicReasoning gpi (membership_not_1 _ _ _ wfφ HΓ)) in "0").
+    mlApplyMeta membership_not_1 in "0".
+    2: {
+      exact HΓ.
+    }
     mlIntro. mlApply "0". mlClear "0".
-    mlApplyMetaRaw Htmp1.
+    mlApplyMeta Htmp1.
     mlDestructOr "1"; subst gpi.
     - mlLeft.
-      unshelve (mlApplyMetaRaw (membership_not_2 _ _ _ wfφ₁ HΓ) in "0").
+      mlApplyMeta membership_not_2 in "0".
+      2: { exact HΓ. }
       mlExactn 0.
     - mlRight.
-      unshelve (mlApplyMetaRaw (membership_not_2 _ _ _ wfφ₂ HΓ) in "2").
+      mlApplyMeta membership_not_2 in "2".
+      2: { exact HΓ. }
       mlExactn 0.
       Unshelve. all: wf_auto2.
   Defined.
@@ -1485,16 +1490,16 @@ Defined.
     mlDestructAnd "0".
     unfold patt_and.
 
-    unshelve (mlApplyMetaRaw (membership_not_2 _ _ _ _ HΓ)).
-    { wf_auto2. }
+    unshelve (mlApplyMeta membership_not_2).
+    2: { exact HΓ. }
     mlIntro.
 
-    mlApplyMetaRaw Htmp1 in "0".
+    mlApplyMeta Htmp1 in "0".
     mlDestructOr "0".
-    - mlApplyMetaRaw Htmp2 in "3".
+    - mlApplyMeta Htmp2 in "3".
       mlApply "3". mlExactn 0.
     -
-      mlApplyMetaRaw Htmp3 in "4".
+      mlApplyMeta Htmp3 in "4".
       mlApply "4". mlExactn 1.
       Unshelve. all: wf_auto2.
   Defined.
@@ -2804,6 +2809,19 @@ Proof.
       * toMLGoal. wf_auto2. mlIntro "H0'". mlRight. mlExact "H0'".
 Defined.
 
+
+Lemma helper_propositional_lemma_1 (Σ : Signature) Γ φ₁ φ₂:
+  well_formed φ₁ = true ->
+  well_formed φ₂ = true ->
+  Γ ⊢ (! φ₁ or φ₂) ---> (! φ₁ or (φ₂ and φ₁)).
+Proof.
+  mlIntro "H0".
+  mlClassic (φ₁) as "H1'" "H1'".
+  { assumption. }
+  { mlTauto. }
+  { mlTauto. }
+Defined.
+
 Lemma membership_symbol_ceil_aux_0 {Σ : Signature} {syntax : Syntax} Γ x y φ:
   theory ⊆ Γ ->
   well_formed φ ->
@@ -2823,34 +2841,18 @@ Proof.
   { wf_auto2. }
   mlRewrite <- (@liftProofInfoLe _ _ _ (ExGen := ∅, SVSubst := ∅, KT := false, AKT := false) (ExGen := ⊤, SVSubst := ∅, KT := false, AKT := false) ltac:(try_solve_pile) (ceil_compat_in_or Γ (! ⌈ patt_free_evar x and φ ⌉) (patt_free_evar y and ⌈ patt_free_evar x and φ ⌉) HΓ ltac:(wf_auto2) ltac:(wf_auto2))) at 1.
 
+  unshelve (mlApplyMeta ceil_monotonic).
+  { exact (patt_free_evar y). }
+  4: { exact HΓ. }
+  (*
   unshelve (mlApplyMetaRaw (ceil_monotonic Γ
   (patt_free_evar y)
   (! ⌈ patt_free_evar x and φ ⌉ or patt_free_evar y and ⌈ patt_free_evar x and φ ⌉)
   (ExGen := ⊤, SVSubst := ∅, KT := false, AKT := false) HΓ ltac:(wf_auto2) ltac:(wf_auto2) _)).
-  {
-
-    assert (Helper: forall φ₁ φ₂, well_formed φ₁ -> well_formed φ₂ -> Γ ⊢i (! φ₁ or φ₂) ---> (! φ₁ or (φ₂ and φ₁)) using (ExGen := ∅, SVSubst := ∅, KT := false, AKT := false)).
-    {
-      intros φ₁ φ₂ wfφ₁ wfφ₂.
-      toMLGoal.
-      { wf_auto2. }
-      mlIntro "H0".
-      mlAdd (useBasicReasoning (ExGen := ∅, SVSubst := ∅, KT := false, AKT := false) (A_or_notA Γ φ₁ ltac:(wf_auto2))) as "H1".
-      mlDestructOr "H0" as "H0'" "H0'"; mlDestructOr "H1" as "H1'" "H1'".
-      - mlExFalso.
-        mlApply "H0'". mlExact "H1'".
-      - mlLeft. mlExactn 0.
-      - mlRight.
-        mlSplitAnd.
-        + mlExact "H0'".
-        + mlExact "H1'".
-      - mlLeft.
-        mlExact "H1'". 
-    }
-    toMLGoal.
-    { wf_auto2. }
+  *)
+  2: {
     mlIntro "H0".
-    mlApplyMeta Helper.
+    mlApplyMeta helper_propositional_lemma_1.
     mlRight.
     mlExact "H0".
   }

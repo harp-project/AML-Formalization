@@ -574,12 +574,23 @@ Proof.
 Defined.
 
 #[global]
+Ltac2 do_mlRevertLast () :=
+  Control.enter(fun () =>
+    lazy_match! goal with
+    | [|- @of_MLGoal ?sgm (mkMLGoal ?sgm ?ctx ?l ?g ?i)]
+    => eapply cast_proof_ml_hyps>
+      [(ltac1:(l |- rewrite -[l](take_drop (length l - 1)); rewrite [take _ _]/=; rewrite [drop _ _]/=) (Ltac1.of_constr l); reflexivity)|()];
+      apply MLGoal_revertLast
+    end
+  )
+.
+
+Ltac2 Notation "mlRevertLast" :=
+  do_mlRevertLast ()
+.
+
 Ltac mlRevertLast :=
-match goal with
-| |- @of_MLGoal ?Sgm (mkMLGoal ?Sgm ?Ctx ?l ?g ?i)
-=> eapply cast_proof_ml_hyps;
-   [(rewrite -[l](take_drop (length l - 1)); rewrite [take _ _]/=; rewrite [drop _ _]/=; reflexivity)|];
-   apply MLGoal_revertLast
-end.
+  ltac2:(do_mlRevertLast ())
+.
 
 Close Scope ml_scope.

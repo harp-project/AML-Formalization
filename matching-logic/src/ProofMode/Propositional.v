@@ -2101,8 +2101,15 @@ Ltac do_mlApplyMetaRawIn t name :=
   f t name
 .
 
-Ltac2 Notation "mlApplyMetaRaw" t(open_constr) "in" name(constr) :=
-  do_mlApplyMetaRawIn t name
+Ltac2 do_mlApplyMetaRaw0 (t : constr) (cl : constr option) :=
+  match cl with
+  | None => do_mlApplyMetaRaw t
+  | Some n => do_mlApplyMetaRawIn t n
+  end
+.
+
+Ltac2 Notation "_mlApplyMetaRaw" t(constr) cl(opt(seq("in", constr))) :=
+  do_mlApplyMetaRaw0 t cl
 .
 
 Tactic Notation "mlApplyMetaRaw" constr(t) "in" constr(name) :=
@@ -2146,7 +2153,7 @@ Ltac2 Eval (applyRec constr:(Nat.add) [constr:(1);constr:(2)]).
   In particular, I want the proof mode goals to be generated first,
   and the other, uninteresting goals, next.
 *)
-Ltac2 rec fillWithUnderscoresAndCall
+Ltac2 rec fillWithUnderscoresAndCall0
   (tac : constr -> unit) (t : constr) (args : constr list) :=
   (*
   Message.print (
@@ -2166,16 +2173,19 @@ Ltac2 rec fillWithUnderscoresAndCall
       lazy_match! goal with
       | [|- ?g] =>
         let h := Fresh.in_goal ident:(hasserted) in
-        assert(h : $t' -> $g) > [(
+        assert($h : $t' -> $g) > [(
           let pftprime := Fresh.in_goal ident:(pftprime) in
           intro $pftprime;
           let new_t := open_constr:($t ltac2:(Notations.exact0 false (fun () => Control.hyp (pftprime)))) in
-          fillWithUnderscoresAndCall tac new_t args;
+          fillWithUnderscoresAndCall0 tac new_t args;
           Std.clear [pftprime]
-        )|(apply &h)
+        )|(
+          let h_constr := Control.hyp h in
+          apply $h_constr
+          )
         ]
       end
-    | (forall _ : _, _) => fillWithUnderscoresAndCall tac open_constr:($t _) args
+    | (forall _ : _, _) => fillWithUnderscoresAndCall0 tac open_constr:($t _) args
     | ?remainder => throw (Invalid_argument (Some (Message.concat (Message.concat (Message.of_string "Remainder type: ") (Message.of_constr remainder)) (Message.concat (Message.of_string ", of term") (Message.of_constr t)))))
     end
   ) in
@@ -2196,6 +2206,16 @@ Ltac2 rec fillWithUnderscoresAndCall
   end
 .
 
+Ltac2 rec fillWithUnderscoresAndCall
+  (tac : constr -> unit) (twb : Std.constr_with_bindings) (args : constr list)
+  :=
+  let t := Fresh.in_goal ident:(t) in
+  Notations.specialize0 (fun () => twb) (Some (Std.IntroNaming (Std.IntroIdentifier t)));
+  let t_constr := Control.hyp t in
+  fillWithUnderscoresAndCall0 tac t_constr args;
+  clear $t
+.
+
 (*
   We have this double-primed version because we want to be able
   to feed it the proof before feeding it the ProofInfoLe.
@@ -2211,12 +2231,16 @@ Proof.
   apply H.
 Defined.
 
-Ltac2 _callCompletedAndCast (t : constr) (tac : constr -> unit) :=
+Ltac2 _callCompletedAndCast (twb : Std.constr_with_bindings) (tac : constr -> unit) :=
   let tac' := (fun (t' : constr) =>
     let tcast := open_constr:(@useGenericReasoning'' _ _ _ _ _ $t') in
-    fillWithUnderscoresAndCall tac tcast []
+    fillWithUnderscoresAndCall0 tac tcast []
   ) in
-  fillWithUnderscoresAndCall tac' t []
+  let t := Fresh.in_goal ident:(t) in
+  Notations.specialize0 (fun () => twb) (Some (Std.IntroNaming (Std.IntroIdentifier t)));
+  let t_constr := Control.hyp t in
+  fillWithUnderscoresAndCall0 tac' t_constr [];
+  clear $t
 .
 
 Ltac2 try_solve_pile_basic () :=
@@ -2251,19 +2275,19 @@ Ltac2 try_wfa () :=
   )
 .
 
-Ltac2 mutable do_mlApplyMeta := fun (t : constr) =>
+Ltac2 mutable do_mlApplyMeta := fun (twb : Std.constr_with_bindings) =>
   Control.enter (fun () =>
     _ensureProofMode;
-    _callCompletedAndCast t do_mlApplyMetaRaw ;
+    _callCompletedAndCast twb do_mlApplyMetaRaw ;
     try_solve_pile_basic ();
     try_wfa ()
   )
 .
 
-Ltac2 mutable do_mlApplyMetaIn := fun (t : constr) (name : constr) =>
+Ltac2 mutable do_mlApplyMetaIn := fun (twb : Std.constr_with_bindings) (name : constr) =>
   Control.enter (fun () =>
     _ensureProofMode;
-    _callCompletedAndCast t (fun t =>
+    _callCompletedAndCast twb (fun t =>
       do_mlApplyMetaRawIn t name
     );
     try_solve_pile_basic ();
@@ -2271,20 +2295,23 @@ Ltac2 mutable do_mlApplyMetaIn := fun (t : constr) (name : constr) =>
   )
 .
 
-Ltac2 Notation "mlApplyMeta" t(constr) :=
-  do_mlApplyMeta t
+Ltac2 do_mlApplyMeta0 (twb : Std.constr_with_bindings) (cl : constr option) :=
+  match cl with
+  | None => do_mlApplyMeta twb
+  | Some n => do_mlApplyMetaIn twb n
+  end
 .
 
-Ltac2 Notation "mlApplyMeta" t(constr) "in" name(constr) :=
-  do_mlApplyMeta t name
+Ltac2 Notation "mlApplyMeta" t(seq(constr,with_bindings)) cl(opt(seq("in", constr))) :=
+  do_mlApplyMeta0 t cl
 .
 
 Ltac _mlApplyMeta t :=
-  let ff := ltac2:(t' |- do_mlApplyMeta (Option.get (Ltac1.to_constr(t')))) in
+  let ff := ltac2:(t' |- do_mlApplyMeta ((Option.get (Ltac1.to_constr(t'))), Std.NoBindings)) in
   ff t.
 
 Ltac _mlApplyMetaIn t name :=
-  let ff := ltac2:(t' name' |- do_mlApplyMetaIn (Option.get (Ltac1.to_constr(t'))) (Option.get (Ltac1.to_constr(name')))) in
+  let ff := ltac2:(t' name' |- do_mlApplyMetaIn ((Option.get (Ltac1.to_constr(t')), Std.NoBindings)) (Option.get (Ltac1.to_constr(name')))) in
   ff t name
 .
 
