@@ -1131,19 +1131,43 @@ Proof.
   }
 Defined.
 
-Tactic Notation "mlAdd" constr(n) "as" constr(name') :=
-  _ensureProofMode;
-  _failIfUsed name';
-  match goal with
-  | |- @of_MLGoal ?Sgm (@mkMLGoal ?Sgm ?Ctx ?l ?g ?i) =>
-    apply (@MLGoal_add Sgm Ctx l name' g _ i n)
+
+Ltac2 do_mlAdd_as (n : constr) (name' : constr) :=
+  do_ensureProofMode ();
+  do_failIfUsed name';
+  lazy_match! goal with
+  | [|- @of_MLGoal ?sgm (@mkMLGoal ?sgm ?ctx ?l ?g ?i)] =>
+    apply (@MLGoal_add $sgm $ctx $l $name' $g _ $i $n)
   end.
 
+Ltac2 Notation "mlAdd" n(constr) "as" name(constr) :=
+  do_mlAdd_as n name
+.
+
+Tactic Notation "mlAdd" constr(n) "as" constr(name') :=
+  let f := ltac2:(n name |- do_mlAdd_as (Option.get (Ltac1.to_constr n)) (Option.get (Ltac1.to_constr name))) in
+  f n name'
+.
+
+Ltac2 get_fresh_name () : constr :=
+  do_ensureProofMode ();
+  let hyps := do_getHypNames () in
+  let name := eval cbv in (fresh $hyps) in
+  name
+.
+
+Ltac2 do_mlAdd (n : constr) :=
+  do_mlAdd_as n (get_fresh_name ())
+.
+
+Ltac2 Notation "mlAdd" n(constr) :=
+  do_mlAdd n
+.
+
 Tactic Notation "mlAdd" constr(n) :=
-  _ensureProofMode;
-  let hyps := _getHypNames in
-  let name := eval cbv in (fresh hyps) in
-  mlAdd n as name.
+  let f := ltac2:(n |- do_mlAdd (Option.get (Ltac1.to_constr n))) in
+  f n
+.
 
 Local Example ex_mlAdd {Σ : Signature} Γ l g h i:
   Pattern.wf l ->
@@ -1218,9 +1242,20 @@ Proof.
 Defined.
 
 
+Ltac2 do_mlClear (name : constr) :=
+  run_in_reshaped_by_name name (fun () =>
+    apply mlGoal_clear_hyp
+  )
+.
+
+Ltac2 Notation "mlClear" name(constr) :=
+  do_mlClear name
+.
+
 Tactic Notation "mlClear" constr(name) :=
-  _ensureProofMode;
-  _mlReshapeHypsByName name; apply mlGoal_clear_hyp; _mlReshapeHypsBack.
+  let f := ltac2:(name |- do_mlClear (Option.get (Ltac1.to_constr name))) in
+  f name
+.
 
 Local Example ex_mlClear {Σ : Signature} Γ a b c:
   well_formed a ->
@@ -1577,6 +1612,9 @@ Proof.
     wf_auto2.
   }
 Defined.
+
+
+
 
 Tactic Notation "mlDestructOr" constr(name) "as" constr(name1) constr(name2) :=
   _ensureProofMode;
