@@ -4377,7 +4377,7 @@ Proof.
           { wf_auto2. }
           clear. set_solver.
         }
-        mlApplyMetaRaw H. mlExact "H0'".
+        mlApplyMeta H. mlExact "H0'".
       + mlExact "H0'".
     - useBasicReasoning. apply disj_right_intro; assumption.
   }
@@ -4451,15 +4451,13 @@ Lemma bott_not_total {Σ : Signature} {syntax : Syntax}:
   Γ ⊢i ! ⌊ ⊥ ⌋
   using AnyReasoning.
 Proof.
-  intros Γ SubTheory.
+  intros Γ HΓ.
   toMLGoal. wf_auto2.
   mlIntro "H0". mlApply "H0".
-  mlApplyMetaRaw (liftProofInfoLe _ _ _ AnyReasoning (phi_impl_defined_phi _ (! ⊥) _ SubTheory _ ltac:(wf_auto2))).
+  ltac2:(mlApplyMeta phi_impl_defined_phi with (x := evar_fresh_s ∅)).
+  3: { exact HΓ. }
+  2: { cbn. clear. set_solver. }
   mlIntro "H1". mlExact "H1".
-Unshelve.
-  2: exact (fresh_evar ⊥).
-  try_solve_pile.
-  solve_fresh.
 Defined.
 
 Lemma defined_not_iff_not_total {Σ : Signature} {syntax : Syntax}:
@@ -4470,7 +4468,8 @@ Proof.
   intros Γ φ HΓ Wf. toMLGoal. wf_auto2.
   mlSplitAnd.
   * mlIntro "H0".
-    mlApplyMetaRaw (liftProofInfoLe _ _ _ AnyReasoning (def_not_phi_impl_not_total_phi Γ φ HΓ Wf)).
+    mlApplyMeta def_not_phi_impl_not_total_phi.
+    2: { exact HΓ. }
     mlExact "H0".
   * unfold patt_total.
     epose proof (liftProofInfoLe _ _ _ AnyReasoning (not_not_iff Γ ⌈ ! φ ⌉ ltac:(wf_auto2))) as H.
@@ -4491,19 +4490,18 @@ Proof.
   intros Γ φ ψ HΓ Wf1 Wf2. toMLGoal. wf_auto2.
   mlIntro "H0".
   mlDestructOr "H0" as "H0'" "H0'".
-  * epose proof (liftProofInfoLe _ _ _ AnyReasoning (disj_left_intro Γ φ ψ Wf1 Wf2)) as H.
-    apply floor_monotonic in H. 3-4: try wf_auto2.
-    2: { exact HΓ. }
-    mlApplyMetaRaw H.
-    mlExact "H0'".
-  * epose proof (liftProofInfoLe _ _ _ AnyReasoning (disj_right_intro Γ φ ψ Wf1 Wf2)) as H.
-    apply floor_monotonic in H.
-    3,4: wf_auto2.
-    2: { exact HΓ. }
-    mlApplyMetaRaw H.
-    mlExact "H0'".
-Unshelve.
-  all: try_solve_pile.
+  * 
+    mlApplyMeta floor_monotonic.
+    2: { apply disj_left_intro; assumption. }
+    { mlExact "H0'"; assumption. }
+    exact Wf1.
+    { exact HΓ. }
+  * 
+    mlApplyMeta floor_monotonic.
+    2: { apply disj_right_intro; assumption. }
+    { mlExact "H0'"; assumption. }
+    { exact Wf2. }
+    { exact HΓ. }
 Defined.
 
 Lemma patt_defined_and {Σ : Signature} {syntax : Syntax}:
@@ -4522,7 +4520,8 @@ Proof.
   mlIntro "H1".
   mlApply "H0".
   mlClear "H0".
-  mlApplyMeta (patt_or_total _ (! φ) (! ψ) HΓ).
+  mlApplyMeta patt_or_total.
+  2: { exact HΓ. }
   mlDestructOr "H1" as "H1'" "H1'".
   * mlLeft. unfold patt_total.
     epose proof (liftProofInfoLe _ _ _ AnyReasoning (not_not_iff Γ φ Wf1)) as H0.
