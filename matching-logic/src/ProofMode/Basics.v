@@ -476,10 +476,12 @@ Tactic Notation "_ensureProofMode" :=
 .
 
 Ltac2 do_mlIntro (name' : constr) :=
-  do_ensureProofMode ();
-  do_failIfUsed name';
-  apply MLGoal_intro with (name := $name');
-  simplLocalContext
+  Control.enter(fun () => 
+    do_ensureProofMode ();
+    do_failIfUsed name';
+    apply MLGoal_intro with (name := $name');
+    simplLocalContext
+  )
 .
 
 Ltac2 Notation "mlIntro" name(constr) :=
@@ -492,10 +494,12 @@ Tactic Notation "mlIntro" constr(name') :=
 .
 
 Ltac2 do_mlIntro_anon () :=
-  do_ensureProofMode ();
-  let hyps := do_getHypNames () in
-  let name' := eval cbv in (fresh $hyps) in
-  mlIntro $name'
+  Control.enter(fun () => 
+    do_ensureProofMode ();
+    let hyps := do_getHypNames () in
+    let name' := eval cbv in (fresh $hyps) in
+    mlIntro $name'
+  )
 .
 
 Ltac2 Notation "mlIntro" :=

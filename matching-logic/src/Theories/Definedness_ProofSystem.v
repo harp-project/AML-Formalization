@@ -2898,13 +2898,13 @@ Proof.
   mlRewrite Htmp at 1.
   mlIntro "H0".
   remember (fresh_evar φ) as y.
-  mlApplyMeta (useBasicReasoning (ExGen := ⊤, SVSubst := ∅, KT := false, AKT := false) (Ex_quan Γ (patt_free_evar x ∈ml ⌈ b0 and φ ⌉) y ltac:(wf_auto2))).
+  mlApplyMeta Ex_quan.
   unfold instantiate. mlSimpl. simpl.
   rewrite bevar_subst_not_occur.
   { wf_auto2. }
 
-  unshelve (mlApplyMetaRaw (liftProofInfoLe _ _ _ _ (membership_symbol_ceil_aux_0 Γ y x φ HΓ wfφ))).
-  { try_solve_pile. }
+  mlApplyMeta membership_symbol_ceil_aux_0.
+  2: { exact HΓ. }
   subst y. subst x.
   mlExact "H0".
   all: try_solve_pile.
@@ -2962,7 +2962,7 @@ Proof.
   mlDestructAnd "H0" as "H1" "H2".
   mlSplitAnd.
   - mlExact "H1".
-  - mlApplyMetaRaw H in "H2".
+  - mlApplyMeta H in "H2".
     mlExact "H2".
 Defined.
 
@@ -3176,7 +3176,7 @@ Proof.
     mlIntro "H0".
     mlIntro "H1".
     mlDestructAnd "H1" as "H2" "H3".
-    mlApplyMetaRaw (useBasicReasoning _ (not_not_elim Γ φ₃ wfφ₃)).
+    mlApplyMeta not_not_elim.
     mlIntro "H4".
     mlApply "H0".
     mlClear "H0".
@@ -3199,6 +3199,14 @@ Proof.
   { try_solve_pile. }
   exact wfφ.
 Defined.
+
+Ltac2 formula_of_proof (t : constr) :=
+  lazy_match! t with
+  | (@derives_using _ _ ?p _) => p
+  | _ => Message.print (Message.concat (Message.of_string "Cannot obtain a formula from") (Message.of_constr t));
+         Control.throw_invalid_argument "Cannot obtain a matching logic formula from given term"
+  end
+.
 
 Lemma membership_symbol_ceil_right {Σ : Signature} {syntax : Syntax} Γ φ x:
   theory ⊆ Γ ->
@@ -3371,7 +3379,7 @@ Proof.
   pose proof (Htmp := @liftProofInfoLe Σ Γ _ (ExGen := {[ev_x; x]}, SVSubst := ∅, KT := false, AKT := false) (ExGen := ⊤, SVSubst := ∅, KT := false, AKT := false) ltac:(try_solve_pile) (membership_imp Γ x (⌈ ! ⌈ φ ⌉ ⌉) (! ⌈ φ ⌉) HΓ ltac:(wf_auto2) ltac:(wf_auto2))).
   mlRewrite Htmp at 1. clear Htmp.
   mlIntro "H0".
-  mlApplyMeta (@membership_symbol_ceil_left Σ syntax Γ (! ⌈ φ ⌉) x HΓ ltac:(wf_auto2)) in "H0".
+  mlApplyMeta membership_symbol_ceil_left in "H0".
   mlRewrite (@liftProofInfoLe Σ Γ _ (ExGen := {[ev_x; x]}, SVSubst := ∅, KT := false, AKT := false) (ExGen := ⊤, SVSubst := ∅, KT := false, AKT := false) ltac:(try_solve_pile) (membership_not_iff Γ (⌈ φ ⌉) x ltac:(wf_auto2) HΓ)) at 1.
 
   remember (evar_fresh (elements ({[x]} ∪ (free_evars φ)))) as y.
@@ -3393,7 +3401,16 @@ Proof.
     { wf_auto2. }
     exact HΓ.
   }
-
+  2: {
+    exact HΓ.
+  }
+  (* We can also do the following, but in this case I think that the original is more readable *)
+  (*ltac2:(
+    let hh := (Control.hyp ident:(Htmp)) in
+    let t := Constr.type hh in
+    let f := formula_of_proof t in
+    mlApplyMeta ex_quan_monotone with (ϕ₂ := $f) in "H0").
+  *)
   mlApplyMeta (ex_quan_monotone Γ y _ _ _ ltac:(try_solve_pile) Htmp) in "H0".
   clear Htmp.
 
