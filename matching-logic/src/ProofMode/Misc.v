@@ -106,7 +106,7 @@ Example ex_mlApplyMetaGeneralized2  {Σ : Signature} Γ a b c d e f:
   well_formed d ->
   well_formed e ->
   well_formed f ->
-  (forall c', Γ ⊢ a ---> b ---> c' ---> d ---> e ---> f) ->
+  (forall c', well_formed c' = true -> Γ ⊢ a ---> b ---> c' ---> d ---> e ---> f) ->
   Γ ⊢ (a and (b and (c and (d and e)))) ---> f.
 Proof.
   intros wfa wfb wfc wfd wfe wff H.

@@ -2813,7 +2813,7 @@ Defined.
 Lemma helper_propositional_lemma_1 (Σ : Signature) Γ φ₁ φ₂:
   well_formed φ₁ = true ->
   well_formed φ₂ = true ->
-  Γ ⊢ (! φ₁ or φ₂) ---> (! φ₁ or (φ₂ and φ₁)).
+  Γ ⊢i (! φ₁ or φ₂) ---> (! φ₁ or (φ₂ and φ₁)) using BasicReasoning.
 Proof.
   mlIntro "H0".
   mlClassic (φ₁) as "H1'" "H1'".
@@ -2841,16 +2841,10 @@ Proof.
   { wf_auto2. }
   mlRewrite <- (@liftProofInfoLe _ _ _ (ExGen := ∅, SVSubst := ∅, KT := false, AKT := false) (ExGen := ⊤, SVSubst := ∅, KT := false, AKT := false) ltac:(try_solve_pile) (ceil_compat_in_or Γ (! ⌈ patt_free_evar x and φ ⌉) (patt_free_evar y and ⌈ patt_free_evar x and φ ⌉) HΓ ltac:(wf_auto2) ltac:(wf_auto2))) at 1.
 
-  unshelve (mlApplyMeta ceil_monotonic).
-  { exact (patt_free_evar y). }
-  4: { exact HΓ. }
-  (*
-  unshelve (mlApplyMetaRaw (ceil_monotonic Γ
-  (patt_free_evar y)
-  (! ⌈ patt_free_evar x and φ ⌉ or patt_free_evar y and ⌈ patt_free_evar x and φ ⌉)
-  (ExGen := ⊤, SVSubst := ∅, KT := false, AKT := false) HΓ ltac:(wf_auto2) ltac:(wf_auto2) _)).
-  *)
+  ltac2:(mlApplyMeta ceil_monotonic with (φ₁ := (patt_free_evar y))).
+  3: { exact HΓ. }
   2: {
+    useBasicReasoning.
     mlIntro "H0".
     mlApplyMeta helper_propositional_lemma_1.
     mlRight.
