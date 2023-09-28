@@ -1,14 +1,19 @@
 From Coq Require Import ssreflect ssrfun ssrbool.
 
+From Coq.Classes Require Import RelationClasses.
+
 From stdpp Require Import
   countable
   infinite
 .
 
+
 Class OPMLSorts := {
     opml_sort : Set;
     opml_sort_eqdec :: EqDecision opml_sort;
     opml_sort_countable :: Countable opml_sort;
+    opml_subsort : relation opml_sort;
+    opml_subsort_po :: PartialOrder opml_subsort;
 }.
 
 Class OPMLVariables {Ss : OPMLSorts} := {
@@ -32,7 +37,7 @@ Class OPMLSymbols {Ss : OPMLSorts} := {
     ((list opml_sort)*opml_sort)%type;
 }.
 
-Class Signature := {
+Class OPMLSignature := {
   opml_sorts :: OPMLSorts ;
   opml_variables :: OPMLVariables;
   opml_symbols :: OPMLSymbols;
