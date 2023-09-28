@@ -79,3 +79,6 @@ src/Evaluation/Firstorder.v
 src/Evaluation/Revert_size.v
 src/Evaluation/Complex.v
 src/Evaluation/Extractor.v
+
+src/OPML/OpmlSignature.v
+src/OPML/OpmlPattern.v
