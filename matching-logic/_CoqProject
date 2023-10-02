@@ -3,6 +3,7 @@
 src/Utils/extralibrary.v
 src/Utils/Lattice.v
 src/Utils/stdpp_ext.v
+src/Utils/Surj.v
 
 src/Signature.v
 src/Pattern.v
@@ -82,3 +83,5 @@ src/Evaluation/Extractor.v
 
 src/OPML/OpmlSignature.v
 src/OPML/OpmlPattern.v
+src/OPML/OpmlModel.v
+src/OPML/OpmlAmlRelSpec.v
