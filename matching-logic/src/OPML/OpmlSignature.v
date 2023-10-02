@@ -32,9 +32,13 @@ Class OPMLSymbols {Ss : OPMLSorts} := {
   opml_sym_eqdec :: EqDecision opml_symbol;
   opml_sym_countable :: Countable opml_symbol;
 
-  opml_arity :
+  opml_arg_sorts :
     opml_symbol ->
-    ((list opml_sort)*opml_sort)%type;
+    list opml_sort ;
+  
+  opml_ret_sort :
+    opml_symbol ->
+    opml_sort ;
 }.
 
 Class OPMLSignature := {
