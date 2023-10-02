@@ -7,15 +7,21 @@ Set Transparent Obligations.
 From Equations Require Import Equations.
 (* Set Equations Transparent. *)
 
+From MatchingLogic.Utils Require Import Surj.
 From MatchingLogic.OPML Require Import OpmlSignature.
 
 Polymorphic Cumulative
-Record OpmlModel {Σ : OPMLSignature} := {
+Record OPMLModel {Σ : OPMLSignature} := {
     om_unified_carrier :
         Type ;
 
     om_carrier :
         opml_sort -> propset om_unified_carrier ;
+
+    om_carrier_no_junk :
+        forall (m : om_unified_carrier),
+            exists (s : opml_sort),
+                m ∈ om_carrier s ;
 
     om_subsort_1 :
         forall
@@ -44,4 +50,13 @@ Record OpmlModel {Σ : OPMLSignature} := {
                 arg ∈ om_carrier sort
             ),
             (om_app sym args) ⊆ (om_carrier (opml_ret_sort sym)) ;
+}.
+
+Record OPMLModelIsomorphism {Σ : OPMLSignature} (M1 M2 : OPMLModel) := {
+    omi_f : (om_unified_carrier M1) -> (om_unified_carrier M2) ;
+    omi_inj :: Inj (=) (=) omi_f ;
+    omi_surj :: Surj' (=) omi_f ;
+    omi_app :
+        ∀ (s : opml_symbol) (args : list (om_unified_carrier M1)),
+        omi_f <$> (@om_app Σ M1 s args) ≡ @om_app Σ M2 s (omi_f <$> args) ;
 }.
