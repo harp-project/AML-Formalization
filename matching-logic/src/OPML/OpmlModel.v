@@ -28,12 +28,15 @@ Record OPMLModel {Σ : OPMLSignature} := {
             (from to : opml_sort)
             (subsort : opml_subsort from to),
             om_carrier from ⊆ om_carrier to ;
-    
+            
+    (* not sure if the following is needed: *)
+    (*
     om_subsort_2 :
         forall
             (from to : opml_sort)
             (not_subsort : not (opml_subsort from to)),
             om_carrier from ## om_carrier to ;
+    *)
     
     om_app :
         opml_symbol ->
