@@ -520,8 +520,8 @@ Defined.
 
 Lemma occurrences_to_named :
   forall ϕ n X evs svs,
-    X ∉ svs ->
-    free_svars ϕ ⊆ svs ->
+    X ∈ svs ->
+    X ∉ free_svars ϕ ->
     (no_negative_occurrence_db_b n ϕ = true ->
     named_no_negative_occurrence X (translate_pattern evs svs (svar_open X n ϕ)) = true)
     /\
@@ -530,26 +530,72 @@ Lemma occurrences_to_named :
 Proof.
   intros ϕ. remember (size' ϕ) as s.
   assert (size' ϕ <= s) by lia. clear Heqs. revert ϕ H.
-  induction s; intros ϕ Hsize m Y evs svs Hin Hsub; destruct ϕ; simpl in Hsize; try lia; split; cbn; intros Hwf; simp translate_pattern; simpl; auto.
-  * cbn. case_match; auto. cbn in Hsub. set_solver. 
+  induction s; intros ϕ Hsize m Y evs svs Hin Hin2; destruct ϕ; simpl in Hsize; try lia; split; cbn; intros Hwf; simp translate_pattern; simpl; auto.
+  * cbn. case_match; auto. cbn in Hin. set_solver. 
   * case_match. 2: { by apply last_None in H. } reflexivity.
   * case_match. 2: { by apply last_None in H. } reflexivity.
   * case_match; simp translate_pattern; (case_match; [|by apply last_None in H0]); reflexivity.
   * case_match. congruence.
     case_match. 2: congruence.
     - simp translate_pattern. case_match. 2: by apply last_None in H1.
-      cbn.
-  * cbn. rewrite (proj1 (IHs ϕ1 ltac:(lia) _ _ _ _ _)); auto.
-    rewrite (proj1 (IHs ϕ2 ltac:(lia) _ _ _ _ _)); auto.
-  * cbn. rewrite (proj2 (IHs ϕ1 ltac:(lia) _ _ _ _ _)); auto.
-    rewrite (proj2 (IHs ϕ2 ltac:(lia) _ _ _ _ _)); auto.
-  * cbn.
-    rewrite (proj1 (IHs ϕ2 ltac:(lia) _ _ _ _ _)); auto. rewrite andb_true_r.
+      cbn. case_match; auto.
+      subst. pose proof (svar_fresh_seq_disj svs (S n)).
+      apply last_Some_elem_of in H1. set_solver.
+    - simp translate_pattern. case_match. 2: by apply last_None in H1.
+      cbn. case_match; auto.
+      subst. pose proof (svar_fresh_seq_disj svs (S (pred n))).
+      apply last_Some_elem_of in H1. set_solver.
+  * cbn in *. rewrite (proj1 (IHs ϕ1 ltac:(lia) _ _ _ _ _ _)); auto. set_solver.
+    rewrite (proj1 (IHs ϕ2 ltac:(lia) _ _ _ _ _ _)); auto. set_solver.
+  * cbn in *. rewrite (proj2 (IHs ϕ1 ltac:(lia) _ _ _ _ _ _)); auto. set_solver.
+    rewrite (proj2 (IHs ϕ2 ltac:(lia) _ _ _ _ _ _)); auto. set_solver.
+  * cbn in *.
+    rewrite (proj1 (IHs ϕ2 ltac:(lia) _ _ _ _ _ _)); auto. set_solver.
+    rewrite andb_true_r.
     apply andb_true_iff in Hwf as [Hwf _].
-    epose proof (H := proj2 (IHs ϕ1 ltac:(lia) m Y evs svs _) Hwf).    
-    unfold named_no_positive_occurrence in H. unfold svar_open in H. 
+    epose proof (H := proj2 (IHs ϕ1 ltac:(lia) m Y evs svs _ _) Hwf).
+    unfold named_no_positive_occurrence in H. unfold svar_open in H.
     unfold named_no_positive_occurrence, named_no_negative_occurrence in H.
-    apply proj2 in H. apply H.
+    apply H.
+  * cbn in *.
+    rewrite (proj2 (IHs ϕ2 ltac:(lia) _ _ _ _ _ _)); auto. set_solver.
+    rewrite andb_true_r.
+    apply andb_true_iff in Hwf as [Hwf _].
+    epose proof (H := proj1 (IHs ϕ1 ltac:(lia) m Y evs svs _ _) Hwf).
+    unfold named_no_positive_occurrence in H. unfold svar_open in H.
+    unfold named_no_positive_occurrence, named_no_negative_occurrence in H.
+    apply H.
+  * cbn in *. rewrite evar_open_bsvar_subst. wf_auto2. unfold svar_open in IHs.
+    rewrite (proj1 (IHs (evar_open (evar_fresh (elements evs)) 0 ϕ) _ m Y ({[evar_fresh (elements evs)]} ∪ evs) svs _ _) _); auto.
+    - rewrite evar_open_size'. lia.
+    - now rewrite free_svars_evar_open.
+    - now apply no_negative_occurrence_evar_open.
+  * cbn in *. rewrite evar_open_bsvar_subst. wf_auto2. unfold svar_open in IHs.
+    rewrite (proj2 (IHs (evar_open (evar_fresh (elements evs)) 0 ϕ) _ m Y ({[evar_fresh (elements evs)]} ∪ evs) svs _ _) _); auto.
+    - rewrite evar_open_size'. lia.
+    - now rewrite free_svars_evar_open.
+    - now apply no_positive_occurrence_evar_open.
+  * cbn in *. case_match; auto.
+    rewrite svar_open_bsvar_subst_higher. wf_auto2. lia.
+    simpl. unfold svar_open in IHs.
+    rewrite (proj1 (IHs (svar_open (svar_fresh (elements svs)) 0 ϕ) _ m Y evs _ _ _) _); auto.
+    - rewrite svar_open_size'. lia.
+    - clear -Hin. set_solver.
+    - pose proof (free_svars_svar_open ϕ (svar_fresh (elements svs)) 0) as H0.
+      clear -n Hin2 H0. set_solver.
+    - apply negative_occ_svar_open. lia. assumption.
+  * cbn in *. case_match; auto.
+    rewrite svar_open_bsvar_subst_higher. wf_auto2. lia.
+    simpl. unfold svar_open in IHs.
+    rewrite (proj2 (IHs (svar_open (svar_fresh (elements svs)) 0 ϕ) _ m Y evs _ _ _) _); auto.
+    - rewrite svar_open_size'. lia.
+    - clear -Hin. set_solver.
+    - pose proof (free_svars_svar_open ϕ (svar_fresh (elements svs)) 0) as H0.
+      clear -n Hin2 H0. set_solver.
+    - apply positive_occ_svar_open. lia. assumption.
+  Unshelve.
+    all: auto.
+    all: clear - Hin2; set_solver.
 Defined.
 
 
@@ -582,7 +628,12 @@ Proof.
     - pose proof (free_svars_svar_open). clear -H Hsvs. set_solver.
     - remember (svar_fresh _) as XX. apply andb_true_iff in Hwf as [Hwf _].
       apply andb_true_iff in Hwf as [Hwf _].
-
+      rewrite (proj1 (occurrences_to_named _ _ _ _ _ _ _)).
+      + clear. set_solver.
+      + subst XX. pose proof (set_svar_fresh_is_fresh' svs) as H. clear -Hsvs H.
+        set_solver.
+      + assumption.
+      + reflexivity.
 Defined.
 
 Import MatchingLogic.ProofSystem.Notations_private
