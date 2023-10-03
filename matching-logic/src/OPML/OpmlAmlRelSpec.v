@@ -38,9 +38,25 @@ Record OpmlAmlModRel
             <-> exists (mo : om_unified_carrier Mo),
                 ma = oamr_ele mo
             )
-            ;    
-
+            ; 
 }.
+
+Lemma oamr_no_junk_fmap
+    {Σo : OPMLSignature}
+    {Σa : Signature}
+    (Mo : OPMLModel)
+    (Ma : Model)
+    (r : OpmlAmlModRel Mo Ma)
+    :
+    ((oamr_ele Mo Ma r) <$> (@propset_top (om_unified_carrier Mo))) ≡ (sym_interp Ma (oasr_no_junk (oamr_sig Mo Ma r)))
+.
+Proof.
+    rewrite set_equiv.
+    intros x.
+    rewrite elem_of_fmap.
+    rewrite oamr_no_junk.
+    set_solver.
+Qed.
 
 Definition OpmlAmlModRel_preserves_isom
     {Σo : OPMLSignature}
