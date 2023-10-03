@@ -636,20 +636,169 @@ Proof.
       + reflexivity.
 Defined.
 
+Lemma translate_rename :
+  forall ϕ evs svs x y n, (* well_formed ϕ = true ->
+  free_evars ϕ ⊆ evs ->
+  free_svars ϕ ⊆ svs -> *)
+  y ∈ evs ->
+  rename_free_evar (translate_pattern evs svs ϕ) x y = 
+  translate_pattern evs svs (evar_open y n ϕ).
+Proof.
+  intros ϕ. remember (size' ϕ) as s.
+  assert (size' ϕ <= s) by lia. clear Heqs. revert ϕ H.
+  induction s; destruct ϕ; simpl; try lia; intros Hs evs svs x0 y0 n0 Hin;
+  simp translate_pattern; cbn; auto.
+  * 
+Defined.
+
 Import MatchingLogic.ProofSystem.Notations_private
        Notations.
 
-Variable class : Elements Pattern Theory.
+Variable Elem_class : Elements Pattern Theory.
+Variable Finite_class : FinSet Pattern Theory.
+
+(* Definition evars_of_Γ (Γ : Theory) := set_fold (fun pat acc => free_evars pat ∪ acc) ∅ Γ.
+Definition svars_of_Γ (Γ : Theory) := set_fold (fun pat acc => free_svars pat ∪ acc) ∅ Γ. *)
+
+(* TODO: undefine AC_free_evars!! *)
+Print AC_free_evars.
+Print free_evars_ctx.
+Search free_evars_ctx.
+Search AC_free_evars.
+
+Check Knaster_tarski.
+
+Fixpoint free_svars_ctx (C : Application_context) : SVarSet :=
+match C with
+| box => ∅
+| ctx_app_l cc p _ => free_svars_ctx cc ∪ free_svars p
+| ctx_app_r p cc _ => free_svars p ∪ free_svars_ctx cc
+end.
+
+
+Fixpoint vars_of_proof {Γ : Theory} {φ : Pattern} (p : Γ ⊢H φ) : EVarSet * SVarSet :=
+match p with
+ | hypothesis _ phi x x0 => (free_evars phi, free_svars phi)
+
+ | P1 _ phi psi x x0 =>
+   (free_evars phi ∪ free_evars psi, free_svars phi ∪ free_svars psi)
+
+ | P2 _ phi psi xi x x0 x1 =>
+   (free_evars phi ∪ free_evars psi ∪ free_evars xi,
+    free_svars phi ∪ free_svars psi ∪ free_svars xi)
+
+ | P3 _ phi x => (free_evars phi, free_svars phi)
+
+ | Modus_ponens _ phi1 phi2 pf1 pf2 =>
+   let (evs1, svs1) := vars_of_proof pf1 in
+   let (evs2, svs2) := vars_of_proof pf2 in
+   (free_evars phi1 ∪ free_evars phi2 ∪ evs1 ∪ evs2,
+    free_svars phi1 ∪ free_svars phi2 ∪ svs1 ∪ svs2)
+
+ | Ex_quan _ phi y x => ({[y]} ∪ free_evars phi, free_svars phi)
+
+ | Ex_gen _ phi1 phi2 x x0 x1 pf x3 =>
+   let (evs, svs) := vars_of_proof pf in
+   ({[x]} ∪ free_evars phi1 ∪ free_evars phi2 ∪ evs, 
+    free_svars phi1 ∪ free_svars phi2 ∪ svs)
+
+ | Prop_bott_left _ phi x => (free_evars phi, free_svars phi)
+
+ | Prop_bott_right _ phi x => (free_evars phi, free_svars phi)
+
+ | Prop_disj_left _ phi1 phi2 psi x x0 x1 =>
+    (free_evars phi1 ∪ free_evars phi2 ∪ free_evars psi,
+     free_svars phi1 ∪ free_svars phi2 ∪ free_svars psi)
+
+ | Prop_disj_right _ phi1 phi2 psi x x0 x1 =>
+    (free_evars phi1 ∪ free_evars phi2 ∪ free_evars psi,
+     free_svars phi1 ∪ free_svars phi2 ∪ free_svars psi)
+
+ | Prop_ex_left _ phi psi x x0 =>
+   (free_evars phi ∪ free_evars psi, free_svars phi ∪ free_svars psi)
+
+ | Prop_ex_right _ phi psi x x0 =>
+   (free_evars phi ∪ free_evars psi, free_svars phi ∪ free_svars psi)
+
+ | Framing_left _ phi1 phi2 psi x pf =>
+   let (evs, svs) := vars_of_proof pf in
+   (free_evars phi1 ∪ free_evars phi2 ∪ free_evars psi ∪ evs,
+    free_svars phi1 ∪ free_svars phi2 ∪ free_svars psi ∪ svs)
+
+ | Framing_right _ phi1 phi2 psi x pf =>
+   let (evs, svs) := vars_of_proof pf in
+   (free_evars phi1 ∪ free_evars phi2 ∪ free_evars psi ∪ evs,
+    free_svars phi1 ∪ free_svars phi2 ∪ free_svars psi ∪ svs)
+
+ | Svar_subst _ phi psi X x x0 pf =>
+   let (evs, svs) := vars_of_proof pf in
+   (free_evars phi ∪ free_evars psi ∪ evs,
+    {[X]} ∪ free_svars phi ∪ free_svars psi ∪ svs)
+
+ | Pre_fixp _ phi x =>
+   (free_evars phi, free_svars phi)
+
+ | Knaster_tarski _ phi psi x pf =>
+   let (evs, svs) := vars_of_proof pf in
+   (free_evars phi ∪ free_evars psi ∪ evs,
+    free_svars phi ∪ free_svars psi ∪ svs)
+
+ | Existence _ => (empty, empty)
+
+ | Singleton_ctx _ C1 C2 phi x x0 =>
+   ({[x]} ∪ free_evars phi ∪ free_evars_ctx C1 ∪ free_evars_ctx C2,
+    free_svars phi ∪ free_svars_ctx C1 ∪ free_svars_ctx C2)
+end.
+
 Theorem proof_translation :
-  forall Γ ϕ, Γ ⊢H ϕ ->
-    let evs := set_fold (fun pat acc => free_evars pat ∪ acc) ∅ Γ ∪ 
-              free_evars ϕ in
-    let svs := set_fold (fun pat acc => free_svars pat ∪ acc) ∅ Γ ∪
-              free_svars ϕ in
+  forall Γ ϕ (H : Γ ⊢H ϕ) evs svs,
+    let (free_evs, free_svs) := vars_of_proof H in
+    free_evs ⊆ evs ->
+    free_svs ⊆ svs ->
     set_map (translate_pattern evs svs) Γ ⊢N translate_pattern evs svs ϕ.
 Proof.
-  intros. induction H; simpl.
+  intros Γ ϕ H. induction H; simpl; intros.
   * apply N_hypothesis.
+    - apply well_formed_translate. assumption.
+      all: set_solver.
+    - apply elem_of_map_2. assumption.
+  * simp translate_pattern.
+    apply N_P1; apply well_formed_translate; try assumption.
+    all: clear -H H0; set_solver.
+  * simp translate_pattern.
+    apply N_P2; apply well_formed_translate; try assumption.
+    all: clear -H H0; set_solver.
+  * simp translate_pattern.
+    apply N_P3; apply well_formed_translate; try assumption.
+  * do 2 case_match. intros Hin1 Hin2.
+    eapply N_Modus_ponens. 3: apply IHML_proof_system1.
+    - apply well_formed_translate. by eapply proved_impl_wf.
+      1-2: clear -Hin1 Hin2; set_solver.
+    - apply proved_impl_wf in H0 as H0'. clear -H0' Hin1 Hin2.
+      eapply well_formed_translate in H0'. now simp translate_pattern in H0'.
+      1-2: set_solver.
+    - set_solver.
+    - set_solver.
+    - specialize (IHML_proof_system2 evs svs
+           ltac:(set_solver) ltac:(set_solver)) as IH2.
+      now simp translate_pattern in IH2.
+  * simp translate_pattern. cbn.
+    pose proof (N_Ex_quan (set_map (translate_pattern evs svs) Γ)).
+    
+  * admit.
+  * admit.
+  * admit.
+  * admit.
+  * admit.
+  * admit.
+  * admit.
+  * admit.
+  * admit.
+  * admit.
+  * admit.
+  * admit.
+  * admit.
+  * admit.
 Defined.
 
 End translation.
