@@ -79,6 +79,13 @@ Proof.
   mlIntro "H0". mlApply "H0". mlAssumption.
 Defined.
 
+Lemma ex1_coq (A B : Prop) :
+  A -> B -> A /\ B.
+Proof.
+  intros H H0.
+  split; assumption.
+Qed.
+
 Lemma ex1_pm2 : forall {Σ : Signature} (Γ : Theory) (A B : Pattern),
   well_formed A = true ->
   well_formed B = true ->

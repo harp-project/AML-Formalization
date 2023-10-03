@@ -6,12 +6,15 @@ In this project we attempt to fully implement the "Applicative Matching Logic" f
 
 - [coqdoc](https://harp-project.github.io/AML-Formalization/branch/master/coqdoc/toc.html)
 - [proofmode.md](proofmode.md) - A list of tactic of matching logic proof mode.
+- [Proof Mode tutorial](examples/02_proofmode/)
+
+
 ## For developers
 
 ### Build
 
 The matching logic library (in the directory `matching-logic/`) depends on:
-- Coq 8.16
+- Coq 8.17
 - stdpp 1.8
 - equations 1.3
 - LibHyps 2.0.4.1
@@ -46,6 +49,10 @@ nix develop '.#coq-matching-logic-mm-exporter'
 If you want to work on examples:
 ```sh
 nix develop '.#coq-matching-logic-example-fol'.
+```
+If you want to go through the proof mode tutorial:
+```sh
+nix develop '.#coq-matching-logic-example-proofmode'
 ```
 And so on. To list all packages, run:
 ```sh

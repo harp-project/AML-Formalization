@@ -5,13 +5,15 @@ From MatchingLogic Require Import
     DerivedOperators_Syntax
     ProofSystem
     ProofMode.MLPM
+    FreshnessManager
 .
 
 From MatchingLogic.Theories Require Import Definedness_Syntax
                                            Definedness_Semantics
                                            Sorts_Syntax
                                            Sorts_Semantics
-                                           Definedness_ProofSystem.
+                                           Definedness_ProofSystem
+                                           DeductionTheorem.
 
 Import
   MatchingLogic.Logic.Notations
@@ -51,6 +53,60 @@ Section running.
     mlRewriteBy "H1" at 1;[assumption|(apply mu_free_in_path; simpl; by rewrite mff)|]. (* .unfold .no-hyps *)
     mlExact "H2". (* .unfold .no-hyps *)
     (* end snippet running *)
+  Defined.
+
+  Lemma running_functional_subst (φ φ' : Pattern) :
+    mu_free φ → well_formed φ' → well_formed_closed_ex_aux φ 1 →
+    well_formed_closed_mu_aux φ 0 →
+    Γ ⊢i φ^[evar:0↦φ'] and (ex , φ' =ml b0) ---> (ex , φ)
+              using AnyReasoning.
+  Proof.
+    intros HMF HWF1 HWF2 HWF3.
+    apply mu_free_wfp in HMF as HMFWF.
+    toMLGoal. wf_auto2.
+    mlIntro "H".
+    mlDestructAnd "H" as "H1" "H2".
+    mlDestructEx "H2" as x.
+    mlSimpl. cbn.
+
+    (* Using equality elimination: *)
+    unfold evar_open. rewrite (bevar_subst_not_occur _ _ φ'). wf_auto2.
+    feed pose proof (equality_elimination_basic Γ φ' (patt_free_evar x) 
+      {|pcEvar := x; pcPattern := φ^{evar:0 ↦ x}|}); auto.
+    { wf_auto2. }
+    { cbn. by apply mu_free_evar_open. }
+    cbn in H.
+    mlApplyMeta H in "H2".
+
+    (* Technical: subst cleanup *)
+    erewrite <-bound_to_free_variable_subst with (m := 1); auto.
+    2: wf_auto2. 2: fm_solve.
+    erewrite <-bound_to_free_variable_subst with (m := 1); auto.
+    2: wf_auto2. 2: fm_solve.
+    (***)
+    mlDestructAnd "H2" as "H2_1" "H2_2".
+    mlExists x. mlApply "H2_1". mlAssumption.
+  Defined.
+
+  Lemma running_forall_functional_subst (φ φ' : Pattern) :
+    mu_free φ → well_formed φ' → well_formed_closed_ex_aux φ 1 →
+    well_formed_closed_mu_aux φ 0 →
+    Γ ⊢i (all , φ) and (ex , φ' =ml b0) ---> φ^[evar:0↦φ']
+              using AnyReasoning.
+  Proof.
+    intros HMF HWF1 HWF2 HWF3.
+    apply mu_free_wfp in HMF as HMFWF.
+    toMLGoal. wf_auto2.
+    mlIntro "H". mlDestructAnd "H" as "H1" "H2".
+    mlAdd (running_functional_subst (! φ) φ' ltac:(simpl;auto) HWF1 ltac:(wf_auto2) ltac:(wf_auto2)) as "H0".
+    mlSimpl.
+    mlApplyMeta Misc.notnot_taut_1. mlIntro "H3".
+    mlAssert ("H5" : (ex , ! φ)).
+    { wf_auto2. }
+    { mlApply "H0". mlSplitAnd; mlAssumption. }
+    mlDestructEx "H5" as x. mlSimpl.
+    mlApply "H5". mlSpecialize "H1" with x.
+    mlAssumption.
   Defined.
 
   Local Lemma lhs_from_and_low:

@@ -4,11 +4,10 @@
 From MatchingLogic Require Import
     Syntax
     ProofSystem
-    ProofMode
+    ProofMode.MLPM
 .
 
 Import MatchingLogic.Syntax.Notations.
-Import MatchingLogic.ProofSystem.Notations.
 
 (* Below we prove that in matching logic, ϕ -> ϕ for any pattern ϕ. *)
 Example phi_implies_phi
@@ -137,9 +136,13 @@ Proof.
     (* However, we can use [H] to rewrite the first occurrence of [ϕ₁] to [ϕ₂]. *)
     mlRewrite H at 1.
     (* Now the goal is provable by propositional reasoning. *)
-    (* However, mlTauto cannot solve it. That is a bug. *)
+    (* However, mlTauto cannot solve it, since it does not know the <---> connective.
+       That is a missing feature / bug.*)
     Fail solve[mlTauto].
-    (* Never mind, we prove it manually. *)
+    (* If we unfold the `patt_iff` into `patt_and`, [mlTauto] can solve that goal, although it is a bit slow.*)
+    solve[unfold patt_iff; mlTauto].
+    (* Also, we can prove it manually. *)
+    Undo.
     mlSplitAnd; mlIntro "H"; mlExact "H".
     
     (* We could also rewrite in the other direction *)
@@ -174,6 +177,9 @@ Fail Example use_rewriteBy {Σ : Signature} (Γ : Theory) (ϕ₁ ϕ₂ ϕ₃ ϕ�
     Γ ⊢ (ϕ₁ $ ϕ₄ =ml ϕ₂ $ ϕ₄ ) ---> (ϕ₁ =ml ϕ₂) ---> ((ϕ₃ $ ϕ₁ $ ϕ₄) <---> (ϕ₃ $ ϕ₂ $ ϕ₄))
 .
 
+(* The typeclass [Definedness_Syntax.Syntax] ensures the presence of the definedness symbol
+   in the (implicit) signature Σ.
+ *)
 Example use_rewriteBy {Σ : Signature} {syntax : Definedness_Syntax.Syntax}
     (Γ : Theory) (ϕ₁ ϕ₂ ϕ₃ ϕ₄ : Pattern) :
     well_formed ϕ₁ = true ->
@@ -183,7 +189,10 @@ Example use_rewriteBy {Σ : Signature} {syntax : Definedness_Syntax.Syntax}
     Γ ⊢ (ϕ₁ $ ϕ₄ =ml ϕ₂ $ ϕ₄ ) ---> (ϕ₁ =ml ϕ₂) ---> ((ϕ₃ $ ϕ₁ $ ϕ₄) <---> (ϕ₃ $ ϕ₂ $ ϕ₄))
 .
 Proof.
-    intros wfϕ₁ wfϕ₂ wfϕ₃ wfϕ₄. toMLGoal;[wf_auto2|].
+    intros wfϕ₁ wfϕ₂ wfϕ₃ wfϕ₄.
+    (* By the way, many tactics (including [mlIntro]) can enter the proof mode automatically?
+       So the commented line is unnecessary. *)
+    (* toMLGoal;[wf_auto2|].*)
     mlIntro "H1". mlIntro "H2".
 
     (* We can rewrite using an equality from the local context. *)
@@ -208,7 +217,8 @@ Example use_rewriteBy {Σ : Signature} {syntax : Definedness_Syntax.Syntax}
     Γ ⊢ (ϕ₁ $ ϕ₄ =ml ϕ₂ $ ϕ₄ ) ---> (ϕ₁ =ml ϕ₂) ---> ((ϕ₃ $ ϕ₁ $ ϕ₄) <---> (ϕ₃ $ ϕ₂ $ ϕ₄))
 .
 Proof.
-    intros HΓ wfϕ₁ wfϕ₂ wfϕ₃ wfϕ₄. toMLGoal;[wf_auto2|].
+    intros HΓ.
+    (* Also, all the wfXY hypothesis can be introduced automatically when entering the proof mode (usually also automatically)*)
     mlIntro "H1". mlIntro "H2".
 
     (* We can rewrite using an equality from the local context. *)
@@ -220,7 +230,7 @@ Proof.
     {
         (* Another constraint. Under the hood, the rewrite uses the equality elimination lemma,
            which in turn uses deduction theorem.
-           Our deduction theorem does not support working with μ patterns yet,
+           The deduction theorem used under the hood does not support working with μ patterns yet,
            so we have to check that the context in which we want to rewrite
            is μ-free.
         *)
@@ -252,34 +262,44 @@ Example use_rewriteBy {Σ : Signature} {syntax : Definedness_Syntax.Syntax}
     Γ ⊢ (ϕ₁ $ ϕ₄ =ml ϕ₂ $ ϕ₄ ) ---> (ϕ₁ =ml ϕ₂) ---> ((ϕ₃ $ ϕ₁ $ ϕ₄) <---> (ϕ₃ $ ϕ₂ $ ϕ₄))
 .
 Proof.
-    intros HΓ Hmf wfϕ₁ wfϕ₂ wfϕ₃ wfϕ₄. toMLGoal;[wf_auto2|].
+    intros HΓ Hmf.
     mlIntro "H1". mlIntro "H2".
 
     (* We can rewrite using an equality from the local context. *)
     mlRewriteBy "H1" at 1.
     { assumption. }
-    { simpl. destruct_and!. unfold is_true. rewrite H0, H2, H3. reflexivity. }
+    {
+        (* We admit this kind of side condition is a bit annoying.
+           Currently, there is no tactic that would automate this.
+           However, we are working on a version of [mlRewriteBy]
+           that would be based on a more general deduction theorem
+           and therefore would not generate such ugly side conditions.
+        *)
+        apply mu_free_in_path. simpl. destruct_and!. unfold is_true. rewrite -> H0, H2, H3. reflexivity.
+    }
 
     (* We could also rewrite by H2 *)
     Restart.
 
-    intros HΓ Hmf wfϕ₁ wfϕ₂ wfϕ₃ wfϕ₄. toMLGoal;[wf_auto2|].
+    intros HΓ Hmf wfϕ₁ wfϕ₂ wfϕ₃ wfϕ₄.
     mlIntro "H1". mlIntro "H2".
 
     mlRewriteBy "H2" at 1.
     { assumption. }
-    { simpl. destruct_and!. unfold is_true. rewrite H0, H2, H3. reflexivity. }
+    { apply mu_free_in_path. simpl. destruct_and!. unfold is_true. rewrite -> H0, H2, H3. reflexivity. }
 
     mlSplitAnd; mlIntro "Hyp"; mlExact "Hyp".
 Defined.
 
+(*
+   We now demonstrate how to use local hypotheses that are implications.
+*)
 Example use_mlApply {Σ : Signature} (Γ : Theory) (a b c : Pattern) :
     well_formed a = true ->
     well_formed b = true ->
     well_formed c = true ->
     Γ ⊢ (a ---> b $ c) ---> (b $ c ---> c) ---> (a ---> c).
 Proof.
-    intros wfa wfb wfc. toMLGoal;[wf_auto2|].
     mlIntro "H1". mlIntro "H2". mlIntro "H3".
     (* strenghtens the concusion using H2 *)
     mlApply "H2".
@@ -291,6 +311,10 @@ Proof.
     mlExact "H3".
 Defined.
 
+(*
+   What if we have a matching logic implication in a Coq hypothesis
+   or in a lemma? There is `mlApplyMeta` for that.
+*)
 Example use_mlApplyMeta {Σ : Signature} (Γ : Theory) (a b c d : Pattern) :
     well_formed a = true ->
     well_formed b = true ->
@@ -298,11 +322,23 @@ Example use_mlApplyMeta {Σ : Signature} (Γ : Theory) (a b c d : Pattern) :
     well_formed d = true ->
     Γ ⊢ a ---> ((ex, c) $ d) ---> b ---> (ex, (c $ d)).
 Proof.
-    intros wfa wfb wfc wfd. toMLGoal;[wf_auto2|].
     mlIntro "H1". mlIntro "H2". mlIntro "H3".
 
     Check Prop_ex_left.
+    (*
+        Prop_ex_left
+        : ∀ (Γ : Theory) (ϕ ψ : Pattern),
+            well_formed (ex , ϕ)
+            → well_formed ψ
+            → Γ ⊢i (ex , ϕ) $ ψ ---> (ex , ϕ $ ψ) using BasicReasoning
+    *)
     mlApplyMeta Prop_ex_left.
+    (* Did you notice that [mlApplyMeta] automatically instantiated
+       all the preconditions of the lemma?
+       That is, without some magic happening on the background,
+       one would need to manualy specify them,
+       and solve the well-formedness subgoals.
+    *)
     mlExact "H2".
 Defined.
 

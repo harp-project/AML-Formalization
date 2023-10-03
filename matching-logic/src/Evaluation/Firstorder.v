@@ -94,6 +94,16 @@ Proof.
   mlAssumption.
 Defined.
 
+Lemma ex3_coq {T : Type} A B:
+  (exists (x : T), A x /\ B x) -> exists x, A x.
+Proof.
+  intros H.
+  destruct H as [x H].
+  destruct H as [H0 H1].
+  exists x.
+  assumption.
+Qed.
+
 Section compute.
   From MatchingLogic.Theories Require Import Definedness_Syntax
                                              Definedness_Semantics

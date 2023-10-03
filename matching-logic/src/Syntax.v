@@ -545,21 +545,6 @@ Section syntax.
     now apply andb_true_iff in H1.
   Qed.
 
-
-
-
-  Lemma x_eq_fresh_impl_x_notin_free_evars x ϕ:
-    x = fresh_evar ϕ ->
-    x ∉ free_evars ϕ.
-  Proof.
-    intros H.
-    rewrite H.
-    unfold fresh_evar.
-    apply set_evar_fresh_is_fresh'.
-  Qed.
-
-  Hint Resolve x_eq_fresh_impl_x_notin_free_evars : core.
-
 End syntax.
 
 Module Notations.

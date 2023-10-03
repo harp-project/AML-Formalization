@@ -15,6 +15,7 @@ From MatchingLogic
 Require Import
     Utils.stdpp_ext
     Utils.extralibrary
+    Utils.Surj
     Pattern
     Syntax
     Semantics
@@ -26,38 +27,7 @@ Import MatchingLogic.Substitution.Notations.
 Section isomorphism.
   Open Scope ml_scope.
 
-  Class Surj' {A B} (R : relation B) (f : A -> B) : Type :=
-      {
-          surj'_inv : B -> A ;
-          surj'_pf: ∀ (b : B), R (f (surj'_inv b)) b
-      }.
 
-  #[export]
-  Instance surj_surj' {A B} (R : relation B) (f : A -> B) {_ : @Surj' A B R f} : Surj R f.
-  Proof.
-      unfold Surj.
-      intros y.
-      exists (surj'_inv y).
-      apply surj'_pf.
-  Defined.
-
-  #[export]
-  Instance surj'_id {A} : @Surj' A A (=) Datatypes.id.
-  Proof.
-      exists Datatypes.id.
-      intros b. reflexivity.
-  Defined.
-
-  #[export]
-  Instance compose_surj' {A B C} R (f : A → B) (g : B → C) :
-    Surj' (=) f -> Surj' R g -> Surj' R (g ∘ f).
-  Proof.
-    intros [sf Hsf] [sg Hsg].
-    exists (sf ∘ sg).
-    intros x. unfold compose.
-    rewrite Hsf.
-    apply Hsg.
-  Qed.
 
   Polymorphic Cumulative
   Record ModelIsomorphism {Σ : Signature} {M₁ M₂ : Model} : Type := mkModelIsomorphism
@@ -103,17 +73,17 @@ Section isomorphism.
   : @ModelIsomorphism _ M₂ M₁.
   Proof.
       destruct i. destruct mi_surj0.
-      exists surj'_inv0.
+      exists surj'_inv.
       {
           intros x y H. unfold Inj in mi_inj0.
-          rewrite -[x]surj'_pf0. rewrite -[y]surj'_pf0.
+          rewrite -[x]surj'_pf. rewrite -[y]surj'_pf.
           f_equal. apply mi_inj0. f_equal. assumption.
       }
       {
           unfold Inj in mi_inj0.
           exists mi_f0. intros a.
           apply mi_inj0.
-          rewrite surj'_pf0. reflexivity.
+          rewrite surj'_pf. reflexivity.
       }
       {
           intros x y.
@@ -134,12 +104,12 @@ Section isomorphism.
               specialize (mi_sym2 b Hb2).
               destruct mi_sym2 as [a [Ha1 Ha2] ].
               subst.
-              cut (surj'_inv0 (mi_f0 a) = a).
+              cut (surj'_inv (mi_f0 a) = a).
               {
                   intros Htmp. rewrite Htmp. exact Ha2.
               }
               apply mi_inj0.
-              rewrite surj'_pf0.
+              rewrite surj'_pf.
               reflexivity.
           }
           {
@@ -155,7 +125,7 @@ Section isomorphism.
               split.
               {
                   apply mi_inj0.
-                  rewrite surj'_pf0.
+                  rewrite surj'_pf.
                   reflexivity.
               }
               {
@@ -167,8 +137,8 @@ Section isomorphism.
           intros x y.
           unfold fmap in *.
           with_strategy transparent [propset_fmap] unfold propset_fmap in *.
-          specialize (mi_app0 (surj'_inv0 x) (surj'_inv0 y)).
-          do 2 rewrite surj'_pf0 in mi_app0.
+          specialize (mi_app0 (surj'_inv x) (surj'_inv y)).
+          do 2 rewrite surj'_pf in mi_app0.
           rewrite set_equiv_subseteq in mi_app0.
           rewrite elem_of_subseteq in mi_app0.
           rewrite elem_of_subseteq in mi_app0.
@@ -184,12 +154,12 @@ Section isomorphism.
               specialize (mi_app2 b Hb2).
               destruct mi_app2 as [a [Ha1 Ha2] ].
               subst.
-              cut (surj'_inv0 (mi_f0 a) = a).
+              cut (surj'_inv (mi_f0 a) = a).
               {
                   intros Htmp. rewrite Htmp. exact Ha2.
               }
               apply mi_inj0.
-              rewrite surj'_pf0.
+              rewrite surj'_pf.
               reflexivity.
           }
           {
@@ -198,7 +168,7 @@ Section isomorphism.
               split.
               {
                   apply mi_inj0.
-                  rewrite surj'_pf0.
+                  rewrite surj'_pf.
                   reflexivity.
               }
               {

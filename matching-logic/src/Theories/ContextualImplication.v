@@ -207,6 +207,11 @@ Proof.
     apply set_builder_full_2; assumption.
 Defined.
 
+(*
+  We need recursive symbols here, for which we need product sorts.
+*)
+
+
 Lemma set_builder_full
     {Σ : Signature}
     {definedness_syntax : Definedness_Syntax.Syntax}

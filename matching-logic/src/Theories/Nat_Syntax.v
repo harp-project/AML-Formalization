@@ -47,8 +47,11 @@ Section nat_syntax.
 
   Class Syntax :=
     { inj : Symbols -> symbols;
-      imported_sorts :> Sorts_Syntax.Syntax;
+      imported_sorts : Sorts_Syntax.Syntax;
     }.
+  
+  #[global] Existing Instance imported_sorts.
+
   Context {self : Syntax}.
 
   Definition Nat := patt_sym (inj sNat).

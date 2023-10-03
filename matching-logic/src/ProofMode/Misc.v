@@ -35,33 +35,48 @@ Open Scope string_scope.
 Open Scope list_scope.
 
 
-Ltac2 _callCompletedTransformedAndCast
+Ltac2 _callCompletedTransformedAndCast0
   (t : constr) (transform : constr) (tac : constr -> unit) :=
   let tac' := (fun (t' : constr) =>
     let tac'' := (fun (t'' : constr) =>
       let tcast := open_constr:(@useGenericReasoning'' _ _ _ _ _ $t'') in
-      fillWithUnderscoresAndCall tac tcast []
+      fillWithUnderscoresAndCall0 tac tcast []
     ) in
-    fillWithUnderscoresAndCall (fun t''' => tac'' t''') transform [t']
+    fillWithUnderscoresAndCall0 (fun t''' => tac'' t''') transform [t']
   ) in
-  fillWithUnderscoresAndCall tac' t []
+  fillWithUnderscoresAndCall0 tac' t []
 .
 
-Ltac2 mlApplyMetaGeneralized (t : constr) :=
-  _callCompletedTransformedAndCast t constr:(@reshape_lhs_imp_to_and_forward) _mlApplyMetaRaw ;
-  try_solve_pile_basic ();
-  try_wfa ()
+Ltac2 _callCompletedTransformedAndCast
+  (twb : Std.constr_with_bindings) (transform : constr) (tac : constr -> unit) :=
+  let t := Fresh.in_goal ident:(t) in
+  Notations.specialize0 (fun () => twb) (Some (Std.IntroNaming (Std.IntroIdentifier t)));
+  let t_constr := Control.hyp t in
+  _callCompletedTransformedAndCast0 t_constr transform tac;
+  clear $t
 .
 
-Ltac _mlApplyMetaGeneralized t :=
-  _ensureProofMode;
-  let ff := ltac2:(t' |- mlApplyMetaGeneralized (Option.get (Ltac1.to_constr(t')))) in
-  ff t;
-  rewrite [foldr patt_and _ _]/=
+Ltac2 do_mlApplyMetaGeneralized (twb : Std.constr_with_bindings) :=
+  Control.enter(fun () =>
+    _callCompletedTransformedAndCast twb constr:(@reshape_lhs_imp_to_and_forward) do_mlApplyMetaRaw ;
+    try_solve_pile_basic ();
+    try_wfa ();
+    ltac1:(rewrite [foldr patt_and _ _]/=)
+  )
 .
 
-Tactic Notation "mlApplyMeta" constr(t) :=
-  (mlApplyMeta t) || (_mlApplyMetaGeneralized t)
+Ltac2 Notation "mlApplyMetaGeneralized" t(seq(open_constr,with_bindings)) :=
+  do_mlApplyMetaGeneralized t
+.
+
+Tactic Notation "mlApplyMetaGeneralized" uconstr(t) :=
+  let f := ltac2:(t |- do_mlApplyMetaGeneralized ((Option.get (Ltac1.to_constr t)), Std.NoBindings)) in
+  f t
+.
+
+
+Ltac2 Set do_mlApplyMeta as old_do_mlApplyMeta := fun  (twb : Std.constr_with_bindings) =>
+  orelse (fun () => old_do_mlApplyMeta twb) (fun _ => do_mlApplyMetaGeneralized twb)
 .
 
 #[local]
@@ -80,6 +95,25 @@ Proof.
   { wf_auto2. }
   mlIntro "H1".
   mlApplyMeta H.
+  mlExact "H1".
+Defined.
+
+#[local]
+Example ex_mlApplyMetaGeneralized2  {Σ : Signature} Γ a b c d e f:
+  well_formed a ->
+  well_formed b ->
+  well_formed c ->
+  well_formed d ->
+  well_formed e ->
+  well_formed f ->
+  (forall c', well_formed c' = true -> Γ ⊢ a ---> b ---> c' ---> d ---> e ---> f) ->
+  Γ ⊢ (a and (b and (c and (d and e)))) ---> f.
+Proof.
+  intros wfa wfb wfc wfd wfe wff H.
+  toMLGoal.
+  { wf_auto2. }
+  mlIntro "H1".
+  ltac2:(mlApplyMeta H with (c' := c)).
   mlExact "H1".
 Defined.
 
@@ -1981,7 +2015,7 @@ Proof.
       { mlApply "0". mlExactn 1. }
       apply pf_iff_proj1 in IHl.
       2,3: wf_auto2.
-      mlApplyMetaRaw IHl.
+      mlApplyMeta IHl.
       mlExactn 2.
     + mlIntro. mlIntro.
       mlAssert ((foldr patt_imp (emplace C q) l)).
@@ -1989,7 +2023,7 @@ Proof.
       { mlApply "0". mlExactn 1. }
       apply pf_iff_proj2 in IHl.
       2,3: wf_auto2.
-      mlApplyMetaRaw IHl.
+      mlApplyMeta IHl.
       mlExactn 2.
 Defined.
 
@@ -2348,58 +2382,70 @@ Defined.
 
 
 (* TODO: de-duplicate the code *)
-#[local]
-Ltac convertToNNF_rewrite_pat Ctx p i :=
-  lazymatch p with
-    | (! ! ?x) =>
-        let H' := fresh "H" in
-        pose proof (@not_not_eq _ Ctx x ltac:(wf_auto2)) as H';
-        apply (@useBasicReasoning _ _ _ i) in H';
-        repeat (mlRewrite H' at 1);
-        try clear H';
-        convertToNNF_rewrite_pat Ctx x i
-    | patt_not (patt_and ?x ?y) =>
-        let H' := fresh "H" in
-        pose proof (@deMorgan_nand _ Ctx x y ltac:(wf_auto2) ltac:(wf_auto2)) as H';
-        apply (@useBasicReasoning _ _ _ i) in H';
-        repeat (mlRewrite H' at 1);
-        try clear H';
-        convertToNNF_rewrite_pat Ctx (!x or !y) i
-    | patt_not (patt_or ?x ?y) =>
-        let H' := fresh "H" in
-        pose proof (@deMorgan_nor _ Ctx x y ltac:(wf_auto2) ltac:(wf_auto2)) as H';
-        apply (@useBasicReasoning _ _ _ i) in H';
-        repeat (mlRewrite H' at 1);
-        try clear H';
-        convertToNNF_rewrite_pat Ctx (!x and !y) i
-    | patt_not (?x ---> ?y) =>
-        let H' := fresh "H" in
-        pose proof (@nimpl_eq_and _ Ctx x y ltac:(wf_auto2) ltac:(wf_auto2)) as H';
-        apply (@useBasicReasoning _ _ _ i) in H';
-        repeat (mlRewrite H' at 1);
-        try clear H';
-        convertToNNF_rewrite_pat Ctx (x and !y) i
-    | (?x ---> ?y) =>
-        let H' := fresh "H" in
-        pose proof (@impl_eq_or _ Ctx x y ltac:(wf_auto2) ltac:(wf_auto2)) as H';
-        apply (@useBasicReasoning _ _ _ i) in H';
-        repeat (mlRewrite H' at 1);
-        try clear H';
-        convertToNNF_rewrite_pat Ctx (!x or y) i
-    | patt_and ?x ?y => convertToNNF_rewrite_pat Ctx x i; convertToNNF_rewrite_pat Ctx y i
-    | patt_or ?x ?y => convertToNNF_rewrite_pat Ctx x i; convertToNNF_rewrite_pat Ctx y i
-    | _ => idtac
-  end.
+Ltac2 rec convertToNNF_rewrite_pat := fun (ctx : constr) (p : constr) (i : constr) : unit =>
+  lazy_match! p with
+    | (! ! ?x) => (
+        let h' := Fresh.in_goal ident:(H) in
+        assert ($h' := (@not_not_eq _ $ctx $x ltac2:(wf_auto2 ())));
+        apply (@useBasicReasoning _ _ _ $i) in $h';
+        let h_constr := Control.hyp h' in
+        repeat (mlRewrite h_constr 1);
+        try (clear h');
+        convertToNNF_rewrite_pat ctx x i
+    )
+    | patt_not (patt_and ?x ?y) => (
+        let h' := Fresh.in_goal ident:(H) in
+        assert ($h' := (@deMorgan_nand _ $ctx $x $y ltac:(wf_auto2) ltac:(wf_auto2)));
+        apply (@useBasicReasoning _ _ _ $i) in $h';
+        let h_constr := Control.hyp h' in
+        repeat (mlRewrite h_constr 1);
+        try (clear h');
+        convertToNNF_rewrite_pat ctx constr:(!$x or !$y) i
+    )
+    | patt_not (patt_or ?x ?y) => (
+        let h' := Fresh.in_goal ident:(H) in
+        assert ($h' := (@deMorgan_nor _ $ctx $x $y ltac:(wf_auto2) ltac:(wf_auto2)));
+        apply (@useBasicReasoning _ _ _ $i) in $h';
+        let h_constr := Control.hyp h' in
+        repeat (mlRewrite h_constr 1);
+        try (clear h');
+        convertToNNF_rewrite_pat ctx constr:(!$x and !$y) i
+    )
+    | patt_not (?x ---> ?y) => (
+        let h' := Fresh.in_goal ident:(H) in
+        assert ($h' := (@nimpl_eq_and _ $ctx $x $y ltac:(wf_auto2) ltac:(wf_auto2)));
+        apply (@useBasicReasoning _ _ _ $i) in $h';
+        let h_constr := Control.hyp h' in
+        repeat (mlRewrite h_constr 1);
+        try (clear h');
+        convertToNNF_rewrite_pat ctx constr:($x and !$y) i
+    )
+    | (?x ---> ?y) => (
+        let h' := Fresh.in_goal ident:(H) in
+        assert ($h' := (@impl_eq_or _ $ctx $x $y ltac:(wf_auto2) ltac:(wf_auto2)));
+        apply (@useBasicReasoning _ _ _ $i) in $h';
+        let h_constr := Control.hyp h' in
+        repeat (mlRewrite h_constr 1);
+        try (clear h');
+        convertToNNF_rewrite_pat ctx constr:(!$x or $y) i
+    )
+    | patt_and ?x ?y => convertToNNF_rewrite_pat ctx x i; convertToNNF_rewrite_pat ctx y i
+    | patt_or ?x ?y => convertToNNF_rewrite_pat ctx x i; convertToNNF_rewrite_pat ctx y i
+    | _ => ()
+  end
+.
 
-#[local]
-Ltac toNNF := 
-  repeat mlRevertLast;
-  match goal with
-    | [ |- @of_MLGoal ?Sgm (@mkMLGoal ?Sgm ?Ctx ?ll ?g ?i) ] 
+Ltac2 toNNF () := 
+  repeat (do_mlRevertLast ());
+  lazy_match! goal with
+    | [ |- @of_MLGoal ?sgm (@mkMLGoal ?sgm ?ctx ?ll ?g ?i) ] 
       =>
-        mlApplyMetaRaw (@useBasicReasoning _ _ _ i (@not_not_elim Sgm Ctx g ltac:(wf_auto2)));
-        convertToNNF_rewrite_pat Ctx (!g) i
-  end.
+        do_mlApplyMetaRaw constr:(@useBasicReasoning _ _ _ $i (@not_not_elim $sgm $ctx $g ltac2:(wf_auto2 ())));
+        convertToNNF_rewrite_pat ctx constr:(!$g) i
+  end
+.
+
+Ltac toNNF := ltac2:(toNNF ()).
 
 #[local] Example test_toNNF {Σ : Signature} Γ a b :
   well_formed a ->
@@ -2467,7 +2513,7 @@ Ltac mlTautoBreak := repeat match goal with
     lazymatch g with
       | (⊥) =>
               breakHyps l
-      | _ => mlApplyMetaRaw (@useBasicReasoning _ _ _ i (@bot_elim _ _ g _))
+      | _ => mlApplyMeta (@useBasicReasoning _ _ _ i (@bot_elim _ _ g _))
     end
 end.
 
