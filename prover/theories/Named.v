@@ -437,6 +437,44 @@ Defined.
     }
   Qed.
 
+  Lemma inclusion_evar_seq :
+    forall (n n' : nat) (evs : EVarSet), n <= n' ->
+      evar_fresh_seq evs n ⊆ evar_fresh_seq evs n'.
+  Proof.
+    induction n; intros n' evs H.
+    * set_solver.
+    * destruct n'.
+      - lia.
+      - simpl.
+        specialize (IHn n' ({[evar_fresh_s evs]} ∪ evs) ltac:(lia)). set_solver.
+  Defined.
+
+(*   Lemma rename_cancel :
+    forall φ x y,
+    y ∉ named_evars φ ->
+    rename_free_evar (rename_free_evar φ y x) x y = φ.
+  Proof.
+    intro φ.
+    remember (nsize' φ) as sz.
+    assert (Hsz: nsize' φ <= sz) by lia.
+    clear Heqsz.
+    move: φ Hsz.
+    induction sz; intros φ Hsz x y Hin; destruct φ; simpl; auto; simpl in Hsz; try lia.
+    * case_match; simpl.
+      - case_match; congruence.
+      - case_match; auto. subst. set_solver.
+    * rewrite IHsz. 3: rewrite IHsz.
+      1, 3: lia.
+      1-2: set_solver.
+      reflexivity.
+    * rewrite IHsz. 3: rewrite IHsz.
+      1, 3: lia.
+      1-2: set_solver.
+      reflexivity.
+    * case_match; simpl; case_match; subst; auto.
+      - 
+  Qed. *)
+
   Lemma rename_free_evar_same :
     forall ϕ x, rename_free_evar ϕ x x = ϕ.
   Proof.

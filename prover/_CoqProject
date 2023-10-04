@@ -1,3 +1,4 @@
+-Q /home/berpeti/Asztal/ELTE/AML-Formalization/matching-logic/src MatchingLogic
 -R theories MatchingLogicProver
 
 theories/Matchers.v

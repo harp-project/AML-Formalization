@@ -427,7 +427,13 @@ Section translation.
 
 Context {Σ : Signature}.
 
-Equations? translate_pattern (evs : EVarSet) (svs : SVarSet) (ϕ : Pattern) : NamedPattern by wf (size' ϕ) lt :=
+(* This function does not work for ill-formed patterns, for example:
+  0 ---> ex , 1  ==> x ---> ex x, y
+
+  Moreover, it does not satisfy the requirements of
+  alpha_mu and alpha_mu_reverse!
+*)
+(* Equations? translate_pattern (evs : EVarSet) (svs : SVarSet) (ϕ : Pattern) : NamedPattern by wf (size' ϕ) lt :=
   translate_pattern _ _ patt_bott := npatt_bott;
   translate_pattern _ _ (patt_sym s) := npatt_sym s;
   translate_pattern evs _ (patt_bound_evar n) :=
@@ -456,15 +462,59 @@ Proof.
   1-4: simpl; try lia.
   simpl. rewrite evar_open_size'. lia.
   simpl. rewrite svar_open_size'. lia.
+Defined. *)
+
+(*
+  To fix the previous definition, we need to make sure, that the variables
+  we generate for dangling indices are different from bound variables
+
+  -->
+
+  we parametherise the function with existential and mu-depths.
+  We decrease this depth in the recursive calls
+  to ensure that the dangling variables get names consistently
+
+  Drawback: we have to have a property that the nats given to the function
+  are at least as big as the depth of the pattern
+*)
+Equations? translate_pattern (evs : EVarSet) (svs : SVarSet) (ed sd : nat) (ϕ : Pattern) : NamedPattern by wf (size' ϕ) lt :=
+  translate_pattern _ _ ed sd patt_bott := npatt_bott;
+  translate_pattern _ _ ed sd (patt_sym s) := npatt_sym s;
+  translate_pattern evs _ ed sd (patt_bound_evar n):=
+    match (last (evar_fresh_seq evs (S ed + n))) with
+    | Some x => npatt_evar x
+    | None => npatt_evar (evar_fresh (elements evs)) (* This can never occur due to S n *)
+    end;
+  translate_pattern _ _ ed sd (patt_free_evar x) := npatt_evar x;
+  translate_pattern _ svs ed sd (patt_bound_svar N) :=
+    match (last (svar_fresh_seq svs (S sd + N))) with
+    | Some X => npatt_svar X
+    | None => npatt_svar (svar_fresh (elements svs)) (* This can never occur due to S n *)
+    end;
+  translate_pattern _ _ ed sd (patt_free_svar X) := npatt_svar X;
+  translate_pattern evs svs ed sd (patt_imp ϕ₁ ϕ₂) := 
+    npatt_imp (translate_pattern evs svs ed sd ϕ₁) (translate_pattern evs svs ed sd ϕ₂);
+  translate_pattern evs svs ed sd (patt_app ϕ₁ ϕ₂) :=
+    npatt_app (translate_pattern evs svs ed sd ϕ₁) (translate_pattern evs svs ed sd ϕ₂);
+  translate_pattern evs svs ed sd (patt_exists ϕ) :=
+    let freshx := evar_fresh (elements evs) in
+      npatt_exists freshx (translate_pattern ({[freshx]} ∪ evs) svs (pred ed) sd (evar_open freshx 0 ϕ));
+  translate_pattern evs svs ed sd (patt_mu ϕ) :=
+    let freshX := svar_fresh (elements svs) in
+      npatt_mu freshX (translate_pattern evs ({[freshX]} ∪ svs) ed (pred sd) (svar_open freshX 0 ϕ)).
+Proof.
+  1-4: simpl; try lia.
+  simpl. rewrite evar_open_size'. lia.
+  simpl. rewrite svar_open_size'. lia.
 Defined.
 
 Lemma translate_pattern_avoids_evar_blacklist :
-  forall ϕ evs svs,
-    named_bound_evars (translate_pattern evs svs ϕ) ## evs.
+  forall ϕ evs svs ed sd,
+    named_bound_evars (translate_pattern evs svs ed sd ϕ) ## evs.
 Proof.
   intros ϕ. remember (size' ϕ) as s.
   assert (size' ϕ <= s) by lia. clear Heqs. revert ϕ H.
-  induction s; intros ϕ Hsize evs svs; destruct ϕ; simpl in Hsize; try lia.
+  induction s; intros ϕ Hsize evs svs ed sd; destruct ϕ; simpl in Hsize; try lia.
   all: simp translate_pattern; simpl.
   1-2, 5, 7: set_solver.
   * case_match. 2: { apply last_None in H. congruence. }
@@ -479,22 +529,22 @@ Proof.
     set_solver.
   * specialize (IHs (evar_open (evar_fresh (elements evs)) 0 ϕ)).
     rewrite evar_open_size' in IHs.
-    specialize (IHs ltac:(lia) ({[evar_fresh (elements evs)]} ∪ evs) svs).
+    specialize (IHs ltac:(lia) ({[evar_fresh (elements evs)]} ∪ evs) svs (pred ed) sd).
     remember (named_bound_evars _) as A. clear HeqA.
     pose proof (Hfresh := set_evar_fresh_is_fresh' evs). set_solver.
   * specialize (IHs (svar_open (svar_fresh (elements svs)) 0 ϕ)).
     rewrite svar_open_size' in IHs.
-    specialize (IHs ltac:(lia) evs ({[svar_fresh (elements svs)]} ∪ svs)).
+    specialize (IHs ltac:(lia) evs ({[svar_fresh (elements svs)]} ∪ svs) ed (pred sd)).
     set_solver.
 Defined.
 
 Lemma translate_pattern_avoids_svar_blacklist :
-  forall ϕ evs svs,
-    named_bound_svars (translate_pattern evs svs ϕ) ## svs.
+  forall ϕ evs svs ed sd,
+    named_bound_svars (translate_pattern evs svs ed sd ϕ) ## svs.
 Proof.
   intros ϕ. remember (size' ϕ) as s.
   assert (size' ϕ <= s) by lia. clear Heqs. revert ϕ H.
-  induction s; intros ϕ Hsize evs svs; destruct ϕ; simpl in Hsize; try lia.
+  induction s; intros ϕ Hsize evs svs ed sd; destruct ϕ; simpl in Hsize; try lia.
   all: simp translate_pattern; simpl.
   1-2, 5, 7: set_solver.
   * case_match. 2: { apply last_None in H. congruence. }
@@ -509,28 +559,28 @@ Proof.
     set_solver.
   * specialize (IHs (evar_open (evar_fresh (elements evs)) 0 ϕ)).
     rewrite evar_open_size' in IHs.
-    specialize (IHs ltac:(lia) ({[evar_fresh (elements evs)]} ∪ evs) svs).
+    specialize (IHs ltac:(lia) ({[evar_fresh (elements evs)]} ∪ evs) svs (pred ed) sd).
     set_solver.
   * specialize (IHs (svar_open (svar_fresh (elements svs)) 0 ϕ)).
     rewrite svar_open_size' in IHs.
-    specialize (IHs ltac:(lia) evs ({[svar_fresh (elements svs)]} ∪ svs)).
+    specialize (IHs ltac:(lia) evs ({[svar_fresh (elements svs)]} ∪ svs) ed (pred sd)).
     remember (named_bound_svars _) as A. clear HeqA.
     pose proof (Hfresh := set_svar_fresh_is_fresh' svs). set_solver.
 Defined.
 
 Lemma occurrences_to_named :
-  forall ϕ n X evs svs,
+  forall ϕ n X evs svs ed sd,
     X ∈ svs ->
     X ∉ free_svars ϕ ->
     (no_negative_occurrence_db_b n ϕ = true ->
-    named_no_negative_occurrence X (translate_pattern evs svs (svar_open X n ϕ)) = true)
+    named_no_negative_occurrence X (translate_pattern evs svs ed sd(svar_open X n ϕ)) = true)
     /\
     (no_positive_occurrence_db_b n ϕ = true ->
-    named_no_positive_occurrence X (translate_pattern evs svs (svar_open X n ϕ)) = true).
+    named_no_positive_occurrence X (translate_pattern evs svs ed sd (svar_open X n ϕ)) = true).
 Proof.
   intros ϕ. remember (size' ϕ) as s.
   assert (size' ϕ <= s) by lia. clear Heqs. revert ϕ H.
-  induction s; intros ϕ Hsize m Y evs svs Hin Hin2; destruct ϕ; simpl in Hsize; try lia; split; cbn; intros Hwf; simp translate_pattern; simpl; auto.
+  induction s; intros ϕ Hsize m Y evs svs ed sd Hin Hin2; destruct ϕ; simpl in Hsize; try lia; split; cbn; intros Hwf; simp translate_pattern; simpl; auto.
   * cbn. case_match; auto. cbn in Hin. set_solver. 
   * case_match. 2: { by apply last_None in H. } reflexivity.
   * case_match. 2: { by apply last_None in H. } reflexivity.
@@ -539,46 +589,46 @@ Proof.
     case_match. 2: congruence.
     - simp translate_pattern. case_match. 2: by apply last_None in H1.
       cbn. case_match; auto.
-      subst. pose proof (svar_fresh_seq_disj svs (S n)).
-      apply last_Some_elem_of in H1. set_solver.
+      subst. pose proof (svar_fresh_seq_disj svs (S sd + n)).
+      apply last_Some_elem_of in H1. clear -H3 H1 Hin. set_solver.
     - simp translate_pattern. case_match. 2: by apply last_None in H1.
       cbn. case_match; auto.
-      subst. pose proof (svar_fresh_seq_disj svs (S (pred n))).
-      apply last_Some_elem_of in H1. set_solver.
-  * cbn in *. rewrite (proj1 (IHs ϕ1 ltac:(lia) _ _ _ _ _ _)); auto. set_solver.
-    rewrite (proj1 (IHs ϕ2 ltac:(lia) _ _ _ _ _ _)); auto. set_solver.
-  * cbn in *. rewrite (proj2 (IHs ϕ1 ltac:(lia) _ _ _ _ _ _)); auto. set_solver.
-    rewrite (proj2 (IHs ϕ2 ltac:(lia) _ _ _ _ _ _)); auto. set_solver.
+      subst. pose proof (svar_fresh_seq_disj svs (S sd + pred n)).
+      apply last_Some_elem_of in H1. clear -H3 H1 Hin. set_solver.
+  * cbn in *. rewrite (proj1 (IHs ϕ1 ltac:(lia) _ _ _ _ _ _ _ _)); auto. set_solver.
+    rewrite (proj1 (IHs ϕ2 ltac:(lia) _ _ _ _ _ _ _ _)); auto. set_solver.
+  * cbn in *. rewrite (proj2 (IHs ϕ1 ltac:(lia) _ _ _ _ _ _ _ _)); auto. set_solver.
+    rewrite (proj2 (IHs ϕ2 ltac:(lia) _ _ _ _ _ _ _ _)); auto. set_solver.
   * cbn in *.
-    rewrite (proj1 (IHs ϕ2 ltac:(lia) _ _ _ _ _ _)); auto. set_solver.
+    rewrite (proj1 (IHs ϕ2 ltac:(lia) _ _ _ _ _ _ _ _)); auto. set_solver.
     rewrite andb_true_r.
     apply andb_true_iff in Hwf as [Hwf _].
-    epose proof (H := proj2 (IHs ϕ1 ltac:(lia) m Y evs svs _ _) Hwf).
+    epose proof (H := proj2 (IHs ϕ1 ltac:(lia) m Y evs svs _ _ _ _) Hwf).
     unfold named_no_positive_occurrence in H. unfold svar_open in H.
     unfold named_no_positive_occurrence, named_no_negative_occurrence in H.
     apply H.
   * cbn in *.
-    rewrite (proj2 (IHs ϕ2 ltac:(lia) _ _ _ _ _ _)); auto. set_solver.
+    rewrite (proj2 (IHs ϕ2 ltac:(lia) _ _ _ _ _ _ _ _)); auto. set_solver.
     rewrite andb_true_r.
     apply andb_true_iff in Hwf as [Hwf _].
-    epose proof (H := proj1 (IHs ϕ1 ltac:(lia) m Y evs svs _ _) Hwf).
+    epose proof (H := proj1 (IHs ϕ1 ltac:(lia) m Y evs svs _ _ _ _) Hwf).
     unfold named_no_positive_occurrence in H. unfold svar_open in H.
     unfold named_no_positive_occurrence, named_no_negative_occurrence in H.
     apply H.
   * cbn in *. rewrite evar_open_bsvar_subst. wf_auto2. unfold svar_open in IHs.
-    rewrite (proj1 (IHs (evar_open (evar_fresh (elements evs)) 0 ϕ) _ m Y ({[evar_fresh (elements evs)]} ∪ evs) svs _ _) _); auto.
+    rewrite (proj1 (IHs (evar_open (evar_fresh (elements evs)) 0 ϕ) _ m Y ({[evar_fresh (elements evs)]} ∪ evs) svs (pred ed) sd _ _) _); auto.
     - rewrite evar_open_size'. lia.
     - now rewrite free_svars_evar_open.
     - now apply no_negative_occurrence_evar_open.
   * cbn in *. rewrite evar_open_bsvar_subst. wf_auto2. unfold svar_open in IHs.
-    rewrite (proj2 (IHs (evar_open (evar_fresh (elements evs)) 0 ϕ) _ m Y ({[evar_fresh (elements evs)]} ∪ evs) svs _ _) _); auto.
+    rewrite (proj2 (IHs (evar_open (evar_fresh (elements evs)) 0 ϕ) _ m Y ({[evar_fresh (elements evs)]} ∪ evs) svs (pred ed) sd _ _) _); auto.
     - rewrite evar_open_size'. lia.
     - now rewrite free_svars_evar_open.
     - now apply no_positive_occurrence_evar_open.
   * cbn in *. case_match; auto.
     rewrite svar_open_bsvar_subst_higher. wf_auto2. lia.
     simpl. unfold svar_open in IHs.
-    rewrite (proj1 (IHs (svar_open (svar_fresh (elements svs)) 0 ϕ) _ m Y evs _ _ _) _); auto.
+    rewrite (proj1 (IHs (svar_open (svar_fresh (elements svs)) 0 ϕ) _ m Y evs _ ed (pred sd) _ _) _); auto.
     - rewrite svar_open_size'. lia.
     - clear -Hin. set_solver.
     - pose proof (free_svars_svar_open ϕ (svar_fresh (elements svs)) 0) as H0.
@@ -587,7 +637,7 @@ Proof.
   * cbn in *. case_match; auto.
     rewrite svar_open_bsvar_subst_higher. wf_auto2. lia.
     simpl. unfold svar_open in IHs.
-    rewrite (proj2 (IHs (svar_open (svar_fresh (elements svs)) 0 ϕ) _ m Y evs _ _ _) _); auto.
+    rewrite (proj2 (IHs (svar_open (svar_fresh (elements svs)) 0 ϕ) _ m Y evs _ ed (pred sd) _ _) _); auto.
     - rewrite svar_open_size'. lia.
     - clear -Hin. set_solver.
     - pose proof (free_svars_svar_open ϕ (svar_fresh (elements svs)) 0) as H0.
@@ -600,14 +650,14 @@ Defined.
 
 
 Lemma well_formed_translate :
-  forall ϕ evs svs, well_formed ϕ = true ->
+  forall ϕ evs svs ed sd, well_formed ϕ = true ->
   free_evars ϕ ⊆ evs ->
   free_svars ϕ ⊆ svs ->
-  named_well_formed (translate_pattern evs svs ϕ) = true.
+  named_well_formed (translate_pattern evs svs ed sd ϕ) = true.
 Proof.
   intros ϕ. remember (size' ϕ) as s.
   assert (size' ϕ <= s) by lia. clear Heqs. revert ϕ H.
-  induction s; destruct ϕ; simpl; try lia; intros Hs evs svs Hwf Hevs Hsvs;
+  induction s; destruct ϕ; simpl; try lia; intros Hs evs svs ed sd Hwf Hevs Hsvs;
   simp translate_pattern; cbn; auto.
   * rewrite IHs. lia. wf_auto2. 1-2: set_solver.
     rewrite IHs. lia. wf_auto2. 1-2: set_solver.
@@ -628,7 +678,7 @@ Proof.
     - pose proof (free_svars_svar_open). clear -H Hsvs. set_solver.
     - remember (svar_fresh _) as XX. apply andb_true_iff in Hwf as [Hwf _].
       apply andb_true_iff in Hwf as [Hwf _].
-      rewrite (proj1 (occurrences_to_named _ _ _ _ _ _ _)).
+      rewrite (proj1 (occurrences_to_named _ _ _ _ _ _ _ _ _)).
       + clear. set_solver.
       + subst XX. pose proof (set_svar_fresh_is_fresh' svs) as H. clear -Hsvs H.
         set_solver.
@@ -636,19 +686,160 @@ Proof.
       + reflexivity.
 Defined.
 
+Lemma last_evar_seq_equal :
+  forall n n' evs,
+    last (evar_fresh_seq evs n) = last (evar_fresh_seq evs n')
+  ->
+    n = n'.
+Proof.
+  induction n; intros n' evs H; destruct n'; auto.
+  * cbn in H. symmetry in H. by apply last_None in H.
+  * cbn in H. by apply last_None in H.
+  * f_equal. eapply (IHn _ ({[evar_fresh_s evs]} ∪ evs)). simpl in H.
+    destruct evar_fresh_seq eqn:EQ.
+    - destruct (evar_fresh_seq _ n') eqn:EQ2.
+      + by [].
+      + simpl in H. destruct last eqn:EQ3 in H. 2: congruence.
+        apply last_Some_elem_of in EQ3.
+        pose proof (evar_fresh_seq_disj ({[evar_fresh_s evs]} ∪ evs) n').
+        inversion H. subst. rewrite EQ2 in H0.
+        clear -H0 EQ3. apply disjoint_union_r in H0 as [H0 _].
+        set_solver.
+    - destruct (evar_fresh_seq _ n') eqn:EQ2.
+      + simpl in H. destruct last eqn:EQ3 in H. 2: congruence.
+        apply last_Some_elem_of in EQ3.
+        pose proof (evar_fresh_seq_disj ({[evar_fresh_s evs]} ∪ evs) n).
+        inversion H. subst. rewrite EQ in H0.
+        clear -H0 EQ3. apply disjoint_union_r in H0 as [H0 _].
+        set_solver.
+      + by simpl in H.
+Defined.
+
+Lemma last_svar_seq_equal :
+  forall n n' svs,
+    last (svar_fresh_seq svs n) = last (svar_fresh_seq svs n')
+  ->
+    n = n'.
+Proof.
+  induction n; intros n' svs H; destruct n'; auto.
+  * cbn in H. symmetry in H. by apply last_None in H.
+  * cbn in H. by apply last_None in H.
+  * f_equal. eapply (IHn _ ({[svar_fresh_s svs]} ∪ svs)). simpl in H.
+    destruct svar_fresh_seq eqn:EQ.
+    - destruct (svar_fresh_seq _ n') eqn:EQ2.
+      + by [].
+      + simpl in H. destruct last eqn:EQ3 in H. 2: congruence.
+        apply last_Some_elem_of in EQ3.
+        pose proof (svar_fresh_seq_disj ({[svar_fresh_s svs]} ∪ svs) n').
+        inversion H. subst. rewrite EQ2 in H0.
+        clear -H0 EQ3. apply disjoint_union_r in H0 as [H0 _].
+        set_solver.
+    - destruct (svar_fresh_seq _ n') eqn:EQ2.
+      + simpl in H. destruct last eqn:EQ3 in H. 2: congruence.
+        apply last_Some_elem_of in EQ3.
+        pose proof (svar_fresh_seq_disj ({[svar_fresh_s svs]} ∪ svs) n).
+        inversion H. subst. rewrite EQ in H0.
+        clear -H0 EQ3. apply disjoint_union_r in H0 as [H0 _].
+        set_solver.
+      + by simpl in H.
+Defined.
+
+Lemma last_evar_fresh_is_first :
+  forall n evs,
+    last (evar_fresh_seq evs n) = Some (evar_fresh (elements evs)) -> n = 1.
+Proof.
+  destruct n; intros evs H; simpl in H; try congruence.
+  destruct n.
+  * reflexivity.
+  * destruct evar_fresh_seq eqn:EQ.
+    - simpl in EQ. congruence.
+    - simpl in H. apply last_Some_elem_of in H.
+      pose proof (evar_fresh_seq_disj ({[evar_fresh_s evs]} ∪ evs) (S n)).
+      rewrite EQ in H0. clear EQ.
+      apply disjoint_union_r in H0 as [H0 _]. set_solver.
+Defined.
+
+
+(* TODO: use depth for more efficiency!
+   Instead of depth, we could use size *)
 Lemma translate_rename :
-  forall ϕ evs svs x y n, (* well_formed ϕ = true ->
+  forall ϕ evs svs y n x ed sd, 
+  well_formed_closed_ex_aux ϕ (S n) = true -> 
   free_evars ϕ ⊆ evs ->
-  free_svars ϕ ⊆ svs -> *)
+  free_svars ϕ ⊆ svs ->
+  ed ≥ size' ϕ ->
+  sd ≥ size' ϕ ->
+  last (evar_fresh_seq evs (S ed + n)) = Some x ->
+  (* y ∉ free_evars ϕ -> *)
   y ∈ evs ->
-  rename_free_evar (translate_pattern evs svs ϕ) x y = 
-  translate_pattern evs svs (evar_open y n ϕ).
+  rename_free_evar (translate_pattern evs svs ed sd ϕ) y x = 
+  translate_pattern evs svs ed sd (evar_open y n ϕ).
 Proof.
   intros ϕ. remember (size' ϕ) as s.
   assert (size' ϕ <= s) by lia. clear Heqs. revert ϕ H.
-  induction s; destruct ϕ; simpl; try lia; intros Hs evs svs x0 y0 n0 Hin;
-  simp translate_pattern; cbn; auto.
-  * 
+  induction s; destruct ϕ; try lia; intros Hs evs svs y0 n0 x0 ed sd
+    Hwf Hsub1 Hsub2 Hs1 Hs2 Hlast Hin2; simpl; simp translate_pattern; auto; simpl in Hs; try now lia.
+  * cbn. case_match; simp translate_pattern.
+    - subst. apply last_Some_elem_of in Hlast.
+      pose proof (evar_fresh_seq_disj evs (S ed + n0)) as H0.
+      clear -Hlast H0 Hsub1. set_solver.
+    - reflexivity.
+  * destruct (last (evar_fresh_seq evs (S ed + n))) eqn:EQ.
+    2: by apply last_None in EQ.
+    simpl. case_match; subst.
+    - cbn. case_match; subst; simp translate_pattern; auto.
+      + case_match.
+        ** inversion EQ. (* TODO: is this okay? *)
+           subst. rewrite <- H1 in Hlast. apply last_evar_seq_equal in Hlast.
+           lia.
+        ** congruence.
+      + simpl in Hwf. case_match; lia.
+    - cbn. case_match; simp translate_pattern; auto.
+      + by rewrite EQ.
+      + subst. congruence.
+      + simpl in Hwf. case_match; lia.
+  * destruct (last (svar_fresh_seq svs (S sd + n))) eqn:EQ.
+    2: by apply last_None in EQ.
+    cbn. simp translate_pattern. by rewrite EQ.
+  * cbn. simp translate_pattern.
+    erewrite IHs, IHs. reflexivity.
+    all: auto; try lia; wf_auto2; set_solver.
+  * cbn. simp translate_pattern.
+    erewrite IHs, IHs. reflexivity.
+    all: auto; try lia; wf_auto2; set_solver.
+  * cbn. case_match; simp translate_pattern; cbn.
+    - subst.
+      assert (ed = 0). { 
+        clear -Hlast.
+        apply last_evar_fresh_is_first in Hlast. lia.
+      }
+      lia.
+    - f_equal. rewrite evar_open_bevar_subst_higher. wf_auto2. lia.
+      apply IHs.
+      + rewrite evar_open_size'. lia.
+      + simpl.
+        apply wfc_ex_aux_bsvar_subst_le. lia. wf_auto2. wf_auto2.
+      + pose proof (free_evars_evar_open ϕ (evar_fresh (elements evs)) 0).
+        clear -H0 Hsub1. set_solver.
+      + by rewrite free_svars_evar_open.
+      + lia.
+      + lia.
+      + replace (S (pred ed) + pred (S n0)) with (ed + n0) by lia.
+        clear -Hlast Hs1. destruct ed. lia. simpl in Hlast.
+        assumption.
+      + clear -Hin2. set_solver.
+  * cbn. simp translate_pattern. cbn.
+    rewrite svar_open_bevar_subst. wf_auto2.
+    erewrite IHs. reflexivity. (* NOTE: for some reason, apply does not work *)
+    - rewrite svar_open_size'. lia.
+    - apply wfc_ex_aux_body_mu_imp1. wf_auto2.
+    - by rewrite free_evars_svar_open.
+    - pose proof (free_svars_svar_open ϕ (svar_fresh (elements svs)) 0).
+      clear -H Hsub2. set_solver.
+    - lia.
+    - lia.
+    - assumption.
+    - assumption.
 Defined.
 
 Import MatchingLogic.ProofSystem.Notations_private
@@ -675,87 +866,208 @@ match C with
 | ctx_app_r p cc _ => free_svars p ∪ free_svars_ctx cc
 end.
 
+Print ML_proof_system.
 
-Fixpoint vars_of_proof {Γ : Theory} {φ : Pattern} (p : Γ ⊢H φ) : EVarSet * SVarSet :=
+(* TODO: use depth and max instead of size and +! *)
+Fixpoint vars_of_proof {Γ : Theory} {φ : Pattern} (p : Γ ⊢H φ) : EVarSet * SVarSet * nat :=
 match p with
- | hypothesis _ phi x x0 => (free_evars phi, free_svars phi)
+ | hypothesis _ phi x x0 => (free_evars phi, free_svars phi, size' phi)
 
  | P1 _ phi psi x x0 =>
-   (free_evars phi ∪ free_evars psi, free_svars phi ∪ free_svars psi)
+   (free_evars phi ∪ free_evars psi, free_svars phi ∪ free_svars psi,
+    size' (patt_imp phi (patt_imp psi phi)))
 
  | P2 _ phi psi xi x x0 x1 =>
    (free_evars phi ∪ free_evars psi ∪ free_evars xi,
-    free_svars phi ∪ free_svars psi ∪ free_svars xi)
+    free_svars phi ∪ free_svars psi ∪ free_svars xi,
+    size' (patt_imp (patt_imp phi (patt_imp psi xi))
+                      (patt_imp (patt_imp phi psi) (patt_imp phi xi))))
 
- | P3 _ phi x => (free_evars phi, free_svars phi)
+ | P3 _ phi x => (free_evars phi, free_svars phi, size' (patt_imp (patt_imp (patt_imp phi patt_bott) patt_bott) phi))
 
  | Modus_ponens _ phi1 phi2 pf1 pf2 =>
-   let (evs1, svs1) := vars_of_proof pf1 in
-   let (evs2, svs2) := vars_of_proof pf2 in
+   match vars_of_proof pf1, vars_of_proof pf2 with
+   | (evs1, svs1, size1), (evs2, svs2, size2) =>
    (free_evars phi1 ∪ free_evars phi2 ∪ evs1 ∪ evs2,
-    free_svars phi1 ∪ free_svars phi2 ∪ svs1 ∪ svs2)
+    free_svars phi1 ∪ free_svars phi2 ∪ svs1 ∪ svs2,
+    size' (patt_imp phi1 phi2) + size1 + size2)
+   end
 
- | Ex_quan _ phi y x => ({[y]} ∪ free_evars phi, free_svars phi)
+ | Ex_quan _ phi y x => ({[y]} ∪ free_evars phi, free_svars phi, size' (patt_imp (instantiate (patt_exists phi) (patt_free_evar y))
+                       (patt_exists phi)))
 
  | Ex_gen _ phi1 phi2 x x0 x1 pf x3 =>
-   let (evs, svs) := vars_of_proof pf in
+   match vars_of_proof pf with
+   | (evs, svs, size1) =>
    ({[x]} ∪ free_evars phi1 ∪ free_evars phi2 ∪ evs, 
-    free_svars phi1 ∪ free_svars phi2 ∪ svs)
+    free_svars phi1 ∪ free_svars phi2 ∪ svs,
+    size' (patt_imp (exists_quantify x phi1) phi2) + size1)
+   end
 
- | Prop_bott_left _ phi x => (free_evars phi, free_svars phi)
+ | Prop_bott_left _ phi x => (free_evars phi, free_svars phi, size' (patt_imp (patt_app patt_bott phi) patt_bott))
 
- | Prop_bott_right _ phi x => (free_evars phi, free_svars phi)
+ | Prop_bott_right _ phi x => (free_evars phi, free_svars phi, size' (patt_imp (patt_app phi patt_bott) patt_bott))
 
  | Prop_disj_left _ phi1 phi2 psi x x0 x1 =>
     (free_evars phi1 ∪ free_evars phi2 ∪ free_evars psi,
-     free_svars phi1 ∪ free_svars phi2 ∪ free_svars psi)
+     free_svars phi1 ∪ free_svars phi2 ∪ free_svars psi,
+     size' (patt_imp
+                                  (patt_app
+                                     (DerivedOperators_Syntax.patt_or phi1 phi2)
+                                     psi)
+                                  (DerivedOperators_Syntax.patt_or
+                                     (patt_app phi1 psi) 
+                                     (patt_app phi2 psi))))
 
  | Prop_disj_right _ phi1 phi2 psi x x0 x1 =>
     (free_evars phi1 ∪ free_evars phi2 ∪ free_evars psi,
-     free_svars phi1 ∪ free_svars phi2 ∪ free_svars psi)
+     free_svars phi1 ∪ free_svars phi2 ∪ free_svars psi,
+     size' (patt_imp
+                                   (patt_app psi
+                                      (DerivedOperators_Syntax.patt_or phi1 phi2))
+                                   (DerivedOperators_Syntax.patt_or
+                                      (patt_app psi phi1) 
+                                      (patt_app psi phi2))))
 
  | Prop_ex_left _ phi psi x x0 =>
-   (free_evars phi ∪ free_evars psi, free_svars phi ∪ free_svars psi)
+   (free_evars phi ∪ free_evars psi, free_svars phi ∪ free_svars psi,
+   size' (patt_imp (patt_app (patt_exists phi) psi)
+                              (patt_exists (patt_app phi psi))))
 
  | Prop_ex_right _ phi psi x x0 =>
-   (free_evars phi ∪ free_evars psi, free_svars phi ∪ free_svars psi)
+   (free_evars phi ∪ free_evars psi, free_svars phi ∪ free_svars psi,
+    size' (patt_imp (patt_app psi (patt_exists phi))
+                               (patt_exists (patt_app psi phi))))
 
  | Framing_left _ phi1 phi2 psi x pf =>
-   let (evs, svs) := vars_of_proof pf in
+   match vars_of_proof pf with
+   | (evs, svs, size1) =>
    (free_evars phi1 ∪ free_evars phi2 ∪ free_evars psi ∪ evs,
-    free_svars phi1 ∪ free_svars phi2 ∪ free_svars psi ∪ svs)
+    free_svars phi1 ∪ free_svars phi2 ∪ free_svars psi ∪ svs,
+    size' (patt_imp (patt_app phi1 psi) (patt_app phi2 psi)) + size1)
+   end
 
  | Framing_right _ phi1 phi2 psi x pf =>
-   let (evs, svs) := vars_of_proof pf in
+   match vars_of_proof pf with
+   | (evs, svs, size1) =>
    (free_evars phi1 ∪ free_evars phi2 ∪ free_evars psi ∪ evs,
-    free_svars phi1 ∪ free_svars phi2 ∪ free_svars psi ∪ svs)
+    free_svars phi1 ∪ free_svars phi2 ∪ free_svars psi ∪ svs,
+    size' (patt_imp (patt_app psi phi1) (patt_app psi phi2)) + size1)
+   end
 
  | Svar_subst _ phi psi X x x0 pf =>
-   let (evs, svs) := vars_of_proof pf in
+   match vars_of_proof pf with
+   | (evs, svs, size1) =>
    (free_evars phi ∪ free_evars psi ∪ evs,
-    {[X]} ∪ free_svars phi ∪ free_svars psi ∪ svs)
+    {[X]} ∪ free_svars phi ∪ free_svars psi ∪ svs,
+    size' psi + size' (free_svar_subst psi X phi) + size1)
+   end
 
  | Pre_fixp _ phi x =>
-   (free_evars phi, free_svars phi)
+   (free_evars phi, free_svars phi, 
+    size' (patt_imp (instantiate (patt_mu phi) (patt_mu phi)) (patt_mu phi)))
 
  | Knaster_tarski _ phi psi x pf =>
-   let (evs, svs) := vars_of_proof pf in
+   match vars_of_proof pf with
+   | (evs, svs, size1) =>
    (free_evars phi ∪ free_evars psi ∪ evs,
-    free_svars phi ∪ free_svars psi ∪ svs)
+    free_svars phi ∪ free_svars psi ∪ svs,
+    size' (patt_imp (instantiate (patt_mu phi) psi) psi) + size1)
+   end
 
- | Existence _ => (empty, empty)
+ | Existence _ => (empty, empty, 2)
 
  | Singleton_ctx _ C1 C2 phi x x0 =>
    ({[x]} ∪ free_evars phi ∪ free_evars_ctx C1 ∪ free_evars_ctx C2,
-    free_svars phi ∪ free_svars_ctx C1 ∪ free_svars_ctx C2)
+    free_svars phi ∪ free_svars_ctx C1 ∪ free_svars_ctx C2,
+    size' (DerivedOperators_Syntax.patt_not
+                             (DerivedOperators_Syntax.patt_and
+                                (subst_ctx C1
+                                   (DerivedOperators_Syntax.patt_and
+                                      (patt_free_evar x) phi))
+                                (subst_ctx C2
+                                   (DerivedOperators_Syntax.patt_and
+                                      (patt_free_evar x)
+                                      (DerivedOperators_Syntax.patt_not phi))))))
 end.
+(* 
+Lemma last_exists :
+  forall (n : nat) (evs : EVarSet),
+  last (evar_fresh_seq evs (S n)) = Some (evar_fresh (elements (iterate (fun x:EVarSet => {[evar_fresh (elements x)]} ∪ x) n evs))).
+Proof.
+  induction n; intros evs; simpl.
+  * reflexivity.
+  * rewrite IHn.
+    
+Defined. *)
+
+Lemma last_exists :
+  forall (n : nat) (evs : EVarSet),
+  last (evar_fresh_seq evs (S n)) = Some (nth n (evar_fresh_seq evs (S n)) (evar_fresh [])).
+Proof.
+  induction n; intros evs.
+  * simpl. reflexivity.
+  * destruct n; simpl.
+    - reflexivity.
+    - rewrite -IHn. reflexivity.
+Defined.
+
+Theorem named_free_evars_translate :
+  forall φ n ed sd evs svs,
+    well_formed_closed_ex_aux φ n = true ->
+    named_free_evars (translate_pattern evs svs ed sd φ) ⊆
+    free_evars φ ∪ list_to_set (evar_fresh_seq evs (ed + n)).
+Proof.
+  intros φ. remember (size' φ) as s.
+  assert (size' φ <= s) by lia. clear Heqs. revert φ H.
+  induction s; destruct φ; try lia; intros Hs level ed sd evs svs Hwf; cbn; simp translate_pattern; auto; simpl in Hs; try now lia.
+  * cbn. set_solver.
+  * cbn. set_solver.
+  * case_match. 2: by apply last_None in H.
+    cbn. apply last_Some_elem_of in H. clear -H Hwf.
+    simpl in H, Hwf. case_match. 2: { congruence. }
+    destruct level. lia. rewrite Nat.add_succ_r. simpl.
+    apply elem_of_cons in H as [H | H].
+    - set_solver.
+    - eapply (inclusion_evar_seq _ (ed + level)) in H. 2: lia.
+      set_solver.
+  * case_match. 2: by apply last_None in H.
+    cbn. set_solver.
+  * cbn. set_solver.
+  * cbn.
+    specialize (IHs φ1 ltac:(lia) level ed sd evs svs ltac:(wf_auto2)) as Hp1.
+    specialize (IHs φ2 ltac:(lia) level ed sd evs svs ltac:(wf_auto2)) as Hp2.
+    clear -Hp1 Hp2. set_solver.
+  * cbn. set_solver.
+  * cbn.
+    specialize (IHs φ1 ltac:(lia) level ed sd evs svs ltac:(wf_auto2)) as Hp1.
+    specialize (IHs φ2 ltac:(lia) level ed sd evs svs ltac:(wf_auto2)) as Hp2.
+    clear -Hp1 Hp2. set_solver.
+  * cbn.
+    epose proof (IHs (evar_open (evar_fresh (elements evs)) 0 φ) _ level (pred ed) sd ({[evar_fresh (elements evs)]} ∪ evs) svs ltac:(wf_auto2)) as Hp.
+    pose proof (free_evars_evar_open φ (evar_fresh (elements evs)) 0).
+    clear -Hp H.
+    pose proof (inclusion_evar_seq (pred ed + level) (ed + level) ({[evar_fresh (elements evs)]} ∪ evs) ltac:(lia)).
+    remember (named_free_evars _) as NF.
+    remember (free_evars (evar_open _ _ _)) as FO.
+    remember (evar_fresh_seq _ _) as S1.
+    destruct ed. clear HeqNF HeqFO HeqS1.
+    simpl in *. set_solver.
+    
+    remember ((evar_fresh_seq evs (ed + level))) as S2.
+    clear HeqNF HeqFO HeqS1 HeqS2.
+Defined.
 
 Theorem proof_translation :
-  forall Γ ϕ (H : Γ ⊢H ϕ) evs svs,
-    let (free_evs, free_svs) := vars_of_proof H in
-    free_evs ⊆ evs ->
-    free_svs ⊆ svs ->
-    set_map (translate_pattern evs svs) Γ ⊢N translate_pattern evs svs ϕ.
+  forall Γ ϕ (H : Γ ⊢H ϕ) (evs : EVarSet) (svs : SVarSet) (ed sd : nat),
+    match vars_of_proof H with
+    | (free_evs, free_svs, minsize) =>
+      free_evs ⊆ evs ->
+      free_svs ⊆ svs ->
+      ed ≥ minsize ->
+      sd ≥ minsize ->
+      set_map (translate_pattern evs svs ed sd) Γ ⊢N translate_pattern evs svs ed sd ϕ
+    end.
 Proof.
   intros Γ ϕ H. induction H; simpl; intros.
   * apply N_hypothesis.
@@ -770,7 +1082,7 @@ Proof.
     all: clear -H H0; set_solver.
   * simp translate_pattern.
     apply N_P3; apply well_formed_translate; try assumption.
-  * do 2 case_match. intros Hin1 Hin2.
+  * repeat case_match. intros Hin1 Hin2 Hs1 Hs2.
     eapply N_Modus_ponens. 3: apply IHML_proof_system1.
     - apply well_formed_translate. by eapply proved_impl_wf.
       1-2: clear -Hin1 Hin2; set_solver.
@@ -779,12 +1091,28 @@ Proof.
       1-2: set_solver.
     - set_solver.
     - set_solver.
-    - specialize (IHML_proof_system2 evs svs
+    - lia.
+    - lia.
+    - specialize (IHML_proof_system2 evs svs ed sd
            ltac:(set_solver) ltac:(set_solver)) as IH2.
-      now simp translate_pattern in IH2.
+      simp translate_pattern in IH2. apply IH2; lia.
   * simp translate_pattern. cbn.
-    pose proof (N_Ex_quan (set_map (translate_pattern evs svs) Γ)).
-    
+    pose proof (N_Ex_quan (set_map (translate_pattern evs svs ed sd) Γ)).
+    fold (evar_open y 0 phi).
+    remember (nth (ed + 0) (evar_fresh_seq evs (S ed + 0)) (evar_fresh [])) as oldX.
+    erewrite <- (translate_rename) with (x := oldX).
+    2: wf_auto2.
+    2-3: set_solver.
+    2-3: lia.
+    2: subst oldX; apply last_exists.
+    2: set_solver.
+    remember (evar_fresh (elements evs)) as freshX.
+    assert (freshX ∉ named_evars (translate_pattern evs svs ed sd phi)). {
+      Search free_evars named_free_evars.
+    }
+    (* alpha renaming needed *)
+    rewrite <-translate_rename with (x := oldX).
+    Search (rename_free_evar () _ _).
   * admit.
   * admit.
   * admit.
