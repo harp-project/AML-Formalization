@@ -650,7 +650,7 @@ Defined.
 
 
 Lemma well_formed_translate :
-  forall ϕ evs svs ed sd, well_formed ϕ = true ->
+  forall ϕ evs svs ed sd, well_formed_positive ϕ = true ->
   free_evars ϕ ⊆ evs ->
   free_svars ϕ ⊆ svs ->
   named_well_formed (translate_pattern evs svs ed sd ϕ) = true.
@@ -659,6 +659,8 @@ Proof.
   assert (size' ϕ <= s) by lia. clear Heqs. revert ϕ H.
   induction s; destruct ϕ; simpl; try lia; intros Hs evs svs ed sd Hwf Hevs Hsvs;
   simp translate_pattern; cbn; auto.
+  * case_match; reflexivity.
+  * case_match; reflexivity.
   * rewrite IHs. lia. wf_auto2. 1-2: set_solver.
     rewrite IHs. lia. wf_auto2. 1-2: set_solver.
     reflexivity.
@@ -677,7 +679,7 @@ Proof.
     - by rewrite free_evars_svar_open.
     - pose proof (free_svars_svar_open). clear -H Hsvs. set_solver.
     - remember (svar_fresh _) as XX. apply andb_true_iff in Hwf as [Hwf _].
-      apply andb_true_iff in Hwf as [Hwf _].
+      (* apply andb_true_iff in Hwf as [Hwf _]. *)
       rewrite (proj1 (occurrences_to_named _ _ _ _ _ _ _ _ _)).
       + clear. set_solver.
       + subst XX. pose proof (set_svar_fresh_is_fresh' svs) as H. clear -Hsvs H.
@@ -1015,48 +1017,177 @@ Defined.
 Theorem named_free_evars_translate :
   forall φ n ed sd evs svs,
     well_formed_closed_ex_aux φ n = true ->
+    ed ≥ size' φ ->
     named_free_evars (translate_pattern evs svs ed sd φ) ⊆
-    free_evars φ ∪ list_to_set (evar_fresh_seq evs (ed + n)).
+    free_evars φ ∪ (list_to_set (evar_fresh_seq evs (ed + n)) ∖ list_to_set (evar_fresh_seq evs ed)).
 Proof.
   intros φ. remember (size' φ) as s.
   assert (size' φ <= s) by lia. clear Heqs. revert φ H.
-  induction s; destruct φ; try lia; intros Hs level ed sd evs svs Hwf; cbn; simp translate_pattern; auto; simpl in Hs; try now lia.
+  induction s; destruct φ; try lia; intros Hs level ed sd evs svs Hwf Hsize; cbn; simp translate_pattern; auto; simpl in Hs; try now lia.
   * cbn. set_solver.
   * cbn. set_solver.
   * case_match. 2: by apply last_None in H.
-    cbn. apply last_Some_elem_of in H. clear -H Hwf.
-    simpl in H, Hwf. case_match. 2: { congruence. }
-    destruct level. lia. rewrite Nat.add_succ_r. simpl.
-    apply elem_of_cons in H as [H | H].
-    - set_solver.
-    - eapply (inclusion_evar_seq _ (ed + level)) in H. 2: lia.
+    cbn. simpl in Hwf. case_match. 2: congruence.
+    clear IHs Hs H0 Hwf Hsize svs. revert n level evs l H.
+    induction ed; intros; simpl.
+    - pose proof (inclusion_evar_seq (1 + n) (level) evs ltac:(lia)).
+      apply last_Some_elem_of in H. set_solver.
+    - replace (last (evar_fresh_seq evs (S (S ed) + n))) with
+              (last (evar_fresh_seq ({[evar_fresh (elements evs)]} ∪ evs) ((S ed) + n))) in H by reflexivity.
+      eapply (IHed _ level) in H. 2: lia.
+      pose proof (evar_fresh_seq_disj ({[evar_fresh (elements evs)]} ∪ evs) (ed + level)).
       set_solver.
   * case_match. 2: by apply last_None in H.
     cbn. set_solver.
   * cbn. set_solver.
   * cbn.
-    specialize (IHs φ1 ltac:(lia) level ed sd evs svs ltac:(wf_auto2)) as Hp1.
-    specialize (IHs φ2 ltac:(lia) level ed sd evs svs ltac:(wf_auto2)) as Hp2.
+    specialize (IHs φ1 ltac:(lia) level ed sd evs svs ltac:(wf_auto2) ltac:(lia)) as Hp1.
+    specialize (IHs φ2 ltac:(lia) level ed sd evs svs ltac:(wf_auto2) ltac:(lia)) as Hp2.
     clear -Hp1 Hp2. set_solver.
   * cbn. set_solver.
   * cbn.
-    specialize (IHs φ1 ltac:(lia) level ed sd evs svs ltac:(wf_auto2)) as Hp1.
-    specialize (IHs φ2 ltac:(lia) level ed sd evs svs ltac:(wf_auto2)) as Hp2.
+    specialize (IHs φ1 ltac:(lia) level ed sd evs svs ltac:(wf_auto2) ltac:(lia)) as Hp1.
+    specialize (IHs φ2 ltac:(lia) level ed sd evs svs ltac:(wf_auto2) ltac:(lia)) as Hp2.
     clear -Hp1 Hp2. set_solver.
   * cbn.
-    epose proof (IHs (evar_open (evar_fresh (elements evs)) 0 φ) _ level (pred ed) sd ({[evar_fresh (elements evs)]} ∪ evs) svs ltac:(wf_auto2)) as Hp.
-    pose proof (free_evars_evar_open φ (evar_fresh (elements evs)) 0).
-    clear -Hp H.
-    pose proof (inclusion_evar_seq (pred ed + level) (ed + level) ({[evar_fresh (elements evs)]} ∪ evs) ltac:(lia)).
+    epose proof (IHs (evar_open (evar_fresh (elements evs)) 0 φ) _ level (pred ed) sd ({[evar_fresh (elements evs)]} ∪ evs) svs ltac:(wf_auto2) ltac:(lia)) as Hp.
     remember (named_free_evars _) as NF.
-    remember (free_evars (evar_open _ _ _)) as FO.
-    remember (evar_fresh_seq _ _) as S1.
-    destruct ed. clear HeqNF HeqFO HeqS1.
-    simpl in *. set_solver.
-    
-    remember ((evar_fresh_seq evs (ed + level))) as S2.
-    clear HeqNF HeqFO HeqS1 HeqS2.
+    pose proof (free_evars_evar_open φ (evar_fresh (elements evs)) 0).
+    destruct ed. lia. simpl in *.
+    clear -Hp H.
+    assert (NF ⊆ {[evar_fresh (elements evs)]} ∪ free_evars φ ∪
+      list_to_set
+           (evar_fresh_seq ({[evar_fresh (elements evs)]} ∪ evs) (ed + level))
+         ∖ list_to_set (evar_fresh_seq ({[evar_fresh (elements evs)]} ∪ evs) ed)) by set_solver.
+    clear Hp H. set_solver.
+  Unshelve.
+    rewrite evar_open_size'. lia.
+    apply wfc_ex_aux_bsvar_subst_le; auto. lia.
+  * cbn.
+    epose proof (IHs (svar_open (svar_fresh (elements svs)) 0 φ) _ level ed (pred sd) evs ({[svar_fresh (elements svs)]} ∪ svs) ltac:(wf_auto2) ltac:(lia)) as Hp.
+    remember (named_free_evars _) as NF.
+    now rewrite (free_evars_svar_open φ 0 (svar_fresh (elements svs))) in Hp.
+  Unshelve.
+    rewrite svar_open_size'. lia.
 Defined.
+
+Notation "A --->ₙ B" := (npatt_imp A B) (at level 75, right associativity).
+
+Lemma n_A_impl_A Γ A :
+  named_well_formed A = true ->
+  Γ ⊢N (A --->ₙ A).
+Proof. 
+  intros WFA.
+  epose proof (_1 := N_P2 Γ A (A --->ₙ A) A _ _ _).
+  epose proof (_2 := N_P1 Γ A (A --->ₙ A) _ _).
+  epose proof (_3 := N_Modus_ponens _ _ _ _ _ _2 _1).
+  epose proof (_4 := N_P1 Γ A A _ _).
+  epose proof (_5 := N_Modus_ponens _ _ _ _ _ _4 _3).
+  exact _5.
+  Unshelve.
+  all: simpl; by rewrite WFA.
+Defined.
+
+Lemma n_reorder Γ A B C :
+  named_well_formed A = true ->
+  named_well_formed B = true ->
+  named_well_formed C = true ->
+  Γ ⊢N ((A --->ₙ B --->ₙ C) --->ₙ ( B --->ₙ A --->ₙ C)).
+Proof.
+  intros Hwf1 Hwf2 Hwf3.
+  epose (t1 := (N_Modus_ponens _ _ _ _ _
+                  (N_P1 Γ ((A --->ₙ B) --->ₙ A --->ₙ C) B _ _)
+                  (N_P1 Γ (((A --->ₙ B) --->ₙ A --->ₙ C) --->ₙ B --->ₙ (A --->ₙ B) --->ₙ A --->ₙ C) (A --->ₙ B --->ₙ C) _ _))).
+
+  pose(ABC := (A --->ₙ B --->ₙ C)).
+
+  eapply N_Modus_ponens. 1-2: shelve.
+  - eapply N_Modus_ponens. 1-2: shelve.
+    + apply(N_P1 _ B A). 1-2: shelve.
+    + apply(N_P1 _ (B --->ₙ A --->ₙ B) (A --->ₙ B --->ₙ C)). 1-2: shelve.
+  - eapply N_Modus_ponens. 1-2: shelve.
+    + eapply N_Modus_ponens. 1-2: shelve.
+      * eapply N_Modus_ponens. 1-2: shelve.
+        -- eapply N_Modus_ponens. 1-2: shelve.
+           ++ apply (n_A_impl_A _ ABC). 1: shelve.
+           ++ eapply N_Modus_ponens. 1-2: shelve.
+              ** eapply N_Modus_ponens. 1-2: shelve.
+                 --- apply(N_P2 _ A B C). 1-3: shelve.
+                 --- eapply(N_P1 _ _ (A --->ₙ B --->ₙ C) _ _).
+              ** apply N_P2. 1-3: shelve.
+        -- eapply N_Modus_ponens. 1-2: shelve.
+           ++ apply t1.
+           ++ apply (N_P2). 1-3: shelve.
+      * eapply N_Modus_ponens. 1-2: shelve.
+        -- eapply N_Modus_ponens. 1-2: shelve.
+           ++ apply(N_P2). 1-3: shelve.
+           ++ apply(N_P1). 1-2: shelve.
+        -- apply N_P2. 1-3: shelve.
+    + apply N_P2. 1-3: shelve.
+  Unshelve.
+    all: simpl; try rewrite Hwf1; try rewrite Hwf2; try rewrite Hwf3; reflexivity.
+Defined.
+
+Lemma n_reorder_meta{Γ A B C} :
+  named_well_formed A = true ->
+  named_well_formed B = true ->
+  named_well_formed C = true ->
+  Γ ⊢N (A --->ₙ B --->ₙ C) ->
+  Γ ⊢N (B --->ₙ A --->ₙ C).
+Proof.
+  intros Hwf1 Hwf2 Hwf3 H2.
+  eapply N_Modus_ponens. 1-2: shelve. apply H2.
+  apply n_reorder.
+  Unshelve.
+  all: simpl; try rewrite Hwf1; try rewrite Hwf2; try rewrite Hwf3; reflexivity.
+Defined.
+
+Lemma n_syllogism A B C Γ :
+  named_well_formed A = true ->
+  named_well_formed B = true ->
+  named_well_formed C = true ->
+  Γ ⊢N (A --->ₙ B) --->ₙ (B --->ₙ C) --->ₙ(A --->ₙ C).
+Proof.
+  intros Hwf1 Hwf2 Hwf3.
+  apply n_reorder_meta. 1-3: shelve.
+  eapply N_Modus_ponens. 1-2: shelve.
+  - apply(N_P1 _ (B --->ₙ C) A). 1-2: shelve.
+  - eapply N_Modus_ponens. 1-2: shelve.
+    + eapply N_Modus_ponens. 1-2: shelve.
+      * apply (N_P2 _ A B C). 1-3: shelve.
+      * apply (N_P1 _ ((A --->ₙ B --->ₙ C) --->ₙ (A --->ₙ B) --->ₙ A --->ₙ C) (B --->ₙ C)). 1-2: shelve.
+    + apply N_P2.
+  Unshelve.
+  all: simpl; try rewrite Hwf1; try rewrite Hwf2; try rewrite Hwf3; reflexivity.
+Defined.
+
+Lemma n_syllogism_meta :
+  forall A B C Γ,
+    named_well_formed A = true ->
+    named_well_formed B = true ->
+    named_well_formed C = true ->
+    Γ ⊢N (npatt_imp A B) ->
+    Γ ⊢N (npatt_imp B C) ->
+    Γ ⊢N (npatt_imp A C).
+Proof.
+  intros A B C Γ Hwf1 Hwf2 Hwf3 H2 H3.
+  eapply N_Modus_ponens. 1-2: shelve.
+  - exact H2.
+  - eapply N_Modus_ponens. 1-2: shelve.
+    + exact H3.
+    + apply n_reorder_meta. 1-3: shelve.
+      apply n_syllogism.
+  Unshelve.
+  all: simpl; try rewrite Hwf1; try rewrite Hwf2; try rewrite Hwf3; reflexivity.
+Defined.
+
+Lemma translate_pred :
+  forall phi ed sd evs svs,
+  (translate_pattern evs svs ed sd phi) =
+  (translate_pattern ({[evar_fresh (elements evs)]} ∪ evs) svs (pred ed) sd phi).
+Proof.
+
+Admitted.
 
 Theorem proof_translation :
   forall Γ ϕ (H : Γ ⊢H ϕ) (evs : EVarSet) (svs : SVarSet) (ed sd : nat),
@@ -1071,24 +1202,25 @@ Theorem proof_translation :
 Proof.
   intros Γ ϕ H. induction H; simpl; intros.
   * apply N_hypothesis.
-    - apply well_formed_translate. assumption.
+    - apply well_formed_translate. wf_auto2.
       all: set_solver.
     - apply elem_of_map_2. assumption.
   * simp translate_pattern.
-    apply N_P1; apply well_formed_translate; try assumption.
+    apply N_P1; apply well_formed_translate; try assumption; wf_auto2.
     all: clear -H H0; set_solver.
   * simp translate_pattern.
-    apply N_P2; apply well_formed_translate; try assumption.
+    apply N_P2; apply well_formed_translate; try assumption; wf_auto2.
     all: clear -H H0; set_solver.
   * simp translate_pattern.
     apply N_P3; apply well_formed_translate; try assumption.
+    wf_auto2.
   * repeat case_match. intros Hin1 Hin2 Hs1 Hs2.
     eapply N_Modus_ponens. 3: apply IHML_proof_system1.
-    - apply well_formed_translate. by eapply proved_impl_wf.
+    - apply well_formed_translate. clear H3. apply proved_impl_wf in H. wf_auto2.
       1-2: clear -Hin1 Hin2; set_solver.
     - apply proved_impl_wf in H0 as H0'. clear -H0' Hin1 Hin2.
-      eapply well_formed_translate in H0'. now simp translate_pattern in H0'.
-      1-2: set_solver.
+      epose proof (well_formed_translate (patt_imp phi1 phi2) evs svs ed sd ltac:(wf_auto2) ltac:(set_solver) ltac:(set_solver)).
+      by simp translate_pattern in H.
     - set_solver.
     - set_solver.
     - lia.
@@ -1108,11 +1240,27 @@ Proof.
     2: set_solver.
     remember (evar_fresh (elements evs)) as freshX.
     assert (freshX ∉ named_evars (translate_pattern evs svs ed sd phi)). {
-      Search free_evars named_free_evars.
+      unfold named_evars.
+      destruct ed. lia.
+      pose proof (translate_pattern_avoids_evar_blacklist phi ({[evar_fresh_s evs]} ∪ evs) svs ed sd).
+      pose proof (named_free_evars_translate phi 1 ed sd evs svs ltac:(wf_auto2)
+      ltac:(lia)).
+      assert (freshX ∉ evs). { subst. apply set_evar_fresh_is_fresh'. }
+      simpl in H5. clear HeqoldX H1 H2 H3 H0. subst freshX.
+      admit. (* DOABLE *)
     }
-    (* alpha renaming needed *)
     rewrite <-translate_rename with (x := oldX).
-    Search (rename_free_evar () _ _).
+    all: auto; try lia. 2: wf_auto2. 2, 4: set_solver.
+    2: { destruct ed. lia. simpl. subst oldX. rewrite last_exists.
+         subst freshX. by simpl.
+       }
+    (* alpha renaming needed *)
+    eapply n_syllogism_meta.
+    1: apply N_Ex_quan.
+    subst freshX. rewrite <-translate_pred.
+    apply alpha_exists.
+    - apply well_formed_translate; auto. wf_auto2. set_solver.
+    - assumption.
   * admit.
   * admit.
   * admit.
