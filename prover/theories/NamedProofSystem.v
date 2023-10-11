@@ -1072,6 +1072,7 @@ Proof.
 Defined.
 
 Notation "A --->ₙ B" := (npatt_imp A B) (at level 75, right associativity).
+Notation "'ex' x , phi" := (npatt_exists x phi) (at level 80).
 
 Lemma n_A_impl_A Γ A :
   named_well_formed A = true ->
@@ -1181,13 +1182,28 @@ Proof.
   all: simpl; try rewrite Hwf1; try rewrite Hwf2; try rewrite Hwf3; reflexivity.
 Defined.
 
-Lemma translate_pred :
-  forall phi ed sd evs svs,
-  (translate_pattern evs svs ed sd phi) =
-  (translate_pattern ({[evar_fresh (elements evs)]} ∪ evs) svs (pred ed) sd phi).
-Proof.
+Fixpoint iterate_tail_rec {A : Type} (f : A -> A) (n : nat) (a : A) :=
+  match n with
+  | 0 => a
+  | S n' => iterate_tail_rec f n' (f a)
+  end.
 
-Admitted.
+Definition iterate_evars (evs : EVarSet) n :=
+  iterate_tail_rec (fun set => {[evar_fresh_s set]} ∪ set) n evs.
+
+Lemma evar_fresh_seq_last :
+  forall n evs,
+    n > 0 ->
+    last (evar_fresh_seq evs n) = Some (evar_fresh_s (iterate_evars evs (pred n))).
+Proof.
+  induction n; intros evs Hn; simpl. lia.
+  destruct n.
+  * by cbn.
+  * replace (last _) with (last (evar_fresh_seq ({[evar_fresh_s evs]} ∪ evs) (S n)))
+      by reflexivity.
+    rewrite IHn. lia.
+    reflexivity.
+Qed.
 
 Theorem proof_translation :
   forall Γ ϕ (H : Γ ⊢H ϕ) (evs : EVarSet) (svs : SVarSet) (ed sd : nat),
@@ -1229,7 +1245,6 @@ Proof.
            ltac:(set_solver) ltac:(set_solver)) as IH2.
       simp translate_pattern in IH2. apply IH2; lia.
   * simp translate_pattern. cbn.
-    pose proof (N_Ex_quan (set_map (translate_pattern evs svs ed sd) Γ)).
     fold (evar_open y 0 phi).
     remember (nth (ed + 0) (evar_fresh_seq evs (S ed + 0)) (evar_fresh [])) as oldX.
     erewrite <- (translate_rename) with (x := oldX).
@@ -1255,9 +1270,15 @@ Proof.
          subst freshX. by simpl.
        }
     (* alpha renaming needed *)
-    eapply n_syllogism_meta.
+    eapply n_syllogism_meta. 1-3: admit.
     1: apply N_Ex_quan.
-    subst freshX. rewrite <-translate_pred.
+    subst freshX.
+    (* TODO: here we need a theorem saying that translating the same pattern
+       with different bound evars is equi-provable - based on alpha-equivalence.
+       At this point the bound variables of the two translated patterns are
+       different (shifted in the second case).
+     *)
+    
     apply alpha_exists.
     - apply well_formed_translate; auto. wf_auto2. set_solver.
     - assumption.
