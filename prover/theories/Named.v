@@ -630,10 +630,7 @@ Defined.
 
   Section blacklist_translation.
 
-  Definition EvarBlacklist := gset evar.
-  Definition SvarBlacklist := gset svar.
-
-  Fixpoint shift_evars (eg : EvarBlacklist) (ϕ : NamedPattern) : NamedPattern :=
+  Fixpoint shift_evars (eg : EVarSet) (ϕ : NamedPattern) : NamedPattern :=
   match ϕ with
   | npatt_imp ϕ1 ϕ2 =>  npatt_imp (shift_evars eg ϕ1) (shift_evars eg ϕ2)
   | npatt_app ϕ1 ϕ2 => npatt_app (shift_evars eg ϕ1) (shift_evars eg ϕ2)
@@ -644,7 +641,7 @@ Defined.
   | ψ => ψ
   end.
 
-  Fixpoint shift_svars (sg : SvarBlacklist) (ϕ : NamedPattern) : NamedPattern :=
+  Fixpoint shift_svars (sg : SVarSet) (ϕ : NamedPattern) : NamedPattern :=
   match ϕ with
   | npatt_imp ϕ1 ϕ2 => npatt_imp (shift_svars sg ϕ1) (shift_svars sg ϕ2)
   | npatt_app ϕ1 ϕ2 => npatt_app (shift_svars sg ϕ1) (shift_svars sg ϕ2)
@@ -655,7 +652,7 @@ Defined.
   | ψ => ψ
   end.
 
-  Equations? named_evar_subst (eg : EvarBlacklist)
+  Equations? named_evar_subst (eg : EVarSet)
     (ϕ : NamedPattern) (x : evar) (ψ : NamedPattern)  : NamedPattern 
     by wf (nsize' ϕ) lt :=
     named_evar_subst eg (npatt_evar y) x ψ with (decide (x = y)) => {
@@ -676,7 +673,7 @@ Defined.
     rewrite nsize'_rename_free_evar. lia.
   Defined.
 
-  Equations? named_svar_subst (sg : SvarBlacklist)
+  Equations? named_svar_subst (sg : SVarSet)
     (ϕ : NamedPattern) (X : svar) (ψ : NamedPattern)  : NamedPattern 
     by wf (nsize' ϕ) lt :=
     named_svar_subst sg (npatt_svar Y) X ψ with (decide (X = Y)) => {
@@ -703,7 +700,7 @@ Defined.
     | S n' => f (iterate f n' a)
   end.
 
-  Equations? translate (eg : EvarBlacklist) (sg : SvarBlacklist) (ϕ : Pattern) : NamedPattern
+  Equations? translate (eg : EVarSet) (sg : SVarSet) (ϕ : Pattern) : NamedPattern
     by wf (size' ϕ) lt :=
     translate eg sg (patt_bound_evar n) :=
       npatt_evar (evar_fresh (elements (iterate (fun eg => {[evar_fresh (elements eg)]} ∪ eg) n eg)));
@@ -915,16 +912,55 @@ Defined.
     | _ => 0
     end.
 
+  Fixpoint iterate_tail_rec {A : Type} (f : A -> A) (n : nat) (a : A) :=
+    match n with
+    | 0 => a
+    | S n' => iterate_tail_rec f n' (f a)
+    end.
+
+  Definition iterate_vars {T} {_ : EqDecision T} {_ : Countable T}
+    (evs : gset T) (next : gset T -> T) n :=
+    iterate_tail_rec (fun set => {[next set]} ∪ set) n evs.
+  Definition iterate_evars evs n := iterate_vars evs evar_fresh_s n.
+  Definition iterate_svars svs n := iterate_vars svs svar_fresh_s n.
+
+  Lemma evar_fresh_seq_last :
+    forall n evs,
+      n > 0 ->
+      last (evar_fresh_seq evs n) = Some (evar_fresh_s (iterate_evars evs (pred n))).
+  Proof.
+    induction n; intros evs Hn; simpl. lia.
+    destruct n.
+    * by cbn.
+    * replace (last _) with (last (evar_fresh_seq ({[evar_fresh_s evs]} ∪ evs) (S n)))
+        by reflexivity.
+      rewrite IHn. lia.
+      reflexivity.
+  Qed.
+  Lemma svar_fresh_seq_last :
+    forall n svs,
+      n > 0 ->
+      last (svar_fresh_seq svs n) = Some (svar_fresh_s (iterate_svars svs (pred n))).
+  Proof.
+    induction n; intros svs Hn; simpl. lia.
+    destruct n.
+    * by cbn.
+    * replace (last _) with (last (svar_fresh_seq ({[svar_fresh_s svs]} ∪ svs) (S n)))
+        by reflexivity.
+      rewrite IHn. lia.
+      reflexivity.
+  Qed.
+
   (* We use option type to check that a sufficient number of names were given.
     NOTE: use None for dangling indices too?
     NOTE: do not use option type, because then inversion would be needed in the proofs,
     which is disallowed on Set. *)
-  Equations? namify (eg : EvarBlacklist) (sg : SvarBlacklist) (evars : list evar) (svars : list svar) (ϕ : Pattern) : NamedPattern
+  Equations? namify (eg : EVarSet) (sg : SVarSet) (evars : list evar) (svars : list svar) (ϕ : Pattern) : NamedPattern
     by wf (size' ϕ) lt :=
     namify eg sg _ _ (patt_bound_evar n) :=
-      npatt_evar (evar_fresh (elements (iterate (fun eg => {[evar_fresh (elements eg)]} ∪ eg) n eg)));
+      npatt_evar (evar_fresh (elements (iterate_evars eg n)));
     namify eg sg _ _ (patt_bound_svar N) :=
-      npatt_svar (svar_fresh (elements (iterate (fun sg => {[svar_fresh (elements sg)]} ∪ sg) N sg)));
+      npatt_svar (svar_fresh (elements (iterate_svars sg N)));
     namify _  _ _ _ (patt_free_evar x)   := npatt_evar x;
     namify _  _ _ _ (patt_free_svar X)   := npatt_svar X;
     namify _  _ _ _ (patt_sym s)         := npatt_sym s;
@@ -1003,16 +1039,15 @@ Defined.
   Theorem Private_no_negatives_namify :
     forall ϕ n,
     (no_negative_occurrence_db_b n ϕ ->
-    (forall eg sg evars svars X, X ∉ free_svars ϕ ->
+    (forall eg sg evars svars X,
+    X ∉ free_svars ϕ ->
     X ∈ sg ->
-    X ∉ svars ->
     named_no_negative_occurrence X (namify eg sg evars svars (svar_open X n ϕ))))
   /\
     (no_positive_occurrence_db_b n ϕ ->
     forall eg sg evars svars X,
     X ∉ free_svars ϕ ->
     X ∈ sg ->
-    X ∉ svars ->
     named_no_positive_occurrence X (namify eg sg evars svars (svar_open X n ϕ))).
   Proof.
     intros ϕ. remember (size' ϕ) as s.
@@ -1021,34 +1056,30 @@ Defined.
     * case_match; auto. set_solver.
     * cbn. case_match; simp namify.
     * cbn. case_match; simp namify; cbn; case_match; auto.
-      - clear H5. simp namify. cbn.
+      - (* clear H5. *) simp namify. cbn.
         case_match.
         + clear H5. apply X_eq_svar_fresh_impl_X_notin_S in e.
-          clear -e H2. induction n;set_solver.
+          clear -e H2. generalize dependent sg. induction n; cbn in *; intros.
+          ** set_solver.
+          ** eapply (IHn ({[svar_fresh_s sg]} ∪ sg)); set_solver.
         + auto.
       - simp namify. cbn. case_match; auto.
         clear -e H2. apply X_eq_svar_fresh_impl_X_notin_S in e.
-        induction (pred n); set_solver.
+        generalize dependent sg. induction (pred n); cbn in *; intros.
+        ** set_solver.
+        ** eapply (IHn0 ({[svar_fresh_s sg]} ∪ sg)); set_solver.
     * move: H0 => /andP [H1_1 H1_2]. cbn. simp namify.
       simpl. rewrite (proj1 (IHs _ _ _)); auto. lia. set_solver.
-      by apply take_notin.
       rewrite (proj1 (IHs _ _ _)); auto. lia. set_solver.
-      by apply drop_notin.
     * move: H0 => /andP [H1_1 H1_2]. cbn. simp namify.
       simpl. rewrite (proj2 (IHs _ _ _)); auto. lia. set_solver.
-      by apply take_notin.
       rewrite (proj2 (IHs _ _ _)); auto. lia. set_solver.
-      by apply drop_notin.
     * move: H0 => /andP [H1_1 H1_2]. cbn. simp namify.
       simpl. rewrite (proj2 (IHs _ _ _)); auto. lia. set_solver.
-      by apply take_notin.
       rewrite (proj1 (IHs _ _ _)); auto. lia. set_solver.
-      by apply drop_notin.
     * move: H0 => /andP [H1_1 H1_2]. cbn.
       simpl. rewrite (proj1 (IHs _ _ _)); auto. lia. set_solver.
-      by apply take_notin.
       rewrite (proj2 (IHs _ _ _)); auto. lia. set_solver.
-      by apply drop_notin.
     * cbn. destruct evars; simp namify; simpl.
       - rewrite svar_open_evar_open_comm. rewrite (proj1 (IHs _ _ _)); auto.
         rewrite evar_open_size'. lia.
@@ -1077,13 +1108,12 @@ Defined.
         pose proof (set_svar_fresh_is_fresh' sg). set_solver.
         set_solver. by case_match.
       - rewrite svar_open_bsvar_subst_higher; auto. lia. simpl.
-        cbn in H2.
+        case_match. by auto.
         rewrite (proj1 (IHs _ _ _)); auto.
         rewrite svar_open_size'. lia.
         apply negative_occ_svar_open; auto. lia.
         pose proof (free_svars_svar_open ϕ s0 0). set_solver.
-        pose proof (set_svar_fresh_is_fresh' sg). set_solver.
-        by case_match.
+        (* set_solver. *)
     * cbn. destruct svars; simp namify; simpl.
       - rewrite svar_open_bsvar_subst_higher; auto. lia. simpl.
         cbn in H2.
@@ -1094,13 +1124,12 @@ Defined.
         pose proof (set_svar_fresh_is_fresh' sg). set_solver.
         set_solver. by case_match.
       - rewrite svar_open_bsvar_subst_higher; auto. lia. simpl.
-        cbn in H2.
+        cbn in H2. case_match. by auto.
         rewrite (proj2 (IHs _ _ _)); auto.
         rewrite svar_open_size'. lia.
         apply positive_occ_svar_open; auto. lia.
         pose proof (free_svars_svar_open ϕ s0 0). set_solver.
-        pose proof (set_svar_fresh_is_fresh' sg). set_solver.
-        by case_match.
+        (* set_solver. *)
   Defined.
 
   Corollary no_positives_namify :
@@ -1109,7 +1138,6 @@ Defined.
     forall eg sg evars svars X,
     X ∉ free_svars ϕ ->
     X ∈ sg ->
-    X ∉ svars ->
     named_no_positive_occurrence X (namify eg sg evars svars (svar_open X n ϕ)).
   Proof.
     apply Private_no_negatives_namify.
@@ -1120,44 +1148,191 @@ Defined.
     no_negative_occurrence_db_b n ϕ ->
     (forall eg sg evars svars X, X ∉ free_svars ϕ ->
     X ∈ sg ->
-    X ∉ svars ->
     named_no_negative_occurrence X (namify eg sg evars svars (svar_open X n ϕ))).
   Proof.
     apply Private_no_negatives_namify.
   Defined.
 
+  Lemma count_ebinders_evar_open :
+    forall ϕ n x, count_ebinders ϕ = count_ebinders (evar_open x n ϕ).
+  Proof.
+    induction ϕ; intros m y; cbn; auto.
+    * by case_match.
+    * by erewrite IHϕ1, IHϕ2.
+    * by erewrite IHϕ1, IHϕ2.
+    * by erewrite IHϕ.
+    * by erewrite IHϕ.
+  Defined.
+
+  Lemma count_sbinders_evar_open :
+    forall ϕ n x, count_sbinders ϕ = count_sbinders (evar_open x n ϕ).
+  Proof.
+    induction ϕ; intros m y; cbn; auto.
+    * by case_match.
+    * by erewrite IHϕ1, IHϕ2.
+    * by erewrite IHϕ1, IHϕ2.
+    * by erewrite IHϕ.
+    * by erewrite IHϕ.
+  Defined.
+
+  Lemma count_sbinders_svar_open :
+    forall ϕ N X, count_sbinders ϕ = count_sbinders (svar_open X N ϕ).
+  Proof.
+    induction ϕ; intros M Y; cbn; auto.
+    * by case_match.
+    * by erewrite IHϕ1, IHϕ2.
+    * by erewrite IHϕ1, IHϕ2.
+    * by erewrite IHϕ.
+    * by erewrite IHϕ.
+  Defined.
+
+  Lemma count_ebinders_svar_open :
+    forall ϕ N X, count_ebinders ϕ = count_ebinders (svar_open X N ϕ).
+  Proof.
+    induction ϕ; intros M Y; cbn; auto.
+    * by case_match.
+    * by erewrite IHϕ1, IHϕ2.
+    * by erewrite IHϕ1, IHϕ2.
+    * by erewrite IHϕ.
+    * by erewrite IHϕ.
+  Defined.
+
+  Theorem namify_svar_open :
+    forall φ evars svars eg sg n X,
+      X ∈ sg ->
+      well_formed_closed_mu_aux φ (S n) ->
+      free_svars φ ⊆ sg ->
+      length svars ≥ count_sbinders φ ->
+      list_to_set svars ⊆ sg ->
+      namify eg sg evars svars (svar_open X n φ) =
+      rename_free_svar (namify eg sg evars svars φ) X (svar_fresh_s (iterate_svars sg n)).
+  Proof.
+    intros φ. remember (size' φ) as s.
+    assert (size' φ <= s) by lia. clear Heqs. revert φ H.
+    induction s; destruct φ; intros; simpl in *; try lia; try reflexivity.
+    * cbn. simp namify. cbn. case_match. 2: reflexivity.
+      subst x. admit. (* DOABLE *)
+    * cbn. simp namify. cbn. repeat case_match; auto; simp namify; simpl.
+      - admit. (* DOABLE - iterate_svars can't be equal when their number is not equal *)
+      - subst. exfalso. apply n1. reflexivity.
+      - admit. (* DOABLE - iterate_svars can't be equal when their number is not equal *)
+      - lia.
+      - congruence.
+      - congruence.
+      - congruence.
+      - congruence.
+    * simpl. cbn. simp namify. simpl.
+      fold (svar_open X n φ1). fold (svar_open X n φ2).
+      rewrite <-IHs, <-IHs.
+      rewrite -count_ebinders_svar_open.
+      rewrite -count_sbinders_svar_open. reflexivity.
+      all: wf_auto2; try rewrite drop_length; try rewrite take_length; try lia.
+      1, 3: set_solver.
+      pose proof (drop_subseteq svars); set_solver.
+      pose proof (take_subseteq svars); set_solver.
+    * simpl. cbn. simp namify. simpl.
+      fold (svar_open X n φ1). fold (svar_open X n φ2).
+      rewrite <-IHs, <-IHs.
+      rewrite -count_ebinders_svar_open.
+      rewrite -count_sbinders_svar_open. reflexivity.
+      all: wf_auto2; try rewrite drop_length; try rewrite take_length; try lia.
+      1, 3: set_solver.
+      pose proof (drop_subseteq svars); set_solver.
+      pose proof (take_subseteq svars); set_solver.
+    * simpl. cbn. destruct evars; simp namify; simpl; fold (svar_open X n φ).
+      all: rewrite svar_open_evar_open_comm IHs; try by auto.
+      1,4: rewrite evar_open_size'; lia.
+      2,4: rewrite -count_sbinders_evar_open; lia.
+      1-2: rewrite free_svars_evar_open; set_solver.
+    * simpl. cbn. destruct svars; simp namify; simpl; fold (svar_open X (S n) φ).
+      all: rewrite svar_open_comm_higher; try lia; simpl pred; case_match; auto.
+      1, 2: simpl in H3; lia.
+      1: {
+        admit. (* DOABLE: s0 is in sg, while it is also fresh *)
+      }
+      rewrite <- IHs. reflexivity.
+      - rewrite svar_open_size'; lia.
+      - assumption.
+      - apply wfc_mu_aux_body_mu_imp3. lia. assumption.
+      - pose proof (free_svars_svar_open φ s0 0). set_solver.
+      - rewrite -count_sbinders_svar_open. simpl in H3. lia.
+      - set_solver.
+  Admitted.
+
+  Lemma rename_well_formed :
+    forall φ x y, named_well_formed φ ->
+      y ∉ named_bound_svars φ ->
+      named_well_formed (rename_free_svar φ y x).
+  Proof.
+    induction φ; intros; simpl; try reflexivity.
+    * by case_match.
+    * apply andb_true_iff in H as [? ?].
+      rewrite IHφ1; auto. set_solver. rewrite IHφ2; auto. set_solver.
+    * apply andb_true_iff in H as [? ?].
+      rewrite IHφ1; auto. set_solver. rewrite IHφ2; auto. set_solver.
+    * rewrite IHφ; auto.
+    * case_match; auto.
+      simpl in *. apply andb_true_iff in H as [? ?].
+      rewrite IHφ; auto. set_solver.
+      admit.
+  Admitted.
+
   Theorem namify_well_formed :
     forall ϕ evars svars eg sg,
-      well_formed_positive ϕ ->
+      well_formed ϕ ->
       free_svars ϕ ⊆ sg ->
+      list_to_set svars ⊆ sg ->
       list_to_set svars ## free_svars ϕ ->
+      length svars ≥ count_sbinders ϕ ->
       named_well_formed (namify eg sg evars svars ϕ).
   Proof.
     intros ϕ. remember (size' ϕ) as s.
     assert (size' ϕ <= s) by lia. clear Heqs. revert ϕ H.
     induction s; destruct ϕ; intros; simpl in *; try lia; try reflexivity.
     * simp namify. simpl. move: H0 =>/andP [H0_1 H0_2].
-      rewrite IHs; auto. lia. set_solver. admit.
-      rewrite IHs; auto. lia. set_solver. admit.
+      rewrite IHs; auto. lia. wf_auto2. set_solver.
+      { clear - H2. pose proof (take_subseteq svars (count_sbinders ϕ1)). set_solver. }
+      { clear - H3. pose proof (take_subseteq svars (count_sbinders ϕ1)). set_solver. }
+      rewrite take_length; lia.
+      rewrite IHs; auto. lia. wf_auto2. set_solver.
+      { clear - H2. pose proof (drop_subseteq svars (count_sbinders ϕ1)). set_solver. }
+      { clear - H3. pose proof (drop_subseteq svars (count_sbinders ϕ1)). set_solver. }
+      rewrite drop_length; lia.
     * simp namify. simpl. move: H0 =>/andP [H0_1 H0_2].
-      rewrite IHs; auto. lia. set_solver. admit.
-      rewrite IHs; auto. lia. set_solver. admit.
+      rewrite IHs; auto. lia. wf_auto2. set_solver.
+      { clear - H2. pose proof (take_subseteq svars (count_sbinders ϕ1)). set_solver. }
+      { clear - H3. pose proof (take_subseteq svars (count_sbinders ϕ1)). set_solver. }
+      rewrite take_length; lia.
+      rewrite IHs; auto. lia. wf_auto2. set_solver.
+      { clear - H2. pose proof (drop_subseteq svars (count_sbinders ϕ1)). set_solver. }
+      { clear - H3. pose proof (drop_subseteq svars (count_sbinders ϕ1)). set_solver. }
+      rewrite drop_length; lia.
     * destruct evars; simp namify; simpl; rewrite IHs; auto.
-      1,4: rewrite evar_open_size'; lia.
-      1-4: by rewrite free_svars_evar_open.
+      1,6: rewrite evar_open_size'; lia.
+      1,5: wf_auto2.
+      1,2,4,5: by rewrite free_svars_evar_open.
+      1-2: rewrite -count_sbinders_evar_open; lia.
     * destruct svars; simp namify; simpl.
       1-2: move: H0 => /andP [H0_1 H0_2].
-      - rewrite no_negatives_namify; auto.
-        admit.
-        1-2: set_solver.
-        (* simpl. rewrite IHs; auto. rewrite svar_open_size'. lia. *)
-        pose proof (free_svars_svar_open ϕ (svar_fresh (elements sg)) 0).
-        (* clear -H0 H1. set_solver. *) admit.
-        (* set_solver. *)
-      - rewrite no_negatives_namify; auto.
-        admit.
-        simpl in H2.
-        (* simpl. rewrite IHs; auto. rewrite svar_open_size'. lia. *)
+      - simpl in H4. lia.
+      - rewrite no_negatives_namify; auto. wf_auto2.
+        set_solver. set_solver.
+        rewrite namify_svar_open.
+        1: set_solver.
+        1: wf_auto2.
+        1: set_solver.
+        1: simpl in H4; lia.
+        1: set_solver.
+        
+        (* TODO: this won't work this way. We have to make sure, 
+           that there is no accidental capture in svars *)
+        rewrite rename_well_formed; auto.
+        2: 
+        pose proof (free_svars_svar_open ϕ s0 0) as H0.
+        simpl. rewrite IHs; auto.
+        + rewrite svar_open_size'. lia.
+        + clear -H0 H1. set_solver.
+        + set_solver.
   Admitted.
 
   (* NOTE: do not use option type, because then inversion would be needed in the proofs,
@@ -1211,50 +1386,6 @@ Defined.
       end
   | _ => (el1, sl1)
   end.
-
-  Lemma count_ebinders_evar_open :
-    forall ϕ n x, count_ebinders ϕ = count_ebinders (evar_open x n ϕ).
-  Proof.
-    induction ϕ; intros m y; cbn; auto.
-    * by case_match.
-    * by erewrite IHϕ1, IHϕ2.
-    * by erewrite IHϕ1, IHϕ2.
-    * by erewrite IHϕ.
-    * by erewrite IHϕ.
-  Defined.
-
-  Lemma count_sbinders_evar_open :
-    forall ϕ n x, count_sbinders ϕ = count_sbinders (evar_open x n ϕ).
-  Proof.
-    induction ϕ; intros m y; cbn; auto.
-    * by case_match.
-    * by erewrite IHϕ1, IHϕ2.
-    * by erewrite IHϕ1, IHϕ2.
-    * by erewrite IHϕ.
-    * by erewrite IHϕ.
-  Defined.
-
-  Lemma count_sbinders_svar_open :
-    forall ϕ N X, count_sbinders ϕ = count_sbinders (svar_open X N ϕ).
-  Proof.
-    induction ϕ; intros M Y; cbn; auto.
-    * by case_match.
-    * by erewrite IHϕ1, IHϕ2.
-    * by erewrite IHϕ1, IHϕ2.
-    * by erewrite IHϕ.
-    * by erewrite IHϕ.
-  Defined.
-
-  Lemma count_ebinders_svar_open :
-    forall ϕ N X, count_ebinders ϕ = count_ebinders (svar_open X N ϕ).
-  Proof.
-    induction ϕ; intros M Y; cbn; auto.
-    * by case_match.
-    * by erewrite IHϕ1, IHϕ2.
-    * by erewrite IHϕ1, IHϕ2.
-    * by erewrite IHϕ.
-    * by erewrite IHϕ.
-  Defined.
 
   Lemma combine_evar_evar_open :
   forall ϕ evarsϕ evarsψ svarsϕ svarsψ n y x,

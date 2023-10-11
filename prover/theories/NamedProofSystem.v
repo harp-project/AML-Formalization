@@ -1182,29 +1182,6 @@ Proof.
   all: simpl; try rewrite Hwf1; try rewrite Hwf2; try rewrite Hwf3; reflexivity.
 Defined.
 
-Fixpoint iterate_tail_rec {A : Type} (f : A -> A) (n : nat) (a : A) :=
-  match n with
-  | 0 => a
-  | S n' => iterate_tail_rec f n' (f a)
-  end.
-
-Definition iterate_evars (evs : EVarSet) n :=
-  iterate_tail_rec (fun set => {[evar_fresh_s set]} ∪ set) n evs.
-
-Lemma evar_fresh_seq_last :
-  forall n evs,
-    n > 0 ->
-    last (evar_fresh_seq evs n) = Some (evar_fresh_s (iterate_evars evs (pred n))).
-Proof.
-  induction n; intros evs Hn; simpl. lia.
-  destruct n.
-  * by cbn.
-  * replace (last _) with (last (evar_fresh_seq ({[evar_fresh_s evs]} ∪ evs) (S n)))
-      by reflexivity.
-    rewrite IHn. lia.
-    reflexivity.
-Qed.
-
 Theorem proof_translation :
   forall Γ ϕ (H : Γ ⊢H ϕ) (evs : EVarSet) (svs : SVarSet) (ed sd : nat),
     match vars_of_proof H with
@@ -1278,10 +1255,10 @@ Proof.
        At this point the bound variables of the two translated patterns are
        different (shifted in the second case).
      *)
-    
+    (* 
     apply alpha_exists.
     - apply well_formed_translate; auto. wf_auto2. set_solver.
-    - assumption.
+    - assumption. *) admit.
   * admit.
   * admit.
   * admit.
@@ -1296,6 +1273,10 @@ Proof.
   * admit.
   * admit.
   * admit.
-Defined.
+Abort.
+
+(** Whitelist-based translation *)
+
+Fixpoint analise_proof {Γ φ} (H : Γ ⊢H φ) : :=
 
 End translation.
