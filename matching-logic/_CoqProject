@@ -85,3 +85,5 @@ src/OPML/OpmlSignature.v
 src/OPML/OpmlPattern.v
 src/OPML/OpmlModel.v
 src/OPML/OpmlAmlRelSpec.v
+src/OPML/OpmlExamples.v
+
