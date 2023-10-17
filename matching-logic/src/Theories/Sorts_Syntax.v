@@ -7,9 +7,9 @@ From Coq.Classes Require Import Morphisms_Prop.
 
 From stdpp Require Import base sets.
 
-From MatchingLogic Require Import Logic.
+From MatchingLogic Require Export Logic.
 Import MatchingLogic.Logic.Notations.
-Require Import MatchingLogic.Theories.Definedness_Syntax.
+Require Export MatchingLogic.Theories.Definedness_Syntax.
 
 Import MatchingLogic.Theories.Definedness_Syntax.Notations.
 Import BoundVarSugar.

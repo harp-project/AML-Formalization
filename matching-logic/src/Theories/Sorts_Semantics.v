@@ -7,7 +7,7 @@ From Coq.Classes Require Import Morphisms_Prop.
 
 From stdpp Require Import base sets.
 
-From MatchingLogic Require Import
+From MatchingLogic Require Export
     Logic
     Utils.extralibrary
     Theories.Definedness_Syntax

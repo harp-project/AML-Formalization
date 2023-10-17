@@ -10,11 +10,11 @@ From Coq.Classes Require Import Morphisms_Prop.
 From Coq.Unicode Require Import Utf8.
 From Coq.micromega Require Import Lia.
 
-From MatchingLogic Require Import Logic ProofMode.MLPM.
-From MatchingLogic.Theories Require Import Definedness_Syntax Definedness_ProofSystem.
-From MatchingLogic.Utils Require Import stdpp_ext.
+From MatchingLogic Require Export Logic ProofMode.MLPM.
+From MatchingLogic.Theories Require Export Definedness_Syntax Definedness_ProofSystem.
+From MatchingLogic.Utils Require Export stdpp_ext.
 
-Require Import MatchingLogic.wftactics.
+Require Export MatchingLogic.wftactics.
 
 From stdpp Require Import base fin_sets sets propset proof_irrel option list.
 
@@ -28,7 +28,7 @@ Set Default Proof Mode "Classic".
 Require Import MatchingLogic.Theories.DeductionTheorem.
 
 Require MatchingLogic.Theories.Sorts_Syntax.
-Import MatchingLogic.Theories.Sorts_Syntax.Notations.
+Export MatchingLogic.Theories.Sorts_Syntax.Notations.
 
 Open Scope ml_scope.
 Open Scope string_scope.
