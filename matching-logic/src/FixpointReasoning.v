@@ -138,7 +138,7 @@ Section with_signature.
 
   (* mu X. base \/ step X *)
   (* [Nats] = mu X. 0 \/ succ X *)
-  (* [Nats] = \{ x | \ex x0,x1,..x_n . x0 \in 0 /\ x(i+1) \in succ xi }*)
+  (* [Nats] = { x | \ex x_0,x_1,..x_n . x_0 \in 0 /\ x_{i+1} \in succ x_i /\ x = x_n } *)
   (*  0, 1, 2,... x*)
   Section inductive_generation.
     Context (base step : Pattern).
