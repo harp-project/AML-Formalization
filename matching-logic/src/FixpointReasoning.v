@@ -144,7 +144,7 @@ Section with_signature.
     Context (base step : Pattern).
 
     Let patt_ind_gen_body := (patt_or (nest_mu base) (patt_app (nest_mu step) (patt_bound_svar 0))).
-    Let patt_ind_gen_simple_body := (patt_or base (patt_app step (patt_free_svar (fresh_svar patt_ind_gen_body)))).
+    (* Let patt_ind_gen_simple_body := (patt_or base (patt_app step (patt_free_svar (fresh_svar patt_ind_gen_body)))). *)
 
     Definition patt_ind_gen := patt_mu patt_ind_gen_body.
 
