@@ -278,10 +278,9 @@ Section with_signature.
       Lemma witnessing_sequence_middle (m : Domain M) (l : list (Domain M)) (n : nat) (m' : Domain M) :
         is_witnessing_sequence m l ->
         l !! n = Some m' ->
-        m' ∈ @eval Σ M ρ base ->
         is_witnessing_sequence m' (drop n l).
       Proof.
-        intros [[lst [Hlst Hbase] ] [Hhd Hfa] ] Hm' Hbase'.
+        intros [[lst [Hlst Hbase] ] [Hhd Hfa] ] Hm'.
         split.
         { exists lst. split.
           rewrite -> last_drop with (x := lst).
@@ -301,6 +300,8 @@ Section with_signature.
         }
       Qed.
 
+      (* TODO: refactor, because this is a corollary of 'witnessing_sequence_middle'
+         by using n = 1 *)
       Lemma witnessing_sequence_tail (m : Domain M) (l : list (Domain M)) (m' : Domain M) :
         is_witnessing_sequence m l ->
         head (tail l) = Some m' ->
@@ -322,7 +323,6 @@ Section with_signature.
         destruct Hw as [Hw1 Hw2].
         apply Hw2.
       Qed.
-      
 
       Lemma is_witnessing_sequence_iff_is_witnessing_sequence_old_reverse (m : Domain M) (l : list (Domain M)) :
         is_witnessing_sequence m l <-> is_witnessing_sequence_old m (reverse l).
@@ -436,6 +436,8 @@ Section with_signature.
       Lemma witnessing_sequence_extend (m m' : Domain M) (l : list (Domain M)) :
         (is_witnessing_sequence m l
          /\ (∃ step', step' ∈ eval ρ step /\ m' ∈ app_interp _ step' m)
+              (* TODO: would this be easier to use/prove/understand to
+                have `m' ∈ app_ext (eval ρ step) {[m]}` instead? *)
         ) <-> (is_witnessing_sequence m' (m'::l) /\ l ≠ []).
       Proof.
         split.
@@ -674,6 +676,8 @@ Section with_signature.
       Definition witnessed_elements_old_of_max_len len : propset (Domain M) :=
         PropSet (λ m, ∃ l, is_witnessing_sequence_old m l /\ length l <= len).
 
+      (* TODO: S len is needed? There is no elements that have an empty
+               witnessing sequence. *)
       Lemma witnessed_elements_old_of_max_len_included_in_interp len:
         (witnessed_elements_old_of_max_len (S len)) ⊆ (@eval Σ M ρ patt_ind_gen).
       Proof.
@@ -1067,7 +1071,7 @@ Section with_signature.
               inversion H. reflexivity.
             }
             subst lst.
-            specialize (Hwsm Hlst2).
+            specialize (Hwsm).
             clear Hm' Hlst1.
 
             destruct (drop (length l₂ - 1) l₁) eqn:Heq.
