@@ -256,6 +256,8 @@ Section with_signature.
 
          end).
 
+      (* This sequence is the reversed version from the informal introduction in line 139 
+         For example, for Nat model elements, the witnessing sequence for 5 is [5,4,3,2,1,0] *)
       Definition is_witnessing_sequence (m : Domain M) (l : list (Domain M)) :=
         (∃ lst, last l = Some lst /\ lst ∈ @eval Σ M ρ base)
           /\
