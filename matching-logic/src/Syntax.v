@@ -790,7 +790,7 @@ Section with_signature.
         apply orb_false_iff in Hnoneg.
         destruct_and!.
         pose proof (IH1 := wfp_neg_free_svar_subst ϕ1 ψ X ltac:(assumption)).
-        feed specialize IH1.
+        ospecialize* IH1.
         { assumption. }
         { assumption. }
         { assumption. }
@@ -815,7 +815,7 @@ Section with_signature.
         apply orb_false_iff in Hnoneg.
         destruct_and!.
         pose proof (IH1 := wfp_free_svar_subst ϕ1 ψ X ltac:(assumption)).
-        feed specialize IH1.
+        ospecialize* IH1.
         { assumption. }
         { assumption. }
         { assumption. }
@@ -1727,10 +1727,12 @@ Section with_signature.
   .
   Proof.
     move: dbi.
-    induction ϕ; cbn; intros dbi Hwf Hxϕ Hϕdbi Hcontra; try set_solver.
+    induction ϕ; cbn; intros dbi Hwf Hxϕ Hϕdbi Hcontra.
+    1,2,3: set_solver.
     {
       repeat case_match; cbn in *; try set_solver; subst; lia.
     }
+    1: set_solver.
     {
       unfold is_true in Hwf.
       rewrite andb_true_iff in Hwf.
@@ -1740,6 +1742,7 @@ Section with_signature.
       rewrite elem_of_union in Hcontra.
       destruct Hcontra; naive_solver.
     }
+    1: set_solver.
     {
       unfold is_true in Hwf.
       rewrite andb_true_iff in Hwf.
@@ -1749,7 +1752,8 @@ Section with_signature.
       rewrite elem_of_union in Hcontra.
       destruct Hcontra; naive_solver.
     }
-    { 
+    1: set_solver.
+    {
       eapply IHϕ.
       { apply Hwf. }
       { exact Hxϕ. }
@@ -1838,7 +1842,7 @@ Section with_signature.
       rewrite Nat.eqb_eq in IHϕ.
       case_match; cbn; try reflexivity.
       specialize (IHϕ Hwf Hfr).
-      feed specialize IHϕ.
+      ospecialize* IHϕ.
       {
         eapply bound_svar_is_lt_lt.
         2: apply H.
@@ -2266,11 +2270,15 @@ Section with_signature.
     induction ϕ; cbn; intros banned n' H; try reflexivity.
     {
       rewrite orb_false_iff in H.
-      naive_solver.
+      rewrite IHϕ1. apply H.
+      rewrite IHϕ2. apply H.
+      reflexivity.
     }
     {
       rewrite orb_false_iff in H.
-      naive_solver.
+      rewrite IHϕ1. apply H.
+      rewrite IHϕ2. apply H.
+      reflexivity.
     }
     {
       naive_solver.
@@ -2293,9 +2301,17 @@ Section with_signature.
     move: depth1 depth2 banned.
     induction ϕ; cbn; intros depth1 depth2 banned Hlt H;
       try reflexivity.
-    { naive_solver. }
-    { naive_solver. }
-    { naive_solver. }
+    {
+      destruct_and! H. erewrite IHϕ1, IHϕ2; try eassumption.
+      reflexivity.
+    }
+    {
+      destruct_and! H. erewrite IHϕ1, IHϕ2; try eassumption.
+      reflexivity.
+    }
+    {
+      erewrite IHϕ; try eassumption. reflexivity.
+    }
     {
       repeat case_match; subst; try lia; try assumption.
       {
@@ -2320,11 +2336,12 @@ Section with_signature.
   .
   Proof.
     move: dbi dbi'.
-    induction ϕ; cbn; intros dbi dbi' Hdbidbi' Hwf Hxϕ Hϕdbi Hcontra; try set_solver.
+    induction ϕ; cbn; intros dbi dbi' Hdbidbi' Hwf Hxϕ Hϕdbi Hcontra.
+    1-3: set_solver.
     {
       repeat case_match; cbn in *; try set_solver; subst; try lia.
-      { congruence. }
     }
+    1: set_solver.
     {
       unfold is_true in Hwf.
       rewrite andb_true_iff in Hwf.
@@ -2335,6 +2352,7 @@ Section with_signature.
       rewrite elem_of_union in Hcontra.
       destruct Hcontra; naive_solver.
     }
+    1: set_solver.
     {
       unfold is_true in Hwf.
       rewrite andb_true_iff in Hwf.
@@ -2345,6 +2363,7 @@ Section with_signature.
       rewrite elem_of_union in Hcontra.
       destruct Hcontra; naive_solver.
     }
+    1: set_solver.
     { 
       destruct dbi;[lia|].
       eapply bound_svar_is_banned_under_mus_lt with (depth2 := (S (S dbi))) in Hϕdbi.
@@ -2432,7 +2451,8 @@ Section with_signature.
   Proof.
     unfold evar_is_fresh_in.
     move: a b.
-    induction ϕ; cbn; intros a b Hab H; try set_solver.
+    induction ϕ; cbn; intros a b Hab H.
+    2-5,7: set_solver.
     {
       destruct (decide (x0 = x)); subst; try lia; try set_solver.
     }
@@ -2445,6 +2465,11 @@ Section with_signature.
       specialize (IHϕ1 a b Hab ltac:(lia)).
       specialize (IHϕ2 a b Hab ltac:(lia)).
       set_solver.
+    }
+    {
+      eapply IHϕ.
+      2: apply H.
+      lia.
     }
     {
       eapply IHϕ.
@@ -2638,10 +2663,16 @@ Section with_signature.
       assumption.
     }
     {
-      naive_solver.
+      destruct_and! H3.
+      rewrite IHϕ1; try assumption.
+      rewrite IHϕ2; try assumption.
+      reflexivity.
     }
     {
-      naive_solver.
+      destruct_and! H3.
+      rewrite IHϕ1; try assumption.
+      rewrite IHϕ2; try assumption.
+      reflexivity.
     }
     {
       naive_solver.
@@ -2783,10 +2814,16 @@ Section with_signature.
       repeat case_match; cbn in *; try reflexivity.
     }
     {
-      naive_solver.
+      destruct_and! H.
+      rewrite IHϕ1; try assumption.
+      rewrite IHϕ2; try assumption.
+      reflexivity.
     }
     {
-      naive_solver.
+      destruct_and! H.
+      rewrite IHϕ1; try assumption.
+      rewrite IHϕ2; try assumption.
+      reflexivity.
     }
     {
       naive_solver.
@@ -2813,7 +2850,22 @@ Section with_signature.
   .
   Proof.
     move: level dbi n.
-    induction ϕ; cbn; intros level dbi n' H1 H2; try reflexivity; try naive_bsolver.
+    induction ϕ; cbn; intros level dbi n' H1 H2; try reflexivity.
+    {
+      destruct_and!.
+      rewrite IHϕ1; try assumption.
+      rewrite IHϕ2; try assumption.
+      reflexivity.
+    }
+    {
+      destruct_and!.
+      rewrite IHϕ1; try assumption.
+      rewrite IHϕ2; try assumption.
+      reflexivity.
+    }
+    {
+      naive_bsolver.
+    }
     {
       destruct level.
       {

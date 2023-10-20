@@ -325,7 +325,7 @@ Proof.
   intros wfx wfxs.
   induction xs; simpl.
   - assumption.
-  - feed specialize IHxs.
+  - ospecialize* IHxs.
     { unfold Pattern.wf in wfxs. simpl in wfxs. destruct_and!. assumption. }
     apply well_formed_and.
     { unfold Pattern.wf in wfxs. simpl in wfxs. destruct_and!. assumption. }

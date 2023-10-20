@@ -405,7 +405,7 @@ Proof.
   assert(S14: Γ ⊢i (subst_ctx AC (ex, (b0 and φ))) ---> (⌈ φ ⌉) using i).
   {
     pose proof (Htmp := prf_prop_ex_iff Γ AC (b0 and φ) x).
-    feed specialize Htmp.
+    ospecialize* Htmp.
     { unfold evar_is_fresh_in in *.
       rewrite free_evars_subst_ctx. clear -Hx1' Hx'2. simpl. set_solver.
     }
@@ -581,7 +581,7 @@ Defined.
     assert (S5: Γ ⊢ (phi1 $ psi) ---> ((phi2 $ psi) or (⌈ ! ψ ⌉ $ psi))).
     {
       pose proof (Htmp := prf_prop_or_iff Γ (ctx_app_l box psi ltac:(assumption)) phi2 (⌈! ψ ⌉)).
-      feed specialize Htmp.
+      ospecialize* Htmp.
       { wf_auto2. }
       { wf_auto2. }
       simpl in Htmp.
@@ -705,7 +705,7 @@ Defined.
     assert (S5: Γ ⊢ (psi $ phi1) ---> ((psi $ phi2) or (psi $ ⌈ ! ψ ⌉))).
     {
       pose proof (Htmp := prf_prop_or_iff Γ (ctx_app_r psi box ltac:(assumption)) phi2 (⌈! ψ ⌉)).
-      feed specialize Htmp.
+      ospecialize* Htmp.
       { wf_auto2. }
       { wf_auto2. }
       simpl in Htmp.
@@ -845,7 +845,7 @@ Defined.
 
       destruct Hpf as [Hpf2 Hpf3 Hpf4 Hpf5].
       simpl in Hpf2, Hpf3, Hpf4.
-      feed specialize IHpf1.
+      ospecialize* IHpf1.
       {
         constructor; simpl.
         { set_solver. }
@@ -866,7 +866,7 @@ Defined.
         }
       }
       { assumption. }
-      feed specialize IHpf2.
+      ospecialize* IHpf2.
       {
         constructor; simpl.
         { set_solver. }
@@ -912,7 +912,7 @@ Defined.
       (*
       simpl in HnoExGen.
       case_match;[congruence|]. *)
-      feed specialize IHpf.
+      ospecialize* IHpf.
       {
         constructor; simpl.
         { clear -Hpf2. set_solver. }
@@ -987,7 +987,7 @@ Defined.
         destruct_and!. split_and!; auto. }
       destruct Hpf as [Hpf2 Hpf3 Hpf4 Hpf5].
       simpl in Hpf2,Hpf3,Hpf4.
-      feed specialize IHpf.
+      ospecialize* IHpf.
       {
         constructor; simpl.
         { set_solver. }
@@ -1021,7 +1021,7 @@ Defined.
 
       destruct Hpf as [Hpf2 Hpf3 Hpf4 Hpf5].
       simpl in Hpf2,Hpf3,Hpf4,Hpf5.
-      feed specialize IHpf.
+      ospecialize* IHpf.
       {
         constructor; simpl.
         { set_solver. }
@@ -1039,7 +1039,7 @@ Defined.
     - (* Set variable substitution *)
       destruct Hpf as [Hpf2 Hpf3 Hpf4 Hpf5].
       simpl in Hpf2, Hpf3, Hpf4.
-      feed specialize IHpf.
+      ospecialize* IHpf.
       {
         constructor; simpl.
         { exact Hpf2. }
@@ -3082,7 +3082,7 @@ Proof.
 
   unfold exists_quantify.
   pose proof (Htmp := membership_exists Γ x (evar_quantify y 0 ⌈ patt_free_evar y and φ ⌉) HΓ).
-  feed specialize Htmp.
+  ospecialize* Htmp.
   { 
       unfold exists_quantify.
       unfold well_formed. split_and!.
@@ -3708,7 +3708,7 @@ Proof.
     { wf_auto2. }
     {
       pose proof (Htmp := equality_elimination_basic_mfpath Γ ψ Top C HΓ ltac:(wf_auto2) ltac:(wf_auto2)).
-      feed specialize Htmp.
+      ospecialize* Htmp.
       {
         unfold PC_wf. exact HwfC.
       }
@@ -3725,7 +3725,7 @@ Proof.
     { wf_auto2. }
     {
       pose proof (Htmp := equality_elimination_basic_mfpath Γ ψ Bot C HΓ ltac:(wf_auto2) ltac:(wf_auto2)).
-      feed specialize Htmp.
+      ospecialize* Htmp.
       {
         unfold PC_wf. exact HwfC.
       }
@@ -4224,7 +4224,7 @@ Proof.
   toMLGoal.
   { wf_auto2. }
   pose proof (H := membership_imp Γ x ϕ (ex , b0 ∈ml ϕ and b0)).
-  feed specialize H.
+  ospecialize* H.
   { set_solver. }
   { wf_auto2. }
   { wf_auto2. }
@@ -4232,7 +4232,7 @@ Proof.
   mlApplyMeta H; clear H.
   mlIntro "H".
   pose proof (H := membership_exists Γ x (b0 ∈ml ϕ and b0)).
-  feed specialize H.
+  ospecialize* H.
   { set_solver. }
   { wf_auto2. }
   use AnyReasoning in H.
@@ -4243,7 +4243,7 @@ Proof.
   unfold instantiate. mlSimpl. simpl.
   rewrite bevar_subst_not_occur;[wf_auto2|].
   pose proof (H := membership_and_iff Γ x (patt_free_evar x ∈ml ϕ) (patt_free_evar x)).
-  feed specialize H.
+  ospecialize* H.
   { wf_auto2. }
   { wf_auto2. }
   { set_solver. }
@@ -4300,7 +4300,7 @@ Proof.
     mlExact "H".
   } mlClear "H1".
   pose proof (H := membership_exists Γ x (ψ $ (b0 ∈ml ϕ and b0))).
-  feed specialize H.
+  ospecialize* H.
   { set_solver. }
   { wf_auto2. }
   use AnyReasoning in H.
@@ -4331,7 +4331,7 @@ Proof.
   toMLGoal.
   { wf_auto2. }
   pose proof (H := predicate_propagate_right Γ (patt_free_evar y) (patt_free_evar y ∈ml ϕ) ψ).
-  feed specialize H.
+  ospecialize* H.
   { set_solver. }
   { wf_auto2. }
   { wf_auto2. }

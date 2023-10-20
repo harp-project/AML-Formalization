@@ -34,7 +34,7 @@ Proof.
     destruct (decide (Xfr1 = Xfr1)), (decide (Xfr2 = Xfr2)); simpl; try contradiction.
     reflexivity.
   - simpl in HXfr1. simpl in HXfr2.
-    feed specialize IHAC.
+    ospecialize* IHAC.
     { set_solver. }
     { set_solver. }
     simpl. rewrite IHAC.
@@ -44,7 +44,7 @@ Proof.
     { set_solver. }
     reflexivity.
   - simpl in HXfr1. simpl in HXfr2.
-    feed specialize IHAC.
+    ospecialize* IHAC.
     { set_solver. }
     { set_solver. }
     simpl. rewrite IHAC.

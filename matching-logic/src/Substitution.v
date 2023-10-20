@@ -3082,9 +3082,10 @@ Lemma Private_no_negative_occurrence_svar_quantify ϕ level X:
       induction ϕ; intros n' H0 H; simpl in *; auto.
       * case_match; auto.
       * cbn. cbn in H.
-        rewrite negb_orb. unfold is_true in *. rewrite IHϕ1; auto.
-        2: rewrite IHϕ2; auto.
-        all: clear -H0; set_solver.
+        rewrite negb_orb. unfold is_true in *.
+        rewrite IHϕ1; auto. 1: clear -H0; set_solver.
+        2: rewrite IHϕ2; auto. 2: clear -H0; set_solver.
+        all: clear -H; apply andb_true_iff in H; apply H.
       * cbn. fold evar_has_positive_occurrence.
         cbn in H. fold no_positive_occurrence_db_b in H.
         destruct_and! H.
@@ -3103,7 +3104,8 @@ Lemma Private_no_negative_occurrence_svar_quantify ϕ level X:
         destruct (decide (n' = n')); congruence.
       * cbn in H.
         rewrite negb_orb. fold evar_has_positive_occurrence.
-        unfold is_true in *. rewrite IHϕ1; auto.
+        unfold is_true in *. destruct_and! H.
+        rewrite IHϕ1; auto.
         2: rewrite IHϕ2; auto.
         all: clear -H0; set_solver.
       * cbn. fold evar_has_negative_occurrence.

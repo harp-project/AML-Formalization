@@ -144,7 +144,7 @@ Proof.
   { wf_auto2. }
 
   pose proof (Htmp := membership_imp Γ x g ψ).
-  feed specialize Htmp.
+  ospecialize* Htmp.
   { set_solver. }
   { wf_auto2. }
   { wf_auto2. }
@@ -157,14 +157,14 @@ Proof.
   mlIntro "H".
 
   pose proof (Htmp := membership_imp_equal_meta Γ (patt_free_evar x) g).
-  feed specialize Htmp.
+  ospecialize* Htmp.
   { assumption. }
   { assumption. }
   { wf_auto2. }
   { wf_auto2. }
   {
     pose proof (Hex := Ex_quan Γ (patt_free_evar x =ml b0) x).
-    feed specialize Hex.
+    ospecialize* Hex.
     { wf_auto2. }
     use AnyReasoning in Hex.
     toMLGoal.

@@ -188,7 +188,7 @@ Section nat.
       mlSimpl. unfold evar_open. simpl.
 
       pose proof (Htmp := membership_imp theory x (Succ $ patt_free_svar X) (patt_free_svar X)).
-      feed specialize Htmp.
+      ospecialize* Htmp.
       { unfold theory. set_solver. }
       { wf_auto2. }
       { wf_auto2. }
@@ -202,7 +202,7 @@ Section nat.
       unfold patt_forall_of_sort, nest_ex in S; simpl in S; fold Nat in S.
 
       pose proof (Htmp := membership_symbol_right theory (patt_free_svar X) Succ x).
-      feed specialize Htmp.
+      ospecialize* Htmp.
       { unfold theory. set_solver. }
       { wf_auto2. }
       { wf_auto2. }
@@ -241,7 +241,7 @@ Section nat.
       mlDestructAnd "H" as "ys" "H0".
 
       pose proof (M := membership_imp_equal theory (patt_free_evar x) (Succ $ patt_free_evar y)).
-      feed specialize M.
+      ospecialize* M.
       { unfold theory. set_solver. }
       { reflexivity. }
       { wf_auto2. }

@@ -406,7 +406,7 @@ Section sec.
             =>
             pose proof (Htmp := mlc_expand_almost_total a1 a2 a3 a4 a5 a6 a7)
         end.
-        feed specialize Htmp.
+        ospecialize* Htmp.
         {
             rewrite length_list_map_pfin.
             rewrite vec_to_list_length.
@@ -846,7 +846,8 @@ Section sec.
         cbn in *.
         pose proof (Hϕ₁pc := Hϕ₁ pc).
         pose proof (Hϕ₂pc := Hϕ₂ pc).
-        naive_solver.
+        destruct_and!. split_and!; auto; apply andb_true_iff;split.
+        all: assumption.
     Qed.
     Next Obligation.
         intros.
@@ -885,7 +886,8 @@ Section sec.
         cbn in *.
         pose proof (Hϕ₁pc := Hϕ₁ pc).
         pose proof (Hϕ₂pc := Hϕ₂ pc).
-        naive_solver.
+        destruct_and!. split_and!; auto; apply andb_true_iff;split.
+        all: assumption.
     Qed.
     Next Obligation.
         intros.

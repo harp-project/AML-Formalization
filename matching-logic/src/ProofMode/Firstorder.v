@@ -601,7 +601,7 @@ Section with_signature.
     apply wf_ex_quan_impl_wf in H11. 2: assumption.
     unfold of_MLGoal in H. simpl in H.
     specialize (H H2).
-    feed specialize H.
+    ospecialize* H.
     {
       unfold Pattern.wf. simpl. rewrite H11 H12. reflexivity.
     }

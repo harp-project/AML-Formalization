@@ -373,7 +373,7 @@ Proof.
   apply (@ord_antisym _ _ leq_order).
   {
     specialize (Hleast (LeastFixpointOf f)).
-    feed specialize Hleast.
+    ospecialize* Hleast.
     {
       apply LeastFixpoint_fixpoint.
       apply Hmono.
@@ -460,13 +460,3 @@ Section propset_lattice.
 
 End propset_lattice.
 
-
-
-
-
-
-
-
-
-
-  

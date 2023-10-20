@@ -184,7 +184,7 @@ Proof.
   }
 
   pose proof (Htmp := @Svar_subst Σ Γ (ϕ₁ ---> ϕ₂) (mu, ϕ₂^{{svar: X ↦ 0}}) X i).
-  feed specialize Htmp.
+  ospecialize* Htmp.
   { try_solve_pile. }
   { wf_auto2. }
   { exact Himp. }

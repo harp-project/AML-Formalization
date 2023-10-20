@@ -533,9 +533,9 @@ Section lemmas.
   - unfold well_formed, well_formed_closed in *. simpl in *.
     destruct_and!.
     specialize (IHp1 n1 n2). specialize (IHp2 n1 n2).
-    feed specialize IHp1.
+    ospecialize* IHp1.
     { split_and!; auto. }
-    feed specialize IHp2.
+    ospecialize* IHp2.
     { split_and!; auto. }
     destruct_and!.
     cbn.
@@ -543,9 +543,9 @@ Section lemmas.
   - unfold well_formed, well_formed_closed in *. simpl in *.
     destruct_and!.
     specialize (IHp1 n1 n2). specialize (IHp2 n1 n2).
-    feed specialize IHp1.
+    ospecialize* IHp1.
     { split_and!; auto. }
-    feed specialize IHp2.
+    ospecialize* IHp2.
     { split_and!; auto. }
     destruct_and!.
     cbn.
@@ -554,7 +554,7 @@ Section lemmas.
     destruct_and!.
     pose proof (IHp' := IHp).
     specialize (IHp n1 (S n2)).
-    feed specialize IHp.
+    ospecialize* IHp.
     { split_and!; auto. }
     destruct_and!.
     cbn in *.
@@ -572,7 +572,7 @@ Section lemmas.
     pose proof (H := @Private_well_formed_free_evar_subst x p q 0 0 wfq).
     unfold well_formed,well_formed_closed in *.
     destruct_and!.
-    feed specialize H.
+    ospecialize* H.
     { split_and!; assumption. }
     destruct_and!. split_and!; auto.
   Qed.
@@ -586,7 +586,7 @@ Section lemmas.
     pose proof (H := @Private_well_formed_free_evar_subst x p q m n wfq).
     unfold well_formed_xy. unfold well_formed_xy in wfp.
     destruct_and!.
-    feed specialize H.
+    ospecialize* H.
     { split_and!; assumption. }
     destruct_and!. split_and!; assumption.
   Qed.
@@ -758,7 +758,7 @@ Proof.
     + cbn in Hwfpϕ.
       destruct_and!.
       pose proof (IH1 := wfp_neg_free_evar_subst ϕ1 ψ x ltac:(assumption)).
-      feed specialize IH1.
+      ospecialize* IH1.
       { assumption. }
       { assumption. }
       specialize (IHϕ2 ltac:(assumption)).
@@ -779,7 +779,7 @@ Proof.
     + cbn in Hwfpϕ.
       destruct_and!.
       pose proof (IH1 := wfp_free_evar_subst ϕ1 ψ x ltac:(assumption)).
-      feed specialize IH1.
+      ospecialize* IH1.
       { assumption. }
       { assumption. }
       specialize (IHϕ2 ltac:(assumption)).
@@ -882,14 +882,14 @@ Proof.
   {
     clear fresh_svar_no_neg.
     induction ϕ; try reflexivity.
-    + feed specialize IHϕ1.
+    + ospecialize* IHϕ1.
       { apply svar_is_fresh_in_app_l in H. assumption. }
-      feed specialize IHϕ2.
+      ospecialize* IHϕ2.
       { apply svar_is_fresh_in_app_r in H. assumption. }
       cbn. rewrite IHϕ1 IHϕ2. reflexivity.
-    + feed specialize IHϕ1.
+    + ospecialize* IHϕ1.
       { apply svar_is_fresh_in_imp_l in H. assumption. }
-      feed specialize IHϕ2.
+      ospecialize* IHϕ2.
       { apply svar_is_fresh_in_imp_r in H. assumption. }
       cbn. fold svar_has_positive_occurrence. rewrite IHϕ2.
       rewrite orb_false_r.
@@ -905,14 +905,14 @@ Proof.
     + cbn. destruct decide.
       - unfold svar_is_fresh_in in H. set_solver.
       - reflexivity.
-    + feed specialize IHϕ1.
+    + ospecialize* IHϕ1.
       { apply svar_is_fresh_in_app_l in H. assumption. }
-      feed specialize IHϕ2.
+      ospecialize* IHϕ2.
       { apply svar_is_fresh_in_app_r in H. assumption. }
       cbn. rewrite IHϕ1 IHϕ2. reflexivity.
-    + feed specialize IHϕ1.
+    + ospecialize* IHϕ1.
       { apply svar_is_fresh_in_imp_l in H. assumption. }
-      feed specialize IHϕ2.
+      ospecialize* IHϕ2.
       { apply svar_is_fresh_in_imp_r in H. assumption. }
       cbn. fold svar_has_negative_occurrence. rewrite IHϕ2.
       rewrite orb_false_r.

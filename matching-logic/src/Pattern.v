@@ -967,58 +967,60 @@ Qed.
 
 (* TODO move somewhere else *)
 Lemma wfapp_proj_1 {Σ : Signature} l₁ l₂:
-wf (l₁ ++ l₂) = true ->
-wf l₁ = true.
+  wf (l₁ ++ l₂) = true ->
+  wf l₁ = true.
 Proof.
-intros H.
-apply (wf_take (length l₁)) in H.
-rewrite take_app in H.
-exact H.
+  intros H.
+  apply (wf_take (length l₁)) in H.
+  rewrite take_app in H.
+  rewrite Nat.sub_diag firstn_all take_0 app_nil_r in H.
+  exact H.
 Qed.
 
 Lemma wfapp_proj_2 {Σ : Signature} l₁ l₂:
-wf (l₁ ++ l₂) = true ->
-wf l₂ = true.
+  wf (l₁ ++ l₂) = true ->
+  wf l₂ = true.
 Proof.
-intros H.
-apply (wf_drop (length l₁)) in H.
-rewrite drop_app in H.
-exact H.
+  intros H.
+  apply (wf_drop (length l₁)) in H.
+  rewrite drop_app in H.
+  rewrite Nat.sub_diag drop_all drop_0 in H.
+  exact H.
 Qed.
 
 Lemma wfl₁hl₂_proj_l₁ {Σ : Signature} l₁ h l₂:
-wf (l₁ ++ h :: l₂) ->
-wf l₁.
+  wf (l₁ ++ h :: l₂) ->
+  wf l₁.
 Proof.
-apply wfapp_proj_1.
+  apply wfapp_proj_1.
 Qed.
 
 Lemma wfl₁hl₂_proj_h {Σ : Signature} l₁ h l₂:
-wf (l₁ ++ h :: l₂) ->
-well_formed h.
+  wf (l₁ ++ h :: l₂) ->
+  well_formed h.
 Proof.
-intros H. apply wfapp_proj_2 in H. unfold wf in H.
-simpl in H. apply andb_prop in H as [H1 H2].
-exact H1.
+  intros H. apply wfapp_proj_2 in H. unfold wf in H.
+  simpl in H. apply andb_prop in H as [H1 H2].
+  exact H1.
 Qed.
 
 Lemma wfl₁hl₂_proj_l₂ {Σ : Signature} l₁ h l₂:
-wf (l₁ ++ h :: l₂) ->
-wf l₂.
+  wf (l₁ ++ h :: l₂) ->
+  wf l₂.
 Proof.
-intros H. apply wfapp_proj_2 in H. unfold wf in H.
-simpl in H. apply andb_prop in H as [H1 H2].
-exact H2.
+  intros H. apply wfapp_proj_2 in H. unfold wf in H.
+  simpl in H. apply andb_prop in H as [H1 H2].
+  exact H2.
 Qed.
 
 Lemma wfl₁hl₂_proj_l₁l₂ {Σ : Signature} l₁ h l₂:
-wf (l₁ ++ h :: l₂) ->
-wf (l₁ ++ l₂).
+  wf (l₁ ++ h :: l₂) ->
+  wf (l₁ ++ l₂).
 Proof.
-intros H.
-pose proof (wfl₁hl₂_proj_l₁ _ _ _ H).
-pose proof (wfl₁hl₂_proj_l₂ _ _ _ H).
-apply wf_app; assumption.
+  intros H.
+  pose proof (wfl₁hl₂_proj_l₁ _ _ _ H).
+  pose proof (wfl₁hl₂_proj_l₂ _ _ _ H).
+  apply wf_app; assumption.
 Qed.
 
 
