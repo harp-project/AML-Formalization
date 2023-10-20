@@ -111,6 +111,12 @@ Section axioms.
   | AxNoConfusion
   | AxInductiveDomain
   (* TODO: extend this with the DEFINITION axioms from "ML explained" *)
+  | AxDefNegTrue
+  | AxDefNegFalse
+  | AxDefAndRightTrue
+  | AxDefAndRightFalse
+  | AxDefAndLeftTrue
+  | AxDefAndLeftFalse
   .
 
   Definition axiom (name : AxiomName) : Pattern :=
@@ -123,6 +129,16 @@ Section axioms.
     | AxNoConfusion => all mlBool, !(mlTrue =ml mlFalse)
     | AxInductiveDomain => 〚 mlBool 〛 =ml mlTrue or mlFalse
     (* TODO: extend this with the DEFINITION axioms from "ML explained" *)
+    | AxDefNegTrue =>  !b mlTrue =ml mlFalse
+    | AxDefNegFalse => !b mlFalse =ml mlTrue
+    | AxDefAndRightTrue => 
+      all mlBool, b0 &&ml mlTrue =ml b0
+    | AxDefAndRightFalse
+      all mlBool, b0 &&ml mlFalse =ml mlFalse
+    | AxDefAndLeftTrue =>
+      all mlBool, mlTrue &&ml b0 =ml b0
+    | AxDefAndLeftFalse =>
+      all mlBool, mlFalse &&ml b0 =ml mlFalse
     end.
 
   Program Definition named_axioms : NamedAxioms :=
