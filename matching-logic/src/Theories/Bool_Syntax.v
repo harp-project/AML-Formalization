@@ -130,10 +130,11 @@ Section axioms.
     | AxInductiveDomain => 〚 mlBool 〛 =ml mlTrue or mlFalse
     (* TODO: extend this with the DEFINITION axioms from "ML explained" *)
     | AxDefNegTrue =>  !b mlTrue =ml mlFalse
-    | AxDefNegFalse => !b mlFalse =ml mlTrue
-    | AxDefAndRightTrue => 
-      all mlBool, b0 &&ml mlTrue =ml b0
-    | AxDefAndRightFalse
+    | AxDefNegFalse => !b mlFalse =ml mlTrue 
+    
+    | AxDefAndRightTrue =>  
+      all mlBool, b0 &&ml mlTrue =ml b0 
+    | AxDefAndRightFalse =>
       all mlBool, b0 &&ml mlFalse =ml mlFalse
     | AxDefAndLeftTrue =>
       all mlBool, mlTrue &&ml b0 =ml b0
