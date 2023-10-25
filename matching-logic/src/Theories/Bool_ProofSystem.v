@@ -30,60 +30,48 @@ Require Import MatchingLogic.Theories.DeductionTheorem.
 Require MatchingLogic.Theories.Sorts_Syntax.
 Export MatchingLogic.Theories.Sorts_Syntax.Notations.
 
+From Coq Require Import ssreflect ssrfun ssrbool.
+
+Require Import Setoid.
+From Coq Require Import Unicode.Utf8.
+From Coq.Logic Require Import Classical_Prop FunctionalExtensionality.
+From Coq.Classes Require Import Morphisms_Prop.
+
+From stdpp Require Import base sets.
+
+From MatchingLogic Require Import Logic MLPM.
+Import MatchingLogic.Logic.Notations.
+Require Import MatchingLogic.Theories.Bool_Syntax.
+
+Import MatchingLogic.Theories.Definedness_Syntax.Notations.
+Import MatchingLogic.Theories.Bool_Syntax.Notations.
+Import BoundVarSugar.
+
+Set Default Proof Mode "Classic".
+
+Section bools.
+Context
+  { Σ : Signature}
+  { syntax : Syntax}.
+
 Open Scope ml_scope.
 Open Scope string_scope.
 Open Scope list_scope.
-
-Set Printing All.
-Lemma ex_sort_impl_ex
-  {Σ : Signature}
-  {syntax : Sorts_Syntax.Syntax}
-  (Γ : Theory)
-  (ϕ : Pattern)
-  (s : symbols)
-  :
-  well_formed (ex , ϕ) ->
-  Definedness_Syntax.theory ⊆ Γ ->
-  Γ ⊢ ex (patt_sym s) , ϕ ---> (ex , ϕ).
+  
+Theorem double_neg : forall Γ , theory ⊆ Γ ->
+        Γ ⊢ all mlBool,   !b !b b0 =ml b0.
 Proof.
-  intros wfϕ HΓ.
+intros.
+toMLGoal.
+wf_auto2.
+mlIntroAll x.
+simpl.
+mlIntro "H".
+Abort. 
+(* Continue from here *)
 
-  unfold "ex _ , _".
 
-  unfold nest_ex; simpl.
-
-  remember (fresh_evar (b0 ∈ml 〚 patt_sym s 〛 and ϕ)) as x.
-  rewrite <- evar_quantify_evar_open with (n := 0) (x := x) (phi := b0 ∈ml 〚 patt_sym s 〛 and ϕ).
-  2: {
-    subst x. eapply evar_is_fresh_in_richer'.
-    2: apply set_evar_fresh_is_fresh'.
-    clear. set_solver.
-  }
-  2: {
-    wf_auto2.
-  }
-
-  gapply Ex_gen.
-  { apply pile_any. }
-  { apply pile_any. }
-  {
-    subst x. eapply evar_is_fresh_in_richer'.
-    2: { apply set_evar_fresh_is_fresh'. }
-    clear. set_solver.
-  }
-
-  mlSimpl. unfold evar_open. simpl.
-
-  toMLGoal.
-  { wf_auto2. }
-  mlIntro "H".
-  mlDestructAnd "H" as "H0" "H1".
-  mlClear "H0".
-
-  mlApplyMeta Ex_quan. simpl.
-  mlExact "H1".
-Defined.
-
+End bools.
 Close Scope ml_scope.
 Close Scope string_scope.
 Close Scope list_scope.

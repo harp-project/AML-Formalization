@@ -63,7 +63,7 @@ Section definedness.
     destruct H as [_ H].
     rewrite -> elem_of_subseteq in H.
     specialize (H x).
-    feed specialize H.
+    ospecialize* H.
     { apply elem_of_top'. }
     unfold patt_defined in H.
     rewrite -> eval_app_simpl in H.
@@ -310,7 +310,7 @@ Section definedness.
       destruct H0 as [_ H0].
       rewrite -> elem_of_subseteq in H0.
       intros x H1. specialize (H0 x).
-      feed specialize H0.
+      ospecialize* H0.
       { apply elem_of_top'. }
       remember (eval ρ ϕ1) as Xϕ1.
       remember (eval ρ ϕ2) as Xϕ2.
@@ -676,7 +676,7 @@ Section definedness.
     destruct HM as [_ HM].
     rewrite elem_of_subseteq in HM.
     specialize (HM y).
-    feed specialize HM.
+    ospecialize* HM.
     {
       clear. set_solver.
     }

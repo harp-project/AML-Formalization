@@ -352,7 +352,7 @@ Section with_syntax.
             specialize (H (lift_value x)).
             unfold lift_value in H.
             do 2 rewrite elem_of_PropSet in H.
-            feed specialize H.
+            ospecialize* H.
             {
                 exists (inl x).
                 split;[reflexivity|].
@@ -387,7 +387,7 @@ Section with_syntax.
         {
             specialize (H1 (lift_value x)).
             do 2 rewrite elem_of_PropSet in H1.
-            feed specialize H1.
+            ospecialize* H1.
             {
                 unfold lift_value.
                 exists (inl x).
@@ -408,7 +408,7 @@ Section with_syntax.
         {
             specialize (H2 (lift_value x)).
             do 2 rewrite elem_of_PropSet in H2.
-            feed specialize H2.
+            ospecialize* H2.
             {
                 unfold lift_value.
                 exists (inl x).
@@ -1531,7 +1531,7 @@ Section with_syntax.
                                     destruct H' as [_ H'2].
                                     rewrite elem_of_subseteq in H'2.
                                     specialize (H'2 (lift_value x)).
-                                    feed specialize H'2.
+                                    ospecialize* H'2.
                                     {
                                         clear. set_solver.
                                     }
@@ -1560,7 +1560,7 @@ Section with_syntax.
                                         intros x Hx.
                                         rewrite elem_of_PropSet.
                                         specialize (H' (@stdpp.base.inhabitant (@Domain _ M) (@Domain_inhabited _ M))).
-                                        feed specialize H'.
+                                        ospecialize* H'.
                                         {
                                             clear. set_solver.
                                         }
@@ -1644,7 +1644,7 @@ Section with_syntax.
                                             exfalso. clear -Hx2. set_solver.
                                         }
                                         exfalso. specialize (H' d).
-                                        feed specialize H'.
+                                        ospecialize* H'.
                                         {
                                             clear H' Hx3.
                                             rewrite elem_of_PropSet.
@@ -1659,11 +1659,11 @@ Section with_syntax.
                                             inversion Hx21. clear Hx21. subst.
 
                                             pose proof (Hel := @satisfies_definedness_implies_has_element_for_every_element Σ _ M).
-                                            feed specialize Hel.
+                                            ospecialize* Hel.
                                             {
                                                 assumption.
                                             }
-                                            specialize (Hel a a).
+                                            (* specialize (Hel a a). *)
                                             destruct Hel as [z [Hz1 Hz2] ].
                                             exists z. exists a.
                                             split.
@@ -1712,11 +1712,11 @@ Section with_syntax.
                                         destruct Hre as [a0 [Ha0 Hre] ].
                                         subst a.
                                         pose proof (Hel := @satisfies_definedness_implies_has_element_for_every_element Σ _ M).
-                                        feed specialize Hel.
+                                        ospecialize* Hel.
                                         {
                                             assumption.
                                         }
-                                        specialize (Hel a0 x).
+                                        (* specialize (Hel a0 x). *)
                                         destruct Hel as [z [Hz1 Hz2] ].
                                         exists z. exists a0.
                                         split.
@@ -1807,13 +1807,13 @@ Section with_syntax.
                         (* patt_impl ψ₁ ψ₂*)
                         do 2 rewrite eval_imp_simpl.
                         pose proof (IH1 := IHszpred ϕ₁ ρ).
-                        feed specialize IH1.
+                        ospecialize* IH1.
                         { lia. }
                         { assumption. }
                         { wf_auto2. }
                         destruct IH1 as [IH11 IH12].
                         pose proof (IH2 := IHszpred ϕ₂ ρ).
-                        feed specialize IH2.
+                        ospecialize* IH2.
                         { lia. }
                         { assumption. }
                         { wf_auto2. }
@@ -1959,7 +1959,7 @@ Section with_syntax.
                                 specialize (H' (lift_value c)).
                                 rewrite update_evar_val_lift_val_comm in H'.
                                 specialize (IHszpred (update_evar_val (fresh_evar ϕ) c ρ)).
-                                feed specialize IHszpred.
+                                ospecialize* IHszpred.
                                 {
                                     rewrite evar_open_size'. lia.
                                 }
@@ -2059,7 +2059,7 @@ Section with_syntax.
                                     rewrite update_evar_val_lift_val_comm.
                                     clear -IHszpred Hszϕ HSPred Hwf H' Hin Hre.
                                     specialize (IHszpred (update_evar_val (fresh_evar ϕ) d0 ρ)).
-                                    feed specialize IHszpred.
+                                    ospecialize* IHszpred.
                                     {
                                         rewrite evar_open_size'. lia.
                                     }
@@ -2174,7 +2174,7 @@ Section with_syntax.
                                         clear -IHszpred Hc Hwf Hszϕ HSPred HSPred'.
                                         rewrite update_evar_val_lift_val_comm in Hc.
                                         specialize (IHszpred (update_evar_val (fresh_evar ϕ) a0 ρ)).
-                                        feed specialize IHszpred.
+                                        ospecialize* IHszpred.
                                         {
                                             rewrite evar_open_size'. lia.
                                         }
@@ -2213,7 +2213,7 @@ Section with_syntax.
                                     {
                                         rewrite update_evar_val_lift_val_comm.
                                         specialize (IHszpred (update_evar_val (fresh_evar ϕ) c ρ)).
-                                        feed specialize IHszpred.
+                                        ospecialize* IHszpred.
                                         {
                                             rewrite evar_open_size'. lia.
                                         }
@@ -2360,7 +2360,7 @@ Section with_syntax.
                                     destruct Hin as [le [re [Hle [Hre' Hin] ] ] ].
                                     rewrite elem_of_singleton in Hre'. subst re.
                                     specialize (IHszpred (ϕ^{evar: 0 ↦ fresh_evar ϕ}) (update_evar_val (fresh_evar ϕ) a0 ρ)).
-                                    feed specialize IHszpred.
+                                    ospecialize* IHszpred.
                                     {
                                         rewrite evar_open_size'.
                                         lia.
@@ -2434,7 +2434,7 @@ Section with_syntax.
                                     destruct Hin as [le [re [Hle [Hre Hin] ] ] ].
 
                                     specialize (IHszpred (ϕ^{evar: 0 ↦ fresh_evar ϕ}) (update_evar_val (fresh_evar ϕ) c ρ)).
-                                    feed specialize IHszpred.
+                                    ospecialize* IHszpred.
                                     {
                                         rewrite evar_open_size'.
                                         lia.
@@ -2536,7 +2536,7 @@ Section with_syntax.
                                 destruct (indec _ H c ρ) as [Hin|Hnotin].
                                 {
                                     specialize (IHszpred (ϕ^{evar: 0 ↦ fresh_evar ϕ}) (update_evar_val (fresh_evar ϕ) c ρ)).
-                                    feed specialize IHszpred.
+                                    ospecialize* IHszpred.
                                     {
                                         rewrite evar_open_size'.
                                         lia.
@@ -2652,7 +2652,7 @@ Section with_syntax.
                                 rewrite update_evar_val_lift_val_comm.
 
                                 specialize (IHszpred (ϕ^{evar: 0 ↦ fresh_evar ϕ}) (update_evar_val (fresh_evar ϕ) a1 ρ)).
-                                feed specialize IHszpred.
+                                ospecialize* IHszpred.
                                 {
                                     rewrite evar_open_size'.
                                     lia.

@@ -1,19 +1,20 @@
 From Coq Require Import String.
 
-From MatchingLogic Require Import
-    Logic
-    DerivedOperators_Syntax
-    ProofSystem
-    ProofMode.MLPM
-    FreshnessManager
-.
-
 From MatchingLogic.Theories Require Import Definedness_Syntax
                                            Definedness_Semantics
                                            Sorts_Syntax
                                            Sorts_Semantics
                                            Definedness_ProofSystem
                                            DeductionTheorem.
+
+From MatchingLogic Require Import
+    Logic
+    DerivedOperators_Syntax
+    ProofSystem
+    ProofMode.MLPM
+    BasicProofSystemLemmas
+    FreshnessManager
+.
 
 Import
   MatchingLogic.Logic.Notations
@@ -71,7 +72,7 @@ Section running.
 
     (* Using equality elimination: *)
     unfold evar_open. rewrite (bevar_subst_not_occur _ _ φ'). wf_auto2.
-    feed pose proof (equality_elimination_basic Γ φ' (patt_free_evar x) 
+    opose proof* (equality_elimination_basic Γ φ' (patt_free_evar x) 
       {|pcEvar := x; pcPattern := φ^{evar:0 ↦ x}|}); auto.
     { wf_auto2. }
     { cbn. by apply mu_free_evar_open. }
@@ -98,7 +99,7 @@ Section running.
     apply mu_free_wfp in HMF as HMFWF.
     toMLGoal. wf_auto2.
     mlIntro "H". mlDestructAnd "H" as "H1" "H2".
-    mlAdd (running_functional_subst (! φ) φ' ltac:(simpl;auto) HWF1 ltac:(wf_auto2) ltac:(wf_auto2)) as "H0".
+    mlAdd (running_functional_subst (! φ) φ' ltac:(cbn;rewrite HMF;auto) HWF1 ltac:(wf_auto2) ltac:(wf_auto2)) as "H0".
     mlSimpl.
     mlApplyMeta Misc.notnot_taut_1. mlIntro "H3".
     mlAssert ("H5" : (ex , ! φ)).
@@ -163,7 +164,7 @@ Section running.
     (* 4 proof info goals *)
     4,13,28,31: try_solve_pile.
     (* 1 mu_free goal: *)
-    17: subst C; cbn; auto.
+    17: subst C; cbn; rewrite mff; auto.
     (* 2 free variable inclusion goal *)
     17-18: subst y; solve_fresh.
     (* 25 well_formed goals *)

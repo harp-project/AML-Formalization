@@ -931,7 +931,7 @@ Fixpoint rename {Σ : Signature}
           subst. clear -Hx1. exfalso. set_solver.
         }
         {
-          feed specialize IHHalpha.
+          ospecialize* IHHalpha.
           {
             set_solver.
           }
@@ -1015,7 +1015,7 @@ Fixpoint rename {Σ : Signature}
           subst. clear -HX1. exfalso. set_solver.
         }
         {
-          feed specialize IHHalpha.
+          ospecialize* IHHalpha.
           {
             set_solver.
           }
@@ -1223,7 +1223,7 @@ Fixpoint rename {Σ : Signature}
             specialize (IHs1 a'' c').
             destruct (decide ((a'',b'') ∈ s1)).
             {
-              feed specialize IHs1.
+              ospecialize* IHs1.
               {
                 exists b''. split; assumption.
               }
@@ -1247,7 +1247,7 @@ Fixpoint rename {Σ : Signature}
           }
           {
             specialize (IHs1 a' c').
-            feed specialize IHs1.
+            ospecialize* IHs1.
             {
               exists b.
               split; assumption.

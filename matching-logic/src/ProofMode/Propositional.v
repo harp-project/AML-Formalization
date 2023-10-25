@@ -54,6 +54,9 @@ Proof.
       pose proof (wfl₁ := wf_take (length (patterns_of l₁)) _ wfl₁gl₂);
       rewrite map_app in wfl₁;
       rewrite take_app in wfl₁;
+      unfold patterns_of in wfl₁;
+      rewrite firstn_all in wfl₁;
+      rewrite Nat.sub_diag take_0 app_nil_r in wfl₁;
       exact wfl₁
     ).
   }
@@ -63,7 +66,9 @@ Proof.
       rewrite map_app in wfgl₂;
       rewrite drop_app in wfgl₂;
       unfold Pattern.wf in wfgl₂;
-      simpl in wfgl₂;
+      simpl in wfgl₂; unfold patterns_of in wfgl₂;
+      rewrite drop_all in wfgl₂;
+      rewrite Nat.sub_diag drop_0 in wfgl₂;
       apply andb_prop in wfgl₂;
       destruct wfgl₂ as [_ wfl₂];
       exact wfl₂
@@ -322,13 +327,18 @@ Proof.
   rewrite map_app.
 
   apply prf_weaken_conclusion_iter_under_implication_iter_meta.
-  { abstract (pose proof (wfl₁ := wf_take (length (patterns_of l₁)) _ wfl₁gg'l₂); simpl in wfl₁; rewrite take_app in wfl₁; exact wfl₁). }
+  { abstract (pose proof (wfl₁ := wf_take (length (patterns_of l₁)) _ wfl₁gg'l₂); simpl in wfl₁; rewrite take_app in wfl₁; 
+       rewrite firstn_all in wfl₁;
+       rewrite Nat.sub_diag take_0 app_nil_r in wfl₁;
+       exact wfl₁). }
   { abstract (
       pose proof (wfgg'l₂ := wf_drop (length (patterns_of l₁)) _ wfl₁gg'l₂);
       rewrite drop_app in wfgg'l₂;
       pose proof (Htmp := wfgg'l₂);
       unfold Pattern.wf in Htmp;
-      simpl in Htmp;
+      simpl in Htmp; unfold patterns_of in Htmp;
+      rewrite drop_all in Htmp;
+      rewrite Nat.sub_diag drop_0 in Htmp;
       apply andb_prop in Htmp;
       destruct Htmp as [wfgg' wfl₂];
       exact wfl₂
@@ -341,6 +351,9 @@ Proof.
       pose proof (Htmp := wfgg'l₂);
       unfold Pattern.wf in Htmp;
       simpl in Htmp;
+      simpl in Htmp; unfold patterns_of in Htmp;
+      rewrite drop_all in Htmp;
+      rewrite Nat.sub_diag drop_0 in Htmp;
       apply andb_prop in Htmp;
       destruct Htmp as [wfgg' wfl₂];
       pose proof (wfg := well_formed_imp_proj1 _ _ wfgg');
@@ -358,7 +371,9 @@ Proof.
       rewrite drop_app in wfgg'l₂;
       pose proof (Htmp := wfgg'l₂);
       unfold Pattern.wf in Htmp;
-      simpl in Htmp;
+      simpl in Htmp; unfold patterns_of in Htmp;
+      rewrite drop_all in Htmp;
+      rewrite Nat.sub_diag drop_0 in Htmp;
       apply andb_prop in Htmp;
       destruct Htmp as [wfgg' wfl₂];
       pose proof (wfg := well_formed_imp_proj1 _ _ wfgg');
@@ -637,7 +652,7 @@ Proof.
   unfold of_MLGoal in H. simpl in H.
   unfold of_MLGoal. simpl. intros wfxig wfl.
   unfold patterns_of in *. rewrite -> map_app in *. simpl in *.
-  feed specialize H. 1-2: wf_auto2.
+  ospecialize* H. 1-2: wf_auto2.
   apply reorder_middle_to_last_meta. 1-4: wf_auto2.
   by rewrite app_assoc foldr_snoc.
 Defined.
@@ -746,6 +761,8 @@ Proof.
         unfold patterns_of in wfl1l2;
         rewrite map_app in wfl1l2;
         rewrite take_app in wfl1l2;
+        rewrite firstn_all in wfl1l2;
+        rewrite Nat.sub_diag take_0 app_nil_r in wfl1l2;
         exact wfl1l2
     ).
   }
@@ -754,6 +771,8 @@ Proof.
         unfold patterns_of in wfl1l2;
         rewrite map_app in wfl1l2;
         rewrite drop_app in wfl1l2;
+        rewrite drop_all in wfl1l2;
+        rewrite Nat.sub_diag drop_0 in wfl1l2;
         exact wfl1l2
     ).
   }
@@ -762,6 +781,8 @@ Proof.
         unfold patterns_of in wfl1l2;
         rewrite map_app in wfl1l2;
         rewrite take_app in wfl1l2;
+        rewrite firstn_all in wfl1l2;
+        rewrite Nat.sub_diag take_0 app_nil_r in wfl1l2;
         exact wfl1l2
     ).
   }
@@ -776,7 +797,12 @@ Proof.
       rewrite map_app in wfl2;
       rewrite drop_app in wfl2;
       unfold Pattern.wf; rewrite map_app; rewrite foldr_app;
-      simpl; rewrite wfh; unfold Pattern.wf in wfl2; rewrite wfl2;
+      simpl; rewrite wfh; unfold Pattern.wf in wfl2;
+      rewrite firstn_all in wfl1;
+      rewrite Nat.sub_diag take_0 app_nil_r in wfl1;
+      rewrite drop_all in wfl2;
+      rewrite Nat.sub_diag drop_0 in wfl2;
+      rewrite wfl2;
       simpl; exact wfl1
     ).
   }
@@ -2366,6 +2392,9 @@ Proof.
     }
 
     mlApplyMeta pf_conj_elim_r.
+    repeat rewrite app_length; simpl.
+    rewrite take_app_add. simpl.
+    rewrite Nat.sub_diag take_0 app_nil_r.
     apply MLGoal_exactn.
     wf_auto2.
   }
@@ -2406,6 +2435,13 @@ Proof.
       ).
     }
     mlApplyMeta pf_conj_elim_l.
+    repeat rewrite firstn_all.
+    repeat rewrite drop_all.
+    repeat rewrite Nat.sub_diag.
+    repeat rewrite drop_0 take_0.
+    repeat rewrite app_length; simpl in *.
+    rewrite Nat.add_0_r Nat.sub_diag take_0 app_nil_r app_nil_r.
+    rewrite take_app_add.
     apply MLGoal_exactn.
     assumption.
   }
@@ -2421,9 +2457,22 @@ Proof.
   {
     rewrite -app_assoc. reflexivity.
   }
-
- apply mlGoal_clear_hyp.
- exact H.
+  simpl.
+  repeat (
+  repeat rewrite app_length; simpl;
+  repeat rewrite Nat.sub_diag; simpl;
+  repeat rewrite take_0; simpl;
+  repeat rewrite drop_0; simpl;
+  repeat rewrite app_nil_r;
+  repeat rewrite Nat.add_0_r;
+  repeat rewrite take_app_add; simpl).
+  rewrite drop_app drop_app_add. simpl.
+  rewrite app_length. simpl. rewrite Nat.sub_diag. rewrite drop_0.
+  rewrite drop_ge. lia. simpl.
+  replace (length l₁ + 1 - length l₁) with 1 by lia. simpl.
+  rewrite -app_assoc.
+  apply mlGoal_clear_hyp.
+  exact H.
 Defined.
 
 Ltac2 mlDestructAnd_as (name : constr) (name1 : constr) (name2 : constr) :=
@@ -2946,10 +2995,10 @@ Proof.
   intros Ha Hb.
   unfold of_MLGoal in *. simpl in *.
   intros wfab wfl.
-  feed specialize Ha.
+  ospecialize* Ha.
   { abstract(wf_auto2). }
   { exact wfl. }
-  feed specialize Hb.
+  ospecialize* Hb.
   { abstract(wf_auto2). }
   { exact wfl. }
   apply prf_conj_split_meta_meta; auto.

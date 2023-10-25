@@ -272,7 +272,7 @@ Lemma cast_proof_ml_hyps {Σ : Signature} Γ hyps hyps' (e : patterns_of hyps = 
 Proof.
   unfold of_MLGoal. simpl. intros H.
   intros wfg wfhyps'.
-  feed specialize H.
+  ospecialize* H.
   { exact wfg. }
   { rewrite e. exact wfhyps'. }
   rewrite -e.
@@ -353,7 +353,7 @@ Proof.
   unfold of_MLGoal in H. simpl in H.
   unfold of_MLGoal. simpl. intros wfxig wfl.
 
-  feed specialize H.
+  ospecialize* H.
   { abstract (apply well_formed_imp_proj2 in wfxig; exact wfxig). }
   { abstract (unfold Pattern.wf in *; unfold patterns_of;
     rewrite map_app map_app foldr_app; simpl;
@@ -551,7 +551,7 @@ Proof.
 
   unfold patterns_of in wfl.
   rewrite map_app in wfl.
-  feed specialize H.
+  ospecialize* H.
   {
     abstract (
         apply wfapp_proj_2 in wfl;

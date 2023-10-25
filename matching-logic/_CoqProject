@@ -56,9 +56,14 @@ src/Theories/DeductionTheorem.v
 src/Theories/Nat_Syntax.v
 src/Theories/Nat_ProofSystem.v
 
+src/Theories/Bool_Syntax.v
+src/Theories/Bool_Semantics.v
+src/Theories/Bool_ProofSystem.v
+
 src/Theories/Sorts_Syntax.v
 src/Theories/Sorts_Semantics.v
 src/Theories/Sorts_ProofSystem.v
+
 src/Theories/ProductSort.v
 src/Theories/ProductSortWithLookup.v
 src/Theories/RecursiveSymbol.v

@@ -29,7 +29,7 @@ Section isomorphism.
 
 
 
-  Polymorphic Cumulative
+  (* Polymorphic Cumulative *)
   Record ModelIsomorphism {Σ : Signature} {M₁ M₂ : Model} : Type := mkModelIsomorphism
       {
           mi_f : (Domain M₁) -> (Domain M₂) ;
@@ -115,7 +115,7 @@ Section isomorphism.
           {
               intros Hy.
               specialize (mi_sym1 (mi_f0 y)).
-              feed specialize mi_sym1.
+              ospecialize* mi_sym1.
               {
                   exists y.
                   split;[reflexivity|].
@@ -190,13 +190,16 @@ Section isomorphism.
           mi_f := (mi_f j) ∘ (mi_f i)
       |}.
   Next Obligation.
-      intros. destruct i,j. simpl. simpl in H.
-      apply (inj mi_f1) in H.
-      apply (inj mi_f0) in H.
+      intros.
+      destruct i,j. simpl. simpl in H.
+      unfold Inj in *.
+      apply mi_inj1 in H.
+      apply mi_inj0 in H.
       exact H.
   Defined.
   Next Obligation.
-      intros. pose proof (mi_surj i). pose proof (mi_surj j). apply _.
+      intros. pose proof (mi_surj i). pose proof (mi_surj j).
+      apply _.
   Defined.
   Next Obligation.
       intros.
@@ -207,11 +210,10 @@ Section isomorphism.
       apply set_fmap_compose.
   Defined.
   Next Obligation.
-      intros.
-      pose proof (Hi := mi_app i).
-      pose proof (Hj := mi_app j).
-      rewrite -Hj.
-      rewrite -Hi.
+      intros. destruct i, j. simpl in *.
+      clear -mi_app1 mi_app0.
+      rewrite -mi_app1.
+      rewrite -mi_app0.
       apply set_fmap_compose.
   Defined.
 
@@ -613,7 +615,7 @@ Section isomorphism.
                   rewrite -IHsz in He.
                   { rewrite svar_open_size'. lia. }
                   specialize (Hx ((@surj'_inv _ _ _ _ (mi_surj i)) <$> e)).
-                  feed specialize Hx.
+                  ospecialize* Hx.
                   {
                       clear -He.
                       rewrite elem_of_subseteq in He.

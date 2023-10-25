@@ -545,7 +545,7 @@ Section with_signature.
         simpl in Hwfc.
         destruct p as [dbi x]. simpl in *.
         specialize (IHϕ (S dbi,x) (S k) ((map (λ p : nat * evar, (S p.1, p.2)) l)) ltac:(simpl;lia) Hwfc).
-        feed specialize IHϕ.
+        ospecialize* IHϕ.
         {
           clear -Hci. induction l.
           {
@@ -561,7 +561,7 @@ Section with_signature.
               }
               {
                 simpl in *. apply ci_cons. lia.
-                feed specialize IHl.
+                ospecialize* IHl.
                 {
                   apply ci_cons. lia. assumption.
                 }
@@ -601,7 +601,7 @@ Section with_signature.
       exact Hwfc.
     }
     {
-      feed specialize IHidx.
+      ospecialize* IHidx.
       {
         intros.
         eapply H3. apply H. lia.
@@ -858,7 +858,8 @@ Section with_signature.
     *)
     specialize (H (make_zero_list (evar_fresh []) l)).
     pose proof (Hzeros := make_zero_list_zeroes (evar_fresh []) l).
-    feed specialize H.
+    intro ρ.
+    ospecialize* H.
     {
       clear -Hzeros.
       induction Hzeros.
@@ -898,7 +899,7 @@ Section with_signature.
       }
     }
     { rewrite make_zero_list_equiv; assumption. }
-    { rewrite make_zero_list_equiv in H; assumption. }
+    { rewrite make_zero_list_equiv in H; try eassumption. }
   Qed.
 
   Lemma closed_M_pre_pre_predicate_is_M_predicate (k : db_index) (M : Model) (ϕ : Pattern) :

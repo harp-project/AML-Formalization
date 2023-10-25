@@ -114,7 +114,9 @@ Fixpoint uses_of_ex_gen Γ ϕ (pf : ML_proof_system Γ ϕ) : EVarSet :=
   Lemma uses_of_ex_gen_correct Γ ϕ (pf : ML_proof_system Γ ϕ) (x : evar) :
     x ∈ uses_of_ex_gen Γ ϕ pf <-> uses_ex_gen {[x]} Γ ϕ pf = true.
   Proof.
-    induction pf; simpl; try set_solver.
+    induction pf; simpl.
+    1-4,6,8-13,17,19,20: set_solver.
+    all: try assumption.
     {
       rewrite orb_true_iff. set_solver.
     }
@@ -197,10 +199,12 @@ Fixpoint uses_of_ex_gen Γ ϕ (pf : ML_proof_system Γ ϕ) : EVarSet :=
   Lemma uses_of_svar_subst_correct Γ ϕ (pf : ML_proof_system Γ ϕ) (X : svar) :
     X ∈ uses_of_svar_subst Γ ϕ pf <-> uses_svar_subst {[X]} Γ ϕ pf = true.
   Proof.
-    induction pf; simpl; try set_solver.
+    induction pf; simpl.
+    1-4,6,8-13,17,19,20: set_solver.
     {
       rewrite orb_true_iff. set_solver.
     }
+    all: try assumption.
     {
       rewrite elem_of_union. rewrite IHpf. clear IHpf.
       destruct (decide (X0 ∈ {[X]})) as [Hin|Hnotin].
@@ -721,7 +725,8 @@ Proof.
     rewrite implb_true_iff in H11.
     rewrite implb_true_iff in H12.
     intros H'.
-    naive_solver.
+    apply Hpf5 in H'. destruct_and!.
+    apply andb_true_iff. split; auto.
   }
 Defined.
 

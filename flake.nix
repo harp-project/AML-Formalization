@@ -10,7 +10,7 @@
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
-        coqPackages = pkgs.coqPackages_8_17;
+        coqPackages = pkgs.coqPackages_8_18;
 
       in {
 
