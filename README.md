@@ -14,10 +14,10 @@ In this project we attempt to fully implement the "Applicative Matching Logic" f
 ### Build
 
 The matching logic library (in the directory `matching-logic/`) depends on:
-- Coq 8.17
-- stdpp 1.8
+- Coq 8.18.0
+- stdpp 1.9
 - equations 1.3
-- LibHyps 2.0.4.1
+- LibHyps 2.0.6
 
 The easiest way to build the library is using the [Nix package manager](https://nixos.org/download.html),
 using the [Nix Flakes](https://nixos.wiki/wiki/Flakes) feature.
@@ -95,7 +95,6 @@ $ make
 Note that this works only for the library located in the `matching-logic/` directory.
 In particular, the Metamath extractor (located in the directory `prover/`), as well as
 the examples in the directory `examples/`, cannot be built this way.
-
 
 ### IDE setup
 
