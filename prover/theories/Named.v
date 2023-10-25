@@ -877,10 +877,14 @@ Defined.
         destruct (decide (X = s)); auto.
     - unfold no_negative_occurrence_db_b, no_positive_occurrence_db_b; simpl.
       split; reflexivity.
-    - feed specialize IHϕ1.
+    - ospecialize* IHϕ1.
       { eapply svar_is_fresh_in_app_l. apply Hfresh. }
-      feed specialize IHϕ2.
+      { eauto. }
+      { assumption. }
+      ospecialize* IHϕ2.
       { eapply svar_is_fresh_in_app_r. apply Hfresh. }
+      { eauto. }
+      { assumption. }
       clear Hfresh.
 
       simpl.
@@ -900,7 +904,8 @@ Defined.
       fold (no_positive_occurrence_db_b dbi ϕ1).
       fold (no_positive_occurrence_db_b dbi ϕ2).
 
-      pose proof (IHϕ10 := IHϕ1 evm svm Hinj Hdbi).
+      Unshelve. 2-3: exact evm.
+      pose proof (IHϕ10 := IHϕ1).
       rewrite -Heqtnϕ1 in IHϕ10. simpl in IHϕ10. destruct IHϕ10 as [IHϕ11 IHϕ12].
 
 

@@ -1192,7 +1192,7 @@ Proof.
   intros l g x i Wfl Wfg Wfx H. eapply MP.
   2: {
     pose proof (reorder_head_to_last Γ l g x) as H0.
-    feed specialize H0. 1-3: wf_auto2.
+    ospecialize* H0. 1-3: wf_auto2.
     use i in H0. exact H0. 
   }
   exact H.

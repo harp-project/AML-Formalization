@@ -146,7 +146,7 @@ Tactic Notation "naive_bsolver" tactic(tac) :=
       | H : _ → _ |- _ =>
         is_non_dependent H;
         no_new_unsolved_evars
-          ltac:(first [eapply H | efeed pose proof H]; clear H; go n')
+          ltac:(first [eapply H | opose proof* H]; clear H; go n')
       end
     end
   end

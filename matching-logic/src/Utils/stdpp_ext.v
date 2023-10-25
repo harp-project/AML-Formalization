@@ -26,18 +26,11 @@ Qed.
 Lemma pmap_to_list_lookup {A} (M : Pmap A) (i : positive) (x : A)
   : (i,x) ∈ (map_to_list M) <-> lookup i M = Some x.
 Proof.
-  intros. unfold map_to_list. unfold Pto_list. unfold lookup. unfold Plookup.
-  destruct M eqn:HM. simpl.
-  split; intros.
-  + apply Pelem_of_to_list in H. simpl in H.
-    destruct H.
-    * destruct H as [i' [Hi' Hsome]]. subst. apply Hsome.
-    * inversion H.
-  + apply Pelem_of_to_list.
-    left. simpl. exists i. firstorder.
+  intros. apply elem_of_map_to_list.
 Qed.
 
-Lemma gmap_to_list_lookup `{Countable K} {A} (M : gmap K A) (k : K) (a : A): ((k,a) ∈ (gmap_to_list M)) <-> (M !! k = Some a).
+(* Lemma gmap_to_list_lookup `{Countable K} {A} (M : gmap K A) (k : K) (a : A):
+  ((k,a) ∈ (gmap_to_list M)) <-> (M !! k = Some a).
 Proof.
   unfold elem_of.
   unfold lookup.
@@ -62,7 +55,7 @@ Proof.
     apply elem_of_list_omap.
     exists (encode k, a). firstorder.
     rewrite -> decode_encode. simpl. reflexivity.
-Qed.
+Qed. *)
 
 #[global]
 Program Instance inj_unit_r {K} : @Inj (K * ()) K (@eq (K * ())) (@eq K) (@fst K ()).
@@ -76,7 +69,7 @@ Proof.
   destruct S as [M].
   unfold elem_of at 2.
   unfold gset_elem_of. unfold mapset_elem_of. simpl.
-  rewrite <- gmap_to_list_lookup.
+  rewrite <- elem_of_map_to_list.
   unfold map_to_list.
   assert (Hk : k = fst (k, ())).
   { reflexivity. }
@@ -389,6 +382,15 @@ Proof.
     reflexivity.
 Qed.
 
+Lemma zip_smaller :
+  forall {T1 T2} (l1 : list T1) (l2 : list T2), length l1 = length l2 ->
+    forall l3, zip l1 l2 = zip l1 (l2 ++ l3).
+Proof.
+  induction l1; destruct l2; intros Hlen l3; simpl; try reflexivity.
+  * simpl in Hlen. lia.
+  * f_equal. erewrite IHl1. reflexivity. simpl in Hlen. lia.
+Qed.
+
 Lemma reverse_zip_tail_r {A : Type} (m : A) (l : list A) :
   reverse (zip (m :: l) (tail (m :: l)))
   = zip (tail (reverse (m :: l))) (reverse (m :: l)).
@@ -461,12 +463,21 @@ Proof.
       { lia. }
       rewrite H2.
       rewrite take_app.
-      reflexivity.
+      rewrite Nat.sub_diag. simpl.
+      by rewrite firstn_all app_nil_r.
     }
     rewrite -> H2 at 4.
 
-    rewrite zip_with_take_r.
-    reflexivity.
+    rewrite Nat.sub_diag.
+    rewrite drop_all. simpl.
+    rewrite take_length.
+    rewrite Nat.min_l.
+    1: rewrite length_tail app_length; lia.
+    rewrite app_nil_r length_tail app_length. simpl.
+    replace ((_ + 1 - 1)) with ((length (reverse l'))) by lia.
+    rewrite firstn_all.
+    rewrite <-zip_smaller with (l3 := [x']). reflexivity.
+    rewrite length_tail app_length. simpl. lia.
 Qed.
 
 Lemma Forall_zip_flip_reverse {A : Type} (f : A -> A -> Prop) (m : A) (l : list A) :

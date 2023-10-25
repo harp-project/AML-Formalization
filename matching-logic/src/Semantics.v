@@ -1992,7 +1992,7 @@ Section with_model.
         epose proof (IHsz (phi^{evar: 0 ↦ fresh}) 
                     psi X
                     (update_evar_val fresh c ρ) _ _ ) as H8.
-        feed specialize H8.
+        ospecialize* H8.
         { wf_auto2. }
         pose proof (eval_free_evar_independent ρ fresh c psi) as H9.
         rewrite -> H9 in H8. clear H9.

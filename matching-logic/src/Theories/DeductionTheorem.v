@@ -84,10 +84,10 @@ Proof.
       { gapply A_impl_A. eapply pile_trans;[|apply pile]; try_solve_pile. wf_auto2. }
 
     + pose proof (IH1 := IHsz cpatt1).
-      feed specialize IH1.
+      ospecialize* IH1.
       { wf_auto2. }
       { lia. }
-      destruct IH1 as [IH1 _]. feed specialize IH1.
+      destruct IH1 as [IH1 _]. ospecialize* IH1.
       {
         clear -Hp. unfold is_positive_context in *. simpl in *.
         unfold evar_has_negative_occurrence in Hp.
@@ -96,10 +96,10 @@ Proof.
         assumption.
       }
       pose proof (IH2 := IHsz cpatt2).
-      feed specialize IH2.
+      ospecialize* IH2.
       { wf_auto2. }
       { lia. }
-      destruct IH2 as [IH2 _]. feed specialize IH2.
+      destruct IH2 as [IH2 _]. ospecialize* IH2.
       {
         clear -Hp. unfold is_positive_context in *. simpl in *.
         unfold evar_has_negative_occurrence in Hp.
@@ -130,10 +130,10 @@ Proof.
       destruct_and! Hp.
 
       pose proof (IH := IHsz (cpatt2)).
-      feed specialize IH.
+      ospecialize* IH.
       { wf_auto2. }
       { lia. }
-      destruct IH as [IH _]. feed specialize IH.
+      destruct IH as [IH _]. ospecialize* IH.
       {
         unfold is_positive_context. simpl. assumption.
       }
@@ -148,19 +148,19 @@ Proof.
       fromMLGoal.
 
       pose proof (IH := IHsz cpatt1).
-      feed specialize IH.
+      ospecialize* IH.
       { wf_auto2. }
       { lia. }
-      destruct IH as [_ IH]. feed specialize IH.
+      destruct IH as [_ IH]. ospecialize* IH.
       { unfold is_negative_context. simpl. assumption. }
       assumption.
 
     + remember (evar_fresh_s ({[cvar]} ∪ free_evars cpatt ∪ free_evars ψ ∪ free_evars ϕ)) as x.
       pose proof (IH := IHsz (evar_open x 0 cpatt)).
-      feed specialize IH.
+      ospecialize* IH.
       { wf_auto2. }
       { rewrite evar_open_size'. lia. }
-      destruct IH as [IH _]. feed specialize IH.
+      destruct IH as [IH _]. ospecialize* IH.
       {
         clear -Hp Heqx. unfold is_positive_context in *. simpl in *.
         unfold evar_has_negative_occurrence in Hp.
@@ -212,10 +212,10 @@ Proof.
 
     + remember (svar_fresh_s (free_svars cpatt ∪ free_svars ψ ∪ free_svars ϕ ∪ free_svars cpatt^[[evar:cvar↦ϕ]] ∪ free_svars cpatt^[[evar:cvar↦ψ]])) as X.
       pose proof (IH := IHsz (svar_open X 0 cpatt)).
-      feed specialize IH.
+      ospecialize* IH.
       { wf_auto2. }
       { rewrite svar_open_size'. lia. }
-      destruct IH as [IH _]. feed specialize IH.
+      destruct IH as [IH _]. ospecialize* IH.
       {
         clear -Hp. unfold is_positive_context in *. simpl in *.
         cbn in Hp.
@@ -231,7 +231,7 @@ Proof.
         unfold well_formed in wfc. simpl in wfc.
         destruct_and! wfc.
         pose proof (Hneg := free_evar_subst_preserves_no_negative_occurrence cvar cpatt ϕ 0).
-        feed specialize Hneg.
+        ospecialize* Hneg.
         { wf_auto2. }
         { assumption. }
         cbn in Hp.
@@ -249,7 +249,7 @@ Proof.
         unfold well_formed in wfc. simpl in wfc.
         destruct_and! wfc.
         pose proof (Hneg := free_evar_subst_preserves_no_negative_occurrence cvar cpatt ψ 0).
-        feed specialize Hneg.
+        ospecialize* Hneg.
         { wf_auto2. }
         { assumption. }
         cbn in Hp.
@@ -322,10 +322,10 @@ Proof.
       { gapply A_impl_A. eapply pile_trans;[|apply pile]; try_solve_pile. wf_auto2. }
 
     + pose proof (IH1 := IHsz cpatt1).
-      feed specialize IH1.
+      ospecialize* IH1.
       { wf_auto2. }
       { lia. }
-      destruct IH1 as [_ IH1]. feed specialize IH1.
+      destruct IH1 as [_ IH1]. ospecialize* IH1.
       {
         clear -Hp. unfold is_negative_context in *. simpl in *.
         cbn in Hp.
@@ -333,10 +333,10 @@ Proof.
         assumption.
       }
       pose proof (IH2 := IHsz cpatt2).
-      feed specialize IH2.
+      ospecialize* IH2.
       { wf_auto2. }
       { lia. }
-      destruct IH2 as [_ IH2]. feed specialize IH2.
+      destruct IH2 as [_ IH2]. ospecialize* IH2.
       {
         clear -Hp. unfold is_negative_context in *. simpl in *.
         cbn in Hp.
@@ -366,10 +366,10 @@ Proof.
       destruct_and! Hp.
 
       pose proof (IH := IHsz (cpatt2)).
-      feed specialize IH.
+      ospecialize* IH.
       { wf_auto2. }
       { lia. }
-      destruct IH as [_ IH]. feed specialize IH.
+      destruct IH as [_ IH]. ospecialize* IH.
       {
         unfold is_negative_context. simpl. assumption.
       }
@@ -384,19 +384,19 @@ Proof.
       fromMLGoal.
 
       pose proof (IH := IHsz cpatt1).
-      feed specialize IH.
+      ospecialize* IH.
       { wf_auto2. }
       { lia. }
-      destruct IH as [IH _]. feed specialize IH.
+      destruct IH as [IH _]. ospecialize* IH.
       { unfold is_positive_context. simpl. assumption. }
       assumption.
 
     + remember (evar_fresh_s ({[cvar]} ∪ free_evars cpatt ∪ free_evars ψ ∪ free_evars ϕ)) as x.
       pose proof (IH := IHsz (evar_open x 0 cpatt)).
-      feed specialize IH.
+      ospecialize* IH.
       { wf_auto2. }
       { rewrite evar_open_size'. lia. }
-      destruct IH as [_ IH]. feed specialize IH.
+      destruct IH as [_ IH]. ospecialize* IH.
       {
         clear -Hp Heqx. unfold is_negative_context in *. simpl in *.
         cbn in Hp.
@@ -447,10 +447,10 @@ Proof.
 
     + remember (svar_fresh_s (free_svars cpatt ∪ free_svars ψ ∪ free_svars ϕ ∪ free_svars cpatt^[[evar:cvar↦ϕ]] ∪ free_svars cpatt^[[evar:cvar↦ψ]])) as X.
       pose proof (IH := IHsz (svar_open X 0 cpatt)).
-      feed specialize IH.
+      ospecialize* IH.
       { wf_auto2. }
       { rewrite svar_open_size'. lia. }
-      destruct IH as [_ IH]. feed specialize IH.
+      destruct IH as [_ IH]. ospecialize* IH.
       {
         clear -Hp. unfold is_negative_context in *. simpl in *.
         cbn in Hp.
@@ -466,7 +466,7 @@ Proof.
         unfold well_formed in wfc. simpl in wfc.
         destruct_and! wfc.
         pose proof (Hneg := free_evar_subst_preserves_no_negative_occurrence cvar cpatt ψ 0).
-        feed specialize Hneg.
+        ospecialize* Hneg.
         { wf_auto2. }
         { assumption. }
         cbn in Hp.
@@ -484,7 +484,7 @@ Proof.
         unfold well_formed in wfc. simpl in wfc.
         destruct_and! wfc.
         pose proof (Hneg := free_evar_subst_preserves_no_negative_occurrence cvar cpatt ϕ 0).
-        feed specialize Hneg.
+        ospecialize* Hneg.
         { wf_auto2. }
         { assumption. }
         cbn in Hp.
@@ -625,7 +625,7 @@ Proof.
     }
     { apply pf_iff_split;[wf_auto2|wf_auto2|aapply A_impl_A|aapply A_impl_A];wf_auto2; set_solver. }
   + pose proof (IH1 := IHsz cpatt1).
-    feed specialize IH1.
+    ospecialize* IH1.
     { wf_auto2. }
     {
       unfold mu_in_evar_path in *.
@@ -640,7 +640,7 @@ Proof.
       lia.
     }
     pose proof (IH2 := IHsz cpatt2).
-    feed specialize IH2.
+    ospecialize* IH2.
     { wf_auto2. }
     {
       unfold mu_in_evar_path in *.
@@ -709,7 +709,7 @@ Proof.
     apply pf_iff_equiv_refl.
     wf_auto2.
   + pose proof (IH1 := IHsz cpatt1).
-    feed specialize IH1.
+    ospecialize* IH1.
     { wf_auto2. }
     {
       unfold mu_in_evar_path in *.
@@ -722,7 +722,7 @@ Proof.
     }
     { lia. }
     pose proof (IH2 := IHsz cpatt2).
-    feed specialize IH2.
+    ospecialize* IH2.
     { wf_auto2. }
     {
       unfold mu_in_evar_path in *.
@@ -823,7 +823,7 @@ Proof.
     {
       mlDestructEx "H" as x0.
       specialize (IHsz (cpatt^{evar:0↦x0})).
-      feed specialize IHsz.
+      ospecialize* IHsz.
       {
         wf_auto2.
       }
@@ -869,7 +869,7 @@ Proof.
     {
       mlDestructEx "H" as x0.
       specialize (IHsz (cpatt^{evar:0↦x0})).
-      feed specialize IHsz.
+      ospecialize* IHsz.
       {
         wf_auto2.
       }
@@ -1102,7 +1102,7 @@ Proof.
       |}
       (ψ ---> (mu , ψ and ϕ)) ψ HΓ).
     unfold emplace in HH. simpl in HH.
-    feed specialize HH.
+    ospecialize* HH.
     { wf_auto2. }
     { wf_auto2. }
     { wf_auto2. }
@@ -1113,7 +1113,7 @@ Proof.
       exfalso.
       pose proof (Htmp2 := maximal_mu_depth_to_svar_subst_evar_banned x ϕ 0 0 0).
       cbn in Htmp2.
-      feed specialize Htmp2.
+      ospecialize* Htmp2.
       {
         wf_auto2.
       }
@@ -1161,7 +1161,7 @@ Proof.
       AnyReasoning
       ).
     unfold emplace in HH'. simpl in HH'.
-    feed specialize HH'.
+    ospecialize* HH'.
     { wf_auto2. }
     { wf_auto2. }
     { wf_auto2. }
@@ -1265,7 +1265,7 @@ Proof.
 
     destruct Hpf as [Hpf2 Hpf3 Hpf4].
     simpl in Hpf2, Hpf3, Hpf4.
-    feed specialize IHpf1.
+    ospecialize* IHpf1.
     {
       constructor; simpl.
       { set_solver. }
@@ -1290,7 +1290,7 @@ Proof.
       }
     }
     { assumption. }
-    feed specialize IHpf2.
+    ospecialize* IHpf2.
     {
       constructor; simpl.
       { set_solver. }
@@ -1341,7 +1341,7 @@ Proof.
     (*
     simpl in HnoExGen.
     case_match;[congruence|]. *)
-    feed specialize IHpf.
+    ospecialize* IHpf.
     {
       constructor; simpl.
       { clear -Hpf2. set_solver. }
@@ -1414,7 +1414,7 @@ Proof.
       destruct_and!. split_and!; auto. }
     destruct Hpf as [Hpf2 Hpf3 Hpf4 Hpf5].
     simpl in Hpf2,Hpf3,Hpf4.
-    feed specialize IHpf.
+    ospecialize* IHpf.
     {
       constructor; simpl.
       { set_solver. }
@@ -1447,7 +1447,7 @@ Proof.
 
     destruct Hpf as [Hpf2 Hpf3 Hpf4 Hpf5].
     simpl in Hpf2,Hpf3,Hpf4.
-    feed specialize IHpf.
+    ospecialize* IHpf.
     {
       constructor; simpl.
       { set_solver. }
@@ -1466,7 +1466,7 @@ Proof.
     simpl in HnoExGen. simpl in HnoSvarSubst. simpl in IHpf.
     destruct Hpf as [Hpf2 Hpf3 Hpf4 Hpf5].
     simpl in Hpf2, Hpf3, Hpf4.
-    feed specialize IHpf.
+    ospecialize* IHpf.
     {
       constructor; simpl.
       { exact Hpf2. }
@@ -1509,7 +1509,7 @@ Proof.
     apply lhs_to_and.
     1-3: clear Hpf2 Hpf3 Hpf4 Hpf5; wf_auto2.
     remember_constraint as pi.
-    feed specialize IHpf.
+    ospecialize* IHpf.
     {
       cbn. constructor; try assumption.
       {
@@ -1548,7 +1548,7 @@ Proof.
     apply negb_true_iff in Hpf5.
     remember (svar_fresh_s (free_svars ⌊ ψ ⌋ ∪ free_svars phi)) as X.
     epose proof (Htmp := @mu_and_predicate_propagation _ _ Γ phi ⌊ ψ ⌋ _ _ _).
-    feed specialize Htmp.
+    ospecialize* Htmp.
     { 
       rewrite negb_false_iff in Hf.
       exact Hf.
@@ -1652,7 +1652,7 @@ Lemma MLGoal_deduct'
 Proof.
   intros HΓ Hge Hse Hakt H.
   intros wf1 wf2. cbn in *.
-  feed specialize H.
+  ospecialize* H.
   { wf_auto2. }
   { cbn in wf2. cbn. destruct_and!. assumption. }
   cbn in *.
@@ -1700,7 +1700,7 @@ Proof.
     destruct_and!. assumption.
   }
   
-  feed specialize H.
+  ospecialize* H.
   { wf_auto2. }
   { cbn in wf2. cbn.
     rewrite map_app. cbn.

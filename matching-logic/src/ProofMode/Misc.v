@@ -206,7 +206,7 @@ Proof.
     wf_auto2.
   }
 
-  feed specialize H.
+  ospecialize* H.
   {
     cbn. wf_auto2.
   }
@@ -287,7 +287,7 @@ Proof.
   apply MLGoal_weakenConclusionGen'.
   intros wf1 wf2. cbn.
 
-  feed specialize H.
+  ospecialize* H.
   {
     cbn. clear H.
     destruct (rev xs) eqn:Heqxs.
@@ -1538,18 +1538,18 @@ Section FOL_helpers.
       pose proof (Hsf1 := fresh_svars_bigger (free_svars ψ1 ∪ free_svars p ∪ free_svars q) Hsl1 ltac:(set_solver)).
       
       unshelve (epose proof (pf₁ := IHsz edepth sdepth ψ1 ltac:(assumption) ltac:(assumption) evs svs gpi _ pf el Hef1 _ Hel3 sl Hsf1 _ Hsl3)). 2-3: lia.
-      { clear - i' pile. try_solve_pile.
+      { clear - i' pile. subst i'.
         cbn in *. unfold mu_in_evar_path in *. cbn in *.
-        do 2 case_match; cbn in *; auto. lia. }
+        do 2 case_match; cbn in *; auto. lia. try_solve_pile. }
 
       epose proof (Hef2 := fresh_evars_bigger (free_evars ψ2 ∪ free_evars p ∪ free_evars q ∪ {[E]}) Hel1 ltac:(set_solver)).
 
       pose proof (Hsf2 := fresh_svars_bigger (free_svars ψ2 ∪ free_svars p ∪ free_svars q) Hsl1 ltac:(set_solver)).
 
       unshelve (epose proof (pf₂ := IHsz edepth sdepth ψ2 ltac:(assumption) ltac:(assumption) evs svs gpi _ pf el Hef2 ltac:(lia) Hel3 sl Hsf2 ltac:(lia) Hsl3)).
-      { clear - i' pile. try_solve_pile.
+      { clear - i' pile. subst i'.
         cbn in *. unfold mu_in_evar_path in *. cbn in *.
-        do 2 case_match; cbn in *; auto. lia. }
+        do 2 case_match; cbn in *; auto. lia. try_solve_pile. }
 
       unshelve (eapply congruence_app); try assumption.
     }
@@ -1572,18 +1572,18 @@ Section FOL_helpers.
       
       simpl in *.
       unshelve (epose proof (pf₁ := IHsz edepth sdepth ψ1 ltac:(assumption) ltac:(assumption) evs svs gpi _ pf el Hef1 ltac:(lia) Hel3 sl Hsf1 ltac:(lia) Hsl3)).
-      { clear - i' pile. try_solve_pile.
+      { clear - i' pile. subst i'.
         cbn in *. unfold mu_in_evar_path in *. cbn in *.
-        do 2 case_match; cbn in *; auto. lia. }
+        do 2 case_match; cbn in *; auto. lia. try_solve_pile. }
 
       epose proof (Hef2 := fresh_evars_bigger (free_evars ψ2 ∪ free_evars p ∪ free_evars q ∪ {[E]}) Hel1 ltac:(set_solver)).
 
       pose proof (Hsf2 := fresh_svars_bigger (free_svars ψ2 ∪ free_svars p ∪ free_svars q) Hsl1 ltac:(set_solver)).
 
       unshelve(epose proof (pf₂ := IHsz edepth sdepth ψ2 ltac:(assumption) ltac:(assumption) evs svs gpi _ pf el Hef2 ltac:(lia) Hel3 sl Hsf2 ltac:(lia) Hsl3)).
-      { clear - i' pile. try_solve_pile.
+      { clear - i' pile. subst i'.
         cbn in *. unfold mu_in_evar_path in *. cbn in *.
-        do 2 case_match; cbn in *; auto. lia. }
+        do 2 case_match; cbn in *; auto. lia. try_solve_pile. }
 
       apply prf_equiv_of_impl_of_equiv.
       { abstract (wf_auto2). }
@@ -1625,7 +1625,7 @@ Section FOL_helpers.
         auto.
       }
       { rewrite evar_open_exists_depth. auto. lia. }
-      feed specialize IH.
+      ospecialize* IH.
       { now rewrite free_svars_evar_open. }
       { rewrite evar_open_mu_depth. auto. lia. }
       { assumption. }
@@ -1670,10 +1670,10 @@ Section FOL_helpers.
       rewrite maximal_mu_depth_to_S in pile. assumption.
 
       unshelve (epose proof (IH := IHsz edepth sdepth (ψ^{svar: 0 ↦ X}) ltac:(assumption) ltac:(assumption) evs svs gpi _ pf el)).
-      { 
+      {
         try_solve_pile.
       }
-      feed specialize IH.
+      ospecialize* IH.
       {
         now rewrite free_evars_svar_open.
       }
@@ -1683,8 +1683,7 @@ Section FOL_helpers.
       {
         assumption.
       }
-      specialize (IH sls).
-      feed specialize IH.
+      Unshelve. 5: exact sls.
       {
         constructor.
         * destruct Hsl1. apply svar_duplicates0.
@@ -1699,7 +1698,7 @@ Section FOL_helpers.
         rewrite maximal_mu_depth_to_S in Hsl2. assumption. lia.
       }
       {
-        intros. apply Hsl3. now right. 
+        intros. apply Hsl3. now right.
       }
 
       unfold svar_open in IH.
@@ -2066,7 +2065,7 @@ Proof.
   intros H pile.
   unfold of_MLGoal in *. simpl in *.
   intros wfcp wfl.
-  feed specialize H.
+  ospecialize* H.
   { abstract (
       pose proof (Hwfiff := proved_impl_wf _ _ (proj1_sig Hpiffq));
       unfold emplace;
