@@ -430,7 +430,6 @@ Tactic Notation "mlApply" constr(name') :=
   f name'
 .
 
-
 Local Example ex_mlApplyn {Σ : Signature} Γ a b:
   well_formed a ->
   well_formed b ->
@@ -3919,7 +3918,7 @@ Proof.
 Defined.
 
 Lemma MLGoal_ApplyIn {Σ : Signature} Γ l1 l2 l3 name1 name2 h h' g i:
-  mkMLGoal Σ Γ (l1 ++ (mkNH _ name1 h) :: l2 ++ (mkNH _ name2 (h')) :: l3) g i ->
+  mkMLGoal Σ Γ (l1 ++ (mkNH _ name1 h') :: l2 ++ (mkNH _ name2 (h ---> h')) :: l3) g i ->
   mkMLGoal Σ Γ (l1 ++ (mkNH _ name1 h) :: l2 ++ (mkNH _ name2 (h ---> h')) :: l3) g i.
 Proof.
     intro H.
@@ -3948,7 +3947,7 @@ Proof.
     assert (Pattern.wf (map nh_patt l2)). wf_auto2.
     assert (Pattern.wf (map nh_patt l3)). wf_auto2.
     assert (well_formed h) as wfh. wf_auto2.
-    feed specialize H.
+    ospecialize* H.
     simpl. wf_auto2.
     simpl. unfold patterns_of. repeat (rewrite map_app; simpl).
          wf_auto2.
@@ -3978,28 +3977,92 @@ Proof.
       apply modus_ponens; wf_auto2.
     + unfold patterns_of in H.
       repeat (rewrite map_app in H; simpl in H).
-      simpl. rewrite app_comm_cons. rewrite app_assoc.
-      rewrite <- app_assoc with
-                          (l := (map nh_patt l1 ++ h :: map nh_patt l2)).
+      rewrite -app_assoc.
       simpl.
       apply prf_clear_hyp_meta with
-                          (l1 := (map nh_patt l1 ++ h :: map nh_patt l2)).
+                          (l1 := (map nh_patt l1)).
       1-4:wf_auto2.
       apply reorder_last_to_middle_meta. 1-4:wf_auto2.
-      rewrite -app_assoc.
       assumption.
 Defined.
+
+Lemma MLGoal_Swap {Σ : Signature} Γ l1 l2 l3 name1 name2 h1 h2 g i:
+  mkMLGoal Σ Γ (l1 ++ (mkNH _ name1 h1) :: l2 ++ (mkNH _ name2 h2) :: l3) g i ->
+  mkMLGoal Σ Γ (l1 ++ (mkNH _ name2 h2) :: l2 ++ (mkNH _ name1 h1) :: l3) g i.
+Proof.
+  intro H.
+  unfold of_MLGoal in *. simpl in *. intros WGg Wfl.
+  assert (Pattern.wf (patterns_of l1) /\ Pattern.wf (patterns_of l2) /\ Pattern.wf (patterns_of l3)
+        /\ well_formed h1 /\ well_formed h2) as [Wfl1 [Wfl2 [Wfl3 [Wfh1 Wfh2] ] ] ]. {
+    clear -Wfl. unfold patterns_of in *; rewrite -> map_app in *.
+    simpl in *. rewrite -> map_app in *. simpl in *.
+    apply wfapp_proj_1 in Wfl as Wfl1.
+    apply wfapp_proj_2 in Wfl. cbn in Wfl. destruct_and!.
+    apply wfapp_proj_1 in H0 as Wfl2.
+    apply wfapp_proj_2 in H0. cbn in H0. destruct_and!.
+    firstorder.
+  }
+  ospecialize* H. 1: assumption.
+  1: {
+    unfold patterns_of. rewrite map_app. simpl. rewrite map_app. simpl.
+    wf_auto2.
+  }
+  unfold patterns_of in *; rewrite -> map_app in *.
+  simpl in *. rewrite -> map_app in *. simpl in *.
+  apply reorder_head_to_middle_meta in H. 2-5: wf_auto2.
+  rewrite app_comm_cons app_assoc in H.
+  apply reorder_head_to_middle_meta in H. 2-5: wf_auto2.
+  rewrite app_comm_cons app_assoc.
+  apply reorder_middle_to_head_meta. 1-4: wf_auto2.
+  rewrite app_comm_cons. rewrite -(app_assoc (h1 :: map nh_patt l1) _ (map nh_patt l3)).
+  apply reorder_middle_to_head_meta. 1-4: wf_auto2. cbn.
+  rewrite app_assoc. assumption.
+Defined.
+
+Ltac2 do_mlSwap (n1 : constr) (n2 : constr) :=
+  Control.enter(fun () =>
+    _ensureProofMode;
+    _mlReshapeHypsBy2Names n1 n2;
+    apply MLGoal_Swap;
+    _mlReshapeHypsBackTwice
+  )
+.
+
+Ltac2 Notation "mlSwap" n1(constr) "with" n2(constr) :=
+  do_mlSwap n1 n2.
+
+Tactic Notation "mlSwap" constr(n1) "with" constr(n2) :=
+  let f := ltac2:(n1 n2 |- do_mlSwap (Option.get (Ltac1.to_constr n1)) (Option.get (Ltac1.to_constr n2))) in
+  f n1 n2.
+
+Ltac2 do_mlApplyIn (name1' : constr) (name2' : constr) :=
+  Control.enter(fun () => 
+    _ensureProofMode;
+    _mlReshapeHypsBy2Names name1' name2';
+    (
+    (* Check the order of the hypotheses *)
+    match! goal with
+    | [ |- @of_MLGoal _ (@mkMLGoal _ _ (_ ++ ((@mkNH _ _ ?h :: _) ++ (@mkNH _ _ (?h ---> _) :: _))) _ _) ] =>
+      apply MLGoal_ApplyIn;
+      _mlReshapeHypsBackTwice
+    | [ |- _ ] => _mlReshapeHypsBackTwice;
+                  mlSwap $name1' with $name2';
+                  _mlReshapeHypsBy2Names name2' name1' ;
+                  apply MLGoal_ApplyIn;
+                  _mlReshapeHypsBackTwice;
+                  mlSwap $name1' with $name2'
+    end
+   )
+  )
+.
+
+Ltac2 Notation "mlApply" n1(constr) "in" n2(constr) :=
+  do_mlApplyIn n1 n2.
+
 Tactic Notation "mlApply" constr(name1') "in" constr(name2') :=
-  _ensureProofMode;
-  (* eapply cast_proof_ml_hyps;
-  f_equal; *)
-  _mlReshapeHypsByName name2';
-  _mlReshapeHypsByName name1';
-  apply MLGoal_ApplyIn with (name1 := name1') (name2 := name2');
-  rewrite -app_comm_cons;
-  _mlReshapeHypsBack;
-  repeat rewrite app_comm_cons;
-  _mlReshapeHypsBack.
+  let f := ltac2:(name1' name2' |- do_mlApplyIn (Option.get (Ltac1.to_constr name1')) (Option.get (Ltac1.to_constr name2'))) in
+  f name1' name2'.
+
 
 Example ex_mlApplyIn {Σ : Signature} Γ a b c d e f i:
   well_formed a -> well_formed b ->
@@ -4013,7 +4076,15 @@ Proof.
   mlIntro.
   mlIntro.
   mlIntro.
-  mlApply "1" in "3".
+  _mlReshapeHypsBy2Names "3" "4".
+  _mlReshapeHypsBackTwice.
+  _mlReshapeHypsBy2Names "4" "2".
+  _mlReshapeHypsBackTwice.
+  _mlReshapeHypsBy2Names "4" "4".
+  mlSwap "3" with "4".
+  mlApply "3" in "4".
+  mlSwap "1" with "3".
+  mlApply "3" in "1".
   mlAssumption.
 Qed.
 
@@ -4033,18 +4104,16 @@ Proof.
   fromMLGoal.
   assert (well_formed p1 /\ well_formed p2) as [wfp1 wfp2].
   {
-    Search Pattern.wf app cons well_formed.
     unfold patterns_of in wfl.
     rewrite map_app in wfl. simpl in wfl. rewrite map_app in wfl. simpl in wfl.
     pose proof (wfl₁hl₂_proj_h _ _ _ wfl).
     (* pose proof (app_assoc (map nh_patt l1) (p1 :: map nh_patt l2) (p2 :: map nh_patt l3)). *)
-    Search app cons eq.
     rewrite app_comm_cons app_assoc in wfl.
     pose proof (wfl₁hl₂_proj_h _ _ _ wfl).
     wf_auto2.
   }
 
-  feed specialize h1.
+  ospecialize* h1.
   simpl. exact wfg.
   simpl. wf_auto2.
   (* apply wf_cons. *)
@@ -4065,26 +4134,21 @@ Proof.
     1-3: wf_auto2.
 Defined.
 
-Tactic Notation "mlConjIntro" constr(name1') constr(name2') "as" constr(conj_name') :=
-  _ensureProofMode;
-  _failIfUsed conj_name';
-  (* eapply cast_proof_ml_hyps;
-  f_equal; *)
-  _mlReshapeHypsByName name2';
-  _mlReshapeHypsByName name1';
-  apply MLGoal_conjugate_hyps with (name1 := name1') (name2 := name2') (conj_name := conj_name');
-  rewrite app_comm_cons;
-  _mlReshapeHypsBack;
-  repeat rewrite app_comm_cons;
-  _mlReshapeHypsBack.
+Ltac2 do_mlConj (name1' : constr) (name2' : constr) (conj_name' : constr) :=
+  Control.enter(fun () => 
+    _ensureProofMode;
+    _mlReshapeHypsBy2Names name1' name2';
+    apply MLGoal_conjugate_hyps with (conj_name := $conj_name');
+    rewrite app_comm_cons;
+    _mlReshapeHypsBackTwice
+  ).
 
-Tactic Notation "mlConjIntro" constr(name1') constr(name2') :=
-  _ensureProofMode;
-  (* eapply cast_proof_ml_hyps;
-  f_equal; *)
-  let hyps := _getHypNames in
-  let conj_name' := eval cbv in (fresh hyps) in
-  mlConjIntro name1' name2' as conj_name'.
+Ltac2 Notation "mlConj" n1(constr) n2(constr) "as" n3(constr) :=
+  do_mlConj n1 n2 n3.
+
+Tactic Notation "mlConj" constr(n1) constr(n2) "as" constr(n3) :=
+  let f := ltac2:(n1 n2 n3 |- do_mlConj (Option.get (Ltac1.to_constr n1)) (Option.get (Ltac1.to_constr n2)) (Option.get (Ltac1.to_constr n3))) in
+  f n1 n2 n3.
 
   (**********************************************************************************)
 
@@ -4095,14 +4159,10 @@ Example ex_ml_conj_intro {Σ : Signature} Γ a b c d e f i:
    Γ ⊢i (a ---> b ---> c ---> d ---> e ---> f ---> (b and e)) using i.
 Proof.
   intros wfa wfb wfc wfd wfe wff.
-  mlIntro; mlIntro; mlIntro; mlIntro; mlIntro; mlIntro. 
-  mlConjIntro "1" "4" as "CONJUCTION".
-  mlConjIntro "1" "4".
-  (* is this an issue or just a different lemma *)
-  Fail mlConjIntro "0" "0" as "conj with self".
-  (* we force the order or of hypotheses currently *)
-  Fail mlConjIntro "4" "1" as "reverse order".
-  mlExact "CONJUCTION".
+  mlIntro; mlIntro; mlIntro; mlIntro; mlIntro; mlIntro.
+  mlConj "1" "4" as "CONJUCTION".
+  mlConj "4" "1" as "CN". (* <- TODO: limitation, this won't be the commutative version of the previous hypothesis *)
+  mlAssumption.
 Qed.
 
 (* This is an example and belongs to the end of this file.
