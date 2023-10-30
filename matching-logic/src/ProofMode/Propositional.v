@@ -4134,13 +4134,42 @@ Proof.
     1-3: wf_auto2.
 Defined.
 
-Ltac2 do_mlConj (name1' : constr) (name2' : constr) (conj_name' : constr) :=
+Lemma patt_and_comm_basic {Σ : Signature}
+  (Γ : Theory)
+  (φ1 φ2 : Pattern) :
+  well_formed φ1 -> well_formed φ2 ->
+  Γ ⊢i φ1 and φ2 ---> φ2 and φ1 using BasicReasoning.
+Proof.
+  intros wf1 wf2.
+  pose proof (patt_and_comm) as H.
+  eapply pf_iff_proj1 in H.
+  eassumption.
+  all: wf_auto2.
+Defined.
+
+Ltac2 do_mlConj (n1 : constr) (n2 : constr) (conj_name' : constr) :=
   Control.enter(fun () => 
     _ensureProofMode;
-    _mlReshapeHypsBy2Names name1' name2';
+    _mlReshapeHypsBy2Names n1 n2;
     apply MLGoal_conjugate_hyps with (conj_name := $conj_name');
     rewrite app_comm_cons;
-    _mlReshapeHypsBackTwice
+    _mlReshapeHypsBackTwice;
+    match! goal with
+    | [ |- @of_MLGoal _ (@mkMLGoal _ _ ?l _ _) ] =>
+      match! eval cbv in (index_of $n1 (names_of $l)) with
+      | (Some ?i1) =>
+         match! eval cbv in (index_of $n2 (names_of $l)) with
+         | (Some ?i2) =>
+           match! (eval cbv in (Nat.compare $i1 $i2)) with
+           | (Lt) => ()
+           | (Gt) => mlApplyMeta patt_and_comm_basic in $conj_name'
+           | (Eq) => Message.print (Message.of_string "Equal names were used")
+           end
+        | (None) => Message.print (Message.concat (Message.of_string "No such name: ") (Message.of_constr n2))
+         end
+       | (None) => Message.print (Message.concat (Message.of_string "No such name: ") (Message.of_constr n2))
+       end
+     end
   ).
 
 Ltac2 Notation "mlConj" n1(constr) n2(constr) "as" n3(constr) :=
@@ -4160,10 +4189,10 @@ Example ex_ml_conj_intro {Σ : Signature} Γ a b c d e f i:
 Proof.
   intros wfa wfb wfc wfd wfe wff.
   mlIntro; mlIntro; mlIntro; mlIntro; mlIntro; mlIntro.
-  mlConj "1" "4" as "CONJUCTION".
-  mlConj "4" "1" as "CN". (* <- TODO: limitation, this won't be the commutative version of the previous hypothesis *)
+  mlConj "1" "4" as "CN1".
+  mlConj "4" "1" as "CN2".
   mlAssumption.
-Qed.
+Defined.
 
 (* This is an example and belongs to the end of this file.
    Its only purpose is only to show as many tactics as possible.\
