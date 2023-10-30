@@ -24,8 +24,8 @@
 | `mlApply "H"`                            | apply an implication from a local hypothesis `"H"` to the goal |
 | `mlApply "H" in "H0"`                    | apply an implication from a local hypothesis `"H"` to another hypothesis "H0" |
 | `mlApplyMeta term`                       | apply an implication (or a chain of implications) from a lemma or a Coq hypothesis to the goal |
-| `mlRewrite term`, `mlRewrite <- term`    | rewrite using a global hypothesis or a lemma that is a matching logic equivalence, where `term` is fully specialized |
-| `mlRewriteBy "H"`                        | rewrite using a local hypothesis that is a matching logic equality (when working under the theory of definedness) - elimination of equality |
+| `mlRewrite term at n`, `mlRewrite <- term at n` | rewrite using a global hypothesis or a lemma that is a matching logic equivalence, where `term` is fully specialized |
+| `mlRewriteBy "H" at n`                   | rewrite using a local hypothesis that is a matching logic equality (when working under the theory of definedness) - elimination of equality |
 | `mlReflexivity`                          | finish proof of a conclusion of the shape `phi =ml phi` - introduction of equality |
 | `mlSymmetry`, `mlSymmetry in "H"`        | swaps the sides of an equality |
 | `mlSwap "H" with "H0"`                   | swaps the positions of two hypotheses |
