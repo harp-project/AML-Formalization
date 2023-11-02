@@ -4154,22 +4154,22 @@ Ltac2 do_mlConj (n1 : constr) (n2 : constr) (conj_name' : constr) :=
     apply MLGoal_conjugate_hyps with (conj_name := $conj_name');
     rewrite app_comm_cons;
     _mlReshapeHypsBackTwice;
-    match! goal with
+    lazy_match! goal with
     | [ |- @of_MLGoal _ (@mkMLGoal _ _ ?l _ _) ] =>
-      match! eval cbv in (index_of $n1 (names_of $l)) with
+      lazy_match! eval cbv in (index_of $n1 (names_of $l)) with
       | (Some ?i1) =>
-         match! eval cbv in (index_of $n2 (names_of $l)) with
+         lazy_match! eval cbv in (index_of $n2 (names_of $l)) with
          | (Some ?i2) =>
-           match! (eval cbv in (Nat.compare $i1 $i2)) with
+           lazy_match! (eval cbv in (Nat.compare $i1 $i2)) with
            | (Lt) => ()
            | (Gt) => mlApplyMeta patt_and_comm_basic in $conj_name'
-           | (Eq) => Message.print (Message.of_string "Equal names were used")
+           | (Eq) => Message.print (Message.of_string "Equal names were used"); fail
            end
-        | (None) => Message.print (Message.concat (Message.of_string "No such name: ") (Message.of_constr n2))
-         end
-       | (None) => Message.print (Message.concat (Message.of_string "No such name: ") (Message.of_constr n2))
-       end
-     end
+        | (None) => Message.print (Message.concat (Message.of_string "No such name: ") (Message.of_constr n2)); fail
+        end
+      | (None) => Message.print (Message.concat (Message.of_string "No such name: ") (Message.of_constr n2)); fail
+      end
+    end
   ).
 
 Ltac2 Notation "mlConj" n1(constr) n2(constr) "as" n3(constr) :=
@@ -4283,6 +4283,118 @@ Defined.
       + mlRight.
         mlApplyMeta q'iq.
         mlExact "H2". 
+  Defined.
+
+
+  Class MLReflexive {Σ : Signature} (op : Pattern -> Pattern -> Pattern) := {
+    op_well_formed : forall φ ψ,
+      well_formed (op φ ψ) -> well_formed φ /\ well_formed ψ;
+    mlReflexivity :
+      forall Γ φ i, well_formed φ -> Γ ⊢i op φ φ using i;
+  }.
+
+  #[global]
+  Instance patt_imp_is_reflexive {Σ : Signature} : @MLReflexive Σ patt_imp.
+  Proof.
+    constructor; intros.
+    * wf_auto2.
+    * gapply A_impl_A. try_solve_pile. assumption.
+  Defined.
+
+  #[export]
+  Hint Resolve patt_imp_is_reflexive : core.
+
+  #[global]
+  Instance patt_iff_is_reflexive {Σ : Signature} : @MLReflexive Σ patt_iff.
+  Proof.
+    constructor; intros.
+    * wf_auto2.
+    * gapply pf_iff_equiv_refl. try_solve_pile. assumption.
+  Defined.
+
+  #[export]
+  Hint Resolve patt_iff_is_reflexive : core.
+
+  Lemma MLGoal_reflexivity {Σ : Signature} Γ l φ i op {_ : MLReflexive op} :
+    mkMLGoal _ Γ l (op φ φ) i.
+  Proof.
+    intros HΓ. unfold of_MLGoal. simpl. intros wfl.
+    eapply MP. 2: gapply nested_const.
+    2: try_solve_pile. 2-3: wf_auto2.
+    apply mlReflexivity.
+    cbn in HΓ. by apply op_well_formed in HΓ as [_ ?].
+  Defined.
+
+  Ltac2 do_mlReflexivity () :=
+    Control.enter(fun () =>
+      _ensureProofMode;
+      lazy_match! goal with
+      | [ |- @of_MLGoal _ (@mkMLGoal _ _ _ (?op ?g ?g) _) ] =>
+        match! goal with (* error handling *)
+        | [ |- _] => now (apply MLGoal_reflexivity; eauto)
+        | [ |- _] =>
+          Message.print(
+          Message.concat (Message.of_constr op) (Message.of_string " is not reflexive!")
+          ); fail
+        end
+      | [ |- _] => Message.print (Message.of_string "Goal is not shaped as φ = φ!"); fail
+      end
+    ).
+
+  Ltac2 Notation "mlReflexivity" :=
+    do_mlReflexivity ().
+
+
+  Tactic Notation "mlReflexivity" :=
+    ltac2:(do_mlReflexivity ()).
+
+#[local]
+  Example reflexive_imp_test1 {Σ : Signature} Γ p q p' q' i:
+    well_formed p ->
+    well_formed q ->
+    well_formed p' ->
+    well_formed q' ->
+    Γ ⊢i p ---> p using i.
+  Proof.
+    intros. toMLGoal. wf_auto2.
+    mlReflexivity.
+  Defined.
+
+#[local]
+  Example notreflexive_and_test1 {Σ : Signature} Γ p q p' q' i:
+    well_formed p ->
+    well_formed q ->
+    well_formed p' ->
+    well_formed q' ->
+    Γ ⊢i p and p using i.
+  Proof.
+    intros. toMLGoal. wf_auto2.
+    Fail mlReflexivity.
+  Abort.
+
+#[local]
+  Example reflexive_imp_test2 {Σ : Signature} Γ p q p' q' i:
+    well_formed p ->
+    well_formed q ->
+    well_formed p' ->
+    well_formed q' ->
+    Γ ⊢i q ---> q' ---> p' ---> p ---> p using i.
+  Proof.
+    intros. repeat mlIntro.
+    mlRevertLast.
+    mlReflexivity.
+  Defined.
+
+#[local]
+  Example reflexive_iff_test {Σ : Signature} Γ p q p' q' i:
+    well_formed p ->
+    well_formed q ->
+    well_formed p' ->
+    well_formed q' ->
+    Γ ⊢i q ---> q' ---> p' ---> p <---> p using i.
+  Proof.
+    intros. do 3 mlIntro.
+    mlReflexivity.
   Defined.
 
 Close Scope string_scope.
