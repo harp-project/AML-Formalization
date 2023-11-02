@@ -4287,7 +4287,7 @@ Defined.
 
 
   Class MLReflexive {Σ : Signature} (op : Pattern -> Pattern -> Pattern) := {
-    op_well_formed : forall φ ψ,
+    reflexive_op_well_formed : forall φ ψ,
       well_formed (op φ ψ) -> well_formed φ /\ well_formed ψ;
     mlReflexivity :
       forall Γ φ i, well_formed φ -> Γ ⊢i op φ φ using i;
@@ -4322,7 +4322,7 @@ Defined.
     eapply MP. 2: gapply nested_const.
     2: try_solve_pile. 2-3: wf_auto2.
     apply mlReflexivity.
-    cbn in HΓ. by apply op_well_formed in HΓ as [_ ?].
+    cbn in HΓ. by apply reflexive_op_well_formed in HΓ as [_ ?].
   Defined.
 
   Ltac2 do_mlReflexivity () :=
