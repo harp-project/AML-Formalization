@@ -20,10 +20,13 @@
 | `mlExists x`                             | use `x` to specialize an existential goal - introduction of existential quantifier |
 | `mlDestructEx "H" as x`                  | use the local hypothesis `"H"` to extract a witness `x`, where `x` already is a fresh variable - elimination of existential quantifier |
 | `mlIntroAll x`                           | specialize a universally quantified goal, where `x` already is a fresh variable - introduction of universal quantifier |
-| `mlSpecialize "H" with x`                | specialize a local hypothesis "H" using a variable `x` - elimination of universal quantifier |
-| `mlApply "H"`                            | apply an implication from a local hypothesis "H" to the goal |
+| `mlSpecialize "H" with x`                | specialize a local hypothesis `"H"` using a variable `x` - elimination of universal quantifier |
+| `mlApply "H"`                            | apply an implication from a local hypothesis `"H"` to the goal |
+| `mlApply "H" in "H0"`                    | apply an implication from a local hypothesis `"H"` to another hypothesis "H0" |
 | `mlApplyMeta term`                       | apply an implication (or a chain of implications) from a lemma or a Coq hypothesis to the goal |
-| `mlRewrite term`, `mlRewrite <- term`    | rewrite using a global hypothesis or a lemma that is a matching logic equivalence, where `term` is fully specialized |
-| `mlRewriteBy "H"`                        | rewrite using a local hypothesis that is a matching logic equality (when working under the theory of definedness) - elimination of equality |
+| `mlRewrite term at n`, `mlRewrite <- term at n` | rewrite using a global hypothesis or a lemma that is a matching logic equivalence, where `term` is fully specialized |
+| `mlRewriteBy "H" at n`                   | rewrite using a local hypothesis that is a matching logic equality (when working under the theory of definedness) - elimination of equality |
 | `mlReflexivity`                          | finish proof of a conclusion of the shape `phi =ml phi` - introduction of equality |
 | `mlSymmetry`, `mlSymmetry in "H"`        | swaps the sides of an equality |
+| `mlSwap "H" with "H0"`                   | swaps the positions of two hypotheses |
+| `mlConj "H1" "H2" as "HC"`               | makes a conjunction of two hypotheses |

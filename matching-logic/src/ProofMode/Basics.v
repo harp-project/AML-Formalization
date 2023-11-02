@@ -344,6 +344,85 @@ Tactic Notation "_mlReshapeHypsBack" :=
   ltac2:(do_mlReshapeHypsBack ())
 .
 
+Ltac2 do_mlReshapeHypsBy2Idx (i1:constr) (i2:constr) :=
+    match! (eval cbv in (Nat.compare $i1 $i2)) with
+    | (Lt) => ltac1:(unshelve ltac2:(eapply (@cast_proof_ml_hyps _ _ _ _ _ _ _)))>
+              [ltac1:(shelve)|
+              (apply f_equal;
+               rewrite <- (firstn_skipn $i2);
+               ltac1:(rewrite /firstn); ltac1:(rewrite /skipn);
+               rewrite <- (firstn_skipn $i1);
+               ltac1:(rewrite -> take_app_le by (simpl; lia));
+               ltac1:(rewrite -> drop_app_le by (simpl; lia));
+               ltac1:(rewrite /firstn); ltac1:(rewrite /skipn); reflexivity)
+              |()]
+    | (Gt) => ltac1:(unshelve ltac2:(eapply (@cast_proof_ml_hyps _ _ _ _ _ _ _)))>
+              [ltac1:(shelve)|
+              (apply f_equal;
+               rewrite <- (firstn_skipn $i1);
+               ltac1:(rewrite /firstn); ltac1:(rewrite /skipn);
+               rewrite <- (firstn_skipn $i2);
+               ltac1:(rewrite -> take_app_le by (simpl; lia));
+               ltac1:(rewrite -> drop_app_le by (simpl; lia));
+               ltac1:(rewrite /firstn); ltac1:(rewrite /skipn); reflexivity)
+              |()]
+    | (Eq) => Message.print (Message.of_string "Equal names were used")
+    end
+.
+
+(* These tactics are used for proof mode tactics that operate with two
+   hypotheses, e.g., mlApply _ in _, mlSwap *)
+Ltac2 Notation "mlReshapeHypsBy2Idx" i1(constr) i2(constr) :=
+  do_mlReshapeHypsBy2Idx i1 i2
+.
+
+Tactic Notation "_mlReshapeHypsBy2Idx" constr(i1) constr(i2) :=
+  let f := ltac2:(i1 i2 |- (do_mlReshapeHypsBy2Idx (Option.get (Ltac1.to_constr i1)) (Option.get (Ltac1.to_constr i2)))) in
+  f i1 i2
+.
+
+Ltac2 do_mlReshapeHypsBy2Names (n1 : constr) (n2 : constr) :=
+  match! goal with
+  | [ |- @of_MLGoal _ (@mkMLGoal _ _ ?l _ _) ] =>
+    match! (eval cbv in (index_of $n1 (names_of $l))) with
+    | (Some ?i1) => 
+      match! (eval cbv in (index_of $n2 (names_of $l))) with
+      | (Some ?i2) => do_mlReshapeHypsBy2Idx i1 i2
+      | None => Message.print (Message.concat (Message.of_string "No such name: ") (Message.of_constr n2))
+      end
+    | None => Message.print (Message.concat (Message.of_string "No such name: ") (Message.of_constr n1))
+    end
+  end
+.
+
+Ltac2 _mlReshapeHypsBy2Names (n1 : constr) (n2 : constr)  :=
+  do_mlReshapeHypsBy2Names n1 n2
+.
+
+Tactic Notation "_mlReshapeHypsBy2Names" constr(name1) constr(name2) :=
+  let f := ltac2:(name1 name2 |- do_mlReshapeHypsBy2Names (Option.get (Ltac1.to_constr name1)) (Option.get (Ltac1.to_constr name2))) in
+  f name1 name2
+.
+
+Ltac2 do_mlReshapeHypsBackTwice () :=
+  Control.enter (fun () =>
+    let hyps := Fresh.in_goal ident:(hyps) in
+    ltac1:(hyps |- rewrite [hyps in mkMLGoal _ _ hyps _]/app;
+                   repeat rewrite app_comm_cons; (* NOTE: this is fragile!
+                     this assumes that the hypotheses are in the following form:
+                     _ :: _ :: ... :: (_ ++ _) *)
+                   rewrite [hyps in mkMLGoal _ _ hyps _]/app) (Ltac1.of_ident hyps)
+  )
+.
+
+Ltac2 Notation "_mlReshapeHypsBackTwice" :=
+  do_mlReshapeHypsBackTwice ()
+.
+
+Tactic Notation "_mlReshapeHypsBackTwice" :=
+  ltac2:(do_mlReshapeHypsBackTwice ())
+.
+
 Lemma MLGoal_intro {Σ : Signature} (Γ : Theory) (l : hypotheses) (name : string) (x g : Pattern)
   (i : ProofInfo) :
   mkMLGoal _ Γ (l ++ [mkNH _ name x]) g i ->
