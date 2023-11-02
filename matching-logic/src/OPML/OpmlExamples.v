@@ -97,7 +97,7 @@ Module example01.
             end ;
     |}.
 
-    Definition Σ : OPMLSignature := {|
+    Instance Σ : OPMLSignature := {|
         opml_sorts := Sorts ;
         opml_variables := Vars ;
         opml_symbols := Symbols ;
@@ -107,6 +107,124 @@ Module example01.
     | cs_bool (b : bool)
     | cs_list_bool (lb : list bool)
     .
+
+    Definition _carrier := fun (s : opml_sort) =>
+        match s with
+        | sort_bool =>
+            {[ x | exists (b : bool), x = cs_bool b ]}
+        | sort_list_bool =>
+            {[ x | exists (lb : list bool), x = cs_list_bool lb ]}
+        end
+    .
+
+    Definition _app (s : opml_symbol) (args : list CarrierSet) : propset CarrierSet
+    :=
+        match s with
+        | ms_bool_true => {[ cs_bool true ]}
+        | ms_bool_false => {[ cs_bool false ]}
+        | ms_list_bool_nil => {[ cs_list_bool [] ]}
+        | ms_list_bool_cons =>
+            match args with
+            | (cs_bool b)::(cs_list_bool bs)::[] =>
+                {[ cs_list_bool (b::bs) ]}
+            | _ => ∅
+            end
+        end
+    .
+
+    Program Definition M : @OPMLModel Σ := {|
+        om_unified_carrier := CarrierSet ;
+
+        om_carrier := _carrier ;
+
+        om_app := _app ;
+    |}.
+    Next Obligation.
+        destruct m as [b|lb].
+        {
+            exists sort_bool.
+            simpl.
+            rewrite elem_of_PropSet.
+            exists b.
+            reflexivity.
+        }
+        {
+            exists sort_list_bool.
+            simpl.
+            rewrite elem_of_PropSet.
+            exists lb.
+            reflexivity.
+        }
+    Qed.
+    Next Obligation.
+        destruct sym; simpl in H.
+        {
+            rewrite elem_of_PropSet in H.
+            subst x.
+            simpl.
+            rewrite elem_of_PropSet.
+            exists true.
+            reflexivity.
+        }
+        {
+            rewrite elem_of_PropSet in H.
+            subst x.
+            simpl.
+            rewrite elem_of_PropSet.
+            exists false.
+            reflexivity.
+        }
+        {
+            rewrite elem_of_PropSet in H.
+            subst x.
+            simpl.
+            rewrite elem_of_PropSet.
+            exists [].
+            reflexivity.
+        }
+        {
+            destruct args as [|a1 args].
+            {
+                rewrite elem_of_empty in H.
+                inversion H.
+            }
+            destruct args as [|a2 args].
+            {
+                destruct a1;
+                    rewrite elem_of_empty in H;
+                    inversion H.
+            }
+            {
+                destruct a1,a2.
+                {
+                    rewrite elem_of_empty in H;
+                        inversion H.
+                }
+                {
+                    destruct args as [|a3 args].
+                    {
+                        rewrite elem_of_PropSet in H.
+                        subst x.
+                        simpl.
+                        rewrite elem_of_PropSet.
+                        eexists. reflexivity.
+                    }
+                    {
+                        rewrite elem_of_empty in H;
+                        inversion H.
+                    }
+                }
+                {
+                    rewrite elem_of_empty in H;
+                        inversion H.
+                }
+                {
+                    rewrite elem_of_empty in H;
+                        inversion H.
+                }
+            }
+        }
+    Qed.
 
 End example01.
 
