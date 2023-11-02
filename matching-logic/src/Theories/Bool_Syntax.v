@@ -127,7 +127,7 @@ Section axioms.
       all mlBool , all mlBool , ex mlBool , b1 &&ml b2 =ml b0
     | AxFunNeg => all mlBool , ex mlBool , !b b1 =ml b0
     | AxNoConfusion => all mlBool, !(mlTrue =ml mlFalse)
-    | AxInductiveDomain => 〚 mlBool 〛 =ml mlTrue or mlFalse
+    | AxInductiveDomain => 〚 mlBool 〛 =ml (mlTrue or mlFalse)
     (* TODO: extend this with the DEFINITION axioms from "ML explained" *)
     | AxDefNegTrue =>  !b mlTrue =ml mlFalse
     | AxDefNegFalse => !b mlFalse =ml mlTrue 
