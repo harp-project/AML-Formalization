@@ -40,10 +40,7 @@ From Coq.Classes Require Import Morphisms_Prop.
 From stdpp Require Import base sets.
 
 From MatchingLogic Require Import Logic MLPM.
-<<<<<<< HEAD
 From MatchingLogic.Theories Require Import Definedness_ProofSystem Sorts_ProofSystem FOEquality_ProofSystem.
-=======
->>>>>>> f14974138ce50a6c5ab1135e6f9a497ec1d8b3b9
 Import MatchingLogic.Logic.Notations.
 Require Import MatchingLogic.Theories.Bool_Syntax.
 
@@ -62,7 +59,6 @@ Open Scope ml_scope.
 Open Scope string_scope.
 Open Scope list_scope.
   
-<<<<<<< HEAD
 Lemma use_bool_axiom ax Γ : 
   Bool_Syntax.theory ⊆ Γ ->
     Γ ⊢ axiom ax.
@@ -147,10 +143,6 @@ Lemma functional_pattern_defined :
 
 Theorem double_neg : forall Γ , theory ⊆ Γ ->
         Γ ⊢ all mlBool,   (!b !b b0) =ml b0.
-=======
-Theorem double_neg : forall Γ , theory ⊆ Γ ->
-        Γ ⊢ all mlBool,   !b !b b0 =ml b0.
->>>>>>> f14974138ce50a6c5ab1135e6f9a497ec1d8b3b9
 Proof.
 intros.
 toMLGoal.
@@ -158,7 +150,6 @@ wf_auto2.
 mlIntroAll x.
 simpl.
 mlIntro "H".
-<<<<<<< HEAD
 Search patt_in derives_using.
 unfold nest_ex;simpl.
 fold mlBool. 
@@ -256,11 +247,8 @@ mlApplyMeta membership_or_1 in "H".
 }
 {
   unfold theory in H. set_solver.
-}
+}                                                                                          
 Abort.
-=======
-Abort. 
->>>>>>> f14974138ce50a6c5ab1135e6f9a497ec1d8b3b9
 (* Continue from here *)
 
 
