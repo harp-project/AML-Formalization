@@ -84,6 +84,37 @@ Proof.
   { apply pile_refl. }
 Qed.
 
+#[global]
+  Instance patt_equal_is_reflexive : MLReflexive patt_equal.
+  Proof.
+    constructor; intros.
+    * wf_auto2.
+    * gapply patt_equal_refl. try_solve_pile. assumption.
+  Defined.
+
+End ProofSystemTheorems.
+
+#[export]
+  Hint Resolve patt_equal_is_reflexive : core.
+
+#[local]
+  Example reflexive_equal_test {Σ : Signature} {_ : Syntax} Γ p q p' q' i:
+    well_formed p ->
+    well_formed q ->
+    well_formed p' ->
+    well_formed q' ->
+    Γ ⊢i q ---> q' ---> p' ---> p =ml p using i.
+  Proof.
+    intros. do 3 mlIntro.
+    mlReflexivity.
+  Defined.
+
+Section ProofSystemTheorems.
+Context
+  {Σ : Signature}
+  {syntax : Syntax}
+.
+
 Lemma use_defined_axiom Γ:
   theory ⊆ Γ ->
   Γ ⊢i patt_defined p_x
@@ -2187,6 +2218,38 @@ Proof.
   }
 Defined.
 
+Lemma patt_subseteq_refl {Σ : Signature} {syntax : Syntax} Γ φ:
+  well_formed φ ->
+  Γ ⊢i φ ⊆ml φ using BasicReasoning.
+Proof.
+  intro wf.
+  unfold patt_subseteq.
+  apply phi_impl_total_phi_meta. wf_auto2. try_solve_pile.
+  mlReflexivity.
+Defined.
+
+#[global]
+  Instance patt_subseteq_is_reflexive {Σ : Signature} {syntax : Syntax} : MLReflexive patt_subseteq.
+  Proof.
+    constructor; intros.
+    * wf_auto2.
+    * gapply patt_subseteq_refl. try_solve_pile. assumption.
+  Defined.
+
+#[export]
+  Hint Resolve patt_subseteq_is_reflexive : core.
+
+#[local]
+  Example reflexive_subseteq_test {Σ : Signature} {_ : Syntax} Γ p q p' q' i:
+    well_formed p ->
+    well_formed q ->
+    well_formed p' ->
+    well_formed q' ->
+    Γ ⊢i q ---> q' ---> p' ---> p ⊆ml p using i.
+  Proof.
+    intros. do 3 mlIntro.
+    mlReflexivity.
+  Defined.
 
 Lemma disj_equals_greater_1_meta {Σ : Signature} {syntax : Syntax} Γ φ₁ φ₂ i x:
   theory ⊆ Γ ->
@@ -4772,10 +4835,6 @@ Proof.
   2: try_solve_pile. 2-3: wf_auto2.
   gapply patt_equal_refl. try_solve_pile. wf_auto2.
 Defined.
-
-Tactic Notation "mlReflexivity" :=
-  _ensureProofMode;
-  apply MLGoal_reflexivity; try assumption; set_solver.
 
 Local Example mlReflexivity_test {Σ : Signature} {syntax : Syntax} Γ ϕ ψ :
   theory ⊆ Γ -> well_formed ϕ -> well_formed ψ ->
