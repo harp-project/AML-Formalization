@@ -180,7 +180,9 @@ mlApplyMeta membership_or_1 in "H".
     +simpl. auto.
     +wf_auto2.
     +wf_auto2.
-    + admit.
+    + mlExists x. mlSimpl. cbn. Search patt_equal derives_using. fromMLGoal. apply useBasicReasoning.  
+      epose proof patt_equal_refl  (patt_free_evar x) Γ.
+      apply H2. wf_auto2.
     + mlApplyMeta ex_sort_impl_ex.
       - pose proof use_bool_axiom AxFunTrue Γ H;simpl in H2;mlAdd H2 as "f";mlExact "f".
       - unfold theory in H;set_solver.
@@ -215,7 +217,9 @@ mlApplyMeta membership_or_1 in "H".
     +simpl. auto.
     +wf_auto2.
     +wf_auto2.
-    +admit.
+    + mlExists x. mlSimpl. cbn. Search patt_equal derives_using. fromMLGoal. apply useBasicReasoning.  
+      epose proof patt_equal_refl  (patt_free_evar x) Γ.
+      apply H2. wf_auto2.
     + mlApplyMeta ex_sort_impl_ex.
       - pose proof use_bool_axiom AxFunFalse Γ H;simpl in H2;mlAdd H2 as "f";mlExact "f".
       - unfold theory in H;set_solver.
@@ -248,8 +252,7 @@ mlApplyMeta membership_or_1 in "H".
 {
   unfold theory in H. set_solver.
 }                                                                                          
-Abort.
-(* Continue from here *)
+Qed.
 
 
 End bools.
