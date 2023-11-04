@@ -202,7 +202,7 @@ Section ProofSystemTheorems.
       { clear H. wf_auto2. }
       mlIntro "H1". unfold patt_iff. mlDestructAnd "H1" as "H2" "H3". mlExact "H3".
     }
-
+    
     use AnyReasoning in H.
     epose proof (syllogism_meta _ _ _ H Hiff).
     (* TODO: mlApplyMetaRaw buggy?
@@ -212,6 +212,120 @@ Section ProofSystemTheorems.
     Unshelve. all: wf_auto2.
     cbn. rewrite mu_free_bevar_subst; wf_auto2.
   Defined.
+
+  Lemma Lemma₂ : forall Γ φ x φ',
+    theory ⊆ Γ -> well_formed φ -> mu_free φ -> well_formed φ' ->
+    Γ ⊢ is_functional φ ->
+    Γ ⊢ φ^[[evar: x ↦ φ']] and patt_free_evar x =ml φ' --->
+    φ and patt_free_evar x =ml φ'.
+  Proof.
+    intros Γ φ x φ' HΓ wfφ mfφ wfφ' fpφ.
+    pose proof (equality_elimination_basic Γ (patt_free_evar x) φ' {| pcEvar := x ; pcPattern := φ |} HΓ ltac:(wf_auto2) wfφ' ltac:(wf_auto2) mfφ).
+    cbn in H.
+    rewrite free_evar_subst_id in H.
+    mlIntro "H".
+    mlAdd H as "H0".
+    mlDestructAnd "H" as "H1" "H2".
+    mlAssert ("H3" : (φ <---> φ^[[evar:x↦φ']])). wf_auto2.
+    mlApply "H0".
+    mlExact "H2".
+    mlSplitAnd.
+    mlDestructAnd "H3" as "H4" "H5".
+    mlRevert "H1".
+    mlExact "H5".
+    mlExact "H2".
+  Defined.
+
+  Lemma Lemma₁_meta : forall φ t x Γ, theory ⊆ Γ ->
+    well_formed φ ->
+    mu_free φ -> (* should I have this? *)
+    well_formed t ->
+    Γ ⊢ (patt_free_evar x) =ml t ->
+    Γ ⊢ φ^[[evar:x↦t]] =ml φ.
+  Proof.
+    intros φ t x Γ HΓ WFφ MFφ WFt H.
+    pose proof (equality_elimination_basic Γ (patt_free_evar x) t {| pcEvar := x; pcPattern := φ |} HΓ ltac:(wf_auto2) WFt ltac:(wf_auto2) MFφ).
+    cbn in H0.
+    pose proof (MP H H0).
+    pose proof (pf_iff_equiv_sym_nowf Γ (φ^[[evar:x↦patt_free_evar x]]) (φ^[[evar:x↦t]]) _ H1).
+    pose proof (free_evar_subst_id φ x).
+    rewrite H3 in H2.
+    pose proof (patt_iff_implies_equal (φ^[[evar:x↦t]]) φ Γ AnyReasoning ltac:(wf_auto2) WFφ ltac:(try_solve_pile) H2).
+    exact H4.
+  Qed.
+
+  Lemma mu_free_free_evar_subst :
+    forall φ ψ x,
+    mu_free φ -> mu_free ψ ->
+    mu_free (free_evar_subst ψ x φ).
+  Proof.
+    induction φ; intros; simpl; auto.
+    * case_match; auto.
+    * rewrite IHφ1. 3: rewrite IHφ2. all: simpl in H; destruct_and! H; auto.
+    * rewrite IHφ1. 3: rewrite IHφ2. all: simpl in H; destruct_and! H; auto.
+  Qed.
+
+  Lemma free_evar_subst_chain :
+    forall φ x y ψ,
+    y ∉ free_evars φ ->
+    φ^[[evar: x ↦ patt_free_evar y]]^[[evar:y ↦ ψ]] =
+    φ^[[evar: x ↦ ψ]].
+  Proof.
+    induction φ; intros; simpl; auto.
+    * simpl. case_match; simpl; case_match; try reflexivity.
+      1: congruence.
+      subst. set_solver.
+    * rewrite IHφ1. set_solver. rewrite IHφ2. set_solver. reflexivity.
+    * rewrite IHφ1. set_solver. rewrite IHφ2. set_solver. reflexivity.
+    * rewrite IHφ; by set_solver.
+    * rewrite IHφ; by set_solver.
+  Qed.
+
+  Lemma Lemma₁ : forall φ t x Γ, theory ⊆ Γ ->
+    well_formed φ ->
+    mu_free φ ->
+    well_formed t ->
+    Γ ⊢ (patt_free_evar x) =ml t ---> φ^[[evar:x↦t]] =ml φ.
+  Proof.
+    intros φ t x Γ HΓ WFφ MFφ WFt.
+    remember (fresh_evar φ) as y.
+    assert (mu_free (φ^[[evar:x↦patt_free_evar y]] =ml φ)) as How. {
+      cbn. rewrite mu_free_free_evar_subst; auto.
+      (* rewrite MFφ. reflexivity. *)
+    }
+    assert (Hy : y ∉ free_evars φ) by (subst y; solve_fresh).
+    pose proof (equality_elimination_basic Γ (patt_free_evar x) t {| pcEvar := y; pcPattern := φ^[[evar:x↦patt_free_evar y]] =ml φ |} HΓ ltac:(wf_auto2) WFt ltac:(wf_auto2) How).
+    Opaque "=ml".
+    cbn in H.
+    replace ((φ^[[evar:x↦patt_free_evar y]] =ml φ)^[[evar:y↦ patt_free_evar x]]) with ((φ^[[evar:x↦patt_free_evar y]]^[[evar:y↦ patt_free_evar x]] =ml φ^[[evar:y↦ patt_free_evar x]])) in H by reflexivity.
+    replace ((φ^[[evar:x↦patt_free_evar y]] =ml φ)^[[evar:y↦t]]) with ((φ^[[evar:x↦patt_free_evar y]]^[[evar:y↦t]] =ml φ^[[evar:y↦t]])) in H by reflexivity.
+    rewrite ! free_evar_subst_chain in H.
+    1-2: assumption.
+    rewrite free_evar_subst_id in H.
+    rewrite ! (free_evar_subst_no_occurrence y) in H.
+    1-2: assumption.
+    mlIntro "H".
+    mlAdd H as "H1".
+    (* specialize? *)
+    mlAssert ("H2" : (φ =ml φ <---> φ^[[evar:x↦t]] =ml φ)).
+    wf_auto2.
+    mlApply "H1".
+    mlExact "H".
+    (* specialize? *)
+    Transparent "=ml".
+    mlDestructAnd "H2" as "H3" "H4".
+    mlApply "H3".
+    mlReflexivity.
+  Defined.
+
+  Lemma R₅' : forall x Γ, theory ⊆ Γ -> Γ ⊢ (ex , patt_free_evar x =ml b0).
+  Proof.
+    intros.
+    toMLGoal.
+    wf_auto2.
+    mlExists x.
+    mlReflexivity.
+  Qed.
 
   Theorem elimination_reverse : forall φ φ' x Γ, x ∉ free_evars φ ->
     theory ⊆ Γ -> mu_free φ ->
@@ -256,9 +370,6 @@ Section ProofSystemTheorems.
     Unshelve. all: wf_auto2.
     cbn. rewrite mu_free_bevar_subst; wf_auto2.
   Defined.
-
-
-
 
   (**
      Should be a consequence of the injectivity axiom:
