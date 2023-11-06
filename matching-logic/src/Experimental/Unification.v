@@ -1,6 +1,6 @@
 From Coq Require Import ssreflect ssrfun ssrbool.
 
-From Ltac2 Require Import Ltac2.
+(* From Ltac2 Require Import Ltac2. *)
 
 Require Import Equations.Prop.Equations.
 
@@ -67,7 +67,7 @@ Section ProofSystemTheorems.
     intros Γ φ HΓ Wf.
     toMLGoal. wf_auto2.
     mlIntro "H0".
-    mlApplyMetaRaw (forall_functional_subst ⌈ b0 ⌉ φ _ HΓ ltac:(wf_auto2)
+    mlApplyMeta (forall_functional_subst ⌈ b0 ⌉ φ _ HΓ ltac:(wf_auto2)
                  ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
     mlSplitAnd.
     * mlClear "H0". fromMLGoal. wf_auto2.
@@ -106,13 +106,14 @@ Section ProofSystemTheorems.
     pose proof (not_not_intro Γ ((φ ∈ml φ' <---> φ =ml φ' ))
     ltac:(wf_auto2)) as H0.
     use AnyReasoning in H0.
-    mlApplyMetaRaw H0.
+    mlApplyMeta H0.
     mlSplitAnd; mlIntro.
     * mlApplyMeta membership_imp_equal_meta; auto. mlExactn 0.
     * mlApplyMeta equal_imp_membership; auto. mlExactn 0.
       Unshelve.
       toMLGoal. wf_auto2.
-      clear h. mlApplyMeta functional_pattern_defined; auto.
+      (* clear h. *)
+      mlApplyMeta functional_pattern_defined; auto.
       mlExactMeta Func2.
   Defined.
 
@@ -133,7 +134,7 @@ Section ProofSystemTheorems.
       pose proof (phi_impl_defined_phi Γ (φ and φ') (fresh_evar (φ and φ')) HΓ
                     ltac:(solve_fresh) ltac:(wf_auto2)) as H.
       use AnyReasoning in H.
-      mlApplyMetaRaw H.
+      mlApplyMeta H.
       mlExact "H0".
     }
     replace (⌈ φ and φ' ⌉) with (φ ∈ml φ') by auto.
@@ -208,7 +209,7 @@ Section ProofSystemTheorems.
     (* TODO: mlApplyMetaRaw buggy?
              Tries to match the longest conclusion, not the shortest *)
     apply reorder_meta in H1.
-    mlRevertLast. mlApplyMetaRaw H1. mlExact "H1".
+    mlRevertLast. mlApplyMeta H1. mlExact "H1".
     Unshelve. all: wf_auto2.
     cbn. rewrite mu_free_bevar_subst; wf_auto2.
   Defined.
@@ -252,7 +253,7 @@ Section ProofSystemTheorems.
     rewrite H3 in H2.
     pose proof (patt_iff_implies_equal (φ^[[evar:x↦t]]) φ Γ AnyReasoning ltac:(wf_auto2) WFφ ltac:(try_solve_pile) H2).
     exact H4.
-  Qed.
+  Defined.
 
   Lemma mu_free_free_evar_subst :
     forall φ ψ x,
@@ -291,7 +292,7 @@ Section ProofSystemTheorems.
     remember (fresh_evar φ) as y.
     assert (mu_free (φ^[[evar:x↦patt_free_evar y]] =ml φ)) as How. {
       cbn. rewrite mu_free_free_evar_subst; auto.
-      (* rewrite MFφ. reflexivity. *)
+      rewrite MFφ. reflexivity.
     }
     assert (Hy : y ∉ free_evars φ) by (subst y; solve_fresh).
     pose proof (equality_elimination_basic Γ (patt_free_evar x) t {| pcEvar := y; pcPattern := φ^[[evar:x↦patt_free_evar y]] =ml φ |} HΓ ltac:(wf_auto2) WFt ltac:(wf_auto2) How).
@@ -324,8 +325,13 @@ Section ProofSystemTheorems.
     toMLGoal.
     wf_auto2.
     mlExists x.
+    mlSimpl.
+    unfold evar_open.
+    rewrite bevar_subst_not_occur.
+    wf_auto2.
+    simpl.
     mlReflexivity.
-  Qed.
+  Defined.
 
   Theorem elimination_reverse : forall φ φ' x Γ, x ∉ free_evars φ ->
     theory ⊆ Γ -> mu_free φ ->
@@ -365,7 +371,7 @@ Section ProofSystemTheorems.
              Tries to match the longest conclusion, not the shortest *)
     apply reorder_meta in H1.
     mlRevertLast.
-    mlApplyMetaRaw H1.
+    mlApplyMeta H1.
     mlExact "H1".
     Unshelve. all: wf_auto2.
     cbn. rewrite mu_free_bevar_subst; wf_auto2.
@@ -591,7 +597,7 @@ Section UnificationProcedure.
       mlIntro "H". mlDestructAnd "H" as "H0" "H1". mlDestructAnd "H0" as "H0_1" "H0_2".
       mlSplitAnd. mlSplitAnd. 1, 3: mlAssumption.
       mlClear "H0_1". mlClear "H1".
-      mlApplyMetaRaw (@patt_equal_sym _ _ Γ t (patt_free_evar x) _ ltac:(wf_auto2) ltac:(wf_auto2)). mlExact "H0_2".
+      mlApplyMeta (@patt_equal_sym _ _ Γ t (patt_free_evar x) _ ltac:(wf_auto2) ltac:(wf_auto2)). mlExact "H0_2".
     * subst; simpl.
       with_strategy opaque [unification_to_pattern] toMLGoal.
       { apply well_formed_imp. admit. admit. }
