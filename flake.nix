@@ -102,6 +102,7 @@
           format = "pyproject";
           propagatedBuildInputs = [
             self.outputs.packages.${system}.coq-matching-logic
+            python.pkgs.setuptools
             pyk-py
           ];
         };
