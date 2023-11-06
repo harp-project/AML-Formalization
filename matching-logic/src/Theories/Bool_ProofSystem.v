@@ -59,30 +59,30 @@ Open Scope ml_scope.
 Open Scope string_scope.
 Open Scope list_scope.
   
-Lemma use_bool_axiom ax Γ : 
-  Bool_Syntax.theory ⊆ Γ ->
-    Γ ⊢ axiom ax.
-Proof.
-intro HΓ.
-apply useBasicReasoning.
-apply BasicProofSystemLemmas.hypothesis.
-{ destruct ax; wf_auto2. }
-{
-  apply elem_of_weaken with (X := theory_of_NamedAxioms named_axioms).
-  {
-    unfold theory_of_NamedAxioms, named_axioms, axiom; simpl.
-    apply elem_of_PropSet.
-    exists ax.
-    reflexivity.
-  }
-  {
-    unfold theory in HΓ.
-    set_solver.
-  }
-}
-Defined.
+  Lemma use_bool_axiom ax Γ : 
+    Bool_Syntax.theory ⊆ Γ ->
+      Γ ⊢ axiom ax.
+  Proof.
+    intro HΓ.
+    apply useBasicReasoning.
+    apply BasicProofSystemLemmas.hypothesis.
+    { destruct ax; wf_auto2. }
+    {
+      apply elem_of_weaken with (X := theory_of_NamedAxioms named_axioms).
+      {
+        unfold theory_of_NamedAxioms, named_axioms, axiom; simpl.
+        apply elem_of_PropSet.
+        exists ax.
+        reflexivity.
+      }
+      {
+        unfold theory in HΓ.
+        set_solver.
+      }
+    }
+  Defined.
 
-Lemma functional_pattern_defined :
+  Lemma functional_pattern_defined :
     forall Γ φ, Definedness_Syntax.theory ⊆ Γ -> well_formed φ ->
        Γ ⊢ (ex , (φ =ml b0)) ---> ⌈ φ ⌉.
   Proof.
@@ -141,118 +141,138 @@ Lemma functional_pattern_defined :
    
 
 
-Theorem double_neg : forall Γ , theory ⊆ Γ ->
-        Γ ⊢ all mlBool,   (!b !b b0) =ml b0.
-Proof.
-intros.
-toMLGoal.
-wf_auto2.
-mlIntroAll x.
-simpl.
-mlIntro "H".
-Search patt_in derives_using.
-unfold nest_ex;simpl.
-fold mlBool. 
-Search elem_of derives_using.
-pose proof use_bool_axiom AxInductiveDomain Γ H.
-simpl in H0.
-mlAdd H0. 
-Check axiom.
-mlRevert "H".
-mlRewriteBy "0" at 1.
-{
-  unfold theory in H. unfold Definedness_Syntax.theory. set_solver. 
-}
-(* Check what was done here *)
-{ cbn. unfold mu_in_evar_path. cbn. rewrite decide_False. 
-  * solve_fresh_neq.
-  *cbn. rewrite decide_eq_same. cbn. reflexivity.
-}
-mlIntro "H".
-mlClear "0".
-mlApplyMeta membership_or_1 in "H".
-{
-  mlDestructOr "H".
-  (* mlTrue case *) 
-  * pose proof membership_equal_equal Γ (patt_free_evar x) mlTrue.
-    ospecialize* H1.
-    +unfold theory in H;set_solver.
-    +simpl. auto.
-    +wf_auto2.
-    +wf_auto2.
-    + mlExists x. mlSimpl. cbn. Search patt_equal derives_using. fromMLGoal. apply useBasicReasoning.  
-      epose proof patt_equal_refl  (patt_free_evar x) Γ.
-      apply H2. wf_auto2.
-    + mlApplyMeta ex_sort_impl_ex.
-      - pose proof use_bool_axiom AxFunTrue Γ H;simpl in H2;mlAdd H2 as "f";mlExact "f".
-      - unfold theory in H;set_solver.
-    + mlAdd H1.
-      mlRevert "0".
-      mlRewriteBy "1" at 1.
-      1: { unfold theory in H. set_solver. }
-      1: { unfold mu_in_evar_path. cbn. rewrite decide_eq_same. rewrite decide_False. 
-          1: solve_fresh_neq.
-          1: cbn. reflexivity.
-      }
-      mlIntro "H".
-      mlRewriteBy "H" at 1.
-      1: { unfold theory in H. set_solver. }
-      1: { unfold mu_in_evar_path. cbn. rewrite decide_eq_same. rewrite decide_False. 
-          1: solve_fresh_neq.
-          1: cbn. reflexivity.
-      }
-      mlRewriteBy "H" at 1.
-      1: { unfold theory in H. set_solver. }
-      1: { unfold mu_in_evar_path. cbn. rewrite decide_eq_same. cbn. reflexivity. }
-      pose proof use_bool_axiom AxDefNegTrue Γ H;simpl in H2.
-      pose proof use_bool_axiom AxDefNegFalse Γ H;simpl in H3.
-      mlAdd H2 as "negTrue";mlAdd H3 as "negFalse".
-      mlRewriteBy "negTrue" at 1.
-      1: { unfold theory in H. set_solver. }
-      1: { unfold mu_in_evar_path. cbn. rewrite decide_eq_same. cbn. reflexivity. }
-      mlAssumption.
-  * pose proof membership_equal_equal Γ (patt_free_evar x) mlFalse.
-    ospecialize* H1.
-    +unfold theory in H;set_solver.
-    +simpl. auto.
-    +wf_auto2.
-    +wf_auto2.
-    + mlExists x. mlSimpl. cbn. Search patt_equal derives_using. fromMLGoal. apply useBasicReasoning.  
-      epose proof patt_equal_refl  (patt_free_evar x) Γ.
-      apply H2. wf_auto2.
-    + mlApplyMeta ex_sort_impl_ex.
-      - pose proof use_bool_axiom AxFunFalse Γ H;simpl in H2;mlAdd H2 as "f";mlExact "f".
-      - unfold theory in H;set_solver.
-    + mlAdd H1.
-      mlRevert "1".
-      mlRewriteBy "0" at 1.
-      1: { unfold theory in H. set_solver. }
-      1: { unfold mu_in_evar_path. cbn. rewrite decide_eq_same. rewrite decide_False. 
-          1: solve_fresh_neq.
-          1: cbn. reflexivity.
-      }
-      mlIntro "H".
-      mlRewriteBy "H" at 1.
-      1: { unfold theory in H. set_solver. }
-      1: { unfold mu_in_evar_path. cbn. rewrite decide_eq_same. rewrite decide_False. 
-          1: solve_fresh_neq.
-          1: cbn. reflexivity.
-      }
-      mlRewriteBy "H" at 1.
-      1: { unfold theory in H. set_solver. }
-      1: { unfold mu_in_evar_path. cbn. rewrite decide_eq_same. cbn. reflexivity. }
-      pose proof use_bool_axiom AxDefNegTrue Γ H;simpl in H2.
-      pose proof use_bool_axiom AxDefNegFalse Γ H;simpl in H3.
-      mlAdd H2 as "negTrue";mlAdd H3 as "negFalse".
-      mlRewriteBy "negFalse" at 1.
-      1: { unfold theory in H. set_solver. }
-      1: { unfold mu_in_evar_path. cbn. rewrite decide_eq_same. cbn. reflexivity. }
-      mlAssumption.
-}
-{
-  unfold theory in H. set_solver.
-}                                                                                          
-Qed.
+  Theorem double_neg : forall Γ , theory ⊆ Γ ->
+                        Γ ⊢ all mlBool,   (!b !b b0) =ml b0.
+  Proof.
+    intros.
+    toMLGoal.
+    wf_auto2.
+    mlIntroAll x.
+    simpl.
+    mlIntro "H".
+    (* Search patt_in derives_using. *)
+    unfold nest_ex;simpl.
+    fold mlBool.
+    (* Search elem_of derives_using. *)
+    pose proof use_bool_axiom AxInductiveDomain Γ H.
+    simpl in H0.
+    mlAdd H0 as "ind". 
+    mlRevert "H".
+    
+    mlRewriteBy "ind" at 1.
+    {
+      unfold theory in H. unfold Definedness_Syntax.theory. set_solver. 
+    }
+    { cbn. unfold mu_in_evar_path. cbn. rewrite decide_False. 
+      1: solve_fresh_neq.
+      1: cbn. rewrite decide_eq_same. cbn. reflexivity.
+    }
+    
+    mlIntro "H".
+    mlClear "ind".
+    mlApplyMeta membership_or_1 in "H".
+    {
+      mlDestructOr "H".
+      (* mlTrue case *) 
+      * pose proof membership_equal_equal Γ (patt_free_evar x) mlTrue.
+      ospecialize* H1.
+      + unfold theory in H;set_solver.
+      + simpl. auto.
+      + wf_auto2.
+      + wf_auto2.
+      + mlExists x. mlSimpl. cbn. Search patt_equal derives_using. fromMLGoal. apply useBasicReasoning.  
+        epose proof patt_equal_refl  (patt_free_evar x) Γ.
+        apply H2. wf_auto2.
+      + mlApplyMeta ex_sort_impl_ex.
+        - pose proof use_bool_axiom AxFunTrue Γ H;simpl in H2;mlAdd H2 as "f";mlExact "f".
+        - unfold theory in H;set_solver.
+      + mlAdd H1.
+        mlRevert "0".
+        
+        mlRewriteBy "1" at 1.
+        1: { unfold theory in H. set_solver. }
+        1: { unfold mu_in_evar_path. cbn. rewrite decide_eq_same. rewrite decide_False. 
+              1: solve_fresh_neq.
+              1: cbn. reflexivity.
+           }
+           
+        mlIntro "H".
+        
+        mlRewriteBy "H" at 1.
+        { unfold theory in H. set_solver. }
+        { unfold mu_in_evar_path. cbn. rewrite decide_eq_same. rewrite decide_False. 
+            1: solve_fresh_neq.
+            1: cbn. reflexivity.
+        }
+        mlRewriteBy "H" at 1.
+        { unfold theory in H. set_solver. }
+        { unfold mu_in_evar_path. cbn. rewrite decide_eq_same. cbn. reflexivity. }
+        
+        pose proof use_bool_axiom AxDefNegTrue Γ H;simpl in H2.
+        pose proof use_bool_axiom AxDefNegFalse Γ H;simpl in H3.
+        mlAdd H2 as "negTrue";mlAdd H3 as "negFalse".
+        
+        mlRewriteBy "negTrue" at 1.
+        { unfold theory in H. set_solver. }
+        { unfold mu_in_evar_path. cbn. rewrite decide_eq_same. cbn. reflexivity. }
+        mlRewriteBy "negFalse" at 1.
+        { unfold theory in H. set_solver. }
+        { unfold mu_in_evar_path. cbn. rewrite decide_eq_same. cbn. reflexivity. }
+        
+        mlReflexivity.
+        
+    (* mlFalse case   *)
+    * pose proof membership_equal_equal Γ (patt_free_evar x) mlFalse. 
+      ospecialize* H1.
+      + unfold theory in H;set_solver.
+      + simpl. auto.
+      + wf_auto2.
+      + wf_auto2.
+      + mlExists x. mlSimpl. cbn. Search patt_equal derives_using. fromMLGoal. apply useBasicReasoning.  
+        epose proof patt_equal_refl  (patt_free_evar x) Γ.
+        apply H2. wf_auto2.
+      + mlApplyMeta ex_sort_impl_ex.
+        - pose proof use_bool_axiom AxFunFalse Γ H;simpl in H2;mlAdd H2 as "f";mlExact "f".
+        - unfold theory in H;set_solver.
+      + mlAdd H1.
+        mlRevert "1".
+        
+        mlRewriteBy "0" at 1.
+        { unfold theory in H. set_solver. }
+        { unfold mu_in_evar_path. cbn. rewrite decide_eq_same. rewrite decide_False. 
+            1: solve_fresh_neq.
+            1: cbn. reflexivity.
+        }
+        
+        mlIntro "H".
+        
+        mlRewriteBy "H" at 1.
+        { unfold theory in H. set_solver. }
+        { unfold mu_in_evar_path. cbn. rewrite decide_eq_same. rewrite decide_False. 
+            1: solve_fresh_neq.
+            1: cbn. reflexivity.
+        }
+        mlRewriteBy "H" at 1.
+        { unfold theory in H. set_solver. }
+        { unfold mu_in_evar_path. cbn. rewrite decide_eq_same. cbn. reflexivity. }
+        
+        pose proof use_bool_axiom AxDefNegTrue Γ H;simpl in H2.
+        pose proof use_bool_axiom AxDefNegFalse Γ H;simpl in H3.
+        mlAdd H2 as "negTrue";mlAdd H3 as "negFalse".
+        
+        mlRewriteBy "negFalse" at 1.
+        { unfold theory in H. set_solver. }
+        { unfold mu_in_evar_path. cbn. rewrite decide_eq_same. cbn. reflexivity. }
+        mlRewriteBy "negTrue" at 1.
+        { unfold theory in H. set_solver. }
+        { unfold mu_in_evar_path. cbn. rewrite decide_eq_same. cbn. reflexivity. }
+        
+        mlReflexivity.
+    }
+    {
+      unfold theory in H. set_solver.
+    }
+  Qed.
 
 
 End bools.
