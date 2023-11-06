@@ -5,7 +5,6 @@ import typing as T
 import pyk.kore.parser as KoreParser
 import pyk.kore.syntax as Kore
 
-
 def get_all_imported_module_names(
     definition: Kore.Definition, module_name: str
 ) -> T.Set[str]:
@@ -66,11 +65,85 @@ def non_hooked_sort_names(definition: Kore.Definition, main_module_name: str) ->
     return {s.name for s in sd if not s.hooked}
 
 
+
+coq_preamble: str = '''
+From Coq Require Import ssreflect ssrfun ssrbool.
+
+From stdpp Require Import base finite list list_numbers strings propset.
+(* This is unset by stdpp. We need to set it again.*)
+Set Transparent Obligations.
+
+From Equations Require Import Equations.
+(* Set Equations Transparent. *)
+
+From MatchingLogic.Utils Require Import Surj.
+From MatchingLogic.OPML Require Import OpmlSignature OpmlModel.
+'''
+
+def inductive_sorts(sort_names: T.List[str]) -> str:
+    inductive_definition = f'''
+    Inductive Sort :=
+    {" ".join([f'| {s}' for s in sort_names])}
+    .
+    '''
+    return inductive_definition
+
+def inductive_sorts_helpers(sort_names: T.List[str]) -> str:
+    helpers = '''
+    #[global]
+    Instance Sort_eqdec: EqDecision Sort.
+    Proof.
+        solve_decision.
+    Defined.
+
+    #[global]
+    Program Instance Sort_finite: Finite Sort := {|
+        enum := [
+    '''
+    
+    helpers += ('; '.join(sort_names)) + '''];
+    |}.
+    Next Obligation.
+        compute_done.
+    Qed.
+    Next Obligation.
+        destruct x; compute_done.
+    Qed.
+
+    Program Definition Sorts : OPMLSorts := {|
+        opml_sort := Sort ;
+        opml_subsort := eq ;
+    |}.
+    Next Obligation.
+        repeat split.
+        {
+            intros x y z Hxy Hyz.
+            subst. reflexivity.
+        }
+        {
+            intros x y Hxy Hyx.
+            subst. reflexivity.
+        }
+    Qed.
+
+    Definition Vars : @OPMLVariables Sorts := {|
+        opml_evar := fun s => string;
+        opml_svar := fun s => string;
+    |}.
+    '''
+    return helpers
+
+
 def generate(input_kore_filename: str, main_module_name: str, output_v_filename: str):
     print(f'{input_kore_filename} > {output_v_filename}')
     parser = KoreParser.KoreParser(open(input_kore_filename).read())
     definition = parser.definition()
-    print(non_hooked_sort_names(definition=definition, main_module_name=main_module_name))
+    sort_names: T.List[str] = list(non_hooked_sort_names(definition=definition, main_module_name=main_module_name))
+
+    output_text = coq_preamble + inductive_sorts(sort_names) + inductive_sorts_helpers(sort_names)
+    with open(output_v_filename, mode="w") as fw:
+        fw.write(output_text)
+    #print(output_text)
     
 
 def main():

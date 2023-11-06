@@ -101,7 +101,10 @@
           src = ./koreimport;
           format = "pyproject";
           propagatedBuildInputs = [
+            coqPackages.coq
             self.outputs.packages.${system}.coq-matching-logic
+            coqPackages.equations
+            coqPackages.stdpp
             python.pkgs.setuptools
             pyk-py
           ];
