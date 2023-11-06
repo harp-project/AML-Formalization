@@ -41,7 +41,8 @@ jobs:
           name: "Kore Import"
           command: |
             source /home/circleci/.nix-profile/etc/profile.d/nix.sh
-            nix --show-trace --print-build-logs build '.#koreimport' 
+            #nix --show-trace --print-build-logs build '.#koreimport' 
+            ./test-koreimport.sh
 
           
       - run:
