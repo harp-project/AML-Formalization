@@ -32,11 +32,18 @@ jobs:
             nproc
       - checkout
       - run:
-          name: "Build"
+          name: "ML in Coq -- Build"
           command: |
             source /home/circleci/.nix-profile/etc/profile.d/nix.sh
             #cachix watch-exec harp-ml-in-coq -- 
             nix --show-trace --print-build-logs build '.#coq-matching-logic' --no-link
+      - run:
+          name: "Kore Import"
+          command: |
+            source /home/circleci/.nix-profile/etc/profile.d/nix.sh
+            nix --show-trace --print-build-logs build '.#koreimport' 
+
+          
       - run:
           name: "FOL -- Build"
           command: |

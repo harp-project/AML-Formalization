@@ -4,14 +4,16 @@
   inputs = {
     nixpkgs.url = "github:NixOs/nixpkgs";
     flake-utils.url = "github:numtide/flake-utils";
+    pyk.url = "github:runtimeverification/pyk/v0.1.491";
    };
 
-  outputs = { self, nixpkgs, flake-utils }: (
+  outputs = { self, nixpkgs, flake-utils, pyk }: (
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
         coqPackages = pkgs.coqPackages_8_18;
-
+        pyk-py = pyk.packages.${system}.pyk-python311;
+        python = pyk-py.python;
       in {
 
         # Newer version of Alectryon
@@ -91,6 +93,19 @@
           # installFlags = [ "DOCDIR=$(out)/share/coq/${coq.coq-version}" "INSTALLCOQDOCROOT=coq-matching-logic" ];
           installFlags = [ "DOCDIR=$(out)/share/doc" "INSTALLCOQDOCROOT=coq-matching-logic" ];
         } ) { } ;
+
+
+        packages.koreimport
+        = python.pkgs.buildPythonApplication {
+          name = "koreimport";
+          src = ./koreimport;
+          format = "pyproject";
+          propagatedBuildInputs = [
+            self.outputs.packages.${system}.coq-matching-logic
+            pyk-py
+          ];
+        };
+
 
         # Example: FOL embedded in matching logic
         packages.coq-matching-logic-example-fol
