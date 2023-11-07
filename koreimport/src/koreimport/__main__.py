@@ -133,20 +133,24 @@ def inductive_from_names(name_of_inductive: str, names: T.List[str]) -> str:
 def inductive_sorts(sort_names: T.List[str]) -> str:
     return inductive_from_names(name_of_inductive="Sort", names=sort_names)
 
-def inductive_sorts_helpers(sort_names: T.List[str]) -> str:
-    helpers = '''
+def eqdec_finite(inductive_name: str, names: T.List[str]) -> str:
+    helpers = f'''
     #[global]
-    Instance Sort_eqdec: EqDecision Sort.
+    Instance {inductive_name}_eqdec: EqDecision {inductive_name}.
     Proof.
         solve_decision.
     Defined.
-
+    '''
+    helpers += f'''
     #[global]
-    Program Instance Sort_finite: Finite Sort := {|
+    Program Instance {inductive_name}_finite: Finite {inductive_name} :=
+    '''
+    
+    helpers += '''{|
         enum := [
     '''
     
-    helpers += ('; '.join(sort_names)) + '''];
+    helpers += ('; '.join(names)) + '''];
     |}.
     Next Obligation.
         compute_done.
@@ -154,7 +158,13 @@ def inductive_sorts_helpers(sort_names: T.List[str]) -> str:
     Next Obligation.
         destruct x; compute_done.
     Qed.
+    '''
+    return helpers
 
+
+def inductive_sorts_helpers(sort_names: T.List[str]) -> str:
+    helpers = eqdec_finite("Sort", sort_names)
+    helpers += '''
     Program Definition Sorts : OPMLSorts := {|
         opml_sort := Sort ;
         opml_subsort := eq ;
