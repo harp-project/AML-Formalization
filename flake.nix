@@ -4,14 +4,16 @@
   inputs = {
     nixpkgs.url = "github:NixOs/nixpkgs";
     flake-utils.url = "github:numtide/flake-utils";
+    pyk.url = "github:runtimeverification/pyk/v0.1.491";
    };
 
-  outputs = { self, nixpkgs, flake-utils }: (
+  outputs = { self, nixpkgs, flake-utils, pyk }: (
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
         coqPackages = pkgs.coqPackages_8_18;
-
+        pyk-py = pyk.packages.${system}.pyk-python311;
+        python = pyk-py.python;
       in {
 
         # Newer version of Alectryon
@@ -91,6 +93,44 @@
           # installFlags = [ "DOCDIR=$(out)/share/coq/${coq.coq-version}" "INSTALLCOQDOCROOT=coq-matching-logic" ];
           installFlags = [ "DOCDIR=$(out)/share/doc" "INSTALLCOQDOCROOT=coq-matching-logic" ];
         } ) { } ;
+
+
+        packages.koreimport
+        = python.pkgs.buildPythonApplication {
+          name = "koreimport";
+          src = ./koreimport;
+          format = "pyproject";
+          propagatedBuildInputs = [
+            python.pkgs.setuptools
+            pyk-py
+          ];
+        };
+
+
+        packages.koreimport-test
+        = pkgs.stdenv.mkDerivation {
+          name = "koreimport-test";
+          src = ./koreimport-test;
+
+          buildInputs = [
+            pkgs.bash
+            self.outputs.packages.${system}.coq-matching-logic
+            self.outputs.packages.${system}.koreimport
+            coqPackages.coq
+            coqPackages.equations
+            coqPackages.stdpp
+          ];
+
+
+          configurePhase = "";
+          buildPhase = ''
+            koreimport -o out.v --module IMP korefiles/imp.kore
+            coqc out.v
+            mkdir -p $out
+          '';
+          installPhase = "";
+        };
+
 
         # Example: FOL embedded in matching logic
         packages.coq-matching-logic-example-fol
