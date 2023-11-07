@@ -209,6 +209,7 @@ def generate(input_kore_filename: str, main_module_name: str, output_v_filename:
         + inductive_sorts(sort_names_mangled) \
         + inductive_sorts_helpers(sort_names_mangled)\
         + inductive_symbols(symbol_names_mangled)\
+        + eqdec_finite("Symbols", symbol_names_mangled)\
         + "\n"
 
     with open(output_v_filename, mode="w") as fw:
