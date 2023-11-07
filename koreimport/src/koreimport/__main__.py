@@ -83,7 +83,7 @@ From MatchingLogic.OPML Require Import OpmlSignature OpmlModel.
 def inductive_from_names(name_of_inductive: str, names: T.List[str]) -> str:
     inductive_definition = f'''
     Inductive {name_of_inductive} :=
-    {" ".join([f'| {s}' for s in sort_names])}
+    {" ".join([f'| {s}' for s in names])}
     .
     '''
     return inductive_definition
