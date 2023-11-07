@@ -101,13 +101,32 @@
           src = ./koreimport;
           format = "pyproject";
           propagatedBuildInputs = [
-            coqPackages.coq
-            self.outputs.packages.${system}.coq-matching-logic
-            coqPackages.equations
-            coqPackages.stdpp
             python.pkgs.setuptools
             pyk-py
           ];
+        };
+
+
+        packages.koreimport-test
+        = pkgs.stdenv.mkDerivation {
+          name = "koreimport-test";
+          src = ./koreimport-test;
+
+          buildInputs = [
+            self.outputs.packages.${system}.coq-matching-logic
+            self.outputs.packages.${system}.koreimport
+            coqPackages.coq
+            coqPackages.equations
+            coqPackages.stdpp
+          ];
+
+          configurePhase = "";
+          buildPhase = ''
+            echo Ahoj
+            ls
+            ./test.sh
+          '';
+          installPhase = "";
         };
 
 
