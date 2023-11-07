@@ -80,13 +80,16 @@ From MatchingLogic.Utils Require Import Surj.
 From MatchingLogic.OPML Require Import OpmlSignature OpmlModel.
 '''
 
-def inductive_sorts(sort_names: T.List[str]) -> str:
+def inductive_from_names(name_of_inductive: str, names: T.List[str]) -> str:
     inductive_definition = f'''
-    Inductive Sort :=
+    Inductive {name_of_inductive} :=
     {" ".join([f'| {s}' for s in sort_names])}
     .
     '''
     return inductive_definition
+
+def inductive_sorts(sort_names: T.List[str]) -> str:
+    return inductive_from_names(name_of_inductive="Sort", names=sort_names)
 
 def inductive_sorts_helpers(sort_names: T.List[str]) -> str:
     helpers = '''
@@ -133,6 +136,9 @@ def inductive_sorts_helpers(sort_names: T.List[str]) -> str:
     '''
     return helpers
 
+
+def inductive_symbols(symbol_names: T.List[str]) -> str:
+    return inductive_from_names(name_of_inductive="Symbols", names=symbol_names)
 
 def generate(input_kore_filename: str, main_module_name: str, output_v_filename: str):
     print(f'{input_kore_filename} > {output_v_filename}')
