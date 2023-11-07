@@ -113,6 +113,7 @@
           src = ./koreimport-test;
 
           buildInputs = [
+            pkgs.bash
             self.outputs.packages.${system}.coq-matching-logic
             self.outputs.packages.${system}.koreimport
             coqPackages.coq
@@ -120,11 +121,12 @@
             coqPackages.stdpp
           ];
 
+
           configurePhase = "";
           buildPhase = ''
-            echo Ahoj
-            ls
-            ./test.sh
+            koreimport -o out.v --module IMP korefiles/imp.kore
+            coqc out.v
+            mkdir -p $out
           '';
           installPhase = "";
         };
