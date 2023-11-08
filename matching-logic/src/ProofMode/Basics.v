@@ -315,7 +315,7 @@ Ltac2 do_mlReshapeHypsByName (name : constr) :=
   | [ |- @of_MLGoal _ (@mkMLGoal _ _ ?l _ _) ] =>
     match! (eval cbv in (index_of $name (names_of $l))) with
     | (Some ?i) => do_mlReshapeHypsByIdx i
-    | None => Message.print (Message.concat (Message.of_string "No such name: ") (Message.of_constr name))
+    | None => Message.print (Message.concat (Message.of_string "No such name: ") (Message.of_constr name)); fail
     end
   end
 .
@@ -675,5 +675,44 @@ Ltac2 Notation "mlRevertLast" :=
 Ltac mlRevertLast :=
   ltac2:(do_mlRevertLast ())
 .
+
+Lemma MLGoal_rename {Σ : Signature} (Γ : Theory) (l1 l2 : hypotheses) (p g : Pattern) (n1 n2 : string) i :
+  mkMLGoal Σ Γ (l1 ++ mkNH _ n2 p :: l2) g i ->
+  mkMLGoal Σ Γ (l1 ++ mkNH _ n1 p :: l2) g i.
+Proof.
+  intros H. unfold of_MLGoal in *. simpl in *.
+  intros WFg WFl. unfold patterns_of in *. rewrite -> map_app in *.
+  simpl in *. by apply H.
+Defined.
+
+Ltac2 do_mlRename (n1 : constr) (n2 : constr) :=
+  Control.enter(fun () =>
+    _ensureProofMode;
+    _mlReshapeHypsByName n1;
+    apply MLGoal_rename with (n2 := $n2);
+    _mlReshapeHypsBack
+  ).
+
+Ltac2 Notation "mlRename" n1(constr) "into" n2(constr) :=
+  do_mlRename n1 n2
+.
+
+Tactic Notation "mlRename" constr(n1) "into" constr(n2) :=
+  let f := ltac2:(n1 n2 |- do_mlRename (Option.get (Ltac1.to_constr n1)) (Option.get (Ltac1.to_constr n2))) in
+  f n1 n2
+.
+
+Local Example ex_ml_conj_many_intro {Σ : Signature} Γ a b c d e f i:
+   well_formed a -> well_formed b ->
+   well_formed c -> well_formed d ->
+   well_formed e -> well_formed f ->
+   Γ ⊢i a ---> b ---> c ---> d ---> e ---> f ---> (a and (b and (c and e))) using i.
+Proof.
+  intros wfa wfb wfc wfd wfe wff.
+  mlIntro; mlIntro; mlIntro; mlIntro; mlIntro; mlIntro.
+  mlRename "0"%string into "H0"%string.
+  mlRename "5"%string into "H5"%string.
+  Fail mlRename "6"%string into "6"%string.
+Abort.
 
 Close Scope ml_scope.

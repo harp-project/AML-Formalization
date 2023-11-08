@@ -4194,8 +4194,7 @@ Ltac2 rec do_mlConj_many l (name : constr) : unit :=
         let newname := eval cbv in (fresh $hyps) in
         (* rename name into newname 
            TODO: optimise this with mlRename, which is independent of ML proofs: *)
-        mlRevert $name;
-        mlIntro $newname;
+        mlRename $name into $newname;
         mlConj $a $newname as $name;
         mlClear $newname
       end
