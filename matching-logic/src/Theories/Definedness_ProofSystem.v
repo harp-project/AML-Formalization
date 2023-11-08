@@ -2151,7 +2151,7 @@ lazy_match! goal with
                  rewrite -> maximal_mu_depth_to_0 in H by (try timeout 5 (subst star; try solve_fresh))(* This is potentially non-terminating, hence the timeout *)
               end;
               simpl in *; try lia
-          )) (Ltac1.of_ident star))
+          ) (Ltac1.of_ident star))
       (* TODO: improve these heuristics above *)
       | lazy_match! goal with
         | [ |- of_MLGoal (@mkMLGoal ?sgm ?g ?l ?p AnyReasoning)]
