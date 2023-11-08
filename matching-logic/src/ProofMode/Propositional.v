@@ -4179,6 +4179,32 @@ Tactic Notation "mlConj" constr(n1) constr(n2) "as" constr(n3) :=
   let f := ltac2:(n1 n2 n3 |- do_mlConj (Option.get (Ltac1.to_constr n1)) (Option.get (Ltac1.to_constr n2)) (Option.get (Ltac1.to_constr n3))) in
   f n1 n2 n3.
 
+Ltac2 rec do_mlConj_many l (name : constr) : unit :=
+  match l with
+  | [] => Message.print (Message.of_string "empty"); fail
+  | a :: t1 => 
+    match t1 with
+    | [] => Message.print (Message.of_string "only one"); fail
+    | b :: t2 => 
+      match t2 with
+      | [] => mlConj $a $b as $name
+      | c :: t3 => 
+        do_mlConj_many t1 name;
+        let hyps := do_getHypNames () in
+        let newname := eval cbv in (fresh $hyps) in
+        (* rename name into newname 
+           TODO: optimise this with mlRename, which is independent of ML proofs: *)
+        mlRename $name into $newname;
+        mlConj $a $newname as $name;
+        mlClear $newname
+      end
+    end
+  end.
+
+Ltac2 Notation "mlConj" l(list1(constr, ",")) "as" n3(constr) :=
+  do_mlConj_many l n3.
+
+
   (**********************************************************************************)
 
 Example ex_ml_conj_intro {Σ : Signature} Γ a b c d e f i:
@@ -4191,6 +4217,18 @@ Proof.
   mlIntro; mlIntro; mlIntro; mlIntro; mlIntro; mlIntro.
   mlConj "1" "4" as "CN1".
   mlConj "4" "1" as "CN2".
+  mlAssumption.
+Defined.
+
+Example ex_ml_conj_many_intro {Σ : Signature} Γ a b c d e f i:
+   well_formed a -> well_formed b ->
+   well_formed c -> well_formed d ->
+   well_formed e -> well_formed f ->
+   Γ ⊢i a ---> b ---> c ---> d ---> e ---> f ---> (a and (b and (c and e))) using i.
+Proof.
+  intros wfa wfb wfc wfd wfe wff.
+  mlIntro; mlIntro; mlIntro; mlIntro; mlIntro; mlIntro.
+  ltac2:(mlConj "0", "1", "2", "4" as "conj").
   mlAssumption.
 Defined.
 

@@ -2292,10 +2292,12 @@ Ltac2 mlRewrite (hiff : constr) (atn : int) :=
         if ml_debug_rewrite then
            Message.print (Message.of_constr (hr.(ctx_pat)))
          else () ;
-         let heq := Control.hyp (hr.(equality)) in
+         let heq := (* Control.hyp *) (hr.(equality)) in
          let pc := (hr.(pc)) in
-         eapply (@cast_proof_ml_goal _ $g) >
-           [ rewrite $heq; reflexivity | ()];
+         let var := (hr.(star_ident)) in
+         let ctx_p := (hr.(ctx_pat)) in
+         eapply (@cast_proof_ml_goal _ $g) with (goal := emplace $pc $a) >
+           [ ltac1:(heq |- rewrite [left in _ = left] heq; reflexivity) (Ltac1.of_ident heq) | ()];
          Std.clear [hr.(equality)];
          let wfC := Fresh.in_goal ident:(wfC) in
          assert (wfC : PC_wf $pc = true) > [ ltac1:(unfold PC_wf; simpl; wf_auto2); Control.shelve () | ()] ;
@@ -2358,6 +2360,16 @@ Tactic Notation "mlRewrite" "->" constr(Hiff) "at" constr(atn) :=
 Tactic Notation "mlRewrite" "<-" constr(Hiff) "at" constr(atn) :=
   mlRewrite (@pf_iff_equiv_sym_nowf _ _ _ _ _ Hiff) at atn.
 
+Local Example ex_prf_rewrite_equiv_1 {Σ : Signature} Γ a a':
+  well_formed a ->
+  well_formed a' ->
+  Γ ⊢ a <---> a' ->
+  Γ ⊢ a' ->
+  Γ ⊢ a.
+Proof.
+  intros. toMLGoal. wf_auto2.
+  mlRewrite H1 at 1. fromMLGoal. assumption.
+Defined.
 
 Local Example ex_prf_rewrite_equiv_2 {Σ : Signature} Γ a a' b x:
   well_formed a ->
