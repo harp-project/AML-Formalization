@@ -908,10 +908,83 @@ Section with_model.
 
   End with_model.
 
+Module SortsExtension.
+  Export DefinednessExtension.
+  Export propset.
+  Context {Σ : Signature} {M : Model}
+          {string_vars : variables = StringMLVariables}
+          {sort_interp : M -> propset M}.
 
-  #[export]
-  Hint Resolve M_predicate_exists_of_sort : core.
+  (* Q: Why does the Definition line not typecheck? Is it about Polimorphic
+        Cumulative Record?
+     Q: Why can't we define model extension without definedness and sorts? That
+        could be reused to construct default sorts (and default definedness)
+        models.
+     Q: In ModelExtension.v, why is a Model composed with a Set/Type? Why not two
+        models? Again, why is it assumed that these include the semantics of
+        inhabitant?
+     Q: Why are data and predicate patterns separated in ModelExtension.v? Is
+        semantics preservation not provable otherwise? If so why not? Why is the
+        big theorem not proved as a single equality instead of two mutually
+        inductive statements? Is there a counterexample, where equality does not
+        hold, while ... = ⊥ \/ ... = ⊤ <-> ... = ⊥ \/ ... = ⊤ does?
+  *)
+  Definition MM := @DefinednessExtension.MModel Σ.
+  Print MM.
+  Instance defaultΣ : Signature := {
+    variables := StringMLVariables;
+    ml_symbols := Build_MLSymbols (@symbols (@ml_symbols (DefinednessExtension.defaultΣ)) + Symbols) _ _;
+  }.
 
-  #[export]
-  Hint Resolve M_predicate_forall_of_sort : core.
+  (* TODO: can we avoid Program? *)
+  Program Instance default_syntax : Syntax := {
+     inj := inr;
+     imported_definedness := _;
+  }.
+  Next Obligation.
+    constructor.
+    intros x. destruct x.
+    apply inl. apply inr. apply definedness.
+  Defined.
+
+  Definition new_carrier : Type := Domain MM + unit.
+  Definition new_sym_interp (m : @symbols (@ml_symbols (DefinednessExtension.defaultΣ)) + Symbols)
+    : propset new_carrier :=
+  match m with
+  | inl x => inl <$> (sym_interp MM x)
+  | inr x => {[ inr () ]}
+  end.
+
+  Program Definition new_app_interp (m1 m2 : new_carrier)
+    : propset new_carrier :=
+  match m1, m2 with
+  | inr (), inr ()       => ∅ (* inh $ inh *)
+  | inr (), inl (inr ()) => ∅ (* inh $ def *)
+  | inr (), inl (inl x)  => (inl ∘ inl) <$> (sort_interp x)
+  | inl _, inr _         => ∅
+  | inl x1, inl x2       => _
+  (* => ⊤
+  | inl x1 =>
+     match m2 with
+     | inl x2 => inl <$> app_interp M x1 x2
+     | inr () => ∅
+     end *)
+  end.
+  Next Obligation.
+    intros.
+
+  Definition MModel : Model := {|
+    Domain := new_carrier;
+    app_interp := new_app_interp;
+    sym_interp := new_sym_interp;
+  |}.
+
+End SortsExtension.
+
+
+#[export]
+Hint Resolve M_predicate_exists_of_sort : core.
+
+#[export]
+Hint Resolve M_predicate_forall_of_sort : core.
 
