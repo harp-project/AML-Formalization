@@ -123,7 +123,6 @@ Section nat.
     mlAdd (use_nat_axiom AxInductiveDomain theory ltac:(reflexivity)) as "ind". unfold axiom.
     mlRewriteBy "ind" at 1.
     { unfold theory. set_solver. }
-    { cbn. unfold mu_in_evar_path. cbn. rewrite decide_eq_same. cbn.  reflexivity. }
 
     mlClear "ind".
     unfold "⊆ml".
@@ -292,11 +291,8 @@ Section nat.
       }
       mlClear "M".
 
-      mlRewriteBy "M0" at 1;[unfold theory; set_solver|idtac|].
-      {
-        cbn. unfold mu_in_evar_path. cbn. rewrite decide_eq_same. cbn. reflexivity.
-      }
-      
+      mlRewriteBy "M0" at 1;[unfold theory; set_solver|].
+
       mlClear "M0".
 
       apply forall_elim with (x := y) in S.

@@ -51,7 +51,7 @@ Section running.
     mlIntro "H". (* .unfold .no-hyps *)
     mlDestructAnd "H" as "H1" "H2". (* .unfold .no-hyps .in .no-out *) mlSpecialize "H1" with x. (* .unfold .no-hyps *)
     mlExists x. (* .in .no-out *) mlSimpl. (* .unfold .no-hyps .no-out .in *) rewrite [f^{evar:0↦x}]evar_open_closed;[wf_auto2|]. (* .unfold .no-hyps *)
-    mlRewriteBy "H1" at 1;[assumption|(apply mu_free_in_path; simpl; by rewrite mff)|]. (* .unfold .no-hyps *)
+    mlRewriteBy "H1" at 1. (* .unfold .no-hyps *)
     mlExact "H2". (* .unfold .no-hyps *)
     (* end snippet running *)
   Defined.

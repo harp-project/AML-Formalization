@@ -2134,8 +2134,25 @@ lazy_match! goal with
       [ rewrite $heq; reflexivity | ()];
     Std.clear [hr.(equality)];
     apply MLGoal_rewriteBy
-    > [ ()
-      | ()
+    > [ try (match! goal with
+           | [hyp : ?theory ⊆ _ |- _] => unfold theory
+         end); try ltac1:(
+                          (* idtac "Trying set solving"; *)
+                          timeout 5 set_solver)
+      | Control.plus
+          (fun () => ltac1:(now (apply mu_free_in_path; simpl; assumption)))
+          (fun exn => let star := hr.(star_ident) in
+            ltac1:(star |-
+              unfold mu_in_evar_path; simpl; repeat case_match;
+              try reflexivity; try congruence;
+              repeat match goal with
+              | [H : context G [maximal_mu_depth_to _ _ _] |- _ ] =>
+                 (* idtac "rewriting"; *)
+                 rewrite -> maximal_mu_depth_to_0 in H by (try timeout 5 (subst star; try solve_fresh))(* This is potentially non-terminating, hence the timeout *)
+              end;
+              simpl in *; try lia
+          )) (Ltac1.of_ident star))
+      (* TODO: improve these heuristics above *)
       | lazy_match! goal with
         | [ |- of_MLGoal (@mkMLGoal ?sgm ?g ?l ?p AnyReasoning)]
           =>
@@ -2149,8 +2166,9 @@ lazy_match! goal with
               | ()
               ];
             let heq2_pf := Control.hyp heq2 in
-            eapply (@cast_proof_ml_goal _ $g) >
-              [ rewrite $heq2_pf; reflexivity | ()];
+            eapply (@cast_proof_ml_goal _ $g)
+              with (goal := $plugged) >
+              [ ltac1:(heq2 |- rewrite [left in _ = left] heq2; reflexivity) (Ltac1.of_ident heq2) | ()];
             Std.clear [heq2 ; (hr.(star_ident)); (hr.(star_eq))];
             _mlReshapeHypsBack
         end
@@ -2182,11 +2200,6 @@ Proof.
   { wf_auto2. }
   mlIntro "H0". mlIntro "H1".
   mlRewriteBy "H1" at 1.
-  { assumption. }
-  { apply mu_free_in_path.
-    simpl.
-  assumption.
-  }
   mlExactn 0.
 Defined.
 
@@ -2390,51 +2403,11 @@ Proof.
   mlAdd H as "H0".
   mlDestructOr "H0" as "H1" "H1".
   - mlRewriteBy "H1" at 2.
-    { exact HΓ. }
-    { simpl. unfold mu_in_evar_path. cbn. case_match;[reflexivity|].
-      case_match;[|contradiction].
-      rewrite Nat.max_0_r in H0.
-      rewrite maximal_mu_depth_to_0 in H0.
-      {
-        subst star. clear.
-        eapply evar_is_fresh_in_richer'.
-        2: {
-          apply set_evar_fresh_is_fresh.
-        }
-        {
-          simpl. set_solver.
-        }
-      }
-      inversion H0.
-    }
     mlRewriteBy "H1" at 1.
-    { exact HΓ. }
-    { simpl.
-    unfold mu_in_evar_path. cbn. case_match;[reflexivity|].
-      case_match;[|contradiction].
-      simpl in H0. inversion H0.
-    }
     mlClear "H1".
     fromMLGoal.
     aapply bott_not_defined.
   - mlRewriteBy "H1" at 2.
-    { exact HΓ. }
-    { simpl. unfold mu_in_evar_path. cbn. case_match;[reflexivity|].
-      case_match;[|contradiction].
-      rewrite Nat.max_0_r in H0.
-      rewrite maximal_mu_depth_to_0 in H0.
-      {
-        subst star. clear.
-        eapply evar_is_fresh_in_richer'.
-        2: {
-          apply set_evar_fresh_is_fresh.
-        }
-        {
-          simpl. set_solver.
-        }
-      }
-      inversion H0.
-    }
     mlClear "H1".
     unfold patt_top. mlIntro. mlIntro. mlExactn 1.
 Defined.
@@ -3817,75 +3790,7 @@ Proof.
   mlDestructOr "Htmp" as "Htmp1" "Htmp2".
   {
     mlRewriteBy "Htmp1" at 1.
-    { exact HΓ. }
-    { cbn. unfold mu_in_evar_path. cbn.
-      rewrite !Nat.max_0_r.
-      rewrite !maximal_mu_depth_to_0.
-      {
-        subst star. clear.
-        eapply evar_is_fresh_in_richer'.
-        2: {
-          apply set_evar_fresh_is_fresh.
-        }
-        {
-          cbn. set_solver.
-        }
-      }
-      {
-        subst star. clear.
-        eapply evar_is_fresh_in_richer'.
-        2: {
-          apply set_evar_fresh_is_fresh.
-        }
-        {
-          cbn. set_solver.
-        }
-      }
-      {
-        subst star. clear.
-        eapply evar_is_fresh_in_richer'.
-        2: {
-          apply set_evar_fresh_is_fresh.
-        }
-        {
-          cbn. set_solver.
-        }
-      }
-      {
-        cbn.
-        repeat case_match; try reflexivity; lia.
-      }
-    }
     mlRewriteBy "Htmp1" at 1.
-    { exact HΓ. }
-    { cbn. unfold mu_in_evar_path. cbn.
-      rewrite !Nat.max_0_r.
-      rewrite !maximal_mu_depth_to_0.
-      {
-        subst star. clear.
-        eapply evar_is_fresh_in_richer'.
-        2: {
-          apply set_evar_fresh_is_fresh.
-        }
-        {
-          cbn. set_solver.
-        }
-      }
-      {
-        subst star. clear.
-        eapply evar_is_fresh_in_richer'.
-        2: {
-          apply set_evar_fresh_is_fresh.
-        }
-        {
-          cbn. set_solver.
-        }
-      }
-      {
-        cbn.
-        repeat case_match; try reflexivity; lia.
-      }
-    }
     mlClear "Htmp1".
     mlRewrite (top_and Γ ϕ ltac:(wf_auto2)) at 1.
     mlRewrite (top_and Γ (P $ ϕ) ltac:(wf_auto2)) at 1.
@@ -3896,75 +3801,7 @@ Proof.
   }
   {
     mlRewriteBy "Htmp2" at 1.
-    { exact HΓ. }
-    { cbn. unfold mu_in_evar_path. cbn.
-      rewrite !Nat.max_0_r.
-      rewrite !maximal_mu_depth_to_0.
-      {
-        subst star. clear.
-        eapply evar_is_fresh_in_richer'.
-        2: {
-          apply set_evar_fresh_is_fresh.
-        }
-        {
-          cbn. set_solver.
-        }
-      }
-      {
-        subst star. clear.
-        eapply evar_is_fresh_in_richer'.
-        2: {
-          apply set_evar_fresh_is_fresh.
-        }
-        {
-          cbn. set_solver.
-        }
-      }
-      {
-        subst star. clear.
-        eapply evar_is_fresh_in_richer'.
-        2: {
-          apply set_evar_fresh_is_fresh.
-        }
-        {
-          cbn. set_solver.
-        }
-      }
-      {
-        cbn.
-        repeat case_match; try reflexivity; lia.
-      }
-    }
     mlRewriteBy "Htmp2" at 1.
-    { exact HΓ. }
-    { cbn. unfold mu_in_evar_path. cbn.
-      rewrite !Nat.max_0_r.
-      rewrite !maximal_mu_depth_to_0.
-      {
-        subst star. clear.
-        eapply evar_is_fresh_in_richer'.
-        2: {
-          apply set_evar_fresh_is_fresh.
-        }
-        {
-          cbn. set_solver.
-        }
-      }
-      {
-        subst star. clear.
-        eapply evar_is_fresh_in_richer'.
-        2: {
-          apply set_evar_fresh_is_fresh.
-        }
-        {
-          cbn. set_solver.
-        }
-      }
-      {
-        cbn.
-        repeat case_match; try reflexivity; lia.
-      }
-    }
     mlClear "Htmp2".
     mlRewrite (bott_and Γ ϕ ltac:(wf_auto2)) at 1.
     mlRewrite (bott_and Γ (P $ ϕ) ltac:(wf_auto2)) at 1.
@@ -3998,75 +3835,7 @@ Proof.
   mlDestructOr "Htmp" as "Htmp1" "Htmp2".
   {
     mlRewriteBy "Htmp1" at 1.
-    { exact HΓ. }
-    { cbn. unfold mu_in_evar_path. cbn.
-      rewrite !Nat.max_0_r.
-      rewrite !maximal_mu_depth_to_0.
-      {
-        subst star. clear.
-        eapply evar_is_fresh_in_richer'.
-        2: {
-          apply set_evar_fresh_is_fresh.
-        }
-        {
-          cbn. set_solver.
-        }
-      }
-      {
-        subst star. clear.
-        eapply evar_is_fresh_in_richer'.
-        2: {
-          apply set_evar_fresh_is_fresh.
-        }
-        {
-          cbn. set_solver.
-        }
-      }
-      {
-        subst star. clear.
-        eapply evar_is_fresh_in_richer'.
-        2: {
-          apply set_evar_fresh_is_fresh.
-        }
-        {
-          cbn. set_solver.
-        }
-      }
-      {
-        cbn.
-        repeat case_match; try reflexivity; lia.
-      }
-    }
     mlRewriteBy "Htmp1" at 1.
-    { exact HΓ. }
-    { cbn. unfold mu_in_evar_path. cbn.
-      rewrite !Nat.max_0_r.
-      rewrite !maximal_mu_depth_to_0.
-      {
-        subst star. clear.
-        eapply evar_is_fresh_in_richer'.
-        2: {
-          apply set_evar_fresh_is_fresh.
-        }
-        {
-          cbn. set_solver.
-        }
-      }
-      {
-        subst star. clear.
-        eapply evar_is_fresh_in_richer'.
-        2: {
-          apply set_evar_fresh_is_fresh.
-        }
-        {
-          cbn. set_solver.
-        }
-      }
-      {
-        cbn.
-        repeat case_match; try reflexivity; lia.
-      }
-    }
     mlClear "Htmp1".
     mlRewrite (top_and Γ P ltac:(wf_auto2)) at 1.
     mlRewrite (top_and Γ (P $ ϕ) ltac:(wf_auto2)) at 1.
@@ -4077,75 +3846,7 @@ Proof.
   }
   {
     mlRewriteBy "Htmp2" at 1.
-    { exact HΓ. }
-    { cbn. unfold mu_in_evar_path. cbn.
-      rewrite !Nat.max_0_r.
-      rewrite !maximal_mu_depth_to_0.
-      {
-        subst star. clear.
-        eapply evar_is_fresh_in_richer'.
-        2: {
-          apply set_evar_fresh_is_fresh.
-        }
-        {
-          cbn. set_solver.
-        }
-      }
-      {
-        subst star. clear.
-        eapply evar_is_fresh_in_richer'.
-        2: {
-          apply set_evar_fresh_is_fresh.
-        }
-        {
-          cbn. set_solver.
-        }
-      }
-      {
-        subst star. clear.
-        eapply evar_is_fresh_in_richer'.
-        2: {
-          apply set_evar_fresh_is_fresh.
-        }
-        {
-          cbn. set_solver.
-        }
-      }
-      {
-        cbn.
-        repeat case_match; try reflexivity; lia.
-      }
-    }
     mlRewriteBy "Htmp2" at 1.
-    { exact HΓ. }
-    { cbn. unfold mu_in_evar_path. cbn.
-      rewrite !Nat.max_0_r.
-      rewrite !maximal_mu_depth_to_0.
-      {
-        subst star. clear.
-        eapply evar_is_fresh_in_richer'.
-        2: {
-          apply set_evar_fresh_is_fresh.
-        }
-        {
-          cbn. set_solver.
-        }
-      }
-      {
-        subst star. clear.
-        eapply evar_is_fresh_in_richer'.
-        2: {
-          apply set_evar_fresh_is_fresh.
-        }
-        {
-          cbn. set_solver.
-        }
-      }
-      {
-        cbn.
-        repeat case_match; try reflexivity; lia.
-      }
-    }
     mlClear "Htmp2".
     mlRewrite (bott_and Γ P ltac:(wf_auto2)) at 1.
     mlRewrite (bott_and Γ (P $ ϕ) ltac:(wf_auto2)) at 1.
@@ -4183,15 +3884,7 @@ Proof.
   mlDestructOr "P" as "T" "B".
   {
     mlRewriteBy "T" at 1.
-    { set_solver. }
-    {
-      apply mu_free_in_path. simpl. split_and!; reflexivity || assumption.
-    }
     mlRewriteBy "T" at 1.
-    { set_solver. }
-    {
-      apply mu_free_in_path. simpl. split_and!; reflexivity || assumption.
-    }
     mlClear "T".
     pose proof (Ht := top_and Γ (P $ ϕ) ltac:(wf_auto2)).
     mlRewrite Ht at 1; clear Ht.
@@ -4202,15 +3895,7 @@ Proof.
   }
   {
     mlRewriteBy "B" at 1.
-    { set_solver. }
-    {
-      apply mu_free_in_path. simpl. split_and!; reflexivity || assumption.
-    }
     mlRewriteBy "B" at 1.
-    { set_solver. }
-    {
-      apply mu_free_in_path. simpl. split_and!; reflexivity || assumption.
-    }
     mlClear "B".
     pose proof (Hb := bott_and Γ (P $ ϕ) ltac:(wf_auto2)).
     mlRewrite Hb at 1; clear Hb.
@@ -4235,21 +3920,7 @@ Proof.
   intros HΓ WF1 WF2 Def.
   toMLGoal. wf_auto2.
   mlIntro "H0".
-  mlRewriteBy "H0" at 1; cbn; try_wfauto2; try assumption.
-  {
-    unfold mu_in_evar_path. simpl.
-    rewrite decide_eq_same. simpl.
-    case_match;[reflexivity|].
-    rewrite 2!Nat.max_0_r in H.
-    rewrite maximal_mu_depth_to_0 in H.
-    2: { inversion H. }
-    subst star. clear.
-    eapply evar_is_fresh_in_richer'.
-    2: { apply set_evar_fresh_is_fresh. }
-    {
-      cbn. set_solver.
-    }
-  }
+  mlRewriteBy "H0" at 1.
   mlClear "H0". unfold patt_in.
   assert (Γ ⊢ ( φ' and φ' <---> φ') ) as H1.
   {
@@ -4495,8 +4166,6 @@ Proof.
   unshelve(mlApplyMeta patt_equal_sym in "H0").
   2: { assumption. }
   mlRewriteBy "H0" at 1.
-  { assumption. }
-  { apply mu_free_in_path. simpl. rewrite mfφ₁. reflexivity. }
   mlClear "H0".
 
   fromMLGoal.
