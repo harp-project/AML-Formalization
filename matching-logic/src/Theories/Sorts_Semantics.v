@@ -917,17 +917,26 @@ Module SortsExtension.
 
   (* Q: Why does the Definition line not typecheck? Is it about Polimorphic
         Cumulative Record?
+     A: Try to solve this by putting Context into a Section.
      Q: Why can't we define model extension without definedness and sorts? That
         could be reused to construct default sorts (and default definedness)
         models.
+     A: We can define model extension without restrictions, but without these constructs
+        we can't argue about the semantics preservation of formulas without the two models
+        agreeing on the basics of the logic (currently definedness and sorts).
      Q: In ModelExtension.v, why is a Model composed with a Set/Type? Why not two
         models? Again, why is it assumed that these include the semantics of
         inhabitant?
+     A: ModelExtension.v formalizes model extensions, which is a generalization of model
+        gluing.
      Q: Why are data and predicate patterns separated in ModelExtension.v? Is
         semantics preservation not provable otherwise? If so why not? Why is the
         big theorem not proved as a single equality instead of two mutually
         inductive statements? Is there a counterexample, where equality does not
         hold, while ... = ⊥ \/ ... = ⊤ <-> ... = ⊥ \/ ... = ⊤ does?
+     A: Counterexample: glue the singleton definedness model to bool model. In the bool
+        model, we can prove `true or false`, but we can't do that if we extend it with
+        definedness.
   *)
   Definition MM := @DefinednessExtension.MModel Σ.
   Print MM.
