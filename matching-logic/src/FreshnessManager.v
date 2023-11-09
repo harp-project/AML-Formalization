@@ -595,7 +595,7 @@ Ltac2 _is_subterm_of (x : constr) (y : constr) : bool
 .
 *)
 
-Print FreshnessManager.
+
 Lemma FreshMan_export_evars_inclusion
     {Σ : Signature}
     (ap : Pattern)
