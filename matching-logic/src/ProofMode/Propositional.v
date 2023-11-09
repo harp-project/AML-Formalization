@@ -1034,7 +1034,6 @@ Proof.
   pose proof (H1 := Constructive_dilemma Γ p r q r wfp wfr wfq wfr).
   assert (Γ ⊢i ((r or r) ---> r) using BasicReasoning).
   { unfold patt_or. apply P4i'. wf_auto2. }
-  Check tofold.
   replace ((p ---> r) ---> (q ---> r) ---> p or q ---> r or r)
   with (foldr patt_imp ((p ---> r) ---> (q ---> r) ---> p or q ---> r or r) [])
   in H1 by reflexivity.
