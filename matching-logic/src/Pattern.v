@@ -567,8 +567,10 @@ Qed.
       induction p; simpl in H; simpl; auto.
       2-5, 7: set_solver.
       - destruct (decide (x0 = x)); set_solver.
-      - apply plus_is_O in H as [H0 H1]. set_solver.
-      - apply plus_is_O in H as [H0 H1]. set_solver.
+      - rewrite Nat.eq_add_0 in H.
+        destruct H as [H0 H1]. set_solver.
+      - rewrite Nat.eq_add_0 in H.
+        destruct H as [H0 H1]. set_solver.
     }
   Qed.
 

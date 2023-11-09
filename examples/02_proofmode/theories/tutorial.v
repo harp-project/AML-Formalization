@@ -198,7 +198,7 @@ Proof.
     (* We can rewrite using an equality from the local context. *)
     mlRewriteBy "H1" at 1.
     {
-        (* Oops, there is a obligation we do not know how to solve. What does that mean? *)
+        (* Oops, there is an obligation we do not know how to solve. What does that mean? *)
         unfold theory, named_axioms, NamedAxioms.theory_of_NamedAxioms, axiom. simpl.
         (* Aha, we are missing a Definedness axiom. *)
         admit.
@@ -223,22 +223,10 @@ Proof.
 
     (* We can rewrite using an equality from the local context. *)
     mlRewriteBy "H1" at 1.
-    { 
-        (* Now we have the appropriate assumption. *)
-        assumption.
-    }
-    {
-        (* Another constraint. Under the hood, the rewrite uses the equality elimination lemma,
-           which in turn uses deduction theorem.
-           The deduction theorem used under the hood does not support working with μ patterns yet,
-           so we have to check that the context in which we want to rewrite
-           is μ-free.
-        *)
-        simpl.
-        (* Oh.. we do not know anything about the [ϕᵢ]s. *)
-        admit.
-    }
-Abort.
+    (* Now the obligation was solved automatically *)
+
+    mlSplitAnd; mlIntro "Hyp"; mlExact "Hyp".
+Defined.
 
 (* A solver for boolean tautologies. *)
 From Coq Require Import btauto.Btauto.
@@ -249,47 +237,6 @@ From MatchingLogic Require Import
 .
 
 Open Scope ml_scope.
-
-Example use_rewriteBy {Σ : Signature} {syntax : Definedness_Syntax.Syntax}
-    (Γ : Theory) (ϕ₁ ϕ₂ ϕ₃ ϕ₄ : Pattern) :
-    Definedness_Syntax.theory ⊆ Γ ->
-    (* This makes the difference. *)
-    ((mu_free ϕ₁) && (mu_free ϕ₂) && (mu_free ϕ₃) && (mu_free ϕ₄)) = true ->
-    well_formed ϕ₁ = true ->
-    well_formed ϕ₂ = true ->
-    well_formed ϕ₃ = true ->
-    well_formed ϕ₄ = true ->
-    Γ ⊢ (ϕ₁ $ ϕ₄ =ml ϕ₂ $ ϕ₄ ) ---> (ϕ₁ =ml ϕ₂) ---> ((ϕ₃ $ ϕ₁ $ ϕ₄) <---> (ϕ₃ $ ϕ₂ $ ϕ₄))
-.
-Proof.
-    intros HΓ Hmf.
-    mlIntro "H1". mlIntro "H2".
-
-    (* We can rewrite using an equality from the local context. *)
-    mlRewriteBy "H1" at 1.
-    { assumption. }
-    {
-        (* We admit this kind of side condition is a bit annoying.
-           Currently, there is no tactic that would automate this.
-           However, we are working on a version of [mlRewriteBy]
-           that would be based on a more general deduction theorem
-           and therefore would not generate such ugly side conditions.
-        *)
-        apply mu_free_in_path. simpl. destruct_and!. unfold is_true. rewrite -> H0, H2, H3. reflexivity.
-    }
-
-    (* We could also rewrite by H2 *)
-    Restart.
-
-    intros HΓ Hmf wfϕ₁ wfϕ₂ wfϕ₃ wfϕ₄.
-    mlIntro "H1". mlIntro "H2".
-
-    mlRewriteBy "H2" at 1.
-    { assumption. }
-    { apply mu_free_in_path. simpl. destruct_and!. unfold is_true. rewrite -> H0, H2, H3. reflexivity. }
-
-    mlSplitAnd; mlIntro "Hyp"; mlExact "Hyp".
-Defined.
 
 (*
    We now demonstrate how to use local hypotheses that are implications.
@@ -306,7 +253,8 @@ Proof.
     (* Would weaken the hypothesis H3 using H1
        if we had it.
      *)
-    (* (mlApply "H1" in "H3"). *)
+    (* mlApply "H1" in "H3". *)
+    
     mlApply "H1".
     mlExact "H3".
 Defined.
