@@ -937,6 +937,9 @@ Module SortsExtension.
      A: Counterexample: glue the singleton definedness model to bool model. In the bool
         model, we can prove `true or false`, but we can't do that if we extend it with
         definedness.
+        Conterexample 2: suppose that `\forall x, !!x = x` holds in some bool model M. If
+        we extend this with additional elements, we still want this formula to be evaluated
+        to the full carrier set in the extended model, and not just the full carrier set of M.
   *)
   Definition MM := @DefinednessExtension.MModel Σ.
   Print MM.
