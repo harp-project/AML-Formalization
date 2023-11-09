@@ -274,8 +274,235 @@ Open Scope list_scope.
     }
   Qed.
 
+  
+  Theorem true_andBool : forall Γ , theory ⊆ Γ ->
+                        Γ ⊢ all mlBool,  b0 &&ml mlTrue =ml b0. 
+  Proof.
+  intros.
+  toMLGoal.
+  wf_auto2.
+  mlIntroAll x.
+  simpl.
+  cbn. fold mlBool.
+  pose proof use_bool_axiom AxInductiveDomain Γ H.
+  simpl in H0. mlAdd H0 as "ind".
+  mlRewriteBy "ind" at 1.
+  {
+    unfold theory in H. unfold Definedness_Syntax.theory. set_solver. 
+  }
+  { cbn. unfold mu_in_evar_path. cbn. rewrite decide_False. 
+    1: solve_fresh_neq.
+    1: cbn. rewrite decide_eq_same. cbn. reflexivity.
+  }
+  mlIntro "H".
+  mlApplyMeta membership_or_1 in "H".
+  { 
+    mlDestructOr "H". 
+    * pose proof membership_equal_equal Γ (patt_free_evar x) mlTrue.
+      ospecialize* H1.
+      + unfold theory in H;set_solver.
+      + simpl. auto.
+      + wf_auto2.
+      + wf_auto2.
+      + mlExists x. mlSimpl. cbn. Search patt_equal derives_using. fromMLGoal. apply useBasicReasoning.  
+        epose proof patt_equal_refl  (patt_free_evar x) Γ.
+        apply H2. wf_auto2.
+      + mlApplyMeta ex_sort_impl_ex.
+        - pose proof use_bool_axiom AxFunTrue Γ H;simpl in H2;mlAdd H2 as "f";mlExact "f".
+        - unfold theory in H;set_solver.
+      + mlAdd H1. mlRevert "0".
+        mlRewriteBy "1" at 1.
+        1: { unfold theory in H. set_solver. }
+        1: { unfold mu_in_evar_path. cbn. rewrite decide_eq_same. rewrite decide_False. 
+              1: solve_fresh_neq.
+              1: cbn. reflexivity.
+           }
+           
+      mlIntro "H".
+      pose proof use_bool_axiom AxDefAndRightTrue Γ H.
+      simpl in H2. mlAdd H2.
+        
+      mlSpecialize "0" with x. mlSimpl. cbn. fold mlBool. 
+      mlApply "0".
+      mlRewriteBy "ind" at 1.
+      1: { unfold theory in H. set_solver. }
+      1: { unfold mu_in_evar_path. cbn. rewrite decide_eq_same. rewrite decide_False.
+            1: solve_fresh_neq.
+            1: cbn. reflexivity.
+          }
+          
+      mlApplyMeta membership_or_2.
+      mlRewriteBy "1" at 1. 
+      1: { unfold theory in H. set_solver. }
+      1: { unfold mu_in_evar_path. cbn. rewrite decide_eq_same. rewrite decide_False.
+            1: solve_fresh_neq.
+            1: cbn. reflexivity.
+         }
+       {
+          mlLeft. mlExact "H".
+       }
+       { unfold theory in H. set_solver.  }
+       
+     * pose proof membership_equal_equal Γ (patt_free_evar x) mlFalse.
+       ospecialize* H1.
+       + unfold theory in H;set_solver.
+       + simpl. auto.
+       + wf_auto2.
+       + wf_auto2.
+       + mlExists x. mlSimpl. cbn. Search patt_equal derives_using. fromMLGoal. apply useBasicReasoning.  
+         epose proof patt_equal_refl  (patt_free_evar x) Γ.
+         apply H2. wf_auto2.
+       + mlApplyMeta ex_sort_impl_ex.
+         - pose proof use_bool_axiom AxFunFalse Γ H;simpl in H2;mlAdd H2 as "f";mlExact "f".
+         - unfold theory in H;set_solver.
+       + mlAdd H1. mlRevert "1".
+         mlRewriteBy "0" at 1.
+         1: { unfold theory in H. set_solver. }
+         1: { unfold mu_in_evar_path. cbn. rewrite decide_eq_same. rewrite decide_False. 
+               1: solve_fresh_neq.
+               1: cbn. reflexivity.
+            }
+       mlIntro "H".
+       pose proof use_bool_axiom AxDefAndRightTrue Γ H.
+       simpl in H2. mlAdd H2.
+       mlSpecialize "1" with x. mlSimpl. cbn. fold mlBool. 
+       mlApply "1".
+       mlRewriteBy "ind" at 1.
+       1: { unfold theory in H. set_solver. }
+       1: { unfold mu_in_evar_path. cbn. rewrite decide_eq_same. rewrite decide_False.
+             1: solve_fresh_neq.
+             1: cbn. reflexivity.
+          }
+       mlApplyMeta membership_or_2.
+       mlRewriteBy "0" at 1. 
+       1: { unfold theory in H. set_solver. }
+       1: { unfold mu_in_evar_path. cbn. rewrite decide_eq_same. rewrite decide_False.
+             1: solve_fresh_neq.
+             1: cbn. reflexivity.
+          }
+       {
+         mlRight. mlExact "H".
+       }
+       { unfold theory in H. set_solver.  }
+  }
+  { unfold theory in H. set_solver.   }
+  Qed.
+  
+    Theorem false_andBool : forall Γ , theory ⊆ Γ ->
+                        Γ ⊢ all mlBool,  b0 &&ml mlFalse =ml mlFalse. 
+  Proof.
+  intros.
+  toMLGoal.
+  wf_auto2.
+  mlIntroAll x.
+  simpl.
+  cbn. fold mlBool.
+  pose proof use_bool_axiom AxInductiveDomain Γ H.
+  simpl in H0. mlAdd H0 as "ind".
+  mlRewriteBy "ind" at 1.
+  {
+    unfold theory in H. unfold Definedness_Syntax.theory. set_solver. 
+  }
+  { cbn. unfold mu_in_evar_path. cbn. rewrite decide_False. 
+    1: solve_fresh_neq.
+    1: cbn. rewrite decide_eq_same. cbn. reflexivity.
+  }
+  mlIntro "H".
+  mlApplyMeta membership_or_1 in "H".
+  { 
+    mlDestructOr "H". 
+    * pose proof membership_equal_equal Γ (patt_free_evar x) mlTrue.
+      ospecialize* H1.
+      + unfold theory in H;set_solver.
+      + simpl. auto.
+      + wf_auto2.
+      + wf_auto2.
+      + mlExists x. mlSimpl. cbn. Search patt_equal derives_using. fromMLGoal. apply useBasicReasoning.  
+        epose proof patt_equal_refl  (patt_free_evar x) Γ.
+        apply H2. wf_auto2.
+      + mlApplyMeta ex_sort_impl_ex.
+        - pose proof use_bool_axiom AxFunTrue Γ H;simpl in H2;mlAdd H2 as "f";mlExact "f".
+        - unfold theory in H;set_solver.
+      + mlAdd H1. mlRevert "0".
+        mlRewriteBy "1" at 1.
+        1: { unfold theory in H. set_solver. }
+        1: { unfold mu_in_evar_path. cbn. rewrite decide_eq_same. rewrite decide_False. 
+              1: solve_fresh_neq.
+              1: cbn. reflexivity.
+           }
+           
+      mlIntro "H".
+      pose proof use_bool_axiom AxDefAndRightFalse Γ H.
+      simpl in H2. mlAdd H2.
+        
+      mlSpecialize "0" with x. mlSimpl. cbn. fold mlBool. 
+      mlApply "0".
+      mlRewriteBy "ind" at 1.
+      1: { unfold theory in H. set_solver. }
+      1: { unfold mu_in_evar_path. cbn. rewrite decide_eq_same. rewrite decide_False.
+            1: solve_fresh_neq.
+            1: cbn. reflexivity.
+          }
+          
+      mlApplyMeta membership_or_2.
+      mlRewriteBy "1" at 1. 
+      1: { unfold theory in H. set_solver. }
+      1: { unfold mu_in_evar_path. cbn. rewrite decide_eq_same. rewrite decide_False.
+            1: solve_fresh_neq.
+            1: cbn. reflexivity.
+         }
+       {
+          mlLeft. mlExact "H".
+       }
+       { unfold theory in H. set_solver.  }
+       
+     * pose proof membership_equal_equal Γ (patt_free_evar x) mlFalse.
+       ospecialize* H1.
+       + unfold theory in H;set_solver.
+       + simpl. auto.
+       + wf_auto2.
+       + wf_auto2.
+       + mlExists x. mlSimpl. cbn. Search patt_equal derives_using. fromMLGoal. apply useBasicReasoning.  
+         epose proof patt_equal_refl  (patt_free_evar x) Γ.
+         apply H2. wf_auto2.
+       + mlApplyMeta ex_sort_impl_ex.
+         - pose proof use_bool_axiom AxFunFalse Γ H;simpl in H2;mlAdd H2 as "f";mlExact "f".
+         - unfold theory in H;set_solver.
+       + mlAdd H1. mlRevert "1".
+         mlRewriteBy "0" at 1.
+         1: { unfold theory in H. set_solver. }
+         1: { unfold mu_in_evar_path. cbn. rewrite decide_eq_same. rewrite decide_False. 
+               1: solve_fresh_neq.
+               1: cbn. reflexivity.
+            }
+       mlIntro "H".
+       pose proof use_bool_axiom AxDefAndRightFalse Γ H.
+       simpl in H2. mlAdd H2.
+       mlSpecialize "1" with x. mlSimpl. cbn. fold mlBool. 
+       mlApply "1".
+       mlRewriteBy "ind" at 1.
+       1: { unfold theory in H. set_solver. }
+       1: { unfold mu_in_evar_path. cbn. rewrite decide_eq_same. rewrite decide_False.
+             1: solve_fresh_neq.
+             1: cbn. reflexivity.
+          }
+       mlApplyMeta membership_or_2.
+       mlRewriteBy "0" at 1. 
+       1: { unfold theory in H. set_solver. }
+       1: { unfold mu_in_evar_path. cbn. rewrite decide_eq_same. rewrite decide_False.
+             1: solve_fresh_neq.
+             1: cbn. reflexivity.
+          }
+       {
+         mlRight. mlExact "H".
+       }
+       { unfold theory in H. set_solver.  }
+  }
+  { unfold theory in H. set_solver.   }
+  Qed.
 
-End bools.
+  
+rEnd bools.
 Close Scope ml_scope.
 Close Scope string_scope.
 Close Scope list_scope.
