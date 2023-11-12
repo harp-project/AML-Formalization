@@ -5,6 +5,9 @@ import typing as T
 import pyk.kore.parser as KoreParser
 import pyk.kore.syntax as Kore
 
+class DefinitionError(Exception):
+    pass
+
 def get_all_imported_module_names(
     definition: Kore.Definition, module_name: str
 ) -> T.Set[str]:
@@ -75,6 +78,16 @@ def non_hooked_sort_names(definition: Kore.Definition, main_module_name: str) ->
 def non_hooked_symbol_names(definition: Kore.Definition, main_module_name: str) -> T.Set[str]:
     sd = symbol_decls(definition=definition, main_module_name=main_module_name)
     return {s.symbol.name for s in sd if not s.hooked}
+
+def get_symbol_decl_from_module(
+    module: Kore.Module, symbol_name: str
+) -> T.Optional[Kore.SymbolDecl]:
+    for s in module.sentences:
+        match s:
+            case Kore.SymbolDecl(symbol, _, _, _, _):
+                if symbol.name == symbol_name:
+                    return s
+    return None
 
 def get_symbol_decl_from_definition(
     definition: Kore.Definition, main_module_name: str, symbol_name: str
@@ -195,6 +208,27 @@ def inductive_symbols(symbol_names: T.List[str]) -> str:
 def mangle_even_more(s: str) -> str:
     return s.replace('-', "'DASH'")
 
+def symbols_return_sorts(inductive_name: str, symbol_names: T.List[str], definition: Kore.Definition, main_module_name: str) -> str:
+    s = f'''
+    Definition {inductive_name}_return_sort (s : {inductive_name}) :=
+        match s with
+    '''
+    symbol_sorts = [
+        (
+            mangle_even_more(symbol_name),
+            mangle_even_more(
+                get_symbol_sort(definition=definition, main_module_name=main_module_name, symbol_name=symbol_name).name
+            )
+        )
+        for symbol_name in symbol_names
+    ]
+    s += "\n".join([f'| {symbol_name} => {return_sort}' for (symbol_name,return_sort) in symbol_sorts])
+    s += '''
+        end 
+    .
+    '''
+    return s
+
 def generate(input_kore_filename: str, main_module_name: str, output_v_filename: str):
     print(f'{input_kore_filename} > {output_v_filename}')
     parser = KoreParser.KoreParser(open(input_kore_filename).read())
@@ -202,7 +236,8 @@ def generate(input_kore_filename: str, main_module_name: str, output_v_filename:
     sort_names: T.List[str] = list(non_hooked_sort_names(definition=definition, main_module_name=main_module_name))
     symbol_names: T.List[str] = list(non_hooked_symbol_names(definition=definition, main_module_name=main_module_name))
 
-    sort_names_mangled = [mangle_even_more(n) for n in sort_names]
+    # TODO we should filter them by the attribute that is on the `inj` symbol, rather then by the name itself.
+    sort_names_mangled = [mangle_even_more(n) for n in sort_names if n != 'inj']
     symbol_names_mangled = [mangle_even_more(n) for n in symbol_names]
 
     output_text = coq_preamble \
@@ -210,6 +245,7 @@ def generate(input_kore_filename: str, main_module_name: str, output_v_filename:
         + inductive_sorts_helpers(sort_names_mangled)\
         + inductive_symbols(symbol_names_mangled)\
         + eqdec_finite("Symbols", symbol_names_mangled)\
+        + symbols_return_sorts("Symbols", symbol_names=symbol_names, definition=definition, main_module_name=main_module_name)\
         + "\n"
 
     with open(output_v_filename, mode="w") as fw:
@@ -217,8 +253,6 @@ def generate(input_kore_filename: str, main_module_name: str, output_v_filename:
     
 
 def main():
-    print("Hello, world")
-
     parser = argparse.ArgumentParser(
                 prog='koreimport',
                 description='Generates a *.v file from a *.kore.')
