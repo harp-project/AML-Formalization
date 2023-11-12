@@ -222,6 +222,24 @@
                 packages = [coq-matching-logic-example-proofmode.coqPackages.coq-lsp];
               };
 
+          koreimport =
+            let
+              koreimport = self.outputs.packages.${system}.koreimport;
+            in
+              pkgs.mkShell {
+                inputsFrom = [koreimport];
+                #packages = [koreimport.coqPackages.coq-lsp];
+              };
+
+          koreimport-test =
+            let
+              koreimport-test = self.outputs.packages.${system}.koreimport-test;
+            in
+              pkgs.mkShell {
+                inputsFrom = [koreimport-test];
+                #packages = [koreimport-test.coqPackages.coq-lsp];
+              };
+
 
           coq-matching-logic-mm-exporter =
             let
