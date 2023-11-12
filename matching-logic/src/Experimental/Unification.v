@@ -237,9 +237,75 @@ Section ProofSystemTheorems.
     mlExact "H2".
   Defined.
 
+  Lemma Lemma₂_multi_right : forall Γ φ subs,
+    theory ⊆ Γ -> mu_free φ -> well_formed φ ->
+    fold_right (fun '(_, φ') a => well_formed φ' && a) true subs ->
+    Γ ⊢ fold_left (fun a '(x, φ') => a^[[evar: x ↦ φ']]) subs φ and fold_right (fun '(x, φ') a => patt_free_evar x =ml φ' and a) patt_top subs --->
+      φ and fold_right (fun '(x, φ') a => patt_free_evar x =ml φ' and a) patt_top subs.
+  Proof.
+    intros Γ φ subs HΓ mfφ wfφ wfs.
+    induction subs as [ | [x φ'] ]; simpl in * |- *.
+    aapply A_impl_A. wf_auto2.
+    specialize (IHsubs ltac:(wf_auto2)).
+    toMLGoal.
+    admit.
+    mlIntro "H".
+    mlDestructAnd "H" as "H1" "H2".
+    mlDestructAnd "H2" as "H3" "H4".
+    mlAdd IHsubs as "IH".
+    mlAssert ("IHspec" : (φ and foldr (λ '(x0, φ'0) (a : Pattern), patt_free_evar x0 =ml φ'0 and a) Top subs)).
+    admit.
+    mlApply "IH".
+    mlSplitAnd.
+    2: mlExact "H4".
+    pose proof (equality_elimination_basic Γ (patt_free_evar x) φ' {| pcEvar := x; pcPattern := φ |} HΓ ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) mfφ).
+    cbn in H.
+    rewrite free_evar_subst_id in H.
+    mlAdd H as "Hcong".
+    mlAssert ("Hcongspec" : (φ <---> φ^[[evar:x↦φ']])).
+    wf_auto2.
+    mlApply "Hcong".
+    mlExact "H3".
+    (* mlRewrite "Hcongspec" at 1. *) admit.
+    mlDestructAnd "IHspec" as "IHspec1" "IHspec2".
+    mlSplitAnd.
+    mlExact "IHspec1".
+    mlSplitAnd.
+    mlExact "H3".
+    mlExact "IHspec2".
+  Admitted.
+
+  Goal forall (Γ : Theory) (φ : Pattern) (x₁ x₂ : evar) (φ'₁ φ'₂ : Pattern), True.
+  Proof.
+    intros.
+    pose proof (Lemma₂_multi_right Γ φ [(x₁, φ'₁); (x₂, φ'₂)]).
+    simpl in H.
+    split.
+  Abort.
+
+  (* Lemma Lemma₂_multi : forall Γ φ subs, *)
+  (*   theory ⊆ Γ -> mu_free φ -> *)
+  (*   fold_left (fun a '(_, φ') => a && well_formed φ') subs (well_formed φ) -> *)
+  (*   Γ ⊢ fold_left (fun a '(x, φ') => a and patt_free_evar x =ml φ') subs (fold_left (fun a '(x, φ') => a^[[evar: x ↦ φ']]) subs φ) ---> fold_left (fun a '(x, φ') => a and patt_free_evar x =ml φ') subs φ. *)
+  (* Proof. *)
+  (*   intros Γ φ subs HΓ mfφ wfs. *)
+  (*   induction subs as [ | [x φ'] ]; simpl in * |- *. *)
+  (*   now aapply A_impl_A. *)
+  (*   pose proof (equality_elimination_basic Γ (patt_free_evar x) φ' {| pcEvar := x; pcPattern := φ |} HΓ ltac:(wf_auto2)). *)
+  (*   cbn in H. *)
+  (* Admitted. *)
+
+  (* Goal forall (Γ : Theory) (φ : Pattern) (x₁ x₂ : evar) (φ'₁ φ'₂ : Pattern), True. *)
+  (* Proof. *)
+  (*   intros. *)
+  (*   pose proof (Lemma₂_multi Γ φ [(x₁, φ'₁); (x₂, φ'₂)]). *)
+  (*   simpl in H. *)
+  (*   split. *)
+  (* Abort. *)
+
   Lemma Lemma₁_meta : forall φ t x Γ, theory ⊆ Γ ->
     well_formed φ ->
-    mu_free φ -> (* should I have this? *)
+    mu_free φ ->
     well_formed t ->
     Γ ⊢ (patt_free_evar x) =ml t ->
     Γ ⊢ φ^[[evar:x↦t]] =ml φ.
