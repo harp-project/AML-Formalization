@@ -71,13 +71,13 @@ def sort_decls(definition: Kore.Definition, main_module_name: str) -> T.List[Kor
 def symbol_decls(definition: Kore.Definition, main_module_name: str) -> T.List[Kore.SymbolDecl]:
     return [s for s in sentences(definition, main_module_name) if is_symbol_decl(s)] #type: ignore
 
-def non_hooked_sort_names(definition: Kore.Definition, main_module_name: str) -> T.Set[str]:
+def non_hooked_sort_names(definition: Kore.Definition, main_module_name: str, non_hooked_only: bool) -> T.Set[str]:
     sd = sort_decls(definition=definition, main_module_name=main_module_name)
-    return {s.name for s in sd if not s.hooked}
+    return {s.name for s in sd if not s.hooked or not non_hooked_only}
 
-def non_hooked_symbol_names(definition: Kore.Definition, main_module_name: str) -> T.Set[str]:
+def non_hooked_symbol_names(definition: Kore.Definition, main_module_name: str, non_hooked_only: bool) -> T.Set[str]:
     sd = symbol_decls(definition=definition, main_module_name=main_module_name)
-    return {s.symbol.name for s in sd if not s.hooked}
+    return {s.symbol.name for s in sd if not s.hooked or not non_hooked_only}
 
 def get_symbol_decl_from_module(
     module: Kore.Module, symbol_name: str
@@ -263,8 +263,8 @@ def generate(input_kore_filename: str, main_module_name: str, output_v_filename:
     print(f'{input_kore_filename} > {output_v_filename}')
     parser = KoreParser.KoreParser(open(input_kore_filename).read())
     definition = parser.definition()
-    sort_names: T.List[str] = list(non_hooked_sort_names(definition=definition, main_module_name=main_module_name))
-    symbol_names: T.List[str] = list(non_hooked_symbol_names(definition=definition, main_module_name=main_module_name))
+    sort_names: T.List[str] = list(non_hooked_sort_names(definition=definition, main_module_name=main_module_name, non_hooked_only=False))
+    symbol_names: T.List[str] = list(non_hooked_symbol_names(definition=definition, main_module_name=main_module_name, non_hooked_only=False))
 
     # TODO we should filter them by the attribute that is on the `inj` symbol, rather then by the name itself.
     sort_names_mangled = [mangle_even_more(n) for n in sort_names if n != 'inj']
