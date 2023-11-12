@@ -264,10 +264,14 @@ def generate(input_kore_filename: str, main_module_name: str, output_v_filename:
     parser = KoreParser.KoreParser(open(input_kore_filename).read())
     definition = parser.definition()
     sort_names: T.List[str] = list(non_hooked_sort_names(definition=definition, main_module_name=main_module_name, non_hooked_only=False))
-    symbol_names: T.List[str] = list(non_hooked_symbol_names(definition=definition, main_module_name=main_module_name, non_hooked_only=False))
-
     # TODO we should filter them by the attribute that is on the `inj` symbol, rather then by the name itself.
-    sort_names_mangled = [mangle_even_more(n) for n in sort_names if n != 'inj']
+    symbol_names: T.List[str] = [
+        symbol
+        for symbol in non_hooked_symbol_names(definition=definition, main_module_name=main_module_name, non_hooked_only=False)
+        if symbol != 'inj'
+    ]
+
+    sort_names_mangled = [mangle_even_more(n) for n in sort_names]
     symbol_names_mangled = [mangle_even_more(n) for n in symbol_names]
 
     output_text = coq_preamble \
