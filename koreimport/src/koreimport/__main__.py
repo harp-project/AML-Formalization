@@ -121,6 +121,12 @@ def get_symbol_sort(
     return decl.sort
 
 
+def get_symbol_param_sorts(
+    definition: Kore.Definition, main_module_name: str, symbol_name: str
+) -> T.List[Kore.Sort]:
+    decl = get_symbol_decl_from_definition(definition, main_module_name, symbol_name)
+    return list(decl.param_sorts)
+
 coq_preamble: str = '''
 From Coq Require Import ssreflect ssrfun ssrbool.
 
@@ -229,6 +235,30 @@ def symbols_return_sorts(inductive_name: str, symbol_names: T.List[str], definit
     '''
     return s
 
+
+def symbols_arg_sorts(inductive_name: str, symbol_names: T.List[str], definition: Kore.Definition, main_module_name: str) -> str:
+    s = f'''
+    Definition {inductive_name}_arg_sorts (s : {inductive_name}) :=
+        match s with
+    '''
+    symbol_sorts = [
+        (
+            mangle_even_more(symbol_name),
+            " ".join([
+                mangle_even_more(arg_sort.name)
+                for arg_sort in
+                get_symbol_param_sorts(definition=definition, main_module_name=main_module_name, symbol_name=symbol_name)
+            ])
+        )
+        for symbol_name in symbol_names
+    ]
+    s += "\n".join([f'| {symbol_name} => {arg_sorts}' for (symbol_name,arg_sorts) in symbol_sorts])
+    s += '''
+        end 
+    .
+    '''
+    return s
+
 def generate(input_kore_filename: str, main_module_name: str, output_v_filename: str):
     print(f'{input_kore_filename} > {output_v_filename}')
     parser = KoreParser.KoreParser(open(input_kore_filename).read())
@@ -246,6 +276,7 @@ def generate(input_kore_filename: str, main_module_name: str, output_v_filename:
         + inductive_symbols(symbol_names_mangled)\
         + eqdec_finite("Symbols", symbol_names_mangled)\
         + symbols_return_sorts("Symbols", symbol_names=symbol_names, definition=definition, main_module_name=main_module_name)\
+        + symbols_arg_sorts("Symbols", symbol_names=symbol_names, definition=definition, main_module_name=main_module_name)\
         + "\n"
 
     with open(output_v_filename, mode="w") as fw:
