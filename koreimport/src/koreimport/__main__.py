@@ -244,11 +244,11 @@ def symbols_arg_sorts(inductive_name: str, symbol_names: T.List[str], definition
     symbol_sorts = [
         (
             mangle_even_more(symbol_name),
-            " ".join([
+            "[" + "; ".join([
                 mangle_even_more(arg_sort.name)
                 for arg_sort in
                 get_symbol_param_sorts(definition=definition, main_module_name=main_module_name, symbol_name=symbol_name)
-            ])
+            ]) + "]"
         )
         for symbol_name in symbol_names
     ]
