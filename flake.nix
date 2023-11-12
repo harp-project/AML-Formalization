@@ -228,7 +228,7 @@
             in
               pkgs.mkShell {
                 inputsFrom = [koreimport];
-                #packages = [koreimport.coqPackages.coq-lsp];
+                packages = [pkgs.python311Packages.mypy];
               };
 
           koreimport-test =
