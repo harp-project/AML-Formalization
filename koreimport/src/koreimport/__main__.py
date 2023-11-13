@@ -77,7 +77,10 @@ def non_hooked_sort_names(definition: Kore.Definition, main_module_name: str, no
 
 def non_hooked_symbol_names(definition: Kore.Definition, main_module_name: str, non_hooked_only: bool) -> T.Set[str]:
     sd = symbol_decls(definition=definition, main_module_name=main_module_name)
-    return {s.symbol.name for s in sd if (not s.hooked or not non_hooked_only) and (Kore.App('impure') not in s.attrs)}
+    return {s.symbol.name for s in sd if (not s.hooked or not non_hooked_only) and 
+        (Kore.App('impure') not in s.attrs) and
+        (Kore.App('hook', (), (Kore.String("KEQUAL.ite"),)) not in s.attrs) # this one is sort-polymorphic
+    }
 
 def get_symbol_decl_from_module(
     module: Kore.Module, symbol_name: str
