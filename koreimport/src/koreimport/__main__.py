@@ -241,7 +241,7 @@ def symbols_return_sorts(inductive_name: str, symbol_names: T.List[str], definit
 
 def symbols_arg_sorts(inductive_name: str, symbol_names: T.List[str], definition: Kore.Definition, main_module_name: str) -> str:
     s = f'''
-    Definition {inductive_name}_arg_sorts (s : {inductive_name}) :=
+    Definition {inductive_name}_arg_sorts (s : {inductive_name}) : list (@opml_sort Sorts) :=
         match s with
     '''
     symbol_sorts = [
@@ -264,7 +264,7 @@ def symbols_arg_sorts(inductive_name: str, symbol_names: T.List[str], definition
 
 def symbols_instance(instance_name: str, inductive_name: str) -> str:
     s = f'''
-    Definition {instance_name} : @OPMLSymbols {inductive_name} := 
+    Definition {instance_name} : @OPMLSymbols Sorts := 
     '''
     s += '''{|'''
     s += f'''
