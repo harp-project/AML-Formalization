@@ -79,22 +79,28 @@ Module example01.
         destruct x; compute_done.
     Qed.
 
+    Definition MySymbols_arg_sorts (s : MySymbols) :=
+        match s with
+        | ms_bool_true => []
+        | ms_bool_false => []
+        | ms_list_bool_nil => []
+        | ms_list_bool_cons => [(sort_list_bool:@opml_sort Sorts)]
+        end
+    .
+
+    Definition MySymbols_return_sort (s : MySymbols) :=
+        match s with
+        | ms_bool_true => sort_bool
+        | ms_bool_false => sort_bool
+        | ms_list_bool_nil => sort_list_bool
+        | ms_list_bool_cons => sort_list_bool
+        end 
+    .
+
     Definition Symbols : @OPMLSymbols Sorts := {|
         opml_symbol := MySymbols ;
-        opml_arg_sorts := fun s =>
-            match s with
-            | ms_bool_true => []
-            | ms_bool_false => []
-            | ms_list_bool_nil => []
-            | ms_list_bool_cons => [(sort_list_bool:@opml_sort Sorts)]
-            end ;
-        opml_ret_sort := fun s =>
-            match s with
-            | ms_bool_true => sort_bool
-            | ms_bool_false => sort_bool
-            | ms_list_bool_nil => sort_list_bool
-            | ms_list_bool_cons => sort_list_bool
-            end ;
+        opml_arg_sorts := MySymbols_arg_sorts ;
+        opml_ret_sort := MySymbols_return_sort ;
     |}.
 
     Instance Σ : OPMLSignature := {|
