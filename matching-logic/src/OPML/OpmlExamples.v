@@ -79,12 +79,12 @@ Module example01.
         destruct x; compute_done.
     Qed.
 
-    Definition MySymbols_arg_sorts (s : MySymbols) :=
+    Definition MySymbols_arg_sorts (s : MySymbols) : list (@opml_sort Sorts) :=
         match s with
         | ms_bool_true => []
         | ms_bool_false => []
         | ms_list_bool_nil => []
-        | ms_list_bool_cons => [(sort_list_bool:@opml_sort Sorts)]
+        | ms_list_bool_cons => [(sort_list_bool)]
         end
     .
 
