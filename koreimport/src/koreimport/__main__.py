@@ -262,6 +262,37 @@ def symbols_arg_sorts(inductive_name: str, symbol_names: T.List[str], definition
     '''
     return s
 
+def symbols_instance(instance_name: str, inductive_name: str) -> str:
+    s = f'''
+    Definition {instance_name} : @OPMLSymbols {inductive_name} := 
+    '''
+    s += '''{|'''
+    s += f'''
+        opml_symbol := {inductive_name} ;
+        opml_arg_sorts := {inductive_name}_arg_sorts ;
+        opml_ret_sort := {inductive_name}_return_sort ;
+    '''
+    s += '''
+    |}.
+    '''
+    return s
+
+def signature_instance(instance_name: str, symbols_instance_name: str) -> str:
+    s = f'''
+    Instance {instance_name} : OPMLSignature :=
+    '''
+    s += '''{|'''
+    s += f'''
+        opml_sorts := Sorts ;
+        opml_variables := Vars ;
+        opml_symbols := {symbols_instance_name} ;
+    '''
+    s += '''
+    |}.
+    '''
+    return s
+
+
 def generate(input_kore_filename: str, main_module_name: str, output_v_filename: str):
     print(f'{input_kore_filename} > {output_v_filename}')
     parser = KoreParser.KoreParser(open(input_kore_filename).read())
@@ -284,6 +315,8 @@ def generate(input_kore_filename: str, main_module_name: str, output_v_filename:
         + eqdec_finite("Symbols", symbol_names_mangled)\
         + symbols_return_sorts("Symbols", symbol_names=symbol_names, definition=definition, main_module_name=main_module_name)\
         + symbols_arg_sorts("Symbols", symbol_names=symbol_names, definition=definition, main_module_name=main_module_name)\
+        + symbols_instance(instance_name="Symbols_def", inductive_name="Symbols")\
+        + signature_instance(instance_name="Σ", symbols_instance_name="Symbols_def")\
         + "\n"
 
     with open(output_v_filename, mode="w") as fw:
