@@ -43,3 +43,7 @@
 | `mlSpecialize "H" with x`                | specialize a local hypothesis `"H"` using a variable `x` - elimination of universal quantifier |
 | `mlExists x`                             | use `x` to specialize an existential goal - introduction of existential quantifier |
 | `mlRevertAll x`                          | moves the free variable `x` back into the goal by quantifying over it |
+
+| Other tactics | |
+|-----------------------------------------:|------------------------------------|
+| `mlSimpl` | simplifies substitutions by preserving the structure of derived operators and it can be used otside of the proof mode too. |
