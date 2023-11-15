@@ -2112,13 +2112,16 @@ Ltac2 for_each_match := fun (a : constr) (phi : constr) (cont : Pattern.context 
                    (Message.of_constr x)
                )
            else ();
+           (* lazy_match! Constr.type x with (* Optimisation, but it does not help much *)
+           | Pattern => *)
            (if Constr.equal x a then
               if ml_debug_rewrite then
                 Message.print (Message.of_string "Success.")
               else () ;
               cont ctx
             else ());
-           fail (* backtrack *)
+             fail (* backtrack *)
+           (* end *)
       end
     ); ().
 
@@ -2140,6 +2143,41 @@ Ltac2 for_nth_match :=
           cont ctx
         else ()
     )
+.
+
+Ltac2 for_nth_match2 :=
+  fun (n : int) (a : constr) (phi : constr) (cont : Pattern.context -> unit) =>
+    try (
+      if ml_debug_rewrite then
+           Message.print (
+               Message.concat
+                 (Message.of_string "Trying to match ")
+                 (Message.of_constr a)
+             )
+        else ();
+      let curr : int ref := {contents := 0} in
+      match! phi with
+      | context ctx [ ?x ]
+        => if ml_debug_rewrite then
+             Message.print (
+                 Message.concat
+                   (Message.of_string " against ")
+                   (Message.of_constr x)
+               )
+           else ();
+           (* lazy_match! Constr.type x with (* Optimisation, but it does not help much *)
+           | Pattern => *)
+           (if Constr.equal x a then
+              if ml_debug_rewrite then
+                Message.print (Message.of_string "Success.")
+              else () ;
+              curr.(contents) := Int.add 1 (curr.(contents)) ;
+              if (Int.equal (curr.(contents)) n) then
+                cont ctx
+              else fail
+            else fail)
+      end
+    ); ()
 .
 
 Local Ltac reduce_free_evar_subst_step_2 star :=
@@ -2245,7 +2283,7 @@ Ltac2 Type HeatResult := {
 Ltac2 heat :=
   fun (n : int) (a : constr) (phi : constr) : HeatResult =>
     let found : (Pattern.context option) ref := { contents := None } in
-     for_nth_match n a phi
+     for_nth_match2 n a phi
      (fun ctx =>
         found.(contents) := Some ctx; ()
      );
@@ -2274,6 +2312,7 @@ Ltac2 heat :=
          let heq1 := Fresh.in_goal ident:(heq1) in
          assert(heq1 : ($phi = (@emplace _ $pc $a))) 
          > [ abstract(
+             (* TODO: this is slow for bigger patterns *)
              (ltac1:(star |- simplify_emplace_2 star) (Ltac1.of_ident star_ident);
              reflexivity
              ))
@@ -2301,21 +2340,23 @@ Ltac2 mlRewrite (hiff : constr) (atn : int) :=
     lazy_match! goal with
     | [ |- of_MLGoal (@mkMLGoal ?sgm ?g ?l ?p ( ?gpi))]
       =>
-        let hr : HeatResult := heat atn a p in
+        let hr : HeatResult := heat atn a p in (* TODO: this is slow for bigger patterns *)
         if ml_debug_rewrite then
-           Message.print (Message.of_constr (hr.(ctx_pat)))
+           Message.print (Message.concat (Message.of_string "Heating finished: ") (Message.of_constr (hr.(ctx_pat))))
          else () ;
          let heq := (* Control.hyp *) (hr.(equality)) in
          let pc := (hr.(pc)) in
          let var := (hr.(star_ident)) in
          let ctx_p := (hr.(ctx_pat)) in
+
          eapply (@cast_proof_ml_goal _ $g) with (goal := emplace $pc $a) >
            [ ltac1:(heq |- rewrite [left in _ = left] heq; reflexivity) (Ltac1.of_ident heq) | ()];
          Std.clear [hr.(equality)];
+
          let wfC := Fresh.in_goal ident:(wfC) in
          assert (wfC : PC_wf $pc = true) > [ ltac1:(unfold PC_wf; simpl; wf_auto2); Control.shelve () | ()] ;
          let wfCpf := Control.hyp wfC in
-         Control.plus (fun () => 
+         Control.plus (fun () =>
            apply (@MLGoal_rewriteIff $sgm $g _ _ $pc $l $gpi $wfCpf $hiff)  >
            [
            (lazy_match! goal with
@@ -2325,6 +2366,7 @@ Ltac2 mlRewrite (hiff : constr) (atn : int) :=
                let plugged := Pattern.instantiate (hr.(ctx)) a' in
                assert(heq2: ($p = $plugged))
                > [
+                   (* TODO: this is slow for bigger patterns *)
                    abstract (ltac1:(star |- simplify_emplace_2 star) (Ltac1.of_ident (hr.(star_ident)));
                    reflexivity
                    )
@@ -2400,13 +2442,29 @@ Proof.
   mlRewrite H1 at 1. fromMLGoal. assumption.
 Defined.
 
-Local Example ex_prf_rewrite_equiv_2 {Σ : Signature} Γ a a' b x:
+Local Example ex_prf_rewrite_equiv_foldl {Σ : Signature} Γ a a' l:
+  well_formed a ->
+  well_formed a' ->
+  Pattern.wf l ->
+  Γ ⊢ a <---> a' ->
+  Γ ⊢ foldr patt_imp a' l ->
+  Γ ⊢ foldr patt_imp a l.
+Proof.
+  intros. toMLGoal.
+  { wf_auto2. }
+  Fail mlRewrite H2 at 1. (* in Ltac2 heat -> side condition of assert fails, that is why
+                                              this is not working*)
+Abort.
+
+
+
+Local Example ex_prf_rewrite_equiv_2 {Σ : Signature} Γ a a' b x y z:
   well_formed a ->
   well_formed a' ->
   well_formed (ex, b) ->
   Γ ⊢ a <---> a' ->
-  Γ ⊢i (ex, (a $ a $ b $ a ---> (patt_free_evar x)))
-  <---> (ex, (a $ a' $ b $ a' ---> (patt_free_evar x)))
+  Γ ⊢i (ex, ((patt_free_evar y) ---> (patt_free_evar z) ---> a $ a $ b $ a ---> (patt_free_evar x)))
+  <---> (ex, ((patt_free_evar y) ---> (patt_free_evar z) ---> a $ a' $ b $ a' ---> (patt_free_evar x)))
   using AnyReasoning.
 Proof.
   intros wfa wfa' wfb Hiff.
