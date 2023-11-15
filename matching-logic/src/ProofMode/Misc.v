@@ -34,7 +34,7 @@ Open Scope ml_scope.
 Open Scope string_scope.
 Open Scope list_scope.
 
-
+(* TODO: create error messages for these tactics *)
 Ltac2 _callCompletedTransformedAndCast0
   (t : constr) (transform : constr) (tac : constr -> unit) :=
   let tac' := (fun (t' : constr) =>
@@ -349,20 +349,23 @@ Proof.
   }
 Defined.
 
+(* TODO: Reformulate this in Ltac2 *)
 Tactic Notation "_mlApplyBasic" constr(name') :=
   _ensureProofMode;
   _mlReshapeHypsByName name';
-  apply MLGoal_weakenConclusion;
-  _mlReshapeHypsBack;
-  cbn.
+  tryif apply MLGoal_weakenConclusion;
+  _mlReshapeHypsBack
+  then idtac
+  else fail "_mlApplyBasic: Hypothesis does not match the goal".
 
-
+(* TODO: Reformulate this in Ltac2 *)
 Tactic Notation "_mlApplyGen" constr(name') :=
   _ensureProofMode;
   _mlReshapeHypsByName name';
-  apply MLGoal_weakenConclusionGen;
-  _mlReshapeHypsBack;
-  cbn.
+  tryif apply MLGoal_weakenConclusionGen;
+  _mlReshapeHypsBack
+  then idtac
+  else fail "_mlApplyGen: Hypothesis does not match the goal".
 
 #[local]
 Example ex_mlApplyGeneralized  {Σ : Signature} Γ a b c d e f g:
@@ -796,13 +799,13 @@ Proof.
 Defined.
 
 
-Tactic Notation "change" "constraint" "in" ident(H) :=
+(* Tactic Notation "change" "constraint" "in" ident(H) :=
   let i := fresh "i" in
   remember_constraint as i;
   eapply useGenericReasoning with (i := i) in H;
   subst i;
-  [|(try_solve_pile)].
- 
+  [|(try_solve_pile)]. *)
+
 
 Lemma prf_prop_ex_iff {Σ : Signature} Γ AC p x:
   evar_is_fresh_in x (subst_ctx AC p) ->
@@ -873,7 +876,7 @@ Proof.
     destruct IHAC as [IH1 IH2].
     apply pf_iff_split; auto.
     + pose proof (H := IH1).
-      change constraint in IH1.
+      (* change constraint in IH1. *)
       apply Framing_left with (ψ := p0) in IH1; auto.
       2: { try_solve_pile. }
 
@@ -888,7 +891,7 @@ Proof.
       apply Prop_ex_left. wf_auto2. wf_auto2.
     + clear IH1.
 
-      change constraint in IH2.
+      (* change constraint in IH2. *)
       apply Framing_left with (ψ := p0) in IH2; auto.
       2: { try_solve_pile. }
       eapply syllogism_meta. 5: eapply IH2.
@@ -960,7 +963,7 @@ Proof.
     destruct IHAC as [IH1 IH2].
     apply pf_iff_split; auto.
     + pose proof (H := IH1).
-      change constraint in IH1.
+      (* change constraint in IH1. *)
       apply Framing_right with (ψ := p0) in IH1; auto.
       2: try_solve_pile.
       eapply syllogism_meta. 4: apply IH1.
@@ -973,7 +976,7 @@ Proof.
       apply Prop_ex_right. wf_auto2. wf_auto2.
     + clear IH1.
 
-      change constraint in IH2.
+      (* change constraint in IH2. *)
       eapply (Framing_right _ _ _ _ _ Prf) in IH2.
       eapply syllogism_meta. 5: eapply IH2.
       1-3: wf_auto2.
@@ -2247,7 +2250,17 @@ Ltac2 heat :=
         found.(contents) := Some ctx; ()
      );
      match found.(contents) with
-    | None => Control.backtrack_tactic_failure "Cannot heat"
+    | None => throw_pm_exn (Message.concat (Message.of_string "heat: could not find match for pattern: '")
+                           (Message.concat (Message.of_constr a)
+                           (Message.concat (Message.of_string "' inside '")
+                           (Message.concat (Message.of_constr phi)
+                           (Message.concat (Message.of_string "' for occurrence ")
+                                           (Message.of_int n)
+                           )
+                           )
+                           )
+                           )
+                           )
     | Some ctx
       => (
          let fr := constr:(fresh_evar $phi) in
@@ -2302,28 +2315,44 @@ Ltac2 mlRewrite (hiff : constr) (atn : int) :=
          let wfC := Fresh.in_goal ident:(wfC) in
          assert (wfC : PC_wf $pc = true) > [ ltac1:(unfold PC_wf; simpl; wf_auto2); Control.shelve () | ()] ;
          let wfCpf := Control.hyp wfC in
-         apply (@MLGoal_rewriteIff $sgm $g _ _ $pc $l $gpi $wfCpf $hiff)  >
-         [
-         (lazy_match! goal with
-         | [ |- of_MLGoal (@mkMLGoal ?sgm ?g ?l ?p _)]
-           =>
-             let heq2 := Fresh.in_goal ident:(heq2) in
-             let plugged := Pattern.instantiate (hr.(ctx)) a' in
-             assert(heq2: ($p = $plugged))
-             > [
-                 abstract (ltac1:(star |- simplify_emplace_2 star) (Ltac1.of_ident (hr.(star_ident)));
-                 reflexivity
-                 )
-               | ()
-               ];
-             let heq2_pf := Control.hyp heq2 in
-             eapply (@cast_proof_ml_goal _ $g) >
-               [ rewrite $heq2_pf; reflexivity | ()];
-             Std.clear [wfC; heq2 ; (hr.(star_ident)); (hr.(star_eq))]
-         end)
-         | (ltac1:(star |- try_solve_complex_pile star) (Ltac1.of_ident (hr.(star_ident))))
-         ]
+         Control.plus (fun () => 
+           apply (@MLGoal_rewriteIff $sgm $g _ _ $pc $l $gpi $wfCpf $hiff)  >
+           [
+           (lazy_match! goal with
+           | [ |- of_MLGoal (@mkMLGoal ?sgm ?g ?l ?p _)]
+             =>
+               let heq2 := Fresh.in_goal ident:(heq2) in
+               let plugged := Pattern.instantiate (hr.(ctx)) a' in
+               assert(heq2: ($p = $plugged))
+               > [
+                   abstract (ltac1:(star |- simplify_emplace_2 star) (Ltac1.of_ident (hr.(star_ident)));
+                   reflexivity
+                   )
+                 | ()
+                 ];
+               let heq2_pf := Control.hyp heq2 in
+               eapply (@cast_proof_ml_goal _ $g) >
+                 [ rewrite $heq2_pf; reflexivity | ()];
+               Std.clear [wfC; heq2 ; (hr.(star_ident)); (hr.(star_eq))]
+           end)
+           | (ltac1:(star |- try_solve_complex_pile star) (Ltac1.of_ident (hr.(star_ident))))
+           ]
+         )
+         (fun _ => throw_pm_exn (Message.concat (Message.of_string "mlRewrite: failed when rewriting '")
+                                (Message.concat (Message.of_constr (a))
+                                (Message.concat (Message.of_string "' to/from '")
+                                (Message.concat (Message.of_constr (a'))
+                                (Message.concat (Message.of_string "' in context ")
+                                (Message.of_constr (pc))
+                                )
+                                )
+                                )
+                                )
+                                )
+         )
+    | [ |- _] => throw_pm_exn_with_goal "mlRewrite: not in proof mode"
     end
+  | ?x => throw_pm_exn (Message.concat (Message.of_string "mlRewrite: Given hypothesis is not an equivalence: ") (Message.of_constr x))
   end.
 
 Ltac2 rec constr_to_int (x : constr) : int :=
@@ -2383,6 +2412,7 @@ Proof.
   intros wfa wfa' wfb Hiff.
   toMLGoal.
   { abstract(wf_auto2). }
+  Fail mlRewrite Hiff at 5.
   mlRewrite Hiff at 2.
   mlRewrite <- Hiff at 3.
   fromMLGoal.
