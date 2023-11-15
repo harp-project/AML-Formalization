@@ -2340,7 +2340,7 @@ Ltac2 mlRewrite (hiff : constr) (atn : int) :=
     lazy_match! goal with
     | [ |- of_MLGoal (@mkMLGoal ?sgm ?g ?l ?p ( ?gpi))]
       =>
-        let hr : HeatResult := heat atn a p in (* TODO: this is slow for bigger patterns *)
+        let hr : HeatResult := heat atn a p in
         if ml_debug_rewrite then
            Message.print (Message.concat (Message.of_string "Heating finished: ") (Message.of_constr (hr.(ctx_pat))))
          else () ;
