@@ -2350,7 +2350,7 @@ Ltac2 mlRewrite (hiff : constr) (atn : int) :=
                                 )
                                 )
          )
-    | [ |- _] => throw_pm_exn_with_goal "mlRewrite: not in proof mode"
+    | [ |- _] => throw_pm_exn_with_goal "mlRewrite: not in proof mode "
     end
   | ?x => throw_pm_exn (Message.concat (Message.of_string "mlRewrite: Given hypothesis is not an equivalence: ") (Message.of_constr x))
   end.

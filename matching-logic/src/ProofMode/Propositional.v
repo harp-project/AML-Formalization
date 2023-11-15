@@ -2637,13 +2637,13 @@ Proof with try_wfauto2.
 
   apply conj_intro_meta; auto.
   - toMLGoal.
-    { auto. }
+    { wf_auto2. }
     mlIntro "H0".
     mlDestructOr "H0" as "H1" "H2".
     + mlLeft. fromMLGoal. assumption.
     + mlRight. fromMLGoal. assumption.
   - toMLGoal.
-    { auto. }
+    { wf_auto2. }
     mlIntro "H0".
     mlDestructOr "H0" as "H1" "H2".
     + mlLeft. fromMLGoal. assumption.

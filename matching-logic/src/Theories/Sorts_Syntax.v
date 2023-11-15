@@ -145,13 +145,58 @@ Section sorts.
             ((nest_ex (nest_ex f) $ b1) =ml (nest_ex (nest_ex f) $ b0))
              ---> (b1 =ml b0))).
 
+(* (* Ltac simpl_sorted_quantification_hyp H :=
+match type of H with
+  | context G [?f ?arg _ (?binder _ _)] => 
+    match type of binder with
+    | Pattern -> Pattern -> Pattern =>
+      (* tryif *)
+       (let name := fresh "X" in
+         unshelve (epose proof (name := @esorted_binder_morphism _ binder
+            _ _ _ (f arg) _ _)); (* try (rewrite name in H; clear name);
+            try typeclasses eauto; auto; *)
+             [ | clear H; typeclasses eauto | clear H; typeclasses eauto | clear H; eauto | rewrite name in H; clear name ] 
+              )
+      (* then idtac "asd" *)
+      (* else idtac "bsd" *) (* "No sorted simplification instance for " binder *)
+    end
+  end. *)
+
+Ltac simpl_sorted_quantification_hyp H :=
+match type of H with
+  | context G [?f ?arg _ (?binder _ _)] => 
+    match type of binder with
+    | Pattern -> Pattern -> Pattern => 
+      (* tryif *)
+       (let name := fresh "X" in
+         (* NOTE: erewrite for some reason does not terminate *)
+         unshelve (epose proof (name := @esorted_binder_morphism _ binder
+            _ _ _ (f arg) _ _)) ; try (erewrite name in H; clear name);
+            match goal with
+             | |- SwappableEx _ _ _ => clear H
+             | |- PatternMorphism _ => clear H; tryif typeclasses eauto then idtac else eauto
+             | |- ESortedBinder _ _ => clear H; tryif typeclasses eauto then idtac else eauto
+             | _ => idtac
+            end
+              )
+      (* then idtac *)
+      (* else idtac *) (* "No sorted simplification instance for " binder *)
+    end
+  end. *)
+
+
+(* Tactic Notation "mlSimpl" "in" hyp(H) :=
+  repeat (rewrite mlSimpl' in H + simpl_sorted_quantification_hyp H); repeat rewrite [increase_ex _ _]/= in H; repeat rewrite [increase_mu _ _]/= in H.
+
+ *)
+
 End sorts.
 
 Section sorts.
   Context {Σ : Signature}.
   Context {self : Syntax}.
   Open Scope ml_scope.
-  
+
   Definition patt_total_binary_function(phi from1 from2 to : Pattern)
   : Pattern :=
     patt_forall_of_sort from1 (
@@ -166,7 +211,8 @@ End sorts.
 
 Module Notations.
   Notation "〚 phi 〛" := (patt_inhabitant_set phi) (at level 0) : ml_scope.
-  Notation "'all' s ,  phi" := (patt_forall_of_sort s phi) (at level 70) : ml_scope.
-  Notation "'ex' s ,  phi" := (patt_exists_of_sort s phi) (at level 70) : ml_scope.
+  Notation "'all' s ,  phi" := (patt_forall_of_sort s phi) (at level 80) : ml_scope.
+  Notation "'ex' s ,  phi" := (patt_exists_of_sort s phi) (at level 80) : ml_scope.
   Notation "phi :ml s1 × s2 -> s3" :=  (patt_total_binary_function phi s1 s2 s3) (at level 70) : ml_scope.
 End Notations.
+

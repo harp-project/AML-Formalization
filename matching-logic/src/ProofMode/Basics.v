@@ -16,6 +16,7 @@ From MatchingLogic Require Import
   ProofInfo
   wftactics
   Experimental.ProofModePattern
+  Logic
 .
 
 From stdpp Require Import list tactics fin_sets coGset gmap sets.
@@ -23,10 +24,9 @@ From stdpp Require Import list tactics fin_sets coGset gmap sets.
 Import
   MatchingLogic.Utils.stdpp_ext
   MatchingLogic.Utils.extralibrary
-  MatchingLogic.Syntax.Notations
-  MatchingLogic.DerivedOperators_Syntax.Notations
   MatchingLogic.ProofSystem.Notations_private
   MatchingLogic.ProofInfo.Notations
+  MatchingLogic.Logic.Notations
 .
 
 Set Default Proof Mode "Classic".
@@ -151,11 +151,11 @@ Ltac2 _toMLGoal () :=
   unfold derives;
   lazy_match! goal with
   | [ |- ?g ⊢i ?phi using ?pi]
-    => (Std.cut constr:(of_MLGoal (MLGoal_from_goal $g $phi $pi));cbn)>
+    => (Std.cut constr:(of_MLGoal (MLGoal_from_goal $g $phi $pi))(* cbn *))>
        [
        (unfold MLGoal_from_goal;
         unfold of_MLGoal;
-         simpl;
+         (* simpl; *)
          let h := Fresh.in_goal ident:(Halmost) in
          intros $h;
          let h_hyp := Control.hyp h in
@@ -626,9 +626,9 @@ Abort.
 
 Local Example ex_mlIntro {Σ : Signature} Γ a (i : ProofInfo) :
   well_formed a ->
-  Γ ⊢i a ---> a ---> a ---> a ---> a using i.
+  Γ ⊢i a ---> a ---> a ---> (a ---> a)^[evar: 0 ↦ a] using i.
 Proof.
-  intros wfa.
+  intros wfa. toMLGoal. wf_auto2.
   (* This happens automatically *)
   (*
   toMLGoal.
