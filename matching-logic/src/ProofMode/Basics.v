@@ -366,7 +366,7 @@ Tactic Notation "_mlReshapeHypsBack" :=
 .
 
 Ltac2 do_mlReshapeHypsBy2Idx (i1:constr) (i2:constr) :=
-    match! (eval cbv in (Nat.compare $i1 $i2)) with
+    lazy_match! (eval cbv in (Nat.compare $i1 $i2)) with
     | (Lt) => ltac1:(unshelve ltac2:(eapply (@cast_proof_ml_hyps _ _ _ _ _ _ _)))>
               [ltac1:(shelve)|
               (apply f_equal;
@@ -403,11 +403,11 @@ Tactic Notation "_mlReshapeHypsBy2Idx" constr(i1) constr(i2) :=
 .
 
 Ltac2 do_mlReshapeHypsBy2Names (n1 : constr) (n2 : constr) :=
-  match! goal with
+  lazy_match! goal with
   | [ |- @of_MLGoal _ (@mkMLGoal _ _ ?l _ _) ] =>
-    match! (eval cbv in (index_of $n1 (names_of $l))) with
+    lazy_match! (eval cbv in (index_of $n1 (names_of $l))) with
     | (Some ?i1) => 
-      match! (eval cbv in (index_of $n2 (names_of $l))) with
+      lazy_match! (eval cbv in (index_of $n2 (names_of $l))) with
       | (Some ?i2) => do_mlReshapeHypsBy2Idx i1 i2
       | None => throw_pm_exn (Message.concat (Message.of_string "do_mlReshapeHypsBy2Names: No such name: ") (Message.of_constr n2))
       end
@@ -575,15 +575,12 @@ Tactic Notation "_ensureProofMode" :=
 .
 
 Ltac2 do_mlIntro (name' : constr) :=
-  Control.enter(fun () => 
+  Control.enter(fun () =>
     do_ensureProofMode ();
     do_failIfUsed name';
-    match! goal with
-    | [ |- of_MLGoal (mkMLGoal _ _ _ (_ ---> _) _)] =>
-      apply MLGoal_intro with (name := $name');
-      simplLocalContext
-    | [ |- _] => throw_pm_exn (Message.of_string "do_mlIntro: goal does not contain more implications!")
-    end
+    Control.plus (fun () => apply MLGoal_intro with (name := $name');
+    simplLocalContext)
+    (fun _ => throw_pm_exn (Message.of_string "do_mlIntro: goal does not contain more implications!"))
   )
 .
 
@@ -637,7 +634,6 @@ Proof.
   toMLGoal.
   { wf_auto2. }
   *)
-  
   mlIntro "h"%string.
   Fail mlIntro "h"%string.
   mlIntro "h'"%string.

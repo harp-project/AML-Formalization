@@ -903,8 +903,8 @@ Tactic Notation "mlSimpl" "in" hyp(H) :=
   #[local]
   Program Instance sorted_forall_binder : ESortedBinder patt_forall_of_sort nest_ex := {}.
   Next Obligation.
-     intros.
-     repeat rewrite pm_correctness.
+    intros.
+    repeat rewrite pm_correctness.
     cbn.
     rewrite eswap.
     now rewrite pm_ezero_increase.
