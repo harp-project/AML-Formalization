@@ -87,6 +87,7 @@ Section Definedness.
 
 End Definedness.
 
+(* This is independent of ModelExtension.v, but it is very similar to it *)
 Section Sorts.
   Context {Σ : Signature} {M : Model}
           {string_vars : variables = StringMLVariables}
@@ -98,7 +99,7 @@ Section Sorts.
   }.
 
   (* TODO: can we avoid Program? *)
-  Program Instance sorts_syntax : Sorts_Syntax.Syntax := {
+  Program Instance sorts_syntax : @Sorts_Syntax.Syntax sorts_Σ := {
      inj := inr;
      imported_definedness := _;
   }.
@@ -155,4 +156,134 @@ Section Sorts.
       cbn. case_match; set_solver.
   Qed.
 End Sorts.
+
+Section Bool.
+  (* TODO: Bool syntax should use bools as core symbols too to avoid boiler-plate
+           PartialAnd is needed to represent partial application of &&ml
+   *)
+  Inductive bool_carrier :=
+  | coreBoolSym (s : Bool_Syntax.Symbols)
+  | partialAnd (b : bool)
+  | defBool
+  | inhBool
+  .
+
+  #[global]
+  Instance bool_carrier_EqDec : EqDecision bool_carrier.
+  Proof.
+    solve_decision.
+  Defined.
+
+  #[global]
+  Program Instance bool_carrier_finite : finite.Finite bool_carrier.
+  Next Obligation.
+    exact (fmap coreBoolSym [sBool; sTrue; sFalse; sAnd; sNeg] ++ 
+           [partialAnd true; partialAnd false; defBool; inhBool]).
+  Defined.
+  Next Obligation.
+    compute_done.
+  Defined.
+  Next Obligation.
+    destruct x; try destruct s; try destruct b; compute_done.
+  Defined.
+
+  Global Instance bool_carrier_countable : countable.Countable bool_carrier.
+  Proof. apply finite.finite_countable. Defined.
+
+  Instance bools_Σ : Signature := {
+    variables := StringMLVariables;
+    ml_symbols := Build_MLSymbols bool_carrier _ _;
+  }.
+
+  Program Instance bool_syntax : @Bool_Syntax.Syntax bools_Σ := {
+    inj := coreBoolSym;
+    imported_sorts := {|
+      Sorts_Syntax.inj := fun x => inhBool;
+      imported_definedness := {|
+        Definedness_Syntax.inj := fun x => defBool;
+      |};
+    |};
+  }.
+
+  Definition bool_sym_interp (m : symbols)
+    : propset bool_carrier := {[ m ]}.
+
+  Definition bool_app_interp (m1 m2 : bool_carrier)
+    : propset bool_carrier :=
+  match m1 with
+   | coreBoolSym sAnd =>
+     match m2 with
+     | coreBoolSym sTrue => {[ partialAnd true ]}
+     | coreBoolSym sFalse => {[ partialAnd false ]}
+     | _ => ∅
+     end
+   | coreBoolSym sNeg =>
+     match m2 with
+     | coreBoolSym sTrue => {[ coreBoolSym sFalse ]}
+     | coreBoolSym sFalse => {[ coreBoolSym sTrue ]}
+     | _ => ∅
+     end
+   | coreBoolSym _ => ∅
+   | partialAnd false =>
+     match m2 with
+     | coreBoolSym sTrue => {[ coreBoolSym sFalse ]}
+     | coreBoolSym sFalse => {[ coreBoolSym sFalse ]}
+     | _ => ∅
+     end
+   | partialAnd true =>
+     match m2 with
+     | coreBoolSym sTrue => {[ coreBoolSym sTrue ]}
+     | coreBoolSym sFalse => {[ coreBoolSym sFalse ]}
+     | _ => ∅
+     end
+   | defBool => ⊤
+   | inhBool =>
+     match m2 with
+     | coreBoolSym sBool => {[ coreBoolSym sFalse; coreBoolSym sTrue ]}
+     | _ => ∅
+     end
+  end.
+
+  Global Instance bool_carrier_inhabited : Inhabited bool_carrier.
+  Proof.
+    constructor. exact defBool.
+  Defined.
+
+  Program Definition BoolModel : Model := {|
+    Domain := bool_carrier;
+    app_interp := bool_app_interp;
+    sym_interp := bool_sym_interp;
+  |}.
+
+  Theorem BoolModel_satisfies_theory :
+    BoolModel ⊨ᵀ Bool_Syntax.theory.
+  Proof.
+    unfold Bool_Syntax.theory, Definedness_Syntax.theory.
+    unfold theory_of_NamedAxioms. simpl.
+    unfold satisfies_theory. intros.
+    rewrite elem_of_union in H. destruct H as [H | H].
+    * rewrite elem_of_PropSet in H. destruct H. destruct x. subst.
+      cbn. unfold satisfies_model. intros.
+      unfold patt_defined. unfold p_x, ev_x. simp eval.
+      unfold sym_interp, app_ext. simpl.
+      eapply leibniz_equiv. Unshelve. 2: exact (@propset_leibniz_equiv _ BoolModel).
+      apply set_equiv. intros. split; intros; set_solver.
+    * rewrite elem_of_PropSet in H. destruct H.
+      destruct x;subst;cbn; unfold satisfies_model; intros.
+      - (* TODO: simplification tactic for eval is needed! Potentially we could base this
+           on typeclasses too. *)
+      -
+      -
+      -
+      -
+      -
+      -
+      -
+      -
+      -
+      -
+      -
+  Defined.
+
+End Bool.
 
