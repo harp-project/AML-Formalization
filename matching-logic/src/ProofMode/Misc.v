@@ -2093,59 +2093,7 @@ Defined.
 
 Ltac2 mutable ml_debug_rewrite := false.
 
-(* Calls [cont] for every subpattern [a] of pattern [phi], giving the match context as an argument *)
-Ltac2 for_each_match := fun (a : constr) (phi : constr) (cont : Pattern.context -> unit) =>
-  try (
-      if ml_debug_rewrite then
-           Message.print (
-               Message.concat
-                 (Message.of_string "Trying to match ")
-                 (Message.of_constr a)
-             )
-        else ();
-      match! phi with
-      | context ctx [ ?x ]
-        => if ml_debug_rewrite then
-             Message.print (
-                 Message.concat
-                   (Message.of_string " against ")
-                   (Message.of_constr x)
-               )
-           else ();
-           (* lazy_match! Constr.type x with (* Optimisation, but it does not help much *)
-           | Pattern => *)
-           (if Constr.equal x a then
-              if ml_debug_rewrite then
-                Message.print (Message.of_string "Success.")
-              else () ;
-              cont ctx
-            else ());
-             fail (* backtrack *)
-           (* end *)
-      end
-    ); ().
-
-(* Calls [cont] for [n]th subpatern [a] of pattern [phi]. *)
 Ltac2 for_nth_match :=
-  fun (n : int) (a : constr) (phi : constr) (cont : Pattern.context -> unit) =>
-    if ml_debug_rewrite then
-      Message.print (Message.of_string "for_nth_match")
-    else () ;
-    let curr : int ref := {contents := 0} in
-    let found : bool ref := {contents := false} in
-    for_each_match a phi
-    (fun ctx =>
-      if (found.(contents))
-      then ()
-      else
-        curr.(contents) := Int.add 1 (curr.(contents)) ;
-        if (Int.equal (curr.(contents)) n) then
-          cont ctx
-        else ()
-    )
-.
-
-Ltac2 for_nth_match2 :=
   fun (n : int) (a : constr) (phi : constr) (cont : Pattern.context -> unit) =>
     try (
       if ml_debug_rewrite then
@@ -2283,7 +2231,7 @@ Ltac2 Type HeatResult := {
 Ltac2 heat :=
   fun (n : int) (a : constr) (phi : constr) : HeatResult =>
     let found : (Pattern.context option) ref := { contents := None } in
-     for_nth_match2 n a phi
+     for_nth_match n a phi
      (fun ctx =>
         found.(contents) := Some ctx; ()
      );
