@@ -29,7 +29,7 @@ Section with_model.
 
 End with_model.
 
-Section bool_model.
+(* Section bool_model.
 
   Instance default_boolΣ : Signature := {
     variables := StringMLVariables;
@@ -41,4 +41,4 @@ Section bool_model.
      imported_sorts := 
   }.
 
-End bool_model.
+End bool_model. *)

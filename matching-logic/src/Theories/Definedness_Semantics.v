@@ -885,45 +885,6 @@ Module equivalence_insufficient.
   Close Scope ml_scope.
 End equivalence_insufficient.
 
-Module DefinednessExtension.
-  Context {Σ : Signature} {M : Model}
-          {string_vars : variables = StringMLVariables}.
-
-  Instance defaultΣ : Signature := {
-    variables := StringMLVariables;
-    ml_symbols := Build_MLSymbols (@symbols (@ml_symbols Σ) + Symbols) _ _;
-  }.
-  Instance default_syntax : Definedness_Syntax.Syntax := {
-     inj := inr;
-  }.
-
-  Definition new_carrier : Type := Domain M + unit.
-  Definition new_sym_interp (m : @symbols (@ml_symbols Σ) + Symbols)
-    : propset new_carrier :=
-  match m with
-  | inl x => inl <$> (sym_interp M x)
-  | inr x => {[ inr () ]}
-  end.
-
-  Definition new_app_interp (m1 m2 : new_carrier)
-    : propset new_carrier :=
-  match m1 with
-  | inr () => ⊤
-  | inl x1 =>
-     match m2 with
-     | inl x2 => inl <$> app_interp M x1 x2
-     | inr () => ∅
-     end
-  end.
-
-  Definition MModel : Model := {|
-    Domain := new_carrier;
-    app_interp := new_app_interp;
-    sym_interp := new_sym_interp;
-  |}.
-
-End DefinednessExtension.
-
 #[export]
 Hint Resolve T_predicate_defined : core.
 #[export]
