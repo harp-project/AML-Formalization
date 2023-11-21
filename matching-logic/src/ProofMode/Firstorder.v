@@ -896,16 +896,31 @@ End with_signature.
 Open Scope ml_scope.
 Open Scope string_scope.
 
+(* TODO: reformulate in Ltac2 - depends on the Freshness Manager *)
 Tactic Notation "mlIntroAll" ident(x) :=
 _ensureProofMode;
 mlFreshEvar as x;
-apply (MLGoal_forallIntro _ _ _ x);
-[   fm_solve
-  | fm_solve
+tryif apply (MLGoal_forallIntro _ _ _ x);
+[   try fm_solve
+  | try fm_solve
   | try subst x; try_solve_pile
   | unfold evar_open; mlSimpl;
     repeat (rewrite bevar_subst_not_occur; [by wf_auto2|])
-].
+]
+then idtac
+else fail "mlIntroAll: matching logic goal is not a universally quantified pattern".
+
+Tactic Notation "mlIntroAllManual" constr(x) :=
+_ensureProofMode;
+tryif apply (MLGoal_forallIntro _ _ _ x);
+[   try fm_solve; try subst x; try solve_fresh; try solve_free_evars 10
+  | try fm_solve; try subst x; try solve_fresh; try solve_free_evars 10
+  | try subst x; try_solve_pile
+  | unfold evar_open; mlSimpl;
+    repeat (rewrite bevar_subst_not_occur; [by wf_auto2|])
+]
+then idtac
+else fail "mlIntroAll: matching logic goal is not a universally quantified pattern".
 
 Local Example forall_test_1 {Σ : Signature} Γ ϕ:
   well_formed ϕ ->
@@ -914,6 +929,12 @@ Proof.
   intro.
   toMLGoal. wf_auto2.
   mlIntroAll x.
+Restart.
+  intros.
+  toMLGoal. wf_auto2.
+  mlFreshEvar as x.
+  mlIntroAllManual x.
+  Fail mlIntroAll y.
   mlIntro "A". mlSplitAnd; mlAssumption.
 Qed.
 
@@ -1017,8 +1038,10 @@ Qed.
 Tactic Notation "mlSpecialize" constr(name') "with" constr(var) :=
 _ensureProofMode;
 _mlReshapeHypsByName name';
-apply (MLGoal_specializeAll _ _ _ _ _ var);
-_mlReshapeHypsBack.
+tryif apply (MLGoal_specializeAll _ _ _ _ _ var);
+_mlReshapeHypsBack
+then idtac
+else fail "mlSpecialize: given local hypothesis is not a universally quantified pattern".
 
 (* revert is a corollary of specialize: *)
 Local Lemma Private_revert_forall_iter {Σ : Signature} (Γ : Theory) :
@@ -1031,14 +1054,17 @@ Proof.
   intros l ϕ x Wfl Wfϕ. apply prf_weaken_conclusion_iter_meta. 1-3: wf_auto2.
   mlIntro "H".
   mlSpecialize "H" with x.
+  Fail mlSpecialize "H" with x.
   rewrite evar_open_evar_quantify. wf_auto2.
   mlAssumption.
 Qed.
 
 Tactic Notation "mlExists" constr(var) :=
 _ensureProofMode;
-apply (MLGoal_exists _ _ _ var);
-try (rewrite evar_open_evar_quantify;[by wf_auto2|]).
+tryif apply (MLGoal_exists _ _ _ var);
+try (rewrite evar_open_evar_quantify;[by wf_auto2|])
+then idtac
+else fail "mlExists: matching logic goal is not an existentially quantified pattern".
 
 Local Lemma exists_test_1 {Σ : Signature} Γ ϕ :
   well_formed (ex, ϕ) ->
@@ -1050,6 +1076,7 @@ Proof.
   (* we can prove this with a y which is not necessarily equal to x too, but it is tricky. *)
   mlSpecialize "H" with y.
   mlExists y.
+  Fail mlExists y.
   mlAssumption.
 Qed.
 
@@ -1085,25 +1112,29 @@ Tactic Notation "mlDestructEx" constr(name') "as" ident(x) :=
 Ltac _mlDestructExManual name' x :=
   _ensureProofMode;
   _mlReshapeHypsByName name';
-  apply (MLGoal_destructEx _ _ _ _ x name');[
+  tryif apply (MLGoal_destructEx _ _ _ _ x name');[
     try subst x; simpl; try_solve_pile
-  | try subst x; simpl; try solve_fresh; try solve_free_evars 10
-  | try subst x; simpl; try solve_fresh; try solve_free_evars 10
-  | try subst x; simpl; try solve_fresh; try solve_free_evars 10
-  | try subst x; simpl; try solve_fresh; try solve_free_evars 10
-  | _mlReshapeHypsBack].
+  | try fm_solve; try subst x; simpl; try solve_fresh; try solve_free_evars 10
+  | try fm_solve; try subst x; simpl; try solve_fresh; try solve_free_evars 10
+  | try fm_solve; try subst x; simpl; try solve_fresh; try solve_free_evars 10
+  | try fm_solve; try subst x; simpl; try solve_fresh; try solve_free_evars 10
+  | _mlReshapeHypsBack]
+  then idtac
+  else fail "_mlDestructExManual: given local hypothesis is not existentially quantified".
 
 Ltac _mlDestructExFresh name' x :=
     _ensureProofMode;
     _mlReshapeHypsByName name';
     mlFreshEvar as x;
-    apply (MLGoal_destructEx _ _ _ _ x name');[
+    tryif apply (MLGoal_destructEx _ _ _ _ x name');[
       try subst x; try_solve_pile
     | fm_solve
     | fm_solve
     | fm_solve
     | fm_solve
-    | _mlReshapeHypsBack].
+    | _mlReshapeHypsBack]
+    then idtac
+    else fail "_mlDestructExManual: given local hypothesis is not existentially quantified".
 
 Tactic Notation "mlDestructEx" constr(name') "as" constr(x) :=
   _mlDestructExManual name' x.
@@ -1137,7 +1168,9 @@ Proof.
   intros.
   mlIntro "H". mlIntro "H0".
   mlDestructEx "H" as (fresh_evar (ϕ $ ψ)). { cbn. solve_fresh. }
+  Fail mlDestructEx "H" as x.
   mlClear "H". mlDestructEx "H0" as x.
+  Fail mlDestructEx "H0" as x.
   mlSimpl. mlDestructAnd "H0" as "H" "H1".
   mlExists x. mlAssumption.
 Qed.

@@ -850,17 +850,17 @@ Ltac simpl_sorted_quantification :=
   | |- context G [?f ?arg _ (?binder _ _)] =>
     match type of binder with
     | Pattern -> Pattern -> Pattern =>
-      tryif
+      (* tryif *)
        unshelve (erewrite (@esorted_binder_morphism _ binder
             _ _ _ (f arg) _ _));
        match goal with
-       | |- SwappableEx _ _ _ => auto
-       | |- PatternMorphism _ => now typeclasses eauto
-       | |- ESortedBinder _ _ => tryif now typeclasses eauto then idtac else fail 3
+       | |- SwappableEx _ _ _ => tryif typeclasses eauto then idtac else eauto
+       | |- PatternMorphism _ => tryif typeclasses eauto then idtac else eauto
+       | |- ESortedBinder _ _ => tryif typeclasses eauto then idtac else eauto
        | _ => idtac
        end
-      then idtac
-      else idtac (* "No sorted simplification instance for " binder *)
+      (* then idtac
+      else idtac (* "No sorted simplification instance for " binder *) *)
     end
   end.
 
@@ -869,33 +869,38 @@ match type of H with
   | context G [?f ?arg _ (?binder _ _)] => 
     match type of binder with
     | Pattern -> Pattern -> Pattern => 
-      tryif
+      (* tryif *)
        (let name := fresh "X" in
+         (* NOTE: erewrite for some reason does not terminate *)
          unshelve (epose proof (name := @esorted_binder_morphism _ binder
             _ _ _ (f arg) _ _)); try (rewrite name in H; clear name);
-            try typeclasses eauto; auto;
+            (* try typeclasses eauto; auto; *)
             match goal with
-             | |- SwappableEx _ _ _ => clear H
-             | |- PatternMorphism _ => clear H; now typeclasses eauto
-             | |- ESortedBinder _ _ => clear H; tryif now typeclasses eauto then idtac else fail 3
+             | |- SwappableEx _ _ _ => clear H; try typeclasses eauto; eauto
+             | |- ESortedBinder _ _ => clear H; try typeclasses eauto; eauto
              | _ => idtac
+            end;
+            match goal with
+            | |- PatternMorphism _ => typeclasses eauto
+            | _ => idtac
             end
               )
-      then idtac
-      else idtac (* "No sorted simplification instance for " binder *)
+      (* then idtac
+      else idtac (* "No sorted simplification instance for " binder *) *)
     end
   end.
 
 
 Section Test.
-Import Substitution.Notations.
-Open Scope ml_scope.
-Context {Σ : Signature}.
-Tactic Notation "mlSimpl" :=
-  repeat (rewrite mlSimpl' + simpl_sorted_quantification); try rewrite [increase_ex _ _]/=; try rewrite [increase_mu]/=.
+  (* NOTE: these tactics are not exported!!!!! *)
+  Import Substitution.Notations.
+  Open Scope ml_scope.
+  Context {Σ : Signature}.
+  Tactic Notation "mlSimpl" :=
+    repeat (rewrite mlSimpl' + simpl_sorted_quantification); repeat rewrite [increase_ex _ _]/=; repeat rewrite [increase_mu]/=.
 
-Tactic Notation "mlSimpl" "in" hyp(H) :=
-  repeat (rewrite mlSimpl' in H + simpl_sorted_quantification_hyp H); try rewrite [increase_ex _ _]/= in H; try rewrite [increase_mu _ _]/= in H.
+  Tactic Notation "mlSimpl" "in" hyp(H) :=
+    repeat (rewrite mlSimpl' in H + simpl_sorted_quantification_hyp H); repeat rewrite [increase_ex _ _]/= in H; repeat rewrite [increase_mu _ _]/= in H.
 
   Local Definition patt_forall_of_sort (sort phi : Pattern) : Pattern :=
     patt_exists (patt_imp (patt_imp (patt_bound_evar 0) (nest_ex sort)) phi).
@@ -924,7 +929,7 @@ Proof.
   2: {
   mlSimpl in H. 2: {
   mlSimpl in H0.
-  mlSimpl in H1. }
+  mlSimpl in H1. cbn. auto. }
 Abort.
 
 Goal forall s ψ x, (* well_formed_closed ψ -> *)
