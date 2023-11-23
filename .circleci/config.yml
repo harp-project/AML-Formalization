@@ -37,6 +37,14 @@ jobs:
             source /home/circleci/.nix-profile/etc/profile.d/nix.sh
             #cachix watch-exec harp-ml-in-coq -- 
             nix --show-trace --print-build-logs build '.#coq-matching-logic' --no-link
+
+      - run:
+          name: "ML in Coq v8.17 -- Build"
+          command: |
+            source /home/circleci/.nix-profile/etc/profile.d/nix.sh
+            #cachix watch-exec harp-ml-in-coq -- 
+            nix --show-trace --print-build-logs build '.#coq-matching-logic-v8_17' --no-link
+
       - run:
           name: "Kore Import"
           command: |
