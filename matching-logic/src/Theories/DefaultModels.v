@@ -26,6 +26,7 @@ Import Definedness_Syntax.Notations.
 Import MatchingLogic.Semantics.Notations.
 Import MatchingLogic.Syntax.BoundVarSugar.
 
+Set Default Proof Mode "Classic".
 
 Open Scope ml_scope.
 
@@ -98,16 +99,16 @@ Section Sorts.
     ml_symbols := Build_MLSymbols (@symbols (@ml_symbols (definedness_Σ)) + Sorts_Syntax.Symbols) _ _;
   }.
 
-  (* TODO: can we avoid Program? *)
-  Program Instance sorts_syntax : @Sorts_Syntax.Syntax sorts_Σ := {
+  Instance sorts_syntax : @Sorts_Syntax.Syntax sorts_Σ := {
      inj := inr;
-     imported_definedness := _;
+     imported_definedness := {|
+        Definedness_Syntax.inj :=
+          λ x : Definedness_Syntax.Symbols,
+            match x with
+            | definedness => inl (inr definedness)
+            end
+      |};
   }.
-  Next Obligation.
-    constructor.
-    intros x. destruct x.
-    apply inl. apply inr. apply definedness.
-  Defined.
 
   Definition sorts_carrier : Type := Domain (@DefinednessModel Σ M) + unit.
   Definition sorts_sym_interp (m : @symbols (@ml_symbols (@definedness_Σ Σ)) + Sorts_Syntax.Symbols)
@@ -156,6 +157,63 @@ Section Sorts.
       cbn. case_match; set_solver.
   Qed.
 End Sorts.
+
+Section Eval_simpl.
+
+  Context {Σ : Signature} {M : Model}.
+  (* Class Eval_nullary (op : Pattern) (set_op : propset (Domain M)) := {
+    eval_nullary_simpl :
+      forall ρ, @eval _ M ρ op = set_op;
+  }.
+  Class Eval_unary (op : Pattern -> Pattern)
+                   (set_op : propset (Domain M) -> propset (Domain M)) := {
+    eval_unary_simpl :
+      forall ρ φ, @eval _ M ρ (op φ) = set_op (eval ρ φ);
+  }.
+  Class Eval_binary (op : Pattern -> Pattern -> Pattern) (set_op : propset (Domain M) -> propset (Domain M) -> propset (Domain M)) := {
+    eval_binary_simpl :
+      forall ρ φ ψ, @eval _ M ρ (op φ ψ) = set_op (eval ρ φ) (eval ρ ψ);
+  }.
+  Search eval patt_exists.
+
+  #[global]
+  Instance Eval_nullary_bot : Eval_nullary patt_bott.
+  Proof.
+    constructor. intros.
+  Defined. *)
+
+
+  Lemma eval_iff_simpl ρ phi1 phi2:
+    @eval Σ M ρ (patt_iff phi1 phi2)
+    = ⊤ ∖ ((eval ρ phi1 ∪ eval ρ phi2) ∖ (eval ρ phi1 ∩ eval ρ phi2)).
+  Proof.
+    unfold patt_iff. rewrite eval_and_simpl.
+    simp eval.
+    (* 
+    difference_difference_r_L
+    epose proof (difference_difference_l_L ⊤ (eval ρ phi1) (eval ρ phi2)).
+    rewrite intersection_union_r_L.
+
+    pose proof (difference_union_distr_r_L ⊤ (e)). *)
+  Admitted.
+
+
+
+End Eval_simpl.
+
+
+  Ltac eval_simpl :=
+    try simp eval;
+    try rewrite eval_not_simpl;
+    try rewrite eval_and_simpl;
+    try rewrite eval_or_simpl;
+    try rewrite eval_top_simpl;
+    try rewrite eval_iff_simpl;
+    try rewrite eval_all_simpl;
+(*  TODO:   try rewrite eval_nu_simpl; *)
+    try unshelve (erewrite eval_forall_of_sort);
+    try unshelve (erewrite eval_exists_of_sort);
+    try apply propset_fa_union_full.
 
 Section Bool.
   (* TODO: Bool syntax should use bools as core symbols too to avoid boiler-plate
@@ -255,14 +313,50 @@ Section Bool.
     sym_interp := bool_sym_interp;
   |}.
 
+  Theorem indec_bool :
+    ∀ ρ s (m : BoolModel),
+      Decision (m ∈ Minterp_inhabitant (patt_sym s) ρ).
+  Proof.
+    intros.
+    unfold Minterp_inhabitant.
+    simp eval. simpl.
+    unfold Sorts_Semantics.sym.
+    simp eval. simpl.
+    unfold bool_sym_interp.
+    destruct s; unfold app_ext.
+    1: destruct s.
+    2-8: right; intro; destruct H as [le [re [Hle [Hre Ht] ] ] ];
+         apply elem_of_singleton_1 in Hle, Hre; subst;
+         cbn in Ht; set_solver.
+    destruct m.
+    destruct s.
+    1, 4-8: right; intro; destruct H as [le [re [Hle [Hre Ht] ] ] ];
+            apply elem_of_singleton_1 in Hle, Hre; subst;
+            cbn in Ht; set_solver.
+    1-2: left;
+         exists (inhBool), (coreBoolSym sBool); split; try split; set_solver.
+  Defined.
+
   Theorem BoolModel_satisfies_theory :
     BoolModel ⊨ᵀ Bool_Syntax.theory.
   Proof.
+    assert (BoolModel ⊨ᵀ Definedness_Syntax.theory) as HDef. {
+      unfold Bool_Syntax.theory, Definedness_Syntax.theory.
+      unfold theory_of_NamedAxioms. simpl.
+      unfold satisfies_theory. intros.
+      rewrite elem_of_PropSet in H. destruct H. destruct x. subst.
+      cbn. unfold satisfies_model. intros.
+      unfold patt_defined. unfold p_x, ev_x. simp eval.
+      unfold sym_interp, app_ext. simpl.
+      eapply leibniz_equiv. Unshelve. 2: exact (@propset_leibniz_equiv _ BoolModel).
+      apply set_equiv. intros. split; intros; set_solver.
+    }
     unfold Bool_Syntax.theory, Definedness_Syntax.theory.
     unfold theory_of_NamedAxioms. simpl.
     unfold satisfies_theory. intros.
     rewrite elem_of_union in H. destruct H as [H | H].
-    * rewrite elem_of_PropSet in H. destruct H. destruct x. subst.
+    * (* This subgoal uses boiler-plate proof *)
+      rewrite elem_of_PropSet in H. destruct H. destruct x. subst.
       cbn. unfold satisfies_model. intros.
       unfold patt_defined. unfold p_x, ev_x. simp eval.
       unfold sym_interp, app_ext. simpl.
@@ -270,8 +364,27 @@ Section Bool.
       apply set_equiv. intros. split; intros; set_solver.
     * rewrite elem_of_PropSet in H. destruct H.
       destruct x;subst;cbn; unfold satisfies_model; intros.
-      - (* TODO: simplification tactic for eval is needed! Potentially we could base this
-           on typeclasses too. *)
+      - (* TODO: simplification tactic for eval is needed!
+           Potentially we could base this on typeclasses too. *)
+        eval_simpl; auto.
+        1: apply indec_bool.
+        intros. mlSimpl. cbn. exists (coreBoolSym sTrue). case_match.
+        + remember (fresh_evar (mlTrue =ml b0)) as x. clear Heqx.
+          unfold patt_equal, patt_total, patt_defined, mlTrue.
+          repeat eval_simpl. cbn. unfold bool_sym_interp.
+          rewrite decide_eq_same. unfold app_ext. eapply elem_of_compl.
+          (* Unshelve. 2: exact (@propset_leibniz_equiv _ BoolModel). *)
+          apply not_elem_of_PropSet. intro. destruct H0 as [le [re [Hle [Hre Ht] ] ] ].
+          apply elem_of_singleton_1 in Hle. subst.
+          apply (proj1 (elem_of_compl _ _)) in Hre; auto. apply Hre.
+          apply elem_of_compl. intro.
+          assert (re = coreBoolSym sTrue \/ re = coreBoolSym sFalse) by set_solver.
+          destruct H1; subst.
+          ** apply Hre. set_solver.
+          ** apply Hre. set_solver.
+        + unfold Minterp_inhabitant, Sorts_Semantics.sym in n.
+          simpl in n. clear H. simp eval in n. exfalso.
+          apply n. clear. exists (inhBool), (coreBoolSym sBool); split; try split; set_solver.
       -
       -
       -
