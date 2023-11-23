@@ -103,6 +103,7 @@ Module example01.
         opml_ret_sort := MySymbols_return_sort ;
     |}.
 
+    #[global]
     Instance Σ : OPMLSignature := {|
         opml_sorts := Sorts ;
         opml_variables := Vars ;
