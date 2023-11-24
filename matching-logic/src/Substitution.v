@@ -3083,7 +3083,7 @@ Lemma Private_no_negative_occurrence_svar_quantify ϕ level X:
       * case_match; auto.
       * cbn. cbn in H.
         rewrite negb_orb. unfold is_true in *.
-        rewrite IHϕ1; auto. 1: clear -H0; set_solver.
+        rewrite IHϕ1; auto with nocore. 1: clear -H0; set_solver.
         2: rewrite IHϕ2; auto. 2: clear -H0; set_solver.
         all: clear -H; apply andb_true_iff in H; apply H.
       * cbn. fold evar_has_positive_occurrence.
