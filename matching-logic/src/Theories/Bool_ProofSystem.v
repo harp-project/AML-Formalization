@@ -395,20 +395,6 @@ Open Scope list_scope.
   { unfold theory in H. set_solver.   }
   Qed.
   
-  (* using new notation for andThen   *)
-  Theorem true_andThenBool : forall Γ , theory ⊆ Γ ->
-                        Γ ⊢ all mlBool,  b0 &&ml mlTrue =ml b0. 
-  Proof.
-  
-  Qed.
-
-  (* extending Bool_syntax.v *)
-  Theorem false_andThenBool : forall Γ , theory ⊆ Γ ->
-                        Γ ⊢ all,  b0 &&ml mlFalse =ml mlFalse. 
-  Proof.
-  Abort.
-
-
   Theorem comm_andBool : forall Γ , theory ⊆ Γ ->
                         Γ ⊢ all mlBool, all mlBool, b0 &&ml b1 =ml b1 &&ml b0.
  Proof.
@@ -424,87 +410,225 @@ Open Scope list_scope.
   typeclasses eauto.
   mlSimpl.
   simpl.
- Admitted.
-
-  (* Theorem comm_andBool_true : forall Γ , theory ⊆ Γ ->
-                        Γ ⊢ all mlBool, b0 &&ml mlTrue =ml mlTrue &&ml b0.
- Proof.
- intros.
- toMLGoal.
- wf_auto2.
- mlIntroAll x.
- simpl.
- cbn.
- fold mlBool.
- unfold theory in H.
- pose proof use_bool_axiom AxInductiveDomain Γ H.
- simpl in H0.
- mlAdd H0 as "ind".
- mlRewriteBy "ind" at 1.
- mlIntro "H".
- mlApplyMeta membership_or_1 in "H".
- {
+  unfold theory in H.
+  cbn.
+  fold mlBool.
+  pose proof use_bool_axiom AxInductiveDomain Γ H.
+  simpl in H0. mlAdd H0 as "ind".
+  mlRewriteBy "ind" at 1.
+  mlIntro "H".
+  mlApplyMeta membership_or_1 in "H".
+  {
     mlDestructOr "H".
     (* mlTrue case *)
     * pose proof membership_equal_equal Γ ( patt_free_evar x) mlTrue.
       ospecialize* H1.
-      + unfold theory in H;set_solver.
+      + set_solver.
       + simpl. auto.
       + wf_auto2.
       + wf_auto2.
-      + mlExists x. mlSimpl. cbn. Search patt_equal derives_using. fromMLGoal. apply useBasicReasoning.  
+      + mlExists x. mlSimpl. cbn. fromMLGoal. apply useBasicReasoning.  
         epose proof patt_equal_refl  (patt_free_evar x) Γ.
         apply H2. wf_auto2.
       + mlApplyMeta ex_sort_impl_ex.
         - pose proof use_bool_axiom AxFunTrue Γ H;simpl in H2;mlAdd H2 as "f";mlExact "f".
-        - unfold theory in H;set_solver.
+        - set_solver.
       + mlAdd H1. mlRevert "0".
         mlRewriteBy "1" at 1.
         mlIntro "H".
         mlRewriteBy "H" at 1.
         mlRewriteBy "H" at 1.
-        mlReflexivity.
-    
-    (* mlFalse case *)
+        mlClear "1". mlClear "ind". mlClear "H".
+        mlIntroAll y.
+        simpl.
+        cbn. fold mlBool.
+        mlAdd H0 as "ind".
+        mlRewriteBy "ind" at 1.
+        mlIntro "H".
+        mlApplyMeta membership_or_1 in "H".
+        {
+          mlDestructOr "H".
+          (* y = mlTrue  *)
+          * pose proof membership_equal_equal Γ ( patt_free_evar y) mlTrue.
+            ospecialize* H2.
+            + set_solver.
+            + simpl. auto.
+            + wf_auto2.
+            + wf_auto2.
+            + mlExists y. mlSimpl. cbn. fromMLGoal. apply useBasicReasoning.  
+              epose proof patt_equal_refl  (patt_free_evar y) Γ.
+              apply H3. wf_auto2.
+            + mlApplyMeta ex_sort_impl_ex.
+              - pose proof use_bool_axiom AxFunTrue Γ H;simpl in H3;mlAdd H3 as "f";mlExact "f" .
+              - set_solver.
+            + mlAdd H2. mlRevert "0". mlRewriteBy "1" at 1. mlIntro "H".
+              mlRewriteBy "H" at 1.
+              mlRewriteBy "H" at 1.
+              mlReflexivity.
+           (* y = mlFalse *)
+           * pose proof membership_equal_equal Γ ( patt_free_evar y) mlFalse.
+            ospecialize* H2.
+            + set_solver.
+            + simpl. auto.
+            + wf_auto2.
+            + wf_auto2.
+            + mlExists y. mlSimpl. cbn. fromMLGoal. apply useBasicReasoning.  
+              epose proof patt_equal_refl  (patt_free_evar y) Γ.
+              apply H3. wf_auto2.
+            + mlApplyMeta ex_sort_impl_ex.
+              - pose proof use_bool_axiom AxFunFalse Γ H;simpl in H3;mlAdd H3 as "f";mlExact "f" .
+              - set_solver.
+            + mlAdd H2. mlRevert "1". mlRewriteBy "0" at 1. mlIntro "H".
+              mlRewriteBy "H" at 1.
+              mlRewriteBy "H" at 1.
+              pose proof use_bool_axiom AxDefAndRightTrue Γ H.
+              simpl in H3. mlAdd H3. mlSpecialize "1" with y. mlSimpl. cbn. fold mlBool. mlRevert "1".
+              mlRewriteBy "H" at 2.
+              mlRewriteBy "H" at 2.
+              mlIntro "H1".
+              mlAssert ("P":( mlTrue &&ml mlFalse  =ml mlFalse  )).
+              1: wf_auto2.
+              1: { mlClear "H1".
+                pose proof use_bool_axiom AxDefAndLeftTrue Γ H.
+                simpl in H4. mlAdd H4.
+                mlSpecialize "1" with y. mlSimpl. cbn. fold mlBool. mlRevert "1".
+                mlRewriteBy "H" at 2.
+                mlRewriteBy "H" at 2.
+                mlIntro "H1". mlApply "H1".
+                mlRewriteBy "ind" at 1.
+                mlApplyMeta membership_or_2.
+                mlRewriteBy "0" at 1.
+                {
+                  mlRight.
+                  mlAssumption.
+                }
+                { set_solver. }
+              }
+              mlRewriteBy "P" at 1.
+              mlApply "H1".
+              mlRewriteBy "ind" at 1.
+              mlApplyMeta membership_or_2.
+              mlRewriteBy "0" at 1.
+              {
+                mlRight. mlExact "H".
+              }
+              { unfold theory in H. set_solver.  }
+        } 
+        { set_solver. } 
+        
+    (* mlFalse case *)     
     * pose proof membership_equal_equal Γ ( patt_free_evar x) mlFalse.
       ospecialize* H1.
-      + unfold theory in H;set_solver.
+      + set_solver.
       + simpl. auto.
       + wf_auto2.
       + wf_auto2.
-      + mlExists x. mlSimpl. cbn. Search patt_equal derives_using. fromMLGoal. apply useBasicReasoning.  
+      + mlExists x. mlSimpl. cbn. fromMLGoal. apply useBasicReasoning.  
         epose proof patt_equal_refl  (patt_free_evar x) Γ.
         apply H2. wf_auto2.
       + mlApplyMeta ex_sort_impl_ex.
         - pose proof use_bool_axiom AxFunFalse Γ H;simpl in H2;mlAdd H2 as "f";mlExact "f".
-        - unfold theory in H;set_solver.
+        - set_solver.
       + mlAdd H1. mlRevert "1".
         mlRewriteBy "0" at 1.
         mlIntro "H".
         mlRewriteBy "H" at 1.
         mlRewriteBy "H" at 1.
-        pose proof use_bool_axiom AxDefAndRightTrue Γ H.
-        simpl in H2. mlAdd H2. mlSpecialize "1" with x. mlSimpl. cbn. fold mlBool. mlRevert "1".
-        mlRewriteBy "H" at 2.
-        mlRewriteBy "H" at 2.
-        mlIntro "1".
-        mlAssert ("P":( mlFalse &&ml mlTrue =ml mlFalse  )).
-        - wf_auto2.
-        - mlApply "1".
-          mlRewriteBy "ind" at 1.
-          mlApplyMeta membership_or_2.
-          mlRight.
-          mlRewriteBy "0" at 1. 
-          mlAssumption.
-          set_solver.
-        - mlRewriteBy "P" at 1.
-          (*  need mlSymmetrt here          
-            *)
-          mlSymmetry.
-        mlReflexivity.
- } 
- {  unfold theory in H. set_solver. }
- Admitted. *)
+        mlClear "0"; mlClear "ind";mlClear "H".
+        mlIntroAll y.
+        cbn. fold mlBool.
+        mlAdd H0 as "ind".
+        mlRewriteBy "ind" at 1.
+        mlIntro "H".
+        mlApplyMeta membership_or_1 in "H".
+        {
+          mlDestructOr "H".
+          (* y = mlTrue  *)
+          * pose proof membership_equal_equal Γ ( patt_free_evar y) mlTrue.
+          ospecialize* H2.
+          + set_solver.
+          + simpl. auto.
+          + wf_auto2.
+          + wf_auto2.
+          + mlExists y. mlSimpl. cbn. fromMLGoal. apply useBasicReasoning.  
+            epose proof patt_equal_refl  (patt_free_evar y) Γ.
+            apply H3. wf_auto2.
+          + mlApplyMeta ex_sort_impl_ex.
+            - pose proof use_bool_axiom AxFunTrue Γ H;simpl in H3;mlAdd H3 as "f";mlExact "f" .
+            - set_solver.
+          + mlAdd H2. mlRevert "0". mlRewriteBy "1" at 1. mlIntro "H".
+            mlRewriteBy "H" at 1.
+            mlRewriteBy "H" at 1.
+            pose proof use_bool_axiom AxDefAndRightFalse Γ H.
+            simpl in H3. mlAdd H3. mlSpecialize "0" with y. mlSimpl. cbn. fold mlBool. mlRevert "0".
+            mlRewriteBy "H" at 2.
+            mlIntro "H1".
+            mlAssert ("P" : (mlFalse &&ml mlTrue =ml mlFalse)).
+            1: wf_auto2.
+            1: { mlClear "H1".
+                pose proof use_bool_axiom AxDefAndLeftFalse Γ H.
+                simpl in H4. mlAdd H4.
+                mlSpecialize "0" with y. mlSimpl. cbn. fold mlBool. mlRevert "0".
+                mlRewriteBy "H" at 2.
+                mlIntro "H1". mlApply "H1".
+                mlRewriteBy "ind" at 1.
+                mlApplyMeta membership_or_2.
+                mlRewriteBy "1" at 1.
+                {
+                  mlLeft.
+                  mlAssumption.
+                }
+                { set_solver. }
+              }
+            mlRewriteBy "P" at 1.
+            mlApply "H1".
+            mlRewriteBy "ind" at 1.
+            mlApplyMeta membership_or_2.
+            mlRewriteBy "1" at 1.
+            {
+              mlLeft.
+              mlAssumption.
+            }
+            { set_solver. }
+          
+          (* y = mlFalse *)
+          * pose proof membership_equal_equal Γ ( patt_free_evar y) mlFalse.
+          ospecialize* H2.
+          + set_solver.
+          + simpl. auto.
+          + wf_auto2.
+          + wf_auto2.
+          + mlExists y. mlSimpl. cbn. fromMLGoal. apply useBasicReasoning.  
+            epose proof patt_equal_refl  (patt_free_evar y) Γ.
+            apply H3. wf_auto2.
+          + mlApplyMeta ex_sort_impl_ex.
+            - pose proof use_bool_axiom AxFunFalse Γ H;simpl in H3;mlAdd H3 as "f";mlExact "f" .
+            - set_solver.
+          + mlAdd H2. mlRevert "1". mlRewriteBy "0" at 1. mlIntro "H".
+            mlRewriteBy "H" at 1.
+            mlRewriteBy "H" at 1.
+            mlReflexivity.
+        } 
+        { set_solver. }
+  }
+  { set_solver. }
+ Qed.
+ 
+   (* using new notation for andThen   *)
+  Theorem true_andThenBool : forall Γ , theory ⊆ Γ ->
+                        Γ ⊢ all mlBool,  b0 &&ml mlTrue =ml b0. 
+  Proof.
+  
+  Qed.
+
+(*
+  (* extending Bool_syntax.v *)
+  Theorem false_andThenBool : forall Γ , theory ⊆ Γ ->
+                        Γ ⊢ all,  b0 &&ml mlFalse =ml mlFalse. 
+  Proof.
+  Abort. *)
+
+
 
 
 End bools.
