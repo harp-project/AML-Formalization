@@ -46,7 +46,7 @@ Section ProofSystemTheorems.
     intros Γ φ φ' SubTheory Wf1 Wf2.
     toMLGoal. wf_auto2.
     mlIntro "H0". mlDestructAnd "H0" as "H1" "H2".
-    mlRewriteBy "H2" at 1. assumption. wf_auto2.
+    mlRewriteBy "H2" at 1. (*assumption. wf_auto2.
     {
       unfold mu_in_evar_path. cbn. rewrite decide_eq_same. cbn.
       rewrite !Nat.max_0_r.
@@ -56,7 +56,7 @@ Section ProofSystemTheorems.
       eapply evar_is_fresh_in_richer'.
       2: apply set_evar_fresh_is_fresh.
       { clear. set_solver. }
-    }
+    }*)
     mlSplitAnd; mlExact "H1".
   Defined.
 
@@ -237,35 +237,133 @@ Section ProofSystemTheorems.
     mlExact "H2".
   Defined.
 
+  Lemma wf_fold_left {A : Type} (f : Pattern -> A -> Pattern) (t : A -> Pattern) x xs :
+    well_formed x ->
+    wf (map t xs) ->
+    (forall a b, well_formed a -> well_formed (t b) -> well_formed (f a b)) ->
+    well_formed (fold_left f xs x).
+  Proof.
+    intros wfx wfxs wfpf.
+    revert x wfx.
+    induction xs; simpl.
+    intro. exact id.
+    intros. apply IHxs, wfpf; wf_auto2.
+  Defined.
+
+  Lemma wf_foldr {A : Type} (f : A -> Pattern -> Pattern) (t : A -> Pattern) x xs :
+    well_formed x ->
+    wf (map t xs) ->
+    (forall a b, well_formed a -> well_formed (t b) -> well_formed (f b a)) ->
+    well_formed (foldr f x xs).
+  Proof.
+    intros wfx wfxs wfpf.
+    revert x wfx.
+    induction xs; simpl.
+    intro. exact id.
+    intros. apply wfpf; [apply IHxs |]; wf_auto2.
+  Defined.
+
+  Lemma mf_fold_left {A : Type} (f : Pattern -> A -> Pattern) (t : A -> Pattern) x xs :
+    mu_free x ->
+    forallb mu_free (map t xs) ->
+    (forall a b, mu_free a -> mu_free (t b) -> mu_free (f a b)) ->
+    mu_free (fold_left f xs x).
+  Proof.
+    intros mfx mfxs mfpf.
+    revert x mfx mfxs.
+    induction xs; simpl.
+    now intros.
+    intros ? ? []%andb_prop.
+    apply IHxs. apply mfpf.
+    all: assumption.
+  Defined.
+
+  Lemma mf_evar_subst φ φ' x :
+    mu_free φ -> mu_free φ' ->
+    mu_free φ^[[evar: x ↦ φ']].
+  Proof.
+    intros.
+    induction φ; simpl; try split.
+    * destruct (decide (x = x0)); auto.
+    * simpl in H. apply andb_true_iff in H as []. apply andb_true_iff. split; [exact (IHφ1 H) | exact (IHφ2 H1)].
+    * simpl in H. apply andb_true_iff in H as []. apply andb_true_iff. split; [exact (IHφ1 H) | exact (IHφ2 H1)].
+    * simpl in H. auto.
+    * inversion H.
+  Defined.
+
   Lemma Lemma₂_multi_right : forall Γ φ subs,
     theory ⊆ Γ -> mu_free φ -> well_formed φ ->
-    fold_right (fun '(_, φ') a => well_formed φ' && a) true subs ->
+    (* fold_right (fun '(_, φ') a => well_formed φ' && a) true subs -> *)
+    forallb mu_free (map snd subs) -> wf (map snd subs) ->
     Γ ⊢ fold_left (fun a '(x, φ') => a^[[evar: x ↦ φ']]) subs φ and fold_right (fun '(x, φ') a => patt_free_evar x =ml φ' and a) patt_top subs --->
       φ and fold_right (fun '(x, φ') a => patt_free_evar x =ml φ' and a) patt_top subs.
   Proof.
-    intros Γ φ subs HΓ mfφ wfφ wfs.
+    intros Γ φ subs HΓ mfφ wfφ mfs wfs.
     induction subs as [ | [x φ'] ]; simpl in * |- *.
     aapply A_impl_A. wf_auto2.
-    specialize (IHsubs ltac:(wf_auto2)).
+    (* Somehow wf_auto2 can solve mu_free here *)
+    specialize (IHsubs ltac:(wf_auto2) ltac:(wf_auto2)).
     toMLGoal.
-    admit.
+    {
+      apply well_formed_imp; repeat apply well_formed_and.
+      1: apply wf_fold_left with (t := snd).
+      5, 8: apply wf_foldr with (t := snd).
+      3, 7, 10: intros ? [] ? ?.
+      all: wf_auto2.
+    }
     mlIntro "H".
     mlDestructAnd "H" as "H1" "H2".
     mlDestructAnd "H2" as "H3" "H4".
     mlAdd IHsubs as "IH".
     mlAssert ("IHspec" : (φ and foldr (λ '(x0, φ'0) (a : Pattern), patt_free_evar x0 =ml φ'0 and a) Top subs)).
-    admit.
+    {
+      apply well_formed_and.
+      2: apply wf_foldr with (t := snd).
+      4: intros ? [] ? ?.
+      all: wf_auto2.
+    }
     mlApply "IH".
     mlSplitAnd.
     2: mlExact "H4".
-    pose proof (equality_elimination_basic Γ (patt_free_evar x) φ' {| pcEvar := x; pcPattern := φ |} HΓ ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) mfφ).
+    pose proof (equality_elimination_basic Γ (patt_free_evar x) φ' {| pcEvar := x; pcPattern := fold_left (λ (a : Pattern) '(x0, φ'0), a^[[evar:x0↦φ'0]]) subs φ |} HΓ ltac:(wf_auto2) ltac:(wf_auto2)).
+    (* pose proof (equality_elimination_basic Γ (patt_free_evar x) φ' {| pcEvar := x; pcPattern := φ |} HΓ ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) mfφ). *)
+    ospecialize* H.
+    {
+      unfold PC_wf. simpl.
+      apply wf_fold_left with (t := snd).
+      3: intros ? [] ? ?.
+      all: wf_auto2.
+    }
+    {
+      simpl.
+      apply mf_fold_left with (t := snd).
+      1, 2: wf_auto2.
+      intros ? [] ? ?. apply mf_evar_subst; assumption.
+    }
     cbn in H.
     rewrite free_evar_subst_id in H.
+    replace ((fold_left (λ (a : Pattern) '(x0, φ'0), a^[[evar:x0↦φ'0]]) subs φ)^[[evar:x↦φ']]) with (fold_left (λ (a : Pattern) '(x0, φ'0), a^[[evar:x0↦φ'0]]) subs φ^[[evar:x↦φ']]) in H.
     mlAdd H as "Hcong".
-    mlAssert ("Hcongspec" : (φ <---> φ^[[evar:x↦φ']])).
-    wf_auto2.
+    mlAssert ("Hcongspec" : (fold_left (λ (a : Pattern) '(x0, φ'0), a^[[evar:x0↦φ'0]]) subs φ <---> (fold_left (λ (a : Pattern) '(x0, φ'0), a^[[evar:x0↦φ'0]]) subs φ^[[evar:x↦φ']]))).
+    {
+       apply well_formed_iff; apply wf_fold_left with (t := snd).
+       3, 6: intros ? [] ? ?.
+       all: wf_auto2.
+    }
     mlApply "Hcong".
     mlExact "H3".
+    mlDestructAnd "Hcongspec" as "Hcongspec1" "Hcongspec2".
+    mlApply "Hcongspec2".
+    mlExact "H1".
+    (* remember (fresh_evar (fold_right (fun '(x, φ') a => patt_free_evar x =ml φ' and a) patt_top subs)) as y. *)
+    (* assert (well_formed (fold_left (λ (a : Pattern) '(x0, φ'0), a^[[evar:x0↦φ'0]]) subs (patt_free_evar y))). *)
+    (* { *)
+    (*   apply wf_fold_left with (t := snd). *)
+    (*   3: intros ? [] ? ?. *)
+    (*   all: wf_auto2. *)
+    (* } *)
+    (* pose proof (prf_equiv_congruence Γ φ (φ^[[evar:x↦φ']]) {| pcEvar := y ; pcPattern := fold_left (λ (a : Pattern) '(x0, φ'0), a^[[evar:x0↦φ'0]]) subs (patt_free_evar y) |} AnyReasoning wfφ ltac:(wf_auto2) H0 (pile_any _)). *)
+    (* cbn in H1. *)
     (* mlRewrite "Hcongspec" at 1. *) admit.
     mlDestructAnd "IHspec" as "IHspec1" "IHspec2".
     mlSplitAnd.
@@ -273,35 +371,7 @@ Section ProofSystemTheorems.
     mlSplitAnd.
     mlExact "H3".
     mlExact "IHspec2".
-  Admitted.
-
-  Goal forall (Γ : Theory) (φ : Pattern) (x₁ x₂ : evar) (φ'₁ φ'₂ : Pattern), True.
-  Proof.
-    intros.
-    pose proof (Lemma₂_multi_right Γ φ [(x₁, φ'₁); (x₂, φ'₂)]).
-    simpl in H.
-    split.
   Abort.
-
-  (* Lemma Lemma₂_multi : forall Γ φ subs, *)
-  (*   theory ⊆ Γ -> mu_free φ -> *)
-  (*   fold_left (fun a '(_, φ') => a && well_formed φ') subs (well_formed φ) -> *)
-  (*   Γ ⊢ fold_left (fun a '(x, φ') => a and patt_free_evar x =ml φ') subs (fold_left (fun a '(x, φ') => a^[[evar: x ↦ φ']]) subs φ) ---> fold_left (fun a '(x, φ') => a and patt_free_evar x =ml φ') subs φ. *)
-  (* Proof. *)
-  (*   intros Γ φ subs HΓ mfφ wfs. *)
-  (*   induction subs as [ | [x φ'] ]; simpl in * |- *. *)
-  (*   now aapply A_impl_A. *)
-  (*   pose proof (equality_elimination_basic Γ (patt_free_evar x) φ' {| pcEvar := x; pcPattern := φ |} HΓ ltac:(wf_auto2)). *)
-  (*   cbn in H. *)
-  (* Admitted. *)
-
-  (* Goal forall (Γ : Theory) (φ : Pattern) (x₁ x₂ : evar) (φ'₁ φ'₂ : Pattern), True. *)
-  (* Proof. *)
-  (*   intros. *)
-  (*   pose proof (Lemma₂_multi Γ φ [(x₁, φ'₁); (x₂, φ'₂)]). *)
-  (*   simpl in H. *)
-  (*   split. *)
-  (* Abort. *)
 
   Lemma Lemma₁_meta : forall φ t x Γ, theory ⊆ Γ ->
     well_formed φ ->
@@ -482,6 +552,27 @@ End ProofSystemTheorems.
 
 Section UnificationProcedure.
   Context {Σ : Signature} {ΣS : Syntax}.
+
+  Definition unification_problem : Set := option (list (Pattern * Pattern)).
+
+  Definition is_free_evar_in (x t : Pattern) : bool :=
+    match x with
+    | patt_free_evar x => match decide (x ∈ free_evars t) with
+                          | left  _ => false
+                          | right _ => true
+                          end
+    | _                => false
+    end.
+
+  Definition in_solved_form (P : unification_problem) : bool := from_option (forallb (uncurry is_free_evar_in)) true P.
+
+
+
+
+
+
+
+
 
   (* Fixpoint apps_r (C : Application_context) : bool :=
   match C with
