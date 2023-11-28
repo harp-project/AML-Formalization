@@ -170,6 +170,22 @@
           installFlags = [ "COQLIB=$(out)/lib/coq/${coq.coq-version}/" ];
           passthru = { inherit coqPackages; };
         } ) { } ;
+
+
+        # Example: ICTAC23 presentation examples
+        packages.coq-matching-logic-example-ictac23
+        = coqPackages.callPackage 
+        ( { coq, stdenv }:
+        stdenv.mkDerivation {
+          name = "coq-matching-logic-example-ictac23";
+          src = ./examples/04_ictac23;
+
+          propagatedBuildInputs = [
+            self.outputs.packages.${system}.coq-matching-logic
+          ];
+          installFlags = [ "COQLIB=$(out)/lib/coq/${coq.coq-version}/" ];
+          passthru = { inherit coqPackages; };
+        } ) { } ;
  
         
         # Metamath exporter: Build & Test
@@ -239,6 +255,16 @@
               pkgs.mkShell {
                 inputsFrom = [coq-matching-logic-example-proofmode];
                 packages = [coq-matching-logic-example-proofmode.coqPackages.coq-lsp];
+              };
+
+
+          coq-matching-logic-example-ictac23 =
+            let
+              coq-matching-logic-example-ictac23 = self.outputs.packages.${system}.coq-matching-logic-example-ictac23;
+            in
+              pkgs.mkShell {
+                inputsFrom = [coq-matching-logic-example-ictac23];
+                packages = [coq-matching-logic-example-ictac23.coqPackages.coq-lsp];
               };
 
           koreimport =
