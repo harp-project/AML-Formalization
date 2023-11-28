@@ -151,7 +151,7 @@ Section sorts.
   Context {Σ : Signature}.
   Context {self : Syntax}.
   Open Scope ml_scope.
-  
+
   Definition patt_total_binary_function(phi from1 from2 to : Pattern)
   : Pattern :=
     patt_forall_of_sort from1 (
@@ -166,7 +166,8 @@ End sorts.
 
 Module Notations.
   Notation "〚 phi 〛" := (patt_inhabitant_set phi) (at level 0) : ml_scope.
-  Notation "'all' s ,  phi" := (patt_forall_of_sort s phi) (at level 70) : ml_scope.
-  Notation "'ex' s ,  phi" := (patt_exists_of_sort s phi) (at level 70) : ml_scope.
+  Notation "'all' s ,  phi" := (patt_forall_of_sort s phi) (at level 80) : ml_scope.
+  Notation "'ex' s ,  phi" := (patt_exists_of_sort s phi) (at level 80) : ml_scope.
   Notation "phi :ml s1 × s2 -> s3" :=  (patt_total_binary_function phi s1 s2 s3) (at level 70) : ml_scope.
 End Notations.
+

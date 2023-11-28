@@ -16,6 +16,7 @@ From MatchingLogic Require Import
   ProofInfo
   wftactics
   Experimental.ProofModePattern
+  Logic
 .
 
 From stdpp Require Import list tactics fin_sets coGset gmap sets.
@@ -23,10 +24,9 @@ From stdpp Require Import list tactics fin_sets coGset gmap sets.
 Import
   MatchingLogic.Utils.stdpp_ext
   MatchingLogic.Utils.extralibrary
-  MatchingLogic.Syntax.Notations
-  MatchingLogic.DerivedOperators_Syntax.Notations
   MatchingLogic.ProofSystem.Notations_private
   MatchingLogic.ProofInfo.Notations
+  MatchingLogic.Logic.Notations
 .
 
 Set Default Proof Mode "Classic".
@@ -134,15 +134,28 @@ Coercion of_MLGoal {Σ : Signature} (MG : MLGoal) : Type :=
   format "G  'Ⱶ' '//' l -------------------------------------- '//' g '//'",
   only printing).
 
+Ltac2 Type exn ::= [PMTacticFailure(message)].
+
+Ltac2 throw_pm_exn (msg : message) :=
+  Control.zero(PMTacticFailure msg).
+
+Ltac2 goal_to_message () : message :=
+  match! goal with
+  | [ |- ?g] => Message.of_constr g
+  end.
+
+Ltac2 throw_pm_exn_with_goal (msg : string) :=
+  throw_pm_exn (Message.concat (Message.of_string msg) (goal_to_message ())).
+
 Ltac2 _toMLGoal () :=
   unfold derives;
   lazy_match! goal with
   | [ |- ?g ⊢i ?phi using ?pi]
-    => (Std.cut constr:(of_MLGoal (MLGoal_from_goal $g $phi $pi));cbn)>
+    => (Std.cut constr:(of_MLGoal (MLGoal_from_goal $g $phi $pi))(* cbn *))>
        [
        (unfold MLGoal_from_goal;
         unfold of_MLGoal;
-         simpl;
+         (* simpl; *)
          let h := Fresh.in_goal ident:(Halmost) in
          intros $h;
          let h_hyp := Control.hyp h in
@@ -150,7 +163,7 @@ Ltac2 _toMLGoal () :=
          [()|reflexivity]
        )
        |unfold MLGoal_from_goal]
-
+  | [ |- _ ] => throw_pm_exn_with_goal "_toMLGoal: Not a matching logic goal: "
   end.
 
 Ltac2 Notation "toMLGoal" :=
@@ -162,10 +175,13 @@ Tactic Notation "toMLGoal" :=
 .
 
 Ltac2 _fromMLGoal () :=
-  unfold of_MLGoal;
-  simpl;
-  intros _ _
-.
+  match! goal with
+  | [ |- of_MLGoal (mkMLGoal _ _ _ _ _) ] =>
+    unfold of_MLGoal;
+    simpl;
+    intros _ _
+  | [ |- _] => throw_pm_exn_with_goal "_fromMLGoal: Not a matching logic proof mode goal: "
+  end.
 
 Ltac2 Notation "fromMLGoal" :=
   _fromMLGoal ()
@@ -190,9 +206,10 @@ Defined.
 Ltac2 _useBasicReasoning () :=
   Control.enter ( fun () =>
     unfold derives;
-    lazy_match! goal with
+    match! goal with
     | [ |- of_MLGoal (mkMLGoal _ _ _ _ _) ] => apply mlUseBasicReasoning
     | [ |- _ ⊢i _ using _ ] => apply useBasicReasoning
+    | [ |- _] => throw_pm_exn_with_goal "_useBasicReasoning: Not a matching logic goal: "
     end
   )
 .
@@ -223,7 +240,7 @@ Defined.
 (* Extracts well-formedness assumptions about (local) goal and (local) hypotheses. *)
 Ltac2 _mlExtractWF (wfl : ident) (wfg : ident) :=
   Control.enter(fun () =>
-    lazy_match! goal with
+    match! goal with
     | [ |- ?g ] =>
       let wfl' := Fresh.in_goal ident:(wfl') in
       let wfg' := Fresh.in_goal ident:(wfg') in
@@ -234,6 +251,7 @@ Ltac2 _mlExtractWF (wfl : ident) (wfg : ident) :=
       fold $g;
       unfold mlConclusion in $wfg;
       unfold mlHypotheses in $wfl
+    | [ |- _] => throw_pm_exn_with_goal "_mlExtractWF: failed for goal: "
     end
 ).
 
@@ -253,6 +271,9 @@ Proof.
   intros wfp.
   toMLGoal.
   {
+    Fail toMLGoal.
+    Fail mlExtractWF wfl wfg.
+    Fail fromMLGoal.
     wf_auto2.
   }
   (*{ wf_auto2. }*)
@@ -315,7 +336,7 @@ Ltac2 do_mlReshapeHypsByName (name : constr) :=
   | [ |- @of_MLGoal _ (@mkMLGoal _ _ ?l _ _) ] =>
     match! (eval cbv in (index_of $name (names_of $l))) with
     | (Some ?i) => do_mlReshapeHypsByIdx i
-    | None => Message.print (Message.concat (Message.of_string "No such name: ") (Message.of_constr name)); fail
+    | None => throw_pm_exn (Message.concat (Message.of_string "do_mlReshapeHypsByName: No such name: ") (Message.of_constr name))
     end
   end
 .
@@ -345,7 +366,7 @@ Tactic Notation "_mlReshapeHypsBack" :=
 .
 
 Ltac2 do_mlReshapeHypsBy2Idx (i1:constr) (i2:constr) :=
-    match! (eval cbv in (Nat.compare $i1 $i2)) with
+    lazy_match! (eval cbv in (Nat.compare $i1 $i2)) with
     | (Lt) => ltac1:(unshelve ltac2:(eapply (@cast_proof_ml_hyps _ _ _ _ _ _ _)))>
               [ltac1:(shelve)|
               (apply f_equal;
@@ -366,7 +387,7 @@ Ltac2 do_mlReshapeHypsBy2Idx (i1:constr) (i2:constr) :=
                ltac1:(rewrite -> drop_app_le by (simpl; lia));
                ltac1:(rewrite /firstn); ltac1:(rewrite /skipn); reflexivity)
               |()]
-    | (Eq) => Message.print (Message.of_string "Equal names were used")
+    | (Eq) => throw_pm_exn (Message.of_string "do_mlReshapeHypsBy2Idx: Hypothesis names are equal!")
     end
 .
 
@@ -382,15 +403,15 @@ Tactic Notation "_mlReshapeHypsBy2Idx" constr(i1) constr(i2) :=
 .
 
 Ltac2 do_mlReshapeHypsBy2Names (n1 : constr) (n2 : constr) :=
-  match! goal with
+  lazy_match! goal with
   | [ |- @of_MLGoal _ (@mkMLGoal _ _ ?l _ _) ] =>
-    match! (eval cbv in (index_of $n1 (names_of $l))) with
+    lazy_match! (eval cbv in (index_of $n1 (names_of $l))) with
     | (Some ?i1) => 
-      match! (eval cbv in (index_of $n2 (names_of $l))) with
+      lazy_match! (eval cbv in (index_of $n2 (names_of $l))) with
       | (Some ?i2) => do_mlReshapeHypsBy2Idx i1 i2
-      | None => Message.print (Message.concat (Message.of_string "No such name: ") (Message.of_constr n2))
+      | None => throw_pm_exn (Message.concat (Message.of_string "do_mlReshapeHypsBy2Names: No such name: ") (Message.of_constr n2))
       end
-    | None => Message.print (Message.concat (Message.of_string "No such name: ") (Message.of_constr n1))
+    | None => throw_pm_exn (Message.concat (Message.of_string "do_mlReshapeHypsBy2Names: No such name: ") (Message.of_constr n1))
     end
   end
 .
@@ -443,10 +464,11 @@ Proof.
 Defined.
 
 Ltac2 _simplLocalContext () :=
-  lazy_match! goal with
+  match! goal with
     | [ |- @of_MLGoal ?sgm (mkMLGoal ?sgm ?ctx ?l ?g ?i) ]
       => let f := ltac1:(l |- rewrite {1}[l]/app) in
          (f (Ltac1.of_constr l))
+    | [ |- _] => throw_pm_exn_with_goal "_simplLocalContext: Not a matching logic proof mode goal: "
   end.
 
 Ltac2 Notation "simplLocalContext" :=
@@ -459,9 +481,10 @@ Tactic Notation "simplLocalContext" :=
 
 
 Ltac2 do_getHypNames () : constr :=
-  lazy_match! goal with
+  match! goal with
   | [ |- of_MLGoal (mkMLGoal _ _ ?l _ _) ]
     => eval lazy in (names_of $l)
+  | [ |- _] => throw_pm_exn_with_goal "do_getHypNames: Not a matching logic proof mode goal: "
   end.
 
 Ltac2 Notation "getHypNames" :=
@@ -484,11 +507,8 @@ Ltac2 do_failIfUsed (name : constr) :=
 lazy_match! goal with
 | [ |- of_MLGoal (mkMLGoal _ _ ?l _ _) ] =>
   lazy_match! (eval cbv in (find (fun x => String.eqb x $name) (names_of $l))) with
-  | Some _ => Message.print (
-    Message.concat
-      (Message.of_string "The name ")
-      (Message.concat (Message.of_constr name) (Message.of_string " is already used")));
-      fail
+  | Some _ =>
+      throw_pm_exn (Message.concat (Message.of_string "do_failIfUsed: Name is already used: ") (Message.of_constr name))
   | _ => () (* should not fail on other values*)
   end
 end.
@@ -555,11 +575,12 @@ Tactic Notation "_ensureProofMode" :=
 .
 
 Ltac2 do_mlIntro (name' : constr) :=
-  Control.enter(fun () => 
+  Control.enter(fun () =>
     do_ensureProofMode ();
     do_failIfUsed name';
-    apply MLGoal_intro with (name := $name');
-    simplLocalContext
+    Control.plus (fun () => apply MLGoal_intro with (name := $name');
+    simplLocalContext)
+    (fun _ => throw_pm_exn (Message.of_string "do_mlIntro: goal does not contain more implications!"))
   )
 .
 
@@ -605,19 +626,19 @@ Abort.
 
 Local Example ex_mlIntro {Σ : Signature} Γ a (i : ProofInfo) :
   well_formed a ->
-  Γ ⊢i a ---> a ---> a ---> a ---> a using i.
+  Γ ⊢i a ---> a ---> a ---> (a ---> a)^[evar: 0 ↦ a] using i.
 Proof.
-  intros wfa.
+  intros wfa. toMLGoal. wf_auto2.
   (* This happens automatically *)
   (*
   toMLGoal.
   { wf_auto2. }
   *)
-  
   mlIntro "h"%string.
   Fail mlIntro "h"%string.
   mlIntro "h'"%string.
   do 2 mlIntro.
+  Fail mlIntro.
 Abort.
 
 Lemma MLGoal_revertLast {Σ : Signature} (Γ : Theory) (l : hypotheses) (x g : Pattern) (n : string) i :
@@ -659,7 +680,9 @@ Defined.
 #[global]
 Ltac2 do_mlRevertLast () :=
   Control.enter(fun () =>
-    lazy_match! goal with
+    match! goal with
+    | [|- @of_MLGoal ?sgm (mkMLGoal ?sgm ?ctx [] ?g ?i)] =>
+      throw_pm_exn (Message.of_string ("do_mlRevertLast: There are no hypotheses to revert!"))
     | [|- @of_MLGoal ?sgm (mkMLGoal ?sgm ?ctx ?l ?g ?i)]
     => eapply cast_proof_ml_hyps>
       [(ltac1:(l |- rewrite -[l](take_drop (length l - 1)); rewrite [take _ _]/=; rewrite [drop _ _]/=) (Ltac1.of_constr l); reflexivity)|()];
@@ -688,6 +711,7 @@ Defined.
 Ltac2 do_mlRename (n1 : constr) (n2 : constr) :=
   Control.enter(fun () =>
     _ensureProofMode;
+    do_failIfUsed n2;
     _mlReshapeHypsByName n1;
     apply MLGoal_rename with (n2 := $n2);
     _mlReshapeHypsBack
@@ -713,6 +737,7 @@ Proof.
   mlRename "0"%string into "H0"%string.
   mlRename "5"%string into "H5"%string.
   Fail mlRename "6"%string into "6"%string.
+  Fail mlRename "4"%string into "1"%string.
 Abort.
 
 Close Scope ml_scope.

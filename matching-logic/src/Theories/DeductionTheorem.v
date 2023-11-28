@@ -971,8 +971,9 @@ Proof.
       wf_auto2.
     }
     mlIntro "H".
-    mlSplitAnd; fromMLGoal.
+    mlSplitAnd.
     {
+      fromMLGoal.
       apply Knaster_tarski.
       { try_solve_pile. }
       { wf_auto2. }
@@ -988,6 +989,7 @@ Proof.
       { wf_auto2. }
     }
     {
+      fromMLGoal.
       remember (fresh_svar (ψ and ϕ)) as Y.
       rewrite <- svar_quantify_svar_open with (n := 0) (phi := (ψ and ϕ)) (X := Y).
       rewrite <- svar_quantify_svar_open with (n := 0) (phi := ϕ) (X := Y) at 2.
@@ -1082,6 +1084,7 @@ Proof.
       wf_auto2. fold no_negative_occurrence_db_b. apply wfc_impl_no_neg_occ. wf_auto2.
     }
     cbn in Htmp.
+    simpl.
     mlRewrite (useBasicReasoning AnyReasoning (@patt_and_comm Σ Γ _ ψ Htmp wfψ)) at 1.
     
     mlIntro "H".
