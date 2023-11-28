@@ -15,7 +15,8 @@ Inductive Symbols : Set :=
 | sTrue
 | sFalse
 | sAnd
-| sNeg.
+| sNeg
+| sAndThen.
 
 Global Instance Symbols_eqdec : EqDecision Symbols.
 Proof. unfold EqDecision. intros x y. unfold Decision. destruct x; decide equality. (*solve_decision.*) Defined.
@@ -39,16 +40,19 @@ Section bool_syntax.
 
   Context {self : Syntax}.
 
-  Definition mlBool := patt_sym (inj sBool).
-  Definition mlTrue := patt_sym (inj sTrue).
-  Definition mlFalse := patt_sym (inj sFalse).
-  Definition mlsBAnd := patt_sym (inj sAnd).
-  Definition mlsBNeg := patt_sym (inj sNeg).
+  Definition mlBool     := patt_sym (inj sBool).
+  Definition mlTrue     := patt_sym (inj sTrue).
+  Definition mlFalse    := patt_sym (inj sFalse).
+  Definition mlsBAnd    := patt_sym (inj sAnd).
+  Definition mlsBNeg    := patt_sym (inj sNeg).
+  Definition mlsBAndThen := patt_sym ( inj sAndThen).
 
   Definition mlBAnd (φ1 φ2 : Pattern) : Pattern :=
     (mlsBAnd $ φ1) $ φ2.
   Definition mlBNeg (φ : Pattern) : Pattern :=
     mlsBNeg $ φ.
+  Definition mlBAndThen ( φ1 φ2 : Pattern) : Pattern := 
+    (mlsBAndThen $ φ1) $ φ2.
 
 End bool_syntax.
 
@@ -88,12 +92,28 @@ Section bools.
   Next Obligation.
     intros. wf_auto2.
   Qed.
+  
+  #[global]
+  Program Instance Binary_sorted_neg_1 : Binary mlBAndThen := {}.
+  Next Obligation.
+    intros. repeat rewrite pm_correctness. reflexivity.
+  Defined.
+  Next Obligation.
+    intros. wf_auto2.
+  Qed.
+  Next Obligation.
+    intros. wf_auto2.
+  Qed.
+  Next Obligation.
+    intros. wf_auto2.
+  Qed.
 
 End bools.
 
 Module Notations.
   Notation "phi '&&ml' psi" := (mlBAnd phi psi) (at level 40, left associativity) : ml_scope.
   Notation "'!b' phi" := (mlBNeg phi) (at level 60) : ml_scope.
+  Notation "phi 'andThen' psi" := (mlBAndThen phi psi) (at level 40, left associativity) : ml_scope.
 End Notations.
 
 Section axioms.
@@ -117,7 +137,12 @@ Section axioms.
   | AxDefAndRightFalse
   | AxDefAndLeftTrue
   | AxDefAndLeftFalse
-  .
+  (* extend to support andThen operator   *)
+  | AxDefAndThenRightTrue
+  | AxDefAndThenRightFalse
+  | AxDefAndThenLeftTrue
+  | AxDefAndThenLeftFalse
+  . 
 
   Definition axiom (name : AxiomName) : Pattern :=
     match name with
@@ -131,7 +156,6 @@ Section axioms.
     (* TODO: extend this with the DEFINITION axioms from "ML explained" *)
     | AxDefNegTrue =>  !b mlTrue =ml mlFalse
     | AxDefNegFalse => !b mlFalse =ml mlTrue 
-    
     | AxDefAndRightTrue =>  
       all mlBool, b0 &&ml mlTrue =ml b0 
     | AxDefAndRightFalse =>
@@ -139,7 +163,17 @@ Section axioms.
     | AxDefAndLeftTrue =>
       all mlBool, mlTrue &&ml b0 =ml b0
     | AxDefAndLeftFalse =>
-      all mlBool, mlFalse &&ml b0 =ml mlFalse
+      all mlBool, mlFalse &&ml b0 =ml mlFalse 
+    (* extend to support andThen operator   *)
+    | AxDefAndThenRightTrue => 
+      all mlBool, b0 andThen mlTrue =ml b0
+    | AxDefAndThenRightFalse =>
+      all, b0 andThen mlFalse =ml mlFalse
+    | AxDefAndThenLeftTrue =>
+      all mlBool, mlTrue andThen b0 =ml b0
+    | AxDefAndThenLeftFalse => 
+      all, mlFalse andThen b0 =ml mlFalse
+      
     end.
 
   Program Definition named_axioms : NamedAxioms :=
