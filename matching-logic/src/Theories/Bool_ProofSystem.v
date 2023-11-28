@@ -138,7 +138,6 @@ Open Scope list_scope.
       clear hasserted. mlApplyMeta functional_pattern_defined; auto.
       mlExactMeta Func2.
   Defined.
-  
 
   Theorem double_neg : forall Γ , theory ⊆ Γ ->
                         Γ ⊢ all mlBool,   (!b !b b0) =ml b0.
@@ -438,9 +437,8 @@ Open Scope list_scope.
         mlIntro "H".
         mlRewriteBy "H" at 1.
         mlRewriteBy "H" at 1.
-        mlClear "1". mlClear "ind". mlClear "H".
+        mlClear "1";mlClear "ind"; mlClear "H".
         mlIntroAll y.
-        simpl.
         cbn. fold mlBool.
         mlAdd H0 as "ind".
         mlRewriteBy "ind" at 1.
@@ -614,19 +612,49 @@ Open Scope list_scope.
   { set_solver. }
  Qed.
  
-   (* using new notation for andThen   *)
+  (* using new notation for andThen   *)
   Theorem true_andThenBool : forall Γ , theory ⊆ Γ ->
-                        Γ ⊢ all mlBool,  b0 &&ml mlTrue =ml b0. 
+                        Γ ⊢ all mlBool,  b0 andThen mlTrue =ml b0. 
   Proof.
-  
+  intros.
+  toMLGoal.
+  wf_auto2.
+  mlIntroAll x.
+  cbn. fold mlBool.
+  unfold theory in H.
+  pose proof use_bool_axiom AxInductiveDomain Γ H.
+  simpl in H0. mlAdd H0 as "ind".
+  mlRewriteBy "ind" at 1.
+  mlIntro "H".
+  mlApplyMeta membership_or_1 in "H".
+  {
+    pose proof use_bool_axiom AxDefAndThenRightTrue Γ H.
+      simpl in H1. mlAdd H1. mlSpecialize "0" with x. mlSimpl. cbn. fold mlBool.
+      mlApply "0".
+      mlRewriteBy "ind" at 1.
+      mlApplyMeta membership_or_2.
+      {
+        mlAssumption. 
+      }
+      { set_solver. }
+  }
+  { set_solver. }
   Qed.
 
-(*
+
   (* extending Bool_syntax.v *)
   Theorem false_andThenBool : forall Γ , theory ⊆ Γ ->
-                        Γ ⊢ all,  b0 &&ml mlFalse =ml mlFalse. 
+                        Γ ⊢ all,  b0 andThen mlFalse =ml mlFalse. 
   Proof.
-  Abort. *)
+  intros.
+  toMLGoal.
+  wf_auto2.
+  mlIntroAll x.
+  cbn.
+  pose proof use_bool_axiom AxDefAndThenRightFalse Γ H.
+  simpl in H0. mlAdd H0. mlSpecialize "0" with x. mlSimpl. cbn.
+  mlAssumption. 
+  Qed.
 
 
 
