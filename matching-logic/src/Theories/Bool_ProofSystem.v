@@ -149,8 +149,7 @@ Open Scope list_scope.
     simpl.
     mlIntro "H".
     (* Search patt_in derives_using. *)
-    unfold nest_ex;simpl.
-    fold mlBool.
+    cbn. fold mlBool.
     unfold theory in H.
     (* Search elem_of derives_using. *)
     pose proof use_bool_axiom AxInductiveDomain Γ H.
@@ -240,78 +239,12 @@ Open Scope list_scope.
   toMLGoal.
   wf_auto2.
   mlIntroAll x.
-  simpl.
   cbn. fold mlBool.
   unfold theory in H.
-  pose proof use_bool_axiom AxInductiveDomain Γ H.
-  simpl in H0. mlAdd H0 as "ind".
-  mlRewriteBy "ind" at 1.
-
-  mlIntro "H".
-  mlApplyMeta membership_or_1 in "H".
-  { 
-    mlDestructOr "H". 
-    * pose proof membership_equal_equal Γ (patt_free_evar x) mlTrue.
-      ospecialize* H1.
-      + unfold theory in H;set_solver.
-      + simpl. auto.
-      + wf_auto2.
-      + wf_auto2.
-      + mlExists x. mlSimpl. cbn. Search patt_equal derives_using. fromMLGoal. apply useBasicReasoning.  
-        epose proof patt_equal_refl  (patt_free_evar x) Γ.
-        apply H2. wf_auto2.
-      + mlApplyMeta ex_sort_impl_ex.
-        - pose proof use_bool_axiom AxFunTrue Γ H;simpl in H2;mlAdd H2 as "f";mlExact "f".
-        - unfold theory in H;set_solver.
-      + mlAdd H1. mlRevert "0".
-        mlRewriteBy "1" at 1.
-           
-      mlIntro "H".
-      pose proof use_bool_axiom AxDefAndRightTrue Γ H.
-      simpl in H2. mlAdd H2.
-        
-      mlSpecialize "0" with x. mlSimpl. cbn. fold mlBool. 
-      mlApply "0".
-      mlRewriteBy "ind" at 1.
-          
-      mlApplyMeta membership_or_2.
-      mlRewriteBy "1" at 1.
-      {
-         mlLeft. mlExact "H".
-      }
-      { unfold theory in H. set_solver.  }
-       
-     * pose proof membership_equal_equal Γ (patt_free_evar x) mlFalse.
-       ospecialize* H1.
-       + unfold theory in H;set_solver.
-       + simpl. auto.
-       + wf_auto2.
-       + wf_auto2.
-       + mlExists x. mlSimpl. cbn. Search patt_equal derives_using. fromMLGoal. apply useBasicReasoning.  
-         epose proof patt_equal_refl  (patt_free_evar x) Γ.
-         apply H2. wf_auto2.
-       + mlApplyMeta ex_sort_impl_ex.
-         - pose proof use_bool_axiom AxFunFalse Γ H;simpl in H2;mlAdd H2 as "f";mlExact "f".
-         - unfold theory in H;set_solver.
-       + mlAdd H1. mlRevert "1".
-         mlRewriteBy "0" at 1.
-       
-       mlIntro "H".
-       pose proof use_bool_axiom AxDefAndRightTrue Γ H.
-       simpl in H2. mlAdd H2.
-       mlSpecialize "1" with x. mlSimpl. cbn. fold mlBool. 
-       mlApply "1".
-       
-       mlRewriteBy "ind" at 1.
-   
-       mlApplyMeta membership_or_2.
-       mlRewriteBy "0" at 1. 
-       {
-         mlRight. mlExact "H".
-       }
-       { unfold theory in H. set_solver.  }
-  }
-  { unfold theory in H. set_solver.   }
+  pose proof use_bool_axiom AxDefAndRightTrue Γ H.
+  simpl in H0. mlAdd H0.
+  mlSpecialize "0" with x. mlSimpl. cbn. fold mlBool.
+  mlAssumption.
   Qed.
   
   Theorem false_andBool : forall Γ , theory ⊆ Γ ->
@@ -321,77 +254,12 @@ Open Scope list_scope.
   toMLGoal.
   wf_auto2.
   mlIntroAll x.
-  simpl.
   cbn. fold mlBool.
   unfold theory in H.
-  pose proof use_bool_axiom AxInductiveDomain Γ H.
-  simpl in H0. mlAdd H0 as "ind".
-  mlRewriteBy "ind" at 1.
-  mlIntro "H".
-  mlApplyMeta membership_or_1 in "H".
-  { 
-    mlDestructOr "H". 
-    * pose proof membership_equal_equal Γ (patt_free_evar x) mlTrue.
-      ospecialize* H1.
-      + unfold theory in H;set_solver.
-      + simpl. auto.
-      + wf_auto2.
-      + wf_auto2.
-      + mlExists x. mlSimpl. cbn. Search patt_equal derives_using. fromMLGoal. apply useBasicReasoning.  
-        epose proof patt_equal_refl  (patt_free_evar x) Γ.
-        apply H2. wf_auto2.
-      + mlApplyMeta ex_sort_impl_ex.
-        - pose proof use_bool_axiom AxFunTrue Γ H;simpl in H2;mlAdd H2 as "f";mlExact "f".
-        - unfold theory in H;set_solver.
-      + mlAdd H1. mlRevert "0".
-        mlRewriteBy "1" at 1.
-        
-      mlIntro "H".
-      pose proof use_bool_axiom AxDefAndRightFalse Γ H.
-      simpl in H2. mlAdd H2.
-        
-      mlSpecialize "0" with x. mlSimpl. cbn. fold mlBool. 
-      mlApply "0".
-      
-      mlRewriteBy "ind" at 1.
-          
-      mlApplyMeta membership_or_2.
-      mlRewriteBy "1" at 1.
-      {
-         mlLeft. mlExact "H".
-      }
-      { set_solver.  }
-       
-     * pose proof membership_equal_equal Γ (patt_free_evar x) mlFalse.
-       ospecialize* H1.
-       + unfold theory in H;set_solver.
-       + simpl. auto.
-       + wf_auto2.
-       + wf_auto2.
-       + mlExists x. mlSimpl. cbn. Search patt_equal derives_using. fromMLGoal. apply useBasicReasoning.  
-         epose proof patt_equal_refl  (patt_free_evar x) Γ.
-         apply H2. wf_auto2.
-       + mlApplyMeta ex_sort_impl_ex.
-         - pose proof use_bool_axiom AxFunFalse Γ H;simpl in H2;mlAdd H2 as "f";mlExact "f".
-         - unfold theory in H;set_solver.
-       + mlAdd H1. mlRevert "1".
-         mlRewriteBy "0" at 1.
-       mlIntro "H".
-       pose proof use_bool_axiom AxDefAndRightFalse Γ H.
-       simpl in H2. mlAdd H2.
-       mlSpecialize "1" with x. mlSimpl. cbn. fold mlBool. 
-       mlApply "1".
-       
-       mlRewriteBy "ind" at 1.
-     
-       mlApplyMeta membership_or_2.
-       mlRewriteBy "0" at 1.
-       {
-         mlRight. mlExact "H".
-       }
-       { unfold theory in H. set_solver.  }
-  }
-  { unfold theory in H. set_solver.   }
+  pose proof use_bool_axiom AxDefAndRightFalse Γ H.
+  simpl in H0. mlAdd H0.
+  mlSpecialize "0" with x. mlSimpl. cbn. fold mlBool. 
+  mlAssumption.
   Qed.
   
   Theorem comm_andBool : forall Γ , theory ⊆ Γ ->
@@ -402,16 +270,9 @@ Open Scope list_scope.
  wf_auto2.
  mlIntroAll x.
  mlSortedSimpl.
- simpl_sorted_quantification.
- unshelve (erewrite (@esorted_binder_morphism _ patt_forall_of_sort
-            _ _ _ (bevar_subst (patt_free_evar x)) _ _)).
-  2-4: eauto.
-  typeclasses eauto.
   mlSimpl.
-  simpl.
+  cbn. fold mlBool.
   unfold theory in H.
-  cbn.
-  fold mlBool.
   pose proof use_bool_axiom AxInductiveDomain Γ H.
   simpl in H0. mlAdd H0 as "ind".
   mlRewriteBy "ind" at 1.
@@ -438,6 +299,8 @@ Open Scope list_scope.
         mlRewriteBy "H" at 1.
         mlRewriteBy "H" at 1.
         mlClear "1";mlClear "ind"; mlClear "H".
+        (* remember (evar_fresh [x]) as y.
+        mlIntroAllManual y. *)
         mlIntroAll y.
         cbn. fold mlBool.
         mlAdd H0 as "ind".
@@ -622,27 +485,13 @@ Open Scope list_scope.
   mlIntroAll x.
   cbn. fold mlBool.
   unfold theory in H.
-  pose proof use_bool_axiom AxInductiveDomain Γ H.
-  simpl in H0. mlAdd H0 as "ind".
-  mlRewriteBy "ind" at 1.
-  mlIntro "H".
-  mlApplyMeta membership_or_1 in "H".
-  {
-    pose proof use_bool_axiom AxDefAndThenRightTrue Γ H.
-      simpl in H1. mlAdd H1. mlSpecialize "0" with x. mlSimpl. cbn. fold mlBool.
-      mlApply "0".
-      mlRewriteBy "ind" at 1.
-      mlApplyMeta membership_or_2.
-      {
-        mlAssumption. 
-      }
-      { set_solver. }
-  }
-  { set_solver. }
+  pose proof use_bool_axiom AxDefAndThenRightTrue Γ H.
+  simpl in H0. mlAdd H0. 
+  mlSpecialize "0" with x. mlSimpl. cbn. fold mlBool.
+  mlAssumption. 
   Qed.
 
 
-  (* extending Bool_syntax.v *)
   Theorem false_andThenBool : forall Γ , theory ⊆ Γ ->
                         Γ ⊢ all,  b0 andThen mlFalse =ml mlFalse. 
   Proof.
@@ -655,8 +504,6 @@ Open Scope list_scope.
   simpl in H0. mlAdd H0. mlSpecialize "0" with x. mlSimpl. cbn.
   mlAssumption. 
   Qed.
-
-
 
 
 End bools.
