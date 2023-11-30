@@ -7,6 +7,8 @@ Set Transparent Obligations.
 From Equations Require Import Equations.
 (* Set Equations Transparent. *)
 
+Require Import Coq.Program.Equality. (* Dependent destruction *)
+
 From MatchingLogic.OPML Require Import
     OpmlSignature
     OpmlModel
@@ -21,7 +23,7 @@ Definition UnifiedCarrierFunctor : Type
 Definition UnifiedCarrierCtorFamily
     (UCF : UnifiedCarrierFunctor) (A : Type)
 : Type
-    := (nat*(list A))%type -> (* Choose a particuar constructor from the family, and arguments of the constructor from the underlying type *)
+    := ((list nat)*(list A))%type -> (* Choose a particuar constructor from the family, and arguments of the constructor from the underlying type *)
        option (UCF A) (* maybe return something, and maybe not *)
 .
 
@@ -34,6 +36,10 @@ Record UnifiedCarrierComponent := {
     ucc_functor : UnifiedCarrierFunctor ;
     ucc_functor_monotone : is_monotone ucc_functor ;
     ucc_ctor_family : forall A, UnifiedCarrierCtorFamily ucc_functor A ;
+    ucc_ctor_family_inj : forall A args1 args2 ret,
+        (ucc_ctor_family A args1 = Some ret) ->
+        (ucc_ctor_family A args2 = Some ret) ->
+        args1 = args2 ;
 }.
 
 (* We can bypass the check because of the `is_monotone` requirement. *)
@@ -49,7 +55,7 @@ Definition CompInvertorT
     (UCC : UnifiedCarrierComponent)
 : Type
     := forall (A : Type) (x : ucc_functor UCC A),
-        option ({ nla : (nat*(list A))%type | ucc_ctor_family UCC A nla = Some x })
+        option ({ nla : ((list nat)*(list A))%type | ucc_ctor_family UCC A nla = Some x })
 .
 
 Record Component := {
@@ -62,7 +68,7 @@ Record Component := {
     comp_invertor_complete
         : forall
             (A : Type)
-            (nla : (nat*(list A))%type)
+            (nla : ((list nat)*(list A))%type)
             (x : ucc_functor comp_UCC A),
             ucc_ctor_family comp_UCC A nla = Some x ->
             exists pf,
@@ -96,7 +102,7 @@ Section constant.
 
 End constant.
 
-Definition bool_UCC : UnifiedCarrierComponent := {|
+Program Definition bool_UCC : UnifiedCarrierComponent := {|
     ucc_functor
         := constant_UnifiedCarrierFunctor bool ;
 
@@ -106,40 +112,42 @@ Definition bool_UCC : UnifiedCarrierComponent := {|
     ucc_ctor_family
         := fun A nla =>
         match nla with
-        | (0, []) => Some true
-        | (1, []) => Some false
+        | ([0], []) => Some true
+        | ([1], []) => Some false
         | _ => None
         end
         ;
 |}.
+Next Obligation.
+    (* Injectivity *)
+    (repeat case_match); simplify_eq/=; reflexivity.
+Qed.
 
 Program Definition bool_component : Component := {|
     comp_UCC :=  bool_UCC ;
     comp_invertor := fun A x =>
-        match x return option ({ nla : (nat*(list A))%type | ucc_ctor_family bool_UCC A nla = Some x }) with 
-        | true => Some (exist (fun y => ucc_ctor_family bool_UCC A y = Some true) (0,([]):(list A)) erefl)
-        | false => Some (exist _ (1,([]):(list A)) erefl)
+        match x return option ({ nla : ((list nat)*(list A))%type | ucc_ctor_family bool_UCC A nla = Some x }) with 
+        | true => Some (exist (fun y => ucc_ctor_family bool_UCC A y = Some true) ([0],([]):(list A)) erefl)
+        | false => Some (exist _ ([1],([]):(list A)) erefl)
         end
         ;
 |}.
 Next Obligation.
-    destruct n,l.
+    destruct l.
+    { inversion H. }
+    destruct n,l,l0; inversion H; subst; clear H.
     {
-        inversion H; subst; clear H.
         exists erefl.
         reflexivity.
     }
-    { inversion H. }
+    destruct n; (simplify_eq /=).
     {
-        destruct n; inversion H; subst.
-        {
-            exists erefl.
-            reflexivity.
-        }
+        exists erefl.
+        reflexivity.
     }
-    {
-        destruct n; inversion H.
-    }
+    destruct n; (simplify_eq /=).
+    destruct n; (simplify_eq /=).
+    destruct n; (simplify_eq /=).
 Qed.
 Fail Next Obligation.
 
@@ -187,12 +195,112 @@ Section paircomb.
                     (comp_UCC C1)
                     (comp_UCC C2)
                 ;
+            
+            ucc_functor_monotone :=
+                paircomb_ucf_UnifiedCarrierFunctor_monotone
+                    (comp_UCC C1)
+                    (comp_UCC C2)
+                ;
+            
+            ucc_ctor_family :=
+                fun A nla =>
+                match nla with
+                | (0::ns, la) => @fmap option _ _ _ inl (@ucc_ctor_family (comp_UCC C1) A (ns,la))
+                | (1::ns, la) => @fmap option _ _ _ inr (@ucc_ctor_family (comp_UCC C2) A (ns,la))
+                | _ => None
+                end
+                ;
+
         |};
 
+        comp_invertor := fun A x =>
+            match x with 
+            | inl y =>
+                let inv := (@comp_invertor C1 A y) in
+                @fmap option _ _ _ (fun tmp => exist _ (0::((proj1_sig tmp).1), (proj1_sig tmp).2) _) inv
+            | inr y => @fmap option _ _ _ (fun tmp => exist _ (1::((proj1_sig tmp).1), (proj1_sig tmp).2) _) (@comp_invertor C2 A y)
+            end
+            ;
     |}.
-    Next Obligation. Admitted.
-    Next Obligation. Admitted.
-    Next Obligation. Admitted.
+    Next Obligation.
+        (* Injectivity *)
+        (repeat case_match); simplify_eq/=; try reflexivity.
+        {
+            rewrite fmap_Some in H.
+            rewrite fmap_Some in H0.
+            destruct H as [a [Ha1 Ha2]].
+            destruct H0 as [b [Hb1 Hb2]].
+            rewrite Ha2 in Hb2. inversion Hb2; subst; clear Hb2.
+            pose proof (ucc_ctor_family_inj (comp_UCC C1) A (l4,l2) (l3, l0) b Ha1 Hb1).
+            simplify_eq/=. reflexivity.
+        }
+        {
+            rewrite fmap_Some in H.
+            rewrite fmap_Some in H0.
+            destruct H as [a [Ha1 Ha2]].
+            destruct H0 as [b [Hb1 Hb2]].
+            rewrite Ha2 in Hb2. inversion Hb2; subst; clear Hb2.
+        }
+        {
+            rewrite fmap_Some in H.
+            rewrite fmap_Some in H0.
+            destruct H as [a [Ha1 Ha2]].
+            destruct H0 as [b [Hb1 Hb2]].
+            rewrite Ha2 in Hb2. inversion Hb2; subst; clear Hb2.
+        }
+        {
+            rewrite fmap_Some in H.
+            rewrite fmap_Some in H0.
+            destruct H as [a [Ha1 Ha2]].
+            destruct H0 as [b [Hb1 Hb2]].
+            rewrite Ha2 in Hb2. inversion Hb2; subst; clear Hb2.
+            pose proof (ucc_ctor_family_inj (comp_UCC C2) A (l4,l2) (l3, l0) b Ha1 Hb1).
+            simplify_eq/=. reflexivity.
+        }
+    Qed.
+    Next Obligation.
+        rewrite H. reflexivity.
+    Defined.
+    Next Obligation.
+        rewrite H. reflexivity.
+    Defined.
+    Next Obligation.
+        unfold paircomb_ucf_UnifiedCarrierFunctor in *.
+        destruct x.
+        {
+            destruct l.
+            { inversion H. }
+            destruct n.
+            {
+                exists H.
+                unfold fmap,option_fmap,option_map.
+                destruct (comp_invertor C1 A u) eqn:Heq.
+                {
+                    destruct s. simpl.
+                    destruct x. simpl in *.
+                    pose proof ( H' := H).
+                    rewrite fmap_Some in H'.
+                    destruct H' as [y [Hy1 Hy2]].
+                    inversion Hy2; subst; clear Hy2.
+                    pose proof (Htmp := ucc_ctor_family_inj (comp_UCC C1) A (l1,l2) (l, l0) y e Hy1).
+                    simplify_eq/=.
+                    f_equal.
+                    (* TODO use proof_irrelevance. *)
+                }
+                {
+
+                }
+            }
+        }
+        exists H.
+        destruct x.
+        Check (comp_invertor x).
+        destruct ln in H.
+        Search fst snd pair.
+        revert H.
+        destruct nla as [ln la].
+        simpl in H.
+    Admitted.
 
 End paircomb.
 
