@@ -27,7 +27,7 @@ Definition UnifiedCarrierCtorFamily
 
 Definition is_monotone (F : UnifiedCarrierFunctor)
     : Type
-:= forall x, (x -> F x)
+:= forall x y, (x -> y) -> (F x -> F x)
 .
 
 Record UnifiedCarrierComponent := {
@@ -74,7 +74,6 @@ Record Component := {
 Section constant.
     Context
         (UCI : UnifiedCarrierInfo)
-        (inh_UCI : Inhabited UCI)
     .
 
     Definition constant_UnifiedCarrierFunctor : UnifiedCarrierFunctor
@@ -84,9 +83,8 @@ Section constant.
     Lemma constant_UnifiedCarrierFunctor_monotone : is_monotone constant_UnifiedCarrierFunctor.
     Proof.
         unfold is_monotone,constant_UnifiedCarrierFunctor,UnifiedCarrierInfo in *.
-        intros T x.
-        destruct inh_UCI as [inhabitant].
-        exact inhabitant.
+        intros T1 T2 f x.
+        exact x.
     Qed.
 
     (* TODO *)
@@ -103,7 +101,7 @@ Definition bool_UCC : UnifiedCarrierComponent := {|
         := constant_UnifiedCarrierFunctor bool ;
 
     ucc_functor_monotone
-        := constant_UnifiedCarrierFunctor_monotone bool _ ;
+        := constant_UnifiedCarrierFunctor_monotone bool ;
 
     ucc_ctor_family
         := fun A nla =>
@@ -160,11 +158,19 @@ Section paircomb_ucf.
         assert (M1 := ucc_functor_monotone F1).
         assert (M2 := ucc_functor_monotone F2).
         unfold is_monotone, paircomb_ucf_UnifiedCarrierFunctor in *.
-        intros T x.
-        specialize (M1 T x).
-        specialize (M2 T x).
-        (* This is highly suspicious. Our definition of monotonicity is probably wrong. *)
-        left. assumption.
+        intros T1 T2 f.
+        specialize (M1 T1 T2 f).
+        specialize (M2 T1 T2 f).
+        intros H.
+        destruct H as [H|H].
+        {
+            specialize (M1 H).
+            left. exact M1.
+        }
+        {
+            specialize (M2 H).
+            right. exact M2.
+        }
     Qed.
 
 End paircomb_ucf.
@@ -184,7 +190,6 @@ Section paircomb.
         |};
 
     |}.
-    Next Obligation. Admitted.
     Next Obligation. Admitted.
     Next Obligation. Admitted.
     Next Obligation. Admitted.
