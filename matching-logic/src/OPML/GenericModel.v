@@ -145,30 +145,49 @@ Next Obligation.
 Qed.
 Fail Next Obligation.
 
+Section paircomb_ucf.
+    Context
+        (F1 F2 : UnifiedCarrierComponent)
+    .
+
+    Definition paircomb_ucf_UnifiedCarrierFunctor : UnifiedCarrierFunctor
+    :=
+        fun A => ((ucc_functor F1 A)+(ucc_functor F2 A))%type
+    .
+
+    Lemma paircomb_ucf_UnifiedCarrierFunctor_monotone : is_monotone paircomb_ucf_UnifiedCarrierFunctor.
+    Proof.
+        assert (M1 := ucc_functor_monotone F1).
+        assert (M2 := ucc_functor_monotone F2).
+        unfold is_monotone, paircomb_ucf_UnifiedCarrierFunctor in *.
+        intros T x.
+        specialize (M1 T x).
+        specialize (M2 T x).
+        (* This is highly suspicious. Our definition of monotonicity is probably wrong. *)
+        left. assumption.
+    Qed.
+
+End paircomb_ucf.
+
 Section paircomb.
     Context
-        (F1 F2 : UnifiedCarrierFunctor)
+        (C1 C2 : Component)
     .
 
-    Definition paircomb_UnifiedCarrierFunctor : UnifiedCarrierFunctor
-    := fun A => ((F1 A)+(F2 A))%type
-    .
+    Program Definition paircomb : Component := {|
+        comp_UCC := {|
+            ucc_functor :=
+                paircomb_ucf_UnifiedCarrierFunctor
+                    (comp_UCC C1)
+                    (comp_UCC C2)
+                ;
+        |};
 
-    Definition paircomb_type_witness (T : Type) : Type :=
-        (({A : Type | T = F1 A}) + ({A : Type | T = F2 A}))%type
-    .
-
-    Definition paircomb_inversion
-        {A : Type}
-        (x : paircomb_UnifiedCarrierFunctor A)
-        (T : Type)
-        (wit : paircomb_type_witness T)
-    :=
-    match wit with
-    | inl (exist _ A pf) => 0
-    | inr (exist _ A pf) => 0
-    end
-    .
+    |}.
+    Next Obligation. Admitted.
+    Next Obligation. Admitted.
+    Next Obligation. Admitted.
+    Next Obligation. Admitted.
 
 End paircomb.
 
@@ -192,9 +211,11 @@ Section combine.
         (l : list Component)
     .
 
+    (*
     Definition combine : Component := {|
         comp_UCC := 
     |}.
+    *)
 
 End combine.
 
@@ -212,6 +233,7 @@ Section with_signature.
             propset UCI
     .
 
+    (*
     Context
         (CF : CarrierFunctor)
         (cfi : CarrierFunctorInvertor)
@@ -231,6 +253,7 @@ Section with_signature.
         end
     ).
 
+    *)
 End with_signature.
 (*
 (*
@@ -252,11 +275,4 @@ Definition proj_carrier (MF : ModelFunctor) : CarrierFunctor
     fun A => (MF A).1
 .
 *)
-Section mybool.
-    Definition F : UnifiedCarrierFunctor := fun _ => bool.
-    Definition interpretation_of_true : bool := true.
-
-
-
-End mybool.
 
