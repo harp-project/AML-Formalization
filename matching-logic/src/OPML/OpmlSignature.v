@@ -229,3 +229,5 @@ Next Obligation.
   destruct s; apply _.
 Qed.
 Fail Next Obligation.
+
+(* TODO morphism from Σ to opml_signature_extend Σ X *)
