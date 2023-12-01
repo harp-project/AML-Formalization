@@ -152,6 +152,27 @@ Next Obligation.
 Qed.
 Fail Next Obligation.
 
+Program Definition empty_component : Component := {|
+    comp_UCC := {|
+        ucc_functor
+            := constant_UnifiedCarrierFunctor Empty_set ;
+
+        ucc_functor_monotone
+            := constant_UnifiedCarrierFunctor_monotone Empty_set ;
+        
+        ucc_ctor_family
+            := fun A nla => None ;
+    |};
+
+    comp_invertor :=
+        fun A x => match x with end
+        ;
+    
+    comp_invertor_complete
+        := _;
+|}.
+Fail Next Obligation.
+
 Section paircomb_ucf.
     Context
         (F1 F2 : UnifiedCarrierComponent)
