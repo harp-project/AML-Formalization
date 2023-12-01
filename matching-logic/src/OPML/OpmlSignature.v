@@ -47,4 +47,16 @@ Class OPMLSignature := {
   opml_symbols :: OPMLSymbols;
 }.
 
-(* Later we will define signature morphisms in some file *)
+Record OPMLSignatureMorphism (Σ1 Σ2 : OPMLSignature) := {
+  osm_sorts : @opml_sort (@opml_sorts Σ1) -> @opml_sort (@opml_sorts Σ2) ;
+  
+  osm_evars : forall (s : @opml_sort (@opml_sorts Σ1)),
+    @opml_evar (@opml_sorts Σ1) (@opml_variables Σ1) s ->
+    @opml_evar (@opml_sorts Σ2) (@opml_variables Σ2) (osm_sorts s);
+  
+  osm_svars : forall (s : @opml_sort (@opml_sorts Σ1)),
+    @opml_svar (@opml_sorts Σ1) (@opml_variables Σ1) s ->
+    @opml_svar (@opml_sorts Σ2) (@opml_variables Σ2) (osm_sorts s);
+}.
+
+

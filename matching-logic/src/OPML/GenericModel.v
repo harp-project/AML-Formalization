@@ -59,7 +59,16 @@ Definition CompInvertorT
         option ({ nla : ((list nat)*(list A))%type | ucc_ctor_family UCC A nla = Some x })
 .
 
-Record Component := {
+Definition CompSortedCarrierT
+    {Σ : OPMLSignature}
+    (s : opml_sort)
+    (UCC : UnifiedCarrierComponent)
+    (invertor : CompInvertorT UCC)
+:=
+    forall (A : Type) (x : ucc_functor UCC A), Prop
+.
+
+Record Component {Σ : OPMLSignature} := {
     comp_UCC
         : UnifiedCarrierComponent ;
 
@@ -75,6 +84,11 @@ Record Component := {
             exists pf,
                 comp_invertor A x = Some (exist _ nla pf)
         ;
+        
+    (*
+    comp_sorted_carrier
+        : forall s, CompSortedCarrierT s comp_UCC comp_invertor
+        ; *)
 }.
 
 
@@ -124,7 +138,7 @@ Next Obligation.
     (repeat case_match); simplify_eq/=; reflexivity.
 Qed.
 
-Program Definition bool_component : Component := {|
+Program Definition bool_component {Σ : OPMLSignature} : Component := {|
     comp_UCC :=  bool_UCC ;
     comp_invertor := fun A x =>
         match x return option ({ nla : ((list nat)*(list A))%type | ucc_ctor_family bool_UCC A nla = Some x }) with 
@@ -132,6 +146,13 @@ Program Definition bool_component : Component := {|
         | false => Some (exist _ ([1],([]):(list A)) erefl)
         end
         ;
+    comp_invertor_complete := _ ;
+
+    (*
+    comp_sorted_carrier := fun s A x => True
+        (* TODO we need to query the sort, whether it belongs to the Bool subsignature *)
+
+        ; *)
 |}.
 Next Obligation.
     destruct l.
@@ -152,7 +173,7 @@ Next Obligation.
 Qed.
 Fail Next Obligation.
 
-Program Definition empty_component : Component := {|
+Program Definition empty_component {Σ : OPMLSignature} : Component := {|
     comp_UCC := {|
         ucc_functor
             := constant_UnifiedCarrierFunctor Empty_set ;
@@ -207,10 +228,11 @@ End paircomb_ucf.
 
 Section paircomb.
     Context
+        {Σ : OPMLSignature}
         (C1 C2 : Component)
     .
 
-    Program Definition paircomb : Component := {|
+    Program Definition paircomb  : Component := {|
         comp_UCC := {|
             ucc_functor :=
                 paircomb_ucf_UnifiedCarrierFunctor
@@ -238,9 +260,9 @@ Section paircomb.
         comp_invertor := fun A x =>
             match x with 
             | inl y =>
-                let inv := (@comp_invertor C1 A y) in
+                let inv := (@comp_invertor Σ C1 A y) in
                 @fmap option _ _ _ (fun tmp => exist _ (0::((proj1_sig tmp).1), (proj1_sig tmp).2) _) inv
-            | inr y => @fmap option _ _ _ (fun tmp => exist _ (1::((proj1_sig tmp).1), (proj1_sig tmp).2) _) (@comp_invertor C2 A y)
+            | inr y => @fmap option _ _ _ (fun tmp => exist _ (1::((proj1_sig tmp).1), (proj1_sig tmp).2) _) (@comp_invertor Σ C2 A y)
             end
             ;
     |}.
@@ -405,6 +427,7 @@ End paircomb.
 
 Section combine.
     Context
+        {Σ : OPMLSignature}
         (l : list Component)
     .
 
