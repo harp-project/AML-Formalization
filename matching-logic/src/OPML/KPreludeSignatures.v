@@ -51,9 +51,11 @@ Module bool_syntax.
     | SortBool
     .
 
+    #[global]
     Instance Sorts_eqdec : EqDecision Sorts_t.
     Proof. solve_decision. Defined.
 
+    #[global]
     Program Instance Sorts_finite : Finite Sorts_t := {|
         enum := [SortBool] ;
     |}.
@@ -72,9 +74,11 @@ Module bool_syntax.
     | bfalse
     .
 
+    #[global]
     Instance Symbols_t_eqdec : EqDecision Symbols_t.
     Proof. solve_decision. Defined.
 
+    #[global]
     Program Instance Symbols_t_finite : Finite Symbols_t := {|
         enum := [btrue;bfalse]
     |}.
@@ -131,9 +135,11 @@ Module bool_common.
     | notEqualsBool
     .
 
+    #[global]
     Instance Symbols_t_eqdec : EqDecision Symbols_t.
     Proof. solve_decision. Defined.
 
+    #[global]
     Program Instance Symbols_t_finite : Finite Symbols_t := {|
         enum := [notBool;andBool;andThenBool;xorBool;orBool;orElseBool;impliesBool;equalsBool;notEqualsBool]
     |}.
@@ -161,7 +167,7 @@ Module bool_common.
         ose_new_sym_eqdec := _ ;
         ose_new_sym_countable := _ ;
         ose_new_arg_sorts := fun s =>
-            match s with
+            match s return list (Empty_set + bool_syntax.Sorts_t) with
             | notBool => [inr bool_syntax.SortBool]
             | andBool => [inr bool_syntax.SortBool;inr bool_syntax.SortBool]
             | andThenBool => [inr bool_syntax.SortBool;inr bool_syntax.SortBool]
