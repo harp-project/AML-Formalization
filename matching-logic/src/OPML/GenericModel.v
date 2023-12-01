@@ -8,6 +8,7 @@ From Equations Require Import Equations.
 (* Set Equations Transparent. *)
 
 Require Import Coq.Program.Equality. (* Dependent destruction *)
+Require Import Coq.Logic.Classical_Prop. (* Proof irrelevance *)
 
 From MatchingLogic.OPML Require Import
     OpmlSignature
@@ -285,22 +286,99 @@ Section paircomb.
                     pose proof (Htmp := ucc_ctor_family_inj (comp_UCC C1) A (l1,l2) (l, l0) y e Hy1).
                     simplify_eq/=.
                     f_equal.
-                    (* TODO use proof_irrelevance. *)
+                    
+                    lazymatch goal with
+                    | [|- (_ ↾ ?pf1) = ( _ ↾ ?pf2)] => assert (Hpi: pf1 = pf2) by (apply proof_irrelevance)
+                    end.
+                    rewrite Hpi.
+                    reflexivity.
                 }
                 {
-
+                    exfalso.
+                    rewrite fmap_Some in H.
+                    destruct H as [y [Hy1 Hy2]].
+                    inversion Hy2; subst; clear Hy2.
+                    apply (comp_invertor_complete C1 A (l,l0)) in Hy1.
+                    destruct Hy1 as [pf Hpf].
+                    simplify_eq/=.
+                }
+            }
+            {
+                exists H.
+                destruct n.
+                {
+                    pose proof (H' := H).
+                    rewrite fmap_Some in H'.
+                    destruct H' as [x [H1x H2x]].
+                    inversion H2x.
+                }
+                {
+                    inversion H.
                 }
             }
         }
-        exists H.
-        destruct x.
-        Check (comp_invertor x).
-        destruct ln in H.
-        Search fst snd pair.
-        revert H.
-        destruct nla as [ln la].
-        simpl in H.
-    Admitted.
+        {
+            destruct l.
+            { inversion H. }
+            destruct n.
+            {
+                exists H.
+                unfold fmap,option_fmap,option_map.
+                destruct (comp_invertor C2 A u) eqn:Heq.
+                {
+                    destruct s. simpl.
+                    destruct x. simpl in *.
+                    pose proof ( H' := H).
+                    rewrite fmap_Some in H'.
+                    destruct H' as [y [Hy1 Hy2]].
+                    inversion Hy2.
+                }
+                {
+                    exfalso.
+                    rewrite fmap_Some in H.
+                    destruct H as [y [Hy1 Hy2]].
+                    inversion Hy2; subst; clear Hy2.
+                }
+            }
+            {
+                exists H.
+                destruct n.
+                {
+                    pose proof (H' := H).
+                    rewrite fmap_Some in H'.
+                    destruct H' as [x [H1x H2x]].
+                    simplify_eq/=.
+                    simpl.
+                    unfold fmap,option_fmap,option_map.
+                    case_match.
+                    {
+                        destruct s as [y pfy].
+                        simpl.
+                        pose proof (Htmp := ucc_ctor_family_inj (comp_UCC C2) A (l, l0) y x H1x pfy).
+                        subst y. simpl.
+                        lazymatch goal with
+                        | [|- Some (_ ↾ ?pf1) = Some ( _ ↾ ?pf2)] => assert (Hpi: pf1 = pf2) by (apply proof_irrelevance)
+                        end.
+                        rewrite Hpi.
+                        reflexivity.
+                    }
+                    {
+                        exfalso.
+                        pose proof (H' := H).
+                        rewrite fmap_Some in H'.
+                        destruct H' as [y [H1y H2y]].
+                        inversion H2y; subst; clear H2y.
+                        apply (comp_invertor_complete C2 A (l,l0)) in H1x.
+                        destruct H1x as [pf Hpf].
+                        simplify_eq/=.
+                    }
+                }
+                {
+                    inversion H.
+                }
+            }
+        }
+    Qed.
 
 End paircomb.
 
