@@ -403,31 +403,12 @@ Section paircomb.
 
 End paircomb.
 
-Section combine_ucf.
-    Context
-        (l : list (UnifiedCarrierFunctor))
-        (pf : forall (F : UnifiedCarrierFunctor), F ∈ l -> is_monotone F)
-    .
-
-    Definition combine_ucf : UnifiedCarrierFunctor
-    := fun A =>
-            let l' := (fun F => F A) <$> l in
-        foldr sum Empty_set l'
-    .
-
-End combine_ucf.
-
 Section combine.
-
     Context
         (l : list Component)
     .
 
-    (*
-    Definition combine : Component := {|
-        comp_UCC := 
-    |}.
-    *)
+    Definition combine : Component := foldr paircomb empty_component l.
 
 End combine.
 
