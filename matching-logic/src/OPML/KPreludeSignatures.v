@@ -28,8 +28,24 @@ Proof.
     }
 Qed.
 
+Definition Identity_relation (A : Type) : relation A := fun x y => x = y.
 
-Module bool.
+#[global]
+Instance Identity_relation_partial_order (A : Type) : PartialOrder (Identity_relation A).
+Proof.
+    repeat split.
+    {
+        intros x y z Hxy Hyz.
+        inversion Hxy; inversion Hyz; subst; assumption.
+    }
+    {
+        intros x y Hxy Hyx.
+        inversion Hxy; inversion Hyx; subst; assumption.
+    }
+Qed.
+
+
+Module bool_syntax.
 
     Inductive Sorts_t : Set :=
     | SortBool
@@ -99,7 +115,79 @@ Module bool.
         opml_symbols := Symbols ;
     |}.
 
-End bool.
+End bool_syntax.
 
+Module bool_common.
 
+    Inductive Symbols_t : Set :=
+    | notBool
+    | andBool
+    | andThenBool
+    | xorBool
+    | orBool
+    | orElseBool
+    | impliesBool
+    | equalsBool
+    | notEqualsBool
+    .
+
+    Instance Symbols_t_eqdec : EqDecision Symbols_t.
+    Proof. solve_decision. Defined.
+
+    Program Instance Symbols_t_finite : Finite Symbols_t := {|
+        enum := [notBool;andBool;andThenBool;xorBool;orBool;orElseBool;impliesBool;equalsBool;notEqualsBool]
+    |}.
+    Next Obligation. compute_done. Qed.
+    Next Obligation. destruct x; compute_done. Qed.
+    Fail Next Obligation.
+
+    Definition extension_of_bool
+        : @OPMLSignatureExtension
+            (@opml_sorts bool_syntax.Σ)
+            (@opml_variables bool_syntax.Σ)
+    := {|
+        ose_new_sort := Empty_set ;
+        ose_new_sort_eqdec := _ ;
+        ose_new_sort_countable := _ ;
+        ose_new_subsort := Identity_relation Empty_set ;
+        ose_new_subsort_po := _ ;
+        ose_new_evar := fun _ => string ;
+        ose_new_evar_eqdec := fun _ => _ ;
+        ose_new_evar_countable := fun _ => _ ;
+        ose_new_svar := fun _ => string ;
+        ose_new_svar_eqdec := fun _ => _ ;
+        ose_new_svar_countable := fun _ => _ ;
+        ose_new_symbol := Symbols_t ;
+        ose_new_sym_eqdec := _ ;
+        ose_new_sym_countable := _ ;
+        ose_new_arg_sorts := fun s =>
+            match s with
+            | notBool => [inr bool_syntax.SortBool]
+            | andBool => [inr bool_syntax.SortBool;inr bool_syntax.SortBool]
+            | andThenBool => [inr bool_syntax.SortBool;inr bool_syntax.SortBool]
+            | xorBool => [inr bool_syntax.SortBool;inr bool_syntax.SortBool]
+            | orBool => [inr bool_syntax.SortBool;inr bool_syntax.SortBool]
+            | orElseBool => [inr bool_syntax.SortBool;inr bool_syntax.SortBool]
+            | impliesBool => [inr bool_syntax.SortBool;inr bool_syntax.SortBool]
+            | equalsBool => [inr bool_syntax.SortBool;inr bool_syntax.SortBool]
+            | notEqualsBool => [inr bool_syntax.SortBool;inr bool_syntax.SortBool]
+            end;
+        ose_new_ret_sort := fun s =>
+            match s with
+            | notBool => inr bool_syntax.SortBool
+            | andBool => inr bool_syntax.SortBool
+            | andThenBool => inr bool_syntax.SortBool
+            | xorBool => inr bool_syntax.SortBool
+            | orBool => inr bool_syntax.SortBool
+            | orElseBool => inr bool_syntax.SortBool
+            | impliesBool => inr bool_syntax.SortBool
+            | equalsBool => inr bool_syntax.SortBool
+            | notEqualsBool => inr bool_syntax.SortBool
+            end;
+    |}.
+
+    Definition Σ : OPMLSignature := opml_signature_extend bool_syntax.Σ extension_of_bool.
+
+    (* TODO add a morphism from bool_syntax.Σ to Σ (when we have the general construction for them) *)
+End bool_common.
 
