@@ -231,3 +231,18 @@ Qed.
 Fail Next Obligation.
 
 (* TODO morphism from Σ to opml_signature_extend Σ X *)
+
+Definition opml_signature_extend_morphism
+  (Σ : OPMLSignature)
+  (X : OPMLSignatureExtension)
+  : OPMLSignatureMorphism Σ (opml_signature_extend Σ X)
+:= {|
+  osm_sorts s := (inr s):(@opml_sort (@opml_sorts ((opml_signature_extend Σ X))));
+  osm_evars := 
+    let Σ' := (opml_signature_extend Σ X) in
+    forall (s : @opml_sort (@opml_sorts Σ)),
+    fun (x : @opml_evar (@opml_sorts Σ) (@opml_variables Σ) s)
+      => (inr x):(@opml_evar (@opml_sorts Σ') (@opml_variables Σ') (osm_sorts s))
+    ;
+|}
+.
