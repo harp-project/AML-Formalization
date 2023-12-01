@@ -188,6 +188,9 @@ Module bool_common.
 
     Definition Σ : OPMLSignature := opml_signature_extend bool_syntax.Σ extension_of_bool.
 
-    (* TODO add a morphism from bool_syntax.Σ to Σ (when we have the general construction for them) *)
+    Definition bool_syntax_to_this : OPMLSignatureMorphism bool_syntax.Σ Σ
+        := opml_signature_extend_morphism bool_syntax.Σ extension_of_bool
+    .
+
 End bool_common.
 
