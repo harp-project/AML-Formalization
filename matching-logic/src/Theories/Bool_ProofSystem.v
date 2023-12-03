@@ -82,6 +82,7 @@ Open Scope list_scope.
     }
   Defined.
 
+
   Lemma functional_pattern_defined :
     forall Γ φ, Definedness_Syntax.theory ⊆ Γ -> well_formed φ ->
        Γ ⊢ (ex , (φ =ml b0)) ---> ⌈ φ ⌉.
@@ -138,6 +139,7 @@ Open Scope list_scope.
       clear hasserted. mlApplyMeta functional_pattern_defined; auto.
       mlExactMeta Func2.
   Defined.
+
 
   Theorem double_neg : forall Γ , theory ⊆ Γ ->
                         Γ ⊢ all mlBool,   (!b !b b0) =ml b0.
@@ -231,45 +233,47 @@ Open Scope list_scope.
     }
   Qed.
 
-  
+
   Theorem true_andBool : forall Γ , theory ⊆ Γ ->
-                        Γ ⊢ all mlBool,  b0 &&ml mlTrue =ml b0. 
+                          Γ ⊢ all mlBool,  b0 &&ml mlTrue =ml b0. 
   Proof.
-  intros.
-  toMLGoal.
-  wf_auto2.
-  mlIntroAll x.
-  cbn. fold mlBool.
-  unfold theory in H.
-  pose proof use_bool_axiom AxDefAndRightTrue Γ H.
-  simpl in H0. mlAdd H0.
-  mlSpecialize "0" with x. mlSimpl. cbn. fold mlBool.
-  mlAssumption.
+    intros.
+    toMLGoal.
+    wf_auto2.
+    mlIntroAll x.
+    cbn. fold mlBool.
+    unfold theory in H.
+    pose proof use_bool_axiom AxDefAndRightTrue Γ H.
+    simpl in H0. mlAdd H0.
+    mlSpecialize "0" with x. mlSimpl. cbn. fold mlBool.
+    mlAssumption.
   Qed.
+  
   
   Theorem false_andBool : forall Γ , theory ⊆ Γ ->
-                        Γ ⊢ all mlBool,  b0 &&ml mlFalse =ml mlFalse.
+                           Γ ⊢ all mlBool,  b0 &&ml mlFalse =ml mlFalse.
   Proof.
+    intros.
+    toMLGoal.
+    wf_auto2.
+    mlIntroAll x.
+    cbn. fold mlBool.
+    unfold theory in H.
+    pose proof use_bool_axiom AxDefAndRightFalse Γ H.
+    simpl in H0. mlAdd H0.
+    mlSpecialize "0" with x. mlSimpl. cbn. fold mlBool. 
+    mlAssumption.
+  Qed.
+  
+  
+  Theorem comm_andBool : forall Γ , theory ⊆ Γ ->
+                          Γ ⊢ all mlBool, all mlBool, b0 &&ml b1 =ml b1 &&ml b0.
+ Proof.
   intros.
   toMLGoal.
   wf_auto2.
   mlIntroAll x.
-  cbn. fold mlBool.
-  unfold theory in H.
-  pose proof use_bool_axiom AxDefAndRightFalse Γ H.
-  simpl in H0. mlAdd H0.
-  mlSpecialize "0" with x. mlSimpl. cbn. fold mlBool. 
-  mlAssumption.
-  Qed.
-  
-  Theorem comm_andBool : forall Γ , theory ⊆ Γ ->
-                        Γ ⊢ all mlBool, all mlBool, b0 &&ml b1 =ml b1 &&ml b0.
- Proof.
- intros.
- toMLGoal.
- wf_auto2.
- mlIntroAll x.
- mlSortedSimpl.
+  mlSortedSimpl.
   mlSimpl.
   cbn. fold mlBool.
   unfold theory in H.
@@ -299,8 +303,6 @@ Open Scope list_scope.
         mlRewriteBy "H" at 1.
         mlRewriteBy "H" at 1.
         mlClear "1";mlClear "ind"; mlClear "H".
-        (* remember (evar_fresh [x]) as y.
-        mlIntroAllManual y. *)
         mlIntroAll y.
         cbn. fold mlBool.
         mlAdd H0 as "ind".
@@ -440,7 +442,7 @@ Open Scope list_scope.
                   mlAssumption.
                 }
                 { set_solver. }
-              }
+            }
             mlRewriteBy "P" at 1.
             mlApply "H1".
             mlRewriteBy "ind" at 1.
@@ -475,34 +477,34 @@ Open Scope list_scope.
   { set_solver. }
  Qed.
  
-  (* using new notation for andThen   *)
+ 
   Theorem true_andThenBool : forall Γ , theory ⊆ Γ ->
-                        Γ ⊢ all mlBool,  b0 andThen mlTrue =ml b0. 
+                              Γ ⊢ all mlBool,  b0 andThen mlTrue =ml b0. 
   Proof.
-  intros.
-  toMLGoal.
-  wf_auto2.
-  mlIntroAll x.
-  cbn. fold mlBool.
-  unfold theory in H.
-  pose proof use_bool_axiom AxDefAndThenRightTrue Γ H.
-  simpl in H0. mlAdd H0. 
-  mlSpecialize "0" with x. mlSimpl. cbn. fold mlBool.
-  mlAssumption. 
+    intros.
+    toMLGoal.
+    wf_auto2.
+    mlIntroAll x.
+    cbn. fold mlBool.
+    unfold theory in H.
+    pose proof use_bool_axiom AxDefAndThenRightTrue Γ H.
+    simpl in H0. mlAdd H0. 
+    mlSpecialize "0" with x. mlSimpl. cbn. fold mlBool.
+    mlAssumption. 
   Qed.
 
 
   Theorem false_andThenBool : forall Γ , theory ⊆ Γ ->
-                        Γ ⊢ all,  b0 andThen mlFalse =ml mlFalse. 
+                               Γ ⊢ all,  b0 andThen mlFalse =ml mlFalse. 
   Proof.
-  intros.
-  toMLGoal.
-  wf_auto2.
-  mlIntroAll x.
-  cbn.
-  pose proof use_bool_axiom AxDefAndThenRightFalse Γ H.
-  simpl in H0. mlAdd H0. mlSpecialize "0" with x. mlSimpl. cbn.
-  mlAssumption. 
+    intros.
+    toMLGoal.
+    wf_auto2.
+    mlIntroAll x.
+    cbn.
+    pose proof use_bool_axiom AxDefAndThenRightFalse Γ H.
+    simpl in H0. mlAdd H0. mlSpecialize "0" with x. mlSimpl. cbn.
+    mlAssumption. 
   Qed.
 
 
