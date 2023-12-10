@@ -357,3 +357,23 @@ Next Obligation.
 Qed.
 Fail Next Obligation.
 
+Program Definition signature_union_morphism_left
+  (Σ1 Σ2 : OPMLSignature)
+  : OPMLSignatureMorphism Σ1 (signature_union Σ1 Σ2)
+:= {|
+    osm_sorts := fun s => (inl s);
+    osm_evars := fun s x => x ;
+    osm_svars := fun s x => x ;
+|}.
+Fail Next Obligation.
+
+Program Definition signature_union_morphism_right
+  (Σ1 Σ2 : OPMLSignature)
+  : OPMLSignatureMorphism Σ2 (signature_union Σ1 Σ2)
+:= {|
+    osm_sorts := fun s => (inr s);
+    osm_evars := fun s x => x ;
+    osm_svars := fun s x => x ;
+|}.
+Fail Next Obligation.
+
