@@ -248,3 +248,112 @@ Definition opml_signature_extend_morphism
   osm_svars := fun (s : Σ_sort) (x : Σ_svar s) => (x):(Σ'_svar (inr s)) ;
 |}
 .
+
+(*
+Definition SignatureFamilyT : Type := forall (I : Type), I -> OPMLSignature.
+
+*)
+
+Program Definition signature_union (Σ1 Σ2 : OPMLSignature) : OPMLSignature := {|
+  opml_sorts := {|
+    opml_sort := ((@opml_sort (@opml_sorts Σ1))+(@opml_sort (@opml_sorts Σ2)))%type ;
+    opml_sort_eqdec := _ ;
+    opml_sort_countable := _ ;
+    opml_subsort := fun s1 s2 =>
+      match s1, s2 with
+      | inl s1', inl s2' => @opml_subsort (@opml_sorts Σ1) s1' s2'
+      | inr s1', inr s2' => @opml_subsort (@opml_sorts Σ2) s1' s2'
+      | _, _ => False
+      end ;
+  |} ;
+  opml_variables := @mkOPMLVariables _
+    (fun s =>
+      match s with
+      | inl s0 => @opml_evar (@opml_sorts Σ1) (@opml_variables Σ1) s0
+      | inr s0 => @opml_evar (@opml_sorts Σ2) (@opml_variables Σ2) s0
+      end
+    )
+    (fun s =>
+      match s with
+      | inl s0 => @opml_svar (@opml_sorts Σ1) (@opml_variables Σ1) s0
+      | inr s0 => @opml_svar (@opml_sorts Σ2) (@opml_variables Σ2) s0
+      end
+    )
+    _
+    _
+    _
+    _
+    _
+    _
+  ;
+  
+  opml_symbols := {|
+    opml_symbol := (((@opml_symbol (@opml_sorts Σ1) (@opml_symbols Σ1)))+(@opml_symbol (@opml_sorts Σ2) (@opml_symbols Σ2)))%type ;
+    opml_sym_eqdec := _ ;
+    opml_sym_countable := _ ;
+    opml_arg_sorts := fun s =>
+      match s with
+      | inl s' =>
+        let l := @opml_arg_sorts (@opml_sorts Σ1) (@opml_symbols Σ1) s' in
+        inl <$> l
+      | inr s' =>
+        let l := @opml_arg_sorts (@opml_sorts Σ2) (@opml_symbols Σ2) s' in
+        inr <$> l
+      end
+    ;
+    opml_ret_sort := fun s =>
+      match s with
+      | inl s' =>
+        let ss := @opml_ret_sort (@opml_sorts Σ1) (@opml_symbols Σ1) s' in
+        inl ss
+      | inr s' =>
+        let ss := @opml_ret_sort (@opml_sorts Σ2) (@opml_symbols Σ2) s' in
+        inr ss
+      end
+    ;
+  |};
+|}.
+Next Obligation.
+  intros.
+  split; intros; try naive_solver.
+Qed.
+Next Obligation.
+  intros.
+  split; intros; try naive_solver.
+Qed.
+Next Obligation.
+  (* subsorting relation is partially ordered *)
+  intros.
+  (repeat split).
+  {
+    intros x. (repeat case_match); simplify_eq/=; apply opml_subsort_po.
+  }
+  {
+    intros x y z Hxy Hyz.
+    (repeat case_match); simplify_eq/=; try contradiction; try (solve [eapply transitivity; eassumption]).
+  }
+  {
+    intros x y Hxy Hyx.
+    (repeat case_match); simplify_eq/=; try contradiction; try (f_equal; apply opml_subsort_po; assumption).
+  }
+Qed.
+Next Obligation.
+  intros. simpl. (repeat case_match); simplify_eq/=; apply _.
+Defined.
+Next Obligation.
+  intros. simpl. (repeat case_match); simplify_eq/=; apply _.
+Qed.
+Next Obligation.
+  intros. simpl. (repeat case_match); simplify_eq/=; apply _.
+Qed.
+Next Obligation.
+  intros. simpl. (repeat case_match); simplify_eq/=; apply _.
+Defined.
+Next Obligation.
+  intros. simpl. (repeat case_match); simplify_eq/=; apply _.
+Qed.
+Next Obligation.
+  intros. simpl. (repeat case_match); simplify_eq/=; apply _.
+Qed.
+Fail Next Obligation.
+
