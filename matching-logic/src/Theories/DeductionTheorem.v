@@ -579,7 +579,7 @@ Lemma pred_and_ctx_and {Σ : Signature} {syntax : Syntax} Γ ctx ϕ ψ:
   well_formed ψ ->
   well_formed (pcPattern ctx) ->
   mu_in_evar_path (pcEvar ctx) (pcPattern ctx) 0 = false ->
-  Γ ⊢ is_predicate_pattern ψ ->
+  Γ ⊢ is_predicate ψ ->
   Γ ⊢ ψ and (emplace ctx ϕ) <---> ψ and (emplace ctx (ψ and ϕ)).
 Proof.
   intros HΓ wfm wfψ wfc Hmf Hp.
@@ -940,7 +940,7 @@ Lemma mu_and_predicate_propagation {Σ : Signature} {syntax : Syntax} Γ ϕ ψ :
   well_formed ψ ->
   (* "Let X be a set variable that does not occur under any µ-binder in ϕ" *)
   bound_svar_is_banned_under_mus ϕ 0 0 ->
-  Γ ⊢ is_predicate_pattern ψ ->
+  Γ ⊢ is_predicate ψ ->
   Γ ⊢ (mu, (ψ and ϕ)) <---> (ψ and (mu, ϕ)).
 Proof.
   intros HΓ wfm wfψ Hbsltϕ1 Hp.

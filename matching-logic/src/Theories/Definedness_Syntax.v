@@ -64,8 +64,10 @@ Section definedness.
   Definition AC_patt_defined : Application_context :=
     @ctx_app_r _ (patt_sym (inj definedness)) box ltac:(auto).
 
-  Definition is_predicate_pattern ψ : Pattern :=
+  Definition is_predicate ψ : Pattern :=
     (patt_equal ψ patt_top) or (patt_equal ψ patt_bott).
+  Definition is_functional φ : Pattern :=
+    (patt_exists (patt_equal φ b0)).
 End definedness.
 
 Module Notations.
