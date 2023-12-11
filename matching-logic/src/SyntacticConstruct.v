@@ -966,8 +966,8 @@ Ltac simpl_sorted_quantification :=
        | |- PatternMorphism _ => tryif typeclasses eauto then idtac else eauto
        | _ => idtac
        end
-      then idtac "Success with" binder
-      else (idtac "No sorted simplification instance for " binder; fail 0)
+      then idtac (* "Success with" binder *)
+      else (idtac (* "No sorted simplification instance for " binder *); fail 0)
     end
   end.
 
@@ -997,7 +997,7 @@ match type of H with
                end
               )
       then idtac
-      else (idtac "No sorted simplification instance for " binder; fail 0 (*backtrack*) )
+      else (idtac (* "No sorted simplification instance for " binder *); fail 0 (*backtrack*) )
     end
   end.
 
