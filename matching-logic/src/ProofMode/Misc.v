@@ -16,6 +16,7 @@ From stdpp Require Import list tactics fin_sets coGset gmap sets.
 From MatchingLogic.Utils Require Import stdpp_ext.
 Import extralibrary.
 From MatchingLogic Require Import Logic
+  ProofSystem
   ProofInfo
   BasicProofSystemLemmas
 .
@@ -400,70 +401,6 @@ Tactic Notation "mlApply" constr(name') :=
 Section FOL_helpers.
 
   Context {Σ : Signature}.
-
-  Lemma Framing_left (Γ : Theory) (ϕ₁ ϕ₂ ψ : Pattern) (i : ProofInfo)
-    (wfψ : well_formed ψ)
-    {pile : ProofInfoLe ((ExGen := ∅, SVSubst := ∅, KT := false, AKT := false)) i}
-    :
-    Γ ⊢i ϕ₁ ---> ϕ₂ using i ->
-    Γ ⊢i ϕ₁ $ ψ ---> ϕ₂ $ ψ using i.
-  Proof.
-    intros [pf Hpf].
-    unshelve (eexists).
-    {
-      apply ProofSystem.Framing_left.
-      { exact wfψ. }
-      exact pf.
-    }
-    {
-      destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf5].
-      constructor; simpl.
-      {
-        assumption.
-      }
-      {
-        assumption.
-      }
-      {
-        assumption.
-      }
-      {
-        assumption.
-      }
-    }
-  Defined.
-
-  Lemma Framing_right (Γ : Theory) (ϕ₁ ϕ₂ ψ : Pattern) (i : ProofInfo)
-    (wfψ : well_formed ψ)
-    {pile : ProofInfoLe ((ExGen := ∅, SVSubst := ∅, KT := false, AKT := false)) i}
-    :
-    Γ ⊢i ϕ₁ ---> ϕ₂ using i ->
-    Γ ⊢i ψ $ ϕ₁ ---> ψ $ ϕ₂ using i.
-  Proof.
-    intros [pf Hpf].
-    unshelve (eexists).
-    {
-      apply ProofSystem.Framing_right.
-      { exact wfψ. }
-      exact pf.
-    }
-    {
-      destruct Hpf as [Hpf1 Hpf2 Hpf3].
-      constructor; simpl.
-      {
-        assumption.
-      }
-      {
-        assumption.
-      }
-      {
-        assumption.
-      }
-      {
-        assumption.
-      }
-    }
-  Defined.
 
   Lemma Prop_bott_left (Γ : Theory) (ϕ : Pattern) :
     well_formed ϕ ->

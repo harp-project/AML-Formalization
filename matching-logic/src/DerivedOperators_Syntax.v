@@ -3,9 +3,9 @@ From Coq Require Import ssreflect ssrfun ssrbool.
 From stdpp Require Import base sets propset.
 From Coq Require Import Logic.Classical_Prop.
 From MatchingLogic.Utils Require Import Lattice stdpp_ext extralibrary.
-From MatchingLogic Require Import Syntax IndexManipulation.
+From MatchingLogic Require Import Pattern IndexManipulation.
 
-Import MatchingLogic.Syntax.Notations.
+Import MatchingLogic.Pattern.Notations.
 Import MatchingLogic.Substitution.Notations.
 
 Section with_signature.
@@ -218,101 +218,6 @@ Qed.
     Lemma svar_quantify_forall n X ϕ :
       (patt_forall ϕ)^{{svar: X ↦ n}} = patt_forall (ϕ^{{svar: X ↦ n}}).
     Proof. simpl. unfold patt_forall. unfold patt_not. reflexivity. Qed.
-
-    (** We define the simplification class instances for the derived operators: *)
-
-    #[global]
-     Program Instance Unary_not : Unary patt_not := {}.
-     Next Obligation.
-       intros A f m φ a.
-       unfold patt_not. repeat rewrite pm_correctness.
-       simpl. reflexivity.
-     Defined.
-     Next Obligation.
-      intros. wf_auto2.
-     Qed.
-     Next Obligation.
-      intros. wf_auto2.
-      Qed.
-    Next Obligation.
-      intros. wf_auto2.
-    Qed.
-     
-    #[global]
-     Program Instance NVNullary_top : Nullary patt_top := {}.
-     Next Obligation.
-       intros A f m φ.
-       unfold patt_top. repeat rewrite pm_correctness.
-       simpl. reflexivity.
-     Defined.
-     Next Obligation.
-      intros. wf_auto2.
-     Qed.
-     Next Obligation.
-      intros. wf_auto2.
-      Qed.
-    Next Obligation.
-      intros. wf_auto2.
-    Qed.
-
-    #[global]
-     Program Instance Binary_or : Binary patt_or := {}.
-     Next Obligation.
-       intros A f m φ1 φ2 a.
-       unfold patt_or. repeat rewrite pm_correctness.
-       simpl. reflexivity.
-     Defined.
-     Next Obligation.
-      intros. wf_auto2.
-     Qed.
-     Next Obligation.
-      intros. wf_auto2.
-      Qed.
-    Next Obligation.
-      intros. wf_auto2.
-    Qed.
-
-    #[global]
-     Program Instance Binary_and : Binary patt_and := {}.
-     Next Obligation.
-       intros A f m φ1 φ2 a.
-       unfold patt_and. repeat rewrite pm_correctness.
-       simpl. reflexivity.
-     Defined.
-     Next Obligation.
-      intros. wf_auto2.
-     Qed.
-     Next Obligation.
-      intros. wf_auto2.
-      Qed.
-    Next Obligation.
-      intros. wf_auto2.
-    Qed.
-
-    #[global]
-     Program Instance Binary_iff : Binary patt_iff := {}.
-     Next Obligation.
-       intros A f m φ1 φ2 a.
-       unfold patt_iff. repeat rewrite pm_correctness.
-       simpl. reflexivity.
-     Defined.
-     Next Obligation.
-      intros. wf_auto2.
-     Qed.
-     Next Obligation.
-      intros. wf_auto2.
-      Qed.
-    Next Obligation.
-      intros. wf_auto2.
-    Qed.
-
-    #[global]
-     Program Instance EBinder_forall : EBinder patt_forall := {}.
-     Next Obligation.
-       intros A f m φ a.
-       unfold patt_not. repeat rewrite pm_correctness.
-       simpl. reflexivity.
-     Defined.
 
   End with_signature.
 
