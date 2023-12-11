@@ -3,6 +3,7 @@ From stdpp Require Export list fin_sets.
 
 From MatchingLogic Require Export
   Logic
+  ProofSystem
   ProofInfo
   BasicProofSystemLemmas
   FreshnessManager.

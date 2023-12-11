@@ -9,6 +9,7 @@ From Equations Require Import Equations.
 Require Import Coq.Program.Tactics.
 
 From MatchingLogic Require Import
+    ProofSystem
     Utils.extralibrary
     Logic
     DerivedOperators_Syntax
@@ -153,7 +154,7 @@ Proof.
   (*mlExtractWF wfl wfgp.*)
   unfold of_MLGoal in *. simpl in *.
   intros wfg' wfl.
-  pose proof (wfimp := proved_impl_wf _ _ (proj1_sig Hgg')).
+  pose proof (wfimp := ProofSystem.proved_impl_wf _ _ (proj1_sig Hgg')).
   apply well_formed_imp_proj1 in wfimp.
   eapply prf_weaken_conclusion_iter_meta_meta.
   5: apply Hlg.

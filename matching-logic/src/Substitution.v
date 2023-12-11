@@ -166,8 +166,6 @@ End subst.
 
 Module Notations.
 
-  Declare Scope ml_scope.
-  Delimit Scope ml_scope with ml.
   Notation "e ^[ 'evar:' dbi ↦ e' ]" := (bevar_subst e' dbi e) (at level 2, e' at level 200, left associativity,
   format "e ^[ 'evar:' dbi ↦ e' ]" ) : ml_scope.
   Notation "e ^[ 'svar:' dbi ↦ e' ]" := (bsvar_subst e' dbi e) (at level 2, e' at level 200, left associativity,

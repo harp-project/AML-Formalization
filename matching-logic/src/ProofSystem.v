@@ -144,6 +144,21 @@ Section ml_proof_system.
   Lemma cast_proof {Γ} {ϕ} {ψ} (e : ψ = ϕ) : ML_proof_system Γ ϕ -> ML_proof_system Γ ψ.
   Proof. intros H. rewrite <- e in H. exact H. Defined.
 
+  Theorem extend_theory (Γ Γ' : Theory) φ :
+    Γ ⊆ Γ' ->
+    Γ ⊢H φ ->
+    Γ' ⊢H φ.
+  Proof.
+    intros H IH. revert Γ' H. induction IH; intros; try now constructor.
+    * constructor. assumption. set_solver.
+    * eapply Modus_ponens; [apply IHIH1; assumption | apply IHIH2; assumption].
+    * apply Ex_gen; try assumption. now apply IHIH.
+    * apply Framing_left. assumption. now apply IHIH.
+    * apply Framing_right. assumption. now apply IHIH.
+    * apply Svar_subst; try assumption. now apply IHIH.
+    * apply Knaster_tarski; try assumption. now apply IHIH.
+  Defined.
+
 End ml_proof_system.
 
 Module Notations_private.

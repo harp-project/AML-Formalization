@@ -24,7 +24,6 @@ Import extralibrary.
 
 Import MatchingLogic.Logic.Notations.
 Import MatchingLogic.DerivedOperators_Syntax.Notations.
-Import MatchingLogic.Syntax.BoundVarSugar.
 
 Set Default Proof Mode "Classic".
 

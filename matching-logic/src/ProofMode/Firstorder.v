@@ -9,6 +9,7 @@ From Equations Require Import Equations.
 Require Import Coq.Program.Tactics.
 
 From MatchingLogic Require Import
+    ProofSystem
     Syntax
     DerivedOperators_Syntax
     ProofSystem
