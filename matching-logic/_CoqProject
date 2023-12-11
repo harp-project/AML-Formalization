@@ -10,9 +10,11 @@ src/Pattern.v
 src/Substitution.v
 src/Freshness.v
 src/IndexManipulation.v
-src/SyntacticConstruct.v
+src/DerivedOperators_Syntax.v
 src/ApplicationContext.v
 src/PatternContext.v
+
+src/SyntacticConstruct.v
 src/SyntaxLemmas/FreshnessSubstitution.v
 src/SyntaxLemmas/PatternCtxApplicationCtx.v
 src/SyntaxLemmas/FreshnessApplicationCtx.v
@@ -27,7 +29,6 @@ src/Semantics.v
 src/ModelIsomorphism.v
 src/PrePredicate.v
 src/monotonic.v
-src/DerivedOperators_Syntax.v
 src/DerivedOperators_Semantics.v
 
 src/ProofSystem.v

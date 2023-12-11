@@ -1537,6 +1537,302 @@ Defined.
     apply modus_tollens; assumption.
   Defined.
 
+  Lemma Framing_left {Σ : Signature}(Γ : Theory) (ϕ₁ ϕ₂ ψ : Pattern) (i : ProofInfo)
+    (wfψ : well_formed ψ)
+    {pile : ProofInfoLe ((ExGen := ∅, SVSubst := ∅, KT := false, AKT := false)) i}
+    :
+    Γ ⊢i ϕ₁ ---> ϕ₂ using i ->
+    Γ ⊢i ϕ₁ $ ψ ---> ϕ₂ $ ψ using i.
+  Proof.
+    intros [pf Hpf].
+    unshelve (eexists).
+    {
+      apply ProofSystem.Framing_left.
+      { exact wfψ. }
+      exact pf.
+    }
+    {
+      destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf5].
+      constructor; simpl.
+      {
+        assumption.
+      }
+      {
+        assumption.
+      }
+      {
+        assumption.
+      }
+      {
+        assumption.
+      }
+    }
+  Defined.
+
+  Lemma Framing_right {Σ : Signature}(Γ : Theory) (ϕ₁ ϕ₂ ψ : Pattern) (i : ProofInfo)
+    (wfψ : well_formed ψ)
+    {pile : ProofInfoLe ((ExGen := ∅, SVSubst := ∅, KT := false, AKT := false)) i}
+    :
+    Γ ⊢i ϕ₁ ---> ϕ₂ using i ->
+    Γ ⊢i ψ $ ϕ₁ ---> ψ $ ϕ₂ using i.
+  Proof.
+    intros [pf Hpf].
+    unshelve (eexists).
+    {
+      apply ProofSystem.Framing_right.
+      { exact wfψ. }
+      exact pf.
+    }
+    {
+      destruct Hpf as [Hpf1 Hpf2 Hpf3].
+      constructor; simpl.
+      {
+        assumption.
+      }
+      {
+        assumption.
+      }
+      {
+        assumption.
+      }
+      {
+        assumption.
+      }
+    }
+  Defined.
+
+Lemma Knaster_tarski {Σ : Signature}
+  (Γ : Theory) (ϕ ψ : Pattern)  (i : ProofInfo)
+  {pile : ProofInfoLe (
+        {| pi_generalized_evars := ∅;
+           pi_substituted_svars := ∅;
+           pi_uses_kt := true ;
+           pi_uses_advanced_kt := ~~ bound_svar_is_banned_under_mus ϕ 0 0 ; (* TODO depends on ϕ*)
+        |}) i} :
+  well_formed (mu, ϕ) ->
+  Γ ⊢i (instantiate (mu, ϕ) ψ) ---> ψ using i ->
+  Γ ⊢i (mu, ϕ) ---> ψ using i.
+Proof.
+  intros Hfev [pf Hpf].
+  unshelve (eexists).
+  {
+    apply ProofSystem.Knaster_tarski.
+    { exact Hfev. }
+    { exact pf. }
+  }
+  {
+    simpl.
+    constructor; simpl.
+    {
+      destruct Hpf as [Hpf2 Hpf3 Hpf4].
+      apply Hpf2.
+    }
+    {
+      destruct Hpf as [Hpf2 Hpf3 Hpf4].
+      apply Hpf3.
+    }
+    {
+      destruct Hpf as [Hpf2 Hpf3 Hpf4 Hpf5].
+      unfold is_true in Hpf4.
+      rewrite implb_true_iff in Hpf4.
+      destruct i. cbn in *.
+      destruct pile as [Hpile1 [Hpile2 [Hpile3 Hpile4 ] ] ]. cbn in *.
+      exact Hpile3.
+    }
+    {
+      destruct Hpf as [Hpf2 Hpf3 Hpf4 Hpf5].
+      unfold is_true in Hpf4.
+      rewrite implb_true_iff in Hpf4.
+      destruct i. cbn in *.
+      destruct pile as [Hpile1 [Hpile2 [Hpile3 Hpile4 ] ] ]. cbn in *.
+      unfold is_true.
+      rewrite implb_true_iff. intros H1.
+      rewrite andb_true_r.
+      rewrite orb_true_iff in H1.
+      destruct H1 as [H1|H1].
+      {
+        rewrite H1 in Hpile4. simpl in Hpile4.
+        exact Hpile4.
+      }
+      {
+        rewrite H1 in Hpf5. simpl in Hpf5.
+        destruct_and!. assumption.
+      }
+    }
+  }
+Defined.
+
+Lemma Svar_subst {Σ : Signature}
+  (Γ : Theory) (ϕ ψ : Pattern) (X : svar)  (i : ProofInfo)
+  {pile : ProofInfoLe (
+        {| pi_generalized_evars := ∅;
+           pi_substituted_svars := {[X]};
+           pi_uses_kt := false ;
+           pi_uses_advanced_kt := false ;
+        |}) i} :
+  well_formed ψ ->
+  Γ ⊢i ϕ using i ->
+  Γ ⊢i (ϕ^[[svar: X ↦ ψ]]) using i.
+Proof.
+  intros wfψ [pf Hpf].
+  unshelve (eexists).
+  {
+   apply ProofSystem.Svar_subst.
+   { pose proof (Hwf := proved_impl_wf _ _ pf). exact Hwf. }
+   { exact wfψ. }
+   { exact pf. }
+  }
+  {
+    simpl.
+    constructor; simpl.
+    {
+      destruct Hpf as [Hpf2 Hpf3 Hpf4].
+      apply Hpf2.
+    }
+    {
+      destruct Hpf as [Hpf2 Hpf3 Hpf4].
+      pose proof (Hpile := pile_impl_allows_svsubst_X _ _ _ _ pile).
+      clear -Hpile Hpf3.
+      set_solver.
+    }
+    {
+      destruct Hpf as [Hpf2 Hpf3 Hpf4].
+      exact Hpf4.
+    }
+    {
+      destruct Hpf as [Hpf2 Hpf3 Hpf4 Hpf5].
+      exact Hpf5.
+    }
+  }
+Defined.
+
+Lemma Pre_fixp {Σ : Signature}
+  (Γ : Theory) (ϕ : Pattern) :
+  well_formed (patt_mu ϕ) ->
+  Γ ⊢i (instantiate (patt_mu ϕ) (patt_mu ϕ) ---> (patt_mu ϕ))
+  using BasicReasoning.
+Proof.
+  intros wfϕ.
+  unshelve (eexists).
+  {
+    apply ProofSystem.Pre_fixp.
+    { exact wfϕ. }
+  }
+  {
+    simpl.
+    abstract(solve_pim_simple).
+  }
+Defined.
+
+Lemma extend_theory {Σ : Signature} (Γ Γ' : Theory) φ i:
+    Γ ⊆ Γ' ->
+    Γ ⊢i φ using i ->
+    Γ' ⊢i φ using i.
+Proof.
+  intros H H0. destruct H0. revert i p Γ' H. induction x; intros.
+  * unshelve (eexists). constructor; try assumption. set_solver.
+    simpl. constructor; simpl; auto; set_solver.
+  * unshelve (eexists). apply P1; try assumption.
+    simpl. constructor; simpl; auto; set_solver.
+  * unshelve (eexists). apply P2; try assumption.
+    simpl. constructor; simpl; auto; set_solver.
+  * unshelve (eexists). apply P3; try assumption.
+    simpl. constructor; simpl; auto; set_solver.
+  * eapply MP.
+    - apply IHx1. 2: assumption.
+      destruct p. constructor; simpl in *.
+      1-2: set_solver.
+      + rewrite implb_orb_distrib_l in pwi_pf_kt.
+        apply andb_true_iff in pwi_pf_kt. apply pwi_pf_kt.
+      + rewrite implb_orb_distrib_l in pwi_pf_kta.
+        apply andb_true_iff in pwi_pf_kta as [H0 _].
+        rewrite implb_true_iff in H0.
+        apply implb_true_iff. intro X. apply H0 in X as X'.
+        apply kt_unreasonably_implies_somehow in X.
+        destruct_and!. split_and!; assumption.
+    - apply IHx2. 2: assumption.
+      destruct p. constructor; simpl in *.
+      1-2: set_solver.
+      + rewrite implb_orb_distrib_l in pwi_pf_kt.
+        apply andb_true_iff in pwi_pf_kt. apply pwi_pf_kt.
+      + rewrite implb_orb_distrib_l in pwi_pf_kta.
+        apply andb_true_iff in pwi_pf_kta as [_ H0].
+        rewrite implb_true_iff in H0.
+        apply implb_true_iff. intro X. apply H0 in X as X'.
+        apply kt_unreasonably_implies_somehow in X.
+        destruct_and!. split_and!; assumption.
+  * unshelve (eexists). apply Ex_quan; try assumption.
+    simpl. constructor; simpl; auto; set_solver.
+  * apply Ex_gen. all: try assumption.
+    2: apply IHx. 3: assumption.
+    - destruct p; simpl.
+      constructor. 2: constructor. 3: constructor.
+      1-2: set_solver.
+      1-2: reflexivity.
+    - destruct p; simpl.
+      constructor; simpl in *. 1-2: set_solver.
+      1-2: assumption.
+  * unshelve (eexists). apply Prop_bott_left; try assumption.
+    simpl. constructor; simpl; auto; set_solver.
+  * unshelve (eexists). apply Prop_bott_right; try assumption.
+    simpl. constructor; simpl; auto; set_solver.
+  * unshelve (eexists). apply Prop_disj_left; try assumption.
+    simpl. constructor; simpl; auto; set_solver.
+  * unshelve (eexists). apply Prop_disj_right; try assumption.
+    simpl. constructor; simpl; auto; set_solver.
+  * unshelve (eexists). apply Prop_ex_left; try assumption.
+    simpl. constructor; simpl; auto; set_solver.
+  * unshelve (eexists). apply Prop_ex_right; try assumption.
+    simpl. constructor; simpl; auto; set_solver.
+  * apply Framing_left. all: try assumption.
+    2: apply IHx. 3: assumption.
+    - destruct p; simpl.
+      constructor. 2: constructor. 3: constructor.
+      1-2: set_solver.
+      1-2: reflexivity.
+    - destruct p; simpl.
+      constructor; simpl in *. 1-2: set_solver.
+      1-2: assumption.
+  * apply Framing_right. all: try assumption.
+    2: apply IHx. 3: assumption.
+    - destruct p; simpl.
+      constructor. 2: constructor. 3: constructor.
+      1-2: set_solver.
+      1-2: reflexivity.
+    - destruct p; simpl.
+      constructor; simpl in *. 1-2: set_solver.
+      1-2: assumption.
+  * apply Svar_subst. all: try assumption.
+    2: apply IHx. 3: assumption.
+    - destruct p; simpl.
+      constructor. 2: constructor. 3: constructor.
+      1-2: set_solver.
+      1-2: reflexivity.
+    - destruct p; simpl.
+      constructor; simpl in *. 1-2: set_solver.
+      1-2: assumption.
+  * unshelve (eexists). apply Pre_fixp; try assumption.
+    simpl. constructor; simpl; auto; set_solver.
+  * apply Knaster_tarski. all: try assumption.
+    2: apply IHx. 3: assumption.
+    - destruct p; simpl.
+      constructor. 2: constructor. 3: constructor.
+      1-2: set_solver.
+      1-2: cbn in *; try assumption.
+      apply implb_true_iff. rewrite andb_true_r in pwi_pf_kta.
+      intro H0. rewrite H0 in pwi_pf_kta. assumption.
+    - destruct p; simpl.
+      constructor; simpl in *. 1-2: set_solver.
+      + apply implb_true_iff. intro. assumption.
+      + apply implb_true_iff. intros H0. rewrite H0 in pwi_pf_kta.
+        rewrite orb_true_r in pwi_pf_kta. apply kt_unreasonably_implies_somehow in H0.
+        rewrite H0. assumption.
+  * unshelve (eexists). apply Existence; try assumption.
+    simpl. constructor; simpl; auto; set_solver.
+  * unshelve (eexists). apply Singleton_ctx; try assumption.
+    simpl. constructor; simpl; auto; set_solver.
+Defined.
+
 Close Scope string_scope.
 Close Scope list_scope.
 Close Scope ml_scope.

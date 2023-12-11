@@ -45,7 +45,6 @@ Require Import MatchingLogic.Theories.Bool_Syntax.
 
 Import MatchingLogic.Theories.Definedness_Syntax.Notations.
 Import MatchingLogic.Theories.Bool_Syntax.Notations.
-Import BoundVarSugar.
 
 Set Default Proof Mode "Classic".
 

@@ -16,11 +16,14 @@ From stdpp Require Import fin_sets.
 From MatchingLogic
 Require Import
     Pattern
+    DerivedOperators_Syntax
     Substitution
     IndexManipulation
 .
 
 Import MatchingLogic.Substitution.Notations.
+
+Set Default Proof Mode "Classic".
 
 Section with_signature.
   Context {Σ : Signature}.
@@ -671,6 +674,102 @@ Next Obligation.
   intros. simpl. reflexivity.
 Qed.
 
+(** We define the simplification class instances for the derived operators: *)
+
+#[global]
+Program Instance Unary_not : Unary patt_not := {}.
+Next Obligation.
+   intros A f m φ a.
+   unfold patt_not. repeat rewrite pm_correctness.
+   simpl. reflexivity.
+Defined.
+Next Obligation.
+  intros. cbn. btauto.
+Qed.
+Next Obligation.
+  intros. cbn. btauto.
+Qed.
+Next Obligation.
+  intros. cbn. btauto.
+Qed.
+
+
+#[global]
+Program Instance NVNullary_top : Nullary patt_top := {}.
+Next Obligation.
+   intros A f m φ.
+   unfold patt_top. repeat rewrite pm_correctness.
+   simpl. reflexivity.
+Defined.
+Next Obligation.
+  intros. cbn. btauto.
+Qed.
+Next Obligation.
+  intros. cbn. btauto.
+Qed.
+Next Obligation.
+  intros. cbn. btauto.
+Qed.
+
+#[global]
+Program Instance Binary_or : Binary patt_or := {}.
+Next Obligation.
+   intros A f m φ1 φ2 a.
+   unfold patt_or. repeat rewrite pm_correctness.
+   simpl. reflexivity.
+Defined.
+Next Obligation.
+  intros. cbn. btauto.
+Qed.
+Next Obligation.
+  intros. cbn. btauto.
+Qed.
+Next Obligation.
+  intros. cbn. btauto.
+Qed.
+
+#[global]
+Program Instance Binary_and : Binary patt_and := {}.
+Next Obligation.
+   intros A f m φ1 φ2 a.
+   unfold patt_and. repeat rewrite pm_correctness.
+   simpl. reflexivity.
+Defined.
+Next Obligation.
+  intros. cbn. btauto.
+Qed.
+Next Obligation.
+  intros. cbn. btauto.
+Qed.
+Next Obligation.
+  intros. cbn. btauto.
+Qed.
+
+#[global]
+Program Instance Binary_iff : Binary patt_iff := {}.
+Next Obligation.
+   intros A f m φ1 φ2 a.
+   unfold patt_iff. repeat rewrite pm_correctness.
+   simpl. reflexivity.
+Defined.
+Next Obligation.
+  intros. cbn. btauto.
+Qed.
+Next Obligation.
+  intros. cbn. btauto.
+Qed.
+Next Obligation.
+  intros. cbn. btauto.
+Qed.
+
+#[global]
+Program Instance EBinder_forall : EBinder patt_forall := {}.
+Next Obligation.
+   intros A f m φ a.
+   unfold patt_not. repeat rewrite pm_correctness.
+   simpl. reflexivity.
+Defined.
+
 Class SwappableEx {A : Type} (f : A -> Pattern -> Pattern) (g : Pattern -> Pattern)
   (m : PatternMorphism f) :=
 {
@@ -850,17 +949,25 @@ Ltac simpl_sorted_quantification :=
   | |- context G [?f ?arg _ (?binder _ _)] =>
     match type of binder with
     | Pattern -> Pattern -> Pattern =>
-      (* tryif *)
+       tryif
+       idtac binder;
        unshelve (erewrite (@esorted_binder_morphism _ binder
             _ _ _ (f arg) _ _));
-       match goal with
-       | |- SwappableEx _ _ _ => tryif typeclasses eauto then idtac else eauto
+       (* prove these in this order: *)
+       lazymatch goal with
+       | |- ESortedBinder _ _ => typeclasses eauto + now eauto
+       | _ => idtac
+       end;
+       lazymatch goal with
+       | |- SwappableEx _ _ _ => typeclasses eauto + eauto
+       | _ => idtac
+       end;
+       lazymatch goal with
        | |- PatternMorphism _ => tryif typeclasses eauto then idtac else eauto
-       | |- ESortedBinder _ _ => tryif typeclasses eauto then idtac else eauto
        | _ => idtac
        end
-      (* then idtac
-      else idtac (* "No sorted simplification instance for " binder *) *)
+      then idtac "Success with" binder
+      else (idtac "No sorted simplification instance for " binder; fail 0)
     end
   end.
 
@@ -869,24 +976,28 @@ match type of H with
   | context G [?f ?arg _ (?binder _ _)] => 
     match type of binder with
     | Pattern -> Pattern -> Pattern => 
-      (* tryif *)
+      tryif
        (let name := fresh "X" in
          (* NOTE: erewrite for some reason does not terminate *)
          unshelve (epose proof (name := @esorted_binder_morphism _ binder
             _ _ _ (f arg) _ _)); try (rewrite name in H; clear name);
             (* try typeclasses eauto; auto; *)
-            match goal with
-             | |- SwappableEx _ _ _ => clear H; try typeclasses eauto; eauto
-             | |- ESortedBinder _ _ => clear H; try typeclasses eauto; eauto
-             | _ => idtac
-            end;
-            match goal with
-            | |- PatternMorphism _ => typeclasses eauto
-            | _ => idtac
-            end
+            (* prove these in this order: *)
+               lazymatch goal with
+               | |- ESortedBinder _ _ => typeclasses eauto + now eauto (* this should succeed *)
+               | _ => idtac
+               end;
+               lazymatch goal with
+               | |- SwappableEx _ _ _ => typeclasses eauto + eauto
+               | _ => idtac
+               end;
+               lazymatch goal with
+               | |- PatternMorphism _ => tryif typeclasses eauto then idtac else eauto
+               | _ => idtac
+               end
               )
-      (* then idtac
-      else idtac (* "No sorted simplification instance for " binder *) *)
+      then idtac
+      else (idtac "No sorted simplification instance for " binder; fail 0 (*backtrack*) )
     end
   end.
 
@@ -896,11 +1007,20 @@ Section Test.
   Import Substitution.Notations.
   Open Scope ml_scope.
   Context {Σ : Signature}.
-  Tactic Notation "mlSimpl" :=
+  (* Tactic Notation "mlSimpl" :=
     repeat (rewrite mlSimpl' + simpl_sorted_quantification); repeat rewrite [increase_ex _ _]/=; repeat rewrite [increase_mu]/=.
 
   Tactic Notation "mlSimpl" "in" hyp(H) :=
-    repeat (rewrite mlSimpl' in H + simpl_sorted_quantification_hyp H); repeat rewrite [increase_ex _ _]/= in H; repeat rewrite [increase_mu _ _]/= in H.
+    repeat (rewrite mlSimpl' in H + simpl_sorted_quantification_hyp H); repeat rewrite [increase_ex _ _]/= in H; repeat rewrite [increase_mu _ _]/= in H. *)
+
+  Tactic Notation "mlSimpl" :=
+  repeat (rewrite mlSimpl'); try rewrite [increase_ex _ _]/=; try rewrite [increase_mu]/=.
+
+  Tactic Notation "mlSimpl" "in" hyp(H) :=
+  repeat (rewrite mlSimpl' in H); try rewrite [increase_ex _ _]/= in H; try rewrite [increase_mu _ _]/= in H.
+
+  Tactic Notation "mlSortedSimpl" := simpl_sorted_quantification; try rewrite [increase_mu]/=.
+  Tactic Notation "mlSortedSimpl" "in" hyp(H) := simpl_sorted_quantification_hyp H; try rewrite [increase_mu]/=.
 
   Local Definition patt_forall_of_sort (sort phi : Pattern) : Pattern :=
     patt_exists (patt_imp (patt_imp (patt_bound_evar 0) (nest_ex sort)) phi).
@@ -925,11 +1045,11 @@ Goal forall s ψ x, (* well_formed_closed ψ -> *)
 .
 Proof.
   intros.
-  mlSimpl.
-  2: {
-  mlSimpl in H. 2: {
-  mlSimpl in H0.
-  mlSimpl in H1. cbn. auto. }
+  mlSortedSimpl.
+(*   2: { *)
+  mlSortedSimpl in H. (* 2: { *)
+  mlSortedSimpl in H0.
+  mlSortedSimpl in H1. cbn. admit. (* auto. *)
 Abort.
 
 Goal forall s ψ x, (* well_formed_closed ψ -> *)
@@ -938,6 +1058,59 @@ Goal forall s ψ x, (* well_formed_closed ψ -> *)
 Proof.
   intros.
   simpl_sorted_quantification. 2: mlSimpl.
+Abort.
+
+Local Definition ml_plus := patt_app.
+Local Definition ml_in := patt_app.
+Local Definition ml_eq := patt_app.
+Local Definition patt_inhabitant_set := patt_app patt_bott.
+
+
+Import Substitution.Notations.
+Import Pattern.Notations.
+Import DerivedOperators_Syntax.Notations.
+Import Pattern.BoundVarSugar.
+
+Local Notation "a +ml b" := (ml_plus a b) (at level 67).
+Local Notation "a =ml b" := (ml_eq a b) (at level 67).
+Local Notation "a ∈ml b" := (ml_in a b) (at level 67).
+Local Notation "'ex' , phi" := (patt_exists phi) (at level 80) : ml_scope.
+Local Notation "'mu' , phi" := (patt_mu phi) (at level 80) : ml_scope.
+Local Notation "〚 phi 〛" := (patt_inhabitant_set phi) (at level 0) : ml_scope.
+
+Open Scope ml_scope.
+
+Local Notation "'all' s ,  phi" := 
+    (patt_forall_of_sort s phi) (at level 70) : ml_scope.
+
+Local Definition patt_exists_of_sort (sort phi : Pattern) : Pattern :=
+    ex , ((b0 ∈ml 〚nest_ex sort〛) and phi).
+Local Notation "'ex' s ,  phi" := 
+    (patt_exists_of_sort s phi) (at level 70) : ml_scope.
+Local Definition Nat := patt_bott.
+Local Definition Zero := patt_bott.
+Local Definition Succ := patt_bott.
+Local Definition patt_subseteq := patt_app.
+Notation "p ⊆ml q" := (patt_subseteq p q) (at level 67) : ml_scope.
+
+Goal forall X,
+  (( patt_free_svar X ⊆ml 〚 Nat 〛 --->
+       Zero ∈ml patt_free_svar X --->
+       (all Nat, (b0 ∈ml patt_free_svar X ---> 
+       Succ $ b0 ∈ml patt_free_svar X)) --->
+       (all Nat, b0 ∈ml patt_free_svar X ) ) ^[[svar:X↦ex Nat, b0 and Zero +ml b0 =ml b0]] ) = 
+      ( (ex Nat, b0 and Zero +ml b0 =ml b0) ⊆ml 〚 Nat 〛 --->
+       Zero ∈ml (ex Nat, b0 and Zero +ml b0 =ml b0) --->
+       (all Nat, (b0 ∈ml (ex Nat, b0 and Zero +ml b0 =ml b0) ---> 
+       Succ $ b0 ∈ml (ex Nat, b0 and Zero +ml b0 =ml b0))) --->
+       (all Nat, b0 ∈ml (ex Nat, b0 and Zero +ml b0 =ml b0) ) ).
+Proof.
+  intros. mlSimpl.
+  simpl_sorted_quantification. apply Fsvar_subst_swaps_ex_nesting. admit.
+  mlSortedSimpl. admit.
+  mlSimpl.
+  mlSortedSimpl. (* TODO: Fix usage when not applicable *)
+
 Abort.
 
 End Test.
