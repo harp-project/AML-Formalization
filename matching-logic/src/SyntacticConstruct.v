@@ -950,7 +950,6 @@ Ltac simpl_sorted_quantification :=
     match type of binder with
     | Pattern -> Pattern -> Pattern =>
        tryif
-       idtac binder;
        unshelve (erewrite (@esorted_binder_morphism _ binder
             _ _ _ (f arg) _ _));
        (* prove these in this order: *)
@@ -976,7 +975,7 @@ match type of H with
   | context G [?f ?arg _ (?binder _ _)] => 
     match type of binder with
     | Pattern -> Pattern -> Pattern => 
-      tryif
+      (* tryif *)
        (let name := fresh "X" in
          (* NOTE: erewrite for some reason does not terminate *)
          unshelve (epose proof (name := @esorted_binder_morphism _ binder
@@ -1021,6 +1020,7 @@ Section Test.
 
   Tactic Notation "mlSortedSimpl" := simpl_sorted_quantification; try rewrite [increase_mu]/=.
   Tactic Notation "mlSortedSimpl" "in" hyp(H) := simpl_sorted_quantification_hyp H; try rewrite [increase_mu]/=.
+
 
   Local Definition patt_forall_of_sort (sort phi : Pattern) : Pattern :=
     patt_exists (patt_imp (patt_imp (patt_bound_evar 0) (nest_ex sort)) phi).

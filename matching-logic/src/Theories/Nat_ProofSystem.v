@@ -132,7 +132,7 @@ Section nat.
     { wf_auto2. }
     { apply pile_any. }
 
-    apply Knaster_tarski.
+    apply FixPoint.Knaster_tarski.
     { apply pile_any. }
     { wf_auto2. }
     unfold instantiate. mlSimpl. simpl.
