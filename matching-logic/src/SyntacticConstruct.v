@@ -975,7 +975,7 @@ match type of H with
   | context G [?f ?arg _ (?binder _ _)] => 
     match type of binder with
     | Pattern -> Pattern -> Pattern => 
-      (* tryif *)
+      tryif
        (let name := fresh "X" in
          (* NOTE: erewrite for some reason does not terminate *)
          unshelve (epose proof (name := @esorted_binder_morphism _ binder
@@ -996,7 +996,7 @@ match type of H with
                end
               )
       then idtac
-      else (idtac (* "No sorted simplification instance for " binder *); fail 0 (*backtrack*) )
+      else (idtac (* "No sorted simplification instance for " binder *); fail 0 (*backtrack*))
     end
   end.
 
