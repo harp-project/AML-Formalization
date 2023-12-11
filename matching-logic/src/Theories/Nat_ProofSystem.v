@@ -415,8 +415,27 @@ Section nat.
     intros Γ φ ψ HΓ wf1 wf2.
     mlIntro "H". mlIntro "H0".
     unfold is_predicate. mlDestructOr "H"; mlDestructOr "H0".
-    all: mlRewriteBy "0" at 1; mlRewriteBy "1" at 1.
-    all: mlRewriteBy "0" at 1; mlRewriteBy "1" at 1.
+    * mlLeft. mlRewriteBy "0" at 1. mlRewriteBy "1" at 1.
+      mlClear "0". mlClear "1".
+      fromMLGoal. apply phi_impl_total_phi_meta. wf_auto2. try_solve_pile.
+      mlSplitAnd; mlIntro "H". 2: mlIntro "H0".
+      all: pose proof (top_holds Γ) as H; use AnyReasoning in H; mlExactMeta H.
+    * mlRight. mlRewriteBy "0" at 1. mlRewriteBy "2" at 1.
+      mlClear "0". mlClear "2".
+      fromMLGoal. apply phi_impl_total_phi_meta. wf_auto2. try_solve_pile.
+      mlSplitAnd; mlIntro "H". 2: mlIntro "H0"; mlAssumption.
+      mlApply "H". pose proof (top_holds Γ) as H; use AnyReasoning in H; mlExactMeta H.
+    * mlLeft. mlRewriteBy "0" at 1. mlRewriteBy "1" at 1.
+      mlClear "0". mlClear "1".
+      fromMLGoal. apply phi_impl_total_phi_meta. wf_auto2. try_solve_pile.
+      mlSplitAnd; mlIntro "H". 2: mlIntro "H0".
+      all: pose proof (top_holds Γ) as H; use AnyReasoning in H; mlExactMeta H.
+    * mlLeft. mlRewriteBy "1" at 1. mlRewriteBy "2" at 1.
+      mlClear "1". mlClear "2".
+      fromMLGoal. apply phi_impl_total_phi_meta. wf_auto2. try_solve_pile.
+      mlSplitAnd; mlIntro "H". 2: mlIntro "H0".
+      1: pose proof (top_holds Γ) as H; use AnyReasoning in H; mlExactMeta H.
+      1: mlAssumption.
   Defined.
 
   Lemma predicate_equiv :
@@ -425,15 +444,32 @@ Section nat.
       well_formed φ ->
       Γ ⊢ is_predicate φ ---> φ <---> ⌊φ⌋.
   Proof.
-    
+    intros Γ φ HΓ wf.
+    mlIntro "H". unfold is_predicate. mlDestructOr "H" as "H0" "H0";
+      do 2 mlRewriteBy "H0" at 1; mlClear "H0"; mlSplitAnd; mlIntro.
+    1-2: mlClear "0".
+    * fromMLGoal. apply phi_impl_total_phi_meta. wf_auto2. try_solve_pile.
+      aapply top_holds.
+    * fromMLGoal. aapply top_holds.
+    * mlDestructBot "0".
+    * mlApply "0". mlClear "0".
+      mlApplyMeta (phi_impl_defined_phi Γ (! ⊥) (evar_fresh [])). 2: set_solver.
+      2: assumption.
+      fromMLGoal. aapply top_holds.
   Defined.
 
   Lemma patt_in_is_predicate :
-    forall Γ φ ψ,
+    forall Γ φ x,
       Definedness_Syntax.theory ⊆ Γ ->
       well_formed φ ->
-      well_formed ψ ->
-      Γ ⊢ is_functional φ ---> is_predicate ψ ---> is_predicate (φ ∈ml ψ)
+      Γ ⊢ is_predicate (patt_free_evar x ∈ml φ).
+  Proof.
+    intros Γ φ x HΓ wf1.
+    unfold is_predicate, patt_in, patt_or, patt_equal, patt_total.
+    mlIntro "H". mlIntro "H0".
+    mlApply "H". mlIntro "H1". mlClear "H".
+    Search patt_defined derives_using.
+  Defined.
 
 End nat.
 
