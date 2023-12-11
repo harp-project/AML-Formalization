@@ -73,6 +73,15 @@ Section nat.
     {Σ : Signature}
     {syntax : Nat_Syntax.Syntax}
   .
+  
+  
+  Lemma patt_defined_and_2:
+  ∀ {Σ : Signature} {syntax : Definedness_Syntax.Syntax} (Γ : Theory) (φ ψ : Pattern),
+    Definedness_Syntax.theory ⊆ Γ
+    → well_formed φ
+      → well_formed ψ → Γ ⊢i ⌈ φ ⌉ and ⌈ ψ ⌉  ---> ⌈ φ and ψ ⌉ using AnyReasoning.
+  Proof.
+  Admitted.
 
   Lemma use_nat_axiom ax Γ :
     Nat_Syntax.theory ⊆ Γ ->
@@ -677,38 +686,130 @@ Defined.
   cbn.
   remember (svar_fresh []) as X.
   pose proof peano_induction X.
-(*   Ψ ≡ ∃z:Nat.z ∧ ϕ(z)
-   *)
-  apply Svar_subst with (X:= X) (ψ:= ex Nat, b0 and Zero +ml b0 =ml b0 )  in H0 .
+  
+  (*   Ψ ≡ ∃z:Nat.z ∧ ϕ(z) *)
+  
+  apply Svar_subst with (X:= X) (ψ:= ex Nat, b0 and Zero +ml b0 =ml b0 )  in H0.
+  
   2:try_solve_pile.
   2:wf_auto2.
+  
   apply use_bigger_theory with (Γ':= Γ) in H0.
+  
   2: assumption.
+  
   mlAdd H0.
   clear H0.
-  replace ((_--->_) ^[[svar:X↦ex Nat, b0 and Zero +ml b0 =ml b0]] ) with 
+  
+  replace ((_--->_) ^[[svar:X↦ex Nat, b0 and Zero +ml b0 =ml b0]] ) with
+   
       ( (ex Nat, b0 and Zero +ml b0 =ml b0) ⊆ml 〚 Nat 〛 --->
-       Zero ∈ml (ex Nat, b0 and Zero +ml b0 =ml b0) --->
-       (all Nat, b0 ∈ml (ex Nat, b0 and Zero +ml b0 =ml b0) ---> 
-       Succ $ b0 ∈ml (ex Nat, b0 and Zero +ml b0 =ml b0)) --->
-       (all Nat, b0 ∈ml (ex Nat, b0 and Zero +ml b0 =ml b0) )).
+      
+        Zero ∈ml (ex Nat, b0 and Zero +ml b0 =ml b0) --->
+        
+        ( all Nat, b0 ∈ml (ex Nat, b0 and Zero +ml b0 =ml b0) ---> 
+          Succ $ b0 ∈ml (ex Nat, b0 and Zero +ml b0 =ml b0) ) --->
+          
+        (all Nat, b0 ∈ml (ex Nat, b0 and Zero +ml b0 =ml b0) ) ).
+       
    2:{
-    cbn.
-    case_match.
-    * reflexivity.
-    * congruence.
-   }
+        cbn.
+        case_match.
+        * reflexivity.
+        * congruence.
+    }
    
    mlAssert ( "H": ( (ex Nat, b0 and Zero +ml b0 =ml b0) ⊆ml 〚 Nat 〛)  ).
    1:wf_auto2.
    1:{
-   admit.
+      remember (evar_fresh [] ) as x.
+      
+      unfold "⊆ml".
+      Search patt_total derives_using.
+     
+      mlClear "0".
+      fromMLGoal.
+
+      apply phi_impl_total_phi_meta.
+      1:wf_auto2.
+      1:apply pile_any.
+      mlIntro "H".
+      mlDestructEx "H" as x. unfold nest_ex. simpl. fold Nat.  mlSimpl. simpl. cbn.
+      mlDestructAnd "H".
+      
+       mlRevert "0".
+      
+      pose proof use_nat_axiom AxInductiveDomain Γ H. 
+      simpl in H0.
+      mlAdd H0 as "ind".
+       
+      mlRewriteBy "ind" at 1.
+      1:unfold theory in H;set_solver.
+      
+      mlIntro "H".
+      
+      mlApplyMeta membership_implies_implication in "H".
+     
+      mlRewriteBy "ind" at 1.
+      1:unfold theory in H;set_solver.
+      mlApply "H".
+      
+      mlDestructAnd "1".
+      mlAssumption.
    }
    
-      mlAssert ( "H0": ( Zero ∈ml (ex Nat, b0 and Zero +ml b0 =ml b0) )  ).
+   mlAssert ( "H0": ( Zero ∈ml (ex Nat, b0 and Zero +ml b0 =ml b0) )  ).
    1:wf_auto2.
    1:{
-   admit.
+      mlRevertLast.
+      pose proof use_nat_axiom AxInductiveDomain Γ H. 
+      simpl in H0.
+      mlAdd H0 as "ind".
+      
+      mlRewriteBy "ind" at 1.
+      1:unfold theory in H;set_solver.
+      
+      mlIntro "H".
+      
+      Search patt_subseteq derives_using.
+      unfold "⊆ml".
+      Search patt_total derives_using.
+      
+      mlApplyMeta total_phi_impl_phi in "H".
+      mlClear "0".
+      
+      2: instantiate (1 := fresh_evar ⊥); solve_fresh.
+      2: { unfold theory in H. set_solver. }
+      
+      Search patt_imp derives_using.
+      unfold "∈ml".
+      mlApplyMeta phi_impl_defined_phi.
+      2: instantiate (1 := fresh_evar ⊥); solve_fresh.
+      2: { unfold theory in H. set_solver. }
+      mlSplitAnd.
+      *admit.
+      *
+      
+
+
+      Search patt_in derives_using.
+      
+      Search patt_defined derives_using.
+(*       patt_defined_and:
+  ∀ {Σ : Signature} {syntax : Definedness_Syntax.Syntax} (Γ : Theory) (φ ψ : Pattern),
+    Definedness_Syntax.theory ⊆ Γ
+    → well_formed φ
+      → well_formed ψ → Γ ⊢i ⌈ φ and ψ ⌉ ---> ⌈ φ ⌉ and ⌈ ψ ⌉ using AnyReasoning
+       *)
+       
+      (* mlApplyMeta patt_defined_and_2.
+      mlSplitAnd.
+      *admit.
+      * mlAssumption.
+      
+      mlApply "0" in "H".
+        mlClear "0".
+ *)   admit.
    }
    
    mlAssert ( "H1": ( (all Nat,
@@ -726,23 +827,118 @@ Defined.
    mlClear "H".
    mlClear "H0".
    mlIntroAll x.
-   mlSpecialize "H1" with x. mlSimpl. simpl.
+   mlSpecialize "H1" with x.
+   mlSimpl. simpl. 
    
    replace ( (ex Nat, b0 and Zero +ml b0 =ml b0)^{evar:0↦x} ) with 
    ( (ex Nat, b0 and Zero +ml b0 =ml b0) ).
    2:{
-   cbn. reflexivity.
+      reflexivity.
    }
    cbn.
    mlIntro "H".
    
-(*    assert    patt_free_evar x ∈ml 〚 patt_sym (inj sNat) 〛 
-     *)
+  mlAssert ( "f" : ( patt_free_evar x ∈ml 〚 patt_sym (inj sNat) 〛 )  ).
+  1:wf_auto2.
+  1:admit.
      
      
    mlApply "H1" in "H".
    mlClear "H1".
+    
    Search patt_in derives_using.
+   
+   mlApplyMeta membership_exists_1 in "H" .
+   2:unfold theory in H;set_solver.
+   
+   Search patt_in patt_exists derives_using.
+   
+   
+   mlDestructEx "H" as x.
+   1-3:admit.
+   mlSimpl. simpl. cbn.
+   
+   Search patt_in derives_using.
+   
+   
+   mlApplyMeta membership_and_1 in "H".
+   2:unfold theory in H;set_solver.
+
+   mlDestructAnd "H".
+   mlApplyMeta membership_and_1 in "1".
+   2:unfold theory in H;set_solver.
+
+   mlDestructAnd "1".
+   
+   Search patt_in derives_using.
+   
+   mlApplyMeta membership_implies_implication in "3".
+   
+(*    mlApplyMeta membership_implies_implication in "2". *)
+   
+   Search patt_imp derives_using.
+   
+   mlApply "3".
+
+(*    mlApply "2". *)
+   
+   mlApplyMeta membership_implies_implication in "0".
+   mlApplyMeta membership_implies_implication in "2". 
+   
+    mlApply "2".
+  
+   mlRevert "f".
+   
+   
+(*    
+
+  membership_implies_implication:
+  ∀ {Σ : Signature} {syntax : Definedness_Syntax.Syntax} (Γ : Theory) 
+    (ϕ : Pattern) (x : evar),
+    well_formed ϕ
+    → Γ ⊢i patt_free_evar x ∈ml ϕ ---> patt_free_evar x ---> ϕ using BasicReasoning
+
+
+
+  membership_symbol_ceil_right:
+  ∀ {Σ : Signature} {syntax : Definedness_Syntax.Syntax} (Γ : Theory) 
+    (φ : Pattern) (x : evar),
+    Definedness_Syntax.theory ⊆ Γ
+    → well_formed φ
+    
+      → Γ ⊢i (ex , b0 ∈ml φ) ---> patt_free_evar x ∈ml ⌈ φ ⌉
+      
+        using (ExGen := ⊤, SVSubst := ∅, KT := false, AKT := false)
+        
+        
+        
+        membership_exists_1:
+  ∀ {Σ : Signature} {syntax : Definedness_Syntax.Syntax} (Γ : Theory) 
+    (x : evar) (φ : Pattern),
+    Definedness_Syntax.theory ⊆ Γ
+    → well_formed (ex , φ)
+    
+      → Γ ⊢i patt_free_evar x ∈ml (ex , φ) ---> (ex , patt_free_evar x ∈ml φ)
+      
+        using (ExGen := ⊤, SVSubst := ∅, KT := false, AKT := false)
+        
+        
+        
+        membership_and_1:
+  ∀ {Σ : Signature} {syntax : Definedness_Syntax.Syntax} (Γ : Theory) 
+    (x : evar) (φ₁ φ₂ : Pattern),
+    well_formed φ₁
+    → well_formed φ₂
+      → Definedness_Syntax.theory ⊆ Γ
+        → Γ
+          ⊢i patt_free_evar x ∈ml (φ₁ and φ₂) --->
+             patt_free_evar x ∈ml φ₁ and patt_free_evar x ∈ml φ₂
+          using (ExGen := {[ev_x; x]}, SVSubst := ∅, KT := false, AKT := false)
+    *)
+    
+
+   
+
    
    
    (* Zero ∈ml (ex Nat, b0 and Zero +ml b0 =ml b0) *)
