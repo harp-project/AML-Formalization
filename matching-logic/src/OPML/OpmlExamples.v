@@ -39,21 +39,11 @@ Module example01.
         destruct x; compute_done.
     Qed.
 
-    Program Definition Sorts : OPMLSorts := {|
+    Definition Sorts : OPMLSorts := {|
         opml_sort := Sort ;
-        opml_subsort := eq ;
+        opml_subsort := Identity_relation Sort ;
+        opml_subsort_po := Identity_relation_partial_order Sort;
     |}.
-    Next Obligation.
-        repeat split.
-        {
-            intros x y z Hxy Hyz.
-            subst. reflexivity.
-        }
-        {
-            intros x y Hxy Hyx.
-            subst. reflexivity.
-        }
-    Qed.
 
     Definition Vars : @OPMLVariables Sorts := {|
         opml_evar := fun s => string;
@@ -381,6 +371,6 @@ Module example02.
 
     (* Need to have signature morphisms to builtin signatures *)
 
-    
+
 
 End example02.
