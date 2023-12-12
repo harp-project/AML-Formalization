@@ -74,14 +74,14 @@ Section nat.
     {syntax : Nat_Syntax.Syntax}
   .
   
-  
+(*   
   Lemma patt_defined_and_2:
   ∀ {Σ : Signature} {syntax : Definedness_Syntax.Syntax} (Γ : Theory) (φ ψ : Pattern),
     Definedness_Syntax.theory ⊆ Γ
     → well_formed φ
       → well_formed ψ → Γ ⊢i ⌈ φ ⌉ and ⌈ ψ ⌉  ---> ⌈ φ and ψ ⌉ using AnyReasoning.
   Proof.
-  Admitted.
+  Admitted. *)
 
   Lemma use_nat_axiom ax Γ :
     Nat_Syntax.theory ⊆ Γ ->
@@ -664,9 +664,7 @@ Defined.
   toMLGoal.
   wf_auto2.
   mlIntroAll x.
-  mlSimpl.
-  cbn. 
-  (* fold (patt_sym (inj sNat)). *)
+  unfold nest_ex. mlSimpl. cbn. fold Nat.
   pose proof use_nat_axiom AxDefAddId Γ H.
   simpl in H0. mlAdd H0 as "AddId".
   mlSpecialize "AddId" with x. mlSimpl. cbn.
@@ -674,16 +672,13 @@ Defined.
   Qed.
  
   
-  
-  
   Theorem add_zero_l : forall Γ , theory ⊆ Γ ->
                         Γ ⊢ all Nat, Zero +ml b0 =ml b0.
   Proof.
   intros.
   toMLGoal.
   wf_auto2.
-  mlSimpl.
-  cbn.
+
   remember (svar_fresh []) as X.
   pose proof peano_induction X.
   
@@ -722,7 +717,6 @@ Defined.
    mlAssert ( "H": ( (ex Nat, b0 and Zero +ml b0 =ml b0) ⊆ml 〚 Nat 〛)  ).
    1:wf_auto2.
    1:{
-      remember (evar_fresh [] ) as x.
       
       unfold "⊆ml".
       Search patt_total derives_using.
@@ -761,27 +755,36 @@ Defined.
    mlAssert ( "H0": ( Zero ∈ml (ex Nat, b0 and Zero +ml b0 =ml b0) )  ).
    1:wf_auto2.
    1:{
-      mlRevertLast.
+   
       pose proof use_nat_axiom AxInductiveDomain Γ H. 
       simpl in H0.
       mlAdd H0 as "ind".
       
-      mlRewriteBy "ind" at 1.
-      1:unfold theory in H;set_solver.
-      
-      mlIntro "H".
-      
-      Search patt_subseteq derives_using.
-      unfold "⊆ml".
       Search patt_total derives_using.
       
-      mlApplyMeta total_phi_impl_phi in "H".
-      mlClear "0".
+(*       mlApplyMeta total_phi_impl_phi in "H".
+ 
       
       2: instantiate (1 := fresh_evar ⊥); solve_fresh.
       2: { unfold theory in H. set_solver. }
+ *)     
+      mlRevert "H".
+      
+      mlRewriteBy "ind" at 1.
+      1:unfold theory in H;set_solver.
+      mlIntro "H".
+      mlClear "0".
+
+      Search patt_exists derives_using.
+       
+(*       mlApplyMeta prenex_exists_and_2 in "H". *)
       
       Search patt_imp derives_using.
+      Search patt_in derives_using.
+      
+      Search patt_mu derives_using.
+      
+      
       unfold "∈ml".
       mlApplyMeta phi_impl_defined_phi.
       2: instantiate (1 := fresh_evar ⊥); solve_fresh.
