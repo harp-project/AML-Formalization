@@ -107,6 +107,7 @@ Section nat.
     { set_solver. }
   Defined.
 
+
   Theorem peano_induction_meta X :
     theory ⊢ patt_free_svar X ⊆ml 〚 Nat 〛 ->
     theory ⊢ Zero ∈ml patt_free_svar X ->
@@ -316,56 +317,6 @@ Section nat.
     }
   Defined.
 
-  Theorem peano_induction X :
-    theory ⊢ patt_free_svar X ⊆ml 〚 Nat 〛 --->
-             Zero ∈ml patt_free_svar X --->
-             (all Nat, (b0 ∈ml patt_free_svar X ---> Succ $ b0 ∈ml patt_free_svar X))--->
-             all Nat, b0 ∈ml patt_free_svar X.
-  Proof.
-    toMLGoal.
-    { wf_auto2. }
-    mlIntro "H".
-    mlIntro "H1".
-    mlIntro "H2".
-
-    mlApplyMeta nat_subset_imp_in.
-    remember (evar_fresh []) as x.
-    pose proof membership_symbol_ceil_aux_aux_0 theory x ( patt_free_svar X) 
-                                         ltac:( unfold theory;set_solver) ltac:(wf_auto2) as H.
-   apply universal_generalization with (x:=x) in H.
-   2: try_solve_pile.
-   2: wf_auto2.
-   mlSimpl in H. simpl in H.
-   case_match. 2: congruence.
-   assert ( theory ⊢ (ex , Zero =ml b0) ). {
-     pose proof (hypothesis theory (ex Nat, Zero =ml b0) ltac:(wf_auto2)).
-     ospecialize* H1.
-     { unfold theory, named_axioms, theory_of_NamedAxioms. simpl.
-       apply elem_of_union_r. exists AxFun1. reflexivity.
-     }
-     use AnyReasoning in H1.
-     mlAdd H1 as "H".
-     mlDestructEx "H" as x. mlSimpl. cbn. mlDestructAnd "H".
-     mlExists x. mlAssumption.
-   }
-   use AnyReasoning in H.
-(*    epose proof conj_intro_meta _ _ _ _ _ _ H H1.
-   Unshelve.
-   2-3: wf_auto2. *)
-     mlSpecMeta H with Zero.
-     2:unfold theory;set_solver.
-     2:simpl;reflexivity.
-     mlSimpl in H.
-     simpl in H.
-     mlApplyMeta H in "H1".
-
-     Search patt_and patt_total.
-     unfold patt_forall_of_sort.
-     
-     Search patt_exists patt_total derives_using.
-    (* rephrase "H2" into a totality statement and use propagation of totality through conjuction  *)
- Admitted.
-
   Lemma floor_propagation_forall_1 :
     forall Γ φ,
       Definedness_Syntax.theory ⊆ Γ ->
@@ -468,8 +419,138 @@ Section nat.
     unfold is_predicate, patt_in, patt_or, patt_equal, patt_total.
     mlIntro "H". mlIntro "H0".
     mlApply "H". mlIntro "H1". mlClear "H".
-    Search patt_defined derives_using.
+    pose proof (deMorgan_nand Γ ((⌈ patt_free_evar x and φ ⌉ ---> Top))
+                                 (Top ---> ⌈ patt_free_evar x and φ ⌉)
+                                 ltac:(wf_auto2) ltac:(wf_auto2)) as H.
+    pose proof (deMorgan_nand Γ ((⌈ patt_free_evar x and φ ⌉ ---> ⊥))
+                                 (⊥ ---> ⌈ patt_free_evar x and φ ⌉)
+                                 ltac:(wf_auto2) ltac:(wf_auto2)) as H0.
+    use AnyReasoning in H. use AnyReasoning in H0.
+    do 2 mlRevertLast. unfold patt_iff.
+    mlRewrite H at 1. mlRewrite H0 at 1. clear H H0.
+    pose proof (ceil_compat_in_or Γ (! (⌈ patt_free_evar x and φ ⌉ ---> ⊥))
+                                    (! (⊥ ---> ⌈ patt_free_evar x and φ ⌉))
+                                    ltac:(set_solver) ltac:(wf_auto2)
+                                    ltac:(wf_auto2)) as H.
+    use AnyReasoning in H. mlRewrite H at 1. clear H.
+    pose proof (ceil_compat_in_or Γ (! (⌈ patt_free_evar x and φ ⌉ ---> Top))
+                                    (! (Top ---> ⌈ patt_free_evar x and φ ⌉))
+                                    ltac:(set_solver) ltac:(wf_auto2)
+                                    ltac:(wf_auto2)) as H.
+    use AnyReasoning in H. mlRewrite H at 1. clear H.
+    pose proof (nimpl_eq_and Γ ⌈ patt_free_evar x and φ ⌉ ⊥
+                             ltac:(wf_auto2) ltac:(wf_auto2)) as H.
+    use AnyReasoning in H. mlRewrite H at 1. clear H.
+    pose proof (nimpl_eq_and Γ ⌈ patt_free_evar x and φ ⌉ Top
+                             ltac:(wf_auto2) ltac:(wf_auto2)) as H.
+    use AnyReasoning in H. mlRewrite H at 1. clear H.
+    pose proof (nimpl_eq_and Γ ⊥ ⌈ patt_free_evar x and φ ⌉
+                             ltac:(wf_auto2) ltac:(wf_auto2)) as H.
+    use AnyReasoning in H. mlRewrite H at 1. clear H.
+    pose proof (nimpl_eq_and Γ Top ⌈ patt_free_evar x and φ ⌉
+                             ltac:(wf_auto2) ltac:(wf_auto2)) as H.
+    use AnyReasoning in H. mlRewrite H at 1. clear H.
+    do 2 mlIntro.
+    mlDestructOr "0" as "H1" "H1"; mlDestructOr "1" as "H2" "H2";
+      mlApplyMeta patt_defined_and in "H1"; try mlApplyMeta patt_defined_and in "H2".
+    2-3, 5-6, 8-9, 11-12: assumption.
+    all: mlDestructAnd "H1"; mlDestructAnd "H2".
+    * mlApplyMeta def_not_phi_impl_not_total_phi in "3". 2: assumption.
+      mlApply "3". mlClear "0". mlClear "1". mlClear "2". mlClear "3".
+      fromMLGoal. apply phi_impl_total_phi_meta. wf_auto2. try_solve_pile.
+      aapply top_holds.
+    * mlClear "1". mlClear "2".
+      Search patt_defined derives_using.
+      mlApplyMeta def_def_phi_impl_tot_def_phi in "0". 2: assumption.
+      mlApplyMeta def_not_phi_impl_not_total_phi in "3". 2: assumption.
+      mlApply "3". mlExact "0".
+    * mlApplyMeta def_not_phi_impl_not_total_phi in "3". 2: assumption.
+      mlApply "3". mlClear "0". mlClear "1". mlClear "2". mlClear "3".
+      fromMLGoal. apply phi_impl_total_phi_meta. wf_auto2. try_solve_pile.
+      aapply top_holds.
+    * mlApplyMeta bott_not_defined in "0". mlExact "0".
   Defined.
+
+  Theorem peano_induction X :
+    theory ⊢ patt_free_svar X ⊆ml 〚 Nat 〛 --->
+             Zero ∈ml patt_free_svar X --->
+             (all Nat, (b0 ∈ml patt_free_svar X ---> Succ $ b0 ∈ml patt_free_svar X))--->
+             all Nat, b0 ∈ml patt_free_svar X.
+  Proof.
+    toMLGoal.
+    { wf_auto2. }
+    mlIntro "H".
+    mlIntro "H1".
+    mlIntro "H2".
+
+    mlApplyMeta nat_subset_imp_in.
+    remember (evar_fresh []) as x.
+    pose proof membership_symbol_ceil_aux_aux_0 theory x ( patt_free_svar X) 
+                                         ltac:( unfold theory;set_solver) ltac:(wf_auto2) as H.
+   apply universal_generalization with (x:=x) in H.
+   2: try_solve_pile.
+   2: wf_auto2.
+   mlSimpl in H. simpl in H.
+   case_match. 2: congruence.
+   assert ( theory ⊢ (ex , Zero =ml b0) ). {
+     pose proof (hypothesis theory (ex Nat, Zero =ml b0) ltac:(wf_auto2)).
+     ospecialize* H1.
+     { unfold theory, named_axioms, theory_of_NamedAxioms. simpl.
+       apply elem_of_union_r. exists AxFun1. reflexivity.
+     }
+     use AnyReasoning in H1.
+     mlAdd H1 as "H".
+     mlDestructEx "H" as x. mlSimpl. cbn. mlDestructAnd "H".
+     mlExists x. mlAssumption.
+   }
+   use AnyReasoning in H.
+(*    epose proof conj_intro_meta _ _ _ _ _ _ H H1.
+   Unshelve.
+   2-3: wf_auto2. *)
+     mlSpecMeta H with Zero.
+     2:unfold theory;set_solver.
+     2:simpl;reflexivity.
+     mlSimpl in H.
+     simpl in H.
+     mlApplyMeta H in "H1".
+
+    (* rephrase "H2" into a totality statement and use propagation of totality through conjuction  *)
+    mlAssert ("H3" : ( ⌊ all Nat , b0 ∈ml patt_free_svar X ---> Succ $ b0 ∈ml patt_free_svar X⌋)). 1: wf_auto2. {
+      mlClear "H". mlClear "H1".
+      mlApplyMeta floor_propagation_forall_1. 2: unfold theory; set_solver.
+      mlIntroAll y. mlSpecialize "H2" with y. mlSimpl. cbn.
+      mlAssert ("H" : (is_predicate (patt_free_evar y ∈ml 〚 patt_sym (inj sNat) 〛 --->
+       patt_free_evar y ∈ml patt_free_svar X --->
+       Succ $ patt_free_evar y ∈ml patt_free_svar X))). 1: wf_auto2. {
+         admit.
+       }
+      mlApplyMeta predicate_equiv in "H". 2: unfold theory; set_solver.
+      mlDestructAnd "H".
+      mlApply "0". mlExact "H2".
+    }
+    mlClear "H2".
+    mlConj "H" "H1" as "C1".
+    mlConj "C1" "H3" as "C2". mlClear "H". mlClear "H1". mlClear "H3".
+    mlClear "C1".
+    pose proof (patt_total_and theory (patt_free_svar X ---> 〚 Nat 〛)
+                                      (⌈ Zero and patt_free_svar X ⌉)
+                 ltac:(unfold theory; set_solver) ltac:(wf_auto2) ltac:(wf_auto2)) as H2.
+    use AnyReasoning in H2.
+    mlRevertLast. unfold patt_subseteq.
+    mlRewrite <- H2 at 1. clear H2.
+    pose proof (patt_total_and theory ((patt_free_svar X ---> 〚 Nat 〛) and ⌈ Zero and patt_free_svar X ⌉)
+                                      (all Nat, b0 ∈ml patt_free_svar X ---> Succ $ b0 ∈ml patt_free_svar X)
+                 ltac:(unfold theory; set_solver) ltac:(wf_auto2) ltac:(wf_auto2))
+         as H2.
+    use AnyReasoning in H2.
+    mlRewrite <- H2 at 1. clear H2.
+    mlIntro. fromMLGoal.
+    apply deduction_theorem with (gpi := (ExGen := ⊤, SVSubst := ⊤, KT := true, AKT := false)); cbn; auto.
+    2: unfold theory; set_solver.
+    (* Using deduction theorem is needed, however, the meta-level peano_induction
+       is based on the deduction theorem, and currently multiple uses of it is
+       not supported. *)
+ Abort.
 
 End nat.
 

@@ -1843,6 +1843,9 @@ Defined.
       evar_quantify x n (φ1 =ml φ2) = (evar_quantify x n φ1) =ml (evar_quantify x n φ2).
   Proof. auto. Qed.
 
+  Definition is_functional φ : Pattern :=
+    (ex, φ =ml b0).
+
   Lemma patt_equal_comm φ φ' Γ:
     theory ⊆ Γ ->
     well_formed φ ->
@@ -3566,11 +3569,11 @@ Defined.
 Lemma floor_is_predicate {Σ : Signature} {syntax : Syntax} Γ φ :
   theory ⊆ Γ ->
   well_formed φ ->
-  Γ ⊢i is_predicate (⌊ φ ⌋)
+  Γ ⊢i is_predicate_pattern (⌊ φ ⌋)
   using (ExGen := ⊤, SVSubst := ∅, KT := false, AKT := false).
 Proof.
   intros HΓ wfφ.
-  unfold is_predicate.
+  unfold is_predicate_pattern.
   unfold "=ml".
   toMLGoal.
   { wf_auto2. }
@@ -3645,11 +3648,11 @@ Defined.
 Lemma ceil_is_predicate {Σ : Signature} {syntax : Syntax} Γ φ :
   theory ⊆ Γ ->
   well_formed φ ->
-  Γ ⊢i is_predicate (⌈ φ ⌉)
+  Γ ⊢i is_predicate_pattern (⌈ φ ⌉)
   using AnyReasoning.
 Proof.
   intros HΓ wfφ.
-  unfold is_predicate.
+  unfold is_predicate_pattern.
   apply or_comm_meta.
   { wf_auto2. }
   { wf_auto2. }
@@ -3752,7 +3755,7 @@ Lemma predicate_elim
   well_formed (pcPattern C) ->
   well_formed ψ ->
   mu_in_evar_path (pcEvar C) (pcPattern C) 0 = false ->
-  Γ ⊢ is_predicate ψ ->
+  Γ ⊢ is_predicate_pattern ψ ->
   Γ ⊢ emplace C patt_bott ->
   Γ ⊢ emplace C patt_top ->
   Γ ⊢ emplace C ψ
@@ -3804,7 +3807,7 @@ Lemma predicate_propagate_right_2 {Σ : Signature} {syntax : Syntax} Γ ϕ ψ P 
   well_formed ϕ ->
   well_formed ψ ->
   well_formed P ->
-  Γ ⊢ is_predicate ψ ->
+  Γ ⊢ is_predicate_pattern ψ ->
   Γ ⊢ ψ and P $ ϕ <---> P $ (ψ and ϕ).
 Proof.
   intros HΓ wfϕ wfψ wfP predψ.
@@ -3849,7 +3852,7 @@ Lemma predicate_propagate_left_2 {Σ : Signature} {syntax : Syntax} Γ ϕ ψ P :
   well_formed ϕ ->
   well_formed ψ ->
   well_formed P ->
-  Γ ⊢ is_predicate ψ ->
+  Γ ⊢ is_predicate_pattern ψ ->
   Γ ⊢ ψ and P $ ϕ <---> (ψ and P) $ ϕ.
 Proof.
   intros HΓ wfϕ wfψ wfP predψ.
@@ -3897,14 +3900,14 @@ Lemma predicate_propagate_right {Σ : Signature} {syntax : Syntax} Γ ϕ ψ P :
   mu_free ϕ ->
   mu_free ψ ->
   mu_free P ->
-  Γ ⊢ is_predicate ψ ->
+  Γ ⊢ is_predicate_pattern ψ ->
   Γ ⊢ ψ and P $ ϕ <---> P $ (ψ and ϕ).
 Proof.
   intros HΓ wfϕ wfψ wfP mϕ mψ mP predψ.
   toMLGoal.
   { wf_auto2. }
   mlAdd predψ as "P"; clear predψ.
-  unfold is_predicate.
+  unfold is_predicate_pattern.
   mlDestructOr "P" as "T" "B".
   {
     mlRewriteBy "T" at 1.
