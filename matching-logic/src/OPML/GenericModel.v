@@ -30,7 +30,7 @@ Definition UnifiedCarrierCtorFamily
 
 Definition is_monotone (F : UnifiedCarrierFunctor)
     : Type
-:= forall x y, (x -> y) -> (F x -> F x)
+:= forall x y, (x -> y) -> (F x -> F y)
 .
 
 Record UnifiedCarrierComponent := {
@@ -434,6 +434,42 @@ Section combine.
     Definition combine : Component := foldr paircomb empty_component l.
 
 End combine.
+
+Section list_component.
+    Program Definition list_UCC : UnifiedCarrierComponent := {|
+        ucc_functor
+            := fun A => list A ;
+
+        ucc_functor_monotone
+            := fun A B f => @map A B f ;
+
+        ucc_ctor_family
+            := fun (A : Type) nla =>
+            match nla with
+            | ([0], xs) => Some xs
+            | _ => None
+            end
+            ;
+    |}.
+    Next Obligation.
+        (* Injectivity *)
+        (repeat case_match); simplify_eq/=; try reflexivity.
+    Qed.
+
+
+    Program Definition list_component {Σ : OPMLSignature} : Component := {|
+        comp_UCC :=  list_UCC ;
+        comp_invertor := fun A x =>
+            Some (exist _ ([0],(x):(list A)) erefl)
+            ;
+        comp_invertor_complete := _ ;
+    |}.
+    Next Obligation.
+        (repeat case_match); simplify_eq/=; exists erefl; reflexivity.
+    Qed.
+    Fail Next Obligation.
+
+End list_component.
 
 
 Section with_signature.
