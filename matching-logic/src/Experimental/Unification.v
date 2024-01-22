@@ -409,87 +409,6 @@ Section ProofSystemTheorems.
     only 3: intros ? [] **; wf_auto2.
   Qed.
   
-  (* Lemma Lemma₂_half : forall Γ φ subs,
-    theory ⊆ Γ -> mu_free φ -> well_formed φ ->
-    forallb mu_free (map snd subs) -> wf (map snd subs) ->
-    Γ ⊢ substitute_list subs φ and predicate_list subs --->
-      φ and predicate_list subs.
-  Proof.
-    intros Γ φ subs HΓ mfφ wfφ mfs wfs.
-    induction subs as [ | [x φ'] ]; simpl in * |- *.
-    aapply A_impl_A. wf_auto2.
-    (* Somehow wf_auto2 can solve mu_free here *)
-    specialize (IHsubs ltac:(wf_auto2) ltac:(wf_auto2)).
-    toMLGoal.
-    {
-      apply well_formed_imp; repeat apply well_formed_and.
-      1: apply wf_fold_left with (t := snd).
-      5, 8: apply wf_foldr with (t := snd).
-      3, 7, 10: intros ? [] ? ?.
-      all: wf_auto2.
-    }
-    mlIntro "H".
-    mlDestructAnd "H" as "H1" "H2".
-    mlDestructAnd "H2" as "H3" "H4".
-    mlAdd IHsubs as "IH".
-    mlAssert ("IHspec" : (φ and foldr (λ '(x0, φ'0) (a : Pattern), patt_free_evar x0 =ml φ'0 and a) Top subs)).
-    {
-      apply well_formed_and.
-      2: apply wf_foldr with (t := snd).
-      4: intros ? [] ? ?.
-      all: wf_auto2.
-    }
-    mlApply "IH".
-    mlSplitAnd.
-    2: mlExact "H4".
-    pose proof (equality_elimination_basic Γ (patt_free_evar x) φ' {| pcEvar := x; pcPattern := fold_left (λ (a : Pattern) '(x0, φ'0), a^[[evar:x0↦φ'0]]) subs φ |} HΓ ltac:(wf_auto2) ltac:(wf_auto2)).
-    (* pose proof (equality_elimination_basic Γ (patt_free_evar x) φ' {| pcEvar := x; pcPattern := φ |} HΓ ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) mfφ). *)
-    ospecialize* H.
-    {
-      unfold PC_wf. simpl.
-      apply wf_fold_left with (t := snd).
-      3: intros ? [] ? ?.
-      all: wf_auto2.
-    }
-    {
-      simpl.
-      apply mf_fold_left with (t := snd).
-      1, 2: wf_auto2.
-      intros ? [] ? ?. apply mu_free_free_evar_subst; assumption.
-    }
-    cbn in H.
-    rewrite free_evar_subst_id in H.
-    replace ((fold_left (λ (a : Pattern) '(x0, φ'0), a^[[evar:x0↦φ'0]]) subs φ)^[[evar:x↦φ']]) with (fold_left (λ (a : Pattern) '(x0, φ'0), a^[[evar:x0↦φ'0]]) subs φ^[[evar:x↦φ']]) in H.
-    mlAdd H as "Hcong".
-    mlAssert ("Hcongspec" : (fold_left (λ (a : Pattern) '(x0, φ'0), a^[[evar:x0↦φ'0]]) subs φ <---> (fold_left (λ (a : Pattern) '(x0, φ'0), a^[[evar:x0↦φ'0]]) subs φ^[[evar:x↦φ']]))).
-    {
-       apply well_formed_iff; apply wf_fold_left with (t := snd).
-       3, 6: intros ? [] ? ?.
-       all: wf_auto2.
-    }
-    mlApply "Hcong".
-    mlExact "H3".
-    mlDestructAnd "Hcongspec" as "Hcongspec1" "Hcongspec2".
-    mlApply "Hcongspec2".
-    mlExact "H1".
-    (* remember (fresh_evar (fold_right (fun '(x, φ') a => patt_free_evar x =ml φ' and a) patt_top subs)) as y. *)
-    (* assert (well_formed (fold_left (λ (a : Pattern) '(x0, φ'0), a^[[evar:x0↦φ'0]]) subs (patt_free_evar y))). *)
-    (* { *)
-    (*   apply wf_fold_left with (t := snd). *)
-    (*   3: intros ? [] ? ?. *)
-    (*   all: wf_auto2. *)
-    (* } *)
-    (* pose proof (prf_equiv_congruence Γ φ (φ^[[evar:x↦φ']]) {| pcEvar := y ; pcPattern := fold_left (λ (a : Pattern) '(x0, φ'0), a^[[evar:x0↦φ'0]]) subs (patt_free_evar y) |} AnyReasoning wfφ ltac:(wf_auto2) H0 (pile_any _)). *)
-    (* cbn in H1. *)
-    (* mlRewrite "Hcongspec" at 1. *) admit.
-    mlDestructAnd "IHspec" as "IHspec1" "IHspec2".
-    mlSplitAnd.
-    mlExact "IHspec1".
-    mlSplitAnd.
-    mlExact "H3".
-    mlExact "IHspec2".
-     Abort. *)
-
   Lemma extract_common_from_equivalence_r Γ a b c i :
     well_formed a -> well_formed b -> well_formed c ->
     Γ ⊢i (b and a <---> c and a) <---> (a ---> b <---> c) using i.
@@ -553,13 +472,6 @@ Section ProofSystemTheorems.
     * rewrite IHφ; by set_solver.
   Qed.
 
-  Definition patt_and_wrapper : forall (a b : sig well_formed), sig well_formed.
-  Proof.
-    intros [a wfa] [b wfb].
-    exists (a and b).
-    now apply well_formed_and.
-  Defined.
-
   Definition get_fresh_evar (φ : Pattern) : sig (.∉ free_evars φ).
   Proof.
     exists (fresh_evar φ); auto.
@@ -571,36 +483,6 @@ Section ProofSystemTheorems.
     well_formed t ->
     Γ ⊢ (patt_free_evar x) =ml t ---> φ^[[evar:x↦t]] =ml φ.
   Proof.
-    (* intros φ t x Γ HΓ WFφ MFφ WFt. *)
-    (* remember (fresh_evar φ) as y. *)
-    (* assert (mu_free (φ^[[evar:x↦patt_free_evar y]] =ml φ)) as How. { *)
-    (*   cbn. rewrite mu_free_free_evar_subst; auto. *)
-    (*   rewrite MFφ. reflexivity. *)
-    (* } *)
-    (* assert (Hy : y ∉ free_evars φ) by (subst y; solve_fresh). *)
-    (* pose proof (equality_elimination_basic Γ (patt_free_evar x) t {| pcEvar := y; pcPattern := φ^[[evar:x↦patt_free_evar y]] =ml φ |} HΓ ltac:(wf_auto2) WFt ltac:(wf_auto2) How). *)
-    (* Opaque "=ml". *)
-    (* cbn in H. *)
-    (* replace ((φ^[[evar:x↦patt_free_evar y]] =ml φ)^[[evar:y↦ patt_free_evar x]]) with ((φ^[[evar:x↦patt_free_evar y]]^[[evar:y↦ patt_free_evar x]] =ml φ^[[evar:y↦ patt_free_evar x]])) in H by reflexivity. *)
-    (* replace ((φ^[[evar:x↦patt_free_evar y]] =ml φ)^[[evar:y↦t]]) with ((φ^[[evar:x↦patt_free_evar y]]^[[evar:y↦t]] =ml φ^[[evar:y↦t]])) in H by reflexivity. *)
-    (* rewrite ! free_evar_subst_chain in H. *)
-    (* 1-2: assumption. *)
-    (* rewrite free_evar_subst_id in H. *)
-    (* rewrite ! (free_evar_subst_no_occurrence y) in H. *)
-    (* 1-2: assumption. *)
-    (* mlIntro "H". *)
-    (* mlAdd H as "H1". *)
-    (* (1* specialize? *1) *)
-    (* mlAssert ("H2" : (φ =ml φ <---> φ^[[evar:x↦t]] =ml φ)). *)
-    (* wf_auto2. *)
-    (* mlApply "H1". *)
-    (* mlExact "H". *)
-    (* (1* specialize? *1) *)
-    (* Transparent "=ml". *)
-    (* mlDestructAnd "H2" as "H3" "H4". *)
-    (* mlApply "H3". *)
-    (* mlReflexivity. *)
-  (* Restart. *)
     intros * HΓ wfφ mfφ wft.
     pose proof (get_fresh_evar φ) as [y Hy].
     pose proof (equality_elimination_basic Γ (patt_free_evar x) t {| pcEvar := y; pcPattern := φ^[[evar: x ↦ patt_free_evar y]] =ml φ |}).
@@ -614,24 +496,6 @@ Section ProofSystemTheorems.
     mlApply "H1". mlReflexivity.
   Defined.
 
-  (* Goal forall σ φ x t, (substitute_list σ φ)^[[evar:x↦t]] = substitute_list (map (fun '(e, p) => (e, p^[[evar:x↦t]])) σ) φ^[[evar:x↦t]]. *)
-  (* Proof. *)
-  (*   intros. *)
-  (*   induction σ; simpl. *)
-  (*   reflexivity. *)
-  (*   destruct a. *)
-  (* Abort. *)
-
-  (* Goal forall σ φ x t, (forall p, In p σ -> x ∉ free_evars (snd p)) -> (x ∉ free_evars φ) -> (substitute_list σ φ)^[[evar:x↦t]] = substitute_list σ φ^[[evar:x↦t]]. *)
-  (* Proof. *)
-  (*   intros. *)
-  (*   induction σ; simpl. *)
-  (*   reflexivity. *)
-  (*   destruct a. *)
-  (* Abort. *)
-
-  (* From Coq.Arith Require Import Wf_nat. *)
-
   Lemma Lemma₂ : forall Γ φ σ (i : ProofInfo),
     theory ⊆ Γ -> mu_free φ -> well_formed φ ->
     forallb mu_free (map snd σ) -> wf (map snd σ) ->
@@ -643,12 +507,10 @@ Section ProofSystemTheorems.
     pose proof (wf_substitute_list σ φ wfσ wfφ) as WF2.
     epose proof (extract_common_from_equivalence_r _ _ _ _ _ _ _).
     eapply (pf_iff_proj2 _ _ _ _ _ _) in H.
-    (* use i in H. *)
     mlApplyMeta H.
     clear H.
     fromMLGoal.
     generalize dependent φ.
-    (* induction σ using (induction_ltof1 _ length). intros. *)
     induction σ; simpl; intros. mlIntro. mlReflexivity. destruct a.
     mlIntro "H". mlDestructAnd "H" as "H1" "H2".
     unshelve ospecialize* IHσ. exact φ^[[evar:e↦p]]. 1-6, 8: shelve.
@@ -657,88 +519,14 @@ Section ProofSystemTheorems.
     mlApply "H2". mlClear "H2".
     epose proof (Lemma₁ _ φ _ _ _ _ _ _).
     mlApplyMeta H in "H1". clear H. 2: admit.
-    (* mlSymmetry in "H1". *)
-    (* mlRewriteBy "H1" at 1. *)
     epose proof (get_fresh_evar (φ^[[evar:e↦p]] <---> φ)) as [y Hy].
     epose proof (total_phi_impl_phi _ _ _ _ Hy _).
     mlApplyMeta H in "H1". clear H.
-    (* ^ mlRewriteBy should be able to do this much ^ *)
     mlExact "H1". admit.
     Unshelve. all: try solve [auto | wf_auto2].
     simpl in mfσ. apply andb_true_iff in mfσ as [].
     apply mu_free_free_evar_subst; auto.
   Admitted.
-
-  (* Proof. *)
-    (* unfold ltof in H. *)
-    (* destruct σ; simpl. mlIntro. mlReflexivity. *)
-    (* destruct p. *)
-    (* specialize (H σ). ospecialize* H. 1-5, 7: shelve. *)
-    (* mlIntro "H". mlDestructAnd "H" as "H1" "H2". *)
-    (* mlApplyMeta H in "H2". clear H. *)
-    (* epose proof (Lemma₁ φ _ _ _ _ _ _ _ ). *)
-    (* mlApplyMeta H in "H1". clear H. 2: admit. *)
-    (* epose proof (pf_iff_equiv_trans_obj _ (substitute_list σ φ^[[evar:e↦p]]) _ φ _ _ _ _). *)
-    (* mlAssert ("H0" : (substitute_list σ φ^[[evar:e↦p]] <---> substitute_list σ φ)). *)
-    (* shelve. clear Hwf. *)
-    (* Fail mlRewriteBy "H1" at 1. *)
-
-
-    (* induction σ; simpl. *)
-    (* mlIntro. mlReflexivity. *)
-    (* destruct a. *)
-    (* ospecialize* IHσ. 1-4, 6: shelve. *)
-    (* mlIntro "H". *)
-    (* mlDestructAnd "H" as "H1" "H2". *)
-    (* mlApplyMeta IHσ in "H2". clear IHσ. *)
-    (* epose proof (Lemma₁ φ _ _ _ _ _ _ _). *)
-    (* mlApplyMeta H in "H1". clear H. 2: admit. *)
-    (* Fail mlRewriteBy "H1" at 1. *)
-    (* evar (y : evar). *)
-    (* epose proof (equality_elimination_basic _ _ _ {| pcEvar := y; pcPattern := substitute_list σ (patt_free_evar y) |}). cbn in H. *)
-    (* ospecialize* H. 1-5: shelve. *)
-    (* mlApplyMeta H in "H1". clear H. *)
-    (* replace ((substitute_list σ (patt_free_evar y))^[[evar:y↦φ^[[evar:e↦p]]]]) with (substitute_list σ φ^[[evar:e↦p]]). *)
-    (* replace ((substitute_list σ (patt_free_evar y))^[[evar:y↦φ]]) with (substitute_list σ φ). *)
-    (* epose proof (pf_iff_equiv_trans_obj _ _ _ _ _ _ _ _). *)
-    (* mlApplyMeta H in "H1". clear H. *)
-    (* mlApply "H1" in "H2". *)
-    (* mlExact "H2". *)
-    (* transitivity (substitute_list (map (^[[evar:y↦φ]]) σ) (patt_free_evar y)^[[evar:y↦φ]]). *)
-    (* (1* generalize dependent φ. vagy induction σ using list_length_ind. *1) *)
-    (* generalize dependent φ. *)
-    (* induction σ; simpl; intros. *)
-    (* mlIntro. mlReflexivity. *)
-    (* destruct a. *)
-    (* unshelve ospecialize* IHσ. exact (φ^[[evar: e ↦ p]]). 1-6, 8: shelve. *)
-    (* mlIntro "H". mlDestructAnd "H" as "H1" "H2". *)
-    (* Fail mlRewriteBy "H1" at 1. *)
-    (* mlApplyMeta IHσ in "H2". clear IHσ. *)
-    (* (1* Undo 3. *1) *)
-    (* epose proof (equality_elimination_basic _ _ _ ({| pcEvar := e; pcPattern := substitute_list σ φ |}) HΓ _ _ _ _). cbn in H. *)
-    (* (1* mlIntro "H". mlDestructAnd "H" as "H1" "H2". *1) *)
-    (* mlApplyMeta H in "H1". clear H. *)
-    (* 2: admit. *)
-    (* rewrite free_evar_subst_id. *)
-    (* (1* emlApplyMeta (pf_iff_equiv_sym_obj _ _ _ _ _ _) in "H1". *1) *)
-    (* epose proof (pf_iff_equiv_sym_obj _ _ _ _ _ _). *)
-    (* mlApplyMeta H in "H1". clear H. *)
-    (* epose proof (pf_iff_equiv_trans_obj _ _ _ _ _ _ _ _). *)
-    (* mlApplyMeta H in "H1". clear H. *)
-    (* mlApply "H1" in "H2". mlClear "H1". *)
-    (* replace ((substitute_list σ φ)^[[evar:e↦p]]) with (substitute_list σ φ^[[evar:e↦p]]). mlExact "H2". *)
-    (* admit. *)
-    (* Unshelve. all: try solve [wf_auto2]. all: epose proof (wf_substitute_list σ φ _ _); try solve [wf_auto2]. *)
-    (* simpl. apply mf_fold_left with (t := snd). exact mfφ. *)
-    (* clear wfφ wfσ WF1 WF2 IHσ H. simpl in mfσ. *)
-    (* apply andb_true_iff in mfσ. destruct mfσ. clear H. *)
-    (* induction σ. split. *)
-    (* simpl in H0. apply andb_true_iff in H0. destruct H0. *)
-    (* specialize (IHσ H0). simpl. apply andb_true_iff. now split. *)
-    (* intros ? [] ? ?. apply mu_free_free_evar_subst; auto. *)
-    (* Unshelve. all: wf_auto2. *)
-
-  (* Admitted. *)
 
   Definition is_unifier_of (σ : list (evar * Pattern)) t₁ t₂ := substitute_list σ t₁ =ml substitute_list σ t₂.
 
@@ -756,116 +544,6 @@ Section ProofSystemTheorems.
     reflexivity.
     contradiction.
   Defined.
-
-  (* Goal forall a b x Γ, theory ⊆ Γ ->
-    well_formed a -> well_formed b -> well_formed x -> mu_free x ->
-    Γ ⊢ x ---> a =ml b <---> (a and x) =ml (b and x).
-  Proof.
-    intros ? ? ? ? HΓ wfa wfb wfx mfx.
-    mlIntro "H".
-    unfold patt_iff.
-    mlSplitAnd.
-    mlIntro "H1".
-    (* remember (fresh_evar x) as y. *)
-    (* pose proof (equality_elimination_basic Γ a b {| pcEvar := y ; pcPattern := patt_free_evar y and x |} HΓ wfa wfb ltac:(wf_auto2) ltac:(wf_auto2)). *)
-    (* Opaque "and". *)
-    (* cbn in H. *)
-    (* Transparent "and". *)
-    (* mlSimpl in H. *)
-    (* rewrite ! patt_free_evar_subst in H. *)
-    (* rewrite ! free_evar_subst_no_occurrence in H; auto. *)
-    (* mlAdd H as "H2". *)
-    (* mlAssert ("H2spec" : (a and x <---> b and x)). *)
-    (* wf_auto2. *)
-    (* mlApply "H2". *)
-    (* mlExact "H1". *)
-    mlRewriteBy "H1" at 1.
-    mlReflexivity.
-    (* pose proof (patt_iff_implies_equal (a and x) (b and x) Γ AnyReasoning ltac:(wf_auto2) ltac:(wf_auto2) (pile_any _)). *)
-    (* mlApplyMeta H0 in "H2spec". *)
-    (* mlRewriteBy "H2spec" at 0. *)
-    mlIntro "H1".
-    mlSwap "H" with "H1".
-    mlDeduct "H1".
-    remember (_ : ProofInfo) as i.
-    pose proof (extract_common_from_equivalence Γ x a b wfx wfa wfb).
-    assert (Γ ∪ {[a and x <---> b and x]} ⊢i (x ---> a <---> b) using i).
-    admit.
-    assert (Γ ∪ {[a and x <---> b and x]} ⊢i (x ---> a =ml b) using i).
-    (* pose proof (hypothesis (Γ ∪ {[a and x <---> b and x]}) (a and x <---> b and x) ltac:(wf_auto2) ltac:(set_solver)). *)
-    (* 2: { assert (Γ ∪ {[a and x <---> b and x]} ⊢i a <---> b using i). admit. mlRewrite H1 at 1. *)
-    (* apply (useBasicReasoning AnyReasoning) in H. *)
-    (* mlAdd H as "H2". *)
-    (* mlDestructAnd "H2" as "H3" "H4". *)
-    (* mlClear "H4". *)
-    (* unfold "=ml". *)
-     Abort. *)
-
-  (* Lemma and_of_equiv_is_equiv_obj Γ p q p' q': *)
-  (*   well_formed p -> *)
-  (*   well_formed q -> *)
-  (*   well_formed p' -> *)
-  (*   well_formed q' -> *)
-  (*   Γ ⊢i (p <---> p') ---> *)
-  (*   (q <---> q') ---> *)
-  (*   ((p and q) <---> (p' and q')) using BasicReasoning. *)
-  (* Proof. *)
-  (*   intros wfp wfq wfp' wfq'. *)
-  (*   toMLGoal. *)
-  (*   wf_auto2. *)
-  (*   mlIntro "H". *)
-  (*   mlIntro "H1". *)
-  (*   mlDestructAnd "H" as "H2" "H3". *)
-  (*   mlDestructAnd "H1" as "H4" "H5". *)
-  (*   mlSplitAnd. *)
-  (*   mlIntro "H". *)
-  (*   mlDestructAnd "H" as "H6" "H7". *)
-  (*   mlSplitAnd. *)
-  (*   mlApply "H2". *)
-  (*   mlExact "H6". *)
-  (*   mlApply "H4". *)
-  (*   mlExact "H7". *)
-  (*   mlIntro "H". *)
-  (*   mlDestructAnd "H" as "H6" "H7". *)
-  (*   mlSplitAnd. *)
-  (*   mlApply "H3". *)
-  (*   mlExact "H6". *)
-  (*   mlApply "H5". *)
-  (*   mlExact "H7". *)
-  (* Defined. *)
-
-  (* Lemma predicate_list_total Γ σ : theory ⊆ Γ -> wf (map snd σ) -> Γ ⊢i ⌊ predicate_list σ ⌋ using BasicReasoning. *)
-  (* Proof. *)
-  (*   intros HΓ wfσ. *)
-  (*   unfold predicate_list. *)
-  (*   epose proof (foldr_preserves_function_set (λ '(x, φ'), patt_free_evar x =ml φ') (λ φ, Γ ⊢i ⌊ φ ⌋ using BasicReasoning) (λ '(x, φ') (φ : Pattern), patt_free_evar x =ml φ' and φ) patt_top σ). *)
-  (*   ospecialize* X. *)
-  (*   toMLGoal. wf_auto2. *)
-  (*   mlAdd (def_propagate_not Γ patt_bott HΓ well_formed_bott). *)
-  (*   mlAdd (bott_not_defined Γ). *)
-  (*   mlDestructAnd "0". *)
-  (*   mlApply "2". *)
-  (*   mlExact "1". *)
-  (*   clear X. *)
-  (*   induction σ; split. *)
-  (*   destruct a. *)
-  (*   unfold "=ml". *)
-  (*   Search patt_total. *)
-  (*   admit. *)
-  (*   apply IHσ. wf_auto2. *)
-  (*   intros. *)
-  (*   destruct b. *)
-  (*   toMLGoal. admit. *)
-  (*   assert (well_formed (patt_free_evar e =ml p)) as Hagyjalmarbeken by admit. *)
-  (*   assert (well_formed a) as Elegleszmar by admit. *)
-  (*   mlAdd (patt_total_and Γ (patt_free_evar e =ml p) a HΓ Hagyjalmarbeken Elegleszmar). *)
-  (*   mlDestructAnd "0". *)
-  (*   mlApply "2". *)
-  (*   mlSplitAnd. *)
-  (*   mlExactMeta H0. *)
-  (*   mlExactMeta H. *)
-  (*   exact X. *)
-  (* Admitted. *)
 
   (* This is temporary *)
   (* Proofs will be merged later *)
@@ -1002,11 +680,6 @@ Section ProofSystemTheorems.
 
   Tactic Notation "mlSpecializeHyp" constr(f) "with" constr(x) := mlApply f in x; mlClear f; mlRename x into f.
 
-  (* H1 : predicate_list can be total?
-  mlConj H0 H1 
-  bring patt_and through totality with patt_total_and
-  distribute patt_and with and_of_equiv_is_equiv_obj
-  deduction theorem *)
   Lemma Lemma₅ : forall (σ : list (evar * Pattern)) t₁ t₂ Γ,
     theory ⊆ Γ ->
     well_formed t₁ -> well_formed t₂ ->
@@ -1035,239 +708,6 @@ Section ProofSystemTheorems.
     mlReflexivity.
     Unshelve. all: auto.
   Defined.
-
-    (* Proof. *)
-    (* intros * HΓ wft₁ wft₂ mft₁ mft₂ wfσ mfσ. *)
-    (* pose proof (wf_substitute_list σ t₁ wfσ wft₁) as WF1. *)
-    (* pose proof (wf_substitute_list σ t₂ wfσ wft₂) as WF2. *)
-    (* pose proof (wf_predicate_list σ wfσ) as WF3. *)
-    (* pose proof (wf_is_unifier_of σ t₁ t₂ wfσ wft₁ wft₂) as WF4. *)
-    (* mlIntro "H0". *)
-    (* mlIntro "H1". *)
-    (* unfold is_unifier_of. *)
-    (* unfold "=ml" at 1. *)
-    (* mlDeduct "H0". *)
-    (* remember (ExGen := _, SVSubst := _, KT := _, AKT := _) as i. clear Heqi. *)
-    (* epose (_ <---> _). *)
-    (* epose proof (hypothesis (Γ ∪ {[p]}) p _ ltac:(set_solver)) as Hyp. *)
-    (* use i in Hyp. *)
-    (* epose proof (prf_add_assumption _ _ _ _ _ _ Hyp) as Hyp'. *)
-    (* epose proof (extract_common_from_equivalence_r _ _ _ _ _ _ _ _). *)
-    (* apply pf_iff_proj2 in H. *)
-    (* apply (MP Hyp') in H. *)
-    (* clear Hyp'. *)
-    (* epose proof (Lemma₂ (Γ ∪ {[p]}) _ _ _ ltac:(set_solver) mft₂ wft₂ mfσ wfσ). *)
-    (* epose proof (pf_iff_equiv_trans _ _ _ _ _ _ _ _ H H0). *)
-    (* clear H0. *)
-    (* epose proof (extract_common_from_equivalence_r _ _ _ _ _ _ _ _). *)
-    (* apply pf_iff_proj1 in H0. *)
-    (* apply (MP H1) in H0. *)
-    (* clear H1. *)
-    (* apply pf_iff_equiv_sym in H. *)
-    (* epose proof (Lemma₂ (Γ ∪ {[p]}) _ _ _ ltac:(set_solver) mft₁ wft₁ mfσ wfσ). *)
-    (* epose proof (pf_iff_equiv_trans _ _ _ _ _ _ _ _ H H1). *)
-    (* clear H H1. *)
-    (* epose proof (extract_common_from_equivalence_r _ _ _ _ _ _ _ _). *)
-    (* apply pf_iff_proj1 in H. *)
-    (* apply (MP H2) in H. *)
-    (* clear H2. *)
-    (* mlAdd Hyp as "Hyp". *)
-    (* mlAdd H as "H". *)
-    (* mlAdd H0 as "H0". *)
-    (* clear Hyp H H0. subst p. *)
-    (* 2-9: shelve. *)
-    (* mlAssert ("H2" : (substitute_list σ t₂ <---> t₁)). *)
-    (* shelve. mlApply "H". mlExact "H1". mlClear "H". clear Hwf. *)
-    (* mlSpecializeHyp "H0" with "H1". *)
-    (* epose proof (pf_iff_equiv_sym_obj _ _ _ _ _ _) as H. *)
-    (* mlAdd H as "H". clear H. *)
-    (* mlSpecializeHyp "H" with "H2". *)
-    (* epose proof (pf_iff_equiv_sym_obj _ _ _ _ _ _) as H. *)
-    (* mlAdd H as "H1". clear H. *)
-    (* mlSpecializeHyp "H1" with "Hyp". *)
-    (* epose proof (pf_iff_equiv_trans_obj _ _ _ (substitute_list σ t₁) _ _ _ _). *)
-    (* mlAdd H as "H2". clear H. *)
-    (* mlSpecializeHyp "H2" with "H". *)
-    (* mlSpecializeHyp "H2" with "H1". *)
-    (* epose proof (pf_iff_equiv_trans_obj _ _ _ _ _ _ _ _). *)
-    (* mlAdd H as "H". clear H. *)
-    (* mlSpecializeHyp "H" with "H2". *)
-    (* mlSpecializeHyp "H" with "H0". *)
-    (* Fail mlRewriteBy "H" at 1. *)
-    (* admit. *)
-    (* Unshelve. all: wf_auto2. *)
-    (* Restart. *)
-
-    (* mlAdd (Lemma₂ Γ t₂ σ HΓ mft₂ wft₂ mfσ wfσ) as "H2". *)
-    (* mlAdd (Lemma₂ Γ t₁ σ HΓ mft₁ wft₁ mfσ wfσ) as "H3". *)
-    (* pose proof (predicate_list_predicate Γ σ HΓ wfσ). *)
-    (* pose proof (predicate_equiv Γ (predicate_list σ) HΓ WF3). *)
-    (* pose proof (MP H0 H1). *)
-    (* mlAssert ("H2" : (⌊ predicate_list σ ⌋)). wf_auto2. *)
-    (* mlAdd H2. mlDestructAnd "0". mlApply "1". mlExact "H1". *)
-    (* mlSwap "H0" with "H2". *)
-    (* mlConj "H2" "H0" as "H3". unfold "=ml" at 1. *)
-    (* pose proof (well_formed_iff _ _ WF1 WF2) as WF5. *)
-    (* pose proof (patt_total_and Γ _ _ HΓ WF3 WF5). *)
-    (* apply useGenericReasoning with (i := AnyReasoning) in H3. *)
-    (* 2: apply pile_any. *)
-    (* mlAdd H3. mlDestructAnd "0". mlAssert ("H4" : (⌊ predicate_list σ        and (substitute_list σ t₁ <---> substitute_list σ t₂) ⌋)). wf_auto2. mlApply "2". mlExact "H3". *)
-    (* mlClear "1". mlClear "2". mlClear "H3". mlClear "H2". *)
-    (* pose proof (and_of_equiv_is_equiv_obj Γ _ _ _ _ WF3 WF1 WF3 WF2). *)
-    (* pose proof (pf_iff_equiv_refl Γ _ WF3). *)
-    (* apply (MP H5) in H4. *)
-    (* use AnyReasoning in H4. *)
-    (* mlAdd H4. *)
-    (* mlDeduct "H4". *)
-    (* pose proof (and_of_equiv_is_equiv_obj Γ _ _ _ _  WF1 WF3 WF2 WF3). *)
-    (* use AnyReasoning in H. *)
-    (* epose proof (extract_common_from_equivalence_r Γ _ _ _ _ WF3 WF1 WF2). *)
-    (* mlAdd H. mlDestructAnd "0" as "x" "H2". clear H. mlClear "x". *)
-    (* epose proof (extract_common_from_equivalence_r Γ _ _ _ _ WF3 WF1 wft₂). *)
-    (* mlAdd H. mlDestructAnd "0" as "H2'" "x". clear H. mlClear "x". *)
-    (* epose proof (extract_common_from_equivalence_r Γ _ _ _ _ WF3 WF2 wft₁). *)
-    (* mlAdd H. mlDestructAnd "0" as "H2''" "x". clear H. mlClear "x". *)
-    (* (1* epose proof (and_of_equiv_is_equiv_obj' _ _ _ _ _ _ WF1 WF3 wft₂ WF3). *1) *)
-    (* (1* use AnyReasoning in H. *1) *)
-    (* (1* mlAdd H as "H2'". clear H. *1) *)
-    (* pose proof (pf_iff_equiv_refl Γ _ WF3). *)
-    (* use AnyReasoning in H. *)
-    (* mlAdd H as "H3". clear H. *)
-    (* epose proof (pf_iff_equiv_trans_obj Γ (substitute_list σ t₂ and predicate_list σ) (substitute_list σ t₁ and predicate_list σ) _ _ _ _ _). *)
-    (* mlAdd H as "H4". clear H. *)
-    (* epose proof (pf_iff_equiv_trans_obj Γ _ _ (t₁ and predicate_list σ) _ _ _ _). *)
-    (* mlAdd H as "H4'". clear H. *)
-    (* epose proof (pf_iff_equiv_trans_obj Γ (substitute_list σ t₁) (substitute_list σ t₂) _ _ _ _ _). *)
-    (* mlAdd H as "H4''". clear H. *)
-    (* epose proof (pf_iff_equiv_trans_obj Γ _ _ _ _ _ _ _). *)
-    (* mlAdd H as "H4'''". clear H. *)
-    (* epose proof (pf_iff_equiv_sym_obj _ (substitute_list σ t₁ and predicate_list σ) (substitute_list σ t₂ and predicate_list σ) _ _ _). *)
-    (* mlAdd H as "H5". clear H. *)
-    (* epose proof (pf_iff_equiv_sym_obj _ _ _ _ _ _). *)
-    (* mlAdd H as "H5'". clear H. *)
-    (* epose proof (pf_iff_equiv_sym_obj _ (substitute_list σ t₁) (substitute_list σ t₂) _ _ _). *)
-    (* mlAdd H as "H5'". clear H. *)
-    (* clear H0 H1 H2 H3 H4 H5 Hwf Hwf0 WF5. *)
-    (* evar Pattern. *)
-    (* enough (well_formed p) as wfp. *)
-    (* pose proof (hypothesis (Γ∪ {[predicate_list σ and (substitute_list σ t₁ <---> substitute_list σ t₂)]}) (predicate_list σ and (substitute_list σ t₁ <---> substitute_list σ t₂)) ltac:(wf_auto2) ltac:(set_solver)) as Hyp. *)
-    (* epose proof (prf_add_assumption _ _ _ _ WF3 _ Hyp). *)
-    (* mlAdd Hyp' as "Hyp'". *)
-    (* subst p. *)
-
-    (* epose proof (pf_iff_proj2 _ _ _ _ _ _ H0). *)
-    (* pose proof (MP H H1). *)
-    (* mlAdd H2 as "H4". mlAdd H2 as "H5". *)
-    (* clear Hyp H H0 H1. *)
-
-    (* pose proof (MP H2 H). *)
-    (* clear H. *)
-    (* epose proof (pf_iff_equiv_trans_obj _ _ _ _ _ _ _ _). *)
-    (* pose proof (MP H (MP H0 H3)). *)
-    (* epose proof (pf_iff_equiv_trans_obj _ _ _ _ _ _ _ _). *)
-
-    (* mlAdd H. clear H. mlDestructAnd "0" as "x" "H4". mlClear "x". *)
-    (* mlSpecializeHyp "H4" with "Hyp'". *)
-    (* subst p. *)
-    (* mlAdd Hyp. *)
-    (* mlDestructAnd "1". *)
-    (* 2: wf_auto2. *)
-    (* unfold patt_iff at 3, patt_and at 1, patt_not at 3. *)
-    (* mlApply "H2" in "Hyp'". mlClear "H2". *)
-    (* mlApply "Hyp'" in "H3". mlClear "Hyp'". *)
-    (* mlApply "H5" in "Hyp'". mlClear "H5". *)
-    (* mlAssert ("H3'" : (substitute_list σ t₂ and predicate_list σ <--->       substitute_list σ t₁ and predicate_list σ)). shelve. *)
-    (* mlApply "H5". mlExact "H3". mlClear "H5". *)
-    (* mlApply "H4" in "Hyp'". mlClear "H4". *)
-    (* mlApply "Hyp'" in "H'". mlClear "Hyp'". *)
-    (* mlApply "H5'" in "H'". mlClear "H5'". *)
-    (* mlApply "H4'''" in "H'". mlClear "H4'''". *)
-    (* mlApply "H'" in "H". mlClear "H'". *)
-    (* epose proof (extract_common_from_equivalence_r _ _ _ _ _ _ _ _). *)
-    (* mlAdd H. clear H. *)
-    (* mlDestructAnd "0" as "H2" "x". mlClear "x". *)
-    (* mlApply "H2" in "H". mlApply "H" in "H1". *)
-
-    (* mlApply "H4'" in "H3'". mlClear "H4'". *)
-    (* mlApply "H3" in "H". mlClear "H3". *)
-    (* mlApply "H3'" in "H'". mlClear "H3'". *)
-    (* mlApply "H2'" in "H". mlClear "H2'". *)
-    (* mlApply "H2''" in "H'". mlClear "H2''". *)
-    (* mlAssert ("H2" : (substitute_list σ t₁ <---> t₂)). shelve. *)
-    (* mlApply "H". mlExact "H1". mlClear "H". *)
-    (* mlApply "H'" in "H1". mlClear "H'". *)
-    (* mlApply "H4''" in "Hyp'". mlClear "H4''". *)
-    (* mlApply "Hyp'" in "H1". mlClear "Hyp'". *)
-    (* mlApply "H5'" in "H1". mlClear "H5'". *)
-    (* mlApply "H4'''" in "H1". mlClear "H4'''". *)
-    (* mlApply "H1" in "H2". mlClear "H1". *)
-    
-    (* epose proof (foldr_preserves_function_set snd (fun φ => Γ ⊢i ⌊ φ ⌋ using BasicReasoning) (λ '(x, φ') (φ : Pattern), patt_free_evar x =ml φ' and φ) Top σ). *)
-    (* simpl in X. *)
-    (* ospecialize* X. *)
-    (* toMLGoal. wf_auto2. *)
-    (* mlAdd (def_propagate_not Γ patt_bott HΓ ltac:(wf_auto2)). *)
-    (* mlAdd (bott_not_defined Γ). *)
-    (* mlDestructAnd "0". *)
-    (* mlApply "2". *)
-    (* mlExact "1". *)
-    (* (1* Search derives_using patt_and patt_total. *1) *)
-    (* (1* Search derives_using patt_iff patt_and. *1) *)
-    (* pose proof (extract_common_from_equivalence Γ (predicate_list σ) (substitute_list σ t₁) t₁). *)
-    (* ospecialize* H0. *)
-    (* apply wf_foldr with (t := snd). *)
-    (* 4: apply wf_fold_left with (t := snd). *)
-    (* 3, 6: intros ? [] ? ?. *)
-    (* 1-7: wf_auto2. *)
-    (* apply (useBasicReasoning AnyReasoning) in H0. *)
-    (* mlAdd H0 as "H2". *)
-    (* mlDestructAnd "H2" as "H3" "H4". *)
-    (* mlClear "H4". *)
-    (* mlAssert ("H3spec" : (predicate_list σ ---> substitute_list σ t₁ <---> t₁)). *)
-    (* { *)
-    (*   apply well_formed_imp. *)
-    (*   apply wf_foldr with (t := snd). *)
-    (*   4: apply well_formed_iff. *)
-    (*   4: apply wf_fold_left with (t := snd). *)
-    (*   3, 6: intros ? [] ? ?. *)
-    (*   all: wf_auto2. *)
-    (* } *)
-    (* mlApply "H3". *)
-    (* mlSplitAnd. *)
-    (* Admitted. *)
-
-  (* Lemma Lemma₅_meta : forall (σ : list (evar * Pattern)) t₁ t₂ Γ, *)
-  (*   theory ⊆ Γ -> well_formed t₁ -> well_formed t₂ -> wf (map snd σ) -> *)
-  (*   Γ ⊢ is_unifier_of σ t₁ t₂ -> Γ ⊢ predicate_list σ ---> (t₁ =ml t₂). *)
-  (* Proof. *)
-  (*   intros ? ? ? ? HΓ wft₁ wft₂ wfσ isunif. *)
-  (*   toMLGoal. *)
-  (*   { *)
-  (*     simpl. *)
-  (*     apply well_formed_imp. *)
-  (*     apply wf_foldr with (t := snd). *)
-  (*     3: intros ? [] ? ?. *)
-  (*     all: wf_auto2. *)
-  (*   } *)
-  (*   mlIntro "H". *)
-
-  (* Lemma Lemma₁_meta : forall φ t x Γ, theory ⊆ Γ ->
-    well_formed φ ->
-    mu_free φ ->
-    well_formed t ->
-    Γ ⊢ (patt_free_evar x) =ml t ->
-    Γ ⊢ φ^[[evar:x↦t]] =ml φ.
-  Proof.
-    intros φ t x Γ HΓ WFφ MFφ WFt H.
-    pose proof (equality_elimination_basic Γ (patt_free_evar x) t {| pcEvar := x; pcPattern := φ |} HΓ ltac:(wf_auto2) WFt ltac:(wf_auto2) MFφ).
-    cbn in H0.
-    pose proof (MP H H0).
-    pose proof (pf_iff_equiv_sym_nowf Γ (φ^[[evar:x↦patt_free_evar x]]) (φ^[[evar:x↦t]]) _ H1).
-    pose proof (free_evar_subst_id φ x).
-    rewrite H3 in H2.
-    pose proof (patt_iff_implies_equal (φ^[[evar:x↦t]]) φ Γ AnyReasoning ltac:(wf_auto2) WFφ ltac:(try_solve_pile) H2).
-    exact H4.
-     Defined. *)
 
   Lemma R₅' : forall x Γ, theory ⊆ Γ -> Γ ⊢ (ex , patt_free_evar x =ml b0).
   Proof.
