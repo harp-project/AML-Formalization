@@ -456,42 +456,10 @@ Section nat.
       mlAssumption.
   Defined.
   
-  Theorem  something:
-    ∀ {Σ : Signature} {syntax : Definedness_Syntax.Syntax} 
-     (Γ : Theory) (φ₁ φ₂ : Pattern)   (i : ProofInfo),
-      Definedness_Syntax.theory ⊆ Γ
-        → well_formed φ₁
-          → well_formed φ₂
-            → Γ ⊢i is_functional φ₂ using AnyReasoning
-              → Γ ⊢i φ₁ using i
-                → Γ ⊢i  φ₂ ∈ml φ₁  using AnyReasoning .
-  Proof.
-    intros.
-    (* toMLGoal.
-    wf_auto2. *)
-    unfold patt_in.
-    apply provable_iff_top in H3.
-    2: wf_auto2.
-    use AnyReasoning in H3.
-    mlRewrite H3 at 1.
-    pose proof patt_and_id_r Γ φ₂ ltac:(wf_auto2).
-    use AnyReasoning in H4.
-    mlRewrite H4 at 1.
-    mlAdd H2. mlRevert "0". unfold is_functional.
-    mlIntro.
-    mlDestructEx "0" as x.
-(*     1:admit. *)
-    mlSimpl. cbn.
-    rewrite evar_open_not_occur.
-    1: wf_auto2.
-    mlRewriteBy "0" at 1. 
-    pose proof defined_evar Γ x H.
-    use AnyReasoning in H5.
-    mlExactMeta H5.
-  Defined.
-    
+  (* nedd to change the name *)  
   Theorem  something_v2:
-    ∀ {Σ : Signature} {syntax : Definedness_Syntax.Syntax} (Γ : Theory) (φ₁ φ₂ : Pattern),
+    ∀ {Σ : Signature} {syntax : Definedness_Syntax.Syntax} 
+     (Γ : Theory) (φ₁ φ₂ : Pattern),
       Definedness_Syntax.theory ⊆ Γ
         → well_formed φ₁
           → well_formed φ₂
@@ -516,6 +484,24 @@ Section nat.
     pose proof defined_evar Γ x H.
     use AnyReasoning in H4.
     mlExactMeta H4.
+  Defined.
+
+  (* nedd to change the name *)
+  Theorem  something:
+    ∀ {Σ : Signature} {syntax : Definedness_Syntax.Syntax} 
+     (Γ : Theory) (φ₁ φ₂ : Pattern),
+      Definedness_Syntax.theory ⊆ Γ
+        → well_formed φ₁
+          → well_formed φ₂
+            → Γ ⊢i is_functional φ₂ using AnyReasoning 
+              → Γ ⊢i φ₁ using AnyReasoning
+                → Γ ⊢i  φ₂ ∈ml φ₁  using AnyReasoning .
+  Proof.
+    intros.
+    mlApplyMeta something_v2.
+    mlExactMeta H2.
+    mlExactMeta H3.
+    set_solver.
   Defined.
     
   Theorem  something_v3:
@@ -1242,7 +1228,7 @@ Section nat.
                    pose proof use_nat_axiom AxFun1 Γ H; simpl in H6; mlAdd H6 as "f";mlExact "f".
                  }
                  
-              epose proof something Γ (Zero +ml Zero =ml Zero) Zero (AnyReasoning) ltac:(set_solver) 
+              epose proof something Γ (Zero +ml Zero =ml Zero) Zero ltac:(set_solver) 
                ltac:(wf_auto2) ltac:(wf_auto2) _ P1.
               mlExactMeta H2.
       
