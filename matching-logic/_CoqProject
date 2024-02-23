@@ -61,6 +61,9 @@ src/Theories/Bool_Syntax.v
 src/Theories/Bool_Semantics.v
 src/Theories/Bool_ProofSystem.v
 
+src/Theories/SumSort_Syntax.v
+src/Theories/SumSort_ProofSystem.v
+
 src/Theories/Sorts_Syntax.v
 src/Theories/Sorts_Semantics.v
 src/Theories/Sorts_ProofSystem.v
