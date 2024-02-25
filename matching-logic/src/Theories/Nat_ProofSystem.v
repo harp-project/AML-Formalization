@@ -68,367 +68,12 @@ Section nat.
     {Σ : Signature}
     {syntax : Nat_Syntax.Syntax}
   .
-  
-  Theorem forall_functional_subst_meta: 
-    ∀ (φ φ' : Pattern) (Γ : Theory),
-      Definedness_Syntax.theory ⊆ Γ
-        → mu_free φ
-          → well_formed φ'
-            → well_formed_closed_ex_aux φ 1
-              → well_formed_closed_mu_aux φ 0
-                -> Γ ⊢ is_functional φ' 
-                  → Γ ⊢ (all , φ) -> Γ ⊢i φ^[evar:0↦φ'] using AnyReasoning.
-   Proof.
-    intros.
-    toMLGoal.
-    wf_auto2.
-    now apply mu_free_wfp.
-    mlApplyMeta forall_functional_subst.
-    2-5:assumption.
-    mlSplitAnd.
-    * mlExactMeta H5.
-    * unfold is_functional in H4. mlExactMeta H4.
-  Defined.
-  
-  Theorem exists_functional_subst_meta: 
-    ∀ (φ φ' : Pattern) (Γ : Theory),
-      Definedness_Syntax.theory ⊆ Γ
-        → mu_free φ
-          → well_formed φ'
-            → well_formed_closed_ex_aux φ 1
-              → well_formed_closed_mu_aux φ 0
-                → Γ  ⊢ (ex , φ) ^ [φ'] 
-                  -> Γ ⊢ is_functional φ' 
-                    -> Γ ⊢i (ex , φ) using AnyReasoning.
-   Proof.
-    intros.
-    toMLGoal.
-    wf_auto2.
-    now apply mu_free_wfp. 
-    mlApplyMeta exists_functional_subst.
-    2-3:assumption.
-    2:eauto.
-    2-3:assumption.
-    mlSplitAnd.
-    * mlExactMeta H4.
-    * mlExactMeta H5.
-  Defined.
-  
-  Theorem membership_monotone_functional:
-    ∀ (Γ : Theory) (φ₁ φ₂  t : Pattern)  (i : ProofInfo),
-      Definedness_Syntax.theory ⊆ Γ
-        → well_formed φ₁
-          → well_formed φ₂
-            → well_formed t
-              → Γ ⊢i is_functional t using i
-                → Γ ⊢i φ₁ ---> φ₂ using i
-                  → Γ ⊢i  t ∈ml φ₁ ---> t ∈ml φ₂ using i .
-   Proof.
-    intros.
-    unfold patt_in.
-    apply ceil_monotonic.
-    1: set_solver.
-    1-2: wf_auto2.
-    toMLGoal.
-    wf_auto2.
-    mlIntro "H".
-    mlDestructAnd "H" as "H1" "H2".
-    mlSplitAnd.
-    * mlAssumption.
-    * mlApplyMeta H4.
-      mlAssumption.
-   Defined.
-   
-  Theorem membership_or_2_functional: 
-    ∀ (Γ : Theory) (φ₁ φ₂ t : Pattern),
-      well_formed φ₁
-        → well_formed φ₂
-          → well_formed t
-            → Definedness_Syntax.theory ⊆ Γ 
-              → Γ ⊢i is_functional t 
-                ---> t ∈ml φ₁ or t ∈ml φ₂ 
-                  ---> t ∈ml (φ₁ or φ₂) using AnyReasoning.
-  Proof.
-    intros.
-    toMLGoal.
-    1: wf_auto2.
-    mlIntro "H".
-    unfold patt_in.
-    epose proof (H3 := prf_prop_or_iff Γ AC_patt_defined ( t and φ₁) (t and φ₂) _ _ ).
-    apply pf_iff_proj2 in H3.
-    2-3: wf_auto2.
-    mlClear "H".
-    fromMLGoal.
-    eapply syllogism_meta.
-    4: gapply H3; try_solve_pile.
-    1-3: wf_auto2.
-    simpl.
-    unshelve (eapply Framing_right).
-    { wf_auto2. }
-    { unfold BasicReasoning. try_solve_pile. }
-    toMLGoal.
-    1: wf_auto2.
-    mlIntro. mlDestructOr "0".
-    - mlDestructAnd "1". unfold patt_and. mlIntro. mlDestructOr "1".
-      + mlApply "3". mlExactn 0.
-      + mlApply "4". mlLeft. mlExactn 1.
-    - mlDestructAnd "2". unfold patt_and. mlIntro. mlDestructOr "2".
-      + mlApply "3". mlExactn 0.
-      + mlApply "4". mlRight. mlExactn 1.
-    Unshelve.
-    1-2:wf_auto2.
-   Defined.
-  
-  Theorem membership_or_2_functional_meta: 
-    ∀ (Γ : Theory) (φ₁ φ₂ t : Pattern),
-      well_formed φ₁
-        → well_formed φ₂
-          → well_formed t
-            → Definedness_Syntax.theory ⊆ Γ
-              → Γ ⊢i is_functional t using AnyReasoning 
-                → Γ ⊢i t ∈ml φ₁ or t ∈ml φ₂ 
-                  ---> t ∈ml (φ₁ or φ₂) using AnyReasoning.
-  Proof.
-    intros.
-    toMLGoal.
-    1:wf_auto2.
-    mlIntro "H".
-    pose proof membership_or_2_functional Γ (φ₁) (φ₂) t .
-    ospecialize* H4.
-    1-3: wf_auto2.
-    set_solver.
-    mlAdd H4.
-    mlApply "0".
-    simpl.
-    mlSplitAnd.
-    1: mlExactMeta H3.
-    mlExact "H".
-  Defined.
-    
-  Theorem unnamed: 
-    ∀ {Σ : Signature} (p : Pattern) (x : evar) (n : db_index),
-      mu_free p = mu_free (p^{{evar:x↦n}}).
-  Proof.
-    induction p;
-    intros.
-    * simpl. case_match. all:reflexivity.
-    * simpl. reflexivity.
-    * simpl. reflexivity.
-    * simpl. reflexivity.
-    * simpl. reflexivity.
-    * simpl. rewrite <- IHp1. rewrite <- IHp2. reflexivity. 
-    * simpl. reflexivity.
-    * simpl. rewrite <- IHp1. rewrite <- IHp2. reflexivity.
-    * simpl.  rewrite <- IHp.  reflexivity.
-    * simpl. reflexivity.
-  Defined.
-    
-  Theorem membership_and_2_functional: 
-    ∀ (Γ : Theory)  (φ₁ φ₂ t : Pattern),
-      well_formed φ₁
-        → well_formed φ₂
-          → mu_free φ₁
-            → mu_free φ₂
-              → well_formed t
-                → Definedness_Syntax.theory ⊆ Γ
-                  → Γ ⊢i is_functional t ---> t ∈ml φ₁ and  t ∈ml φ₂ 
-                    ---> t ∈ml (φ₁ and φ₂) using AnyReasoning.
-  Proof.
-    intros.
-    toMLGoal.
-    1: wf_auto2.
-    mlIntro "H".
-    mlIntro "H1".
-    
-    remember ( fresh_evar( φ₁ ---> φ₂)  ) as x.
-    
-    pose proof membership_and_2 Γ x φ₁ φ₂ ltac:(wf_auto2)ltac:(wf_auto2) ltac:(set_solver). 
-    
-    apply universal_generalization with (x := x) in H5.
-    2: try_solve_pile.
-    2: wf_auto2. 
-    use AnyReasoning in H5.
-    mlAdd H5.
-    
-    mlConj "0" "H" as "H2". mlClear "0".
-    mlApplyMeta forall_functional_subst in "H2".
-    2:{ simpl. case_match.
-        2:congruence. wf_auto2. 
-      }
-    2:{ simpl. case_match.
-        2:congruence. wf_auto2. 
-      }
-    2:{ simpl. case_match.
-        2:congruence. rewrite evar_quantify_fresh.
-        1:{ subst x.  unfold evar_is_fresh_in. solve_fresh. }
-        rewrite evar_quantify_fresh.
-        1:{ subst x.  unfold evar_is_fresh_in. solve_fresh. }
-        wf_auto2.
-      }
-    2:assumption.
-    
-    mlSimpl. simpl. case_match. 2:congruence.
-    mlSimpl. simpl.
-    
-    rewrite evar_quantify_fresh.
-    1:{ subst x.  unfold evar_is_fresh_in. solve_fresh. }
-    
-    rewrite evar_quantify_fresh.
-    1:{ subst x.  unfold evar_is_fresh_in. solve_fresh. }
-    
-    rewrite bevar_subst_not_occur.
-    1:wf_auto2.
-    
-    rewrite bevar_subst_not_occur.
-    1:wf_auto2.
-    
-    mlApply "H2".
-    mlAssumption.
-  Defined.
-  
-  Theorem membership_and_2_functional_meta: 
-    ∀ (Γ : Theory)  (φ₁ φ₂ t : Pattern),
-      well_formed φ₁
-        → well_formed φ₂
-          → mu_free φ₁
-            → mu_free φ₂
-              → well_formed t
-                → Definedness_Syntax.theory ⊆ Γ
-                  → Γ ⊢ is_functional t 
-                    → Γ ⊢i t ∈ml φ₁ and  t ∈ml φ₂ 
-                      ---> t ∈ml (φ₁ and φ₂) using AnyReasoning.
-  Proof.
-    intros.
-    toMLGoal.
-    1:wf_auto2.
-    mlIntro "H".
-    epose proof membership_and_2_functional Γ (φ₁) (φ₂) t _ _ _ _ _ _.
-    mlAdd H6.
-    mlApply "0". simpl.
-    mlSplitAnd.
-    1:mlExactMeta H5.
-    mlAssumption.
-    Unshelve.
-    1-5: wf_auto2.
-    set_solver.
-  Defined.
-  
-  Theorem  membership_symbol_ceil_aux_0_functional:
-    ∀ (Γ : Theory) (φ t1 t2 : Pattern),
-      Definedness_Syntax.theory ⊆ Γ
-        → well_formed φ
-          → mu_free φ
-            → well_formed t1
-              → well_formed t2
-                → mu_free t2
-                  → Γ ⊢i is_functional t1 ---> is_functional t2 
-                    ---> ⌈ t1 and φ ⌉ 
-                      ---> ⌈ t2 and ⌈ t1 and φ ⌉ ⌉ using AnyReasoning.
-  Proof.
-    intros.
-    toMLGoal.
-    wf_auto2.
-    mlIntro. 
-    mlIntro.
-    mlIntro.
-    
-    remember (fresh_evar(φ)  ) as x.
-    
-    remember ( fresh_evar( φ ---> patt_free_evar x ) ) as y.
-    
-    epose proof membership_symbol_ceil_aux_0 Γ (x) (y) (φ) _ _.
-    
-    apply universal_generalization with (x := x) in H5.
-    2: try_solve_pile.
-    2: wf_auto2.
-    
-    apply universal_generalization with (x := y) in H5.
-    2: try_solve_pile.
-    2:{ mlSimpl.
-        1:{ case_match. all:reflexivity. }
-        1:{ case_match. case_match. 1-2:reflexivity.
-            case_match. all:reflexivity. }
-        1:{ case_match. all:reflexivity. }
-        1:{ case_match. all:reflexivity. }
-        1:{ case_match. case_match. 1-2:reflexivity.
-            case_match. all:reflexivity. }
-        1:{ case_match. all:reflexivity. }
-        1:{ case_match. all:reflexivity. }
-        1:{ case_match. case_match. 1-2:reflexivity.
-            case_match. all:reflexivity. }
-        1:{ case_match. all:reflexivity. }
-      }
-    
-    mlSimpl in H5. simpl in H5. case_match. 2:congruence.
-    case_match.
-    * exfalso. apply x_eq_fresh_impl_x_notin_free_evars in Heqy. simpl in *. set_solver.
-    * mlSimpl in H5. simpl in H5. case_match. 2:congruence.
-      use AnyReasoning in H5.
-      mlAdd H5.
-    
-      mlConj "3" "1" as "f".
-      mlApplyMeta forall_functional_subst in "f".
-      2-3: wf_auto2.
-      2:{ simpl. rewrite evar_quantify_fresh.
-          1:{ rewrite evar_quantify_fresh. subst x. unfold evar_is_fresh_in. solve_fresh. 
-              subst y. unfold evar_is_fresh_in. solve_fresh. 
-            }
-          rewrite evar_quantify_fresh. 
-          subst x. unfold evar_is_fresh_in. solve_fresh.
-          wf_auto2.
-        }
-      2: set_solver.
-      mlSimpl. simpl.
-      
-      mlConj "f" "0" as "g".
-      mlApplyMeta forall_functional_subst in "g".
-      2-3: wf_auto2.
-      2:{ simpl. rewrite evar_quantify_fresh.
-          1:{ rewrite evar_quantify_fresh. 
-              subst x. unfold evar_is_fresh_in. solve_fresh. 
-              subst y. unfold evar_is_fresh_in. solve_fresh. 
-            }
-          rewrite evar_quantify_fresh. 
-          subst x. unfold evar_is_fresh_in. solve_fresh.
-          rewrite bevar_subst_not_occur.
-          1: wf_auto2.
-          wf_auto2.
-        }
-      2: set_solver.
-      
-      mlClear "f";mlClear "3";clear H5.
-      mlSimpl. simpl.
-   
-      rewrite evar_quantify_fresh.
-      1:{ rewrite evar_quantify_fresh.
-          1:{ subst x.  unfold evar_is_fresh_in. solve_fresh. }  
-          1:{ subst y. unfold evar_is_fresh_in. solve_fresh. }
-        }
-        
-      rewrite evar_quantify_fresh.
-      1:{ subst x. unfold evar_is_fresh_in. solve_fresh. }
-   
-      rewrite bevar_subst_not_occur.
-      1:{ rewrite bevar_subst_not_occur. all:wf_auto2. }
-    
-      rewrite bevar_subst_not_occur.
-      1: wf_auto2.
-      
-      rewrite bevar_subst_not_occur.
-      1: wf_auto2.
-      
-      mlApply "g".
-      mlAssumption.
-      Unshelve. 
-      set_solver.
-      wf_auto2.
-  Defined.
-  
+
   Theorem  provable_iff_top:
     ∀ {Σ : Signature} (Γ : Theory) (φ : Pattern)   (i : ProofInfo),
-      well_formed φ
-        → Γ ⊢i φ using i
-          → Γ ⊢i φ <--->  patt_top using i .
+      well_formed φ ->
+      Γ ⊢i φ using i ->
+      Γ ⊢i φ <--->  patt_top using i .
   Proof.
     intros.
     mlSplitAnd.
@@ -441,8 +86,8 @@ Section nat.
     
   Theorem  patt_and_id_r:
     ∀ {Σ : Signature} (Γ : Theory) (φ : Pattern),
-      well_formed φ
-        → Γ ⊢i φ and patt_top <--->  φ using BasicReasoning .
+      well_formed φ ->
+      Γ ⊢i φ and patt_top <--->  φ using BasicReasoning .
   Proof.
     intros.
     mlSplitAnd.
@@ -456,15 +101,14 @@ Section nat.
       mlAssumption.
   Defined.
   
-  (* nedd to change the name *)  
-  Theorem  something_v2:
+  Theorem proved_membership_functional:
     ∀ {Σ : Signature} {syntax : Definedness_Syntax.Syntax} 
      (Γ : Theory) (φ₁ φ₂ : Pattern),
-      Definedness_Syntax.theory ⊆ Γ
-        → well_formed φ₁
-          → well_formed φ₂
-            → Γ ⊢i φ₁ using AnyReasoning
-              → Γ ⊢i is_functional φ₂ --->  φ₂ ∈ml φ₁  using AnyReasoning .
+      Definedness_Syntax.theory ⊆ Γ ->
+      well_formed φ₁ ->
+      well_formed φ₂ ->
+      Γ ⊢i φ₁ using AnyReasoning ->
+      Γ ⊢i is_functional φ₂ --->  φ₂ ∈ml φ₁  using AnyReasoning .
   Proof.
     intros.
     unfold patt_in.
@@ -486,44 +130,33 @@ Section nat.
     mlExactMeta H4.
   Defined.
 
-  (* nedd to change the name *)
-  Theorem  something:
+  Theorem proved_membership_functional_meta:
     ∀ {Σ : Signature} {syntax : Definedness_Syntax.Syntax} 
      (Γ : Theory) (φ₁ φ₂ : Pattern),
-      Definedness_Syntax.theory ⊆ Γ
-        → well_formed φ₁
-          → well_formed φ₂
-            → Γ ⊢i is_functional φ₂ using AnyReasoning 
-              → Γ ⊢i φ₁ using AnyReasoning
-                → Γ ⊢i  φ₂ ∈ml φ₁  using AnyReasoning .
+      Definedness_Syntax.theory ⊆ Γ ->
+      well_formed φ₁ ->
+      well_formed φ₂ ->
+      Γ ⊢i is_functional φ₂ using AnyReasoning ->
+      Γ ⊢i φ₁ using AnyReasoning ->
+      Γ ⊢i  φ₂ ∈ml φ₁  using AnyReasoning .
   Proof.
     intros.
-    mlApplyMeta something_v2.
+    mlApplyMeta proved_membership_functional.
     mlExactMeta H2.
     mlExactMeta H3.
     set_solver.
   Defined.
     
-  Theorem  something_v3:
-    ∀ {Σ : Signature} {syntax : Definedness_Syntax.Syntax} (Γ : Theory) (φ₁ φ₂ : Pattern),
-      Definedness_Syntax.theory ⊆ Γ
-        → well_formed φ₁
-          → well_formed φ₂
-            → Γ ⊢i is_functional φ₂ ---> φ₁ using AnyReasoning
-              → Γ ⊢i is_functional φ₂ --->  φ₂ ∈ml φ₁  using AnyReasoning .
-  Proof.
-  Abort.
-
 
 (* suppose \phi is_functional 
  *)
   Theorem t1:
     ∀ (Γ : Theory) (φ φ' : Pattern) (i : ProofInfo) ,
-      Definedness_Syntax.theory ⊆ Γ 
-        → well_formed φ
-          → well_formed (ex , φ')
-            →  Γ ⊢i φ ∈ml (ex, φ')
-              --->   φ'^[evar:0↦φ]  using i.
+      Definedness_Syntax.theory ⊆ Γ -> 
+      well_formed φ ->
+      well_formed (ex , φ') ->
+      Γ ⊢i φ ∈ml (ex, φ') --->
+      φ'^[evar:0↦φ]  using i.
   Proof.
     (* intros.
     mlIntro "H".
@@ -641,9 +274,9 @@ Section nat.
              pi_uses_kt := false ;
              pi_uses_advanced_kt := false ;
           |}) i} :
-    well_formed ψ 
-      -> Γ ⊢i ϕ using i 
-        -> Γ ⊢i (ϕ^[[svar: X ↦ ψ]]) using i.
+    well_formed ψ -> 
+    Γ ⊢i ϕ using i -> 
+    Γ ⊢i (ϕ^[[svar: X ↦ ψ]]) using i.
   Proof.
     intros wfψ [pf Hpf].
     unshelve (eexists).
@@ -678,10 +311,10 @@ Section nat.
   Defined.
 
   Theorem peano_induction X :
-    theory ⊢ patt_free_svar X ⊆ml 〚 Nat 〛 
-      ---> Zero ∈ml patt_free_svar X 
-        ---> ( all Nat, (b0 ∈ml patt_free_svar X ---> Succ $ b0 ∈ml patt_free_svar X) )
-          ---> all Nat, b0 ∈ml patt_free_svar X.
+    theory ⊢ patt_free_svar X ⊆ml 〚 Nat 〛 ---> 
+    Zero ∈ml patt_free_svar X  --->
+    ( all Nat, (b0 ∈ml patt_free_svar X ---> Succ $ b0 ∈ml patt_free_svar X) ) --->
+    all Nat, b0 ∈ml patt_free_svar X.
   Proof.
 (*     toMLGoal.
     { wf_auto2. }
@@ -730,10 +363,10 @@ Section nat.
   Admitted.  
   
   Theorem peano_induction_1 X :
-    theory ⊢ patt_free_svar X ⊆ml 〚 Nat 〛 
-    -> theory ⊢ Zero ∈ml patt_free_svar X 
-      -> theory ⊢ all Nat, ( b0 ∈ml patt_free_svar X ---> Succ $ b0 ∈ml patt_free_svar X ) 
-        -> theory ⊢ all Nat, b0 ∈ml patt_free_svar X.
+    theory ⊢ patt_free_svar X ⊆ml 〚 Nat 〛 -> 
+    theory ⊢ Zero ∈ml patt_free_svar X ->
+    theory ⊢ all Nat, ( b0 ∈ml patt_free_svar X ---> Succ $ b0 ∈ml patt_free_svar X ) -> 
+    theory ⊢ all Nat, b0 ∈ml patt_free_svar X.
   Proof.
     intros XN Z S.
 
@@ -937,9 +570,8 @@ Section nat.
     }
   Defined.
   
-  Theorem add_zero_r: 
-    forall Γ , theory ⊆ Γ 
-                -> Γ ⊢ all Nat, b0 +ml Zero =ml b0.
+  Theorem add_zero_r: forall Γ , theory ⊆ Γ -> 
+                       Γ ⊢ all Nat, b0 +ml Zero =ml b0.
   Proof.
     intros.
     toMLGoal.
@@ -952,9 +584,8 @@ Section nat.
     mlAssumption.
   Defined.
   
-  Theorem add_zero_l: 
-    forall Γ , theory ⊆ Γ 
-                ->  Γ ⊢ all Nat, Zero +ml b0 =ml b0.
+  Theorem add_zero_l: forall Γ , theory ⊆ Γ ->
+                       Γ ⊢ all Nat, Zero +ml b0 =ml b0.
   Proof.
     intros.
     toMLGoal.
@@ -1158,11 +789,6 @@ Section nat.
               mlSplitAnd.
               1: mlAssumption.
               mlExactMeta P1.
-             
-          (* 
-            epose proof something Γ ( Zero ∈ml 〚 Nat 〛) Zero (AnyReasoning) ltac:(set_solver) ltac:(wf_auto2) 
-             ltac:(wf_auto2) _ P1.
-            mlExactMeta H2. *)
           
           + mlApplyMeta membership_and_2_functional_meta.
             2:{ 
@@ -1228,7 +854,7 @@ Section nat.
                    pose proof use_nat_axiom AxFun1 Γ H; simpl in H6; mlAdd H6 as "f";mlExact "f".
                  }
                  
-              epose proof something Γ (Zero +ml Zero =ml Zero) Zero ltac:(set_solver) 
+              epose proof proved_membership_functional_meta Γ (Zero +ml Zero =ml Zero) Zero ltac:(set_solver) 
                ltac:(wf_auto2) ltac:(wf_auto2) _ P1.
               mlExactMeta H2.
       
@@ -1447,7 +1073,7 @@ same chain of thoughts as 1st one for totality.
                  }
                  
             mlRewriteBy "P1" at 1.
-            epose proof something_v2 Γ
+            epose proof proved_membership_functional Γ
              (Succ $ patt_free_evar x =ml Succ $ patt_free_evar x)
              ( Succ $ patt_free_evar x ) ltac:(set_solver) ltac:(wf_auto2) ltac:(wf_auto2). 
             mlApplyMeta H0.
@@ -1514,7 +1140,6 @@ same chain of thoughts as 1st one for totality.
     mlDestructAnd "1".
     mlAssumption.
   Defined.
-             
 
 End nat.
 
