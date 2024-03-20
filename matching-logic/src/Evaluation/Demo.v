@@ -38,22 +38,24 @@ Section running.
         ex, (P $ φ₂).
   Proof.
     eapply prf_weaken_conclusion_meta_meta. 1-3: shelve.
-    gapply (Ex_quan _ _ x). 1-2: shelve.
-    cbn. rewrite bevar_subst_not_occur; [shelve|].
-    apply lhs_from_and. 1-3: shelve.
-    eapply prf_strenghten_premise_meta_meta.
-    4: gapply (forall_variable_substitution _ _ x). 1-5: shelve.
-    remember (fresh_evar P) as y.
-    remember ({| pcEvar := y; pcPattern := P $ patt_free_evar y |}) as C.
-    epose proof (equality_elimination_basic Γ (φ₂^{evar:0 ↦ x}) (φ₁^{evar:0 ↦ x}) C _ _ _ _ _).
-    subst C. cbn in H.
-    destruct decide in H. 2: congruence.
-    repeat rewrite free_evar_subst_no_occurrence in H. 1-2: shelve.
-    eapply prf_weaken_conclusion_meta_meta in H. 2-4: shelve.
-    exact H.
-    eapply prf_strenghten_premise_meta_meta. 1-3: shelve.
-    gapply pf_conj_elim_r. 1-3: shelve.
-    gapply A_impl_A. 1-2: shelve.
+    * gapply (Ex_quan _ _ x). 1-2: shelve.
+    * cbn. rewrite bevar_subst_not_occur; [shelve|].
+      apply lhs_from_and. 1-3: shelve.
+      eapply prf_strenghten_premise_meta_meta.
+      4: gapply (forall_variable_substitution _ _ x). 1-5: shelve.
+      remember (fresh_evar P) as y.
+      remember ({| pcEvar := y; pcPattern := P $ patt_free_evar y |}) as C.
+      epose proof (equality_elimination_basic Γ (φ₂^{evar:0 ↦ x}) (φ₁^{evar:0 ↦ x})
+                                              C _ _ _ _ _).
+      subst C. cbn in H.
+      destruct decide in H. 2: congruence.
+      repeat rewrite free_evar_subst_no_occurrence in H. 1-2: shelve.
+      eapply prf_weaken_conclusion_meta_meta in H. 2-4: shelve.
+      - exact H.
+      - eapply prf_strenghten_premise_meta_meta. 1-3: shelve.
+        + gapply pf_conj_elim_r. 1-3: shelve.
+        + gapply A_impl_A. 1-2: shelve.
+
   Unshelve.
     (* 32 subgoals *)
     (* 4 proof info goals *)
@@ -103,6 +105,8 @@ Section functional_subst.
   Proof.
     remember (fresh_evar (φ $ ψ)) as Zvar.
     remember (patt_free_evar Zvar) as Z.
+
+    (* assertions about well-formedness *)
     assert (well_formed Z) as WFZ.
     { shelve. }
 
@@ -114,6 +118,9 @@ Section functional_subst.
     }
     assert (well_formed (ex, φ)) as WFEX.
     { shelve. }
+    (****)
+
+
     pose proof (EQ := BasicProofSystemLemmas.Ex_quan Γ φ Zvar WFEX).
     (* change constraint in EQ. *)
     use AnyReasoning in EQ.
@@ -133,7 +140,6 @@ Section functional_subst.
       eapply MP.
       2: eapply MP.
       3: useBasicReasoning; exact PSP.
-
       * unshelve (epose proof (AI := and_impl' Γ (patt_equal ψ Z) (φ^[evar: 0 ↦ Z]) (ex , φ) _ _ _)).
         1,2,3: shelve.
         unfold instantiate.
@@ -152,19 +158,24 @@ Section functional_subst.
       shelve.
     }
     2: { apply pile_any. }
+
+
     (* simplifications *)
     unfold exists_quantify in HSUB.
     mlSimpl in HSUB.
     rewrite -> HeqZ, -> HeqZvar in HSUB.
     simpl evar_quantify in HSUB.
     rewrite decide_True in HSUB. reflexivity.
-
     rewrite evar_quantify_fresh in HSUB.
     { shelve. }
-    (*---*)
+    (****)
+
+
     eapply MP. 2: useBasicReasoning; apply and_impl'. 2-4: shelve.
     apply reorder_meta. 1-3: shelve.
     exact HSUB.
+
+
   Unshelve.
     (* 29 well-formedness side conditions *)
     all: try wf_auto2.
@@ -194,19 +205,22 @@ Section functional_subst.
 
     (* Technical: subst cleanup *)
     erewrite <-bound_to_free_variable_subst with (m := 1); auto. (*!*)
-    2-3: shelve.
+    2-4: shelve.
     erewrite <-bound_to_free_variable_subst with (m := 1); auto. (*!*)
-    2: shelve.
-    (***)
+    2-3: shelve.
+    (****)
+
     mlDestructAnd "H2" as "H2_1" "H2_2".
     mlExists x. mlApply "H2_1". mlAssumption.
+
+
   Unshelve. (* These all come from manual application of lemmas (marked with !) *)
-    (* 2 freshness constraints *)
-    fm_solve. fm_solve.
     (* 5 well-formedness constraints *)
-    all: wf_auto2.
+    1-5,7: wf_auto2.
     (* 1 mu_free contraint *)
     by apply mu_free_bevar_subst.
+    (* 2 freshness constraints *)
+    fm_solve. fm_solve.
   Defined.
 
 End functional_subst.
