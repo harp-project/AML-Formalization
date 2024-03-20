@@ -115,6 +115,10 @@ Section running.
     mlExact "H2".
   Defined.
 
+
+  (* this is the dual version of Lemma 61 in
+     https://fsl.cs.illinois.edu/publications/chen-rosu-2019-tr.pdf
+   *)
   Lemma exists_functional_subst φ φ' :
     mu_free φ -> well_formed φ' -> well_formed_closed_ex_aux φ 1 -> well_formed_closed_mu_aux φ 0 ->
     Γ ⊢i φ^[evar:0↦φ'] and is_functional φ' ---> (ex , φ)
