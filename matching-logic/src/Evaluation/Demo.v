@@ -27,14 +27,14 @@ Section running.
 
   Context
     (f g P : Pattern)
-    (wff    : well_formed (ex, f))
-    (wfg    : well_formed (ex, g))
-    (wfP     : well_formed P)
-    (mfP     : mu_free P)
-    (x       : evar).
+    (wff   : well_formed (ex, f))
+    (wfg   : well_formed (ex, g))
+    (wfP   : well_formed P)
+    (mfP   : mu_free P)
+    (x     : evar).
 
   (*
-     Γ ⊢ ∀z.(g z = f z) ∧ P (f x) → ∃y. P (g y)
+     Γ ⊢ (∀z.g z = f z) ∧ P (f x) → ∃y. P (g y)
   *)
   Lemma running_low :
     Γ ⊢ (all, (g =ml f)) and P $ f^{evar:0 ↦ x} ---> 
