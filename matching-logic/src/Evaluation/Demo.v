@@ -33,6 +33,9 @@ Section running.
     (mfP     : mu_free P)
     (x       : evar).
 
+  (*
+  Γ ⊢ ∀z.(φ₂ z = φ₁ z) ∧ P (φ₁ x) ---> ∃y. P (φ₂ y)
+  *)
   Lemma running_low :
     Γ ⊢ (all, (φ₂ =ml φ₁)) and P $ φ₁^{evar:0 ↦ x} ---> 
         ex, (P $ φ₂).
@@ -67,7 +70,11 @@ Section running.
     (* 25 well_formed goals *)
     1-25: wf_auto2.
   Defined.
+  (* Proof above is 28 LOC *)
 
+  (*
+  Γ ⊢ (∀z.φ₂ z = φ₁ z) ∧ P (φ₁ x) → ∃y. P (φ₂ y)
+  *)
   Lemma running :
     Γ ⊢ (all, (φ₂ =ml φ₁)) and P $ φ₁^{evar:0 ↦ x} ---> 
         ex, (P $ φ₂).
@@ -79,6 +86,7 @@ Section running.
     mlRewriteBy "H1" at 1.
     mlExact "H2".
   Defined.
+  (* Proof above is 6 LOC *)
 
 End running.
 
@@ -99,6 +107,8 @@ Section functional_subst.
 
   (* this is the dual version of Lemma 61 in
      https://fsl.cs.illinois.edu/publications/chen-rosu-2019-tr.pdf
+
+    Γ ⊢ φ[t/x] ∧ (∃z. t = z) → ∃x.φ
    *)
   Lemma exists_functional_subst :
     Γ ⊢ φ^[evar:0↦ψ] and is_functional ψ ---> (ex , φ).
@@ -185,6 +195,7 @@ Section functional_subst.
     pose proof (set_evar_fresh_is_fresh' (free_evars φ ∪ free_evars ψ)).
     set_solver.
   Defined.
+  (* Proof above is ~80 LOC *)
 
   Lemma running_functional_subst :
     Γ ⊢ φ^[evar:0↦ψ] and is_functional ψ ---> (ex , φ).
@@ -222,5 +233,6 @@ Section functional_subst.
     (* 2 freshness constraints *)
     fm_solve. fm_solve.
   Defined.
+  (* Proof above is ~30 LOC *)
 
 End functional_subst.
