@@ -26,19 +26,19 @@ Section running.
     (HΓ        : definedness_theory ⊆ Γ).
 
   Context
-    (φ₁ φ₂ P : Pattern)
-    (wfφ₁    : well_formed (ex, φ₁))
-    (wfφ₂    : well_formed (ex, φ₂))
+    (f g P : Pattern)
+    (wff    : well_formed (ex, f))
+    (wfg    : well_formed (ex, g))
     (wfP     : well_formed P)
     (mfP     : mu_free P)
     (x       : evar).
 
   (*
-  Γ ⊢ ∀z.(φ₂ z = φ₁ z) ∧ P (φ₁ x) ---> ∃y. P (φ₂ y)
+     Γ ⊢ ∀z.(g z = f z) ∧ P (f x) → ∃y. P (g y)
   *)
   Lemma running_low :
-    Γ ⊢ (all, (φ₂ =ml φ₁)) and P $ φ₁^{evar:0 ↦ x} ---> 
-        ex, (P $ φ₂).
+    Γ ⊢ (all, (g =ml f)) and P $ f^{evar:0 ↦ x} ---> 
+        ex, (P $ g).
   Proof.
     eapply prf_weaken_conclusion_meta_meta. 1-3: shelve.
     * gapply (Ex_quan _ _ x). 1-2: shelve.
@@ -48,7 +48,7 @@ Section running.
       4: gapply (forall_variable_substitution _ _ x). 1-5: shelve.
       remember (fresh_evar P) as y.
       remember ({| pcEvar := y; pcPattern := P $ patt_free_evar y |}) as C.
-      epose proof (equality_elimination_basic Γ (φ₂^{evar:0 ↦ x}) (φ₁^{evar:0 ↦ x})
+      epose proof (equality_elimination_basic Γ (g^{evar:0 ↦ x}) (f^{evar:0 ↦ x})
                                               C _ _ _ _ _).
       subst C. cbn in H.
       destruct decide in H. 2: congruence.
@@ -73,11 +73,11 @@ Section running.
   (* Proof above is 28 LOC *)
 
   (*
-  Γ ⊢ (∀z.φ₂ z = φ₁ z) ∧ P (φ₁ x) → ∃y. P (φ₂ y)
+      Γ ⊢ ∀z.(g z = f z) ∧ P (f x) → ∃y. P (g y)
   *)
   Lemma running :
-    Γ ⊢ (all, (φ₂ =ml φ₁)) and P $ φ₁^{evar:0 ↦ x} ---> 
-        ex, (P $ φ₂).
+    Γ ⊢ (all, (g =ml f)) and P $ f^{evar:0 ↦ x} ---> 
+        ex, (P $ g).
   Proof.
     mlIntro "H".
     mlDestructAnd "H" as "H1" "H2". mlSpecialize "H1" with x.
@@ -100,10 +100,10 @@ Section functional_subst.
     (HΓ        : definedness_theory ⊆ Γ).
 
   Context
-    (φ ψ : Pattern)
+    (φ t : Pattern)
     (wfφ : well_formed (ex, φ))
     (mfφ : mu_free φ)
-    (wfψ : well_formed ψ).
+    (wft : well_formed t).
 
   (* this is the dual version of Lemma 61 in
      https://fsl.cs.illinois.edu/publications/chen-rosu-2019-tr.pdf
@@ -111,16 +111,16 @@ Section functional_subst.
     Γ ⊢ φ[t/x] ∧ (∃z. t = z) → ∃x.φ
    *)
   Lemma exists_functional_subst :
-    Γ ⊢ φ^[evar:0↦ψ] and is_functional ψ ---> (ex , φ).
+    Γ ⊢ φ^[evar:0↦t] and is_functional t ---> (ex , φ).
   Proof.
-    remember (fresh_evar (φ $ ψ)) as Zvar.
+    remember (fresh_evar (φ $ t)) as Zvar.
     remember (patt_free_evar Zvar) as Z.
 
     (* assertions about well-formedness *)
     assert (well_formed Z) as WFZ.
     { shelve. }
 
-    assert (well_formed (instantiate (ex , φ) ψ)) as WF1. {
+    assert (well_formed (instantiate (ex , φ) t)) as WF1. {
       shelve.
     }
     assert (well_formed (instantiate (ex , φ) Z)) as WF2. {
@@ -134,15 +134,15 @@ Section functional_subst.
     pose proof (EQ := BasicProofSystemLemmas.Ex_quan Γ φ Zvar WFEX).
     (* change constraint in EQ. *)
     use AnyReasoning in EQ.
-    epose proof (PC := prf_conclusion Γ (patt_equal ψ Z) (instantiate (ex , φ) (patt_free_evar Zvar) ---> ex , φ) AnyReasoning ltac:(shelve) _ EQ).
+    epose proof (PC := prf_conclusion Γ (patt_equal t Z) (instantiate (ex , φ) (patt_free_evar Zvar) ---> ex , φ) AnyReasoning ltac:(shelve) _ EQ).
 
-    assert (Γ ⊢ patt_equal ψ Z ---> (ex , φ) ^ [ψ] ---> ex , φ) as HSUB.
+    assert (Γ ⊢ patt_equal t Z ---> (ex , φ) ^ [t] ---> ex , φ) as HSUB.
     {
-      epose proof (EE := equality_elimination_proj Γ ψ Z φ HΓ
-                                               mfφ wfψ WFZ _ _).
+      epose proof (EE := equality_elimination_proj Γ t Z φ HΓ
+                                               mfφ wft WFZ _ _).
 
-      epose proof (PSP := prf_strenghten_premise Γ ((patt_equal ψ Z) and (instantiate (ex , φ) Z))
-                                                 ((patt_equal ψ Z) and (instantiate (ex , φ) ψ))
+      epose proof (PSP := prf_strenghten_premise Γ ((patt_equal t Z) and (instantiate (ex , φ) Z))
+                                                 ((patt_equal t Z) and (instantiate (ex , φ) t))
                                                  (ex , φ) _ _ _).
       eapply MP.
       2: useBasicReasoning; apply and_impl.
@@ -150,14 +150,14 @@ Section functional_subst.
       eapply MP.
       2: eapply MP.
       3: useBasicReasoning; exact PSP.
-      * unshelve (epose proof (AI := and_impl' Γ (patt_equal ψ Z) (φ^[evar: 0 ↦ Z]) (ex , φ) _ _ _)).
+      * unshelve (epose proof (AI := and_impl' Γ (patt_equal t Z) (φ^[evar: 0 ↦ Z]) (ex , φ) _ _ _)).
         1,2,3: shelve.
         unfold instantiate.
         eapply MP. 2: useBasicReasoning; exact AI.
         rewrite <- HeqZ in PC.
         exact PC.
       * apply and_drop. 1-3: shelve.
-        unshelve(epose proof (AI := and_impl' Γ (patt_equal ψ Z) (instantiate (ex , φ) ψ) (instantiate (ex , φ) Z) _ _ _)).
+        unshelve(epose proof (AI := and_impl' Γ (patt_equal t Z) (instantiate (ex , φ) t) (instantiate (ex , φ) Z) _ _ _)).
         1-3: shelve.
         eapply MP. 2: useBasicReasoning; exact AI.
         { exact EE. }
@@ -191,14 +191,14 @@ Section functional_subst.
     all: try wf_auto2.
     (* 2 freshness conditions *)
     clear. 2: solve_fresh.
-    pose proof (free_evars_bevar_subst φ ψ 0).
-    pose proof (set_evar_fresh_is_fresh' (free_evars φ ∪ free_evars ψ)).
+    pose proof (free_evars_bevar_subst φ t 0).
+    pose proof (set_evar_fresh_is_fresh' (free_evars φ ∪ free_evars t)).
     set_solver.
   Defined.
   (* Proof above is ~80 LOC *)
 
   Lemma running_functional_subst :
-    Γ ⊢ φ^[evar:0↦ψ] and is_functional ψ ---> (ex , φ).
+    Γ ⊢ φ^[evar:0↦t] and is_functional t ---> (ex , φ).
   Proof.
     mlIntro "H".
     mlDestructAnd "H" as "H1" "H2".
@@ -206,8 +206,8 @@ Section functional_subst.
     mlSimpl. cbn.
 
     (* Use equality elimination to rewrite under substitution: *)
-    unfold evar_open. rewrite (bevar_subst_not_occur _ _ ψ). shelve. (*!*)
-    opose proof* (equality_elimination_basic Γ ψ (patt_free_evar x) 
+    unfold evar_open. rewrite (bevar_subst_not_occur _ _ t). shelve. (*!*)
+    opose proof* (equality_elimination_basic Γ t (patt_free_evar x) 
       {|pcEvar := x; pcPattern := φ^{evar:0 ↦ x}|}); auto. (*!*)
     { shelve. }
     { shelve. }
