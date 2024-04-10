@@ -21,7 +21,6 @@ Import extralibrary.
 
 Import MatchingLogic.Logic.Notations.
 Import MatchingLogic.DerivedOperators_Syntax.Notations.
-Import MatchingLogic.Syntax.BoundVarSugar.
 
 Set Default Proof Mode "Classic".
 
@@ -151,7 +150,7 @@ Proof.
   eapply MP.
   exact S1'.
   simpl in S1'. case_match. 2: congruence.
-  toMLGoal. case_match. 2: congruence. wf_auto2.
+  toMLGoal. simpl. case_match. 2: congruence. wf_auto2.
   mlIntro "H".
   mlSpecialize "H" with x.
   mlSimpl. simpl. case_match. 2: congruence.
@@ -1473,7 +1472,7 @@ Defined.
 
     epose proof (Htmp1 := (membership_or_2 _ _ _ _ _ _ HΓ)).
     (* TODO: [change constraint in _] should work even in proof mode! *)
-    change constraint in Htmp1.
+    (* change constraint in Htmp1. *)
     remember_constraint as gpi.
 
     unfold patt_and.
@@ -1510,11 +1509,11 @@ Defined.
     intros wfφ₁ wfφ₂ HΓ.
 
     epose proof (Htmp1 := (membership_or_1 _ _ _ _ _ _ HΓ)).
-    change constraint in Htmp1.
+    (* change constraint in Htmp1. *)
     epose proof (Htmp2 := (membership_not_1 _ _ _ _ HΓ)).
-    change constraint in Htmp2.
+    (* change constraint in Htmp2. *)
     epose proof (Htmp3 := (membership_not_1 _ _ _ _ HΓ)).
-    change constraint in Htmp3.
+    (* change constraint in Htmp3. *)
     toMLGoal.
     { wf_auto2. }
     mlIntro.
@@ -1892,7 +1891,8 @@ Defined.
     assert (well_formed (ex, φ)) as WFEX.
     { wf_auto2. }
     pose proof (EQ := BasicProofSystemLemmas.Ex_quan Γ φ Zvar WFEX).
-    change constraint in EQ.
+    (* change constraint in EQ. *)
+    use AnyReasoning in EQ.
     epose proof (PC := prf_conclusion Γ (patt_equal φ' Z) (instantiate (ex , φ) (patt_free_evar Zvar) ---> ex , φ) AnyReasoning ltac:(apply well_formed_equal;wf_auto2) _ EQ).
 
     assert (Γ ⊢ patt_equal φ' Z ---> (ex , φ) ^ [φ'] ---> ex , φ) as HSUB.
@@ -2133,46 +2133,61 @@ lazy_match! goal with
     eapply (@cast_proof_ml_goal _ $g) >
       [ rewrite $heq; reflexivity | ()];
     Std.clear [hr.(equality)];
-    apply MLGoal_rewriteBy
-    > [ try (match! goal with
-           | [hyp : ?theory ⊆ _ |- _] => unfold theory
-         end); try ltac1:(
-                          (* idtac "Trying set solving"; *)
-                          timeout 5 set_solver)
-      | Control.plus
-          (fun () => ltac1:(now (apply mu_free_in_path; simpl; assumption)))
-          (fun exn => let star := hr.(star_ident) in
-            ltac1:(star |-
-              unfold mu_in_evar_path; simpl; repeat case_match;
-              try reflexivity; try congruence;
-              repeat match goal with
-              | [H : context G [maximal_mu_depth_to _ _ _] |- _ ] =>
-                 (* idtac "rewriting"; *)
-                 rewrite -> maximal_mu_depth_to_0 in H by (try timeout 5 (subst star; try solve_fresh))(* This is potentially non-terminating, hence the timeout *)
-              end;
-              simpl in *; try lia
-          ) (Ltac1.of_ident star))
-      (* TODO: improve these heuristics above *)
-      | lazy_match! goal with
-        | [ |- of_MLGoal (@mkMLGoal ?sgm ?g ?l ?p AnyReasoning)]
-          =>
-            let heq2 := Fresh.in_goal ident:(heq2) in
-            let plugged := Pattern.instantiate (hr.(ctx)) a in
-            assert(heq2: ($p = $plugged))
-            > [
-                abstract (ltac1:(star |- simplify_emplace_2 star) (Ltac1.of_ident (hr.(star_ident)));
-                          reflexivity
-                         )
-              | ()
-              ];
-            let heq2_pf := Control.hyp heq2 in
-            eapply (@cast_proof_ml_goal _ $g)
-              with (goal := $plugged) >
-              [ ltac1:(heq2 |- rewrite [left in _ = left] heq2; reflexivity) (Ltac1.of_ident heq2) | ()];
-            Std.clear [heq2 ; (hr.(star_ident)); (hr.(star_eq))];
-            _mlReshapeHypsBack
-        end
-      ]
+    Control.plus(fun () =>
+      apply MLGoal_rewriteBy
+      > [ try (match! goal with
+             | [hyp : ?theory ⊆ _ |- _] => unfold theory
+           end); try ltac1:(
+                            (* idtac "Trying set solving"; *)
+                            timeout 5 set_solver)
+        | Control.plus
+            (fun () => ltac1:(now (apply mu_free_in_path; simpl; assumption)))
+            (fun exn => let star := hr.(star_ident) in
+              ltac1:(star |-
+                unfold mu_in_evar_path; simpl; repeat case_match;
+                try reflexivity; try congruence;
+                repeat match goal with
+                | [H : context G [maximal_mu_depth_to _ _ _] |- _ ] =>
+                   (* idtac "rewriting"; *)
+                   rewrite -> maximal_mu_depth_to_0 in H by (try timeout 5 (subst star; try solve_fresh))(* This is potentially non-terminating, hence the timeout *)
+                end;
+                simpl in *; try lia
+            ) (Ltac1.of_ident star))
+        (* TODO: improve these heuristics above *)
+        | lazy_match! goal with
+          | [ |- of_MLGoal (@mkMLGoal ?sgm ?g ?l ?p AnyReasoning)]
+            =>
+              let heq2 := Fresh.in_goal ident:(heq2) in
+              let plugged := Pattern.instantiate (hr.(ctx)) a in
+              assert(heq2: ($p = $plugged))
+              > [
+                  abstract (ltac1:(star |- simplify_emplace_2 star) (Ltac1.of_ident (hr.(star_ident)));
+                            reflexivity
+                           )
+                | ()
+                ];
+              let heq2_pf := Control.hyp heq2 in
+              eapply (@cast_proof_ml_goal _ $g)
+                with (goal := $plugged) >
+                [ ltac1:(heq2 |- rewrite [left in _ = left] heq2; reflexivity) (Ltac1.of_ident heq2) | ()];
+              Std.clear [heq2 ; (hr.(star_ident)); (hr.(star_eq))];
+              _mlReshapeHypsBack
+          end
+        ]
+      )
+      (fun _ => throw_pm_exn (Message.concat (Message.of_string "mlRewriteBy: failed when rewriting '")
+                             (Message.concat (Message.of_constr (a))
+                             (Message.concat (Message.of_string "' to/from '")
+                             (Message.concat (Message.of_constr (a'))
+                             (Message.concat (Message.of_string "' in context ")
+                             (Message.of_constr (pc))
+                             )
+                             )
+                             )
+                             )
+                             )
+      )
+| [|- _] => throw_pm_exn_with_goal "mlRewrite: not in proof mode"
 end
 .
 
@@ -2200,6 +2215,7 @@ Proof.
   { wf_auto2. }
   mlIntro "H0". mlIntro "H1".
   mlRewriteBy "H1" at 1.
+  Fail mlRewriteBy "H1" at 1.
   mlExactn 0.
 Defined.
 
@@ -2684,8 +2700,8 @@ Proof.
     mlRewrite (useBasicReasoning (ExGen := ⊤, SVSubst := ∅, KT := false, AKT := false) (patt_and_comm Γ (patt_free_evar x) (ex, φ) ltac:(wf_auto2) ltac:(wf_auto2))) at 1.
     mlRewrite <- (@liftProofInfoLe Σ Γ _ (ExGen := {[fresh_evar (φ and patt_free_evar x)]}, SVSubst := ∅, KT := false, AKT := false) (ExGen := ⊤, SVSubst := ∅, KT := false, AKT := false) ltac:(try_solve_pile) (@prenex_exists_and_iff Σ Γ φ (patt_free_evar x) ltac:(wf_auto2) ltac:(wf_auto2))) at 1.
     remember (evar_fresh (elements ({[x]} ∪ (free_evars φ)))) as y.
-    mlSplitAnd; fromMLGoal.
-    - apply (strip_exists_quantify_l Γ y).
+    mlSplitAnd.
+    - fromMLGoal. apply (strip_exists_quantify_l Γ y).
       { subst y. simpl.
         eapply not_elem_of_larger_impl_not_elem_of.
         2: { apply set_evar_fresh_is_fresh'. }
@@ -2707,7 +2723,7 @@ Proof.
       mlIntro "H0". mlDestructAnd "H0" as "H1" "H2". mlSplitAnd.
       + mlExact "H2".
       + mlExact "H1".
-    - apply (strip_exists_quantify_l Γ y).
+    - fromMLGoal. apply (strip_exists_quantify_l Γ y).
       { subst y. simpl.
         eapply not_elem_of_larger_impl_not_elem_of.
         2: { apply set_evar_fresh_is_fresh'. }
@@ -2834,12 +2850,12 @@ Proof.
   mlSplitAnd; mlIntro "H0".
   - mlApplyMeta (useBasicReasoning (ExGen := ∅, SVSubst := ∅, KT := false, AKT := false) (Prop_disj_right Γ φ₁ φ₂ (patt_sym (Definedness_Syntax.inj definedness)) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) )).
     mlExact "H0".
-  - mlDestructOr "H0" as "H1" "H2"; fromMLGoal.
-    + unshelve (eapply Framing_right).
+  - mlDestructOr "H0" as "H1" "H2".
+    + fromMLGoal. unshelve (eapply Framing_right).
       * wf_auto2.
       * try_solve_pile.
       * toMLGoal. wf_auto2. mlIntro "H0'". mlLeft. mlExact "H0'".
-    + unshelve (eapply Framing_right).
+    + fromMLGoal. unshelve (eapply Framing_right).
       * wf_auto2.
       * try_solve_pile.
       * toMLGoal. wf_auto2. mlIntro "H0'". mlRight. mlExact "H0'".
@@ -2854,8 +2870,19 @@ Proof.
   mlIntro "H0".
   mlClassic (φ₁) as "H1'" "H1'".
   { assumption. }
-  { mlTauto. }
-  { mlTauto. }
+  {
+    mlIntro. mlSplitAnd. 2: mlAssumption.
+    mlDestructOr "H0".
+    * mlExFalso. mlApply "1". mlAssumption.
+    * mlAssumption.
+  }
+  {
+    mlIntro. mlSplitAnd.
+    * mlDestructOr "H0".
+      - mlExFalso. mlApply "0". mlAssumption.
+      - mlAssumption.
+    * mlExFalso. mlApply "0". mlAssumption.
+  }
 Defined.
 
 Lemma membership_symbol_ceil_aux_0 {Σ : Signature} {syntax : Syntax} Γ x y φ:
@@ -4371,12 +4398,12 @@ Proof.
   intros Γ φ ψ HΓ WF1 WF2 MF P1 P2.
   toMLGoal. wf_auto2.
   mlApplyMeta forall_functional_subst.
-  mlSplitAnd; fromMLGoal; auto.
+  mlSplitAnd. all: try fromMLGoal; auto.
   Unshelve. all: auto. all: wf_auto2.
 Defined.
 
 (* TODO: make sure that the final [assumption] does not solve goals we do not want to solve. *)
-Tactic Notation "mgSpecMeta" ident(hyp) "with" constr(t) := 
+Tactic Notation "mlSpecMeta" ident(hyp) "with" constr(t) := 
   unshelve (eapply (@mlSpecializeMeta _ _ _ _ t) in hyp); try_wfauto2; try assumption.
 
 Local Lemma test_spec {Σ : Signature} {syntax : Syntax}:
@@ -4386,7 +4413,7 @@ Local Lemma test_spec {Σ : Signature} {syntax : Syntax}:
   Γ ⊢i ex , ψ =ml b0 using AnyReasoning ->
   Γ ⊢i φ^[evar: 0 ↦ ψ] using AnyReasoning.
 Proof.
-  intros. mgSpecMeta H3 with ψ.
+  intros. mlSpecMeta H3 with ψ.
 Defined.
 
 Lemma MLGoal_mlSpecialize {Σ : Signature} {syntax : Syntax} Γ l₁ l₂ p t g name:
@@ -4546,22 +4573,27 @@ Defined.
 
 Tactic Notation "mlSymmetry" :=
   _ensureProofMode;
-  apply MLGoal_symmetry; [try assumption; set_solver|].
+  tryif apply MLGoal_symmetry; [try assumption; try timeout 5 set_solver|]
+  then idtac
+  else fail "mlSymmetry: matching logic goal is not an equality".
 
 Tactic Notation "mlSymmetry" "in" constr(name) :=
   _ensureProofMode;
   _mlReshapeHypsByName name;
-  apply (MLGoal_symmetryIn name); [try assumption; set_solver|];
-  _mlReshapeHypsBack.
+  tryif apply (MLGoal_symmetryIn name); [try assumption; try timeout 5 set_solver|];
+  _mlReshapeHypsBack
+  then idtac
+  else fail "mlSymmetry: given local hypothesis is not an equality".
 
 Local Example mlSymmetry_test {Σ : Signature} {syntax : Syntax} Γ ϕ ψ :
   theory ⊆ Γ -> well_formed ϕ -> well_formed ψ ->
-  Γ ⊢i ϕ =ml ψ ---> ϕ =ml ψ using AnyReasoning.
+  Γ ⊢i ψ ---> ϕ =ml ψ ---> ϕ =ml ψ using AnyReasoning.
 Proof.
   intros.
-  mlIntro "H".
+  mlIntro "H0". mlIntro "H".
   mlSymmetry.
   mlSymmetry in "H".
+  Fail mlSymmetry in "H0".
   mlAssumption.
 Defined.
 

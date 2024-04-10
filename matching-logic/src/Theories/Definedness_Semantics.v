@@ -26,7 +26,6 @@ Import extralibrary.
 Require Import MatchingLogic.Theories.Definedness_Syntax.
 Import Definedness_Syntax.Notations.
 Import MatchingLogic.Semantics.Notations.
-Import MatchingLogic.Syntax.BoundVarSugar.
 
 Section definedness.
   Context

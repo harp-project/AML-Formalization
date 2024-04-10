@@ -11,13 +11,13 @@ From Coq.Unicode Require Import Utf8.
 From Coq.micromega Require Import Lia.
 
 From MatchingLogic Require Export Logic ProofMode.MLPM.
-From MatchingLogic.Theories Require Export Definedness_Syntax Definedness_ProofSystem.
+From MatchingLogic.Theories Require Export Definedness_Syntax Definedness_ProofSystem Sorts_Syntax.
 From MatchingLogic.Utils Require Export stdpp_ext.
 
 Require Export MatchingLogic.wftactics.
 
 From stdpp Require Import base fin_sets sets propset proof_irrel option list.
-
+Import FreshnessManager.
 Import extralibrary.
 
 Import MatchingLogic.Logic.Notations.
@@ -35,6 +35,26 @@ Open Scope string_scope.
 Open Scope list_scope.
 
 Set Printing All.
+
+Local Lemma simplTest
+  {Σ : Signature}
+  {syntax : Sorts_Syntax.Syntax}
+  (Γ : Theory)
+  (φ ψ τ: Pattern)
+  (s : symbols) x:
+  well_formed (ex , φ) ->
+  well_formed ψ ->
+  well_formed τ ->
+  Definedness_Syntax.theory ⊆ Γ ->
+  Γ ⊢ ((all ψ , φ) ---> ex ψ ,  φ)^[[evar:x↦τ]].
+Proof.
+  intros. mlSimpl. mlSortedSimpl. mlSortedSimpl. mlSimpl.
+  remember (fresh_evar (ψ $ φ $ τ)) as y.
+  mlIntro.
+  mlSpecialize "0" with x.
+  mlExists x.
+Abort.
+
 Lemma ex_sort_impl_ex
   {Σ : Signature}
   {syntax : Sorts_Syntax.Syntax}
@@ -44,7 +64,7 @@ Lemma ex_sort_impl_ex
   :
   well_formed (ex , ϕ) ->
   Definedness_Syntax.theory ⊆ Γ ->
-  Γ ⊢ ex (patt_sym s) , ϕ ---> (ex , ϕ).
+  Γ ⊢ (ex (patt_sym s) , ϕ) ---> (ex , ϕ).
 Proof.
   intros wfϕ HΓ.
 
@@ -63,7 +83,7 @@ Proof.
     wf_auto2.
   }
 
-  gapply Ex_gen.
+  gapply BasicProofSystemLemmas.Ex_gen.
   { apply pile_any. }
   { apply pile_any. }
   {
@@ -80,7 +100,7 @@ Proof.
   mlDestructAnd "H" as "H0" "H1".
   mlClear "H0".
 
-  mlApplyMeta Ex_quan. simpl.
+  mlApplyMeta BasicProofSystemLemmas.Ex_quan. simpl.
   mlExact "H1".
 Defined.
 

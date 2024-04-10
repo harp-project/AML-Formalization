@@ -3,8 +3,10 @@ From stdpp Require Export list fin_sets.
 
 From MatchingLogic Require Export
   Logic
+  ProofSystem
   ProofInfo
-  BasicProofSystemLemmas.
+  BasicProofSystemLemmas
+  FreshnessManager.
 From MatchingLogic.ProofMode Require Export Basics
                                             Propositional
                                             Firstorder

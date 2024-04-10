@@ -37,3 +37,7 @@ Section with_signature.
   Definition is_negative_context (C : PatternCtx) := ~~ evar_has_positive_occurrence (pcEvar C) (pcPattern C).
 
 End with_signature.
+
+Module Notations.
+  Notation "C [ p ]" := (emplace C p) (at level 90) : ml_scope.
+End Notations.

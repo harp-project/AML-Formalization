@@ -8,7 +8,12 @@ From Equations Require Import Equations.
 (* Set Equations Transparent. *)
 
 From MatchingLogic.Utils Require Import Surj.
-From MatchingLogic.OPML Require Import OpmlSignature OpmlModel.
+From MatchingLogic.OPML Require Import
+    OpmlSignature
+    OpmlModel
+    GenericModel
+    KPreludeSignatures
+.
 
 Module example01.
 
@@ -34,21 +39,11 @@ Module example01.
         destruct x; compute_done.
     Qed.
 
-    Program Definition Sorts : OPMLSorts := {|
+    Definition Sorts : OPMLSorts := {|
         opml_sort := Sort ;
-        opml_subsort := eq ;
+        opml_subsort := Identity_relation Sort ;
+        opml_subsort_po := Identity_relation_partial_order Sort;
     |}.
-    Next Obligation.
-        repeat split.
-        {
-            intros x y z Hxy Hyz.
-            subst. reflexivity.
-        }
-        {
-            intros x y Hxy Hyx.
-            subst. reflexivity.
-        }
-    Qed.
 
     Definition Vars : @OPMLVariables Sorts := {|
         opml_evar := fun s => string;
@@ -79,24 +74,31 @@ Module example01.
         destruct x; compute_done.
     Qed.
 
+    Definition MySymbols_arg_sorts (s : MySymbols) : list (@opml_sort Sorts) :=
+        match s with
+        | ms_bool_true => []
+        | ms_bool_false => []
+        | ms_list_bool_nil => []
+        | ms_list_bool_cons => [(sort_list_bool)]
+        end
+    .
+
+    Definition MySymbols_return_sort (s : MySymbols) :=
+        match s with
+        | ms_bool_true => sort_bool
+        | ms_bool_false => sort_bool
+        | ms_list_bool_nil => sort_list_bool
+        | ms_list_bool_cons => sort_list_bool
+        end 
+    .
+
     Definition Symbols : @OPMLSymbols Sorts := {|
         opml_symbol := MySymbols ;
-        opml_arg_sorts := fun s =>
-            match s with
-            | ms_bool_true => []
-            | ms_bool_false => []
-            | ms_list_bool_nil => []
-            | ms_list_bool_cons => [(sort_list_bool:@opml_sort Sorts)]
-            end ;
-        opml_ret_sort := fun s =>
-            match s with
-            | ms_bool_true => sort_bool
-            | ms_bool_false => sort_bool
-            | ms_list_bool_nil => sort_list_bool
-            | ms_list_bool_cons => sort_list_bool
-            end ;
+        opml_arg_sorts := MySymbols_arg_sorts ;
+        opml_ret_sort := MySymbols_return_sort ;
     |}.
 
+    #[global]
     Instance Σ : OPMLSignature := {|
         opml_sorts := Sorts ;
         opml_variables := Vars ;
@@ -228,3 +230,147 @@ Module example01.
 
 End example01.
 
+Module example02.
+
+    (* Here is an example model that we would like to generate automatically
+       from a K/Kore language definition that uses Lists, Bools, and defines one user defined sort
+       with three constructors.
+    *)
+
+    Inductive Sort :=
+    | sort_bool
+    | sort_list
+    | sort_user
+    | sort_kitem
+    .
+
+    #[global]
+    Instance Sort_eqdec: EqDecision Sort.
+    Proof.
+        solve_decision.
+    Defined.
+
+    #[global]
+    Program Instance Sort_finite: Finite Sort := {|
+        enum := [sort_bool; sort_list; sort_user; sort_kitem];
+    |}.
+    Next Obligation.
+        compute_done.
+    Qed.
+    Next Obligation.
+        destruct x; compute_done.
+    Qed.
+
+    Program Definition Sorts : OPMLSorts := {|
+        opml_sort := Sort ;
+        opml_subsort := fun s1 s2 =>
+            s1 = s2 \/
+            match s1,s2 with
+            | sort_kitem, sort_user => True
+            | _,_ => False
+            end
+         ;
+    |}.
+    Next Obligation.
+        repeat split.
+        {
+            (* reflexivity *)
+            unfold Reflexive.
+            intros x.
+            left. reflexivity.
+        }
+        {
+            (* Transitivity *)
+            intros x y z Hxy Hyz.
+            (repeat case_match); simplify_eq/=; naive_solver.
+        }
+        {
+            (* Antisymmetry *)
+            intros x y Hxy Hyx.
+            (repeat case_match); simplify_eq/=; naive_solver.
+        }
+    Qed.
+
+    Definition Vars : @OPMLVariables Sorts := {|
+        opml_evar := fun s => string;
+        opml_svar := fun s => string;
+    |}.
+
+    Inductive MySymbols :=
+    | ms_bool_true
+    | ms_bool_false
+    | ms_list_nil
+    | ms_list_cons
+    | ms_user_1
+    | ms_user_2
+    | ms_user_3
+    .
+
+    #[global]
+    Instance MySymbols_eqdec: EqDecision MySymbols.
+    Proof.
+        solve_decision.
+    Defined.
+
+    #[global]
+    Program Instance MySymbols_finite: Finite MySymbols := {|
+        enum := [
+            ms_bool_true;
+            ms_bool_false;
+            ms_list_nil;
+            ms_list_cons;
+            ms_user_1;
+            ms_user_2;
+            ms_user_3
+        ];
+    |}.
+    Next Obligation.
+        compute_done.
+    Qed.
+    Next Obligation.
+        destruct x; compute_done.
+    Qed.
+
+    Definition MySymbols_arg_sorts (s : MySymbols) : list (@opml_sort Sorts) :=
+        match s with
+        | ms_bool_true => []
+        | ms_bool_false => []
+        | ms_list_nil => []
+        | ms_list_cons => [sort_bool;sort_list]
+        | ms_user_1 => []
+        | ms_user_2 => []
+        | ms_user_3 => []
+        end
+    .
+
+    Definition MySymbols_return_sort (s : MySymbols) :=
+        match s with
+        | ms_bool_true => sort_bool
+        | ms_bool_false => sort_bool
+        | ms_list_nil => sort_list
+        | ms_list_cons => sort_list
+        | ms_user_1 => sort_user
+        | ms_user_2 => sort_user
+        | ms_user_3 => sort_user
+        end 
+    .
+
+    Definition Symbols : @OPMLSymbols Sorts := {|
+        opml_symbol := MySymbols ;
+        opml_arg_sorts := MySymbols_arg_sorts ;
+        opml_ret_sort := MySymbols_return_sort ;
+    |}.
+
+    #[global]
+    Instance Σ : OPMLSignature := {|
+        opml_sorts := Sorts ;
+        opml_variables := Vars ;
+        opml_symbols := Symbols ;
+    |}.
+
+
+    (* Need to have signature morphisms to builtin signatures *)
+
+
+
+End example02.

@@ -9,6 +9,7 @@ From Equations Require Import Equations.
 Require Import Coq.Program.Tactics.
 
 From MatchingLogic Require Import
+    ProofSystem
     Utils.extralibrary
     Logic
     DerivedOperators_Syntax
@@ -79,7 +80,9 @@ Defined.
 Ltac2 do_mlExactn (n : constr) :=
   do_ensureProofMode ();
   do_mlReshapeHypsByIdx n;
-  apply MLGoal_exactn
+  Control.plus (fun () => apply MLGoal_exactn)
+  (fun _ => _mlReshapeHypsBack;
+            throw_pm_exn_with_goal "do_mlExactn: Hypothesis is not identical to the goal!")
 .
 
 Ltac2 Notation "mlExactn" n(constr) :=
@@ -106,8 +109,11 @@ Defined.
 
 Ltac2 do_mlExact (name' : constr) :=
   do_ensureProofMode ();
-  eapply MLGoal_exact with (name := $name');
-  simpl; apply f_equal; reflexivity
+  Control.plus (fun () =>
+    eapply MLGoal_exact with (name := $name');
+    simpl; apply f_equal; reflexivity)
+    (fun _ => _mlReshapeHypsBack;
+              throw_pm_exn_with_goal ("do_mlExact: Given hypothesis is not identical to the goal, or there is no pattern associated with the given name!"))
 .
 
 Ltac2 Notation "mlExact" name(constr) :=
@@ -132,6 +138,8 @@ Proof.
     { wf_auto2. }
   *)
   mlIntro "H1". mlIntro "H2". mlIntro "H3". (* TODO: mlIntros "H1" "H2" "H3".*)
+  Fail mlExact "H4".
+  Fail mlExact "H1".
   mlExact "H2".
 Defined.
 
@@ -146,7 +154,7 @@ Proof.
   (*mlExtractWF wfl wfgp.*)
   unfold of_MLGoal in *. simpl in *.
   intros wfg' wfl.
-  pose proof (wfimp := proved_impl_wf _ _ (proj1_sig Hgg')).
+  pose proof (wfimp := ProofSystem.proved_impl_wf _ _ (proj1_sig Hgg')).
   apply well_formed_imp_proj1 in wfimp.
   eapply prf_weaken_conclusion_iter_meta_meta.
   5: apply Hlg.
@@ -393,7 +401,8 @@ Ltac2 run_in_reshaped_by_idx
 
 Ltac2 do_mlApplyn (n : constr) :=
   run_in_reshaped_by_idx n ( fun () =>
-    apply MLGoal_weakenConclusion
+    Control.plus (fun () => apply MLGoal_weakenConclusion)
+      (fun _ => throw_pm_exn_with_goal "do_mlApplyn: Failed for goal: ")
   )
 .
 
@@ -417,7 +426,8 @@ Ltac2 run_in_reshaped_by_name
 
 Ltac2 do_mlApply (name' : constr) :=
   run_in_reshaped_by_name name' (fun () =>
-    apply MLGoal_weakenConclusion
+    Control.plus (fun () => apply MLGoal_weakenConclusion)
+    (fun _ => throw_pm_exn_with_goal "do_mlApply: Goal does not match the conclusion of the hypothesis")
   )
 .
 
@@ -440,6 +450,8 @@ Proof.
   { wf_auto2. }
   mlIntro "H1".
   mlIntro "H2".
+  Fail mlApply "H1".
+  Fail mlApply "H3".
   mlApply "H2".
   fromMLGoal.
   apply P1; wf_auto2.
@@ -617,7 +629,8 @@ Defined.
 
 Ltac2 do_mlDestructImp (name : constr) :=
   run_in_reshaped_by_name name (fun () =>
-    apply (mlGoal_destructImp _ _ _ $name)
+   Control.plus (fun () => apply (mlGoal_destructImp _ _ _ $name))
+                 (fun _ => throw_pm_exn_with_goal "do_mlDestructImp: The given hypothesis was not an implication pattern: ")
   )
 .
 
@@ -658,7 +671,8 @@ Defined.
 
 Ltac2 do_mlRevert (name : constr) :=
   run_in_reshaped_by_name name (fun () =>
-    apply (MLGoal_revert _ _ _ _ _ $name)
+    Control.plus (fun () => apply (MLGoal_revert _ _ _ _ _ $name))
+      (fun _ => throw_pm_exn_with_goal "do_mlRevert: failed for goal: ")
   )
 .
 
@@ -679,6 +693,7 @@ Proof.
   intros. toMLGoal. wf_auto2.
   mlIntro "H". mlIntro "H0". mlIntro "H1".
   mlRevert "H0". mlRevert "H1".
+  Fail mlRevert "H0".
   mlIntro "H0". mlIntro "H1".
   mlExact "H".
 Defined.
@@ -873,6 +888,7 @@ Proof.
   toMLGoal.
   { wf_auto2. }
   mlIntro "H0". mlIntro "H1".
+  Fail mlAssert ("H0" : a).
   mlAssert ("H2" : a).
   { wf_auto2. }
   { mlExact "H1". }
@@ -1034,7 +1050,6 @@ Proof.
   pose proof (H1 := Constructive_dilemma Γ p r q r wfp wfr wfq wfr).
   assert (Γ ⊢i ((r or r) ---> r) using BasicReasoning).
   { unfold patt_or. apply P4i'. wf_auto2. }
-  Check tofold.
   replace ((p ---> r) ---> (q ---> r) ---> p or q ---> r or r)
   with (foldr patt_imp ((p ---> r) ---> (q ---> r) ---> p or q ---> r or r) [])
   in H1 by reflexivity.
@@ -1169,7 +1184,10 @@ Ltac2 do_mlAdd_as (n : constr) (name' : constr) :=
   do_failIfUsed name';
   lazy_match! goal with
   | [|- @of_MLGoal ?sgm (@mkMLGoal ?sgm ?ctx ?l ?g ?i)] =>
+  Control.plus(fun () =>
     apply (@MLGoal_add $sgm $ctx $l $name' $g _ $i $n)
+  )
+  (fun _ => throw_pm_exn (Message.concat (Message.of_string "do_mlAdd_as: given Coq hypothesis is not a pattern: ") (Message.of_constr n)))
   end.
 
 Ltac2 Notation "mlAdd" n(constr) "as" name(constr) :=
@@ -1212,6 +1230,8 @@ Proof.
   intros WFl WFg WFh H H0.
   mlAdd H0 as "H0".
   mlAdd H.
+  Fail mlAdd WFl as "0".
+  Fail mlAdd WFl as "1".
   mlApply "0".
   mlExact "H0".
 Defined.
@@ -1253,7 +1273,7 @@ Proof.
   apply H3.
   useBasicReasoning.
   apply prf_clear_hyp; wf_auto2.
-Defined.  
+Defined.
 
 
 
@@ -1301,6 +1321,7 @@ Proof.
   mlIntro "H0". mlIntro "H1". mlIntro "H2".
   mlClear "H2".
   mlClear "H0".
+  Fail mlClear "H0".
   mlExact "H1".
 Defined.
 
@@ -1606,9 +1627,9 @@ Proof.
 Defined.
 
 Lemma MLGoal_disj_elim {Σ : Signature} Γ l₁ l₂ pn p qn q pqn r i:
-  mkMLGoal Σ Γ (l₁ ++ [mkNH _ pn p] ++ l₂) r i ->
-  mkMLGoal Σ Γ (l₁ ++ [mkNH _ qn q] ++ l₂) r i ->
-  mkMLGoal Σ Γ (l₁ ++ [mkNH _ pqn (p or q)] ++ l₂) r i.
+  mkMLGoal Σ Γ (l₁ ++ (mkNH _ pn p) :: l₂) r i ->
+  mkMLGoal Σ Γ (l₁ ++ (mkNH _ qn q) :: l₂) r i ->
+  mkMLGoal Σ Γ (l₁ ++ (mkNH _ pqn (p or q)) :: l₂) r i.
 Proof.
   intros H1 H2.
   unfold of_MLGoal in *. simpl in *.
@@ -1655,9 +1676,12 @@ Ltac2 do_mlDestructOr_as (name : constr) (name1 : constr) (name2 : constr) :=
     eapply cast_proof_ml_hyps;
     f_equal;
     _mlReshapeHypsByName name;
-    apply MLGoal_disj_elim with (pqn := $name) (pn := $name1) (qn := $name2);
-    _mlReshapeHypsBack;
-    simpl
+    Control.plus (fun () =>
+      apply MLGoal_disj_elim with (pqn := $name) (pn := $name1) (qn := $name2);
+      _mlReshapeHypsBack
+    )
+    (fun _ => _mlReshapeHypsBack; 
+      throw_pm_exn_with_goal "do_mlDestructOr_as: failed for goal: ")
   end
 .
 
@@ -1703,6 +1727,8 @@ Proof.
   mlIntro "H0".
   mlIntro "H1".
   mlIntro "H2".
+  Fail mlDestructOr "H3".
+  Fail mlDestructOr "H0".
   mlDestructOr "H1".
   - fromMLGoal. apply H.
   - fromMLGoal. apply H0.
@@ -1996,7 +2022,7 @@ Proof.
   1,2: pose proof (wfrr' := proved_impl_wf _ _ (proj1_sig Himp)); wf_auto2.
 Defined.
 
-
+(* Error message of this one is sufficient *)
 Ltac2 do_mlApplyMetaRaw (t : constr) :=
   eapply (@MLGoal_applyMeta _ _ _ _ _ $t)
 .
@@ -2046,12 +2072,18 @@ Defined.
 
 Ltac2 mlLeft () :=
   _ensureProofMode;
-  apply MLGoal_left
+  Control.plus(fun () =>
+    apply MLGoal_left
+  )
+  (fun _ => throw_pm_exn_with_goal "mlLeft: Current matching logic goal is not a disjunction! ")
 .
 
 Ltac2 mlRight () :=
   _ensureProofMode;
-  apply MLGoal_right
+  Control.plus(fun () =>
+    apply MLGoal_right
+  )
+  (fun _ => throw_pm_exn_with_goal "mlLeft: Current matching logic goal is not a disjunction! ")
 .
 
 Ltac mlLeft := ltac2:(mlLeft ()).
@@ -2066,6 +2098,7 @@ Proof.
   intros wfa.
   toMLGoal.
   { wf_auto2. }
+  Fail mlLeft.
   mlIntro "H0".
   mlLeft.
   mlExact "H0".
@@ -2116,7 +2149,7 @@ Defined.
 Ltac2 do_mlApplyMetaRawIn (t : constr) (name : constr) :=
   eapply cast_proof_ml_hyps;
   f_equal;
-  
+
   run_in_reshaped_by_name name (fun () =>
     eapply (@MLGoal_applyMetaIn _ _ _ _ $name _ _ $t)
   )
@@ -2257,6 +2290,7 @@ Proof.
   apply H.
 Defined.
 
+(* TODO: Create error messages for the following tactics *)
 Ltac2 _callCompletedAndCast (twb : Std.constr_with_bindings) (tac : constr -> unit) :=
   let tac' := (fun (t' : constr) =>
     let tcast := open_constr:(@useGenericReasoning'' _ _ _ _ _ $t') in
@@ -2479,12 +2513,13 @@ Ltac2 mlDestructAnd_as (name : constr) (name1 : constr) (name2 : constr) :=
     _ensureProofMode;
     _failIfUsed $name1;
     _failIfUsed $name2;
-    (*
-    eapply cast_proof_ml_hyps;
-    f_equal;
-    *)
     run_in_reshaped_by_name name (fun () =>
-      apply MLGoal_destructAnd with (nxy := $name) (nx := $name1) (ny := $name2)
+      Control.plus(fun () =>
+        apply MLGoal_destructAnd with (nxy := $name) (nx := $name1) (ny := $name2)
+      )
+      (fun _ => 
+        _mlReshapeHypsBack;
+        throw_pm_exn_with_goal "mlDestructAnd_as: Given matching logic hypothesis is not a conjunction! ")
     )
   )
 .
@@ -2529,6 +2564,10 @@ Proof.
   { wf_auto2. }
   mlIntro "H0". mlIntro "H1". mlIntro "H2".
   mlDestructAnd "H1" as "H3" "H4".
+  Fail mlDestructAnd "H1" as "H3" "H4".
+  Fail mlDestructAnd "H1" as "H3'" "H4".
+  Fail mlDestructAnd "H1" as "H3'" "H4'".
+  Fail mlDestructAnd "H3" as "H3'" "H4'".
   mlDestructAnd "H0".
   mlExact "H3".
 Defined.
@@ -2599,13 +2638,13 @@ Proof with try_wfauto2.
 
   apply conj_intro_meta; auto.
   - toMLGoal.
-    { auto. }
+    { wf_auto2. }
     mlIntro "H0".
     mlDestructOr "H0" as "H1" "H2".
     + mlLeft. fromMLGoal. assumption.
     + mlRight. fromMLGoal. assumption.
   - toMLGoal.
-    { auto. }
+    { wf_auto2. }
     mlIntro "H0".
     mlDestructOr "H0" as "H1" "H2".
     + mlLeft. fromMLGoal. assumption.
@@ -2715,8 +2754,10 @@ Proof.
     + mlRight. mlExact "H5".
   - mlLeft.
     mlIntro "H2".
-    mlExFalso.
+    mlAssert ("0" : ⊥). wf_auto2.
     mlApply "H4". mlExact "H2".
+    Fail mlDestructBot "H1".
+    mlDestructBot "0".
 Defined.
 
 Lemma weird_lemma_meta {Σ : Signature} Γ A B L R i:
@@ -3008,7 +3049,10 @@ Defined.
 Ltac2 do_mlSplitAnd () :=
   Control.enter(fun () =>
     _ensureProofMode;
-    apply MLGoal_splitAnd
+    Control.plus(fun () =>
+      apply MLGoal_splitAnd
+    )
+    (fun _ => throw_pm_exn_with_goal "do_mlSplitAnd: matching logic goal is not a conjunction! ")
   )
 .
 
@@ -3030,7 +3074,9 @@ Proof.
   intros wfa wfb wfc.
   toMLGoal.
   { wf_auto2. }
-  mlIntro "H0". mlIntro "H1". mlIntro "H2".
+  mlIntro "H0". mlIntro "H1".
+  Fail mlSplitAnd.
+  mlIntro "H2".
   mlSplitAnd.
   - mlExact "H0".
   - mlExact "H1".
@@ -3536,8 +3582,8 @@ Defined.
 #[local]
 Ltac2 rec tryExact (l : constr) (idx : constr) :=
   lazy_match! l with
-    | nil => ()
-    | (?a :: ?m) => try (do_mlExactn idx); tryExact m constr:($idx + 1)
+    | nil => throw_pm_exn_with_goal "tryExact: there was no matching logic hypothesis which is exactly matched by the goal: "
+    | (?a :: ?m) => Control.plus (fun () => do_mlExactn idx) (fun exn => tryExact m constr:($idx + 1))
   end.
 
 #[global]
@@ -3576,7 +3622,7 @@ Proof.
     mlApply "H2". mlAssumption.
   - mlApply "H2". mlIntro "H0". mlClear "H2". mlIntro "H1".
     mlDestructOr "H0" as "H2" "H3".
-    + mlExFalso.
+    + mlExFalso. Fail mlAssumption.
       mlApply "H2". mlAssumption.
     + mlAssumption.
 Defined.
@@ -4080,7 +4126,9 @@ Proof.
   _mlReshapeHypsBackTwice.
   _mlReshapeHypsBy2Names "4" "2".
   _mlReshapeHypsBackTwice.
-  _mlReshapeHypsBy2Names "4" "4".
+  Fail mlSwap "3" with "3".
+  Fail mlSwap "5" with "4".
+  Fail mlSwap "1" with "6".
   mlSwap "3" with "4".
   mlApply "3" in "4".
   mlSwap "1" with "3".
@@ -4150,6 +4198,7 @@ Defined.
 Ltac2 do_mlConj (n1 : constr) (n2 : constr) (conj_name' : constr) :=
   Control.enter(fun () => 
     _ensureProofMode;
+    do_failIfUsed conj_name';
     _mlReshapeHypsBy2Names n1 n2;
     apply MLGoal_conjugate_hyps with (conj_name := $conj_name');
     rewrite app_comm_cons;
@@ -4163,11 +4212,11 @@ Ltac2 do_mlConj (n1 : constr) (n2 : constr) (conj_name' : constr) :=
            lazy_match! (eval cbv in (Nat.compare $i1 $i2)) with
            | (Lt) => ()
            | (Gt) => mlApplyMeta patt_and_comm_basic in $conj_name'
-           | (Eq) => Message.print (Message.of_string "Equal names were used"); fail
+           | (Eq) => throw_pm_exn_with_goal "do_mlConj: Equal names were used"
            end
-        | (None) => Message.print (Message.concat (Message.of_string "No such name: ") (Message.of_constr n2)); fail
+        | (None) => throw_pm_exn (Message.concat (Message.of_string "do_mlConj: No such name: ") (Message.of_constr n2))
         end
-      | (None) => Message.print (Message.concat (Message.of_string "No such name: ") (Message.of_constr n2)); fail
+      | (None) => throw_pm_exn (Message.concat (Message.of_string "do_mlConj: No such name: ") (Message.of_constr n1))
       end
     end
   ).
@@ -4181,10 +4230,10 @@ Tactic Notation "mlConj" constr(n1) constr(n2) "as" constr(n3) :=
 
 Ltac2 rec do_mlConj_many l (name : constr) : unit :=
   match l with
-  | [] => Message.print (Message.of_string "empty"); fail
+  | [] => throw_pm_exn (Message.of_string "do_mlConj_many: empty list")
   | a :: t1 => 
     match t1 with
-    | [] => Message.print (Message.of_string "only one"); fail
+    | [] => throw_pm_exn (Message.of_string "do_mlConj_many: singleton list")
     | b :: t2 => 
       match t2 with
       | [] => mlConj $a $b as $name
@@ -4215,6 +4264,10 @@ Example ex_ml_conj_intro {Σ : Signature} Γ a b c d e f i:
 Proof.
   intros wfa wfb wfc wfd wfe wff.
   mlIntro; mlIntro; mlIntro; mlIntro; mlIntro; mlIntro.
+  Fail ltac2:(mlConj "1" as "conj").
+  Fail ltac2:(mlConj "1" as "conj").
+  Fail mlConj "0" "0" as "0".
+  Fail mlConj "0" "0" as "00".
   mlConj "1" "4" as "CN1".
   mlConj "4" "1" as "CN2".
   mlAssumption.
@@ -4371,9 +4424,10 @@ Defined.
         match! goal with (* error handling *)
         | [ |- _] => now (apply MLGoal_reflexivity; eauto)
         | [ |- _] =>
-          Message.print(
-          Message.concat (Message.of_constr op) (Message.of_string " is not reflexive!")
-          ); fail
+          throw_pm_exn
+          (Message.concat (Message.of_string "do_mlReflexivity: ")
+          (Message.concat (Message.of_constr op) (Message.of_string " is not reflexive!"))
+          )
         end
       | [ |- _] => Message.print (Message.of_string "Goal is not shaped as φ = φ!"); fail
       end

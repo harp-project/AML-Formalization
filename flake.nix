@@ -14,6 +14,29 @@
         coqPackages = pkgs.coqPackages_8_18;
         pyk-py = pyk.packages.${system}.pyk-python311;
         python = pyk-py.python;
+
+        # The 'matching logic in Coq' library
+        coq-matching-logic = { coqPackages }: (
+        coqPackages.callPackage 
+        ( { coq, stdenv }:
+        stdenv.mkDerivation {
+          name = "coq-matching-logic";
+          src = ./matching-logic;
+
+          propagatedBuildInputs = [
+            coq
+            coqPackages.equations
+            coqPackages.stdpp
+            coqPackages.LibHyps
+          ];
+          enableParallelBuilding = true;
+          installFlags = [ "COQLIB=$(out)/lib/coq/${coq.coq-version}/" ];
+
+          passthru = { inherit coqPackages; };
+        } ) { }
+	);
+
+
       in {
 
         # Newer version of Alectryon
@@ -41,24 +64,10 @@
             };
 
         # The 'matching logic in Coq' library
-        packages.coq-matching-logic
-        = coqPackages.callPackage 
-        ( { coq, stdenv }:
-        stdenv.mkDerivation {
-          name = "coq-matching-logic";
-          src = ./matching-logic;
+        packages.coq-matching-logic = coq-matching-logic { coqPackages = coqPackages; };
 
-          propagatedBuildInputs = [
-            coq
-            coqPackages.equations
-            coqPackages.stdpp
-            coqPackages.LibHyps
-          ];
-          enableParallelBuilding = true;
-          installFlags = [ "COQLIB=$(out)/lib/coq/${coq.coq-version}/" ];
-
-          passthru = { inherit coqPackages; };
-        } ) { } ;
+        # The 'matching logic in Coq' library
+        packages.coq-matching-logic-v8_17 = coq-matching-logic { coqPackages = pkgs.coqPackages_8_17; };
 
         # Documentation of the 'matching logic in Coq' library
         packages.coq-matching-logic-doc
@@ -203,6 +212,16 @@
                 packages = [coq-matching-logic.coqPackages.coq-lsp];
               };
 
+
+          coq-matching-logic-v8_17 =
+            let
+              coq-matching-logic = self.outputs.packages.${system}.coq-matching-logic-v8_17;
+            in
+              pkgs.mkShell {
+                inputsFrom = [coq-matching-logic];
+                packages = [coq-matching-logic.coqPackages.coq-lsp];
+              };
+
           coq-matching-logic-example-fol =
             let
               coq-matching-logic-example-fol = self.outputs.packages.${system}.coq-matching-logic-example-fol;
@@ -220,6 +239,24 @@
               pkgs.mkShell {
                 inputsFrom = [coq-matching-logic-example-proofmode];
                 packages = [coq-matching-logic-example-proofmode.coqPackages.coq-lsp];
+              };
+
+          koreimport =
+            let
+              koreimport = self.outputs.packages.${system}.koreimport;
+            in
+              pkgs.mkShell {
+                inputsFrom = [koreimport];
+                packages = [pkgs.python311Packages.mypy];
+              };
+
+          koreimport-test =
+            let
+              koreimport-test = self.outputs.packages.${system}.koreimport-test;
+            in
+              pkgs.mkShell {
+                inputsFrom = [koreimport-test];
+                #packages = [koreimport-test.coqPackages.coq-lsp];
               };
 
 

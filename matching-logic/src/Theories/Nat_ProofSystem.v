@@ -223,7 +223,7 @@ Section nat.
         wf_auto2.
       }
 
-      gapply Ex_gen.
+      gapply BasicProofSystemLemmas.Ex_gen.
       { apply pile_any. }
       { apply pile_any. }
       {
@@ -258,7 +258,7 @@ Section nat.
         mlApply "M". mlClear "M".
         mlSplitAnd. mlSplitAnd.
         + mlClear "ys". mlClear "H0".
-          mlApplyMeta Ex_quan.
+          mlApplyMeta BasicProofSystemLemmas.Ex_quan.
           unfold instantiate. mlSimpl. simpl.
           fromMLGoal.
           aapply patt_equal_refl.
