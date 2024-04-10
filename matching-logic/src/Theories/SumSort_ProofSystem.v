@@ -34,6 +34,7 @@ From MatchingLogic Require Import
 .
 
 Import MatchingLogic.Theories.Sorts_Syntax.Notations.
+Import MatchingLogic.Theories.SumSort_Syntax.Notations.
 
 Open Scope ml_scope.
 Open Scope string_scope.
@@ -48,16 +49,37 @@ Section sumsort.
       {syntax : SumSort_Syntax.Syntax s1 s2}
     .
 
-   (*Lemma use_sumsort_axiom ax Γ  :
+    Local Notation "'(' phi ').mlInjectL'" := 
+        (patt_app (patt_sym (inj (ml_injectL s1 s2))) phi)
+        : ml_scope
+    .
+
+    Local Notation "'(' phi ').mlInjectR'" := 
+        (patt_app (patt_sym (inj (ml_injectR s1 s2))) phi)
+        : ml_scope
+    .
+    
+    Local Notation "'(' phi ').mlEjectL'" := 
+        (patt_app (patt_sym (inj (ml_ejectL s1 s2))) phi)
+        : ml_scope
+    .
+    
+    Local Notation "'(' phi ').mlEjectR'" := 
+        (patt_app (patt_sym (inj (ml_ejectR s1 s2))) phi)
+        : ml_scope
+    .
+
+ Lemma use_sumsort_axiom ax Γ  :
     SumSort_Syntax.theory s1 s2 wfs1 wfs2 ⊆ Γ ->
-    Γ ⊢ axiom ax.
-  Proof.
+    Γ ⊢ axiom _ _ ax.
+Proof.
     intro HΓ.
     apply useBasicReasoning.
     apply BasicProofSystemLemmas.hypothesis.
-    { destruct ax; wf_auto2. }
+    { (* pose proof wfs1. pose proof wfs2. *) clear HΓ. destruct ax; wf_auto2. }
     {
-      apply elem_of_weaken with (X := theory_of_NamedAxioms named_axioms).
+      Check elem_of_weaken.
+      apply elem_of_weaken with (X := theory_of_NamedAxioms (named_axioms _ _ wfs1 wfs2 ) ).
       {
         unfold theory_of_NamedAxioms, named_axioms, axiom; simpl.
         apply elem_of_PropSet.
@@ -69,7 +91,9 @@ Section sumsort.
         set_solver.
       }
     }
-  Defined. *)
+  Defined.
+  
+  
   
 End sumsort.
 
