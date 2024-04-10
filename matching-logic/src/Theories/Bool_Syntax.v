@@ -24,7 +24,7 @@ Proof. unfold EqDecision. intros x y. unfold Decision. destruct x; decide equali
 #[global]
 Program Instance Symbols_finite : finite.Finite Symbols.
 Next Obligation.
-  exact [sBool; sTrue; sFalse; sAnd; sNeg].
+  exact [sBool; sTrue; sFalse; sAnd; sNeg; sAndThen].
 Defined.
 Next Obligation.
   unfold Symbols_finite_obligation_1.

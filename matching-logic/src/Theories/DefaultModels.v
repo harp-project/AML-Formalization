@@ -24,7 +24,6 @@ From MatchingLogic.Theories Require Import Definedness_Syntax
 .
 Import Definedness_Syntax.Notations.
 Import MatchingLogic.Semantics.Notations.
-Import MatchingLogic.Syntax.BoundVarSugar.
 
 Set Default Proof Mode "Classic".
 
@@ -222,6 +221,7 @@ Section Bool.
   Inductive bool_carrier :=
   | coreBoolSym (s : Bool_Syntax.Symbols)
   | partialAnd (b : bool)
+  | partialAndThen (b : bool)
   | defBool
   | inhBool
   .
@@ -235,8 +235,9 @@ Section Bool.
   #[global]
   Program Instance bool_carrier_finite : finite.Finite bool_carrier.
   Next Obligation.
-    exact (fmap coreBoolSym [sBool; sTrue; sFalse; sAnd; sNeg] ++ 
-           [partialAnd true; partialAnd false; defBool; inhBool]).
+    exact (fmap coreBoolSym [sBool; sTrue; sFalse; sAnd; sNeg; sAndThen] ++ 
+           [partialAnd true; partialAnd false;
+            partialAndThen true; partialAndThen false; defBool; inhBool]).
   Defined.
   Next Obligation.
     compute_done.
@@ -294,6 +295,20 @@ Section Bool.
      | coreBoolSym sFalse => {[ coreBoolSym sFalse ]}
      | _ => ∅
      end
+   (* TODO: revise these! Probably they are incorrect *)
+   | partialAndThen false =>
+     match m2 with
+     | coreBoolSym sTrue => {[ coreBoolSym sFalse ]}
+     | coreBoolSym sFalse => {[ coreBoolSym sFalse ]}
+     | _ => ∅
+     end
+   | partialAndThen true =>
+     match m2 with
+     | coreBoolSym sTrue => {[ coreBoolSym sTrue ]}
+     | coreBoolSym sFalse => {[ coreBoolSym sFalse ]}
+     | _ => ∅
+     end
+   (**)
    | defBool => ⊤
    | inhBool =>
      match m2 with
@@ -330,7 +345,7 @@ Section Bool.
          cbn in Ht; set_solver.
     destruct m.
     destruct s.
-    1, 4-8: right; intro; destruct H as [le [re [Hle [Hre Ht] ] ] ];
+    1, 4-12: right; intro; destruct H as [le [re [Hle [Hre Ht] ] ] ];
             apply elem_of_singleton_1 in Hle, Hre; subst;
             cbn in Ht; set_solver.
     1-2: left;
