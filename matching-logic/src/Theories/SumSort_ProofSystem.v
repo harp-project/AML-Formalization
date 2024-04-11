@@ -540,6 +540,28 @@ membership_symbol_ceil_right_aux_0:
   
   
    *)
+   
+   Theorem membership_axiom_v1: 
+    ∀ (Γ : Theory) (φ φ' : Pattern) (x : evar),
+      Definedness_Syntax.theory ⊆ Γ -> 
+      well_formed φ ->
+      well_formed φ' ->
+      
+      Γ ⊢i patt_free_evar x ∈ml ( φ $ φ' ) =ml ex , ( b0 ∈ml φ and patt_free_evar x ∈ml (b0 $ φ') )  
+           using AnyReasoning.
+  Proof.
+  Admitted.
+  
+  Theorem membership_axiom_v2: 
+    ∀ (Γ : Theory) (φ φ' : Pattern) (x : evar),
+      Definedness_Syntax.theory ⊆ Γ -> 
+      well_formed φ ->
+      well_formed φ' ->
+      
+      Γ ⊢i patt_free_evar x ∈ml ( φ $ φ' ) =ml ex, (b0 ∈ml φ' and patt_free_evar x ∈ml (φ $ b0)  )
+           using AnyReasoning.
+  Proof.
+  Admitted.
   
 End sumsort.
 
