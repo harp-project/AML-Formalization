@@ -66,6 +66,7 @@ src/Theories/Sorts_Semantics.v
 src/Theories/Sorts_ProofSystem.v
 
 src/Theories/ProductSort.v
+src/Theories/ProductSort_ProofSystem.v
 src/Theories/ProductSortWithLookup.v
 src/Theories/RecursiveSymbol.v
 
