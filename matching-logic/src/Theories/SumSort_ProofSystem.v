@@ -563,6 +563,321 @@ membership_symbol_ceil_right_aux_0:
   Proof.
   Admitted.
   
+  Theorem sum_inj : forall Γ , theory s1 s2 wfs1 wfs2 ⊆ Γ ->
+                              Γ ⊢ 〚 mlSum (s1, s2) 〛 =ml  ( (〚s1〛).mlInjectL  or  (〚s2〛).mlInjectR ) .
+  Proof.
+    intros.
+    toMLGoal.
+    1:{ clear H. wf_auto2. }
+    pose proof use_sumsort_axiom AxCoProduct Γ H.
+    simpl in H0. mlAdd H0 as "coproduct".   
+    pose proof use_sumsort_axiom AxInjectLeft Γ H.
+    simpl in H1. mlAdd H1 as "INJECT Left".
+    pose proof use_sumsort_axiom AxInjectRight Γ H.
+    simpl in H2. mlAdd H2 as "INJECT Right".
+    clear H0;clear H1;clear H2.
+    
+    mlAssert ( "P" : (  ( (〚s1〛).mlInjectL  or  (〚s2〛).mlInjectR )  ⊆ml  〚 mlSum (s1, s2) 〛 ) ) .
+    1:{ clear H;wf_auto2. }
+    1:{ 
+        epose proof t2 Γ (〚 mlSum (s1, s2) 〛)   ( (〚 s1 〛 ).mlInjectL ) ( (〚 s2 〛 ).mlInjectR) 
+         AnyReasoning ltac:(set_solver) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2).
+         
+        mlRewrite H0 at 1.
+        mlSplitAnd.
+        (* (〚 s1 〛 ).mlInjectL ⊆ml 〚 mlSum (s1, s2) 〛 *)
+        * clear H0.
+          epose proof t3 Γ ((〚 s1 〛 ).mlInjectL) ( 〚 mlSum (s1, s2) 〛) 
+            ltac:(set_solver) ltac:(wf_auto2) ltac:(wf_auto2).
+            
+          mlRewrite H0 at 1.
+          remember (fresh_evar ( s1 ---> s2)) as x.
+          mlIntroAllManual x.
+          1:{ cbn. unfold nest_ex. repeat rewrite nest_ex_aux_wfcex. 
+              1-2:clear H; wf_auto2.
+              solve_fresh.
+            }
+            
+          simpl.
+          rewrite bevar_subst_not_occur.
+          1:{ clear H;wf_auto2. }
+          mlIntro.
+            
+          mlAssert ("P" : ( ex s1, (b0).mlInjectL =ml patt_free_evar x ) ).
+          1:{ clear H; wf_auto2. }
+          1:{ unfold patt_exists_of_sort.
+              unfold nest_ex.
+              rewrite nest_ex_aux_wfcex.
+              1:wf_auto2.
+              rewrite nest_ex_aux_wfcex.
+              1:{ clear H; wf_auto2. }
+              epose proof membership_axiom_v2 Γ  (patt_sym (inj (ml_injectL s1 s2))) (〚 s1 〛) (x)
+                ltac:(set_solver) ltac:(wf_auto2) ltac:(wf_auto2).
+                   
+              mlAdd H1. mlClear "INJECT Right";mlClear "coproduct".
+              mlRevert "0".
+              mlRewriteBy "1" at 1.
+              mlIntro "H".
+               
+              remember (fresh_evar( patt_free_evar x ---> s1 ---> s2)) as y. 
+              mlDestructEx "H" as y.
+              1: { cbn. unfold nest_ex. rewrite nest_ex_aux_wfcex. 
+                   clear H; wf_auto2. solve_fresh.
+                 }
+                
+              mlExists y.
+              mlSimpl. simpl. cbn.
+              unfold evar_open.
+              rewrite bevar_subst_not_occur.
+              1:{ clear H;wf_auto2. }
+                 
+              mlDestructAnd "H".
+              mlSplitAnd.
+              1:mlAssumption.
+              mlSpecialize "INJECT Left" with y.
+              mlSimpl. unfold evar_open. simpl. cbn.
+              unfold nest_ex.
+              rewrite nest_ex_aux_wfcex.
+              1:{clear H;wf_auto2. }
+              rewrite bevar_subst_not_occur.
+              1:{clear H;wf_auto2. }
+              
+              mlAssert ( "3" : (patt_free_evar y ∈ml 〚 s1 〛)).
+              1:{ clear H. wf_auto2. }
+              1:mlAssumption.
+              mlApply "INJECT Left" in "0".
+              
+              opose proof*( membership_imp_equal Γ ( patt_free_evar x) ( (patt_free_evar y ).mlInjectL) _ _ _ _ ).
+              1:set_solver.
+              1-3:wf_auto2.
+              mlSymmetry.
+              mlAdd H2.
+              
+              mlAssert ("F" : (ex , patt_free_evar x =ml b0)).
+              1:wf_auto2.
+              1:{ mlExists x. mlSimpl. cbn. mlReflexivity. }
+              mlApply "4" in "F".
+              mlAssert ("G" : ( ex , (patt_free_evar y ).mlInjectL =ml b0) ).
+              1:wf_auto2.
+              1:{ remember (fresh_evar(patt_free_evar x ---> patt_free_evar y ---> s1 ---> s2)) as z.
+                  mlDestructEx "0" as z.
+                  1-2:cbn; solve_fresh.
+                  mlSimpl. cbn. 
+                  mlDestructAnd "0".
+                  mlExists z. 
+                  mlAssumption.
+                }
+              mlClear "4";mlClear "1";mlClear "0";mlClear "3".  
+              mlApply "F" in "G".
+              mlApply "G".
+              mlAssumption.
+            }
+          
+          remember (fresh_evar( patt_free_evar x ---> s1 ---> s2)) as y.
+          mlDestructEx "P" as y.
+          1:{ cbn. unfold nest_ex. repeat rewrite nest_ex_aux_wfcex. 
+              1-2:clear H; wf_auto2.
+              solve_fresh.
+            }
+          1:{ cbn. unfold nest_ex. rewrite nest_ex_aux_wfcex. 
+              clear H; wf_auto2.
+              solve_fresh.
+            }
+          
+          mlSimpl. simpl. cbn.
+          unfold evar_open.
+          rewrite bevar_subst_not_occur.
+          1:{ unfold nest_ex. rewrite nest_ex_aux_wfcex.
+              all:clear H;wf_auto2. 
+            }
+          unfold nest_ex.
+          rewrite nest_ex_aux_wfcex.
+          1:{ clear H;wf_auto2. }
+          mlDestructAnd "P".
+          mlSpecialize "INJECT Left" with y.
+          mlSimpl.
+          replace  ( (ex mlSum (s1, s2), (b1 ).mlInjectL =ml b0)^{evar:0↦y} ) with
+            ( ex mlSum (s1, s2), (patt_free_evar y ).mlInjectL =ml b0) .
+          2:{ mlSortedSimpl. mlSimpl. unfold evar_open. simpl. reflexivity. }
+          cbn.
+          unfold evar_open.
+          rewrite bevar_subst_not_occur.
+          1:{ unfold nest_ex. rewrite nest_ex_aux_wfcex.
+              all:clear H;wf_auto2. 
+            }
+          unfold nest_ex.
+          rewrite nest_ex_aux_wfcex.
+          1:{ clear H; wf_auto2. }
+          mlApply "INJECT Left" in "1".
+          mlClear "INJECT Right";mlClear "INJECT Left".
+            
+          remember (fresh_evar(patt_free_evar x ---> patt_free_evar y ---> s1 ---> s2)) as z.
+          mlDestructEx "1" as z.
+          1-2:cbn;solve_fresh.
+          mlSimpl. cbn.
+          mlDestructAnd "1".
+          mlSymmetry in "2".
+          mlRewriteBy "2" at 1.
+          mlRewriteBy "4" at 1.
+          mlAssumption.
+            
+        (* (〚 s2 〛 ).mlInjectR ⊆ml 〚 mlSum (s1, s2) 〛 *) 
+        * clear H0.
+          epose proof t3 Γ ((〚 s2 〛 ).mlInjectR) (〚 mlSum (s1, s2) 〛) 
+           ltac:(set_solver) ltac:(wf_auto2) ltac:(wf_auto2).
+          
+          mlRewrite H0 at 1.
+          remember (fresh_evar ( s1 ---> s2)) as x.
+          mlIntroAllManual x.
+          1:{ cbn.  unfold nest_ex. repeat rewrite nest_ex_aux_wfcex. 
+              1-2:clear H; wf_auto2.
+              solve_fresh. 
+            }
+          simpl.
+          rewrite bevar_subst_not_occur.
+          1:{ clear H;wf_auto2. }
+          mlIntro.
+          
+          mlAssert ("P" : ( ex s2, (b0).mlInjectR =ml patt_free_evar x ) ).
+          1:{ clear H; wf_auto2. }
+          1:{ unfold patt_exists_of_sort.
+              unfold nest_ex.
+              rewrite nest_ex_aux_wfcex.
+              1:wf_auto2.
+              rewrite nest_ex_aux_wfcex.
+              1:clear H;wf_auto2.
+              
+              epose proof membership_axiom_v2 Γ  (patt_sym (inj (ml_injectR s1 s2))) (〚 s2 〛) (x)
+               ltac:(set_solver) ltac:(wf_auto2) ltac:(wf_auto2).
+              mlAdd H1.
+              mlRevert "0".
+              mlRewriteBy "1" at 1.
+              mlIntro "H".
+               
+              remember (fresh_evar( patt_free_evar x ---> s1 ---> s2)) as y.
+              mlDestructEx "H" as y.
+              1:{ cbn. unfold nest_ex. repeat rewrite nest_ex_aux_wfcex. 
+                  1-2:clear H; wf_auto2.
+                  solve_fresh.
+                }
+              mlExists y. 
+              mlSimpl. simpl. cbn.
+              unfold evar_open.
+              rewrite bevar_subst_not_occur.
+              1:{ clear H;wf_auto2. } 
+              mlDestructAnd "H".
+              mlSplitAnd.
+              1:mlAssumption.
+                 
+              mlSpecialize "INJECT Right" with y.
+              mlSimpl. unfold evar_open. simpl. cbn.
+              unfold nest_ex.
+              rewrite nest_ex_aux_wfcex.
+              1:{clear H;wf_auto2. }
+              rewrite bevar_subst_not_occur.
+              1:{clear H;wf_auto2. }
+              
+              mlAssert( "3" : (patt_free_evar y ∈ml 〚 s2 〛  )).
+              1:{ clear H; wf_auto2. }
+              mlAssumption.
+              mlClear "1";mlClear "INJECT Left".
+              mlApply "INJECT Right" in "0".
+              
+              opose proof* ( membership_imp_equal Γ (patt_free_evar x) (patt_free_evar y).mlInjectR _ _ _ _ ).
+              1:set_solver.
+              1-3:wf_auto2.
+              mlAdd H2.
+              
+              mlAssert( "F" : ( ex, patt_free_evar x =ml b0  )).
+              1:wf_auto2.
+              1:{ mlExists x. mlSimpl. cbn.  mlReflexivity. }
+              
+              mlApply "1" in "F".
+              mlClear "1".
+              mlAssert( "G" : (ex , (patt_free_evar y).mlInjectR =ml b0 )).
+              1:wf_auto2.
+              1:{ remember (fresh_evar(patt_free_evar x ---> patt_free_evar y ---> s1 ---> s2)) as z.
+                  mlDestructEx "0" as z.
+                  1-2: cbn;solve_fresh.
+                  mlSimpl. cbn.
+                  mlDestructAnd "0".
+                  mlExists z.
+                  mlSimpl. cbn.
+                  mlAssumption.
+                }
+              
+              mlApply "F" in "G".
+              mlSymmetry.
+              mlApply "G".
+              mlAssumption.
+            }
+            
+          remember (fresh_evar( patt_free_evar x ---> s1 ---> s2)) as y.
+          mlDestructEx "P" as y.
+          1:{ cbn. unfold nest_ex. repeat rewrite nest_ex_aux_wfcex.
+              1-2: clear H;wf_auto2.
+              solve_fresh.
+            }
+          1:{ unfold nest_ex. rewrite nest_ex_aux_wfcex.
+              clear H; wf_auto2.
+              solve_fresh.
+            } 
+          mlSimpl. simpl. cbn.
+          unfold evar_open.
+          rewrite bevar_subst_not_occur.
+          1:{ unfold nest_ex. rewrite nest_ex_aux_wfcex.
+              all:clear H;wf_auto2. 
+            }
+          unfold nest_ex.
+          rewrite nest_ex_aux_wfcex.
+          1:{ clear H;wf_auto2. }
+          mlDestructAnd "P".
+          mlSpecialize "INJECT Right" with y.
+       
+          mlSimpl.
+          replace  ( (ex mlSum (s1, s2), (b1 ).mlInjectR =ml b0)^{evar:0↦y} ) with
+            ( ex mlSum (s1, s2), (patt_free_evar y ).mlInjectR =ml b0) .
+          2:{
+              mlSortedSimpl. mlSimpl. unfold evar_open. simpl. reflexivity.
+             }
+          cbn.
+          unfold evar_open.
+          rewrite bevar_subst_not_occur.
+          1:{ unfold nest_ex. rewrite nest_ex_aux_wfcex.
+              all:clear H;wf_auto2. 
+            }
+          unfold nest_ex.
+          rewrite nest_ex_aux_wfcex.
+          1:{ clear H; wf_auto2. }
+          mlApply "INJECT Right" in "1".
+          mlClear "INJECT Right";mlClear "INJECT Left".
+            
+          remember (fresh_evar(patt_free_evar x ---> patt_free_evar y ---> s1 ---> s2)) as z.
+          mlDestructEx "1" as z.
+          1-2: cbn;solve_fresh.
+          mlSimpl. cbn.
+          mlDestructAnd "1".
+          mlSymmetry in "2".
+          mlRewriteBy "2" at 1.
+          mlRewriteBy "4" at 1.
+          mlAssumption.
+      }
+      
+    mlConj  "coproduct" "P" as "f".
+    
+    
+    epose proof t1 Γ (〚 mlSum (s1, s2) 〛) ( (〚 s1 〛 ).mlInjectL or (〚 s2 〛 ).mlInjectR ) 
+     AnyReasoning _ _ _ .
+    
+    apply pf_iff_proj1 in H0.
+    2-3:clear H;wf_auto2.
+    mlApplyMeta H0.
+    mlAssumption.
+    Unshelve.
+    set_solver.
+    all:clear H;wf_auto2.
+  Defined.
+  
 End sumsort.
 
 Close Scope ml_scope.
