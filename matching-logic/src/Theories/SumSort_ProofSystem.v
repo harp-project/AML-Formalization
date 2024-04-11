@@ -224,6 +224,323 @@ Proof.
     mlAssumption.
   Defined.
   
+  Theorem t1:
+    ∀ (Γ : Theory) (φ φ' : Pattern) (i : ProofInfo) ,
+      Definedness_Syntax.theory ⊆ Γ -> 
+      well_formed φ ->
+      well_formed φ' ->
+      Γ ⊢i φ ⊆ml φ' and  φ' ⊆ml φ   <--->
+       φ =ml φ' using i.
+    Proof.
+    intros.
+    toMLGoal.
+    1:wf_auto2.
+    epose proof patt_total_and Γ (φ ---> φ') (φ'--->φ) H ltac:(wf_auto2) ltac:(wf_auto2) .
+    use i in H2.
+    apply pf_iff_equiv_sym_nowf in H2.
+    mlExactMeta H2.
+    Qed.
+    
+   Theorem t2:
+    ∀ (Γ : Theory) (φ  φ₁ φ₂ : Pattern) (i : ProofInfo) ,
+      Definedness_Syntax.theory ⊆ Γ -> 
+      well_formed φ ->
+      well_formed φ₁ ->
+      well_formed φ₂  ->
+      Γ ⊢i   ( φ₁ or φ₂ )  ⊆ml φ   <--->
+          φ₁ ⊆ml φ  and  φ₂  ⊆ml φ using i.
+    Proof.
+      intros.
+      toMLGoal.
+      1:wf_auto2.
+      epose proof patt_total_and Γ (φ₁ ---> φ) (φ₂---> φ) H ltac:(wf_auto2) ltac:(wf_auto2) .
+      use i in H3.
+      unfold "⊆ml".
+      mlRewrite <- H3 at 1.
+      mlSplitAnd.
+      * fromMLGoal.
+        Check floor_monotonic.
+        apply floor_monotonic.
+        1:set_solver.
+        1-2:wf_auto2.
+        mlIntro "H".
+        mlSplitAnd.
+        + mlIntro.
+          mlApply "H".
+          mlLeft.
+          mlAssumption.
+        + mlIntro.
+          mlApply "H".
+          mlRight.
+          mlAssumption.
+      * fromMLGoal.
+        apply floor_monotonic.
+        1:set_solver.
+        1-2:wf_auto2.
+        mlIntro "H".
+        mlIntro.
+        mlDestructOr "0";
+        mlDestructAnd "H".
+        + mlApply "0".
+          mlAssumption.
+        + mlApply "1".
+          mlAssumption.
+    Qed.
+    
+    (*         we need : phi ---> phi' =  patt_top. if that is top, we can rewrite with it ---> x \in top
+
+create two helper theorems 
+1st ---> patt_total of phi ---> phi =ml patt_top 
+2nd  ---> "everything is \in top"  patt_free_evar x \in patt_top.   *)
+  Theorem  provable_iff_top:
+    ∀ {Σ : Signature} (Γ : Theory) (φ : Pattern)   (i : ProofInfo),
+      well_formed φ ->
+      Γ ⊢i φ using i ->
+      Γ ⊢i φ <--->  patt_top using i .
+  Proof.
+    intros.
+    mlSplitAnd.
+    2:{ mlIntro. mlExactMeta H0. }
+    mlIntro.
+    pose proof top_holds Γ.
+    use i in H1.
+    mlExactMeta H1.
+  Defined.
+  
+  Theorem  patt_and_id_r:
+    ∀ {Σ : Signature} (Γ : Theory) (φ : Pattern),
+      well_formed φ ->
+      Γ ⊢i φ and patt_top <--->  φ using BasicReasoning .
+  Proof.
+    intros.
+    mlSplitAnd.
+    * mlIntro.
+      mlDestructAnd "0".
+      mlAssumption.
+    * mlIntro.
+      mlSplitAnd.
+      1: mlAssumption.
+      mlIntro.
+      mlAssumption.
+  Defined.
+  
+     Theorem proved_membership_functional:
+    ∀ {Σ : Signature} {syntax : Definedness_Syntax.Syntax} 
+     (Γ : Theory) (φ₁ φ₂ : Pattern),
+      Definedness_Syntax.theory ⊆ Γ ->
+      well_formed φ₁ ->
+      well_formed φ₂ ->
+      Γ ⊢i φ₁ using AnyReasoning ->
+      Γ ⊢i is_functional φ₂ --->  φ₂ ∈ml φ₁  using AnyReasoning .
+  Proof.
+    intros.
+    unfold patt_in.
+    apply provable_iff_top in H2.
+    2:wf_auto2.
+    mlRewrite H2 at 1.
+    pose proof patt_and_id_r Γ φ₂ ltac:(wf_auto2).
+    use AnyReasoning in H3.
+    mlRewrite H3 at 1.
+    unfold is_functional.
+    mlIntro.
+    remember (fresh_evar(φ₂)) as x.
+    mlDestructEx "0" as x.
+    mlSimpl. cbn.
+    rewrite evar_open_not_occur.
+    wf_auto2.
+    mlRewriteBy "0" at 1.
+    pose proof defined_evar Γ x H.
+    use AnyReasoning in H4.
+    mlExactMeta H4.
+  Defined.
+
+
+   Theorem unnamaed:
+    ∀ (Γ : Theory) (φ : Pattern),
+      Definedness_Syntax.theory ⊆ Γ -> 
+      well_formed φ ->
+      Γ ⊢i ⌊ φ ⌋ <--->  (φ =ml patt_top)     using AnyReasoning.
+      Proof.
+        intros.
+        mlSplitAnd.
+        * mlIntro.
+          unfold patt_equal.
+          mlRevert "0".
+          fromMLGoal.
+          apply floor_monotonic.
+          1:set_solver.
+          1-2:wf_auto2.
+          mlIntro "H".
+          mlSplitAnd.
+          + mlIntro.
+            pose proof top_holds Γ.
+            use AnyReasoning in H1.
+            mlExactMeta H1.
+          + mlIntro.
+            mlAssumption.
+          * unfold patt_equal.
+            fromMLGoal.
+            apply floor_monotonic.
+            1:set_solver.
+            1-2:wf_auto2.
+            mlIntro "H".
+            mlDestructAnd "H".
+            mlApply "1".
+            pose proof top_holds Γ.
+            use AnyReasoning in H1.
+            mlExactMeta H1.
+      Defined.
+        
+
+      Theorem unnamaed_1:
+      ∀ (Γ : Theory) (x : evar),
+      Definedness_Syntax.theory ⊆ Γ -> 
+      Γ ⊢i patt_free_evar x  ∈ml patt_top     using AnyReasoning.
+      Proof.
+        intros.
+        pose proof proved_membership_functional Γ (patt_top) (patt_free_evar x) ltac:(set_solver) 
+         ltac:(wf_auto2) ltac:(wf_auto2).
+       mlApplyMeta H0.
+       * unfold  is_functional.
+         mlExists x.
+         mlSimpl. cbn.
+         mlReflexivity.
+       * pose proof top_holds Γ.
+         use AnyReasoning in H1.
+         mlExactMeta H1.
+      Defined. 
+
+    
+   Theorem t3:
+    ∀ (Γ : Theory) (φ φ' : Pattern),
+      Definedness_Syntax.theory ⊆ Γ -> 
+      well_formed φ ->
+      well_formed φ' ->
+      
+      Γ ⊢i  φ  ⊆ml φ'   <--->
+          ( all , b0 ∈ml φ ---> b0 ∈ml φ') using AnyReasoning.
+    Proof.
+      intros.
+      toMLGoal.
+      wf_auto2.
+      mlSplitAnd.
+      * mlIntro "H".
+        mlIntroAll x.
+        simpl.
+        rewrite bevar_subst_not_occur.
+        1:wf_auto2.
+        
+(*         fm_solve tactic for varibales freshness, when not using manual version of mlIntroAll. *)
+        rewrite bevar_subst_not_occur.
+        1:wf_auto2.
+        mlIntro.
+        
+(*         unfold patt_in, patt_subseteq,patt_total. *)
+        mlRevert "0".
+        mlApplyMeta membership_imp_1.
+        2:set_solver.
+        unfold patt_subseteq.
+        epose proof unnamaed Γ (φ ---> φ') ltac:(set_solver) ltac:(wf_auto2).
+        apply pf_iff_proj1 in H2.
+        2-3:wf_auto2. 
+        mlApplyMeta H2 in "H" .
+        mlRewriteBy "H" at 1.
+        pose proof unnamaed_1 Γ (x) ltac:(wf_auto2).
+        mlExactMeta H3.
+      * mlIntro "H".
+        
+        remember (fresh_evar( φ ---> φ')) as x.
+        (* mlSpecialize "H" with x.
+        mlSimpl. simpl. cbn.
+        rewrite evar_open_not_occur.
+        wf_auto2.
+        rewrite evar_open_not_occur.
+        wf_auto2.
+(*         unfold patt_in. *)
+        Search patt_defined patt_imp derives_using. *)
+ 
+        epose proof unnamaed Γ (φ ---> φ') ltac:(set_solver) ltac:(wf_auto2).
+        (* mlApplyMeta membership_imp_2 in "H".
+        2:set_solver.
+        Search patt_in derives_using.
+        
+        unfold patt_in.
+        Search patt_defined derives_using.
+        mlApplyMeta patt_defined_and in "H".
+        2:set_solver.
+        mlDestructAnd "H". *)
+        
+        unfold patt_subseteq.
+        (* Search patt_defined patt_exists derives_using.
+        mlIntro.
+        mlApply "H".
+        Search patt_defined patt_free_evar derives_using.
+(*         
+
+         *)
+        
+        unfold patt_forall.
+        mlRewrite H2 at 1.
+
+        unfold patt_equal.
+        Check floor_monotonic.
+        Search patt_defined patt_total derives_using.
+        mlApplyMeta def_phi_impl_tot_def_phi in "1".
+        2:set_solver.
+        mlClear "0".
+        mlRevert "1".
+        fromMLGoal.
+        apply floor_monotonic.
+        1:set_solver.
+        1-2:wf_auto2.
+        mlIntro "H".
+        mlSplitAnd.
+        + mlIntro.
+          pose proof top_holds Γ.
+          use AnyReasoning in H3.
+          mlExactMeta H3.
+        + mlIntro. 
+        Search patt_top. mlIntro.
+          
+          Search patt_imp derives_using.
+          
+          
+          Search patt_top.
+          mlIntro.
+  
+        apply pf_iff_proj2 in H2.  *)
+        
+(*         membership_symbol_ceil_left_aux_0:
+  ∀ {Σ : Signature} {syntax : Definedness_Syntax.Syntax} (Γ : Theory) (φ : Pattern),
+    Definedness_Syntax.theory ⊆ Γ
+    → well_formed φ
+      → Γ ⊢i φ ---> (ex , ⌈ b0 and φ ⌉)
+        using (ExGen := ⊤, SVSubst := ∅, KT := false, AKT := false)
+        
+membership_symbol_ceil_right_aux_0:
+  ∀ {Σ : Signature} {syntax : Definedness_Syntax.Syntax} (Γ : Theory) (φ : Pattern),
+    Definedness_Syntax.theory ⊆ Γ
+    → well_formed φ
+      → Γ ⊢i (ex , ⌈ b0 and φ ⌉ and b0) ---> φ
+        using (ExGen := ⊤, SVSubst := ∅, KT := false, AKT := false)
+         *)
+    Admitted.
+    
+(*   
+   3. ` x ∈ σ(ϕ1,.., ϕi−1, ϕi, ϕi+1,.., ϕn) = ∃y.(y ∈ ϕi ∧ x ∈ σ(ϕ1,.., ϕi−1, y, ϕi+1,.., ϕn) )
+  
+   x ∈ml (φ $ ψ) =ml ex , b0 ∈ml φ and x ∈ (b0 $ ψ)   ...(1)
+   
+   
+   ex s1, (b0).mlInjectL =ml patt_free_evar x 
+   
+   
+   second version : 
+    x ∈ml (φ $ ψ) =ml ex , b0 ∈ml ψ and x ∈ml (φ $ b0)  
+  
+  
+   *)
+  
 End sumsort.
 
 Close Scope ml_scope.
