@@ -158,87 +158,37 @@ Section Sorts.
   Qed.
 End Sorts.
 
-Section Eval_simpl.
-
-  Context {Σ : Signature} {M : Model}.
-  (* Class Eval_nullary (op : Pattern) (set_op : propset (Domain M)) := {
-    eval_nullary_simpl :
-      forall ρ, @eval _ M ρ op = set_op;
-  }.
-  Class Eval_unary (op : Pattern -> Pattern)
-                   (set_op : propset (Domain M) -> propset (Domain M)) := {
-    eval_unary_simpl :
-      forall ρ φ, @eval _ M ρ (op φ) = set_op (eval ρ φ);
-  }.
-  Class Eval_binary (op : Pattern -> Pattern -> Pattern) (set_op : propset (Domain M) -> propset (Domain M) -> propset (Domain M)) := {
-    eval_binary_simpl :
-      forall ρ φ ψ, @eval _ M ρ (op φ ψ) = set_op (eval ρ φ) (eval ρ ψ);
-  }.
-  Search eval patt_exists.
-
-  #[global]
-  Instance Eval_nullary_bot : Eval_nullary patt_bott.
-  Proof.
-    constructor. intros.
-  Defined. *)
-
-
-  Lemma eval_iff_simpl ρ phi1 phi2:
-    @eval Σ M ρ (patt_iff phi1 phi2)
-    = ⊤ ∖ ((eval ρ phi1 ∪ eval ρ phi2) ∖ (eval ρ phi1 ∩ eval ρ phi2)).
-  Proof.
-    unfold patt_iff. rewrite eval_and_simpl.
-    simp eval.
-    remember (eval _ _) as A. clear.
-    remember (eval _ _) as B. clear.
-    erewrite difference_difference_r_L.
-    set_solver.
-    Unshelve.
-      unfold RelDecision, Decision.
-      intros.
-      Search elem_of propset.
-      destruct y.
-      epose proof elem_of_PropSet propset_car x.
-      epose proof not_elem_of_PropSet propset_car x.
-      pose proof classic (propset_car x).
-      setoid_rewrite <- H in H1 at 1.
-      setoid_rewrite <- H0 in H1 at 1.
-  Admitted.
-
-
-
-End Eval_simpl.
-
-
-  Ltac eval_simpl :=
-    try simp eval;
-    try rewrite eval_not_simpl;
-    try rewrite eval_and_simpl;
-    try rewrite eval_or_simpl;
-    try rewrite eval_top_simpl;
-    try rewrite eval_iff_simpl;
-    try rewrite eval_all_simpl;
+Ltac eval_simpl :=
+  try simp eval;
+  try rewrite eval_not_simpl;
+  try rewrite eval_and_simpl;
+  try rewrite eval_or_simpl;
+  try rewrite eval_top_simpl;
+  try rewrite eval_iff_simpl;
+  try rewrite eval_all_simpl;
 (*  TODO:   try rewrite eval_nu_simpl; *)
-    try unshelve (erewrite eval_forall_of_sort);
-    try unshelve (erewrite eval_exists_of_sort);
-    try apply propset_fa_union_full.
+  try unshelve (erewrite eval_forall_of_sort);
+  try unshelve (erewrite eval_exists_of_sort);
+  try apply propset_fa_union_full.
 
-  Ltac eval_simpl_in H :=
-    try simp eval in H;
-    try rewrite eval_not_simpl in H;
-    try rewrite eval_and_simpl in H;
-    try rewrite eval_or_simpl in H;
-    try rewrite eval_top_simpl in H;
-    try rewrite eval_iff_simpl in H;
-    try rewrite eval_all_simpl in H;
+Ltac eval_simpl_in H :=
+  try simp eval in H;
+  try rewrite eval_not_simpl in H;
+  try rewrite eval_and_simpl in H;
+  try rewrite eval_or_simpl in H;
+  try rewrite eval_top_simpl in H;
+  try rewrite eval_iff_simpl in H;
+  try rewrite eval_all_simpl in H;
 (*  TODO:   try rewrite eval_nu_simpl; *)
-    try unshelve (erewrite eval_forall_of_sort in H);
-    try unshelve (erewrite eval_exists_of_sort in H);
-    try apply propset_fa_union_full in H.
+  try unshelve (erewrite eval_forall_of_sort in H);
+  try unshelve (erewrite eval_exists_of_sort in H);
+  try apply propset_fa_union_full in H.
 
 Section Bool.
-  (* TODO: Bool syntax should use bools as core symbols too to avoid boiler-plate
-           PartialAnd is needed to represent partial application of &&ml
+  (* NOTE - INVESTIGATE:
+    When we automatically generate carriers, should the partial
+    operations use Coq standard types, or use the generated core
+    symbols?
    *)
   Inductive bool_carrier :=
   | coreBoolSym (s : Bool_Syntax.Symbols)
@@ -424,11 +374,7 @@ Section Bool.
           apply not_elem_of_PropSet. intro. destruct H0 as [le [re [Hle [Hre Ht] ] ] ].
           apply elem_of_singleton_1 in Hle. subst.
           apply (proj1 (elem_of_compl _ _)) in Hre; auto. apply Hre.
-          apply elem_of_compl. intro.
-          assert (re = coreBoolSym sTrue \/ re = coreBoolSym sFalse) by set_solver.
-          destruct H1; subst.
-          ** apply Hre. set_solver.
-          ** apply Hre. set_solver.
+          set_solver.
         + unfold Minterp_inhabitant, Sorts_Semantics.sym in n.
           simpl in n. clear H. simp eval in n. exfalso.
           apply n. clear. exists (inhBool), (coreBoolSym sBool); split; try split; set_solver.
@@ -444,11 +390,7 @@ Section Bool.
           apply not_elem_of_PropSet. intro. destruct H0 as [le [re [Hle [Hre Ht] ] ] ].
           apply elem_of_singleton_1 in Hle. subst.
           apply (proj1 (elem_of_compl _ _)) in Hre; auto. apply Hre.
-          apply elem_of_compl. intro.
-          assert (re = coreBoolSym sTrue \/ re = coreBoolSym sFalse) by set_solver.
-          destruct H1; subst.
-          ** apply Hre. set_solver.
-          ** apply Hre. set_solver.
+          set_solver.
         + unfold Minterp_inhabitant, Sorts_Semantics.sym in n.
           simpl in n. clear H. simp eval in n. exfalso.
           apply n. clear. exists (inhBool), (coreBoolSym sBool); split; try split; set_solver.

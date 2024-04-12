@@ -107,7 +107,13 @@ Section with_signature.
 
     (* TODO: forall, nu *)
 
-
+  Lemma eval_iff_simpl ρ phi1 phi2:
+    @eval Σ M ρ (patt_iff phi1 phi2)
+    = (⊤ ∖ eval ρ phi1 ∪ eval ρ phi2) ∩ (⊤ ∖ eval ρ phi2 ∪ eval ρ phi1).
+  Proof.
+    unfold patt_iff.
+    by rewrite -> eval_and_simpl, -> eval_imp_simpl, -> eval_imp_simpl.
+  Qed.
 
         (* if eval (phi1 ---> phi2) = Full_set,
            then eval phi1 subset eval phi2
