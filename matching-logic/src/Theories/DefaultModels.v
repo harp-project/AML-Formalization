@@ -29,6 +29,7 @@ Import MatchingLogic.Semantics.Notations.
 Set Default Proof Mode "Classic".
 
 Open Scope ml_scope.
+Open Scope list_scope.
 
 Section Definedness.
 
@@ -989,9 +990,205 @@ Section Bool.
     all: apply (@propset_leibniz_equiv _ BoolModel).
   Qed.
 
-End Bool.
+End Bool. 
 
 Section Nat.
+
+  Inductive nat_carrier :=
+  | coreNatSym (s : Nat_Syntax.Symbols)
+  | partialAdd (s : nat)
+  | natVal (n : nat)
+  | defNat
+  | inhNat
+  .
+
+  #[global]
+  Instance nat_carrier_EqDec : EqDecision nat_carrier.
+  Proof.
+    solve_decision.
+  Defined.
+
+  Global Program Instance nat_carrier_countable : countable.Countable nat_carrier. (* := {
+    encode := fun (n : nat_carrier) =>
+      match n with
+      | coreNatSym s =>
+        match s with
+         | sNat => 1%positive
+         | sZero => 2%positive
+         | sSucc => 3%positive
+         | sAddNat => 4%positive
+        end
+      | partialAdd n => (7%positive + @encode _ _ nat_countable n)%positive
+      | defNat => 5%positive
+      | inhNat => 6%positive
+      end;
+    decode := fun (p : positive) =>
+      if      (Pos.eqb p 1) then Some (coreNatSym sNat)
+      else if (Pos.eqb p 2) then Some (coreNatSym sZero)
+      else if (Pos.eqb p 3) then Some (coreNatSym sSucc)
+      else if (Pos.eqb p 4) then Some (coreNatSym sAddNat)
+      else if (Pos.eqb p 5) then Some defNat
+      else if (Pos.eqb p 6) then Some inhNat
+      else match (@decode _ _ nat_countable (p-7)) with
+           | Some n => Some (partialAdd n)
+           | _ => None
+           end;
+  }.
+  Next Obligation.
+    intros. subst wildcard'. congruence.
+  Defined.
+  Next Obligation.
+    destruct x; simpl; try reflexivity.
+    destruct s; simpl; try reflexivity.
+  Admitted. *)
+  Next Obligation.
+  Admitted.
+  Next Obligation.
+  Admitted.
+  Next Obligation.
+  Admitted.
+
+  Instance nat_Σ : Signature := {
+    variables := StringMLVariables;
+    ml_symbols := Build_MLSymbols nat_carrier _ _;
+  }.
+
+  Program Instance nat_syntax : @Nat_Syntax.Syntax nat_Σ := {
+    inj := coreNatSym;
+    imported_sorts := {|
+      Sorts_Syntax.inj := fun x => inhNat;
+      imported_definedness := {|
+        Definedness_Syntax.inj := fun x => defNat;
+      |};
+    |};
+  }.
+
+  Definition nat_sym_interp (m : symbols)
+    : propset nat_carrier :=
+  match m with
+  | coreNatSym sZero => {[ natVal 0 ]}
+  | x => {[ x ]}
+  end.
+
+  Definition nat_app_interp (m1 m2 : nat_carrier)
+    : propset nat_carrier :=
+  match m1 with
+   | coreNatSym sSucc =>
+     match m2 with
+     | natVal n => {[ natVal (S n) ]}
+     | _ => ∅
+     end
+   | coreNatSym sAddNat =>
+     match m2 with
+     | natVal n => {[ partialAdd n ]}
+     | _ => ∅
+     end
+   | coreNatSym _ => ∅
+   | partialAdd n =>
+     match m2 with
+     | natVal m => {[ natVal (n + m) ]}
+     | _ => ∅
+     end
+   (**)
+   | natVal _ => ∅
+   | defNat => ⊤
+   | inhNat =>
+     match m2 with
+     | coreNatSym sNat => {[ m | exists n, m = natVal n ]}
+     | _ => ∅
+     end
+  end.
+
+  Global Instance nat_carrier_inhabited : Inhabited nat_carrier.
+  Proof.
+    constructor. exact defNat.
+  Defined.
+
+  Program Definition NatModel : Model := {|
+    Domain := nat_carrier;
+    app_interp := nat_app_interp;
+    sym_interp := nat_sym_interp;
+  |}.
+
+  Theorem indec_nat :
+    ∀ ρ s (m : NatModel),
+      Decision (m ∈ Minterp_inhabitant (patt_sym s) ρ).
+  Proof.
+    intros.
+    unfold Minterp_inhabitant.
+    simp eval. simpl.
+    unfold Sorts_Semantics.sym.
+    simp eval. simpl.
+    unfold bool_sym_interp.
+    destruct s; unfold app_ext.
+    1: destruct s.
+    2-8: right; intro; destruct H as [le [re [Hle [Hre Ht] ] ] ];
+         try apply elem_of_singleton_1 in Hle, Hre; subst;
+         cbn in Ht; set_solver.
+    destruct m.
+    destruct s.
+    1-5,7-8: right; intro; destruct H as [le [re [Hle [Hre Ht] ] ] ];
+            try apply elem_of_singleton_1 in Hle;
+            try apply elem_of_singleton_1 in Hre; subst;
+            cbn in Ht; try set_solver.
+    all: try destruct re; try set_solver.
+    all: try destruct s; try set_solver.
+    destruct s0; try set_solver.
+    destruct s0; try set_solver.
+    admit.
+  Admitted.
+
+  Hint Resolve propset_leibniz_equiv : core.
+
+  Theorem NatModel_satisfies_theory :
+    NatModel ⊨ᵀ Nat_Syntax.theory.
+  Proof.
+    assert (NatModel ⊨ᵀ Definedness_Syntax.theory) as HDef. {
+      unfold Nat_Syntax.theory, Definedness_Syntax.theory.
+      unfold theory_of_NamedAxioms. simpl.
+      unfold satisfies_theory. intros.
+      rewrite elem_of_PropSet in H. destruct H. destruct x. subst.
+      cbn. unfold satisfies_model. intros.
+      unfold patt_defined. unfold p_x, ev_x. simp eval.
+      unfold sym_interp, app_ext. simpl.
+      eapply leibniz_equiv. Unshelve. 2: exact (@propset_leibniz_equiv _ NatModel).
+      apply set_equiv. intros. split; intros; set_solver.
+    }
+    unfold Nat_Syntax.theory, Definedness_Syntax.theory.
+    unfold theory_of_NamedAxioms. simpl.
+    unfold satisfies_theory. intros.
+    rewrite elem_of_union in H. destruct H as [H | H].
+    * (* This subgoal uses boiler-plate proof *)
+      rewrite elem_of_PropSet in H. destruct H. destruct x. subst.
+      cbn. unfold satisfies_model. intros.
+      unfold patt_defined. unfold p_x, ev_x. simp eval.
+      unfold sym_interp, app_ext. simpl.
+      eapply leibniz_equiv. Unshelve. 2: exact (@propset_leibniz_equiv _ NatModel).
+      apply set_equiv. intros. split; intros; set_solver.
+    * rewrite elem_of_PropSet in H. destruct H.
+      destruct x;subst;cbn; unfold satisfies_model; intros.
+      (* zero is functional *)
+      - eval_simpl; auto. apply indec_nat.
+        intros. mlSimpl. cbn. exists (coreNatSym sNat).
+        case_match.
+        2: { unfold Minterp_inhabitant in n.
+             unfold Sorts_Semantics.sym in n.
+             
+      (* succ is functional *)
+      -
+      (* no confusion *)
+      -
+      (* injectivity of succ *)
+      -
+      (* inductive domain *)
+      -
+      (* add is functional *)
+      -
+      (* add rule 1 *)
+      -
+      (* add rule 2 *)
+      -
+  Qed.
 
 End Nat.
 
