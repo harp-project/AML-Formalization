@@ -884,7 +884,6 @@ Module equivalence_insufficient.
   Close Scope ml_scope.
 End equivalence_insufficient.
 
-
 #[export]
 Hint Resolve T_predicate_defined : core.
 #[export]
