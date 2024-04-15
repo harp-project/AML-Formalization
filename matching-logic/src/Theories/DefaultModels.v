@@ -159,19 +159,6 @@ Section Sorts.
   Qed.
 End Sorts.
 
-(* Lemma eval_equal_simpl {Σ : Signature} {Syn : Definedness_Syntax.Syntax} (M : Model) ρ phi1 phi2:
-  exists X,
-  @eval Σ M ρ (patt_equal phi1 phi2) = X.
-Proof.
-  eexists.
-  unfold patt_equal, patt_total, patt_defined.
-  rewrite eval_not_simpl, eval_app_simpl. 
-  rewrite eval_not_simpl, eval_iff_simpl.
-  remember (eval _ phi1) as A. clear. remember (eval _ phi2) as B. clear.
-  unfold app_ext.
-  Search "⊤" "∖".
-Qed. *)
-
 Ltac eval_simpl :=
   try simp eval;
   try rewrite eval_not_simpl;
@@ -460,10 +447,7 @@ Section Bool.
           ** clear H e. mlSimpl. cbn.
              unfold mlBAnd, mlsBAnd.
              revert t.
-             assert (forall S : propset bool_carrier, S = ⊤ -> forall t, t ∈ S) as HX. {
-               set_solver.
-             }
-             apply HX. clear HX.
+             apply propset_top_elem_of.
              eapply (equal_iff_interpr_same BoolModel HDef). (* explicit model needed *)
              eval_simpl; auto. unfold app_ext. cbn.
              repeat destruct decide; try congruence.
@@ -489,10 +473,7 @@ Section Bool.
           ** clear H e. mlSimpl. cbn.
              unfold mlBAnd, mlsBAnd.
              revert t.
-             assert (forall S : propset bool_carrier, S = ⊤ -> forall t, t ∈ S) as HX. {
-               set_solver.
-             }
-             apply HX. clear HX.
+             apply propset_top_elem_of.
              eapply (equal_iff_interpr_same BoolModel HDef). (* explicit model needed *)
              eval_simpl; auto. unfold app_ext. cbn.
              repeat destruct decide; try congruence.
@@ -518,10 +499,7 @@ Section Bool.
           ** clear H e. mlSimpl. cbn.
              unfold mlBAnd, mlsBAnd.
              revert t.
-             assert (forall S : propset bool_carrier, S = ⊤ -> forall t, t ∈ S) as HX. {
-               set_solver.
-             }
-             apply HX. clear HX.
+             apply propset_top_elem_of.
              eapply (equal_iff_interpr_same BoolModel HDef). (* explicit model needed *)
              eval_simpl; auto. unfold app_ext. cbn.
              repeat destruct decide; try congruence.
@@ -547,10 +525,7 @@ Section Bool.
           ** clear H e. mlSimpl. cbn.
              unfold mlBAnd, mlsBAnd.
              revert t.
-             assert (forall S : propset bool_carrier, S = ⊤ -> forall t, t ∈ S) as HX. {
-               set_solver.
-             }
-             apply HX. clear HX.
+             apply propset_top_elem_of.
              eapply (equal_iff_interpr_same BoolModel HDef). (* explicit model needed *)
              eval_simpl; auto. unfold app_ext. cbn.
              repeat destruct decide; try congruence.
@@ -603,10 +578,7 @@ Section Bool.
           ** clear H e. mlSimpl. cbn.
              unfold mlBNeg, mlsBNeg.
              revert t.
-             assert (forall S : propset bool_carrier, S = ⊤ -> forall t, t ∈ S) as HX. {
-               set_solver.
-             }
-             apply HX. clear HX.
+             apply propset_top_elem_of.
              eapply (equal_iff_interpr_same BoolModel HDef). (* explicit model needed *)
              eval_simpl; auto. unfold app_ext. cbn.
              repeat destruct decide; try congruence.
@@ -628,10 +600,7 @@ Section Bool.
           ** clear H e. mlSimpl. cbn.
              unfold mlBNeg, mlsBNeg.
              revert t.
-             assert (forall S : propset bool_carrier, S = ⊤ -> forall t, t ∈ S) as HX. {
-               set_solver.
-             }
-             apply HX. clear HX.
+             apply propset_top_elem_of.
              eapply (equal_iff_interpr_same BoolModel HDef). (* explicit model needed *)
              eval_simpl; auto. unfold app_ext. cbn.
              repeat destruct decide; try congruence.
@@ -1021,45 +990,37 @@ Section Nat.
     solve_decision.
   Defined.
 
-  Global Program Instance nat_carrier_countable : countable.Countable nat_carrier. (* := {
-    encode := fun (n : nat_carrier) =>
+  Global Instance nat_carrier_countable : countable.Countable nat_carrier.
+  Proof.
+    set (enc := fun (n : nat_carrier) =>
       match n with
       | coreNatSym s =>
         match s with
-         | sNat => 1%positive
-         | sZero => 2%positive
-         | sSucc => 3%positive
-         | sAddNat => 4%positive
+         | sNat => inl (inl ())
+         | sZero => inl (inr (inl ()))
+         | sSucc => inl (inr (inr (inl ())))
+         | sAddNat => inl (inr (inr (inr (inl ()))))
         end
-      | partialAdd n => (7%positive + @encode _ _ nat_countable n)%positive
-      | defNat => 5%positive
-      | inhNat => 6%positive
-      end;
-    decode := fun (p : positive) =>
-      if      (Pos.eqb p 1) then Some (coreNatSym sNat)
-      else if (Pos.eqb p 2) then Some (coreNatSym sZero)
-      else if (Pos.eqb p 3) then Some (coreNatSym sSucc)
-      else if (Pos.eqb p 4) then Some (coreNatSym sAddNat)
-      else if (Pos.eqb p 5) then Some defNat
-      else if (Pos.eqb p 6) then Some inhNat
-      else match (@decode _ _ nat_countable (p-7)) with
-           | Some n => Some (partialAdd n)
-           | _ => None
-           end;
-  }.
-  Next Obligation.
-    intros. subst wildcard'. congruence.
+      | natVal n => inr (inl n)
+      | partialAdd n => inr (inr n)
+      | defNat => inl (inr (inr (inr (inr (inl ())))))
+      | inhNat => inl (inr (inr (inr (inr (inr ())))))
+      end).
+    set (dec := fun t =>
+      match t with
+      | inl (inr (inr (inr (inr (inr ()))))) => inhNat
+      | inl (inr (inr (inr (inr (inl ()))))) => defNat
+      | inl (inr (inr (inr (inl ())))) => coreNatSym sAddNat
+      | inl (inr (inr (inl ()))) => coreNatSym sSucc
+      | inl (inr (inl ())) => coreNatSym sZero
+      | inl (inl ()) => coreNatSym sNat
+      | inr (inl n) => natVal n
+      | inr (inr n) => partialAdd n
+      end
+    ).
+    apply inj_countable' with (f := enc) (g := dec).
+    by destruct x; try destruct s.
   Defined.
-  Next Obligation.
-    destruct x; simpl; try reflexivity.
-    destruct s; simpl; try reflexivity.
-  Admitted. *)
-  Next Obligation.
-  Admitted.
-  Next Obligation.
-  Admitted.
-  Next Obligation.
-  Admitted.
 
   Instance nat_Σ : Signature := {
     variables := StringMLVariables;
@@ -1148,8 +1109,9 @@ Section Nat.
     all: try destruct s; try set_solver.
     destruct s0; try set_solver.
     destruct s0; try set_solver.
-    admit.
-  Admitted.
+    left. do 2 eexists. split_and!. 1-2: cbn; by apply elem_of_singleton.
+    simpl. set_solver.
+  Defined.
 
   Hint Resolve propset_leibniz_equiv : core.
 
@@ -1234,10 +1196,7 @@ Section Nat.
         ** clear H e. mlSimpl. cbn.
            unfold Succ.
            revert t.
-           assert (forall S : propset nat_carrier, S = ⊤ -> forall t, t ∈ S) as HX. {
-             set_solver.
-           }
-           apply HX. clear HX.
+           apply propset_top_elem_of.
            eapply (equal_iff_interpr_same NatModel HDef). (* explicit model needed *)
            eval_simpl; auto. unfold app_ext. cbn.
            repeat destruct decide; try congruence.
@@ -1303,7 +1262,6 @@ Section Nat.
         repeat eval_simpl.
         unfold patt_equal, patt_total, patt_defined.
         repeat eval_simpl.
-        Search evar_valuation update_evar_val.
         repeat rewrite update_evar_val_same.
         rewrite update_evar_val_neq. 2: auto.
         rewrite update_evar_val_same.
@@ -1319,33 +1277,20 @@ Section Nat.
             by cbn.
         }
         do 2 rewrite H0.
-        (* This is a general theorem, should be extracted *)
-        assert (forall S, S ≠ ∅ ->
-          app_ext (sym_interp NatModel (Definedness_Syntax.inj definedness)) S = ⊤) as NE.
+        (* helper to rewrite: *)
+        assert (forall (S1 S2 : propset NatModel), S2 = ∅ -> app_ext S1 S2 = ∅) as E.
         {
-          intros. unfold app_ext. apply set_eq. intros. split. set_solver.
-          intros. apply elem_of_PropSet.
-          apply Not_Empty_Contains_Elements in H1 as [s H1].
-          cbn. do 2 eexists. split_and!.
-          1: by apply elem_of_singleton.
-          1: eassumption.
-          by cbn.
-        }
-        assert (forall S, S = ∅ ->
-          app_ext (sym_interp NatModel (Definedness_Syntax.inj definedness)) S = ∅) as E.
-        {
-          intros. unfold app_ext. apply set_eq. intros. split. set_solver.
-          intros. apply elem_of_PropSet. set_solver.
+          intros. subst. apply app_ext_bot_r.
         }
         destruct (decide (n = m)).
-        + subst. rewrite E.
+        + subst.
+          rewrite 2!E.
           (* TODO for some reason, set_solver won't work here *)
           2: {
             rewrite union_with_complement. clear.
             erewrite (subseteq_intersection_1_L ⊤ ⊤). 2: set_solver.
             erewrite difference_diag_L. reflexivity.
           }
-          rewrite E.
           2: {
             rewrite union_with_complement. clear.
             erewrite (subseteq_intersection_1_L ⊤ ⊤). 2: set_solver.
@@ -1353,9 +1298,8 @@ Section Nat.
           }
           rewrite difference_empty_L, difference_diag_L, union_empty_l_L.
           reflexivity.
-        + rewrite NE. 2: set_solver.
-          rewrite NE. 2: set_solver.
-          set_solver.
+        + rewrite 2! definedness_app_ext_not_empty; try assumption.
+          all: set_solver.
       (* inductive domain *)
       - unfold patt_inhabitant_set, Sorts_Syntax.sym, Nat, Zero, Succ.
         apply equal_iff_interpr_same. 1: assumption.
