@@ -96,7 +96,123 @@ Proof.
     intros.
     toMLGoal.
     1: clear H;wf_auto2.
-  Admitted.
+    remember (fresh_evar( s1 ---> s2)) as x.
+    mlIntroAllManual x.
+    1:{ cbn. unfold nest_ex. repeat rewrite nest_ex_aux_wfcex.
+        1-2:clear H;wf_auto2.
+        solve_fresh.
+      }
+    mlSortedSimpl. 
+    mlSimpl.
+    mlIntro.
+    mlSortedSimpl.
+    mlSimpl. simpl. cbn.
+    repeat rewrite bevar_subst_not_occur.
+    1-2: clear H;wf_auto2.
+    
+    pose proof use_productsort_axiom AxProjLeft Γ H.
+    pose proof use_productsort_axiom AxProjRight Γ H.
+    pose proof use_productsort_axiom InversePairProjb Γ H.
+    
+    simpl in *.
+    mlAdd H0 as "f".
+    mlAdd H1 as "g".
+    mlAdd H2 as "z".
+    
+    mlSpecialize "f" with x.
+    mlSimpl.
+    
+    pose proof sorted_exists_binder as BE. destruct BE as [BE].
+    erewrite (BE _ (evar_open _)); eauto.
+    mlSimpl. simpl. cbn.
+    unfold evar_open.
+    rewrite bevar_subst_not_occur.
+    1:{ clear H. wf_auto2. }
+    
+    mlAssert ("C" : ( patt_free_evar x ∈ml 〚 mlProd (s1, s2) 〛) ).
+    1:wf_auto2.
+    1:mlAssumption.
+    mlApply "C" in "f".
+      
+    remember (fresh_evar( s1 ---> s2 ---> patt_free_evar x)) as y.
+    mlDestructEx "C" as y.
+    1:{ simpl. cbn. unfold nest_ex. repeat rewrite nest_ex_aux_wfcex.
+        1-2:clear H;wf_auto2.
+        solve_fresh.
+      }
+    1:{ unfold nest_ex. rewrite nest_ex_aux_wfcex.
+        1:clear H;wf_auto2.
+        solve_fresh.
+      }
+    1:{ unfold nest_ex. repeat rewrite nest_ex_aux_wfcex.
+        1-2:clear H;wf_auto2.
+        solve_fresh.
+      }
+      
+    unfold evar_open. mlSimpl. simpl. unfold nest_ex. rewrite nest_ex_aux_wfcex.
+    1:{ clear H. wf_auto2. }
+    rewrite bevar_subst_not_occur. 
+    1:{ clear H. wf_auto2. }
+    mlDestructAnd "C".
+    mlClear "f".
+      
+    mlSpecialize "g" with x.
+    mlSimpl.
+    erewrite (BE _ (evar_open _)); eauto.
+    mlSimpl. simpl. cbn.
+    unfold evar_open.
+    rewrite bevar_subst_not_occur.
+    1:{ clear H. wf_auto2. }
+    
+    mlAssert ("C" : ( patt_free_evar x ∈ml 〚 mlProd (s1, s2) 〛) ).
+    1:wf_auto2.
+    1:mlAssumption.
+    mlApply "C" in "g".
+    
+    
+    remember (fresh_evar( s1 ---> s2 ---> patt_free_evar x ---> patt_free_evar y)) as z.
+    mlDestructEx "C" as z.
+    1:{ simpl. cbn. unfold nest_ex. repeat rewrite nest_ex_aux_wfcex.
+          1-2:clear H;wf_auto2.
+          solve_fresh.
+      }
+    1:{ unfold nest_ex. rewrite nest_ex_aux_wfcex.
+          1:clear H;wf_auto2.
+          solve_fresh.
+        }
+    1:{ unfold nest_ex. repeat rewrite nest_ex_aux_wfcex.
+          1-2:clear H;wf_auto2.
+          solve_fresh.
+      }
+    unfold evar_open. mlSimpl. simpl. unfold nest_ex. rewrite nest_ex_aux_wfcex.
+    1:clear H;wf_auto2.
+    rewrite bevar_subst_not_occur. 
+    1:clear H;wf_auto2.
+    mlDestructAnd "C".
+    mlClear "g".
+    
+    mlExists y. mlSimpl. 
+    mlSplitAnd.
+    * unfold evar_open. mlSimpl. simpl. unfold nest_ex. rewrite nest_ex_aux_wfcex.
+      1:clear H;wf_auto2. 
+      rewrite bevar_subst_not_occur. 
+      1:clear H;wf_auto2. 
+      mlAssumption.
+    * mlSortedSimpl. mlSimpl. simpl. cbn.
+      unfold evar_open. rewrite bevar_subst_not_occur.
+      1:{ clear H. wf_auto2. }
+      mlExists z. mlSimpl. simpl. cbn. unfold nest_ex. rewrite nest_ex_aux_wfcex.
+      1:clear H;wf_auto2. unfold evar_open.
+      rewrite bevar_subst_not_occur.
+      clear H;wf_auto2.
+      mlSplitAnd.
+      + mlAssumption.
+      + mlSymmetry in "2". mlRewriteBy "2" at 1.
+        mlSymmetry in "4". mlRewriteBy "4" at 1.
+        mlSpecialize "z" with x. mlSimpl. simpl. cbn.
+        mlApply "z".
+        mlAssumption.
+  Defined.
 
 End productsort.
 
