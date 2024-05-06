@@ -496,7 +496,51 @@ Proof.
     wf_auto2.
 Defined.
 
+Theorem proved_membership_functional:
+  ∀ {Σ : Signature} {syntax : Definedness_Syntax.Syntax} 
+   (Γ : Theory) (φ₁ φ₂ : Pattern),
+    Definedness_Syntax.theory ⊆ Γ ->
+    well_formed φ₁ ->
+    well_formed φ₂ ->
+    Γ ⊢i φ₁ using AnyReasoning ->
+    Γ ⊢i is_functional φ₂ --->  φ₂ ∈ml φ₁  using AnyReasoning .
+Proof.
+  intros.
+  unfold patt_in.
+  apply provable_iff_top in H2.
+  2:wf_auto2.
+  mlRewrite H2 at 1.
+  pose proof patt_and_id_r Γ φ₂ ltac:(wf_auto2).
+  use AnyReasoning in H3.
+  mlRewrite H3 at 1.
+  unfold is_functional.
+  mlIntro.
+  mlDestructEx "0" as x.
+  mlSimpl. cbn.
+  rewrite evar_open_not_occur.
+  wf_auto2.
+  mlRewriteBy "0" at 1.
+  pose proof defined_evar Γ x H.
+  use AnyReasoning in H4.
+  mlExactMeta H4.
+Defined.
 
+Theorem proved_membership_functional_meta:
+  ∀ {Σ : Signature} {syntax : Definedness_Syntax.Syntax} 
+   (Γ : Theory) (φ₁ φ₂ : Pattern),
+    Definedness_Syntax.theory ⊆ Γ ->
+    well_formed φ₁ ->
+    well_formed φ₂ ->
+    Γ ⊢i is_functional φ₂ using AnyReasoning ->
+    Γ ⊢i φ₁ using AnyReasoning ->
+    Γ ⊢i  φ₂ ∈ml φ₁  using AnyReasoning .
+Proof.
+  intros.
+  mlApplyMeta proved_membership_functional.
+  mlExactMeta H2.
+  mlExactMeta H3.
+  set_solver.
+Defined.
 
 Close Scope ml_scope.
 Close Scope string_scope.
