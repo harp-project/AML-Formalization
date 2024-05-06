@@ -49,36 +49,15 @@ Section sumsort.
       {syntax : SumSort_Syntax.Syntax s1 s2}
     .
 
-    Local Notation "'(' phi ').mlInjectL'" := 
-        (patt_app (patt_sym (inj (ml_injectL s1 s2))) phi)
-        : ml_scope
-    .
-
-    Local Notation "'(' phi ').mlInjectR'" := 
-        (patt_app (patt_sym (inj (ml_injectR s1 s2))) phi)
-        : ml_scope
-    .
-    
-    Local Notation "'(' phi ').mlEjectL'" := 
-        (patt_app (patt_sym (inj (ml_ejectL s1 s2))) phi)
-        : ml_scope
-    .
-    
-    Local Notation "'(' phi ').mlEjectR'" := 
-        (patt_app (patt_sym (inj (ml_ejectR s1 s2))) phi)
-        : ml_scope
-    .
-
- Lemma use_sumsort_axiom ax Γ  :
+  Lemma use_sumsort_axiom ax Γ  :
     SumSort_Syntax.theory s1 s2 wfs1 wfs2 ⊆ Γ ->
-    Γ ⊢ axiom _ _ ax.
-Proof.
+      Γ ⊢ axiom _ _ ax.
+  Proof.
     intro HΓ.
     apply useBasicReasoning.
     apply BasicProofSystemLemmas.hypothesis.
-    { (* pose proof wfs1. pose proof wfs2. *) clear HΓ. destruct ax; wf_auto2. }
+    { clear HΓ. destruct ax; wf_auto2. }
     {
-      Check elem_of_weaken.
       apply elem_of_weaken with (X := theory_of_NamedAxioms (named_axioms _ _ wfs1 wfs2 ) ).
       {
         unfold theory_of_NamedAxioms, named_axioms, axiom; simpl.
@@ -94,7 +73,7 @@ Proof.
   Defined.
   
   Theorem inject_left_inj : forall Γ , theory s1 s2 wfs1 wfs2 ⊆ Γ ->
-                              Γ ⊢ all s1, all s1, ( (b1).mlInjectL  =ml (b0).mlInjectL ) --->  
+                              Γ ⊢ all s1, all s1, ( (b1).mlInjectL( s1 , s2 )  =ml (b0).mlInjectL( s1 , s2 ) ) --->  
                                (b1 =ml b0).
   Proof.
     intros.
@@ -104,7 +83,6 @@ Proof.
     mlIntroAllManual x.
     cbn.
     1:{ 
-        Search nest_ex free_evars. 
         rewrite free_evars_nest_ex. 
         solve_fresh.
       }
@@ -160,7 +138,7 @@ Proof.
   Defined.
   
   Theorem inject_right_inj : forall Γ , theory s1 s2 wfs1 wfs2 ⊆ Γ ->
-                              Γ ⊢ all s2, all s2, ( (b1).mlInjectR  =ml (b0).mlInjectR ) --->  
+                              Γ ⊢ all s2, all s2, ( (b1).mlInjectR( s1 , s2 )  =ml (b0).mlInjectR( s1 , s2 ) ) --->  
                                (b1 =ml b0).
   Proof.
     intros.
@@ -232,13 +210,13 @@ Proof.
       Γ ⊢i φ ⊆ml φ' and  φ' ⊆ml φ   <--->
        φ =ml φ' using i.
     Proof.
-    intros.
-    toMLGoal.
-    1:wf_auto2.
-    epose proof patt_total_and Γ (φ ---> φ') (φ'--->φ) H ltac:(wf_auto2) ltac:(wf_auto2) .
-    use i in H2.
-    apply pf_iff_equiv_sym_nowf in H2.
-    mlExactMeta H2.
+      intros.
+      toMLGoal.
+      1:wf_auto2.
+      epose proof patt_total_and Γ (φ ---> φ') (φ'--->φ) H ltac:(wf_auto2) ltac:(wf_auto2) .
+      use i in H2.
+      apply pf_iff_equiv_sym_nowf in H2.
+      mlExactMeta H2.
     Qed.
     
    Theorem t2:
@@ -259,7 +237,6 @@ Proof.
       mlRewrite <- H3 at 1.
       mlSplitAnd.
       * fromMLGoal.
-        Check floor_monotonic.
         apply floor_monotonic.
         1:set_solver.
         1-2:wf_auto2.
@@ -287,12 +264,7 @@ Proof.
           mlAssumption.
     Qed.
     
-    (*         we need : phi ---> phi' =  patt_top. if that is top, we can rewrite with it ---> x \in top
-
-create two helper theorems 
-1st ---> patt_total of phi ---> phi =ml patt_top 
-2nd  ---> "everything is \in top"  patt_free_evar x \in patt_top.   *)
-  Theorem  provable_iff_top:
+   Theorem  provable_iff_top:
     ∀ {Σ : Signature} (Γ : Theory) (φ : Pattern)   (i : ProofInfo),
       well_formed φ ->
       Γ ⊢i φ using i ->
@@ -324,14 +296,14 @@ create two helper theorems
       mlAssumption.
   Defined.
   
-     Theorem proved_membership_functional:
+  Theorem proved_membership_functional:
     ∀ {Σ : Signature} {syntax : Definedness_Syntax.Syntax} 
-     (Γ : Theory) (φ₁ φ₂ : Pattern),
-      Definedness_Syntax.theory ⊆ Γ ->
-      well_formed φ₁ ->
-      well_formed φ₂ ->
-      Γ ⊢i φ₁ using AnyReasoning ->
-      Γ ⊢i is_functional φ₂ --->  φ₂ ∈ml φ₁  using AnyReasoning .
+    (Γ : Theory) (φ₁ φ₂ : Pattern),
+    Definedness_Syntax.theory ⊆ Γ ->
+    well_formed φ₁ ->
+    well_formed φ₂ ->
+    Γ ⊢i φ₁ using AnyReasoning ->
+    Γ ⊢i is_functional φ₂ --->  φ₂ ∈ml φ₁  using AnyReasoning .
   Proof.
     intros.
     unfold patt_in.
@@ -354,217 +326,89 @@ create two helper theorems
     mlExactMeta H4.
   Defined.
 
-
-   Theorem unnamaed:
+  Theorem unnamaed:
     ∀ (Γ : Theory) (φ : Pattern),
       Definedness_Syntax.theory ⊆ Γ -> 
       well_formed φ ->
       Γ ⊢i ⌊ φ ⌋ <--->  (φ =ml patt_top)     using AnyReasoning.
-      Proof.
-        intros.
-        mlSplitAnd.
-        * mlIntro.
-          unfold patt_equal.
-          mlRevert "0".
-          fromMLGoal.
-          apply floor_monotonic.
-          1:set_solver.
-          1-2:wf_auto2.
-          mlIntro "H".
-          mlSplitAnd.
-          + mlIntro.
-            pose proof top_holds Γ.
-            use AnyReasoning in H1.
-            mlExactMeta H1.
-          + mlIntro.
-            mlAssumption.
-          * unfold patt_equal.
-            fromMLGoal.
-            apply floor_monotonic.
-            1:set_solver.
-            1-2:wf_auto2.
-            mlIntro "H".
-            mlDestructAnd "H".
-            mlApply "1".
-            pose proof top_holds Γ.
-            use AnyReasoning in H1.
-            mlExactMeta H1.
-      Defined.
-        
-
-      Theorem unnamaed_1:
-      ∀ (Γ : Theory) (x : evar),
-      Definedness_Syntax.theory ⊆ Γ -> 
-      Γ ⊢i patt_free_evar x  ∈ml patt_top     using AnyReasoning.
-      Proof.
-        intros.
-        pose proof proved_membership_functional Γ (patt_top) (patt_free_evar x) ltac:(set_solver) 
-         ltac:(wf_auto2) ltac:(wf_auto2).
-       mlApplyMeta H0.
-       * unfold  is_functional.
-         mlExists x.
-         mlSimpl. cbn.
-         mlReflexivity.
-       * pose proof top_holds Γ.
-         use AnyReasoning in H1.
-         mlExactMeta H1.
-      Defined. 
-
-    
-   Theorem t3:
-    ∀ (Γ : Theory) (φ φ' : Pattern),
-      Definedness_Syntax.theory ⊆ Γ -> 
-      well_formed φ ->
-      well_formed φ' ->
-      
-      Γ ⊢i  φ  ⊆ml φ'   <--->
-          ( all , b0 ∈ml φ ---> b0 ∈ml φ') using AnyReasoning.
-    Proof.
-      intros.
-      toMLGoal.
-      wf_auto2.
+  Proof.
+    intros.
+    mlSplitAnd.
+    * mlIntro.
+      unfold patt_equal.
+      mlRevert "0".
+      fromMLGoal.
+      apply floor_monotonic.
+      1:set_solver.
+      1-2:wf_auto2.
+      mlIntro "H".
       mlSplitAnd.
-      * mlIntro "H".
-        mlIntroAll x.
-        simpl.
-        rewrite bevar_subst_not_occur.
-        1:wf_auto2.
-        
-(*         fm_solve tactic for varibales freshness, when not using manual version of mlIntroAll. *)
-        rewrite bevar_subst_not_occur.
-        1:wf_auto2.
-        mlIntro.
-        
-(*         unfold patt_in, patt_subseteq,patt_total. *)
-        mlRevert "0".
-        mlApplyMeta membership_imp_1.
-        2:set_solver.
-        unfold patt_subseteq.
-        epose proof unnamaed Γ (φ ---> φ') ltac:(set_solver) ltac:(wf_auto2).
-        apply pf_iff_proj1 in H2.
-        2-3:wf_auto2. 
-        mlApplyMeta H2 in "H" .
-        mlRewriteBy "H" at 1.
-        pose proof unnamaed_1 Γ (x) ltac:(wf_auto2).
-        mlExactMeta H3.
-      * mlIntro "H".
-        
-        remember (fresh_evar( φ ---> φ')) as x.
-        (* mlSpecialize "H" with x.
-        mlSimpl. simpl. cbn.
-        rewrite evar_open_not_occur.
-        wf_auto2.
-        rewrite evar_open_not_occur.
-        wf_auto2.
-(*         unfold patt_in. *)
-        Search patt_defined patt_imp derives_using. *)
- 
-        epose proof unnamaed Γ (φ ---> φ') ltac:(set_solver) ltac:(wf_auto2).
-        (* mlApplyMeta membership_imp_2 in "H".
-        2:set_solver.
-        Search patt_in derives_using.
-        
-        unfold patt_in.
-        Search patt_defined derives_using.
-        mlApplyMeta patt_defined_and in "H".
-        2:set_solver.
-        mlDestructAnd "H". *)
-        
-        unfold patt_subseteq.
-        (* Search patt_defined patt_exists derives_using.
-        mlIntro.
-        mlApply "H".
-        Search patt_defined patt_free_evar derives_using.
-(*         
+      + mlIntro.
+        pose proof top_holds Γ.
+        use AnyReasoning in H1.
+        mlExactMeta H1.
+      + mlIntro.
+        mlAssumption.
+    * unfold patt_equal.
+      fromMLGoal.
+      apply floor_monotonic.
+      1:set_solver.
+      1-2:wf_auto2.
+      mlIntro "H".
+      mlDestructAnd "H".
+      mlApply "1".
+      pose proof top_holds Γ.
+      use AnyReasoning in H1.
+      mlExactMeta H1.
+  Defined.
 
-         *)
-        
-        unfold patt_forall.
-        mlRewrite H2 at 1.
-
-        unfold patt_equal.
-        Check floor_monotonic.
-        Search patt_defined patt_total derives_using.
-        mlApplyMeta def_phi_impl_tot_def_phi in "1".
-        2:set_solver.
-        mlClear "0".
-        mlRevert "1".
-        fromMLGoal.
-        apply floor_monotonic.
-        1:set_solver.
-        1-2:wf_auto2.
-        mlIntro "H".
-        mlSplitAnd.
-        + mlIntro.
-          pose proof top_holds Γ.
-          use AnyReasoning in H3.
-          mlExactMeta H3.
-        + mlIntro. 
-        Search patt_top. mlIntro.
-          
-          Search patt_imp derives_using.
-          
-          
-          Search patt_top.
-          mlIntro.
+  Theorem unnamaed_1:
+    ∀ (Γ : Theory) (x : evar),
+    Definedness_Syntax.theory ⊆ Γ -> 
+    Γ ⊢i patt_free_evar x  ∈ml patt_top     using AnyReasoning.
+  Proof.
+    intros.
+    pose proof proved_membership_functional Γ (patt_top) (patt_free_evar x) ltac:(set_solver) ltac:(wf_auto2) ltac:(wf_auto2).
+    mlApplyMeta H0.
+    * unfold  is_functional.
+      mlExists x.
+      mlSimpl. cbn.
+      mlReflexivity.
+    * pose proof top_holds Γ.
+      use AnyReasoning in H1.
+      mlExactMeta H1.
+  Defined. 
   
-        apply pf_iff_proj2 in H2.  *)
-        
-(*         membership_symbol_ceil_left_aux_0:
-  ∀ {Σ : Signature} {syntax : Definedness_Syntax.Syntax} (Γ : Theory) (φ : Pattern),
-    Definedness_Syntax.theory ⊆ Γ
-    → well_formed φ
-      → Γ ⊢i φ ---> (ex , ⌈ b0 and φ ⌉)
-        using (ExGen := ⊤, SVSubst := ∅, KT := false, AKT := false)
-        
-membership_symbol_ceil_right_aux_0:
-  ∀ {Σ : Signature} {syntax : Definedness_Syntax.Syntax} (Γ : Theory) (φ : Pattern),
-    Definedness_Syntax.theory ⊆ Γ
-    → well_formed φ
-      → Γ ⊢i (ex , ⌈ b0 and φ ⌉ and b0) ---> φ
-        using (ExGen := ⊤, SVSubst := ∅, KT := false, AKT := false)
-         *)
-    Admitted.
-    
-(*   
-   3. ` x ∈ σ(ϕ1,.., ϕi−1, ϕi, ϕi+1,.., ϕn) = ∃y.(y ∈ ϕi ∧ x ∈ σ(ϕ1,.., ϕi−1, y, ϕi+1,.., ϕn) )
+  Theorem t3:
+    ∀ (Γ : Theory) (φ φ' : Pattern),
+    Definedness_Syntax.theory ⊆ Γ -> 
+    well_formed φ ->
+    well_formed φ' ->
+    Γ ⊢i  φ  ⊆ml φ'   <--->
+        ( all , b0 ∈ml φ ---> b0 ∈ml φ') using AnyReasoning.
+  Proof.
+  Admitted.
   
-   x ∈ml (φ $ ψ) =ml ex , b0 ∈ml φ and x ∈ (b0 $ ψ)   ...(1)
-   
-   
-   ex s1, (b0).mlInjectL =ml patt_free_evar x 
-   
-   
-   second version : 
-    x ∈ml (φ $ ψ) =ml ex , b0 ∈ml ψ and x ∈ml (φ $ b0)  
-  
-  
-   *)
-   
-   Theorem membership_axiom_v1: 
+  Theorem membership_axiom_v1: 
     ∀ (Γ : Theory) (φ φ' : Pattern) (x : evar),
-      Definedness_Syntax.theory ⊆ Γ -> 
-      well_formed φ ->
-      well_formed φ' ->
-      
-      Γ ⊢i patt_free_evar x ∈ml ( φ $ φ' ) =ml ex , ( b0 ∈ml φ and patt_free_evar x ∈ml (b0 $ φ') )  
-           using AnyReasoning.
+    Definedness_Syntax.theory ⊆ Γ -> 
+    well_formed φ ->
+    well_formed φ' ->
+    Γ ⊢i patt_free_evar x ∈ml ( φ $ φ' ) =ml ex , ( b0 ∈ml φ and patt_free_evar x ∈ml (b0 $ φ') ) using AnyReasoning.
   Proof.
   Admitted.
   
   Theorem membership_axiom_v2: 
     ∀ (Γ : Theory) (φ φ' : Pattern) (x : evar),
-      Definedness_Syntax.theory ⊆ Γ -> 
-      well_formed φ ->
-      well_formed φ' ->
-      
-      Γ ⊢i patt_free_evar x ∈ml ( φ $ φ' ) =ml ex, (b0 ∈ml φ' and patt_free_evar x ∈ml (φ $ b0)  )
-           using AnyReasoning.
+    Definedness_Syntax.theory ⊆ Γ -> 
+    well_formed φ ->
+    well_formed φ' ->
+    Γ ⊢i patt_free_evar x ∈ml ( φ $ φ' ) =ml ex, (b0 ∈ml φ' and patt_free_evar x ∈ml (φ $ b0) ) using AnyReasoning.
   Proof.
   Admitted.
   
   Theorem sum_inj : forall Γ , theory s1 s2 wfs1 wfs2 ⊆ Γ ->
-                              Γ ⊢ 〚 mlSum (s1, s2) 〛 =ml  ( (〚s1〛).mlInjectL  or  (〚s2〛).mlInjectR ) .
+                              Γ ⊢ 〚 mlSum (s1, s2) 〛 =ml  ( (〚s1〛).mlInjectL( s1 , s2 )  or  (〚s2〛).mlInjectR( s1 , s2 ) ) .
   Proof.
     intros.
     toMLGoal.
@@ -577,17 +421,17 @@ membership_symbol_ceil_right_aux_0:
     simpl in H2. mlAdd H2 as "INJECT Right".
     clear H0;clear H1;clear H2.
     
-    mlAssert ( "P" : (  ( (〚s1〛).mlInjectL  or  (〚s2〛).mlInjectR )  ⊆ml  〚 mlSum (s1, s2) 〛 ) ) .
+    mlAssert ( "P" : (  ( (〚s1〛).mlInjectL( s1 , s2 )  or  (〚s2〛).mlInjectR( s1 , s2 ) )  ⊆ml  〚 mlSum (s1, s2) 〛 ) ) .
     1:{ clear H;wf_auto2. }
     1:{ 
-        epose proof t2 Γ (〚 mlSum (s1, s2) 〛)   ( (〚 s1 〛 ).mlInjectL ) ( (〚 s2 〛 ).mlInjectR) 
+        epose proof t2 Γ (〚 mlSum (s1, s2) 〛)   ( (〚 s1 〛 ).mlInjectL( s1 , s2 ) ) ( (〚 s2 〛 ).mlInjectR( s1 , s2 )) 
          AnyReasoning ltac:(set_solver) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2).
          
         mlRewrite H0 at 1.
         mlSplitAnd.
         (* (〚 s1 〛 ).mlInjectL ⊆ml 〚 mlSum (s1, s2) 〛 *)
         * clear H0.
-          epose proof t3 Γ ((〚 s1 〛 ).mlInjectL) ( 〚 mlSum (s1, s2) 〛) 
+          epose proof t3 Γ ((〚 s1 〛 ).mlInjectL( s1 , s2 )) ( 〚 mlSum (s1, s2) 〛) 
             ltac:(set_solver) ltac:(wf_auto2) ltac:(wf_auto2).
             
           mlRewrite H0 at 1.
@@ -603,7 +447,7 @@ membership_symbol_ceil_right_aux_0:
           1:{ clear H;wf_auto2. }
           mlIntro.
             
-          mlAssert ("P" : ( ex s1, (b0).mlInjectL =ml patt_free_evar x ) ).
+          mlAssert ("P" : ( ex s1, (b0).mlInjectL( s1 , s2 ) =ml patt_free_evar x ) ).
           1:{ clear H; wf_auto2. }
           1:{ unfold patt_exists_of_sort.
               unfold nest_ex.
@@ -647,7 +491,7 @@ membership_symbol_ceil_right_aux_0:
               1:mlAssumption.
               mlApply "INJECT Left" in "0".
               
-              opose proof*( membership_imp_equal Γ ( patt_free_evar x) ( (patt_free_evar y ).mlInjectL) _ _ _ _ ).
+              opose proof*( membership_imp_equal Γ ( patt_free_evar x) ( (patt_free_evar y ).mlInjectL( s1 , s2 )) _ _ _ _ ).
               1:set_solver.
               1-3:wf_auto2.
               mlSymmetry.
@@ -657,7 +501,7 @@ membership_symbol_ceil_right_aux_0:
               1:wf_auto2.
               1:{ mlExists x. mlSimpl. cbn. mlReflexivity. }
               mlApply "4" in "F".
-              mlAssert ("G" : ( ex , (patt_free_evar y ).mlInjectL =ml b0) ).
+              mlAssert ("G" : ( ex , (patt_free_evar y ).mlInjectL( s1 , s2 ) =ml b0) ).
               1:wf_auto2.
               1:{ remember (fresh_evar(patt_free_evar x ---> patt_free_evar y ---> s1 ---> s2)) as z.
                   mlDestructEx "0" as z.
@@ -696,8 +540,8 @@ membership_symbol_ceil_right_aux_0:
           mlDestructAnd "P".
           mlSpecialize "INJECT Left" with y.
           mlSimpl.
-          replace  ( (ex mlSum (s1, s2), (b1 ).mlInjectL =ml b0)^{evar:0↦y} ) with
-            ( ex mlSum (s1, s2), (patt_free_evar y ).mlInjectL =ml b0) .
+          replace  ( (ex mlSum (s1, s2), (b1 ).mlInjectL( s1 , s2 ) =ml b0)^{evar:0↦y} ) with
+            ( ex mlSum (s1, s2), (patt_free_evar y ).mlInjectL( s1 , s2 ) =ml b0) .
           2:{ mlSortedSimpl. mlSimpl. unfold evar_open. simpl. reflexivity. }
           cbn.
           unfold evar_open.
@@ -723,7 +567,7 @@ membership_symbol_ceil_right_aux_0:
             
         (* (〚 s2 〛 ).mlInjectR ⊆ml 〚 mlSum (s1, s2) 〛 *) 
         * clear H0.
-          epose proof t3 Γ ((〚 s2 〛 ).mlInjectR) (〚 mlSum (s1, s2) 〛) 
+          epose proof t3 Γ ((〚 s2 〛 ).mlInjectR( s1 , s2 )) (〚 mlSum (s1, s2) 〛) 
            ltac:(set_solver) ltac:(wf_auto2) ltac:(wf_auto2).
           
           mlRewrite H0 at 1.
@@ -738,7 +582,7 @@ membership_symbol_ceil_right_aux_0:
           1:{ clear H;wf_auto2. }
           mlIntro.
           
-          mlAssert ("P" : ( ex s2, (b0).mlInjectR =ml patt_free_evar x ) ).
+          mlAssert ("P" : ( ex s2, (b0).mlInjectR( s1 , s2 ) =ml patt_free_evar x ) ).
           1:{ clear H; wf_auto2. }
           1:{ unfold patt_exists_of_sort.
               unfold nest_ex.
@@ -783,7 +627,7 @@ membership_symbol_ceil_right_aux_0:
               mlClear "1";mlClear "INJECT Left".
               mlApply "INJECT Right" in "0".
               
-              opose proof* ( membership_imp_equal Γ (patt_free_evar x) (patt_free_evar y).mlInjectR _ _ _ _ ).
+              opose proof* ( membership_imp_equal Γ (patt_free_evar x) (patt_free_evar y).mlInjectR( s1 , s2 ) _ _ _ _ ).
               1:set_solver.
               1-3:wf_auto2.
               mlAdd H2.
@@ -794,7 +638,7 @@ membership_symbol_ceil_right_aux_0:
               
               mlApply "1" in "F".
               mlClear "1".
-              mlAssert( "G" : (ex , (patt_free_evar y).mlInjectR =ml b0 )).
+              mlAssert( "G" : (ex , (patt_free_evar y).mlInjectR( s1 , s2 ) =ml b0 )).
               1:wf_auto2.
               1:{ remember (fresh_evar(patt_free_evar x ---> patt_free_evar y ---> s1 ---> s2)) as z.
                   mlDestructEx "0" as z.
@@ -835,8 +679,8 @@ membership_symbol_ceil_right_aux_0:
           mlSpecialize "INJECT Right" with y.
        
           mlSimpl.
-          replace  ( (ex mlSum (s1, s2), (b1 ).mlInjectR =ml b0)^{evar:0↦y} ) with
-            ( ex mlSum (s1, s2), (patt_free_evar y ).mlInjectR =ml b0) .
+          replace  ( (ex mlSum (s1, s2), (b1 ).mlInjectR( s1 , s2 ) =ml b0)^{evar:0↦y} ) with
+            ( ex mlSum (s1, s2), (patt_free_evar y ).mlInjectR( s1 , s2 ) =ml b0) .
           2:{
               mlSortedSimpl. mlSimpl. unfold evar_open. simpl. reflexivity.
              }
@@ -866,7 +710,7 @@ membership_symbol_ceil_right_aux_0:
     mlConj  "coproduct" "P" as "f".
     
     
-    epose proof t1 Γ (〚 mlSum (s1, s2) 〛) ( (〚 s1 〛 ).mlInjectL or (〚 s2 〛 ).mlInjectR ) 
+    epose proof t1 Γ (〚 mlSum (s1, s2) 〛) ( (〚 s1 〛 ).mlInjectL( s1 , s2 ) or (〚 s2 〛 ).mlInjectR( s1 , s2 ) ) 
      AnyReasoning _ _ _ .
     
     apply pf_iff_proj1 in H0.
