@@ -30,124 +30,29 @@ Require Import MatchingLogic.Theories.DeductionTheorem.
 Require MatchingLogic.Theories.Sorts_Syntax.
 Export MatchingLogic.Theories.Sorts_Syntax.Notations.
 
-From Coq Require Import ssreflect ssrfun ssrbool.
-
 Require Import Setoid.
-From Coq Require Import Unicode.Utf8.
 From Coq.Logic Require Import Classical_Prop FunctionalExtensionality.
-From Coq.Classes Require Import Morphisms_Prop.
 
 From stdpp Require Import base sets.
 
 From MatchingLogic Require Import Logic MLPM.
-From MatchingLogic.Theories Require Import Definedness_ProofSystem Sorts_ProofSystem FOEquality_ProofSystem.
-Import MatchingLogic.Logic.Notations.
+From MatchingLogic.Theories Require Import Sorts_ProofSystem FOEquality_ProofSystem.
 Require Import MatchingLogic.Theories.Nat_Syntax.
 
-Import MatchingLogic.Theories.Definedness_Syntax.Notations.
 Import MatchingLogic.Theories.Nat_Syntax.Notations.
 
 Set Default Proof Mode "Classic".
 
-From MatchingLogic Require Import
-  Theories.DeductionTheorem
-  Theories.Sorts_Syntax
-  FOEquality_ProofSystem
-  Sorts_ProofSystem
-  Nat_Syntax.
-
-Import MatchingLogic.Theories.Sorts_Syntax.Notations.
-
 Open Scope ml_scope.
 Open Scope string_scope.
 Open Scope list_scope.
-
   
 Section nat.
   Context
     {Σ : Signature}
     {syntax : Nat_Syntax.Syntax}
   .
-
-  Theorem  provable_iff_top:
-    ∀ {Σ : Signature} (Γ : Theory) (φ : Pattern)   (i : ProofInfo),
-      well_formed φ ->
-      Γ ⊢i φ using i ->
-      Γ ⊢i φ <--->  patt_top using i .
-  Proof.
-    intros.
-    mlSplitAnd.
-    2:{ mlIntro. mlExactMeta H0. }
-    mlIntro.
-    pose proof top_holds Γ.
-    use i in H1.
-    mlExactMeta H1.
-  Defined.
-    
-  Theorem  patt_and_id_r:
-    ∀ {Σ : Signature} (Γ : Theory) (φ : Pattern),
-      well_formed φ ->
-      Γ ⊢i φ and patt_top <--->  φ using BasicReasoning .
-  Proof.
-    intros.
-    mlSplitAnd.
-    * mlIntro.
-      mlDestructAnd "0".
-      mlAssumption.
-    * mlIntro.
-      mlSplitAnd.
-      1: mlAssumption.
-      mlIntro.
-      mlAssumption.
-  Defined.
   
-  Theorem proved_membership_functional:
-    ∀ {Σ : Signature} {syntax : Definedness_Syntax.Syntax} 
-     (Γ : Theory) (φ₁ φ₂ : Pattern),
-      Definedness_Syntax.theory ⊆ Γ ->
-      well_formed φ₁ ->
-      well_formed φ₂ ->
-      Γ ⊢i φ₁ using AnyReasoning ->
-      Γ ⊢i is_functional φ₂ --->  φ₂ ∈ml φ₁  using AnyReasoning .
-  Proof.
-    intros.
-    unfold patt_in.
-    apply provable_iff_top in H2.
-    2:wf_auto2.
-    mlRewrite H2 at 1.
-    pose proof patt_and_id_r Γ φ₂ ltac:(wf_auto2).
-    use AnyReasoning in H3.
-    mlRewrite H3 at 1.
-    unfold is_functional.
-    mlIntro.
-    mlDestructEx "0" as x.
-    mlSimpl. cbn.
-    rewrite evar_open_not_occur.
-    wf_auto2.
-    mlRewriteBy "0" at 1.
-    pose proof defined_evar Γ x H.
-    use AnyReasoning in H4.
-    mlExactMeta H4.
-  Defined.
-
-  Theorem proved_membership_functional_meta:
-    ∀ {Σ : Signature} {syntax : Definedness_Syntax.Syntax} 
-     (Γ : Theory) (φ₁ φ₂ : Pattern),
-      Definedness_Syntax.theory ⊆ Γ ->
-      well_formed φ₁ ->
-      well_formed φ₂ ->
-      Γ ⊢i is_functional φ₂ using AnyReasoning ->
-      Γ ⊢i φ₁ using AnyReasoning ->
-      Γ ⊢i  φ₂ ∈ml φ₁  using AnyReasoning .
-  Proof.
-    intros.
-    mlApplyMeta proved_membership_functional.
-    mlExactMeta H2.
-    mlExactMeta H3.
-    set_solver.
-  Defined.
-    
-
 (* suppose \phi is_functional 
  *)
   Theorem t1:
@@ -173,10 +78,8 @@ Section nat.
     2:set_solver. *)
 (*     rewrite bevar_subst_positive.
     1:admit.
-    Search patt_exists derives_using.
     mlDestructEx "1" as x.
     1:admit.
-    Search patt_defined.
     rewrite evar_quantify_fresh. *)
     
 (*     Definedness_ProofSystem.test_spec:
@@ -202,7 +105,6 @@ Section nat.
     * mlIntroAll x.
       1:admit.
       admit.  *)
-(*     Search patt_in patt_exists derives_using. *)
   Admitted.
 
   Lemma use_nat_axiom ax Γ :
@@ -266,49 +168,6 @@ Section nat.
     { set_solver. }
     { set_solver. }
   Defined.
-  
-  Lemma Svar_subst (Γ : Theory) (ϕ ψ : Pattern) (X : svar)  (i : ProofInfo)
-    {pile : ProofInfoLe (
-          {| pi_generalized_evars := ∅;
-             pi_substituted_svars := {[X]};
-             pi_uses_kt := false ;
-             pi_uses_advanced_kt := false ;
-          |}) i} :
-    well_formed ψ -> 
-    Γ ⊢i ϕ using i -> 
-    Γ ⊢i (ϕ^[[svar: X ↦ ψ]]) using i.
-  Proof.
-    intros wfψ [pf Hpf].
-    unshelve (eexists).
-    {
-      apply ProofSystem.Svar_subst.
-      { pose proof (Hwf := proved_impl_wf _ _ pf). exact Hwf. }
-      { exact wfψ. }
-      { exact pf. }
-    }
-    {
-      simpl.
-      constructor; simpl.
-      {
-        destruct Hpf as [Hpf2 Hpf3 Hpf4].
-        apply Hpf2.
-      }
-      {
-        destruct Hpf as [Hpf2 Hpf3 Hpf4].
-        pose proof (Hpile := pile_impl_allows_svsubst_X _ _ _ _ pile).
-        clear -Hpile Hpf3.
-        set_solver.
-      }
-      {
-        destruct Hpf as [Hpf2 Hpf3 Hpf4].
-        exact Hpf4.
-      }
-      {
-        destruct Hpf as [Hpf2 Hpf3 Hpf4 Hpf5].
-        exact Hpf5.
-      }
-    }
-  Defined.
 
   Theorem peano_induction X :
     theory ⊢ patt_free_svar X ⊆ml 〚 Nat 〛 ---> 
@@ -316,51 +175,38 @@ Section nat.
     ( all Nat, (b0 ∈ml patt_free_svar X ---> Succ $ b0 ∈ml patt_free_svar X) ) --->
     all Nat, b0 ∈ml patt_free_svar X.
   Proof.
-(*     toMLGoal.
+(*  toMLGoal.
     { wf_auto2. }
     
     mlIntro "H".
     mlIntro "H1".
     mlIntro "H2".
-
     mlApplyMeta nat_subset_imp_in.
-    Search patt_mu derives_using.
-    Search patt_defined patt_total derives_using.
-    
-    
     remember (evar_fresh [] ) as x.
     
+    pose proof membership_symbol_ceil_aux_aux_0 theory x ( patt_free_svar X)  ltac:( unfold theory;set_solver) ltac:(wf_auto2).
+    apply universal_generalization with (x:=x) in H.
+    2: try_solve_pile.
+    2: wf_auto2.
+    mlSimpl in H. simpl in H.
+    case_match.
+    2: congruence.
+    assert ( theory ⊢ (ex , Zero =ml b0) ).
+    1:admit.
+    use AnyReasoning in H.
+    epose proof conj_intro_meta _ _ _ _ _ _ H H1.
+    Unshelve.
+    2-3: wf_auto2. 
+    mlSpecMeta H with Zero.
+    2:unfold theory;set_solver.
+    2:simpl;reflexivity.
+    mlSimpl in H.
+    simpl in H.
+    mlApplyMeta H in "H1".
+    unfold patt_forall_of_sort.*)
     
-    pose proof membership_symbol_ceil_aux_aux_0 theory x ( patt_free_svar X) 
-                                         ltac:( unfold theory;set_solver) ltac:(wf_auto2).
-   Check universal_generalization.
-   apply universal_generalization with (x:=x) in H.
-   2: try_solve_pile.
-   2: wf_auto2.
-   mlSimpl in H. simpl in H.
-   case_match.
-   2: congruence.
-   Check forall_functional_subst.
-   assert ( theory ⊢ (ex , Zero =ml b0) ).
-   1:admit.
-   Search patt_and derives_using.
-   use AnyReasoning in H.
-(*    epose proof conj_intro_meta _ _ _ _ _ _ H H1.
-   Unshelve.
-   2-3: wf_auto2. *)
-     mlSpecMeta H with Zero.
-     2:unfold theory;set_solver.
-     2:simpl;reflexivity.
-     mlSimpl in H.
-     simpl in H.
-     mlApplyMeta H in "H1".
-     Search patt_and patt_total.
-     unfold patt_forall_of_sort.
-     Search patt_exists patt_total derives_using. *)
-     
     (* rephrase "H2" into a totality statement and use propagation of totality through conjuction  *)
-                                   
-  Admitted.  
+  Admitted.
   
   Theorem peano_induction_1 X :
     theory ⊢ patt_free_svar X ⊆ml 〚 Nat 〛 -> 
@@ -383,7 +229,6 @@ Section nat.
     unfold "⊆ml".
     fromMLGoal.
 
-    Check phi_impl_total_phi_meta.
     apply phi_impl_total_phi_meta.
     { wf_auto2. }
     { apply pile_any. }
@@ -720,7 +565,7 @@ Section nat.
         2-4: wf_auto2.
         2: set_solver.
           
-          (* prove separatly is_functional zero  *)
+        (* prove separatly is_functional zero  *)
         mlAssert( "P": (is_functional Zero)).
         1: wf_auto2.
         1:{ 
@@ -1007,7 +852,7 @@ same chain of thoughts as 1st one for totality.
                 set_solver. 
               }
               
-            mlAssert ( "P1" : ( (* Γ ⊢ *) Zero +ml (Succ $ patt_free_evar x) =ml Succ $ patt_free_evar x )).
+            mlAssert ( "P1" : ( Zero +ml (Succ $ patt_free_evar x) =ml Succ $ patt_free_evar x )).
             1: wf_auto2.
                1:{
                    pose proof use_nat_axiom AxDefAdd Γ H.
