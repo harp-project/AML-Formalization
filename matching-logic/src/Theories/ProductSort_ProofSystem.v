@@ -49,21 +49,6 @@ Section productsort.
       {syntax : ProductSort.Syntax s1 s2}
     .
     
-(*     Local Notation "'(' phi1 ',ml' phi2 ')'" := 
-        (patt_app (patt_app (patt_sym (inj (ml_pair s1 s2))) phi1) phi2)
-        : ml_scope
-    .
-
-    Local Notation "'(' phi ').mlProjL'" := 
-        (patt_app (patt_sym (inj (ml_projL s1 s2))) phi)
-        : ml_scope
-    .
-
-    Local Notation "'(' phi ').mlProjR'" := 
-        (patt_app (patt_sym (inj (ml_projR s1 s2))) phi)
-        : ml_scope
-    . *)
-    
   Lemma use_productsort_axiom ax Γ  :
       ProductSort.theory s1 s2 wfs1 wfs2 ⊆ Γ -> 
         Γ ⊢ axiom _ _ ax.
