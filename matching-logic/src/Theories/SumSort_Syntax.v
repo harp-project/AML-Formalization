@@ -67,26 +67,6 @@ Module Notations.
         : ml_scope
     .
 
-    (* Notation "'mlInjectL' '(' s1 ',' s2 ')' '(' phi ')'" := 
-        (patt_app (patt_sym (inj (ml_injectL s1 s2))) phi)
-        : ml_scope
-    .
-
-    Notation "'mlInjectR' '(' s1 ',' s2 ')' '(' phi ')'" := 
-        (patt_app (patt_sym (inj (ml_injectR s1 s2))) phi)
-        : ml_scope
-    .
-    
-    Notation "'mlEjectL' '(' s1 ',' s2 ')' '(' phi ')'" := 
-        (patt_app (patt_sym (inj (ml_ejectL s1 s2))) phi)
-        : ml_scope
-    .
-
-    Notation "'mlEjectR' '(' s1 ',' s2 ')' '(' phi ')'" := 
-        (patt_app (patt_sym (inj (ml_ejectR s1 s2))) phi)
-        : ml_scope
-    . *)
-
 End Notations.
 
 
