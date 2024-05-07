@@ -1,7 +1,6 @@
 From Coq Require Import ssreflect ssrfun ssrbool.
 
 Require Import Setoid.
-From Coq Require Import Ensembles.
 From Coq.Logic Require Import FunctionalExtensionality.
 From Coq.Logic Require Import PropExtensionality ClassicalFacts.
 
@@ -610,8 +609,7 @@ Section with_signature.
         fold ((nest_mu base)^{svar: 0 ↦ (fresh_svar patt_ind_gen_body)}) in Hx.
         fold ((nest_mu step)^{svar: 0 ↦ (fresh_svar patt_ind_gen_body)}) in Hx.
         destruct Hx.
-        - unfold Ensembles.In in H.
-          unfold witnessed_elements_old.
+        - unfold witnessed_elements_old.
           exists [x]. unfold is_witnessing_sequence_old.
           simpl.
           split.
@@ -626,8 +624,7 @@ Section with_signature.
           }
           simpl. unfold svar_open in H.
           rewrite nest_mu_same in H. auto.
-        - unfold Ensembles.In in H.
-          rewrite eval_app_simpl in H.
+        - rewrite eval_app_simpl in H.
           rewrite eval_free_svar_simpl in H.
           rewrite update_svar_val_same in H.
           unfold app_ext in H.
@@ -682,9 +679,8 @@ Section with_signature.
         (witnessed_elements_old_of_max_len (S len)) ⊆ (@eval Σ M ρ patt_ind_gen).
       Proof.
         induction len.
-        - unfold Included. intros m.
+        - intros m.
           rewrite -eval_patt_ind_gen_fix.
-          unfold Ensembles.In.
           intros H.
           unfold witnessed_elements_old_of_max_len.
           rewrite F_interp.
@@ -697,12 +693,11 @@ Section with_signature.
           2: { simpl in Hlen. lia. }
           simpl in Hlast. inversion Hlast. clear Hlast. subst.
           destruct Hm as [Hm _].
-          left. unfold Ensembles.In. apply Hm.
-        - unfold Included. intros m.
+          left. apply Hm.
+        - intros m.
           rewrite -eval_patt_ind_gen_fix.
-          unfold Ensembles.In. intros H.
+          intros H.
           destruct H as [l [Hwit Hlen] ].
-          unfold Included in IHlen. unfold Ensembles.In in IHlen.
           rewrite F_interp.
           pose proof (Hwit' := Hwit).
           unfold is_witnessing_sequence in Hwit.
@@ -714,8 +709,8 @@ Section with_signature.
           destruct Hl as [Hd Hl].
           destruct l.
           + simpl in Hlast. inversion Hlast. clear Hlast. subst.
-            left. unfold Ensembles.In. apply Hd.
-          + right. unfold Ensembles.In.
+            left. apply Hd.
+          + right.
             pose proof (P := witnessing_sequence_old_extend).
             destruct l as [|x' l'].
             { simpl in Hlast. inversion Hlast. subst.
@@ -847,10 +842,10 @@ Section with_signature.
         witnessed_elements_old ⊆ (@eval Σ M ρ patt_ind_gen).
       Proof.
         intros x H.
-        unfold Ensembles.In in H. unfold witnessed_elements_old in H.
+        unfold witnessed_elements_old in H.
         destruct H as [wit Hwit].
         assert (H': x ∈ (witnessed_elements_old_of_max_len (length wit))).
-        { unfold Ensembles.In. exists wit. split. apply Hwit. lia. }
+        { exists wit. split. apply Hwit. lia. }
         destruct wit as [|y l'] eqn:Hl.
         { unfold is_witnessing_sequence in Hwit. destruct Hwit. contradiction. }
         eapply witnessed_elements_old_of_max_len_included_in_interp.
@@ -1133,8 +1128,7 @@ Section with_signature.
             clear H1.
             split.
             - apply Hlst2.
-            - unfold Ensembles.In.
-              unfold app_ext.
+            - unfold app_ext.
               destruct H as [le' [re' [H1 [H2 H3] ] ] ].
               exists le'. exists d0.
               split.

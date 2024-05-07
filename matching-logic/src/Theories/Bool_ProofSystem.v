@@ -1,48 +1,24 @@
-From Coq Require Import ssreflect ssrfun ssrbool.
+From Coq Require Import ssreflect ssrfun ssrbool String.
 
 From Ltac2 Require Import Ltac2.
 
-From Coq Require Import String Ensembles Setoid.
-Require Import Coq.Program.Equality.
-Require Import Coq.Logic.Classical_Prop.
-From Coq.Logic Require Import FunctionalExtensionality Eqdep_dec.
-From Coq.Classes Require Import Morphisms_Prop.
-From Coq.Unicode Require Import Utf8.
-From Coq.micromega Require Import Lia.
-
 From MatchingLogic Require Export Logic ProofMode.MLPM.
-From MatchingLogic.Theories Require Export Definedness_Syntax Definedness_ProofSystem.
-From MatchingLogic.Utils Require Export stdpp_ext.
+From MatchingLogic.Theories Require Export Definedness_Syntax
+                                           Definedness_ProofSystem
+                                           Sorts_Syntax
+                                           Sorts_ProofSystem
+                                           FOEquality_ProofSystem
+                                           Bool_Syntax.
 
-Require Export MatchingLogic.wftactics.
-
-From stdpp Require Import base fin_sets sets propset proof_irrel option list.
-
-Import extralibrary.
+From stdpp Require Import base propset.
 
 Import MatchingLogic.Logic.Notations.
 Import MatchingLogic.Theories.Definedness_Syntax.Notations.
+Import MatchingLogic.Theories.Sorts_Syntax.Notations.
 
 Set Default Proof Mode "Classic".
 
 Require Import MatchingLogic.Theories.DeductionTheorem.
-
-Require MatchingLogic.Theories.Sorts_Syntax.
-Export MatchingLogic.Theories.Sorts_Syntax.Notations.
-
-From Coq Require Import ssreflect ssrfun ssrbool.
-
-Require Import Setoid.
-From Coq Require Import Unicode.Utf8.
-From Coq.Logic Require Import Classical_Prop FunctionalExtensionality.
-From Coq.Classes Require Import Morphisms_Prop.
-
-From stdpp Require Import base sets.
-
-From MatchingLogic Require Import Logic MLPM.
-From MatchingLogic.Theories Require Import Definedness_ProofSystem Sorts_ProofSystem FOEquality_ProofSystem.
-Import MatchingLogic.Logic.Notations.
-Require Import MatchingLogic.Theories.Bool_Syntax.
 
 Import MatchingLogic.Theories.Definedness_Syntax.Notations.
 Import MatchingLogic.Theories.Bool_Syntax.Notations.
@@ -149,10 +125,8 @@ Open Scope list_scope.
     mlIntroAll x.
     simpl.
     mlIntro "H".
-    (* Search patt_in derives_using. *)
     cbn. fold mlBool.
     unfold theory in H.
-    (* Search elem_of derives_using. *)
     pose proof use_bool_axiom AxInductiveDomain Γ H.
     simpl in H0.
     mlAdd H0 as "ind". 
@@ -172,7 +146,7 @@ Open Scope list_scope.
       + simpl. auto.
       + wf_auto2.
       + wf_auto2.
-      + mlExists x. mlSimpl. cbn. Search patt_equal derives_using. fromMLGoal. apply useBasicReasoning.  
+      + mlExists x. mlSimpl. cbn. fromMLGoal. apply useBasicReasoning.  
         epose proof patt_equal_refl  (patt_free_evar x) Γ.
         apply H2. wf_auto2.
       + mlApplyMeta ex_sort_impl_ex.
@@ -203,7 +177,7 @@ Open Scope list_scope.
       + simpl. auto.
       + wf_auto2.
       + wf_auto2.
-      + mlExists x. mlSimpl. cbn. Search patt_equal derives_using. fromMLGoal. apply useBasicReasoning.  
+      + mlExists x. mlSimpl. cbn. fromMLGoal. apply useBasicReasoning.  
         epose proof patt_equal_refl  (patt_free_evar x) Γ.
         apply H2. wf_auto2.
       + mlApplyMeta ex_sort_impl_ex.

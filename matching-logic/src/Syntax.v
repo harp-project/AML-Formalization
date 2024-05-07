@@ -1,7 +1,6 @@
 From Coq Require Import ssreflect ssrfun ssrbool.
 Require Import Setoid.
 Require Import List.
-Require Import Ensembles.
 Require Import Coq.Strings.String.
 
 From Coq Require Import Logic.Classical_Prop.

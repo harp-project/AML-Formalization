@@ -4,7 +4,7 @@ From Ltac2 Require Import Ltac2.
 
 Require Import Equations.Prop.Equations.
 
-From Coq Require Import String Ensembles Setoid Btauto.
+From Coq Require Import String Setoid Btauto.
 Require Import Coq.Program.Equality.
 From Coq.Classes Require Import Morphisms_Prop.
 From Coq.Unicode Require Import Utf8.
