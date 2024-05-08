@@ -15,7 +15,6 @@ From MatchingLogic Require Import
   IndexManipulation
   ProofInfo
   wftactics
-  Experimental.ProofModePattern
   Logic
 .
 
