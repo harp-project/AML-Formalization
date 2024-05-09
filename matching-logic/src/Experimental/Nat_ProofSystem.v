@@ -55,7 +55,7 @@ Section nat.
   
 (* suppose \phi is_functional 
  *)
-  Theorem t1:
+  Theorem membership_exists_subst:
     ∀ (Γ : Theory) (φ φ' : Pattern) (i : ProofInfo) ,
       Definedness_Syntax.theory ⊆ Γ -> 
       well_formed φ ->
@@ -63,48 +63,6 @@ Section nat.
       Γ ⊢i φ ∈ml (ex, φ') --->
       φ'^[evar:0↦φ]  using i.
   Proof.
-    (* intros.
-    mlIntro "H".
-    unfold patt_in. *)
-(*     ceil_propagation_exists_1:
-  ∀ {Σ : Signature} {syntax : Definedness_Syntax.Syntax} (Γ : Theory) (φ : Pattern),
-    Definedness_Syntax.theory ⊆ Γ
-    → well_formed (ex , φ) → Γ ⊢i ⌈ ex , φ ⌉ ---> (ex , ⌈ φ ⌉) using BasicReasoning
-     *)
-    (* mlApplyMeta patt_defined_and in "H".
-    2-3:admit.
-    mlDestructAnd "H".
-    mlApplyMeta ceil_propagation_exists_1 in "1".
-    2:set_solver. *)
-(*     rewrite bevar_subst_positive.
-    1:admit.
-    mlDestructEx "1" as x.
-    1:admit.
-    rewrite evar_quantify_fresh. *)
-    
-(*     Definedness_ProofSystem.test_spec:
-  ∀ {Σ : Signature} {syntax : Definedness_Syntax.Syntax} (Γ : Theory) (φ ψ : Pattern),
-    Definedness_Syntax.theory ⊆ Γ
-    → well_formed (ex , φ)
-      → well_formed ψ
-        → mu_free φ
-          → Γ ⊢i all , φ using AnyReasoning
-            → Γ ⊢i ex , ψ =ml b0 using AnyReasoning → Γ ⊢i φ^[evar:0↦ψ] using AnyReasoning
-     *)
-(*      Unnamed_thm:
-  ∀ (Σ : Signature) (syntax : Definedness_Syntax.Syntax) (Γ : Theory) (φ t : Pattern),
-    Definedness_Syntax.theory ⊆ Γ
-    → mu_free φ
-      → well_formed t
-        → well_formed (ex , φ)
-          → Γ ⊢i (all , φ) ---> (ex , t =ml b0) ---> φ^[evar:0↦t] using AnyReasoning
-      *)
-(*     mlApplyMeta forall_functional_subst.
-    2-6:admit.
-    mlSplitAnd.
-    * mlIntroAll x.
-      1:admit.
-      admit.  *)
   Admitted.
 
   Lemma use_nat_axiom ax Γ :
@@ -782,7 +740,7 @@ same chain of thoughts as 1st one for totality.
       
        mlSplitAnd.
        * clear H0.
-         pose proof t1 Γ (patt_free_evar x ) (b0 ∈ml 〚 Nat 〛 and (b0 and Zero +ml b0 =ml b0)) 
+         pose proof membership_exists_subst Γ (patt_free_evar x ) (b0 ∈ml 〚 Nat 〛 and (b0 and Zero +ml b0 =ml b0)) 
           (AnyReasoning) ltac:(set_solver) ltac:(wf_auto2) ltac:(wf_auto2).
          mlApplyMeta H0 in "H2".
          clear H0.
@@ -975,7 +933,7 @@ same chain of thoughts as 1st one for totality.
     mlClear "H1".
     unfold patt_exists_of_sort.
     
-    pose proof t1 Γ (patt_free_evar x ) (b0 ∈ml 〚 nest_ex Nat 〛 and (b0 and Zero +ml b0 =ml b0))
+    pose proof membership_exists_subst Γ (patt_free_evar x ) (b0 ∈ml 〚 nest_ex Nat 〛 and (b0 and Zero +ml b0 =ml b0))
      (AnyReasoning) ltac:(set_solver) ltac:(wf_auto2) ltac:(wf_auto2).
     mlApplyMeta H0 in "H".
     clear H0.
