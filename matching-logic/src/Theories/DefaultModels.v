@@ -29,6 +29,7 @@ Import MatchingLogic.Semantics.Notations.
 Set Default Proof Mode "Classic".
 
 Open Scope ml_scope.
+Open Scope list_scope.
 
 Section Definedness.
 
@@ -446,10 +447,7 @@ Section Bool.
           ** clear H e. mlSimpl. cbn.
              unfold mlBAnd, mlsBAnd.
              revert t.
-             assert (forall S : propset bool_carrier, S = ⊤ -> forall t, t ∈ S) as HX. {
-               set_solver.
-             }
-             apply HX. clear HX.
+             apply propset_top_elem_of.
              eapply (equal_iff_interpr_same BoolModel HDef). (* explicit model needed *)
              eval_simpl; auto. unfold app_ext. cbn.
              repeat destruct decide; try congruence.
@@ -475,10 +473,7 @@ Section Bool.
           ** clear H e. mlSimpl. cbn.
              unfold mlBAnd, mlsBAnd.
              revert t.
-             assert (forall S : propset bool_carrier, S = ⊤ -> forall t, t ∈ S) as HX. {
-               set_solver.
-             }
-             apply HX. clear HX.
+             apply propset_top_elem_of.
              eapply (equal_iff_interpr_same BoolModel HDef). (* explicit model needed *)
              eval_simpl; auto. unfold app_ext. cbn.
              repeat destruct decide; try congruence.
@@ -504,10 +499,7 @@ Section Bool.
           ** clear H e. mlSimpl. cbn.
              unfold mlBAnd, mlsBAnd.
              revert t.
-             assert (forall S : propset bool_carrier, S = ⊤ -> forall t, t ∈ S) as HX. {
-               set_solver.
-             }
-             apply HX. clear HX.
+             apply propset_top_elem_of.
              eapply (equal_iff_interpr_same BoolModel HDef). (* explicit model needed *)
              eval_simpl; auto. unfold app_ext. cbn.
              repeat destruct decide; try congruence.
@@ -533,10 +525,7 @@ Section Bool.
           ** clear H e. mlSimpl. cbn.
              unfold mlBAnd, mlsBAnd.
              revert t.
-             assert (forall S : propset bool_carrier, S = ⊤ -> forall t, t ∈ S) as HX. {
-               set_solver.
-             }
-             apply HX. clear HX.
+             apply propset_top_elem_of.
              eapply (equal_iff_interpr_same BoolModel HDef). (* explicit model needed *)
              eval_simpl; auto. unfold app_ext. cbn.
              repeat destruct decide; try congruence.
@@ -589,10 +578,7 @@ Section Bool.
           ** clear H e. mlSimpl. cbn.
              unfold mlBNeg, mlsBNeg.
              revert t.
-             assert (forall S : propset bool_carrier, S = ⊤ -> forall t, t ∈ S) as HX. {
-               set_solver.
-             }
-             apply HX. clear HX.
+             apply propset_top_elem_of.
              eapply (equal_iff_interpr_same BoolModel HDef). (* explicit model needed *)
              eval_simpl; auto. unfold app_ext. cbn.
              repeat destruct decide; try congruence.
@@ -614,10 +600,7 @@ Section Bool.
           ** clear H e. mlSimpl. cbn.
              unfold mlBNeg, mlsBNeg.
              revert t.
-             assert (forall S : propset bool_carrier, S = ⊤ -> forall t, t ∈ S) as HX. {
-               set_solver.
-             }
-             apply HX. clear HX.
+             apply propset_top_elem_of.
              eapply (equal_iff_interpr_same BoolModel HDef). (* explicit model needed *)
              eval_simpl; auto. unfold app_ext. cbn.
              repeat destruct decide; try congruence.
@@ -989,9 +972,561 @@ Section Bool.
     all: apply (@propset_leibniz_equiv _ BoolModel).
   Qed.
 
-End Bool.
+End Bool. 
 
 Section Nat.
+
+  Inductive nat_carrier :=
+  | coreNatSym (s : Nat_Syntax.Symbols)
+  | partialAdd (s : nat)
+  | natVal (n : nat)
+  | defNat
+  | inhNat
+  .
+
+  #[global]
+  Instance nat_carrier_EqDec : EqDecision nat_carrier.
+  Proof.
+    solve_decision.
+  Defined.
+
+  Global Instance nat_carrier_countable : countable.Countable nat_carrier.
+  Proof.
+    set (enc := fun (n : nat_carrier) =>
+      match n with
+      | coreNatSym s =>
+        match s with
+         | sNat => inl (inl ())
+         | sZero => inl (inr (inl ()))
+         | sSucc => inl (inr (inr (inl ())))
+         | sAddNat => inl (inr (inr (inr (inl ()))))
+        end
+      | natVal n => inr (inl n)
+      | partialAdd n => inr (inr n)
+      | defNat => inl (inr (inr (inr (inr (inl ())))))
+      | inhNat => inl (inr (inr (inr (inr (inr ())))))
+      end).
+    set (dec := fun t =>
+      match t with
+      | inl (inr (inr (inr (inr (inr ()))))) => inhNat
+      | inl (inr (inr (inr (inr (inl ()))))) => defNat
+      | inl (inr (inr (inr (inl ())))) => coreNatSym sAddNat
+      | inl (inr (inr (inl ()))) => coreNatSym sSucc
+      | inl (inr (inl ())) => coreNatSym sZero
+      | inl (inl ()) => coreNatSym sNat
+      | inr (inl n) => natVal n
+      | inr (inr n) => partialAdd n
+      end
+    ).
+    apply inj_countable' with (f := enc) (g := dec).
+    by destruct x; try destruct s.
+  Defined.
+
+  Instance nat_Σ : Signature := {
+    variables := StringMLVariables;
+    ml_symbols := Build_MLSymbols nat_carrier _ _;
+  }.
+
+  Program Instance nat_syntax : @Nat_Syntax.Syntax nat_Σ := {
+    inj := coreNatSym;
+    imported_sorts := {|
+      Sorts_Syntax.inj := fun x => inhNat;
+      imported_definedness := {|
+        Definedness_Syntax.inj := fun x => defNat;
+      |};
+    |};
+  }.
+
+  Definition nat_sym_interp (m : symbols)
+    : propset nat_carrier :=
+  match m with
+  | coreNatSym sZero => {[ natVal 0 ]}
+  | x => {[ x ]}
+  end.
+
+  Definition nat_app_interp (m1 m2 : nat_carrier)
+    : propset nat_carrier :=
+  match m1 with
+   | coreNatSym sSucc =>
+     match m2 with
+     | natVal n => {[ natVal (S n) ]}
+     | _ => ∅
+     end
+   | coreNatSym sAddNat =>
+     match m2 with
+     | natVal n => {[ partialAdd n ]}
+     | _ => ∅
+     end
+   | coreNatSym _ => ∅
+   | partialAdd n =>
+     match m2 with
+     | natVal m => {[ natVal (n + m) ]}
+     | _ => ∅
+     end
+   (**)
+   | natVal _ => ∅
+   | defNat => ⊤
+   | inhNat =>
+     match m2 with
+     | coreNatSym sNat => {[ m | exists n, m = natVal n ]}
+     | _ => ∅
+     end
+  end.
+
+  Global Instance nat_carrier_inhabited : Inhabited nat_carrier.
+  Proof.
+    constructor. exact defNat.
+  Defined.
+
+  Program Definition NatModel : Model := {|
+    Domain := nat_carrier;
+    app_interp := nat_app_interp;
+    sym_interp := nat_sym_interp;
+  |}.
+
+  Theorem indec_nat :
+    ∀ ρ s (m : NatModel),
+      Decision (m ∈ Minterp_inhabitant (patt_sym s) ρ).
+  Proof.
+    intros.
+    unfold Minterp_inhabitant.
+    simp eval. simpl.
+    unfold Sorts_Semantics.sym.
+    simp eval. simpl.
+    unfold bool_sym_interp.
+    destruct s; unfold app_ext.
+    1: destruct s.
+    2-8: right; intro; destruct H as [le [re [Hle [Hre Ht] ] ] ];
+         try apply elem_of_singleton_1 in Hle, Hre; subst;
+         cbn in Ht; set_solver.
+    destruct m.
+    destruct s.
+    1-5,7-8: right; intro; destruct H as [le [re [Hle [Hre Ht] ] ] ];
+            try apply elem_of_singleton_1 in Hle;
+            try apply elem_of_singleton_1 in Hre; subst;
+            cbn in Ht; try set_solver.
+    all: try destruct re; try set_solver.
+    all: try destruct s; try set_solver.
+    destruct s0; try set_solver.
+    destruct s0; try set_solver.
+    left. do 2 eexists. split_and!. 1-2: cbn; by apply elem_of_singleton.
+    simpl. set_solver.
+  Defined.
+
+  Hint Resolve propset_leibniz_equiv : core.
+
+  Theorem NatModel_satisfies_theory :
+    NatModel ⊨ᵀ Nat_Syntax.theory.
+  Proof.
+    pose proof (@propset_leibniz_equiv _ NatModel) as LEQ.
+    assert (NatModel ⊨ᵀ Definedness_Syntax.theory) as HDef. {
+      unfold Nat_Syntax.theory, Definedness_Syntax.theory.
+      unfold theory_of_NamedAxioms. simpl.
+      unfold satisfies_theory. intros.
+      rewrite elem_of_PropSet in H. destruct H. destruct x. subst.
+      cbn. unfold satisfies_model. intros.
+      unfold patt_defined. unfold p_x, ev_x. simp eval.
+      unfold sym_interp, app_ext. simpl.
+      eapply leibniz_equiv.
+      apply set_equiv. intros. split; intros; set_solver.
+    }
+    unfold Nat_Syntax.theory, Definedness_Syntax.theory.
+    unfold theory_of_NamedAxioms. simpl.
+    unfold satisfies_theory. intros.
+    rewrite elem_of_union in H. destruct H as [H | H].
+    * (* This subgoal uses boiler-plate proof *)
+      rewrite elem_of_PropSet in H. destruct H. destruct x. subst.
+      cbn. unfold satisfies_model. intros.
+      unfold patt_defined. unfold p_x, ev_x. simp eval.
+      unfold sym_interp, app_ext. simpl.
+      eapply leibniz_equiv.
+      apply set_equiv. intros. split; intros; set_solver.
+    * rewrite elem_of_PropSet in H. destruct H.
+      destruct x;subst;cbn; unfold satisfies_model; intros.
+      (* zero is functional - same as for true/false *)
+      - eval_simpl; auto. apply indec_nat.
+        intros. mlSimpl. cbn. exists (natVal 0).
+        case_match.
+        2: { unfold Minterp_inhabitant in n.
+             unfold Sorts_Semantics.sym in n. clear H.
+             eval_simpl_in n. cbn in n.
+             unfold app_ext in n. rewrite elem_of_PropSet in n.
+             exfalso. apply n. do 2 eexists. split_and!.
+             1-2: by apply elem_of_singleton.
+             cbn. apply elem_of_PropSet. by eexists.
+           }
+        remember (fresh_evar (Zero =ml b0)) as x. clear Heqx.
+        unfold patt_equal, patt_total, patt_defined, mlFalse.
+        repeat eval_simpl. cbn.
+        rewrite decide_eq_same. unfold app_ext. eapply elem_of_compl.
+        (* Unshelve. 2: exact (@propset_leibniz_equiv _ BoolModel). *)
+        apply not_elem_of_PropSet. intro. destruct H0 as [le [re [Hle [Hre Ht] ] ] ].
+        apply elem_of_singleton_1 in Hle. subst.
+        apply (proj1 (elem_of_compl _ _)) in Hre; auto. apply Hre.
+        set_solver.
+      (* succ is functional - essentially same as for bnot *)
+      - eval_simpl; auto.
+        1: apply indec_nat.
+        apply propset_fa_intersection_full. intros. case_match. 2: by reflexivity.
+        pose proof sorted_exists_binder as BE. destruct BE as [BE].
+        erewrite (BE _ (evar_open _)); eauto.
+        mlSimpl. cbn.
+        eval_simpl; auto. 1: apply indec_nat.
+        remember (fresh_evar _) as X.
+        remember (fresh_evar (Succ $ patt_free_evar X =ml b0)) as Y.
+        unfold Minterp_inhabitant in *.
+        clear H. eval_simpl_in e.
+        unfold app_ext in *.
+        apply elem_of_PropSet in e.
+        destruct e as [le [re [Hle [Hre Hlere] ] ] ].
+        unfold Sorts_Semantics.sym in *.
+        simp eval in *. simpl in *.
+        unfold bool_sym_interp in *. apply elem_of_singleton in Hre, Hle.
+        subst le re.
+        assert (exists n, c = natVal n) by set_solver.
+        assert (X <> Y) as HXY. {
+          subst Y. clear.
+          unfold fresh_evar. pose proof (X_eq_evar_fresh_impl_X_notin_S X (free_evars (Succ $ patt_free_evar X =ml b0))).
+          set_solver.
+        }
+        clear HeqX HeqY.
+        destruct H; subst c.
+        intros. exists (natVal (S x)).
+        case_match.
+        ** clear H e. mlSimpl. cbn.
+           unfold Succ.
+           revert t.
+           apply propset_top_elem_of.
+           eapply (equal_iff_interpr_same NatModel HDef). (* explicit model needed *)
+           eval_simpl; auto. unfold app_ext. cbn.
+           repeat destruct decide; try congruence.
+           eapply set_eq. intros. rewrite elem_of_PropSet.
+           split.
+           -- intros. destruct H as [le [re [EQ1 [EQ2 EQ3] ] ] ].
+              unfold bool_sym_interp in *. apply elem_of_singleton in EQ1, EQ2.
+              subst.
+              unfold bool_app_interp in *.
+              assumption.
+           -- intros. do 2 eexists. split. 2: split.
+              1-2: by apply elem_of_singleton.
+              assumption.
+        ** unfold Minterp_inhabitant, Sorts_Semantics.sym in n.
+           simpl in n. clear H. simp eval in n. exfalso.
+           apply n. clear. exists (inhNat), (coreNatSym sNat); split; try split.
+           all: simpl; set_solver.
+      (* no confusion *)
+      - eval_simpl. apply indec_nat. 2: assumption.
+        apply propset_fa_intersection_full. intros. case_match. 2: reflexivity.
+        mlSimpl. cbn. remember (fresh_evar _) as x. clear Heqx.
+        eval_simpl. eapply complement_full_iff_empty.
+        apply (not_equal_iff_not_interpr_same_1 _ HDef).
+        unfold Zero, Succ. simp eval. cbn. unfold app_ext.
+        intro.
+        assert (exists n, c = natVal n). {
+          unfold Minterp_inhabitant, Sorts_Semantics.sym in e.
+          clear H.
+          simp eval in e. set_solver.
+        }
+        destruct H1. subst.
+        eapply set_eq with (x := natVal 0) in H0.
+        rewrite elem_of_singleton in H0.
+        specialize (proj1 H0 eq_refl). clear.
+        intro. apply elem_of_PropSet in H.
+        destruct H as [le [re [EQ1 [EQ2 EQ3] ] ] ].
+        rewrite decide_eq_same in EQ2. apply elem_of_singleton in EQ1, EQ2.
+        subst. simpl in EQ3. set_solver.
+      (* injectivity of succ *)
+      - eval_simpl. apply indec_nat. 2: assumption.
+        apply propset_fa_intersection_full. intros. case_match. 2: reflexivity.
+        clear H.
+        assert (exists n, c = natVal n) as [n ?]. {
+          unfold Minterp_inhabitant, Sorts_Semantics.sym in e.
+          eval_simpl_in e. set_solver.
+        }
+        clear e. subst. remember (fresh_evar _) as x. clear Heqx.
+        mlSortedSimpl. mlSimpl. cbn.
+        eval_simpl. 1: apply indec_nat. 2: assumption.
+        eapply propset_fa_intersection_full. intros. case_match. 2: reflexivity.
+        clear H.
+        assert (exists n, c = natVal n) as [m ?]. {
+          unfold Minterp_inhabitant, Sorts_Semantics.sym in e.
+          eval_simpl_in e. set_solver.
+        }
+        clear e. subst. remember (fresh_evar _) as y.
+        assert (x <> y). {
+          subst y. clear.
+          unfold fresh_evar. pose proof (X_eq_evar_fresh_impl_X_notin_S x (free_evars (Succ $ patt_free_evar x =ml Succ $ b0 ---> patt_free_evar x =ml b0))).
+          set_solver.
+        }
+        clear Heqy. mlSimpl. cbn. unfold Succ.
+        repeat eval_simpl.
+        unfold patt_equal, patt_total, patt_defined.
+        repeat eval_simpl.
+        repeat rewrite update_evar_val_same.
+        rewrite update_evar_val_neq. 2: auto.
+        rewrite update_evar_val_same.
+        (* These are manual steps *)
+        assert (forall n, app_ext (sym_interp NatModel (inj sSucc)) {[natVal n]} = {[natVal (S n)]}). {
+          intros. unfold app_ext.
+          apply set_eq. intros. rewrite elem_of_PropSet. split; intro.
+          + destruct H0 as [le [re [EQ1 [EQ2 EQ3] ] ] ].
+            cbn in *.
+            apply elem_of_singleton in EQ1, EQ2. subst.
+            by cbn in EQ3.
+          + do 2 eexists. cbn. split_and!. 1-2: by apply elem_of_singleton.
+            by cbn.
+        }
+        do 2 rewrite H0.
+        (* helper to rewrite: *)
+        assert (forall (S1 S2 : propset NatModel), S2 = ∅ -> app_ext S1 S2 = ∅) as E.
+        {
+          intros. subst. apply app_ext_bot_r.
+        }
+        destruct (decide (n = m)).
+        + subst.
+          rewrite 2!E.
+          (* TODO for some reason, set_solver won't work here *)
+          2: {
+            rewrite union_with_complement. clear.
+            erewrite (subseteq_intersection_1_L ⊤ ⊤). 2: set_solver.
+            erewrite difference_diag_L. reflexivity.
+          }
+          2: {
+            rewrite union_with_complement. clear.
+            erewrite (subseteq_intersection_1_L ⊤ ⊤). 2: set_solver.
+            erewrite difference_diag_L. reflexivity.
+          }
+          rewrite difference_empty_L, difference_diag_L, union_empty_l_L.
+          reflexivity.
+        + rewrite 2! definedness_app_ext_not_empty; try assumption.
+          all: set_solver.
+      (* inductive domain *)
+      - unfold patt_inhabitant_set, Sorts_Syntax.sym, Nat, Zero, Succ.
+        apply equal_iff_interpr_same. 1: assumption.
+        eval_simpl.
+        remember (fresh_svar _) as X. simpl. unfold app_ext. clear HeqX.
+        (* NOTE: reasoning about LeastFixpointOf is needed here *)
+        rewrite set_eq_subseteq.
+        split.
+        {
+          (* EQ3 is less than the LeastFixpoint *)
+          apply elem_of_subseteq.
+          intros. apply elem_of_PropSet in H as [le [re [EQ1 [EQ2 EQ3] ] ] ].
+          apply elem_of_singleton in EQ1, EQ2. subst. simpl in *.
+          mlSimpl. cbn.
+          unfold LeastFixpointOf, PrefixpointsOf.
+          simpl. unfold propset_Meet.
+          apply elem_of_PropSet. intros. destruct EQ3 as [n]. subst.
+          apply (proj1 (elem_of_PropSet _ _)) in H. simpl in H.
+          repeat eval_simpl_in H. simpl in H.
+          rewrite decide_eq_same in H. clear -H.
+          (* the key is in meta-induction here: *)
+          induction n.
+          * set_solver.
+          * unfold app_ext in H.
+            apply union_subseteq in H as [_ H].
+            pose proof proj1 (elem_of_subseteq _ _) H as HEQ.
+            apply HEQ.
+            do 2 eexists. split_and!. by apply elem_of_singleton.
+            exact IHn.
+            simpl. set_solver.
+        }
+        {
+          (* EQ3 is a Fixpoint *)
+          apply (LeastFixpoint_LesserThanPrefixpoint _ _ (PowersetLattice (@Domain _ NatModel))).
+          simpl in *. mlSimpl. cbn.
+          repeat eval_simpl. simpl. rewrite decide_eq_same. unfold app_ext.
+          apply elem_of_subseteq. intros.
+          apply elem_of_union in H as [|]. (* 0 or succ n? *)
+          - do 2 eexists. split_and!. 1-2: by apply elem_of_singleton.
+            simpl. set_solver.
+          - destruct H as [le [re [EQ1 [EQ2 EQ3] ] ] ].
+            destruct EQ2 as [le2 [re2 [EQ12 [EQ22 EQ32] ] ] ].
+            apply elem_of_singleton in EQ1, EQ12, EQ22. subst.
+            simpl in *.
+            destruct re. 1-2,4-5: set_solver.
+            do 2 eexists. split_and!. 1-2: by apply elem_of_singleton.
+            simpl. set_solver.
+        }
+      (* add is functional *)
+      - (* 1st sorted forall *)
+        eval_simpl. 1: apply indec_nat. 2: assumption.
+        apply propset_fa_intersection_full. intros.
+        case_match. 2: reflexivity.
+        pose proof sorted_forall_binder as BF. destruct BF as [BF].
+        pose proof sorted_exists_binder as BE. destruct BE as [BE].
+        erewrite (BF _ (evar_open _)); eauto.
+        erewrite (BE _ (evar_open _)); eauto.
+        mlSimpl. cbn.
+        remember (fresh_evar _) as x. clear Heqx.
+        (* 2nd sorted forall *)
+        eval_simpl. 1: apply indec_nat. 2: assumption.
+        apply propset_fa_intersection_full. intros.
+        case_match. 2: reflexivity.
+        erewrite (BE _ (evar_open _)); eauto.
+        mlSimpl. cbn. remember (fresh_evar _) as y.
+        assert (x <> y). {
+          subst y. clear.
+          pose proof (X_eq_evar_fresh_impl_X_notin_S x (free_evars (patt_exists_of_sort Nat (mlAddNat b1 (patt_free_evar x) =ml b0)))).
+          set_solver.
+        }
+        clear Heqy.
+        (* sorted exists *)
+        eval_simpl. 1: apply indec_nat. 2: assumption. intros.
+        (* For this, we need that c and c0 are nats *)
+        clear H H0.
+        assert (exists n, c = natVal n). {
+          clear -e.
+          unfold Minterp_inhabitant, Sorts_Semantics.sym in e.
+          eval_simpl_in e. set_solver.
+        }
+        assert (exists n, c0 = natVal n). {
+          clear -e0.
+          unfold Minterp_inhabitant, Sorts_Semantics.sym in e0.
+          eval_simpl_in e0. set_solver.
+        }
+        destruct H as [n ?], H0 as [m ?]. subst.
+        exists (natVal (m + n)). case_match.
+        + clear H e1.
+          remember (fresh_evar _) as z.
+          assert (z <> x /\ z <> y) as [X2 X3]. {
+            subst z. clear.
+            pose proof (X_eq_evar_fresh_impl_X_notin_S x (free_evars (mlAddNat (patt_free_evar y) (patt_free_evar x) =ml b0))).
+            pose proof (X_eq_evar_fresh_impl_X_notin_S y (free_evars (mlAddNat (patt_free_evar y) (patt_free_evar x) =ml b0))).
+            set_solver. (* this is slow for some reason *)
+          }
+          clear Heqz.
+          mlSimpl. cbn.
+          unfold mlAddNat, AddNat.
+          assert (forall S : propset nat_carrier, S = ⊤ -> forall t, t ∈ S) as HX. {
+            set_solver.
+          }
+          apply HX.
+          eapply (@equal_iff_interpr_same _ _ NatModel). assumption.
+          eval_simpl. unfold app_ext.
+          repeat rewrite update_evar_val_same.
+          rewrite update_evar_val_neq. 2: by auto.
+          rewrite update_evar_val_same.
+          rewrite update_evar_val_neq. 2: by auto.
+          rewrite update_evar_val_neq. 2: by auto.
+          rewrite update_evar_val_same.
+          apply set_eq; split.
+          ** intros. destruct H as [le [re [EQ1 [EQ2 EQ3] ] ] ].
+             destruct EQ1 as [le2 [re2 [EQ12 [EQ22 EQ32] ] ] ]. simpl in *.
+             apply elem_of_singleton in EQ22, EQ2, EQ12. subst.
+             simpl in *.
+             apply elem_of_singleton in EQ32. subst.
+             by simpl in EQ3.
+          ** intros. do 2 eexists. split_and!.
+             do 2 eexists. split_and!.
+             all: cbn.
+             all: try by apply elem_of_singleton.
+        + clear H. exfalso. apply n0. clear.
+          unfold Minterp_inhabitant, Sorts_Semantics.sym. eval_simpl.
+          do 2 eexists. split_and!. 1-2: cbn; by apply elem_of_singleton.
+          cbn. set_solver.
+      (* add rule 1 *)
+      - eval_simpl. 1: apply indec_nat. 2: assumption.
+        apply propset_fa_intersection_full. intros.
+        case_match. 2: reflexivity. clear H.
+        assert (exists n, c = natVal n). {
+          clear -e.
+          unfold Minterp_inhabitant, Sorts_Semantics.sym in e.
+          eval_simpl_in e. set_solver.
+        }
+        destruct H as [n ?]. subst.
+        clear e.
+        mlSimpl. cbn. remember (fresh_evar _) as x. clear Heqx.
+        unfold mlAddNat, AddNat, Zero.
+        apply (@equal_iff_interpr_same _ _ NatModel). assumption.
+        eval_simpl. simpl. rewrite decide_eq_same.
+        unfold app_ext.
+        apply set_eq; split.
+        ** intros. destruct H as [le [re [EQ1 [EQ2 EQ3] ] ] ].
+           destruct EQ1 as [le2 [re2 [EQ12 [EQ22 EQ32] ] ] ]. simpl in *.
+           apply elem_of_singleton in EQ22, EQ2, EQ12. subst.
+           simpl in *.
+           apply elem_of_singleton in EQ32. subst.
+           simpl in EQ3.
+           (* trick here: *)
+           by rewrite Nat.add_0_r in EQ3.
+        ** intros. do 2 eexists. split_and!.
+           do 2 eexists. split_and!.
+           all: cbn.
+           all: try by apply elem_of_singleton.
+           (* trick here: *)
+           simpl. by rewrite Nat.add_0_r.
+        (* the tricks above were needed, because Coq's nat operations are defined
+           with recursion on the left argument, not the right one -
+
+           Similar tricks are needed in the next subgoal *)
+      (* add rule 2 *)
+      - eval_simpl. 1: apply indec_nat. 2: assumption.
+        apply propset_fa_intersection_full. intros.
+        case_match. 2: reflexivity. clear H.
+        assert (exists n, c = natVal n). {
+          clear -e.
+          unfold Minterp_inhabitant, Sorts_Semantics.sym in e.
+          eval_simpl_in e. set_solver.
+        }
+        destruct H as [n ?]. subst.
+        clear e.
+        remember (fresh_evar _) as x. clear Heqx.
+        mlSortedSimpl. mlSimpl. cbn.
+        (* 2nd sorted forall *)
+        eval_simpl. 1: apply indec_nat. 2: assumption.
+        apply propset_fa_intersection_full. intros.
+        case_match. 2: reflexivity. clear H.
+        assert (exists n, c = natVal n). {
+          clear -e.
+          unfold Minterp_inhabitant, Sorts_Semantics.sym in e.
+          eval_simpl_in e. set_solver.
+        }
+        destruct H as [m ?]. subst.
+        clear e.
+        remember (fresh_evar _) as y.
+        assert (x <> y). {
+          subst y. clear.
+          pose proof (X_eq_evar_fresh_impl_X_notin_S x (free_evars (mlAddNat b0 (Succ $ patt_free_evar x) =ml Succ $ mlAddNat b0 (patt_free_evar x)))).
+          set_solver.
+        }
+        clear Heqy.
+        mlSimpl. cbn.
+        unfold mlAddNat, AddNat, Succ.
+        apply (@equal_iff_interpr_same _ _ NatModel). assumption.
+        eval_simpl. simpl.
+        repeat rewrite decide_eq_same.
+        case_match. congruence. unfold app_ext.
+        apply set_eq; split; intro X; destruct X as [le [re [EQ1 [EQ2 EQ3] ] ] ];
+          simpl in *.
+        ** destruct EQ1 as [le2 [re2 [EQ12 [EQ22 EQ32] ] ] ],
+                    EQ2 as [le3 [re3 [EQ13 [EQ23 EQ33] ] ] ].
+           apply elem_of_singleton in EQ23, EQ13, EQ22, EQ12. subst.
+           simpl in *.
+           apply elem_of_singleton in EQ32, EQ33. subst.
+           simpl in *.
+           do 2 eexists. split_and!.
+           2: do 2 eexists; split_and!.
+           2: do 2 eexists; split_and!.
+           all: try by apply elem_of_singleton.
+           simpl.
+           (* trick *)
+           by rewrite PeanoNat.Nat.add_succ_r in EQ3.
+        ** destruct EQ2 as [le2 [re2 [EQ12 [EQ22 EQ32] ] ] ].
+           destruct EQ12 as [le3 [re3 [EQ13 [EQ23 EQ33] ] ] ].
+           apply elem_of_singleton in EQ13, EQ23, EQ22, EQ1. subst.
+           simpl in *.
+           destruct re. 1-2,4-5: set_solver.
+           apply elem_of_singleton in EQ33, EQ3. subst.
+           simpl in *.
+           do 2 eexists. split_and!.
+           1-2: do 2 eexists; split_and!.
+           all: simpl; try by apply elem_of_singleton.
+           simpl.
+           (* trick - although, set_solver also used n1 = m + n -> S n1 = S (m + n)*)
+           rewrite PeanoNat.Nat.add_succ_r.
+           set_solver.
+  Qed.
 
 End Nat.
 

@@ -4648,6 +4648,26 @@ Proof.
   1-4: wf_auto2.
 Defined.
 
+Theorem forall_functional_subst_meta: ∀ {Σ : Signature} {syntax : Syntax} (Γ : Theory) (φ φ' : Pattern) ,
+  Definedness_Syntax.theory ⊆ Γ->
+  mu_free φ ->
+  well_formed φ' ->
+  well_formed_closed_ex_aux φ 1 ->
+  well_formed_closed_mu_aux φ 0 ->
+  Γ ⊢ is_functional φ' -> 
+  Γ ⊢ (all , φ) -> Γ ⊢i φ^[evar:0↦φ'] using AnyReasoning.
+Proof.
+  intros.
+  toMLGoal.
+  wf_auto2.
+  now apply mu_free_wfp.
+  mlApplyMeta forall_functional_subst.
+  2-5:assumption.
+  mlSplitAnd.
+  * mlExactMeta H5.
+  * unfold is_functional in H4. mlExactMeta H4.
+Defined.
+
 Close Scope ml_scope.
 Close Scope string_scope.
 Close Scope list_scope.
