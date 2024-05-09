@@ -4489,6 +4489,38 @@ Defined.
     mlReflexivity.
   Defined.
 
+Theorem  provable_iff_top:
+  ∀ {Σ : Signature} (Γ : Theory) (φ : Pattern)   (i : ProofInfo),
+    well_formed φ ->
+    Γ ⊢i φ using i ->
+    Γ ⊢i φ <--->  patt_top using i .
+Proof.
+  intros.
+  mlSplitAnd.
+  2:{ mlIntro. mlExactMeta H0. }
+  mlIntro.
+  pose proof top_holds Γ.
+  use i in H1.
+  mlExactMeta H1.
+Defined.
+  
+Theorem  patt_and_id_r:
+  ∀ {Σ : Signature} (Γ : Theory) (φ : Pattern),
+    well_formed φ ->
+    Γ ⊢i φ and patt_top <--->  φ using BasicReasoning .
+Proof.
+  intros.
+  mlSplitAnd.
+  * mlIntro.
+    mlDestructAnd "0".
+    mlAssumption.
+  * mlIntro.
+    mlSplitAnd.
+    1: mlAssumption.
+    mlIntro.
+    mlAssumption.
+Defined.
+  
 Close Scope string_scope.
 Close Scope list_scope.
 Close Scope ml_scope.
