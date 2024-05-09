@@ -201,185 +201,8 @@ Section sumsort.
     1:{ clear H. wf_auto2. }
     mlAssumption.
   Defined.
-  
-  Theorem t1:
-    ∀ (Γ : Theory) (φ φ' : Pattern) (i : ProofInfo) ,
-      Definedness_Syntax.theory ⊆ Γ -> 
-      well_formed φ ->
-      well_formed φ' ->
-      Γ ⊢i φ ⊆ml φ' and  φ' ⊆ml φ   <--->
-       φ =ml φ' using i.
-    Proof.
-      intros.
-      toMLGoal.
-      1:wf_auto2.
-      epose proof patt_total_and Γ (φ ---> φ') (φ'--->φ) H ltac:(wf_auto2) ltac:(wf_auto2) .
-      use i in H2.
-      apply pf_iff_equiv_sym_nowf in H2.
-      mlExactMeta H2.
-    Qed.
-    
-   Theorem t2:
-    ∀ (Γ : Theory) (φ  φ₁ φ₂ : Pattern) (i : ProofInfo) ,
-      Definedness_Syntax.theory ⊆ Γ -> 
-      well_formed φ ->
-      well_formed φ₁ ->
-      well_formed φ₂  ->
-      Γ ⊢i   ( φ₁ or φ₂ )  ⊆ml φ   <--->
-          φ₁ ⊆ml φ  and  φ₂  ⊆ml φ using i.
-    Proof.
-      intros.
-      toMLGoal.
-      1:wf_auto2.
-      epose proof patt_total_and Γ (φ₁ ---> φ) (φ₂---> φ) H ltac:(wf_auto2) ltac:(wf_auto2) .
-      use i in H3.
-      unfold "⊆ml".
-      mlRewrite <- H3 at 1.
-      mlSplitAnd.
-      * fromMLGoal.
-        apply floor_monotonic.
-        1:set_solver.
-        1-2:wf_auto2.
-        mlIntro "H".
-        mlSplitAnd.
-        + mlIntro.
-          mlApply "H".
-          mlLeft.
-          mlAssumption.
-        + mlIntro.
-          mlApply "H".
-          mlRight.
-          mlAssumption.
-      * fromMLGoal.
-        apply floor_monotonic.
-        1:set_solver.
-        1-2:wf_auto2.
-        mlIntro "H".
-        mlIntro.
-        mlDestructOr "0";
-        mlDestructAnd "H".
-        + mlApply "0".
-          mlAssumption.
-        + mlApply "1".
-          mlAssumption.
-    Qed.
-    
-   Theorem  provable_iff_top:
-    ∀ {Σ : Signature} (Γ : Theory) (φ : Pattern)   (i : ProofInfo),
-      well_formed φ ->
-      Γ ⊢i φ using i ->
-      Γ ⊢i φ <--->  patt_top using i .
-  Proof.
-    intros.
-    mlSplitAnd.
-    2:{ mlIntro. mlExactMeta H0. }
-    mlIntro.
-    pose proof top_holds Γ.
-    use i in H1.
-    mlExactMeta H1.
-  Defined.
-  
-  Theorem  patt_and_id_r:
-    ∀ {Σ : Signature} (Γ : Theory) (φ : Pattern),
-      well_formed φ ->
-      Γ ⊢i φ and patt_top <--->  φ using BasicReasoning .
-  Proof.
-    intros.
-    mlSplitAnd.
-    * mlIntro.
-      mlDestructAnd "0".
-      mlAssumption.
-    * mlIntro.
-      mlSplitAnd.
-      1: mlAssumption.
-      mlIntro.
-      mlAssumption.
-  Defined.
-  
-  Theorem proved_membership_functional:
-    ∀ {Σ : Signature} {syntax : Definedness_Syntax.Syntax} 
-    (Γ : Theory) (φ₁ φ₂ : Pattern),
-    Definedness_Syntax.theory ⊆ Γ ->
-    well_formed φ₁ ->
-    well_formed φ₂ ->
-    Γ ⊢i φ₁ using AnyReasoning ->
-    Γ ⊢i is_functional φ₂ --->  φ₂ ∈ml φ₁  using AnyReasoning .
-  Proof.
-    intros.
-    unfold patt_in.
-    apply provable_iff_top in H2.
-    2:wf_auto2.
-    mlRewrite H2 at 1.
-    pose proof patt_and_id_r Γ φ₂ ltac:(wf_auto2).
-    use AnyReasoning in H3.
-    mlRewrite H3 at 1.
-    unfold is_functional.
-    mlIntro.
-    remember (fresh_evar(φ₂)) as x.
-    mlDestructEx "0" as x.
-    mlSimpl. cbn.
-    rewrite evar_open_not_occur.
-    wf_auto2.
-    mlRewriteBy "0" at 1.
-    pose proof defined_evar Γ x H.
-    use AnyReasoning in H4.
-    mlExactMeta H4.
-  Defined.
 
-  Theorem unnamaed:
-    ∀ (Γ : Theory) (φ : Pattern),
-      Definedness_Syntax.theory ⊆ Γ -> 
-      well_formed φ ->
-      Γ ⊢i ⌊ φ ⌋ <--->  (φ =ml patt_top)     using AnyReasoning.
-  Proof.
-    intros.
-    mlSplitAnd.
-    * mlIntro.
-      unfold patt_equal.
-      mlRevert "0".
-      fromMLGoal.
-      apply floor_monotonic.
-      1:set_solver.
-      1-2:wf_auto2.
-      mlIntro "H".
-      mlSplitAnd.
-      + mlIntro.
-        pose proof top_holds Γ.
-        use AnyReasoning in H1.
-        mlExactMeta H1.
-      + mlIntro.
-        mlAssumption.
-    * unfold patt_equal.
-      fromMLGoal.
-      apply floor_monotonic.
-      1:set_solver.
-      1-2:wf_auto2.
-      mlIntro "H".
-      mlDestructAnd "H".
-      mlApply "1".
-      pose proof top_holds Γ.
-      use AnyReasoning in H1.
-      mlExactMeta H1.
-  Defined.
-
-  Theorem unnamaed_1:
-    ∀ (Γ : Theory) (x : evar),
-    Definedness_Syntax.theory ⊆ Γ -> 
-    Γ ⊢i patt_free_evar x  ∈ml patt_top     using AnyReasoning.
-  Proof.
-    intros.
-    pose proof proved_membership_functional Γ (patt_top) (patt_free_evar x) ltac:(set_solver) ltac:(wf_auto2) ltac:(wf_auto2).
-    mlApplyMeta H0.
-    * unfold  is_functional.
-      mlExists x.
-      mlSimpl. cbn.
-      mlReflexivity.
-    * pose proof top_holds Γ.
-      use AnyReasoning in H1.
-      mlExactMeta H1.
-  Defined. 
-  
-  Theorem t3:
+  Theorem subseteq_iff_membership:
     ∀ (Γ : Theory) (φ φ' : Pattern),
     Definedness_Syntax.theory ⊆ Γ -> 
     well_formed φ ->
@@ -424,14 +247,14 @@ Section sumsort.
     mlAssert ( "P" : (  ( (〚s1〛).mlInjectL( s1 , s2 )  or  (〚s2〛).mlInjectR( s1 , s2 ) )  ⊆ml  〚 mlSum (s1, s2) 〛 ) ) .
     1:{ clear H;wf_auto2. }
     1:{ 
-        epose proof t2 Γ (〚 mlSum (s1, s2) 〛)   ( (〚 s1 〛 ).mlInjectL( s1 , s2 ) ) ( (〚 s2 〛 ).mlInjectR( s1 , s2 )) 
+        epose proof subset_disj Γ (〚 mlSum (s1, s2) 〛)   ( (〚 s1 〛 ).mlInjectL( s1 , s2 ) ) ( (〚 s2 〛 ).mlInjectR( s1 , s2 )) 
          AnyReasoning ltac:(set_solver) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2).
          
         mlRewrite H0 at 1.
         mlSplitAnd.
         (* (〚 s1 〛 ).mlInjectL ⊆ml 〚 mlSum (s1, s2) 〛 *)
         * clear H0.
-          epose proof t3 Γ ((〚 s1 〛 ).mlInjectL( s1 , s2 )) ( 〚 mlSum (s1, s2) 〛) 
+          epose proof subseteq_iff_membership Γ ((〚 s1 〛 ).mlInjectL( s1 , s2 )) ( 〚 mlSum (s1, s2) 〛) 
             ltac:(set_solver) ltac:(wf_auto2) ltac:(wf_auto2).
             
           mlRewrite H0 at 1.
@@ -567,7 +390,7 @@ Section sumsort.
             
         (* (〚 s2 〛 ).mlInjectR ⊆ml 〚 mlSum (s1, s2) 〛 *) 
         * clear H0.
-          epose proof t3 Γ ((〚 s2 〛 ).mlInjectR( s1 , s2 )) (〚 mlSum (s1, s2) 〛) 
+          epose proof subseteq_iff_membership Γ ((〚 s2 〛 ).mlInjectR( s1 , s2 )) (〚 mlSum (s1, s2) 〛) 
            ltac:(set_solver) ltac:(wf_auto2) ltac:(wf_auto2).
           
           mlRewrite H0 at 1.
@@ -710,7 +533,7 @@ Section sumsort.
     mlConj  "coproduct" "P" as "f".
     
     
-    epose proof t1 Γ (〚 mlSum (s1, s2) 〛) ( (〚 s1 〛 ).mlInjectL( s1 , s2 ) or (〚 s2 〛 ).mlInjectR( s1 , s2 ) ) 
+    epose proof subset_iff_eq Γ (〚 mlSum (s1, s2) 〛) ( (〚 s1 〛 ).mlInjectL( s1 , s2 ) or (〚 s2 〛 ).mlInjectR( s1 , s2 ) ) 
      AnyReasoning _ _ _ .
     
     apply pf_iff_proj1 in H0.
