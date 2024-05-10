@@ -4,7 +4,7 @@ From MatchingLogic Require Import Logic.
 Import MatchingLogic.Logic.Notations.
 From MatchingLogic.Utils Require Import Lattice stdpp_ext extralibrary.
 
-From stdpp Require Import base propset.
+From stdpp Require Import base propset countable.
 
 Import extralibrary.
 
