@@ -1036,3 +1036,9 @@ Proof.
   intros Hunfold.
   constructor. rewrite elem_of_gset_to_coGset. apply Hunfold.
 Qed.
+
+Lemma propset_top_elem_of {A}:
+  forall S : propset A, S = ⊤ -> forall t, t ∈ S.
+Proof.
+  set_solver.
+Qed.
