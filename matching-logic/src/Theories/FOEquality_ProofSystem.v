@@ -515,6 +515,7 @@ Proof.
   mlRewrite H3 at 1.
   unfold is_functional.
   mlIntro.
+  remember (fresh_evar(φ₂)) as x.
   mlDestructEx "0" as x.
   mlSimpl. cbn.
   rewrite evar_open_not_occur.

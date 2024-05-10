@@ -11,7 +11,7 @@ From Coq.Unicode Require Import Utf8.
 From Coq.micromega Require Import Lia.
 
 From MatchingLogic Require Export Logic ProofMode.MLPM.
-From MatchingLogic.Theories Require Export Definedness_Syntax Definedness_ProofSystem Sorts_Syntax.
+From MatchingLogic.Theories Require Export Definedness_Syntax Definedness_ProofSystem Sorts_Syntax FOEquality_ProofSystem.
 From MatchingLogic.Utils Require Export stdpp_ext.
 
 Require Export MatchingLogic.wftactics.
@@ -102,6 +102,23 @@ Proof.
 
   mlApplyMeta BasicProofSystemLemmas.Ex_quan. simpl.
   mlExact "H1".
+Defined.
+
+Theorem top_includes_everything {Σ : Signature} {syntax : Sorts_Syntax.Syntax}:
+  ∀ (Γ : Theory) (x : evar),
+  Definedness_Syntax.theory ⊆ Γ -> 
+  Γ ⊢i patt_free_evar x  ∈ml patt_top using AnyReasoning.
+Proof.
+  intros.
+  pose proof proved_membership_functional Γ (patt_top) (patt_free_evar x) ltac:(set_solver) ltac:(wf_auto2) ltac:(wf_auto2).
+  mlApplyMeta H0.
+  * unfold  is_functional.
+    mlExists x.
+    mlSimpl. cbn.
+    mlReflexivity.
+  * pose proof top_holds Γ.
+    use AnyReasoning in H1.
+    mlExactMeta H1.
 Defined.
 
 Close Scope ml_scope.

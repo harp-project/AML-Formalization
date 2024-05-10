@@ -57,6 +57,9 @@ src/Theories/DeductionTheorem.v
 src/Theories/Nat_Syntax.v
 src/Experimental/Nat_ProofSystem.v
 
+src/Theories/SumSort_Syntax.v
+src/Experimental/SumSort_ProofSystem.v
+
 src/Theories/Sorts_Syntax.v
 src/Theories/Sorts_Semantics.v
 src/Theories/Sorts_ProofSystem.v
