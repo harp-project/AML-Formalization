@@ -1,17 +1,10 @@
- From Coq Require Import String Ensembles Setoid.
-Require Import Coq.Program.Equality.
-Require Import Coq.Logic.Classical_Prop.
-From Coq.Logic Require Import FunctionalExtensionality Eqdep_dec.
-From Coq.Classes Require Import Morphisms_Prop.
-From Coq.Unicode Require Import Utf8.
-From Coq.micromega Require Import Lia.
 From Equations Require Import Equations.
 
 From MatchingLogic Require Import Logic.
 Import MatchingLogic.Logic.Notations.
 From MatchingLogic.Utils Require Import Lattice stdpp_ext extralibrary.
 
-From stdpp Require Import base fin_sets sets propset proof_irrel option list finite.
+From stdpp Require Import base propset countable.
 
 Import extralibrary.
 
@@ -275,7 +268,6 @@ Section Bool.
      | coreBoolSym sFalse => {[ coreBoolSym sFalse ]}
      | _ => ∅
      end
-   (* TODO: revise these! Probably they are incorrect *)
    | partialAndThen (Some false) => {[ coreBoolSym sFalse ]}
    | partialAndThen (Some true) =>
      match m2 with
