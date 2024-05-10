@@ -909,9 +909,9 @@ Section with_model.
   End with_model.
 
 
-  #[export]
-  Hint Resolve M_predicate_exists_of_sort : core.
+#[export]
+Hint Resolve M_predicate_exists_of_sort : core.
 
-  #[export]
-  Hint Resolve M_predicate_forall_of_sort : core.
+#[export]
+Hint Resolve M_predicate_forall_of_sort : core.
 
