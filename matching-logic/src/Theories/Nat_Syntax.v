@@ -2,7 +2,7 @@ From Coq Require Import ssreflect ssrfun ssrbool.
 
 From Ltac2 Require Import Ltac2.
 
-From Coq Require Import String Ensembles Setoid.
+From Coq Require Import String Setoid.
 Require Import Coq.Program.Equality.
 Require Import Coq.Logic.Classical_Prop.
 From Coq.Logic Require Import FunctionalExtensionality Eqdep_dec.
@@ -43,7 +43,11 @@ Section nat_syntax.
 
   Context {Σ : Signature}.
 
-  Inductive Symbols := sNat | sZero | sSucc.
+  Inductive Symbols := sNat | sZero | sSucc | sAddNat.
+  
+  Global Instance Symbols_eqdec : EqDecision Symbols.
+  Proof. unfold EqDecision. intros x y. unfold Decision. destruct x; decide equality. (*solve_decision.*)    
+  Defined.
 
   Class Syntax :=
     { inj : Symbols -> symbols;
@@ -57,11 +61,43 @@ Section nat_syntax.
   Definition Nat := patt_sym (inj sNat).
   Definition Zero := patt_sym (inj sZero).
   Definition Succ := patt_sym (inj sSucc).
+  Definition AddNat := patt_sym (inj sAddNat).
+  
+  Definition mlAddNat (φ1 φ2 : Pattern) : Pattern :=
+    (AddNat $ φ1) $ φ2 .
 
 End nat_syntax.
 
-
 Section nat.
+  Context {Σ : Signature}.
+  Context {self : Syntax}.
+  Open Scope ml_scope.
+
+  Obligation Tactic := idtac.
+
+  #[global]
+  Program Instance Binary_sorted_add : Binary mlAddNat := {}.
+  Next Obligation.
+    intros. repeat rewrite pm_correctness. reflexivity.
+  Defined.
+  Next Obligation.
+    intros. wf_auto2.
+  Qed.
+  Next Obligation.
+    intros. wf_auto2.
+  Qed.
+  Next Obligation.
+    intros. wf_auto2.
+  Qed.
+
+End nat.
+
+Module Notations.
+  Notation "phi '+ml' psi" := (mlAddNat phi psi) (at level 40, left associativity) : ml_scope.
+End Notations.
+
+Section axioms.
+  Import Notations.
   Context
     {Σ : Signature}
     {syntax : Syntax}
@@ -72,8 +108,12 @@ Section nat.
   | AxFun2
   | AxNoConfusion1
   | AxNoConfusion2
-  | AxInductiveDomain.
-
+  | AxInductiveDomain
+  (* extend the axioms in spec for addition operator   *)
+  | AxFunAdd
+  | AxDefAddId
+  | AxDefAdd.
+  
   Definition axiom (name : AxiomName) : Pattern :=
     match name with
     | AxFun1 => ex Nat , Zero =ml b0
@@ -81,6 +121,15 @@ Section nat.
     | AxNoConfusion1 => all Nat, !(Zero =ml Succ $ b0)
     | AxNoConfusion2 => all Nat, all Nat, (Succ $ b1 =ml Succ $ b0 ---> b1 =ml b0)
     | AxInductiveDomain => 〚 Nat 〛 =ml mu , Zero or Succ $ B0
+    (* extend to support addition operator*)
+    | AxFunAdd =>
+      all Nat, all Nat, ex Nat, b1 +ml b2 =ml b0
+     
+    | AxDefAddId =>
+      all Nat, b0 +ml Zero =ml b0
+
+    | AxDefAdd =>
+      all Nat, all Nat, b0 +ml (Succ $ b1)  =ml Succ $ (b0 +ml b1)   
     end.
 
   Program Definition named_axioms : NamedAxioms :=
@@ -94,4 +143,8 @@ Section nat.
 
   Definition theory := Definedness_Syntax.theory ∪ theory_of_NamedAxioms named_axioms.
 
-End nat.
+End axioms.
+
+Close Scope ml_scope.
+Close Scope string_scope.
+Close Scope list_scope.

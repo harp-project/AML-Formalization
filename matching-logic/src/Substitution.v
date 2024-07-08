@@ -3116,6 +3116,24 @@ Lemma Private_no_negative_occurrence_svar_quantify ϕ level X:
       * cbn in *. now apply IHϕ.
     }
   Defined.
+  
+  Theorem mu_free_evar_quantify: 
+    ∀ {Σ : Signature} (p : Pattern) (x : evar) (n : db_index),
+      mu_free p = mu_free (p^{{evar:x↦n}}).
+  Proof.
+    induction p;
+    intros.
+    * simpl. case_match. all:reflexivity.
+    * simpl. reflexivity.
+    * simpl. reflexivity.
+    * simpl. reflexivity.
+    * simpl. reflexivity.
+    * simpl. rewrite <- IHp1. rewrite <- IHp2. reflexivity. 
+    * simpl. reflexivity.
+    * simpl. rewrite <- IHp1. rewrite <- IHp2. reflexivity.
+    * simpl.  rewrite <- IHp.  reflexivity.
+    * simpl. reflexivity.
+  Defined.
 
 End subst.
 

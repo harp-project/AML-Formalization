@@ -109,7 +109,6 @@ Section with_model.
         destruct Hfeip as [Hfeip1 _]. apply Hfeip1. clear Hfeip1.
         rewrite update_evar_val_same.
         clear H. unfold sym in H'.
-        unfold Ensembles.In.
 
         rewrite eval_app_simpl.
         unfold evar_open. rewrite nest_ex_same.
@@ -136,8 +135,7 @@ Section with_model.
         rewrite -(eval_fresh_evar_subterm _ Bigϕ) in H.
         apply Hsub. apply H. clear H.
 
-        unfold Minterp_inhabitant.
-        unfold Ensembles.In in Hfeip2. unfold sym.
+        unfold Minterp_inhabitant. unfold sym.
 
 
         rewrite eval_app_simpl in Hfeip2.
@@ -228,7 +226,6 @@ Section with_model.
         apply Hfeip2 in H1. clear Hfeip2.
         rewrite update_evar_val_same in H1.
         unfold sym.
-        unfold Ensembles.In in H1.
 
         rewrite eval_app_simpl in H1.
         unfold evar_open in H1.
@@ -250,7 +247,6 @@ Section with_model.
         apply eval_and_full. fold evar_open.
         split.
         + apply Hfeip1. clear Hfeip1.
-          unfold Ensembles.In.
           rewrite -> update_evar_val_same.
           unfold Minterp_inhabitant in H1. unfold sym in H1.
 
@@ -909,9 +905,9 @@ Section with_model.
   End with_model.
 
 
-  #[export]
-  Hint Resolve M_predicate_exists_of_sort : core.
+#[export]
+Hint Resolve M_predicate_exists_of_sort : core.
 
-  #[export]
-  Hint Resolve M_predicate_forall_of_sort : core.
+#[export]
+Hint Resolve M_predicate_forall_of_sort : core.
 

@@ -21,6 +21,22 @@ Inductive Symbols : Set :=
 Global Instance Symbols_eqdec : EqDecision Symbols.
 Proof. unfold EqDecision. intros x y. unfold Decision. destruct x; decide equality. (*solve_decision.*) Defined.
 
+#[global]
+Program Instance Symbols_finite : finite.Finite Symbols.
+Next Obligation.
+  exact [sBool; sTrue; sFalse; sAnd; sNeg; sAndThen].
+Defined.
+Next Obligation.
+  unfold Symbols_finite_obligation_1.
+  compute_done.
+Defined.
+Next Obligation.
+  destruct x; compute_done.
+Defined.
+
+Global Instance Symbols_countable : countable.Countable Symbols.
+Proof. apply finite.finite_countable. Defined.
+
 Import MatchingLogic.Logic.Notations.
 Import MatchingLogic.Theories.Definedness_Syntax.Notations.
 Import MatchingLogic.Theories.Sorts_Syntax.Notations.
@@ -151,7 +167,7 @@ Section axioms.
     | AxFunAnd =>
       all mlBool , all mlBool , ex mlBool , b1 &&ml b2 =ml b0
     | AxFunNeg => all mlBool , ex mlBool , !b b1 =ml b0
-    | AxNoConfusion => all mlBool, !(mlTrue =ml mlFalse)
+    | AxNoConfusion => !(mlTrue =ml mlFalse)
     | AxInductiveDomain => 〚 mlBool 〛 =ml (mlTrue or mlFalse)
     (* TODO: extend this with the DEFINITION axioms from "ML explained" *)
     | AxDefNegTrue =>  !b mlTrue =ml mlFalse

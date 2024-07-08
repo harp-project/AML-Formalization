@@ -4,7 +4,7 @@ From Ltac2 Require Import Ltac2.
 
 Require Import Equations.Prop.Equations.
 
-From Coq Require Import String Ensembles Setoid.
+From Coq Require Import String Setoid.
 Require Import Coq.Program.Equality.
 Require Import Coq.Logic.Classical_Prop.
 From Coq.Logic Require Import FunctionalExtensionality Eqdep_dec.
@@ -4646,6 +4646,124 @@ Proof.
   auto.
   Unshelve.
   1-4: wf_auto2.
+Defined.
+
+Theorem subset_iff_eq {Σ : Signature} {syntax : Syntax}:
+  ∀ (Γ : Theory) (φ φ' : Pattern) (i : ProofInfo) ,
+    Definedness_Syntax.theory ⊆ Γ -> 
+    well_formed φ ->
+    well_formed φ' ->
+    Γ ⊢i φ ⊆ml φ' and  φ' ⊆ml φ <--->
+         φ =ml φ' using i.
+Proof.
+  intros.
+  toMLGoal.
+  1:wf_auto2.
+  epose proof patt_total_and Γ (φ ---> φ') (φ'--->φ) H ltac:(wf_auto2) ltac:(wf_auto2) .
+  use i in H2.
+  apply pf_iff_equiv_sym_nowf in H2.
+  mlExactMeta H2.
+Defined.
+
+Theorem subset_disj {Σ : Signature} {syntax : Syntax}:
+  ∀ (Γ : Theory) (φ  φ₁ φ₂ : Pattern) (i : ProofInfo) ,
+    Definedness_Syntax.theory ⊆ Γ -> 
+    well_formed φ ->
+    well_formed φ₁ ->
+    well_formed φ₂  ->
+    Γ ⊢i ( φ₁ or φ₂ )  ⊆ml φ   <--->
+          φ₁ ⊆ml φ  and  φ₂  ⊆ml φ using i.
+Proof.
+  intros.
+  toMLGoal.
+  1:wf_auto2.
+  epose proof patt_total_and Γ (φ₁ ---> φ) (φ₂---> φ) H ltac:(wf_auto2) ltac:(wf_auto2) .
+  use i in H3.
+  unfold "⊆ml".
+  mlRewrite <- H3 at 1.
+  mlSplitAnd.
+  * fromMLGoal.
+    apply floor_monotonic.
+    1:set_solver.
+    1-2:wf_auto2.
+    mlIntro "H".
+    mlSplitAnd.
+    + mlIntro.
+      mlApply "H".
+      mlLeft.
+      mlAssumption.
+    + mlIntro.
+      mlApply "H".
+      mlRight.
+      mlAssumption.
+  * fromMLGoal.
+    apply floor_monotonic.
+    1:set_solver.
+    1-2:wf_auto2.
+    mlIntro "H".
+    mlIntro.
+    mlDestructOr "0";
+    mlDestructAnd "H".
+    + mlApply "0".
+      mlAssumption.
+    + mlApply "1".
+      mlAssumption.
+Defined.
+
+Theorem forall_functional_subst_meta: ∀ {Σ : Signature} {syntax : Syntax} (Γ : Theory) (φ φ' : Pattern) ,
+  Definedness_Syntax.theory ⊆ Γ->
+  mu_free φ ->
+  well_formed φ' ->
+  well_formed_closed_ex_aux φ 1 ->
+  well_formed_closed_mu_aux φ 0 ->
+  Γ ⊢ is_functional φ' -> 
+  Γ ⊢ (all , φ) -> Γ ⊢i φ^[evar:0↦φ'] using AnyReasoning.
+Proof.
+  intros.
+  toMLGoal.
+  wf_auto2.
+  now apply mu_free_wfp.
+  mlApplyMeta forall_functional_subst.
+  2-5:assumption.
+  mlSplitAnd.
+  * mlExactMeta H5.
+  * unfold is_functional in H4. mlExactMeta H4.
+Defined.
+
+Theorem total_iff_top {Σ : Signature} {syntax : Syntax}:
+  ∀ (Γ : Theory) (φ : Pattern),
+    Definedness_Syntax.theory ⊆ Γ -> 
+    well_formed φ ->
+    Γ ⊢i ⌊ φ ⌋ <--->  (φ =ml patt_top)     using AnyReasoning.
+Proof.
+  intros.
+  mlSplitAnd.
+  * mlIntro.
+    unfold patt_equal.
+    mlRevert "0".
+    fromMLGoal.
+    apply floor_monotonic.
+    1:set_solver.
+    1-2:wf_auto2.
+    mlIntro "H".
+    mlSplitAnd.
+    + mlIntro.
+      pose proof top_holds Γ.
+      use AnyReasoning in H1.
+      mlExactMeta H1.
+    + mlIntro.
+      mlAssumption.
+  * unfold patt_equal.
+    fromMLGoal.
+    apply floor_monotonic.
+    1:set_solver.
+    1-2:wf_auto2.
+    mlIntro "H".
+    mlDestructAnd "H".
+    mlApply "1".
+    pose proof top_holds Γ.
+    use AnyReasoning in H1.
+    mlExactMeta H1.
 Defined.
 
 Close Scope ml_scope.
