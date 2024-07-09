@@ -24,11 +24,22 @@ Set Default Proof Mode "Classic".
 Open Scope ml_scope.
 Open Scope list_scope.
 
+(*
+  Subtasks:
+  - eval/app_ext automatic simplification
+
+*)
+
 Section Definedness.
 
   Context {Σ : Signature} {M : Model}
           {string_vars : variables = StringMLVariables}.
 
+
+  (*
+    Option 2: use only a single-symbol signature for definedness, which will be
+    glued to other theories/specs
+  *)
   Instance definedness_Σ : Signature := {
     variables := StringMLVariables;
     ml_symbols := Build_MLSymbols (@symbols (@ml_symbols Σ) + Definedness_Syntax.Symbols) _ _;
@@ -74,8 +85,7 @@ Section Definedness.
     unfold sym_interp, app_ext. simpl.
     eapply leibniz_equiv. Unshelve. 2: exact (@propset_leibniz_equiv _ DefinednessModel).
     apply set_equiv. intros. split; intros.
-    * rewrite elem_of_PropSet in H. destruct H as [le [re [Hle [Hre Hx] ] ] ].
-      destruct Hle. destruct Hre. by simpl in Hx.
+    * clear. set_solver.
     * rewrite elem_of_PropSet. exists (inr ()), (evar_valuation ρ (evar_fresh [])).
       set_solver.
   Qed.
@@ -184,10 +194,14 @@ Section Bool.
     operations use Coq standard types, or use the generated core
     symbols?
    *)
+  Print Bool_Syntax.Symbols.
   Inductive bool_carrier :=
   | coreBoolSym (s : Bool_Syntax.Symbols)
+  (* TODO: the next two should not be part of the signature/symbols but they are
+     elements of the model's carrier *)
   | partialAnd (b : bool)
   | partialAndThen (b : option bool)
+  (**)
   | defBool
   | inhBool
   .
@@ -216,6 +230,8 @@ Section Bool.
   Global Instance bool_carrier_countable : countable.Countable bool_carrier.
   Proof. apply finite.finite_countable. Defined.
 
+  (* TODO: if partial ops are removed from the symbols, this has to be
+           adjusted *)
   Instance bools_Σ : Signature := {
     variables := StringMLVariables;
     ml_symbols := Build_MLSymbols bool_carrier _ _;
@@ -231,7 +247,7 @@ Section Bool.
     |};
   }.
 
-  Definition bool_sym_interp (m : symbols)
+  Definition bool_sym_interp (m : @symbols (@ml_symbols bools_Σ))
     : propset bool_carrier := {[ m ]}.
 
   Definition bool_app_interp (m1 m2 : bool_carrier)
@@ -285,6 +301,7 @@ Section Bool.
    | inhBool =>
      match m2 with
      | coreBoolSym sBool => {[ coreBoolSym sFalse; coreBoolSym sTrue ]}
+                            (* type value set *)
      | _ => ∅
      end
   end.
@@ -968,10 +985,13 @@ End Bool.
 
 Section Nat.
 
+  Print Nat_Syntax.Symbols.
   Inductive nat_carrier :=
   | coreNatSym (s : Nat_Syntax.Symbols)
+  (* TODO: these two should not be in the signature, only in the carrier *)
   | partialAdd (s : nat)
   | natVal (n : nat)
+  (**)
   | defNat
   | inhNat
   .
@@ -1522,3 +1542,113 @@ Section Nat.
 
 End Nat.
 
+
+
+(*
+
+  Q: What happens to the signatures when importing a theory into another?
+  How to handle diamond dependencies in the syntax? For example
+  definedness is in Nat and Bool signatures too, how should we handle it
+  in the glued signature?
+
+  1. Do nothing, just use union, and add theory-level axioms saying that the
+     different definedness symbols are equal/interchangable.
+  2. Only define signature specific symbols (e.g., 0, succ, +), and inject
+     definedness and others.
+  3. Use a binary relation which expresses which symbols are repeated. Then use
+     union to express the signature, but tag each symbol (of one of the signatures)
+     with a proof based on this relation that it is unique.
+
+ *)
+Require Import ModelExtension.
+
+Inductive extend_def_inh {A B : Set} : Set :=
+| inj_def
+| inj_inh
+| fromA (a : A)
+| fromB (b : B).
+
+Program Definition signature_fusion
+        (Σ1 Σ2 : Signature)
+        (* (def1 inh1 : @symbols (@ml_symbols Σ1))
+        (def2 inh2 : @symbols (@ml_symbols Σ2)) *)
+        (* (R : @symbols (@ml_symbols Σ1) -> @symbols (@ml_symbols Σ2) -> bool) *)
+          : Signature :=
+{|
+  variables := StringMLVariables;
+  ml_symbols := {|
+    symbols := @extend_def_inh (@symbols (@ml_symbols Σ1)) (@symbols (@ml_symbols Σ2))
+  |};
+|}
+.
+Next Obligation.
+  intros. solve_decision.
+Defined.
+Next Obligation.
+  intros. admit.
+Admitted. (* technical *)
+
+
+Section BoolNat.
+
+(* common carrier *)
+(*   Definition bool_nat_carrier : Set := bool_carrier + nat_carrier.
+
+  #[global]
+  Instance bool_nat_carrier_EqDec : EqDecision bool_nat_carrier.
+  Proof.
+    solve_decision.
+  Defined.
+
+  Global Instance bool_nat_carrier_countable : countable.Countable bool_nat_carrier.
+  Proof.
+    by apply sum_countable.
+  Defined.
+
+  Global Instance bool_nat_carrier_inhabited : Inhabited bool_nat_carrier.
+  Proof.
+    constructor. constructor. constructor. constructor.
+  Defined. *)
+
+  (* common signature *)
+
+  Instance nat_bool_Σ : Signature := signature_fusion nat_Σ bools_Σ.
+
+  (*
+    Here, we say that we use the new definedness
+  *)
+  Program Instance nat_bool_syntax_bool_part : @Bool_Syntax.Syntax nat_bool_Σ := {
+    inj := fromB ∘ coreBoolSym;
+    imported_sorts := {|
+      Sorts_Syntax.inj := fun x => inj_inh;
+      imported_definedness := {|
+        Definedness_Syntax.inj := fun x => inj_def;
+      |};
+    |};
+  }.
+
+  Program Instance nat_bool_syntax_nat_part : @Nat_Syntax.Syntax nat_bool_Σ := {
+    inj := fromA ∘ coreNatSym;
+    imported_sorts := {|
+      Sorts_Syntax.inj := fun x => inj_inh;
+      imported_definedness := {|
+        Definedness_Syntax.inj := fun x => inj_def;
+      |};
+    |};
+  }.
+
+  Check @patt_defined nat_bool_Σ _ patt_bott.
+  Check @patt_defined bools_Σ (@imported_definedness bools_Σ
+     (@imported_sorts bools_Σ bool_syntax)) patt_bott.
+  Check @patt_defined nat_Σ _ patt_bott.
+
+  (* Model extension's new_sym_interp does not define meaning to new symbols! *)
+  Fail Definition nat_bool_sym_interp (s : @symbols (@ml_symbols nat_bool_Σ))
+     : propset (Carrier NatModel bool_carrier) :=
+   new_sym_interp NatModel bool_carrier.
+
+  Definition nat_bool_app_interp := new_app_interp.
+
+  Print nat_bool_app_interp.
+
+End BoolNat.
