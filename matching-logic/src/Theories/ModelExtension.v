@@ -232,12 +232,13 @@ Section with_syntax.
 *)
     Section ext.
         Context
-            (M : Model)
+            (M : @Model Σ)
             (indec : forall (s : symbols),
               is_not_core_symbol s ->
               forall (m : Domain M) ρ,
               Decision (m ∈ Minterp_inhabitant (patt_sym s) ρ))
             (R : Type)
+            (new_sym_interp : @symbols (@ml_symbols Σ) -> propset (Domain M + R)%type)
             (fRM : R -> (Domain M) -> propset (Domain M + R)%type)
             (fMR : (Domain M) -> R -> propset (Domain M + R)%type)
             (fRR : R -> R -> propset (Domain M + R)%type)
@@ -282,17 +283,17 @@ Section with_syntax.
             end
         end.
 
-    Definition new_sym_interp (s : symbols) : propset Carrier :=
+    Definition new_sym_interp' (s : symbols) : propset Carrier :=
         match (decide (s = Definedness_Syntax.inj definedness)) with
         | left _ => {[ cdef ]}
         | right _ =>
             match (decide (s = Sorts_Syntax.inj inhabitant)) with
             | left _ => {[ cinh ]}
-            | right _ => cel <$> (@fmap propset _ _ _ inl (@sym_interp _ M s))
+            | right _ => cel <$> new_sym_interp s (* cel <$> (@fmap propset _ _ _ inl (@sym_interp _ M s)) *)
             end
         end.
 
-    (* TODO: why was this poliorphic? *)
+    (* TODO: why was this polimorphic? *)
     Definition Mext : Model :=
         {|
             Domain := Carrier ;
