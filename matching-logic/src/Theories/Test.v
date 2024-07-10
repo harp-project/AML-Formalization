@@ -154,9 +154,16 @@ Section natbool.
      * - Are there any other cases where this is needed or is this
      * special to definedness? Should definedness be treated as
      * special and we don't need this change elsewhere?
+     * ∙ PB: Yes, potentially generic datatypes would raise this issue too.
+       For example, lists, maps, sets. Depending on the element's sort
+       you might need to extend the behaviour of list/set/etc. symbols.
      * - If we override the models original app_interp, do we not
      * lose any reasoning we did about the original one? Is there
      * a way to retain the proofs and allow special behaviour?
+     * ∙ PB: This is a main question. I think, you can only retain the original
+         behaviour, if you override (or rather, extend) the behaviour in a
+         correct way. For example, in case of definedness, you extend its
+         interpretation in M₂ to full.
      *)
   Abort.
 End natbool.
