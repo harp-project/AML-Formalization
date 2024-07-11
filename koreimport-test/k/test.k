@@ -16,11 +16,11 @@ module TEST
   rule tasteOf(Blueberry()) => Good()
   rule tasteOf(Blueberry()) => Bad()
 
-  syntax MyBool ::= "myNotBool" KItem         [function, total]
+  syntax MyBool ::= "myNotBool" KItem "alma" KItem "cica"       [function, total]
                   | "myTrue"
                   | "myFalse"
 
-  rule myNotBool myTrue => myFalse
-  rule myNotBool _ => myTrue
+  rule myNotBool myTrue alma myTrue cica => myFalse
+  rule myNotBool _ alma _ cica => myTrue
 
 endmodule

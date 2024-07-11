@@ -32,6 +32,36 @@ Require Import
 Import MatchingLogic.Logic.Notations.
 Import MatchingLogic.Semantics.Notations.
 
+
+
+Section glue_models.
+
+  Context (Σ1 : Signature)
+          (Σ2 : Signature)
+          {HVars : @variables Σ1 = @variables Σ2}.
+
+  Definition glued_sig_of : Signature :=
+  {|
+    variables := @variables Σ1;
+    ml_symbols := {|
+      symbols := @symbols (@ml_symbols Σ1) + @symbols (@ml_symbols Σ2)
+    |};
+  |}.
+
+  
+
+End glue_models.
+
+
+
+
+
+
+
+
+
+
+
 Section with_syntax.
     Context
         {Σ : Signature}
@@ -2694,3 +2724,5 @@ Section with_syntax.
 
     End ext.
 End with_syntax.
+
+
