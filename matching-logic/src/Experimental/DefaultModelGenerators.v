@@ -95,6 +95,8 @@ End Definedness.
 
 Section Sorts.
   Context (Σ : Signature) (M : Model)
+          (* It is not the job of this theory to define the meaning of the 
+             inhabitant symbol *)
           (sort_interp : Domain M -> propset M).
 
   Instance sorts_Σ : Signature := {
@@ -116,8 +118,8 @@ Section Sorts.
   Definition sorts_app_interp (m1 m2 : sorts_carrier)
     : propset sorts_carrier :=
   match m1, m2 with
-  | inr (), inr ()       => ∅ (* inh $ inh *)
-  | inr (), inl x => inl <$> (sort_interp x)
+  | inr (), inr () => ∅ (* inh $ inh *)
+  | inr (), inl x => inl <$> sort_interp x (* This part will be updated by each theory *)
   | inl x, inr () => ∅
   | inl x, inl y => inl <$> (app_interp _ x y)
   end.
@@ -233,7 +235,7 @@ Section Bool.
     |};
   }.
 
-  Global Instance bool_carrier_inhabited : Inhabited bool_pre_carrier.
+  Global Instance bool_pre_carrier_inhabited : Inhabited bool_pre_carrier.
   Proof.
     constructor. exact (boolVal true).
   Defined.
@@ -337,7 +339,7 @@ Section Bool.
     end.
 
   Definition BoolModel : @Model (@definedness_Σ (sorts_Σ bools_Σ)) :=
-    SortsModel bools_Σ BoolPreModel bool_sort_interp.
+    @SortsModel bools_Σ BoolPreModel bool_sort_interp.
 
   Program Instance bool_syntax :
     @Bool_Syntax.Syntax (@definedness_Σ (sorts_Σ bools_Σ))
@@ -1005,123 +1007,137 @@ Section Bool.
     all: apply (@propset_leibniz_equiv _ BoolModel). *)
   Admitted.
 
-End Bool. 
+End Bool.
 
 Section Nat.
-
-  Print Nat_Syntax.Symbols.
-  Inductive nat_carrier :=
+  Context (Σ : Signature) (M : Model)
+          (sort_interp : Domain M -> propset M). (* Sort meaning in M
+            TODO: this needs to be extended if KItem is used
+           *)
+  Inductive nat_pre_carrier :=
   | coreNatSym (s : Nat_Syntax.Symbols)
-  (* TODO: these two should not be in the signature, only in the carrier *)
   | partialAdd (s : nat)
   | natVal (n : nat)
-  (**)
-  | defNat
-  | inhNat
   .
 
-  #[global]
-  Instance nat_carrier_EqDec : EqDecision nat_carrier.
+  Global Instance nat_pre_carrier_EqDec : EqDecision nat_pre_carrier.
   Proof.
     solve_decision.
   Defined.
 
-  Global Instance nat_carrier_countable : countable.Countable nat_carrier.
+  Global Instance nat_pre_carrier_countable : countable.Countable nat_pre_carrier.
   Proof.
-    set (enc := fun (n : nat_carrier) =>
+    set (enc := fun (n : nat_pre_carrier) =>
       match n with
       | coreNatSym s =>
         match s with
-         | sNat => inl (inl ())
-         | sZero => inl (inr (inl ()))
-         | sSucc => inl (inr (inr (inl ())))
-         | sAddNat => inl (inr (inr (inr (inl ()))))
+         | sNat => inl ()
+         | sZero => inr (inl ())
+         | sSucc => inr (inr (inl ()))
+         | sAddNat => inr (inr (inr (inl ())))
         end
-      | natVal n => inr (inl n)
-      | partialAdd n => inr (inr n)
-      | defNat => inl (inr (inr (inr (inr (inl ())))))
-      | inhNat => inl (inr (inr (inr (inr (inr ())))))
+      | natVal n => inr (inr (inr (inr (inl n))))
+      | partialAdd n => inr (inr (inr (inr (inr n))))
       end).
     set (dec := fun t =>
       match t with
-      | inl (inr (inr (inr (inr (inr ()))))) => inhNat
-      | inl (inr (inr (inr (inr (inl ()))))) => defNat
-      | inl (inr (inr (inr (inl ())))) => coreNatSym sAddNat
-      | inl (inr (inr (inl ()))) => coreNatSym sSucc
-      | inl (inr (inl ())) => coreNatSym sZero
-      | inl (inl ()) => coreNatSym sNat
-      | inr (inl n) => natVal n
-      | inr (inr n) => partialAdd n
+      | inr (inr (inr (inl ()))) => coreNatSym sAddNat
+      | inr (inr (inl ())) => coreNatSym sSucc
+      | inr (inl ()) => coreNatSym sZero
+      | inl () => coreNatSym sNat
+      | inr (inr (inr (inr (inl n)))) => natVal n
+      | inr (inr (inr (inr (inr n)))) => partialAdd n
       end
     ).
     apply inj_countable' with (f := enc) (g := dec).
     by destruct x; try destruct s.
   Defined.
 
-  Instance nat_Σ : Signature := {
-    variables := StringMLVariables;
-    ml_symbols := Build_MLSymbols nat_carrier _ _;
-  }.
+  Global Program Instance NatSymbols_Finite : finite.Finite Nat_Syntax.Symbols.
+  Next Obligation.
+    exact [sNat; sAddNat; sSucc; sZero].
+  Defined.
+  Next Obligation.
+    compute_done.
+  Defined.
+  Next Obligation.
+    destruct x; try destruct s; try destruct b; try compute_done.
+  Defined.
 
-  Program Instance nat_syntax : @Nat_Syntax.Syntax nat_Σ := {
-    inj := coreNatSym;
-    imported_sorts := {|
-      Sorts_Syntax.inj := fun x => inhNat;
-      imported_definedness := {|
-        Definedness_Syntax.inj := fun x => defNat;
-      |};
+  Instance nat_Σ : Signature := {
+    variables := variables;
+    ml_symbols := {|
+      symbols := symbols + Nat_Syntax.Symbols
     |};
   }.
 
-  Definition nat_sym_interp (m : symbols)
+  Global Instance nat_pre_carrier_Inhabited : Inhabited nat_pre_carrier.
+  Proof.
+    constructor. exact (natVal 0).
+  Defined.
+
+  Definition nat_carrier : Type := Domain M + nat_pre_carrier.
+
+  Definition nat_sym_interp (m : @symbols (@ml_symbols nat_Σ))
     : propset nat_carrier :=
   match m with
-  | coreNatSym sZero => {[ natVal 0 ]}
-  | x => {[ x ]}
+  | inr sZero => {[ inr (natVal 0) ]}
+  | inr x => {[ inr (coreNatSym x) ]}
+  | inl x => inl <$> sym_interp _ x
   end.
 
   Definition nat_app_interp (m1 m2 : nat_carrier)
     : propset nat_carrier :=
   match m1 with
-   | coreNatSym sSucc =>
+   | inr (coreNatSym sSucc) =>
      match m2 with
-     | natVal n => {[ natVal (S n) ]}
+     | inr (natVal n) => {[ inr (natVal (S n)) ]}
      | _ => ∅
      end
-   | coreNatSym sAddNat =>
+   | inr (coreNatSym sAddNat) =>
      match m2 with
-     | natVal n => {[ partialAdd n ]}
+     | inr (natVal n) => {[ inr (partialAdd n) ]}
      | _ => ∅
      end
-   | coreNatSym _ => ∅
-   | partialAdd n =>
+   | inr (coreNatSym _) => ∅
+   | inr (partialAdd n) =>
      match m2 with
-     | natVal m => {[ natVal (n + m) ]}
+     | inr (natVal m) => {[ inr (natVal (n + m)) ]}
      | _ => ∅
      end
-   (**)
-   | natVal _ => ∅
-   | defNat => ⊤
-   | inhNat =>
+   | inr (natVal _) => ∅
+   | inl m1 =>
      match m2 with
-     | coreNatSym sNat => {[ m | exists n, m = natVal n ]}
-     | _ => ∅
+     | inl m2 => inl <$> app_interp M m1 m2
+     | inr m2 => ∅
      end
   end.
 
-  Global Instance nat_carrier_inhabited : Inhabited nat_carrier.
-  Proof.
-    constructor. exact defNat.
-  Defined.
-
-  Program Definition NatModel : Model := {|
+  Program Definition NatPreModel : Model := {|
     Domain := nat_carrier;
     app_interp := nat_app_interp;
     sym_interp := nat_sym_interp;
   |}.
 
+  Definition nat_sort_interp (s : nat_carrier) : propset nat_carrier :=
+    match s with
+    | inr (coreNatSym sNat) => inr <$> {[ m | exists n, m = natVal n ]}
+    | inr _ => ∅
+    | inl s => inl <$> sort_interp s
+    end.
+
+  Definition NatModel : @Model (@definedness_Σ (sorts_Σ nat_Σ)) :=
+    SortsModel nat_Σ NatPreModel nat_sort_interp.
+
+  Instance nat_syntax :
+    @Nat_Syntax.Syntax (@definedness_Σ (sorts_Σ nat_Σ))
+  := {
+    inj := inl ∘ inl ∘ inr;
+    imported_sorts := sorts_syntax _;
+  }.
+
   Theorem indec_nat :
-    ∀ ρ s (m : NatModel),
+    ∀ ρ (s : symbols) (m : NatModel),
       Decision (m ∈ Minterp_inhabitant (patt_sym s) ρ).
   Proof.
     intros.
@@ -1131,7 +1147,7 @@ Section Nat.
     simp eval. simpl.
     unfold bool_sym_interp.
     destruct s; unfold app_ext.
-    1: destruct s.
+    1: destruct s. (* 
     2-8: right; intro; destruct H as [le [re [Hle [Hre Ht] ] ] ];
          try apply elem_of_singleton_1 in Hle, Hre; subst;
          cbn in Ht; set_solver.
@@ -1146,8 +1162,8 @@ Section Nat.
     destruct s0; try set_solver.
     destruct s0; try set_solver.
     left. do 2 eexists. split_and!. 1-2: cbn; by apply elem_of_singleton.
-    simpl. set_solver.
-  Defined.
+    simpl. set_solver. *)
+  Admitted.
 
   Hint Resolve propset_leibniz_equiv : core.
 
@@ -1181,14 +1197,14 @@ Section Nat.
       destruct x;subst;cbn; unfold satisfies_model; intros.
       (* zero is functional - same as for true/false *)
       - eval_simpl; auto. apply indec_nat.
-        intros. mlSimpl. cbn. exists (natVal 0).
+        intros. mlSimpl. cbn. exists (inl (inl (inr (natVal 0)))).
         case_match.
         2: { unfold Minterp_inhabitant in n.
              unfold Sorts_Semantics.sym in n. clear H.
              eval_simpl_in n. cbn in n.
              unfold app_ext in n. rewrite elem_of_PropSet in n.
              exfalso. apply n. do 2 eexists. split_and!.
-             1-2: by apply elem_of_singleton.
+(*              1-2: by apply elem_of_singleton.
              cbn. apply elem_of_PropSet. by eexists.
            }
         remember (fresh_evar (Zero =ml b0)) as x. clear Heqx.
@@ -1563,9 +1579,166 @@ Section Nat.
            rewrite PeanoNat.Nat.add_succ_r.
            set_solver.
   Qed.
-
+ *)
+  Admitted.
 End Nat.
 
+Section NatBool.
+  (* The issue here is that this model is a generator and not a concrete model,
+     we still have to instantiate it with our concrete model, and prove the
+     hypotheses.
+
+     Q: Is there a way to generalize this kind of glueing/extension?
+   *)
+  Context (Σ : Signature) (M : Model)
+    (sort_interp : Domain M -> propset (Domain M)).
+
+  Definition NatBoolPreModel :=
+    BoolModel _ (NatModel Σ M sort_interp)
+      (nat_sort_interp (@definedness_Σ (sorts_Σ (nat_Σ Σ))) _ sort_interp).
+
+  Inductive nat_bool_symbols : Type :=
+  | sLt.
+
+  (** TODO: solve_decision does not work here for some reason *)
+  Global Instance nat_bool_symbols_EqDec : EqDecision nat_bool_symbols.
+  Proof.
+    unfold EqDecision, Decision. intros.
+    destruct x, y. by left.
+  Defined.
+
+  Global Program Instance nat_bool_symbols_Finite : finite.Finite nat_bool_symbols.
+  Next Obligation.
+    exact [sLt].
+  Defined.
+  Next Obligation.
+    compute_done.
+  Defined.
+  Next Obligation.
+    destruct x; try destruct s; try destruct b; try compute_done.
+  Defined.
+
+  Instance nat_bool_Σ : Signature := {
+    variables := variables;
+    ml_symbols := {|
+      symbols := symbols + nat_bool_symbols
+    |};
+  }.
+
+  Inductive nat_bool_pre_carrier :=
+  | coreNatBoolSym (s : nat_bool_symbols)
+  | partialLt (n : nat).
+
+  Global Instance nat_bool_pre_carrier_Inhabited : Inhabited nat_bool_pre_carrier.
+  Proof.
+    constructor. exact (partialLt 0).
+  Defined.
+
+  Definition nat_bool_carrier : Type := Domain M + nat_bool_pre_carrier.
+
+  Definition nat_bool_sym_interp (m : @symbols (@ml_symbols nat_bool_Σ))
+    : propset nat_bool_carrier :=
+  match m with
+  | inr x => {[ inr (coreNatBoolSym x) ]}
+  | inl x => inl <$> sym_interp _ x
+  end.
+
+  Definition nat_bool_app_interp (m1 m2 : nat_bool_carrier)
+    : propset nat_bool_carrier :=
+  match m1 with
+   | inr (coreNatBoolSym sLt) =>
+     if decide (m2 = @inj Σ nat_syntax )
+     then ∅
+     else ∅
+   | inr (partialLt n) => ∅
+   | inl m1 =>
+     match m2 with
+     | inl m2 => inl <$> app_interp M m1 m2
+     | inr m2 => ∅
+     end
+  end.
+
+End NatBool.
+
+
+
+
+
+
+Section NatBool.
+  (* The issue here is that this model is a generator and not a concrete model,
+     we still have to instantiate it with our concrete model, and prove the
+     hypotheses.
+
+     Q: Is there a way to generalize this kind of glueing/extension?
+   *)
+
+  Context (Σ : Signature) (M : Model).
+  Hypotheses (nat_syntax : Nat_Syntax.Syntax)
+             (bool_syntax : Bool_Syntax.Syntax).
+
+  Inductive nat_bool_symbols : Type :=
+  | sLt.
+
+  (** TODO: solve_decision does not work here for some reason *)
+  Global Instance nat_bool_symbols_EqDec : EqDecision nat_bool_symbols.
+  Proof.
+    unfold EqDecision, Decision. intros.
+    destruct x, y. by left.
+  Defined.
+
+  Global Program Instance nat_bool_symbols_Finite : finite.Finite nat_bool_symbols.
+  Next Obligation.
+    exact [sLt].
+  Defined.
+  Next Obligation.
+    compute_done.
+  Defined.
+  Next Obligation.
+    destruct x; try destruct s; try destruct b; try compute_done.
+  Defined.
+
+  Instance nat_bool_Σ : Signature := {
+    variables := variables;
+    ml_symbols := {|
+      symbols := symbols + nat_bool_symbols
+    |};
+  }.
+
+  Inductive nat_bool_pre_carrier :=
+  | coreNatBoolSym (s : nat_bool_symbols)
+  | partialLt (n : nat).
+
+  Global Instance nat_bool_pre_carrier_Inhabited : Inhabited nat_bool_pre_carrier.
+  Proof.
+    constructor. exact (partialLt 0).
+  Defined.
+
+  Definition nat_bool_carrier : Type := Domain M + nat_bool_pre_carrier.
+
+  Definition nat_bool_sym_interp (m : @symbols (@ml_symbols nat_bool_Σ))
+    : propset nat_bool_carrier :=
+  match m with
+  | inr x => {[ inr (coreNatBoolSym x) ]}
+  | inl x => inl <$> sym_interp _ x
+  end.
+
+  Definition nat_bool_app_interp (m1 m2 : nat_bool_carrier)
+    : propset nat_bool_carrier :=
+  match m1 with
+   | inr (coreNatBoolSym sLt) =>
+     if decide (m2 = @inj Σ nat_syntax )
+     then ∅
+     else ∅
+   | inr (partialLt n) => ∅
+   | inl m1 =>
+     match m2 with
+     | inl m2 => inl <$> app_interp M m1 m2
+     | inr m2 => ∅
+     end
+  end.
+
+End NatBool.
 
 
 (*

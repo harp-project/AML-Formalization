@@ -2299,7 +2299,7 @@ Tactic Notation "mlRewrite" constr(Hiff) "at" constr(atn) :=
    ff Hiff atn);
    fold AnyReasoning.
 
-Lemma pf_iff_equiv_sym_nowf {Σ : Signature} Γ A B i :
+Lemma pf_iff_equiv_sym_meta {Σ : Signature} Γ A B i :
   Γ ⊢i (A <---> B) using i ->
   Γ ⊢i (B <---> A) using i.
 Proof.
@@ -2314,7 +2314,7 @@ Tactic Notation "mlRewrite" "->" constr(Hiff) "at" constr(atn) :=
   mlRewrite Hiff at atn.
 
 Tactic Notation "mlRewrite" "<-" constr(Hiff) "at" constr(atn) :=
-  mlRewrite (@pf_iff_equiv_sym_nowf _ _ _ _ _ Hiff) at atn.
+  mlRewrite (@pf_iff_equiv_sym_meta _ _ _ _ _ Hiff) at atn.
 
 Local Example ex_prf_rewrite_equiv_1 {Σ : Signature} Γ a a':
   well_formed a ->

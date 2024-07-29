@@ -1802,42 +1802,49 @@ Defined.
       mlApplyMeta H0. mlExact "0".
   Defined.
 
-  (* TODO: proof infos *)
-  Lemma patt_equal_sym Γ φ1 φ2:
+  Lemma ceil_monotonic Γ φ₁ φ₂ i :
+    theory ⊆ Γ ->
+    well_formed φ₁ ->
+    well_formed φ₂ ->
+    Γ ⊢i φ₁ ---> φ₂ using i ->
+    Γ ⊢i ⌈ φ₁ ⌉ ---> ⌈ φ₂ ⌉ using i.
+  Proof.
+    intros HΓ wfφ₁ wfφ₂ H.
+    unshelve (eapply Framing_right).
+    { wf_auto2. }
+    { try_solve_pile. }
+    exact H.
+  Defined.
+
+  Lemma floor_monotonic  Γ φ₁ φ₂ i :
+    theory ⊆ Γ ->
+    well_formed φ₁ ->
+    well_formed φ₂ ->
+    Γ ⊢i φ₁ ---> φ₂ using i ->
+    Γ ⊢i ⌊ φ₁ ⌋ ---> ⌊ φ₂ ⌋ using i.
+  Proof.
+    intros HΓ wfφ₁ wfφ₂ H.
+    unfold patt_total.
+    apply BasicProofSystemLemmas.modus_tollens.
+    apply ceil_monotonic.
+    { assumption. }
+    { wf_auto2. }
+    { wf_auto2. }
+    apply BasicProofSystemLemmas.modus_tollens.
+    exact H.
+  Defined.
+
+  Lemma patt_equal_sym Γ φ1 φ2 i:
     theory ⊆ Γ ->
     well_formed φ1 -> well_formed φ2 ->
+    ProofInfoLe BasicReasoning i ->
     Γ ⊢i φ1 =ml φ2 ---> φ2 =ml φ1
-    using AnyReasoning.
+    using i.
   Proof.
-    intros HΓ WF1 WF2.
-    unshelve (gapply deduction_theorem_noKT).
-    4,5: abstract(wf_auto2).
-    4: exact HΓ.
-    3: {
-      remember_constraint as i'.
-      remember (Γ ∪ {[ (φ1 <---> φ2) ]}) as Γ'.
-      assert (Γ' ⊢i (φ1 <---> φ2) using i'). {
-        subst i'. useBasicReasoning.
-        apply BasicProofSystemLemmas.hypothesis. apply well_formed_iff; auto.
-        rewrite HeqΓ'. apply elem_of_union_r. constructor.
-      }
-      apply pf_iff_equiv_sym in H; auto.
-      apply patt_iff_implies_equal; auto.
-      subst i'. apply pile_refl.
-    }
-    {
-      apply pile_any.
-    }
-    {
-      simpl. set_solver.
-    }
-    {
-      simpl. set_solver.
-    }
-    {
-      simpl. reflexivity.
-    }
-  Defined.
+    intros.
+    apply floor_monotonic; auto.
+    mlIntro. mlDestructAnd "0". mlSplitAnd; mlAssumption.
+  Qed.
 
   Lemma evar_quantify_equal_simpl : forall φ1 φ2 x n,
       evar_quantify x n (φ1 =ml φ2) = (evar_quantify x n φ1) =ml (evar_quantify x n φ2).
@@ -1845,18 +1852,6 @@ Defined.
 
   Definition is_functional φ : Pattern :=
     (ex, φ =ml b0).
-
-  Lemma patt_equal_comm φ φ' Γ:
-    theory ⊆ Γ ->
-    well_formed φ ->
-    well_formed φ' ->
-    Γ ⊢ (φ =ml φ') <---> (φ' =ml φ).
-  Proof.
-    intros HΓ wfφ wfφ'.
-    pose proof (SYM1 := @patt_equal_sym Γ φ' φ HΓ wfφ' wfφ).
-    pose proof (SYM2 := @patt_equal_sym Γ φ φ' HΓ wfφ wfφ').
-    apply pf_iff_split. 3,4: assumption. 1,2: wf_auto2. 
-  Defined.
 
   Lemma exists_functional_subst φ φ' Γ :
     theory ⊆ Γ ->
@@ -2503,38 +2498,6 @@ Proof.
   { wf_auto2. }
 Defined.
 
-
-Lemma ceil_monotonic {Σ : Signature} {syntax : Syntax} Γ φ₁ φ₂ i :
-  theory ⊆ Γ ->
-  well_formed φ₁ ->
-  well_formed φ₂ ->
-  Γ ⊢i φ₁ ---> φ₂ using i ->
-  Γ ⊢i ⌈ φ₁ ⌉ ---> ⌈ φ₂ ⌉ using i.
-Proof.
-  intros HΓ wfφ₁ wfφ₂ H.
-  unshelve (eapply Framing_right).
-  { wf_auto2. }
-  { try_solve_pile. }
-  exact H.
-Defined.
-
-Lemma floor_monotonic {Σ : Signature} {syntax : Syntax} Γ φ₁ φ₂ i :
-  theory ⊆ Γ ->
-  well_formed φ₁ ->
-  well_formed φ₂ ->
-  Γ ⊢i φ₁ ---> φ₂ using i ->
-  Γ ⊢i ⌊ φ₁ ⌋ ---> ⌊ φ₂ ⌋ using i.
-Proof.
-  intros HΓ wfφ₁ wfφ₂ H.
-  unfold patt_total.
-  apply BasicProofSystemLemmas.modus_tollens.
-  apply ceil_monotonic.
-  { assumption. }
-  { wf_auto2. }
-  { wf_auto2. }
-  apply BasicProofSystemLemmas.modus_tollens.
-  exact H.
-Defined.
 
 Lemma double_not_ceil_alt {Σ : Signature} {syntax : Syntax} Γ φ i :
   theory ⊆ Γ ->
@@ -4542,10 +4505,10 @@ Proof.
 Defined.
 
 (* TODO: strengthen proof info about this: *)
-Lemma MLGoal_symmetry {Σ : Signature} {syntax : Syntax} Γ l ϕ ψ :
+Lemma MLGoal_symmetry {Σ : Signature} {syntax : Syntax} Γ l ϕ ψ i :
   theory ⊆ Γ ->
-  mkMLGoal _ Γ l (ϕ =ml ψ) AnyReasoning ->
-  mkMLGoal _ Γ l (ψ =ml ϕ) AnyReasoning.
+  mkMLGoal _ Γ l (ϕ =ml ψ) i ->
+  mkMLGoal _ Γ l (ψ =ml ϕ) i.
 Proof.
   unfold of_MLGoal. simpl.
   intros HΓ H wfl wfg.
@@ -4553,20 +4516,22 @@ Proof.
   1-3,5,6: wf_auto2.
   apply patt_equal_sym; auto.
   1-2: wf_auto2.
+  try_solve_pile.
 Defined.
 
 (* TODO: strengthen proof info about this: *)
-Lemma MLGoal_symmetryIn {Σ : Signature} {syntax : Syntax} name Γ l1 l2 ϕ ψ g  :
+Lemma MLGoal_symmetryIn {Σ : Signature} {syntax : Syntax} name Γ l1 l2 ϕ ψ g i :
   theory ⊆ Γ ->
-  mkMLGoal _ Γ (l1 ++ (mkNH _ name (ϕ =ml ψ)) :: l2) g AnyReasoning ->
-  mkMLGoal _ Γ (l1 ++ (mkNH _ name (ψ =ml ϕ)) :: l2) g AnyReasoning.
+  mkMLGoal _ Γ (l1 ++ (mkNH _ name (ϕ =ml ψ)) :: l2) g i ->
+  mkMLGoal _ Γ (l1 ++ (mkNH _ name (ψ =ml ϕ)) :: l2) g i.
 Proof.
   unfold of_MLGoal. simpl.
   intros HΓ H wfl wfg.
   unfold patterns_of in *. rewrite -> map_app in *. simpl in *.
   eapply prf_strenghten_premise_iter_meta_meta.
   6 : apply patt_equal_sym; auto.
-  8: apply H.
+  9: apply H.
+  8: try_solve_pile.
   all: wf_auto2.
 Defined.
 
@@ -4648,6 +4613,19 @@ Proof.
   1-4: wf_auto2.
 Defined.
 
+  Lemma patt_equal_comm {Σ : Signature} {S : Syntax} φ φ' Γ:
+    theory ⊆ Γ ->
+    well_formed φ ->
+    well_formed φ' ->
+    Γ ⊢ (φ =ml φ') <---> (φ' =ml φ).
+  Proof.
+    intros HΓ wfφ wfφ'.
+    pose proof (SYM1 := @patt_equal_sym _ _ Γ φ' φ AnyReasoning HΓ wfφ' wfφ ltac:(try_solve_pile)).
+    pose proof (SYM2 := @patt_equal_sym _ _ Γ φ φ' AnyReasoning HΓ wfφ wfφ' ltac:(try_solve_pile)).
+    apply pf_iff_split. 3,4: assumption. 1,2: wf_auto2. 
+  Defined.
+
+
 Theorem subset_iff_eq {Σ : Signature} {syntax : Syntax}:
   ∀ (Γ : Theory) (φ φ' : Pattern) (i : ProofInfo) ,
     Definedness_Syntax.theory ⊆ Γ -> 
@@ -4661,7 +4639,7 @@ Proof.
   1:wf_auto2.
   epose proof patt_total_and Γ (φ ---> φ') (φ'--->φ) H ltac:(wf_auto2) ltac:(wf_auto2) .
   use i in H2.
-  apply pf_iff_equiv_sym_nowf in H2.
+  apply pf_iff_equiv_sym_meta in H2.
   mlExactMeta H2.
 Defined.
 
