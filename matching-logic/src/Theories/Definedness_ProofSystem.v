@@ -4639,8 +4639,9 @@ Proof.
   1:wf_auto2.
   epose proof patt_total_and Γ (φ ---> φ') (φ'--->φ) H ltac:(wf_auto2) ltac:(wf_auto2) .
   use i in H2.
-  apply pf_iff_equiv_sym_meta in H2.
+  apply pf_iff_equiv_sym in H2.
   mlExactMeta H2.
+  all: wf_auto2.
 Defined.
 
 Theorem subset_disj {Σ : Signature} {syntax : Syntax}:

@@ -307,25 +307,28 @@ Set Printing All.
     eq-elim $a |- ( \imp ( \eq ph0 ph1 ) ( \imp ph2 ph3 ) ) $.
                                                   => ph0 = ph1 -> ph2 -> ph3
  *)
+Search "exists" Pattern nat.
+Search evar_fresh_seq.
 Lemma equality_elimination_basic 
   {Σ : Signature}
   {sy : Definedness_Syntax.Syntax}
-  Γ φ1 φ2 C x
+  Γ φ1 φ2 C x (xs : list evar)
   (HΓ : theory ⊆ Γ)
   (WF1 : well_formed φ1)
   (WF2 :  well_formed φ2)
   (WFC : PC_wf C)
-  (Hfree : x ∉ free_evars φ1 ∪ free_evars φ2 ∪ free_evars (pcPattern C)) :
+  (Hfree : free_evars φ1 ∪ free_evars φ2 ∪ free_evars (pcPattern C) ## list_to_set xs) 
+  (Hfree2 : NoDup (ev_x :: x :: xs)):
 (*   mu_free (pcPattern C) -> *)
   Γ ⊢i (φ1 =ml φ2) --->
     (emplace C φ1) ---> (emplace C φ2)
-  using (ExGen := {[ev_x; x]}, SVSubst := ∅, KT := false, AKT := false).
+  using (ExGen := {[ev_x; x]} ∪ list_to_set xs, SVSubst := ∅, KT := false, AKT := false).
 Proof.
   destruct C as [y φ4]. cbn in *.
   assert (well_formed φ4) by wf_auto2. clear WFC.
   remember (size' φ4) as sz.
   assert (size' φ4 <= sz) by lia. clear Heqsz.
-  revert φ4 φ1 φ2 x Γ HΓ H0 H WF1 WF2 Hfree. induction sz; intros.
+  revert φ4 φ1 φ2 xs Γ HΓ H0 H WF1 WF2 Hfree Hfree2. induction sz; intros.
   {
     destruct φ4; simpl in H0; lia.
   }
@@ -334,10 +337,11 @@ Proof.
     - subst.
       mlIntro "H".
       mlApplyMeta total_phi_impl_phi in "H".
-      2: set_solver.
-      2: wf_auto2.
       mlDestructAnd "H".
       mlAssumption.
+      3: wf_auto2.
+      1: instantiate (1 := x).
+      Search elements.
     - do 2 mlIntro. mlAssumption.
   * do 2 mlIntro. mlAssumption.
   * do 2 mlIntro. mlAssumption.
@@ -374,7 +378,14 @@ Proof.
     mlApplyMeta IH2 in "H".
     mlIntro "H0". mlIntro "S".
     clear. mlApply "H". mlApply "H0". mlApply "H2". mlAssumption.
-  * 
+  * mlIntro.
+    mlIntro.
+    specialize (IHsz φ4 φ1 φ2 x).
+    Search patt_exists derives_using.
+    
+    mlDestructEx "1" as x.
+    1-2: clear-Hfree; pose proof free_evars_free_evar_subst; set_solver.
+    
   *
 Qed.
 
