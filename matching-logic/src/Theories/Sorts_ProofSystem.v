@@ -302,6 +302,34 @@ Set Printing All.
     mlIntro. mlDestructAnd "0". mlSplitAnd; mlAssumption.
   Defined.
 
+  Lemma move_mu_under_implication
+    {Σ : Signature}
+    Γ φ ψ :
+      well_formed φ ->
+      well_formed (mu , ψ) ->
+      Γ ⊢i φ ---> (mu , ψ) ---> mu , (φ ---> ψ) using
+        (ExGen := ∅,
+         SVSubst := ∅,
+         KT := true,
+         AKT := ~~ bound_svar_is_banned_under_mus ψ 0 0).
+  Proof.
+    intros.
+    assert (no_positive_occurrence_db_b 0 φ). {
+    (* TODO: wf_auto2 breaks without this assert later! *)
+      wf_auto2.
+    }
+    do 2 mlIntro.
+    mlApplyMeta (Knaster_tarski Γ ψ (mu, φ ---> ψ)) in "1".
+    2: {
+      toMLGoal. {
+        wf_auto2.
+      }
+      mlIntro; mlApplyMeta Pre_fixp. simpl.
+      mlIntro. mlAssumption.
+    }
+    mlAssumption.
+  Defined.
+
 (*  eq-elim.0 $e #Substitution ph2 ph4 ph0 x $.   => ph2 = ph4[ph0/x]
     eq-elim.1 $e #Substitution ph3 ph4 ph1 x $.   => ph3 = ph4[ph1/x]
     eq-elim $a |- ( \imp ( \eq ph0 ph1 ) ( \imp ph2 ph3 ) ) $.
@@ -310,19 +338,20 @@ Set Printing All.
 Lemma equality_elimination_basic 
   {Σ : Signature}
   {sy : Definedness_Syntax.Syntax}
-  Γ φ1 φ2 C x (xs : EVarSet)
+  Γ φ1 φ2 C x (xs : EVarSet) X
   (HΓ : theory ⊆ Γ)
   (WF1 : well_formed φ1)
   (WF2 :  well_formed φ2)
   (WFC : PC_wf C)
   (Hfree : {[ev_x; x]} ∪ free_evars φ1 ∪ free_evars φ2 ∪ free_evars (pcPattern C) ## xs)
   (Hfree2 : x ∉ free_evars φ1 ∪ free_evars φ2 ∪ free_evars (pcPattern C))
+  (* (Hfree3 : x ∉ free_svars ) *)
   (Henough : size xs >= maximal_exists_depth_to 0 (pcEvar C) (pcPattern C)):
 (*   mu_free (pcPattern C) -> *)
   Γ ⊢i (φ1 =ml φ2) --->
     (emplace C φ1) ---> (emplace C φ2)
   using (ExGen := {[ev_x; x]} ∪ coGset.gset_to_coGset xs,
-         SVSubst := ∅,
+         SVSubst := {[X]},
          KT := false,
          AKT := false).
 Proof.
@@ -331,7 +360,7 @@ Proof.
   assert (well_formed φ4) by wf_auto2. clear WFC.
   remember (size' φ4) as sz.
   assert (size' φ4 <= sz) by lia. clear Heqsz.
-  revert φ4 φ1 φ2 xs x Γ HΓ H0 H WF1 WF2 Hfree Hfree2 Henough. induction sz; intros.
+  revert φ4 φ1 φ2 xs x X Γ HΓ H0 H WF1 WF2 Hfree Hfree2 Henough. induction sz; intros.
   {
     destruct φ4; simpl in H0; lia.
   }
@@ -354,8 +383,8 @@ Proof.
   * do 2 mlIntro. mlAssumption.
   * do 2 mlIntro. mlAssumption.
   * mlIntro "H".
-    epose proof (IH1 := IHsz φ4_1 φ1 φ2 xs x Γ HΓ ltac:(lia) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) _ ltac:(set_solver) ltac:(lia)).
-    epose proof (IH2 := IHsz φ4_2 φ1 φ2 xs x Γ HΓ ltac:(lia) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) _ ltac:(set_solver) ltac:(lia)).
+    epose proof (IH1 := IHsz φ4_1 φ1 φ2 xs x X Γ HΓ ltac:(lia) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) _ ltac:(set_solver) ltac:(lia)).
+    epose proof (IH2 := IHsz φ4_2 φ1 φ2 xs x X Γ HΓ ltac:(lia) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) _ ltac:(set_solver) ltac:(lia)).
     clear IHsz.
     mlAssert ("H2" : (φ1 =ml φ2)). wf_auto2. mlAssumption.
     eapply framing_left_under_tot_impl with (x := x) in IH1.
@@ -383,8 +412,8 @@ Proof.
       set_solver.
   * do 2 mlIntro. mlAssumption.
   * mlIntro "H".
-    epose proof (IH1 := IHsz φ4_1 φ2 φ1 xs x Γ HΓ ltac:(lia) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) _ ltac:(set_solver) ltac:(lia)).
-    epose proof (IH2 := IHsz φ4_2 φ1 φ2 xs x Γ HΓ ltac:(lia) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) _ ltac:(set_solver) ltac:(lia)).
+    epose proof (IH1 := IHsz φ4_1 φ2 φ1 xs x X Γ HΓ ltac:(lia) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) _ ltac:(set_solver) ltac:(lia)).
+    epose proof (IH2 := IHsz φ4_2 φ1 φ2 xs x X Γ HΓ ltac:(lia) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) _ ltac:(set_solver) ltac:(lia)).
     clear IHsz.
     mlAssert ("H2" : (φ2 =ml φ1)). wf_auto2.
     {
@@ -448,7 +477,7 @@ Proof.
     1-2: pose proof free_evars_free_evar_subst; set_solver.
     (* *** *)
     simpl. mlExists z.
-    opose proof* (IHsz (evar_open z 0 φ4) φ1 φ2 (list_to_set l) x Γ HΓ).
+    opose proof* (IHsz (evar_open z 0 φ4) φ1 φ2 (list_to_set l) x X Γ HΓ).
     2-4: wf_auto2.
     1: rewrite evar_open_size'; lia.
     - clear -Hfree e HZ.
@@ -471,9 +500,22 @@ Proof.
     - rewrite evar_open_free_evar_subst_swap. apply HZ. wf_auto2.
       rewrite evar_open_free_evar_subst_swap. apply HZ. wf_auto2.
       use (ExGen := coGset.FinGSet ({[ev_x; x]} ∪ ({[z]} ∪ list_to_set l)),
-       SVSubst := ∅, KT := false, AKT := false) in H2.
+       SVSubst := {[X]}, KT := false, AKT := false) in H2.
       mlApplyMeta H2. mlSplitAnd; mlAssumption.
-  * 
+  * do 2 mlIntro.
+    pose proof (move_mu_under_implication Γ (φ1 =ml φ2) (φ4^[[evar:y↦φ1]])
+      ltac:(wf_auto2) ltac:(wf_auto2)).
+    (** TODO ***)
+    replace (ExGen := ∅ : coEVarSet, SVSubst := ∅ : coSVarSet, KT := true,
+            AKT := ~~ bound_svar_is_banned_under_mus φ4^[[evar:y↦φ1]] 0 0) with
+      (ExGen := coGset.FinGSet ({[ev_x; x]} ∪ xs), SVSubst := {[X]}, KT := false,
+       AKT := false) in H1.
+    (****)
+    mlApplyMeta H1 in "0".
+    mlApply "0" in "1".
+    mlClear "0".
+    fromMLGoal. clear H1.
+    pose proof mu_monotone.
 Defined.
 
 
