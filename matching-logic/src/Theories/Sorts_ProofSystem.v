@@ -59,7 +59,7 @@ Set Printing All.
     }
     1-3: wf_auto2.
     eapply Framing_left; auto. try_solve_pile.
-  Qed.
+  Defined.
 
   (* TODO: overwrite with this *)
   Lemma framing_left_under_tot_impl {Σ : Signature} {syntax : Definedness_Syntax.Syntax} Γ ψ phi1 phi2 psi x i:
@@ -300,56 +300,62 @@ Set Printing All.
     intros.
     apply floor_monotonic; auto.
     mlIntro. mlDestructAnd "0". mlSplitAnd; mlAssumption.
-  Qed.
+  Defined.
 
 (*  eq-elim.0 $e #Substitution ph2 ph4 ph0 x $.   => ph2 = ph4[ph0/x]
     eq-elim.1 $e #Substitution ph3 ph4 ph1 x $.   => ph3 = ph4[ph1/x]
     eq-elim $a |- ( \imp ( \eq ph0 ph1 ) ( \imp ph2 ph3 ) ) $.
                                                   => ph0 = ph1 -> ph2 -> ph3
  *)
-Search "exists" Pattern nat.
-Search evar_fresh_seq.
 Lemma equality_elimination_basic 
   {Σ : Signature}
   {sy : Definedness_Syntax.Syntax}
-  Γ φ1 φ2 C x (xs : list evar)
+  Γ φ1 φ2 C x (xs : EVarSet)
   (HΓ : theory ⊆ Γ)
   (WF1 : well_formed φ1)
   (WF2 :  well_formed φ2)
   (WFC : PC_wf C)
-  (Hfree : free_evars φ1 ∪ free_evars φ2 ∪ free_evars (pcPattern C) ## list_to_set xs) 
-  (Hfree2 : NoDup (ev_x :: x :: xs)):
+  (Hfree : {[ev_x; x]} ∪ free_evars φ1 ∪ free_evars φ2 ∪ free_evars (pcPattern C) ## xs)
+  (Hfree2 : x ∉ free_evars φ1 ∪ free_evars φ2 ∪ free_evars (pcPattern C))
+  (Henough : size xs >= maximal_exists_depth_to 0 (pcEvar C) (pcPattern C)):
 (*   mu_free (pcPattern C) -> *)
   Γ ⊢i (φ1 =ml φ2) --->
     (emplace C φ1) ---> (emplace C φ2)
-  using (ExGen := {[ev_x; x]} ∪ list_to_set xs, SVSubst := ∅, KT := false, AKT := false).
+  using (ExGen := {[ev_x; x]} ∪ coGset.gset_to_coGset xs,
+         SVSubst := ∅,
+         KT := false,
+         AKT := false).
 Proof.
+  Print maximal_exists_depth_to.
   destruct C as [y φ4]. cbn in *.
   assert (well_formed φ4) by wf_auto2. clear WFC.
   remember (size' φ4) as sz.
   assert (size' φ4 <= sz) by lia. clear Heqsz.
-  revert φ4 φ1 φ2 xs Γ HΓ H0 H WF1 WF2 Hfree Hfree2. induction sz; intros.
+  revert φ4 φ1 φ2 xs x Γ HΓ H0 H WF1 WF2 Hfree Hfree2 Henough. induction sz; intros.
   {
     destruct φ4; simpl in H0; lia.
   }
   destruct φ4; simpl in *.
   * case_match.
-    - subst.
+    - subst. rewrite decide_eq_same.
       mlIntro "H".
       mlApplyMeta total_phi_impl_phi in "H".
       mlDestructAnd "H".
       mlAssumption.
       3: wf_auto2.
       1: instantiate (1 := x).
-      Search elements.
-    - do 2 mlIntro. mlAssumption.
+      try_solve_pile.
+      set_solver.
+    - rewrite decide_False. by auto.
+      rewrite decide_False. by auto.
+      do 2 mlIntro. mlAssumption.
   * do 2 mlIntro. mlAssumption.
   * do 2 mlIntro. mlAssumption.
   * do 2 mlIntro. mlAssumption.
   * do 2 mlIntro. mlAssumption.
   * mlIntro "H".
-    pose proof (IH1 := IHsz φ4_1 φ1 φ2 x Γ HΓ ltac:(lia) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(set_solver)).
-    pose proof (IH2 := IHsz φ4_2 φ1 φ2 x Γ HΓ ltac:(lia) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(set_solver)).
+    epose proof (IH1 := IHsz φ4_1 φ1 φ2 xs x Γ HΓ ltac:(lia) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) _ ltac:(set_solver) ltac:(lia)).
+    epose proof (IH2 := IHsz φ4_2 φ1 φ2 xs x Γ HΓ ltac:(lia) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) _ ltac:(set_solver) ltac:(lia)).
     clear IHsz.
     mlAssert ("H2" : (φ1 =ml φ2)). wf_auto2. mlAssumption.
     eapply framing_left_under_tot_impl with (x := x) in IH1.
@@ -363,12 +369,22 @@ Proof.
     5, 12: assumption.
     6, 12: try_solve_pile.
     1-4,6-9: wf_auto2.
-    clear -Hfree.
-    1-2: pose proof free_evars_free_evar_subst; set_solver.
+    1-2: clear -Hfree2; pose proof free_evars_free_evar_subst; set_solver.
+    Unshelve.
+    - clear -Hfree.
+      apply disjoint_union_l in Hfree as [HF1 HF2].
+      apply disjoint_union_l in HF1 as [H ?], HF2 as [? ?].
+      apply disjoint_union_l in H as [? ?].
+      set_solver.
+    - clear -Hfree.
+      apply disjoint_union_l in Hfree as [HF1 HF2].
+      apply disjoint_union_l in HF1 as [H ?], HF2 as [? ?].
+      apply disjoint_union_l in H as [? ?].
+      set_solver.
   * do 2 mlIntro. mlAssumption.
   * mlIntro "H".
-    pose proof (IH1 := IHsz φ4_1 φ2 φ1 x Γ HΓ ltac:(lia) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(set_solver)).
-    pose proof (IH2 := IHsz φ4_2 φ1 φ2 x Γ HΓ ltac:(lia) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(set_solver)).
+    epose proof (IH1 := IHsz φ4_1 φ2 φ1 xs x Γ HΓ ltac:(lia) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) _ ltac:(set_solver) ltac:(lia)).
+    epose proof (IH2 := IHsz φ4_2 φ1 φ2 xs x Γ HΓ ltac:(lia) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) _ ltac:(set_solver) ltac:(lia)).
     clear IHsz.
     mlAssert ("H2" : (φ2 =ml φ1)). wf_auto2.
     {
@@ -378,16 +394,87 @@ Proof.
     mlApplyMeta IH2 in "H".
     mlIntro "H0". mlIntro "S".
     clear. mlApply "H". mlApply "H0". mlApply "H2". mlAssumption.
+    Unshelve.
+    - clear -Hfree.
+      apply disjoint_union_l in Hfree as [HF1 HF2].
+      apply disjoint_union_l in HF1 as [H ?], HF2 as [? ?].
+      apply disjoint_union_l in H as [? ?].
+      set_solver.
+    - clear -Hfree.
+      apply disjoint_union_l in Hfree as [HF1 HF2].
+      apply disjoint_union_l in HF1 as [H ?], HF2 as [? ?].
+      apply disjoint_union_l in H as [? ?].
+      set_solver.
   * mlIntro.
     mlIntro.
-    specialize (IHsz φ4 φ1 φ2 x).
-    Search patt_exists derives_using.
-    
-    mlDestructEx "1" as x.
-    1-2: clear-Hfree; pose proof free_evars_free_evar_subst; set_solver.
-    
-  *
-Qed.
+    destruct (decide (y ∈ free_evars φ4)).
+    2: {
+      rewrite free_evar_subst_no_occurrence. assumption.
+      rewrite free_evar_subst_no_occurrence. assumption.
+      mlAssumption.
+    }
+    rewrite maximal_exists_depth_to_S in Henough. assumption.
+    destruct (elements xs) eqn:Hel.
+    {
+      apply elements_empty_iff in Hel. apply leibniz_equiv in Hel.
+      subst. rewrite size_empty in Henough. lia.
+    }
+    rename e0 into z.
+    (* TODO: extract this, very technical *)
+    assert (xs = {[z]} ∪ list_to_set l). {
+      rewrite <- (list_to_set_cons z l).
+      clear-Hel.
+      rewrite <- list_to_set_elements_L at 1.
+      by rewrite Hel.
+    }
+    assert (z ∉ l /\ z <> y) as HZ. {
+      split.
+      pose proof (HND := NoDup_elements xs).
+      clear -Hel HND.
+      rewrite Hel in HND. inversion HND. set_solver.
+      set_solver.
+    }
+    subst xs.
+    assert (z ∉ free_evars φ1 ∪ free_evars φ2 ∪ free_evars φ4). {
+      clear-Hfree. apply disjoint_union_r in Hfree. set_solver.
+    }
+    (* TODO
+       manually applied mlDestructEx, because it does not automatically solve the
+       side conditions, thus fails *)
+    _mlReshapeHypsByName "1".
+    apply MLGoal_destructEx with (x := z). try_solve_pile.
+    1-4: cbn; clear-H1.
+    1-2: set_solver.
+    1-2: pose proof free_evars_free_evar_subst; set_solver.
+    (* *** *)
+    simpl. mlExists z.
+    opose proof* (IHsz (evar_open z 0 φ4) φ1 φ2 (list_to_set l) x Γ HΓ).
+    2-4: wf_auto2.
+    1: rewrite evar_open_size'; lia.
+    - clear -Hfree e HZ.
+      pose proof free_evars_evar_open φ4 z 0.
+      repeat apply disjoint_union_r in Hfree as [Hfree ?].
+      repeat apply disjoint_union_l in Hfree as [Hfree ?].
+      repeat apply disjoint_union_l in H0 as [H0 ?].
+      repeat (apply disjoint_union_l; split); try assumption.
+      clear -H5 H HZ. set_solver.
+    - pose proof free_evars_evar_open φ4 z 0.
+      clear-Hfree2 Hfree H2.
+      repeat apply disjoint_union_r in Hfree as [Hfree _].
+      do 3 apply disjoint_union_l in Hfree as [Hfree _].
+      apply disjoint_union_l in Hfree as [_ Hfree].
+      set_solver.
+    - rewrite evar_open_exists_depth.
+      set_solver.
+      rewrite size_union in Henough. set_solver.
+      rewrite size_singleton in Henough. lia.
+    - rewrite evar_open_free_evar_subst_swap. apply HZ. wf_auto2.
+      rewrite evar_open_free_evar_subst_swap. apply HZ. wf_auto2.
+      use (ExGen := coGset.FinGSet ({[ev_x; x]} ∪ ({[z]} ∪ list_to_set l)),
+       SVSubst := ∅, KT := false, AKT := false) in H2.
+      mlApplyMeta H2. mlSplitAnd; mlAssumption.
+  * 
+Defined.
 
 
 Local Lemma simplTest

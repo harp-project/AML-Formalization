@@ -178,7 +178,7 @@ Proof.
 
   mlApplyMeta Htmp in "H". clear Htmp.
   mlRevertLast.
-  mlRewrite (patt_equal_sym Γ (patt_free_evar x) g AnyReasoning HΓ ltac:(wf_auto2) ltac:(wf_auto2)) at 1. fold AnyReasoning.
+  mlRewrite (patt_equal_comm (patt_free_evar x) g Γ HΓ ltac:(wf_auto2) ltac:(wf_auto2)) at 1. fold AnyReasoning.
   mlIntro "H".
   mlApplyMeta (equality_elimination_proj Γ g (patt_free_evar x) (b0 ∈ml ψ)) in "H". mlSimpl. simpl.
   rewrite bevar_subst_not_occur.
