@@ -543,28 +543,23 @@ Section with_signature.
   TODO: parameterize this lemma with a variable which is fresh in (ϕ₁ ---> ϕ₂),
   instead of hard-coding the fresh generation.
   *)
-  Lemma prenex_forall_imp Γ ϕ₁ ϕ₂ i:
+  Lemma prenex_forall_imp Γ ϕ₁ ϕ₂ i x:
     well_formed (ex, ϕ₁) ->
     well_formed ϕ₂ ->
-    ProofInfoLe ( (ExGen := {[fresh_evar (ϕ₁ ---> ϕ₂)]}, SVSubst := ∅, KT := false, AKT := false)) i ->
+    x ∉ free_evars ϕ₁ ∪ free_evars ϕ₂ ->
+    ProofInfoLe ( (ExGen := {[x]}, SVSubst := ∅, KT := false, AKT := false)) i ->
     Γ ⊢i (all, (ϕ₁ ---> ϕ₂)) using i ->
     Γ ⊢i (ex, ϕ₁) ---> (ϕ₂) using i.
   Proof.
-    intros wfϕ₁ wfϕ₂ pile H.
-    remember (fresh_evar (ϕ₁ ---> ϕ₂)) as x.
+    intros wfϕ₁ wfϕ₂ Hf pile H.
     apply (strip_exists_quantify_l Γ x).
-    { subst x.
-      eapply evar_is_fresh_in_richer'.
-      2: { apply set_evar_fresh_is_fresh'. }
+    { 
       simpl. set_solver.
     }
     { wf_auto2. }
     apply Ex_gen.
     { apply pile. }
     1: {
-      subst x.
-      eapply evar_is_fresh_in_richer'.
-      2: { apply set_evar_fresh_is_fresh'. }
       simpl. set_solver.
     }
 

@@ -359,7 +359,7 @@ Set Printing All.
     mlAssumption.
     simpl.
     mlIntro.
-    Check PreFixp.
+    Check Pre_fixp.
   Qed.
 
 (*  eq-elim.0 $e #Substitution ph2 ph4 ph0 x $.   => ph2 = ph4[ph0/x]
@@ -538,6 +538,7 @@ Proof.
     Search patt_or derives_using.
     Print is_predicate_pattern.
     Search is_predicate_pattern.
+    Search patt_and patt_defined.
     (*
       new idea:
       1. prove Γ ⊢ is_predicate (φ = ψ) -> Γ ⊢ φ = ⊤ or φ = ⊥   (maybe with <--->)
