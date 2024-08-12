@@ -330,6 +330,38 @@ Set Printing All.
     mlAssumption.
   Defined.
 
+  Lemma move_mu_under_conj
+    {Σ : Signature}
+    Γ φ ψ :
+      well_formed φ ->
+      well_formed (mu , ψ) ->
+      Γ ⊢i φ and (mu , ψ) ---> mu , (φ and ψ) using
+        (ExGen := ∅,
+         SVSubst := ∅,
+         KT := true,
+         AKT := ~~ bound_svar_is_banned_under_mus ψ 0 0).
+  Proof.
+    intros.
+    assert (no_positive_occurrence_db_b 0 φ). {
+    (* TODO: wf_auto2 breaks without this assert later! *)
+      wf_auto2.
+    }
+    assert (no_negative_occurrence_db_b 0 φ). {
+    (* TODO: wf_auto2 breaks without this assert later! *)
+      wf_auto2.
+    }
+    toMLGoal. wf_auto2.
+    mlIntro. mlDestructAnd "0".
+    
+    mlApplyMeta Pre_fixp. unfold instantiate. mlSimpl.
+    rewrite bsvar_subst_not_occur. wf_auto2. mlSplitAnd. mlAssumption.
+    mlApplyMeta (Knaster_tarski Γ ψ (ψ^[svar:0↦mu , φ and ψ])) in "2".
+    mlAssumption.
+    simpl.
+    mlIntro.
+    Check PreFixp.
+  Qed.
+
 (*  eq-elim.0 $e #Substitution ph2 ph4 ph0 x $.   => ph2 = ph4[ph0/x]
     eq-elim.1 $e #Substitution ph3 ph4 ph1 x $.   => ph3 = ph4[ph1/x]
     eq-elim $a |- ( \imp ( \eq ph0 ph1 ) ( \imp ph2 ph3 ) ) $.
@@ -503,6 +535,25 @@ Proof.
        SVSubst := {[X]}, KT := false, AKT := false) in H2.
       mlApplyMeta H2. mlSplitAnd; mlAssumption.
   * do 2 mlIntro.
+    Search patt_or derives_using.
+    Print is_predicate_pattern.
+    Search is_predicate_pattern.
+    (*
+      new idea:
+      1. prove Γ ⊢ is_predicate (φ = ψ) -> Γ ⊢ φ = ⊤ or φ = ⊥   (maybe with <--->)
+                                                                (maybe with meta-or)
+      2. do case separation based on 1.
+        a) if φ = ⊥, then contradiction
+        b) if φ = ⊤, then it can be eliminated from IHsz, also from the goal.
+           then use mu_monotone
+    *)
+  
+  
+    Search derives_using (_ ---> _ ---> _).
+    Check prf_equiv_congruence.
+    Search is_predicate_pattern derives_using.
+    opose proof* (IHsz (svar_open X 0 φ4) φ1 φ2 xs x X Γ HΓ) as IHsz.
+    1-7: admit.
     pose proof (move_mu_under_implication Γ (φ1 =ml φ2) (φ4^[[evar:y↦φ1]])
       ltac:(wf_auto2) ltac:(wf_auto2)).
     (** TODO ***)
@@ -511,11 +562,46 @@ Proof.
       (ExGen := coGset.FinGSet ({[ev_x; x]} ∪ xs), SVSubst := {[X]}, KT := false,
        AKT := false) in H1.
     (****)
+    mlAssert ("H" : ((mu , φ1 =ml φ2 ---> φ4^[[evar:y↦φ1]]))). { admit. }
+    {
+      mlApplyMeta H1. mlSplitAnd; mlAssumption.
+    }
+    
     mlApplyMeta H1 in "0".
     mlApply "0" in "1".
     mlClear "0".
     fromMLGoal. clear H1.
-    pose proof mu_monotone.
+    replace ((mu , φ1 =ml φ2 ---> φ4^[[evar:y↦φ1]]) ---> (mu , φ4^[[evar:y↦φ2]]))
+      with
+      ((mu , (φ1 =ml φ2 ---> φ4^[[evar:y↦φ1]])^{svar:0↦X}^{{svar:X↦0}}) ---> (mu , φ4^[[evar:y↦φ2]]^{svar:0↦X}^{{svar:X↦0}})).
+    2: {
+      admit.
+    }
+    apply mu_monotone.
+    - admit.
+    - apply svar_hno_bsvar_subst.
+      + intro HH. cbn in HH. congruence.
+      + intros. wf_auto2.
+        all: try apply wfc_impl_no_neg_occ; try apply wfc_impl_no_pos_occ.
+        all: wf_auto2.
+      + intros. apply fresh_svar_no_neg. admit.
+    - apply svar_hno_bsvar_subst.
+      + intro HH. cbn in HH. congruence.
+      + intros. wf_auto2.
+        all: try apply wfc_impl_no_neg_occ; try apply wfc_impl_no_pos_occ.
+        all: wf_auto2.
+      + intros. apply fresh_svar_no_neg. admit.
+    - mlSimpl.
+      rewrite (svar_open_not_occur 0 X φ1). wf_auto2.
+      rewrite (svar_open_not_occur 0 X φ2). wf_auto2.
+      unfold svar_open.
+      rewrite <- free_evar_subst_bsvar_subst.
+      rewrite <- free_evar_subst_bsvar_subst.
+      2,4:wf_auto2.
+      2-3: unfold evar_is_fresh_in; set_solver.
+      fold (svar_open X 0 φ4).
+      
+      apply IHsz.
 Defined.
 
 

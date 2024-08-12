@@ -313,28 +313,27 @@ Section with_signature.
   (*
    Γ ⊢ ((∃x. φ₁) /\ φ₂) → (∃x. (φ₁ /\ φ₂))
    *)
-  Lemma prenex_exists_and_1 (Γ : Theory) ϕ₁ ϕ₂:
+  Lemma prenex_exists_and_1 (Γ : Theory) ϕ₁ ϕ₂ x:
     well_formed (ex, ϕ₁) ->
     well_formed ϕ₂ ->
+    x ∉ free_evars ϕ₁ ∪ free_evars ϕ₂ ->
     Γ ⊢i ((ex, ϕ₁) and ϕ₂) ---> (ex, (ϕ₁ and ϕ₂))
-    using ( (ExGen := {[fresh_evar (ϕ₂ ---> ex , (ϕ₁ and ϕ₂))]}, SVSubst := ∅, KT := false, AKT := false)).
+    using ( (ExGen := {[x]}, SVSubst := ∅, KT := false, AKT := false)).
   Proof.
-    intros wfϕ₁ wfϕ₂.
+    intros wfϕ₁ wfϕ₂ Hf.
     toMLGoal.
     { wf_auto2. }
     mlIntro. mlDestructAnd "0".
     fromMLGoal.
 
-    remember (fresh_evar (ϕ₂ ---> (ex, (ϕ₁ and ϕ₂)))) as x.
     apply strip_exists_quantify_l with (x := x).
-    { subst x. eapply evar_is_fresh_in_richer'.
-      2: { apply set_evar_fresh_is_fresh'. }
-      simpl. clear. set_solver.
+    {
+      simpl. set_solver.
     }
     { wf_auto2. }
     apply Ex_gen.
     { apply pile_refl. }
-    { subst x. apply set_evar_fresh_is_fresh. }
+    { set_solver. }
 
     apply lhs_to_and.
     { wf_auto2. }
@@ -364,30 +363,29 @@ Section with_signature.
   (*
      Γ ⊢ (∃x. (φ₁ /\ φ₂)) → ((∃x. φ₁) /\ φ₂)
   *)
-  Lemma prenex_exists_and_2 (Γ : Theory) ϕ₁ ϕ₂:
+  Lemma prenex_exists_and_2 (Γ : Theory) ϕ₁ ϕ₂ x:
     well_formed (ex, ϕ₁) ->
     well_formed ϕ₂ ->
+    x ∉ free_evars ϕ₁ ∪ free_evars ϕ₂ ->
     Γ ⊢i (ex, (ϕ₁ and ϕ₂)) ---> ((ex, ϕ₁) and ϕ₂)
-    using ( (ExGen := {[fresh_evar ((ϕ₁ and ϕ₂))]}, SVSubst := ∅, KT := false, AKT := false)).
+    using ( (ExGen := {[x]}, SVSubst := ∅, KT := false, AKT := false)).
   Proof.
-    intros wfϕ₁ wfϕ₂.
+    intros wfϕ₁ wfϕ₂ Hf.
     toMLGoal.
     { wf_auto2. }
     mlIntro.
     mlSplitAnd.
     - fromMLGoal.
-      remember (fresh_evar (ϕ₁ and ϕ₂)) as x.
       apply strip_exists_quantify_l with (x := x).
-      { subst x. apply set_evar_fresh_is_fresh. }
+      { set_solver. }
       (* TODO: make wf_auto2 solve this *)
       { simpl. rewrite !andbT. split_and!.
         + wf_auto2.
         + wf_auto2.
       }
       apply strip_exists_quantify_r with (x := x).
-      { subst x. eapply evar_is_fresh_in_richer'.
-        2: { apply set_evar_fresh_is_fresh'. }
-        simpl. clear. set_solver.
+      {
+        simpl. set_solver.
       }
       { wf_auto2. }
       apply ex_quan_monotone.
@@ -402,19 +400,16 @@ Section with_signature.
       { wf_auto2. }
       mlIntro. mlDestructAnd "0". mlExactn 0.
     - fromMLGoal.
-      remember (fresh_evar (ϕ₁ and ϕ₂)) as x.
       eapply cast_proof'.
       {
         rewrite -[ϕ₁ and ϕ₂](evar_quantify_evar_open x 0).
-        { subst x. apply set_evar_fresh_is_fresh. }
+        { set_solver. }
         { wf_auto2. }
         reflexivity.
       }
       apply Ex_gen.
       { apply pile_refl. }
-      { eapply evar_is_fresh_in_richer. 2: { subst x. apply set_evar_fresh_is_fresh'. }
-        simpl. clear. set_solver.
-      }
+      { set_solver. }
 
       unfold evar_open. mlSimpl.
       rewrite [bevar_subst _ _ ϕ₂]bevar_subst_not_occur.
@@ -431,13 +426,14 @@ Section with_signature.
   (*
      Γ ⊢ (∃x. (φ₁ /\ φ₂)) ↔ ((∃x. φ₁) /\ φ₂)
   *)
-  Lemma prenex_exists_and_iff (Γ : Theory) ϕ₁ ϕ₂:
+  Lemma prenex_exists_and_iff (Γ : Theory) ϕ₁ ϕ₂ x:
     well_formed (ex, ϕ₁) ->
     well_formed ϕ₂ ->
+    x ∉ free_evars ϕ₁ ∪ free_evars ϕ₂ ->
     Γ ⊢i (ex, (ϕ₁ and ϕ₂)) <---> ((ex, ϕ₁) and ϕ₂)
-    using ( (ExGen := {[fresh_evar ((ϕ₁ and ϕ₂))]}, SVSubst := ∅, KT := false, AKT := false)).
+    using ( (ExGen := {[x]}, SVSubst := ∅, KT := false, AKT := false)).
   Proof.
-    intros wfϕ₁ wfϕ₂.
+    intros wfϕ₁ wfϕ₂ Hf.
     apply conj_intro_meta.
     { wf_auto2. }
     { wf_auto2. }
