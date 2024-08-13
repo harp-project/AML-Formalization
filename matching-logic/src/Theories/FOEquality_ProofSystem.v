@@ -195,6 +195,63 @@ Proof.
   { assumption. }
 Defined.
 
+Lemma functional_pattern_defined {Σ : Signature} {syntax : Syntax} :
+  forall Γ φ, theory ⊆ Γ -> well_formed φ ->
+     Γ ⊢ (ex , (φ =ml b0)) ---> ⌈ φ ⌉.
+Proof.
+  intros Γ φ HΓ Wf.
+  toMLGoal. wf_auto2.
+  mlIntro "H0".
+  mlApplyMeta (forall_functional_subst ⌈ b0 ⌉ φ _ HΓ ltac:(wf_auto2)
+  ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
+  mlSplitAnd.
+  * mlClear "H0". fromMLGoal. wf_auto2.
+    remember (fresh_evar patt_bott) as x.
+    pose proof (universal_generalization Γ ⌈patt_free_evar x⌉ x AnyReasoning (pile_any _)) 
+      as H1'.
+    cbn in H1'. case_match. 2: congruence. apply H1'. reflexivity.
+    gapply defined_evar.
+    { apply pile_any. }
+    { exact HΓ. }
+  * mlExact "H0".
+Defined.
+
+Lemma membership_equal_equal {Σ : Signature} {syntax : Syntax} :
+  forall Γ φ φ',
+    theory ⊆ Γ -> mu_free φ' ->
+    well_formed φ -> well_formed φ' ->
+    Γ ⊢ (ex , (φ =ml b0))  ->
+    Γ ⊢ (ex , (φ' =ml b0))  ->
+    Γ ⊢ (φ ∈ml φ') =ml (φ =ml φ') .
+Proof.
+  intros Γ φ φ' HΓ Mufree Wf1 Wf2 Func1 Func2.
+  unfold patt_equal at 1.
+
+  toMLGoal. wf_auto2.
+  mlIntro.
+  pose proof (bott_not_defined Γ) as H.
+  use AnyReasoning in H.
+  mlApplyMeta H.
+  fromMLGoal. wf_auto2.
+
+  apply ceil_monotonic; auto.
+  { wf_auto2. }
+
+  toMLGoal. wf_auto2.
+  pose proof (not_not_intro Γ ((φ ∈ml φ' <---> φ =ml φ' ))
+  ltac:(wf_auto2)) as H0.
+  use AnyReasoning in H0.
+  mlApplyMeta H0.
+  mlSplitAnd; mlIntro.
+  * mlApplyMeta membership_imp_equal_meta; auto. mlExactn 0.
+  * mlApplyMeta equal_imp_membership; auto. mlExactn 0.
+    Unshelve.
+    toMLGoal. wf_auto2.
+    (* clear h. *)
+    mlApplyMeta functional_pattern_defined; auto.
+    mlExactMeta Func2.
+Defined.
+
 Close Scope ml_scope.
 Close Scope string_scope.
 Close Scope list_scope.

@@ -4649,6 +4649,124 @@ Proof.
   1-4: wf_auto2.
 Defined.
 
+
+(* These [are from/should be part of] this branch: *)
+(* https://github.com/harp-project/AML-Formalization/blob/09f24d95119769ce578c8c15eceba5a3a00c45d4/matching-logic/src/Theories/Nat_ProofSystem.v#L392 *)
+Section predicate_lemmas.
+  Context {Σ : Signature} {syntax : Syntax}.
+
+  Lemma predicate_equiv :
+    forall Γ φ,
+      theory ⊆ Γ ->
+      well_formed φ ->
+      Γ ⊢ is_predicate_pattern φ ---> φ <---> ⌊φ⌋.
+  Proof.
+    intros Γ φ HΓ wf.
+    mlIntro "H". unfold is_predicate_pattern. mlDestructOr "H" as "H0" "H0";
+      do 2 mlRewriteBy "H0" at 1; mlClear "H0"; mlSplitAnd; mlIntro.
+    1-2: mlClear "0".
+    * fromMLGoal. apply phi_impl_total_phi_meta. wf_auto2. try_solve_pile.
+      aapply top_holds.
+    * fromMLGoal. aapply top_holds.
+    * mlDestructBot "0".
+    * mlApply "0". mlClear "0".
+      mlApplyMeta (phi_impl_defined_phi Γ (! ⊥) (evar_fresh [])). 2: set_solver.
+      2: assumption.
+      fromMLGoal. aapply top_holds.
+  Defined.
+
+  Lemma predicate_imp :
+    forall Γ φ ψ,
+      Definedness_Syntax.theory ⊆ Γ ->
+      well_formed φ ->
+      well_formed ψ ->
+      Γ ⊢ is_predicate_pattern φ --->
+          is_predicate_pattern ψ --->
+          is_predicate_pattern (φ ---> ψ).
+  Proof.
+    intros Γ φ ψ HΓ wf1 wf2.
+    mlIntro "H". mlIntro "H0".
+    unfold is_predicate_pattern. mlDestructOr "H"; mlDestructOr "H0".
+    * mlLeft. mlRewriteBy "0" at 1. mlRewriteBy "1" at 1.
+      mlClear "0". mlClear "1".
+      fromMLGoal. apply phi_impl_total_phi_meta. wf_auto2. try_solve_pile.
+      mlSplitAnd; mlIntro "H". 2: mlIntro "H0".
+      all: pose proof (top_holds Γ) as H; use AnyReasoning in H; mlExactMeta H.
+    * mlRight. mlRewriteBy "0" at 1. mlRewriteBy "2" at 1.
+      mlClear "0". mlClear "2".
+      fromMLGoal. apply phi_impl_total_phi_meta. wf_auto2. try_solve_pile.
+      mlSplitAnd; mlIntro "H". 2: mlIntro "H0"; mlAssumption.
+      mlApply "H". pose proof (top_holds Γ) as H; use AnyReasoning in H; mlExactMeta H.
+    * mlLeft. mlRewriteBy "0" at 1. mlRewriteBy "1" at 1.
+      mlClear "0". mlClear "1".
+      fromMLGoal. apply phi_impl_total_phi_meta. wf_auto2. try_solve_pile.
+      mlSplitAnd; mlIntro "H". 2: mlIntro "H0".
+      all: pose proof (top_holds Γ) as H; use AnyReasoning in H; mlExactMeta H.
+    * mlLeft. mlRewriteBy "1" at 1. mlRewriteBy "2" at 1.
+      mlClear "1". mlClear "2".
+      fromMLGoal. apply phi_impl_total_phi_meta. wf_auto2. try_solve_pile.
+      mlSplitAnd; mlIntro "H". 2: mlIntro "H0".
+      1: pose proof (top_holds Γ) as H; use AnyReasoning in H; mlExactMeta H.
+      1: mlAssumption.
+  Defined.
+
+  Lemma predicate_bott : forall Γ,
+    theory ⊆ Γ -> Γ ⊢ is_predicate_pattern ⊥.
+  Proof with wf_auto2.
+    intros * HΓ.
+    unfold is_predicate_pattern.
+    toMLGoal...
+    mlRight. mlReflexivity.
+  Defined.
+
+  Lemma predicate_not : forall Γ φ,
+    theory ⊆ Γ -> well_formed φ ->
+    Γ ⊢ is_predicate_pattern φ ---> is_predicate_pattern (! φ).
+  Proof.
+    intros * HΓ wfφ.
+    unfold patt_not.
+    pose proof (predicate_imp Γ φ ⊥ HΓ wfφ well_formed_bott).
+    mlIntro.
+    mlAdd (predicate_bott Γ HΓ).
+    mlRevert "1".
+    (* mlRevert "0". *)
+    fromMLGoal.
+    exact H.
+  Defined.
+
+  Lemma predicate_or : forall Γ φ₁ φ₂,
+    theory ⊆ Γ -> well_formed φ₁ -> well_formed φ₂ ->
+    Γ ⊢ is_predicate_pattern φ₁ ---> is_predicate_pattern φ₂ --->
+        is_predicate_pattern (φ₁ or φ₂).
+  Proof.
+    intros * HΓ wfφ₁ wfφ₂.
+    unfold patt_or.
+    pose proof (predicate_not Γ φ₁ HΓ wfφ₁).
+    mlIntro.
+    mlApplyMeta H in "0".
+    fromMLGoal.
+    apply predicate_imp; auto.
+  Defined.
+
+  Lemma predicate_and : forall Γ φ₁ φ₂,
+    theory ⊆ Γ -> well_formed φ₁ -> well_formed φ₂ ->
+    Γ ⊢ is_predicate_pattern φ₁ ---> is_predicate_pattern φ₂ --->
+        is_predicate_pattern (φ₁ and φ₂).
+  Proof.
+    intros * HΓ wfφ₁ wfφ₂.
+    unfold patt_and.
+    mlIntro.
+    mlIntro.
+    mlApplyMeta predicate_not in "0".
+    mlApplyMeta predicate_not in "1".
+    mlApplyMeta predicate_or in "0".
+    mlApplyMeta predicate_not.
+    mlApply "0". mlExact "1".
+    all: auto.
+  Defined.
+
+End predicate_lemmas.
+
 Close Scope ml_scope.
 Close Scope string_scope.
 Close Scope list_scope.
