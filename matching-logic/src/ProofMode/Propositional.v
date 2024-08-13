@@ -4543,11 +4543,6 @@ Tactic Notation "emlTrans_iff" :=
     mlTrans_iff ep;
     subst ep.
 
-(* Can't be in ProofMode.Propositional: *)
-(* mlRewrite requires Theories.Definedness_ProofSystem *)
-(* which requires ProofMode.MLPM *)
-(* which requires ProofMode.Propositional *)
-(* TODO: Solve w/o mlRewrite *)
 Lemma extract_common_from_equivalence_r {Σ : Signature} Γ a b c i :
   well_formed a -> well_formed b -> well_formed c ->
   Γ ⊢i (b and a <---> c and a) <---> (a ---> b <---> c) using i.
