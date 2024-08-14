@@ -330,12 +330,12 @@ Set Printing All.
     mlAssumption.
   Defined.
 
-  Lemma move_mu_under_conj
+(*   Lemma remove_mu_under_implication
     {Σ : Signature}
     Γ φ ψ :
       well_formed φ ->
       well_formed (mu , ψ) ->
-      Γ ⊢i φ and (mu , ψ) ---> mu , (φ and ψ) using
+      Γ ⊢i (mu , (φ ---> ψ)) ---> φ ---> (mu , ψ) using
         (ExGen := ∅,
          SVSubst := ∅,
          KT := true,
@@ -351,16 +351,124 @@ Set Printing All.
       wf_auto2.
     }
     toMLGoal. wf_auto2.
-    mlIntro. mlDestructAnd "0".
+    do 2 mlIntro.
+    mlApplyMeta Pre_fixp. simpl.
+    mlApplyMeta (Knaster_tarski Γ (φ ---> ψ) (ψ)) in "0". mlAssumption.
+    2: {
+      toMLGoal. {
+        wf_auto2.
+      }
+      mlIntro; mlApplyMeta Pre_fixp. simpl.
+      mlIntro. mlAssumption.
+    }
+    mlAssumption.
+  Defined. *)
+
+  Lemma move_mu_under_conj
+    {Σ : Signature}
+    {syntax : Syntax}
+    Γ φ ψ X:
+      well_formed ψ ->
+      well_formed (mu , φ) ->
+      X ∉ free_svars ψ ∪ free_svars φ ->
+      Γ ⊢i ⌊ψ⌋ and (mu , φ) ---> mu , (⌊ψ⌋ and φ) using
+        (* (ExGen := ∅,
+         SVSubst := {[X]},
+         KT := true,
+         AKT := ~~ bound_svar_is_banned_under_mus ψ 0 0) *)
+         AnyReasoning.
+  Proof.
+    intros.
+    assert (no_positive_occurrence_db_b 0 ψ). {
+    (* TODO: wf_auto2 breaks without this assert later! *)
+      wf_auto2.
+    }
+    assert (no_negative_occurrence_db_b 0 ψ). {
+    (* TODO: wf_auto2 breaks without this assert later! *)
+      wf_auto2.
+    }
+    toMLGoal. wf_auto2.
+    mlIntro. mlDestructAnd "0". mlSwap "1" with "2".
+    fromMLGoal.
+    gapply Knaster_tarski. 1-3: admit.
+    simpl.
+    mlIntro. mlIntro. mlApplyMeta Pre_fixp.
+    unfold instantiate. mlSimpl. simpl.
+    rewrite (bsvar_subst_not_occur _ _ ψ). wf_auto2.
+    mlSplitAnd. mlAssumption.
+    fromMLGoal.
+    Search patt_and emplace.
+    
+    pose proof Knaster_tarski Γ.
+    
+    epose proof (floor_is_predicate Γ φ AnyReasoning _ _ _ _ _ _ _ _ _).
+    mlAdd H4. unfold is_predicate_pattern. mlDestructOr "0".
+    {
+      
+    }
+    {
+    
+    }
     
     mlApplyMeta Pre_fixp. unfold instantiate. mlSimpl.
     rewrite bsvar_subst_not_occur. wf_auto2. mlSplitAnd. mlAssumption.
-    mlApplyMeta (Knaster_tarski Γ ψ (ψ^[svar:0↦mu , φ and ψ])) in "2".
-    mlAssumption.
+    epose proof (Knaster_tarski Γ ψ (mu , φ and ψ) _ _). simpl in H4.
+    (* mlApplyMeta H4 in "2".
+     *)
+    mlApplyMeta (Knaster_tarski Γ ψ (ψ^[svar:0↦mu , ⌊ φ ⌋ and ψ])) in "2". admit.
+    2: try_solve_pile.
     simpl.
-    mlIntro.
-    Check Pre_fixp.
+    
+    (* assert (
+      forall φ ψ, 
+      well_formed (mu , φ) ->
+      well_formed ψ ->
+      Γ ⊢i φ^[svar:0↦φ^[svar:0↦ψ] ] ---> φ^[svar:0↦ψ] using AnyReasoning
+    ). {
+      clear. intros.
+      Check Svar_subst.
+      Check Pre_fixp. *)
+      mlIntro.
+      Check Svar_subst.
+      pose proof (Pre_fixp Γ (φ^[svar:0↦ψ])). simpl in H1.
+      
+    (* } *)
+    
+    assert ((ψ^[svar:0↦ψ^[svar:0↦mu , φ and ψ] ] ---> ψ^[svar:0↦mu , φ and ψ]) =
+      (ψ^[svar:0↦ψ^{svar:0↦X}] ---> ψ^[svar:0↦mu , φ and ψ])^[[svar:X↦mu, φ and ψ]]). {
+      simpl.
+      rewrite (free_svar_subst_fresh (ψ^[svar:0↦mu , φ and ψ])).
+      {
+        unfold svar_is_fresh_in. clear -H1.
+        pose proof (free_svars_bsvar_subst ψ (mu , φ and ψ) 0).
+        set_solver.
+      }
+      f_equal.
+      rewrite -free_svar_subst_bsvar_subst. wf_auto2.
+      rewrite (free_svar_subst_fresh ψ). unfold svar_is_fresh_in. set_solver.
+      erewrite <- bound_to_free_set_variable_subst. reflexivity.
+      instantiate (1 := 1). lia.
+      1-2: wf_auto2.
+      set_solver.
+    }
+    Check Svar_subst.
+    rewrite H4.
+    apply Svar_subst. try_solve_pile. wf_auto2.
+    
+    
   Qed.
+
+Lemma asd :
+  forall {Σ : Signature} Γ φ ψ i,
+    well_formed φ -> well_formed ψ ->
+    Γ ⊢i φ or ψ using i ->
+    (Γ ⊢i φ using i) + (Γ ⊢i ψ using i).
+Proof.
+  intros.
+  pose proof (A_or_notA Γ φ ltac:(wf_auto2)).
+  Search (patt_or _ _ ---> _) derives_using.
+  
+Defined.
 
 (*  eq-elim.0 $e #Substitution ph2 ph4 ph0 x $.   => ph2 = ph4[ph0/x]
     eq-elim.1 $e #Substitution ph3 ph4 ph1 x $.   => ph3 = ph4[ph1/x]
@@ -370,7 +478,7 @@ Set Printing All.
 Lemma equality_elimination_basic 
   {Σ : Signature}
   {sy : Definedness_Syntax.Syntax}
-  Γ φ1 φ2 C x (xs : EVarSet) X
+  Γ φ1 φ2 C x (xs : EVarSet) X i
   (HΓ : theory ⊆ Γ)
   (WF1 : well_formed φ1)
   (WF2 :  well_formed φ2)
@@ -380,12 +488,13 @@ Lemma equality_elimination_basic
   (* (Hfree3 : x ∉ free_svars ) *)
   (Henough : size xs >= maximal_exists_depth_to 0 (pcEvar C) (pcPattern C)):
 (*   mu_free (pcPattern C) -> *)
-  Γ ⊢i (φ1 =ml φ2) --->
-    (emplace C φ1) ---> (emplace C φ2)
-  using (ExGen := {[ev_x; x]} ∪ coGset.gset_to_coGset xs,
+  ProofInfoLe (ExGen := {[ev_x; x]} ∪ coGset.gset_to_coGset xs,
          SVSubst := {[X]},
          KT := false,
-         AKT := false).
+         AKT := false) i ->
+  Γ ⊢i (φ1 =ml φ2) --->
+    (emplace C φ1) ---> (emplace C φ2)
+  using i.
 Proof.
   Print maximal_exists_depth_to.
   destruct C as [y φ4]. cbn in *.
@@ -400,7 +509,9 @@ Proof.
   * case_match.
     - subst. rewrite decide_eq_same.
       mlIntro "H".
+      (* ExGen : {[ev_x; x]} is needed for this: *)
       mlApplyMeta total_phi_impl_phi in "H".
+      (***)
       mlDestructAnd "H".
       mlAssumption.
       3: wf_auto2.
@@ -415,8 +526,8 @@ Proof.
   * do 2 mlIntro. mlAssumption.
   * do 2 mlIntro. mlAssumption.
   * mlIntro "H".
-    epose proof (IH1 := IHsz φ4_1 φ1 φ2 xs x X Γ HΓ ltac:(lia) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) _ ltac:(set_solver) ltac:(lia)).
-    epose proof (IH2 := IHsz φ4_2 φ1 φ2 xs x X Γ HΓ ltac:(lia) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) _ ltac:(set_solver) ltac:(lia)).
+    epose proof (IH1 := IHsz φ4_1 φ1 φ2 xs x X Γ HΓ ltac:(lia) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) _ ltac:(set_solver) ltac:(lia) H1).
+    epose proof (IH2 := IHsz φ4_2 φ1 φ2 xs x X Γ HΓ ltac:(lia) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) _ ltac:(set_solver) ltac:(lia) H1).
     clear IHsz.
     mlAssert ("H2" : (φ1 =ml φ2)). wf_auto2. mlAssumption.
     eapply framing_left_under_tot_impl with (x := x) in IH1.
@@ -444,8 +555,8 @@ Proof.
       set_solver.
   * do 2 mlIntro. mlAssumption.
   * mlIntro "H".
-    epose proof (IH1 := IHsz φ4_1 φ2 φ1 xs x X Γ HΓ ltac:(lia) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) _ ltac:(set_solver) ltac:(lia)).
-    epose proof (IH2 := IHsz φ4_2 φ1 φ2 xs x X Γ HΓ ltac:(lia) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) _ ltac:(set_solver) ltac:(lia)).
+    epose proof (IH1 := IHsz φ4_1 φ2 φ1 xs x X Γ HΓ ltac:(lia) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) _ ltac:(set_solver) ltac:(lia) H1).
+    epose proof (IH2 := IHsz φ4_2 φ1 φ2 xs x X Γ HΓ ltac:(lia) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) _ ltac:(set_solver) ltac:(lia) H1).
     clear IHsz.
     mlAssert ("H2" : (φ2 =ml φ1)). wf_auto2.
     {
@@ -504,7 +615,7 @@ Proof.
        side conditions, thus fails *)
     _mlReshapeHypsByName "1".
     apply MLGoal_destructEx with (x := z). try_solve_pile.
-    1-4: cbn; clear-H1.
+    1-4: cbn; clear-H2.
     1-2: set_solver.
     1-2: pose proof free_evars_free_evar_subst; set_solver.
     (* *** *)
@@ -520,7 +631,7 @@ Proof.
       repeat (apply disjoint_union_l; split); try assumption.
       clear -H5 H HZ. set_solver.
     - pose proof free_evars_evar_open φ4 z 0.
-      clear-Hfree2 Hfree H2.
+      clear-Hfree2 Hfree H3.
       repeat apply disjoint_union_r in Hfree as [Hfree _].
       do 3 apply disjoint_union_l in Hfree as [Hfree _].
       apply disjoint_union_l in Hfree as [_ Hfree].
@@ -529,16 +640,27 @@ Proof.
       set_solver.
       rewrite size_union in Henough. set_solver.
       rewrite size_singleton in Henough. lia.
+    - try_solve_pile.
     - rewrite evar_open_free_evar_subst_swap. apply HZ. wf_auto2.
       rewrite evar_open_free_evar_subst_swap. apply HZ. wf_auto2.
-      use (ExGen := coGset.FinGSet ({[ev_x; x]} ∪ ({[z]} ∪ list_to_set l)),
-       SVSubst := {[X]}, KT := false, AKT := false) in H2.
-      mlApplyMeta H2. mlSplitAnd; mlAssumption.
+      mlApplyMeta H3. mlSplitAnd; mlAssumption.
   * do 2 mlIntro.
-    Search patt_or derives_using.
-    Print is_predicate_pattern.
-    Search is_predicate_pattern.
-    Search patt_and patt_defined.
+    epose proof (floor_is_predicate Γ (φ1 <---> φ2) i x _ _ HΓ
+                   ltac:(wf_auto2) ltac:(set_solver) _ _ _) as Hpred.
+    unfold is_predicate_pattern in Hpred.
+    mlAdd Hpred. mlDestructOr "2".
+    {
+      opose proof* (IHsz (svar_open X 0 φ4) φ1 φ2 xs x X Γ HΓ) as IHsz.
+      1-8: admit.
+      mlAdd IHsz.
+    }
+    {
+    
+    }
+    (* Search patt_or derives_using.
+    
+    assert (). *)
+    
     (*
       new idea:
       1. prove Γ ⊢ is_predicate (φ = ψ) -> Γ ⊢ φ = ⊤ or φ = ⊥   (maybe with <--->)
@@ -554,24 +676,24 @@ Proof.
     Check prf_equiv_congruence.
     Search is_predicate_pattern derives_using.
     opose proof* (IHsz (svar_open X 0 φ4) φ1 φ2 xs x X Γ HΓ) as IHsz.
-    1-7: admit.
+    1-8: admit.
     pose proof (move_mu_under_implication Γ (φ1 =ml φ2) (φ4^[[evar:y↦φ1]])
       ltac:(wf_auto2) ltac:(wf_auto2)).
     (** TODO ***)
     replace (ExGen := ∅ : coEVarSet, SVSubst := ∅ : coSVarSet, KT := true,
             AKT := ~~ bound_svar_is_banned_under_mus φ4^[[evar:y↦φ1]] 0 0) with
-      (ExGen := coGset.FinGSet ({[ev_x; x]} ∪ xs), SVSubst := {[X]}, KT := false,
-       AKT := false) in H1.
+      i in H2.
     (****)
     mlAssert ("H" : ((mu , φ1 =ml φ2 ---> φ4^[[evar:y↦φ1]]))). { admit. }
     {
-      mlApplyMeta H1. mlSplitAnd; mlAssumption.
+      mlApplyMeta H2. mlSplitAnd; mlAssumption.
     }
     
-    mlApplyMeta H1 in "0".
+    mlApplyMeta H2 in "0".
     mlApply "0" in "1".
     mlClear "0".
-    fromMLGoal. clear H1.
+    mlClear "1".
+    fromMLGoal. clear H2.
     replace ((mu , φ1 =ml φ2 ---> φ4^[[evar:y↦φ1]]) ---> (mu , φ4^[[evar:y↦φ2]]))
       with
       ((mu , (φ1 =ml φ2 ---> φ4^[[evar:y↦φ1]])^{svar:0↦X}^{{svar:X↦0}}) ---> (mu , φ4^[[evar:y↦φ2]]^{svar:0↦X}^{{svar:X↦0}})).

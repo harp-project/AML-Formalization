@@ -325,7 +325,8 @@ Proof.
     
   remember ( fresh_evar( φ₁ ---> φ₂)  ) as x.
     
-  pose proof membership_and_2 Γ x φ₁ φ₂ ltac:(wf_auto2)ltac:(wf_auto2) ltac:(set_solver). 
+  pose proof membership_and_2 Γ x φ₁ φ₂ ltac:(wf_auto2)ltac:(wf_auto2) ltac:(set_solver).
+  use (ExGen := {[ev_x; x]}, SVSubst := ∅, KT := false, AKT := false) in H5.
     
   apply universal_generalization with (x := x) in H5.
   2: try_solve_pile.
@@ -418,11 +419,12 @@ Proof.
     
   remember ( fresh_evar( φ ---> patt_free_evar x ) ) as y.
     
-  epose proof membership_symbol_ceil_aux_0 Γ (x) (y) (φ) _ _.
-    
+  epose proof membership_symbol_ceil_aux_0 Γ (x) (y) (φ) AnyReasoning H ltac:(wf_auto2).
+
   apply universal_generalization with (x := x) in H5.
   2: try_solve_pile.
   2: wf_auto2.
+  2: try_solve_pile.
     
   apply universal_generalization with (x := y) in H5.
   2: try_solve_pile.
@@ -491,9 +493,6 @@ Proof.
       
     mlApply "g".
     mlAssumption.
-    Unshelve. 
-    set_solver.
-    wf_auto2.
 Defined.
 
 Theorem proved_membership_functional:

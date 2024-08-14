@@ -1560,6 +1560,8 @@ Proof.
       { try_solve_pile. }
       { exact HΓ. }
       { wf_auto2. }
+      { instantiate (1 := fresh_evar ψ). solve_fresh. }
+      { instantiate (1 := fresh_evar ψ $ fre). solve_fresh. }
     }
     toMLGoal.
     { clear Hpf2 Hpf3 Hpf4; wf_auto2. }

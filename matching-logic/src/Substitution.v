@@ -3023,10 +3023,9 @@ Lemma Private_no_negative_occurrence_svar_quantify ϕ level X:
       split_and!; auto.
   Qed.
 
-  Lemma free_evar_subst_free_evar_subst φ ψ η x n :
+  Lemma free_evar_subst_bevar_subst φ ψ η x n :
     well_formed_closed_ex_aux ψ n ->
-    x ∉ free_evars η ->
-    φ^[[evar:x ↦ ψ]]^[evar:n ↦ η] =
+    φ^[[evar:x ↦ ψ]]^[evar:n ↦ η^[[evar:x ↦ ψ]]] =
     φ^[evar:n ↦ η]^[[evar:x ↦ ψ]].
   Proof.
     generalize dependent n.
@@ -3034,12 +3033,50 @@ Lemma Private_no_negative_occurrence_svar_quantify ϕ level X:
     * case_match. now rewrite bevar_subst_not_occur.
       now simpl.
     * case_match; simpl; auto.
-      now rewrite free_evar_subst_no_occurrence.
     * erewrite IHφ1, IHφ2. reflexivity. all: auto.
     * erewrite IHφ1, IHφ2. reflexivity. all: auto.
     * erewrite IHφ; auto.
       eapply well_formed_closed_ex_aux_ind. 2: eassumption. lia.
     * erewrite IHφ; auto.
+  Defined.
+
+  Corollary free_evar_subst_bevar_subst_fresh φ ψ η x n :
+    well_formed_closed_ex_aux ψ n ->
+    x ∉ free_evars η ->
+    φ^[[evar:x ↦ ψ]]^[evar:n ↦ η] =
+    φ^[evar:n ↦ η]^[[evar:x ↦ ψ]].
+  Proof.
+    intros.
+    rewrite -free_evar_subst_bevar_subst. assumption.
+    by rewrite (free_evar_subst_no_occurrence _ η).
+  Defined.
+
+  Lemma free_svar_subst_bsvar_subst φ ψ η X n :
+    well_formed_closed_mu_aux ψ n ->
+    φ^[[svar:X ↦ ψ]]^[svar:n ↦ η^[[svar:X ↦ ψ]]] =
+    φ^[svar:n ↦ η]^[[svar:X ↦ ψ]].
+  Proof.
+    generalize dependent n.
+    induction φ; intros; simpl; auto.
+    * case_match. now rewrite bsvar_subst_not_occur.
+      now simpl.
+    * case_match; simpl; auto.
+    * erewrite IHφ1, IHφ2. reflexivity. all: auto.
+    * erewrite IHφ1, IHφ2. reflexivity. all: auto.
+    * erewrite IHφ; auto.
+    * erewrite IHφ; auto.
+      eapply well_formed_closed_mu_aux_ind. 2: eassumption. lia.
+  Defined.
+
+  Corollary free_evar_subst_bsvar_subst_fresh φ ψ η X n :
+    well_formed_closed_mu_aux ψ n ->
+    X ∉ free_svars η ->
+    φ^[[svar:X ↦ ψ]]^[svar:n ↦ η] =
+    φ^[svar:n ↦ η]^[[svar:X ↦ ψ]].
+  Proof.
+    intros.
+    rewrite -free_svar_subst_bsvar_subst. assumption.
+    by rewrite (free_svar_subst_fresh η).
   Defined.
 
   Lemma subst_svar_evar_svar ϕ x ψ n :
