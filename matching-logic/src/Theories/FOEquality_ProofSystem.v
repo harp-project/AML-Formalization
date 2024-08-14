@@ -252,6 +252,132 @@ Proof.
     mlExactMeta Func2.
 Defined.
 
+Lemma funcional_application {Σ : Signature} {syntax : Syntax} Γ t1 t2 :
+  theory ⊆ Γ ->
+  well_formed t1 ->
+  well_formed t2 ->
+  Γ ⊢ (ex , t2 =ml b0) ---> (all , ex , (t1 $ b1)%ml =ml b0) --->
+    ex , (t1 $ t2)%ml =ml b0.
+Proof.
+  intros HΓ wf1 wf2.
+  mlIntro "H".
+  mlDestructEx "H" as x.
+  mlSimpl. cbn. rewrite evar_open_not_occur. wf_auto2.
+  mlIntro "H0".
+  mlSpecialize "H0" with x.
+  mlSimpl. cbn. rewrite evar_open_not_occur. wf_auto2.
+  mlDestructEx "H0" as y.
+  mlSimpl. cbn. rewrite evar_open_not_occur. wf_auto2.
+  mlExists y.
+  mlSimpl. cbn. rewrite evar_open_not_occur. wf_auto2. rewrite evar_open_not_occur. wf_auto2.
+  mlRewriteBy "H" at 1.
+  mlAssumption.
+Defined.
+
+Fixpoint nary_function {Σ : Signature} {syntax : Syntax} (f : Pattern) (n : nat) :=
+  match n with
+  | 0 => ex , f =ml b0
+  | S n' => all , nary_function (f $ patt_bound_evar (S n')) n'
+  end.
+
+Definition nary_function_symbol {Σ : Signature} {syntax : Syntax} (f : symbols) (n : nat) := nary_function (patt_sym f) n.
+
+Eval simpl in nary_function patt_bott 3.
+
+Lemma function_application_many {Σ : Signature} {syntax : Syntax} Γ l φ :
+  wf l ->
+  well_formed φ ->
+  (* mu_free φ ->
+    Forall mu_free l
+  *)
+  Γ ⊢ nary_function φ (length l) --->
+      foldr (fun p acc => (ex , p =ml b0) ---> acc)
+            (ex , foldl patt_app φ l =ml b0) l.
+Proof.
+  revert φ.
+  induction l; intros; cbn in *. mlIntro. mlAssumption.
+  destruct_and!.
+  specialize (IHl (φ $ a) H2 ltac:(wf_auto2)).
+  toMLGoal.
+  {
+    simpl in *. clear Halmost.
+    admit.
+  }
+  mlIntro. mlIntro.
+  mlApplyMeta IHl.
+  pose proof forall_functional_subst (nary_function (φ $ patt_bound_evar (S (length l))) (length l)).
+  admit.
+Admitted.
+
+Fixpoint deconstruct_function {Σ : Signature} (pat : Pattern) : option (symbols * list Pattern) :=
+match pat with
+| patt_app t1 t2 => match deconstruct_function t1 with
+                    | Some (f, pats) => Some (f, pats ++ [t2])
+                    | _ => None
+                    end
+| patt_sym s => Some (s, [])
+| _ => None
+end.
+
+(* Context (Σ : Signature).
+Axiom f g one : symbols.
+Axiom x y : evar.
+Compute deconstruct_function (((patt_sym f $ patt_free_evar x) $ patt_sym g $ patt_sym one) $ patt_sym g $ patt_free_evar y). *)
+
+Ltac mlSplitAnds :=
+match goal with
+[ |- @of_MLGoal _ (@mkMLGoal _ ?Γ _ (patt_and _ _) _)] =>
+  mlSplitAnd; mlSplitAnds
+| _ => idtac
+end.
+
+Ltac solve_functional_var :=
+lazymatch goal with
+[ |- @of_MLGoal _ (@mkMLGoal _ ?Γ _ (ex, patt_free_evar ?x =ml b0) _)] =>
+  mlExists x;
+  mlSimpl; cbn; try (rewrite bevar_subst_not_occur; wf_auto2);
+  mlReflexivity
+| [ |- _ ] => fail "Not a functional variable claim"
+end.
+
+Ltac solve_functional_symbol :=
+(* TODO: check the shape, this tactic is fragile *)
+  fromMLGoal;
+  gapply hypothesis;
+  try assumption;
+  wf_auto2;
+  set_solver
+.
+
+Ltac solve_functional_step :=
+  lazymatch goal with
+  | [ |- @of_MLGoal _ (@mkMLGoal _ ?Γ _ (ex, ?p =ml patt_bound_evar 0) _)] =>
+    lazymatch eval cbv in (deconstruct_function p) with
+    | Some (?f, ?p::?pats) =>
+      mlApplyMeta (function_application_many Γ (p::pats) (patt_sym f) ltac:(wf_auto2) ltac:(wf_auto2));
+      mlSplitAnds
+    | Some (?f, []) => solve_functional_symbol
+    | None => fail "Claim does not contain a first function symbol"
+    end
+  | _ => fail "Claim is not shaped as 'ex, <pat> =ml b0'"
+  end.
+
+Ltac solve_functional :=
+  (repeat solve_functional_step); try solve_functional_var; try solve_functional_symbol.
+
+Goal
+  forall {Σ : Signature} {syntax: Syntax} f g one Γ x y,
+    theory ⊆ Γ ->
+    (all, all, all, ex, patt_app (patt_app (patt_app (patt_sym f) b3) b2) b1 =ml b0) ∈ Γ ->
+    (all, ex, patt_app (patt_sym g) b1 =ml b0) ∈ Γ ->
+    (ex , patt_sym one =ml b0) ∈ Γ ->
+  Γ ⊢ ex, (((patt_sym f $ patt_free_evar x) $ patt_sym g $ patt_sym one) $ patt_sym g $ patt_free_evar y)%ml =ml b0.
+Proof.
+  intros * HΓ Hf Hg Hone.
+  toMLGoal. { wf_auto2. }
+  solve_functional.
+Defined.
+
 Close Scope ml_scope.
 Close Scope string_scope.
 Close Scope list_scope.

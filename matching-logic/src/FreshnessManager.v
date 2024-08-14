@@ -595,7 +595,6 @@ Ltac2 _is_subterm_of (x : constr) (y : constr) : bool
 .
 *)
 
-
 Lemma FreshMan_export_evars_inclusion
     {Σ : Signature}
     (ap : Pattern)
@@ -676,6 +675,67 @@ Proof.
     }
 Qed.
 
+Lemma FreshMan_export_evars_nodup
+    {Σ : Signature}
+    (x : evar)
+    (avoided_patterns : list Pattern)
+    (aevs : list evar)
+    (asvs : list svar)
+    (fm_evars : list evar)
+    (fm_svars : list svar)
+    (FM : FreshnessManager avoided_patterns aevs asvs (x::fm_evars) fm_svars)
+    :
+    x ∉ fm_evars /\
+    x ∉ aevs /\
+    FreshnessManager avoided_patterns aevs asvs fm_evars fm_svars
+.
+Proof.
+  split.
+  {
+    pose proof (fm_evars_nodup _ _ _ _ _ FM).
+    clear-H.
+    intro.
+    apply elem_of_list_lookup_1 in H0 as [i H0].
+    by specialize (H 0 (S i) x x eq_refl H0 ltac:(lia)).
+  }
+  split.
+  {
+    pose proof (fm_avoids_evar _ _ _ _ _ FM).
+    clear -H.
+    intro.
+    apply elem_of_list_lookup_1 in H0 as [i H0].
+    by specialize (H i 0 x x H0 eq_refl).
+  }
+  {
+    destruct FM.
+    constructor.
+    {
+        intros.
+        eapply (fm_avoids_evar0 i (S j)); eassumption.
+    }
+    {
+        intros.
+        eapply fm_avoids_svar0; eassumption.
+    }
+    {
+        intros.
+        eapply (fm_evars_nodup0 (S i) (S j)); try eassumption. lia.
+    }
+    {
+        intros.
+        eapply fm_svars_nodup0; eassumption.
+    }
+    {
+        intros.
+        eapply fm_evars_fresh0 with (j := j) (i := S i); try eassumption.
+    }
+    {
+        intros.
+        eapply fm_svars_fresh0 with (j := j); try eassumption.
+    }
+  }
+Qed.
+
 Ltac2 rec _fm_export_everything () :=
     lazy_match! goal with
     | [ fm : (FreshnessManager ?ps ?aevs ?asvs ?evs ?svs) |- _]
@@ -687,6 +747,15 @@ Ltac2 rec _fm_export_everything () :=
     | [ fm : (FreshnessManager ?ps ?aevs ?asvs ?evs ?svs) |- _]
         =>
         apply FreshMan_export_evars_inclusion in $fm;
+        let h := Control.hyp fm in
+        destruct $h as [? [? fm]]
+    end
+    );
+    repeat (
+    lazy_match! goal with
+    | [ fm : (FreshnessManager ?ps ?aevs ?asvs ?evs ?svs) |- _]
+        =>
+        apply FreshMan_export_evars_nodup in $fm;
         let h := Control.hyp fm in
         destruct $h as [? [? fm]]
     end
@@ -773,17 +842,18 @@ Ltac2 fm_solve () :=
         let fmt := (Control.hyp fm) in
         let pf := constr:(fm_svars_nodup $ps $aevs $asvs $evs $svs $fmt $i $j $x $y) in
         apply $pf > [reflexivity|reflexivity|ltac1:(lia)]
-    | [ fm : (FreshnessManager ?ps ?aevs ?asvs ?evs ?svs) |- (not (@elem_of evar _ _ ?x (free_evars ?phi)))] =>
+    | [ fm : (FreshnessManager ?ps ?aevs ?asvs ?evs ?svs) |- (not (@elem_of _ _ _ ?x _))] =>
         (* This might not be the most scalable approach, but it works for now. *)
-        _fm_export_everything (); cbn; ltac1:(pose proof (free_evars_bevar_subst); subst; (solve_fresh + set_solver))
-    | [ fm : (FreshnessManager ?ps ?aevs ?asvs ?evs ?svs) |- (not (@elem_of svar _ _ ?x (free_svars ?phi)))] =>
+        _fm_export_everything (); cbn; ltac1:(pose proof (free_evars_bevar_subst); pose proof (free_svars_bsvar_subst); subst; (solve_fresh + set_solver))
+(*     | [ fm : (FreshnessManager ?ps ?aevs ?asvs ?evs ?svs) |- (not (@elem_of svar _ _ ?x (free_svars ?phi)))] =>
         (* This might not be the most scalable approach, but it works for now. *)
-        _fm_export_everything (); cbn; ltac1:(pose proof (free_svars_bsvar_subst); subst; set_solver)
+        _fm_export_everything (); cbn; ltac1:(pose proof (free_svars_bsvar_subst); subst; set_solver) *)
     | [ fm : (FreshnessManager ?ps ?aevs ?asvs ?evs ?svs) |- (not (@elem_of evar _ _ ?x (free_evars_of_list ?phis)))] =>
         (* This might not be the most scalable approach, but it works for now. *)        
         _fm_export_everything (); cbn;
         repeat (apply free_evars_of_list_unfold; split);
         ltac1:(pose proof (free_evars_bevar_subst); subst; set_solver)
+    | [ _ : _ |- _] => Message.print (Message.of_string "fm_solve() failed")
     end
 .
 
@@ -848,6 +918,13 @@ Proof.
     assert (Y <> X0).
     {
         fm_solve.
+    }
+
+    assert (x ∉ free_evars (patt_imp ϕ₁ (patt_free_evar y))). {
+      fm_solve.
+    }
+    assert (x ∉ free_evars (patt_imp ϕ₁ (patt_free_evar x0))). {
+      fm_solve.
     }
     exact I.
 Qed.

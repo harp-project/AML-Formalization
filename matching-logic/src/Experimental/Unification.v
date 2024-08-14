@@ -126,7 +126,11 @@ Section unification.
 
   End corollaries.
 
-  (* The naming of the following lemmas matches this article: https://arxiv.org/abs/1811.02835v3 *)
+  (** The naming of the following lemmas matches this article:
+        Unification in Matching Logic - Extended Version
+        Andrei Arusoaie, Dorel Lucanu
+        https://arxiv.org/abs/1811.02835v3
+   *)
 
   Lemma Prop₃_left: forall Γ φ φ',
     theory ⊆ Γ ->
@@ -336,20 +340,66 @@ Section unification.
     exact (const eq_refl).
   Defined.
 
+  (**
+    This typeclass represents (in an abstract way) the unification problems of
+
+      Unification in Matching Logic - Extended Version
+      Andrei Arusoaie, Dorel Lucanu
+      https://arxiv.org/abs/1811.02835v3
+
+      In the following description, we highlight the connection to this paper.
+  *)
   Class UP (T : Type) := {
-    (* Insertion operation, like union in the paper but with one operand *)
+    (** Insertion operation:
+
+          insertUP P (t, u) ~ P ∪ {t ≐ u}
+      *)
     insertUP : T -> (WFPattern * WFPattern) -> T;
-    (* Failed unification problem *)
+    (** Failed unification problem
+
+          bottomUP ~ ⊥
+      *)
+
     bottomUP : T;
-    (* Conversion to predicate. Expected to be conjunction of equalities *)
+    (** Conversion to predicate. Expected to be conjunction of equalities.
+
+          toPredicateUP P ~ ϕᴾ
+      *)
+
     toPredicateUP : T -> WFPattern;
-    (* Substitution on every pattern *)
+    (** Substitution of a variable to a pattern in every pattern of
+        a unification problem
+
+          substituteAllUP x t P ~ P{x ↦ t}
+      *)
+
     substituteAllUP : evar -> WFPattern -> T -> T;
-    (* Creation of a singleton problem, for the start of the algirthm *)
+    (** Creation of a singleton problem
+
+          singletonUP t u ~ {t ≐ u}
+      *)
+
     singletonUP : WFPattern -> WFPattern -> T;
+
+    (**
+      Converting a unification problem maps insertion to conjunction.
+     *)
     toPredicateInsertUP : forall Γ t x y, Γ ⊢wf toPredicateUP (insertUP t (x, y)) wf<---> ((x wf=ml y) wfand (toPredicateUP t));
+
+    (**
+      Converting a unification problem maps substitution of unification problems
+      to substitution of patterns.
+     *)
     toPredicateSubstituteAllUP : forall Γ t e p, Γ ⊢wf toPredicateUP (substituteAllUP e p t) wf<---> (toPredicateUP t)^wf[[evar:e↦p]];
+
+    (**
+      Inserting into a non-⊥ unification problem cannot result ⊥.
+     *)
     insertNotBottomUP : forall t x, t ≠ bottomUP -> insertUP t x ≠ bottomUP;
+
+    (**
+      Converting a singleton problem to a predicate pattern gives us an equality.
+     *)
     toPredicateSingletonUP : forall Γ t1 t2, Γ ⊢wf toPredicateUP (singletonUP t1 t2) wf<---> (t1 wf=ml t2)
   }.
 
@@ -563,6 +613,11 @@ Section unification.
         insertUP P (patt_free_evar x ↾ well_formed_free_evar x, t) ===> insertUP (substituteAllUP x t P) (patt_free_evar x ↾ well_formed_free_evar x, t)
   where "P ===> P'" := (unification_step P P').
 
+  (**
+    TODO: this axiom should be placed into Γ later, and we have to use `hypothesis`
+          to obtain it. For this, we have to create a spec. for unification/term
+          algebras.
+  *)
   Axiom injectivity : forall Γ f t g u, Γ ⊢ (f $ t) =ml (g $ u) ---> (f =ml g) and (t =ml u).
 
   Tactic Notation "inside" tactic(inside) "outside" tactic(outside) :=
@@ -655,12 +710,15 @@ Section unification.
 
   Definition is_most_general_unifier_of (σ : list (evar * Pattern)) (t₁ t₂ : Pattern) : Type := (forall Γ, Γ ⊢ is_unifier_of σ t₁ t₂) * (forall η, more_general_substitution σ η).
 
-  (* Could I make US a Prop and use stdpp's rtc for this? *)
+  (* NOTE Could I make US a Prop and use stdpp's rtc for this? *)
   Inductive USrtc {T : Set} {UPT : UP T} : T -> T -> Set :=
     | USrtc_last : forall a, USrtc a a
     | USrtc_step : forall a b c, a ===> b -> USrtc b c -> USrtc a c
   .
 
+  (**
+    The formalized unification algorithm gives us an MGU.
+  *)
   Axiom convenient : forall {T : Set} {UPT : UP T} σ t1 t2, is_most_general_unifier_of σ (`t1) (`t2) -> {P : T & (USrtc (singletonUP t1 t2) P * (P ≠ bottomUP) * forall Γ, Γ ⊢ projT1 (toPredicateUP P) <---> predicate_list σ)%type}.
 
   Lemma Lemma₄_helper : forall {T : Set} {UPT : UP T} Γ P P',
@@ -790,87 +848,107 @@ Section unification.
     let z := (patt_free_evar z' ↾ well_formed_free_evar z') in
     let t1 := ((f wf$ x) wf$ (g wf$ one)) wf$ (g wf$ z) in
     let t2 := ((f wf$ (g wf$ y)) wf$ (g wf$ y)) wf$ (g wf$ (g wf$ x)) in
-    (* (all, all, all, ex, patt_app (patt_app (patt_app (patt_sym f') b3) b2) b1 =ml b0) ∈ Γ -> *)
-    (* (all, all, ex, patt_app (patt_app (patt_sym g') b3) b2 =ml b0) ∈ Γ -> *)
+    (** f is a functional symbol *)
+    (all, all, all, ex, patt_app (patt_app (patt_app (patt_sym f') b3) b2) b1 =ml b0) ∈ Γ ->
+    (** g is a functional symbol *)
+    (all, ex, patt_app (patt_sym g') b1 =ml b0) ∈ Γ ->
+    (** one is a functional symbol *)
+    (ex, patt_sym one' =ml b0) ∈ Γ ->
+    (*
+      TODO: after defining term algebra spec. these functional axioms should be
+      in the theory of the spec.
+    *)
     {σ & Γ ⊢ `t1 and `t2 <---> `t1 and predicate_list σ}.
   Proof with try solve [auto | refine_wf; auto; apply wfWFPattern].
     intros * NE1 NE2 HΓ **.
+    rename H into Hfunctional_f.
+    rename H0 into Hfunctional_g.
+    rename H1 into Hfunctional_one.
     evar (σ : list (evar * Pattern)).
     assert (wf (map snd σ)) as WFσ by shelve.
     pose proof (wf_predicate_list σ WFσ) as WFplσ.
     exists σ.
     toMLGoal... mlSplitAnd; mlIntro.
     opose proof* (Prop₃_right Γ (`t1) (`t2))...
-    (* How do I solve these? *)
-    (* toMLGoal. admit. apply hypothesis in FF. use AnyReasoning in FF. mlAdd FF. *)
-    (* Print bevar_subst. *)
-    (* About forall_functional_subst. *)
-    1-2: admit.
-    mlApplyMeta H in "0".
-    pose proof (@gset_fin_set _ WFPattern_eq_dec ltac:(typeclasses eauto)).
-    pose (@optionSetUP _ _ _ _ _ _ _ _ H0 ltac:(typeclasses eauto)).
-    opose proof* (Lemma₄_helper Γ (Some (singleton (t1, t2)))). auto.
-    eright. pose proof (decompositionUS (Some empty)). simpl in H1. rewrite <- union_empty_r_L. apply H1... rewrite union_empty_r_L.
-    eright. epose proof (decompositionUS (Some _)). simpl in H1. apply H1...
-    rewrite union_comm_L. rewrite <- union_assoc_L.
-    eright. epose proof (deleteUS (Some _)). simpl in H1. apply H1...
-    eright. epose proof (decompositionUS (Some _)). simpl in H1. apply H1...
-    eright. epose proof (decompositionUS (Some _)). simpl in H1. apply H1...
-    rewrite union_comm_L. rewrite <- union_assoc_L.
-    eright. epose proof (deleteUS (Some _)). simpl in H1. apply H1...
-    rewrite <- union_assoc_L.
-    eright. epose proof (decompositionUS (Some _)). simpl in H1. apply H1...
-    rewrite union_comm_L. rewrite <- union_assoc_L.
-    eright. epose proof (deleteUS (Some _)). simpl in H1. apply H1...
-    rewrite (union_comm_L {[(z, g wf$ x)]}). rewrite <- union_assoc_L.
-    eright. epose proof (orientUS (Some _)). simpl in H1. apply H1... fold y.
-    rewrite union_assoc_L. rewrite (union_comm_L {[(y, one)]}).
-    left. discriminate. cbn -[f g one x y z] in H1.
-    rewrite set_fold_singleton in H1. cbn -[f g one x y z] in H1.
-    unfold WFDerives in H1. do 3 rewrite unwrap_wfwrapper in H1. cbn [proj1_sig] in H1.
-    mlDestructAnd "0". mlSplitAnd. mlAssumption.
-    pose proof (top_holds Γ). use AnyReasoning in H2.
-    mlAdd H2.
-    Time mlConjFast "2" "0" as "3"... (*wfby (refine_wf; apply wfWFPattern).*)
-    (* Record: 0.19s *)
-    (* Time mlConj "2" "0" as "3". *)
-    (* Record: 38.576s *)
-    (* TODO: make issue *)
-    mlApplyMeta H1 in "3".
-    mlClear "0". mlClear "1". mlClear "2". clear H H1 H2.
-    opose proof* (set_fold_disj_union_strong_equiv Γ (WFPatt_and ∘ uncurry WFPatt_equal) (Top ↾ well_formed_top)).
-    3: unfold WFDerives in H; rewrite unwrap_wfwrapper in H; apply pf_iff_proj1 in H; [mlApplyMeta H in "3" | |]...
-    intros. simpl. unfold WFDerives. rewrite ! unwrap_wfwrapper.
-    toMLGoal. refine_wf; apply wfWFPattern. mlSplitAnd; mlDecomposeAll; do 2? mlSplitAnd; mlAssumption.
-    apply disjoint_singleton_r. set_solver.
-    rewrite set_fold_singleton. simpl. case_match. simpl.
-    instantiate (σ := [(_, _); (_, _); (_, _)]). simpl.
-    mlDestructAnd "3". mlSplitAnd. mlExact "0". mlClear "0". clear H.
-    apply (f_equal proj1_sig) in H1. simpl in H1. subst x0.
-    opose proof* (set_fold_disj_union_strong_equiv Γ (WFPatt_and ∘ uncurry WFPatt_equal) (Top ↾ well_formed_top)).
-    3: unfold WFDerives in H; rewrite unwrap_wfwrapper in H; apply pf_iff_proj1 in H; [mlApplyMeta H in "1" | |]...
-    intros. simpl. unfold WFDerives. rewrite ! unwrap_wfwrapper.
-    toMLGoal. refine_wf; apply wfWFPattern. mlSplitAnd; mlDecomposeAll; do 2? mlSplitAnd; mlAssumption.
-    apply disjoint_singleton_r. set_solver.
-    rewrite 2! set_fold_singleton. simpl.
-    mlExact "1".
-    opose proof* (Lemma₂ Γ (`t1) σ AnyReasoning)...
-    opose proof* (wf_substitute_list σ (`t1))...
-    apply pf_iff_proj2 in H... mlSplitAnd. mlDestructAnd "0"; mlAssumption.
-    mlApplyMeta H in "0". unfold t1. simpl.
-    case_match. 2: now destruct n.
-    case_match. now destruct NE1.
-    mlSimpl. simpl.
-    case_match. 2: now destruct n0.
-    case_match. now destruct NE2.
-    simpl. case_match. 2: now destruct n1.
-    mlDecomposeAll.
-    do ! mlRewriteBy "2" at 1.
-    mlExact "1".
-    Unshelve.
-    wf_auto2.
-    all: typeclasses eauto.
-  Abort.
+    (* functional patterns: *)
+    1: {
+      subst t1 t2. cbn.
+      toMLGoal. { wf_auto2. }
+      solve_functional.
+    }
+    1: {
+      subst t1 t2. cbn.
+      toMLGoal. { wf_auto2. }
+      solve_functional.
+    }
+    {
+      mlApplyMeta H in "0".
+      pose proof (@gset_fin_set _ WFPattern_eq_dec ltac:(typeclasses eauto)).
+      pose (@optionSetUP _ _ _ _ _ _ _ _ H0 ltac:(typeclasses eauto)).
+      opose proof* (Lemma₄_helper Γ (Some (singleton (t1, t2)))). auto.
+      eright. pose proof (decompositionUS (Some empty)). simpl in H1. rewrite <- union_empty_r_L. apply H1... rewrite union_empty_r_L.
+      eright. epose proof (decompositionUS (Some _)). simpl in H1. apply H1...
+      rewrite union_comm_L. rewrite <- union_assoc_L.
+      eright. epose proof (deleteUS (Some _)). simpl in H1. apply H1...
+      eright. epose proof (decompositionUS (Some _)). simpl in H1. apply H1...
+      eright. epose proof (decompositionUS (Some _)). simpl in H1. apply H1...
+      rewrite union_comm_L. rewrite <- union_assoc_L.
+      eright. epose proof (deleteUS (Some _)). simpl in H1. apply H1...
+      rewrite <- union_assoc_L.
+      eright. epose proof (decompositionUS (Some _)). simpl in H1. apply H1...
+      rewrite union_comm_L. rewrite <- union_assoc_L.
+      eright. epose proof (deleteUS (Some _)). simpl in H1. apply H1...
+      rewrite (union_comm_L {[(z, g wf$ x)]}). rewrite <- union_assoc_L.
+      eright. epose proof (orientUS (Some _)). simpl in H1. apply H1... fold y.
+      rewrite union_assoc_L. rewrite (union_comm_L {[(y, one)]}).
+      left. discriminate. cbn -[f g one x y z] in H1.
+      rewrite set_fold_singleton in H1. cbn -[f g one x y z] in H1.
+      unfold WFDerives in H1. do 3 rewrite unwrap_wfwrapper in H1. cbn [proj1_sig] in H1.
+      mlDestructAnd "0". mlSplitAnd. mlAssumption.
+      pose proof (top_holds Γ). use AnyReasoning in H2.
+      mlAdd H2.
+      Time mlConjFast "2" "0" as "3"... (*wfby (refine_wf; apply wfWFPattern).*)
+      (* Record: 0.19s *)
+      (* Time mlConj "2" "0" as "3". *)
+      (* Record: 38.576s *)
+      mlApplyMeta H1 in "3".
+      mlClear "0". mlClear "1". mlClear "2". clear H H1 H2.
+      opose proof* (set_fold_disj_union_strong_equiv Γ (WFPatt_and ∘ uncurry WFPatt_equal) (Top ↾ well_formed_top)).
+      3: unfold WFDerives in H; rewrite unwrap_wfwrapper in H; apply pf_iff_proj1 in H; [mlApplyMeta H in "3" | |]...
+      intros. simpl. unfold WFDerives. rewrite ! unwrap_wfwrapper.
+      toMLGoal. refine_wf; apply wfWFPattern. mlSplitAnd; mlDecomposeAll; do 2? mlSplitAnd; mlAssumption.
+      apply disjoint_singleton_r. set_solver.
+      rewrite set_fold_singleton. simpl. case_match. simpl.
+      instantiate (σ := [(_, _); (_, _); (_, _)]). simpl.
+      mlDestructAnd "3". mlSplitAnd. mlExact "0". mlClear "0". clear H.
+      apply (f_equal proj1_sig) in H1. simpl in H1. subst x0.
+      opose proof* (set_fold_disj_union_strong_equiv Γ (WFPatt_and ∘ uncurry WFPatt_equal) (Top ↾ well_formed_top)).
+      3: unfold WFDerives in H; rewrite unwrap_wfwrapper in H; apply pf_iff_proj1 in H; [mlApplyMeta H in "1" | |]...
+      intros. simpl. unfold WFDerives. rewrite ! unwrap_wfwrapper.
+      toMLGoal. refine_wf; apply wfWFPattern. mlSplitAnd; mlDecomposeAll; do 2? mlSplitAnd; mlAssumption.
+      apply disjoint_singleton_r. set_solver.
+      rewrite 2! set_fold_singleton. simpl.
+      mlExact "1".
+    }
+    {
+      opose proof* (Lemma₂ Γ (`t1) σ AnyReasoning)...
+      opose proof* (wf_substitute_list σ (`t1))...
+      apply pf_iff_proj2 in H... mlSplitAnd. mlDestructAnd "0"; mlAssumption.
+      mlApplyMeta H in "0". unfold t1. simpl.
+      case_match. 2: now destruct n.
+      case_match. now destruct NE1.
+      mlSimpl. simpl.
+      case_match. 2: now destruct n0.
+      case_match. now destruct NE2.
+      simpl. case_match. 2: now destruct n1.
+      mlDecomposeAll.
+      do ! mlRewriteBy "2" at 1.
+      mlExact "1".
+    }
+      Unshelve.
+      wf_auto2.
+      all: typeclasses eauto.
+  Defined.
 
 End unification.
 
