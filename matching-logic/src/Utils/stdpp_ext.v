@@ -3,6 +3,14 @@ From Coq Require Import ssreflect ssrfun ssrbool String.
 From Coq.Logic Require Import Classical_Prop Classical_Pred_Type Eqdep_dec.
 From stdpp Require Import pmap gmap mapset fin_sets sets list propset coGset.
 
+Lemma foldl_fold_left :
+  forall {A B} f (l : list A) (b : B),
+    foldl f b l = fold_left f l b.
+Proof.
+  induction l; intros; simpl. reflexivity.
+  by rewrite IHl.
+Qed.
+
 Fixpoint index_of_helper (x : string) (l : list string) (n : nat) : option nat :=
   match l with
   | [] => None

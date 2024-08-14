@@ -74,57 +74,12 @@ Section unification.
       Unshelve. all: wf_auto2.
     Defined.
 
-    Lemma Forall_wf_map {A} (t : A -> Pattern) l : Forall (well_formed ∘ t) l <-> wf (map t l).
-    Proof.
-      intros. etransitivity. apply Forall_fold_right. unfold wf.
-      rewrite -> 2 foldr_map, foldr_andb_equiv_foldr_conj.
-      reflexivity.
-    Defined.
-
     Definition get_fresh_evar (φ : Pattern) : sig (.∉ free_evars φ).
     Proof.
       exists (fresh_evar φ); auto.
     Defined.
 
   End helpers.
-
-  Section corollaries.
-
-    Corollary wf_fold_left {A : Type} (f : Pattern -> A -> Pattern) (t : A -> Pattern) x xs :
-      well_formed x ->
-      wf (map t xs) ->
-      (forall a b, well_formed a -> well_formed (t b) -> well_formed (f a b)) ->
-      well_formed (fold_left f xs x).
-    Proof.
-      intros. apply fold_left_ind with (Q := well_formed ∘ t);
-      only 2: apply Forall_wf_map; auto.
-    Defined.
-
-    Corollary wf_foldr {A : Type} (f : A -> Pattern -> Pattern) (t : A -> Pattern) x xs :
-      well_formed x ->
-      wf (map t xs) ->
-      (forall a b, well_formed a -> well_formed (t b) -> well_formed (f b a)) ->
-      well_formed (foldr f x xs).
-    Proof.
-      intros.
-      apply foldr_ind with (Q := well_formed ∘ t);
-      only 2: apply Forall_wf_map; auto.
-    Defined.
-
-    Corollary mf_fold_left {A : Type} (f : Pattern -> A -> Pattern) (t : A -> Pattern) x xs :
-      mu_free x ->
-      foldr (fun c a => mu_free c && a) true (map t xs) ->
-      (forall a b, mu_free a -> mu_free (t b) -> mu_free (f a b)) ->
-      mu_free (fold_left f xs x).
-    Proof.
-      intros.
-      apply fold_left_ind with (Q := mu_free ∘ t);
-      only 2: apply Forall_fold_right;
-      only 2: rewrite -> foldr_map, foldr_andb_equiv_foldr_conj in H0;
-      auto.
-    Defined.
-
-  End corollaries.
 
   (** The naming of the following lemmas matches this article:
         Unification in Matching Logic - Extended Version

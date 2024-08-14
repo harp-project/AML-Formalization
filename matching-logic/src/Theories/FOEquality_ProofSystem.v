@@ -274,40 +274,155 @@ Proof.
   mlAssumption.
 Defined.
 
-Fixpoint nary_function {Σ : Signature} {syntax : Syntax} (f : Pattern) (n : nat) :=
-  match n with
-  | 0 => ex , f =ml b0
-  | S n' => all , nary_function (f $ patt_bound_evar (S n')) n'
-  end.
+Section nary_functions.
 
-Definition nary_function_symbol {Σ : Signature} {syntax : Syntax} (f : symbols) (n : nat) := nary_function (patt_sym f) n.
+  Context {Σ : Signature} {syntax : Syntax}.
+  Fixpoint nary_function (f : Pattern) (n : nat) :=
+    match n with
+    | 0 => ex , f =ml b0
+    | S n' => all , nary_function (f $ patt_bound_evar (S n')) n'
+    end.
 
-Eval simpl in nary_function patt_bott 3.
+  Definition nary_function_symbol (f : symbols) (n : nat) := nary_function (patt_sym f) n.
 
-Lemma function_application_many {Σ : Signature} {syntax : Syntax} Γ l φ :
-  wf l ->
-  well_formed φ ->
-  (* mu_free φ ->
-    Forall mu_free l
-  *)
-  Γ ⊢ nary_function φ (length l) --->
-      foldr (fun p acc => (ex , p =ml b0) ---> acc)
-            (ex , foldl patt_app φ l =ml b0) l.
-Proof.
-  revert φ.
-  induction l; intros; cbn in *. mlIntro. mlAssumption.
-  destruct_and!.
-  specialize (IHl (φ $ a) H2 ltac:(wf_auto2)).
-  toMLGoal.
-  {
-    simpl in *. clear Halmost.
-    admit.
-  }
-  mlIntro. mlIntro.
-  mlApplyMeta IHl.
-  pose proof forall_functional_subst (nary_function (φ $ patt_bound_evar (S (length l))) (length l)).
-  admit.
-Admitted.
+  Eval simpl in nary_function patt_bott 3.
+
+  Lemma nary_function_well_formed_positive :
+    forall n φ, well_formed_positive φ -> well_formed_positive (nary_function φ n).
+  Proof.
+    induction n; simpl; intros.
+    wf_auto2.
+    rewrite IHn. wf_auto2. reflexivity.
+  Qed.
+
+  Lemma nary_function_well_formed_closed_mu_aux :
+    forall m n φ, well_formed_closed_mu_aux φ n ->
+      well_formed_closed_mu_aux (nary_function φ m) n.
+  Proof.
+    induction m; simpl; intros.
+    wf_auto2.
+    rewrite IHm. wf_auto2. reflexivity.
+  Qed.
+
+  Lemma nary_function_well_formed_closed_ex_aux_helper :
+    forall m n φ,
+      n > m ->
+      well_formed_closed_ex_aux φ n ->
+      well_formed_closed_ex_aux (nary_function φ m) (n - S m).
+  Proof.
+    induction m; simpl; intros.
+    wf_auto2.
+    specialize (IHm n (φ $ patt_bound_evar (S m)) ltac:(lia)).
+    rewrite Nat.sub_succ_r. rewrite Nat.succ_pred_pos. lia.
+    rewrite IHm. wf_auto2. case_match. lia. lia. reflexivity.
+  Qed.
+
+  Lemma nary_function_well_formed_closed_ex_aux :
+    forall m n φ, well_formed_closed_ex_aux φ n ->
+      well_formed_closed_ex_aux (nary_function φ m) (n - S m).
+  Proof.
+    intros m n. destruct (dec_gt n m).
+    * intros. by apply nary_function_well_formed_closed_ex_aux_helper.
+    * assert (n - S m = 0) by lia. rewrite H0.
+      assert (n ≤ m) by lia. clear H H0.
+      revert n H1. induction m; intros; cbn.
+      - wf_auto2.
+      - do 2 rewrite andb_true_r.
+        replace 1 with (S (S m) - S m) by lia.
+        apply nary_function_well_formed_closed_ex_aux_helper. lia.
+        wf_auto2. case_match. lia. lia.
+  Qed.
+
+  Lemma nary_function_mu_free :
+    forall m φ, mu_free φ -> mu_free (nary_function φ m).
+  Proof.
+    induction m; intros; simpl. wf_auto2.
+    rewrite IHm; wf_auto2.
+  Qed.
+
+  Lemma nary_function_bevar_subst :
+    forall m n φ ψ,
+      (nary_function φ m)^[evar:n↦ψ] =
+      (nary_function φ^[evar: S m + n ↦ ψ] m).
+  Proof.
+    induction m; intros.
+    * by mlSimpl.
+    * simpl nary_function. mlSimpl. rewrite IHm. mlSimpl.
+      f_equal. f_equal.
+      simpl.
+      case_match. 2-3: lia.
+      rewrite -Nat.add_succ_comm. reflexivity.
+  Qed.
+
+  Lemma function_application_many Γ l φ :
+    theory ⊆ Γ ->
+    wf l ->
+    well_formed φ ->
+    mu_free φ ->
+    foldr andb true (map mu_free l) ->
+    Γ ⊢ nary_function φ (length l) --->
+        foldr (fun p acc => (ex , p =ml b0) ---> acc)
+              (ex , foldl patt_app φ l =ml b0) l.
+  Proof.
+    revert φ.
+    induction l; intros φ HΓ Hwfl Hwf HMF1 HMF2; cbn in *. mlIntro. mlAssumption.
+    destruct_and!.
+    opose proof* (IHl (φ $ a) HΓ H2 ltac:(wf_auto2)).
+    { simpl. by rewrite H HMF1. }
+    { assumption. }
+    toMLGoal.
+    {
+      simpl in *. clear Halmost H.
+      repeat apply well_formed_imp. 2-3: wf_auto2.
+      * assert (well_formed_positive (nary_function (φ $ patt_bound_evar (S (length l))) (length l))). {
+          apply nary_function_well_formed_positive. wf_auto2.
+        }
+        assert (well_formed_closed_mu_aux (nary_function (φ $ patt_bound_evar (S (length l))) (length l)) 0). {
+          apply nary_function_well_formed_closed_mu_aux. wf_auto2.
+        }
+        assert (well_formed_closed_ex_aux (nary_function (φ $ patt_bound_evar (S (length l))) (length l)) 1). {
+          replace 1 with (S (S (length l)) - S (length l)) by lia.
+          apply nary_function_well_formed_closed_ex_aux. wf_auto2.
+          case_match; lia.
+        }
+        wf_auto2.
+      * apply wf_foldr with (t := fun p => (ex , p =ml b0)).
+        - remember (fresh_evar (foldl patt_app (φ $ a) l)) as x.
+          pose proof (evar_quantify_well_formed (foldl patt_app (φ $ a) l =ml patt_free_evar x) x).
+          mlSimpl in H. simpl in H. rewrite decide_eq_same in H.
+          rewrite evar_quantify_fresh in H. subst x. solve_fresh.
+          apply H.
+          apply well_formed_equal. 2: wf_auto2.
+          rewrite foldl_fold_left.
+          apply wf_fold_left with (t := id). wf_auto2. by rewrite map_id.
+          clear. intros. wf_auto2.
+        - apply map_wf. assumption. clear. intros. wf_auto2.
+        - clear. intros. wf_auto2.
+    }
+    mlIntro. mlIntro.
+    mlApplyMeta IHl.
+    2: { assumption. }
+    2: { simpl. by rewrite H HMF1. }
+    opose proof* (forall_functional_subst (nary_function (φ $ patt_bound_evar (S (length l))) (length l)) a Γ HΓ).
+    { apply nary_function_mu_free. wf_auto2. }
+    { assumption. }
+    {
+      replace 1 with (S (S (length l)) - S (length l)) by lia.
+      apply nary_function_well_formed_closed_ex_aux. wf_auto2.
+      case_match; lia.
+    }
+    { apply nary_function_well_formed_closed_mu_aux. wf_auto2. }
+    2: { assumption. }
+    mlAdd H4. mlConj "0" "1" as "3".
+    mlApply "2" in "3".
+    rewrite nary_function_bevar_subst. mlSimpl. simpl.
+    case_match. 1,3: lia.
+    rewrite Nat.add_0_r.
+    rewrite bevar_subst_not_occur. wf_auto2.
+    mlAssumption.
+  Defined.
+
+End nary_functions.
 
 Fixpoint deconstruct_function {Σ : Signature} (pat : Pattern) : option (symbols * list Pattern) :=
 match pat with
@@ -318,11 +433,6 @@ match pat with
 | patt_sym s => Some (s, [])
 | _ => None
 end.
-
-(* Context (Σ : Signature).
-Axiom f g one : symbols.
-Axiom x y : evar.
-Compute deconstruct_function (((patt_sym f $ patt_free_evar x) $ patt_sym g $ patt_sym one) $ patt_sym g $ patt_free_evar y). *)
 
 Ltac mlSplitAnds :=
 match goal with
@@ -354,8 +464,8 @@ Ltac solve_functional_step :=
   | [ |- @of_MLGoal _ (@mkMLGoal _ ?Γ _ (ex, ?p =ml patt_bound_evar 0) _)] =>
     lazymatch eval cbv in (deconstruct_function p) with
     | Some (?f, ?p::?pats) =>
-      mlApplyMeta (function_application_many Γ (p::pats) (patt_sym f) ltac:(wf_auto2) ltac:(wf_auto2));
-      mlSplitAnds
+      mlApplyMeta (function_application_many Γ (p::pats) (patt_sym f) ltac:(set_solver) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(by simpl) ltac:(by simpl));
+      try mlSplitAnds
     | Some (?f, []) => solve_functional_symbol
     | None => fail "Claim does not contain a first function symbol"
     end
