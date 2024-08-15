@@ -2,7 +2,7 @@ From Coq Require Import ssreflect ssrfun ssrbool.
 
 From Ltac2 Require Import Ltac2.
 
-From Coq Require Import Bool.
+From Coq Require Import Bool String.
 From Coq.Logic Require Import FunctionalExtensionality Eqdep_dec.
 From Equations Require Import Equations.
 
@@ -221,6 +221,34 @@ Proof.
       { wf_auto2. }
     }
   }
+Defined.
+
+Lemma move_mu_under_implication
+  {Σ : Signature}
+  Γ φ ψ :
+    well_formed φ ->
+    well_formed (mu , ψ) ->
+    Γ ⊢i φ ---> (mu , ψ) ---> mu , (φ ---> ψ) using
+      (ExGen := ∅,
+       SVSubst := ∅,
+       KT := true,
+       AKT := ~~ bound_svar_is_banned_under_mus ψ 0 0).
+Proof.
+  intros.
+  assert (no_positive_occurrence_db_b 0 φ). {
+  (* TODO: wf_auto2 breaks without this assert later! *)
+    wf_auto2.
+  }
+  do 2 mlIntro.
+  mlApplyMeta (Knaster_tarski Γ ψ (mu, φ ---> ψ)) in "1".
+  2: {
+    toMLGoal. {
+      wf_auto2.
+    }
+    mlIntro; mlApplyMeta Pre_fixp. simpl.
+    mlIntro. mlAssumption.
+  }
+  mlAssumption.
 Defined.
 
 Close Scope ml_scope.

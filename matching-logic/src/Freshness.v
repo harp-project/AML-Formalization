@@ -522,6 +522,61 @@ induction n; intros S; simpl in *; unfold evar_fresh_s in *.
 }
 Qed.
 
+(** Note: we cannot reuse NoDup, until the proof system is 
+    formalised as `... -> Set`. *)
+Fixpoint no_dups {A : Set} {eqdec : EqDecision A} (l : list A) :=
+  match l with
+  | [] => True
+  | x::xs => x ∉ xs /\ no_dups xs
+  end.
+
+Lemma no_dups_NoDup :
+  forall {A : Set} {eqdec : EqDecision A} (l : list A), no_dups l <-> NoDup l.
+Proof.
+  induction l; split; simpl; intros.
+  * constructor.
+  * trivial.
+  * constructor. apply H. apply IHl, H.
+  * inversion H; subst. split. assumption. by apply IHl.
+Qed.
+
+Class fresh_evars {Σ : Signature} (l : list evar) (s : EVarSet) :=
+{
+  evar_duplicates : no_dups l;
+  all_evars_fresh : forall x, x ∈ l -> x ∉ s;
+}.
+
+Lemma fresh_evars_bigger {Σ : Signature} {el s} s' :
+  fresh_evars el s -> s' ⊆ s -> fresh_evars el s'.
+Proof. intros H H0. constructor; destruct H. auto. intros. set_solver. Qed.
+
+Lemma less_fresh_evars {Σ : Signature} {x el s} :
+  fresh_evars (x::el) s -> fresh_evars el s.
+Proof.
+  intros H. constructor; destruct H.
+  simpl in *. apply evar_duplicates0.
+  intros. apply all_evars_fresh0. now constructor 2.
+Qed.
+
+Class fresh_svars {Σ : Signature} (l : list svar) (s : SVarSet) :=
+{
+  svar_duplicates : no_dups l;
+  all_svars_fresh : forall X, X ∈ l -> X ∉ s;
+}.
+
+Lemma fresh_svars_bigger {Σ : Signature} {sl s} s' :
+  fresh_svars sl s -> s' ⊆ s -> fresh_svars sl s'.
+Proof. intros H H0. constructor; destruct H. auto. intros. set_solver. Qed.
+
+Lemma less_fresh_svars {Σ : Signature} {X sl s} :
+  fresh_evars (X::sl) s -> fresh_evars sl s.
+Proof.
+  intros H. constructor; destruct H.
+  simpl in *. apply evar_duplicates0.
+  intros. apply all_evars_fresh0. now constructor 2.
+Qed.
+
+
 Ltac solve_fresh :=
   (eapply not_elem_of_larger_impl_not_elem_of;
   [|apply x_eq_fresh_impl_x_notin_free_evars; reflexivity];

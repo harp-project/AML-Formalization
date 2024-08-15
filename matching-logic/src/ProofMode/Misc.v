@@ -1108,50 +1108,6 @@ Section FOL_helpers.
     }
   Qed.
 
-  (** Note: we cannot reuse NoDup, until the proof system is 
-      formalised as `... -> Set`. *)
-  Fixpoint no_dups {A : Set} {eqdec : EqDecision A} (l : list A) :=
-    match l with
-    | [] => True
-    | x::xs => x ∉ xs /\ no_dups xs
-    end.
-
-  Class fresh_evars (l : list evar) (s : EVarSet) :=
-  {
-    evar_duplicates : no_dups l;
-    all_evars_fresh : forall x, x ∈ l -> x ∉ s;
-  }.
-
-  Lemma fresh_evars_bigger {el s} s' :
-    fresh_evars el s -> s' ⊆ s -> fresh_evars el s'.
-  Proof. intros H H0. constructor; destruct H. auto. intros. set_solver. Qed.
-
-  Lemma less_fresh_evars {x el s} :
-    fresh_evars (x::el) s -> fresh_evars el s.
-  Proof.
-    intros H. constructor; destruct H.
-    simpl in *. apply evar_duplicates0.
-    intros. apply all_evars_fresh0. now constructor 2.
-  Qed.
-
-  Class fresh_svars (l : list svar) (s : SVarSet) :=
-  {
-    svar_duplicates : no_dups l;
-    all_svars_fresh : forall X, X ∈ l -> X ∉ s;
-  }.
-
-  Lemma fresh_svars_bigger {sl s} s' :
-    fresh_svars sl s -> s' ⊆ s -> fresh_svars sl s'.
-  Proof. intros H H0. constructor; destruct H. auto. intros. set_solver. Qed.
-
-  Lemma less_fresh_svars {X sl s} :
-    fresh_evars (X::sl) s -> fresh_evars sl s.
-  Proof.
-    intros H. constructor; destruct H.
-    simpl in *. apply evar_duplicates0.
-    intros. apply all_evars_fresh0. now constructor 2.
-  Qed.
-
   Lemma congruence_ex Γ E ψ x p q gpi kt evs svs
     (HxneqE : x ≠ E)
     (wfψ : well_formed (ex , ψ))
@@ -1290,6 +1246,30 @@ Section FOL_helpers.
 
   Context {Σ : Signature}.
 
+  (* TODO: derive congruence_app with this *)
+  Lemma congruence_app1 Γ ψ1 ψ2 p q E i
+    (wfψ1: well_formed ψ1)
+    (wfψ2: well_formed ψ2)
+    (wfp: well_formed p)
+    (wfq: well_formed q)
+    (pf₁: Γ ⊢i ψ1^[[evar: E ↦ p]] ---> ψ1^[[evar: E ↦ q]] using i)
+    (pf₂: Γ ⊢i ψ2^[[evar: E ↦ p]] ---> ψ2^[[evar: E ↦ q]] using i)
+    :
+    (Γ ⊢i (ψ1^[[evar: E ↦ p]]) $ (ψ2^[[evar: E ↦ p]]) ---> (ψ1^[[evar: E ↦ q]]) $ (ψ2^[[evar: E ↦ q]]) using i).
+  Proof.
+    remember (well_formed_free_evar_subst_0 E _ _ wfp wfψ1) as Hwf1.
+    remember (well_formed_free_evar_subst_0 E _ _ wfq wfψ1) as Hwf2.
+    remember (well_formed_free_evar_subst_0 E _ _ wfp wfψ2) as Hwf3.
+    remember (well_formed_free_evar_subst_0 E _ _ wfq wfψ2) as Hwf4.
+    eapply syllogism_meta.
+    4: {
+      eapply Framing_right; auto. try_solve_pile.
+      apply pf₂.
+    }
+    1-3: wf_auto2.
+    eapply Framing_left; auto. try_solve_pile.
+  Defined.
+
   Lemma congruence_app Γ ψ1 ψ2 p q E i
     (wfψ1: well_formed ψ1)
     (wfψ2: well_formed ψ2)
@@ -1304,69 +1284,16 @@ Section FOL_helpers.
     remember (well_formed_free_evar_subst_0 E _ _ wfq wfψ1) as Hwf2.
     remember (well_formed_free_evar_subst_0 E _ _ wfp wfψ2) as Hwf3.
     remember (well_formed_free_evar_subst_0 E _ _ wfq wfψ2) as Hwf4.
-
-    eapply pf_iff_equiv_trans.
-    5: { 
-      apply conj_intro_meta.
-      4: {
-        eapply Framing_right with (ψ := ψ1^[[evar: E ↦ q]]); auto.
-        1: { try_solve_pile. }
-        {
-          eapply pf_conj_elim_r_meta in pf₂.
-          apply pf₂.
-          { abstract (wf_auto2). }
-          { abstract (wf_auto2). }
-        }
-      }
-      3: {
-        eapply Framing_right with (ψ := ψ1^[[evar: E ↦ q]]); auto.
-        1: { try_solve_pile. }
-        {
-          eapply pf_conj_elim_l_meta in pf₂.
-          apply pf₂.
-          { abstract (wf_auto2). }
-          { abstract (wf_auto2). }
-        }
-      }
-      {
-        abstract (wf_auto2).
-      }
-      {
-        abstract (wf_auto2).
-      }
-    }
-    4: {
-      apply conj_intro_meta.
-      4: {
-        apply Framing_left with (ψ := ψ2^[[evar: E ↦ p]]); auto.
-        { try_solve_pile. }
-        {
-          eapply pf_conj_elim_r_meta in pf₁.
-          apply pf₁.
-          { abstract (wf_auto2). }
-          { abstract (wf_auto2). }
-        }
-      }
-      3: {
-        apply Framing_left with (ψ := ψ2^[[evar: E ↦ p]]); auto.
-        { try_solve_pile. }
-        {
-          eapply pf_conj_elim_l_meta in pf₁.
-          apply pf₁.
-          { abstract (wf_auto2). }
-          { abstract (wf_auto2). }
-        }
-      }
-      {
-        abstract (wf_auto2).
-      }
-      {
-        abstract (wf_auto2).
-      }
-    }
-    { abstract (wf_auto2). }
-    { abstract (wf_auto2). }
-    { abstract (wf_auto2). }
+    apply pf_iff_proj1 in pf₁ as pf1_1.
+    2-3: wf_auto2.
+    apply pf_iff_proj1 in pf₂ as pf2_1.
+    2-3: wf_auto2.
+    apply pf_iff_proj2 in pf₁ as pf1_2.
+    2-3: wf_auto2.
+    apply pf_iff_proj2 in pf₂ as pf2_2.
+    2-3: wf_auto2.
+    mlSplitAnd. fromMLGoal. 2: fromMLGoal.
+    all: apply congruence_app1; try assumption; try wf_auto2.
   Defined.
 
   Lemma count_evar_occurrences_evar_replace φ x y :
@@ -1545,17 +1472,17 @@ Section FOL_helpers.
       assert (size' (ψ^{evar: 0 ↦ x}) <= sz) by abstract(rewrite evar_open_size'; lia).
 
       assert (fresh_evars els (free_evars ψ^{evar:0↦x} ∪ free_evars p ∪ free_evars q ∪ {[E]})) as HVars. { constructor.
-        * destruct Hel1. apply evar_duplicates0.
+        * destruct Hel1. apply evar_duplicates.
         * destruct Hel1. intros.
           pose proof (free_evars_evar_open ψ x 0).
-          specialize (all_evars_fresh0 x0 ltac:(now right)).
-          simpl in *. destruct evar_duplicates0. set_solver.
+          specialize (all_evars_fresh x0 ltac:(now right)).
+          simpl in *. destruct evar_duplicates. set_solver.
       }
       simpl in Hel2.
       rewrite maximal_exists_depth_to_S in Hel2. assumption.
 
       assert (E ≠ x) as HXe. {
-        destruct Hel1 as [_ ?]. clear -all_evars_fresh0. set_solver.
+        destruct Hel1 as [_ ?]. clear -all_evars_fresh. set_solver.
       }
       unshelve (epose proof (IH := IHsz edepth sdepth (ψ^{evar: 0 ↦ x}) ltac:(assumption) ltac:(assumption) (evs ∪ {[x]}) svs gpi _ pf els HVars _ ltac:(set_solver) sl)).
       {
@@ -1573,12 +1500,12 @@ Section FOL_helpers.
       eapply congruence_ex with (x := x); try assumption.
       {
         destruct Hel1 as [_ ?].
-        specialize (all_evars_fresh0 x ltac:(now left)).
+        specialize (all_evars_fresh x ltac:(now left)).
         set_solver.
       }
       {
         destruct Hel1 as [_ ?].
-        specialize (all_evars_fresh0 x ltac:(now left)).
+        specialize (all_evars_fresh x ltac:(now left)).
         set_solver.
       }
       { apply Hel3. now left. }
@@ -1626,12 +1553,12 @@ Section FOL_helpers.
       Unshelve. 5: exact sls.
       {
         constructor.
-        * destruct Hsl1. apply svar_duplicates0.
+        * destruct Hsl1. apply svar_duplicates.
         * destruct Hsl1. intros.
           pose proof (free_svars_svar_open ψ X 0).
-          specialize (all_svars_fresh0 X0 ltac:(now right)).
-          simpl in *. destruct svar_duplicates0.
-          clear -H3 H2 H1 all_svars_fresh0. set_solver.
+          specialize (all_svars_fresh X0 ltac:(now right)).
+          simpl in *. destruct svar_duplicates.
+          clear -H3 H2 H1 all_svars_fresh. set_solver.
       }
       {
         rewrite svar_open_mu_depth.
@@ -1660,12 +1587,12 @@ Section FOL_helpers.
       rewrite <- (svar_quantify_svar_open X 0 (ψ^[[evar:E↦q]])).
       2: {
         pose proof (free_svars_free_evar_subst ψ E q).
-        destruct Hsl1 as [_ ?]. clear -all_svars_fresh0 H1.
+        destruct Hsl1 as [_ ?]. clear -all_svars_fresh H1.
         set_solver.
       }
       3: {
         pose proof (free_svars_free_evar_subst ψ E p).
-        destruct Hsl1 as [_ ?]. clear -all_svars_fresh0 H1.
+        destruct Hsl1 as [_ ?]. clear -all_svars_fresh H1.
         set_solver.
       }
       2-3: wf_auto2.

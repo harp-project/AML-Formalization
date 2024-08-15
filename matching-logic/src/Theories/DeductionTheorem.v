@@ -1425,9 +1425,12 @@ Proof.
       { apply Hpf5. }
     }
     { wf_auto2. }
-    apply framing_left_under_tot_impl.
+    mlFreshEvar as x.
+    apply framing_left_under_tot_impl with (x := x).
     1-4: solve [wf_auto2].
     { exact HΓ. }
+    { clear-FM. ltac2:(_fm_export_everything()). set_solver. }
+    { try_solve_pile. }
     { exact IHpf. }
   - (* Framing right *)
     assert (well_formed (phi1)).
@@ -1459,9 +1462,12 @@ Proof.
     }
     { clear Hpf5; wf_auto2. }
 
-    apply framing_right_under_tot_impl.
+    mlFreshEvar as x.
+    apply framing_right_under_tot_impl with (x := x).
     1-4: solve [wf_auto2].
     { exact HΓ. }
+    { clear-FM. ltac2:(_fm_export_everything()). set_solver. }
+    { try_solve_pile. }
     { exact IHpf. }
     
   - (* Set variable substitution *)

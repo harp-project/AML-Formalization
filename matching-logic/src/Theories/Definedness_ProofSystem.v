@@ -12,12 +12,12 @@ From Coq.Classes Require Import Morphisms_Prop.
 (* From Coq.Unicode Require Import Utf8. *)
 From Coq.micromega Require Import Lia.
 
-From stdpp Require Import base fin_sets sets propset proof_irrel option list coGset finite infinite gmap.
-
 From MatchingLogic Require Import Logic ProofMode.MLPM.
 From MatchingLogic.Theories Require Import Definedness_Syntax.
 From MatchingLogic.Utils Require Import stdpp_ext.
 Import extralibrary.
+
+From stdpp Require Import base fin_sets sets propset proof_irrel option list coGset finite infinite gmap.
 
 Import MatchingLogic.Logic.Notations.
 Import MatchingLogic.DerivedOperators_Syntax.Notations.
@@ -25,6 +25,7 @@ Import MatchingLogic.DerivedOperators_Syntax.Notations.
 Set Default Proof Mode "Classic".
 
 Close Scope equations_scope. (* Because of [!] *)
+Open Scope ml_scope.
 
 Import Notations.
 
@@ -36,60 +37,60 @@ Context
 .
 
 
-Definition defFP : coWfpSet := {[(exist (λ p, well_formed p = true) (patt_sym (Definedness_Syntax.inj definedness)) erefl)]}. 
+  Definition defFP : coWfpSet := {[(exist (λ p, well_formed p = true) (patt_sym (Definedness_Syntax.inj definedness)) erefl)]}. 
 
-Lemma phi_impl_total_phi_meta Γ φ i:
-  well_formed φ ->
-  ProofInfoLe BasicReasoning i -> 
-  Γ ⊢i φ using i ->
-  Γ ⊢i ⌊ φ ⌋ using i.
-Proof.
-  intros wfφ pile Hφ.
-  pose proof (ANNA := A_implies_not_not_A_ctx Γ (φ) AC_patt_defined).
-  apply ANNA.
-  { simpl. try_solve_pile. }
-  { apply wfφ. }
-  exact Hφ.
-Defined.
-
-Lemma patt_iff_implies_equal :
-  forall (φ1 φ2 : Pattern) Γ i,
-    well_formed φ1 ->
-    well_formed φ2 ->
-    ProofInfoLe BasicReasoning i ->
-    Γ ⊢i (φ1 <---> φ2) using i ->
-    Γ ⊢i φ1 =ml φ2 using i .
-Proof.
-  intros φ1 φ2 Γ i WF1 WF2 pile H.
-  pose proof (ANNA := A_implies_not_not_A_ctx Γ (φ1 <---> φ2) AC_patt_defined).
-  apply ANNA.
-  { eapply pile_trans;[|apply pile]. try_solve_pile. }
-  { wf_auto2. }
-  { exact H. }
-Defined.
-
-Lemma patt_equal_refl :
-  forall φ Γ,
-  well_formed φ ->
-  Γ ⊢i φ =ml φ
-  using BasicReasoning.
-Proof.
-  intros φ Γ WF. pose proof (IFF := pf_iff_equiv_refl Γ φ WF).
-  eapply useBasicReasoning in IFF.
-  apply patt_iff_implies_equal in IFF.
-  { apply IFF. }
-  { exact WF. }
-  { exact WF. }
-  { apply pile_refl. }
-Qed.
-
-#[global]
-  Instance patt_equal_is_reflexive : MLReflexive patt_equal.
+  Lemma phi_impl_total_phi_meta Γ φ i:
+    well_formed φ ->
+    ProofInfoLe BasicReasoning i -> 
+    Γ ⊢i φ using i ->
+    Γ ⊢i ⌊ φ ⌋ using i.
   Proof.
-    constructor; intros.
-    * wf_auto2.
-    * gapply patt_equal_refl. try_solve_pile. assumption.
+    intros wfφ pile Hφ.
+    pose proof (ANNA := A_implies_not_not_A_ctx Γ (φ) AC_patt_defined).
+    apply ANNA.
+    { simpl. try_solve_pile. }
+    { apply wfφ. }
+    exact Hφ.
   Defined.
+
+  Lemma patt_iff_implies_equal :
+    forall (φ1 φ2 : Pattern) Γ i,
+      well_formed φ1 ->
+      well_formed φ2 ->
+      ProofInfoLe BasicReasoning i ->
+      Γ ⊢i (φ1 <---> φ2) using i ->
+      Γ ⊢i φ1 =ml φ2 using i .
+  Proof.
+    intros φ1 φ2 Γ i WF1 WF2 pile H.
+    pose proof (ANNA := A_implies_not_not_A_ctx Γ (φ1 <---> φ2) AC_patt_defined).
+    apply ANNA.
+    { eapply pile_trans;[|apply pile]. try_solve_pile. }
+    { wf_auto2. }
+    { exact H. }
+  Defined.
+
+  Lemma patt_equal_refl :
+    forall φ Γ,
+    well_formed φ ->
+    Γ ⊢i φ =ml φ
+    using BasicReasoning.
+  Proof.
+    intros φ Γ WF. pose proof (IFF := pf_iff_equiv_refl Γ φ WF).
+    eapply useBasicReasoning in IFF.
+    apply patt_iff_implies_equal in IFF.
+    { apply IFF. }
+    { exact WF. }
+    { exact WF. }
+    { apply pile_refl. }
+  Qed.
+
+  #[global]
+    Instance patt_equal_is_reflexive : MLReflexive patt_equal.
+    Proof.
+      constructor; intros.
+      * wf_auto2.
+      * gapply patt_equal_refl. try_solve_pile. assumption.
+    Defined.
 
 End ProofSystemTheorems.
 
@@ -109,466 +110,483 @@ End ProofSystemTheorems.
   Defined.
 
 Section ProofSystemTheorems.
-Context
-  {Σ : Signature}
-  {syntax : Syntax}
-.
+  Context
+    {Σ : Signature}
+    {syntax : Syntax}
+  .
 
-Lemma use_defined_axiom Γ:
-  theory ⊆ Γ ->
-  Γ ⊢i patt_defined p_x
-  using BasicReasoning.
-Proof.
-  intros HΓ.
-  apply BasicProofSystemLemmas.hypothesis; auto. unfold theory,theory_of_NamedAxioms in HΓ. simpl in HΓ.
-  eapply elem_of_weaken.
-  2: { apply HΓ. }
-  unfold axiom.
-  apply elem_of_PropSet.
-  exists AxDefinedness.
-  reflexivity.
-Defined.
+  Lemma use_defined_axiom Γ:
+    theory ⊆ Γ ->
+    Γ ⊢i patt_defined p_x
+    using BasicReasoning.
+  Proof.
+    intros HΓ.
+    apply BasicProofSystemLemmas.hypothesis; auto. unfold theory,theory_of_NamedAxioms in HΓ. simpl in HΓ.
+    eapply elem_of_weaken.
+    2: { apply HΓ. }
+    unfold axiom.
+    apply elem_of_PropSet.
+    exists AxDefinedness.
+    reflexivity.
+  Defined.
 
-Definition BasicReasoningWithDefinedness := (ExGen := {[ev_x]}, SVSubst := ∅, KT := false, AKT := false).
+  Definition BasicReasoningWithDefinedness := (ExGen := {[ev_x]}, SVSubst := ∅, KT := false, AKT := false).
 
-Lemma defined_evar Γ x:
-  theory ⊆ Γ ->
-  Γ ⊢i ⌈ patt_free_evar x ⌉
-  using  (ExGen := {[ev_x]}, SVSubst := ∅, KT := false, AKT := false).
-Proof.
-  intros HΓ.
-  assert(S1: Γ ⊢i patt_defined p_x using BasicReasoningWithDefinedness).
-  {
-    useBasicReasoning.
-    apply use_defined_axiom.
-    apply HΓ.
-  }
-
-  apply universal_generalization with (x := ev_x) in S1 as S1'.
-  3: { wf_auto2. }
-  2: { try_solve_pile. }
-  eapply MP.
-  exact S1'.
-  simpl in S1'. case_match. 2: congruence.
-  toMLGoal. simpl. case_match. 2: congruence. wf_auto2.
-  mlIntro "H".
-  mlSpecialize "H" with x.
-  mlSimpl. simpl. case_match. 2: congruence.
-  mlAssumption.
-Defined.
-  
-Lemma in_context_impl_defined Γ AC φ x:
-  theory ⊆ Γ ->
-  x ∉ (free_evars φ ∪ AC_free_evars AC) ->
-  well_formed φ ->
-  Γ ⊢i (subst_ctx AC φ) ---> ⌈ φ ⌉
-  using  (ExGen := {[ev_x]} ∪ {[x]}, SVSubst := ∅, KT := false, AKT := false).
-Proof.
-  intros HΓ Hx Hwfφ.
-  assert(S1: Γ ⊢i patt_defined p_x using BasicReasoning).
-  {
-    apply use_defined_axiom.
-    apply HΓ.
-  }
-
-  pose proof (S1' := S1).
-  apply useBasicReasoning with (i := (ExGen := {[ev_x; x]}, SVSubst := ∅, KT := false, AKT := false)) in S1'.
-  apply universal_generalization with (x := ev_x) in S1'.
-  3: { wf_auto2. }
-  2: { try_solve_pile. }
-
-  assert (Hx1': evar_is_fresh_in x φ).
-  {
-    unfold evar_is_fresh_in. set_solver.
-  }
-
-  assert (Hx'2: x ∉ AC_free_evars AC).
-  { 
-    unfold evar_is_fresh_in. set_solver.
-  }
-
-  remember ( (ExGen := {[ev_x; x]}, SVSubst := ∅, KT := false, AKT := false)) as i.
-  assert (S1'' : Γ ⊢i ⌈ patt_free_evar x ⌉ using i).
-  {
-    gapply defined_evar. try_solve_pile. assumption.
-  }
-  
-  assert(S2: Γ ⊢i ⌈ patt_free_evar x ⌉ or ⌈ φ ⌉ using i).
-  {
-    toMLGoal.
-    { wf_auto2. }
-    mlLeft.
-    fromMLGoal.
-    apply S1''.
-  }
-
-  assert(S3: Γ ⊢i ⌈ patt_free_evar x or φ ⌉ using i).
-  {
-    pose proof (Htmp := (prf_prop_or_iff Γ AC_patt_defined) (patt_free_evar x) φ ltac:(auto) ltac:(auto)).
-    simpl in Htmp.
-    apply pf_conj_elim_r_meta in Htmp.
-    2-3: wf_auto2.
-    apply useGenericReasoning with (i := i) in Htmp.
-    2: {
-      subst i. try_solve_pile.
+  Lemma defined_evar Γ x:
+    theory ⊆ Γ ->
+    Γ ⊢i ⌈ patt_free_evar x ⌉
+    using  (ExGen := {[ev_x]}, SVSubst := ∅, KT := false, AKT := false).
+  Proof.
+    intros HΓ.
+    assert(S1: Γ ⊢i patt_defined p_x using BasicReasoningWithDefinedness).
+    {
+      useBasicReasoning.
+      apply use_defined_axiom.
+      apply HΓ.
     }
-    subst i.
+
+    apply universal_generalization with (x := ev_x) in S1 as S1'.
+    3: { wf_auto2. }
+    2: { try_solve_pile. }
     eapply MP.
-    1: apply S2.
-    1: {
-      apply Htmp.
-    }
-  }
+    exact S1'.
+    simpl in S1'. case_match. 2: congruence.
+    toMLGoal. simpl. case_match. 2: congruence. wf_auto2.
+    mlIntro "H".
+    mlSpecialize "H" with x.
+    mlSimpl. simpl. case_match. 2: congruence.
+    mlAssumption.
+  Defined.
 
-  assert(S4: Γ ⊢i ⌈ ((patt_free_evar x) and (! φ)) or φ ⌉ using i).
-  {
-    assert(Htmp1: Γ ⊢i (patt_free_evar x or φ) ---> (patt_free_evar x and ! φ or φ) using i).
+  Lemma ceil_monotonic Γ φ₁ φ₂ i :
+    theory ⊆ Γ ->
+    well_formed φ₁ ->
+    well_formed φ₂ ->
+    Γ ⊢i φ₁ ---> φ₂ using i ->
+    Γ ⊢i ⌈ φ₁ ⌉ ---> ⌈ φ₂ ⌉ using i.
+  Proof.
+    intros HΓ wfφ₁ wfφ₂ H.
+    unshelve (eapply Framing_right).
+    { wf_auto2. }
+    { try_solve_pile. }
+    exact H.
+  Defined.
+
+  Lemma floor_monotonic  Γ φ₁ φ₂ i :
+    theory ⊆ Γ ->
+    well_formed φ₁ ->
+    well_formed φ₂ ->
+    Γ ⊢i φ₁ ---> φ₂ using i ->
+    Γ ⊢i ⌊ φ₁ ⌋ ---> ⌊ φ₂ ⌋ using i.
+  Proof.
+    intros HΓ wfφ₁ wfφ₂ H.
+    unfold patt_total.
+    apply BasicProofSystemLemmas.modus_tollens.
+    apply ceil_monotonic.
+    { assumption. }
+    { wf_auto2. }
+    { wf_auto2. }
+    apply BasicProofSystemLemmas.modus_tollens.
+    exact H.
+  Defined.
+
+  Lemma patt_equal_sym Γ φ1 φ2:
+    theory ⊆ Γ ->
+    well_formed φ1 -> well_formed φ2 ->
+    Γ ⊢i φ1 =ml φ2 ---> φ2 =ml φ1
+    using BasicReasoning.
+  Proof.
+    intros.
+    apply floor_monotonic; auto.
+    mlIntro. mlDestructAnd "0". mlSplitAnd; mlAssumption.
+  Qed.
+
+  Lemma in_context_impl_defined Γ AC φ x:
+    theory ⊆ Γ ->
+    x ∉ (free_evars φ ∪ AC_free_evars AC) ->
+    well_formed φ ->
+    Γ ⊢i (subst_ctx AC φ) ---> ⌈ φ ⌉
+    using  (ExGen := {[ev_x]} ∪ {[x]}, SVSubst := ∅, KT := false, AKT := false).
+  Proof.
+    intros HΓ Hx Hwfφ.
+    assert(S1: Γ ⊢i patt_defined p_x using BasicReasoning).
+    {
+      apply use_defined_axiom.
+      apply HΓ.
+    }
+
+    pose proof (S1' := S1).
+    apply useBasicReasoning with (i := (ExGen := {[ev_x; x]}, SVSubst := ∅, KT := false, AKT := false)) in S1'.
+    apply universal_generalization with (x := ev_x) in S1'.
+    3: { wf_auto2. }
+    2: { try_solve_pile. }
+
+    assert (Hx1': evar_is_fresh_in x φ).
+    {
+      unfold evar_is_fresh_in. set_solver.
+    }
+
+    assert (Hx'2: x ∉ AC_free_evars AC).
+    { 
+      unfold evar_is_fresh_in. set_solver.
+    }
+
+    remember ( (ExGen := {[ev_x; x]}, SVSubst := ∅, KT := false, AKT := false)) as i.
+    assert (S1'' : Γ ⊢i ⌈ patt_free_evar x ⌉ using i).
+    {
+      gapply defined_evar. try_solve_pile. assumption.
+    }
+    
+    assert(S2: Γ ⊢i ⌈ patt_free_evar x ⌉ or ⌈ φ ⌉ using i).
     {
       toMLGoal.
       { wf_auto2. }
-      mlIntro "H0".
-      mlClassic (φ) as "Hφ" "Hnotφ".
-      { wf_auto2. }
-      - mlRight. mlExact "Hφ".
-      - mlLeft. mlIntro "H1".
-        mlDestructOr "H0" as "H01" "H02".
-        + mlDestructOr "H1" as "H10" "H11".
-          * mlApply "H10". mlExact "H01".
-          * mlApply "H11". mlExact "Hnotφ".
-        + mlApply "Hnotφ".
-          mlExact "H02".
+      mlLeft.
+      fromMLGoal.
+      apply S1''.
     }
 
-    assert(Htmp2: Γ ⊢i (⌈ patt_free_evar x or φ ⌉) ---> (⌈ patt_free_evar x and ! φ or φ ⌉) using i).
+    assert(S3: Γ ⊢i ⌈ patt_free_evar x or φ ⌉ using i).
     {
-      unshelve (eapply Framing_right).
-      { wf_auto2. }
-      {
-        try_solve_pile.
+      pose proof (Htmp := (prf_prop_or_iff Γ AC_patt_defined) (patt_free_evar x) φ ltac:(auto) ltac:(auto)).
+      simpl in Htmp.
+      apply pf_conj_elim_r_meta in Htmp.
+      2-3: wf_auto2.
+      apply useGenericReasoning with (i := i) in Htmp.
+      2: {
+        subst i. try_solve_pile.
       }
-      apply Htmp1.
+      subst i.
+      eapply MP.
+      1: apply S2.
+      1: {
+        apply Htmp.
+      }
     }
 
-    eapply MP.
-    2: apply Htmp2.
-    1: apply S3.
-  }
-
-  assert(S5: Γ ⊢i ⌈ (patt_free_evar x and (! φ)) ⌉ or ⌈ φ ⌉ using i).
-  {
-    pose proof (Htmp := (prf_prop_or_iff Γ AC_patt_defined) (patt_free_evar x and ! φ) φ ltac:(auto) ltac:(auto)).
-    simpl in Htmp.
-    apply pf_conj_elim_l_meta in Htmp;[|wf_auto2|wf_auto2].
-    apply useGenericReasoning with (i := i) in Htmp.
-    2: {
-      subst i. try_solve_pile.
-    }
-    subst i.
-    eapply MP.
-    2: {
-      apply Htmp.
-    }
-    1: apply S4.
-  }
-
-  assert(S6: Γ ⊢i subst_ctx AC (patt_free_evar x and φ) ---> ! ⌈ patt_free_evar x and ! φ ⌉ using i).
-  {
-    pose proof (Htmp := Singleton_ctx Γ AC AC_patt_defined φ x).
-    simpl in Htmp.
-    unfold patt_and in Htmp at 1.
-    apply not_not_elim_meta in Htmp.
-    3: { wf_auto2. }
-    2: { wf_auto2. }
-    replace (patt_sym (Definedness_Syntax.inj definedness) $ (patt_free_evar x and ! φ))%ml
-      with (patt_defined (patt_free_evar x and ! φ)) in Htmp by reflexivity.
-    
-    toMLGoal.
-    { wf_auto2. }
-    mlIntro.
-    remember (ExGen := {[ev_x; x]}, SVSubst := ∅, KT := false, AKT := false) as gpi.
-    rewrite Heqi.
-    mlAdd (useBasicReasoning gpi Htmp).
-    mlApply "1". mlIntro. mlApply "2".
-    mlExactn 1.
-  }
-
-  pose proof (S7 := S5). unfold patt_or in S7.
-
-  assert(S8: Γ ⊢i subst_ctx AC (patt_free_evar x and φ) ---> ⌈ φ ⌉ using i).
-  {
-    eapply syllogism_meta.
-    5: apply S7.
-    4: apply S6.
-    1-3: wf_auto2.
-  }
-  assert (S9: Γ ⊢i all, (subst_ctx AC (patt_bound_evar 0 and φ) ---> ⌈ φ ⌉) using i).
-  {
-    eapply universal_generalization with (x := x) in S8.
-    3: { wf_auto2. }
-    2: { try_solve_pile. }
-    simpl in S8.
-
-    rewrite evar_quantify_subst_ctx in S8;[assumption|].
-
-    simpl in S8.
-    case_match; try contradiction.
-    rewrite evar_quantify_fresh in S8; [assumption|].
-    apply S8.
-  }
-
-  assert(S10: Γ ⊢i (ex, subst_ctx AC (b0 and φ)) ---> ⌈ φ ⌉ using i).
-  {
-    unfold patt_forall in S9.
-    unfold patt_not in S9 at 1.
-
-    assert (Heq: (subst_ctx AC (patt_free_evar x and φ))^{{evar: x ↦ 0}} = subst_ctx AC (b0 and φ)).
+    assert(S4: Γ ⊢i ⌈ ((patt_free_evar x) and (! φ)) or φ ⌉ using i).
     {
-      rewrite evar_quantify_subst_ctx;[assumption|].
-      f_equal.
-      simpl.
-      case_match; [|congruence].
-      rewrite evar_quantify_fresh; [assumption|].
-      reflexivity.
+      assert(Htmp1: Γ ⊢i (patt_free_evar x or φ) ---> (patt_free_evar x and ! φ or φ) using i).
+      {
+        toMLGoal.
+        { wf_auto2. }
+        mlIntro "H0".
+        mlClassic (φ) as "Hφ" "Hnotφ".
+        { wf_auto2. }
+        - mlRight. mlExact "Hφ".
+        - mlLeft. mlIntro "H1".
+          mlDestructOr "H0" as "H01" "H02".
+          + mlDestructOr "H1" as "H10" "H11".
+            * mlApply "H10". mlExact "H01".
+            * mlApply "H11". mlExact "Hnotφ".
+          + mlApply "Hnotφ".
+            mlExact "H02".
+      }
+
+      assert(Htmp2: Γ ⊢i (⌈ patt_free_evar x or φ ⌉) ---> (⌈ patt_free_evar x and ! φ or φ ⌉) using i).
+      {
+        unshelve (eapply Framing_right).
+        { wf_auto2. }
+        {
+          try_solve_pile.
+        }
+        apply Htmp1.
+      }
+
+      eapply MP.
+      2: apply Htmp2.
+      1: apply S3.
     }
-    rewrite <- Heq.
-    apply BasicProofSystemLemmas.Ex_gen.
-    2: {simpl. unfold evar_is_fresh_in in Hx1'. clear -Hx1'. set_solver. }
-    1: { try_solve_pile. }
-    assumption.
-  }
 
-  assert (S11: Γ ⊢i φ ---> ((ex, patt_bound_evar 0) and φ) using i).
-  {
-    toMLGoal.
-    { wf_auto2. }
-    mlIntro.
-    mlAdd (useBasicReasoning i (conj_intro Γ (ex, b0) φ ltac:(auto) ltac:(auto))).
-
-    mlAssert ((φ ---> (ex , b0) and φ)).
-    { wf_auto2. }
-    {  mlApply "1".
-        subst i.
-       (* TODO mlAdd should do the cast automatically *)
-       mlAdd (useBasicReasoning (ExGen := {[ev_x; x]}, SVSubst := ∅, KT := false, AKT := false) (Existence Γ)).
-       mlExactn 0.
-    }
-    mlApply "2". mlExactn 1.
-  }
-
-  assert (well_formed (ex , (b0 and φ))).
-  {
-    unfold well_formed,well_formed_closed in *.
-    destruct_and!.
-    simpl; split_and!; auto.
-    eapply well_formed_closed_ex_aux_ind. 2: eassumption. lia.
-  }
-
-  assert (S12: Γ ⊢i φ ---> ex, (b0 and φ) using i).
-  {
-
-    assert(well_formed (ex , ((patt_free_evar x)^{{evar: x ↦ 0}} and φ))).
+    assert(S5: Γ ⊢i ⌈ (patt_free_evar x and (! φ)) ⌉ or ⌈ φ ⌉ using i).
     {
-      unfold well_formed,well_formed_closed in *. simpl in *.
-      destruct_and!. split_and!; auto.
-      all: repeat case_match; auto.
+      pose proof (Htmp := (prf_prop_or_iff Γ AC_patt_defined) (patt_free_evar x and ! φ) φ ltac:(auto) ltac:(auto)).
+      simpl in Htmp.
+      apply pf_conj_elim_l_meta in Htmp;[|wf_auto2|wf_auto2].
+      apply useGenericReasoning with (i := i) in Htmp.
+      2: {
+        subst i. try_solve_pile.
+      }
+      subst i.
+      eapply MP.
+      2: {
+        apply Htmp.
+      }
+      1: apply S4.
     }
 
-    assert(Htmp: Γ ⊢i ((ex, b0) and φ ---> (ex, (b0 and φ))) using i).
+    assert(S6: Γ ⊢i subst_ctx AC (patt_free_evar x and φ) ---> ! ⌈ patt_free_evar x and ! φ ⌉ using i).
+    {
+      pose proof (Htmp := Singleton_ctx Γ AC AC_patt_defined φ x).
+      simpl in Htmp.
+      unfold patt_and in Htmp at 1.
+      apply not_not_elim_meta in Htmp.
+      3: { wf_auto2. }
+      2: { wf_auto2. }
+      replace (patt_sym (Definedness_Syntax.inj definedness) $ (patt_free_evar x and ! φ))%ml
+        with (patt_defined (patt_free_evar x and ! φ)) in Htmp by reflexivity.
+      
+      toMLGoal.
+      { wf_auto2. }
+      mlIntro.
+      remember (ExGen := {[ev_x; x]}, SVSubst := ∅, KT := false, AKT := false) as gpi.
+      rewrite Heqi.
+      mlAdd (useBasicReasoning gpi Htmp).
+      mlApply "1". mlIntro. mlApply "2".
+      mlExactn 1.
+    }
+
+    pose proof (S7 := S5). unfold patt_or in S7.
+
+    assert(S8: Γ ⊢i subst_ctx AC (patt_free_evar x and φ) ---> ⌈ φ ⌉ using i).
+    {
+      eapply syllogism_meta.
+      5: apply S7.
+      4: apply S6.
+      1-3: wf_auto2.
+    }
+    assert (S9: Γ ⊢i all, (subst_ctx AC (patt_bound_evar 0 and φ) ---> ⌈ φ ⌉) using i).
+    {
+      eapply universal_generalization with (x := x) in S8.
+      3: { wf_auto2. }
+      2: { try_solve_pile. }
+      simpl in S8.
+
+      rewrite evar_quantify_subst_ctx in S8;[assumption|].
+
+      simpl in S8.
+      case_match; try contradiction.
+      rewrite evar_quantify_fresh in S8; [assumption|].
+      apply S8.
+    }
+
+    assert(S10: Γ ⊢i (ex, subst_ctx AC (b0 and φ)) ---> ⌈ φ ⌉ using i).
+    {
+      unfold patt_forall in S9.
+      unfold patt_not in S9 at 1.
+
+      assert (Heq: (subst_ctx AC (patt_free_evar x and φ))^{{evar: x ↦ 0}} = subst_ctx AC (b0 and φ)).
+      {
+        rewrite evar_quantify_subst_ctx;[assumption|].
+        f_equal.
+        simpl.
+        case_match; [|congruence].
+        rewrite evar_quantify_fresh; [assumption|].
+        reflexivity.
+      }
+      rewrite <- Heq.
+      apply BasicProofSystemLemmas.Ex_gen.
+      2: {simpl. unfold evar_is_fresh_in in Hx1'. clear -Hx1'. set_solver. }
+      1: { try_solve_pile. }
+      assumption.
+    }
+
+    assert (S11: Γ ⊢i φ ---> ((ex, patt_bound_evar 0) and φ) using i).
     {
       toMLGoal.
       { wf_auto2. }
       mlIntro.
-      mlDestructAnd "0".
-      fromMLGoal.
-      replace b0 with ((patt_free_evar x)^{{evar: x ↦ 0}}).
-      2: { simpl. case_match;[reflexivity|congruence]. }
-      apply BasicProofSystemLemmas.Ex_gen.
-      2: { simpl. case_match;[|congruence]. simpl.
-           unfold evar_is_fresh_in in Hx1'. clear -Hx1'. set_solver.
-      }
-      1: {
-        try_solve_pile.
-      }
-      toMLGoal.
-      { wf_auto2. }
-      do 2 mlIntro.
-      mlAssert ((patt_free_evar x and φ)) using first 2.
-      { wf_auto2. }
-      { unfold patt_and. unfold patt_not at 1. mlIntro.
-        mlDestructOr "2".
-        - mlApply "3". mlExactn 0.
-        - mlApply "4". mlExactn 1.
-      }
-      mlClear "1". mlClear "0".
-      fromMLGoal.
-      case_match;[|congruence].
+      mlAdd (useBasicReasoning i (conj_intro Γ (ex, b0) φ ltac:(auto) ltac:(auto))).
 
-      replace (patt_free_evar x and φ)
-        with (instantiate (ex, (patt_bound_evar 0 and φ)) (patt_free_evar x)).
-      2: {
-        simpl. rewrite bevar_subst_not_occur.
-        { unfold well_formed, well_formed_closed in *.
-          destruct_and!. auto.
+      mlAssert ((φ ---> (ex , b0) and φ)).
+      { wf_auto2. }
+      {  mlApply "1".
+          subst i.
+         (* TODO mlAdd should do the cast automatically *)
+         mlAdd (useBasicReasoning (ExGen := {[ev_x; x]}, SVSubst := ∅, KT := false, AKT := false) (Existence Γ)).
+         mlExactn 0.
+      }
+      mlApply "2". mlExactn 1.
+    }
+
+    assert (well_formed (ex , (b0 and φ))).
+    { wf_auto2. }
+
+    assert (S12: Γ ⊢i φ ---> ex, (b0 and φ) using i).
+    {
+
+      assert(well_formed (ex , ((patt_free_evar x)^{{evar: x ↦ 0}} and φ))).
+      { wf_auto2. all: repeat case_match; auto. }
+
+      assert(Htmp: Γ ⊢i ((ex, b0) and φ ---> (ex, (b0 and φ))) using i).
+      {
+        toMLGoal.
+        { wf_auto2. }
+        mlIntro.
+        mlDestructAnd "0".
+        fromMLGoal.
+        replace b0 with ((patt_free_evar x)^{{evar: x ↦ 0}}).
+        2: { simpl. case_match;[reflexivity|congruence]. }
+        apply BasicProofSystemLemmas.Ex_gen.
+        2: { simpl. case_match;[|congruence]. simpl.
+             unfold evar_is_fresh_in in Hx1'. clear -Hx1'. set_solver.
         }
-        reflexivity.
-      }
-      subst i.
-      useBasicReasoning.
-      apply BasicProofSystemLemmas.Ex_quan.
-      { wf_auto2. }
-    }
-    eapply syllogism_meta.
-    5: { apply Htmp. }
-    4: assumption.
-    1-3: wf_auto2.
-  }
+        1: {
+          try_solve_pile.
+        }
+        toMLGoal.
+        { wf_auto2. }
+        do 2 mlIntro.
+        mlAssert ((patt_free_evar x and φ)) using first 2.
+        { wf_auto2. }
+        { unfold patt_and. unfold patt_not at 1. mlIntro.
+          mlDestructOr "2".
+          - mlApply "3". mlExactn 0.
+          - mlApply "4". mlExactn 1.
+        }
+        mlClear "1". mlClear "0".
+        fromMLGoal.
+        case_match;[|congruence].
 
-  assert(S13: Γ ⊢i (subst_ctx AC φ) ---> (subst_ctx AC (ex, (b0 and φ))) using i).
-  {
-    apply Framing.
-    {
-      try_solve_pile.
-    }
-    apply S12.
-  }
-
-  assert(S14: Γ ⊢i (subst_ctx AC (ex, (b0 and φ))) ---> (⌈ φ ⌉) using i).
-  {
-    pose proof (Htmp := prf_prop_ex_iff Γ AC (b0 and φ) x).
-    ospecialize* Htmp.
-    { unfold evar_is_fresh_in in *.
-      rewrite free_evars_subst_ctx. clear -Hx1' Hx'2. simpl. set_solver.
-    }
-    { auto. }
-    unfold exists_quantify in Htmp.
-    rewrite evar_quantify_subst_ctx in Htmp.
-    { assumption. }
-
-    assert (well_formed (ex , subst_ctx AC (b0 and φ))).
-    {
-      unfold well_formed,well_formed_closed in *. destruct_and!.
-      split_and!; simpl; auto.
-      3: { apply wcex_sctx.
-           simpl. split_and!; auto.
-           eapply well_formed_closed_ex_aux_ind. 2: eassumption. lia.
+        replace (patt_free_evar x and φ)
+          with (instantiate (ex, (patt_bound_evar 0 and φ)) (patt_free_evar x)).
+        2: {
+          simpl. rewrite bevar_subst_not_occur.
+          { wf_auto2. }
+          reflexivity.
+        }
+        subst i.
+        useBasicReasoning.
+        apply BasicProofSystemLemmas.Ex_quan.
+        { wf_auto2. }
       }
-      2: {
-        apply wcmu_sctx.
-        simpl. split_and!; auto.
-      }
-      1: {
-        apply wp_sctx. simpl. split_and!; auto.
-      }
-    }
-
-    rewrite -> evar_quantify_evar_open in Htmp.
-    2: { simpl. unfold evar_is_fresh_in in Hx1'. clear -Hx1'. set_solver. }
-    apply pf_iff_proj1 in Htmp; auto.
-    {
       eapply syllogism_meta.
-      5: { apply S10. }
-      4: { subst i. eapply useGenericReasoning. 2: apply Htmp.
-        try_solve_pile.
-      }
+      5: { apply Htmp. }
+      4: assumption.
       1-3: wf_auto2.
     }
-    unfold patt_and,patt_or,patt_not.
-    simpl. split_and!; auto.
-    apply well_formed_closed_ex_aux_ind with (ind_evar1 := 0); auto.
-    wf_auto2.
-  }
 
-  eapply syllogism_meta.
-  5: apply S14.
-  4: assumption.
-  1-3: wf_auto2.
-Defined.
+    assert(S13: Γ ⊢i (subst_ctx AC φ) ---> (subst_ctx AC (ex, (b0 and φ))) using i).
+    {
+      apply Framing.
+      {
+        try_solve_pile.
+      }
+      apply S12.
+    }
 
-Lemma elements_union_empty φ:
-  elements (free_evars φ ∪ ∅) = elements (free_evars φ).
-Proof.
-  apply f_equal.
-  set_solver.
-Qed.
+    assert(S14: Γ ⊢i (subst_ctx AC (ex, (b0 and φ))) ---> (⌈ φ ⌉) using i).
+    {
+      pose proof (Htmp := prf_prop_ex_iff Γ AC (b0 and φ) x).
+      ospecialize* Htmp.
+      { unfold evar_is_fresh_in in *.
+        rewrite free_evars_subst_ctx. clear -Hx1' Hx'2. simpl. set_solver.
+      }
+      { auto. }
+      unfold exists_quantify in Htmp.
+      rewrite evar_quantify_subst_ctx in Htmp.
+      { assumption. }
 
-Lemma phi_impl_defined_phi Γ φ x:
-  theory ⊆ Γ ->
-  x ∉ free_evars φ ->
-  well_formed φ ->
-  Γ ⊢i φ ---> ⌈ φ ⌉
-  using 
-                     (ExGen := {[ev_x;x]},
-                      SVSubst := ∅, KT := false, AKT := false).
-Proof.
-  intros HΓ Hx wfφ.
-  eapply cast_proof'.
-  {
-    replace φ with (subst_ctx box φ) at 1 by reflexivity.
-    reflexivity.
-  }
-  eapply useGenericReasoning.
-  2: {
-    apply in_context_impl_defined; try assumption.
-    cbn. instantiate (1:=x). set_solver.
-  }
-  {
-    simpl. replace (free_evars φ ∪ ∅) with (free_evars φ) by set_solver.
-    try_solve_pile.
-  }
-Defined.
+      assert (well_formed (ex , subst_ctx AC (b0 and φ))).
+      { wf_auto2. }
 
-Lemma total_phi_impl_phi Γ φ x:
-  theory ⊆ Γ ->
-  x ∉ free_evars φ -> 
-  well_formed φ ->
-  Γ ⊢i ⌊ φ ⌋ ---> φ
-  using 
-  (ExGen := {[ev_x; x]},
-   SVSubst := ∅, KT := false, AKT := false).
-Proof.
-  intros HΓ Hx wfφ.
-  unfold patt_total.
-  pose proof (Htmp := phi_impl_defined_phi Γ (! φ) x HΓ ltac:(set_solver) ltac:(wf_auto2)).
-  apply A_impl_not_not_B_meta.
-  1,2: wf_auto2.
-  apply modus_tollens.
-  simpl in Htmp. assumption.
-Defined.
+      rewrite -> evar_quantify_evar_open in Htmp.
+      2: { simpl. unfold evar_is_fresh_in in Hx1'. clear -Hx1'. set_solver. }
+      apply pf_iff_proj1 in Htmp; auto.
+      {
+        eapply syllogism_meta.
+        5: { apply S10. }
+        4: { subst i. eapply useGenericReasoning. 2: apply Htmp.
+          try_solve_pile.
+        }
+        1-3: wf_auto2.
+      }
+      wf_auto2.
+    }
 
-Lemma total_phi_impl_phi_meta Γ φ i x:
-  theory ⊆ Γ ->
-  x ∉ free_evars φ ->
-  well_formed φ ->
-  ProofInfoLe
-  (ExGen := {[ev_x; x]},
-   SVSubst := ∅, KT := false, AKT := false) i ->
-  Γ ⊢i ⌊ φ ⌋ using i ->
-  Γ ⊢i φ using i.
-Proof.
-  intros HΓ Hx wfφ pile H.
-  eapply MP.
-  1: exact H.
-  eapply useGenericReasoning.
-  2: apply total_phi_impl_phi.
-  {
-    eapply pile_trans. 2: apply pile.
-    try_solve_pile.
-  }
-  all: assumption.
-Defined.
+    eapply syllogism_meta.
+    5: apply S14.
+    4: assumption.
+    1-3: wf_auto2.
+  Defined.
 
-  Lemma framing_left_under_tot_impl Γ ψ phi1 phi2 psi:
+  Lemma elements_union_empty φ:
+    elements (free_evars φ ∪ ∅) = elements (free_evars φ).
+  Proof.
+    apply f_equal.
+    set_solver.
+  Qed.
+
+  Lemma phi_impl_defined_phi Γ φ x:
+    theory ⊆ Γ ->
+    x ∉ free_evars φ ->
+    well_formed φ ->
+    Γ ⊢i φ ---> ⌈ φ ⌉
+    using 
+                       (ExGen := {[ev_x;x]},
+                        SVSubst := ∅, KT := false, AKT := false).
+  Proof.
+    intros HΓ Hx wfφ.
+    eapply cast_proof'.
+    {
+      replace φ with (subst_ctx box φ) at 1 by reflexivity.
+      reflexivity.
+    }
+    eapply useGenericReasoning.
+    2: {
+      apply in_context_impl_defined; try assumption.
+      cbn. instantiate (1:=x). set_solver.
+    }
+    {
+      simpl. replace (free_evars φ ∪ ∅) with (free_evars φ) by set_solver.
+      try_solve_pile.
+    }
+  Defined.
+
+  Lemma total_phi_impl_phi Γ φ x:
+    theory ⊆ Γ ->
+    x ∉ free_evars φ -> 
+    well_formed φ ->
+    Γ ⊢i ⌊ φ ⌋ ---> φ
+    using 
+    (ExGen := {[ev_x; x]},
+     SVSubst := ∅, KT := false, AKT := false).
+  Proof.
+    intros HΓ Hx wfφ.
+    unfold patt_total.
+    pose proof (Htmp := phi_impl_defined_phi Γ (! φ) x HΓ ltac:(set_solver) ltac:(wf_auto2)).
+    apply A_impl_not_not_B_meta.
+    1,2: wf_auto2.
+    apply modus_tollens.
+    simpl in Htmp. assumption.
+  Defined.
+
+  Lemma total_phi_impl_phi_meta Γ φ i x:
+    theory ⊆ Γ ->
+    x ∉ free_evars φ ->
+    well_formed φ ->
+    ProofInfoLe
+    (ExGen := {[ev_x; x]},
+     SVSubst := ∅, KT := false, AKT := false) i ->
+    Γ ⊢i ⌊ φ ⌋ using i ->
+    Γ ⊢i φ using i.
+  Proof.
+    intros HΓ Hx wfφ pile H.
+    eapply MP.
+    1: exact H.
+    eapply useGenericReasoning.
+    2: apply total_phi_impl_phi.
+    {
+      eapply pile_trans. 2: apply pile.
+      try_solve_pile.
+    }
+    all: assumption.
+  Defined.
+
+  Lemma framing_left_under_tot_impl Γ ψ phi1 phi2 psi x i:
     well_formed ψ = true ->
     well_formed phi1 = true ->
     well_formed phi2 = true ->
     well_formed psi = true ->
     theory ⊆ Γ ->
-    Γ ⊢ ⌊ ψ ⌋ ---> phi1 ---> phi2 ->
-    Γ ⊢ ⌊ ψ ⌋ ---> (phi1 $ psi) ---> (phi2 $ psi)
+    x ∉ free_evars ψ ∪ free_evars psi ->
+    ProofInfoLe (ExGen := {[ev_x; x]}, SVSubst := ∅, KT := false, AKT := false) i ->
+    Γ ⊢i ⌊ ψ ⌋ ---> phi1 ---> phi2 using i->
+    Γ ⊢i ⌊ ψ ⌋ ---> (phi1 $ psi) ---> (phi2 $ psi) using i
   .
   Proof.
-    intros Hwfψ Hwfphi1 Hwfphi2 Hwfpsi HΓ H.
-    assert (S2: Γ ⊢ phi1 ---> (phi2 or ⌈ ! ψ ⌉)).
+    intros Hwfψ Hwfphi1 Hwfphi2 Hwfpsi HΓ HIn HPile H.
+    assert (S2: Γ ⊢i phi1 ---> (phi2 or ⌈ ! ψ ⌉) using i).
     { toMLGoal.
       { wf_auto2. }
       mlAdd H as "H". mlIntro "Hphi1".
@@ -582,33 +600,27 @@ Defined.
         { mlExact "Hphi1". }
     }
 
-    assert (S3: Γ ⊢ (⌈ ! ψ ⌉ $ psi) ---> ⌈ ! ψ ⌉).
+    assert (S3: Γ ⊢i (⌈ ! ψ ⌉ $ psi) ---> ⌈ ! ψ ⌉ using i).
     {
       replace (⌈ ! ψ ⌉ $ psi)
         with (subst_ctx (ctx_app_l AC_patt_defined psi ltac:(assumption)) (! ψ))
         by reflexivity.
-      remember (evar_fresh (elements (free_evars ψ ∪ free_evars psi))) as x.
       gapply (in_context_impl_defined _ _ _ x).
       4: { wf_auto2. }
       2: { exact HΓ. }
-      1: { apply pile_any. }
-      subst x.
-      cbn.
-      eapply not_elem_of_larger_impl_not_elem_of.
-      2: { apply set_evar_fresh_is_fresh'. }
-      clear.
+      1: { assumption. }
       set_solver.
     }
 
-    assert (S4: Γ ⊢ (phi1 $ psi) ---> ((phi2 or ⌈ ! ψ ⌉) $ psi)).
-    { 
+    assert (S4: Γ ⊢i (phi1 $ psi) ---> ((phi2 or ⌈ ! ψ ⌉) $ psi) using i).
+    {
       unshelve (eapply Framing_left).
       { wf_auto2. }
-      { apply pile_any. }
+      { try_solve_pile. }
       { exact S2. }
     }
 
-    assert (S5: Γ ⊢ (phi1 $ psi) ---> ((phi2 $ psi) or (⌈ ! ψ ⌉ $ psi))).
+    assert (S5: Γ ⊢i (phi1 $ psi) ---> ((phi2 $ psi) or (⌈ ! ψ ⌉ $ psi)) using i).
     {
       pose proof (Htmp := prf_prop_or_iff Γ (ctx_app_l box psi ltac:(assumption)) phi2 (⌈! ψ ⌉)).
       ospecialize* Htmp.
@@ -621,13 +633,13 @@ Defined.
       eapply syllogism_meta.
       5: {
         gapply Htmp.
-        apply pile_any.
+        try_solve_pile.
       }
       4: { exact S4. }
       all: wf_auto2.
     }
 
-    assert (S6: Γ ⊢ ((phi2 $ psi) or (⌈ ! ψ ⌉ $ psi)) ---> ((phi2 $ psi) or (⌈ ! ψ ⌉))).
+    assert (S6: Γ ⊢i ((phi2 $ psi) or (⌈ ! ψ ⌉ $ psi)) ---> ((phi2 $ psi) or (⌈ ! ψ ⌉)) using i).
     {
       toMLGoal.
       { wf_auto2. }
@@ -638,7 +650,7 @@ Defined.
       - mlRight. mlApply "S3". mlApply "H". mlExact "Hc2".
     }
 
-    assert (S7: Γ ⊢ (phi1 $ psi) ---> ((phi2 $ psi)  or ⌈ ! ψ ⌉)).
+    assert (S7: Γ ⊢i (phi1 $ psi) ---> ((phi2 $ psi)  or ⌈ ! ψ ⌉) using i).
     {
       toMLGoal.
       { wf_auto2. }
@@ -677,18 +689,20 @@ Defined.
     }
   Defined.
 
-  Lemma framing_right_under_tot_impl Γ ψ phi1 phi2 psi:
+  Lemma framing_right_under_tot_impl Γ ψ phi1 phi2 psi x i:
     well_formed ψ = true ->
     well_formed phi1 = true ->
     well_formed phi2 = true ->
     well_formed psi = true ->
     theory ⊆ Γ ->
-    Γ ⊢ ⌊ ψ ⌋ ---> phi1 ---> phi2 ->
-    Γ ⊢ ⌊ ψ ⌋ ---> (psi $ phi1) ---> (psi $ phi2)
+    x ∉ free_evars ψ ∪ free_evars psi ->
+    ProofInfoLe (ExGen := {[ev_x; x]}, SVSubst := ∅, KT := false, AKT := false) i ->
+    Γ ⊢i ⌊ ψ ⌋ ---> phi1 ---> phi2 using i->
+    Γ ⊢i ⌊ ψ ⌋ ---> (psi $ phi1) ---> (psi $ phi2) using i
   .
   Proof.
-    intros Hwfψ Hwfphi1 Hwfphi2 Hwfpsi HΓ H.
-    assert (S2: Γ ⊢ phi1 ---> (phi2 or ⌈ ! ψ ⌉)).
+    intros Hwfψ Hwfphi1 Hwfphi2 Hwfpsi HΓ HIn HPile H.
+    assert (S2: Γ ⊢i phi1 ---> (phi2 or ⌈ ! ψ ⌉) using i).
     { toMLGoal.
       { wf_auto2. }
       mlAdd H as "H". mlIntro "Hphi1".
@@ -702,37 +716,27 @@ Defined.
         { mlExact "Hphi1". }
     }
 
-    assert (S3: Γ ⊢ (psi $ ⌈ ! ψ ⌉) ---> ⌈ ! ψ ⌉).
+    assert (S3: Γ ⊢i (psi $ ⌈ ! ψ ⌉) ---> ⌈ ! ψ ⌉ using i).
     {
       replace (psi $ ⌈ ! ψ ⌉)
       with (subst_ctx (ctx_app_r psi AC_patt_defined ltac:(assumption)) (! ψ))
         by reflexivity.
-      
-      remember (evar_fresh (elements (free_evars ψ ∪ free_evars psi))) as x.
       gapply (in_context_impl_defined _ _ _ x).
       4: { wf_auto2. }
       2: { exact HΓ. }
-      1: { apply pile_any. }
-      subst x.
-      cbn.
-      eapply not_elem_of_larger_impl_not_elem_of.
-      2: { apply set_evar_fresh_is_fresh'. }
-      clear.
+      1: { assumption. }
       set_solver.
     }
 
-    assert (S4: Γ ⊢ (psi $ phi1) ---> (psi $ (phi2 or ⌈ ! ψ ⌉))).
+    assert (S4: Γ ⊢i (psi $ phi1) ---> (psi $ (phi2 or ⌈ ! ψ ⌉)) using i).
     { 
-      (* TODO: have a variant of apply which automatically solves all wf constraints.
-         Like: unshelve (eapply H); try_wfauto
-      *)
       unshelve (eapply Framing_right).
       { wf_auto2. }
       2: exact S2.
-      apply pile_any.
+      try_solve_pile.
     }
 
-    assert (S5: Γ ⊢ (psi $ phi1) ---> ((psi $ phi2) or (psi $ ⌈ ! ψ ⌉))).
+    assert (S5: Γ ⊢i (psi $ phi1) ---> ((psi $ phi2) or (psi $ ⌈ ! ψ ⌉)) using i).
     {
       pose proof (Htmp := prf_prop_or_iff Γ (ctx_app_r psi box ltac:(assumption)) phi2 (⌈! ψ ⌉)).
       ospecialize* Htmp.
@@ -742,12 +746,12 @@ Defined.
       apply pf_iff_proj1 in Htmp.
       2,3: wf_auto2.
       eapply syllogism_meta.
-      5: gapply Htmp; apply pile_any.
+      5: gapply Htmp; try_solve_pile.
       1-3: wf_auto2.
       exact S4.
     }
 
-    assert (S6: Γ ⊢ ((psi $ phi2) or (psi $ ⌈ ! ψ ⌉)) ---> ((psi $ phi2) or (⌈ ! ψ ⌉))).
+    assert (S6: Γ ⊢i ((psi $ phi2) or (psi $ ⌈ ! ψ ⌉)) ---> ((psi $ phi2) or (⌈ ! ψ ⌉)) using i).
     {
       toMLGoal.
       { wf_auto2. }
@@ -758,7 +762,7 @@ Defined.
       - mlRight. mlApply "S3". mlApply "H1". mlExact "Hc2".
     }
 
-    assert (S7: Γ ⊢ (psi $ phi1) ---> ((psi $ phi2)  or ⌈ ! ψ ⌉)).
+    assert (S7: Γ ⊢i (psi $ phi1) ---> ((psi $ phi2)  or ⌈ ! ψ ⌉) using i).
     {
       toMLGoal.
       { wf_auto2. }
@@ -863,13 +867,9 @@ Defined.
       apply P3; assumption.
     - (* Modus Ponens *)
       assert (well_formed phi2).
-      { unfold well_formed, well_formed_closed in *. simpl in *.
-        destruct_and!. split_and!; auto.
-      }
+      { wf_auto2. }
       assert (well_formed phi1).
-      {
-        clear -pf1. apply proved_impl_wf in pf1. exact pf1.
-      }
+      { wf_auto2. }
 
       remember_constraint as i'.
 
@@ -1001,20 +1001,16 @@ Defined.
       apply Prop_ex_right; assumption.
     - (* Framing left *)
       assert (well_formed (phi1)).
-      { unfold well_formed,well_formed_closed in *. simpl in *.
-        destruct_and!. split_and!; auto. }
+      { wf_auto2. }
 
       assert (well_formed (phi2)).
-      { unfold well_formed,well_formed_closed in *. simpl in *.
-        destruct_and!. split_and!; auto. }
+      { wf_auto2. }
 
       assert (well_formed (psi)).
-      { unfold well_formed,well_formed_closed in *. simpl in *.
-        destruct_and!. split_and!; auto. }
-      
+      { wf_auto2. }
+
       assert (well_formed (phi1 ---> phi2)).
-      { unfold well_formed,well_formed_closed in *. simpl in *.
-        destruct_and!. split_and!; auto. }
+      { wf_auto2. }
       destruct Hpf as [Hpf2 Hpf3 Hpf4 Hpf5].
       simpl in Hpf2,Hpf3,Hpf4.
       ospecialize* IHpf.
@@ -1027,27 +1023,25 @@ Defined.
       }
       { clear Hpf5; wf_auto2. }
       
-      apply framing_left_under_tot_impl.
+      eapply framing_left_under_tot_impl.
       1-4: wf_auto2.
       { exact HΓ. }
+      { instantiate (1 := fresh_evar (ψ ---> psi)). solve_fresh. }
+      { try_solve_pile. }
       { exact IHpf. }
 
     - (* Framing right *)
       assert (well_formed (phi1)).
-      { unfold well_formed,well_formed_closed in *. simpl in *.
-        destruct_and!. split_and!; auto. }
+      { wf_auto2. }
 
       assert (well_formed (phi2)).
-      { unfold well_formed,well_formed_closed in *. simpl in *.
-        destruct_and!. split_and!; auto. }
+      { wf_auto2. }
 
       assert (well_formed (psi)).
-      { unfold well_formed,well_formed_closed in *. simpl in *.
-        destruct_and!. split_and!; auto. }
+      { wf_auto2. }
 
       assert (well_formed (phi1 ---> phi2)).
-      { unfold well_formed,well_formed_closed in *. simpl in *.
-        destruct_and!. split_and!; auto. }
+      { wf_auto2. }
 
       destruct Hpf as [Hpf2 Hpf3 Hpf4 Hpf5].
       simpl in Hpf2,Hpf3,Hpf4,Hpf5.
@@ -1061,11 +1055,13 @@ Defined.
       }
       { wf_auto2. }
 
-      apply framing_right_under_tot_impl.
+      eapply framing_right_under_tot_impl.
       1-4: wf_auto2.
       { exact HΓ. }
+      { instantiate (1 := fresh_evar (ψ ---> psi)). solve_fresh. }
+      { try_solve_pile. }
       { exact IHpf. }
-      
+
     - (* Set variable substitution *)
       destruct Hpf as [Hpf2 Hpf3 Hpf4 Hpf5].
       simpl in Hpf2, Hpf3, Hpf4.
@@ -1558,7 +1554,200 @@ Defined.
     eapply IHφ in H. apply H.
   Qed.
 
-  Lemma equality_elimination_basic_mfpath Γ φ1 φ2 C
+  (** Induction-based eq_elim proof *)
+  Lemma equality_elimination_basic_mfpath
+    Γ φ1 φ2 C x (xs : EVarSet) i
+    (HΓ : theory ⊆ Γ)
+    (WF1 : well_formed φ1)
+    (WF2 :  well_formed φ2)
+    (WFC : PC_wf C)
+    (Hfree : {[ev_x; x]} ∪ free_evars φ1 ∪ free_evars φ2 ∪ free_evars (pcPattern C) ## xs)
+(*   TODO: use this:  (Hfree : fresh_evars xs {[ev_x; x]} ∪ free_evars φ1 ∪ free_evars φ2 ∪ free_evars (pcPattern C))  *)
+    (Hfree2 : x ∉ free_evars φ1 ∪ free_evars φ2 ∪ free_evars (pcPattern C))
+    (Henough : size xs >= maximal_exists_depth_to 0 (pcEvar C) (pcPattern C))
+    (Hmu_less : mu_in_evar_path (pcEvar C) (pcPattern C) 0 = false):
+    ProofInfoLe (ExGen := {[ev_x; x]} ∪ coGset.gset_to_coGset xs,
+           SVSubst := ∅,
+           KT := false,
+           AKT := false) i ->
+    Γ ⊢i (φ1 =ml φ2) --->
+      (emplace C φ1) ---> (emplace C φ2)
+    using i.
+  Proof.
+    destruct C as [y φ4]. cbn in *.
+    assert (well_formed φ4) by wf_auto2. clear WFC.
+    remember (size' φ4) as sz.
+    assert (size' φ4 <= sz) by lia. clear Heqsz.
+    revert φ4 φ1 φ2 xs x Γ HΓ H0 H WF1 WF2 Hfree Hfree2 Henough Hmu_less.
+    induction sz; intros.
+    {
+      destruct φ4; simpl in H0; lia.
+    }
+    destruct φ4; simpl in *.
+    * case_match.
+      - subst. rewrite decide_eq_same.
+        mlIntro "H".
+        (* ExGen : {[ev_x; x]} is needed for this: *)
+        mlApplyMeta total_phi_impl_phi in "H".
+        (***)
+        mlDestructAnd "H".
+        mlAssumption.
+        3: wf_auto2.
+        1: instantiate (1 := x).
+        try_solve_pile.
+        set_solver.
+      - rewrite decide_False. by auto.
+        rewrite decide_False. by auto.
+        do 2 mlIntro. mlAssumption.
+    * do 2 mlIntro. mlAssumption.
+    * do 2 mlIntro. mlAssumption.
+    * do 2 mlIntro. mlAssumption.
+    * do 2 mlIntro. mlAssumption.
+    * mlIntro "H".
+      epose proof (IH1 := IHsz φ4_1 φ1 φ2 xs x Γ HΓ ltac:(lia) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) _ ltac:(set_solver) ltac:(lia) _ H1).
+      epose proof (IH2 := IHsz φ4_2 φ1 φ2 xs x Γ HΓ ltac:(lia) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) _ ltac:(set_solver) ltac:(lia) _ H1).
+      clear IHsz.
+      mlAssert ("H2" : (φ1 =ml φ2)). wf_auto2. mlAssumption.
+      eapply framing_left_under_tot_impl with (x := x) in IH1.
+      eapply framing_right_under_tot_impl with (x := x) in IH2.
+      mlApplyMeta IH1 in "H".
+      mlApplyMeta IH2 in "H2".
+      mlIntro "H0".
+      mlApply "H".
+      mlApply "H2".
+      mlAssumption.
+      5, 12: assumption.
+      6, 12: try_solve_pile.
+      1-4,6-9: wf_auto2.
+      1-2: clear -Hfree2; pose proof free_evars_free_evar_subst; set_solver.
+      Unshelve.
+      - clear -Hfree.
+        apply disjoint_union_l in Hfree as [HF1 HF2].
+        apply disjoint_union_l in HF1 as [H ?], HF2 as [? ?].
+        apply disjoint_union_l in H as [? ?].
+        set_solver.
+      - clear-Hmu_less. unfold mu_in_evar_path in *.
+        simpl in Hmu_less. case_match. 2: by simpl in Hmu_less.
+        rewrite negb_false_iff Nat.eqb_eq. lia.
+      - clear -Hfree.
+        apply disjoint_union_l in Hfree as [HF1 HF2].
+        apply disjoint_union_l in HF1 as [H ?], HF2 as [? ?].
+        apply disjoint_union_l in H as [? ?].
+        set_solver.
+      - clear-Hmu_less. unfold mu_in_evar_path in *.
+        simpl in Hmu_less. case_match. 2: by simpl in Hmu_less.
+        rewrite negb_false_iff Nat.eqb_eq. lia.
+    * do 2 mlIntro. mlAssumption.
+    * mlIntro "H".
+      epose proof (IH1 := IHsz φ4_1 φ2 φ1 xs x Γ HΓ ltac:(lia) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) _ ltac:(set_solver) ltac:(lia) _ H1).
+      epose proof (IH2 := IHsz φ4_2 φ1 φ2 xs x Γ HΓ ltac:(lia) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) _ ltac:(set_solver) ltac:(lia) _ H1).
+      clear IHsz.
+      mlAssert ("H2" : (φ2 =ml φ1)). wf_auto2.
+      {
+        mlApplyMeta patt_equal_sym. mlAssumption. assumption.
+      }
+      mlApplyMeta IH1 in "H2".
+      mlApplyMeta IH2 in "H".
+      mlIntro "H0". mlIntro "S".
+      clear. mlApply "H". mlApply "H0". mlApply "H2". mlAssumption.
+      Unshelve.
+      - clear -Hfree.
+        apply disjoint_union_l in Hfree as [HF1 HF2].
+        apply disjoint_union_l in HF1 as [H ?], HF2 as [? ?].
+        apply disjoint_union_l in H as [? ?].
+        set_solver.
+      - clear-Hmu_less. unfold mu_in_evar_path in *.
+        simpl in Hmu_less. case_match. 2: by simpl in Hmu_less.
+        rewrite negb_false_iff Nat.eqb_eq. lia.
+      - clear -Hfree.
+        apply disjoint_union_l in Hfree as [HF1 HF2].
+        apply disjoint_union_l in HF1 as [H ?], HF2 as [? ?].
+        apply disjoint_union_l in H as [? ?].
+        set_solver.
+      - clear-Hmu_less. unfold mu_in_evar_path in *.
+        simpl in Hmu_less. case_match. 2: by simpl in Hmu_less.
+        rewrite negb_false_iff Nat.eqb_eq. lia.
+    * mlIntro.
+      mlIntro.
+      destruct (decide (y ∈ free_evars φ4)).
+      2: {
+        rewrite free_evar_subst_no_occurrence. assumption.
+        rewrite free_evar_subst_no_occurrence. assumption.
+        mlAssumption.
+      }
+      rewrite maximal_exists_depth_to_S in Henough. assumption.
+      destruct (elements xs) eqn:Hel.
+      {
+        apply elements_empty_iff in Hel. apply leibniz_equiv in Hel.
+        subst. rewrite size_empty in Henough. lia.
+      }
+      rename e0 into z.
+      (* TODO: extract this, very technical *)
+      assert (xs = {[z]} ∪ list_to_set l). {
+        rewrite <- (list_to_set_cons z l).
+        clear-Hel.
+        rewrite <- list_to_set_elements_L at 1.
+        by rewrite Hel.
+      }
+      assert (z ∉ l /\ z <> y) as HZ. {
+        split.
+        pose proof (HND := NoDup_elements xs).
+        clear -Hel HND.
+        rewrite Hel in HND. inversion HND. set_solver.
+        set_solver.
+      }
+      subst xs.
+      assert (z ∉ free_evars φ1 ∪ free_evars φ2 ∪ free_evars φ4). {
+        clear-Hfree. apply disjoint_union_r in Hfree. set_solver.
+      }
+      (* TODO
+         manually applied mlDestructEx, because it does not automatically solve the
+         side conditions, thus fails *)
+      _mlReshapeHypsByName "1".
+      apply MLGoal_destructEx with (x := z). try_solve_pile.
+      1-4: cbn; clear-H2.
+      1-2: set_solver.
+      1-2: pose proof free_evars_free_evar_subst; set_solver.
+      (* *** *)
+      simpl. mlExists z.
+      opose proof* (IHsz (evar_open z 0 φ4) φ1 φ2 (list_to_set l) x Γ HΓ).
+      2-4: wf_auto2.
+      1: rewrite evar_open_size'; lia.
+      - clear -Hfree e HZ.
+        pose proof free_evars_evar_open φ4 z 0.
+        repeat apply disjoint_union_r in Hfree as [Hfree ?].
+        repeat apply disjoint_union_l in Hfree as [Hfree ?].
+        repeat apply disjoint_union_l in H0 as [H0 ?].
+        repeat (apply disjoint_union_l; split); try assumption.
+        clear -H5 H HZ. set_solver.
+      - pose proof free_evars_evar_open φ4 z 0.
+        clear-Hfree2 Hfree H3.
+        repeat apply disjoint_union_r in Hfree as [Hfree _].
+        do 3 apply disjoint_union_l in Hfree as [Hfree _].
+        apply disjoint_union_l in Hfree as [_ Hfree].
+        set_solver.
+      - rewrite evar_open_exists_depth.
+        set_solver.
+        rewrite size_union in Henough. set_solver.
+        rewrite size_singleton in Henough. lia.
+      - destruct HZ as [_ HZ].
+        clear-Hmu_less HZ. unfold mu_in_evar_path in *.
+        simpl in Hmu_less. case_match. 2: by simpl in Hmu_less.
+        by rewrite negb_false_iff Nat.eqb_eq evar_open_mu_depth.
+      - try_solve_pile.
+      - rewrite evar_open_free_evar_subst_swap. apply HZ. wf_auto2.
+        rewrite evar_open_free_evar_subst_swap. apply HZ. wf_auto2.
+        mlApplyMeta H3. mlSplitAnd; mlAssumption.
+    * unfold mu_in_evar_path in Hmu_less. simpl in Hmu_less.
+      destruct (decide (y ∈ free_evars φ4)).
+      - rewrite maximal_mu_depth_to_S in Hmu_less. assumption.
+        simpl in Hmu_less. congruence.
+      - rewrite free_evar_subst_no_occurrence. assumption.
+        rewrite free_evar_subst_no_occurrence. assumption.
+        mlIntro. mlIntro. mlAssumption.
+  Defined.
+
+  Lemma equality_elimination_basic_mfpath_original Γ φ1 φ2 C
     (HΓ : theory ⊆ Γ)
     (WF1 : well_formed φ1)
     (WF2 :  well_formed φ2)
@@ -1609,7 +1798,70 @@ Defined.
     )). *)
   Proof.
     intros Hmf.
+    pose proof equality_elimination_basic_mfpath Γ φ1 φ2 C as H1.
+    pose proof equality_elimination_basic_mfpath Γ φ2 φ1 C as H2.
+    toMLGoal. { unfold PC_wf in WFC. wf_auto2. }
+    destruct C as [Cevar Cpat]. simpl in *.
+    pose ev_x as ev_x. mlFreshEvar as x.
+    remember (evar_fresh_seq (free_evars (patt_free_evar ev_x
+                          ---> patt_free_evar x ---> patt_free_evar Cevar --->
+                          φ1 ---> φ2 ---> Cpat))
+                (maximal_exists_depth_to 0 Cevar Cpat)) as xs.
+    opose proof* (H1 x (list_to_set xs) AnyReasoning HΓ WF1 WF2 WFC).
+    {
+      pose proof evar_fresh_seq_correct (maximal_exists_depth_to 0 Cevar Cpat) ((free_evars
+             (patt_free_evar ev_x --->
+              patt_free_evar x ---> patt_free_evar Cevar ---> φ1 ---> φ2 ---> Cpat))).
+      destruct H. subst xs.
+      clear -all_evars_fresh.
+      set_solver.
+    }
+    {
+      ltac2:(_fm_export_everything()). set_solver.
+    }
+    {
+      subst xs. clear.
+      rewrite size_list_to_set.
+      {
+        apply no_dups_NoDup, evar_fresh_seq_correct.
+      }
+      rewrite evar_fresh_seq_length. lia.
+    }
+    { assumption. }
+    { try_solve_pile. }
+    opose proof* (H2 x (list_to_set xs) AnyReasoning HΓ WF2 WF1 WFC).
+    {
+      pose proof evar_fresh_seq_correct (maximal_exists_depth_to 0 Cevar Cpat) ((free_evars
+             (patt_free_evar ev_x --->
+              patt_free_evar x ---> patt_free_evar Cevar ---> φ1 ---> φ2 ---> Cpat))).
+      destruct H0. subst xs.
+      clear -all_evars_fresh.
+      set_solver.
+    }
+    {
+      ltac2:(_fm_export_everything()). set_solver.
+    }
+    {
+      subst xs. clear.
+      rewrite size_list_to_set.
+      {
+        apply no_dups_NoDup, evar_fresh_seq_correct.
+      }
+      rewrite evar_fresh_seq_length. lia.
+    }
+    { assumption. }
+    { try_solve_pile. }
 
+    mlIntro. mlSplitAnd.
+    {
+      mlApplyMeta H. mlAssumption.
+    }
+    {
+      mlApplyMeta H0.
+      mlApplyMeta patt_equal_sym. 2: assumption.
+      mlAssumption.
+    }
+(* 
     eapply useGenericReasoning.
     2: {
       unshelve(eapply deduction_theorem_noKT).
@@ -1683,7 +1935,7 @@ Defined.
     {
       clear. set_solver.
     } *)
-  }
+  } *)
   Defined.
 
   Lemma equality_elimination_basic Γ φ1 φ2 C
@@ -1697,7 +1949,7 @@ Defined.
   using AnyReasoning.
   Proof.
     intros.
-    apply equality_elimination_basic_mfpath; try assumption.
+    aapply equality_elimination_basic_mfpath_original; try assumption.
     now apply mu_free_in_path.
   Defined.
 
@@ -1713,7 +1965,7 @@ Defined.
     using AnyReasoning.
   Proof.
     intros.
-    unshelve (gapply equality_elimination_basic_mfpath); try assumption.
+    unshelve (gapply equality_elimination_basic_mfpath_original); try assumption.
     unfold AnyReasoning.
     try_solve_pile.
   Defined.
@@ -1783,9 +2035,9 @@ Defined.
     intros HΓ MF WF1 WF2 WF3 WF4. remember (fresh_evar ψ) as x.
     assert (x ∉ free_evars ψ) by now apply x_eq_fresh_impl_x_notin_free_evars.
     rewrite (bound_to_free_variable_subst ψ x 1 0 φ1 ltac:(lia)); auto.
-    { unfold well_formed,well_formed_closed in *. destruct_and!. assumption. }
+    { wf_auto2. }
     rewrite (bound_to_free_variable_subst ψ x 1 0 φ2 ltac:(lia)); auto.
-    { unfold well_formed,well_formed_closed in *. destruct_and!. assumption. }
+    { wf_auto2. }
     (* needed for wf_auto2: *)
     have Hmf1 : well_formed_positive ψ = true by apply mu_free_wfp. 
     have Hmf2 : mu_free (pcPattern {| pcEvar := x; pcPattern := ψ^{evar:0↦x} |}) by apply mu_free_evar_open.
@@ -1800,50 +2052,6 @@ Defined.
                   ).
       mlApplyMeta H0. mlExact "0".
   Defined.
-
-  Lemma ceil_monotonic Γ φ₁ φ₂ i :
-    theory ⊆ Γ ->
-    well_formed φ₁ ->
-    well_formed φ₂ ->
-    Γ ⊢i φ₁ ---> φ₂ using i ->
-    Γ ⊢i ⌈ φ₁ ⌉ ---> ⌈ φ₂ ⌉ using i.
-  Proof.
-    intros HΓ wfφ₁ wfφ₂ H.
-    unshelve (eapply Framing_right).
-    { wf_auto2. }
-    { try_solve_pile. }
-    exact H.
-  Defined.
-
-  Lemma floor_monotonic  Γ φ₁ φ₂ i :
-    theory ⊆ Γ ->
-    well_formed φ₁ ->
-    well_formed φ₂ ->
-    Γ ⊢i φ₁ ---> φ₂ using i ->
-    Γ ⊢i ⌊ φ₁ ⌋ ---> ⌊ φ₂ ⌋ using i.
-  Proof.
-    intros HΓ wfφ₁ wfφ₂ H.
-    unfold patt_total.
-    apply BasicProofSystemLemmas.modus_tollens.
-    apply ceil_monotonic.
-    { assumption. }
-    { wf_auto2. }
-    { wf_auto2. }
-    apply BasicProofSystemLemmas.modus_tollens.
-    exact H.
-  Defined.
-
-  Lemma patt_equal_sym Γ φ1 φ2 i:
-    theory ⊆ Γ ->
-    well_formed φ1 -> well_formed φ2 ->
-    ProofInfoLe BasicReasoning i ->
-    Γ ⊢i φ1 =ml φ2 ---> φ2 =ml φ1
-    using i.
-  Proof.
-    intros.
-    apply floor_monotonic; auto.
-    mlIntro. mlDestructAnd "0". mlSplitAnd; mlAssumption.
-  Qed.
 
   Lemma evar_quantify_equal_simpl : forall φ1 φ2 x n,
       evar_quantify x n (φ1 =ml φ2) = (evar_quantify x n φ1) =ml (evar_quantify x n φ2).
@@ -1865,20 +2073,11 @@ Defined.
     { rewrite HeqZ. auto. }
 
     assert (well_formed (instantiate (ex , φ) φ')) as WF1. {
-      unfold instantiate.
-      unfold well_formed, well_formed_closed.
-      apply andb_true_iff in WF as [E1 E2].
-      unfold well_formed_closed in *. destruct_and!.
-      erewrite bevar_subst_closed_mu, bevar_subst_positive, bevar_subst_closed_ex; auto.
+      wf_auto2.
       now apply mu_free_wfp.
     }
     assert (well_formed (instantiate (ex , φ) Z)) as WF2. {
-      unfold instantiate.
-      unfold well_formed, well_formed_closed.
-      apply andb_true_iff in WF as [E1 E2]. simpl in E1, E2.
-      unfold well_formed_closed in *. destruct_and!.
-      erewrite bevar_subst_closed_mu, bevar_subst_positive, bevar_subst_closed_ex; auto.
-      all: try rewrite HeqZ; auto.
+      wf_auto2.
       now apply mu_free_wfp.
     }
     
@@ -1968,29 +2167,15 @@ Defined.
   Proof.
     intros HΓ MF WF WFB WFM. unfold patt_forall.
     assert (well_formed (φ^[evar: 0 ↦ φ'])) as BWF. {
-      unfold well_formed, well_formed_closed in *.
-      destruct_and!.
-      split_and!.
-      - apply well_formed_positive_bevar_subst; auto.
-        now apply mu_free_wfp.
-      - auto.
-      - apply wfc_ex_aux_bevar_subst; auto.
+      wf_auto2.
+      now apply mu_free_wfp.
     }
     assert (well_formed (ex , patt_equal φ' b0)) as SWF. {
-      unfold well_formed, well_formed_closed.
-      apply andb_true_iff in WF as [E1 E2]. unfold well_formed_closed in E2.
-      simpl. rewrite E1.
-      unfold well_formed,well_formed_closed in *. destruct_and!.
-      split_and!; auto.
-      - eapply well_formed_closed_ex_aux_ind. 2: eassumption. lia.
-      - eapply well_formed_closed_ex_aux_ind. 2: eassumption. lia.
+      wf_auto2.
     }
     assert (well_formed (ex , (φ ---> ⊥))) as NWF. {
-      unfold well_formed, well_formed_closed in *.
-      clear BWF SWF.
-      destruct_and!. split_and!; auto.
+      wf_auto2.
       apply mu_free_wfp; simpl; now rewrite MF.
-      all: simpl; wf_auto2.
     }
     unshelve (epose proof (H := exists_functional_subst (! φ) φ' Γ HΓ _ WF _ _)).
     { simpl. rewrite andbT. exact MF. }
@@ -3130,9 +3315,7 @@ Proof.
           pose proof (Hfr := set_evar_fresh_is_fresh' ({[x]} ∪ (free_evars φ))).
           set_solver.
         }
-        simpl. split_and!; auto.
-        unfold well_formed, well_formed_closed in wfφ. destruct_and!.
-        eapply well_formed_closed_ex_aux_ind; try eassumption; lia.
+        wf_auto2.
         reflexivity.
       }
       apply ex_quan_monotone.
@@ -3149,51 +3332,27 @@ Proof.
       }
     }
     {
-      unfold exists_quantify.
-      unfold well_formed. split_and!.
-      { wf_auto2; case_match; wf_auto2. }
-      unfold well_formed_closed. split_and!.
-      { simpl; case_match; wf_auto2. }
-      { simpl; case_match; try congruence. simpl.
-        wf_auto2.
-      }
+      unfold exists_quantify. wf_auto2.
+      all: case_match; wf_auto2.
     }
   }
   {
-      unfold exists_quantify.
-      unfold well_formed. split_and!.
-      { wf_auto2; case_match; wf_auto2. }
-      unfold well_formed_closed. split_and!.
-      { simpl; case_match; wf_auto2. }
-      { simpl; case_match; try congruence. simpl.
-        wf_auto2.
-      }
+      wf_auto2.
+      all: case_match; wf_auto2.
   }
 
   toMLGoal.
   {
-    unfold exists_quantify.
-    unfold well_formed. split_and!.
-    { wf_auto2; case_match; wf_auto2. }
-    unfold well_formed_closed. split_and!.
-    { simpl; case_match; wf_auto2. }
-    { simpl; case_match; try congruence. simpl.
-      split_and!; auto; wf_auto2.
-    }
+    wf_auto2.
+    all: case_match; wf_auto2.
   }
 
   unfold exists_quantify.
   pose proof (Htmp := membership_exists Γ x z (evar_quantify y 0 ⌈ patt_free_evar y and φ ⌉) i HΓ).
   ospecialize* Htmp.
   {
-      unfold exists_quantify.
-      unfold well_formed. split_and!.
-      { wf_auto2; case_match; wf_auto2. }
-      unfold well_formed_closed. split_and!.
-      { simpl; case_match; wf_auto2. }
-      { simpl; case_match; try congruence. simpl.
-        split_and!; auto; wf_auto2.
-      }
+      wf_auto2.
+      all: case_match; wf_auto2.
   }
   {
     mlSimpl. cbn. rewrite decide_eq_same. simpl.
@@ -3223,14 +3382,14 @@ Proof.
     pose proof (Hfr := set_evar_fresh_is_fresh' ({[x]} ∪ (free_evars φ))).
     set_solver.
   }
-  { simpl. split_and!; auto; wf_auto2. }
+  { simpl. wf_auto2. }
 
   apply (strip_exists_quantify_r Γ y).
   { simpl.
     pose proof (Hfr := @set_evar_fresh_is_fresh' Σ ({[x]} ∪ (free_evars φ))).
     set_solver.
   }
-  { simpl. split_and!; auto; wf_auto2. }
+  { simpl. wf_auto2. }
   apply ex_quan_monotone.
   { try_solve_pile. }
   unfold evar_open. mlSimpl. simpl.
@@ -3330,7 +3489,7 @@ Proof.
   2: {
     apply (strip_exists_quantify_l Γ y).
     { simpl. set_solver. }
-    { simpl. split_and!; try reflexivity. wf_auto2. }
+    { simpl. wf_auto2. }
     apply ex_quan_monotone.
     { try_solve_pile. }
     {
@@ -3375,7 +3534,7 @@ Proof.
     2: {
       apply (strip_exists_quantify_l Γ y).
       { set_solver. }
-      { simpl. split_and!; try reflexivity. wf_auto2. }
+      { simpl. wf_auto2. }
       apply ex_quan_monotone.
       { try_solve_pile. }
       {
@@ -3472,9 +3631,7 @@ Proof.
   { 
     rewrite -[b0 ∈ml _](evar_quantify_evar_open x 0).
     { set_solver. }
-    unfold well_formed, well_formed_closed in wfφ. destruct_and!.
-    simpl; split_and!; auto.
-    1-2: eapply well_formed_closed_ex_aux_ind; try eassumption; lia.
+    wf_auto2.
     reflexivity.
   }
   apply universal_generalization.
@@ -3500,9 +3657,7 @@ Proof.
     rewrite <- (evar_quantify_evar_open y 0 (b0 ∈ml (! ⌈ φ ⌉))).
     2: { set_solver. }
     2: {
-      unfold well_formed, well_formed_closed in wfφ. destruct_and!.
-      simpl; split_and!; auto.
-      eapply well_formed_closed_ex_aux_ind; try eassumption; lia.
+      wf_auto2.
     }
 
   assert (Htmp: Γ ⊢i (((b0 ∈ml (! ⌈ φ ⌉))^{evar: 0 ↦ y}) ---> ((! (b0 ∈ml ⌈ φ ⌉))^{evar: 0 ↦ y})) using (ExGen := {[y]}, SVSubst := ∅, KT := false, AKT := false)).
@@ -3811,7 +3966,7 @@ Proof.
     mlAssert ("H": (emplace C ψ <---> emplace C Top )).
     { wf_auto2. }
     {
-      pose proof (Htmp := equality_elimination_basic_mfpath Γ ψ Top C HΓ ltac:(wf_auto2) ltac:(wf_auto2)).
+      pose proof (Htmp := equality_elimination_basic_mfpath_original Γ ψ Top C HΓ ltac:(wf_auto2) ltac:(wf_auto2)).
       ospecialize* Htmp.
       {
         unfold PC_wf. exact HwfC.
@@ -3828,7 +3983,7 @@ Proof.
     mlAssert ("H": (emplace C ψ <---> emplace C Bot )).
     { wf_auto2. }
     {
-      pose proof (Htmp := equality_elimination_basic_mfpath Γ ψ Bot C HΓ ltac:(wf_auto2) ltac:(wf_auto2)).
+      pose proof (Htmp := equality_elimination_basic_mfpath_original Γ ψ Bot C HΓ ltac:(wf_auto2) ltac:(wf_auto2)).
       ospecialize* Htmp.
       {
         unfold PC_wf. exact HwfC.
@@ -4166,7 +4321,7 @@ Proof.
   { wf_auto2. }
   { wf_auto2. }
   { reflexivity. }
-  { simpl. split_and!;reflexivity || assumption. }
+  { simpl. wf_auto2. }
   { assumption. }
   { aapply ceil_is_predicate;[set_solver|wf_auto2]. }
   mlRewrite <- H at 1; clear H.
@@ -4261,7 +4416,7 @@ Proof.
   mlIntro "H0".
 
   unshelve(mlApplyMeta patt_equal_sym in "H0").
-  2: { assumption. }
+  2: assumption.
   mlRewriteBy "H0" at 1.
   mlClear "H0".
 
@@ -4546,9 +4701,8 @@ Proof.
   intros HΓ H wfl wfg.
   eapply prf_weaken_conclusion_iter_meta_meta. 5: apply H.
   1-3,5,6: wf_auto2.
-  apply patt_equal_sym; auto.
+  gapply patt_equal_sym; try assumption. try_solve_pile.
   1-2: wf_auto2.
-  try_solve_pile.
 Defined.
 
 (* TODO: strengthen proof info about this: *)
@@ -4561,9 +4715,9 @@ Proof.
   intros HΓ H wfl wfg.
   unfold patterns_of in *. rewrite -> map_app in *. simpl in *.
   eapply prf_strenghten_premise_iter_meta_meta.
-  6 : apply patt_equal_sym; auto.
+  6 : aapply patt_equal_sym; auto.
   9: apply H.
-  8: try_solve_pile.
+  6: try_solve_pile.
   all: wf_auto2.
 Defined.
 
@@ -4652,8 +4806,9 @@ Defined.
     Γ ⊢ (φ =ml φ') <---> (φ' =ml φ).
   Proof.
     intros HΓ wfφ wfφ'.
-    pose proof (SYM1 := @patt_equal_sym _ _ Γ φ' φ AnyReasoning HΓ wfφ' wfφ ltac:(try_solve_pile)).
-    pose proof (SYM2 := @patt_equal_sym _ _ Γ φ φ' AnyReasoning HΓ wfφ wfφ' ltac:(try_solve_pile)).
+    pose proof (SYM1 := @patt_equal_sym _ _ Γ φ' φ HΓ wfφ' wfφ).
+    pose proof (SYM2 := @patt_equal_sym _ _ Γ φ φ' HΓ wfφ wfφ').
+    use AnyReasoning in SYM1. use AnyReasoning in SYM2.
     apply pf_iff_split. 3,4: assumption. 1,2: wf_auto2. 
   Defined.
 
