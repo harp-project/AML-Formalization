@@ -122,8 +122,8 @@ Example use_rewrite {Σ : Signature} (Γ : Theory) (ϕ₁ ϕ₂ ϕ₃ ϕ₄ : Pa
     well_formed ϕ₃ = true ->
     well_formed ϕ₄ = true ->
     Γ ⊢ ϕ₁ <---> ϕ₂ ->
-    (* The [$] operator is an application. *)
-    Γ ⊢ (ϕ₃ $ ϕ₁ $ ϕ₄) <---> (ϕ₃ $ ϕ₂ $ ϕ₄)
+    (* The [⋅] operator is an application. *)
+    Γ ⊢ (ϕ₃ ⋅ ϕ₁ ⋅ ϕ₄) <---> (ϕ₃ ⋅ ϕ₂ ⋅ ϕ₄)
 .
 Proof.
     intros wfϕ₁ wfϕ₂ wfϕ₃ wfϕ₄ H. toMLGoal;[wf_auto2|].
@@ -174,7 +174,7 @@ Fail Example use_rewriteBy {Σ : Signature} (Γ : Theory) (ϕ₁ ϕ₂ ϕ₃ ϕ�
     well_formed ϕ₂ = true ->
     well_formed ϕ₃ = true ->
     well_formed ϕ₄ = true ->
-    Γ ⊢ (ϕ₁ $ ϕ₄ =ml ϕ₂ $ ϕ₄ ) ---> (ϕ₁ =ml ϕ₂) ---> ((ϕ₃ $ ϕ₁ $ ϕ₄) <---> (ϕ₃ $ ϕ₂ $ ϕ₄))
+    Γ ⊢ (ϕ₁ ⋅ ϕ₄ =ml ϕ₂ ⋅ ϕ₄ ) ---> (ϕ₁ =ml ϕ₂) ---> ((ϕ₃ ⋅ ϕ₁ ⋅ ϕ₄) <---> (ϕ₃ ⋅ ϕ₂ ⋅ ϕ₄))
 .
 
 (* The typeclass [Definedness_Syntax.Syntax] ensures the presence of the definedness symbol
@@ -186,7 +186,7 @@ Example use_rewriteBy {Σ : Signature} {syntax : Definedness_Syntax.Syntax}
     well_formed ϕ₂ = true ->
     well_formed ϕ₃ = true ->
     well_formed ϕ₄ = true ->
-    Γ ⊢ (ϕ₁ $ ϕ₄ =ml ϕ₂ $ ϕ₄ ) ---> (ϕ₁ =ml ϕ₂) ---> ((ϕ₃ $ ϕ₁ $ ϕ₄) <---> (ϕ₃ $ ϕ₂ $ ϕ₄))
+    Γ ⊢ (ϕ₁ ⋅ ϕ₄ =ml ϕ₂ ⋅ ϕ₄ ) ---> (ϕ₁ =ml ϕ₂) ---> ((ϕ₃ ⋅ ϕ₁ ⋅ ϕ₄) <---> (ϕ₃ ⋅ ϕ₂ ⋅ ϕ₄))
 .
 Proof.
     intros wfϕ₁ wfϕ₂ wfϕ₃ wfϕ₄.
@@ -214,7 +214,7 @@ Example use_rewriteBy {Σ : Signature} {syntax : Definedness_Syntax.Syntax}
     well_formed ϕ₂ = true ->
     well_formed ϕ₃ = true ->
     well_formed ϕ₄ = true ->
-    Γ ⊢ (ϕ₁ $ ϕ₄ =ml ϕ₂ $ ϕ₄ ) ---> (ϕ₁ =ml ϕ₂) ---> ((ϕ₃ $ ϕ₁ $ ϕ₄) <---> (ϕ₃ $ ϕ₂ $ ϕ₄))
+    Γ ⊢ (ϕ₁ ⋅ ϕ₄ =ml ϕ₂ ⋅ ϕ₄ ) ---> (ϕ₁ =ml ϕ₂) ---> ((ϕ₃ ⋅ ϕ₁ ⋅ ϕ₄) <---> (ϕ₃ ⋅ ϕ₂ ⋅ ϕ₄))
 .
 Proof.
     intros HΓ.
@@ -245,7 +245,7 @@ Example use_mlApply {Σ : Signature} (Γ : Theory) (a b c : Pattern) :
     well_formed a = true ->
     well_formed b = true ->
     well_formed c = true ->
-    Γ ⊢ (a ---> b $ c) ---> (b $ c ---> c) ---> (a ---> c).
+    Γ ⊢ (a ---> b ⋅ c) ---> (b ⋅ c ---> c) ---> (a ---> c).
 Proof.
     mlIntro "H1". mlIntro "H2". mlIntro "H3".
     (* strenghtens the concusion using H2 *)
@@ -268,7 +268,7 @@ Example use_mlApplyMeta {Σ : Signature} (Γ : Theory) (a b c d : Pattern) :
     well_formed b = true ->
     well_formed (ex, c) = true ->
     well_formed d = true ->
-    Γ ⊢ a ---> ((ex, c) $ d) ---> b ---> (ex, (c $ d)).
+    Γ ⊢ a ---> ((ex, c) ⋅ d) ---> b ---> (ex, (c ⋅ d)).
 Proof.
     mlIntro "H1". mlIntro "H2". mlIntro "H3".
 
@@ -278,7 +278,7 @@ Proof.
         : ∀ (Γ : Theory) (ϕ ψ : Pattern),
             well_formed (ex , ϕ)
             → well_formed ψ
-            → Γ ⊢i (ex , ϕ) $ ψ ---> (ex , ϕ $ ψ) using BasicReasoning
+            → Γ ⊢i (ex , ϕ) ⋅ ψ ---> (ex , ϕ ⋅ ψ) using BasicReasoning
     *)
     mlApplyMeta Prop_ex_left.
     (* Did you notice that [mlApplyMeta] automatically instantiated

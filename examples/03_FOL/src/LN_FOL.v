@@ -984,7 +984,7 @@ Section FOL_ML_correspondence.
     is_true (well_formed_closed_ex_aux start m) ->
     is_true (well_formed_closed_ex_aux
      (List.fold_left
-        (λ (Acc : Pattern) (x : nat), (Acc $ patt_bound_evar x))
+        (λ (Acc : Pattern) (x : nat), (Acc ⋅ patt_bound_evar x))
         (make_list1 n) start )
      m).
   Proof.
@@ -997,7 +997,7 @@ Section FOL_ML_correspondence.
     is_true (well_formed_closed_mu_aux start k) ->
     is_true (well_formed_closed_mu_aux
      (List.fold_left
-        (λ (Acc : Pattern) (x : nat), (Acc $ patt_bound_evar x)%ml)
+        (λ (Acc : Pattern) (x : nat), (Acc ⋅ patt_bound_evar x)%ml)
         (make_list1 n) start )
      k).
   Proof.
@@ -1009,7 +1009,7 @@ Section FOL_ML_correspondence.
     is_true (well_formed_positive start) ->
     is_true (well_formed_positive
      (List.fold_left
-        (λ (Acc : Pattern) (x : nat), (Acc $ patt_bound_evar x)%ml)
+        (λ (Acc : Pattern) (x : nat), (Acc ⋅ patt_bound_evar x)%ml)
         (make_list1 n) start)).
   Proof.
     induction n; intros; simpl; auto.
@@ -1020,7 +1020,7 @@ Section FOL_ML_correspondence.
     is_true (well_formed_closed_ex_aux start m) ->
     is_true (well_formed_closed_ex_aux
      (List.fold_left
-        (λ (Acc : Pattern) (x : nat), (Acc $ patt_bound_evar x)%ml)
+        (λ (Acc : Pattern) (x : nat), (Acc ⋅ patt_bound_evar x)%ml)
         (make_list0 n) start)
      m).
   Proof.
@@ -1034,7 +1034,7 @@ Section FOL_ML_correspondence.
     is_true (well_formed_closed_mu_aux start k) ->
     is_true (well_formed_closed_mu_aux
      (List.fold_left
-        (λ (Acc : Pattern) (x : nat), (Acc $ patt_bound_evar x)%ml)
+        (λ (Acc : Pattern) (x : nat), (Acc ⋅ patt_bound_evar x)%ml)
         (make_list0 n) start)
      k).
   Proof.
@@ -1046,7 +1046,7 @@ Section FOL_ML_correspondence.
     is_true (well_formed_positive start) ->
     is_true (well_formed_positive
      (List.fold_left
-        (λ (Acc : Pattern) (x : nat), (Acc $ patt_bound_evar x)%ml)
+        (λ (Acc : Pattern) (x : nat), (Acc ⋅ patt_bound_evar x)%ml)
         (make_list0 n) start)).
   Proof.
     induction n; intros start H; simpl; auto.
@@ -1140,9 +1140,9 @@ Section FOL_ML_correspondence.
 
   Lemma pointwise_fold : forall n0 (v : @vec term n0) start (F : Pattern -> Pattern),
     (forall (p1 p2 : Pattern), F (patt_app p1 p2) = patt_app (F p1) (F p2)) ->
-    F (fold_left (λ (Acc : Pattern) (t : term), (Acc $ convert_term t)%ml)
+    F (fold_left (λ (Acc : Pattern) (t : term), (Acc ⋅ convert_term t)%ml)
      start v) =
-  (fold_left (λ (Acc : Pattern) (t : term), (Acc $ F (convert_term t))%ml)
+  (fold_left (λ (Acc : Pattern) (t : term), (Acc ⋅ F (convert_term t))%ml)
      (F start) v).
   Proof.
     induction v; intros start F H.
@@ -1151,9 +1151,9 @@ Section FOL_ML_correspondence.
   Qed.
 
   Corollary evar_quantify_fold : forall n0 (v : @vec term n0) start x n,
-    evar_quantify x n (fold_left (λ (Acc : Pattern) (t : term), (Acc $ convert_term t)%ml)
+    evar_quantify x n (fold_left (λ (Acc : Pattern) (t : term), (Acc ⋅ convert_term t)%ml)
      start v) =
-  (fold_left (λ (Acc : Pattern) (t : term), (Acc $ evar_quantify x n (convert_term t))%ml)
+  (fold_left (λ (Acc : Pattern) (t : term), (Acc ⋅ evar_quantify x n (convert_term t))%ml)
      (evar_quantify x n start) v).
   Proof.
     intros. apply pointwise_fold. intros. auto.
@@ -1161,9 +1161,9 @@ Section FOL_ML_correspondence.
 
   (** This is boiler-plate *)
   Corollary bevar_subst_fold : forall n0 (v : @vec term n0) start x n,
-    (fold_left (λ (Acc : Pattern) (t : term), (Acc $ convert_term t))
+    (fold_left (λ (Acc : Pattern) (t : term), (Acc ⋅ convert_term t))
      start v)^[evar: n ↦ x] =
-  (fold_left (λ (Acc : Pattern) (t : term), (Acc $ (convert_term t)^[evar: n ↦ x]))
+  (fold_left (λ (Acc : Pattern) (t : term), (Acc ⋅ (convert_term t)^[evar: n ↦ x]))
      (start^[evar: n ↦ x]) v).
   Proof.
     induction v; intros.
@@ -1222,7 +1222,7 @@ Section FOL_ML_correspondence.
       clear Heqstart. generalize dependent start. 
       induction v; intros.
       - auto.
-      - simpl. epose proof (IHv _ _ (start $ convert_term h)%ml _). clear IHv.
+      - simpl. epose proof (IHv _ _ (start ⋅ convert_term h)%ml _). clear IHv.
         apply H1.
       Unshelve.
       {
@@ -1259,7 +1259,7 @@ Section FOL_ML_correspondence.
       clear Heqstart. generalize dependent start. 
       induction v; intros.
       - auto.
-      - simpl. epose proof (IHv _ (start $ convert_term h)%ml _). clear IHv.
+      - simpl. epose proof (IHv _ (start ⋅ convert_term h)%ml _). clear IHv.
         apply H1.
       Unshelve.
         {
@@ -1363,12 +1363,12 @@ Section FOL_ML_correspondence.
   Lemma subst_make_list : forall n m ψ start, m > n ->
     (List.fold_left
           (λ (Acc : Pattern) (x : nat),
-             (Acc $ patt_bound_evar x)%ml) 
+             (Acc ⋅ patt_bound_evar x)%ml) 
           (make_list1 n) start)^[evar: m ↦ ψ]
       =
     (List.fold_left
           (λ (Acc : Pattern) (x : nat),
-             (Acc $ patt_bound_evar x)%ml) 
+             (Acc ⋅ patt_bound_evar x)%ml) 
           (make_list1 n) (start^[evar: m ↦ ψ])).
   Proof.
     induction n; intros; cbn; auto.
@@ -1424,15 +1424,15 @@ Section FOL_ML_correspondence.
       clear Heqstart. generalize dependent start.
       revert H0. induction v; intros.
       - cbn. simpl in H1. exact H1.
-      - cbn in *. eapply (IHv _ _ (start $ convert_term h)%ml); clear IHv.
+      - cbn in *. eapply (IHv _ _ (start ⋅ convert_term h)%ml); clear IHv.
         separate.
         specialize (H h ltac:(constructor) Γ E2).
         remember (add_forall_prefix n
             (ex ,
               patt_equal
                 (List.fold_left
-                   (λ (Acc : Pattern) (x : nat), (Acc $ patt_bound_evar x)%ml)
-                   (make_list1 n) (start $ patt_bound_evar (S n))%ml)
+                   (λ (Acc : Pattern) (x : nat), (Acc ⋅ patt_bound_evar x)%ml)
+                   (make_list1 n) (start ⋅ patt_bound_evar (S n))%ml)
                 BoundVarSugar.b0)) as A.
         pose proof (forall_functional_subst A (convert_term h) (from_FOL_theory Γ)).
         assert (mu_free A). {
@@ -1485,15 +1485,15 @@ Section FOL_ML_correspondence.
                patt_equal
                  (List.fold_left
                     (λ (Acc : Pattern) (x : nat),
-                       (Acc $ patt_bound_evar x)%ml) 
-                    (make_list1 n) (start $ patt_bound_evar (S n)))
+                       (Acc ⋅ patt_bound_evar x)%ml) 
+                    (make_list1 n) (start ⋅ patt_bound_evar (S n)))
                  BoundVarSugar.b0)^[evar: n ↦ convert_term h]) with
              ((ex ,
                patt_equal
                  ((List.fold_left
                     (λ (Acc : Pattern) (x : nat),
-                       (Acc $ patt_bound_evar x)%ml) 
-                    (make_list1 n) (start $ patt_bound_evar (S n)))^[evar: S n ↦ convert_term h])
+                       (Acc ⋅ patt_bound_evar x)%ml) 
+                    (make_list1 n) (start ⋅ patt_bound_evar (S n)))^[evar: S n ↦ convert_term h])
                  BoundVarSugar.b0)) in H by auto.
         simpl in H0.
         rewrite subst_make_list in H0. lia.
