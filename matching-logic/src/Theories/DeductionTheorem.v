@@ -175,14 +175,14 @@ Proof.
       unfold evar_open.
       unfold evar_open in IH.
 
-      rewrite free_evar_subst_free_evar_subst.
+      rewrite free_evar_subst_bevar_subst_fresh.
       { wf_auto2. }
       { subst x. simpl.
         rewrite not_elem_of_singleton.
         solve_fresh_neq.
       }
 
-      rewrite free_evar_subst_free_evar_subst.
+      rewrite free_evar_subst_bevar_subst_fresh.
       { wf_auto2. }
       {
         rewrite not_elem_of_singleton.
@@ -410,14 +410,14 @@ Proof.
       unfold evar_open.
       unfold evar_open in IH.
 
-      rewrite free_evar_subst_free_evar_subst.
+      rewrite free_evar_subst_bevar_subst_fresh.
       { wf_auto2. }
       {
         rewrite not_elem_of_singleton.
         solve_fresh_neq.
       }
 
-      rewrite free_evar_subst_free_evar_subst.
+      rewrite free_evar_subst_bevar_subst_fresh.
       { wf_auto2. }
       {
         rewrite not_elem_of_singleton.
@@ -654,7 +654,7 @@ Proof.
 
     toMLGoal.
     { wf_auto2. }
-    pose proof (Htmp := predicate_propagate_right_2 Γ
+    pose proof (Htmp := predicate_propagate_right_2_meta Γ
       (cpatt2^[[evar:cvar↦ϕ]])
       ψ
       (cpatt1^[[evar:cvar↦ϕ]])
@@ -667,7 +667,7 @@ Proof.
     mlRewrite Htmp at 1.
     clear Htmp.
     mlRewrite IH2 at 1.
-    pose proof (Htmp := predicate_propagate_right_2 Γ
+    pose proof (Htmp := predicate_propagate_right_2_meta Γ
       (cpatt2^[[evar:cvar↦ψ and ϕ]])
       ψ
       (cpatt1^[[evar:cvar↦ϕ]])
@@ -679,7 +679,7 @@ Proof.
     ).
     mlRewrite <- Htmp at 1.
     clear Htmp.
-    pose proof (Htmp := predicate_propagate_left_2 Γ
+    pose proof (Htmp := predicate_propagate_left_2_meta Γ
       (cpatt2^[[evar:cvar↦ψ and ϕ]])
       ψ
       (cpatt1^[[evar:cvar↦ϕ]])
@@ -692,7 +692,7 @@ Proof.
     mlRewrite Htmp at 1.
     clear Htmp.
     mlRewrite IH1 at 1.
-    pose proof (Htmp := predicate_propagate_left_2 Γ
+    pose proof (Htmp := predicate_propagate_left_2_meta Γ
       (cpatt2^[[evar:cvar↦ψ and ϕ]])
       ψ
       (cpatt1^[[evar:cvar↦ψ and ϕ]])
@@ -1561,7 +1561,10 @@ Proof.
       { exact HΓ. }
       { wf_auto2. }
       { instantiate (1 := fresh_evar ψ). solve_fresh. }
-      { instantiate (1 := fresh_evar ψ $ fre). solve_fresh. }
+      { instantiate (1 := fresh_evar (ψ $ patt_free_evar (fresh_evar ψ))). solve_fresh. }
+      { instantiate (1 := fresh_evar (ψ $ patt_free_evar (fresh_evar ψ) $ 
+                      patt_free_evar (fresh_evar (ψ $ patt_free_evar (fresh_evar ψ))))). solve_fresh. }
+      { try_solve_pile. }
     }
     toMLGoal.
     { clear Hpf2 Hpf3 Hpf4; wf_auto2. }

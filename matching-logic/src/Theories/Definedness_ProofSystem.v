@@ -3886,19 +3886,31 @@ Proof.
   }
 Defined.
 
+Lemma predicate_propagate_right_2_meta {Σ : Signature} {syntax : Syntax} Γ ϕ ψ P :
+  theory ⊆ Γ ->
+  well_formed ϕ ->
+  well_formed ψ ->
+  well_formed P ->
+  Γ ⊢ is_predicate_pattern ψ -> 
+  Γ ⊢ ψ and P $ ϕ <---> P $ (ψ and ϕ).
+Proof.
+  intros.
+  mlAdd H3.
+  mlApplyMeta predicate_propagate_right_2. 2: assumption.
+  mlAssumption.
+Defined.
 
 Lemma predicate_propagate_left_2 {Σ : Signature} {syntax : Syntax} Γ ϕ ψ P :
   theory ⊆ Γ ->
   well_formed ϕ ->
   well_formed ψ ->
   well_formed P ->
-  Γ ⊢ is_predicate_pattern ψ ->
-  Γ ⊢ ψ and P $ ϕ <---> (ψ and P) $ ϕ.
+  Γ ⊢ is_predicate_pattern ψ ---> ψ and P $ ϕ <---> (ψ and P) $ ϕ.
 Proof.
-  intros HΓ wfϕ wfψ wfP predψ.
+  intros HΓ wfϕ wfψ wfP.
   toMLGoal.
   { wf_auto2. }
-  mlAdd predψ as "Htmp".
+  mlIntro "Htmp".
   mlDestructOr "Htmp" as "Htmp1" "Htmp2".
   {
     mlRewriteBy "Htmp1" at 1.
@@ -3929,6 +3941,20 @@ Proof.
       wf_auto2.
     }
   }
+Defined.
+
+Lemma predicate_propagate_left_2_meta {Σ : Signature} {syntax : Syntax} Γ ϕ ψ P :
+  theory ⊆ Γ ->
+  well_formed ϕ ->
+  well_formed ψ ->
+  well_formed P ->
+  Γ ⊢ is_predicate_pattern ψ ->
+  Γ ⊢ ψ and P $ ϕ <---> (ψ and P) $ ϕ.
+Proof.
+  intros.
+  mlAdd H3.
+  mlApplyMeta predicate_propagate_left_2. 2: assumption.
+  mlAssumption.
 Defined.
 
 (* TODO: Put in a different file? *)
