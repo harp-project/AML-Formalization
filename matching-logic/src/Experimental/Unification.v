@@ -4,7 +4,7 @@ From Coq Require Import ssreflect ssrfun ssrbool.
 
 Require Import Equations.Prop.Equations.
 
-From Coq Require Import String Ensembles Setoid.
+From Coq Require Import String Setoid.
 Require Import Coq.Program.Equality.
 Require Import Coq.Logic.Classical_Prop.
 From Coq.Logic Require Import FunctionalExtensionality Eqdep_dec.
@@ -289,7 +289,7 @@ Section unification.
   Definition WFDerives (Γ : Theory) (p : WFPattern) : Set := derives Γ (proj1_sig p).
   Notation "Γ ⊢wf ϕ" := (WFDerives Γ ϕ) (at level 95, no associativity).
   Definition WFPatt_app := mkWFWrapper patt_app well_formed_app.
-  Notation "a wf$ b" := (WFPatt_app a b) (at level 65, right associativity) : ml_scope.
+  Notation "a wf⋅ b" := (WFPatt_app a b) (at level 66, left associativity) : ml_scope.
   Lemma well_formed_free_evar : forall e, well_formed (patt_free_evar e).
   Proof.
     exact (const eq_refl).
@@ -543,7 +543,7 @@ Section unification.
         insertUP P (t, t) ===> P
     | decompositionUS : forall P f t g u,
         P ≠ bottomUP ->
-        insertUP P (f wf$ t, g wf$ u) ===> insertUP (insertUP P (f, g)) (t, u)
+        insertUP P (f wf⋅ t, g wf⋅ u) ===> insertUP (insertUP P (f, g)) (t, u)
     | symbol_clash_lUS : forall P f t,
         P ≠ bottomUP ->
         patt_sym f ≠ `t ->
@@ -573,7 +573,7 @@ Section unification.
           to obtain it. For this, we have to create a spec. for unification/term
           algebras.
   *)
-  Axiom injectivity : forall Γ f t g u, Γ ⊢ (f $ t) =ml (g $ u) ---> (f =ml g) and (t =ml u).
+  Axiom injectivity : forall Γ f t g u, Γ ⊢ (f ⋅ t) =ml (g ⋅ u) ---> (f =ml g) and (t =ml u).
 
   Tactic Notation "inside" tactic(inside) "outside" tactic(outside) :=
     match goal with
@@ -594,7 +594,7 @@ Section unification.
       mlDestructAnd "H" as "_" "H0"...
       mlAssumption.
     * unfold WFDerives in H |- *.
-      pose proof (H P0 (f wf$ t) (g wf$ u)) as H0.
+      pose proof (H P0 (f wf⋅ t) (g wf⋅ u)) as H0.
       rewrite unwrap_wfwrapper in H0.
       pose proof (H (insertUP P0 (f, g)) t u) as H1.
       rewrite unwrap_wfwrapper in H1.
@@ -801,12 +801,12 @@ Section unification.
     let x := (patt_free_evar x' ↾ well_formed_free_evar x') in
     let y := (patt_free_evar y' ↾ well_formed_free_evar y') in
     let z := (patt_free_evar z' ↾ well_formed_free_evar z') in
-    let t1 := ((f wf$ x) wf$ (g wf$ one)) wf$ (g wf$ z) in
-    let t2 := ((f wf$ (g wf$ y)) wf$ (g wf$ y)) wf$ (g wf$ (g wf$ x)) in
+    let t1 := f wf⋅ x wf⋅ (g wf⋅ one) wf⋅ (g wf⋅ z) in
+    let t2 := f wf⋅ (g wf⋅ y) wf⋅ (g wf⋅ y) wf⋅ (g wf⋅ (g wf⋅ x)) in
     (** f is a functional symbol *)
-    (all, all, all, ex, patt_app (patt_app (patt_app (patt_sym f') b3) b2) b1 =ml b0) ∈ Γ ->
+    (all, all, all, ex, (patt_sym f') ⋅ b3 ⋅ b2 ⋅ b1 =ml b0) ∈ Γ ->
     (** g is a functional symbol *)
-    (all, ex, patt_app (patt_sym g') b1 =ml b0) ∈ Γ ->
+    (all, ex, (patt_sym g') ⋅ b1 =ml b0) ∈ Γ ->
     (** one is a functional symbol *)
     (ex, patt_sym one' =ml b0) ∈ Γ ->
     (*
@@ -853,7 +853,7 @@ Section unification.
       eright. epose proof (decompositionUS (Some _)). simpl in H1. apply H1...
       rewrite union_comm_L. rewrite <- union_assoc_L.
       eright. epose proof (deleteUS (Some _)). simpl in H1. apply H1...
-      rewrite (union_comm_L {[(z, g wf$ x)]}). rewrite <- union_assoc_L.
+      rewrite (union_comm_L {[(z, g wf⋅ x)]}). rewrite <- union_assoc_L.
       eright. epose proof (orientUS (Some _)). simpl in H1. apply H1... fold y.
       rewrite union_assoc_L. rewrite (union_comm_L {[(y, one)]}).
       left. discriminate. cbn -[f g one x y z] in H1.

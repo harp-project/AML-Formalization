@@ -2,13 +2,14 @@ From Coq Require Import ssreflect ssrfun ssrbool.
 
 From Ltac2 Require Import Ltac2 Control.
 
-From Coq Require Import Ensembles Bool String.
+From Coq Require Import Bool String.
 From Coq.Logic Require Import FunctionalExtensionality Eqdep_dec.
 From Equations Require Import Equations.
 
 Require Import Coq.Program.Tactics.
 
 From MatchingLogic Require Import
+    ProofSystem
     Utils.extralibrary
     Logic
     DerivedOperators_Syntax
@@ -153,7 +154,7 @@ Proof.
   (*mlExtractWF wfl wfgp.*)
   unfold of_MLGoal in *. simpl in *.
   intros wfg' wfl.
-  pose proof (wfimp := proved_impl_wf _ _ (proj1_sig Hgg')).
+  pose proof (wfimp := ProofSystem.proved_impl_wf _ _ (proj1_sig Hgg')).
   apply well_formed_imp_proj1 in wfimp.
   eapply prf_weaken_conclusion_iter_meta_meta.
   5: apply Hlg.
@@ -4567,6 +4568,38 @@ Proof with try solve [auto | wf_auto2].
     use i in H0.
     emlTrans_iff; only 6: mlExactMeta H0...
     mlExact "0".
+Defined.
+
+Theorem provable_iff_top:
+  ∀ {Σ : Signature} (Γ : Theory) (φ : Pattern)   (i : ProofInfo),
+    well_formed φ ->
+    Γ ⊢i φ using i ->
+    Γ ⊢i φ <--->  patt_top using i .
+Proof.
+  intros.
+  mlSplitAnd.
+  2:{ mlIntro. mlExactMeta H0. }
+  mlIntro.
+  pose proof top_holds Γ.
+  use i in H1.
+  mlExactMeta H1.
+Defined.
+
+Theorem patt_and_id_r:
+  ∀ {Σ : Signature} (Γ : Theory) (φ : Pattern),
+    well_formed φ ->
+    Γ ⊢i φ and patt_top <--->  φ using BasicReasoning .
+Proof.
+  intros.
+  mlSplitAnd.
+  * mlIntro.
+    mlDestructAnd "0".
+    mlAssumption.
+  * mlIntro.
+    mlSplitAnd.
+    1: mlAssumption.
+    mlIntro.
+    mlAssumption.
 Defined.
 
 Close Scope string_scope.

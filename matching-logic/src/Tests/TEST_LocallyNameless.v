@@ -1,5 +1,5 @@
 From Coq Require Import ssreflect ssrfun ssrbool.
-From Coq Require Import String Ensembles.
+From Coq Require Import String.
 Require Import Coq.Logic.Classical_Prop.
 
 From stdpp Require Import base fin_sets sets propset finite.
@@ -72,16 +72,16 @@ Module test_1.
   Proof. unfold more. unfold evar_open. mlSimpl. reflexivity. Qed.
   
   Definition complex : Pattern :=
-    a ---> (b ---> !C) $ ex , D $ Bot and Top.
+    a ---> (b ---> !C) ⋅ ex , D ⋅ ⊥ and Top.
 
   Definition custom_constructor := patt_sym ctor.
 
   (* p x1 x2 *)
-  Definition predicate : Pattern := patt_sym (ctor) $ (patt_free_evar "x1") $ (patt_free_evar "x2").
+  Definition predicate : Pattern := patt_sym (ctor) ⋅ (patt_free_evar "x1") ⋅ (patt_free_evar "x2").
   
   (* f x (mu y . y) *)
   Definition function :=
-    (patt_sym f) $ (patt_free_evar "x") $ (mu , (patt_bound_svar 0)).
+    (patt_sym f) ⋅ (patt_free_evar "x") ⋅ (mu , (patt_bound_svar 0)).
 
   (* forall x, x /\ y *)
   Definition free_and_bound :=
@@ -269,14 +269,14 @@ Module test_3.
     (* axioms *)
     Definition defined : Pattern := Definedness_Syntax.axiom AxDefinedness.
     Definition ruleA : Pattern :=
-      X0 ∈ml sym_succ $ sym_succ $ X --->
-        sym_even $ X0 =ml patt_sym even $ X.
+      X0 ∈ml sym_succ ⋅ sym_succ ⋅ X --->
+        sym_even ⋅ X0 =ml patt_sym even ⋅ X.
     Definition ruleB : Pattern :=
-       X0 ∈ml sym_succ $ sym_zero --->
-        sym_even $ X0 =ml sym_ff.
+       X0 ∈ml sym_succ ⋅ sym_zero --->
+        sym_even ⋅ X0 =ml sym_ff.
     Definition ruleC : Pattern :=
       X0 ∈ml sym_zero --->
-        sym_even $ X0 =ml sym_tt.
+        sym_even ⋅ X0 =ml sym_tt.
 
     Let Γₙₐₜ : Theory := {[ defined; ruleA; ruleB; ruleC ]}.
     Theorem def_theory : theory ⊆ Γₙₐₜ.
@@ -286,7 +286,7 @@ Module test_3.
     Abort.
 
     Theorem example:
-      Γₙₐₜ ⊢i sym_tt ∈ml sym_even $ sym_succ $ sym_succ $ sym_succ $ sym_succ $ sym_zero using AnyReasoning.
+      Γₙₐₜ ⊢i sym_tt ∈ml sym_even ⋅ (sym_succ ⋅ (sym_succ ⋅ (sym_succ ⋅ (sym_succ ⋅ sym_zero)))) using AnyReasoning.
     Proof.
       assert (Γₙₐₜ ⊢i ruleA using AnyReasoning) as RA.
       { gapply BasicProofSystemLemmas.hypothesis; [ apply pile_any | wf_auto2 | set_solver ]. } 
@@ -297,17 +297,17 @@ Module test_3.
       2: apply pile_any. 2: auto.
       unfold ruleA in RA1.
       mlSimpl in RA1. 
-      assert (Γₙₐₜ ⊢i ex , (sym_succ $ sym_succ $ sym_zero =ml b0) using AnyReasoning) as S2WF.
+      assert (Γₙₐₜ ⊢i ex , (sym_succ ⋅ (sym_succ ⋅ sym_zero) =ml b0) using AnyReasoning) as S2WF.
       { admit. }
-      assert (Γₙₐₜ ⊢i ex , (sym_succ $ sym_succ $ sym_succ $ sym_succ $ sym_zero =ml b0) using AnyReasoning) as S4WF.
+      assert (Γₙₐₜ ⊢i ex , (sym_succ ⋅ (sym_succ ⋅ (sym_succ ⋅ (sym_succ ⋅ sym_zero))) =ml b0) using AnyReasoning) as S4WF.
       { admit. }
-      mlSpecMeta RA1 with (sym_succ $ sym_succ $ sym_zero).
+      mlSpecMeta RA1 with (sym_succ ⋅ (sym_succ ⋅ sym_zero)).
       mlSimpl in RA1; try_wfauto2. 2: admit. (* apply def_theory. *)
       simpl in RA1.
       apply universal_generalization with (x := "X0") in RA1 as RA2. (* revert Meta *)
       2: apply pile_any. 2: auto.
       mlSimpl in RA2. simpl in RA2.
-      mlSpecMeta RA2 with (sym_succ $ sym_succ $ sym_succ $ sym_succ $ sym_zero).
+      mlSpecMeta RA2 with (sym_succ ⋅ (sym_succ ⋅ (sym_succ ⋅ (sym_succ ⋅ sym_zero)))).
       mlSimpl in RA2; try_wfauto2. 2: admit. (* apply def_theory. *)
       simpl in RA2.
     Abort.

@@ -8,14 +8,22 @@ From MatchingLogic Require Import
     Theories.Sorts_Syntax
 .
 
+
+Require Import Setoid.
+From Coq.Logic Require Import Classical_Prop FunctionalExtensionality.
+From Coq.Classes Require Import Morphisms_Prop.
 Import BoundVarSugar.
 Import Definedness_Syntax.Notations.
+Import Sorts_Syntax.Notations.
+
+
+Open Scope ml_scope.
 
 Inductive Symbols {Σ : Signature} (s1 s2 : Pattern) :=
 | ml_prod
 | ml_pair
-| ml_proj1
-| ml_proj2
+| ml_projL
+| ml_projR
 .
 
 #[global]
@@ -32,7 +40,36 @@ Class Syntax {Σ : Signature} (s1 s2 : Pattern) :=
 #[global] Existing Instance imported_sorts.
 #[global] Existing Instance inj_inj.
 
-Section sorts.
+Module Notations.
+
+    Notation "'mlProd' '(' s1 ',' s2 ')'"
+        := (patt_sym (inj (ml_prod s1 s2)))
+        : ml_scope
+    .
+
+     Notation "'mlPair' '{' s1 ',' s2 '}' '(' phi1 ',' phi2 ')'" := 
+        (patt_app (patt_app (patt_sym (inj (ml_pair s1 s2))) phi1) phi2)
+        : ml_scope
+    .
+        
+    Notation "'(' phi1 '∷' s1 ',' phi2 '∷' s2 ')'" := 
+        (patt_app (patt_app (patt_sym (inj (ml_pair s1 s2))) phi1) phi2)
+        : ml_scope
+    .
+    
+    Notation "'(' phi ').mlProjL(' s1 ',' s2 ')'" := 
+        (patt_app (patt_sym (inj (ml_projL s1 s2))) phi)
+        : ml_scope
+    .
+    
+    Notation "'(' phi ').mlProjR(' s1 ',' s2 ')'" := 
+        (patt_app (patt_sym (inj (ml_projR s1 s2))) phi)
+        : ml_scope
+    .
+
+End Notations.
+
+Section axioms.
     Context
       {Σ : Signature}
       (s1 s2 : Pattern)
@@ -42,22 +79,9 @@ Section sorts.
     .
     Import Notations.
     Open Scope ml_scope.
-    Delimit Scope ml_scope with ml. (* TODO move this somewhere else *)
+    Delimit Scope ml_scope with ml. (* TODO move this somewhere else *) 
 
-    Local Notation "'(' phi1 ',ml' phi2 ')'" := 
-        (patt_app (patt_app (patt_sym (inj (ml_pair s1 s2))) phi1) phi2)
-        : ml_scope
-    .
 
-    Local Notation "'(' phi ').ml1'" := 
-        (patt_app (patt_sym (inj (ml_proj1 s1 s2))) phi)
-        : ml_scope
-    .
-
-    Local Notation "'(' phi ').ml2'" := 
-        (patt_app (patt_sym (inj (ml_proj2 s1 s2))) phi)
-        : ml_scope
-    .
 
     Inductive AxiomName :=
     | AxPair
@@ -73,29 +97,24 @@ Section sorts.
 
     Definition axiom (name : AxiomName) : Pattern :=
     match name with
-    | AxPair =>
-        patt_total_binary_function
+    
+    | AxPair => 
+         patt_total_binary_function
             (patt_sym (inj (ml_pair s1 s2)))
             s1
             s2
-            (patt_sym (inj (ml_prod s1 s2)))
-    | AxProjLeft =>
-        patt_total_function
-            (patt_sym (inj (ml_proj1 s1 s2)))
-            (patt_sym (inj (ml_prod s1 s2)))
-            s1
+            (patt_sym (inj (ml_prod s1 s2))) 
+          
+    | AxProjLeft => 
+        all mlProd(s1,s2), ex s1, (b1).mlProjL( s1 , s2 ) =ml b0 
+            
     | AxProjRight =>
-        patt_total_function
-            (patt_sym (inj (ml_proj1 s1 s2)))
-            (patt_sym (inj (ml_prod s1 s2)))
-            s2
-    | AxInj =>
-        patt_forall_of_sort s1 (
-            patt_forall_of_sort s1 (
-                patt_forall_of_sort s2 (
-                    patt_forall_of_sort s2 (
-                        patt_imp (
-                            ( b3 ,ml b1 ) =ml ( b2 ,ml b0 )%ml
+         all mlProd(s1,s2), ex s2, (b1).mlProjR( s1 , s2 ) =ml b0 
+        
+    | AxInj => 
+        all s1, all s1, all s2, all s2, 
+          patt_imp (
+                    ( b3 ∷ s1 , b1 ∷ s2 ) =ml ( b2 ∷ s1 , b0 ∷ s2 )%ml
                         ) (
                             patt_and (
                                 b3 =ml b2
@@ -103,26 +122,15 @@ Section sorts.
                                 b1 =ml b0
                             )
                         )
-                    )
-                )
-            )
-        )
-    | InversePairProja1 =>
-        patt_forall_of_sort s1 (
-            patt_forall_of_sort s2 (
-               ( ( b1 ,ml b0 ) ).ml1  =ml b1
-            )
-        )
+                        
+    | InversePairProja1 => 
+        all s1, all s2,  (( b1 ∷ s1 , b0 ∷ s2 )).mlProjL( s1 , s2 ) =ml b1 
+        
     | InversePairProja2 =>
-        patt_forall_of_sort s1 (
-            patt_forall_of_sort s2 (
-               ( ( b1 ,ml b0 ) ).ml2  =ml b0
-            )
-        )
+        all s1, all s2,  (( b1 ∷ s1 , b0 ∷ s2 )).mlProjL( s1 , s2 ) =ml b0 
+        
     | InversePairProjb =>
-        patt_forall_of_sort (patt_sym (inj (ml_prod s1 s2))) (
-             ( (b0).ml1 ,ml (b0).ml2 ) =ml b0
-        )
+        all mlProd(s1,s2), ( (b0).mlProjL( s1 , s2 ) ∷ s1 ,  (b0).mlProjR( s1 , s2 ) ∷ s2 )  =ml  b0
     end.
 
     Program Definition named_axioms : NamedAxioms :=
@@ -133,31 +141,7 @@ Section sorts.
     destruct name; simpl; wf_auto2.
     Qed.
 
-    Definition Γprod := theory_of_NamedAxioms named_axioms.
+    Definition theory := Definedness_Syntax.theory ∪
+                       theory_of_NamedAxioms named_axioms.
 
-End sorts.
-
-Module Notations.
-
-
-    Notation "'mlProd' '(' s1 ',' s2 ')'"
-        := (patt_sym (inj (ml_prod s1 s2)))
-        : ml_scope
-    .
-
-    Notation "'mlPair' '{' s1 ',' s2 '}' '(' phi1 ',' phi2 ')'" := 
-        (patt_app (patt_app (patt_sym (inj (ml_pair s1 s2))) phi1) phi2)
-        : ml_scope
-    .
-
-    Notation "'mlProj1' '{' s1 ',' s2 '}' '(' phi ')'" := 
-        (patt_app (patt_sym (inj (ml_proj1 s1 s2))) phi)
-        : ml_scope
-    .
-
-    Notation "'mlProj2' '{' s1 ',' s2 '}' '(' phi ')'" := 
-        (patt_app (patt_sym (inj (ml_proj2 s1 s2))) phi)
-        : ml_scope
-    .
-
-End Notations.
+End axioms.

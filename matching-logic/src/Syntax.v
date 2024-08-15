@@ -1,7 +1,6 @@
 From Coq Require Import ssreflect ssrfun ssrbool.
 Require Import Setoid.
 Require Import List.
-Require Import Ensembles.
 Require Import Coq.Strings.String.
 
 From Coq Require Import Logic.Classical_Prop.
@@ -548,45 +547,11 @@ Section syntax.
 End syntax.
 
 Module Notations.
-  (* TODO: change Bot and Top to unicode symbols *)
-  (* TODO: this associativity is wrong! However, stdpp disallows defining it otherwise. We could use @ instead, associated to the left *)
-  Notation "a $ b" := (patt_app a b) (at level 65, right associativity) : ml_scope.
-  Notation "'Bot'" := patt_bott : ml_scope.
-  Notation "⊥" := patt_bott : ml_scope.
-  Notation "a ---> b"  := (patt_imp a b) (at level 75, right associativity) : ml_scope.
-  Notation "'ex' , phi" := (patt_exists phi) (at level 80) : ml_scope.
-  Notation "'mu' , phi" := (patt_mu phi) (at level 80) : ml_scope.
 
-  (*Notation "AC [ p ]" := (subst_ctx AC p) (at level 90) : ml_scope.*)
-  Notation "C [ p ]" := (emplace C p) (at level 90) : ml_scope.
+Export MatchingLogic.Pattern.Notations.
+Export MatchingLogic.PatternContext.Notations.
 
 End Notations.
-
-Module BoundVarSugar.
-  (* Element variables - bound *)
-  Notation b0 := (patt_bound_evar 0).
-  Notation b1 := (patt_bound_evar 1).
-  Notation b2 := (patt_bound_evar 2).
-  Notation b3 := (patt_bound_evar 3).
-  Notation b4 := (patt_bound_evar 4).
-  Notation b5 := (patt_bound_evar 5).
-  Notation b6 := (patt_bound_evar 6).
-  Notation b7 := (patt_bound_evar 7).
-  Notation b8 := (patt_bound_evar 8).
-  Notation b9 := (patt_bound_evar 9).
-
-  Notation B0 := (patt_bound_svar 0).
-  Notation B1 := (patt_bound_svar 1).
-  Notation B2 := (patt_bound_svar 2).
-  Notation B3 := (patt_bound_svar 3).
-  Notation B4 := (patt_bound_svar 4).
-  Notation B5 := (patt_bound_svar 5).
-  Notation B6 := (patt_bound_svar 6).
-  Notation B7 := (patt_bound_svar 7).
-  Notation B8 := (patt_bound_svar 8).
-  Notation B9 := (patt_bound_svar 9).
-
-End BoundVarSugar.
 
 #[export]
  Hint Resolve

@@ -2,13 +2,14 @@ From Coq Require Import ssreflect ssrfun ssrbool.
 
 From Ltac2 Require Import Ltac2 Control.
 
-From Coq Require Import Ensembles Bool String.
+From Coq Require Import Bool String.
 From Coq.Logic Require Import FunctionalExtensionality Eqdep_dec.
 From Equations Require Import Equations.
 
 Require Import Coq.Program.Tactics.
 
 From MatchingLogic Require Import
+    ProofSystem
     Syntax
     DerivedOperators_Syntax
     ProofSystem
@@ -1167,7 +1168,7 @@ Local Lemma destructExDouble_Test {Σ : Signature} Γ ϕ ψ :
 Proof.
   intros.
   mlIntro "H". mlIntro "H0".
-  mlDestructEx "H" as (fresh_evar (ϕ $ ψ)). { cbn. solve_fresh. }
+  mlDestructEx "H" as (fresh_evar (ϕ ⋅ ψ)). { cbn. solve_fresh. }
   Fail mlDestructEx "H" as x.
   mlClear "H". mlDestructEx "H0" as x.
   Fail mlDestructEx "H0" as x.

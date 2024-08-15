@@ -1,4 +1,4 @@
-From MatchingLogic Require Import Logic.
+From MatchingLogic Require Import Logic ProofSystem.
 From MatchingLogic.Evaluation Require Import
   Firstorder
   Complex

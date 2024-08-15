@@ -19,6 +19,22 @@ Inductive Symbols := inhabitant.
 Global Instance Symbols_eqdec : EqDecision Symbols.
 Proof. unfold EqDecision. intros x y. unfold Decision. destruct x. decide equality. (*solve_decision.*) Defined.
 
+#[global]
+Program Instance Symbols_finite : finite.Finite Symbols.
+Next Obligation.
+  exact [inhabitant].
+Defined.
+Next Obligation.
+  unfold Symbols_finite_obligation_1.
+  compute_done.
+Defined.
+Next Obligation.
+  destruct x; compute_done.
+Defined.
+
+Global Instance Symbols_countable : countable.Countable Symbols.
+Proof. apply finite.finite_countable. Defined.
+
 Section sorts_syntax.
   Open Scope ml_scope.
   Context {Σ : Signature}.
@@ -36,7 +52,7 @@ Section sorts_syntax.
     patt_sym (inj s).
 
   Example test_pattern_1 := patt_equal (sym inhabitant) (sym inhabitant).
-  Definition patt_inhabitant_set(phi : Pattern) : Pattern := sym inhabitant $ phi.
+  Definition patt_inhabitant_set(phi : Pattern) : Pattern := sym inhabitant ⋅ phi.
 
   Definition patt_element_of (φ ψ : Pattern) := ⌈ φ and ψ ⌉.
 
@@ -121,16 +137,16 @@ Section sorts.
   (* TODO a lemma about patt_forall_of_sort *)
 
   Definition patt_total_function(phi from to : Pattern) : Pattern :=
-    all from , (ex (nest_ex to) , ((nest_ex (nest_ex phi) $ b1) =ml b0)).
+    all from , (ex (nest_ex to) , ((nest_ex (nest_ex phi) ⋅ b1) =ml b0)).
 
   Definition patt_partial_function(phi from to : Pattern) : Pattern :=
-    all from , (ex (nest_ex to), ((nest_ex (nest_ex phi) $ b1) ⊆ml b0)).
+    all from , (ex (nest_ex to), ((nest_ex (nest_ex phi) ⋅ b1) ⊆ml b0)).
 
 
   (* Assuming `f` is a total function, says it is injective on given domain. Does not quite work for partial functions. *)
   Definition patt_total_function_injective f from : Pattern :=
     all from , (all (nest_ex from) , 
-                (((nest_ex (nest_ex f) $ b1) =ml (nest_ex (nest_ex f) $ b0)) ---> 
+                (((nest_ex (nest_ex f) ⋅ b1) =ml (nest_ex (nest_ex f) ⋅ b0)) ---> 
                   (b1 =ml b0))).
 
   (* Assuming `f` is a partial function, says it is injective on given domain. Works for total functions, too. *)
@@ -140,9 +156,9 @@ Section sorts.
       (all
          (nest_ex from) ,
          (
-            ! ((nest_ex (nest_ex f) $ b1) =ml ⊥ )
+            ! ((nest_ex (nest_ex f) ⋅ b1) =ml ⊥ )
             --->
-            ((nest_ex (nest_ex f) $ b1) =ml (nest_ex (nest_ex f) $ b0))
+            ((nest_ex (nest_ex f) ⋅ b1) =ml (nest_ex (nest_ex f) ⋅ b0))
              ---> (b1 =ml b0))).
 
 End sorts.
@@ -157,7 +173,7 @@ Section sorts.
     patt_forall_of_sort from1 (
       patt_forall_of_sort (nest_ex from2) (
         patt_exists_of_sort (nest_ex (nest_ex to)) (
-          (((nest_ex (nest_ex (nest_ex phi)) $ b2) $ b1) =ml b0)
+          (((nest_ex (nest_ex (nest_ex phi)) ⋅ b2) ⋅ b1) =ml b0)
         )
       )
     )

@@ -4,7 +4,7 @@ From Ltac2 Require Import Ltac2.
 
 Require Import Equations.Prop.Equations.
 
-From Coq Require Import String Ensembles Setoid.
+From Coq Require Import String Setoid.
 Require Import Coq.Program.Equality.
 Require Import Coq.Logic.Classical_Prop.
 From Coq.Logic Require Import FunctionalExtensionality Eqdep_dec.
@@ -21,7 +21,6 @@ Import extralibrary.
 
 Import MatchingLogic.Logic.Notations.
 Import MatchingLogic.DerivedOperators_Syntax.Notations.
-Import MatchingLogic.Syntax.BoundVarSugar.
 
 Set Default Proof Mode "Classic".
 
@@ -280,7 +279,7 @@ Proof.
     apply not_not_elim_meta in Htmp.
     3: { wf_auto2. }
     2: { wf_auto2. }
-    replace (patt_sym (Definedness_Syntax.inj definedness) $ (patt_free_evar x and ! φ))%ml
+    replace (patt_sym (Definedness_Syntax.inj definedness) ⋅ (patt_free_evar x and ! φ))%ml
       with (patt_defined (patt_free_evar x and ! φ)) in Htmp by reflexivity.
     
     toMLGoal.
@@ -565,7 +564,7 @@ Defined.
     well_formed psi = true ->
     theory ⊆ Γ ->
     Γ ⊢ ⌊ ψ ⌋ ---> phi1 ---> phi2 ->
-    Γ ⊢ ⌊ ψ ⌋ ---> (phi1 $ psi) ---> (phi2 $ psi)
+    Γ ⊢ ⌊ ψ ⌋ ---> (phi1 ⋅ psi) ---> (phi2 ⋅ psi)
   .
   Proof.
     intros Hwfψ Hwfphi1 Hwfphi2 Hwfpsi HΓ H.
@@ -583,9 +582,9 @@ Defined.
         { mlExact "Hphi1". }
     }
 
-    assert (S3: Γ ⊢ (⌈ ! ψ ⌉ $ psi) ---> ⌈ ! ψ ⌉).
+    assert (S3: Γ ⊢ (⌈ ! ψ ⌉ ⋅ psi) ---> ⌈ ! ψ ⌉).
     {
-      replace (⌈ ! ψ ⌉ $ psi)
+      replace (⌈ ! ψ ⌉ ⋅ psi)
         with (subst_ctx (ctx_app_l AC_patt_defined psi ltac:(assumption)) (! ψ))
         by reflexivity.
       remember (evar_fresh (elements (free_evars ψ ∪ free_evars psi))) as x.
@@ -601,7 +600,7 @@ Defined.
       set_solver.
     }
 
-    assert (S4: Γ ⊢ (phi1 $ psi) ---> ((phi2 or ⌈ ! ψ ⌉) $ psi)).
+    assert (S4: Γ ⊢ (phi1 ⋅ psi) ---> ((phi2 or ⌈ ! ψ ⌉) ⋅ psi)).
     { 
       unshelve (eapply Framing_left).
       { wf_auto2. }
@@ -609,7 +608,7 @@ Defined.
       { exact S2. }
     }
 
-    assert (S5: Γ ⊢ (phi1 $ psi) ---> ((phi2 $ psi) or (⌈ ! ψ ⌉ $ psi))).
+    assert (S5: Γ ⊢ (phi1 ⋅ psi) ---> ((phi2 ⋅ psi) or (⌈ ! ψ ⌉ ⋅ psi))).
     {
       pose proof (Htmp := prf_prop_or_iff Γ (ctx_app_l box psi ltac:(assumption)) phi2 (⌈! ψ ⌉)).
       ospecialize* Htmp.
@@ -628,25 +627,25 @@ Defined.
       all: wf_auto2.
     }
 
-    assert (S6: Γ ⊢ ((phi2 $ psi) or (⌈ ! ψ ⌉ $ psi)) ---> ((phi2 $ psi) or (⌈ ! ψ ⌉))).
+    assert (S6: Γ ⊢ ((phi2 ⋅ psi) or (⌈ ! ψ ⌉ ⋅ psi)) ---> ((phi2 ⋅ psi) or (⌈ ! ψ ⌉))).
     {
       toMLGoal.
       { wf_auto2. }
       mlIntro "H". mlAdd S3 as "S3".
-      mlClassic (phi2 $ psi) as "Hc1" "Hc2".
+      mlClassic (phi2 ⋅ psi) as "Hc1" "Hc2".
       { wf_auto2. }
       - mlLeft. mlExact "Hc1".
       - mlRight. mlApply "S3". mlApply "H". mlExact "Hc2".
     }
 
-    assert (S7: Γ ⊢ (phi1 $ psi) ---> ((phi2 $ psi)  or ⌈ ! ψ ⌉)).
+    assert (S7: Γ ⊢ (phi1 ⋅ psi) ---> ((phi2 ⋅ psi)  or ⌈ ! ψ ⌉)).
     {
       toMLGoal.
       { wf_auto2. }
       mlAdd S5 as "S5".
       mlAdd S6 as "S6".
       mlIntro "H".
-      mlAssert ("Ha" : ((phi2 $ psi) or (⌈ ! ψ ⌉ $ psi))).
+      mlAssert ("Ha" : ((phi2 ⋅ psi) or (⌈ ! ψ ⌉ ⋅ psi))).
       { wf_auto2. }
       { mlApply "S5". mlExact "H". }
       mlDestructOr "Ha" as "Ha1" "Ha2".
@@ -659,15 +658,15 @@ Defined.
     mlIntro "H1".
     mlIntro "H2".
     mlAdd S7 as "S7".
-    mlAssert ("Ha" : (phi2 $ psi or ⌈ ! ψ ⌉)).
+    mlAssert ("Ha" : (phi2 ⋅ psi or ⌈ ! ψ ⌉)).
     { wf_auto2. }
     { mlApply "S7". mlExact "H2". }
     mlDestructOr "Ha" as "Ha1" "Ha2".
     { mlExact "Ha1". }
-    { mlAssert ("Ha'" : (phi2 $ psi or ⌈ ! ψ ⌉)).
+    { mlAssert ("Ha'" : (phi2 ⋅ psi or ⌈ ! ψ ⌉)).
       { wf_auto2. }
       { mlApply "S7". mlExact "H2". }
-      mlClassic (phi2 $ psi) as "Hc1" "Hc2".
+      mlClassic (phi2 ⋅ psi) as "Hc1" "Hc2".
       { wf_auto2. }
       { mlExact "Hc1". }
       {
@@ -685,7 +684,7 @@ Defined.
     well_formed psi = true ->
     theory ⊆ Γ ->
     Γ ⊢ ⌊ ψ ⌋ ---> phi1 ---> phi2 ->
-    Γ ⊢ ⌊ ψ ⌋ ---> (psi $ phi1) ---> (psi $ phi2)
+    Γ ⊢ ⌊ ψ ⌋ ---> (psi ⋅ phi1) ---> (psi ⋅ phi2)
   .
   Proof.
     intros Hwfψ Hwfphi1 Hwfphi2 Hwfpsi HΓ H.
@@ -703,9 +702,9 @@ Defined.
         { mlExact "Hphi1". }
     }
 
-    assert (S3: Γ ⊢ (psi $ ⌈ ! ψ ⌉) ---> ⌈ ! ψ ⌉).
+    assert (S3: Γ ⊢ (psi ⋅ ⌈ ! ψ ⌉) ---> ⌈ ! ψ ⌉).
     {
-      replace (psi $ ⌈ ! ψ ⌉)
+      replace (psi ⋅ ⌈ ! ψ ⌉)
       with (subst_ctx (ctx_app_r psi AC_patt_defined ltac:(assumption)) (! ψ))
         by reflexivity.
       
@@ -722,7 +721,7 @@ Defined.
       set_solver.
     }
 
-    assert (S4: Γ ⊢ (psi $ phi1) ---> (psi $ (phi2 or ⌈ ! ψ ⌉))).
+    assert (S4: Γ ⊢ (psi ⋅ phi1) ---> (psi ⋅ (phi2 or ⌈ ! ψ ⌉))).
     { 
       (* TODO: have a variant of apply which automatically solves all wf constraints.
          Like: unshelve (eapply H); try_wfauto
@@ -733,7 +732,7 @@ Defined.
       apply pile_any.
     }
 
-    assert (S5: Γ ⊢ (psi $ phi1) ---> ((psi $ phi2) or (psi $ ⌈ ! ψ ⌉))).
+    assert (S5: Γ ⊢ (psi ⋅ phi1) ---> ((psi ⋅ phi2) or (psi ⋅ ⌈ ! ψ ⌉))).
     {
       pose proof (Htmp := prf_prop_or_iff Γ (ctx_app_r psi box ltac:(assumption)) phi2 (⌈! ψ ⌉)).
       ospecialize* Htmp.
@@ -748,24 +747,24 @@ Defined.
       exact S4.
     }
 
-    assert (S6: Γ ⊢ ((psi $ phi2) or (psi $ ⌈ ! ψ ⌉)) ---> ((psi $ phi2) or (⌈ ! ψ ⌉))).
+    assert (S6: Γ ⊢ ((psi ⋅ phi2) or (psi ⋅ ⌈ ! ψ ⌉)) ---> ((psi ⋅ phi2) or (⌈ ! ψ ⌉))).
     {
       toMLGoal.
       { wf_auto2. }
       mlIntro "H1". mlAdd S3 as "S3".
-      mlClassic (psi $ phi2) as "Hc1" "Hc2".
+      mlClassic (psi ⋅ phi2) as "Hc1" "Hc2".
       { wf_auto2. }
       - mlLeft. mlExact "Hc1".
       - mlRight. mlApply "S3". mlApply "H1". mlExact "Hc2".
     }
 
-    assert (S7: Γ ⊢ (psi $ phi1) ---> ((psi $ phi2)  or ⌈ ! ψ ⌉)).
+    assert (S7: Γ ⊢ (psi ⋅ phi1) ---> ((psi ⋅ phi2)  or ⌈ ! ψ ⌉)).
     {
       toMLGoal.
       { wf_auto2. }
       mlAdd S5 as "S5". mlAdd S6 as "S6". mlIntro "H".
       (* TODO: a tactic mlFeedImpl *)
-      mlAssert ("Ha" : ((psi $ phi2) or (psi $ ⌈ ! ψ ⌉))).
+      mlAssert ("Ha" : ((psi ⋅ phi2) or (psi ⋅ ⌈ ! ψ ⌉))).
       { wf_auto2. }
       { mlApply "S5". mlExact "H". }
       mlDestructOr "Ha" as "Ha1" "Ha2".
@@ -778,15 +777,15 @@ Defined.
     mlIntro "H1".
     mlIntro "H2".
     mlAdd S7 as "S7".
-    mlAssert ("Ha" : (psi $ phi2 or ⌈ ! ψ ⌉)).
+    mlAssert ("Ha" : (psi ⋅ phi2 or ⌈ ! ψ ⌉)).
     { wf_auto2. }
     { mlApply "S7". mlExact "H2". }
     mlDestructOr "Ha" as "Ha1" "Ha2".
     { mlExact "Ha1". }
-    + mlAssert ("Ha'" : (psi $ phi2 or ⌈ ! ψ ⌉)).
+    + mlAssert ("Ha'" : (psi ⋅ phi2 or ⌈ ! ψ ⌉)).
       { wf_auto2. }
       { mlApply "S7". mlExact "H2". }
-      mlClassic (psi $ phi2) as "Hc1" "Hc2".
+      mlClassic (psi ⋅ phi2) as "Hc1" "Hc2".
       { wf_auto2. }
       { mlExact "Hc1". }
       {
@@ -1284,10 +1283,10 @@ Defined.
     assert (S2: Γ ⊢i ⌈ patt_free_evar x and ! φ ⌉ ---> ! ⌈ patt_free_evar x and φ ⌉ using BasicReasoning).
     {
 
-      replace (patt_sym (Definedness_Syntax.inj definedness) $ (patt_free_evar x and φ))
+      replace (patt_sym (Definedness_Syntax.inj definedness) ⋅ (patt_free_evar x and φ))
         with (⌈ patt_free_evar x and φ ⌉) in S1 by reflexivity.
 
-      replace (patt_sym (Definedness_Syntax.inj definedness) $ (patt_free_evar x and ! φ))
+      replace (patt_sym (Definedness_Syntax.inj definedness) ⋅ (patt_free_evar x and ! φ))
         with (⌈ patt_free_evar x and ! φ ⌉) in S1 by reflexivity.
 
       toMLGoal.
@@ -1866,7 +1865,7 @@ Defined.
     using AnyReasoning.
   Proof.
     intros HΓ MF WF WFB WFM.
-    remember (fresh_evar (φ $ φ')) as Zvar.
+    remember (fresh_evar (φ ⋅ φ')) as Zvar.
     remember (patt_free_evar Zvar) as Z.
     assert (well_formed Z) as WFZ.
     { rewrite HeqZ. auto. }
@@ -2208,7 +2207,7 @@ Local Example ex_rewriteBy {Σ : Signature} {syntax : Syntax} Γ a a' b:
   well_formed a' ->
   well_formed b ->
   mu_free b ->
-  Γ ⊢i a $ b ---> (a' =ml a) ---> a' $ b
+  Γ ⊢i a ⋅ b ---> (a' =ml a) ---> a' ⋅ b
   using AnyReasoning.
 Proof.
   intros HΓ wfa wfa' wfb mfb.
@@ -2446,7 +2445,7 @@ Proof.
   { wf_auto2. }
   mlAdd H as "H0".
   mlDestructAnd "H0" as "H1" "H2".
-  remember (fresh_evar (φ₁ $ φ₂)) as x.
+  remember (fresh_evar (φ₁ ⋅ φ₂)) as x.
 
   epose proof (Htmp := (total_phi_impl_phi Γ _ x HΓ _)).
   apply useGenericReasoning with (i := AnyReasoning) in Htmp.
@@ -2464,8 +2463,8 @@ Proof.
   - mlExact "H2".
   Unshelve.
   all: wf_auto2.
-  exact (set_evar_fresh_is_fresh (φ₁ $ φ₂)).
-  pose proof (set_evar_fresh_is_fresh (φ₁ $ φ₂)).
+  exact (set_evar_fresh_is_fresh (φ₁ ⋅ φ₂)).
+  pose proof (set_evar_fresh_is_fresh (φ₁ ⋅ φ₂)).
   unfold evar_is_fresh_in in H. set_solver.
 Defined.
 
@@ -3785,10 +3784,10 @@ Proof.
     mlExactMeta Ht.
   }
   {
-    mlAssert ("H": (emplace C ψ <---> emplace C Bot )).
+    mlAssert ("H": (emplace C ψ <---> emplace C ⊥ )).
     { wf_auto2. }
     {
-      pose proof (Htmp := equality_elimination_basic_mfpath Γ ψ Bot C HΓ ltac:(wf_auto2) ltac:(wf_auto2)).
+      pose proof (Htmp := equality_elimination_basic_mfpath Γ ψ ⊥ C HΓ ltac:(wf_auto2) ltac:(wf_auto2)).
       ospecialize* Htmp.
       {
         unfold PC_wf. exact HwfC.
@@ -3809,7 +3808,7 @@ Lemma predicate_propagate_right_2 {Σ : Signature} {syntax : Syntax} Γ ϕ ψ P 
   well_formed ψ ->
   well_formed P ->
   Γ ⊢ is_predicate_pattern ψ ->
-  Γ ⊢ ψ and P $ ϕ <---> P $ (ψ and ϕ).
+  Γ ⊢ ψ and P ⋅ ϕ <---> P ⋅ (ψ and ϕ).
 Proof.
   intros HΓ wfϕ wfψ wfP predψ.
   toMLGoal.
@@ -3821,7 +3820,7 @@ Proof.
     mlRewriteBy "Htmp1" at 1.
     mlClear "Htmp1".
     mlRewrite (top_and Γ ϕ ltac:(wf_auto2)) at 1.
-    mlRewrite (top_and Γ (P $ ϕ) ltac:(wf_auto2)) at 1.
+    mlRewrite (top_and Γ (P ⋅ ϕ) ltac:(wf_auto2)) at 1.
     fromMLGoal.
     useBasicReasoning.
     apply pf_iff_equiv_refl.
@@ -3832,7 +3831,7 @@ Proof.
     mlRewriteBy "Htmp2" at 1.
     mlClear "Htmp2".
     mlRewrite (bott_and Γ ϕ ltac:(wf_auto2)) at 1.
-    mlRewrite (bott_and Γ (P $ ϕ) ltac:(wf_auto2)) at 1.
+    mlRewrite (bott_and Γ (P ⋅ ϕ) ltac:(wf_auto2)) at 1.
     fromMLGoal.
     mlSplitAnd.
     {
@@ -3854,7 +3853,7 @@ Lemma predicate_propagate_left_2 {Σ : Signature} {syntax : Syntax} Γ ϕ ψ P :
   well_formed ψ ->
   well_formed P ->
   Γ ⊢ is_predicate_pattern ψ ->
-  Γ ⊢ ψ and P $ ϕ <---> (ψ and P) $ ϕ.
+  Γ ⊢ ψ and P ⋅ ϕ <---> (ψ and P) ⋅ ϕ.
 Proof.
   intros HΓ wfϕ wfψ wfP predψ.
   toMLGoal.
@@ -3866,7 +3865,7 @@ Proof.
     mlRewriteBy "Htmp1" at 1.
     mlClear "Htmp1".
     mlRewrite (top_and Γ P ltac:(wf_auto2)) at 1.
-    mlRewrite (top_and Γ (P $ ϕ) ltac:(wf_auto2)) at 1.
+    mlRewrite (top_and Γ (P ⋅ ϕ) ltac:(wf_auto2)) at 1.
     fromMLGoal.
     useBasicReasoning.
     apply pf_iff_equiv_refl.
@@ -3877,7 +3876,7 @@ Proof.
     mlRewriteBy "Htmp2" at 1.
     mlClear "Htmp2".
     mlRewrite (bott_and Γ P ltac:(wf_auto2)) at 1.
-    mlRewrite (bott_and Γ (P $ ϕ) ltac:(wf_auto2)) at 1.
+    mlRewrite (bott_and Γ (P ⋅ ϕ) ltac:(wf_auto2)) at 1.
     fromMLGoal.
     mlSplitAnd.
     {
@@ -3902,7 +3901,7 @@ Lemma predicate_propagate_right {Σ : Signature} {syntax : Syntax} Γ ϕ ψ P :
   mu_free ψ ->
   mu_free P ->
   Γ ⊢ is_predicate_pattern ψ ->
-  Γ ⊢ ψ and P $ ϕ <---> P $ (ψ and ϕ).
+  Γ ⊢ ψ and P ⋅ ϕ <---> P ⋅ (ψ and ϕ).
 Proof.
   intros HΓ wfϕ wfψ wfP mϕ mψ mP predψ.
   toMLGoal.
@@ -3914,7 +3913,7 @@ Proof.
     mlRewriteBy "T" at 1.
     mlRewriteBy "T" at 1.
     mlClear "T".
-    pose proof (Ht := top_and Γ (P $ ϕ) ltac:(wf_auto2)).
+    pose proof (Ht := top_and Γ (P ⋅ ϕ) ltac:(wf_auto2)).
     mlRewrite Ht at 1; clear Ht.
     pose proof (Ht := top_and Γ ϕ ltac:(wf_auto2)).
     mlRewrite Ht at 1; clear Ht.
@@ -3925,7 +3924,7 @@ Proof.
     mlRewriteBy "B" at 1.
     mlRewriteBy "B" at 1.
     mlClear "B".
-    pose proof (Hb := bott_and Γ (P $ ϕ) ltac:(wf_auto2)).
+    pose proof (Hb := bott_and Γ (P ⋅ ϕ) ltac:(wf_auto2)).
     mlRewrite Hb at 1; clear Hb.
     pose proof (Hb := bott_and Γ ϕ ltac:(wf_auto2)).
     mlRewrite Hb at 1; clear Hb.
@@ -4036,13 +4035,13 @@ Lemma membership_symbol_right {Σ : Signature} {syntax : Syntax} Γ ϕ ψ x :
   well_formed ψ ->
   mu_free ϕ ->
   mu_free ψ ->
-  Γ ⊢ (patt_free_evar x ∈ml ψ $ ϕ) ---> (ex , (b0 ∈ml ϕ and patt_free_evar x ∈ml ψ $ b0)).
+  Γ ⊢ (patt_free_evar x ∈ml ψ ⋅ ϕ) ---> (ex , (b0 ∈ml ϕ and patt_free_evar x ∈ml ψ ⋅ b0)).
 Proof.
   intros HΓ wfϕ wfψ mϕ mψ.
   toMLGoal.
   { wf_auto2. }
   mlIntro "H0".
-  mlAssert ("H1" : (patt_free_evar x ∈ml ψ $ (ex , b0 ∈ml ϕ and b0))).
+  mlAssert ("H1" : (patt_free_evar x ∈ml ψ ⋅ (ex , b0 ∈ml ϕ and b0))).
   { wf_auto2. }
   {
     fromMLGoal.
@@ -4050,7 +4049,7 @@ Proof.
     apply Framing_right with (ψ := ψ); auto. apply pile_any.
     aapply phi_impl_ex_in_phi;[set_solver|wf_auto2].
   } mlClear "H0".
-  mlAssert ("H2" : (patt_free_evar x ∈ml (ex, ψ $ (b0 ∈ml ϕ and b0)))).
+  mlAssert ("H2" : (patt_free_evar x ∈ml (ex, ψ ⋅ (b0 ∈ml ϕ and b0)))).
   { wf_auto2. }
   {
     fromMLGoal.
@@ -4061,7 +4060,7 @@ Proof.
     mlApplyMeta Prop_ex_right.
     mlExact "H".
   } mlClear "H1".
-  pose proof (H := membership_exists Γ x (ψ $ (b0 ∈ml ϕ and b0))).
+  pose proof (H := membership_exists Γ x (ψ ⋅ (b0 ∈ml ϕ and b0))).
   ospecialize* H.
   { set_solver. }
   { wf_auto2. }
@@ -4070,7 +4069,7 @@ Proof.
   mlRewrite H at 1; clear H.
   fromMLGoal.
   remember (fresh_evar ((patt_free_evar x) and ϕ and ψ)) as y.
-  rewrite <- evar_quantify_evar_open with (x := y) (n := 0) (phi := patt_free_evar x ∈ml ψ $ (b0 ∈ml ϕ and b0)).
+  rewrite <- evar_quantify_evar_open with (x := y) (n := 0) (phi := patt_free_evar x ∈ml ψ ⋅ (b0 ∈ml ϕ and b0)).
   2: {
     subst y.
     eapply evar_is_fresh_in_richer'.
@@ -4078,7 +4077,7 @@ Proof.
     clear. set_solver.
   }
   2: wf_auto2.
-  rewrite <- evar_quantify_evar_open with (x := y) (n := 0) (phi := b0 ∈ml ϕ and patt_free_evar x ∈ml ψ $ b0).
+  rewrite <- evar_quantify_evar_open with (x := y) (n := 0) (phi := b0 ∈ml ϕ and patt_free_evar x ∈ml ψ ⋅ b0).
   2: {
     subst y.
     eapply evar_is_fresh_in_richer'.
@@ -4766,6 +4765,125 @@ Section predicate_lemmas.
   Defined.
 
 End predicate_lemmas.
+
+Theorem subset_iff_eq {Σ : Signature} {syntax : Syntax}:
+  ∀ (Γ : Theory) (φ φ' : Pattern) (i : ProofInfo) ,
+    Definedness_Syntax.theory ⊆ Γ -> 
+    well_formed φ ->
+    well_formed φ' ->
+    Γ ⊢i φ ⊆ml φ' and  φ' ⊆ml φ <--->
+         φ =ml φ' using i.
+Proof.
+  intros.
+  toMLGoal.
+  1:wf_auto2.
+  epose proof patt_total_and Γ (φ ---> φ') (φ'--->φ) H ltac:(wf_auto2) ltac:(wf_auto2) .
+  use i in H2.
+  apply pf_iff_equiv_sym_nowf in H2.
+  mlExactMeta H2.
+Defined.
+
+Theorem subset_disj {Σ : Signature} {syntax : Syntax}:
+  ∀ (Γ : Theory) (φ  φ₁ φ₂ : Pattern) (i : ProofInfo) ,
+    Definedness_Syntax.theory ⊆ Γ -> 
+    well_formed φ ->
+    well_formed φ₁ ->
+    well_formed φ₂  ->
+    Γ ⊢i ( φ₁ or φ₂ )  ⊆ml φ   <--->
+          φ₁ ⊆ml φ  and  φ₂  ⊆ml φ using i.
+Proof.
+  intros.
+  toMLGoal.
+  1:wf_auto2.
+  epose proof patt_total_and Γ (φ₁ ---> φ) (φ₂---> φ) H ltac:(wf_auto2) ltac:(wf_auto2) .
+  use i in H3.
+  unfold "⊆ml".
+  mlRewrite <- H3 at 1.
+  mlSplitAnd.
+  * fromMLGoal.
+    apply floor_monotonic.
+    1:set_solver.
+    1-2:wf_auto2.
+    mlIntro "H".
+    mlSplitAnd.
+    + mlIntro.
+      mlApply "H".
+      mlLeft.
+      mlAssumption.
+    + mlIntro.
+      mlApply "H".
+      mlRight.
+      mlAssumption.
+  * fromMLGoal.
+    apply floor_monotonic.
+    1:set_solver.
+    1-2:wf_auto2.
+    mlIntro "H".
+    mlIntro.
+    mlDestructOr "0";
+    mlDestructAnd "H".
+    + mlApply "0".
+      mlAssumption.
+    + mlApply "1".
+      mlAssumption.
+Defined.
+
+Theorem forall_functional_subst_meta: ∀ {Σ : Signature} {syntax : Syntax} (Γ : Theory) (φ φ' : Pattern) ,
+  Definedness_Syntax.theory ⊆ Γ->
+  mu_free φ ->
+  well_formed φ' ->
+  well_formed_closed_ex_aux φ 1 ->
+  well_formed_closed_mu_aux φ 0 ->
+  Γ ⊢ is_functional φ' -> 
+  Γ ⊢ (all , φ) -> Γ ⊢i φ^[evar:0↦φ'] using AnyReasoning.
+Proof.
+  intros.
+  toMLGoal.
+  wf_auto2.
+  now apply mu_free_wfp.
+  mlApplyMeta forall_functional_subst.
+  2-5:assumption.
+  mlSplitAnd.
+  * mlExactMeta H5.
+  * unfold is_functional in H4. mlExactMeta H4.
+Defined.
+
+Theorem total_iff_top {Σ : Signature} {syntax : Syntax}:
+  ∀ (Γ : Theory) (φ : Pattern),
+    Definedness_Syntax.theory ⊆ Γ -> 
+    well_formed φ ->
+    Γ ⊢i ⌊ φ ⌋ <--->  (φ =ml patt_top)     using AnyReasoning.
+Proof.
+  intros.
+  mlSplitAnd.
+  * mlIntro.
+    unfold patt_equal.
+    mlRevert "0".
+    fromMLGoal.
+    apply floor_monotonic.
+    1:set_solver.
+    1-2:wf_auto2.
+    mlIntro "H".
+    mlSplitAnd.
+    + mlIntro.
+      pose proof top_holds Γ.
+      use AnyReasoning in H1.
+      mlExactMeta H1.
+    + mlIntro.
+      mlAssumption.
+  * unfold patt_equal.
+    fromMLGoal.
+    apply floor_monotonic.
+    1:set_solver.
+    1-2:wf_auto2.
+    mlIntro "H".
+    mlDestructAnd "H".
+    mlApply "1".
+    pose proof top_holds Γ.
+    use AnyReasoning in H1.
+    mlExactMeta H1.
+Defined.
+
 
 Close Scope ml_scope.
 Close Scope string_scope.

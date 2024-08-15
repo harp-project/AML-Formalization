@@ -42,8 +42,8 @@ Section running.
     well_formed f ->
     well_formed (ex, ϕ₁) ->
     well_formed (ex, ϕ₂) ->
-    Γ ⊢ (((all, (ϕ₂ =ml ϕ₁)) and (f $ (evar_open x 0 ϕ₁))) ---> 
-        ex, (f $ ϕ₂))
+    Γ ⊢ (((all, (ϕ₂ =ml ϕ₁)) and (f ⋅ (evar_open x 0 ϕ₁))) ---> 
+        ex, (f ⋅ ϕ₂))
   .
   Proof.
     (* begin snippet running *)
@@ -136,8 +136,8 @@ Section running.
     well_formed f ->
     well_formed (ex, ϕ₁) ->
     well_formed (ex, ϕ₂) ->
-    Γ ⊢ (((all, (ϕ₂ =ml ϕ₁)) and (f $ (evar_open x 0 ϕ₁))) ---> 
-        ex, (f $ ϕ₂))
+    Γ ⊢ (((all, (ϕ₂ =ml ϕ₁)) and (f ⋅ (evar_open x 0 ϕ₁))) ---> 
+        ex, (f ⋅ ϕ₂))
   .
   Proof.
     intros mff wff wfϕ₁ wfϕ₂.
@@ -149,7 +149,7 @@ Section running.
     eapply prf_strenghten_premise_meta_meta.
     4: gapply (forall_variable_substitution _ _ x). 1-5: shelve.
     remember (fresh_evar f) as y.
-    remember ({| pcEvar := y; pcPattern := f $ patt_free_evar y |}) as C.
+    remember ({| pcEvar := y; pcPattern := f ⋅ patt_free_evar y |}) as C.
     epose proof (equality_elimination_basic Γ (ϕ₂^{evar:0 ↦ x}) (ϕ₁^{evar:0 ↦ x}) C _ _ _ _ _).
     subst C. cbn in H.
     destruct decide in H. 2: congruence.

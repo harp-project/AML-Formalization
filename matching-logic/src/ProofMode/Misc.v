@@ -2,7 +2,7 @@ From Coq Require Import ssreflect ssrfun ssrbool.
 
 From Ltac2 Require Import Ltac2.
 
-From Coq Require Import Ensembles Bool String.
+From Coq Require Import Bool String.
 
 From Coq.Logic Require Import FunctionalExtensionality Eqdep_dec.
 From Equations Require Import Equations.
@@ -16,6 +16,7 @@ From stdpp Require Import list tactics fin_sets coGset gmap sets.
 From MatchingLogic.Utils Require Import stdpp_ext.
 Import extralibrary.
 From MatchingLogic Require Import Logic
+  ProofSystem
   ProofInfo
   BasicProofSystemLemmas
 .
@@ -401,73 +402,9 @@ Section FOL_helpers.
 
   Context {Σ : Signature}.
 
-  Lemma Framing_left (Γ : Theory) (ϕ₁ ϕ₂ ψ : Pattern) (i : ProofInfo)
-    (wfψ : well_formed ψ)
-    {pile : ProofInfoLe ((ExGen := ∅, SVSubst := ∅, KT := false, AKT := false)) i}
-    :
-    Γ ⊢i ϕ₁ ---> ϕ₂ using i ->
-    Γ ⊢i ϕ₁ $ ψ ---> ϕ₂ $ ψ using i.
-  Proof.
-    intros [pf Hpf].
-    unshelve (eexists).
-    {
-      apply ProofSystem.Framing_left.
-      { exact wfψ. }
-      exact pf.
-    }
-    {
-      destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf5].
-      constructor; simpl.
-      {
-        assumption.
-      }
-      {
-        assumption.
-      }
-      {
-        assumption.
-      }
-      {
-        assumption.
-      }
-    }
-  Defined.
-
-  Lemma Framing_right (Γ : Theory) (ϕ₁ ϕ₂ ψ : Pattern) (i : ProofInfo)
-    (wfψ : well_formed ψ)
-    {pile : ProofInfoLe ((ExGen := ∅, SVSubst := ∅, KT := false, AKT := false)) i}
-    :
-    Γ ⊢i ϕ₁ ---> ϕ₂ using i ->
-    Γ ⊢i ψ $ ϕ₁ ---> ψ $ ϕ₂ using i.
-  Proof.
-    intros [pf Hpf].
-    unshelve (eexists).
-    {
-      apply ProofSystem.Framing_right.
-      { exact wfψ. }
-      exact pf.
-    }
-    {
-      destruct Hpf as [Hpf1 Hpf2 Hpf3].
-      constructor; simpl.
-      {
-        assumption.
-      }
-      {
-        assumption.
-      }
-      {
-        assumption.
-      }
-      {
-        assumption.
-      }
-    }
-  Defined.
-
   Lemma Prop_bott_left (Γ : Theory) (ϕ : Pattern) :
     well_formed ϕ ->
-    Γ ⊢i ⊥ $ ϕ ---> ⊥ using BasicReasoning.
+    Γ ⊢i ⊥ ⋅ ϕ ---> ⊥ using BasicReasoning.
   Proof.
     intros wfϕ.
     unshelve (eexists).
@@ -481,7 +418,7 @@ Section FOL_helpers.
 
   Lemma Prop_bott_right (Γ : Theory) (ϕ : Pattern) :
     well_formed ϕ ->
-    Γ ⊢i ϕ $ ⊥ ---> ⊥ using BasicReasoning.
+    Γ ⊢i ϕ ⋅ ⊥ ---> ⊥ using BasicReasoning.
   Proof.
     intros wfϕ.
     unshelve (eexists).
@@ -572,8 +509,8 @@ Section FOL_helpers.
     intros WFA H.
 
     epose proof (ANNA := A_implies_not_not_A_alt Γ _ i _ H).
-    replace (! (! A)) with ((! A) ---> Bot) in ANNA by reflexivity.
-    epose proof (EF := Framing _ C (! A) Bot _ ANNA).
+    replace (! (! A)) with ((! A) ---> ⊥) in ANNA by reflexivity.
+    epose proof (EF := Framing _ C (! A) ⊥ _ ANNA).
     epose proof (PB := Prop_bot_ctx Γ C).
     apply liftProofInfoLe with (i₂ := i) in PB. 2: try_solve_pile.
     epose (TRANS := syllogism_meta _ _ _ EF PB).
@@ -589,11 +526,11 @@ Section FOL_helpers.
     {pile : ProofInfoLe ((ExGen := ∅, SVSubst := ∅, KT := false, AKT := false)) i}
   :
     well_formed A ->
-    Γ ⊢i (A ---> Bot) using i ->
-    Γ ⊢i (subst_ctx C A ---> Bot) using i.
+    Γ ⊢i (A ---> ⊥) using i ->
+    Γ ⊢i (subst_ctx C A ---> ⊥) using i.
   Proof.
     intros WFA H.
-    epose proof (FR := Framing Γ C A Bot _ H).
+    epose proof (FR := Framing Γ C A ⊥ _ H).
     epose proof (BPR := Prop_bot_ctx Γ C).
     apply liftProofInfoLe with (i₂ := i) in BPR. 2: try_solve_pile.
     epose proof (TRANS := syllogism_meta _ _ _ FR BPR).
@@ -631,7 +568,7 @@ Lemma Prop_disj_left {Σ : Signature} (Γ : Theory) (ϕ₁ ϕ₂ ψ : Pattern) :
   well_formed ϕ₁ ->
   well_formed ϕ₂ ->
   well_formed ψ ->
-  Γ ⊢i (ϕ₁ or ϕ₂) $ ψ ---> (ϕ₁ $ ψ) or (ϕ₂ $ ψ) using BasicReasoning.
+  Γ ⊢i (ϕ₁ or ϕ₂) ⋅ ψ ---> (ϕ₁ ⋅ ψ) or (ϕ₂ ⋅ ψ) using BasicReasoning.
 Proof.
   intros wfϕ₁ wfϕ₂ wfψ.
   unshelve (eexists).
@@ -647,7 +584,7 @@ Lemma Prop_disj_right {Σ : Signature} (Γ : Theory) (ϕ₁ ϕ₂ ψ : Pattern) 
   well_formed ϕ₁ ->
   well_formed ϕ₂ ->
   well_formed ψ ->
-  Γ ⊢i ψ $ (ϕ₁ or ϕ₂)  ---> (ψ $ ϕ₁) or (ψ $ ϕ₂) using BasicReasoning.
+  Γ ⊢i ψ ⋅ (ϕ₁ or ϕ₂)  ---> (ψ ⋅ ϕ₁) or (ψ ⋅ ϕ₂) using BasicReasoning.
 Proof.
   intros wfϕ₁ wfϕ₂ wfψ.
   unshelve (eexists).
@@ -769,7 +706,7 @@ Defined.
 Lemma Prop_ex_left {Σ : Signature} (Γ : Theory) (ϕ ψ : Pattern) :
   well_formed (ex, ϕ) ->
   well_formed ψ ->
-  Γ ⊢i (ex , ϕ) $ ψ ---> ex , ϕ $ ψ
+  Γ ⊢i (ex , ϕ) ⋅ ψ ---> ex , ϕ ⋅ ψ
   using BasicReasoning.
 Proof.
   intros wfϕ wfψ.
@@ -785,7 +722,7 @@ Defined.
 Lemma Prop_ex_right {Σ : Signature} (Γ : Theory) (ϕ ψ : Pattern) :
   well_formed (ex, ϕ) ->
   well_formed ψ ->
-  Γ ⊢i ψ $ (ex , ϕ) ---> ex , ψ $ ϕ
+  Γ ⊢i ψ ⋅ (ex , ϕ) ---> ex , ψ ⋅ ϕ
   using BasicReasoning.
 Proof.
   intros wfϕ wfψ.
@@ -868,7 +805,7 @@ Proof.
        A better way would be to create some `simpl_well_formed` tuple, that might use the type class
        mechanism for extension...
      *)
-    assert(Hwf'p0: well_formed (exists_quantify x (subst_ctx AC (p^{evar: 0 ↦ x}) $ p0))).
+    assert(Hwf'p0: well_formed (exists_quantify x (subst_ctx AC (p^{evar: 0 ↦ x}) ⋅ p0))).
     { wf_auto2. }
 
     apply pf_iff_iff in IHAC; auto.
@@ -953,7 +890,7 @@ Proof.
        A better way would be to create some `simpl_well_formed` tuple, that might use the type class
        mechanism for extension...
      *)
-    assert(Hwf'p0: well_formed (exists_quantify x (p0 $ subst_ctx AC (p^{evar: 0 ↦ x})))).
+    assert(Hwf'p0: well_formed (exists_quantify x (p0 ⋅ subst_ctx AC (p^{evar: 0 ↦ x})))).
     {
       wf_auto2.
     }
@@ -1022,7 +959,7 @@ Section FOL_helpers.
   NOTE: DO NOT REPLACE! The element variable in this function is 
   needed to substitute in such pattern context, which contain
   arbitrary patterns, but the path to the element variable
-  is concrete. For example, in `⌈ E ⌉ $ φ` the path to `E` does
+  is concrete. For example, in `⌈ E ⌉ ⋅ φ` the path to `E` does
   not contain any ∃-s, thus no new variables need to be generated
   for `mlRewrite`.
   *)
@@ -1361,7 +1298,7 @@ Section FOL_helpers.
     (pf₁: Γ ⊢i ψ1^[[evar: E ↦ p]] <---> ψ1^[[evar: E ↦ q]] using i)
     (pf₂: Γ ⊢i ψ2^[[evar: E ↦ p]] <---> ψ2^[[evar: E ↦ q]] using i)
     :
-    (Γ ⊢i (ψ1^[[evar: E ↦ p]]) $ (ψ2^[[evar: E ↦ p]]) <---> (ψ1^[[evar: E ↦ q]]) $ (ψ2^[[evar: E ↦ q]]) using i).
+    (Γ ⊢i (ψ1^[[evar: E ↦ p]]) ⋅ (ψ2^[[evar: E ↦ p]]) <---> (ψ1^[[evar: E ↦ q]]) ⋅ (ψ2^[[evar: E ↦ q]]) using i).
   Proof.
     remember (well_formed_free_evar_subst_0 E _ _ wfp wfψ1) as Hwf1.
     remember (well_formed_free_evar_subst_0 E _ _ wfq wfψ1) as Hwf2.
@@ -2411,8 +2348,8 @@ Local Example ex_prf_rewrite_equiv_2 {Σ : Signature} Γ a a' b x y z:
   well_formed a' ->
   well_formed (ex, b) ->
   Γ ⊢ a <---> a' ->
-  Γ ⊢i (ex, ((patt_free_evar y) ---> (patt_free_evar z) ---> a $ a $ b $ a ---> (patt_free_evar x)))
-  <---> (ex, ((patt_free_evar y) ---> (patt_free_evar z) ---> a $ a' $ b $ a' ---> (patt_free_evar x)))
+  Γ ⊢i (ex, ((patt_free_evar y) ---> (patt_free_evar z) ---> a ⋅ a ⋅ b ⋅ a ---> (patt_free_evar x)))
+  <---> (ex, ((patt_free_evar y) ---> (patt_free_evar z) ---> a ⋅ a' ⋅ b ⋅ a' ---> (patt_free_evar x)))
   using AnyReasoning.
 Proof.
   intros wfa wfa' wfb Hiff.

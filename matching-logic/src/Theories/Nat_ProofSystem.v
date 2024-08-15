@@ -2,7 +2,7 @@ From Coq Require Import ssreflect ssrfun ssrbool.
 
 From Ltac2 Require Import Ltac2.
 
-From Coq Require Import String Ensembles Setoid.
+From Coq Require Import String Setoid.
 Require Import Coq.Program.Equality.
 Require Import Coq.Logic.Classical_Prop.
 From Coq.Logic Require Import FunctionalExtensionality Eqdep_dec.
@@ -110,7 +110,7 @@ Section nat.
   Theorem peano_induction X :
     theory ⊢ patt_free_svar X ⊆ml 〚 Nat 〛 ->
     theory ⊢ Zero ∈ml patt_free_svar X ->
-    theory ⊢ all Nat, (b0 ∈ml patt_free_svar X ---> Succ $ b0 ∈ml patt_free_svar X) ->
+    theory ⊢ all Nat, (b0 ∈ml patt_free_svar X ---> Succ ⋅ b0 ∈ml patt_free_svar X) ->
     theory ⊢ all Nat, b0 ∈ml patt_free_svar X.
   Proof.
     intros XN Z S.
@@ -132,7 +132,7 @@ Section nat.
     { wf_auto2. }
     { apply pile_any. }
 
-    apply FixPoint.Knaster_tarski.
+    apply Knaster_tarski.
     { apply pile_any. }
     { wf_auto2. }
     unfold instantiate. mlSimpl. simpl.
@@ -173,9 +173,9 @@ Section nat.
       { wf_auto2. }
       { unfold theory. set_solver. }
 
-      remember (fresh_evar (b0 ∈ml (Succ $ patt_free_svar X ---> patt_free_svar X))) as x.
+      remember (fresh_evar (b0 ∈ml (Succ ⋅ patt_free_svar X ---> patt_free_svar X))) as x.
 
-      rewrite <- evar_quantify_evar_open with (phi := b0 ∈ml (Succ $ patt_free_svar X ---> patt_free_svar X)) (n := 0) (x := x).
+      rewrite <- evar_quantify_evar_open with (phi := b0 ∈ml (Succ ⋅ patt_free_svar X ---> patt_free_svar X)) (n := 0) (x := x).
       2: {
         subst x.
         eapply evar_is_fresh_in_richer'.
@@ -186,7 +186,7 @@ Section nat.
       apply universal_generalization;[apply pile_any|wf_auto2|].
       mlSimpl. unfold evar_open. simpl.
 
-      pose proof (Htmp := membership_imp theory x (Succ $ patt_free_svar X) (patt_free_svar X)).
+      pose proof (Htmp := membership_imp theory x (Succ ⋅ patt_free_svar X) (patt_free_svar X)).
       ospecialize* Htmp.
       { unfold theory. set_solver. }
       { wf_auto2. }
@@ -212,8 +212,8 @@ Section nat.
 
       fromMLGoal.
 
-      remember (fresh_evar (b0 ∈ml patt_free_svar X and patt_free_evar x ∈ml Succ $ b0)) as y.
-      rewrite <- evar_quantify_evar_open with (n := 0) (x := y) (phi := b0 ∈ml patt_free_svar X and patt_free_evar x ∈ml Succ $ b0).
+      remember (fresh_evar (b0 ∈ml patt_free_svar X and patt_free_evar x ∈ml Succ ⋅ b0)) as y.
+      rewrite <- evar_quantify_evar_open with (n := 0) (x := y) (phi := b0 ∈ml patt_free_svar X and patt_free_evar x ∈ml Succ ⋅ b0).
       2: {
         subst y. eapply evar_is_fresh_in_richer'.
         2: { apply set_evar_fresh_is_fresh'. }
@@ -239,7 +239,7 @@ Section nat.
       mlIntro "H".
       mlDestructAnd "H" as "ys" "H0".
 
-      pose proof (M := membership_imp_equal theory (patt_free_evar x) (Succ $ patt_free_evar y)).
+      pose proof (M := membership_imp_equal theory (patt_free_evar x) (Succ ⋅ patt_free_evar y)).
       ospecialize* M.
       { unfold theory. set_solver. }
       { reflexivity. }
@@ -252,7 +252,7 @@ Section nat.
       mlAdd M as "M". clear M.
       mlApplyMeta and_impl' in "M".
       mlApplyMeta and_impl' in "M".
-      mlAssert ("M0" : (patt_free_evar x =ml Succ $ patt_free_evar y)).
+      mlAssert ("M0" : (patt_free_evar x =ml Succ ⋅ patt_free_evar y)).
       { wf_auto2. }
       {
         mlApply "M". mlClear "M".
@@ -266,7 +266,7 @@ Section nat.
         + mlApplyMeta ex_sort_impl_ex;[|unfold theory; set_solver].
           mlAdd (use_nat_axiom AxFun2 theory ltac:(set_solver)) as "H"; unfold axiom.
           unfold "all _ , _", nest_ex; simpl; fold Nat.
-          rewrite <- evar_quantify_evar_open with (x := y) (n := 0) (phi := b0 ∈ml 〚 Nat 〛 ---> (ex Nat , Succ $ b1 =ml b0)).
+          rewrite <- evar_quantify_evar_open with (x := y) (n := 0) (phi := b0 ∈ml 〚 Nat 〛 ---> (ex Nat , Succ ⋅ b1 =ml b0)).
           2: {
             subst y. eapply evar_is_fresh_in_richer'.
             2: apply set_evar_fresh_is_fresh'.

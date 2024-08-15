@@ -4,7 +4,7 @@ From Ltac2 Require Import Ltac2.
 
 Require Import Equations.Prop.Equations.
 
-From Coq Require Import String Ensembles Setoid.
+From Coq Require Import String Setoid.
 Require Import Coq.Program.Equality.
 Require Import Coq.Logic.Classical_Prop.
 From Coq.Logic Require Import FunctionalExtensionality Eqdep_dec.
@@ -22,7 +22,6 @@ From stdpp Require Import base fin_sets sets propset proof_irrel option list coG
 
 Import MatchingLogic.Syntax.Notations
        MatchingLogic.DerivedOperators_Syntax.Notations
-       MatchingLogic.Syntax.BoundVarSugar
        MatchingLogic.Theories.Definedness_Syntax.Notations
        MatchingLogic.ApplicationContext.Notations.
 

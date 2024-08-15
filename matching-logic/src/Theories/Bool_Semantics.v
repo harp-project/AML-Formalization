@@ -10,7 +10,8 @@ From stdpp Require Import base sets.
 From MatchingLogic Require Export
     Logic
     Utils.extralibrary
-    Theories.Bool_Syntax.
+    Theories.Bool_Syntax
+    Theories.ModelExtension.
 
 Import MatchingLogic.Theories.Definedness_Syntax.Notations.
 Import MatchingLogic.Theories.Bool_Syntax.Notations.
@@ -26,6 +27,18 @@ Section with_model.
 
   Hypothesis M_satisfies_theory : M ⊨ᵀ Bool_Syntax.theory.
 
-  
-
 End with_model.
+
+(* Section bool_model.
+
+  Instance default_boolΣ : Signature := {
+    variables := StringMLVariables;
+    ml_symbols := Build_MLSymbols Symbols _ _;
+  }.
+
+  Instance default_bool_syntax : Bool_Syntax.Syntax := {
+     inj := id;
+     imported_sorts := 
+  }.
+
+End bool_model. *)

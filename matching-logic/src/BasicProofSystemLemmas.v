@@ -185,28 +185,28 @@ Lemma P4m  {Σ : Signature}(Γ : Theory) (A B : Pattern) :
   using BasicReasoning.
 Proof.
   intros WFA WFB.
-  pose (H1 := P2 Γ A B Bot ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
+  pose (H1 := P2 Γ A B ⊥ ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
   assert (well_formed_closed_ex_aux A 0 = true).
   {
     wf_auto2.
   }
   (*
-  unshelve (epose proof (H2 := (P2 Γ (A ---> B ---> Bot) (A ---> B) (A ---> Bot) _ _ _ ))).
+  unshelve (epose proof (H2 := (P2 Γ (A ---> B ---> ⊥) (A ---> B) (A ---> ⊥) _ _ _ ))).
   {
 (*    compositeSimplifyAllWfHyps.
     wf_auto2_composite_step. *)
     wf_auto2.
   }
   *)
-  pose proof (H2 := (P2 Γ (A ---> B ---> Bot) (A ---> B) (A ---> Bot) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2))).
+  pose proof (H2 := (P2 Γ (A ---> B ---> ⊥) (A ---> B) (A ---> ⊥) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2))).
   pose proof (H3 := MP H1 H2).
-  pose proof (H4 := (P1 Γ (((A ---> B ---> Bot) ---> A ---> B) ---> (A ---> B ---> Bot) ---> A ---> Bot)
+  pose proof (H4 := (P1 Γ (((A ---> B ---> ⊥) ---> A ---> B) ---> (A ---> B ---> ⊥) ---> A ---> ⊥)
     (A ---> B) ltac:(wf_auto2) ltac:(wf_auto2))).
   pose proof (H5 := MP H3 H4).
   
   (*
   (* This one is just for performance debugging purposes *)
-  unshelve (epose proof (H6 := (P2 Γ (A ---> B) ((A ---> B ---> Bot) ---> A ---> B) ((A ---> B ---> Bot) ---> A ---> Bot) _ _ _))).
+  unshelve (epose proof (H6 := (P2 Γ (A ---> B) ((A ---> B ---> ⊥) ---> A ---> B) ((A ---> B ---> ⊥) ---> A ---> ⊥) _ _ _))).
   {
     wf_auto2_step.
     wf_auto2_step.
@@ -219,10 +219,10 @@ Proof.
   *)
 
   
-  pose proof (H6 := (P2 Γ (A ---> B) ((A ---> B ---> Bot) ---> A ---> B) ((A ---> B ---> Bot) ---> A ---> Bot)
+  pose proof (H6 := (P2 Γ (A ---> B) ((A ---> B ---> ⊥) ---> A ---> B) ((A ---> B ---> ⊥) ---> A ---> ⊥)
     ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2))).
   pose proof (H7 := MP H5 H6).
-  pose proof (H8 := (P1 Γ (A ---> B) (A ---> B ---> Bot) ltac:(wf_auto2) ltac:(wf_auto2))).
+  pose proof (H8 := (P1 Γ (A ---> B) (A ---> B ---> ⊥) ltac:(wf_auto2) ltac:(wf_auto2))).
   pose proof (H9 := MP H8 H7).
   exact H9.
 Defined.
@@ -362,15 +362,15 @@ Lemma P4 {Σ : Signature} (Γ : Theory) (A B : Pattern)  :
 Proof.
   intros WFA WFB.
   pose proof (m := P3 Γ A ltac:(wf_auto2)).
-  pose proof (m0 := P1 Γ (((A ---> Bot) ---> Bot) ---> A) B ltac:(wf_auto2) ltac:(wf_auto2)).
-  pose proof (m1 := P2 Γ B ((A ---> Bot) ---> Bot) A ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
+  pose proof (m0 := P1 Γ (((A ---> ⊥) ---> ⊥) ---> A) B ltac:(wf_auto2) ltac:(wf_auto2)).
+  pose proof (m1 := P2 Γ B ((A ---> ⊥) ---> ⊥) A ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
   pose proof (m2 := MP m m0).
   pose proof (m3 := MP m2 m1).
-  pose proof (m4 := P1 Γ ((B ---> (A ---> Bot) ---> Bot) ---> B ---> A) ((A ---> Bot) ---> (B ---> Bot)) ltac:(wf_auto2) ltac:(wf_auto2) ).
+  pose proof (m4 := P1 Γ ((B ---> (A ---> ⊥) ---> ⊥) ---> B ---> A) ((A ---> ⊥) ---> (B ---> ⊥)) ltac:(wf_auto2) ltac:(wf_auto2) ).
   pose proof (m5 := MP m3 m4).
-  pose proof (m6 := P2 Γ ((A ---> Bot) ---> (B ---> Bot)) (B ---> (A ---> Bot) ---> Bot) (B ---> A) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
+  pose proof (m6 := P2 Γ ((A ---> ⊥) ---> (B ---> ⊥)) (B ---> (A ---> ⊥) ---> ⊥) (B ---> A) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
   pose proof (m7 := MP m5 m6).
-  pose proof (m8 := reorder Γ (A ---> Bot) (B) Bot ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
+  pose proof (m8 := reorder Γ (A ---> ⊥) (B) ⊥ ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
   apply (MP m8 m7).
 Defined.
 
@@ -382,7 +382,7 @@ Lemma conj_intro {Σ : Signature} (Γ : Theory) (A B : Pattern) :
 Proof.
   intros WFA WFB.
   pose proof (tB := (A_impl_A Γ B ltac:(wf_auto2))).
-  unshelve (epose proof (t1 := MP (P2 Γ (!(!A) ---> !B) A Bot ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)) (P1 _ _ B _ _))); try_wfauto2.
+  unshelve (epose proof (t1 := MP (P2 Γ (!(!A) ---> !B) A ⊥ ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)) (P1 _ _ B _ _))); try_wfauto2.
   unshelve (epose proof (t2 := MP (reorder_meta _ _ _ (P4 Γ (!A) B ltac:(wf_auto2) ltac:(wf_auto2))) (P1 _ _ B _ _))); try_wfauto2.
   unshelve (epose proof (t3'' := MP (P1 Γ A (!(!A) ---> !B) _ _) (P1 _ _ B _ _))); try_wfauto2.
   unshelve (epose proof (t4 := MP tB (MP t2 (P2 Γ B B _ _ _ _)))); try_wfauto2.
@@ -460,7 +460,7 @@ Defined.
 
 Lemma bot_elim {Σ : Signature} (Γ : Theory) (A : Pattern) :
   well_formed A ->
-  Γ ⊢i (Bot ---> A)
+  Γ ⊢i (⊥ ---> A)
   using BasicReasoning.
 Proof.
   intros WFA.
@@ -468,11 +468,11 @@ Proof.
   - eapply MP.
     + eapply MP.
       * eapply MP.
-        -- eapply (P1 _ Bot Bot _ _).
-        -- eapply (P2 _ Bot Bot Bot _ _ _).
-      * eapply (P4 _ Bot Bot _ _).
-    + eapply (P1 _ (Bot ---> Bot) (A ---> Bot) _ _).
-  - eapply (P4 _ A Bot _ _).
+        -- eapply (P1 _ ⊥ ⊥ _ _).
+        -- eapply (P2 _ ⊥ ⊥ ⊥ _ _ _).
+      * eapply (P4 _ ⊥ ⊥ _ _).
+    + eapply (P1 _ (⊥ ---> ⊥) (A ---> ⊥) _ _).
+  - eapply (P4 _ A ⊥ _ _).
     Unshelve.
     all: wf_auto2.
 Defined.
@@ -698,8 +698,8 @@ Defined.
 Lemma exclusion {Σ : Signature} (G : Theory) (A : Pattern) (i : ProofInfo) :
   well_formed A ->
   G ⊢i A using i ->
-  G ⊢i (A ---> Bot) using i ->
-  G ⊢i Bot using i.
+  G ⊢i (A ---> ⊥) using i ->
+  G ⊢i ⊥ using i.
 Proof.
   intros WFA H H0.
   eapply MP.
@@ -1536,6 +1536,302 @@ Defined.
     { simpl. unfold evar_is_fresh_in in Hfr. clear -Hfr. set_solver. }
     apply modus_tollens; assumption.
   Defined.
+
+  Lemma Framing_left {Σ : Signature}(Γ : Theory) (ϕ₁ ϕ₂ ψ : Pattern) (i : ProofInfo)
+    (wfψ : well_formed ψ)
+    {pile : ProofInfoLe ((ExGen := ∅, SVSubst := ∅, KT := false, AKT := false)) i}
+    :
+    Γ ⊢i ϕ₁ ---> ϕ₂ using i ->
+    Γ ⊢i ϕ₁ ⋅ ψ ---> ϕ₂ ⋅ ψ using i.
+  Proof.
+    intros [pf Hpf].
+    unshelve (eexists).
+    {
+      apply ProofSystem.Framing_left.
+      { exact wfψ. }
+      exact pf.
+    }
+    {
+      destruct Hpf as [Hpf1 Hpf2 Hpf3 Hpf5].
+      constructor; simpl.
+      {
+        assumption.
+      }
+      {
+        assumption.
+      }
+      {
+        assumption.
+      }
+      {
+        assumption.
+      }
+    }
+  Defined.
+
+  Lemma Framing_right {Σ : Signature}(Γ : Theory) (ϕ₁ ϕ₂ ψ : Pattern) (i : ProofInfo)
+    (wfψ : well_formed ψ)
+    {pile : ProofInfoLe ((ExGen := ∅, SVSubst := ∅, KT := false, AKT := false)) i}
+    :
+    Γ ⊢i ϕ₁ ---> ϕ₂ using i ->
+    Γ ⊢i ψ ⋅ ϕ₁ ---> ψ ⋅ ϕ₂ using i.
+  Proof.
+    intros [pf Hpf].
+    unshelve (eexists).
+    {
+      apply ProofSystem.Framing_right.
+      { exact wfψ. }
+      exact pf.
+    }
+    {
+      destruct Hpf as [Hpf1 Hpf2 Hpf3].
+      constructor; simpl.
+      {
+        assumption.
+      }
+      {
+        assumption.
+      }
+      {
+        assumption.
+      }
+      {
+        assumption.
+      }
+    }
+  Defined.
+
+Lemma Knaster_tarski {Σ : Signature}
+  (Γ : Theory) (ϕ ψ : Pattern)  (i : ProofInfo)
+  {pile : ProofInfoLe (
+        {| pi_generalized_evars := ∅;
+           pi_substituted_svars := ∅;
+           pi_uses_kt := true ;
+           pi_uses_advanced_kt := ~~ bound_svar_is_banned_under_mus ϕ 0 0 ; (* TODO depends on ϕ*)
+        |}) i} :
+  well_formed (mu, ϕ) ->
+  Γ ⊢i (instantiate (mu, ϕ) ψ) ---> ψ using i ->
+  Γ ⊢i (mu, ϕ) ---> ψ using i.
+Proof.
+  intros Hfev [pf Hpf].
+  unshelve (eexists).
+  {
+    apply ProofSystem.Knaster_tarski.
+    { exact Hfev. }
+    { exact pf. }
+  }
+  {
+    simpl.
+    constructor; simpl.
+    {
+      destruct Hpf as [Hpf2 Hpf3 Hpf4].
+      apply Hpf2.
+    }
+    {
+      destruct Hpf as [Hpf2 Hpf3 Hpf4].
+      apply Hpf3.
+    }
+    {
+      destruct Hpf as [Hpf2 Hpf3 Hpf4 Hpf5].
+      unfold is_true in Hpf4.
+      rewrite implb_true_iff in Hpf4.
+      destruct i. cbn in *.
+      destruct pile as [Hpile1 [Hpile2 [Hpile3 Hpile4 ] ] ]. cbn in *.
+      exact Hpile3.
+    }
+    {
+      destruct Hpf as [Hpf2 Hpf3 Hpf4 Hpf5].
+      unfold is_true in Hpf4.
+      rewrite implb_true_iff in Hpf4.
+      destruct i. cbn in *.
+      destruct pile as [Hpile1 [Hpile2 [Hpile3 Hpile4 ] ] ]. cbn in *.
+      unfold is_true.
+      rewrite implb_true_iff. intros H1.
+      rewrite andb_true_r.
+      rewrite orb_true_iff in H1.
+      destruct H1 as [H1|H1].
+      {
+        rewrite H1 in Hpile4. simpl in Hpile4.
+        exact Hpile4.
+      }
+      {
+        rewrite H1 in Hpf5. simpl in Hpf5.
+        destruct_and!. assumption.
+      }
+    }
+  }
+Defined.
+
+Lemma Svar_subst {Σ : Signature}
+  (Γ : Theory) (ϕ ψ : Pattern) (X : svar)  (i : ProofInfo)
+  {pile : ProofInfoLe (
+        {| pi_generalized_evars := ∅;
+           pi_substituted_svars := {[X]};
+           pi_uses_kt := false ;
+           pi_uses_advanced_kt := false ;
+        |}) i} :
+  well_formed ψ ->
+  Γ ⊢i ϕ using i ->
+  Γ ⊢i (ϕ^[[svar: X ↦ ψ]]) using i.
+Proof.
+  intros wfψ [pf Hpf].
+  unshelve (eexists).
+  {
+   apply ProofSystem.Svar_subst.
+   { pose proof (Hwf := proved_impl_wf _ _ pf). exact Hwf. }
+   { exact wfψ. }
+   { exact pf. }
+  }
+  {
+    simpl.
+    constructor; simpl.
+    {
+      destruct Hpf as [Hpf2 Hpf3 Hpf4].
+      apply Hpf2.
+    }
+    {
+      destruct Hpf as [Hpf2 Hpf3 Hpf4].
+      pose proof (Hpile := pile_impl_allows_svsubst_X _ _ _ _ pile).
+      clear -Hpile Hpf3.
+      set_solver.
+    }
+    {
+      destruct Hpf as [Hpf2 Hpf3 Hpf4].
+      exact Hpf4.
+    }
+    {
+      destruct Hpf as [Hpf2 Hpf3 Hpf4 Hpf5].
+      exact Hpf5.
+    }
+  }
+Defined.
+
+Lemma Pre_fixp {Σ : Signature}
+  (Γ : Theory) (ϕ : Pattern) :
+  well_formed (patt_mu ϕ) ->
+  Γ ⊢i (instantiate (patt_mu ϕ) (patt_mu ϕ) ---> (patt_mu ϕ))
+  using BasicReasoning.
+Proof.
+  intros wfϕ.
+  unshelve (eexists).
+  {
+    apply ProofSystem.Pre_fixp.
+    { exact wfϕ. }
+  }
+  {
+    simpl.
+    abstract(solve_pim_simple).
+  }
+Defined.
+
+Lemma extend_theory {Σ : Signature} (Γ Γ' : Theory) φ i:
+    Γ ⊆ Γ' ->
+    Γ ⊢i φ using i ->
+    Γ' ⊢i φ using i.
+Proof.
+  intros H H0. destruct H0. revert i p Γ' H. induction x; intros.
+  * unshelve (eexists). constructor; try assumption. set_solver.
+    simpl. constructor; simpl; auto; set_solver.
+  * unshelve (eexists). apply P1; try assumption.
+    simpl. constructor; simpl; auto; set_solver.
+  * unshelve (eexists). apply P2; try assumption.
+    simpl. constructor; simpl; auto; set_solver.
+  * unshelve (eexists). apply P3; try assumption.
+    simpl. constructor; simpl; auto; set_solver.
+  * eapply MP.
+    - apply IHx1. 2: assumption.
+      destruct p. constructor; simpl in *.
+      1-2: set_solver.
+      + rewrite implb_orb_distrib_l in pwi_pf_kt.
+        apply andb_true_iff in pwi_pf_kt. apply pwi_pf_kt.
+      + rewrite implb_orb_distrib_l in pwi_pf_kta.
+        apply andb_true_iff in pwi_pf_kta as [H0 _].
+        rewrite implb_true_iff in H0.
+        apply implb_true_iff. intro X. apply H0 in X as X'.
+        apply kt_unreasonably_implies_somehow in X.
+        destruct_and!. split_and!; assumption.
+    - apply IHx2. 2: assumption.
+      destruct p. constructor; simpl in *.
+      1-2: set_solver.
+      + rewrite implb_orb_distrib_l in pwi_pf_kt.
+        apply andb_true_iff in pwi_pf_kt. apply pwi_pf_kt.
+      + rewrite implb_orb_distrib_l in pwi_pf_kta.
+        apply andb_true_iff in pwi_pf_kta as [_ H0].
+        rewrite implb_true_iff in H0.
+        apply implb_true_iff. intro X. apply H0 in X as X'.
+        apply kt_unreasonably_implies_somehow in X.
+        destruct_and!. split_and!; assumption.
+  * unshelve (eexists). apply Ex_quan; try assumption.
+    simpl. constructor; simpl; auto; set_solver.
+  * apply Ex_gen. all: try assumption.
+    2: apply IHx. 3: assumption.
+    - destruct p; simpl.
+      constructor. 2: constructor. 3: constructor.
+      1-2: set_solver.
+      1-2: reflexivity.
+    - destruct p; simpl.
+      constructor; simpl in *. 1-2: set_solver.
+      1-2: assumption.
+  * unshelve (eexists). apply Prop_bott_left; try assumption.
+    simpl. constructor; simpl; auto; set_solver.
+  * unshelve (eexists). apply Prop_bott_right; try assumption.
+    simpl. constructor; simpl; auto; set_solver.
+  * unshelve (eexists). apply Prop_disj_left; try assumption.
+    simpl. constructor; simpl; auto; set_solver.
+  * unshelve (eexists). apply Prop_disj_right; try assumption.
+    simpl. constructor; simpl; auto; set_solver.
+  * unshelve (eexists). apply Prop_ex_left; try assumption.
+    simpl. constructor; simpl; auto; set_solver.
+  * unshelve (eexists). apply Prop_ex_right; try assumption.
+    simpl. constructor; simpl; auto; set_solver.
+  * apply Framing_left. all: try assumption.
+    2: apply IHx. 3: assumption.
+    - destruct p; simpl.
+      constructor. 2: constructor. 3: constructor.
+      1-2: set_solver.
+      1-2: reflexivity.
+    - destruct p; simpl.
+      constructor; simpl in *. 1-2: set_solver.
+      1-2: assumption.
+  * apply Framing_right. all: try assumption.
+    2: apply IHx. 3: assumption.
+    - destruct p; simpl.
+      constructor. 2: constructor. 3: constructor.
+      1-2: set_solver.
+      1-2: reflexivity.
+    - destruct p; simpl.
+      constructor; simpl in *. 1-2: set_solver.
+      1-2: assumption.
+  * apply Svar_subst. all: try assumption.
+    2: apply IHx. 3: assumption.
+    - destruct p; simpl.
+      constructor. 2: constructor. 3: constructor.
+      1-2: set_solver.
+      1-2: reflexivity.
+    - destruct p; simpl.
+      constructor; simpl in *. 1-2: set_solver.
+      1-2: assumption.
+  * unshelve (eexists). apply Pre_fixp; try assumption.
+    simpl. constructor; simpl; auto; set_solver.
+  * apply Knaster_tarski. all: try assumption.
+    2: apply IHx. 3: assumption.
+    - destruct p; simpl.
+      constructor. 2: constructor. 3: constructor.
+      1-2: set_solver.
+      1-2: cbn in *; try assumption.
+      apply implb_true_iff. rewrite andb_true_r in pwi_pf_kta.
+      intro H0. rewrite H0 in pwi_pf_kta. assumption.
+    - destruct p; simpl.
+      constructor; simpl in *. 1-2: set_solver.
+      + apply implb_true_iff. intro. assumption.
+      + apply implb_true_iff. intros H0. rewrite H0 in pwi_pf_kta.
+        rewrite orb_true_r in pwi_pf_kta. apply kt_unreasonably_implies_somehow in H0.
+        rewrite H0. assumption.
+  * unshelve (eexists). apply Existence; try assumption.
+    simpl. constructor; simpl; auto; set_solver.
+  * unshelve (eexists). apply Singleton_ctx; try assumption.
+    simpl. constructor; simpl; auto; set_solver.
+Defined.
 
 Close Scope string_scope.
 Close Scope list_scope.

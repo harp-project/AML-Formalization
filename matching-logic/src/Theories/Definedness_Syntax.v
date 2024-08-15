@@ -30,6 +30,22 @@ Inductive Symbols := definedness.
 Global Instance Symbols_eqdec : EqDecision Symbols.
 Proof. unfold EqDecision. intros x y. unfold Decision. destruct x. decide equality. (*solve_decision.*) Defined.
 
+#[global]
+Program Instance Symbols_finite : finite.Finite Symbols.
+Next Obligation.
+  exact [definedness].
+Defined.
+Next Obligation.
+  unfold Symbols_finite_obligation_1.
+  compute_done.
+Defined.
+Next Obligation.
+  destruct x; compute_done.
+Defined.
+
+Global Instance Symbols_countable : countable.Countable Symbols.
+Proof. apply finite.finite_countable. Defined.
+
   Class Syntax {Σ : Signature} :=
     {
     (* 'Symbols' are a 'subset' of all the symbols from the signature *)
@@ -47,7 +63,7 @@ Section definedness.
   Context {syntax : Syntax}.
 
   Definition patt_defined (phi : Pattern) : Pattern :=
-    patt_sym (inj definedness) $ phi.
+    patt_sym (inj definedness) ⋅ phi.
 
   Definition patt_total (phi: Pattern) : Pattern :=
     patt_not (patt_defined (patt_not phi)).

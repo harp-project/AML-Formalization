@@ -2,7 +2,7 @@ From Coq Require Import ssreflect ssrfun ssrbool.
 
 Require Import Equations.Prop.Equations.
 
-From Coq Require Import String Ensembles Setoid.
+From Coq Require Import String Setoid.
 Require Import Coq.Program.Equality.
 Require Import Coq.Logic.Classical_Prop.
 From Coq.Logic Require Import FunctionalExtensionality Eqdep_dec.
@@ -26,7 +26,6 @@ Import extralibrary.
 Require Import MatchingLogic.Theories.Definedness_Syntax.
 Import Definedness_Syntax.Notations.
 Import MatchingLogic.Semantics.Notations.
-Import MatchingLogic.Syntax.BoundVarSugar.
 
 Section definedness.
   Context
@@ -38,49 +37,28 @@ Section definedness.
   Let sym (s : Symbols) : Pattern :=
     @patt_sym Σ (inj s).
 
-  Lemma definedness_model_application :
-    forall (M : Model) (ρ : Valuation),
-      M ⊨ᵀ theory ->
-      forall (m: Domain M),
-                 (app_ext (eval ρ (sym definedness)) {[m]}) = ⊤.
+  Lemma definedness_app_ext_not_empty : forall (M : Model),
+    M ⊨ᵀ theory ->
+      forall S, S ≠ ∅ ->
+        app_ext (sym_interp M (inj definedness)) S = ⊤.
   Proof.
     intros.
-    unfold app_ext.
-    rewrite -> set_eq_subseteq.
-    split.
-    { apply top_subseteq. }
-    rewrite -> elem_of_subseteq.
-    intros x _.
-    unfold theory in H.
     pose proof (H' := proj1 (satisfies_theory_iff_satisfies_named_axioms named_axioms M)).
     specialize (H' H AxDefinedness).
     simpl in H'.
     clear H. rename H' into H.
     unfold satisfies_model in H.
-    remember (update_evar_val ev_x m ρ) as ρ'.
-    specialize (H ρ').
-    rewrite -> set_eq_subseteq in H.
-    destruct H as [_ H].
-    rewrite -> elem_of_subseteq in H.
-    specialize (H x).
-    ospecialize* H.
-    { apply elem_of_top'. }
-    unfold patt_defined in H.
-    rewrite -> eval_app_simpl in H.
-    rewrite -> eval_sym_simpl in H.
-    unfold sym.
-    unfold p_x in H.
-    rewrite -> eval_free_evar_simpl in H.
-    rewrite -> Heqρ' in H.
-    unfold update_evar_val in H. simpl in H.
-    destruct (decide (ev_x = ev_x)).
-    2: { contradiction. }
-    unfold app_ext in H. unfold In in H.
-    destruct H as [m1 [m2 Hm1m2] ].
-    destruct Hm1m2. destruct H0.
-    inversion H0. clear H0. simpl in H2. subst.
-    exists m1. exists m2. split. 2: { split. 2: { apply H1. } constructor. }
-    rewrite -> eval_sym_simpl. apply H.
+    apply stdpp_ext.Not_Empty_Contains_Elements in H0 as [s H0].
+    unfold app_ext in *.
+    apply set_eq. split; intros. 1: set_solver.
+    specialize (H {| evar_valuation := fun _ => s;
+                       svar_valuation := fun _ => ∅;  |}).
+    unfold patt_defined in H. simp eval in H.
+    unfold app_ext in H.
+    apply propset_top_elem_of with (t := x) in H.
+    destruct H as [le [re [E1 [E2 E3] ] ] ].
+    unfold p_x in E2. simp eval in E2. cbn in E2.
+    do 2 eexists. split_and!. 1-2: eassumption. set_solver.
   Qed.
 
   Lemma definedness_not_empty_1 : forall (M : Model),
@@ -95,8 +73,7 @@ Section definedness.
     unfold patt_defined.
     rewrite -> eval_app_simpl.
 
-    pose proof (H'' := definedness_model_application M ρ H x).
-    unfold sym in H''.
+    pose proof definedness_app_ext_not_empty M H {[x]} ltac:(set_solver) as H''.
     rewrite -> set_eq_subseteq in H''.
     destruct H'' as [_ H''].
     assert (Hincl: {[x]} ⊆ (eval ρ ϕ) ).
@@ -520,10 +497,10 @@ Section definedness.
     { mlSimpl. apply T_predicate_equals. apply Htheory. }
     apply all_iff_morphism. intros m₁.
     remember ((fresh_evar
-          (patt_equal (nest_ex ϕ₁ $ BoundVarSugar.b0)
+          (patt_equal (nest_ex ϕ₁ ⋅ BoundVarSugar.b0)
              (ex ,
               (BoundVarSugar.b0
-                 and patt_in BoundVarSugar.b1 (nest_ex (nest_ex ϕ₂) $ BoundVarSugar.b0)))))) as x.
+                 and patt_in BoundVarSugar.b1 (nest_ex (nest_ex ϕ₂) ⋅ BoundVarSugar.b0)))))) as x.
     unfold evar_open.
     mlSimpl.
     rewrite equal_iff_interpr_same.
@@ -558,7 +535,7 @@ Section definedness.
     unfold evar_open, nest_ex.
     remember (fresh_evar
                 (patt_free_evar x
-                 ∈ml (nest_ex_aux 0 1 (nest_ex_aux 0 1 ϕ₂))^[evar:1↦patt_free_evar x] $ b0)) as y.
+                 ∈ml (nest_ex_aux 0 1 (nest_ex_aux 0 1 ϕ₂))^[evar:1↦patt_free_evar x] ⋅ b0)) as y.
     rewrite fuse_nest_ex_same.
     rewrite nest_ex_same_general. 1-2: cbn; lia.
     mlSimpl. rewrite nest_ex_same.
@@ -638,7 +615,6 @@ Section definedness.
     rewrite -> elem_of_subseteq.
     intros x _.
     intros.
-    unfold Ensembles.In.
     unfold app_ext.
     exists hashdef.
     rewrite Hhashdefsym.
@@ -788,7 +764,7 @@ Module equivalence_insufficient.
   Qed.
 
   Example equiv_not_eq :
-    forall ρ, @eval _ exampleModel ρ (ex , (patt_sym sym_f $ patt_free_evar "x"%string <---> b0)) = ⊤.
+    forall ρ, @eval _ exampleModel ρ (ex , (patt_sym sym_f ⋅ patt_free_evar "x"%string <---> b0)) = ⊤.
   Proof.
     intros ρ. unfold_leibniz.
     rewrite set_equiv_subseteq. split.
@@ -884,7 +860,6 @@ Module equivalence_insufficient.
   Qed.
   Close Scope ml_scope.
 End equivalence_insufficient.
-
 
 #[export]
 Hint Resolve T_predicate_defined : core.

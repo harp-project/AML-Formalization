@@ -1133,3 +1133,10 @@ Proof.
     apply Hadd; [set_solver|]. apply IHl; [auto | set_solver].
 Qed.
 
+
+Lemma propset_top_elem_of {A}:
+  forall S : propset A, S = ⊤ -> forall t, t ∈ S.
+Proof.
+  set_solver.
+Qed.
+

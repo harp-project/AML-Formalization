@@ -1,7 +1,6 @@
 From MatchingLogic Require Export Syntax
                                   IndexManipulation
                                   Semantics
-                                  ProofSystem
                                   StringSignature
                                   wftactics
                                   DerivedOperators_Syntax
@@ -15,5 +14,5 @@ Module Notations.
          MatchingLogic.DerivedOperators_Syntax.Notations
          MatchingLogic.ApplicationContext.Notations
          MatchingLogic.ProofInfo.Notations.
-  Export Syntax.BoundVarSugar.
+  Export Pattern.BoundVarSugar.
 End Notations.

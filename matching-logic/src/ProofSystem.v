@@ -41,7 +41,7 @@ Section ml_proof_system.
       theory ⊢H ((phi ---> (psi ---> xi)) ---> ((phi ---> psi) ---> (phi ---> xi)))
   | P3 (phi : Pattern) :
       well_formed phi ->
-      theory ⊢H (((phi ---> Bot) ---> Bot) ---> phi)
+      theory ⊢H (((phi ---> ⊥) ---> ⊥) ---> phi)
 
   (* Modus ponens *)
   | Modus_ponens (phi1 phi2 : Pattern) :
@@ -65,40 +65,40 @@ Section ml_proof_system.
   (* Propagation bottom *)
   | Prop_bott_left (phi : Pattern) :
       well_formed phi ->
-      theory ⊢H (patt_bott $ phi ---> patt_bott)
+      theory ⊢H (⊥ ⋅ phi ---> ⊥)
 
   | Prop_bott_right (phi : Pattern) :
       well_formed phi ->
-      theory ⊢H (phi $ patt_bott ---> patt_bott)
+      theory ⊢H (phi ⋅ ⊥ ---> ⊥)
 
   (* Propagation disjunction *)
   | Prop_disj_left (phi1 phi2 psi : Pattern) :
       well_formed phi1 -> well_formed phi2 -> well_formed psi ->
-      theory ⊢H (((phi1 or phi2) $ psi) ---> ((phi1 $ psi) or (phi2 $ psi)))
+      theory ⊢H (((phi1 or phi2) ⋅ psi) ---> ((phi1 ⋅ psi) or (phi2 ⋅ psi)))
 
   | Prop_disj_right (phi1 phi2 psi : Pattern) :
       well_formed phi1 -> well_formed phi2 -> well_formed psi ->
-      theory ⊢H ((psi $ (phi1 or phi2)) ---> ((psi $ phi1) or (psi $ phi2)))
+      theory ⊢H ((psi ⋅ (phi1 or phi2)) ---> ((psi ⋅ phi1) or (psi ⋅ phi2)))
 
   (* Propagation exist *)
   | Prop_ex_left (phi psi : Pattern) :
       well_formed (ex , phi) -> well_formed psi ->
-      theory ⊢H (((ex , phi) $ psi) ---> (ex , phi $ psi))
+      theory ⊢H (((ex , phi) ⋅ psi) ---> (ex , phi ⋅ psi))
 
   | Prop_ex_right (phi psi : Pattern) :
       well_formed (ex , phi) -> well_formed psi ->
-      theory ⊢H ((psi $ (ex , phi)) ---> (ex , psi $ phi))
+      theory ⊢H ((psi ⋅ (ex , phi)) ---> (ex , psi ⋅ phi))
 
   (* Framing *)
   | Framing_left (phi1 phi2 psi : Pattern) :
       well_formed psi ->
       theory ⊢H (phi1 ---> phi2) ->
-      theory ⊢H ((phi1 $ psi) ---> (phi2 $ psi))
+      theory ⊢H ((phi1 ⋅ psi) ---> (phi2 ⋅ psi))
 
   | Framing_right (phi1 phi2 psi : Pattern) :
       well_formed psi ->
       theory ⊢H (phi1 ---> phi2) ->
-      theory ⊢H ((psi $ phi1) ---> (psi $ phi2))
+      theory ⊢H ((psi ⋅ phi1) ---> (psi ⋅ phi2))
 
   (* Fixpoint reasoning *)
   (* Set Variable Substitution *)
@@ -143,6 +143,21 @@ Section ml_proof_system.
 
   Lemma cast_proof {Γ} {ϕ} {ψ} (e : ψ = ϕ) : ML_proof_system Γ ϕ -> ML_proof_system Γ ψ.
   Proof. intros H. rewrite <- e in H. exact H. Defined.
+
+  Theorem extend_theory (Γ Γ' : Theory) φ :
+    Γ ⊆ Γ' ->
+    Γ ⊢H φ ->
+    Γ' ⊢H φ.
+  Proof.
+    intros H IH. revert Γ' H. induction IH; intros; try now constructor.
+    * constructor. assumption. set_solver.
+    * eapply Modus_ponens; [apply IHIH1; assumption | apply IHIH2; assumption].
+    * apply Ex_gen; try assumption. now apply IHIH.
+    * apply Framing_left. assumption. now apply IHIH.
+    * apply Framing_right. assumption. now apply IHIH.
+    * apply Svar_subst; try assumption. now apply IHIH.
+    * apply Knaster_tarski; try assumption. now apply IHIH.
+  Defined.
 
 End ml_proof_system.
 

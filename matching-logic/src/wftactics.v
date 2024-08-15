@@ -475,11 +475,11 @@ lazymatch goal with
 end.
 
 Tactic Notation "mlSimpl" :=
-  repeat (rewrite mlSimpl'); try rewrite [increase_ex _ _]/=; try rewrite [increase_mu]/=.
+  repeat (rewrite mlSimpl'); try rewrite [increase_ex _ _]/=; try rewrite [increase_mu]/=; try_wfauto2.
 
 Tactic Notation "mlSimpl" "in" hyp(H) :=
-  repeat (rewrite mlSimpl' in H); try rewrite [increase_ex _ _]/= in H; try rewrite [increase_mu _ _]/= in H.
+  repeat (rewrite mlSimpl' in H); try rewrite [increase_ex _ _]/= in H; try rewrite [increase_mu _ _]/= in H; try_wfauto2.
 
-Tactic Notation "mlSortedSimpl" := simpl_sorted_quantification; try rewrite [increase_mu]/=.
-Tactic Notation "mlSortedSimpl" "in" hyp(H) := simpl_sorted_quantification H; try rewrite [increase_mu]/=.
+Tactic Notation "mlSortedSimpl" := simpl_sorted_quantification; try rewrite [increase_mu]/=; try_wfauto2.
+Tactic Notation "mlSortedSimpl" "in" hyp(H) := simpl_sorted_quantification_hyp H; try rewrite [increase_mu]/=; try_wfauto2.
 
