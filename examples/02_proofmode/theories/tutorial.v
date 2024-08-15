@@ -186,7 +186,7 @@ Example use_rewriteBy {Σ : Signature} {syntax : Definedness_Syntax.Syntax}
     well_formed ϕ₂ = true ->
     well_formed ϕ₃ = true ->
     well_formed ϕ₄ = true ->
-    Γ ⊢ (ϕ₁ ⋅ ϕ₄ =ml ϕ₂ ⋅ ϕ₄ ) ---> (ϕ₁ =ml ϕ₂) ---> ((ϕ₃ ⋅ ϕ₁ ⋅ ϕ₄) <---> (ϕ₃ ⋅ ϕ₂ ⋅ ϕ₄))
+    Γ ⊢ (ϕ₁ ⋅ ϕ₄ =ml ϕ₂ ⋅ ϕ₄ ) ---> (ϕ₁ =ml ϕ₂) ---> ((ϕ₃ ⋅ (ϕ₁ ⋅ ϕ₄)) <---> (ϕ₃ ⋅ (ϕ₂ ⋅ ϕ₄)))
 .
 Proof.
     intros wfϕ₁ wfϕ₂ wfϕ₃ wfϕ₄.
@@ -214,7 +214,7 @@ Example use_rewriteBy {Σ : Signature} {syntax : Definedness_Syntax.Syntax}
     well_formed ϕ₂ = true ->
     well_formed ϕ₃ = true ->
     well_formed ϕ₄ = true ->
-    Γ ⊢ (ϕ₁ ⋅ ϕ₄ =ml ϕ₂ ⋅ ϕ₄ ) ---> (ϕ₁ =ml ϕ₂) ---> ((ϕ₃ ⋅ ϕ₁ ⋅ ϕ₄) <---> (ϕ₃ ⋅ ϕ₂ ⋅ ϕ₄))
+    Γ ⊢ (ϕ₁ ⋅ ϕ₄ =ml ϕ₂ ⋅ ϕ₄ ) ---> (ϕ₁ =ml ϕ₂) ---> ((ϕ₃ ⋅ (ϕ₁ ⋅ ϕ₄)) <---> (ϕ₃ ⋅ (ϕ₂ ⋅ ϕ₄)))
 .
 Proof.
     intros HΓ.
