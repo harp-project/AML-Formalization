@@ -130,7 +130,7 @@ Section nat.
   Theorem peano_induction X :
     theory ⊢ patt_free_svar X ⊆ml 〚 Nat 〛 ---> 
     Zero ∈ml patt_free_svar X  --->
-    ( all Nat, (b0 ∈ml patt_free_svar X ---> Succ $ b0 ∈ml patt_free_svar X) ) --->
+    ( all Nat, (b0 ∈ml patt_free_svar X ---> Succ ⋅ b0 ∈ml patt_free_svar X) ) --->
     all Nat, b0 ∈ml patt_free_svar X.
   Proof.
 (*  toMLGoal.
@@ -169,7 +169,7 @@ Section nat.
   Theorem peano_induction_1 X :
     theory ⊢ patt_free_svar X ⊆ml 〚 Nat 〛 -> 
     theory ⊢ Zero ∈ml patt_free_svar X ->
-    theory ⊢ all Nat, ( b0 ∈ml patt_free_svar X ---> Succ $ b0 ∈ml patt_free_svar X ) -> 
+    theory ⊢ all Nat, ( b0 ∈ml patt_free_svar X ---> Succ ⋅ b0 ∈ml patt_free_svar X ) -> 
     theory ⊢ all Nat, b0 ∈ml patt_free_svar X.
   Proof.
     intros XN Z S.
@@ -232,9 +232,9 @@ Section nat.
       { wf_auto2. }
       { unfold theory. set_solver. }
 
-      remember (fresh_evar (b0 ∈ml (Succ $ patt_free_svar X ---> patt_free_svar X))) as x.
+      remember (fresh_evar (b0 ∈ml (Succ ⋅ patt_free_svar X ---> patt_free_svar X))) as x.
 
-      rewrite <- evar_quantify_evar_open with (phi := b0 ∈ml (Succ $ patt_free_svar X ---> patt_free_svar X)) (n := 0) (x := x).
+      rewrite <- evar_quantify_evar_open with (phi := b0 ∈ml (Succ ⋅ patt_free_svar X ---> patt_free_svar X)) (n := 0) (x := x).
       2:{
           subst x.
           eapply evar_is_fresh_in_richer'.
@@ -245,7 +245,7 @@ Section nat.
       apply universal_generalization;[apply pile_any|wf_auto2|].
       mlSimpl. unfold evar_open. simpl.
 
-      pose proof (Htmp := membership_imp theory x (Succ $ patt_free_svar X) (patt_free_svar X)).
+      pose proof (Htmp := membership_imp theory x (Succ ⋅ patt_free_svar X) (patt_free_svar X)).
       ospecialize* Htmp.
       { unfold theory. set_solver. }
       { wf_auto2. }
@@ -271,8 +271,8 @@ Section nat.
 
       fromMLGoal.
 
-      remember (fresh_evar (b0 ∈ml patt_free_svar X and patt_free_evar x ∈ml Succ $ b0)) as y.
-      rewrite <- evar_quantify_evar_open with (n := 0) (x := y) (phi := b0 ∈ml patt_free_svar X and patt_free_evar x ∈ml Succ $ b0).
+      remember (fresh_evar (b0 ∈ml patt_free_svar X and patt_free_evar x ∈ml Succ ⋅ b0)) as y.
+      rewrite <- evar_quantify_evar_open with (n := 0) (x := y) (phi := b0 ∈ml patt_free_svar X and patt_free_evar x ∈ml Succ ⋅ b0).
       2:{
           subst y. eapply evar_is_fresh_in_richer'.
           2: { apply set_evar_fresh_is_fresh'. }
@@ -296,7 +296,7 @@ Section nat.
       mlIntro "H".
       mlDestructAnd "H" as "ys" "H0".
 
-      pose proof (M := membership_imp_equal theory (patt_free_evar x) (Succ $ patt_free_evar y)).
+      pose proof (M := membership_imp_equal theory (patt_free_evar x) (Succ ⋅ patt_free_evar y)).
       ospecialize* M.
       { unfold theory. set_solver. }
       { reflexivity. }
@@ -309,7 +309,7 @@ Section nat.
       mlAdd M as "M". clear M.
       mlApplyMeta and_impl' in "M".
       mlApplyMeta and_impl' in "M".
-      mlAssert ("M0" : (patt_free_evar x =ml Succ $ patt_free_evar y)).
+      mlAssert ("M0" : (patt_free_evar x =ml Succ ⋅ patt_free_evar y)).
       { wf_auto2. }
       {
         mlApply "M". mlClear "M".
@@ -323,7 +323,7 @@ Section nat.
         + mlApplyMeta ex_sort_impl_ex;[|unfold theory; set_solver].
           mlAdd (use_nat_axiom AxFun2 theory ltac:(set_solver)) as "H". unfold axiom.
           unfold "all _ , _", nest_ex. simpl. fold Nat.
-          rewrite <- evar_quantify_evar_open with (x := y) (n := 0) (phi := b0 ∈ml 〚 Nat 〛 ---> (ex Nat , Succ $ b1 =ml b0)).
+          rewrite <- evar_quantify_evar_open with (x := y) (n := 0) (phi := b0 ∈ml 〚 Nat 〛 ---> (ex Nat , Succ ⋅ b1 =ml b0)).
           2: {
                subst y. eapply evar_is_fresh_in_richer'.
                2: apply set_evar_fresh_is_fresh'.
@@ -417,7 +417,7 @@ Section nat.
         --->
         
        ( all Nat, b0 ∈ml (ex Nat, b0 and Zero +ml b0 =ml b0) 
-         ---> Succ $ b0 ∈ml (ex Nat, b0 and Zero +ml b0 =ml b0) 
+         ---> Succ ⋅ b0 ∈ml (ex Nat, b0 and Zero +ml b0 =ml b0) 
        ) 
         --->
          
@@ -555,11 +555,11 @@ Section nat.
                 mlRewriteBy "ind" at 1.
                     
                 epose proof membership_monotone_functional Γ 
-                 ( (mu , Zero or Succ $ B0) ^ [mu , Zero or Succ $ B0] ) 
-                 (mu , Zero or Succ $ B0) (Zero) (AnyReasoning) ltac:(set_solver) ltac:(wf_auto2) 
+                 ( (mu , Zero or Succ ⋅ B0) ^ [mu , Zero or Succ ⋅ B0] ) 
+                 (mu , Zero or Succ ⋅ B0) (Zero) (AnyReasoning) ltac:(set_solver) ltac:(wf_auto2) 
                   ltac:(wf_auto2) ltac:(wf_auto2) _ .
                     
-                pose proof Pre_fixp Γ (Zero or Succ $ B0) ltac:(wf_auto2).
+                pose proof Pre_fixp Γ (Zero or Succ ⋅ B0) ltac:(wf_auto2).
                     
                 use AnyReasoning in H3.
                 specialize (H2 H3).
@@ -630,11 +630,11 @@ Section nat.
                    mlRewriteBy "ind" at 1.
                     
                    epose proof membership_monotone_functional Γ 
-                    ( (mu , Zero or Succ $ B0) ^ [mu , Zero or Succ $ B0] ) 
-                    (mu , Zero or Succ $ B0) (Zero) (AnyReasoning) ltac:(set_solver) ltac:(wf_auto2) 
+                    ( (mu , Zero or Succ ⋅ B0) ^ [mu , Zero or Succ ⋅ B0] ) 
+                    (mu , Zero or Succ ⋅ B0) (Zero) (AnyReasoning) ltac:(set_solver) ltac:(wf_auto2) 
                     ltac:(wf_auto2) ltac:(wf_auto2) _ .
                     
-                   pose proof Pre_fixp Γ (Zero or Succ $ B0) ltac:(wf_auto2).
+                   pose proof Pre_fixp Γ (Zero or Succ ⋅ B0) ltac:(wf_auto2).
                     
                    use AnyReasoning in H5.
                    specialize (H4 H5).
@@ -683,7 +683,7 @@ same chain of thoughts as 1st one for totality.
 
       
     mlAssert ( "H1": (  all Nat, b0 ∈ml (ex Nat, b0 and Zero +ml b0 =ml b0) 
-                          ---> Succ $ b0 ∈ml (ex Nat, b0 and Zero +ml b0 =ml b0) 
+                          ---> Succ ⋅ b0 ∈ml (ex Nat, b0 and Zero +ml b0 =ml b0) 
                      ) ).
     1:wf_auto2.
     1:{ 
@@ -703,7 +703,7 @@ same chain of thoughts as 1st one for totality.
         use AnyReasoning in H0.
         mlSimpl in H0. simpl in H0. case_match. 2: congruence.
       
-        mlAssert ( "P" : ( is_functional ( Succ $ patt_free_evar x))).
+        mlAssert ( "P" : ( is_functional ( Succ ⋅ patt_free_evar x))).
         1: wf_auto2.
         1:{ 
             unfold is_functional.
@@ -728,8 +728,8 @@ same chain of thoughts as 1st one for totality.
         mlApply "H3". mlClear "H3".
        
         pose proof exists_functional_subst 
-         ( (Succ $ patt_free_evar x) ∈ml (b0 ∈ml 〚 Nat 〛 and (b0 and Zero +ml b0 =ml b0)))
-         (Succ $ patt_free_evar x) Γ.
+         ( (Succ ⋅ patt_free_evar x) ∈ml (b0 ∈ml 〚 Nat 〛 and (b0 and Zero +ml b0 =ml b0)))
+         (Succ ⋅ patt_free_evar x) Γ.
        
         mlApplyMeta H0.
         2-3: wf_auto2.
@@ -750,9 +750,9 @@ same chain of thoughts as 1st one for totality.
          mlClear "0". 
       
          pose proof membership_and_2_functional Γ 
-          (Succ $ patt_free_evar x ∈ml 〚 Nat 〛)
-          (Succ $ patt_free_evar x and Zero +ml (Succ $ patt_free_evar x) =ml Succ $ patt_free_evar x)
-          (Succ $ patt_free_evar x)
+          (Succ ⋅ patt_free_evar x ∈ml 〚 Nat 〛)
+          (Succ ⋅ patt_free_evar x and Zero +ml (Succ ⋅ patt_free_evar x) =ml Succ ⋅ patt_free_evar x)
+          (Succ ⋅ patt_free_evar x)
           ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)  ltac:(set_solver).
          
          mlApplyMeta H0. clear H0.
@@ -761,7 +761,7 @@ same chain of thoughts as 1st one for totality.
           1: mlAssumption.
          
           mlSplitAnd.
-          - assert ( P2: ( Γ ⊢ patt_free_evar x ∈ml 〚 Nat 〛 ---> Succ $ patt_free_evar x  ∈ml 〚 Nat 〛) ).
+          - assert ( P2: ( Γ ⊢ patt_free_evar x ∈ml 〚 Nat 〛 ---> Succ ⋅ patt_free_evar x  ∈ml 〚 Nat 〛) ).
                 1:{ 
                     mlIntro "H".
                     pose proof use_nat_axiom AxFun2 Γ H. simpl in H0.
@@ -776,14 +776,14 @@ same chain of thoughts as 1st one for totality.
                     mlAssumption.
                   }
                   
-            mlAssert ( "P1" : (  (Succ $ patt_free_evar x)  ∈ml 〚 Nat 〛 ) ).
+            mlAssert ( "P1" : (  (Succ ⋅ patt_free_evar x)  ∈ml 〚 Nat 〛 ) ).
             1:{ wf_auto2. }
             1:{      
                 mlApplyMeta P2.
                 mlAssumption.
               }
             epose proof membership_symbol_ceil_aux_0_functional Γ 
-             (〚 Nat 〛) (Succ $ patt_free_evar x) (Succ $ patt_free_evar x) ltac:(wf_auto2)
+             (〚 Nat 〛) (Succ ⋅ patt_free_evar x) (Succ ⋅ patt_free_evar x) ltac:(wf_auto2)
               ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) .
             
             mlApplyMeta H0.
@@ -793,9 +793,9 @@ same chain of thoughts as 1st one for totality.
             1-2: mlAssumption.
             
           - pose proof membership_and_2_functional Γ 
-             (Succ $ patt_free_evar x )
-             (Zero +ml (Succ $ patt_free_evar x) =ml Succ $ patt_free_evar x)
-             (Succ $ patt_free_evar x)
+             (Succ ⋅ patt_free_evar x )
+             (Zero +ml (Succ ⋅ patt_free_evar x) =ml Succ ⋅ patt_free_evar x)
+             (Succ ⋅ patt_free_evar x)
              ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(set_solver) .
             
             mlApplyMeta H0. clear H0.
@@ -810,7 +810,7 @@ same chain of thoughts as 1st one for totality.
                 set_solver. 
               }
               
-            mlAssert ( "P1" : ( Zero +ml (Succ $ patt_free_evar x) =ml Succ $ patt_free_evar x )).
+            mlAssert ( "P1" : ( Zero +ml (Succ ⋅ patt_free_evar x) =ml Succ ⋅ patt_free_evar x )).
             1: wf_auto2.
                1:{
                    pose proof use_nat_axiom AxDefAdd Γ H.
@@ -850,11 +850,11 @@ same chain of thoughts as 1st one for totality.
                    mlRewriteBy "ind" at 1.
                    
                    epose proof membership_monotone_functional Γ 
-                    ( (mu , Zero or Succ $ B0) ^ [mu , Zero or Succ $ B0] ) 
-                    (mu , Zero or Succ $ B0) (Zero) (AnyReasoning) ltac:(set_solver) ltac:(wf_auto2) 
+                    ( (mu , Zero or Succ ⋅ B0) ^ [mu , Zero or Succ ⋅ B0] ) 
+                    (mu , Zero or Succ ⋅ B0) (Zero) (AnyReasoning) ltac:(set_solver) ltac:(wf_auto2) 
                     ltac:(wf_auto2) ltac:(wf_auto2) _ .
                     
-                   pose proof Pre_fixp Γ (Zero or Succ $ B0) ltac:(wf_auto2).
+                   pose proof Pre_fixp Γ (Zero or Succ ⋅ B0) ltac:(wf_auto2).
                     
                    use AnyReasoning in H2.
                    specialize (H0 H2).
@@ -877,8 +877,8 @@ same chain of thoughts as 1st one for totality.
                  
             mlRewriteBy "P1" at 1.
             epose proof proved_membership_functional Γ
-             (Succ $ patt_free_evar x =ml Succ $ patt_free_evar x)
-             ( Succ $ patt_free_evar x ) ltac:(set_solver) ltac:(wf_auto2) ltac:(wf_auto2). 
+             (Succ ⋅ patt_free_evar x =ml Succ ⋅ patt_free_evar x)
+             ( Succ ⋅ patt_free_evar x ) ltac:(set_solver) ltac:(wf_auto2) ltac:(wf_auto2). 
             mlApplyMeta H0.
              
             mlAssumption.

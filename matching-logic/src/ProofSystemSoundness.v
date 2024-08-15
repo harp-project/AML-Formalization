@@ -28,7 +28,7 @@ Section soundness.
         axiom ∈ theory
         → ∀ (ρ : @Valuation Σ m),
           eval ρ axiom = ⊤) ->
-    eval ρ ((ex , phi) $ psi ---> ex , phi $ psi)%ml = ⊤.
+    eval ρ ((ex , phi) ⋅ psi ---> ex , phi ⋅ psi)%ml = ⊤.
   Proof.
     intros Hwf H H0 Hv.
     rewrite -> eval_imp_simpl.
@@ -99,7 +99,7 @@ Section soundness.
         axiom ∈ theory
         → ∀ (ρ : @Valuation Σ m),
           eval ρ axiom = ⊤) ->
-    eval ρ (psi $ (ex , phi) ---> ex , psi $ phi)%ml = ⊤.
+    eval ρ (psi ⋅ (ex , phi) ---> ex , psi ⋅ phi)%ml = ⊤.
   Proof.
     intros Hwf H H0 Hv.
     rewrite -> eval_imp_simpl.
@@ -646,14 +646,14 @@ Proof.
                eval
                  ρ
                  (subst_ctx C1 (patt_free_evar x and phi)
-                            and subst_ctx C2 (patt_free_evar x and (phi ---> Bot)))
+                            and subst_ctx C2 (patt_free_evar x and (phi ---> ⊥)))
                = ∅).
     { intros ρ.
       rewrite -> eval_and_simpl.
       destruct (classic (evar_valuation ρ x ∈ eval ρ phi)).
       - rewrite [(eval
                     ρ
-                    (subst_ctx C2 (patt_free_evar x and (phi ---> Bot))))]
+                    (subst_ctx C2 (patt_free_evar x and (phi ---> ⊥))))]
                 propagate_context_empty.
         2: { unfold Semantics.Empty. rewrite intersection_empty_r_L. reflexivity. }
         rewrite eval_and_simpl.

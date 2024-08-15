@@ -185,28 +185,28 @@ Lemma P4m  {Σ : Signature}(Γ : Theory) (A B : Pattern) :
   using BasicReasoning.
 Proof.
   intros WFA WFB.
-  pose (H1 := P2 Γ A B Bot ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
+  pose (H1 := P2 Γ A B ⊥ ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
   assert (well_formed_closed_ex_aux A 0 = true).
   {
     wf_auto2.
   }
   (*
-  unshelve (epose proof (H2 := (P2 Γ (A ---> B ---> Bot) (A ---> B) (A ---> Bot) _ _ _ ))).
+  unshelve (epose proof (H2 := (P2 Γ (A ---> B ---> ⊥) (A ---> B) (A ---> ⊥) _ _ _ ))).
   {
 (*    compositeSimplifyAllWfHyps.
     wf_auto2_composite_step. *)
     wf_auto2.
   }
   *)
-  pose proof (H2 := (P2 Γ (A ---> B ---> Bot) (A ---> B) (A ---> Bot) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2))).
+  pose proof (H2 := (P2 Γ (A ---> B ---> ⊥) (A ---> B) (A ---> ⊥) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2))).
   pose proof (H3 := MP H1 H2).
-  pose proof (H4 := (P1 Γ (((A ---> B ---> Bot) ---> A ---> B) ---> (A ---> B ---> Bot) ---> A ---> Bot)
+  pose proof (H4 := (P1 Γ (((A ---> B ---> ⊥) ---> A ---> B) ---> (A ---> B ---> ⊥) ---> A ---> ⊥)
     (A ---> B) ltac:(wf_auto2) ltac:(wf_auto2))).
   pose proof (H5 := MP H3 H4).
   
   (*
   (* This one is just for performance debugging purposes *)
-  unshelve (epose proof (H6 := (P2 Γ (A ---> B) ((A ---> B ---> Bot) ---> A ---> B) ((A ---> B ---> Bot) ---> A ---> Bot) _ _ _))).
+  unshelve (epose proof (H6 := (P2 Γ (A ---> B) ((A ---> B ---> ⊥) ---> A ---> B) ((A ---> B ---> ⊥) ---> A ---> ⊥) _ _ _))).
   {
     wf_auto2_step.
     wf_auto2_step.
@@ -219,10 +219,10 @@ Proof.
   *)
 
   
-  pose proof (H6 := (P2 Γ (A ---> B) ((A ---> B ---> Bot) ---> A ---> B) ((A ---> B ---> Bot) ---> A ---> Bot)
+  pose proof (H6 := (P2 Γ (A ---> B) ((A ---> B ---> ⊥) ---> A ---> B) ((A ---> B ---> ⊥) ---> A ---> ⊥)
     ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2))).
   pose proof (H7 := MP H5 H6).
-  pose proof (H8 := (P1 Γ (A ---> B) (A ---> B ---> Bot) ltac:(wf_auto2) ltac:(wf_auto2))).
+  pose proof (H8 := (P1 Γ (A ---> B) (A ---> B ---> ⊥) ltac:(wf_auto2) ltac:(wf_auto2))).
   pose proof (H9 := MP H8 H7).
   exact H9.
 Defined.
@@ -362,15 +362,15 @@ Lemma P4 {Σ : Signature} (Γ : Theory) (A B : Pattern)  :
 Proof.
   intros WFA WFB.
   pose proof (m := P3 Γ A ltac:(wf_auto2)).
-  pose proof (m0 := P1 Γ (((A ---> Bot) ---> Bot) ---> A) B ltac:(wf_auto2) ltac:(wf_auto2)).
-  pose proof (m1 := P2 Γ B ((A ---> Bot) ---> Bot) A ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
+  pose proof (m0 := P1 Γ (((A ---> ⊥) ---> ⊥) ---> A) B ltac:(wf_auto2) ltac:(wf_auto2)).
+  pose proof (m1 := P2 Γ B ((A ---> ⊥) ---> ⊥) A ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
   pose proof (m2 := MP m m0).
   pose proof (m3 := MP m2 m1).
-  pose proof (m4 := P1 Γ ((B ---> (A ---> Bot) ---> Bot) ---> B ---> A) ((A ---> Bot) ---> (B ---> Bot)) ltac:(wf_auto2) ltac:(wf_auto2) ).
+  pose proof (m4 := P1 Γ ((B ---> (A ---> ⊥) ---> ⊥) ---> B ---> A) ((A ---> ⊥) ---> (B ---> ⊥)) ltac:(wf_auto2) ltac:(wf_auto2) ).
   pose proof (m5 := MP m3 m4).
-  pose proof (m6 := P2 Γ ((A ---> Bot) ---> (B ---> Bot)) (B ---> (A ---> Bot) ---> Bot) (B ---> A) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
+  pose proof (m6 := P2 Γ ((A ---> ⊥) ---> (B ---> ⊥)) (B ---> (A ---> ⊥) ---> ⊥) (B ---> A) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
   pose proof (m7 := MP m5 m6).
-  pose proof (m8 := reorder Γ (A ---> Bot) (B) Bot ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
+  pose proof (m8 := reorder Γ (A ---> ⊥) (B) ⊥ ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
   apply (MP m8 m7).
 Defined.
 
@@ -382,7 +382,7 @@ Lemma conj_intro {Σ : Signature} (Γ : Theory) (A B : Pattern) :
 Proof.
   intros WFA WFB.
   pose proof (tB := (A_impl_A Γ B ltac:(wf_auto2))).
-  unshelve (epose proof (t1 := MP (P2 Γ (!(!A) ---> !B) A Bot ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)) (P1 _ _ B _ _))); try_wfauto2.
+  unshelve (epose proof (t1 := MP (P2 Γ (!(!A) ---> !B) A ⊥ ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)) (P1 _ _ B _ _))); try_wfauto2.
   unshelve (epose proof (t2 := MP (reorder_meta _ _ _ (P4 Γ (!A) B ltac:(wf_auto2) ltac:(wf_auto2))) (P1 _ _ B _ _))); try_wfauto2.
   unshelve (epose proof (t3'' := MP (P1 Γ A (!(!A) ---> !B) _ _) (P1 _ _ B _ _))); try_wfauto2.
   unshelve (epose proof (t4 := MP tB (MP t2 (P2 Γ B B _ _ _ _)))); try_wfauto2.
@@ -460,7 +460,7 @@ Defined.
 
 Lemma bot_elim {Σ : Signature} (Γ : Theory) (A : Pattern) :
   well_formed A ->
-  Γ ⊢i (Bot ---> A)
+  Γ ⊢i (⊥ ---> A)
   using BasicReasoning.
 Proof.
   intros WFA.
@@ -468,11 +468,11 @@ Proof.
   - eapply MP.
     + eapply MP.
       * eapply MP.
-        -- eapply (P1 _ Bot Bot _ _).
-        -- eapply (P2 _ Bot Bot Bot _ _ _).
-      * eapply (P4 _ Bot Bot _ _).
-    + eapply (P1 _ (Bot ---> Bot) (A ---> Bot) _ _).
-  - eapply (P4 _ A Bot _ _).
+        -- eapply (P1 _ ⊥ ⊥ _ _).
+        -- eapply (P2 _ ⊥ ⊥ ⊥ _ _ _).
+      * eapply (P4 _ ⊥ ⊥ _ _).
+    + eapply (P1 _ (⊥ ---> ⊥) (A ---> ⊥) _ _).
+  - eapply (P4 _ A ⊥ _ _).
     Unshelve.
     all: wf_auto2.
 Defined.
@@ -698,8 +698,8 @@ Defined.
 Lemma exclusion {Σ : Signature} (G : Theory) (A : Pattern) (i : ProofInfo) :
   well_formed A ->
   G ⊢i A using i ->
-  G ⊢i (A ---> Bot) using i ->
-  G ⊢i Bot using i.
+  G ⊢i (A ---> ⊥) using i ->
+  G ⊢i ⊥ using i.
 Proof.
   intros WFA H H0.
   eapply MP.
@@ -1542,7 +1542,7 @@ Defined.
     {pile : ProofInfoLe ((ExGen := ∅, SVSubst := ∅, KT := false, AKT := false)) i}
     :
     Γ ⊢i ϕ₁ ---> ϕ₂ using i ->
-    Γ ⊢i ϕ₁ $ ψ ---> ϕ₂ $ ψ using i.
+    Γ ⊢i ϕ₁ ⋅ ψ ---> ϕ₂ ⋅ ψ using i.
   Proof.
     intros [pf Hpf].
     unshelve (eexists).
@@ -1574,7 +1574,7 @@ Defined.
     {pile : ProofInfoLe ((ExGen := ∅, SVSubst := ∅, KT := false, AKT := false)) i}
     :
     Γ ⊢i ϕ₁ ---> ϕ₂ using i ->
-    Γ ⊢i ψ $ ϕ₁ ---> ψ $ ϕ₂ using i.
+    Γ ⊢i ψ ⋅ ϕ₁ ---> ψ ⋅ ϕ₂ using i.
   Proof.
     intros [pf Hpf].
     unshelve (eexists).

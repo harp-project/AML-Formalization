@@ -115,14 +115,14 @@ Section Sorts.
   Definition sorts_app_interp (m1 m2 : sorts_carrier)
     : propset sorts_carrier :=
   match m1, m2 with
-  | inr (), inr ()       => ∅ (* inh $ inh *)
-  | inr (), inl (inr ()) => ∅ (* inh $ def *)
-  | inr (), inl (inl x)  =>   (* inh $ x *)
+  | inr (), inr ()       => ∅ (* inh ⋅ inh *)
+  | inr (), inl (inr ()) => ∅ (* inh ⋅ def *)
+  | inr (), inl (inl x)  =>   (* inh ⋅ x *)
         (inl ∘ inl) <$> (sort_interp x)
-  | inl (inr _), inr _   => ⊤ (* ⌈ ⌉ $ inh <- Notion of definedness has to be extended *)
-  | inl (inr _), inl _   => ⊤ (* ⌈ ⌉ $ x <- Notion of definedness has to be extended *)
-  | inl (inl _), inr _   => ∅ (* x $ inh *)
-  | inl x1, inl x2       =>   (* x $ y*)
+  | inl (inr _), inr _   => ⊤ (* ⌈ ⌉ ⋅ inh <- Notion of definedness has to be extended *)
+  | inl (inr _), inl _   => ⊤ (* ⌈ ⌉ ⋅ x <- Notion of definedness has to be extended *)
+  | inl (inl _), inr _   => ∅ (* x ⋅ inh *)
+  | inl x1, inl x2       =>   (* x ⋅ y*)
         inl <$> app_interp DefinednessModel x1 x2
   end.
 
@@ -1165,7 +1165,7 @@ Section Nat.
         mlSimpl. cbn.
         eval_simpl; auto. 1: apply indec_nat.
         remember (fresh_evar _) as X.
-        remember (fresh_evar (Succ $ patt_free_evar X =ml b0)) as Y.
+        remember (fresh_evar (Succ ⋅ patt_free_evar X =ml b0)) as Y.
         unfold Minterp_inhabitant in *.
         clear H. eval_simpl_in e.
         unfold app_ext in *.
@@ -1178,7 +1178,7 @@ Section Nat.
         assert (exists n, c = natVal n) by set_solver.
         assert (X <> Y) as HXY. {
           subst Y. clear.
-          unfold fresh_evar. pose proof (X_eq_evar_fresh_impl_X_notin_S X (free_evars (Succ $ patt_free_evar X =ml b0))).
+          unfold fresh_evar. pose proof (X_eq_evar_fresh_impl_X_notin_S X (free_evars (Succ ⋅ patt_free_evar X =ml b0))).
           set_solver.
         }
         clear HeqX HeqY.
@@ -1247,7 +1247,7 @@ Section Nat.
         clear e. subst. remember (fresh_evar _) as y.
         assert (x <> y). {
           subst y. clear.
-          unfold fresh_evar. pose proof (X_eq_evar_fresh_impl_X_notin_S x (free_evars (Succ $ patt_free_evar x =ml Succ $ b0 ---> patt_free_evar x =ml b0))).
+          unfold fresh_evar. pose proof (X_eq_evar_fresh_impl_X_notin_S x (free_evars (Succ ⋅ patt_free_evar x =ml Succ ⋅ b0 ---> patt_free_evar x =ml b0))).
           set_solver.
         }
         clear Heqy. mlSimpl. cbn. unfold Succ.
@@ -1479,7 +1479,7 @@ Section Nat.
         remember (fresh_evar _) as y.
         assert (x <> y). {
           subst y. clear.
-          pose proof (X_eq_evar_fresh_impl_X_notin_S x (free_evars (mlAddNat b0 (Succ $ patt_free_evar x) =ml Succ $ mlAddNat b0 (patt_free_evar x)))).
+          pose proof (X_eq_evar_fresh_impl_X_notin_S x (free_evars (mlAddNat b0 (Succ ⋅ patt_free_evar x) =ml Succ ⋅ mlAddNat b0 (patt_free_evar x)))).
           set_solver.
         }
         clear Heqy.

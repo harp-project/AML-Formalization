@@ -64,7 +64,7 @@ Section nat_syntax.
   Definition AddNat := patt_sym (inj sAddNat).
   
   Definition mlAddNat (φ1 φ2 : Pattern) : Pattern :=
-    (AddNat $ φ1) $ φ2 .
+    AddNat ⋅ φ1 ⋅ φ2 .
 
 End nat_syntax.
 
@@ -117,10 +117,10 @@ Section axioms.
   Definition axiom (name : AxiomName) : Pattern :=
     match name with
     | AxFun1 => ex Nat , Zero =ml b0
-    | AxFun2 => all Nat, ex Nat, Succ $ b1 =ml b0
-    | AxNoConfusion1 => all Nat, !(Zero =ml Succ $ b0)
-    | AxNoConfusion2 => all Nat, all Nat, (Succ $ b1 =ml Succ $ b0 ---> b1 =ml b0)
-    | AxInductiveDomain => 〚 Nat 〛 =ml mu , Zero or Succ $ B0
+    | AxFun2 => all Nat, ex Nat, Succ ⋅ b1 =ml b0
+    | AxNoConfusion1 => all Nat, !(Zero =ml Succ ⋅ b0)
+    | AxNoConfusion2 => all Nat, all Nat, (Succ ⋅ b1 =ml Succ ⋅ b0 ---> b1 =ml b0)
+    | AxInductiveDomain => 〚 Nat 〛 =ml mu , Zero or Succ ⋅ B0
     (* extend to support addition operator*)
     | AxFunAdd =>
       all Nat, all Nat, ex Nat, b1 +ml b2 =ml b0
@@ -129,7 +129,7 @@ Section axioms.
       all Nat, b0 +ml Zero =ml b0
 
     | AxDefAdd =>
-      all Nat, all Nat, b0 +ml (Succ $ b1)  =ml Succ $ (b0 +ml b1)   
+      all Nat, all Nat, b0 +ml (Succ ⋅ b1)  =ml Succ ⋅ (b0 +ml b1)   
     end.
 
   Program Definition named_axioms : NamedAxioms :=

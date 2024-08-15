@@ -39,8 +39,8 @@ end.
 (** Low-level proof, using only the proof system *)
 Lemma ex2_low {Σ : Signature} (A B C D : Pattern) (Γ : Theory) :
   well_formed (A ---> B ---> C ---> D) = true ->
-  Γ ⊢ ((B $ C) <---> D) ->
-  Γ ⊢ ((A $ (B $ C)) ---> (A $ D)).
+  Γ ⊢ ((B ⋅ C) <---> D) ->
+  Γ ⊢ ((A ⋅ (B ⋅ C)) ---> (A ⋅ D)).
 Proof.
   intros Hwf H.
   apply pf_iff_proj1 in H.
@@ -56,13 +56,13 @@ Defined.
 (** Low-level proof, using the congruence lemma *)
 Lemma ex2_low2 {Σ : Signature} (A B C D : Pattern) (Γ : Theory) :
   well_formed (A ---> B ---> C ---> D) = true ->
-  Γ ⊢ ((B $ C) <---> D) ->
-  Γ ⊢ ((A $ (B $ C)) ---> (A $ D)).
+  Γ ⊢ ((B ⋅ C) <---> D) ->
+  Γ ⊢ ((A ⋅ (B ⋅ C)) ---> (A ⋅ D)).
 Proof.
   intros Hwf H.
-  remember (fresh_evar (A $ B $ C)) as x.
+  remember (fresh_evar (A ⋅ B ⋅ C)) as x.
   epose proof (prf_equiv_congruence _ _ _
-                   {| pcPattern := A $ patt_free_evar x; pcEvar := x |}
+                   {| pcPattern := A ⋅ patt_free_evar x; pcEvar := x |}
                     _ _ _ _ _ H).
   cbn in H0. destruct decide. 2: congruence.
   rewrite free_evar_subst_no_occurrence in H0. shelve.
@@ -82,13 +82,13 @@ Defined.
     the congruence lemma *)
 Lemma ex2_low3 {Σ : Signature} (A B C D : Pattern) (Γ : Theory) :
   well_formed (A ---> B ---> C ---> D) = true ->
-  Γ ⊢ ((B $ C) <---> D) ->
-  Γ ⊢ ((A $ (B $ C)) ---> (A $ D)).
+  Γ ⊢ ((B ⋅ C) <---> D) ->
+  Γ ⊢ ((A ⋅ (B ⋅ C)) ---> (A ⋅ D)).
 Proof.
   intros Hwf H.
-  remember (fresh_evar (A $ B $ C $ D)) as x.
+  remember (fresh_evar (A ⋅ B ⋅ C ⋅ D)) as x.
   epose proof (prf_equiv_congruence_iter _ _ _
-                   {| pcPattern := A $ patt_free_evar x ---> A $ D; pcEvar := x |}
+                   {| pcPattern := A ⋅ patt_free_evar x ---> A ⋅ D; pcEvar := x |}
                     [] _ _ _ _ _ _ H).
   cbn in H0. destruct decide. 2: congruence.
   repeat rewrite free_evar_subst_no_occurrence in H0. 1-4: shelve.
@@ -102,14 +102,14 @@ Defined.
 
 Lemma ex2_low4 {Σ : Signature} (A B C D : Pattern) (Γ : Theory) :
   well_formed (A ---> B ---> C ---> D) = true ->
-  Γ ⊢ ((B $ C) <---> D) ->
-  Γ ⊢ ((A $ (B $ C)) ---> (A $ D)).
+  Γ ⊢ ((B ⋅ C) <---> D) ->
+  Γ ⊢ ((A ⋅ (B ⋅ C)) ---> (A ⋅ D)).
 Proof.
   intros Hwf H.
-  remember (fresh_evar (A $ B $ C $ D)) as x.
+  remember (fresh_evar (A ⋅ B ⋅ C ⋅ D)) as x.
   toMLGoal. wf_auto2.
   epose proof (MLGoal_rewriteIff _ _ _
-                   {| pcPattern := A $ patt_free_evar x ---> A $ D; pcEvar := x |}
+                   {| pcPattern := A ⋅ patt_free_evar x ---> A ⋅ D; pcEvar := x |}
                     [] _ _ H) as H0.
   cbn in H0. destruct decide. 2: congruence.
   repeat rewrite free_evar_subst_no_occurrence in H0. 1-4: shelve.
@@ -130,8 +130,8 @@ Open Scope ml_scope.
 (** Proof using proof mode *)
 Lemma ex2_pm {Σ : Signature} (A B C D : Pattern) (Γ : Theory) :
   well_formed (A ---> B ---> C ---> D) = true ->
-  Γ ⊢ ((B $ C) <---> D) ->
-  Γ ⊢ ((A $ (B $ C)) ---> (A $ D))
+  Γ ⊢ ((B ⋅ C) <---> D) ->
+  Γ ⊢ ((A ⋅ (B ⋅ C)) ---> (A ⋅ D))
 .
 Proof.
   intros Hwf H.
@@ -153,8 +153,8 @@ Qed.
 
 Lemma ex2_pm2 {Σ : Signature} (A B C D : Pattern) (Γ : Theory) :
   well_formed (A ---> B ---> C ---> D) = true ->
-  Γ ⊢ ((B $ C) <---> D) ->
-  Γ ⊢ ((A $ (B $ C)) ---> (A $ D))
+  Γ ⊢ ((B ⋅ C) <---> D) ->
+  Γ ⊢ ((A ⋅ (B ⋅ C)) ---> (A ⋅ D))
 .
 Proof.
   intros Hwf H.
@@ -228,10 +228,10 @@ Section compute.
     Search derives_using patt_exists  patt_defined.
     Search patt_defined patt_total.
     Search patt_imp patt_and. (* 
-    pose proof (nimpl_eq_and theory (patt_sym Succ $ patt_sym Zero) b0).
+    pose proof (nimpl_eq_and theory (patt_sym Succ ⋅ patt_sym Zero) b0).
      at 1.
     Search derives_using patt_exists. *)
-    eapply MP. instantiate (1 := (ex , patt_sym Succ $ patt_sym Zero =ml b0) ^ [X]).
+    eapply MP. instantiate (1 := (ex , patt_sym Succ ⋅ patt_sym Zero =ml b0) ^ [X]).
     2: gapply Ex_quan.
     2-3: shelve.
     unfold instantiate. mlSimpl. simpl.
@@ -240,7 +240,7 @@ Section compute.
     Search patt_free_evar derives_using.
     unfold patt_equal, patt_total, patt_iff, patt_and.
     Search patt_defined patt_or.
-    remember (@patt_sym signature Succ $ @patt_sym signature Zero) as A.
+    remember (@patt_sym signature Succ ⋅ @patt_sym signature Zero) as A.
     epose proof (nimpl_eq_and theory A X _ _).
     apply useAnyReasoning in H.
     epose proof (not_not_eq theory (! (A ---> X) or ! (X ---> A)) _).
@@ -254,7 +254,7 @@ Section compute.
   Definition proof2_pm2 : nat := proof_size_info (ex2_pm ∅ A B ltac:(wf_auto2) ltac:(wf_auto2)). *)
 
   Lemma premise :
-    ∅ ⊢ Y $ Z <---> Y $ Z.
+    ∅ ⊢ Y ⋅ Z <---> Y ⋅ Z.
   Proof.
     gapply pf_iff_equiv_refl.
     apply pile_any.
@@ -262,13 +262,13 @@ Section compute.
   Defined.
 
 
-  Definition proof2_low := ex2_low X Y Z (Y $ Z) ∅ ltac:(wf_auto2) premise.
-  Definition proof2_pm := ex2_low2 X Y Z (Y $ Z) ∅ ltac:(wf_auto2) premise.
-  Definition proof2_pm2 := ex2_pm X Y Z (Y $ Z) ∅ ltac:(wf_auto2) premise.
-  Definition proof2_pm3 := ex2_pm2 X Y Z (Y $ Z) ∅ ltac:(wf_auto2) premise.
+  Definition proof2_low := ex2_low X Y Z (Y ⋅ Z) ∅ ltac:(wf_auto2) premise.
+  Definition proof2_pm := ex2_low2 X Y Z (Y ⋅ Z) ∅ ltac:(wf_auto2) premise.
+  Definition proof2_pm2 := ex2_pm X Y Z (Y ⋅ Z) ∅ ltac:(wf_auto2) premise.
+  Definition proof2_pm3 := ex2_pm2 X Y Z (Y ⋅ Z) ∅ ltac:(wf_auto2) premise.
 
-  Definition proof2_low3 := ex2_low3 X Y Z (Y $ Z) ∅ ltac:(wf_auto2) premise.
-  Definition proof2_low4 := ex2_low4 X Y Z (Y $ Z) ∅ ltac:(wf_auto2) premise.
+  Definition proof2_low3 := ex2_low3 X Y Z (Y ⋅ Z) ∅ ltac:(wf_auto2) premise.
+  Definition proof2_low4 := ex2_low4 X Y Z (Y ⋅ Z) ∅ ltac:(wf_auto2) premise.
 
 (* 
   Compute proof_size_info (ex2_low ∅ A B ltac:(wf_auto2) ltac:(wf_auto2)).

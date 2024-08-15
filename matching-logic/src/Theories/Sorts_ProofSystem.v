@@ -49,7 +49,7 @@ Local Lemma simplTest
   Γ ⊢ ((all ψ , φ) ---> ex ψ ,  φ)^[[evar:x↦τ]].
 Proof.
   intros. mlSimpl. mlSortedSimpl. mlSortedSimpl. mlSimpl.
-  remember (fresh_evar (ψ $ φ $ τ)) as y.
+  remember (fresh_evar (ψ ⋅ φ ⋅ τ)) as y.
   mlIntro.
   mlSpecialize "0" with x.
   mlExists x.

@@ -27,7 +27,7 @@ Lemma ex1_low : forall {Σ : Signature} (Γ : Theory) (A B : Pattern),
 Proof.
   intros Σ Γ A B WFA WFB.
   epose proof (tB := (A_impl_A Γ B _)).
-  epose proof (t1 := MP (P2 Γ (!(!A) ---> !B) A Bot _ _ _) (P1 _ _ B _ _)).
+  epose proof (t1 := MP (P2 Γ (!(!A) ---> !B) A ⊥ _ _ _) (P1 _ _ B _ _)).
   epose proof (t2 := MP (BasicProofSystemLemmas.reorder_meta _ _ _ (BasicProofSystemLemmas.P4 Γ (!A) B _ _)) (P1 _ _ B _ _)).
   epose proof (t3'' := MP (P1 Γ A (!(!A) ---> !B) _ _) (P1 _ _ B _ _)).
   epose proof (t4 := MP tB (MP t2 (P2 Γ B B _ _ _ _))).

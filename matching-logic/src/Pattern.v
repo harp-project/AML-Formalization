@@ -1057,6 +1057,65 @@ Proof.
   intros x. reflexivity.
 Defined.
 
+
+Lemma map_wf :
+  forall {Σ : Signature} (f : Pattern -> Pattern) l,
+    wf l -> (forall p, well_formed p -> well_formed (f p)) ->
+    wf (map f l).
+Proof.
+  induction l; intros; try by cbn in *.
+  cbn in *.
+  destruct_and!. apply H0 in H1.
+  specialize (IHl H2 H0). unfold wf in IHl.
+  by rewrite H1 IHl.
+Qed.
+
+Section corollaries.
+  Context {Σ : Signature}.
+
+  Lemma Forall_wf_map {A} (t : A -> Pattern) l : Forall (well_formed ∘ t) l <-> wf (map t l).
+  Proof.
+    intros. etransitivity. apply Forall_fold_right. unfold wf.
+    rewrite -> 2 foldr_map, foldr_andb_equiv_foldr_conj.
+    reflexivity.
+  Qed.
+
+  Corollary wf_fold_left {A : Type} (f : Pattern -> A -> Pattern) (t : A -> Pattern) x xs :
+    well_formed x ->
+    wf (map t xs) ->
+    (forall a b, well_formed a -> well_formed (t b) -> well_formed (f a b)) ->
+    well_formed (fold_left f xs x).
+  Proof.
+    intros. apply fold_left_ind with (Q := well_formed ∘ t);
+    only 2: apply Forall_wf_map; auto.
+  Defined.
+
+  Corollary wf_foldr {A : Type} (f : A -> Pattern -> Pattern) (t : A -> Pattern) x xs :
+    well_formed x ->
+    wf (map t xs) ->
+    (forall a b, well_formed a -> well_formed (t b) -> well_formed (f b a)) ->
+    well_formed (foldr f x xs).
+  Proof.
+    intros.
+    apply foldr_ind with (Q := well_formed ∘ t);
+    only 2: apply Forall_wf_map; auto.
+  Qed.
+
+  Corollary mf_fold_left {A : Type} (f : Pattern -> A -> Pattern) (t : A -> Pattern) x xs :
+    mu_free x ->
+    foldr (fun c a => mu_free c && a) true (map t xs) ->
+    (forall a b, mu_free a -> mu_free (t b) -> mu_free (f a b)) ->
+    mu_free (fold_left f xs x).
+  Proof.
+    intros.
+    apply fold_left_ind with (Q := mu_free ∘ t);
+    only 2: apply Forall_fold_right;
+    only 2: rewrite -> foldr_map, foldr_andb_equiv_foldr_conj in H0;
+    auto.
+  Qed.
+
+End corollaries.
+
 Module BoundVarSugar.
   (* Element variables - bound *)
   Notation b0 := (patt_bound_evar 0).
@@ -1084,12 +1143,9 @@ Module BoundVarSugar.
 End BoundVarSugar.
 
 Module Notations.
-  (* TODO: change Bot and Top to unicode symbols *)
-  (* TODO: this associativity is wrong! However, stdpp disallows defining it otherwise. We could use @ instead, associated to the left *)
   Declare Scope ml_scope.
   Delimit Scope ml_scope with ml.
-  Notation "a $ b" := (patt_app a b) (at level 65, right associativity) : ml_scope.
-  Notation "'Bot'" := patt_bott : ml_scope.
+  Notation "a ⋅ b" := (patt_app a b) (at level 66, left associativity) : ml_scope.
   Notation "⊥" := patt_bott : ml_scope.
   Notation "a ---> b"  := (patt_imp a b) (at level 75, right associativity) : ml_scope.
   Notation "'ex' , phi" := (patt_exists phi) (at level 80) : ml_scope.

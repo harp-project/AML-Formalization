@@ -24,7 +24,7 @@ Section rs.
     .
 
     Definition apply_connective (connective arg1 arg2 : Pattern) : Pattern
-    := ((connective $ arg1) $ arg2)%ml.
+    := (connective ⋅ arg1 ⋅ arg2)%ml.
 
     Definition chain_patterns
         (connective : Pattern)
@@ -52,7 +52,7 @@ Section rs.
             (⊥%ml)
             [b0]
             (b1)
-        = ((⊥ $ b0) $ b1)%ml
+        = (⊥ ⋅ b0 ⋅ b1)%ml
     .
     Proof. reflexivity. Qed.
 
@@ -61,7 +61,7 @@ Section rs.
             (⊥%ml)
             [b0;b1]
             (b2)
-        = ((⊥ $ b0) $ ((⊥ $ b1) $ b2))%ml
+        = (⊥ ⋅ b0 ⋅ (⊥ ⋅ b1 ⋅ b2))%ml
     .
     Proof. reflexivity. Qed.
 
@@ -70,7 +70,7 @@ Section rs.
             (⊥%ml)
             [b0;b1;b2]
             (b3)
-        = ((⊥ $ b0) $ ((⊥ $ b1) $ ((⊥ $ b2) $ b3)))%ml
+        = (⊥ ⋅ b0 ⋅ (⊥ ⋅ b1 ⋅ (⊥ ⋅ b2 ⋅ b3)))%ml
     .
     Proof. reflexivity. Qed.
 

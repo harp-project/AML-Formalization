@@ -171,8 +171,8 @@ Section compute.
 (* rewrite example *)
 Lemma ex2_pm1 {Σ : Signature} (A B C D : Pattern) (Γ : Theory) :
   well_formed (A ---> B ---> C ---> D) = true ->
-  Γ ⊢ ((B $ C) <---> D) ->
-  Γ ⊢ A ---> ((A $ (B $ C)) ---> (A $ D))
+  Γ ⊢ ((B ⋅ C) <---> D) ->
+  Γ ⊢ A ---> ((A ⋅ (B ⋅ C)) ---> (A ⋅ D))
 .
 Proof.
   intros Hwf H.
@@ -184,13 +184,13 @@ Defined.
 (* example with the induction-based iterated congruence lemma for a smaller context *)
 Lemma ex2_pm2 {Σ : Signature} (A B C D : Pattern) (Γ : Theory) :
   well_formed (A ---> B ---> C ---> D) = true ->
-  Γ ⊢ ((B $ C) <---> D) ->
-  Γ ⊢ A ---> ((A $ (B $ C)) ---> (A $ D))
+  Γ ⊢ ((B ⋅ C) <---> D) ->
+  Γ ⊢ A ---> ((A ⋅ (B ⋅ C)) ---> (A ⋅ D))
 .
 Proof.
   intros Hwf H.
-  remember (patt_free_evar (fresh_evar (A $ B $ C $ D))) as x.
-  pose proof (prf_equiv_congruence_iter Γ (B $ C) D {|pcPattern := A $ x; pcEvar := (fresh_evar (A $ B $ C $ D))|} [A] ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) AnyReasoning ltac:(try_solve_pile) ltac:(wf_auto2) H).
+  remember (patt_free_evar (fresh_evar (A ⋅ B ⋅ C ⋅ D))) as x.
+  pose proof (prf_equiv_congruence_iter Γ (B ⋅ C) D {|pcPattern := A ⋅ x; pcEvar := (fresh_evar (A ⋅ B ⋅ C ⋅ D))|} [A] ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) AnyReasoning ltac:(try_solve_pile) ltac:(wf_auto2) H).
   subst x.
   cbn in H0. destruct decide. 2: congruence.
   rewrite free_evar_subst_no_occurrence in H0.
@@ -204,13 +204,13 @@ Defined.
 (* example with the complex context-based iterated congruence lemma for a smaller context *)
 Lemma ex2_pm3 {Σ : Signature} (A B C D : Pattern) (Γ : Theory) :
   well_formed (A ---> B ---> C ---> D) = true ->
-  Γ ⊢ ((B $ C) <---> D) ->
-  Γ ⊢ A ---> ((A $ (B $ C)) ---> (A $ D))
+  Γ ⊢ ((B ⋅ C) <---> D) ->
+  Γ ⊢ A ---> ((A ⋅ (B ⋅ C)) ---> (A ⋅ D))
 .
 Proof.
   intros Hwf H.
-  remember (patt_free_evar (fresh_evar (A $ B $ C $ D))) as x.
-  epose proof (prf_equiv_congruence_iter_no_ind Γ (B $ C) D {|pcPattern := A $ x; pcEvar := (fresh_evar (A $ B $ C $ D))|} [A] ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) _ AnyReasoning ltac:(try_solve_pile) ltac:(wf_auto2) H).
+  remember (patt_free_evar (fresh_evar (A ⋅ B ⋅ C ⋅ D))) as x.
+  epose proof (prf_equiv_congruence_iter_no_ind Γ (B ⋅ C) D {|pcPattern := A ⋅ x; pcEvar := (fresh_evar (A ⋅ B ⋅ C ⋅ D))|} [A] ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) _ AnyReasoning ltac:(try_solve_pile) ltac:(wf_auto2) H).
   Unshelve. 2: {
     simpl. unfold free_evars_of_list. solve_fresh.
   }
@@ -227,13 +227,13 @@ Defined.
 (* example with the congruence lemma for a smaller context *)
 Lemma ex2_pm4 {Σ : Signature} (A B C D : Pattern) (Γ : Theory) :
   well_formed (A ---> B ---> C ---> D) = true ->
-  Γ ⊢ ((B $ C) <---> D) ->
-  Γ ⊢ A ---> ((A $ (B $ C)) ---> (A $ D))
+  Γ ⊢ ((B ⋅ C) <---> D) ->
+  Γ ⊢ A ---> ((A ⋅ (B ⋅ C)) ---> (A ⋅ D))
 .
 Proof.
   intros Hwf H.
-  remember (patt_free_evar (fresh_evar (A $ B $ C $ D))) as x.
-  pose proof (prf_equiv_congruence Γ (B $ C) D {|pcPattern := A ---> A $ x; pcEvar := (fresh_evar (A $ B $ C $ D))|} AnyReasoning ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)
+  remember (patt_free_evar (fresh_evar (A ⋅ B ⋅ C ⋅ D))) as x.
+  pose proof (prf_equiv_congruence Γ (B ⋅ C) D {|pcPattern := A ---> A ⋅ x; pcEvar := (fresh_evar (A ⋅ B ⋅ C ⋅ D))|} AnyReasoning ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)
   ltac:(try_solve_pile) H).
   subst x.
   cbn in H0. destruct decide. 2: congruence.
@@ -259,13 +259,13 @@ Defined.
 (* example with the induction-based iterated congruence lemma for a bigger context *)
 Lemma ex3_pm2 {Σ : Signature} (A B C D : Pattern) (Γ : Theory) :
   well_formed (A ---> B ---> C ---> D) = true ->
-  Γ ⊢ ((B $ C) <---> D) ->
-  Γ ⊢ A ---> ((A $ (B $ C)) ---> (A $ D))
+  Γ ⊢ ((B ⋅ C) <---> D) ->
+  Γ ⊢ A ---> ((A ⋅ (B ⋅ C)) ---> (A ⋅ D))
 .
 Proof.
   intros Hwf H.
-  remember (patt_free_evar (fresh_evar (A $ B $ C $ D))) as x.
-  pose proof (prf_equiv_congruence_iter Γ (B $ C) D {|pcPattern := A $ x ---> A $ D; pcEvar := (fresh_evar (A $ B $ C $ D))|} [A] ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) AnyReasoning ltac:(try_solve_pile) ltac:(wf_auto2) H).
+  remember (patt_free_evar (fresh_evar (A ⋅ B ⋅ C ⋅ D))) as x.
+  pose proof (prf_equiv_congruence_iter Γ (B ⋅ C) D {|pcPattern := A ⋅ x ---> A ⋅ D; pcEvar := (fresh_evar (A ⋅ B ⋅ C ⋅ D))|} [A] ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) AnyReasoning ltac:(try_solve_pile) ltac:(wf_auto2) H).
   subst x.
   cbn in H0. destruct decide. 2: congruence.
   rewrite free_evar_subst_no_occurrence in H0.
@@ -273,8 +273,8 @@ Proof.
   3: rewrite free_evar_subst_no_occurrence in H0.
   4: rewrite free_evar_subst_no_occurrence in H0. 1-4: solve_fresh.
   apply pf_iff_proj2 in H0. 2-3: wf_auto2.
-  remember (A ---> A $ B $ C ---> A $ D) as AA.
-  remember (A ---> A $ D ---> A $ D ) as BB.
+  remember (A ---> A ⋅ B ⋅ C ---> A ⋅ D) as AA.
+  remember (A ---> A ⋅ D ---> A ⋅ D ) as BB.
   mlApplyMeta H0. subst BB.
   do 2 mlIntro. mlExact "1".
 Defined.
@@ -282,13 +282,13 @@ Defined.
 (* example with the complex context-based iterated congruence lemma for a bigger context *)
 Lemma ex3_pm3 {Σ : Signature} (A B C D : Pattern) (Γ : Theory) :
   well_formed (A ---> B ---> C ---> D) = true ->
-  Γ ⊢ ((B $ C) <---> D) ->
-  Γ ⊢ A ---> ((A $ (B $ C)) ---> (A $ D))
+  Γ ⊢ ((B ⋅ C) <---> D) ->
+  Γ ⊢ A ---> ((A ⋅ (B ⋅ C)) ---> (A ⋅ D))
 .
 Proof.
   intros Hwf H.
-  remember (patt_free_evar (fresh_evar (A $ B $ C $ D))) as x.
-  epose proof (prf_equiv_congruence_iter_no_ind Γ (B $ C) D {|pcPattern := A $ x ---> A $ D; pcEvar := (fresh_evar (A $ B $ C $ D))|} [A] ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) _ AnyReasoning ltac:(try_solve_pile) ltac:(wf_auto2) H).
+  remember (patt_free_evar (fresh_evar (A ⋅ B ⋅ C ⋅ D))) as x.
+  epose proof (prf_equiv_congruence_iter_no_ind Γ (B ⋅ C) D {|pcPattern := A ⋅ x ---> A ⋅ D; pcEvar := (fresh_evar (A ⋅ B ⋅ C ⋅ D))|} [A] ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) _ AnyReasoning ltac:(try_solve_pile) ltac:(wf_auto2) H).
   Unshelve.
   2: {
     simpl. unfold free_evars_of_list. solve_fresh.
@@ -300,8 +300,8 @@ Proof.
   3: rewrite free_evar_subst_no_occurrence in H0.
   4: rewrite free_evar_subst_no_occurrence in H0. 1-4: solve_fresh.
   apply pf_iff_proj2 in H0. 2-3: wf_auto2.
-  remember (A ---> A $ B $ C ---> A $ D) as AA.
-  remember (A ---> A $ D ---> A $ D ) as BB.
+  remember (A ---> A ⋅ B ⋅ C ---> A ⋅ D) as AA.
+  remember (A ---> A ⋅ D ---> A ⋅ D ) as BB.
   mlApplyMeta H0. subst BB.
   do 2 mlIntro. mlExact "1".
 Defined.
@@ -310,13 +310,13 @@ Defined.
 (* example with the congruence lemma for a big context *)
 Lemma ex3_pm4 {Σ : Signature} (A B C D : Pattern) (Γ : Theory) :
   well_formed (A ---> B ---> C ---> D) = true ->
-  Γ ⊢ ((B $ C) <---> D) ->
-  Γ ⊢ A ---> ((A $ (B $ C)) ---> (A $ D))
+  Γ ⊢ ((B ⋅ C) <---> D) ->
+  Γ ⊢ A ---> ((A ⋅ (B ⋅ C)) ---> (A ⋅ D))
 .
 Proof.
   intros Hwf H.
-  remember (patt_free_evar (fresh_evar (A $ B $ C $ D))) as x.
-  pose proof (prf_equiv_congruence Γ (B $ C) D {|pcPattern := A ---> A $ x ---> A $ D; pcEvar := (fresh_evar (A $ B $ C $ D))|} AnyReasoning ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)
+  remember (patt_free_evar (fresh_evar (A ⋅ B ⋅ C ⋅ D))) as x.
+  pose proof (prf_equiv_congruence Γ (B ⋅ C) D {|pcPattern := A ---> A ⋅ x ---> A ⋅ D; pcEvar := (fresh_evar (A ⋅ B ⋅ C ⋅ D))|} AnyReasoning ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)
   ltac:(try_solve_pile) H).
   subst x.
   cbn in H0. destruct decide. 2: congruence.
@@ -325,29 +325,29 @@ Proof.
   3: rewrite free_evar_subst_no_occurrence in H0.
   4: rewrite free_evar_subst_no_occurrence in H0. 1-4: solve_fresh.
   apply pf_iff_proj2 in H0. 2-3: wf_auto2.
-  remember (A ---> A $ B $ C ---> A $ D) as AA.
-  remember (A ---> A $ D ---> A $ D ) as BB.
+  remember (A ---> A ⋅ B ⋅ C ---> A ⋅ D) as AA.
+  remember (A ---> A ⋅ D ---> A ⋅ D ) as BB.
   mlApplyMeta H0. subst BB.
   do 2 mlIntro. mlExact "1".
 Defined.
 
 
 Lemma premise :
-∅ ⊢ Y $ Z <---> Y $ Z.
+∅ ⊢ Y ⋅ Z <---> Y ⋅ Z.
 Proof.
   gapply pf_iff_equiv_refl.
   apply pile_any.
   wf_auto2.
 Defined.
 
-Definition proof_pm1 : nat := proof_size_info (ex2_pm1 X Y Z (Y $ Z) ∅ ltac:(wf_auto2) premise).
-Definition proof_pm2 : nat := proof_size_info (ex2_pm2 X Y Z (Y $ Z) ∅ ltac:(wf_auto2) premise).
-Definition proof_pm3 : nat := proof_size_info (ex2_pm3 X Y Z (Y $ Z) ∅ ltac:(wf_auto2) premise).
-Definition proof_pm4 : nat := proof_size_info (ex2_pm4 X Y Z (Y $ Z) ∅ ltac:(wf_auto2) premise).
+Definition proof_pm1 : nat := proof_size_info (ex2_pm1 X Y Z (Y ⋅ Z) ∅ ltac:(wf_auto2) premise).
+Definition proof_pm2 : nat := proof_size_info (ex2_pm2 X Y Z (Y ⋅ Z) ∅ ltac:(wf_auto2) premise).
+Definition proof_pm3 : nat := proof_size_info (ex2_pm3 X Y Z (Y ⋅ Z) ∅ ltac:(wf_auto2) premise).
+Definition proof_pm4 : nat := proof_size_info (ex2_pm4 X Y Z (Y ⋅ Z) ∅ ltac:(wf_auto2) premise).
 
-Definition proof2_pm2 : nat := proof_size_info (ex3_pm2 X Y Z (Y $ Z) ∅ ltac:(wf_auto2) premise).
-Definition proof2_pm3 : nat := proof_size_info (ex3_pm3 X Y Z (Y $ Z) ∅ ltac:(wf_auto2) premise).
-Definition proof2_pm4 : nat := proof_size_info (ex3_pm4 X Y Z (Y $ Z) ∅ ltac:(wf_auto2) premise).
+Definition proof2_pm2 : nat := proof_size_info (ex3_pm2 X Y Z (Y ⋅ Z) ∅ ltac:(wf_auto2) premise).
+Definition proof2_pm3 : nat := proof_size_info (ex3_pm3 X Y Z (Y ⋅ Z) ∅ ltac:(wf_auto2) premise).
+Definition proof2_pm4 : nat := proof_size_info (ex3_pm4 X Y Z (Y ⋅ Z) ∅ ltac:(wf_auto2) premise).
 
 End compute.
 (*

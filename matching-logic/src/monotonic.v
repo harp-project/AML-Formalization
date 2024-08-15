@@ -24,14 +24,14 @@ Section monotonic.
 
     Lemma respects_blacklist_app : forall (phi1 phi2 : Pattern) (Bp Bn : Ensemble svar),
         respects_blacklist phi1 Bp Bn -> respects_blacklist phi2 Bp Bn ->
-        respects_blacklist (phi1 $ phi2)%ml Bp Bn.
+        respects_blacklist (phi1 ⋅ phi2)%ml Bp Bn.
     Proof.
       intros. unfold respects_blacklist in *.
       intros. split; intros; cbn; apply orb_false_iff; split; try apply H; try apply H0; auto.
     Qed.
 
     Lemma respects_blacklist_app_1 : forall (phi1 phi2 : Pattern) (Bp Bn : Ensemble svar),
-        respects_blacklist (phi1 $ phi2)%ml Bp Bn -> respects_blacklist phi1 Bp Bn.
+        respects_blacklist (phi1 ⋅ phi2)%ml Bp Bn -> respects_blacklist phi1 Bp Bn.
     Proof.
       unfold respects_blacklist.
       intros.
@@ -46,7 +46,7 @@ Section monotonic.
 
     (* This proof is the same as for app_1 *)
     Lemma respects_blacklist_app_2 : forall (phi1 phi2 : Pattern) (Bp Bn : Ensemble svar),
-        respects_blacklist (phi1 $ phi2) Bp Bn -> respects_blacklist phi2 Bp Bn.
+        respects_blacklist (phi1 ⋅ phi2) Bp Bn -> respects_blacklist phi2 Bp Bn.
     Proof.
       unfold respects_blacklist.
       intros.

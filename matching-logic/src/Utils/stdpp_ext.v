@@ -3,6 +3,14 @@ From Coq Require Import ssreflect ssrfun ssrbool String.
 From Coq.Logic Require Import Classical_Prop Classical_Pred_Type Eqdep_dec.
 From stdpp Require Import pmap gmap mapset fin_sets sets list propset coGset.
 
+Lemma foldl_fold_left :
+  forall {A B} f (l : list A) (b : B),
+    foldl f b l = fold_left f l b.
+Proof.
+  induction l; intros; simpl. reflexivity.
+  by rewrite IHl.
+Qed.
+
 Fixpoint index_of_helper (x : string) (l : list string) (n : nat) : option nat :=
   match l with
   | [] => None
@@ -1037,8 +1045,98 @@ Proof.
   constructor. rewrite elem_of_gset_to_coGset. apply Hunfold.
 Qed.
 
+Lemma foldr_ind {A B} (P : B -> Prop) (Q : A -> Prop) (f : A -> B -> B) (b : B) (l : list A) : P b -> Forall Q l -> (forall a b, Q a -> P b -> P (f a b)) -> P (foldr f b l).
+Proof.
+  intros.
+  induction l; simpl; inversion H0; auto.
+Defined.
+
+Lemma foldr_ind_set {A B} (P : B -> Set) (Q : A -> Set) (f : A -> B -> B) (b : B) (l : list A) : P b -> foldr (prod ∘ Q) True l -> (forall a b, Q a -> P b -> P (f a b)) -> P (foldr f b l).
+Proof.
+  intros.
+  induction l; simpl in X |- *;
+  only 2: destruct X; auto.
+Defined.
+
+Lemma fold_left_ind {A B} (P : B -> Prop) (Q : A -> Prop) (f : B -> A -> B) (b : B) (l : list A) : P b -> Forall Q l -> (forall a b, Q a -> P b -> P (f b a)) -> P (fold_left f l b).
+Proof.
+  intros.
+  generalize dependent b.
+  induction l; simpl; intros; inversion H0; auto.
+Defined.
+
+Lemma foldr_andb_equiv_foldr_conj {A : Type} (t : A -> bool) (xs : list A) : foldr (fun c a => t c && a) true xs <-> foldr (fun c a => (t c) = true /\ a) True xs.
+Proof.
+  induction xs; simpl.
+  split; split.
+  destruct IHxs.
+  split; intro.
+  apply andb_true_iff in H1. destruct H1.
+  split. exact H1.
+  exact (H H2).
+  destruct H1.
+  apply andb_true_iff.
+  split.
+  exact H1.
+  exact (H0 H2).
+Defined.
+
+Lemma foldr_map {A B C : Type} (f : A -> B -> B) (g : C -> A) (x : B) (xs : list C) : foldr f x (map g xs) = foldr (fun c a => f (g c) a) x xs.
+Proof.
+  induction xs.
+  reflexivity.
+  simpl. f_equal. exact IHxs.
+Defined.
+
+(* Existing lemmas restated for Set. *)
+Lemma set_choose_or_empty' `{FinSet A C} (X : C) : (sig (.∈ X)) + (X ≡ ∅).
+Proof.
+  destruct (elements X) as [|x l] eqn:HX; [right|left].
+  * apply equiv_empty; intros x. by rewrite <-elem_of_elements, HX, elem_of_nil.
+  * exists x. rewrite <-elem_of_elements, HX. by left.
+Qed.
+
+Lemma set_ind' `{FinSet A C, !LeibnizEquiv C} (P : C → Set) :
+  P ∅ → (∀ x X, x ∉ X → P X → P ({[ x ]} ∪ X)) → ∀ X, P X.
+Proof.
+  intros Hemp Hadd. apply well_founded_induction with (⊂).
+  apply set_wf. 
+  intros X IH.
+  destruct (set_choose_or_empty' X) as [[x ?H]|HX].
+  * pose proof (elem_of_subseteq_singleton x X) as [? _].
+    specialize (H8 H7).
+    unshelve epose proof (union_difference {[ x ]} X H8).
+    apply elem_of_dec_slow. apply leibniz_equiv_iff in H9.
+    rewrite H9. clear H8 H9.
+    apply Hadd. 2: apply IH. all: set_solver.
+  * apply leibniz_equiv_iff in HX. by rewrite HX.
+Qed.
+
+Lemma set_fold_ind' {B} `{FinSet A C, !LeibnizEquiv C} (P : B → C → Set) (f : A → B → B) (b : B) :
+  P b ∅ → (∀ x X r, x ∉ X → P r X → P (f x r) ({[ x ]} ∪ X)) →
+  ∀ X, P (set_fold f b X) X.
+Proof.
+  intros Hemp Hadd.
+  enough (∀ l, NoDup l → ∀ X, (∀ x, x ∈ X ↔ x ∈ l) → P (foldr f b l) X) as help.
+  { intros ?. apply help; [apply NoDup_elements|].
+    symmetry. apply elem_of_elements. }
+  intros ? ?.  induction l; simpl. (* "probably" *)
+  - intros X HX. setoid_rewrite elem_of_nil in HX.
+    pose proof H6 as [[?H _ _] _ _].
+    epose proof (@equiv_empty _ _ _ _ _ _ H8 X ltac:(set_solver)).
+    now apply leibniz_equiv_iff in H9 as ->.
+  - pose proof (NoDup_cons_1_1 _ _ H7). apply NoDup_cons_1_2 in H7.
+    intros X HX. setoid_rewrite elem_of_cons in HX.
+    epose proof (@elem_of_dec_slow _ _ _ _ _ _ _ _ _ _ H6).
+    epose proof (@union_difference _ _ _ _ _ _ _ _ fin_set_set X0 {[a]} X ltac:(set_solver)).
+    apply leibniz_equiv_iff in H9 as ->.
+    apply Hadd; [set_solver|]. apply IHl; [auto | set_solver].
+Qed.
+
+
 Lemma propset_top_elem_of {A}:
   forall S : propset A, S = ⊤ -> forall t, t ∈ S.
 Proof.
   set_solver.
 Qed.
+

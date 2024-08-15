@@ -1135,7 +1135,7 @@ Ltac _mlDestructExFresh name' x :=
     | fm_solve
     | _mlReshapeHypsBack]
     then idtac
-    else fail "_mlDestructExManual: given local hypothesis is not existentially quantified".
+    else fail "_mlDestructExFresh: given local hypothesis is not existentially quantified".
 
 Tactic Notation "mlDestructEx" constr(name') "as" constr(x) :=
   _mlDestructExManual name' x.
@@ -1168,7 +1168,7 @@ Local Lemma destructExDouble_Test {Σ : Signature} Γ ϕ ψ :
 Proof.
   intros.
   mlIntro "H". mlIntro "H0".
-  mlDestructEx "H" as (fresh_evar (ϕ $ ψ)). { cbn. solve_fresh. }
+  mlDestructEx "H" as (fresh_evar (ϕ ⋅ ψ)). { cbn. solve_fresh. }
   Fail mlDestructEx "H" as x.
   mlClear "H". mlDestructEx "H0" as x.
   Fail mlDestructEx "H0" as x.

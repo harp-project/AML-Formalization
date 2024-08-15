@@ -23,8 +23,6 @@ src/Syntax.v
 src/wftactics.v
 src/NamedAxioms.v
 
-src/Experimental/ProofModePattern.v
-
 src/Semantics.v
 src/ModelIsomorphism.v
 src/PrePredicate.v
@@ -55,10 +53,8 @@ src/Theories/Definedness_ProofSystem.v
 src/Theories/FOEquality_ProofSystem.v
 src/Theories/DeductionTheorem.v
 src/Theories/Nat_Syntax.v
-src/Experimental/Nat_ProofSystem.v
 
 src/Theories/SumSort_Syntax.v
-src/Experimental/SumSort_ProofSystem.v
 
 src/Theories/Sorts_Syntax.v
 src/Theories/Sorts_Semantics.v
@@ -99,3 +95,9 @@ src/OPML/OpmlAmlRelSpec.v
 src/OPML/OpmlExamples.v
 src/OPML/GenericModel.v
 src/OPML/KPreludeSignatures.v
+
+src/Experimental/Nat_ProofSystem.v
+src/Experimental/SumSort_ProofSystem.v
+src/Experimental/ProofModePattern.v
+src/Experimental/Unification.v
+

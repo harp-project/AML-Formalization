@@ -3135,8 +3135,55 @@ Lemma Private_no_negative_occurrence_svar_quantify ϕ level X:
     * simpl. reflexivity.
   Defined.
 
-End subst.
+  Lemma free_evar_subst_id :
+    forall φ x, φ^[[evar: x ↦ patt_free_evar x]] = φ.
+  Proof.
+    induction φ; intros x'; simpl; auto.
+    * case_match; subst; auto.
+    * rewrite IHφ1. now rewrite IHφ2.
+    * rewrite IHφ1. now rewrite IHφ2.
+    * now rewrite IHφ.
+    * now rewrite IHφ.
+  Qed.
 
+
+  Lemma free_evar_subst_chain :
+    forall φ x y ψ,
+    y ∉ free_evars φ ->
+    φ^[[evar: x ↦ patt_free_evar y]]^[[evar:y ↦ ψ]] =
+    φ^[[evar: x ↦ ψ]].
+  Proof.
+    induction φ; intros; simpl; auto.
+    * simpl. case_match; simpl; case_match; try reflexivity.
+      1: congruence.
+      subst. set_solver.
+    * rewrite IHφ1. set_solver. rewrite IHφ2. set_solver. reflexivity.
+    * rewrite IHφ1. set_solver. rewrite IHφ2. set_solver. reflexivity.
+    * rewrite IHφ; by set_solver.
+    * rewrite IHφ; by set_solver.
+  Qed.
+
+  Lemma patt_free_evar_subst : forall x φ, (patt_free_evar x)^[[evar: x ↦ φ]] = φ.
+  Proof.
+    intros.
+    simpl.
+    case_match.
+    reflexivity.
+    contradiction.
+  Defined.
+
+  Lemma mu_free_free_evar_subst :
+    forall φ ψ x,
+    mu_free φ -> mu_free ψ ->
+    mu_free (free_evar_subst ψ x φ).
+  Proof.
+    induction φ; intros; simpl; auto.
+    * case_match; auto.
+    * rewrite IHφ1. 3: rewrite IHφ2. all: simpl in H; destruct_and! H; auto.
+    * rewrite IHφ1. 3: rewrite IHφ2. all: simpl in H; destruct_and! H; auto.
+  Qed.
+
+End subst.
 
 (*
 #[export]
