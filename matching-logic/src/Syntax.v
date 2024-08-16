@@ -2717,6 +2717,60 @@ Section with_signature.
   Qed.
 
   (* ϕ ≡ (mu, 0) ---> cvar  *)
+  Lemma bound_svar_is_banned_under_mus_fevar_subst_alternative ϕ ψ cvar level dbi':
+    well_formed_closed_mu_aux ψ (S dbi') = true  ->
+    bound_svar_is_banned_under_mus ψ level dbi' = true ->
+    bound_svar_is_banned_under_mus ϕ level dbi' = true ->
+    bound_svar_is_banned_under_mus ϕ^[[evar:cvar↦ψ]] level dbi' = true
+  .
+  Proof.
+    move: dbi' level.
+    induction ϕ; cbn; intros dbi' level H0 H1 H2 (*H3*); try reflexivity.
+    {
+      repeat case_match; cbn in *; subst; try reflexivity.
+      assumption.
+    }
+    {
+      naive_bsolver.
+    }
+    {
+      naive_bsolver.
+    }
+    {
+      naive_solver.
+    }
+    {
+      destruct level; cbn in *.
+      {
+        rewrite negb_true_iff.
+        rewrite negb_true_iff in H2.
+        apply bsvar_occur_free_evar_subst; try assumption.
+      }
+      {
+        apply IHϕ.
+        {
+          eapply well_formed_closed_mu_aux_ind.
+          2: apply H0.
+          { lia. }
+        }
+        (* {
+          eapply well_formed_closed_mu_aux_ind.
+          2: apply H1.
+          { lia. }
+        } *)
+        {
+          apply bsvar_occur_false_impl_banned.
+          apply wfc_mu_aux_implies_not_bsvar_occur.
+          assumption.
+        }
+        {
+          assumption.
+        }
+      }
+    }
+  Qed.
+
+  (* ϕ ≡ (mu, 0) ---> cvar  *)
   Lemma bound_svar_is_banned_under_mus_fevar_subst ϕ ψ cvar level dbi':
     well_formed_closed_mu_aux ϕ (dbi') = true ->
     well_formed_closed_mu_aux ψ (S dbi') = true  ->
@@ -2871,6 +2925,105 @@ Section with_signature.
     {
       cbn. lia.
     }
+  Qed.
+
+
+  Fixpoint pattern_kt_well_formed (φ : Pattern) :=
+  match φ with
+   | patt_free_evar x => true
+   | patt_free_svar x => true
+   | patt_bound_evar n => true
+   | patt_bound_svar n => true
+   | patt_sym sigma => true
+   | patt_app phi1 phi2 => pattern_kt_well_formed phi1 && pattern_kt_well_formed phi2
+   | patt_bott => true
+   | patt_imp phi1 phi2 => pattern_kt_well_formed phi1 && pattern_kt_well_formed phi2
+   | patt_exists phi => pattern_kt_well_formed phi
+   | patt_mu phi => bound_svar_is_banned_under_mus phi 0 0 &&
+                    pattern_kt_well_formed phi
+  end.
+
+  Lemma kt_well_formed_evar_open (φ : Pattern) x dbi:
+    pattern_kt_well_formed φ ->
+    pattern_kt_well_formed φ^{evar:dbi↦x}.
+  Proof.
+    revert x dbi.
+    induction φ; simpl; intros; try reflexivity.
+    * cbn. case_match; by simpl.
+    * specialize (IHφ1 x dbi). specialize (IHφ2 x dbi). naive_bsolver.
+    * specialize (IHφ1 x dbi). specialize (IHφ2 x dbi). naive_bsolver.
+    * by apply IHφ.
+    * destruct_and!. rewrite IHφ. naive_bsolver.
+      split_and!. 2: reflexivity.
+      by apply bound_svar_is_banned_under_mus_evar_open.
+  Qed.
+
+  Lemma bsvar_occur_bsvar_subst_wf :
+    forall φ ψ dbi x,
+      well_formed_closed_mu_aux φ (S x) ->
+      ~~ bsvar_occur φ dbi ->
+      well_formed_closed_mu_aux ψ 0 ->
+      ~~ bsvar_occur (bsvar_subst ψ x φ) dbi.
+  Proof.
+    induction φ; simpl; intros; try reflexivity.
+    * case_match. by simpl in H.
+      case_match. 2: by simpl in *.
+      case_match; simpl; try assumption.
+      case_match. lia. reflexivity.
+      rewrite wfc_mu_aux_implies_not_bsvar_occur.
+      eapply well_formed_closed_mu_aux_ind. 2: eassumption.
+      lia.
+      reflexivity.
+      case_match. lia. reflexivity.
+    * rewrite negb_or. rewrite negb_or in H0.
+      rewrite IHφ1. 1-3: wf_auto2.
+      rewrite IHφ2; wf_auto2.
+    * rewrite negb_or. rewrite negb_or in H0.
+      rewrite IHφ1. 1-3: wf_auto2.
+      rewrite IHφ2; wf_auto2.
+    * rewrite IHφ; wf_auto2.
+    * rewrite IHφ; wf_auto2.
+  Qed.
+
+  Lemma bound_svar_is_banned_bsvar_subst :
+    forall φ ψ level dbi x,
+      well_formed_closed_mu_aux ψ 0 ->
+      well_formed_closed_mu_aux φ (S x) ->
+      bound_svar_is_banned_under_mus φ level dbi ->
+      bound_svar_is_banned_under_mus (bsvar_subst ψ x φ) level dbi.
+  Proof.
+    induction φ; intros; simpl in *; try reflexivity.
+    * case_match; try reflexivity. 2: congruence. subst.
+      case_match; simpl; try reflexivity.
+      apply bsvar_occur_false_impl_banned.
+      apply wfc_mu_aux_implies_not_bsvar_occur.
+      eapply well_formed_closed_mu_aux_ind. 2: eassumption.
+      lia.
+    * rewrite IHφ1. 4: rewrite IHφ2.
+      all: try wf_auto2.
+    * rewrite IHφ1. 4: rewrite IHφ2.
+      all: try wf_auto2.
+    * apply IHφ; wf_auto2.
+    * case_match.
+      - (* apply negb_true_iff. apply negb_true_iff in H1. *)
+        rewrite bsvar_occur_bsvar_subst_wf; wf_auto2.
+      - apply IHφ; wf_auto2.
+  Qed.
+
+  Lemma kt_well_formed_svar_open (φ : Pattern) X dbi:
+    well_formed_closed_mu_aux φ (S dbi) ->
+    pattern_kt_well_formed φ ->
+    pattern_kt_well_formed φ^{svar:dbi↦X}.
+  Proof.
+    revert X dbi.
+    induction φ; simpl; intros; try reflexivity.
+    * cbn. case_match; try by simpl. case_match; try by simpl.
+    * specialize (IHφ1 X dbi). specialize (IHφ2 X dbi). naive_bsolver.
+    * specialize (IHφ1 X dbi). specialize (IHφ2 X dbi). naive_bsolver.
+    * by apply IHφ.
+    * destruct_and!. rewrite IHφ. 1-2: naive_bsolver.
+      split_and!. 2: reflexivity.
+      rewrite bound_svar_is_banned_bsvar_subst; wf_auto2.
   Qed.
 
 End with_signature.

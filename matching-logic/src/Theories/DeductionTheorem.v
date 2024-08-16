@@ -934,6 +934,8 @@ Proof.
 Defined.
 
 (* Lemma 89 *)
+(* TODO: it is worth splitting this theorem, since the ---> direction requires
+         fewer side conditions *)
 Lemma mu_and_predicate_propagation {Σ : Signature} {syntax : Syntax} Γ ϕ ψ :
   Definedness_Syntax.theory ⊆ Γ ->
   well_formed (mu, ϕ) ->
