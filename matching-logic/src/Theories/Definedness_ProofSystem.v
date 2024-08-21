@@ -2828,29 +2828,30 @@ Proof.
   - apply ceil_propagation_exists_2; assumption.
 Defined.
 
-Lemma membership_exists {Σ : Signature} {syntax : Syntax} Γ x y φ i:
+Lemma membership_exists {Σ : Signature} {syntax : Syntax} Γ ψ y φ i:
   theory ⊆ Γ ->
   well_formed (ex, φ) ->
-  y ∉ free_evars φ ∪ {[x]} ->
+  well_formed ψ ->
+  y ∉ free_evars φ ∪ free_evars ψ ->
   ProofInfoLe (ExGen := {[y]}, SVSubst := ∅, KT := false, AKT := false) i ->
-  Γ ⊢i (patt_free_evar x ∈ml (ex, φ)) <---> (ex, patt_free_evar x ∈ml φ)
+  Γ ⊢i (ψ ∈ml (ex, φ)) <---> (ex, ψ ∈ml φ)
   using i.
 Proof.
-  intros HΓ wfφ Hf Hpile.
+  intros HΓ wfφ wfψ Hf Hpile.
   unfold "∈ml".
   toMLGoal.
   { wf_auto2. }
   (* mlRewrite <- *)
-  pose proof (@ceil_propagation_exists_iff Σ syntax Γ (patt_free_evar x and φ) y HΓ ltac:(wf_auto2) ltac:(set_solver)) (* at 1 *).
+  pose proof (@ceil_propagation_exists_iff Σ syntax Γ (ψ and φ) y HΓ ltac:(wf_auto2) ltac:(set_solver)) (* at 1 *).
   use i in H.
   mlRewrite <- H at 1.
   fromMLGoal.
-  assert (Htmp: Γ ⊢i (patt_free_evar x and ex, φ) <---> (ex, (patt_free_evar x and φ)) using i).
+  assert (Htmp: Γ ⊢i (ψ and ex, φ) <---> (ex, (ψ and φ)) using i).
   { (* prenex-exists-and *)
     toMLGoal.
     { wf_auto2. }
-    mlRewrite (useBasicReasoning i (patt_and_comm Γ (patt_free_evar x) (ex, φ) ltac:(wf_auto2) ltac:(wf_auto2))) at 1.
-    pose proof (@prenex_exists_and_iff Σ Γ φ (patt_free_evar x) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(set_solver)) as Htmp.
+    mlRewrite (useBasicReasoning i (patt_and_comm Γ (ψ) (ex, φ) ltac:(wf_auto2) ltac:(wf_auto2))) at 1.
+    pose proof (@prenex_exists_and_iff Σ Γ φ (ψ) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(set_solver)) as Htmp.
     simpl in Htmp.
     mlRewrite <- (@liftProofInfoLe Σ Γ _ (ExGen := {[y]}, SVSubst := ∅, KT := false, AKT := false) i ltac:(try_solve_pile) Htmp) at 1.
     mlSplitAnd.
@@ -2896,36 +2897,38 @@ Proof.
 Defined.
 
 
-Lemma membership_exists_1 {Σ : Signature} {syntax : Syntax} Γ x φ y i:
+Lemma membership_exists_1 {Σ : Signature} {syntax : Syntax} Γ ψ φ y i:
   theory ⊆ Γ ->
   well_formed (ex, φ) ->
-  y ∉ free_evars φ ∪ {[x]} ->
+  well_formed ψ ->
+  y ∉ free_evars φ ∪ free_evars ψ ->
   ProofInfoLe (ExGen := {[y]}, SVSubst := ∅, KT := false, AKT := false) i ->
-  Γ ⊢i (patt_free_evar x ∈ml (ex, φ)) ---> (ex, patt_free_evar x ∈ml φ)
+  Γ ⊢i (ψ ∈ml (ex, φ)) ---> (ex, ψ ∈ml φ)
   using i.
 Proof.
-  intros HΓ ? ? ?.
+  intros HΓ ? ? ? ?.
   eapply pf_iff_proj1.
   3: eapply membership_exists.
   1,2,4: solve[wf_auto2].
   { exact HΓ. }
-  1-2: eassumption.
+  1-3: eassumption.
 Defined.
 
-Lemma membership_exists_2 {Σ : Signature} {syntax : Syntax} Γ x φ y i:
+Lemma membership_exists_2 {Σ : Signature} {syntax : Syntax} Γ ψ φ y i:
   theory ⊆ Γ ->
   well_formed (ex, φ) ->
-  y ∉ free_evars φ ∪ {[x]} ->
+  well_formed ψ ->
+  y ∉ free_evars φ ∪ free_evars ψ ->
   ProofInfoLe (ExGen := {[y]}, SVSubst := ∅, KT := false, AKT := false) i ->
-  Γ ⊢i (ex, patt_free_evar x ∈ml φ) ---> (patt_free_evar x ∈ml (ex, φ))
+  Γ ⊢i (ex, ψ ∈ml φ) ---> (ψ ∈ml (ex, φ))
   using i.
 Proof.
-  intros HΓ ? ? ?.
+  intros HΓ ? ? ? ?.
   eapply pf_iff_proj2.
   3: eapply membership_exists.
   1,2,4: solve[wf_auto2].
   { exact HΓ. }
-  1-2: eassumption.
+  1-3: eassumption.
 Defined.
 
 Lemma membership_symbol_ceil_aux_aux_0 {Σ : Signature} {syntax : Syntax} Γ x φ i:
@@ -3105,7 +3108,7 @@ Proof.
   { wf_auto2. }
   pose proof (Htmp := @liftProofInfoLe Σ Γ _ (ExGen := {[ev_x]}, SVSubst := ∅, KT := false, AKT := false) i ltac:(try_solve_pile) (@membership_imp Σ syntax Γ x φ (ex, ⌈ b0 and φ ⌉) HΓ ltac:(wf_auto2) ltac:(wf_auto2))).
   mlRewrite Htmp at 1. clear Htmp.
-  pose proof (@membership_exists Σ syntax Γ x y (⌈ b0 and φ ⌉) i HΓ ltac:(wf_auto2) ltac:(set_solver) ltac:(try_solve_pile)) as Htmp.
+  pose proof (@membership_exists Σ syntax Γ (patt_free_evar x) y (⌈ b0 and φ ⌉) i HΓ ltac:(wf_auto2) ltac:(wf_auto2) ltac:(set_solver) ltac:(try_solve_pile)) as Htmp.
   mlRewrite Htmp at 1.
   mlIntro "H0".
   mlApplyMeta Ex_quan.
@@ -3119,15 +3122,16 @@ Proof.
   mlExact "H0".
 Defined.
 
-Lemma ceil_and_x_ceil_phi_impl_ceil_phi {Σ : Signature} {syntax : Syntax} Γ (φ : Pattern) x y i:
+Lemma ceil_and_x_ceil_phi_impl_ceil_phi {Σ : Signature} {syntax : Syntax} Γ (φ : Pattern) ψ y i:
   theory ⊆ Γ ->
   well_formed φ ->
+  well_formed ψ ->
   y ∉ free_evars φ ->
   ProofInfoLe (ExGen := {[ev_x; y]}, SVSubst := ∅, KT := false, AKT := false) i ->
-  Γ ⊢i ( (⌈ patt_free_evar x and ⌈ φ ⌉ ⌉) ---> (⌈ φ ⌉))
+  Γ ⊢i ( (⌈ ψ and ⌈ φ ⌉ ⌉) ---> (⌈ φ ⌉))
   using i.
 Proof.
-  intros HΓ wfφ Hf Hpile.
+  intros HΓ wfφ wfψ Hf Hpile.
   eapply syllogism_meta.
   { wf_auto2. }
   2: { wf_auto2. }
@@ -3154,14 +3158,15 @@ Unshelve.
   assumption.
 Defined.
 
-Lemma membership_monotone {Σ : Signature} {syntax : Syntax} Γ (φ₁ φ₂ : Pattern) x i:
+Lemma membership_monotone {Σ : Signature} {syntax : Syntax} Γ (φ₁ φ₂ : Pattern) ψ i:
   theory ⊆ Γ ->
   well_formed φ₁ ->
   well_formed φ₂ ->
+  well_formed ψ ->
   Γ ⊢i (φ₁ ---> φ₂) using i ->
-  Γ ⊢i (patt_free_evar x ∈ml φ₁) ---> (patt_free_evar x ∈ml φ₂) using i.
+  Γ ⊢i (ψ ∈ml φ₁) ---> (ψ ∈ml φ₂) using i.
 Proof.
-  intros HΓ wfφ₁ wfφ₂ H.
+  intros HΓ wfφ₁ wfφ₂ wfψ H.
   unfold patt_in.
   apply ceil_monotonic.
   { exact HΓ. }
@@ -3269,6 +3274,7 @@ Proof.
     apply membership_monotone.
     { exact HΓ. }
     { wf_auto2. }
+    2: { wf_auto2. }
     2: {
       apply ceil_monotonic.
       { exact HΓ. }
@@ -3294,6 +3300,7 @@ Proof.
     apply membership_monotone.
     { exact HΓ. }
     { wf_auto2. }
+    2: { wf_auto2. }
     2: {
       gapply ceil_propagation_exists_1.
       { try_solve_pile. }
@@ -3311,6 +3318,7 @@ Proof.
     apply membership_monotone.
     { exact HΓ. }
     { wf_auto2. }
+    2: { wf_auto2. }
     2: {
       eapply cast_proof'.
       {
@@ -3352,12 +3360,13 @@ Proof.
   }
 
   unfold exists_quantify.
-  pose proof (Htmp := membership_exists Γ x z (evar_quantify y 0 ⌈ patt_free_evar y and φ ⌉) i HΓ).
+  pose proof (Htmp := membership_exists Γ (patt_free_evar x) z (evar_quantify y 0 ⌈ patt_free_evar y and φ ⌉) i HΓ).
   ospecialize* Htmp.
   {
       wf_auto2.
       all: case_match; wf_auto2.
   }
+  { wf_auto2. }
   {
     mlSimpl. cbn. rewrite decide_eq_same. simpl.
     rewrite evar_quantify_fresh. unfold evar_is_fresh_in. set_solver.
@@ -3402,6 +3411,7 @@ Proof.
 
   eapply ceil_and_x_ceil_phi_impl_ceil_phi.
   { exact HΓ. }
+  { wf_auto2. }
   { wf_auto2. }
   1: instantiate (1 := z).
   set_solver.
@@ -3522,6 +3532,7 @@ Proof.
       apply membership_exists with (y := y).
       { exact HΓ. }
       { wf_auto2. }
+      { wf_auto2. }
       { set_solver. }
       { try_solve_pile. }
     }
@@ -3535,6 +3546,7 @@ Proof.
     apply membership_monotone.
     { exact HΓ. }
     { wf_auto2. }
+    2: { wf_auto2. }
     2: {
       apply (strip_exists_quantify_l Γ y).
       { set_solver. }
@@ -3581,7 +3593,8 @@ Proof.
   2: {
     apply membership_monotone.
     { exact HΓ. }
-    { unfold exists_quantify. simpl. repeat case_match; try congruence; wf_auto2. } 
+    { unfold exists_quantify. simpl. repeat case_match; try congruence; wf_auto2. }
+    2: { wf_auto2. }
     2: {
       unfold exists_quantify.
       simpl.
@@ -3599,6 +3612,7 @@ Proof.
   { wf_auto2. }
   apply membership_monotone.
   { exact HΓ. }
+  { wf_auto2. }
   { wf_auto2. }
   { wf_auto2. }
   apply ceil_monotonic.
@@ -4217,8 +4231,9 @@ Proof.
   apply pf_iff_proj2 in H;[|wf_auto2|wf_auto2].
   mlApplyMeta H; clear H.
   mlIntro "H".
-  pose proof (H := membership_exists Γ x (fresh_evar (ϕ ⋅ patt_free_evar x)) (b0 ∈ml ϕ and b0) AnyReasoning HΓ).
+  pose proof (H := membership_exists Γ (patt_free_evar x) (fresh_evar (ϕ ⋅ patt_free_evar x)) (b0 ∈ml ϕ and b0) AnyReasoning HΓ).
   ospecialize* H.
+  { wf_auto2. }
   { wf_auto2. }
   { solve_fresh. }
   { try_solve_pile. }
@@ -4270,7 +4285,7 @@ Proof.
   { wf_auto2. }
   {
     fromMLGoal.
-    aapply membership_monotone;[set_solver|wf_auto2|wf_auto2|].
+    aapply membership_monotone;[set_solver|wf_auto2|wf_auto2|wf_auto2|].
     apply Framing_right with (ψ := ψ); auto. apply pile_any.
     aapply phi_impl_ex_in_phi;[set_solver|wf_auto2].
   }
@@ -4279,7 +4294,7 @@ Proof.
   { wf_auto2. }
   {
     fromMLGoal.
-    aapply membership_monotone;[set_solver|wf_auto2|wf_auto2|].
+    aapply membership_monotone;[set_solver|wf_auto2|wf_auto2|wf_auto2|].
     toMLGoal.
     { wf_auto2. }
     mlIntro "H".
@@ -4288,8 +4303,9 @@ Proof.
   }
   mlClear "H1".
   remember (fresh_evar ((patt_free_evar x) and ϕ and ψ)) as y.
-  pose proof (H := membership_exists Γ x y (ψ ⋅ (b0 ∈ml ϕ and b0)) AnyReasoning HΓ).
+  pose proof (H := membership_exists Γ (patt_free_evar x) y (ψ ⋅ (b0 ∈ml ϕ and b0)) AnyReasoning HΓ).
   ospecialize* H.
+  { wf_auto2. }
   { wf_auto2. }
   { subst y. solve_fresh. }
   { try_solve_pile. }

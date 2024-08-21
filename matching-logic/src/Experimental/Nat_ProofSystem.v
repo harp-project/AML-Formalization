@@ -61,8 +61,13 @@ Section nat.
       well_formed φ ->
       well_formed (ex , φ') ->
       Γ ⊢i φ ∈ml (ex, φ') --->
-      φ'^[evar:0↦φ]  using i.
+      φ'^[evar:0↦φ] using i.
   Proof.
+    intros.
+    mlIntro. mlApplyMeta membership_exists_1 in "0". 2-4: admit.
+    mlDestructEx "0" as x. admit.
+    mlSimpl.
+    rewrite evar_open_not_occur. wf_auto2.
   Admitted.
 
   Lemma use_nat_axiom ax Γ :
@@ -128,42 +133,231 @@ Section nat.
   Defined.
 
   Theorem peano_induction X :
-    theory ⊢ patt_free_svar X ⊆ml 〚 Nat 〛 ---> 
+    theory ⊢ (* patt_free_svar X ⊆ml 〚 Nat 〛 --->  *)
     Zero ∈ml patt_free_svar X  --->
     ( all Nat, (b0 ∈ml patt_free_svar X ---> Succ ⋅ b0 ∈ml patt_free_svar X) ) --->
     all Nat, b0 ∈ml patt_free_svar X.
   Proof.
-(*  toMLGoal.
+    (* toMLGoal.
     { wf_auto2. }
+    do 2 mlIntro.
+    unfold axiom.
+    mlIntroAll x. cbn.
+    mlIntro.
+    mlSpecialize "1" with x. mlSimpl. cbn.
+
+    mlAdd (use_nat_axiom AxInductiveDomain theory ltac:(reflexivity)) as "ind".
+    unfold axiom. fold Nat.
+    mlRevert "2".
+    mlRewriteBy "ind" at 1. 1: unfold theory; set_solver.
+    mlClear "ind".
+    mlApplyMeta membership_imp_1. 2: unfold theory; set_solver.
+
+    Search patt_in derives_using. *)
     
+
+
+(*     mlApplyMeta nat_subset_imp_in.
+
+    
+    { unfold theory. set_solver. }
+
+    mlClear "ind".
+    mlIntro.
+    Check Framing.
+    Search patt_forall derives_using.
+
+    
+    
+    
+    fromMLGoal.
+
+    apply phi_impl_total_phi_meta.
+    { wf_auto2. }
+    { apply pile_any. }
+
+    apply Knaster_tarski.
+    { apply pile_any. }
+    { wf_auto2. }
+    unfold instantiate. mlSimpl. simpl.
+
+    toMLGoal.
+    { wf_auto2. }
     mlIntro "H".
-    mlIntro "H1".
-    mlIntro "H2".
-    mlApplyMeta nat_subset_imp_in.
-    remember (evar_fresh [] ) as x.
-    
-    pose proof membership_symbol_ceil_aux_aux_0 theory x ( patt_free_svar X)  ltac:( unfold theory;set_solver) ltac:(wf_auto2).
-    apply universal_generalization with (x:=x) in H.
-    2: try_solve_pile.
-    2: wf_auto2.
-    mlSimpl in H. simpl in H.
-    case_match.
-    2: congruence.
-    assert ( theory ⊢ (ex , Zero =ml b0) ).
-    1:admit.
-    use AnyReasoning in H.
-    epose proof conj_intro_meta _ _ _ _ _ _ H H1.
-    Unshelve.
-    2-3: wf_auto2. 
-    mlSpecMeta H with Zero.
-    2:unfold theory;set_solver.
-    2:simpl;reflexivity.
-    mlSimpl in H.
-    simpl in H.
-    mlApplyMeta H in "H1".
-    unfold patt_forall_of_sort.*)
-    
-    (* rephrase "H2" into a totality statement and use propagation of totality through conjuction  *)
+    mlDestructOr "H" as "Z0" "S0".
+    { (* Base case *)
+      mlRevertLast.
+      mlApplyMeta total_phi_impl_phi.
+      2: instantiate (1 := fresh_evar ⊥); solve_fresh.
+      2: { unfold theory. set_solver. }
+
+      fromMLGoal.
+
+      apply membership_impl_subseteq.
+      { unfold theory. set_solver. }
+      { reflexivity. }
+      { reflexivity. }
+      { wf_auto2. }
+      { wf_auto2. }
+      {
+        toMLGoal.
+        { wf_auto2. }
+        mlApplyMeta ex_sort_impl_ex.
+        2: { unfold theory. set_solver. }
+        mlAdd (use_nat_axiom AxFun1 theory ltac:(reflexivity)) as "f"; unfold axiom.
+        mlExact "f".
+      }
+      assumption.
+    }
+    { (* Inductive case *)
+      fromMLGoal.
+      apply membership_elimination with (x := ev_x).
+      { solve_free_evars 1. }
+      { apply pile_any. }
+      { wf_auto2. }
+      { unfold theory. set_solver. }
+
+      remember (fresh_evar (b0 ∈ml (Succ ⋅ patt_free_svar X ---> patt_free_svar X))) as x.
+
+      rewrite <- evar_quantify_evar_open with (phi := b0 ∈ml (Succ ⋅ patt_free_svar X ---> patt_free_svar X)) (n := 0) (x := x).
+      2: {
+        subst x.
+        eapply evar_is_fresh_in_richer'.
+        2: { apply set_evar_fresh_is_fresh'. }
+        clear. set_solver.
+      }
+      2: { cbn. reflexivity. }
+      apply universal_generalization;[apply pile_any|wf_auto2|].
+      mlSimpl. unfold evar_open. simpl.
+
+      pose proof (Htmp := membership_imp theory x (Succ ⋅ patt_free_svar X) (patt_free_svar X)).
+      ospecialize* Htmp.
+      { unfold theory. set_solver. }
+      { wf_auto2. }
+      { wf_auto2. }
+      use AnyReasoning in Htmp.
+
+      toMLGoal.
+      { wf_auto2. }
+
+      mlRewrite Htmp at 1. clear Htmp. fold AnyReasoning.
+
+      unfold patt_forall_of_sort, nest_ex in S; simpl in S; fold Nat in S.
+
+      pose proof (Htmp := membership_symbol_right theory (patt_free_svar X) Succ x).
+      ospecialize* Htmp.
+      { unfold theory. set_solver. }
+      { wf_auto2. }
+      { wf_auto2. }
+      { reflexivity. }
+      { reflexivity. }
+      mlIntro "H".
+      mlApplyMeta Htmp in "H". clear Htmp.
+
+      fromMLGoal.
+
+      remember (fresh_evar (b0 ∈ml patt_free_svar X and patt_free_evar x ∈ml Succ ⋅ b0)) as y.
+      rewrite <- evar_quantify_evar_open with (n := 0) (x := y) (phi := b0 ∈ml patt_free_svar X and patt_free_evar x ∈ml Succ ⋅ b0).
+      2: {
+        subst y. eapply evar_is_fresh_in_richer'.
+        2: { apply set_evar_fresh_is_fresh'. }
+        clear. set_solver.
+      }
+      2: {
+        wf_auto2.
+      }
+
+      gapply BasicProofSystemLemmas.Ex_gen.
+      { apply pile_any. }
+      { apply pile_any. }
+      {
+        subst y. eapply evar_is_fresh_in_richer'.
+        2: { apply set_evar_fresh_is_fresh'. }
+        clear. set_solver.
+      }
+
+      mlSimpl. unfold evar_open. simpl. fold AnyReasoning.
+
+      toMLGoal.
+      { wf_auto2. }
+      mlIntro "H".
+      mlDestructAnd "H" as "ys" "H0".
+
+      pose proof (M := membership_imp_equal theory (patt_free_evar x) (Succ ⋅ patt_free_evar y)).
+      ospecialize* M.
+      { unfold theory. set_solver. }
+      { reflexivity. }
+      { wf_auto2. }
+      { wf_auto2. }
+
+      apply total_phi_impl_phi_meta with (x := fresh_evar ⊥) in XN;
+      [|unfold theory; set_solver|set_solver|wf_auto2|apply pile_any].
+
+      mlAdd M as "M". clear M.
+      mlApplyMeta and_impl' in "M".
+      mlApplyMeta and_impl' in "M".
+      mlAssert ("M0" : (patt_free_evar x =ml Succ ⋅ patt_free_evar y)).
+      { wf_auto2. }
+      {
+        mlApply "M". mlClear "M".
+        mlSplitAnd. mlSplitAnd.
+        + mlClear "ys". mlClear "H0".
+          mlApplyMeta BasicProofSystemLemmas.Ex_quan.
+          unfold instantiate. mlSimpl. simpl.
+          fromMLGoal.
+          aapply patt_equal_refl.
+          { wf_auto2. }
+        + mlApplyMeta ex_sort_impl_ex;[|unfold theory; set_solver].
+          mlAdd (use_nat_axiom AxFun2 theory ltac:(set_solver)) as "H"; unfold axiom.
+          unfold "all _ , _", nest_ex; simpl; fold Nat.
+          rewrite <- evar_quantify_evar_open with (x := y) (n := 0) (phi := b0 ∈ml 〚 Nat 〛 ---> (ex Nat , Succ ⋅ b1 =ml b0)).
+          2: {
+            subst y. eapply evar_is_fresh_in_richer'.
+            2: apply set_evar_fresh_is_fresh'.
+            clear. set_solver.
+          }
+          2: wf_auto2.
+          mlApplyMeta forall_variable_substitution in "H".
+          2-10: case_match;[wf_auto2|congruence].
+          unfold evar_open. mlSimpl. simpl.
+          case_match. 2: congruence.
+          mlApply "H". mlClear "H". mlClear "H0".
+          unfold patt_in.
+          fromMLGoal.
+          aapply ceil_monotonic;[unfold theory; set_solver|wf_auto2|wf_auto2|].
+          toMLGoal. wf_auto2.
+          mlIntro "yX".
+          mlDestructAnd "yX" as "y" "X".
+          mlSplitAnd.
+          * mlExact "y".
+          * mlAdd XN as "H". mlApply "H". mlExact "X". 
+        + mlExact "H0".
+      }
+      mlClear "M".
+
+      mlRewriteBy "M0" at 1;[unfold theory; set_solver|].
+
+      mlClear "M0".
+
+      apply forall_elim with (x := y) in S.
+      2: { wf_auto2. }
+      unfold evar_open in S. mlSimpl in S. simpl in S.
+      mlAdd S as "S". clear S.
+      mlApplyMeta and_impl' in "S".
+      mlApply "S". mlClear "S".
+      mlSplitAnd.
+      + mlClear "H0".
+        fromMLGoal.
+        aapply ceil_monotonic;[unfold theory; set_solver|wf_auto2|wf_auto2|].
+        toMLGoal. wf_auto2.
+        mlAdd XN as "H".
+        mlIntro "yX".
+        mlDestructAnd "yX" as "y" "X".
+        mlSplitAnd.
+        * mlExact "y".
+        * mlApply "H". mlExact "X". 
+      + mlExact "ys".
+    } *)
   Admitted.
   
   Theorem peano_induction_1 X :
