@@ -1587,14 +1587,8 @@ Section ProofSystemTheorems.
   Proof.
     destruct C as [y φ4]. cbn in *.
     assert (well_formed φ4) by wf_auto2. clear WFC.
-    remember (size' φ4) as sz.
-    assert (size' φ4 <= sz) by lia. clear Heqsz.
-    revert φ4 φ1 φ2 xs x Γ HΓ H0 H WF1 WF2 Hfree Hfree2 Henough Hmu_less.
-    induction sz; intros.
-    {
-      destruct φ4; simpl in H0; lia.
-    }
-    destruct φ4; simpl in *.
+    revert φ1 φ2 xs x Γ HΓ H WF1 WF2 Hfree Hfree2 Henough Hmu_less.
+    size_induction φ4; intros; simpl in *.
     * case_match.
       - subst. rewrite decide_eq_same.
         mlIntro "H".
@@ -1604,7 +1598,7 @@ Section ProofSystemTheorems.
         mlDestructAnd "H".
         mlAssumption.
         3: wf_auto2.
-        1: instantiate (1 := x).
+        1: instantiate (1 := x0).
         try_solve_pile.
         set_solver.
       - rewrite decide_False. by auto.
@@ -1615,8 +1609,8 @@ Section ProofSystemTheorems.
     * do 2 mlIntro. mlAssumption.
     * do 2 mlIntro. mlAssumption.
     * mlIntro "H".
-      epose proof (IH1 := IHsz φ4_1 φ1 φ2 xs x Γ HΓ ltac:(lia) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) _ ltac:(set_solver) ltac:(lia) _ H1).
-      epose proof (IH2 := IHsz φ4_2 φ1 φ2 xs x Γ HΓ ltac:(lia) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) _ ltac:(set_solver) ltac:(lia) _ H1).
+      epose proof (IH1 := IHsz φ4_1 ltac:(lia) φ1 φ2 xs x Γ HΓ ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) _ ltac:(set_solver) ltac:(lia) _ H0).
+      epose proof (IH2 := IHsz φ4_2 ltac:(lia) φ1 φ2 xs x Γ HΓ ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) _ ltac:(set_solver) ltac:(lia) _ H0).
       clear IHsz.
       mlAssert ("H2" : (φ1 =ml φ2)). wf_auto2. mlAssumption.
       eapply framing_left_under_tot_impl with (x := x) in IH1.
@@ -1650,8 +1644,8 @@ Section ProofSystemTheorems.
         rewrite negb_false_iff Nat.eqb_eq. lia.
     * do 2 mlIntro. mlAssumption.
     * mlIntro "H".
-      epose proof (IH1 := IHsz φ4_1 φ2 φ1 xs x Γ HΓ ltac:(lia) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) _ ltac:(set_solver) ltac:(lia) _ H1).
-      epose proof (IH2 := IHsz φ4_2 φ1 φ2 xs x Γ HΓ ltac:(lia) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) _ ltac:(set_solver) ltac:(lia) _ H1).
+      epose proof (IH1 := IHsz φ4_1 ltac:(lia) φ2 φ1 xs x Γ HΓ ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) _ ltac:(set_solver) ltac:(lia) _ H0).
+      epose proof (IH2 := IHsz φ4_2 ltac:(lia) φ1 φ2 xs x Γ HΓ ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) _ ltac:(set_solver) ltac:(lia) _ H0).
       clear IHsz.
       mlAssert ("H2" : (φ2 =ml φ1)). wf_auto2.
       {
@@ -1716,14 +1710,13 @@ Section ProofSystemTheorems.
          side conditions, thus fails *)
       _mlReshapeHypsByName "1".
       apply MLGoal_destructEx with (x := z). try_solve_pile.
-      1-4: cbn; clear-H2.
+      1-4: cbn; clear-H1.
       1-2: set_solver.
       1-2: pose proof free_evars_free_evar_subst; set_solver.
       (* *** *)
       simpl. mlExists z.
-      opose proof* (IHsz (evar_open z 0 φ4) φ1 φ2 (list_to_set l) x Γ HΓ).
-      2-4: wf_auto2.
-      1: rewrite evar_open_size'; lia.
+      opose proof* (IHsz (evar_open z 0 φ4) ltac:( rewrite evar_open_size'; lia) φ1 φ2 (list_to_set l) x Γ HΓ).
+      1-3: wf_auto2.
       - clear -Hfree e HZ.
         pose proof free_evars_evar_open φ4 z 0.
         repeat apply disjoint_union_r in Hfree as [Hfree ?].
@@ -1732,7 +1725,7 @@ Section ProofSystemTheorems.
         repeat (apply disjoint_union_l; split); try assumption.
         clear -H5 H HZ. set_solver.
       - pose proof free_evars_evar_open φ4 z 0.
-        clear-Hfree2 Hfree H3.
+        clear-Hfree2 Hfree H2.
         repeat apply disjoint_union_r in Hfree as [Hfree _].
         do 3 apply disjoint_union_l in Hfree as [Hfree _].
         apply disjoint_union_l in Hfree as [_ Hfree].
@@ -1748,7 +1741,7 @@ Section ProofSystemTheorems.
       - try_solve_pile.
       - rewrite evar_open_free_evar_subst_swap. apply HZ. wf_auto2.
         rewrite evar_open_free_evar_subst_swap. apply HZ. wf_auto2.
-        mlApplyMeta H3. mlSplitAnd; mlAssumption.
+        mlApplyMeta H2. mlSplitAnd; mlAssumption.
     * unfold mu_in_evar_path in Hmu_less. simpl in Hmu_less.
       destruct (decide (y ∈ free_evars φ4)).
       - rewrite maximal_mu_depth_to_S in Hmu_less. assumption.
