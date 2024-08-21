@@ -584,3 +584,11 @@ Ltac solve_fresh :=
   by (unfold evar_is_fresh_in;
   eapply evar_is_fresh_in_richer'; [|apply set_evar_fresh_is_fresh'];
   clear; set_solver).
+
+Ltac solve_sfresh :=
+  (eapply not_elem_of_larger_impl_not_elem_of;
+  [|apply X_eq_fresh_impl_X_notin_free_svars; reflexivity];
+  simpl; clear; set_solver) +
+  by (unfold svar_is_fresh_in;
+  eapply svar_is_fresh_in_richer'; [|apply set_svar_fresh_is_fresh'];
+  clear; set_solver).

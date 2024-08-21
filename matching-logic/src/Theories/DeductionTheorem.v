@@ -221,44 +221,21 @@ Proof.
         rewrite <- neg_occurrence_bsvar_subst.
         assumption.
       }
-      rewrite <- svar_quantify_svar_open with (n := 0) (phi := cpatt^[[evar:cvar↦ϕ]]) (X := X).
-      rewrite <- svar_quantify_svar_open with (n := 0) (phi := cpatt^[[evar:cvar↦ψ]]) (X := X).
-      apply mu_monotone.
+
+      apply mu_monotone with (X := X).
       { eapply pile_trans;[|apply pile]. try_solve_pile. }
       {
-        unfold is_positive_context in Hp. simpl in Hp. 
-        unfold well_formed in wfc. simpl in wfc.
-        destruct_and! wfc.
-        pose proof (Hneg := free_evar_subst_preserves_no_negative_occurrence cvar cpatt ϕ 0).
-        ospecialize* Hneg.
-        { wf_auto2. }
-        { assumption. }
-        cbn in Hp.
-        apply positive_negative_occurrence_db_named.
-        { assumption. }
-        apply fresh_svar_no_neg.
-        subst.
-        clear.
-        eapply svar_is_fresh_in_richer'.
-        2: apply set_svar_fresh_is_fresh'.
-        set_solver.
+        wf_auto2.
       }
       {
-        unfold is_positive_context in Hp. simpl in Hp. 
-        unfold well_formed in wfc. simpl in wfc.
-        destruct_and! wfc.
-        pose proof (Hneg := free_evar_subst_preserves_no_negative_occurrence cvar cpatt ψ 0).
-        ospecialize* Hneg.
-        { wf_auto2. }
-        { assumption. }
-        cbn in Hp.
-        apply positive_negative_occurrence_db_named.
-        { assumption. }
-        apply fresh_svar_no_neg.
-        subst.
-        clear.
-        eapply svar_is_fresh_in_richer'.
-        2: apply set_svar_fresh_is_fresh'.
+        wf_auto2.
+      }
+      {
+        subst X. unfold svar_fresh_s.
+        pose proof free_svars_free_evar_subst.
+        pose proof set_svar_fresh_is_fresh' (free_svars cpatt ∪ free_svars ψ ∪ free_svars ϕ ∪ free_svars cpatt^[[evar:cvar↦ϕ]]
+      ∪ free_svars cpatt^[[evar:cvar↦ψ]]).
+        clear-H0 H1.
         set_solver.
       }
       unfold svar_open.
@@ -270,38 +247,6 @@ Proof.
       { unfold evar_is_fresh_in. set_solver. }
       { wf_auto2. }
       { unfold evar_is_fresh_in. set_solver. }
-      {
-        clear -HeqX.
-        intro Hcontra.
-        pose proof (Hfree := free_svars_free_evar_subst cpatt cvar ψ).
-        assert (X ∉ free_svars cpatt /\ X ∉ free_svars ψ).
-        {
-          subst.
-          split.
-          {
-            eapply svar_is_fresh_in_richer'.
-            2: apply set_svar_fresh_is_fresh'.
-            clear.
-            set_solver.
-          }
-          {
-            eapply svar_is_fresh_in_richer'.
-            2: apply set_svar_fresh_is_fresh'.
-            clear.
-            set_solver.
-          }
-        }
-        set_solver.
-      }
-      { wf_auto2. }
-      {
-        subst X.
-        eapply svar_is_fresh_in_richer'.
-        2: apply set_svar_fresh_is_fresh'.
-        clear.
-        set_solver.
-      }
-      { wf_auto2. }
   }
   {
     intro Hp.
@@ -352,7 +297,7 @@ Proof.
       { wf_auto2. }
       { wf_auto2. }
       { wf_auto2. }
-      
+
       unshelve(eapply Framing_right).
       { wf_auto2. }
       { eapply pile_trans;[|apply pile]. apply pile_any. }
@@ -456,44 +401,17 @@ Proof.
         rewrite <- pos_occurrence_bsvar_subst.
         assumption.
       }
-      rewrite <- svar_quantify_svar_open with (n := 0) (phi := cpatt^[[evar:cvar↦ϕ]]) (X := X).
-      rewrite <- svar_quantify_svar_open with (n := 0) (phi := cpatt^[[evar:cvar↦ψ]]) (X := X).
-      apply mu_monotone.
+
+      apply mu_monotone with (X := X).
       { eapply pile_trans;[|apply pile]. try_solve_pile. }
+      { wf_auto2. }
+      { wf_auto2. }
       {
-        unfold is_negative_context in Hp. simpl in Hp. 
-        unfold well_formed in wfc. simpl in wfc.
-        destruct_and! wfc.
-        pose proof (Hneg := free_evar_subst_preserves_no_negative_occurrence cvar cpatt ψ 0).
-        ospecialize* Hneg.
-        { wf_auto2. }
-        { assumption. }
-        cbn in Hp.
-        apply positive_negative_occurrence_db_named.
-        { assumption. }
-        apply fresh_svar_no_neg.
-        subst.
-        clear.
-        eapply svar_is_fresh_in_richer'.
-        2: apply set_svar_fresh_is_fresh'.
-        set_solver.
-      }
-      {
-        unfold is_negative_context in Hp. simpl in Hp. 
-        unfold well_formed in wfc. simpl in wfc.
-        destruct_and! wfc.
-        pose proof (Hneg := free_evar_subst_preserves_no_negative_occurrence cvar cpatt ϕ 0).
-        ospecialize* Hneg.
-        { wf_auto2. }
-        { assumption. }
-        cbn in Hp.
-        apply positive_negative_occurrence_db_named.
-        { assumption. }
-        apply fresh_svar_no_neg.
-        subst.
-        clear.
-        eapply svar_is_fresh_in_richer'.
-        2: apply set_svar_fresh_is_fresh'.
+        subst X. unfold svar_fresh_s.
+        pose proof free_svars_free_evar_subst.
+        pose proof set_svar_fresh_is_fresh' (free_svars cpatt ∪ free_svars ψ ∪ free_svars ϕ
+          ∪ free_svars cpatt^[[evar:cvar↦ϕ]] ∪ free_svars cpatt^[[evar:cvar↦ψ]]).
+        clear-H0 H1.
         set_solver.
       }
       unfold svar_open.
@@ -505,38 +423,6 @@ Proof.
       { unfold evar_is_fresh_in. set_solver. }
       { wf_auto2. }
       { unfold evar_is_fresh_in. set_solver. }
-      {
-        clear -HeqX.
-        intro Hcontra.
-        pose proof (Hfree := free_svars_free_evar_subst cpatt cvar ψ).
-        assert (X ∉ free_svars cpatt /\ X ∉ free_svars ψ).
-        {
-          subst.
-          split.
-          {
-            eapply svar_is_fresh_in_richer'.
-            2: apply set_svar_fresh_is_fresh'.
-            clear.
-            set_solver.
-          }
-          {
-            eapply svar_is_fresh_in_richer'.
-            2: apply set_svar_fresh_is_fresh'.
-            clear.
-            set_solver.
-          }
-        }
-        set_solver.
-      }
-      { wf_auto2. }
-      {
-        subst X.
-        eapply svar_is_fresh_in_richer'.
-        2: apply set_svar_fresh_is_fresh'.
-        clear.
-        set_solver.
-      }
-      { wf_auto2. }
   }
 Defined.
 
@@ -991,69 +877,18 @@ Proof.
     }
     {
       fromMLGoal.
-      remember (fresh_svar (ψ and ϕ)) as Y.
-      rewrite <- svar_quantify_svar_open with (n := 0) (phi := (ψ and ϕ)) (X := Y).
-      rewrite <- svar_quantify_svar_open with (n := 0) (phi := ϕ) (X := Y) at 2.
-      apply mu_monotone.
+      mlFreshSvar as X.
+      apply mu_monotone with (X := X).
       { apply pile_any. }
+      1-2: wf_auto2.
+      1: fm_solve.
       {
-        mlSimpl. cbn. fold no_negative_occurrence_db_b svar_has_negative_occurrence.
-        rewrite !orb_false_r.
-        apply orb_false_iff.
-        split.
-        {
-          apply positive_negative_occurrence_db_named.
-          { wf_auto2. }
-          {
-            subst Y. clear. apply svar_hno_false_if_fresh.
-            eapply svar_is_fresh_in_richer'.
-            2: { apply set_svar_fresh_is_fresh. }
-            { cbn.  set_solver. }
-          }
-        }
-        {
-          apply positive_negative_occurrence_db_named.
-          { wf_auto2. }
-          {
-            subst Y. clear. apply svar_hno_false_if_fresh.
-            eapply svar_is_fresh_in_richer'.
-            2: { apply set_svar_fresh_is_fresh. }
-            { cbn.  set_solver. }
-          }
-        }
-      }
-      {
-        apply positive_negative_occurrence_db_named.
-        { wf_auto2. }
-        {
-          subst Y. clear. apply svar_hno_false_if_fresh.
-          eapply svar_is_fresh_in_richer'.
-          2: { apply set_svar_fresh_is_fresh. }
-          { cbn.  set_solver. }
-        }
-      }
-      {
-        unfold svar_open.
         mlSimpl.
         gapply pf_conj_elim_r.
         { try_solve_pile. }
         { wf_auto2. }
         { wf_auto2. }
       }
-      {
-        subst Y. clear.
-        eapply svar_is_fresh_in_richer'.
-        2: { apply set_svar_fresh_is_fresh. }
-        { cbn.  set_solver. }
-      }
-      { wf_auto2. }
-      {
-        subst Y. clear.
-        eapply svar_is_fresh_in_richer'.
-        2: { apply set_svar_fresh_is_fresh. }
-        { cbn.  set_solver. }
-      }
-      { wf_auto2. }
     }
   }
   {
@@ -1569,9 +1404,9 @@ Proof.
       { exact HΓ. }
       { wf_auto2. }
       { instantiate (1 := fresh_evar ψ). solve_fresh. }
-      { instantiate (1 := fresh_evar (ψ $ patt_free_evar (fresh_evar ψ))). solve_fresh. }
-      { instantiate (1 := fresh_evar (ψ $ patt_free_evar (fresh_evar ψ) $ 
-                      patt_free_evar (fresh_evar (ψ $ patt_free_evar (fresh_evar ψ))))). solve_fresh. }
+      { instantiate (1 := fresh_evar (ψ ⋅ patt_free_evar (fresh_evar ψ))). solve_fresh. }
+      { instantiate (1 := fresh_evar (ψ ⋅ patt_free_evar (fresh_evar ψ) ⋅ 
+                      patt_free_evar (fresh_evar (ψ ⋅ patt_free_evar (fresh_evar ψ))))). solve_fresh. }
       { try_solve_pile. }
     }
     toMLGoal.
@@ -1623,29 +1458,6 @@ Proof.
     2,3: wf_auto2.
     1: exact HΓ.
 Defined.
-
-(*
-
-*)
-
-
-(*
-Lemma mu_depth_to_fev_limited_0
-  {Σ : Signature}
-  (E : evar)
-  (ϕ : Pattern)
-: mu_depth_to_fev_limited E ϕ 0 ->
-  E ∉ free_evars ϕ
-.
-Proof.
-  induction ϕ; cbn; intros H; try set_solver.
-  {
-    case_match.
-    { lia. }
-    { set_solver. }
-  }
-Qed.
-*)
 
 
 Lemma MLGoal_deduct'
@@ -1795,6 +1607,181 @@ Proof.
   apply hypothesis.
   { wf_auto2. }
   { set_solver. }
+Defined.
+
+(*  eq-elim.0 $e #Substitution ph2 ph4 ph0 x $.   => ph2 = ph4[ph0/x]
+    eq-elim.1 $e #Substitution ph3 ph4 ph1 x $.   => ph3 = ph4[ph1/x]
+    eq-elim $a |- ( \imp ( \eq ph0 ph1 ) ( \imp ph2 ph3 ) ) $.
+                                                  => ph0 = ph1 -> ph2 -> ph3
+
+  Improved version of equality elimination - we can use the following lemma for
+  all contexts in which μs bind set variables only on their outermost level.
+  (Basically, this means, that all bound set variables are 0s)
+ *)
+Lemma equality_elimination
+  {Σ : Signature}
+  {sy : Definedness_Syntax.Syntax}
+  Γ φ1 φ2 C (* x (xs : EVarSet) X i *)
+  (HΓ : theory ⊆ Γ)
+  (WF1 : well_formed φ1)
+  (WF2 :  well_formed φ2)
+  (WFC : PC_wf C)
+  (Hmu : pattern_kt_well_formed (pcPattern C))
+  (* (Hmu : bound_svar_is_banned_under_mus (pcPattern C) 0 0) *)
+(*   (Hfree : {[ev_x; x]} ∪ free_evars φ1 ∪ free_evars φ2 ∪ free_evars (pcPattern C) ## xs)
+  (Hfree2 : x ∉ free_evars φ1 ∪ free_evars φ2 ∪ free_evars (pcPattern C))
+  (* (Hfree3 : x ∉ free_svars ) *)
+  (Henough : size xs >= maximal_exists_depth_to 0 (pcEvar C) (pcPattern C)):
+(*   mu_free (pcPattern C) -> *)
+  ProofInfoLe (ExGen := {[ev_x; x]} ∪ coGset.gset_to_coGset xs,
+         SVSubst := {[X]},
+         KT := false,
+         AKT := false) i -> *) :
+  Γ ⊢i (φ1 =ml φ2) --->
+    (emplace C φ1) ---> (emplace C φ2)
+  using AnyReasoning.
+Proof.
+  destruct C as [y φ4]. cbn in *.
+  assert (well_formed φ4) by wf_auto2. clear WFC.
+  revert φ1 φ2 Γ HΓ H WF1 WF2 Hmu.
+  size_induction φ4; simpl in *; intros.
+  * case_match.
+    - subst.
+      mlIntro "H".
+      (* ExGen : {[ev_x; x]} is needed for this: *)
+      mlApplyMeta total_phi_impl_phi in "H".
+      (***)
+      mlDestructAnd "H".
+      mlAssumption.
+      2: assumption.
+      1: instantiate (1 := fresh_evar (φ1 ---> φ2)); solve_fresh.
+    - do 2 mlIntro. mlAssumption.
+  * do 2 mlIntro. mlAssumption.
+  * do 2 mlIntro. mlAssumption.
+  * do 2 mlIntro. mlAssumption.
+  * do 2 mlIntro. mlAssumption.
+  * mlIntro "H".
+    pose proof (IH1 := IHsz φ4_1 ltac:(lia) φ1 φ2
+                            Γ HΓ ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)
+                            ltac:(by apply andb_true_iff in Hmu as [? ?])).
+    epose proof (IH2 := IHsz φ4_2 ltac:(lia) φ1 φ2
+                             Γ HΓ ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)
+                             ltac:(by apply andb_true_iff in Hmu as [? ?])).
+    clear IHsz.
+    mlAssert ("H2" : (φ1 =ml φ2)). wf_auto2. mlAssumption.
+    eapply framing_left_under_tot_impl with (x := fresh_evar ((φ1 <---> φ2) ---> φ4_2^[[evar:y↦φ2]])) in IH1.
+    eapply framing_right_under_tot_impl with (x := fresh_evar ((φ1 <---> φ2) ---> φ4_1^[[evar:y↦φ1]])) in IH2.
+    mlApplyMeta IH1 in "H".
+    mlApplyMeta IH2 in "H2".
+    mlIntro "H0".
+    mlApply "H".
+    mlApply "H2".
+    mlAssumption.
+    6, 13: solve_fresh.
+    6, 12: try_solve_pile.
+    all: try assumption; wf_auto2.
+  * do 2 mlIntro. mlAssumption.
+  * mlIntro "H".
+    epose proof (IH1 := IHsz φ4_1 ltac:(lia) φ2 φ1
+                             Γ HΓ ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)
+                             ltac:(by apply andb_true_iff in Hmu as [? ?])).
+    epose proof (IH2 := IHsz φ4_2 ltac:(lia) φ1 φ2
+                             Γ HΓ ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)
+                             ltac:(by apply andb_true_iff in Hmu as [? ?])).
+    clear IHsz.
+    mlAssert ("H2" : (φ2 =ml φ1)). wf_auto2.
+    {
+      mlApplyMeta patt_equal_sym. mlAssumption. assumption.
+    }
+    mlApplyMeta IH1 in "H2".
+    mlApplyMeta IH2 in "H".
+    mlIntro "H0". mlIntro "S".
+    clear. mlApply "H". mlApply "H0". mlApply "H2". mlAssumption.
+  * mlIntro.
+    mlIntro.
+    destruct (decide (y ∈ free_evars φ4)).
+    2: {
+      (**
+        If there is no variable to substitute
+      *)
+      rewrite free_evar_subst_no_occurrence. assumption.
+      rewrite free_evar_subst_no_occurrence. assumption.
+      mlAssumption.
+    }
+
+    mlDestructEx "1" as z.
+
+    mlExists z.
+    opose proof* (IHsz (evar_open z 0 φ4) ltac:(rewrite evar_open_size'; lia)
+                       φ1 φ2 Γ HΓ ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
+    1: by apply kt_well_formed_evar_open.
+    rewrite evar_open_free_evar_subst_swap. fm_solve. wf_auto2.
+    rewrite evar_open_free_evar_subst_swap. fm_solve. wf_auto2.
+    mlApplyMeta H0.
+    mlSplitAnd; mlAssumption.
+  * do 2 mlIntro.
+    mlConj "0" "1" as "H". mlClear "0". mlClear "1".
+    (**
+      Γ ⊢ φ1 =ml φ2 and (mu , φ4^[[evar:y↦φ1]]) <--->
+          mu , φ1 =ml φ2 and φ4^[[evar:y↦φ1]]
+    *)
+    opose proof* (mu_and_predicate_propagation Γ (φ4^[[evar:y↦φ1]]) (φ1 =ml φ2) HΓ
+      ltac:(wf_auto2) ltac:(wf_auto2)).
+    {
+      (** Mu-pattern side condition *)
+      destruct_and!.
+      apply bound_svar_is_banned_under_mus_fevar_subst_alternative.
+      * wf_auto2.
+      * apply bsvar_occur_false_impl_banned.
+        apply wfc_mu_aux_implies_not_bsvar_occur. wf_auto2.
+      * assumption.
+    }
+    {
+      (**
+        Γ ⊢ is_predicate_pattern (φ1 =ml φ2)
+      *)
+      mlFreshEvar as x.
+      mlFreshEvar as z.
+      mlFreshEvar as w.
+      eapply floor_is_predicate with (x := x) (y := z) (z := w); try eassumption.
+      wf_auto2.
+      1: fm_solve.
+      1: fm_solve.
+      1: fm_solve.
+      try_solve_pile.
+    }
+    mlAdd H0 as "H0".
+    mlDestructAnd "H0" as "H0_1" "H0_2". mlClear "H0_1".
+    mlApply "H0_2" in "H". mlClear "H0_2".
+    
+    mlFreshSvar as X.
+    (**
+        Γ ⊢ φ1[0↦X] ---> φ2[0↦X]
+    -------------------------------
+      Γ ⊢ (mu , φ1) ---> mu , φ2
+    *)
+    mlApplyMeta mu_monotone. mlAssumption.
+    instantiate (1 := X).
+    3: clear-H0; apply proj1_sig, proved_impl_wf in H0; wf_auto2.
+    2: { ltac2:(_fm_export_everything()). pose proof free_svars_free_evar_subst.
+         set_solver.
+    }
+    mlSimpl.
+    rewrite svar_open_not_occur. wf_auto2.
+    rewrite svar_open_not_occur. wf_auto2.
+    unfold svar_open.
+    rewrite -free_evar_subst_bsvar_subst. wf_auto2. unfold evar_is_fresh_in; set_solver.
+    rewrite -free_evar_subst_bsvar_subst. wf_auto2. unfold evar_is_fresh_in; set_solver.
+    mlIntro. mlDestructAnd "0".
+    fromMLGoal.
+    apply IHsz.
+    - rewrite svar_open_size'. lia.
+    - wf_auto2.
+    - wf_auto2.
+    - wf_auto2.
+    - wf_auto2.
+    - destruct_and!.
+      apply kt_well_formed_svar_open; wf_auto2.
 Defined.
 
 Close Scope ml_scope.

@@ -497,10 +497,10 @@ Section definedness.
     { mlSimpl. apply T_predicate_equals. apply Htheory. }
     apply all_iff_morphism. intros m₁.
     remember ((fresh_evar
-          (patt_equal (nest_ex ϕ₁ $ BoundVarSugar.b0)
+          (patt_equal (nest_ex ϕ₁ ⋅ BoundVarSugar.b0)
              (ex ,
               (BoundVarSugar.b0
-                 and patt_in BoundVarSugar.b1 (nest_ex (nest_ex ϕ₂) $ BoundVarSugar.b0)))))) as x.
+                 and patt_in BoundVarSugar.b1 (nest_ex (nest_ex ϕ₂) ⋅ BoundVarSugar.b0)))))) as x.
     unfold evar_open.
     mlSimpl.
     rewrite equal_iff_interpr_same.
@@ -535,7 +535,7 @@ Section definedness.
     unfold evar_open, nest_ex.
     remember (fresh_evar
                 (patt_free_evar x
-                 ∈ml (nest_ex_aux 0 1 (nest_ex_aux 0 1 ϕ₂))^[evar:1↦patt_free_evar x] $ b0)) as y.
+                 ∈ml (nest_ex_aux 0 1 (nest_ex_aux 0 1 ϕ₂))^[evar:1↦patt_free_evar x] ⋅ b0)) as y.
     rewrite fuse_nest_ex_same.
     rewrite nest_ex_same_general. 1-2: cbn; lia.
     mlSimpl. rewrite nest_ex_same.
@@ -764,7 +764,7 @@ Module equivalence_insufficient.
   Qed.
 
   Example equiv_not_eq :
-    forall ρ, @eval _ exampleModel ρ (ex , (patt_sym sym_f $ patt_free_evar "x"%string <---> b0)) = ⊤.
+    forall ρ, @eval _ exampleModel ρ (ex , (patt_sym sym_f ⋅ patt_free_evar "x"%string <---> b0)) = ⊤.
   Proof.
     intros ρ. unfold_leibniz.
     rewrite set_equiv_subseteq. split.

@@ -1097,12 +1097,12 @@ Goal forall X,
   (( patt_free_svar X ⊆ml 〚 Nat 〛 --->
        Zero ∈ml patt_free_svar X --->
        (all Nat, (b0 ∈ml patt_free_svar X ---> 
-       Succ $ b0 ∈ml patt_free_svar X)) --->
+       Succ ⋅ b0 ∈ml patt_free_svar X)) --->
        (all Nat, b0 ∈ml patt_free_svar X ) ) ^[[svar:X↦ex Nat, b0 and Zero +ml b0 =ml b0]] ) = 
       ( (ex Nat, b0 and Zero +ml b0 =ml b0) ⊆ml 〚 Nat 〛 --->
        Zero ∈ml (ex Nat, b0 and Zero +ml b0 =ml b0) --->
        (all Nat, (b0 ∈ml (ex Nat, b0 and Zero +ml b0 =ml b0) ---> 
-       Succ $ b0 ∈ml (ex Nat, b0 and Zero +ml b0 =ml b0))) --->
+       Succ ⋅ b0 ∈ml (ex Nat, b0 and Zero +ml b0 =ml b0))) --->
        (all Nat, b0 ∈ml (ex Nat, b0 and Zero +ml b0 =ml b0) ) ).
 Proof.
   intros. mlSimpl.

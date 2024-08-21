@@ -60,10 +60,10 @@ Section with_model.
       }
       subst x.
       remember (patt_in b0 (patt_inhabitant_set (nest_ex s)) ---> ϕ) as Bigϕ.
-      assert (Hfresh: fresh_evar Bigϕ ∉ free_evars (patt_sym (inj inhabitant) $ (nest_ex s))).
+      assert (Hfresh: fresh_evar Bigϕ ∉ free_evars (patt_sym (inj inhabitant) ⋅ (nest_ex s))).
       { rewrite HeqBigϕ.
         unfold patt_inhabitant_set.
-        fold (evar_is_fresh_in (fresh_evar (patt_in b0 (sym inhabitant $ s) ---> ϕ)) (patt_sym (inj inhabitant) $ s)).
+        fold (evar_is_fresh_in (fresh_evar (patt_in b0 (sym inhabitant ⋅ s) ---> ϕ)) (patt_sym (inj inhabitant) ⋅ s)).
         unfold sym.
         eapply evar_fresh_in_subformula.
         2: apply set_evar_fresh_is_fresh.
@@ -105,7 +105,7 @@ Section with_model.
         simpl. fold evar_open.
 
         unfold Minterp_inhabitant in H'.
-        pose proof (Hfeip := free_evar_in_patt M M_satisfies_theory (fresh_evar Bigϕ) (patt_sym (inj inhabitant) $ (nest_ex s)^{evar: 0 ↦ (fresh_evar Bigϕ)}) (update_evar_val (fresh_evar Bigϕ) m ρ)).
+        pose proof (Hfeip := free_evar_in_patt M M_satisfies_theory (fresh_evar Bigϕ) (patt_sym (inj inhabitant) ⋅ (nest_ex s)^{evar: 0 ↦ (fresh_evar Bigϕ)}) (update_evar_val (fresh_evar Bigϕ) m ρ)).
         destruct Hfeip as [Hfeip1 _]. apply Hfeip1. clear Hfeip1.
         rewrite update_evar_val_same.
         clear H. unfold sym in H'.
@@ -123,7 +123,7 @@ Section with_model.
         apply H'.
 
       - intros H m.
-        pose proof (Hfeip := free_evar_in_patt  M M_satisfies_theory (fresh_evar Bigϕ) (patt_sym (inj inhabitant) $ (nest_ex s)^{evar: 0 ↦ (fresh_evar Bigϕ)}) (update_evar_val (fresh_evar Bigϕ) m ρ)).
+        pose proof (Hfeip := free_evar_in_patt  M M_satisfies_theory (fresh_evar Bigϕ) (patt_sym (inj inhabitant) ⋅ (nest_ex s)^{evar: 0 ↦ (fresh_evar Bigϕ)}) (update_evar_val (fresh_evar Bigϕ) m ρ)).
         destruct Hfeip as [_ Hfeip2].
         rewrite {3}HeqBigϕ.
         unfold evar_open. mlSimpl. simpl.
@@ -176,10 +176,10 @@ Section with_model.
       }
       subst x.
       remember (patt_in b0 (patt_inhabitant_set (nest_ex s)) and ϕ) as Bigϕ.
-      assert (Hfresh: fresh_evar Bigϕ ∉ free_evars (patt_sym (inj inhabitant) $ (nest_ex s))).
+      assert (Hfresh: fresh_evar Bigϕ ∉ free_evars (patt_sym (inj inhabitant) ⋅ (nest_ex s))).
       { rewrite HeqBigϕ.
         unfold patt_inhabitant_set.
-        fold (evar_is_fresh_in (fresh_evar (patt_in b0 (sym inhabitant $ s) and ϕ)) (patt_sym (inj inhabitant) $ s)).
+        fold (evar_is_fresh_in (fresh_evar (patt_in b0 (sym inhabitant ⋅ s) and ϕ)) (patt_sym (inj inhabitant) ⋅ s)).
         unfold sym.
         eapply evar_fresh_in_subformula.
         2: apply set_evar_fresh_is_fresh.
@@ -220,7 +220,7 @@ Section with_model.
         destruct H as [H1 H2].
         split. 2: apply H2. clear H2.
         unfold Minterp_inhabitant.
-        pose proof (Hfeip := free_evar_in_patt M M_satisfies_theory (fresh_evar Bigϕ) (patt_sym (inj inhabitant) $ (nest_ex s)^{evar: 0 ↦ (fresh_evar Bigϕ)}) (update_evar_val (fresh_evar Bigϕ) m ρ)).
+        pose proof (Hfeip := free_evar_in_patt M M_satisfies_theory (fresh_evar Bigϕ) (patt_sym (inj inhabitant) ⋅ (nest_ex s)^{evar: 0 ↦ (fresh_evar Bigϕ)}) (update_evar_val (fresh_evar Bigϕ) m ρ)).
         destruct Hfeip as [_ Hfeip2].
 
         apply Hfeip2 in H1. clear Hfeip2.
@@ -241,7 +241,7 @@ Section with_model.
         apply H1.
 
       - intros [m [H1 H2] ]. exists m.
-        pose proof (Hfeip := free_evar_in_patt M M_satisfies_theory (fresh_evar Bigϕ) (patt_sym (inj inhabitant) $ (nest_ex s)^{evar: 0 ↦ (fresh_evar Bigϕ)}) (update_evar_val (fresh_evar Bigϕ) m ρ)).
+        pose proof (Hfeip := free_evar_in_patt M M_satisfies_theory (fresh_evar Bigϕ) (patt_sym (inj inhabitant) ⋅ (nest_ex s)^{evar: 0 ↦ (fresh_evar Bigϕ)}) (update_evar_val (fresh_evar Bigϕ) m ρ)).
         destruct Hfeip as [Hfeip1 _].
         rewrite {3}HeqBigϕ.
         apply eval_and_full. fold evar_open.
@@ -318,7 +318,7 @@ Section with_model.
       rewrite eval_forall_of_sort_predicate.
       1: { mlSortedSimpl. eapply M_predicate_exists_of_sort. eauto. }
 
-      remember (fresh_evar (patt_exists_of_sort (nest_ex s₂) (patt_equal ((nest_ex (nest_ex f)) $ b1) b0))) as x'.
+      remember (fresh_evar (patt_exists_of_sort (nest_ex s₂) (patt_equal ((nest_ex (nest_ex f)) ⋅ b1) b0))) as x'.
       rewrite [nest_ex s₂]/nest_ex.
       mlSortedSimpl.
       unfold nest_ex. repeat rewrite nest_ex_same.
@@ -366,7 +366,7 @@ Section with_model.
       repeat rewrite nest_ex_same.
 
 
-      remember (fresh_evar (patt_equal (nest_ex_aux 0 1 f $ patt_free_evar x') b0)) as x''.
+      remember (fresh_evar (patt_equal (nest_ex_aux 0 1 f ⋅ patt_free_evar x') b0)) as x''.
 
       rewrite equal_iff_interpr_same. 1: apply M_satisfies_theory.
       simpl. rewrite eval_free_evar_simpl.
@@ -412,7 +412,7 @@ Section with_model.
       1: { mlSortedSimpl. eauto. }
 
       unfold evar_open. mlSimpl.
-      remember (fresh_evar (patt_exists_of_sort (nest_ex s₂) (patt_subseteq ((nest_ex (nest_ex f)) $ b1) b0))) as x'.
+      remember (fresh_evar (patt_exists_of_sort (nest_ex s₂) (patt_subseteq ((nest_ex (nest_ex f)) ⋅ b1) b0))) as x'.
       rewrite [nest_ex s₂]/nest_ex.
       mlSortedSimpl.
       rewrite nest_ex_same.
@@ -459,7 +459,7 @@ Section with_model.
       unfold evar_open. mlSimpl.
       rewrite nest_ex_same.
       simpl.
-      remember (fresh_evar (patt_subseteq (nest_ex_aux 0 1 f $ patt_free_evar x') b0)) as x''.
+      remember (fresh_evar (patt_subseteq (nest_ex_aux 0 1 f ⋅ patt_free_evar x') b0)) as x''.
 
       rewrite subseteq_iff_interpr_subseteq. 1: apply M_satisfies_theory.
       simpl. rewrite eval_free_evar_simpl.
@@ -537,8 +537,8 @@ Section with_model.
       remember
       (fresh_evar
              (patt_forall_of_sort (nest_ex s)
-                (! patt_equal (nest_ex (nest_ex f) $ b1) ⊥ --->
-                 patt_equal (nest_ex (nest_ex f) $ b1) (nest_ex (nest_ex f) $ b0) --->
+                (! patt_equal (nest_ex (nest_ex f) ⋅ b1) ⊥ --->
+                 patt_equal (nest_ex (nest_ex f) ⋅ b1) (nest_ex (nest_ex f) ⋅ b0) --->
                  patt_equal b1 b0)))
       as x₁.
       apply all_iff_morphism. intros m₁.
@@ -550,11 +550,11 @@ Section with_model.
       remember
       (fresh_evar
              (! patt_equal
-                  ((nest_ex (nest_ex f))^[evar:1↦patt_free_evar x₁] $ b1^[evar:1↦patt_free_evar x₁])
+                  ((nest_ex (nest_ex f))^[evar:1↦patt_free_evar x₁] ⋅ b1^[evar:1↦patt_free_evar x₁])
                   ⊥ --->
               patt_equal
-                ((nest_ex (nest_ex f))^[evar:1↦patt_free_evar x₁] $ b1^[evar:1↦patt_free_evar x₁])
-                ((nest_ex (nest_ex f))^[evar:1↦patt_free_evar x₁] $ b0^[evar:1↦patt_free_evar x₁]) --->
+                ((nest_ex (nest_ex f))^[evar:1↦patt_free_evar x₁] ⋅ b1^[evar:1↦patt_free_evar x₁])
+                ((nest_ex (nest_ex f))^[evar:1↦patt_free_evar x₁] ⋅ b0^[evar:1↦patt_free_evar x₁]) --->
               patt_equal b1^[evar:1↦patt_free_evar x₁] b0^[evar:1↦patt_free_evar x₁]))
       as x₂.
 
@@ -658,7 +658,7 @@ Section with_model.
       remember
       (fresh_evar
                (patt_forall_of_sort (nest_ex s)
-                  (patt_equal (nest_ex (nest_ex f) $ b1) (nest_ex (nest_ex f) $ b0) ---> patt_equal b1 b0)))
+                  (patt_equal (nest_ex (nest_ex f) ⋅ b1) (nest_ex (nest_ex f) ⋅ b0) ---> patt_equal b1 b0)))
       as x₁.
       apply all_iff_morphism. intros m₁.
       apply all_iff_morphism. intros Hm₁s.
@@ -675,8 +675,8 @@ Section with_model.
       remember
       (fresh_evar
              (patt_equal
-                ((nest_ex (nest_ex f))^[evar:1↦patt_free_evar x₁] $ b1^[evar:1↦patt_free_evar x₁])
-                ((nest_ex (nest_ex f))^[evar:1↦patt_free_evar x₁] $ b0^[evar:1↦patt_free_evar x₁]) --->
+                ((nest_ex (nest_ex f))^[evar:1↦patt_free_evar x₁] ⋅ b1^[evar:1↦patt_free_evar x₁])
+                ((nest_ex (nest_ex f))^[evar:1↦patt_free_evar x₁] ⋅ b0^[evar:1↦patt_free_evar x₁]) --->
               patt_equal b1^[evar:1↦patt_free_evar x₁] b0^[evar:1↦patt_free_evar x₁]))
       as x₂.
 

@@ -4489,6 +4489,87 @@ Defined.
     mlReflexivity.
   Defined.
 
+Lemma pf_iff_equiv_trans_obj {Σ : Signature} : forall Γ A B C i,
+  well_formed A -> well_formed B -> well_formed C ->
+  Γ ⊢i (A <---> B) ---> (B <---> C) ---> (A <---> C) using i.
+Proof.
+  intros * wfA wfB wfC.
+  do 2 mlIntro.
+  mlDestructAnd "0".
+  mlDestructAnd "1".
+  mlSplitAnd.
+  pose proof (syllogism Γ _ _ _ wfA wfB wfC).
+  use i in H.
+  mlApplyMeta H in "2".
+  mlApply "0" in "2".
+  mlExact "0".
+  pose proof (syllogism Γ _ _ _ wfC wfB wfA).
+  use i in H.
+  mlApplyMeta H in "4".
+  mlApply "4" in "3".
+  mlExact "3".
+Defined.
+
+Lemma pf_iff_equiv_sym_obj {Σ : Signature} Γ A B i :
+  well_formed A -> well_formed B -> Γ ⊢i (A <---> B) ---> (B <---> A) using i.
+Proof.
+  intros wfa wfb.
+  mlIntro.
+  mlDestructAnd "0".
+  mlSplitAnd; mlAssumption.
+Defined.
+
+(* TODO: make for other transitive relations too, then maybe move *)
+Tactic Notation "mlTrans_iff" constr(b) :=
+  match goal with
+  | [ |- context[(mkMLGoal _ ?g ?h (patt_iff ?a ?c) ?i)] ] =>
+      let Htrans := fresh in
+        opose proof* (pf_iff_equiv_trans_obj g a b c i _ _ _) as Htrans;
+        last (
+          let Htrans2 := eval cbv in (fresh (map nh_name h)) in (
+            mlAssert (Htrans2 : (a <---> b));
+            last (
+              mlApplyMeta Htrans in Htrans2;
+              mlApply Htrans2;
+              mlClear Htrans2
+            )
+          );
+          last 2 [clear Htrans]
+        )
+  end.
+
+Tactic Notation "emlTrans_iff" :=
+  let ep := fresh in
+    evar (ep : Pattern);
+    mlTrans_iff ep;
+    subst ep.
+
+Lemma extract_common_from_equivalence_r {Σ : Signature} Γ a b c i :
+  well_formed a -> well_formed b -> well_formed c ->
+  Γ ⊢i (b and a <---> c and a) <---> (a ---> b <---> c) using i.
+Proof with try solve [auto | wf_auto2].
+  intros wfa wfb wfc.
+  toMLGoal...
+  pose proof (extract_common_from_equivalence Γ a b c wfa wfb wfc).
+  use i in H.
+  emlTrans_iff; only 6: mlExactMeta H...
+  clear H Hwf. mlSplitAnd; mlIntro.
+  * pose proof (patt_and_comm Γ a b wfa wfb).
+    use i in H.
+    emlTrans_iff; only 5: mlExactMeta H...
+    pose proof (patt_and_comm Γ c a wfc wfa).
+    use i in H0.
+    emlTrans_iff; only 6: mlExactMeta H0...
+    mlExact "0".
+  * pose proof (patt_and_comm Γ b a wfb wfa).
+    use i in H.
+    emlTrans_iff; only 5: mlExactMeta H...
+    pose proof (patt_and_comm Γ a c wfa wfc).
+    use i in H0.
+    emlTrans_iff; only 6: mlExactMeta H0...
+    mlExact "0".
+Defined.
+
 Theorem provable_iff_top:
   ∀ {Σ : Signature} (Γ : Theory) (φ : Pattern)   (i : ProofInfo),
     well_formed φ ->

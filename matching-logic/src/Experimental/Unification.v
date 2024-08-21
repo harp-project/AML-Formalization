@@ -1,6 +1,6 @@
 From Coq Require Import ssreflect ssrfun ssrbool.
 
-From Ltac2 Require Import Ltac2.
+(* From Ltac2 Require Import Ltac2. *)
 
 Require Import Equations.Prop.Equations.
 
@@ -12,8 +12,8 @@ From Coq.Classes Require Import Morphisms_Prop.
 From Coq.Unicode Require Import Utf8.
 From Coq.micromega Require Import Lia.
 
-From MatchingLogic Require Import Logic ProofMode.MLPM.
-From MatchingLogic.Theories Require Import Definedness_Syntax Definedness_ProofSystem FOEquality_ProofSystem.
+From MatchingLogic Require Import Logic ProofMode.MLPM Substitution.
+From MatchingLogic.Theories Require Import Definedness_Syntax Definedness_ProofSystem FOEquality_ProofSystem DeductionTheorem.
 From MatchingLogic.Utils Require Import stdpp_ext.
 
 Require Import MatchingLogic.wftactics.
@@ -33,87 +33,70 @@ Open Scope ml_scope.
 Open Scope string_scope.
 Open Scope list_scope.
 
-Section ProofSystemTheorems.
-  Context
-    {Σ : Signature}
-    {syntax : Syntax}.
+Section unification.
+  Context {Σ : Signature} {syntax : Syntax}.
+
+  Section helpers.
+
+    Lemma extract_common_from_equality_r a b p Γ :
+      theory ⊆ Γ ->
+      well_formed a -> well_formed b -> well_formed p ->
+      Γ ⊢ is_predicate_pattern p --->
+          p ---> a =ml b <---> (a and p) =ml (b and p).
+    Proof.
+      intros HΓ wfa wfb wfx.
+      mlIntro "H".
+      mlIntro "H0".
+      mlSplitAnd; mlIntro "H1".
+      mlRewriteBy "H1" at 1.
+      mlReflexivity.
+      epose proof (predicate_equiv _ _ _ _).
+      mlApplyMeta H in "H".
+      mlDestructAnd "H" as "H2" "_".
+      mlApply "H2" in "H0".
+      epose proof (patt_total_and _ _ _ _ _ _).
+      apply pf_iff_proj2 in H0.
+      use AnyReasoning in H0.
+      mlConj "H1" "H0" as "H".
+      mlApplyMeta H0 in "H".
+      clear H H0. mlClear "H0". mlClear "H2". mlClear "_". mlClear "H1".
+      mlDeduct "H".
+      remember (_ : ProofInfo) as i. clear Heqi.
+      evar Pattern.
+      epose proof (hypothesis (Γ ∪ {[p0]}) p0 _ ltac:(set_solver)). use i in H.
+      epose proof (extract_common_from_equivalence_r _ _ _ _ _ _ _ _).
+      apply (pf_iff_proj1) in H0.
+      apply lhs_from_and in H0.
+      apply (MP H) in H0.
+      mlAdd H.
+      mlRewrite H0 at 1.
+      mlReflexivity.
+      Unshelve. all: wf_auto2.
+    Defined.
+
+    Definition get_fresh_evar (φ : Pattern) : sig (.∉ free_evars φ).
+    Proof.
+      exists (fresh_evar φ); auto.
+    Defined.
+
+  End helpers.
+
+  (** The naming of the following lemmas matches this article:
+        Unification in Matching Logic - Extended Version
+        Andrei Arusoaie, Dorel Lucanu
+        https://arxiv.org/abs/1811.02835v3
+   *)
 
   Lemma Prop₃_left: forall Γ φ φ',
-      theory ⊆ Γ ->
-      well_formed φ -> well_formed φ' ->
-      Γ ⊢ (φ and (φ' =ml φ)) ---> (φ and φ').
+    theory ⊆ Γ ->
+    well_formed φ -> well_formed φ' ->
+    Γ ⊢ (φ and (φ' =ml φ)) ---> (φ and φ').
   Proof.
     intros Γ φ φ' SubTheory Wf1 Wf2.
     toMLGoal. wf_auto2.
     mlIntro "H0". mlDestructAnd "H0" as "H1" "H2".
-    mlRewriteBy "H2" at 1. assumption. wf_auto2.
-    {
-      unfold mu_in_evar_path. cbn. rewrite decide_eq_same. cbn.
-      rewrite !Nat.max_0_r.
-      case_match;[reflexivity|].
-      rewrite maximal_mu_depth_to_0 in H.
-      2: { inversion H. }
-      eapply evar_is_fresh_in_richer'.
-      2: apply set_evar_fresh_is_fresh.
-      { clear. set_solver. }
-    }
+    mlRewriteBy "H2" at 1.
     mlSplitAnd; mlExact "H1".
-  Defined.
-
-  Lemma functional_pattern_defined :
-    forall Γ φ, theory ⊆ Γ -> well_formed φ ->
-       Γ ⊢ (ex , (φ =ml b0)) ---> ⌈ φ ⌉.
-  Proof.
-    intros Γ φ HΓ Wf.
-    toMLGoal. wf_auto2.
-    mlIntro "H0".
-    mlApplyMetaRaw (forall_functional_subst ⌈ b0 ⌉ φ _ HΓ ltac:(wf_auto2)
-                 ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
-    mlSplitAnd.
-    * mlClear "H0". fromMLGoal. wf_auto2.
-      remember (fresh_evar patt_bott) as x.
-      pose proof (universal_generalization Γ ⌈patt_free_evar x⌉ x AnyReasoning (pile_any _)) 
-        as H1'.
-      cbn in H1'. case_match. 2: congruence. apply H1'. reflexivity.
-      gapply defined_evar.
-      { apply pile_any. }
-      { exact HΓ. }
-    * mlExact "H0".
-  Defined.
-
-  Lemma membership_equal_equal :
-    forall Γ φ φ',
-      theory ⊆ Γ -> mu_free φ' ->
-      well_formed φ -> well_formed φ' ->
-      Γ ⊢ (ex , (φ =ml b0))  ->
-      Γ ⊢ (ex , (φ' =ml b0))  ->
-      Γ ⊢ (φ ∈ml φ') =ml (φ =ml φ') .
-  Proof.
-    intros Γ φ φ' HΓ Mufree Wf1 Wf2 Func1 Func2.
-    unfold patt_equal at 1.
-
-    toMLGoal. wf_auto2.
-    mlIntro.
-    pose proof (bott_not_defined Γ) as H.
-    use AnyReasoning in H.
-    mlApplyMeta H.
-    fromMLGoal. wf_auto2.
-
-    apply ceil_monotonic; auto.
-    { wf_auto2. }
-
-    toMLGoal. wf_auto2.
-    pose proof (not_not_intro Γ ((φ ∈ml φ' <---> φ =ml φ' ))
-    ltac:(wf_auto2)) as H0.
-    use AnyReasoning in H0.
-    mlApplyMetaRaw H0.
-    mlSplitAnd; mlIntro.
-    * mlApplyMeta membership_imp_equal_meta; auto. mlExactn 0.
-    * mlApplyMeta equal_imp_membership; auto. mlExactn 0.
-      Unshelve.
-      toMLGoal. wf_auto2.
-      clear h. mlApplyMeta functional_pattern_defined; auto.
-      mlExactMeta Func2.
   Defined.
 
   Lemma Prop₃_right : forall Γ φ φ',
@@ -128,12 +111,11 @@ Section ProofSystemTheorems.
     mlIntro "H0".
     mlAssert ("H1" : ⌈ φ and φ' ⌉).
     { wf_auto2. }
-    (* Why can we only mlApplyMetaRaw here, and not after mlRevert? *)
     {
       pose proof (phi_impl_defined_phi Γ (φ and φ') (fresh_evar (φ and φ')) HΓ
                     ltac:(solve_fresh) ltac:(wf_auto2)) as H.
       use AnyReasoning in H.
-      mlApplyMetaRaw H.
+      mlApplyMeta H.
       mlExact "H0".
     }
     replace (⌈ φ and φ' ⌉) with (φ ∈ml φ') by auto.
@@ -143,449 +125,789 @@ Section ProofSystemTheorems.
       mlExact "H1".
   Defined.
 
-  Corollary delete : forall φ φ' Γ,
-    well_formed φ -> well_formed φ'
-  ->
-    Γ ⊢ φ and φ' =ml φ' ---> φ
-    .
-  Proof.
-    intros φ φ' Γ WF1 WF2.
-    toMLGoal. wf_auto2.
-    mlIntro "H0". mlDestructAnd "H0" as "H1" "H2". mlExact "H1".
-  Defined.
+  Definition substitute_list (σ : list (evar * Pattern)) (t : Pattern) : Pattern := fold_left (fun φ '(x, φ') => φ^[[evar: x ↦ φ']]) σ t.
 
-  Lemma free_evar_subst_id :
-    forall φ x, φ^[[evar: x ↦ patt_free_evar x]] = φ.
+  Lemma wf_substitute_list : forall σ t, wf (map snd σ) -> well_formed t -> well_formed (substitute_list σ t).
   Proof.
-    induction φ; intros x'; simpl; auto.
-    * case_match; subst; auto.
-    * rewrite IHφ1. now rewrite IHφ2.
-    * rewrite IHφ1. now rewrite IHφ2.
-    * now rewrite IHφ.
-    * now rewrite IHφ.
+    intros.
+    apply wf_fold_left with (t := snd); try assumption.
+    intros ? [] **; wf_auto2.
   Qed.
 
-  Theorem elimination : forall φ φ' x Γ, x ∉ free_evars φ ->
-    theory ⊆ Γ -> mu_free φ ->
-    well_formed_closed_ex_aux φ 1 ->
-    well_formed_closed_mu_aux φ 0 ->
-    well_formed φ' ->
-    Γ ⊢ φ^[evar: 0 ↦ patt_free_evar x] and φ' =ml patt_free_evar x ---> 
-        φ^[evar: 0 ↦ φ'] and φ' =ml patt_free_evar x
-    .
-  Proof.
-    intros φ φ' x Γ NotIn HΓ MF WFp1 WFp2 WF2.
-    assert (well_formed (φ^[evar:0↦φ'])) as WFF.
-    { wf_auto2. now apply mu_free_wfp. }
-    assert (well_formed (φ^[evar:0↦patt_free_evar x])) as WFFF. {
-      wf_auto2. now apply mu_free_wfp. }
-    toMLGoal. wf_auto2.
-    mlIntro "H0". mlDestructAnd "H0" as "H1" "H2".
-    mlSplitAnd.
-    2: { mlExact "H2". }
-    epose proof (equality_elimination_basic Γ φ' (patt_free_evar x)
-            {|pcEvar := x; pcPattern := φ^[evar: 0 ↦ patt_free_evar x]|} 
-            HΓ WF2 ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
-    cbn in H.
-    assert (Hwfeaψ': well_formed_closed_ex_aux φ' 0 = true).
-    {
-      (* TODO this clear should not be necessary *)
-      clear - WF2.
-      wf_auto2.
-    }
-    pose proof (bound_to_free_variable_subst φ x 1 0 φ' ltac:(lia) ltac:(wf_auto2) WFp1 NotIn) as H0.
-    unfold evar_open in H0. rewrite <- H0 in H. (* TODO: cast_proof? *)
-    rewrite free_evar_subst_id in H.
-    assert (Γ ⊢ φ^[evar:0↦φ'] <---> φ^[evar:0↦patt_free_evar x] --->
-                φ^[evar:0↦patt_free_evar x] ---> φ^[evar:0↦φ'] ) as Hiff. {
-      toMLGoal.
-      { clear H. wf_auto2. }
-      mlIntro "H1". unfold patt_iff. mlDestructAnd "H1" as "H2" "H3". mlExact "H3".
-    }
+  Definition predicate_list (σ : list (evar * Pattern)) : Pattern := fold_right (fun '(x, φ') φ => patt_free_evar x =ml φ' and φ) patt_top σ.
 
-    use AnyReasoning in H.
-    epose proof (syllogism_meta _ _ _ H Hiff).
-    (* TODO: mlApplyMetaRaw buggy?
-             Tries to match the longest conclusion, not the shortest *)
-    apply reorder_meta in H1.
-    mlRevertLast. mlApplyMetaRaw H1. mlExact "H1".
-    Unshelve. all: wf_auto2.
-    cbn. rewrite mu_free_bevar_subst; wf_auto2.
+  Lemma wf_predicate_list : forall σ, wf (map snd σ) -> well_formed (predicate_list σ).
+  Proof.
+    intros.
+    apply wf_foldr with (t := snd);
+    only 3: intros ? [] **; wf_auto2.
+  Qed.
+  
+  Lemma Lemma₁ : forall Γ φ t x, theory ⊆ Γ ->
+    well_formed φ ->
+    mu_free φ ->
+    well_formed t ->
+    Γ ⊢ (patt_free_evar x) =ml t ---> φ^[[evar:x↦t]] =ml φ.
+  Proof.
+    intros * HΓ wfφ mfφ wft.
+    pose proof (get_fresh_evar φ) as [y Hy].
+    pose proof (equality_elimination_basic Γ (patt_free_evar x) t {| pcEvar := y; pcPattern := φ^[[evar: x ↦ patt_free_evar y]] =ml φ |}).
+    ospecialize* H; auto. wf_auto2.
+    simpl. now erewrite mu_free_free_evar_subst, mfφ.
+    cbn -["=ml"] in H. mlSimpl in H.
+    erewrite ! free_evar_subst_chain, free_evar_subst_id, ! (free_evar_subst_no_occurrence y) in H by auto.
+    mlIntro "H".
+    mlApplyMeta H in "H".
+    mlDestructAnd "H" as "H1" "H2".
+    mlApply "H1". mlReflexivity.
   Defined.
 
-  Theorem elimination_reverse : forall φ φ' x Γ, x ∉ free_evars φ ->
-    theory ⊆ Γ -> mu_free φ ->
-    well_formed_closed_ex_aux φ 1 ->
-    well_formed_closed_mu_aux φ 0 ->
-    well_formed φ' ->
-    Γ ⊢ φ^[evar: 0 ↦ φ'] and φ' =ml patt_free_evar x --->
-        φ^[evar: 0 ↦ patt_free_evar x] and φ' =ml patt_free_evar x
-    .
+  Lemma Lemma₂ : forall Γ φ σ (i : ProofInfo),
+    theory ⊆ Γ -> mu_free φ -> well_formed φ ->
+    forallb mu_free (map snd σ) -> wf (map snd σ) ->
+    Γ ⊢i substitute_list σ φ and predicate_list σ <--->
+      φ and predicate_list σ using i.
   Proof.
-    intros φ φ' x Γ NotIn HΓ MF WFp1 WFp2 WF2.
-    assert (well_formed (φ^[evar:0↦φ'])) as WFF.
-    { wf_auto2. now apply mu_free_wfp. }
-    assert (well_formed (φ^[evar:0↦patt_free_evar x])) as WFFF. {
-      wf_auto2. now apply mu_free_wfp. }
-    toMLGoal. wf_auto2.
+    intros * HΓ mfφ wfφ mfσ wfσ.
+    pose proof (wf_predicate_list σ wfσ) as WF1.
+    pose proof (wf_substitute_list σ φ wfσ wfφ) as WF2.
+    epose proof (extract_common_from_equivalence_r _ _ _ _ _ _ _).
+    eapply (pf_iff_proj2 _ _ _ _ _ _) in H.
+    mlApplyMeta H.
+    clear H.
+    fromMLGoal.
+    generalize dependent φ.
+    induction σ; simpl; intros. mlIntro. mlReflexivity. destruct a.
+    mlIntro "H". mlDestructAnd "H" as "H1" "H2".
+    unshelve ospecialize* IHσ. exact φ^[[evar:e↦p]]. 1-6, 8: shelve.
+    mlApplyMeta IHσ in "H2". clear IHσ.
+    mlApplyMeta (pf_iff_equiv_trans_obj) in "H2".
+    mlApply "H2". mlClear "H2".
+    epose proof (Lemma₁ _ φ _ _ _ _ _ _).
+    mlApplyMeta H in "H1". clear H. 2: admit.
+    epose proof (get_fresh_evar (φ^[[evar:e↦p]] <---> φ)) as [y Hy].
+    epose proof (total_phi_impl_phi _ _ _ _ Hy _).
+    mlApplyMeta H in "H1". clear H.
+    mlExact "H1". admit.
+    Unshelve. all: try solve [auto | wf_auto2].
+    simpl in mfσ. apply andb_true_iff in mfσ as [].
+    apply mu_free_free_evar_subst; auto.
+  Admitted.
+
+  Definition is_unifier_of (σ : list (evar * Pattern)) t₁ t₂ := substitute_list σ t₁ =ml substitute_list σ t₂.
+
+  Lemma wf_is_unifier_of : forall σ t₁ t₂, wf (map snd σ) -> well_formed t₁ -> well_formed t₂ -> well_formed (is_unifier_of σ t₁ t₂).
+  Proof.
+    intros.
+    apply well_formed_equal; apply wf_substitute_list; assumption.
+  Qed.
+
+  Lemma predicate_list_predicate Γ σ : theory ⊆ Γ -> wf (map snd σ) -> Γ ⊢ is_predicate_pattern (predicate_list σ).
+  Proof with wf_auto2.
+    intros HΓ wfσ.
+    epose proof (foldr_ind_set (λ φ, well_formed φ -> Γ ⊢ is_predicate_pattern φ) (λ '(x, φ), well_formed (patt_free_evar x =ml φ) -> Γ ⊢ is_predicate_pattern (patt_free_evar x =ml φ)) (λ '(x, φ') (φ : Pattern), patt_free_evar x =ml φ' and φ) patt_top σ).
+    ospecialize* X. 1-4: clear X.
+    * intro. toMLGoal... mlLeft. mlReflexivity.
+    * induction σ; split.
+      ** destruct a. intro. unfold "=ml".
+         eapply useGenericReasoning.
+         apply pile_any.
+         apply floor_is_predicate; auto...
+      ** apply IHσ...
+    * intros [] ? ? ? ?.
+      (* destruct a. *)
+      eenough (well_formed _).
+      eenough (well_formed _).
+      pose proof (predicate_and Γ _ _ HΓ H3 H2).
+      apply (MP (H H3)) in H4.
+      apply (MP (H0 H2)) in H4.
+      exact H4.
+      all: wf_auto2.
+    * apply (wf_foldr) with (t := snd); only 3: intros ? [] ? ?...
+    * exact X.
+  Defined.
+
+  Lemma Lemma₅ : forall (σ : list (evar * Pattern)) t₁ t₂ Γ,
+    theory ⊆ Γ ->
+    well_formed t₁ -> well_formed t₂ ->
+    mu_free t₁ -> mu_free t₂ ->
+    wf (map snd σ) -> forallb mu_free (map snd σ) ->
+    Γ ⊢ is_unifier_of σ t₁ t₂ ---> predicate_list σ ---> (t₁ =ml t₂).
+  Proof.
+    intros * HΓ wft₁ wft₂ mft₁ mft₂ wfσ mfσ.
+    unfold is_unifier_of.
+    epose proof (wf_predicate_list σ wfσ) as wfpl.
+    epose proof (wf_substitute_list σ t₁ wfσ wft₁) as wfsl1.
+    epose proof (wf_substitute_list σ t₂ wfσ wft₂) as wfsl2.
+    mlIntro "H".
     mlIntro "H0".
+    epose proof (extract_common_from_equality_r _ _ _ _ _ _ _ _).
+    epose proof (predicate_list_predicate _ _ _ _).
+    apply (MP H0) in H.
+    mlApplyMeta H in "H0".
     mlDestructAnd "H0" as "H1" "H2".
-    mlSplitAnd.
-    2: { mlAssumption. }
-    epose proof (equality_elimination_basic Γ φ' (patt_free_evar x)
-            {|pcEvar := x; pcPattern := φ^[evar: 0 ↦ patt_free_evar x]|} 
-            HΓ WF2 ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
-    cbn in H.
-    pose proof (bound_to_free_variable_subst φ x 1 0 φ' ltac:(lia) ltac:(clear -WF2; wf_auto2) WFp1 NotIn) as H0.
-    unfold evar_open in H0. rewrite <- H0 in H. (* TODO: cast_proof? *)
-    rewrite free_evar_subst_id in H.
-    assert (Γ ⊢ φ^[evar:0↦φ'] <---> φ^[evar:0↦patt_free_evar x] --->
-                φ^[evar:0↦φ'] ---> φ^[evar:0↦patt_free_evar x] ) as Hiff. {
-      toMLGoal.
-      { clear H. wf_auto2. }
-      mlIntro "H1". unfold patt_iff. mlDestructAnd "H1" as "H2" "H3". mlExact "H2".
-    }
-    use AnyReasoning in H.
-    epose proof (syllogism_meta _ _ _ H Hiff).
-    (* TODO: mlApplyMetaRaw buggy?
-             Tries to match the longest conclusion, not the shortest *)
-    apply reorder_meta in H1.
-    mlRevertLast.
-    mlApplyMetaRaw H1.
-    mlExact "H1".
-    Unshelve. all: wf_auto2.
-    cbn. rewrite mu_free_bevar_subst; wf_auto2.
+    mlApply "H2".
+    epose proof (Lemma₂ Γ t₁ σ AnyReasoning _ _ _ _ _).
+    mlRewrite <- H1 at 1.
+    epose proof (Lemma₂ Γ t₂ σ AnyReasoning _ _ _ _ _).
+    mlRewrite <- H2 at 1.
+    mlRewriteBy "H" at 1.
+    mlReflexivity.
+    Unshelve. all: auto.
   Defined.
 
+  Lemma R₅' : forall x Γ, theory ⊆ Γ -> Γ ⊢ (ex , patt_free_evar x =ml b0).
+  Proof.
+    intros.
+    toMLGoal.
+    wf_auto2.
+    mlExists x.
+    mlSimpl.
+    unfold evar_open.
+    rewrite bevar_subst_not_occur.
+    wf_auto2.
+    simpl.
+    mlReflexivity.
+  Defined.
 
-
+  Definition WFPattern := sig well_formed.
+  Definition mkWFWrapper (f : Pattern -> Pattern -> Pattern) (wfp : forall a b, well_formed a -> well_formed b -> well_formed (f a b)) : WFPattern -> WFPattern -> WFPattern.
+  Proof.
+    intros * [a wfa] [b wfb].
+    exists (f a b). exact (wfp a b wfa wfb).
+  Defined.
+  Definition WFPatt_imp := mkWFWrapper patt_imp well_formed_imp.
+  Notation "a wf---> b"  := (WFPatt_imp a b) (at level 75, right associativity) : ml_scope.
+  Definition WFPatt_and := mkWFWrapper patt_and well_formed_and.
+  Notation "a 'wfand' b" := (WFPatt_and   a b) (at level 72, left associativity) : ml_scope.
+  Definition WFPatt_iff := mkWFWrapper patt_iff well_formed_iff.
+  Notation "a wf<---> b" := (WFPatt_iff a b) (at level 74, no associativity) : ml_scope.
+  Definition WFPatt_equal := mkWFWrapper patt_equal well_formed_equal.
+  Notation "p wf=ml q" := (WFPatt_equal p q) (at level 67) : ml_scope.
+  Definition WFFree_evar_subst (x : evar) := mkWFWrapper (flip free_evar_subst x) (fun a b => well_formed_free_evar_subst x b a).
+  Notation "e ^wf[[ 'evar:' x ↦ e' ]]" := (WFFree_evar_subst x e' e) (at level 2, e' at level 200, left associativity, format "e ^wf[[ 'evar:' x ↦ e' ]]" ) : ml_scope.
+  Definition WFDerives (Γ : Theory) (p : WFPattern) : Set := derives Γ (proj1_sig p).
+  Notation "Γ ⊢wf ϕ" := (WFDerives Γ ϕ) (at level 95, no associativity).
+  Definition WFPatt_app := mkWFWrapper patt_app well_formed_app.
+  Notation "a wf⋅ b" := (WFPatt_app a b) (at level 66, left associativity) : ml_scope.
+  Lemma well_formed_free_evar : forall e, well_formed (patt_free_evar e).
+  Proof.
+    exact (const eq_refl).
+  Defined.
 
   (**
-     Should be a consequence of the injectivity axiom:
+    This typeclass represents (in an abstract way) the unification problems of
 
-      f(x₁,...,xₙ) = f(x₁',...,xₙ') → x₁ = x₁' ∧ ... ∧ xₙ = xₙ'
+      Unification in Matching Logic - Extended Version
+      Andrei Arusoaie, Dorel Lucanu
+      https://arxiv.org/abs/1811.02835v3
 
-     The question is, why can we assume this axiom?
+      In the following description, we highlight the connection to this paper.
   *)
-  (* TODO move this definition to a more general place. *)
-  Definition application_chain (φ : Pattern) (φs : list Pattern) : Pattern :=
-    fold_left (fun Acc φ => patt_app Acc φ) φs φ.
+  Class UP (T : Type) := {
+    (** Insertion operation:
 
-  Theorem application_equal : forall φs ψ φ's Γ,
-    length φs = length φ's ->
-    well_formed ψ -> (* Forall well_formed φs -> Forall well_formed φ's *)
-    (forall i, i < length φs -> well_formed (nth i φs ⊥)) ->
-    (forall i, i < length φ's -> well_formed (nth i φ's ⊥))
-  ->
-    Γ ⊢ application_chain ψ φs =ml application_chain ψ φ's --->
-         fold_right (fun '(x, y) Acc => Acc and x =ml y) Top (zip φs φ's)
-    .
+          insertUP P (t, u) ~ P ∪ {t ≐ u}
+      *)
+    insertUP : T -> (WFPattern * WFPattern) -> T;
+    (** Failed unification problem
+
+          bottomUP ~ ⊥
+      *)
+
+    bottomUP : T;
+    (** Conversion to predicate. Expected to be conjunction of equalities.
+
+          toPredicateUP P ~ ϕᴾ
+      *)
+
+    toPredicateUP : T -> WFPattern;
+    (** Substitution of a variable to a pattern in every pattern of
+        a unification problem
+
+          substituteAllUP x t P ~ P{x ↦ t}
+      *)
+
+    substituteAllUP : evar -> WFPattern -> T -> T;
+    (** Creation of a singleton problem
+
+          singletonUP t u ~ {t ≐ u}
+      *)
+
+    singletonUP : WFPattern -> WFPattern -> T;
+
+    (**
+      Converting a unification problem maps insertion to conjunction.
+     *)
+    toPredicateInsertUP : forall Γ t x y, Γ ⊢wf toPredicateUP (insertUP t (x, y)) wf<---> ((x wf=ml y) wfand (toPredicateUP t));
+
+    (**
+      Converting a unification problem maps substitution of unification problems
+      to substitution of patterns.
+     *)
+    toPredicateSubstituteAllUP : forall Γ t e p, Γ ⊢wf toPredicateUP (substituteAllUP e p t) wf<---> (toPredicateUP t)^wf[[evar:e↦p]];
+
+    (**
+      Inserting into a non-⊥ unification problem cannot result ⊥.
+     *)
+    insertNotBottomUP : forall t x, t ≠ bottomUP -> insertUP t x ≠ bottomUP;
+
+    (**
+      Converting a singleton problem to a predicate pattern gives us an equality.
+     *)
+    toPredicateSingletonUP : forall Γ t1 t2, Γ ⊢wf toPredicateUP (singletonUP t1 t2) wf<---> (t1 wf=ml t2)
+  }.
+
+  Lemma lift_derives : forall Γ p, derives Γ (proj1_sig p) -> WFDerives Γ p.
   Proof.
-    induction φs;
-    intros ψ φ's Γ Len WF WFs1 WFs2.
-    * apply eq_sym, length_zero_iff_nil in Len. subst. cbn.
-      toMLGoal. wf_auto2.
-      mlIntro "H0". mlClear "H0". (* TODO: mlExact for meta theorems *)
-      fromMLGoal. wf_auto2.
-      useBasicReasoning.
-      apply (top_holds Γ).
-    * destruct φ's. simpl in Len. congruence.
-      simpl in Len. inversion Len. clear Len.
-      cbn.
-      admit.
-  Abort.
+    intros. auto.
+  Defined.
 
-End ProofSystemTheorems.
+  Lemma unwrap_wfwrapper : forall f wff a b, proj1_sig (mkWFWrapper f wff a b) = f (`a) (`b).
+  Proof.
+    now intros ? ? [a wfa] [b wfb].
+  Defined.
 
-Section UnificationProcedure.
-  Context {Σ : Signature} {ΣS : Syntax}.
+  Lemma wfWFPattern : forall (p : WFPattern), well_formed (proj1_sig p).
+  Proof.
+    intros [p wfp]. exact wfp.
+  Defined.
 
-  (* Fixpoint apps_r (C : Application_context) : bool :=
-  match C with
-   | box => true
-   | ctx_app_l cc p => apps_r cc
-   | ctx_app_r p cc => false
-  end. *)
+  Tactic Notation "mlDestructBotDocVer" := match goal with [ |- context [mkNH _ ?x patt_bott] ] => mlDestructBot x end.
 
-  (** Based on https://www.cs.bu.edu/fac/snyder/publications/UnifChapter.pdf *)
-  Definition Unification_problem : Set := list (Pattern * Pattern) * 
-                                          list (evar * Pattern).
+  Tactic Notation "refine_wf" := repeat first [
+      apply well_formed_imp |
+      apply well_formed_and |
+      apply well_formed_equal |
+      apply well_formed_free_evar_subst |
+      apply well_formed_top |
+      apply well_formed_free_evar
+    ].
 
-  Fixpoint get_apps (p : Pattern) : option (symbols * list Pattern) :=
-  match p with
-  | patt_app p1 p2 =>
-    match get_apps p1 with
-    | Some (s, ps) => Some (s, ps ++ [p2])
-    | None => None
-    end
-  | patt_sym s => Some (s, [])
-  | _ => None
-  end.
-
-  Definition u_remove := remove (prod_eqdec Pattern_eqdec Pattern_eqdec).
-
-  Definition subst_ziplist (x : evar) (p : Pattern) 
-    : list (Pattern * Pattern) -> list (Pattern * Pattern) :=
-    map (fun '(p1, p2) => ( p1^[[evar: x ↦ p]] , p2^[[evar: x ↦ p]] )).
-  Definition subst_list (x : evar) (p : Pattern) 
-    : list (evar * Pattern) -> list (evar * Pattern) :=
-    map (fun '(y, p2) => ( y , p2^[[evar: x ↦ p]] )).
-
-  Reserved Notation "u ===> u'" (at level 80).
-  Inductive unify_step : Unification_problem -> option Unification_problem -> Set :=
-  (* trivial/delete *)
-  | u_trivial t U S U' :
-    (U ++ (t, t)::U', S) ===> Some (U ++ U', S)
-  (* decomposition *)
-  | u_decompose U U' S t1 t2 f ps ps' :
-    get_apps t1 = Some (f, ps) -> get_apps t2 = Some (f, ps') ->
-    length ps = length ps'
-   ->
-    (U ++ (t1, t2)::U', S) ===> Some (zip ps ps' ++ U ++ U', S)
-  (* symbol_clash *)
-  | u_clash U U' S t1 t2 f g ps ps' :
-    get_apps t1 = Some (f, ps) -> get_apps t2 = Some (g, ps') ->
-    f <> g
-   ->
-    (U ++ (t1, t2)::U', S) ===> None
-  (* orient *)
-  | u_orient U U' S t x:
-    (U ++ (t, patt_free_evar x)::U', S) ===> Some (U ++ (patt_free_evar x, t)::U', S)
-  (* occurs check *)
-  | u_check U U' S x t:
-    x ∈ free_evars t ->
-    patt_free_evar x <> t
-   ->
-    (U ++ (t, patt_free_evar x)::U', S) ===> None
-  (* elimination *)
-  | u_elim U U' S x t:
-    x ∉ free_evars t
-   ->
-    (U ++ (patt_free_evar x, t)::U', S) ===> Some (subst_ziplist x t (U ++ U'), 
-                                                   (x, t) :: subst_list x t S)
-  where "u ===> u'" := (unify_step u u').
-
-  Definition eq_pats := (fun '(p1, p2) => p1 =ml p2).
-  Definition eq_vars := (fun '(x, p2) => patt_free_evar x =ml p2).
-
-  Definition unification_to_pattern (u : Unification_problem) : Pattern :=
-    match u with
-    | (Us, Ss) => 
-        foldr patt_and Top (map eq_pats Us)
-        and
-        foldr patt_and Top (map eq_vars Ss)
+  Tactic Notation "mlDecomposeAll" := do !
+    match goal with
+    | [ |- context[(mkMLGoal _ _ _ (patt_imp _ _) _)] ] => mlIntro
+    | [ |- context[mkNH _ ?x (patt_and _ _)] ] => mlDestructAnd x
     end.
-  Definition wf_unification (u : Unification_problem) :=
-    wf (map fst u.1) && wf (map snd u.1) && wf (map snd u.2).
 
-(*   Theorem foldr_equiv :
-    forall l p l' p0, well_formed p -> well_formed (foldr patt_and p0 l) -> well_formed (foldr patt_and p0 l') ->
-    forall Γ, Γ ⊢ foldr patt_and p0 (l ++ p::l') <---> foldr patt_and p0 (p::l ++ l').
-  Proof.
-    intros l. induction l; intros p l' p0 WFp WFl WFl' Γ.
-    * simpl. useBasicReasoning. apply pf_iff_equiv_refl. wf_auto2.
-    * simpl.
-  Admitted. *)
+  Lemma set_fold_disj_union_strong_equiv `{FinSet A C} Γ (f : A → WFPattern → WFPattern) (b : WFPattern) (X Y : C) :
+  (∀ x1 x2 b',
+  x1 ∈ X ∪ Y → x2 ∈ X ∪ Y → x1 ≠ x2 →
+  Γ ⊢wf (f x1 (f x2 b')) wf<---> (f x2 (f x1 b'))) →
+  X ## Y →
+  Γ ⊢wf (set_fold f b (X ∪ Y)) wf<---> (set_fold f (set_fold f b X) Y).
+  Admitted.
+  (* Proof. *)
+  (*   intros Hf Hdisj. unfold set_fold; simpl. *)
+  (*   rewrite <- foldr_app. *)
+  (*   epose proof foldr_permutation. *)
+  (*   apply (foldr_permutation R f b). *)
+  (*   - intros j1 x1 j2 x2 b' Hj Hj1 Hj2. apply Hf. *)
+  (*     + apply elem_of_list_lookup_2 in Hj1. set_solver. *)
+  (*     + apply elem_of_list_lookup_2 in Hj2. set_solver. *)
+  (*     + intros →. pose proof (NoDup_elements (X ∪ Y)). *)
+  (*       by eapply Hj, NoDup_lookup. *)
+  (*   - by rewrite elements_disj_union, (comm (++)). *)
+  (* Qed. *)
 
-  Theorem wf_unify_step :
-    forall u u' : Unification_problem,
-    u ===> Some u' ->
-    wf_unification u ->
-    wf_unification u'.
+  Lemma in_set_implies_in_predicate `{FinSet A C} `{!LeibnizEquiv C} : forall Γ f b x (X : C), x ∈ X -> Γ ⊢wf set_fold (WFPatt_and ∘ f) b X wf---> f x.
   Proof.
-    intros u u' D. dependent induction D; intros WF.
-    * 
+    intros.
+    opose proof* (set_ind' (fun X' => Γ ⊢wf set_fold (WFPatt_and ∘ f) b ({[x]} ∪ X') wf---> f x) _ _ X).
+    rewrite -> union_empty_r_L, set_fold_singleton. simpl.
+    unfold WFDerives. toMLGoal. apply wfWFPattern. rewrite ! unwrap_wfwrapper. mlDecomposeAll; mlAssumption.
+    intros.
+    rewrite union_assoc_L.
+    destruct (EqDecision0 x x0) as [-> | ].
+    rewrite union_idemp_L. exact H9.
+    rewrite -> (union_comm_L {[x]}), <- union_assoc_L, union_comm_L.
+    opose proof* (set_fold_disj_union_strong_equiv Γ (WFPatt_and ∘ f) b ({[x]} ∪ X0) {[x0]} _ _).
+    intros. simpl.
+    unfold WFDerives. toMLGoal. apply wfWFPattern. rewrite ! unwrap_wfwrapper.
+    mlSplitAnd; mlDecomposeAll; repeat mlSplitAnd; mlAssumption.
+    set_solver.
+    rewrite set_fold_singleton in H10. simpl in H10.
+    unfold WFDerives in H10, H9 |- *.
+    toMLGoal. apply wfWFPattern.
+    rewrite ! unwrap_wfwrapper in H10, H9 |- *.
+    mlIntro. apply pf_iff_proj1 in H10. mlApplyMeta H10 in "0".
+    mlDestructAnd "0". mlApplyMeta H9 in "2". mlAssumption.
+    1-2: refine_wf; apply wfWFPattern.
+    simpl in H8.
+    apply elem_of_subseteq_singleton in H7.
+    apply subseteq_union_1_L in H7.
+    rewrite H7 in H8. exact H8.
+  Defined.
+
+  Lemma WFPattern_eq_dec : EqDecision (WFPattern * WFPattern).
+  Proof.
+    apply @prod_eq_dec.
+    all: apply sig_eq_dec.
+    1, 3: intros; apply eq_pi; apply decide_rel; apply bool_eq_dec.
+    1, 2: apply Pattern_eqdec.
+  Defined.
+
+  #[refine] Instance optionSetUP `{H : ElemOf (WFPattern * WFPattern) T, H0 : Empty T, H1 : Singleton (WFPattern * WFPattern) T, H2 : Union T, H3 : Intersection T, H4 : Difference T, H5 : Elements (WFPattern * WFPattern) T, @FinSet (WFPattern * WFPattern) T H H0 H1 H2 H3 H4 H5 WFPattern_eq_dec, !LeibnizEquiv T} : UP (option T) := {
+    insertUP t x := option_map ({[x]} ∪.) t;
+    bottomUP := None;
+    toPredicateUP := from_option (set_fold (WFPatt_and ∘ (fun '(x, y) => x wf=ml y)) (Top ↾ well_formed_top)) (patt_bott ↾ well_formed_bott);
+    substituteAllUP e p := option_map (set_map (fun '(x, y) => (x^wf[[evar:e↦p]], y^wf[[evar:e↦p]])));
+    singletonUP t1 t2 := Some {[(t1, t2)]}
+  }.
+  Proof.
+    * intros. destruct_with_eqn t; simpl.
+      ** match goal with [ |- context[set_fold (WFPatt_and ∘ ?f') ?b' _] ] => remember f' as f; remember b' as b end.
+         epose proof (elem_of_dec_slow (x, y) t0) as [].
+         pose proof (in_set_implies_in_predicate Γ f b _ _ e).
+         rewrite subseteq_union_1_L. set_solver.
+         unfold WFDerives in H7 |- *. toMLGoal. apply wfWFPattern.
+         rewrite ! unwrap_wfwrapper in H7 |- *.
+         mlSplitAnd; mlDecomposeAll.
+         mlSplitAnd. subst f. rewrite unwrap_wfwrapper in H7.
+         mlApplyMeta H7. 1-3: mlAssumption.
+         rewrite union_comm_L.
+         opose proof* (set_fold_disj_union_strong_equiv Γ (WFPatt_and ∘ f) b t0 {[(x, y)]} _ _).
+         intros. subst f. simpl. do ! case_match.
+         unfold WFDerives. toMLGoal. apply wfWFPattern. rewrite ! unwrap_wfwrapper.
+         mlSplitAnd; mlDecomposeAll; repeat mlSplitAnd; mlAssumption.
+         set_solver.
+         rewrite set_fold_singleton in H7. simpl in H7. subst f.
+         exact H7.
+      ** unfold WFDerives. case_match. simpl.
+         apply (f_equal proj1_sig) in H7. rewrite ! unwrap_wfwrapper in H7. simpl in H7.
+         rewrite <- H7. toMLGoal. refine_wf; apply wfWFPattern.
+         mlSplitAnd; mlDecomposeAll; mlDestructBotDocVer.
+    * intros. destruct_with_eqn t; simpl.
+      ** match goal with [ |- context[set_fold (WFPatt_and ∘ ?f') ?b' (set_map ?g' _)] ] => remember f' as f; remember b' as b; remember g' as g end.
+         apply (set_fold_ind' (fun r X => Γ ⊢wf set_fold (WFPatt_and ∘ f) b (set_map g X) wf<---> r^wf[[evar:e↦p]]) (WFPatt_and ∘ f) b).
+         rewrite -> set_map_empty, set_fold_empty. subst b.
+         unfold WFDerives. rewrite ! unwrap_wfwrapper. simpl.
+         toMLGoal. wf_auto2. mlSplitAnd; mlDecomposeAll.
+         mlAssumption. pose proof (top_holds Γ). use AnyReasoning in H7. mlExactMeta H7.
+         intros. simpl. rewrite -> set_map_union_L, set_map_singleton_L.
+         unshelve epose proof (elem_of_dec_slow (g x) (set_map g X)) as [].
+         1: exact T. 4: exact H6. 1-3: auto.
+         rewrite subseteq_union_1_L. apply elem_of_subseteq_singleton. exact e0.
+         epose proof (in_set_implies_in_predicate Γ f b _ _ e0).
+         unfold WFDerives in H8, H9 |- *. toMLGoal. apply wfWFPattern.
+         rewrite ! unwrap_wfwrapper in H8, H9 |- *.
+         cbn [flip] in H8 |- *. mlSimpl.
+         mlSplitAnd; mlDecomposeAll. mlSplitAnd.
+         mlApplyMeta H9 in "0". subst f g. case_match.
+         rewrite ! unwrap_wfwrapper. cbn [flip]. mlSimpl.
+         mlAssumption.
+         apply pf_iff_proj1 in H8. mlApplyMeta H8. mlAssumption.
+         1-2: refine_wf; apply wfWFPattern.
+         apply pf_iff_proj2 in H8. mlApplyMeta H8. mlAssumption.
+         1-2: refine_wf; apply wfWFPattern.
+         rewrite union_comm_L.
+         unshelve opose proof* (set_fold_disj_union_strong_equiv Γ (WFPatt_and ∘ f) b (set_map g X) {[g x]}).
+         5: exact H6. all: auto.
+         intros.
+         subst f g. simpl. repeat case_match.
+         unfold WFDerives. toMLGoal. apply wfWFPattern.
+         rewrite ! unwrap_wfwrapper. mlSplitAnd; mlDecomposeAll;
+         repeat mlSplitAnd; mlAssumption.
+         set_solver.
+         unfold WFDerives in H9, H8 |- *.
+         rewrite ! unwrap_wfwrapper in H9, H8 |- *.
+         cbn [flip] in H8 |- *.
+         eapply pf_iff_equiv_trans. 4: exact H9.
+         1-3: refine_wf; apply wfWFPattern.
+         rewrite set_fold_singleton. cbn [compose].
+         mlSimpl. rewrite unwrap_wfwrapper.
+         toMLGoal. refine_wf; apply wfWFPattern.
+         mlSplitAnd; mlDecomposeAll; mlSplitAnd.
+         subst f g. case_match. rewrite ! unwrap_wfwrapper.
+         cbn [flip]. mlSimpl. mlAssumption.
+         apply pf_iff_proj1 in H8. mlApplyMeta H8. mlAssumption.
+         1-2: refine_wf; apply wfWFPattern.
+         subst f g. case_match. rewrite ! unwrap_wfwrapper.
+         cbn [flip]. mlSimpl. mlAssumption.
+         apply pf_iff_proj2 in H8. mlApplyMeta H8. mlAssumption.
+         1-2: refine_wf; apply wfWFPattern.
+      ** case_match. apply (f_equal proj1_sig) in H7. rewrite unwrap_wfwrapper in H7. simpl in H7. unfold WFDerives. simpl. rewrite H7. now aapply pf_iff_equiv_refl.
+    * intros. destruct_with_eqn t. simpl. discriminate. now destruct H7.
+    * intros. simpl. rewrite set_fold_singleton. simpl.
+      unfold WFDerives. rewrite ! unwrap_wfwrapper. simpl.
+      toMLGoal. refine_wf; apply wfWFPattern.
+      mlSplitAnd; mlDecomposeAll; only 2: mlSplitAnd; try mlAssumption.
+      pose proof (top_holds Γ). use AnyReasoning in H7.
+      mlExactMeta H7.
+  Defined.
+
+  Reserved Notation "P ===> P'" (at level 80).
+  Inductive unification_step {T : Set} {UPT : UP T} : T -> T -> Set :=
+    | deleteUS : forall P t,
+        P ≠ bottomUP ->
+        insertUP P (t, t) ===> P
+    | decompositionUS : forall P f t g u,
+        P ≠ bottomUP ->
+        insertUP P (f wf⋅ t, g wf⋅ u) ===> insertUP (insertUP P (f, g)) (t, u)
+    | symbol_clash_lUS : forall P f t,
+        P ≠ bottomUP ->
+        patt_sym f ≠ `t ->
+        (forall x, `t ≠ patt_free_evar x) ->
+        insertUP P (patt_sym f ↾ well_formed_sym f, t) ===> bottomUP
+    | symbol_clash_rUS : forall P f t,
+        P ≠ bottomUP ->
+        patt_sym f ≠ `t ->
+        (forall x, `t ≠ patt_free_evar x) ->
+        insertUP P (t, patt_sym f ↾ well_formed_sym f) ===> bottomUP
+    | orientUS : forall P x y,
+        P ≠ bottomUP ->
+        insertUP P (x, patt_free_evar y ↾ well_formed_free_evar y) ===> insertUP P (patt_free_evar y ↾ well_formed_free_evar y, x)
+    | occours_checkUS : forall P x t,
+        P ≠ bottomUP ->
+        x ∈ free_evars (`t) ->
+        insertUP P (patt_free_evar x ↾ well_formed_free_evar x, t) ===> bottomUP
+    | eliminationUS : forall P x t,
+        P ≠ bottomUP ->
+        x ∉ free_evars (`t) ->
+        mu_free (`t) ->
+        insertUP P (patt_free_evar x ↾ well_formed_free_evar x, t) ===> insertUP (substituteAllUP x t P) (patt_free_evar x ↾ well_formed_free_evar x, t)
+  where "P ===> P'" := (unification_step P P').
+
+  (**
+    TODO: this axiom should be placed into Γ later, and we have to use `hypothesis`
+          to obtain it. For this, we have to create a spec. for unification/term
+          algebras.
+  *)
+  Axiom injectivity : forall Γ f t g u, Γ ⊢ (f ⋅ t) =ml (g ⋅ u) ---> (f =ml g) and (t =ml u).
+
+  Tactic Notation "inside" tactic(inside) "outside" tactic(outside) :=
+    match goal with
+    | [ |- of_MLGoal _ ] => inside
+    | _ => outside
+    end.
+
+  Lemma Lemma₃ {T : Set} {UPT : UP T} Γ P P' : theory ⊆ Γ -> P ===> P' -> P' <> bottomUP -> Γ ⊢wf toPredicateUP P wf---> toPredicateUP P'.
+  Proof with inside mlClear "_" outside try apply wfWFPattern.
+    intros HΓ [] NB; pose proof (toPredicateInsertUP Γ).
+    * specialize (H P0 t t).
+      unfold WFDerives in H |- *.
+      rewrite unwrap_wfwrapper in H.
+      apply pf_iff_proj1 in H...
+      toMLGoal...
+      rewrite ! unwrap_wfwrapper in H |- *.
+      mlIntro "H". mlApplyMeta H in "H".
+      mlDestructAnd "H" as "_" "H0"...
+      mlAssumption.
+    * unfold WFDerives in H |- *.
+      pose proof (H P0 (f wf⋅ t) (g wf⋅ u)) as H0.
+      rewrite unwrap_wfwrapper in H0.
+      pose proof (H (insertUP P0 (f, g)) t u) as H1.
+      rewrite unwrap_wfwrapper in H1.
+      specialize (H P0 f g).
+      rewrite unwrap_wfwrapper in H.
+      apply pf_iff_proj1 in H0...
+      apply pf_iff_proj2 in H1, H...
+      toMLGoal...
+      rewrite ! unwrap_wfwrapper in H0, H1, H |- *.
+      mlIntro "H".
+      mlApplyMeta H0 in "H".
+      mlDestructAnd "H" as "H0" "H3".
+      mlApplyMeta injectivity in "H0".
+      mlDestructAnd "H0" as "H1" "H2".
+      mlApplyMeta H1.
+      mlSplitAnd. mlAssumption.
+      mlApplyMeta H. mlSplitAnd; mlAssumption.
+    * now destruct NB.
+    * now destruct NB.
+    * unfold WFDerives in H |- *.
+      pose proof (H P0 x (patt_free_evar y ↾ well_formed_free_evar y)) as H0.
+      rewrite unwrap_wfwrapper in H0.
+      apply pf_iff_proj1 in H0...
+      specialize (H P0 (patt_free_evar y ↾ well_formed_free_evar y) x).
+      rewrite unwrap_wfwrapper in H.
+      apply pf_iff_proj2 in H...
+      toMLGoal...
+      rewrite ! unwrap_wfwrapper in H0, H |- *.
+      mlIntro "H".
+      mlApplyMeta H0 in "H". mlDestructAnd "H" as "H0" "H1".
+      mlApplyMeta H. mlSplitAnd. mlSymmetry. 1-2: mlAssumption.
+    * now destruct NB.
+    * unfold WFDerives in H |- *.
+      pose proof (H P0 (patt_free_evar x ↾ well_formed_free_evar x) t).
+      rewrite unwrap_wfwrapper in H0.
+      apply pf_iff_proj1 in H0...
+      specialize (H (substituteAllUP x t P0) (patt_free_evar x ↾ well_formed_free_evar x) t).
+      rewrite unwrap_wfwrapper in H.
+      apply pf_iff_proj2 in H...
+      toMLGoal...
+      rewrite ! unwrap_wfwrapper in H0, H |- *.
+      mlIntro "H".
+      mlApplyMeta H0 in "H".
+      mlApplyMeta H. simpl.
+      pose proof (toPredicateSubstituteAllUP Γ P0 x t).
+      unfold WFDerives in H1.
+      rewrite ! unwrap_wfwrapper in H1. simpl in H1.
+      pose proof (projT2 t). simpl in H2.
+      mlRewrite H1 at 1. clear H2.
+      opose proof* (Lemma₂ Γ (proj1_sig (toPredicateUP P0)) [(x, projT1 t)] AnyReasoning); cbn; rewrite ? andb_true_r; auto...
+      admit.
+      simpl in H2. apply pf_iff_proj2 in H2.
+      2-3: refine_wf...
+
+      match goal with [H2 : derives_using _ (?x ---> _) _ |- _] => mlAssert ("H0" : x) end. refine_wf...
+
+      mlDestructAnd "H" as "H1" "H2".
+      repeat mlSplitAnd; try mlAssumption.
+      pose proof (top_holds Γ). use AnyReasoning in H3. mlExactMeta H3.
+      mlApplyMeta H2 in "H0".
+      mlDestructAnd "H0" as "H1" "H2". mlDestructAnd "H2" as "H3" "_"...
+      mlSplitAnd; mlAssumption.
   Admitted.
 
-  Theorem wf_unify_pattern :
-    forall u, wf_unification u -> well_formed (unification_to_pattern u).
-  Proof.
-  Admitted.
+  Definition compose_substitution (σ η : list (evar * Pattern)) : list (evar * Pattern) := map (fun '(e, p) => (e, substitute_list η p)) σ.
 
-  Theorem foldr_last_element :
-    forall Γ xs x y,
-    well_formed x -> well_formed y -> wf xs ->
-    Γ ⊢i foldr patt_and (x and y) xs <--->
-    ((foldr patt_and y xs) and x) using AnyReasoning.
-  Proof.
-    induction xs; intros x y Wf1 Wf2 Wf3; simpl.
-    * gapply patt_and_comm; auto. apply pile_any.
-    * apply wf_tail' in Wf3 as Wf4.
-      specialize (IHxs x y Wf1 Wf2 Wf4).
-      unshelve(toMLGoal).
-      {
-        assert (well_formed a) by now apply andb_true_iff in Wf3.
-        apply well_formed_and; apply well_formed_imp;
-        repeat apply well_formed_and; auto;
-        apply well_formed_foldr_and; wf_auto2.
-      }
-      mlSplitAnd; mlIntro "H"; mlDestructAnd "H" as "H0" "H1".
-      - mlRevertLast. mlRewrite IHxs at 1. mlIntro "H1". mlDestructAnd "H1".
-        mlSplitAnd; [mlSplitAnd;mlAssumption|mlAssumption].
-      - mlRewrite IHxs at 1. mlDestructAnd "H0".
-        mlSplitAnd; [mlAssumption|mlSplitAnd;mlAssumption].
-    Unshelve.
-  Admitted.
+  Definition more_general_substitution (σ η : list (evar * Pattern)) : Prop := exists (θ : list (evar * Pattern)), compose_substitution σ θ = η.
 
-  Theorem unification_soundness :
-    forall u u' : Unification_problem,
-    u ===> Some u' ->
-    wf_unification u ->
-    forall Γ, theory ⊆ Γ -> Γ ⊢ unification_to_pattern u ---> unification_to_pattern u' .
-  Proof.
-    intros u u' D WF.
-    assert (wf_unification u') as H.
-    { eapply wf_unify_step; eassumption. }
-    inversion D; intros Γ HΓ.
-    * subst.
-      (* TODO: why does toMyGoal simplify??? *)
-      (* Opaque unification_to_pattern. *)
-      with_strategy opaque [unification_to_pattern] toMLGoal.
-      { apply well_formed_imp; apply wf_unify_pattern; auto. }
-      (* Transparent unification_to_pattern. *)
-      cbn.
-      rewrite map_app. simpl map.
+  Definition is_most_general_unifier_of (σ : list (evar * Pattern)) (t₁ t₂ : Pattern) : Type := (forall Γ, Γ ⊢ is_unifier_of σ t₁ t₂) * (forall η, more_general_substitution σ η).
 
-      mlIntro "H". mlDestructAnd "H" as "H0" "H1". mlSplitAnd. 2: mlExact "H1".
-      mlClear "H1".
-      replace (fix app (l m : list Pattern) {struct l} : list Pattern :=
-         match l with
-         | [] => m
-         | a :: l1 => a :: app l1 m
-         end) with (@app Pattern) by reflexivity.
-      mlRevertLast.
-      rewrite map_app.
-      do 2 rewrite foldr_app.
-      simpl.
-      apply wf_unify_pattern in WF. cbn in WF.
-      rewrite map_app in WF. rewrite foldr_app in WF.
-      simpl in WF.
-      remember (foldr patt_and Top (map eq_pats U')) as L1.
-      remember (map eq_pats U) as L2.
-      epose proof (@foldr_last_element Γ L2 (t =ml t) L1 _ _ _).
-      mlRewrite H0 at 1.
-      mlIntro "H". mlDestructAnd "H" as "H0" "H1". mlExact "H0".
-    * subst. admit.
-    * subst; simpl.
-      with_strategy opaque [unification_to_pattern] toMLGoal.
-      { apply well_formed_imp. admit. admit. }
-      do 2 rewrite map_app. simpl map.
-      do 2 rewrite foldr_app. simpl.
-      remember (foldr patt_and Top (map eq_pats U')) as L1.
-      remember (map eq_pats U) as L2.
-      epose proof (@foldr_last_element Γ L2 (t =ml patt_free_evar x) L1 _ _ _).
-      mlRewrite H0 at 1.
-      epose proof (@foldr_last_element Γ L2 (patt_free_evar x =ml t) L1 _ _ _).
+  (* NOTE Could I make US a Prop and use stdpp's rtc for this? *)
+  Inductive USrtc {T : Set} {UPT : UP T} : T -> T -> Set :=
+    | USrtc_last : forall a, USrtc a a
+    | USrtc_step : forall a b c, a ===> b -> USrtc b c -> USrtc a c
+  .
+
+  (**
+    The formalized unification algorithm gives us an MGU.
+  *)
+  Axiom convenient : forall {T : Set} {UPT : UP T} σ t1 t2, is_most_general_unifier_of σ (`t1) (`t2) -> {P : T & (USrtc (singletonUP t1 t2) P * (P ≠ bottomUP) * forall Γ, Γ ⊢ projT1 (toPredicateUP P) <---> predicate_list σ)%type}.
+
+  Lemma Lemma₄_helper : forall {T : Set} {UPT : UP T} Γ P P',
+    theory ⊆ Γ ->
+    USrtc P P' ->
+    P' ≠ bottomUP ->
+    Γ ⊢wf toPredicateUP P wf---> toPredicateUP P'.
+  Proof with apply wfWFPattern.
+    intros * HΓ R NB.
+    unfold WFDerives.
+    rewrite unwrap_wfwrapper.
+    induction R.
+    aapply A_impl_A...
+    toMLGoal. apply well_formed_imp...
+    mlIntro "H".
+    mlApplyMeta IHR; auto.
+    opose proof* (Lemma₃ Γ); eauto.
+    {
+      inversion R; subst.
+      auto.
+      pose proof insertNotBottomUP.
+      inversion H; subst; apply H1; auto.
+    }
+    unfold WFDerives in H. rewrite unwrap_wfwrapper in H.
+    mlApplyMeta H. mlAssumption.
+  Defined.
+
+  From stdpp Require Import gmap.
+  Definition wf := Pattern.wf.
+
+  Lemma Lemma₄ : forall Γ (σ : list (evar * Pattern)) (t1 t2 : WFPattern),
+    theory ⊆ Γ -> wf (map snd σ) ->
+    is_most_general_unifier_of σ (`t1) (`t2) -> Γ ⊢ `t1 =ml `t2 ---> predicate_list σ.
+  Proof with try apply wfWFPattern.
+    intros * HΓ WFσ HMGU.
+    opose proof* (@optionSetUP (gset (WFPattern * WFPattern))).
+    1-2: typeclasses eauto.
+    pose proof (convenient σ t1 t2 HMGU) as [P [[R NB] EQ] ].
+    toMLGoal. simpl. refine_wf...
+    now apply wf_predicate_list.
+    pose proof (proj2_sig t1). pose proof (proj2_sig t2).
+    mlRewrite <- (EQ Γ) at 1.
+    clear H H0.
+    pose proof (toPredicateSingletonUP Γ t1 t2).
+    unfold WFDerives in H. rewrite ! unwrap_wfwrapper in H.
+    pose proof (proj2_sig (toPredicateUP P)).
+    mlRewrite <- H at 1.
+    clear H0.
+    opose proof* (Lemma₄_helper Γ); eauto.
+    unfold WFDerives in H0. rewrite ! unwrap_wfwrapper in H0.
+    mlExactMeta H0.
+  Defined.
+
+  Lemma Lemma₆ : forall Γ (σ : list (evar * Pattern)) (t1 t2 : WFPattern),
+    theory ⊆ Γ ->
+    wf (map snd σ) ->
+    mu_free (`t1) -> mu_free (`t2) ->
+    forallb mu_free (map snd σ) ->
+    is_most_general_unifier_of σ (`t1) (`t2) ->
+    Γ ⊢ (`t1 =ml `t2) <---> predicate_list σ.
+  Proof with try by refine_wf.
+    intros ? ? [t1 wft1] [t2 wft2] HΓ WFσ MFt1 MFt2 MFσ HMGU.
+    opose proof* (wf_predicate_list σ) as WFpl...
+    toMLGoal... mlSplitAnd; mlIntro "H".
+    unshelve opose proof* (Lemma₄ Γ σ (t1 ↾ _) (t2 ↾ _))...
+    all: simpl in *. mlApplyMeta H. mlAssumption.
+    opose proof* (Lemma₅ σ t1 t2 Γ)...
+    destruct HMGU as [IUO _]. specialize (IUO Γ).
+    pose proof (MP IUO H). mlApplyMeta H0. mlAssumption.
+  Defined.
+
+  Lemma Prop3_full : forall Γ t1 t2,
+    theory ⊆ Γ -> well_formed t1 -> well_formed t2 -> mu_free t2 ->
+    Γ ⊢ is_functional t1 -> Γ ⊢ is_functional t2 ->
+    Γ ⊢ t1 and t2 <---> t1 and t1 =ml t2.
+  Proof with try solve [auto | wf_auto2].
+    intros * HΓ WFt1 WFt2 MFt2 IFt1 IFt2.
+    toMLGoal... mlSplitAnd; mlIntro "H".
+    opose proof* (Prop₃_right Γ t1 t2)...
+    mlApplyMeta H. mlAssumption.
+    opose proof* (Prop₃_left Γ t1 t2)...
+    mlApplyMeta H. mlDestructAnd "H" as "H1" "H2".
+    mlSplitAnd; only 2: mlSymmetry; mlAssumption.
+  Defined.
+
+  Lemma Theorem₁ : forall Γ σ t1 t2,
+    theory ⊆ Γ ->
+    well_formed t1 -> well_formed t2 ->
+    wf (map snd σ) ->
+    mu_free t1 -> mu_free t2 ->
+    forallb mu_free (map snd σ) ->
+    Γ ⊢ is_functional t1 -> Γ ⊢ is_functional t2 ->
+    is_most_general_unifier_of σ t1 t2 ->
+    (Γ ⊢ (t1 and t2) =ml (t1 and predicate_list σ)) * (Γ ⊢ (t1 and t2) =ml (t2 and predicate_list σ)).
+  Proof with try solve [auto | wf_auto2 | refine_wf; auto].
+    intros * HΓ WFt1 WFt2 WFσ MFt1 MFt2 MFσ IFt1 IFt2 HMGU.
+    opose proof* (Prop3_full Γ t1 t2)...
+    assert (Γ ⊢ t1 and t2 <---> t2 and t1 =ml t2). {
+      opose proof* (Prop3_full Γ t2 t1)...
+      opose proof* (patt_and_comm Γ t1 t2)...
+      use AnyReasoning in H1.
       mlRewrite H1 at 1.
-      mlIntro "H". mlDestructAnd "H" as "H0" "H1". mlDestructAnd "H0" as "H0_1" "H0_2".
-      mlSplitAnd. mlSplitAnd. 1, 3: mlAssumption.
-      mlClear "H0_1". mlClear "H1".
-      mlApplyMetaRaw (@patt_equal_sym _ _ Γ t (patt_free_evar x) _ ltac:(wf_auto2) ltac:(wf_auto2)). mlExact "H0_2".
-    * subst; simpl.
-      with_strategy opaque [unification_to_pattern] toMLGoal.
-      { apply well_formed_imp. admit. admit. }
-      rewrite map_app. simpl map.
-      rewrite foldr_app. simpl.
-      mlIntro "H". mlDestructAnd "H" as "H0" "H1".
-    Unshelve. all: admit.
-  Abort.
+      opose proof* (patt_equal_comm t1 t2 Γ)...
+      mlRewrite H2 at 1.
+      mlExactMeta H0.
+    }
+    opose proof* (Lemma₆ Γ σ (t1 ↾ WFt1) (t2 ↾ WFt2))...
+    opose proof* (wf_predicate_list σ)...
+    split. toMLGoal... 2: toMLGoal...
+    all: simpl in H1.
+    mlRewrite H at 1. 2: mlRewrite H0 at 1.
+    all: mlRewrite H1 at 1; mlReflexivity.
+  Defined.
 
+  Tactic Notation "mlConjFast" constr(a) constr(b) "as" constr(c) "wfby" tactic(d) := match goal with | [ |- context[mkNH _ a ?x] ] => match goal with | [ |- context[mkNH _ b ?y] ] => mlAssert (c : (x and y)); [d | mlSplitAnd; [mlExact a | mlExact b] |] end end.
 
+  Tactic Notation "mlConjFast" constr(a) constr(b) "as" constr(c) := mlConjFast a b as c wfby idtac.
 
+  Goal forall Γ (f' g' one' : symbols) (x' y' z' : evar) (*one : WFPattern*),
+    x' ≠ z' -> y' ≠ z' ->
+    theory ⊆ Γ ->
+    let f := (patt_sym f' ↾ well_formed_sym f') in
+    let g := (patt_sym g' ↾ well_formed_sym g') in
+    let one := (patt_sym one' ↾ well_formed_sym one') in
+    let x := (patt_free_evar x' ↾ well_formed_free_evar x') in
+    let y := (patt_free_evar y' ↾ well_formed_free_evar y') in
+    let z := (patt_free_evar z' ↾ well_formed_free_evar z') in
+    let t1 := f wf⋅ x wf⋅ (g wf⋅ one) wf⋅ (g wf⋅ z) in
+    let t2 := f wf⋅ (g wf⋅ y) wf⋅ (g wf⋅ y) wf⋅ (g wf⋅ (g wf⋅ x)) in
+    (** f is a functional symbol *)
+    (all, all, all, ex, (patt_sym f') ⋅ b3 ⋅ b2 ⋅ b1 =ml b0) ∈ Γ ->
+    (** g is a functional symbol *)
+    (all, ex, (patt_sym g') ⋅ b1 =ml b0) ∈ Γ ->
+    (** one is a functional symbol *)
+    (ex, patt_sym one' =ml b0) ∈ Γ ->
+    (*
+      TODO: after defining term algebra spec. these functional axioms should be
+      in the theory of the spec.
+    *)
+    {σ & Γ ⊢ `t1 and `t2 <---> `t1 and predicate_list σ}.
+  Proof with try solve [auto | refine_wf; auto; apply wfWFPattern].
+    intros * NE1 NE2 HΓ **.
+    rename H into Hfunctional_f.
+    rename H0 into Hfunctional_g.
+    rename H1 into Hfunctional_one.
+    evar (σ : list (evar * Pattern)).
+    assert (wf (map snd σ)) as WFσ by shelve.
+    pose proof (wf_predicate_list σ WFσ) as WFplσ.
+    exists σ.
+    toMLGoal... mlSplitAnd; mlIntro.
+    opose proof* (Prop₃_right Γ (`t1) (`t2))...
+    (* functional patterns: *)
+    1: {
+      subst t1 t2. cbn.
+      toMLGoal. { wf_auto2. }
+      solve_functional.
+    }
+    1: {
+      subst t1 t2. cbn.
+      toMLGoal. { wf_auto2. }
+      solve_functional.
+    }
+    {
+      mlApplyMeta H in "0".
+      pose proof (@gset_fin_set _ WFPattern_eq_dec ltac:(typeclasses eauto)).
+      pose (@optionSetUP _ _ _ _ _ _ _ _ H0 ltac:(typeclasses eauto)).
+      opose proof* (Lemma₄_helper Γ (Some (singleton (t1, t2)))). auto.
+      eright. pose proof (decompositionUS (Some empty)). simpl in H1. rewrite <- union_empty_r_L. apply H1... rewrite union_empty_r_L.
+      eright. epose proof (decompositionUS (Some _)). simpl in H1. apply H1...
+      rewrite union_comm_L. rewrite <- union_assoc_L.
+      eright. epose proof (deleteUS (Some _)). simpl in H1. apply H1...
+      eright. epose proof (decompositionUS (Some _)). simpl in H1. apply H1...
+      eright. epose proof (decompositionUS (Some _)). simpl in H1. apply H1...
+      rewrite union_comm_L. rewrite <- union_assoc_L.
+      eright. epose proof (deleteUS (Some _)). simpl in H1. apply H1...
+      rewrite <- union_assoc_L.
+      eright. epose proof (decompositionUS (Some _)). simpl in H1. apply H1...
+      rewrite union_comm_L. rewrite <- union_assoc_L.
+      eright. epose proof (deleteUS (Some _)). simpl in H1. apply H1...
+      rewrite (union_comm_L {[(z, g wf⋅ x)]}). rewrite <- union_assoc_L.
+      eright. epose proof (orientUS (Some _)). simpl in H1. apply H1... fold y.
+      rewrite union_assoc_L. rewrite (union_comm_L {[(y, one)]}).
+      left. discriminate. cbn -[f g one x y z] in H1.
+      rewrite set_fold_singleton in H1. cbn -[f g one x y z] in H1.
+      unfold WFDerives in H1. do 3 rewrite unwrap_wfwrapper in H1. cbn [proj1_sig] in H1.
+      mlDestructAnd "0". mlSplitAnd. mlAssumption.
+      pose proof (top_holds Γ). use AnyReasoning in H2.
+      mlAdd H2.
+      Time mlConjFast "2" "0" as "3"... (*wfby (refine_wf; apply wfWFPattern).*)
+      (* Record: 0.19s *)
+      (* Time mlConj "2" "0" as "3". *)
+      (* Record: 38.576s *)
+      mlApplyMeta H1 in "3".
+      mlClear "0". mlClear "1". mlClear "2". clear H H1 H2.
+      opose proof* (set_fold_disj_union_strong_equiv Γ (WFPatt_and ∘ uncurry WFPatt_equal) (Top ↾ well_formed_top)).
+      3: unfold WFDerives in H; rewrite unwrap_wfwrapper in H; apply pf_iff_proj1 in H; [mlApplyMeta H in "3" | |]...
+      intros. simpl. unfold WFDerives. rewrite ! unwrap_wfwrapper.
+      toMLGoal. refine_wf; apply wfWFPattern. mlSplitAnd; mlDecomposeAll; do 2? mlSplitAnd; mlAssumption.
+      apply disjoint_singleton_r. set_solver.
+      rewrite set_fold_singleton. simpl. case_match. simpl.
+      instantiate (σ := [(_, _); (_, _); (_, _)]). simpl.
+      mlDestructAnd "3". mlSplitAnd. mlExact "0". mlClear "0". clear H.
+      apply (f_equal proj1_sig) in H1. simpl in H1. subst x0.
+      opose proof* (set_fold_disj_union_strong_equiv Γ (WFPatt_and ∘ uncurry WFPatt_equal) (Top ↾ well_formed_top)).
+      3: unfold WFDerives in H; rewrite unwrap_wfwrapper in H; apply pf_iff_proj1 in H; [mlApplyMeta H in "1" | |]...
+      intros. simpl. unfold WFDerives. rewrite ! unwrap_wfwrapper.
+      toMLGoal. refine_wf; apply wfWFPattern. mlSplitAnd; mlDecomposeAll; do 2? mlSplitAnd; mlAssumption.
+      apply disjoint_singleton_r. set_solver.
+      rewrite 2! set_fold_singleton. simpl.
+      mlExact "1".
+    }
+    {
+      opose proof* (Lemma₂ Γ (`t1) σ AnyReasoning)...
+      opose proof* (wf_substitute_list σ (`t1))...
+      apply pf_iff_proj2 in H... mlSplitAnd. mlDestructAnd "0"; mlAssumption.
+      mlApplyMeta H in "0". unfold t1. simpl.
+      case_match. 2: now destruct n.
+      case_match. now destruct NE1.
+      mlSimpl. simpl.
+      case_match. 2: now destruct n0.
+      case_match. now destruct NE2.
+      simpl. case_match. 2: now destruct n1.
+      mlDecomposeAll.
+      do ! mlRewriteBy "2" at 1.
+      mlExact "1".
+    }
+      Unshelve.
+      wf_auto2.
+      all: typeclasses eauto.
+  Defined.
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-(* (*   Axiom f : symbols.
-  Compute (get_apps (patt_sym f $ ⊥ $ ⊤ $ ⊥)). *)
-  Fixpoint unify_step1 (u : Unification_problem) : option Unification_problem :=
-  match u with
-  | []           => Some []
-  | (t1, t2)::xs =>
-    match unify_step1 xs with
-    | None => None
-    | Some xs' =>
-      match decide (t1 = t2) with
-      | left _ => Some xs' (* delete *)
-      | right _ =>
-        match get_apps t1, get_apps t2 with
-        | Some (s, ps), Some (s', ps') =>
-          match decide (s = s') with
-          | left _ => Some (xs' ++ zip ps ps') (* decomposition *)
-          | right _ => None (* symbol clash *)
-          end
-        | _, _ => Some xs'
-        end
-      end
-    end
-  end. *)
-
-  Definition is_free_evar (p : Pattern) : bool :=
-  match p with
-  | patt_free_evar _ => true
-  | _ => false
-  end.
-
-  Definition swap_if {A : Type} (P : A -> bool) (p : A * A): A * A :=
-  match p with
-  | (p1, p2) =>
-    match P p1, P p2 with
-    | true, _ => (p1, p2)
-    | _, true => (p2, p1)
-    | _, _    => (p1, p2)
-    end
-  end.
-
-  (* (* orient *)
-  Definition unify_step2 (u : Unification_problem) : Unification_problem :=
-     map (swap_if is_free_evar) u.
-
-  (* occurs_check *)
-  Fixpoint unify_step3 (u : Unification_problem) : option Unification_problem :=
-  match u with
-  | [] => Some []
-  | (p1, p2)::xs =>
-    match unify_step3 xs with
-    | Some xs' =>
-      match p1 with
-      | patt_free_evar x =>
-        match decide (x ∈ free_evars p2) with
-        | left _ => None
-        | right _ => Some ((p1, p2)::xs')
-        end
-      | _ => Some ((p1, p2)::xs')
-      end
-    | None => None
-    end
-  end.
-
-  (* 1x elimination *)
-  Fixpoint unify_step3 (u : Unification_problem) : Unification_problem :=
-  match u with
-  | [] => []
-  | (patt_free_evar x, p2)::xs => 
-  | (p1, p2)::xs => unify_step3 xs
-  end. *)
-
-End UnificationProcedure.
+End unification.
 
 Close Scope ml_scope.
 Close Scope string_scope.
 Close Scope list_scope.
+

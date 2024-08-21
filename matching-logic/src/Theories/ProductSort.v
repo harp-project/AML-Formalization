@@ -95,7 +95,6 @@ Section axioms.
 
     Arguments patt_forall_of_sort {Σ self} sort phi%ml_scope.
 
-    Print patt_total_binary_function.
     Definition axiom (name : AxiomName) : Pattern :=
     match name with
     

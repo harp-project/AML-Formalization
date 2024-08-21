@@ -42,7 +42,7 @@ Open Scope string_scope.
 Open Scope list_scope.
 
 
-Lemma mu_monotone {Σ : Signature} Γ ϕ₁ ϕ₂ X (i : ProofInfo):
+Lemma mu_monotone_quantify {Σ : Signature} Γ ϕ₁ ϕ₂ X (i : ProofInfo):
   ProofInfoLe ( (ExGen := ∅, SVSubst := {[X]}, KT := true, AKT := ~~ bound_svar_is_banned_under_mus ϕ₁^{{svar:X↦0}} 0 0)) i ->
   svar_has_negative_occurrence X ϕ₁ = false ->
   svar_has_negative_occurrence X ϕ₂ = false ->
@@ -57,7 +57,7 @@ Proof.
 
   apply Knaster_tarski.
   { try_solve_pile. }
-  { 
+  {
     wf_auto2.
   }
 
@@ -188,7 +188,32 @@ Proof.
   all: abstract(wf_auto2).
 Defined.
 
-Lemma mu_iff {Σ : Signature} Γ ϕ₁ ϕ₂ X (i : ProofInfo):
+Lemma mu_monotone {Σ : Signature} Γ ϕ₁ ϕ₂ X (i : ProofInfo):
+  ProofInfoLe ( (ExGen := ∅, SVSubst := {[X]}, KT := true, AKT := ~~ bound_svar_is_banned_under_mus ϕ₁ 0 0)) i ->
+  well_formed (patt_mu ϕ₁) ->
+  well_formed (patt_mu ϕ₂) ->
+  X ∉ free_svars ϕ₁ ∪ free_svars ϕ₂ ->
+  Γ ⊢i ϕ₁^{svar:0↦X} ---> ϕ₂^{svar:0↦X} using i->
+  Γ ⊢i (patt_mu ϕ₁) ---> (patt_mu ϕ₂)
+  using i.
+Proof.
+  intros.
+  apply mu_monotone_quantify with (X := X) in H3.
+  * rewrite svar_quantify_svar_open in H3. set_solver. wf_auto2.
+    rewrite svar_quantify_svar_open in H3. set_solver. wf_auto2.
+    assumption.
+  * rewrite svar_quantify_svar_open. set_solver. wf_auto2. assumption.
+  * apply positive_negative_occurrence_db_named.
+    wf_auto2.
+    wf_auto2.
+    unfold svar_is_fresh_in. set_solver.
+  * apply positive_negative_occurrence_db_named.
+    wf_auto2.
+    wf_auto2.
+    unfold svar_is_fresh_in. set_solver.
+Defined.
+
+Lemma mu_iff_quantify {Σ : Signature} Γ ϕ₁ ϕ₂ X (i : ProofInfo):
   ProofInfoLe ( (ExGen := ∅, SVSubst := {[X]}, KT := true, AKT := true)) i ->
   svar_has_negative_occurrence X ϕ₁ = false ->
   svar_has_negative_occurrence X ϕ₂ = false ->
@@ -202,7 +227,7 @@ Proof.
   { wf_auto2. }
   { wf_auto2. }
   {
-    apply mu_monotone; try assumption.
+    apply mu_monotone_quantify; try assumption.
     { try_solve_pile. }
     { 
       apply pf_iff_proj1 in H2.
@@ -212,7 +237,7 @@ Proof.
     }
   }
   {
-    apply mu_monotone; try assumption.
+    apply mu_monotone_quantify; try assumption.
     { try_solve_pile. }
     { 
       apply pf_iff_proj2 in H2.

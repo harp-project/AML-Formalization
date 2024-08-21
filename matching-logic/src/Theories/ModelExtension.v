@@ -341,7 +341,7 @@ Section with_syntax.
         exists cdef.
         simpl. split.
         {
-            unfold new_sym_interp. case_match.
+            unfold new_sym_interp'. case_match.
             { reflexivity. }
             contradiction n. reflexivity.
         }

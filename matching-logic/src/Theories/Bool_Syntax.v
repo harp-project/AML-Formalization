@@ -64,11 +64,11 @@ Section bool_syntax.
   Definition mlsBAndThen := patt_sym ( inj sAndThen).
 
   Definition mlBAnd (φ1 φ2 : Pattern) : Pattern :=
-    (mlsBAnd $ φ1) $ φ2.
+    mlsBAnd ⋅ φ1 ⋅ φ2.
   Definition mlBNeg (φ : Pattern) : Pattern :=
-    mlsBNeg $ φ.
+    mlsBNeg ⋅ φ.
   Definition mlBAndThen ( φ1 φ2 : Pattern) : Pattern := 
-    (mlsBAndThen $ φ1) $ φ2.
+    mlsBAndThen ⋅ φ1 ⋅ φ2.
 
 End bool_syntax.
 

@@ -998,38 +998,38 @@ Defined.
   (* Propagation bottom *)
   | Prop_bott_left (phi : Pattern) :
       well_formed phi ->
-      theory ⊢ (patt_bott $ phi ---> patt_bott)
+      theory ⊢ (patt_bott ⋅ phi ---> patt_bott)
 
   | Prop_bott_right (phi : Pattern) :
       well_formed phi ->
-      theory ⊢ (phi $ patt_bott ---> patt_bott)
+      theory ⊢ (phi ⋅ patt_bott ---> patt_bott)
 
   (* Propagation disjunction *)
   | Prop_disj_left (phi1 phi2 psi : Pattern) :
       well_formed phi1 -> well_formed phi2 -> well_formed psi ->
-      theory ⊢ (((phi1 or phi2) $ psi) ---> ((phi1 $ psi) or (phi2 $ psi)))
+      theory ⊢ (((phi1 or phi2) ⋅ psi) ---> ((phi1 ⋅ psi) or (phi2 ⋅ psi)))
 
   | Prop_disj_right (phi1 phi2 psi : Pattern) :
       well_formed phi1 -> well_formed phi2 -> well_formed psi ->
-      theory ⊢ ((psi $ (phi1 or phi2)) ---> ((psi $ phi1) or (psi $ phi2)))
+      theory ⊢ ((psi ⋅ (phi1 or phi2)) ---> ((psi ⋅ phi1) or (psi ⋅ phi2)))
 
   (* Propagation exist *)
   | Prop_ex_left (phi psi : Pattern) :
       well_formed (ex , phi) -> well_formed psi ->
-      theory ⊢ (((ex , phi) $ psi) ---> (ex , phi $ psi))
+      theory ⊢ (((ex , phi) ⋅ psi) ---> (ex , phi ⋅ psi))
 
   | Prop_ex_right (phi psi : Pattern) :
       well_formed (ex , phi) -> well_formed psi ->
-      theory ⊢ ((psi $ (ex , phi)) ---> (ex , psi $ phi))
+      theory ⊢ ((psi ⋅ (ex , phi)) ---> (ex , psi ⋅ phi))
 
   (* Framing *)
   | Framing_left (phi1 phi2 psi : Pattern) :
       theory ⊢ (phi1 ---> phi2) ->
-      theory ⊢ ((phi1 $ psi) ---> (phi2 $ psi))
+      theory ⊢ ((phi1 ⋅ psi) ---> (phi2 ⋅ psi))
 
   | Framing_right (phi1 phi2 psi : Pattern) :
       theory ⊢ (phi1 ---> phi2) ->
-      theory ⊢ ((psi $ phi1) ---> (psi $ phi2))
+      theory ⊢ ((psi ⋅ phi1) ---> (psi ⋅ phi2))
 
   (* Fixpoint reasoning *)
   (* Set Variable Substitution *)

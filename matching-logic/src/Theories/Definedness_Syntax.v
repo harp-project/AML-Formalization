@@ -63,7 +63,7 @@ Section definedness.
   Context {syntax : Syntax}.
 
   Definition patt_defined (phi : Pattern) : Pattern :=
-    patt_sym (inj definedness) $ phi.
+    patt_sym (inj definedness) ⋅ phi.
 
   Definition patt_total (phi: Pattern) : Pattern :=
     patt_not (patt_defined (patt_not phi)).

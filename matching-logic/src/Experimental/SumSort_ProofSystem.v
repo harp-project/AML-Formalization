@@ -217,7 +217,7 @@ Section sumsort.
     Definedness_Syntax.theory ⊆ Γ -> 
     well_formed φ ->
     well_formed φ' ->
-    Γ ⊢i patt_free_evar x ∈ml ( φ $ φ' ) =ml ex , ( b0 ∈ml φ and patt_free_evar x ∈ml (b0 $ φ') ) using AnyReasoning.
+    Γ ⊢i patt_free_evar x ∈ml ( φ ⋅ φ' ) =ml ex , ( b0 ∈ml φ and patt_free_evar x ∈ml (b0 ⋅ φ') ) using AnyReasoning.
   Proof.
   Admitted.
   
@@ -226,7 +226,7 @@ Section sumsort.
     Definedness_Syntax.theory ⊆ Γ -> 
     well_formed φ ->
     well_formed φ' ->
-    Γ ⊢i patt_free_evar x ∈ml ( φ $ φ' ) =ml ex, (b0 ∈ml φ' and patt_free_evar x ∈ml (φ $ b0) ) using AnyReasoning.
+    Γ ⊢i patt_free_evar x ∈ml ( φ ⋅ φ' ) =ml ex, (b0 ∈ml φ' and patt_free_evar x ∈ml (φ ⋅ b0) ) using AnyReasoning.
   Proof.
   Admitted.
   
