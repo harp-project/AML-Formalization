@@ -1641,94 +1641,186 @@ Lemma equality_elimination
     (emplace C φ1) ---> (emplace C φ2)
   using AnyReasoning.
 Proof.
-  destruct C as [y φ4]. cbn in *.
-  assert (well_formed φ4) by wf_auto2. clear WFC.
+  destruct C as [y C]. unfold emplace. simpl in *.
+  (** C is the context pattern, and y is the context variable from now on *)
+  assert (well_formed C) by wf_auto2. clear WFC.
   revert φ1 φ2 Γ HΓ H WF1 WF2 Hmu.
-  size_induction φ4; simpl in *; intros.
+  (** size-based induction on the context *)
+  size_induction C; simpl in *; intros.
+
+  (** C = x *)
   * case_match.
+
+    (** C = □ (the context's hole) *)
     - subst.
       mlIntro "H".
+      mlFreshEvar as y.
       (* ExGen : {[ev_x; x]} is needed for this: *)
       mlApplyMeta total_phi_impl_phi in "H".
       (***)
       mlDestructAnd "H".
       mlAssumption.
       2: assumption.
-      1: instantiate (1 := fresh_evar (φ1 ---> φ2)); solve_fresh.
+      1: instantiate (1 := y); fm_solve.
+
+    (** C = x ≠ □ *)
     - do 2 mlIntro. mlAssumption.
+
+  (** C = X *)
   * do 2 mlIntro. mlAssumption.
+
+  (** C is a bound element variable --- C is not well-formed *)
   * do 2 mlIntro. mlAssumption.
+
+  (** C is a bound set variable --- C is not well-formed *)
   * do 2 mlIntro. mlAssumption.
+
+  (** C = σ *)
   * do 2 mlIntro. mlAssumption.
+
+  (** C = C₁ ⋅ C₂ *)
   * mlIntro "H".
-    pose proof (IH1 := IHsz φ4_1 ltac:(lia) φ1 φ2
+    pose proof (IH1 := IHsz C1 ltac:(lia) φ1 φ2
                             Γ HΓ ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)
                             ltac:(by apply andb_true_iff in Hmu as [? ?])).
-    epose proof (IH2 := IHsz φ4_2 ltac:(lia) φ1 φ2
-                             Γ HΓ ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)
-                             ltac:(by apply andb_true_iff in Hmu as [? ?])).
-    clear IHsz.
+    pose proof (IH2 := IHsz C2 ltac:(lia) φ1 φ2
+                            Γ HΓ ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)
+                            ltac:(by apply andb_true_iff in Hmu as [? ?])).
+    clear IHsz Hmu.
     mlAssert ("H2" : (φ1 =ml φ2)). wf_auto2. mlAssumption.
-    eapply framing_left_under_tot_impl with (x := fresh_evar ((φ1 <---> φ2) ---> φ4_2^[[evar:y↦φ2]])) in IH1.
-    eapply framing_right_under_tot_impl with (x := fresh_evar ((φ1 <---> φ2) ---> φ4_1^[[evar:y↦φ1]])) in IH2.
+
+    apply framing_left_under_tot_impl with (x := fresh_evar ((φ1 <---> φ2) ---> C2^[[evar:y↦φ2]])) (psi := C2^[[evar:y↦φ2]]) in IH1. 2-8: shelve. (** side conditions *)
+    apply framing_right_under_tot_impl with (x := fresh_evar ((φ1 <---> φ2) ---> C1^[[evar:y↦φ1]])) (psi := C1^[[evar:y↦φ1]]) in IH2. 2-8: shelve. (** side conditions *)
+
     mlApplyMeta IH1 in "H".
     mlApplyMeta IH2 in "H2".
     mlIntro "H0".
     mlApply "H".
     mlApply "H2".
     mlAssumption.
+
+    (** solving the side conditions from above *)
+    Unshelve.
     6, 13: solve_fresh.
     6, 12: try_solve_pile.
-    all: try assumption; wf_auto2.
+    5, 10: assumption.
+    all: wf_auto2.
+
+  (** C = ⊥ *)
   * do 2 mlIntro. mlAssumption.
+
+  (** C = C₁ ---> C₂ *)
   * mlIntro "H".
-    epose proof (IH1 := IHsz φ4_1 ltac:(lia) φ2 φ1
-                             Γ HΓ ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)
-                             ltac:(by apply andb_true_iff in Hmu as [? ?])).
-    epose proof (IH2 := IHsz φ4_2 ltac:(lia) φ1 φ2
-                             Γ HΓ ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)
-                             ltac:(by apply andb_true_iff in Hmu as [? ?])).
-    clear IHsz.
+    pose proof (IH1 := IHsz C1 ltac:(lia) φ2 φ1
+                            Γ HΓ ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)
+                            ltac:(by apply andb_true_iff in Hmu as [? ?])).
+    pose proof (IH2 := IHsz C2 ltac:(lia) φ1 φ2
+                            Γ HΓ ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)
+                            ltac:(by apply andb_true_iff in Hmu as [? ?])).
+    clear IHsz Hmu.
     mlAssert ("H2" : (φ2 =ml φ1)). wf_auto2.
     {
-      mlApplyMeta patt_equal_sym. mlAssumption. assumption.
+      mlSymmetry. mlAssumption.
     }
     mlApplyMeta IH1 in "H2".
     mlApplyMeta IH2 in "H".
     mlIntro "H0". mlIntro "S".
-    clear. mlApply "H". mlApply "H0". mlApply "H2". mlAssumption.
-  * mlIntro.
-    mlIntro.
-    destruct (decide (y ∈ free_evars φ4)).
-    2: {
-      (**
-        If there is no variable to substitute
-      *)
-      rewrite free_evar_subst_no_occurrence. assumption.
-      rewrite free_evar_subst_no_occurrence. assumption.
-      mlAssumption.
-    }
+    clear.
+    mlApply "H".
+    mlApply "H0".
+    mlApply "H2".
+    mlAssumption.
+
+  (** C = ∃x.C *)
+  * do 2 mlIntro.
 
     mlDestructEx "1" as z.
 
     mlExists z.
-    opose proof* (IHsz (evar_open z 0 φ4) ltac:(rewrite evar_open_size'; lia)
-                       φ1 φ2 Γ HΓ ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
-    1: by apply kt_well_formed_evar_open.
+
+    epose proof (IHsz (evar_open z 0 C) _ φ1 φ2 Γ HΓ _ _ _ _).
+                                  (** _-s are side conditions *)
+
+    (** swapping substitutions *)
     rewrite evar_open_free_evar_subst_swap. fm_solve. wf_auto2.
     rewrite evar_open_free_evar_subst_swap. fm_solve. wf_auto2.
+
     mlApplyMeta H0.
     mlSplitAnd; mlAssumption.
+
+    Unshelve.
+    rewrite evar_open_size'; lia.
+    1-3: wf_auto2.
+    by apply kt_well_formed_evar_open.
+
+  (** C = μX.C *)
   * do 2 mlIntro.
-    mlConj "0" "1" as "H". mlClear "0". mlClear "1".
+    mlConj "0" "1" as "H".
+    mlClear "0".
+    mlClear "1".
     (**
-      Γ ⊢ φ1 =ml φ2 and (mu , φ4^[[evar:y↦φ1]]) <--->
-          mu , φ1 =ml φ2 and φ4^[[evar:y↦φ1]]
+      Γ ⊢ φ1 = φ2 ∧ (μX.C[y↦φ1]) ↔ μX.φ1 = φ2 ∧ C[y↦φ1]
     *)
-    opose proof* (mu_and_predicate_propagation Γ (φ4^[[evar:y↦φ1]]) (φ1 =ml φ2) HΓ
-      ltac:(wf_auto2) ltac:(wf_auto2)).
+    epose proof (mu_and_predicate_propagation Γ (C^[[evar:y↦φ1]]) (φ1 =ml φ2) HΓ _ _ _). (* _-s are side conditions *)
+    ospecialize* H0.
     {
-      (** Mu-pattern side condition *)
+      (**
+        conjunction propagation under μ - side condition:
+        Γ ⊢ is_predicate_pattern (φ1 =ml φ2)
+      *)
+      mlFreshEvar as x.
+      mlFreshEvar as z.
+      mlFreshEvar as w.
+      (** This theorem uses Ex-Gen for some fresh x, y, z for which we
+          generate concrete variables above *)
+      eapply floor_is_predicate with (x := x) (y := z) (z := w); try eassumption.
+      wf_auto2.
+      fm_solve.
+      fm_solve.
+      fm_solve.
+      try_solve_pile.
+    }
+
+
+    mlAdd H0 as "H0".
+    mlDestructAnd "H0" as "H0_1" "H0_2". mlClear "H0_1".
+    mlApply "H0_2" in "H". mlClear "H0_2". clear H0.
+
+    mlFreshSvar as X.
+    (**
+        Γ ⊢ φ1 → φ2
+     ---------------------
+      Γ ⊢ (μX.φ1) → μX.φ2
+    *)
+    mlApplyMeta mu_monotone. 3-4: shelve.
+    mlAssumption.
+
+    (** Proof of the premise of monotonicity of μ *)
+    instantiate (1 := X).
+
+    (** Substiutions do not affect the equality, since they do not contain μ's
+        bound variable 
+      *)
+    mlSimpl.
+    rewrite svar_open_not_occur. wf_auto2.
+    rewrite svar_open_not_occur. wf_auto2.
+
+    (** Swapping the substitutions *)
+    unfold svar_open.
+    rewrite -free_evar_subst_bsvar_subst. wf_auto2. unfold evar_is_fresh_in; set_solver.
+    rewrite -free_evar_subst_bsvar_subst. wf_auto2. unfold evar_is_fresh_in; set_solver.
+
+    mlIntro. mlDestructAnd "0".
+    fromMLGoal.
+    (** size-based induction is needed to make this `apply` *)
+    apply IHsz.
+    Unshelve.
+    rewrite svar_open_size'. lia.
+    assumption.
+    1-3, 5-6: wf_auto2.
+    destruct_and!. apply kt_well_formed_svar_open; wf_auto2.
+    {
+      (** Mu-pattern side condition of the monotonicity theorem *)
       destruct_and!.
       apply bound_svar_is_banned_under_mus_fevar_subst_alternative.
       * wf_auto2.
@@ -1736,52 +1828,18 @@ Proof.
         apply wfc_mu_aux_implies_not_bsvar_occur. wf_auto2.
       * assumption.
     }
+    { (** monotonicity side condition, originating from the locally-nameless
+          approach *)
+      ltac2:(_fm_export_everything()).
+      pose proof free_svars_free_evar_subst.
+      set_solver.
+    }
     {
-      (**
-        Γ ⊢ is_predicate_pattern (φ1 =ml φ2)
-      *)
-      mlFreshEvar as x.
-      mlFreshEvar as z.
-      mlFreshEvar as w.
-      eapply floor_is_predicate with (x := x) (y := z) (z := w); try eassumption.
       wf_auto2.
-      1: fm_solve.
-      1: fm_solve.
-      1: fm_solve.
-      try_solve_pile.
+      all: fold no_negative_occurrence_db_b.
+      all: fold no_positive_occurrence_db_b.
+      all: wf_auto2.
     }
-    mlAdd H0 as "H0".
-    mlDestructAnd "H0" as "H0_1" "H0_2". mlClear "H0_1".
-    mlApply "H0_2" in "H". mlClear "H0_2".
-    
-    mlFreshSvar as X.
-    (**
-        Γ ⊢ φ1[0↦X] ---> φ2[0↦X]
-    -------------------------------
-      Γ ⊢ (mu , φ1) ---> mu , φ2
-    *)
-    mlApplyMeta mu_monotone. mlAssumption.
-    instantiate (1 := X).
-    3: clear-H0; apply proj1_sig, proved_impl_wf in H0; wf_auto2.
-    2: { ltac2:(_fm_export_everything()). pose proof free_svars_free_evar_subst.
-         set_solver.
-    }
-    mlSimpl.
-    rewrite svar_open_not_occur. wf_auto2.
-    rewrite svar_open_not_occur. wf_auto2.
-    unfold svar_open.
-    rewrite -free_evar_subst_bsvar_subst. wf_auto2. unfold evar_is_fresh_in; set_solver.
-    rewrite -free_evar_subst_bsvar_subst. wf_auto2. unfold evar_is_fresh_in; set_solver.
-    mlIntro. mlDestructAnd "0".
-    fromMLGoal.
-    apply IHsz.
-    - rewrite svar_open_size'. lia.
-    - wf_auto2.
-    - wf_auto2.
-    - wf_auto2.
-    - wf_auto2.
-    - destruct_and!.
-      apply kt_well_formed_svar_open; wf_auto2.
 Defined.
 
 Close Scope ml_scope.
