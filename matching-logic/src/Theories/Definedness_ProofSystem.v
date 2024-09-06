@@ -3891,6 +3891,29 @@ Proof.
   }
 Defined.
 
+Corollary app_prop_under_implication
+  {Σ : Signature} {syntax : Syntax} Γ: forall φ1 φ2 φ3 ψ,
+  theory ⊆ Γ ->
+  well_formed φ1 ->
+  well_formed φ2 ->
+  well_formed φ3 ->
+  well_formed ψ ->
+  Γ ⊢ is_predicate_pattern φ3 ->
+  Γ ⊢ (φ1 ---> (ψ ⋅ φ2)) ---> (φ1 and φ3) ---> (ψ ⋅ (φ2 and φ3)).
+Proof with try solve [auto | wf_auto2 | try_solve_pile].
+  intros * HΓ wfφ1 wfφ2 wfφ3 wfψ ppφ3.
+  opose proof* (predicate_propagate_right_2 Γ φ2 φ3 ψ)...
+  opose proof* pf_iff_proj1; only 3: exact H...
+  clear H. mlAdd H0. clear H0.
+  do 2 mlIntro. mlDestructAnd "2".
+  mlApply "3" in "1". mlClear "1".
+  mlConj "4" "3" as "1". mlClear "3". mlClear "4".
+  mlApply "0" in "1". mlClear "0".
+  mlApplyMeta Framing_right. mlExact "1".
+  aapply patt_and_comm_basic...
+Defined.
+
+
 (* TODO: Put in a different file? *)
 Lemma predicate_propagate_right {Σ : Signature} {syntax : Syntax} Γ ϕ ψ P :
   theory ⊆ Γ ->
