@@ -1842,6 +1842,62 @@ Proof.
     }
 Defined.
 
+Lemma pattern_kt_well_formed_free_evar_subst {Σ : Signature}:
+  forall φ ψ x,
+    pattern_kt_well_formed φ ->
+    pattern_kt_well_formed ψ ->
+    well_formed ψ ->
+    pattern_kt_well_formed (free_evar_subst ψ x φ).
+Proof.
+  induction φ; simpl; intros; try reflexivity.
+  * case_match; by simpl.
+  * rewrite -> IHφ1, -> IHφ2. reflexivity.
+    all: naive_bsolver.
+  * rewrite -> IHφ1, -> IHφ2. reflexivity.
+    all: naive_bsolver.
+  * by rewrite IHφ.
+  * rewrite IHφ. 2: assumption. 1: naive_bsolver. 1: assumption.
+    rewrite bound_svar_is_banned_under_mus_fevar_subst_alternative.
+    wf_auto2. 2: naive_bsolver. 2: reflexivity.
+    apply bsvar_occur_false_impl_banned.
+    apply wfc_mu_aux_implies_not_bsvar_occur. wf_auto2.
+Qed.
+
+Corollary equality_elimination_eq
+  {Σ : Signature}
+  {sy : Definedness_Syntax.Syntax}
+  Γ φ1 φ2 C
+  (HΓ : theory ⊆ Γ)
+  (WF1 : well_formed φ1)
+  (WF2 :  well_formed φ2)
+  (WFC : PC_wf C)
+  (Hmu : pattern_kt_well_formed (pcPattern C))
+  (Htechnical : pattern_kt_well_formed φ1) :
+  Γ ⊢i (φ1 =ml φ2) --->
+    (emplace C φ1) =ml (emplace C φ2)
+  using AnyReasoning.
+Proof.
+  unfold PC_wf in WFC. destruct C as [x C]. cbn in *.
+  mlIntro "H".
+  mlFreshEvar as y.
+  epose proof (equality_elimination Γ φ1 φ2
+       {| pcEvar := y; pcPattern := C^[[evar:x↦φ1]] =ml
+                                    C^[[evar:x↦patt_free_evar y]] |}
+              HΓ WF1 WF2 ltac:(wf_auto2) _).
+  unfold emplace in H. mlSimpl in H. simpl in H.
+  rewrite free_evar_subst_chain in H. 1: fm_solve.
+  rewrite free_evar_subst_chain in H. 1: fm_solve.
+  rewrite (free_evar_subst_no_occurrence y) in H. 1: fm_solve.
+  rewrite (free_evar_subst_no_occurrence y) in H. 1: fm_solve.
+  mlApplyMeta H in "H".
+  mlApply "H".
+  mlReflexivity.
+Unshelve.
+  cbn.
+  rewrite !pattern_kt_well_formed_free_evar_subst; try reflexivity.
+  all: wf_auto2.
+Defined.
+
 Close Scope ml_scope.
 Close Scope string_scope.
 Close Scope list_scope.
