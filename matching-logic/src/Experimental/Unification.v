@@ -212,7 +212,16 @@ Section unification.
       ** destruct a. intro. unfold "=ml".
          eapply useGenericReasoning.
          apply pile_any.
-         apply floor_is_predicate; auto...
+         mlFreshEvar as x.
+         mlFreshEvar as y.
+         mlFreshEvar as z.
+         eapply (floor_is_predicate _ _ AnyReasoning x y z).
+         3: fm_solve.
+         3: fm_solve.
+         3: fm_solve.
+         3: try_solve_pile.
+         assumption.
+         wf_auto2.
       ** apply IHσ...
     * intros [] ? ? ? ?.
       (* destruct a. *)
@@ -776,7 +785,10 @@ Section unification.
       opose proof* (patt_and_comm Γ t1 t2)...
       use AnyReasoning in H1.
       mlRewrite H1 at 1.
-      opose proof* (patt_equal_comm t1 t2 Γ)...
+      opose proof* (patt_equal_comm t1 t2 Γ).
+      1: assumption.
+      1-2: wf_auto2.
+      use AnyReasoning in H2.
       mlRewrite H2 at 1.
       mlExactMeta H0.
     }

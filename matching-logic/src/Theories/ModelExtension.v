@@ -32,36 +32,6 @@ Require Import
 Import MatchingLogic.Logic.Notations.
 Import MatchingLogic.Semantics.Notations.
 
-
-
-Section glue_models.
-
-  Context (Σ1 : Signature)
-          (Σ2 : Signature)
-          {HVars : @variables Σ1 = @variables Σ2}.
-
-  Definition glued_sig_of : Signature :=
-  {|
-    variables := @variables Σ1;
-    ml_symbols := {|
-      symbols := @symbols (@ml_symbols Σ1) + @symbols (@ml_symbols Σ2)
-    |};
-  |}.
-
-  
-
-End glue_models.
-
-
-
-
-
-
-
-
-
-
-
 Section with_syntax.
     Context
         {Σ : Signature}
@@ -262,13 +232,12 @@ Section with_syntax.
 *)
     Section ext.
         Context
-            (M : @Model Σ)
+            (M : Model)
             (indec : forall (s : symbols),
               is_not_core_symbol s ->
               forall (m : Domain M) ρ,
               Decision (m ∈ Minterp_inhabitant (patt_sym s) ρ))
             (R : Type)
-            (new_sym_interp : @symbols (@ml_symbols Σ) -> propset (Domain M + R)%type)
             (fRM : R -> (Domain M) -> propset (Domain M + R)%type)
             (fMR : (Domain M) -> R -> propset (Domain M + R)%type)
             (fRR : R -> R -> propset (Domain M + R)%type)
@@ -313,17 +282,17 @@ Section with_syntax.
             end
         end.
 
-    Definition new_sym_interp' (s : symbols) : propset Carrier :=
+    Definition new_sym_interp (s : symbols) : propset Carrier :=
         match (decide (s = Definedness_Syntax.inj definedness)) with
         | left _ => {[ cdef ]}
         | right _ =>
             match (decide (s = Sorts_Syntax.inj inhabitant)) with
             | left _ => {[ cinh ]}
-            | right _ => cel <$> new_sym_interp s (* cel <$> (@fmap propset _ _ _ inl (@sym_interp _ M s)) *)
+            | right _ => cel <$> (@fmap propset _ _ _ inl (@sym_interp _ M s))
             end
         end.
 
-    (* TODO: why was this polimorphic? *)
+    (* TODO: why was this poliorphic? *)
     Definition Mext : Model :=
         {|
             Domain := Carrier ;
@@ -341,7 +310,7 @@ Section with_syntax.
         exists cdef.
         simpl. split.
         {
-            unfold new_sym_interp'. case_match.
+            unfold new_sym_interp. case_match.
             { reflexivity. }
             contradiction n. reflexivity.
         }
@@ -2724,5 +2693,3 @@ Section with_syntax.
 
     End ext.
 End with_syntax.
-
-
