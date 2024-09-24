@@ -343,8 +343,6 @@ Section Bool.
 
   Hint Resolve propset_leibniz_equiv : core.
 
-  Print BoolModel.
-
   Theorem BoolModel_satisfies_theory :
     BoolModel ⊨ᵀ Bool_Syntax.theory.
   Proof.
