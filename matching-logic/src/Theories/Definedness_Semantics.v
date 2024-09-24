@@ -694,6 +694,112 @@ Section definedness.
     split; intros H'; exact H'.
   Qed.
 
+  Lemma patt_defined_dec : forall (M : Model),
+    M ⊨ᵀ theory ->
+    forall φ ρ,
+      @eval _ M ρ ⌈φ⌉ = ⊤ \/
+      @eval _ M ρ ⌈φ⌉ = ∅.
+  Proof.
+    intros.
+    destruct (classic ((eval ρ φ) = ∅)).
+    * apply definedness_empty_1 in H0. by right. assumption.
+    * apply definedness_not_empty_1 in H0. by left. assumption.
+  Qed.
+
+  Lemma patt_total_dec : forall (M : Model),
+    M ⊨ᵀ theory ->
+    forall φ ρ,
+      @eval _ M ρ ⌊φ⌋ = ⊤ \/
+      @eval _ M ρ ⌊φ⌋ = ∅.
+  Proof.
+    intros.
+    unfold patt_total, patt_not.
+    simp eval.
+    destruct (patt_defined_dec M H (φ ---> ⊥) ρ) as [H0 | H0]; rewrite H0; set_solver.
+  Qed.
+
+  Lemma eval_equal_emplace : forall (M : Model),
+    M ⊨ᵀ theory ->
+    forall C (φ1 φ2 : Pattern) (ρ : Valuation),
+      well_formed φ1 ->
+      well_formed φ2 ->
+      @eval _ M ρ φ1 = eval ρ φ2 ->
+      eval ρ (emplace C φ1) = eval ρ (emplace C φ2).
+  Proof.
+    intros. destruct C as [y C]. cbn.
+    revert ρ H2.
+    size_induction C; intros; simp eval; simpl;
+      try reflexivity.
+    * by case_match.
+    * simp eval.
+      rewrite IHsz. lia. assumption.
+      rewrite IHsz. lia. assumption.
+      reflexivity.
+    * simp eval.
+      rewrite IHsz. lia. assumption.
+      rewrite IHsz. lia. assumption.
+      reflexivity.
+    * simp eval. cbn.
+      apply propset_fa_union_same. intros.
+      destruct (decide (y ∈ free_evars C)).
+      2: {
+        rewrite free_evar_subst_no_occurrence. assumption.
+        rewrite free_evar_subst_no_occurrence. assumption.
+        reflexivity.
+      }
+      remember (fresh_evar (C ⋅ φ1 ⋅ φ2 ⋅ patt_free_evar y)) as z.
+      rewrite (eval_fresh_evar_open _ _ z).
+      3: rewrite (eval_fresh_evar_open _ _ z).
+      1-4: unfold evar_is_fresh_in.
+      1,3: solve_fresh.
+      1-2: subst z; pose proof free_evars_free_evar_subst as X; eapply not_elem_of_weaken; try apply X; solve_fresh.
+      assert (z ≠ y). {
+        subst z.
+        pose proof set_evar_fresh_is_fresh (C ⋅ φ1 ⋅ φ2 ⋅ patt_free_evar y).
+        unfold evar_is_fresh_in in H3. set_solver.
+      }
+      rewrite evar_open_free_evar_subst_swap; try assumption.
+      rewrite evar_open_free_evar_subst_swap; try assumption.
+      apply IHsz.
+      - rewrite evar_open_size'. lia.
+      - rewrite !eval_free_evar_independent.
+        1-2: unfold evar_is_fresh_in; subst z; solve_fresh.
+        assumption.
+    * simp eval. cbn.
+      f_equal. extensionality S. (** FUN_EXT axiom *)
+      remember (fresh_svar (C ⋅ φ1 ⋅ φ2)) as Z.
+      rewrite (eval_fresh_svar_open _ _ Z).
+      3: rewrite (eval_fresh_svar_open _ _ Z).
+      1-4: unfold svar_is_fresh_in.
+      1,3: solve_sfresh.
+      1-2: subst Z; pose proof free_svars_free_evar_subst as X; eapply not_elem_of_weaken; try apply X; solve_sfresh.
+      unfold svar_open.
+      rewrite -free_evar_subst_bsvar_subst. wf_auto2. unfold evar_is_fresh_in. set_solver.
+      rewrite -free_evar_subst_bsvar_subst. wf_auto2. unfold evar_is_fresh_in. set_solver.
+      apply IHsz.
+      - rewrite svar_open_size'. lia.
+      - rewrite !eval_free_svar_independent.
+        1-2: unfold evar_is_fresh_in; subst Z; solve_sfresh.
+        assumption.
+  Qed.
+
+  Lemma eq_elim_is_top : forall (M : Model),
+    M ⊨ᵀ theory ->
+    forall C (φ1 φ2 : Pattern) (ρ : Valuation),
+      well_formed φ1 ->
+      well_formed φ2 ->
+      @eval _ M ρ (φ1 =ml φ2 ---> emplace C φ1 ---> emplace C φ2) = ⊤.
+  Proof.
+    intros. destruct C as [y C]. cbn. simp eval.
+    (** classic axiom: *)
+    destruct (patt_total_dec M H (φ1 <---> φ2) ρ) as [Heq | Heq]; rewrite Heq.
+    2: set_solver.
+    apply equal_iff_interpr_same in Heq. 2: assumption.
+    apply eval_equal_emplace with (C := {|pcPattern := C; pcEvar := y|}) in Heq.
+    2-4: assumption.
+    cbn in Heq. rewrite Heq.
+    rewrite union_with_complement. set_solver.
+  Qed.
 End definedness.
 
 From MatchingLogic Require Import StringSignature.

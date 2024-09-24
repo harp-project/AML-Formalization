@@ -510,6 +510,58 @@ Section with_signature.
     }
   Qed.
 
+  Lemma challenge : forall (M : Model) ρ φ,
+      @eval _ M ρ (patt_exists (patt_and (patt_bound_evar 0) φ) --->
+                  (patt_forall ((patt_bound_evar 0) ---> φ))) = ⊤.
+  Proof.
+    intros.
+    rewrite eval_imp_simpl eval_ex_simpl eval_all_simpl.
+    simpl.
+    mlSimpl.
+    cbn.
+    apply set_eq. split. set_solver.
+    intros.
+    apply elem_of_union.
+    destruct (classic (x ∈ propset_fa_intersection
+      (λ e : M,
+         eval (update_evar_val (fresh_evar ((patt_bound_evar 0) ---> φ)) e ρ)
+           (patt_free_evar (fresh_evar ((patt_bound_evar 0) ---> φ)) --->
+            φ^{evar:0↦fresh_evar ((patt_bound_evar 0) ---> φ)})))).
+    {
+      right. assumption.
+    }
+    {
+      left. apply elem_of_difference. split. set_solver.
+      intro. apply H0. clear H0.
+      remember (fresh_evar ((patt_bound_evar 0) and φ)) as y.
+      remember (fresh_evar ((patt_bound_evar 0) ---> φ)) as z.
+      assert (y = z).
+      {
+        subst. unfold fresh_evar. simpl.
+        repeat rewrite union_empty_l_L.
+        repeat rewrite union_empty_r_L.
+        reflexivity.
+      }
+      rewrite -> H0 in *. clear Heqy H0.
+      destruct H1.
+      unfold propset_fa_intersection.
+      rewrite eval_and_simpl in H0.
+      apply elem_of_intersection in H0 as [H0_1 H0_2].
+      apply elem_of_PropSet. intro. rewrite eval_imp_simpl eval_free_evar_simpl.
+      rewrite update_evar_val_same.
+      destruct (classic (x = c)).
+      {
+        apply elem_of_union_r. subst x.
+        rewrite eval_free_evar_simpl in H0_1.
+        rewrite update_evar_val_same in H0_1. assert (c = x0) by set_solver.
+        by subst.
+      }
+      {
+        set_solver.
+      }
+    }
+  Qed.
+
 End with_signature.
 
 (* TODO make these a separate hintdb. *)

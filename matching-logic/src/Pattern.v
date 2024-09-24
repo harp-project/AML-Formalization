@@ -1116,6 +1116,23 @@ Section corollaries.
 
 End corollaries.
 
+Ltac size_induction φ :=
+match type of φ with
+| Pattern => let sz := fresh "sz" in
+             let Hsz := fresh "Hsz" in
+             let H := fresh "H" in
+               remember (size' φ) as sz eqn:H;
+               assert (size' φ <= sz) as Hsz by lia;
+               clear H;
+               revert φ Hsz;
+               induction sz; intros φ Hsz; [
+                 destruct φ; simpl size' in Hsz; lia
+               |
+                 destruct φ; simpl size' in Hsz
+               ]
+end.
+
+
 Module BoundVarSugar.
   (* Element variables - bound *)
   Notation b0 := (patt_bound_evar 0).

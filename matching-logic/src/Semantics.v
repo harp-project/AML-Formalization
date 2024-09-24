@@ -225,7 +225,8 @@ Section semantics.
   Definition app_ext
              (l r : propset (Domain M)) :
     propset (Domain M) :=
-    PropSet (fun (e : (Domain M)) => exists (le re : (Domain M)), le ∈ l /\ re ∈ r /\ e ∈ (app_interp _) le re).
+    PropSet (fun (e : (Domain M)) => exists (le re : (Domain M)),
+      le ∈ l /\ re ∈ r /\ e ∈ (app_interp _) le re).
 
   Lemma app_ext_bot_r :
       forall S : propset (Domain M),
@@ -282,6 +283,7 @@ Section semantics.
 
     Let OS := PropsetOrderedSet (Domain M).
     Let  L := PowersetLattice (Domain M).
+
 
     Equations? eval (ρ : Valuation) (ϕ : Pattern)
       : propset (@Domain M) by wf (size ϕ) :=

@@ -474,10 +474,10 @@ Section nat.
         mlClear "0".
         
         unfold patt_exists_of_sort.
-        remember (evar_fresh [] ) as x.
+        mlFreshEvar as x.
+        mlFreshEvar as y.
         
-        epose proof membership_exists_2 Γ (x) (b0 ∈ml 〚 nest_ex Nat 〛 and (b0 and Zero +ml b0 =ml b0))
-         ltac:(set_solver) ltac:(wf_auto2).
+        epose proof membership_exists_2 Γ (patt_free_evar x) (b0 ∈ml 〚 nest_ex Nat 〛 and (b0 and Zero +ml b0 =ml b0)) y AnyReasoning ltac:(set_solver) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(fm_solve) ltac:(try_solve_pile).
         unfold nest_ex in *. simpl in *. fold Nat in *.
         
         apply universal_generalization with (x := x ) in H1 .
@@ -692,9 +692,10 @@ same chain of thoughts as 1st one for totality.
         mlIntro "H1".
         mlIntro "H2".
         mlClear "0";mlClear "H";mlClear "H0".
-       
-        epose proof membership_exists_2 Γ (x) (b0 ∈ml 〚 nest_ex Nat 〛 and (b0 and Zero +ml b0 =ml b0))
-         ltac:(set_solver) ltac:(wf_auto2).
+
+        mlFreshEvar as y.
+        epose proof membership_exists_2 Γ (patt_free_evar x) (b0 ∈ml 〚 nest_ex Nat 〛 and (b0 and Zero +ml b0 =ml b0)) y AnyReasoning
+         ltac:(set_solver) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(fm_solve) ltac:(try_solve_pile).
        
         apply universal_generalization with (x := x ) in H0 .
         2:try_solve_pile.
@@ -767,9 +768,7 @@ same chain of thoughts as 1st one for totality.
                     pose proof use_nat_axiom AxFun2 Γ H. simpl in H0.
                     mlAdd H0. mlSpecialize "0" with x. mlSimpl. mlSortedSimpl. mlSimpl. cbn.
                     mlApply "0" in "H".
-                    remember (evar_fresh[x]) as y.
                     mlDestructEx "H" as y.
-                    1-3: cbn;pose proof set_evar_fresh_is_fresh'' [x] as S; clear -S; set_solver.
                     mlSimpl. cbn.
                     mlDestructAnd "H". 
                     mlRewriteBy "2" at 1.
