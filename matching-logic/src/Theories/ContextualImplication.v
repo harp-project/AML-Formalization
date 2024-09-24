@@ -111,8 +111,15 @@ Proof.
     mlApplyMeta membership_imp_2.
     2: exact HΓ.
     mlIntro "H".
+
     mlApplyMeta membership_exists_2.
-    2: exact HΓ.
+    3: exact HΓ.
+    2: {
+      cbn. instantiate (1:= x).
+      ltac2:(_fm_export_everything()).
+      pose proof (free_evars_bevar_subst ϕ (patt_free_evar y) 1).
+      cbn in H5. set_solver.
+    }
     mlExists y.
     mlApplyMeta membership_and_2.
     2: exact HΓ.
@@ -130,7 +137,13 @@ Proof.
         rewrite -> bevar_subst_not_occur with (n := 1).
         2: wf_auto2.
         mlApplyMeta membership_symbol_ceil_right.
-        2: exact HΓ.
+        3: exact HΓ.
+        2: {
+          cbn. instantiate (1:= x).
+          ltac2:(_fm_export_everything()).
+          pose proof (free_evars_bevar_subst ϕ (patt_free_evar y) 0).
+          cbn in H5. set_solver.
+        }
         mlExists y.
         mlSimpl. cbn.
         mlApplyMeta membership_and_2.

@@ -981,7 +981,7 @@ Section Bool.
     all: apply (@propset_leibniz_equiv _ BoolModel).
   Qed.
 
-End Bool. 
+End Bool.
 
 Section Nat.
 
