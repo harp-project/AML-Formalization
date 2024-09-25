@@ -1907,16 +1907,22 @@ Lemma exists_singleton {Σ : Signature} {syntax : Definedness_Syntax.Syntax} Γ 
                   (patt_forall ((patt_bound_evar 0) ---> φ)).
 Proof.
   intros.
+  (* first, we get rid of the ∃, and the conjunction *)
   mlIntro. mlDestructEx "0" as x. mlSimpl. cbn.
   mlDestructAnd "0".
   mlRevert "2". mlRevert "1".
+
+  (* We introduce membership: x ∈ (φ(x) ---> ∀y.(y ---> φ(y))) *)
   mlApplyMeta membership_implies_implication.
+  (* We propagate membership to the primitive subpatterns: *)
   mlApplyMeta membership_imp_2. 2: assumption.
   mlIntro.
+  (* we don't have a theorem for ∀, thus we revert to ∃ *)
   unfold patt_forall.
   mlApplyMeta membership_not_2. 2: assumption.
   mlIntro.
   mlFreshEvar as y.
+  (* TODO: smarten fm_solve with free_evars_evar_open *)
   mlApplyMeta membership_exists_1 in "1".
   2: instantiate (1 := y); fm_solve.
   2: assumption.
@@ -1932,6 +1938,10 @@ Proof.
   mlClear "1".
   mlApplyMeta membership_imp_2. 2: assumption.
   mlIntro.
+  (* at this point, we have x ∈ y and x ∈ φ(x) ---> x ∈ φ(y)
+     this means that x = y
+     and we can use equality elimination to swap φ(x) with φ(y)
+   *)
   mlApplyMeta overlapping_variables_equal in "1". 2: assumption.
   mlFreshEvar as z.
   opose proof* (equality_elimination Γ (patt_free_evar x) (patt_free_evar y)
