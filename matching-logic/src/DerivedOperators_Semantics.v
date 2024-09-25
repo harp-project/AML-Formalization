@@ -510,18 +510,23 @@ Section with_signature.
     }
   Qed.
 
-  Lemma challenge : forall (M : Model) ρ φ,
+  Lemma exists_singleton_is_top : forall (M : Model) ρ φ,
       @eval _ M ρ (patt_exists (patt_and (patt_bound_evar 0) φ) --->
                   (patt_forall ((patt_bound_evar 0) ---> φ))) = ⊤.
   Proof.
     intros.
+    (* We simplify the evaluation relation *)
     rewrite eval_imp_simpl eval_ex_simpl eval_all_simpl.
     simpl.
     mlSimpl.
     cbn.
-    apply set_eq. split. set_solver.
+    (* Two sets are equal, if they contain the same elements *)
+    apply set_eq. split. set_solver. (* ⊤ contains all elements *)
+    (* all elements should be contained by the simplified evaluation result: *)
     intros.
     apply elem_of_union.
+    (* We check which side of the union could contain any x *)
+    (* This big intersecion is the semantics of ∀ *)
     destruct (classic (x ∈ propset_fa_intersection
       (λ e : M,
          eval (update_evar_val (fresh_evar ((patt_bound_evar 0) ---> φ)) e ρ)
@@ -531,8 +536,14 @@ Section with_signature.
       right. assumption.
     }
     {
+      (* if x is not an element in the semantics of ∀, then it also should not
+         be an element of the ∃. --->
+         if x is an element of the union (∃), it also should be an element of the 
+         intersection (∀) *)
       left. apply elem_of_difference. split. set_solver.
       intro. apply H0. clear H0.
+      (* We prove that the variables used for opening in the union and
+         intersection are actually the same *)
       remember (fresh_evar ((patt_bound_evar 0) and φ)) as y.
       remember (fresh_evar ((patt_bound_evar 0) ---> φ)) as z.
       assert (y = z).
@@ -543,20 +554,25 @@ Section with_signature.
         reflexivity.
       }
       rewrite -> H0 in *. clear Heqy H0.
+      (* we suppose that x ∈ ρ⟦z and φ^{0↦z}⟧, where ρ(z) = x0 *)
       destruct H1.
       unfold propset_fa_intersection.
       rewrite eval_and_simpl in H0.
       apply elem_of_intersection in H0 as [H0_1 H0_2].
-      apply elem_of_PropSet. intro. rewrite eval_imp_simpl eval_free_evar_simpl.
+      apply elem_of_PropSet. intro.
+      (* we have to prove that x ∈ ρ⟦z ---> φ^{0↦z}⟧, where ρ(z) = c *)
+      rewrite eval_imp_simpl eval_free_evar_simpl.
       rewrite update_evar_val_same.
+      (* we check whether x = c *)
       destruct (classic (x = c)).
       {
+        (* in this case, actually c = x0, and we get an assumption *)
         apply elem_of_union_r. subst x.
         rewrite eval_free_evar_simpl in H0_1.
         rewrite update_evar_val_same in H0_1. assert (c = x0) by set_solver.
         by subst.
       }
-      {
+      {  (* in this case, we can conclude by basic set reasoning *)
         set_solver.
       }
     }
