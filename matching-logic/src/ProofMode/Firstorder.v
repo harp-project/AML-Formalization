@@ -891,7 +891,7 @@ Open Scope string_scope.
 (* TODO: reformulate in Ltac2 - depends on the Freshness Manager *)
 Tactic Notation "mlIntroAll" ident(x) :=
 _ensureProofMode;
-mlFreshEvar as x;
+try mlFreshEvar as x;
 tryif apply (MLGoal_forallIntro _ _ _ x);
 [   try fm_solve
   | try fm_solve
@@ -925,7 +925,7 @@ Restart.
   intros.
   toMLGoal. wf_auto2.
   mlFreshEvar as x.
-  mlIntroAllManual x.
+  mlIntroAll x.
   Fail mlIntroAll y.
   mlIntro "A". mlSplitAnd; mlAssumption.
 Qed.
