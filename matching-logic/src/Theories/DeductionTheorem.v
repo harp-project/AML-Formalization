@@ -1899,16 +1899,98 @@ Unshelve.
   all: wf_auto2.
 Defined.
 
+Lemma exists_elim {Σ : Signature} {syntax : Definedness_Syntax.Syntax} Γ φ x :
+  theory ⊆ Γ ->
+  well_formed (ex , φ) ->
+  pattern_kt_well_formed φ ->
+  Γ ⊢ (ex , b0 and φ) ---> patt_free_evar x ---> φ^{evar:0↦x}.
+Proof.
+  intros H H0 H1.
+  mlIntro.
+  mlDestructEx "0" as y.
+  simpl. mlSimpl. cbn.
+  mlDestructAnd "0".
+  mlRevert "2". mlRevert "1".
+  mlApplyMeta membership_implies_implication.
+  mlApplyMeta membership_imp_2. 2: assumption.
+  mlIntro.
+  mlApplyMeta membership_imp_2. 2: assumption.
+  mlIntro.
+  mlApplyMeta overlapping_variables_equal in "1". 2: assumption.
+  (* TODO: write a theorem which is a corollary of equality elimination, and
+     is capable of rewriting inside substitutions *)
+  mlFreshEvar as z.
+  opose proof* (equality_elimination Γ (patt_free_evar y) (patt_free_evar x)
+     {| pcEvar := z; pcPattern := patt_free_evar y ∈ml φ^{evar:0↦z}|} H
+     ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
+   {
+     cbn. rewrite kt_well_formed_evar_open. assumption. reflexivity.
+   }
+   unfold emplace in H2. mlSimpl in H2. cbn in H2.
+   case_match. 1: subst z; ltac2:(_fm_export_everything()); exfalso; set_solver.
+   erewrite <- !bound_to_free_variable_subst in H2.
+   2: instantiate (1 := 1); lia.
+   5: instantiate (1 := 1); lia.
+   2-3, 5-6: wf_auto2.
+   2: fm_solve.
+   2: fm_solve.
+   (**)
+   mlApplyMeta H2.
+   mlSplitAnd; mlAssumption.
+Defined.
+
+Lemma forall_intro {Σ : Signature} {syntax : Definedness_Syntax.Syntax} Γ φ x :
+  theory ⊆ Γ ->
+  well_formed (ex , φ) ->
+  pattern_kt_well_formed φ ->
+  Γ ⊢ patt_free_evar x ---> φ^{evar:0↦x} ---> (all , b0 ---> φ).
+Proof.
+  intros H H0 H1.
+  mlApplyMeta membership_implies_implication.
+  mlApplyMeta membership_imp_2. 2: assumption.
+  mlIntro.
+  mlFreshEvar as y.
+  mlApplyMeta membership_forall_2. 2: instantiate (1 := y); fm_solve.
+  2: assumption.
+  mlIntroAll y.
+  mlSimpl. cbn.
+  mlApplyMeta membership_imp_2. 2: assumption.
+  mlIntro.
+  mlApplyMeta overlapping_variables_equal in "1". 2: assumption.
+  mlFreshEvar as z.
+  (* TODO: write a theorem which is a corollary of equality elimination, and
+     is capable of rewriting inside substitutions *)
+  opose proof* (equality_elimination Γ (patt_free_evar x) (patt_free_evar y)
+     {| pcEvar := z; pcPattern := patt_free_evar x ∈ml φ^{evar:0↦z}|} H
+     ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
+   {
+     cbn. rewrite kt_well_formed_evar_open. assumption. reflexivity.
+   }
+   unfold emplace in H2. mlSimpl in H2. cbn in H2.
+   case_match. 1: subst z; ltac2:(_fm_export_everything()); exfalso; set_solver.
+   erewrite <- !bound_to_free_variable_subst in H2.
+   2: instantiate (1 := 1); lia.
+   5: instantiate (1 := 1); lia.
+   2-3, 5-6: wf_auto2.
+   2: fm_solve.
+   2: fm_solve.
+   (***)
+   mlApplyMeta H2.
+   mlSplitAnd; mlAssumption.
+Defined.
+
 Lemma exists_singleton {Σ : Signature} {syntax : Definedness_Syntax.Syntax} Γ φ :
   theory ⊆ Γ ->
   well_formed (ex, φ) ->
   pattern_kt_well_formed φ ->
-  Γ ⊢ patt_exists (patt_and (patt_bound_evar 0) φ) --->
-                  (patt_forall ((patt_bound_evar 0) ---> φ)).
+  Γ ⊢ (ex , b0 and φ) ---> (all, (b0 ---> φ)).
 Proof.
-  intros.
+  intros H H0 H1.
   (* first, we get rid of the ∃, and the conjunction *)
-  mlIntro. mlDestructEx "0" as x. mlSimpl. cbn.
+  mlIntro.
+  mlFreshEvar as x.
+
+  mlDestructEx "0" as x. mlSimpl. cbn.
   mlDestructAnd "0".
   mlRevert "2". mlRevert "1".
 
@@ -1917,25 +1999,9 @@ Proof.
   (* We propagate membership to the primitive subpatterns: *)
   mlApplyMeta membership_imp_2. 2: assumption.
   mlIntro.
-  (* we don't have a theorem for ∀, thus we revert to ∃ *)
-  unfold patt_forall.
-  mlApplyMeta membership_not_2. 2: assumption.
-  mlIntro.
   mlFreshEvar as y.
-  (* TODO: smarten fm_solve with free_evars_evar_open *)
-  mlApplyMeta membership_exists_1 in "1".
-  2: instantiate (1 := y); fm_solve.
-  2: assumption.
-  _mlReshapeHypsByName "1".
-  apply MLGoal_destructEx with (x := y). try_solve_pile.
-  2: fm_solve.
-  2: fm_solve.
-  2: fm_solve.
-  1: ltac2:(_fm_export_everything()); cbn; pose proof (free_evars_evar_open); set_solver.
-  simpl. mlSimpl. cbn.
-  mlApplyMeta membership_not_1 in "1". 2: assumption.
-  mlApply "1".
-  mlClear "1".
+  mlApplyMeta membership_forall_2. 2: instantiate (1 := y); fm_solve. 2: assumption.
+  mlIntroAll y. simpl.
   mlApplyMeta membership_imp_2. 2: assumption.
   mlIntro.
   (* at this point, we have x ∈ y and x ∈ φ(x) ---> x ∈ φ(y)
@@ -1944,6 +2010,8 @@ Proof.
    *)
   mlApplyMeta overlapping_variables_equal in "1". 2: assumption.
   mlFreshEvar as z.
+  (* TODO: write a theorem which is a corollary of equality elimination, and
+     is capable of rewriting inside substitutions *)
   opose proof* (equality_elimination Γ (patt_free_evar x) (patt_free_evar y)
      {| pcEvar := z; pcPattern := patt_free_evar x ∈ml φ^{evar:0↦z}|} H
      ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).

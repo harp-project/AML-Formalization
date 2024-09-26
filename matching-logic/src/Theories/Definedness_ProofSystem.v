@@ -2931,6 +2931,50 @@ Proof.
   1-3: eassumption.
 Defined.
 
+Lemma membership_forall_1 {Σ : Signature} {syntax : Definedness_Syntax.Syntax} Γ φ x y i:
+  theory ⊆ Γ ->
+  well_formed (ex , φ) ->
+  y ∉ free_evars φ ∪ {[x]}->
+  ProofInfoLe (ExGen := {[ev_x; y]}, SVSubst := ∅, KT := false, AKT := false) i ->
+  Γ ⊢i patt_free_evar x ∈ml (all , φ) ---> (all , patt_free_evar x ∈ml φ) using i.
+Proof.
+  intros H H0 H1 H2.
+  mlIntro. unfold patt_forall.
+  mlApplyMeta membership_not_1 in "0". 2: assumption.
+  mlIntro. mlApply "0".
+  mlApplyMeta membership_exists_2.
+  2: instantiate (1 := y); try_solve_pile.
+  2: set_solver.
+  2: assumption.
+  mlDestructEx "1" as y.
+  mlExists y.
+  mlSimpl. cbn.
+  mlApplyMeta membership_not_2. 2: try_solve_pile. 2: assumption.
+  mlAssumption.
+Defined.
+
+Lemma membership_forall_2 {Σ : Signature} {syntax : Definedness_Syntax.Syntax} Γ φ x y i:
+  theory ⊆ Γ ->
+  well_formed (ex , φ) ->
+  y ∉ free_evars φ ∪ {[x]} ->
+  ProofInfoLe (ExGen := {[ev_x; y]}, SVSubst := ∅, KT := false, AKT := false) i ->
+  Γ ⊢i (all , patt_free_evar x ∈ml φ) ---> patt_free_evar x ∈ml (all , φ) using i.
+Proof.
+  intros H H0 H1 H2.
+  mlIntro. unfold patt_forall.
+  mlApplyMeta membership_not_2. 2: try_solve_pile. 2: assumption.
+  mlIntro. mlApply "0".
+  mlApplyMeta membership_exists_1 in "1".
+  2: instantiate (1 := y); try_solve_pile.
+  2: set_solver.
+  2: assumption.
+  mlDestructEx "1" as y.
+  mlExists y.
+  mlSimpl. cbn.
+  mlApplyMeta membership_not_1. 2: assumption.
+  mlAssumption.
+Defined.
+
 Lemma membership_symbol_ceil_aux_aux_0 {Σ : Signature} {syntax : Syntax} Γ x φ i:
   theory ⊆ Γ ->
   well_formed φ ->
