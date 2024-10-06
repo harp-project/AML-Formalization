@@ -191,42 +191,86 @@ Section MatchingEquivs.
   Proof.
   Abort.
 
-  (* TODO: multiexists *)
   Goal forall l ti,
     well_formed (ex, l) ->
     well_formed ti ->
     mu_free l ->
-    Γ ⊢ is_functional l ->
     Γ ⊢ is_functional ti ->
-    Γ ⊢ (ex, (l =ml ti)) <---> ti ∈ml (ex, l). 
+    (forall x, Γ ⊢ is_functional l^{evar: 0 ↦ x}) ->
+    Γ ⊢ (ex, (l =ml ti)) <---> ti ∈ml (ex, l).
   Proof.
-    intros * wfl wfti mfl fpl fpti.
-    mlFreshEvar as y.
-    unshelve epose proof membership_exists Γ ti y l AnyReasoning HΓ ltac:(wf_auto2) wfti _ ltac:(try_solve_pile).
-    (* TODO: why doesn't solve_fresh work here? *)
-    ltac2:(_fm_export_everything ()). set_solver.
-    (* pose proof pf_iff_equiv_sym_meta Γ _ _ _ H. clear H. *)
-    (* pose proof patt_equal_comm l ti Γ HΓ wfl wfti. use AnyReasoning in H. *)
-    toMLGoal. wf_auto2.
-    mlRewrite H at 1.
-    mlSplitAnd; mlIntro.
-    mlDestructEx "0" as x. mlExists x. mlSimpl. mlRewriteBy "0" at 1.
-    Search patt_in. mlApplyMeta membership_refl.
-    mlAdd fpti. unfold is_functional.
-    mlClear "0".
-    mlDestructEx "1" as z.
-    Search patt_exists patt_equal.
-
-
-    pose proof membership_equal_equal Γ _ _ HΓ mfl wfti wfl fpti fpl.
-    epose proof patt_equal_sym Γ _ _ HΓ _ _. use AnyReasoning in H2.
-    pose proof (MP H1 H2). clear H1 H2.
-    Unshelve. 2-3: wf_auto2.
-    toMLGoal. wf_auto2.
-    mlRewrite H at 1.
-    mlAdd H3. mlRewriteBy "0" at 1.
-    mlExactMeta H0.
+    intros.
+    mlSplitAnd.
+    {
+      mlIntro.
+      mlFreshEvar as y.
+      unshelve mlApplyMeta membership_exists_2.
+      exact y. 2: ltac2:(_fm_export_everything ()); set_solver.
+      2: auto.
+      mlDestructEx "0" as x.
+      mlExists x.
+      mlSimpl.
+      mlRewriteBy "0" at 1.
+      rewrite (evar_open_not_occur _ _ ti). wf_auto2.
+      mlApplyMeta membership_refl. 2: assumption.
+      mlExactMeta H2.
+    }
+    {
+      mlIntro.
+      mlFreshEvar as y.
+      unshelve mlApplyMeta membership_exists_1 in "0".
+      exact y. 2: ltac2:(_fm_export_everything ()); set_solver.
+      2: auto.
+      mlDestructEx "0" as x.
+      mlExists x.
+      mlSimpl.
+      rewrite (evar_open_not_occur _ _ ti). wf_auto2.
+      epose proof MP _ (MP H2 (membership_imp_equal Γ ti l^{evar:0↦x} HΓ _ _ _)).
+      mlSymmetry.
+      mlApplyMeta H4.
+      mlAssumption.
+    }
+    Unshelve.
+    apply H3. now apply mu_free_bevar_subst.
+    all: wf_auto2.
   Defined.
+
+  (* (1* TODO: multiexists *1) *)
+  (* Goal forall l ti, *)
+  (*   well_formed (ex, l) -> *)
+  (*   well_formed ti -> *)
+  (*   mu_free l -> *)
+  (*   Γ ⊢ is_functional l -> *)
+  (*   Γ ⊢ is_functional ti -> *)
+  (*   Γ ⊢ (ex, (l =ml ti)) <---> ti ∈ml (ex, l). *) 
+  (* Proof. *)
+  (*   intros * wfl wfti mfl fpl fpti. *)
+  (*   mlFreshEvar as y. *)
+  (*   unshelve epose proof membership_exists Γ ti y l AnyReasoning HΓ ltac:(wf_auto2) wfti _ ltac:(try_solve_pile). *)
+  (*   (1* TODO: why doesn't solve_fresh work here? *1) *)
+  (*   ltac2:(_fm_export_everything ()). set_solver. *)
+  (*   (1* pose proof pf_iff_equiv_sym_meta Γ _ _ _ H. clear H. *1) *)
+  (*   (1* pose proof patt_equal_comm l ti Γ HΓ wfl wfti. use AnyReasoning in H. *1) *)
+  (*   toMLGoal. wf_auto2. *)
+  (*   mlRewrite H at 1. *)
+  (*   mlSplitAnd; mlIntro. *)
+  (*   mlDestructEx "0" as x. mlExists x. mlSimpl. mlRewriteBy "0" at 1. *)
+  (*   Search patt_in. mlApplyMeta membership_refl. *)
+  (*   mlAdd fpti. unfold is_functional. *)
+  (*   mlClear "0". *)
+  (*   mlDestructEx "1" as z. *)
+  (*   Search patt_exists patt_equal. *)
+
+
+  (*   pose proof membership_equal_equal Γ _ _ HΓ mfl wfti wfl fpti fpl. *)
+  (*   epose proof patt_equal_sym Γ _ _ HΓ _ _. use AnyReasoning in H2. *)
+  (*   pose proof (MP H1 H2). clear H1 H2. *)
+  (*   Unshelve. 2-3: wf_auto2. *)
+  (*   toMLGoal. wf_auto2. *)
+  (*   mlRewrite H at 1. *)
+  (*   mlAdd H3. mlRewriteBy "0" at 1. *)
+  (*   mlExactMeta H0. *)
+  (* Defined. *)
 
 
   Goal forall l ti M ρ,
