@@ -139,21 +139,6 @@ Section MatchingEquivs.
   Context (σ : list (evar * Pattern)).
   Hypothesis (Hwfσ : wf (map snd σ)).
 
-  (* Lemma equal_iff_interpr M ρ φ1 φ2 : *)
-  (*   satisfies_theory M theory -> *)
-  (*   @eval _ M ρ (φ1 =ml φ2) = ⊤ \/ *)
-  (*   @eval _ M ρ (φ1 =ml φ2) = ∅. *)
-  (* Proof. *)
-  (*   intros HM. *)
-  (*   pose proof classic (@eval _ M ρ φ1 = @eval _ M ρ φ2) as []. *)
-  (*   - *)
-  (*     pose proof equal_iff_interpr_same M HM φ1 φ2 ρ as [_ Heq]. *)
-  (*     left. auto. *)
-  (*   - *)
-  (*     pose proof not_equal_iff_not_interpr_same_1 M HM φ1 φ2 ρ as [_ Hneq]. *)
-  (*     right. auto. *)
-  (* Defined. *)
-
   Goal forall l ti,
     forall M ρ,
     satisfies_theory M theory ->
@@ -235,130 +220,33 @@ Section MatchingEquivs.
     all: wf_auto2.
   Defined.
 
-  (* (1* TODO: multiexists *1) *)
-  (* Goal forall l ti, *)
-  (*   well_formed (ex, l) -> *)
-  (*   well_formed ti -> *)
-  (*   mu_free l -> *)
-  (*   Γ ⊢ is_functional l -> *)
-  (*   Γ ⊢ is_functional ti -> *)
-  (*   Γ ⊢ (ex, (l =ml ti)) <---> ti ∈ml (ex, l). *) 
-  (* Proof. *)
-  (*   intros * wfl wfti mfl fpl fpti. *)
-  (*   mlFreshEvar as y. *)
-  (*   unshelve epose proof membership_exists Γ ti y l AnyReasoning HΓ ltac:(wf_auto2) wfti _ ltac:(try_solve_pile). *)
-  (*   (1* TODO: why doesn't solve_fresh work here? *1) *)
-  (*   ltac2:(_fm_export_everything ()). set_solver. *)
-  (*   (1* pose proof pf_iff_equiv_sym_meta Γ _ _ _ H. clear H. *1) *)
-  (*   (1* pose proof patt_equal_comm l ti Γ HΓ wfl wfti. use AnyReasoning in H. *1) *)
-  (*   toMLGoal. wf_auto2. *)
-  (*   mlRewrite H at 1. *)
-  (*   mlSplitAnd; mlIntro. *)
-  (*   mlDestructEx "0" as x. mlExists x. mlSimpl. mlRewriteBy "0" at 1. *)
-  (*   Search patt_in. mlApplyMeta membership_refl. *)
-  (*   mlAdd fpti. unfold is_functional. *)
-  (*   mlClear "0". *)
-  (*   mlDestructEx "1" as z. *)
-  (*   Search patt_exists patt_equal. *)
-
-
-  (*   pose proof membership_equal_equal Γ _ _ HΓ mfl wfti wfl fpti fpl. *)
-  (*   epose proof patt_equal_sym Γ _ _ HΓ _ _. use AnyReasoning in H2. *)
-  (*   pose proof (MP H1 H2). clear H1 H2. *)
-  (*   Unshelve. 2-3: wf_auto2. *)
-  (*   toMLGoal. wf_auto2. *)
-  (*   mlRewrite H at 1. *)
-  (*   mlAdd H3. mlRewriteBy "0" at 1. *)
-  (*   mlExactMeta H0. *)
-  (* Defined. *)
-
-
-  Goal forall l ti M ρ,
-    satisfies_theory M theory ->
-    @eval _ M ρ ((ex, l =ml ti) <---> ⌈l and ti⌉) ≠ ⊤.
-  Proof.
-    intros * HM.
-    rewrite eval_iff_simpl.
-    Search eval patt_defined.
-    pose proof patt_defined_dec M HM (l and ti) ρ as [-> | ->].
-    assert (forall X : propset M, X ∪ ⊤ = ⊤) as -> by set_solver.
-    rewrite difference_diag_L union_empty_l_L.
-    assert (forall X : propset M, ⊤ ∩ X = X) as -> by set_solver.
-    2: rewrite union_empty_r_L difference_empty_L.
-    2: assert (forall X : propset M, ⊤ ∪ X = ⊤) as -> by set_solver.
-    2: assert (forall X : propset M, X ∩ ⊤ = X) as -> by set_solver.
-    Search eval patt_exists.
-  Abort.
-
-
   Goal forall l ti,
-    well_formed l ->
+    well_formed (ex, l) ->
     well_formed ti ->
     mu_free ti ->
-    Γ ⊢ is_functional l ->
+    (forall x, Γ ⊢ is_functional l^{evar:0↦x}) ->
     Γ ⊢ is_functional ti ->
-    Γ ⊢ (ex, (l =ml ti)) <---> ⌈l and ti⌉.
+    Γ ⊢ (ex, (l =ml ti)) <---> ⌈l^{evar: 0 ↦ fresh_evar (l ---> ti)} and ti⌉.
   Proof.
     intros * wfl wfti mfti fpl fpti.
-    replace (⌈l and ti⌉) with (l ∈ml ti) by reflexivity.
-    pose proof membership_equal_equal Γ _ _ HΓ mfti wfl wfti fpl fpti.
-    toMLGoal. wf_auto2.
-    mlAdd H as "H".
-    mlRewriteBy "H" at 1.
-    mlClear "H".
-    fromMLGoal.
-    Search patt_in patt_exists.
-    (****************)
-    Search patt_exists.
-  Abort.
-
+    remember (fresh_evar _) as y.
+    pose proof evar_open_not_occur 0 y ti ltac:(wf_auto2).
+    mlSplitAnd; mlIntro.
+    -
+      mlDestructEx "0" as y.
+      admit.
+      mlSimpl. rewrite H.
+      mlRewriteBy "0" at 1. fold (ti ∈ml ti).
+      mlApplyMeta membership_refl.
+      mlExactMeta fpti. auto.
+    -
+      mlExists y. mlSimpl. rewrite H.
+      fold (l^{evar:0↦y} ∈ml ti).
+      Search patt_in patt_equal.
+      epose proof membership_imp_equal Γ (l^{evar:0↦y}) ti HΓ mfti ltac:(wf_auto2) ltac:(wf_auto2).
+      pose proof (MP (fpl y) H0). clear H0.
+      pose proof (MP fpti H1). clear H1.
+      mlApplyMeta H0. mlAssumption.
+  Admitted.
 End MatchingEquivs.
 
-Section Existentials.
-  About Model.
-  Goal exists (Σ : Signature) (syntax : @Syntax Σ) (M : @Model Σ) ρ l ti,
-    satisfies_theory M theory /\
-    @eval _ M ρ (ex, l =ml ti) ≠ ⊤ /\
-    @eval _ M ρ (ex, l =ml ti) ≠ ∅.
-  Proof.
-    do ! eexists.
-    Unshelve.
-    4: {
-      split. exact StringMLVariables.
-      unshelve esplit. exact bool. all: typeclasses eauto.
-    }
-    4: {
-      split. intros []. simpl. left.
-    }
-    4: {
-      unshelve esplit. exact bool. typeclasses eauto.
-      intros. exact empty.
-      intros. exact {[sigma]}.
-    }
-    4: {
-      split; simpl; intros. right. exact {[true]}.
-    }
-    4: exact b0.
-    4: apply patt_sym; right.
-    2: {
-      simpl.
-      rewrite eval_ex_simpl. simpl.
-      remember (λ e, _) as f.
-      intro.
-      epose proof propset_fa_union_full f as [? _]. specialize (H0 H).
-      clear H. subst. simpl in H0. remember (fresh_evar _) as y. 
-      mlSimpl in H0.
-      (*-------------------*)
-      specialize (H0 false) as [].
-      remember (update_evar_val _ _ _) as ρ'.
-      epose proof not_equal_iff_not_interpr_same_1 _ _ (b0^{evar:0↦y}) (patt_sym _) ρ' as [_ ?]. rewrite H0 in H.
-      2: set_solver.
-      rewrite ! eval_simpl. simpl. subst. simpl.
-      rewrite decide_eq_same. destruct x.
-      (*********************)
-
-      mlSimpl. cbn.
-      Search propset_fa_union.
-    Print Signature.
-    Print MLSymbols.
-End Existentials.
