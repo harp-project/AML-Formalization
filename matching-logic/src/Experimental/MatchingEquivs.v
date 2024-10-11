@@ -136,6 +136,237 @@ Section MatchingEquivs.
       all: wf_auto2.
   Admitted.
 
+  Goal forall l ti,
+    well_formed (ex, l) ->
+    well_formed ti ->
+    mu_free l ->
+    (forall x, Γ ⊢ is_functional l^{evar: 0 ↦ x}) ->
+    Γ ⊢ is_functional ti ->
+    Γ ⊢ (ex, (l =ml ti)) <---> ti ∈ml (ex, l).
+  Proof.
+    intros * wfl wfti mfl fpl fpti.
+    mlFreshEvar as y.
+    assert (y ∉ free_evars l ∪ free_evars ti)
+      by (ltac2:(_fm_export_everything ()); set_solver).
+    assert (forall x, ti^{evar:0↦x} = ti)
+      by (intros; apply evar_open_not_occur; wf_auto2).
+    mlSplitAnd; mlIntro.
+    1: unshelve mlApplyMeta membership_exists_2; auto.
+    2: unshelve mlApplyMeta membership_exists_1 in "0"; auto.
+    all: mlDestructEx "0" as x; mlExists x.
+    all: mlSimpl; rewrite ! H0.
+    -
+      mlRewriteBy "0" at 1.
+      mlApplyMeta membership_refl.
+      mlExactMeta fpti. auto.
+    -
+      opose proof* (membership_imp_equal Γ ti (l^{evar:0↦x})); auto.
+      now apply mu_free_bevar_subst. wf_auto2.
+      pose proof (MP fpti H1); clear H1.
+      pose proof (MP (fpl x) H2); clear H2.
+      mlSymmetry. now fromMLGoal.
+  Defined.
+
+  Goal forall l ti,
+    well_formed (ex, l) ->
+    well_formed ti ->
+    mu_free ti ->
+    (forall x, Γ ⊢ is_functional l^{evar:0↦x}) ->
+    Γ ⊢ is_functional ti ->
+    (* Γ ⊢ (ex, (l =ml ti)) <---> ⌈l^{evar: 0 ↦ fresh_evar (l ---> ti)} and ti⌉. *)
+    (* Γ ⊢ (ex, (l =ml ti)) <---> ⌈l^{evar: 0 ↦ fresh_evar l} and ti⌉. *)
+    Γ ⊢ ⌈l^{evar: 0 ↦ fresh_evar l} and ti⌉ ---> (ex, l =ml ti).
+    (* {y & Γ ⊢ (ex, (l =ml ti)) <---> ⌈l^{evar: 0 ↦ y} and ti⌉}. *)
+    (* forall y, y ∉ free_evars l -> *)
+    (* Γ ⊢ (ex, l =ml ti) <---> ⌈l^{evar: 0 ↦ y} and ti⌉. *)
+  Proof.
+    intros * wfl wfti mfti fpl fpti.
+    (* intros * wfl wfti mfti fpl fpti y Hy. *)
+    (* mlFreshEvar as y. *)
+    (* evar (y : evar). *)
+    (* exists y. *)
+    remember (fresh_evar _) as y.
+    pose proof evar_open_not_occur 0 y ti ltac:(wf_auto2).
+    (* mlSplitAnd; *)
+    mlIntro.
+    (* - *)
+    (*   mlDestructEx "0" as y. *)
+    (*   admit. *)
+    (*   admit. *)
+    (*   mlSimpl. rewrite H. *)
+    (*   mlRewriteBy "0" at 1. fold (ti ∈ml ti). *)
+    (*   mlApplyMeta membership_refl. *)
+    (*   mlExactMeta fpti. auto. *)
+    (* - *)
+      mlExists y. mlSimpl. rewrite H.
+      fold (l^{evar:0↦y} ∈ml ti).
+      epose proof membership_imp_equal Γ (l^{evar:0↦y}) ti HΓ mfti ltac:(wf_auto2) ltac:(wf_auto2).
+      pose proof (MP (fpl y) H0). clear H0.
+      pose proof (MP fpti H1). clear H1.
+      now fromMLGoal.
+  Defined.
+
+  Goal forall M ρ l ti,
+    well_formed ti ->
+    forall y,
+    @eval _ M ρ ((ex, l =ml ti) <---> ⌈l^{evar: 0 ↦ y} and ti⌉) = ⊤.
+  Proof.
+    intros * wfti *.
+    (* evar (y : evar). exists y. *)
+    rewrite ! eval_simpl. simpl.
+    rewrite ! union_empty_r_L.
+    rewrite ! Compl_Compl_propset.
+    mlSimpl.
+    remember (fresh_evar _) as y'.
+    pose proof evar_open_not_occur 0 y' ti ltac:(wf_auto2).
+    rewrite ! H.
+    remember (propset_fa_union _) as pfu.
+    (* Should hold because we take unions of tops and emptys. *)
+    enough (pfu = ⊤ \/ pfu = ∅) as [-> | ->].
+    rewrite difference_diag_L union_empty_l_L.
+    assert (forall X : propset M, X ∪ ⊤ = ⊤) as -> by set_solver.
+    rewrite difference_diag_L union_empty_r_L Compl_Compl_propset.
+    rewrite Compl_Union_Compl_Inters_propset_alt.
+    2: {
+      rewrite union_empty_r_L difference_empty_L.
+      assert (forall X : propset M, ⊤ ∪ X = ⊤) by set_solver.
+      rewrite ! H0. rewrite difference_diag_L union_empty_l_L.
+      rewrite Compl_Compl_propset Compl_Union_Compl_Inters_propset_alt.
+      apply complement_full_iff_empty.
+      shelve.
+    }
+    Unshelve.
+  Abort.
+
+  Search eval update_evar_val.
+  About Valuation.
+
+  Goal forall y (sy : symbols), exists (M : Model), forall (ρ' : @Valuation _ M), exists ρ l ti,
+    well_formed ti ->
+    (* @eval _ M ρ ((ex, l =ml ti) <---> ⌈l^{evar: 0 ↦ y} and ti⌉) ≠ ⊤. *)
+    @eval _ M ρ ((ex, l =ml ti) ---> ⌈l^{evar: 0 ↦ y} and ti⌉) ≠ ⊤.
+  Proof.
+    intros.
+    pose {| Domain := bool; sym_interp _ := {[true]}; app_interp _ _ := ⊤ |} as M.
+    (* assert (forall X Y, @app_ext _ M X Y = ∅). { *)
+    (*   intros. *)
+    (*   unfold app_ext. *)
+    (*   apply set_eq. *)
+    (*   intros. *)
+    (*   transitivity False. 2: set_solver. *)
+    (*   remember (λ e, exists le re : M, _) as f. *)
+    (*   transitivity (f x). apply elem_of_PropSet. *)
+    (*   split. 2: contradiction. *)
+    (*   subst f. intros. decompose record H. *)
+    (*   simpl in H3. set_solver. *)
+    (* } *)
+    eexists M.
+    intros.
+    pose (false : M).
+    exists (update_evar_val y d ρ'), b0, (patt_sym sy).
+    intros wfti *.
+    rewrite ! eval_simpl. simpl.
+    remember (fresh_evar _) as y'.
+    mlSimpl.
+    (* pose proof evar_open_not_occur 0 y' ?ti ltac:(wf_auto2). *)
+    (* rewrite ! H. *)
+    remember (λ e : bool, eval _ _) as f.
+    (* rewrite ! (@union_empty_r_L bool (propset M)). *)
+    (* epose proof (@Compl_Compl_propset (propset M) _ {[evar_valuation ?ρ y]}). rewrite H0. *)
+    (* rewrite ! union_empty_r_L. *)
+    (* rewrite ! (@Compl_Compl_propset (propset M)). *)
+    (* rewrite (@Compl_Union_Compl_Inters_propset_alt (propset M)). *)
+    (* remember (propset_fa_union _) as pfu. *)
+    epose proof propset_fa_union_full f as [_ ?]. rewrite H.
+    intros.
+    (* assert (Domain M) as c. split. *)
+    (* exists c. rewrite Heqf. *)
+    pose (true : Domain M) as c.
+    exists c. subst f.
+    unfold evar_open. simpl.
+    epose proof equal_iff_interpr_same M _ (patt_free_evar y') (patt_sym sy) (update_evar_val y' c (update_evar_val y d ρ')) as [_ ->].
+    set_solver. clear _H.
+    rewrite ! eval_simpl. simpl. rewrite decide_eq_same. subst c. auto.
+    epose proof @difference_diag_L bool (propset M) _ _ _ _ _ _ _ _ ⊤.
+    rewrite H0. rewrite (@union_empty_l_L bool (propset M)).
+    (* unfold app_ext. *)
+    (* remember (λ e, exists le re, _) as f'. *)
+    (* epose proof set_eq (PropSet f') ⊤. *)
+    (* apply not_iff_compat in H1. apply H1. *)
+    (* Search "trans" iff. *)
+    (* assert (evar_valuation (update_evar_val y d ?ρ) y = false). *)
+    (* unfold update_evar_val. simpl. rewrite decide_eq_same. auto. *)
+    rewrite decide_eq_same.
+    (* rewrite H1. *)
+    assert (LeibnizEquiv (propset bool)). apply (@propset_leibniz_equiv _ M).
+    rewrite ! union_empty_r_L.
+    rewrite ! Compl_Compl_propset.
+    rewrite Compl_Union_Compl_Inters_propset_alt.
+    replace ({[d]} ∩ {[true]}) with (@empty (propset (@Domain Σ M)) (@propset_empty (@Domain Σ M))) by set_solver.
+    unfold app_ext. simpl.
+    remember (λ e, exists le re, _) as f'.
+    epose proof set_eq (PropSet f') ⊤.
+    apply not_iff_compat in H2. apply H2.
+    intro. specialize (H3 false).
+    pose proof elem_of_PropSet f' false.
+    apply iff_sym in H4.
+    apply (iff_trans H4) in H3. clear H4.
+    epose proof elem_of_top false.
+    apply (iff_trans H3) in H4. clear H3.
+    destruct H4 as [_ ?]. specialize (H3 I).
+    rewrite Heqf' in H3. decompose record H3.
+    set_solver.
+
+    (* intro. *)
+    (* enough (exists x, x ∈ (@top (propset unit) (@propset_top unit))). *)
+    (* rewrite <- H2 in H3. set_solver. set_solver. *)
+    Unshelve.
+    1: {
+      unfold satisfies_theory, satisfies_model. intros.
+      inversion H0. subst. simpl. unfold axiom. case_match.
+      rewrite ! eval_simpl. simpl. unfold app_ext.
+      remember (λ e, exists le re, _) as f'.
+      epose proof set_eq (PropSet f') ⊤. apply H2.
+      intros.
+      transitivity (f' x0). apply elem_of_PropSet.
+      transitivity True. 2: { epose proof elem_of_top x0. apply iff_sym in H3. exact H3. }
+      split. auto. intros [].
+      rewrite Heqf'.
+      do 2 eexists; repeat split.
+    }
+    Unshelve.
+    all: typeclasses eauto.
+  Defined.
+
+
+
+
+  (*   epose {| Domain := unit; app_interp := _; sym_interp := const ∅ |} as M. exists M. *)
+  (*   evar (ρ : @Valuation _ M). *)
+  (*   exists ρ. *)
+  (*   exists b0. *)
+  (*   evar symbols. *)
+  (*   exists (patt_sym s). *)
+  (*   intros. *)
+  (*   rewrite ! eval_simpl. *)
+  (*   simpl. mlSimpl. remember (fresh_evar _) as y'. *)
+  (*   replace (b0^{evar: 0 ↦ y'}) with (patt_free_evar y') by auto. *)
+  (*   remember (fun e : () => _) as f. *)
+  (*   epose proof propset_fa_union_empty f as [_ ?]. *)
+  (*   rewrite ! H. *)
+  (*   intros. subst f. *)
+  (*   apply not_equal_iff_not_interpr_same_1. *)
+  (*   shelve. *)
+  (*   rewrite ! eval_simpl. simpl. rewrite decide_eq_same. *)
+  (*   epose proof non_empty_singleton_L c. exact H0. *)
+  (*   epose proof union_empty_r_L. unfold RightId in H0. rewrite ! H0. *)
+  (*   erewrite difference_empty_L. *)
+  (*   erewrite difference_diag_L. *)
+  (*   erewrite difference_empty_L. *)
+  (*   erewrite difference_diag_L. *)
+  (*   erewrite difference_empty_L. *)
+  (* Abort. *)
+
   Context (σ : list (evar * Pattern)).
   Hypothesis (Hwfσ : wf (map snd σ)).
 
@@ -169,84 +400,49 @@ Section MatchingEquivs.
     set_solver.
   Defined.
 
-  Goal exists ti M ρ,
+  Goal forall (sy : symbols) (a : evar), exists ti s M, forall ρ,
     satisfies_theory M theory /\
-    @eval _ M ρ (predicate_list σ) = ∅ /\
+    @eval _ M ρ (predicate_list s) = ∅ /\
     @eval _ M ρ ti ≠ ∅.
   Proof.
-  Abort.
-
-  Goal forall l ti,
-    well_formed (ex, l) ->
-    well_formed ti ->
-    mu_free l ->
-    Γ ⊢ is_functional ti ->
-    (forall x, Γ ⊢ is_functional l^{evar: 0 ↦ x}) ->
-    Γ ⊢ (ex, (l =ml ti)) <---> ti ∈ml (ex, l).
-  Proof.
     intros.
-    mlSplitAnd.
-    {
-      mlIntro.
-      mlFreshEvar as y.
-      unshelve mlApplyMeta membership_exists_2.
-      exact y. 2: ltac2:(_fm_export_everything ()); set_solver.
-      2: auto.
-      mlDestructEx "0" as x.
-      mlExists x.
-      mlSimpl.
-      mlRewriteBy "0" at 1.
-      rewrite (evar_open_not_occur _ _ ti). wf_auto2.
-      mlApplyMeta membership_refl. 2: assumption.
-      mlExactMeta H2.
+    exists (patt_sym sy).
+    exists [(a, ⊥)].
+    pose {| Domain := unit; app_interp _ _ := ⊤; sym_interp _ := ⊤ |} as M. exists M.
+    intros.
+    
+    assert (forall X Y, (exists x, x ∈ X) -> (exists y, y ∈ Y) -> @app_ext _ M X Y = ⊤). {
+      intros * HX HY. unfold app_ext.
+      remember (fun e : Domain M => exists le re : M, _) as f.
+      apply set_eq.
+      intros e.
+      transitivity (f e).
+      apply elem_of_PropSet.
+      transitivity True.
+      2: symmetry; apply elem_of_top.
+      split. auto.
+      intros []. subst.
+      destruct HX as [x HX], HY as [y HY].
+      exists x, y. do ! split. all: auto.
     }
-    {
-      mlIntro.
-      mlFreshEvar as y.
-      unshelve mlApplyMeta membership_exists_1 in "0".
-      exact y. 2: ltac2:(_fm_export_everything ()); set_solver.
-      2: auto.
-      mlDestructEx "0" as x.
-      mlExists x.
-      mlSimpl.
-      rewrite (evar_open_not_occur _ _ ti). wf_auto2.
-      epose proof MP _ (MP H2 (membership_imp_equal Γ ti l^{evar:0↦x} HΓ _ _ _)).
-      mlSymmetry.
-      mlApplyMeta H4.
-      mlAssumption.
-    }
-    Unshelve.
-    apply H3. now apply mu_free_bevar_subst.
-    all: wf_auto2.
-  Defined.
 
-  Goal forall l ti,
-    well_formed (ex, l) ->
-    well_formed ti ->
-    mu_free ti ->
-    (forall x, Γ ⊢ is_functional l^{evar:0↦x}) ->
-    Γ ⊢ is_functional ti ->
-    Γ ⊢ (ex, (l =ml ti)) <---> ⌈l^{evar: 0 ↦ fresh_evar (l ---> ti)} and ti⌉.
-  Proof.
-    intros * wfl wfti mfti fpl fpti.
-    remember (fresh_evar _) as y.
-    pose proof evar_open_not_occur 0 y ti ltac:(wf_auto2).
-    mlSplitAnd; mlIntro.
+    do ! split.
+
     -
-      mlDestructEx "0" as y.
-      admit.
-      mlSimpl. rewrite H.
-      mlRewriteBy "0" at 1. fold (ti ∈ml ti).
-      mlApplyMeta membership_refl.
-      mlExactMeta fpti. auto.
+      unfold satisfies_theory, satisfies_model. intros.
+      inversion H0. subst. simpl.
+      unfold axiom. case_match. rewrite ! eval_simpl. rewrite H.
+      3: reflexivity. all: set_solver.
     -
-      mlExists y. mlSimpl. rewrite H.
-      fold (l^{evar:0↦y} ∈ml ti).
-      Search patt_in patt_equal.
-      epose proof membership_imp_equal Γ (l^{evar:0↦y}) ti HΓ mfti ltac:(wf_auto2) ltac:(wf_auto2).
-      pose proof (MP (fpl y) H0). clear H0.
-      pose proof (MP fpti H1). clear H1.
-      mlApplyMeta H0. mlAssumption.
-  Admitted.
+      simpl.
+      rewrite ! eval_simpl.
+      rewrite ! union_empty_r_L.
+      rewrite ! Compl_Compl_propset.
+      rewrite H. 3: now rewrite union_empty_r_L difference_diag_L.
+      all: set_solver.
+    -
+      rewrite eval_simpl. simpl.
+      apply Contains_Elements_Not_Empty. set_solver.
+  Defined.
 End MatchingEquivs.
 
