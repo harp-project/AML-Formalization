@@ -148,7 +148,7 @@ Section EqCon.
   (* For any pattern (which would serve as the core of the context), *)
   (* given the eqalities as hypothesis, substituting into the *)
   (* multihole context yields equality. *)
-  Goal forall φ,
+  Lemma eqcon : forall φ,
     well_formed φ ->
     mu_free φ ->
     hypos ->
@@ -179,3 +179,63 @@ Section EqCon.
     - exact (Hfpσ.2).
   Defined.
 End EqCon.
+
+Section Example.
+  Context {Σ : Signature} {syntax : Syntax}.
+
+  (* In any theory that contains the theory of definedness ... *)
+  Context (Γ : Theory).
+  Hypothesis (HΓ : theory ⊆ Γ).
+
+  (* ... given some function/context ... *)
+  Context (kseq_sym : symbols).
+  Definition kseq x y := patt_sym kseq_sym ⋅ x ⋅ y.
+
+  (* ... and two pairs of patterns ... *)
+  Context (one two one' two' : Pattern).
+  (* ... some of which are functional and all of which are *)
+  (* well-formed and free of fixed points ... *)
+  Hypothesis (fpone : Γ ⊢ is_functional one).
+  Hypothesis (fptwo : Γ ⊢ is_functional two).
+  Hypothesis (Hwf : well_formed one /\ well_formed two /\ well_formed one' /\ well_formed two').
+  Hypothesis (Hmf : mu_free one /\ mu_free two /\ mu_free one' /\ mu_free two').
+  (* ... and pairwise provable equal ... *)
+  Hypothesis (Heqone : Γ ⊢ one =ml one').
+  Hypothesis (Heqtwo : Γ ⊢ two =ml two').
+
+  (* ... and given two different evars, one of which is free *)
+  (* in two of the patterns ... *)
+  Context (x y : evar).
+  Hypothesis (Hxneqy : y ≠ x).
+  Hypothesis (Hxfree : x ∉ free_evars two ∪ free_evars two').
+
+  (* ... substituting the two into the same context *)
+  (* is also equal. *)
+  (*            one = one'       two = two'            *)
+  (* ------------------------------------------------- *)
+  (* (kseq □₁ □₂)[one, two] = (kseq □₁ □₂)[one', two'] *)
+  Goal Γ ⊢ kseq one two =ml kseq one' two'.
+  Proof.
+    decompose record Hwf. clear Hwf.
+    decompose record Hmf. clear Hmf.
+    pose [(x, one, one'); (y, two, two')] as pairs.
+    pose (kseq (patt_free_evar x) (patt_free_evar y)) as base_pat.
+
+    opose proof* (eqcon Γ _ pairs _ _ _ _ _ base_pat);
+
+    (* side conditions *)
+    subst pairs base_pat; simpl.
+    6,9: repeat split. all: auto.
+    1-4: wf_auto2.
+
+    (* simplification *)
+    unfold goal in H6. simpl in H6.
+    destruct (decide (y = x)). contradiction.
+    simpl in H6. rewrite ! decide_eq_same in H6.
+    rewrite ! free_evar_subst_no_occurrence in H6.
+    1-2: set_solver.
+    fold (kseq one two) in H6. fold (kseq one' two') in H6.
+
+    assumption.
+  Qed.
+End Example.
