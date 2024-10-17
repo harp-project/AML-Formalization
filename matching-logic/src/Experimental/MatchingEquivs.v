@@ -16,7 +16,7 @@ From MatchingLogic.Utils Require Import stdpp_ext.
 
 Require Import MatchingLogic.wftactics.
 
-From stdpp Require Import base fin_sets sets propset proof_irrel option list.
+From stdpp Require Import base fin_sets sets propset proof_irrel option list tactics.
 
 Import extralibrary.
 
@@ -94,7 +94,6 @@ Section MatchingEquivs.
       mlDeduct "1".
       remember (ExGen := _, SVSubst := _, KT:= _, AKT := _) as i.
       remember (_ ∪ _ : Theory) as Γ'.
-      (* clear Heqi. *)
       opose proof* (hypothesis Γ' (p ---> a =ml b)).
       wf_auto2. set_solver.
       use i in H0.
@@ -173,31 +172,12 @@ Section MatchingEquivs.
     mu_free ti ->
     (forall x, Γ ⊢ is_functional l^{evar:0↦x}) ->
     Γ ⊢ is_functional ti ->
-    (* Γ ⊢ (ex, (l =ml ti)) <---> ⌈l^{evar: 0 ↦ fresh_evar (l ---> ti)} and ti⌉. *)
-    (* Γ ⊢ (ex, (l =ml ti)) <---> ⌈l^{evar: 0 ↦ fresh_evar l} and ti⌉. *)
     Γ ⊢ ⌈l^{evar: 0 ↦ fresh_evar l} and ti⌉ ---> (ex, l =ml ti).
-    (* {y & Γ ⊢ (ex, (l =ml ti)) <---> ⌈l^{evar: 0 ↦ y} and ti⌉}. *)
-    (* forall y, y ∉ free_evars l -> *)
-    (* Γ ⊢ (ex, l =ml ti) <---> ⌈l^{evar: 0 ↦ y} and ti⌉. *)
   Proof.
     intros * wfl wfti mfti fpl fpti.
-    (* intros * wfl wfti mfti fpl fpti y Hy. *)
-    (* mlFreshEvar as y. *)
-    (* evar (y : evar). *)
-    (* exists y. *)
     remember (fresh_evar _) as y.
     pose proof evar_open_not_occur 0 y ti ltac:(wf_auto2).
-    (* mlSplitAnd; *)
     mlIntro.
-    (* - *)
-    (*   mlDestructEx "0" as y. *)
-    (*   admit. *)
-    (*   admit. *)
-    (*   mlSimpl. rewrite H. *)
-    (*   mlRewriteBy "0" at 1. fold (ti ∈ml ti). *)
-    (*   mlApplyMeta membership_refl. *)
-    (*   mlExactMeta fpti. auto. *)
-    (* - *)
       mlExists y. mlSimpl. rewrite H.
       fold (l^{evar:0↦y} ∈ml ti).
       epose proof membership_imp_equal Γ (l^{evar:0↦y}) ti HΓ mfti ltac:(wf_auto2) ltac:(wf_auto2).
@@ -206,60 +186,12 @@ Section MatchingEquivs.
       now fromMLGoal.
   Defined.
 
-  Goal forall M ρ l ti,
-    well_formed ti ->
-    forall y,
-    @eval _ M ρ ((ex, l =ml ti) <---> ⌈l^{evar: 0 ↦ y} and ti⌉) = ⊤.
-  Proof.
-    intros * wfti *.
-    (* evar (y : evar). exists y. *)
-    rewrite ! eval_simpl. simpl.
-    rewrite ! union_empty_r_L.
-    rewrite ! Compl_Compl_propset.
-    mlSimpl.
-    remember (fresh_evar _) as y'.
-    pose proof evar_open_not_occur 0 y' ti ltac:(wf_auto2).
-    rewrite ! H.
-    remember (propset_fa_union _) as pfu.
-    (* Should hold because we take unions of tops and emptys. *)
-    enough (pfu = ⊤ \/ pfu = ∅) as [-> | ->].
-    rewrite difference_diag_L union_empty_l_L.
-    assert (forall X : propset M, X ∪ ⊤ = ⊤) as -> by set_solver.
-    rewrite difference_diag_L union_empty_r_L Compl_Compl_propset.
-    rewrite Compl_Union_Compl_Inters_propset_alt.
-    2: {
-      rewrite union_empty_r_L difference_empty_L.
-      assert (forall X : propset M, ⊤ ∪ X = ⊤) by set_solver.
-      rewrite ! H0. rewrite difference_diag_L union_empty_l_L.
-      rewrite Compl_Compl_propset Compl_Union_Compl_Inters_propset_alt.
-      apply complement_full_iff_empty.
-      shelve.
-    }
-    Unshelve.
-  Abort.
-
-  Search eval update_evar_val.
-  About Valuation.
-
   Goal forall y (sy : symbols), exists (M : Model), forall (ρ' : @Valuation _ M), exists ρ l ti,
     well_formed ti ->
-    (* @eval _ M ρ ((ex, l =ml ti) <---> ⌈l^{evar: 0 ↦ y} and ti⌉) ≠ ⊤. *)
     @eval _ M ρ ((ex, l =ml ti) ---> ⌈l^{evar: 0 ↦ y} and ti⌉) ≠ ⊤.
   Proof.
     intros.
     pose {| Domain := bool; sym_interp _ := {[true]}; app_interp _ _ := ⊤ |} as M.
-    (* assert (forall X Y, @app_ext _ M X Y = ∅). { *)
-    (*   intros. *)
-    (*   unfold app_ext. *)
-    (*   apply set_eq. *)
-    (*   intros. *)
-    (*   transitivity False. 2: set_solver. *)
-    (*   remember (λ e, exists le re : M, _) as f. *)
-    (*   transitivity (f x). apply elem_of_PropSet. *)
-    (*   split. 2: contradiction. *)
-    (*   subst f. intros. decompose record H. *)
-    (*   simpl in H3. set_solver. *)
-    (* } *)
     eexists M.
     intros.
     pose (false : M).
@@ -268,19 +200,9 @@ Section MatchingEquivs.
     rewrite ! eval_simpl. simpl.
     remember (fresh_evar _) as y'.
     mlSimpl.
-    (* pose proof evar_open_not_occur 0 y' ?ti ltac:(wf_auto2). *)
-    (* rewrite ! H. *)
     remember (λ e : bool, eval _ _) as f.
-    (* rewrite ! (@union_empty_r_L bool (propset M)). *)
-    (* epose proof (@Compl_Compl_propset (propset M) _ {[evar_valuation ?ρ y]}). rewrite H0. *)
-    (* rewrite ! union_empty_r_L. *)
-    (* rewrite ! (@Compl_Compl_propset (propset M)). *)
-    (* rewrite (@Compl_Union_Compl_Inters_propset_alt (propset M)). *)
-    (* remember (propset_fa_union _) as pfu. *)
     epose proof propset_fa_union_full f as [_ ?]. rewrite H.
     intros.
-    (* assert (Domain M) as c. split. *)
-    (* exists c. rewrite Heqf. *)
     pose (true : Domain M) as c.
     exists c. subst f.
     unfold evar_open. simpl.
@@ -289,15 +211,7 @@ Section MatchingEquivs.
     rewrite ! eval_simpl. simpl. rewrite decide_eq_same. subst c. auto.
     epose proof @difference_diag_L bool (propset M) _ _ _ _ _ _ _ _ ⊤.
     rewrite H0. rewrite (@union_empty_l_L bool (propset M)).
-    (* unfold app_ext. *)
-    (* remember (λ e, exists le re, _) as f'. *)
-    (* epose proof set_eq (PropSet f') ⊤. *)
-    (* apply not_iff_compat in H1. apply H1. *)
-    (* Search "trans" iff. *)
-    (* assert (evar_valuation (update_evar_val y d ?ρ) y = false). *)
-    (* unfold update_evar_val. simpl. rewrite decide_eq_same. auto. *)
     rewrite decide_eq_same.
-    (* rewrite H1. *)
     assert (LeibnizEquiv (propset bool)). apply (@propset_leibniz_equiv _ M).
     rewrite ! union_empty_r_L.
     rewrite ! Compl_Compl_propset.
@@ -316,10 +230,6 @@ Section MatchingEquivs.
     destruct H4 as [_ ?]. specialize (H3 I).
     rewrite Heqf' in H3. decompose record H3.
     set_solver.
-
-    (* intro. *)
-    (* enough (exists x, x ∈ (@top (propset unit) (@propset_top unit))). *)
-    (* rewrite <- H2 in H3. set_solver. set_solver. *)
     Unshelve.
     1: {
       unfold satisfies_theory, satisfies_model. intros.
@@ -338,37 +248,80 @@ Section MatchingEquivs.
     all: typeclasses eauto.
   Defined.
 
-
-
-
-  (*   epose {| Domain := unit; app_interp := _; sym_interp := const ∅ |} as M. exists M. *)
-  (*   evar (ρ : @Valuation _ M). *)
-  (*   exists ρ. *)
-  (*   exists b0. *)
-  (*   evar symbols. *)
-  (*   exists (patt_sym s). *)
-  (*   intros. *)
-  (*   rewrite ! eval_simpl. *)
-  (*   simpl. mlSimpl. remember (fresh_evar _) as y'. *)
-  (*   replace (b0^{evar: 0 ↦ y'}) with (patt_free_evar y') by auto. *)
-  (*   remember (fun e : () => _) as f. *)
-  (*   epose proof propset_fa_union_empty f as [_ ?]. *)
-  (*   rewrite ! H. *)
-  (*   intros. subst f. *)
-  (*   apply not_equal_iff_not_interpr_same_1. *)
-  (*   shelve. *)
-  (*   rewrite ! eval_simpl. simpl. rewrite decide_eq_same. *)
-  (*   epose proof non_empty_singleton_L c. exact H0. *)
-  (*   epose proof union_empty_r_L. unfold RightId in H0. rewrite ! H0. *)
-  (*   erewrite difference_empty_L. *)
-  (*   erewrite difference_diag_L. *)
-  (*   erewrite difference_empty_L. *)
-  (*   erewrite difference_diag_L. *)
-  (*   erewrite difference_empty_L. *)
-  (* Abort. *)
-
   Context (σ : list (evar * Pattern)).
   Hypothesis (Hwfσ : wf (map snd σ)).
+
+  Goal forall (sy : symbols) (x : evar) l, exists M ti σ, forall (ρ' : @Valuation _ M), exists ρ,
+    @eval _ M ρ ((predicate_list σ ---> (l =ml ti)) <---> ((l and predicate_list σ) =ml ti)) ≠ ⊤.
+  Proof.
+    intros.
+    pose {| Domain := bool; sym_interp _ := {[true]}; app_interp _ _ := ⊤ |} as M.
+    exists M.
+    exists (patt_sym sy).
+    exists [(x, patt_sym sy)].
+    intros.
+    pose (false : M).
+    pose (update_evar_val x d ρ') as ρ.
+    exists ρ.
+    
+    assert (satisfies_theory M theory). {
+      unfold satisfies_theory, satisfies_model.
+      intros. inversion H. subst. simpl. unfold axiom.
+      case_match. rewrite ! eval_simpl.
+      simpl. unfold app_ext. remember (λ e, exists le re, _) as f.
+      epose proof set_eq (PropSet f) ⊤ as [_ ?]. apply H1.
+      intros. rewrite elem_of_top. repeat split.
+      intros []. apply elem_of_PropSet. subst.
+      exists true, (evar_valuation ρ0 ev_x). repeat split.
+    }
+
+    unfold predicate_list. simpl.
+    assert (eval ρ (patt_free_evar x =ml patt_sym sy) = ∅). {
+      pose proof not_equal_iff_not_interpr_same_1 M H (patt_free_evar x) (patt_sym sy) ρ as [_ ?]. apply H0.
+      rewrite ! eval_simpl. simpl. rewrite decide_eq_same. subst d.
+      intro. epose proof set_eq {[false]} {[true]} as [? _].
+      specialize (H2 H1 false) as [? _]. ospecialize* H2.
+      now apply elem_of_singleton_2.
+      set_solver.
+    }
+
+    rewrite eval_iff_simpl.
+    rewrite eval_imp_simpl.
+    rewrite ! eval_and_simpl.
+    rewrite H0.
+    rewrite ! intersection_empty_l_L difference_empty_L.
+    (* set_solver went on vacation *)
+    (* TODO: extract these to stdpp_ext? *)
+    assert (forall X : propset M, ⊤ ∪ X = ⊤) by (set_unfold; solve [repeat constructor]).
+    rewrite ! H1.
+    rewrite difference_diag_L union_empty_l_L.
+    assert (forall X : propset M, X ∪ ⊤ = ⊤) by (set_unfold; solve [repeat constructor]).
+    rewrite ! H2.
+    assert (forall X : propset M, X ∩ ⊤ = X). {
+      set_unfold. repeat constructor. now intros []. auto.
+    }
+    rewrite ! H3.
+    epose proof not_equal_iff_not_interpr_same_1 M H _ _ ρ as [_ ?].
+    erewrite H4. set_unfold. auto.
+    rewrite ! eval_and_simpl eval_sym_simpl.
+    rewrite H0 intersection_empty_l_L intersection_empty_r_L.
+    simpl. symmetry. epose proof non_empty_singleton_L true. exact H5.
+    Unshelve. all: try typeclasses eauto.
+    (* TODO: possible to make this part of typeclasses eauto's search? *)
+    all: exact (@propset_leibniz_equiv _ M).
+  Defined.
+
+  Goal forall l ti,
+    well_formed (ex, l) ->
+    well_formed ti ->
+    Γ ⊢ ⌈(ex, l) and ti⌉ <---> (ti ∈ml ex, l).
+  Proof.
+    intros * wfl wfti.
+    toMLGoal. wf_auto2.
+    pose proof patt_and_comm Γ (ex, l) ti wfl wfti.
+    use AnyReasoning in H. mlRewrite H at 1.
+    fold (ti ∈ml (ex, l)). mlReflexivity.
+  Defined.
 
   Goal forall l ti,
     forall M ρ,
