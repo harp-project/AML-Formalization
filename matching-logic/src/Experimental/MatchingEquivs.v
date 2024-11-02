@@ -164,8 +164,74 @@ Section MatchingEquivs.
       pose proof (MP fpti H1); clear H1.
       pose proof (MP (fpl x) H2); clear H2.
       mlSymmetry. now fromMLGoal.
-  Defined.
+  Defined lemma1.
 
+  Fixpoint functional_when_applied (n : nat) (φ : Pattern) :=
+    match n with
+    | 0 => derives Γ (is_functional φ)
+    | S m => forall x, functional_when_applied m (evar_open x 0 φ)
+    end.
+
+  Fixpoint many_ex (n : nat) (φ : Pattern) :=
+    match n with
+    | 0 => φ
+    | S m => many_ex m (ex, φ)
+    end.
+
+  (* Goal forall φ, *)
+  (*   mu_free φ -> *)
+  (*   well_formed_closed_ex_aux φ 0 -> *)
+  (*   well_formed φ. *)
+  (* Proof. *)
+  (*   induction φ; intros Hmf Hwfcea; *)
+  (*   unfold well_formed; apply andb_true_iff; split; *)
+  (*   unfold well_formed_closed; try apply andb_true_iff; *)
+  (*   repeat split; auto. *)
+  (*   - *)
+  (*     unfold well_formed_closed_mu_aux. case_match; auto. *)
+  (*     simpl in *. *)
+  (*     unfold well_formed_closed_ex_aux in Hwfcea. *)
+
+    (* wf_auto2. *)
+    (* induction φ eqn:Hφ; auto; simpl in *. *)
+    (* 1,2: apply andb_true_iff in Hmf, Hwfcea; apply andb_true_iff. *)
+
+    
+
+  Goal forall l ti n,
+    well_formed_closed_ex_aux l n ->
+    well_formed_closed_mu_aux l 0 ->
+    well_formed_positive l ->
+    well_formed ti ->
+    mu_free l ->
+    functional_when_applied n l ->
+    Γ ⊢ is_functional ti ->
+    Γ ⊢ (many_ex n (l =ml ti)) <---> ti ∈ml (many_ex n l).
+  Proof.
+    intros * Hwfceal Hwfcmal Hwfpl Hwfti Hmfl Hfpl Hfpti.
+    generalize dependent l.
+    induction n; intros; simpl in *.
+    (* induction n; simpl in *. *)
+    -
+      epose proof membership_equal_equal Γ ti l HΓ Hmfl Hwfti ltac:(wf_auto2) Hfpti Hfpl.
+      toMLGoal. wf_auto2.
+      mlAdd H.
+      mlRewriteBy "0" at 1.
+      mlSplitAnd; mlIntro.
+      (* TODO: Why don't they work with sequencing? *)
+      mlSymmetry; mlAssumption.
+      mlSymmetry; mlAssumption.
+    -
+      opose proof* (lemma1 l ti); auto.
+      mlFreshEvar as y.
+      ospecialize* (IHn l^{evar:0↦y}).
+      apply wfc_mu_aux_body_ex_imp3. lia. auto.
+      apply wfc_mu_aux_body_ex_imp1. auto.
+      apply wfp_evar_open. auto.
+      apply mu_free_evar_open. auto. auto.
+      Search evar_open patt_exists.
+  Abort.
+  
   Goal forall l ti,
     well_formed (ex, l) ->
     well_formed ti ->
