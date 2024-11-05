@@ -603,28 +603,15 @@ Section nat.
     
     mlAdd H0.
     clear H0.
+
+    mlSimpl.
+    rewrite (@esorted_binder_morphism _ _ _ sorted_forall_binder _ _ _ (Fsvar_subst_swaps_ex_nesting _ _)). wf_auto2.
+    rewrite (@esorted_binder_morphism _ _ _ sorted_forall_binder _ _ _ (Fsvar_subst_swaps_ex_nesting _ _)). wf_auto2.
+    mlSimpl. cbn.
+    case_match. 2: congruence.
+    clear H0 e.
   
-    replace ((_--->_) ^[[svar:X↦ex Nat, b0 and Zero +ml b0 =ml b0]] ) with
-    
-      ( 
-       ( ex Nat, b0 and Zero +ml b0 =ml b0 ) ⊆ml 〚 Nat 〛 ---> Zero ∈ml ( ex Nat, b0 and Zero +ml b0 =ml b0 ) 
-        --->
-        
-       ( all Nat, b0 ∈ml (ex Nat, b0 and Zero +ml b0 =ml b0) 
-         ---> Succ ⋅ b0 ∈ml (ex Nat, b0 and Zero +ml b0 =ml b0) 
-       ) 
-        --->
-         
-       ( all Nat, b0 ∈ml (ex Nat, b0 and Zero +ml b0 =ml b0) ) 
-      ).
-       
-    2:{ 
-        cbn.
-        case_match.
-        2: congruence.
-        reflexivity.
-      }
-      
+  
     mlAssert ( "H": ( (ex Nat, b0 and Zero +ml b0 =ml b0 ) ⊆ml 〚 Nat 〛 ) ).
     1:wf_auto2.
     1:{ 
@@ -1103,8 +1090,7 @@ same chain of thoughts as 1st one for totality.
          }
       }
    
-    mlApply "0" in "H".
-    mlApply "H" in "H0".
+    mlApply "0" in "H0".
     mlApply "H0" in "H1".
     mlClear "0".
     mlClear "H".

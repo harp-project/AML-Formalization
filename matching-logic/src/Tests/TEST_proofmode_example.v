@@ -33,16 +33,15 @@ Import Notations.
 Open Scope ml_scope.
 Open Scope string_scope.
 
-Lemma overlapping_variables_equal {Σ : Signature} {syntax : Syntax} :
+Lemma membership_var {Σ : Signature} {syntax : Syntax} :
   forall x y Γ,
   theory ⊆ Γ ->
-  Γ ⊢ overlaps_with (patt_free_evar y) (patt_free_evar x) ---> patt_free_evar y =ml patt_free_evar x.
+  Γ ⊢ patt_free_evar y ∈ml patt_free_evar x ---> patt_free_evar y =ml patt_free_evar x.
 Proof.
   intros x y Γ HΓ.
   
   remember (patt_free_evar x) as pX. assert (well_formed pX) by (rewrite HeqpX;auto).
   remember (patt_free_evar y) as pY. assert (well_formed pY) by (rewrite HeqpY;auto).
-  unfold overlaps_with.
   toMLGoal. wf_auto2.
   unfold patt_equal, patt_iff.
   pose proof (patt_total_and Γ (pY ---> pX) (pX ---> pY) HΓ 
@@ -79,7 +78,9 @@ Proof.
                   ltac:(wf_auto2) ltac:(wf_auto2)).
     mlRevertLast. use AnyReasoning in MH. mlRewrite MH at 1.
     pose proof (MH1 := @patt_and_comm _ Γ pY pX ltac:(wf_auto2) ltac:(wf_auto2)).
-    mlRevertLast. use AnyReasoning in MH1. mlRewrite MH1 at 1.
+    mlRevertLast. use AnyReasoning in MH1.
+    unfold patt_in.
+    mlRewrite MH1 at 1.
     unshelve (epose proof (@Singleton_ctx _ Γ 
            (⌈_⌉ $ᵣ □)
            (⌈_⌉ $ᵣ □) pY x ltac:(wf_auto2)) as MH2). 1-2: wf_auto2.

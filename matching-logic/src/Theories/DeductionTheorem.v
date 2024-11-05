@@ -906,19 +906,14 @@ Proof.
     { wf_auto2. }
 
     apply lhs_to_and.
-    { wf_auto2.
-      fold no_negative_occurrence_db_b.
-      apply wfc_impl_no_neg_occ. wf_auto2.
-    }
+    { wf_auto2. }
     { wf_auto2. }
     { wf_auto2. }
     
     toMLGoal.
-    { wf_auto2. fold no_negative_occurrence_db_b. apply wfc_impl_no_neg_occ. wf_auto2. }
+    { wf_auto2. }
     assert (Htmp : is_true (well_formed (mu , ϕ) ^ [ψ ---> (mu , ψ and ϕ)])).
-    {
-      wf_auto2. fold no_negative_occurrence_db_b. apply wfc_impl_no_neg_occ. wf_auto2.
-    }
+    { wf_auto2. }
     cbn in Htmp.
     simpl.
     mlRewrite (useBasicReasoning AnyReasoning (@patt_and_comm Σ Γ _ ψ Htmp wfψ)) at 1.
@@ -1418,18 +1413,7 @@ Proof.
     apply Knaster_tarski.
     { subst pi. try_solve_pile. }
     1,4,5:clear Hpf2 Hpf3 Hpf4 Hpf5; wf_auto2.
-    {
-      fold no_negative_occurrence_db_b.
-      apply wfc_impl_no_neg_occ.
-      wf_auto2.
-    }
-    {
-      fold no_negative_occurrence_db_b.
-      apply wfc_impl_no_neg_occ.
-      wf_auto2.
-    }
-    2: { try_solve_pile. }
-
+    2: try_solve_pile.
     unfold instantiate.
     mlSimpl.
     apply lhs_from_and.

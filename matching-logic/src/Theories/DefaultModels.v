@@ -194,7 +194,6 @@ Section Bool.
     operations use Coq standard types, or use the generated core
     symbols?
    *)
-  Print Bool_Syntax.Symbols.
   Inductive bool_carrier :=
   | coreBoolSym (s : Bool_Syntax.Symbols)
   (* TODO: the next two should not be part of the signature/symbols but they are
@@ -985,7 +984,6 @@ End Bool.
 
 Section Nat.
 
-  Print Nat_Syntax.Symbols.
   Inductive nat_carrier :=
   | coreNatSym (s : Nat_Syntax.Symbols)
   (* TODO: these two should not be in the signature, only in the carrier *)
@@ -1638,8 +1636,8 @@ Section BoolNat.
   }.
 
   Check @patt_defined nat_bool_Σ _ patt_bott.
-  Check @patt_defined bools_Σ (@imported_definedness bools_Σ
-     (@imported_sorts bools_Σ bool_syntax)) patt_bott.
+(*   Check @patt_defined bools_Σ (@imported_definedness bools_Σ
+     (@imported_sorts bools_Σ (@bool_syntax) )) patt_bott. *)
   Check @patt_defined nat_Σ _ patt_bott.
 
   (* Model extension's new_sym_interp does not define meaning to new symbols! *)
@@ -1649,6 +1647,5 @@ Section BoolNat.
 
   Definition nat_bool_app_interp := new_app_interp.
 
-  Print nat_bool_app_interp.
 
 End BoolNat.

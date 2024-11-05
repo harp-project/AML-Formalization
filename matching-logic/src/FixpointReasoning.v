@@ -359,7 +359,7 @@ Section with_signature.
           destruct (reverse (m::l)) eqn:Heq.
           { assert ( length (reverse (m::l)) = @length (Domain M) []).
             { rewrite Heq. reflexivity. }
-            rewrite reverse_length in H.
+            rewrite length_reverse in H.
             simpl in H. inversion H.
           }
 
@@ -1079,7 +1079,7 @@ Section with_signature.
             {
               assert (Hlendrop: length (drop (length l₂ - 1) l₁) = 1).
               { rewrite Heq. reflexivity. }
-              rewrite drop_length in Hlendrop.
+              rewrite length_drop in Hlendrop.
               assert (length l₂ <> 0).
               { intros Hcontra'.
                 apply nil_length_inv in Hcontra'.

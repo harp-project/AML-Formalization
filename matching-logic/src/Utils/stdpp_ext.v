@@ -429,12 +429,12 @@ Proof.
 
     (* extract `m` out of `tail` *)
     rewrite -> tail_app_nonempty'.
-    2: { rewrite reverse_length. simpl. lia. }
+    2: { rewrite length_reverse. simpl. lia. }
 
     (* extract `x` out of `tail` *)
     rewrite 1!reverse_cons.
     rewrite -> tail_app_nonempty'.
-    2: { rewrite reverse_length. simpl. lia. }
+    2: { rewrite length_reverse. simpl. lia. }
 
     rewrite -!app_assoc.
     rewrite [[x]++[m]]/=.
@@ -444,13 +444,13 @@ Proof.
     assert (len' = length l').
     { rewrite Heqlen'.
       rewrite length_tail.
-      rewrite reverse_length.
+      rewrite length_reverse.
       simpl.
       rewrite PeanoNat.Nat.sub_0_r.
       reflexivity.
     }
     assert (len' = length (reverse l')).
-    { rewrite reverse_length. apply H0. }
+    { rewrite length_reverse. apply H0. }
     rewrite reverse_cons.
     rewrite -!app_assoc.
     rewrite H1.
@@ -478,7 +478,7 @@ Proof.
 
     rewrite Nat.sub_diag.
     rewrite drop_all. simpl.
-    rewrite take_length.
+    rewrite length_take.
     rewrite Nat.min_l.
     1: rewrite length_tail app_length; lia.
     rewrite app_nil_r length_tail app_length. simpl.

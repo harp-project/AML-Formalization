@@ -2075,7 +2075,7 @@ induction phi; intros dbi1 dbi2 H; simpl; auto.
     * apply wfc_impl_no_pos_occ. apply Hwfcpsi.
   + split; intros H0'.
     * auto.
-    * cbn. repeat case_match. lia. reflexivity.
+    * cbn. repeat case_match; lia.
 - specialize (IHphi1 dbi1 dbi2).
   specialize (IHphi2 dbi1 dbi2).
   destruct (IHphi1 H) as [IHphi11 IHphi12].
@@ -2115,7 +2115,6 @@ induction phi; intros dbi1 dbi2 H; simpl; auto.
     cbn. fold no_negative_occurrence_db_b no_positive_occurrence_db_b.
     rewrite IHphi11 IHphi22. reflexivity.
 - split; intros H0; apply IHphi; auto; lia.
-- apply IHphi. lia.
 Qed.
 
 
@@ -2844,8 +2843,6 @@ Proof.
     rewrite nno_free_svar_subst; auto.
     rewrite npo_free_svar_subst; auto.
   + cbn.
-    rewrite IHϕ; auto.
-  + cbn.
     rewrite IHϕ; auto. eapply well_formed_closed_mu_aux_ind. 2: exact Hwf. lia.
 - move: dbi.
   induction ϕ; intros dbi Hwf; simpl; auto.
@@ -2856,8 +2853,6 @@ Proof.
     fold (no_negative_occurrence_db_b).
     rewrite nno_free_svar_subst; auto.
     rewrite IHϕ2; auto.
-  + cbn.
-    rewrite IHϕ; auto.
   + cbn.
     rewrite IHϕ; auto. eapply well_formed_closed_mu_aux_ind. 2: exact Hwf. lia.
 Qed.
@@ -2981,8 +2976,6 @@ Lemma Private_no_negative_occurrence_svar_quantify ϕ level X:
         fold (no_positive_occurrence_db_b dbi1 (ϕ1^{{svar: X ↦ dbi2}})).
         fold (no_negative_occurrence_db_b dbi1 (ϕ2^{{svar: X ↦ dbi2}})).
         rewrite no_positive_occurrence_svar_quantify_2. lia. rewrite IHϕ2. lia. reflexivity.
-      + cbn. rewrite IHϕ. lia. reflexivity.
-      + cbn. rewrite IHϕ. lia. reflexivity.
     - move: dbi1 dbi2.
       induction ϕ; intros dbi1 dbi2 Hdbi; simpl; auto.
       + case_match; cbn. 2: reflexivity. case_match; congruence.
@@ -2991,8 +2984,6 @@ Lemma Private_no_negative_occurrence_svar_quantify ϕ level X:
         fold (no_negative_occurrence_db_b dbi1 (ϕ1^{{svar: X ↦ dbi2}})).
         fold (no_positive_occurrence_db_b dbi1 (ϕ2^{{svar: X ↦ dbi2}})).
         rewrite no_negative_occurrence_svar_quantify_2. lia. rewrite IHϕ2. lia. reflexivity.
-      + cbn. rewrite IHϕ. lia. reflexivity.
-      + cbn. rewrite IHϕ. lia. reflexivity.
   Qed.
 
   Lemma well_formed_positive_svar_quantify X dbi ϕ:
@@ -3127,16 +3118,13 @@ Lemma Private_no_negative_occurrence_svar_quantify ϕ level X:
         rewrite negb_orb. unfold is_true in *.
         rewrite IHϕ2; auto. clear -H0. set_solver.
         rewrite no_pos_svar_subst; auto. clear -H0. set_solver.
-      * cbn in *. now apply IHϕ.
-      * cbn in *. now apply IHϕ.
     }
     {
       clear no_pos_svar_subst.
       generalize dependent n.
       induction ϕ; intros n' H0 H; simpl in *; auto.
       * cbn. case_match; auto. set_solver.
-      * case_match; auto. cbn in *. subst.
-        destruct (decide (n' = n')); congruence.
+      * case_match; auto. case_match; auto.
       * cbn in H.
         rewrite negb_orb. fold evar_has_positive_occurrence.
         unfold is_true in *. destruct_and! H.
@@ -3149,8 +3137,6 @@ Lemma Private_no_negative_occurrence_svar_quantify ϕ level X:
         rewrite negb_orb. unfold is_true in *.
         rewrite IHϕ2; auto. clear -H0. set_solver.
         rewrite no_neg_svar_subst; auto. clear -H0. set_solver.
-      * cbn in *. now apply IHϕ.
-      * cbn in *. now apply IHϕ.
     }
   Defined.
   

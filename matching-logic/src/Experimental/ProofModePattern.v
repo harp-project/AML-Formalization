@@ -200,7 +200,7 @@ Lemma max_value_in_leq
 Proof.
     unfold max_value.
     move: m.
-    eapply (map_fold_ind (
+    eapply (map_fold_weak_ind (
         fun resulting_value original_map =>
         original_map !! name = Some d ->
         d <= resulting_value
@@ -409,15 +409,15 @@ Section sec.
         ospecialize* Htmp.
         {
             rewrite length_list_map_pfin.
-            rewrite vec_to_list_length.
+            rewrite length_vec_to_list.
             reflexivity.
         }
         {
-            rewrite vec_to_list_length.
+            rewrite length_vec_to_list.
             reflexivity.
         }
         {
-            rewrite vec_to_list_length.
+            rewrite length_vec_to_list.
             reflexivity.
         }
         destruct Htmp as [ϕ_in_context Hϕ_in_context].
