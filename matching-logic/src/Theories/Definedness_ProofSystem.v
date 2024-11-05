@@ -4567,19 +4567,16 @@ Proof.
     - mlRevertLast. mlExact "H2".
 Defined.
 
-Definition overlaps_with {Σ : Signature} {syntax : Syntax} (p q : Pattern) : Pattern
-:= ⌈ p and q ⌉.
-
-Lemma overlapping_variables_equal {Σ : Signature} {syntax : Syntax} :
+Lemma membership_var {Σ : Signature} {syntax : Syntax} :
   forall x y Γ,
   theory ⊆ Γ ->
-  Γ ⊢ overlaps_with (patt_free_evar y) (patt_free_evar x) ---> patt_free_evar y =ml patt_free_evar x.
+  Γ ⊢ patt_free_evar y ∈ml patt_free_evar x ---> patt_free_evar y =ml patt_free_evar x.
 Proof.
   intros x y Γ HΓ.
 
   remember (patt_free_evar x) as pX. assert (well_formed pX) by (rewrite HeqpX;auto).
   remember (patt_free_evar y) as pY. assert (well_formed pY) by (rewrite HeqpY;auto).
-  unfold overlaps_with.
+  unfold patt_in.
   toMLGoal. wf_auto2.
   unfold patt_equal, patt_iff.
   epose proof (H2 := liftProofInfoLe _ _ _ AnyReasoning (patt_total_and Γ

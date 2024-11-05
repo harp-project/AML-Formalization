@@ -87,7 +87,7 @@ Proof.
   apply H1.
   { wf_auto2. }
   clear H1.
-  now apply overlapping_variables_equal.
+  now apply membership_var.
 Defined.
 
 Lemma membership_imp_equal_meta {Σ : Signature} {syntax : Syntax} Γ φ φ' :

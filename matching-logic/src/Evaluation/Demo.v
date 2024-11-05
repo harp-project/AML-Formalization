@@ -5,7 +5,9 @@ From MatchingLogic Require Import
     ProofMode.MLPM
     FreshnessManager
     Theories.Definedness_Syntax
-    Theories.Definedness_ProofSystem.
+    Theories.Definedness_ProofSystem
+    Theories.DeductionTheorem
+    Theories.FOEquality_ProofSystem.
 
 Import
   MatchingLogic.Logic.Notations
@@ -37,8 +39,8 @@ Section running.
      Γ ⊢ (∀z.g z = f z) ∧ P (f x) → ∃y. P (g y)
   *)
   Lemma running_low :
-    Γ ⊢ (all, (g =ml f)) and P $ f^{evar:0 ↦ x} ---> 
-        ex, (P $ g).
+    Γ ⊢ (all, (g =ml f)) and P ⋅ f^{evar:0 ↦ x} ---> 
+        ex, (P ⋅ g).
   Proof.
     eapply prf_weaken_conclusion_meta_meta. 1-3: shelve.
     * gapply (Ex_quan _ _ x). 1-2: shelve.
@@ -47,7 +49,7 @@ Section running.
       eapply prf_strenghten_premise_meta_meta.
       4: gapply (forall_variable_substitution _ _ x). 1-5: shelve.
       remember (fresh_evar P) as y.
-      remember ({| pcEvar := y; pcPattern := P $ patt_free_evar y |}) as C.
+      remember ({| pcEvar := y; pcPattern := P ⋅ patt_free_evar y |}) as C.
       epose proof (equality_elimination_basic Γ (g^{evar:0 ↦ x}) (f^{evar:0 ↦ x})
                                               C _ _ _ _ _).
       subst C. cbn in H.
@@ -73,11 +75,11 @@ Section running.
   (* Proof above is 28 LOC *)
 
   (*
-      Γ ⊢ ∀z.(g z = f z) ∧ P (f x) → ∃y. P (g y)
+      Γ ⊢ (∀z . g z = f z) ∧ P (f x) → ∃y. P (g y)
   *)
   Lemma running :
-    Γ ⊢ (all, (g =ml f)) and P $ f^{evar:0 ↦ x} ---> 
-        ex, (P $ g).
+    Γ ⊢ (all, (g =ml f)) and P ⋅ f^{evar:0 ↦ x} ---> 
+        ex, (P ⋅ g).
   Proof.
     mlIntro "H".
     mlDestructAnd "H" as "H1" "H2". mlSpecialize "H1" with x.
@@ -113,7 +115,7 @@ Section functional_subst.
   Lemma exists_functional_subst :
     Γ ⊢ φ^[evar:0↦t] and is_functional t ---> (ex , φ).
   Proof.
-    remember (fresh_evar (φ $ t)) as Zvar.
+    remember (fresh_evar (φ ⋅ t)) as Zvar.
     remember (patt_free_evar Zvar) as Z.
 
     (* assertions about well-formedness *)
@@ -236,3 +238,108 @@ Section functional_subst.
   (* Proof above is ~30 LOC *)
 
 End functional_subst.
+
+Section exists_singleton.
+
+  Notation definedness_theory := Theories.Definedness_Syntax.theory.
+  Notation definedness_syntax := Theories.Definedness_Syntax.Syntax.
+  Context
+    {Σ         : Signature}
+    {defsyntax : definedness_syntax}
+    (Γ         : Theory)
+    (HΓ        : definedness_theory ⊆ Γ).
+
+  Context
+    (f g P : Pattern)
+    (wff   : well_formed (ex, f))
+    (wfg   : well_formed (ex, g))
+    (wfP   : well_formed P)
+    (mfP   : mu_free P)
+    (x     : evar).
+(*     
+    Γ ⊢ₕ φ₁ → ... → φₙ → ψ
+    Γ ▷ φ₁, ..., φₙ ⊢ₛ ψ
+ *)
+  (*
+      Γ ⊢ (∀z. g z = f z) ∧ P (f x) → ∃y. P (g y)
+  *)
+  Goal
+    Γ ⊢ (all, (g =ml f)) and P ⋅ f^{evar:0 ↦ x} ---> ex, (P ⋅ g).
+  Proof.
+    toMLGoal.                       (* - switch to sequent calculus *)
+    { wf_auto2. }                   (* - well-formedness of the initial pattern *)
+    mlIntro "H".                    (* - implication introduction  *)
+    mlDestructAnd "H" as "H1" "H2". (* - conjuction elimination *)
+    mlSpecialize "H1" with x.       (* - universal elimination *)
+    mlExists x.                     (* - existential introduction *)
+    (* simplification of substitutions: *)
+    mlSimpl. rewrite [P^{evar:0↦x}]evar_open_closed;[wf_auto2|].
+    (***)
+    mlRewriteBy "H1" at 1.          (* - equality elimination *)
+    mlExact "H2".                   (* - hypothesis *)
+  Defined.
+
+  Context {φ : Pattern}
+          {wfφ : well_formed (ex, φ)}
+          {wfktφ : pattern_kt_well_formed φ}.
+
+  (*
+    Γ ⊢ (∃x.x ∧ φ) → ∀y.y → φ
+  *)
+  Goal
+    Γ ⊢ (ex , b0 and φ) ---> (all, (b0 ---> φ)).
+  Proof.
+    (* first, we get rid of the ∃, and the conjunction *)
+    mlIntro.               (* - implication introduction *)
+    mlDestructEx "0" as z. (* - existential elimination *)
+    mlSimpl. cbn.          (* - substitution simplification *)
+    mlDestructAnd "0".     (* - conjuction elimination *)
+
+    mlRevert "2".          (* - revert hypothesis (derived rule) *)
+    mlRevert "1".          (* - revert hypothesis (derived rule) *)
+
+    (* We introduce membership: x ∈ (φ(x) ---> ∀y.(y ---> φ(y))) *)
+    mlApplyMeta membership_implies_implication.  (* - modus ponens *)
+    (* We propagate membership to the primitive subpatterns: *)
+    mlApplyMeta membership_imp_2. 2: assumption. (* - modus ponens *)
+    mlIntro.                         (* - implication introduction *)
+    mlFreshEvar as y.                (* - fresh variable generation for proof constraints *)
+    mlApplyMeta membership_forall_2. (* - modus ponens *)
+    2: instantiate (1 := y); fm_solve. 2: assumption. (* side conditions *)
+    mlIntroAll y. simpl.             (* - universal introduction *)
+    mlApplyMeta membership_imp_2.    (* - modus ponens *)
+    2: assumption.
+    mlIntro.                         (* - implication introduction *)
+    (* at this point, we have x ∈ y and x ∈ φ(x) ---> x ∈ φ(y)
+       this means that x = y
+       and we can use equality elimination to swap φ(x) with φ(y)
+     *)
+    mlApplyMeta membership_var in "1". (* - modus ponens *)
+    2: assumption.
+    mlFreshEvar as w.
+
+    (* The next lines contain the application of equality elimination manually *)
+    (* TODO: write a theorem which is a corollary of equality elimination, and
+       is capable of rewriting inside substitutions *)
+    opose proof* (equality_elimination Γ (patt_free_evar z) (patt_free_evar y)
+       {| pcEvar := w; pcPattern := patt_free_evar z ∈ml φ^{evar:0↦w}|} HΓ
+       ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
+     {
+       cbn. rewrite kt_well_formed_evar_open. assumption. reflexivity.
+     }
+     unfold emplace in H. mlSimpl in H. cbn in H.
+     case_match. 1: subst w; ltac2:(_fm_export_everything()); exfalso; set_solver.
+     erewrite <- !(bound_to_free_variable_subst) in H.
+     2: instantiate (1 := 1); lia.
+     5: instantiate (1 := 1); lia.
+     2-3, 5-6: wf_auto2.
+     2: fm_solve.
+     2: fm_solve.
+     mlApplyMeta H.
+     (***)
+     mlSplitAnd; mlAssumption.
+  Defined.
+
+End exists_singleton.
+
+

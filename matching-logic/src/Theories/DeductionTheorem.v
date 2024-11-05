@@ -1916,7 +1916,7 @@ Proof.
   mlIntro.
   mlApplyMeta membership_imp_2. 2: assumption.
   mlIntro.
-  mlApplyMeta overlapping_variables_equal in "1". 2: assumption.
+  mlApplyMeta membership_var in "1". 2: assumption.
   (* TODO: write a theorem which is a corollary of equality elimination, and
      is capable of rewriting inside substitutions *)
   mlFreshEvar as z.
@@ -1956,7 +1956,7 @@ Proof.
   mlSimpl. cbn.
   mlApplyMeta membership_imp_2. 2: assumption.
   mlIntro.
-  mlApplyMeta overlapping_variables_equal in "1". 2: assumption.
+  mlApplyMeta membership_var in "1". 2: assumption.
   mlFreshEvar as z.
   (* TODO: write a theorem which is a corollary of equality elimination, and
      is capable of rewriting inside substitutions *)
@@ -2008,7 +2008,7 @@ Proof.
      this means that x = y
      and we can use equality elimination to swap φ(x) with φ(y)
    *)
-  mlApplyMeta overlapping_variables_equal in "1". 2: assumption.
+  mlApplyMeta membership_var in "1". 2: assumption.
   mlFreshEvar as z.
   (* TODO: write a theorem which is a corollary of equality elimination, and
      is capable of rewriting inside substitutions *)
