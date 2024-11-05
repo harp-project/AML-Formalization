@@ -14,8 +14,10 @@
         coqPackages = pkgs.coqPackages_8_19;
         pyk-py = pyk.packages.${system}.pyk-python311;
         python = pyk-py.python;
+        stdpp = coqPackages.stdpp.overrideAttrs (o : { src = fetchTarball { url = "https://gitlab.mpi-sws.org/iris/stdpp/-/archive/master/stdpp-master.tar.bz2"; sha256="sha256:1f8v61mcixcai8ki1l350hlnypc7v3rrxjcx4m0xclb01rlf9afa";}; });
 
         # The 'matching logic in Coq' library
+        
         coq-matching-logic = { coqPackages }: (
         coqPackages.callPackage 
         ( { coq, stdenv }:
@@ -26,7 +28,7 @@
           propagatedBuildInputs = [
             coq
             coqPackages.equations
-            coqPackages.stdpp
+            stdpp
             coqPackages.LibHyps
           ];
           enableParallelBuilding = true;
