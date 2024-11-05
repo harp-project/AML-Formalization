@@ -11,7 +11,7 @@
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
-        coqPackages = pkgs.coqPackages_8_18;
+        coqPackages = pkgs.coqPackages_8_19;
         pyk-py = pyk.packages.${system}.pyk-python311;
         python = pyk-py.python;
 
