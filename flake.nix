@@ -2,7 +2,7 @@
   description = "A Coq Library for Matching Logic";
 
   inputs = {
-    nixpkgs.url = "github:NixOs/nixpkgs";
+    nixpkgs.url = "github:NixOS/nixpkgs/release-24.05";
     flake-utils.url = "github:numtide/flake-utils";
     pyk.url = "github:runtimeverification/pyk/v0.1.491";
    };
