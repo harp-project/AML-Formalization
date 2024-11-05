@@ -20,7 +20,7 @@ jobs:
       - run:
           name: "Install dependencies"
           command: |
-            sh <(curl -L https://github.com/nix-community/nix-unstable-installer/releases/download/nix-2.16.0pre20230421_7474a90/install)
+            sh <(curl -L https://github.com/nix-community/nix-unstable-installer/releases/download/nix-2.23.0pre20240603_da92ad7/install)
             source /home/circleci/.nix-profile/etc/profile.d/nix.sh
             mkdir -p ~/.config/nix/
             echo 'experimental-features = nix-command flakes' >> ~/.config/nix/nix.conf
