@@ -1070,6 +1070,12 @@ Proof.
   by rewrite H1 IHl.
 Qed.
 
+(* Allows splitting `wf` without unfolding in-place. *)
+Lemma wf_cons x l : wf (x :: l) <-> well_formed x /\ wf l.
+Proof.
+  unfold wf. simpl. apply andb_true_iff.
+Defined.
+
 Section corollaries.
   Context {Σ : Signature}.
 
@@ -1109,6 +1115,19 @@ Section corollaries.
   Proof.
     intros.
     apply fold_left_ind with (Q := mu_free ∘ t);
+    only 2: apply Forall_fold_right;
+    only 2: rewrite -> foldr_map, foldr_andb_equiv_foldr_conj in H0;
+    auto.
+  Qed.
+
+  Corollary mf_foldr {A : Type} (f : A -> Pattern -> Pattern) (t : A -> Pattern) x xs :
+    mu_free x ->
+    foldr (fun c a => mu_free c && a) true (map t xs) ->
+    (forall a b, mu_free a -> mu_free (t b) -> mu_free (f b a)) ->
+    mu_free (foldr f x xs).
+  Proof.
+    intros.
+    apply foldr_ind with (Q := mu_free ∘ t);
     only 2: apply Forall_fold_right;
     only 2: rewrite -> foldr_map, foldr_andb_equiv_foldr_conj in H0;
     auto.

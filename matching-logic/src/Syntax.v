@@ -3026,6 +3026,14 @@ Section with_signature.
       rewrite bound_svar_is_banned_bsvar_subst; wf_auto2.
   Qed.
 
+  (* Mu-freeness is a stricter property. *)
+  Lemma mf_imp_ktwf φ : mu_free φ -> pattern_kt_well_formed φ.
+  Proof.
+    intros.
+    induction φ; auto.
+    all: inversion H; apply andb_true_iff in H1 as [?%IHφ1 ?%IHφ2]; now apply andb_true_iff.
+  Defined.
+
 End with_signature.
 
 
