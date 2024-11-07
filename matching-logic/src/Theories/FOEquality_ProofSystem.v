@@ -908,7 +908,7 @@ Section EqCon.
     unfold hypos, goal.
     induction σ; simpl; intros.
     now aapply patt_equal_refl.
-    simpl in Hσ1, Hσ2. apply wf_cons in Hσ1 as [], Hσ2 as [].
+    simpl in Hσ1, Hσ2. apply wf_cons_iff in Hσ1 as [], Hσ2 as [].
     simpl in Hmfσ1, Hmfσ2. apply andb_true_iff in Hmfσ1 as [], Hmfσ2 as [].
     simpl in Hfpσ.
     destruct X as [? ?%(IHl H0 H2)]. clear IHl.

@@ -1071,7 +1071,7 @@ Proof.
 Qed.
 
 (* Allows splitting `wf` without unfolding in-place. *)
-Lemma wf_cons x l : wf (x :: l) <-> well_formed x /\ wf l.
+Lemma wf_cons_iff {Σ : Signature} x l : wf (x :: l) <-> well_formed x /\ wf l.
 Proof.
   unfold wf. simpl. apply andb_true_iff.
 Defined.
