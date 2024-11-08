@@ -1052,19 +1052,19 @@ Module equivalence_insufficient2.
           patt_sym sym_g ⋅ patt_sym sym_f ---> patt_sym sym_g ⋅ patt_sym sym_g) ≠ ⊤.
   Proof.
     intros.
+    (** First, we simplify the interpretation *)
     rewrite eval_imp_simpl eval_imp_simpl.
     rewrite eval_iff_simpl.
     repeat rewrite eval_simpl.
+    (** Next, we simplify the model-specific parts:*)
     cbn.
     rewrite 2!app_ext_singleton.
     cbn. intro.
-    (* End of general simplification *)
     (**
-      The element "two" won't be in the LHS of H
+      Now we derive a counterexample by showing that the element "two"
+      won't be in the LHS of H. This only involves simplification of set
+      operations.
     *)
-    
-    
-    
     epose proof (proj1 (set_eq _ _) H two) as [_ ?]. Unshelve.
     2: { apply (@propset_leibniz_equiv mySignature exampleModel). } (* why is this not automatic?? *)
     clear H.
