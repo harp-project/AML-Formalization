@@ -827,10 +827,10 @@ Module equivalence_insufficient.
     {
       apply NoDup_nil. exact I.
     }
-  Qed.
+  Defined.
   Next Obligation.
   intros []. set_solver.
-  Qed.
+  Defined.
 
   #[local]
   Instance mySignature : Signature :=
@@ -966,6 +966,123 @@ Module equivalence_insufficient.
   Qed.
   Close Scope ml_scope.
 End equivalence_insufficient.
+
+
+Module equivalence_insufficient2.
+  Open Scope ml_scope.
+  Inductive exampleSymbols : Set :=
+  | sym_f
+  | sym_g.
+
+  Local
+  Instance exampleSymbols_eqdec : EqDecision exampleSymbols.
+  Proof. unfold EqDecision. intros x y. unfold Decision. decide equality. Defined.
+
+  Local
+  Program Instance exampleSymbols_fin : Finite exampleSymbols :=
+  {|
+    enum := [sym_f; sym_g] ;
+  |}.
+  Next Obligation.
+    apply NoDup_cons.
+    split.
+    {
+      intros HContra. inversion HContra.
+      subst. inversion H1.
+    }
+    apply NoDup_cons. split.
+    {
+      intro. inversion H.
+    }
+    {
+      apply NoDup_nil. exact I.
+    }
+  Defined.
+  Next Obligation.
+    intros []; set_solver.
+  Defined.
+
+  #[local]
+  Instance mySignature : Signature :=
+  {| variables := StringMLVariables;
+     ml_symbols := {|
+      symbols := exampleSymbols;
+      sym_eqdec := exampleSymbols_eqdec;
+     |};
+  |}.
+
+  Inductive exampleDomain : Set :=
+  | one | two | f | g.
+
+  Instance exampleDomain_Inhabited : Inhabited exampleDomain.
+  Proof. constructor. apply one. Defined.
+
+  Definition example_sym_interp (x : symbols) : propset exampleDomain :=
+    match x with
+    | sym_f => {[f]}
+    | sym_g => {[g]}
+    end.
+
+  Definition example_app_interp (d1 d2 : exampleDomain) : propset exampleDomain :=
+  match d1, d2 with
+  | g, f => {[two]}
+  | g, g => {[f]}
+  | _, _ => ∅
+  end.
+
+  Definition exampleModel : @Model mySignature :=
+  {|
+    Domain := exampleDomain;
+    Domain_inhabited := exampleDomain_Inhabited;
+    sym_interp := example_sym_interp;
+    app_interp := example_app_interp;
+  |}.
+
+  Theorem app_ext_singleton : forall x y,
+    app_ext {[x]} {[y]} = @app_interp mySignature exampleModel x y.
+  Proof.
+    intros x y. unfold app_ext.
+    apply set_eq. set_solver.
+  Qed.
+
+  Example equiv_elim_not :
+    forall ρ,
+        @eval _ exampleModel ρ
+          (patt_sym sym_f <---> patt_sym sym_g --->
+          patt_sym sym_g ⋅ patt_sym sym_f ---> patt_sym sym_g ⋅ patt_sym sym_g) ≠ ⊤.
+  Proof.
+    intros.
+    rewrite eval_imp_simpl eval_imp_simpl.
+    rewrite eval_iff_simpl.
+    repeat rewrite eval_simpl.
+    cbn.
+    rewrite 2!app_ext_singleton.
+    cbn. intro.
+    (* End of general simplification *)
+    (**
+      The element "two" won't be in the LHS of H
+    *)
+    
+    
+    
+    epose proof (proj1 (set_eq _ _) H two) as [_ ?]. Unshelve.
+    2: { apply (@propset_leibniz_equiv mySignature exampleModel). } (* why is this not automatic?? *)
+    clear H.
+    specialize (H0 ltac:(set_solver)).
+    (* set_solver should work at this point... *)
+    apply elem_of_union in H0 as [|].
+    * apply elem_of_difference in H as [? ?].
+      apply H0.
+      apply elem_of_intersection. split.
+      - apply elem_of_union_r. set_solver.
+      - apply elem_of_union_l. set_solver.
+    * apply elem_of_union in H as [|].
+      - apply elem_of_difference in H as [? ?].
+        set_solver.
+      - set_solver.
+  Qed.
+
+End equivalence_insufficient2.
 
 #[export]
 Hint Resolve T_predicate_defined : core.
