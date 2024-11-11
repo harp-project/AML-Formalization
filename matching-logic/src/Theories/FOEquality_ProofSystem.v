@@ -835,6 +835,161 @@ Proof.
   set_solver.
 Defined.
 
+(* Equality elimination for substitution using a functional *)
+(* pattern. *)
+Lemma equality_elimination_functional_subst {Σ : Signature} {syntax : Syntax} (Γ : Theory) p q p1 p2 x :
+  theory ⊆ Γ ->
+  well_formed p ->
+  well_formed q ->
+  well_formed p1 ->
+  well_formed p2 ->
+  mu_free p ->
+  mu_free q ->
+  pattern_kt_well_formed p1 ->
+  pattern_kt_well_formed p2 ->
+  Γ ⊢ p =ml q ->
+  Γ ⊢ p1 =ml p2 ->
+  Γ ⊢ is_functional p1 ->
+  Γ ⊢ p^[[evar: x ↦ p1]] =ml q^[[evar: x ↦ p2]].
+Proof.
+  intros HΓ Hwfp Hwfq Hwfp1 Hwfp2 Hmfp Hmfq Hktwfp1 Hktwfp2 Hpeqq Hp1eqp2 Hfuncp1.
+  pose proof mf_imp_ktwf _ Hmfp as Hktwfp.
+  pose proof mf_imp_ktwf _ Hmfq as Hktwfq.
+  apply universal_generalization with (x := x) in Hpeqq;
+  [| try_solve_pile | wf_auto2].
+  eapply forall_functional_subst_meta with (φ' := p1) in Hpeqq;
+  auto; [|rewrite <- mu_free_evar_quantify | ..];
+  [| wf_auto2 ..].
+  rewrite bevar_subst_evar_quantify in Hpeqq; [wf_auto2 |].
+  mlSimpl in Hpeqq.
+  mlFreshEvar as y.
+  unshelve epose proof MP Hp1eqp2 (equality_elimination Γ p1 p2 {|pcPattern := p^[[evar: x ↦ p1]] =ml q^[[evar: x ↦ patt_free_evar y]]; pcEvar := y|} HΓ _ _ _ _); try solve [wf_auto2].
+  simpl. rewrite ! pattern_kt_well_formed_free_evar_subst; auto.
+  unfold emplace in H. mlSimpl in H. cbn in H.
+  rewrite -> 2 free_evar_subst_chain in H; [| fm_solve ..].
+  rewrite -> 2 (free_evar_subst_no_occurrence y) in H; [| fm_solve ..].
+  exact (MP Hpeqq H).
+Defined.
+
+Section EqCon.
+  Context {Σ : Signature} {syntax : Syntax}.
+
+  (* The remainder works for any theory containing definedness. *)
+  Context (Γ : Theory).
+  Hypothesis (HΓ : theory ⊆ Γ).
+
+  (* The patterns that will be equal, *)
+  (* and the evars that they will replace. *)
+  Context (σ : list (evar * Pattern * Pattern)).
+  (* They are well-formed... *)
+  Hypothesis (Hσ1 : wf (map (snd ∘ fst) σ)) (Hσ2 : wf (map snd σ)).
+  (* ... mu-free ... *)
+  Hypothesis (Hmfσ1 : foldr (fun c a => mu_free c && a) true (map (snd ∘ fst) σ)).
+  Hypothesis (Hmfσ2 : foldr (fun c a => mu_free c && a) true (map snd σ)).
+  (* ... and one of them is functional. *)
+  Hypothesis (Hfpσ : foldr (fun c a => ((Γ ⊢ is_functional c.1.2) * a)%type) unit σ).
+
+  (* Separate equalities as a hypothesis. *)
+  Definition hypos : Type := foldr (fun x t => ((Γ ⊢ x.1.2 =ml x.2) * t)%type) unit σ.
+
+  (* Same as `emplace`ing into a context with multiple holes. *)
+  Definition goal (φ : Pattern) : Pattern := (foldr (fun x p => p^[[evar: x.1.1 ↦ x.1.2]]) φ σ) =ml (foldr (fun x p => p^[[evar: x.1.1 ↦ x.2]]) φ σ).
+
+  (* For any pattern (which would serve as the core of the context), *)
+  (* given the eqalities as hypothesis, substituting into the *)
+  (* multihole context yields equality. *)
+  Lemma eqcon : forall φ,
+    well_formed φ ->
+    mu_free φ ->
+    hypos ->
+    Γ ⊢ goal φ.
+  Proof.
+    intros ? Hwfφ Hmfφ.
+    unfold hypos, goal.
+    induction σ; simpl; intros.
+    now aapply patt_equal_refl.
+    simpl in Hσ1, Hσ2. apply wf_cons_iff in Hσ1 as [], Hσ2 as [].
+    simpl in Hmfσ1, Hmfσ2. apply andb_true_iff in Hmfσ1 as [], Hmfσ2 as [].
+    simpl in Hfpσ.
+    destruct X as [? ?%(IHl H0 H2)]. clear IHl.
+    apply equality_elimination_functional_subst; auto.
+    - eapply wf_foldr. auto. exact H0.
+      intros ? [[] ?] **. wf_auto2.
+    - eapply wf_foldr. auto. exact H2.
+      intros ? [[] ?] **. wf_auto2.
+    - eapply mf_foldr. auto. exact H4.
+      intros ? [[] ?] **. simpl in H8 |- *. now apply mu_free_free_evar_subst.
+    - eapply mf_foldr. auto. exact H6.
+      intros ? [[] ?] **. simpl in H8 |- *. now apply mu_free_free_evar_subst.
+    - now apply mf_imp_ktwf.
+    - now apply mf_imp_ktwf.
+    - exact (Hfpσ.1).
+    - auto.
+    - auto.
+    - exact (Hfpσ.2).
+  Defined.
+End EqCon.
+
+Section Example.
+  Context {Σ : Signature} {syntax : Syntax}.
+
+  (* In any theory that contains the theory of definedness ... *)
+  Context (Γ : Theory).
+  Hypothesis (HΓ : theory ⊆ Γ).
+
+  (* ... given some function/context ... *)
+  Context (kseq_sym : symbols).
+  Definition kseq x y := patt_sym kseq_sym ⋅ x ⋅ y.
+
+  (* ... and two pairs of patterns ... *)
+  Context (one two one' two' : Pattern).
+  (* ... some of which are functional and all of which are *)
+  (* well-formed and free of fixed points ... *)
+  Hypothesis (fpone : Γ ⊢ is_functional one).
+  Hypothesis (fptwo : Γ ⊢ is_functional two).
+  Hypothesis (Hwf : well_formed one /\ well_formed two /\ well_formed one' /\ well_formed two').
+  Hypothesis (Hmf : mu_free one /\ mu_free two /\ mu_free one' /\ mu_free two').
+  (* ... and pairwise provable equal ... *)
+  Hypothesis (Heqone : Γ ⊢ one =ml one').
+  Hypothesis (Heqtwo : Γ ⊢ two =ml two').
+
+  (* ... and given two different evars, one of which is free *)
+  (* in two of the patterns ... *)
+  Context (x y : evar).
+  Hypothesis (Hxneqy : y ≠ x).
+  Hypothesis (Hxfree : x ∉ free_evars two ∪ free_evars two').
+
+  (* ... substituting the two into the same context *)
+  (* is also equal. *)
+  (*            one = one'       two = two'            *)
+  (* ------------------------------------------------- *)
+  (* (kseq □₁ □₂)[one, two] = (kseq □₁ □₂)[one', two'] *)
+  Goal Γ ⊢ kseq one two =ml kseq one' two'.
+  Proof.
+    decompose record Hwf. clear Hwf.
+    decompose record Hmf. clear Hmf.
+    pose [(x, one, one'); (y, two, two')] as pairs.
+    pose (kseq (patt_free_evar x) (patt_free_evar y)) as base_pat.
+
+    opose proof* (eqcon Γ _ pairs _ _ _ _ _ base_pat);
+
+    (* side conditions *)
+    subst pairs base_pat; simpl.
+    6,9: repeat split. all: auto.
+    1-4: wf_auto2.
+
+    (* simplification *)
+    unfold goal in H6. simpl in H6.
+    destruct (decide (y = x)). contradiction.
+    simpl in H6. rewrite ! decide_eq_same in H6.
+    rewrite ! free_evar_subst_no_occurrence in H6.
+    1-2: set_solver.
+    fold (kseq one two) in H6. fold (kseq one' two') in H6.
+
+    assumption.
+  Qed.
+End Example.
+ 
 Close Scope ml_scope.
 Close Scope string_scope.
 Close Scope list_scope.
