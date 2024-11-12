@@ -66,6 +66,15 @@ Section sorts.
 
   Obligation Tactic := idtac.
 
+  Class ESortedBinder (binder : Pattern -> Pattern -> Pattern) := {
+      esorted_binder_morphism :
+        forall {A : Type} (f : A -> Pattern -> Pattern)
+           (f_morph : PatternMorphism f)
+           (f_swap : SwappableEx f nest_ex f_morph)
+           (s phi : Pattern) a,
+        f a (binder s phi) = binder (f a s) (f (increase_ex pm_spec_data a) phi) ;
+  }.
+
   #[global]
   Program Instance Unary_inhabitant_set : Unary patt_inhabitant_set := {}.
   Next Obligation.
@@ -105,14 +114,22 @@ Section sorts.
     (patt_exists_of_sort s phi) (at level 70) : ml_scope.
 
   #[global]
-  Program Instance sorted_exists_binder : ESortedBinder patt_exists_of_sort nest_ex := {}.
+  Program Instance sorted_exists_binder : ESortedBinder patt_exists_of_sort := {}.
   Next Obligation.
     intros.
     repeat rewrite pm_correctness.
-    cbn.
-    rewrite (@eswap _ _ _ nest_ex _ f_swap).
-    replace (on_bevar pm_spec_data (increase_ex pm_spec_data a) 0) with b0. reflexivity.
-    now rewrite pm_ezero_increase.
+    unfold patt_exists_of_sort.
+    repeat rewrite <- pm_correctness.
+    mlSimpl.
+    rewrite pm_correctness. cbn.
+    replace (on_bevar pm_spec_data (increase_ex pm_spec_data a) 0) with b0.
+    2: {
+      now rewrite pm_ezero_increase.
+    }
+    rewrite pm_correctness. cbn.
+    rewrite eswap.
+    repeat rewrite pm_correctness.
+    reflexivity.
   Defined.
 
   Definition patt_forall_of_sort (sort phi : Pattern) : Pattern :=
@@ -122,14 +139,22 @@ Section sorts.
     (patt_forall_of_sort s phi) (at level 70) : ml_scope.
 
   #[global]
-  Program Instance sorted_forall_binder : ESortedBinder patt_forall_of_sort nest_ex := {}.
+  Program Instance sorted_forall_binder : ESortedBinder patt_forall_of_sort := {}.
   Next Obligation.
     intros.
     repeat rewrite pm_correctness.
-    cbn.
-    rewrite (@eswap _ _ _ nest_ex _ f_swap).
-    replace (on_bevar pm_spec_data (increase_ex pm_spec_data a) 0) with b0. reflexivity.
-    now rewrite pm_ezero_increase.
+    unfold patt_exists_of_sort.
+    repeat rewrite <- pm_correctness.
+    mlSimpl.
+    rewrite pm_correctness. cbn.
+    replace (on_bevar pm_spec_data (increase_ex pm_spec_data a) 0) with b0.
+    2: {
+      now rewrite pm_ezero_increase.
+    }
+    rewrite pm_correctness. cbn.
+    rewrite eswap.
+    repeat rewrite pm_correctness.
+    reflexivity.
   Defined.
 
   (* TODO patt_forall_of_sort and patt_exists_of_sort are duals - a lemma *)
@@ -161,13 +186,6 @@ Section sorts.
             ((nest_ex (nest_ex f) ⋅ b1) =ml (nest_ex (nest_ex f) ⋅ b0))
              ---> (b1 =ml b0))).
 
-End sorts.
-
-Section sorts.
-  Context {Σ : Signature}.
-  Context {self : Syntax}.
-  Open Scope ml_scope.
-
   Definition patt_total_binary_function(phi from1 from2 to : Pattern)
   : Pattern :=
     patt_forall_of_sort from1 (
@@ -178,6 +196,7 @@ Section sorts.
       )
     )
   .
+
 End sorts.
 
 Module Notations.
@@ -187,3 +206,148 @@ Module Notations.
   Notation "phi :ml s1 × s2 -> s3" :=  (patt_total_binary_function phi s1 s2 s3) (at level 70) : ml_scope.
 End Notations.
 
+Ltac mlESortedSimpl_single :=
+match goal with
+| |- context G [?f ?arg _ (?binder _ _)] =>
+  let Hyp := fresh "H" in
+  let Hyp2 := fresh "H" in
+    (* We check whether we have a sorted binder *)
+    assert (Hyp: ESortedBinder binder) by (typeclasses eauto + eauto);
+    (* We check wether we found a swappable substitution *)
+    assert (Hyp2: SwappableEx (f arg) nest_ex _) by (typeclasses eauto + eauto);
+    (* The previous checks are needed to correctly identify the position for
+       simplification, since using only rewrite fails on finding the right
+       instances *)
+    erewrite (@esorted_binder_morphism _ _ Hyp _ _ _ Hyp2);
+    clear Hyp Hyp2;
+    try rewrite [increase_ex _ _]/=
+end.
+
+Ltac mlESortedSimpl_single_hyp H :=
+match type of H with
+| context G [?f ?arg _ (?binder _ _)] =>
+  let Hyp := fresh "H" in
+  let Hyp2 := fresh "H" in
+    (* We check whether we have a sorted binder *)
+    assert (Hyp: ESortedBinder binder) by (typeclasses eauto + eauto);
+    (* We check wether we found a swappable substitution *)
+    assert (Hyp2: SwappableEx (f arg) nest_ex _) by (typeclasses eauto + eauto);
+    (* The previous checks are needed to correctly identify the position for
+       simplification, since using only rewrite fails on finding the right
+       instances *)
+    erewrite (@esorted_binder_morphism _ _ Hyp _ _ _ Hyp2) in H;
+    clear Hyp Hyp2;
+    try rewrite [increase_ex _ _]/= in H
+end.
+
+(* TODO: extend with mu *)
+Tactic Notation "mlSortedSimpl" := repeat mlESortedSimpl_single.
+Tactic Notation "mlSortedSimpl" "in" hyp(H) := repeat mlESortedSimpl_single_hyp H.
+
+Section simplTest.
+  (* NOTE: these tactics are not exported!!!!! *)
+  Import Substitution.Notations.
+  Import Notations.
+  Open Scope ml_scope.
+  Context {Σ : Signature} {S : Syntax}.
+
+  Goal forall s p x,
+    (all s , p)^{evar:0 ↦ x} = (all s^{evar:0 ↦ x}, p^{evar:1 ↦ x}) ->
+    (all s , p)^{evar:0 ↦ x} = (all s^{evar:0 ↦ x}, p^{evar:1 ↦ x}).
+  Proof.
+    intros.
+    mlSortedSimpl.
+    mlSortedSimpl in H.
+    reflexivity.
+  Qed.
+
+  Goal forall s p1 p2 p3 x,
+    (p1 ---> all s , p2 ---> p3)^{evar:0 ↦ x} =
+    (p1^{evar:0 ↦ x} ---> all s^{evar:0 ↦ x}, p2^{evar:1 ↦ x} ---> p3^{evar:1 ↦ x}).
+  Proof.
+    intros. mlSimpl.
+    mlSortedSimpl.
+    mlSimpl.
+    reflexivity.
+  Qed.
+
+  Goal forall s ψ x X, well_formed_closed ψ ->
+  (patt_forall_of_sort s ψ)^[[evar: x ↦ ψ]] = patt_bott ->
+  (patt_forall_of_sort s ψ)^{evar: 0 ↦ x} = patt_bott ->
+  (patt_forall_of_sort s ψ)^{{evar: x ↦ 0}} = patt_bott ->
+  (patt_forall_of_sort s ψ)^[[svar: X ↦ ψ]] = patt_bott ->
+  (patt_forall_of_sort s ψ)^{svar: 0 ↦ X} = patt_bott ->
+  (patt_forall_of_sort s ψ)^{{svar: X ↦ 0}} = patt_bott ->
+  (patt_forall_of_sort s ψ)^[[svar: X ↦ ψ]] = patt_bott /\
+  (patt_forall_of_sort s ψ)^{svar: 0 ↦ X} = patt_bott /\
+  (patt_forall_of_sort s ψ)^{{svar: X ↦ 0}} = patt_bott /\
+  (patt_forall_of_sort s ψ)^[[evar: x ↦ ψ]] = patt_bott /\ 
+  (patt_forall_of_sort s ψ)^{evar: 0 ↦ x} = patt_bott /\
+  (patt_forall_of_sort s ψ)^{{evar: x ↦ 0}} = patt_bott
+  .
+  Proof.
+    intros.
+    repeat mlSortedSimpl.
+    mlSortedSimpl in H0.
+    mlSortedSimpl in H1.
+    mlSortedSimpl in H2.
+    mlSortedSimpl in H3.
+    mlSortedSimpl in H4.
+    mlSortedSimpl in H5.
+    intuition.
+  Qed.
+
+  Goal forall s ψ x, (* well_formed_closed ψ -> *)
+  (patt_forall_of_sort (patt_imp s s) ψ)^[[evar: x ↦ ψ]] = patt_bott
+  .
+  Proof.
+    intros.
+    Fail progress mlSortedSimpl.
+  Abort.
+
+  Local Definition ml_plus := patt_app.
+  Local Definition ml_in := patt_app.
+  Local Definition ml_eq := patt_app.
+
+
+  Import Substitution.Notations.
+  Import Pattern.Notations.
+  Import DerivedOperators_Syntax.Notations.
+  Import Pattern.BoundVarSugar.
+
+  Local Notation "a +ml b" := (ml_plus a b) (at level 67).
+  Local Notation "a =ml b" := (ml_eq a b) (at level 67).
+  Local Notation "a ∈ml b" := (ml_in a b) (at level 67).
+  Local Notation "'ex' , phi" := (patt_exists phi) (at level 80) : ml_scope.
+  Local Notation "'mu' , phi" := (patt_mu phi) (at level 80) : ml_scope.
+  Local Notation "〚 phi 〛" := (patt_inhabitant_set phi) (at level 0) : ml_scope.
+
+  Open Scope ml_scope.
+
+  Local Definition Nat := patt_bott.
+  Local Definition Zero := patt_bott.
+  Local Definition Succ := patt_bott.
+  Local Definition patt_subseteq := patt_app.
+  Notation "p ⊆ml q" := (patt_subseteq p q) (at level 67) : ml_scope.
+
+  Goal forall X,
+    (( patt_free_svar X ⊆ml 〚 Nat 〛 --->
+         Zero ∈ml patt_free_svar X --->
+         (all Nat, (b0 ∈ml patt_free_svar X ---> 
+         Succ ⋅ b0 ∈ml patt_free_svar X)) --->
+         (all Nat, b0 ∈ml patt_free_svar X ) ) ^[[svar:X↦ex Nat, b0 and Zero +ml b0 =ml b0]] ) = 
+        ( (ex Nat, b0 and Zero +ml b0 =ml b0) ⊆ml 〚 Nat 〛 --->
+         Zero ∈ml (ex Nat, b0 and Zero +ml b0 =ml b0) --->
+         (all Nat, (b0 ∈ml (ex Nat, b0 and Zero +ml b0 =ml b0) ---> 
+         Succ ⋅ b0 ∈ml (ex Nat, b0 and Zero +ml b0 =ml b0))) --->
+         (all Nat, b0 ∈ml (ex Nat, b0 and Zero +ml b0 =ml b0) ) ).
+  Proof.
+    intros. mlSimpl.
+    mlSortedSimpl. mlSimpl.
+    cbn.
+    case_match.
+    - reflexivity.
+    - try congruence.
+  Qed.
+
+End simplTest.

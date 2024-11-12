@@ -426,16 +426,9 @@ Section nat.
       { wf_auto2. }
       { unfold theory. set_solver. }
 
-      remember (fresh_evar (b0 ∈ml (Succ ⋅ patt_free_svar X ---> patt_free_svar X))) as x.
+      mlFreshEvar as x.
 
-      rewrite <- evar_quantify_evar_open with (phi := b0 ∈ml (Succ ⋅ patt_free_svar X ---> patt_free_svar X)) (n := 0) (x := x).
-      2:{
-          subst x.
-          eapply evar_is_fresh_in_richer'.
-          2: { apply set_evar_fresh_is_fresh'. }
-          clear. set_solver.
-        }
-      2: { cbn. reflexivity. }
+      rewrite <- evar_quantify_evar_open with (phi := b0 ∈ml (Succ ⋅ patt_free_svar X ---> patt_free_svar X)) (n := 0) (x := x). 2: fm_solve. 2: wf_auto2.
       apply universal_generalization;[apply pile_any|wf_auto2|].
       mlSimpl. unfold evar_open. simpl.
 
@@ -465,23 +458,13 @@ Section nat.
 
       fromMLGoal.
 
-      remember (fresh_evar (b0 ∈ml patt_free_svar X and patt_free_evar x ∈ml Succ ⋅ b0)) as y.
-      rewrite <- evar_quantify_evar_open with (n := 0) (x := y) (phi := b0 ∈ml patt_free_svar X and patt_free_evar x ∈ml Succ ⋅ b0).
-      2:{
-          subst y. eapply evar_is_fresh_in_richer'.
-          2: { apply set_evar_fresh_is_fresh'. }
-          clear. set_solver.
-        }
-      2: wf_auto2.
+      mlFreshEvar as y.
+      rewrite <- evar_quantify_evar_open with (n := 0) (x := y) (phi := b0 ∈ml patt_free_svar X and patt_free_evar x ∈ml Succ ⋅ b0). 2: fm_solve. 2: wf_auto2.
 
       gapply BasicProofSystemLemmas.Ex_gen.
       { apply pile_any. }
       { apply pile_any. }
-      {
-        subst y. eapply evar_is_fresh_in_richer'.
-        2: { apply set_evar_fresh_is_fresh'. }
-        clear. set_solver.
-      }
+      { fm_solve. }
 
       mlSimpl. unfold evar_open. simpl. fold AnyReasoning.
 
@@ -518,11 +501,7 @@ Section nat.
           mlAdd (use_nat_axiom AxFun2 theory ltac:(set_solver)) as "H". unfold axiom.
           unfold "all _ , _", nest_ex. simpl. fold Nat.
           rewrite <- evar_quantify_evar_open with (x := y) (n := 0) (phi := b0 ∈ml 〚 Nat 〛 ---> (ex Nat , Succ ⋅ b1 =ml b0)).
-          2: {
-               subst y. eapply evar_is_fresh_in_richer'.
-               2: apply set_evar_fresh_is_fresh'.
-               clear. set_solver.
-             }
+          2: { fm_solve. }
           2: wf_auto2.
           mlApplyMeta forall_variable_substitution in "H".
           2-10: case_match;[wf_auto2|congruence].
@@ -566,7 +545,7 @@ Section nat.
       + mlExact "ys".
     }
   Defined.
-  
+
   Theorem add_zero_r: forall Γ , theory ⊆ Γ -> 
                        Γ ⊢ all Nat, b0 +ml Zero =ml b0.
   Proof.
@@ -588,30 +567,29 @@ Section nat.
     toMLGoal.
     wf_auto2.
     unfold theory in H.
-    
-    remember (svar_fresh []) as X.
+
+    mlFreshSvar as X.
     pose proof peano_induction X.
-  
+
     (*   Ψ ≡ ∃z:Nat.z ∧ ϕ(z)  *)
-  
+
     apply Svar_subst with (X:= X) (ψ:= ex Nat, b0 and Zero +ml b0 =ml b0 )  in H0.
     2:try_solve_pile.
     2:wf_auto2.
-    
+
     apply extend_theory with (Γ':= Γ) in H0.
     2: assumption.
-    
+
     mlAdd H0.
     clear H0.
 
     mlSimpl.
-    rewrite (@esorted_binder_morphism _ _ _ sorted_forall_binder _ _ _ (Fsvar_subst_swaps_ex_nesting _ _)). wf_auto2.
-    rewrite (@esorted_binder_morphism _ _ _ sorted_forall_binder _ _ _ (Fsvar_subst_swaps_ex_nesting _ _)). wf_auto2.
+    mlSortedSimpl.
     mlSimpl. cbn.
     case_match. 2: congruence.
     clear H0 e.
-  
-  
+
+
     mlAssert ( "H": ( (ex Nat, b0 and Zero +ml b0 =ml b0 ) ⊆ml 〚 Nat 〛 ) ).
     1:wf_auto2.
     1:{ 

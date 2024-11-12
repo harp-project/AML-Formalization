@@ -480,6 +480,3 @@ Tactic Notation "mlSimpl" :=
 Tactic Notation "mlSimpl" "in" hyp(H) :=
   repeat (rewrite mlSimpl' in H); try rewrite [increase_ex _ _]/= in H; try rewrite [increase_mu _ _]/= in H; try_wfauto2.
 
-Tactic Notation "mlSortedSimpl" := simpl_sorted_quantification; try rewrite [increase_mu]/=; try_wfauto2.
-Tactic Notation "mlSortedSimpl" "in" hyp(H) := simpl_sorted_quantification_hyp H; try rewrite [increase_mu]/=; try_wfauto2.
-
