@@ -1,8 +1,6 @@
-From Coq Require Import ssreflect ssrfun ssrbool.
+From Coq Require Export String.
 
-From Coq Require Import String.
-
-From stdpp Require Import
+From stdpp Require Export
   countable
   infinite
 .

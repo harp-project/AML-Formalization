@@ -1,7 +1,7 @@
 (* Extensions to the stdpp library *)
-From Coq Require Import ssreflect ssrfun ssrbool String.
+From Coq Require Export ssreflect ssrfun ssrbool String.
 From Coq.Logic Require Import Classical_Prop Classical_Pred_Type Eqdep_dec.
-From stdpp Require Import pmap gmap mapset fin_sets sets list propset coGset.
+From stdpp Require Export list propset sets pmap gmap mapset coGset.
 
 Lemma foldl_fold_left :
   forall {A B} f (l : list A) (b : B),

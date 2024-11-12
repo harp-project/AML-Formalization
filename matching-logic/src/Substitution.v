@@ -1,10 +1,4 @@
-From Coq Require Import ssreflect ssrfun ssrbool.
-
-From stdpp Require Import base tactics sets.
-
-Require Import MatchingLogic.Utils.extralibrary. (* compare_nat *)
-
-From MatchingLogic Require Import
+From MatchingLogic Require Export
     Pattern.
 
 Section subst.
@@ -242,10 +236,10 @@ Proof.
  induction phi; intros db1 db2 x'; cbn; split; intro H; try lia; auto.
  * case_match; auto.
  * case_match; auto.
- * rewrite -> (proj1 (IHphi1 db1 db2 x')), -> (proj1 (IHphi2 db1 db2 x')); destruct_and!; auto.
- * rewrite -> (proj2 (IHphi1 db1 db2 x')), -> (proj2 (IHphi2 db1 db2 x')); destruct_and!; auto.
- * rewrite -> (proj2 (IHphi1 db1 db2 x')), -> (proj1 (IHphi2 db1 db2 x')); destruct_and!; auto.
- * rewrite -> (proj1 (IHphi1 db1 db2 x')), -> (proj2 (IHphi2 db1 db2 x')); destruct_and!; auto.
+ * rewrite -> (proj1 (IHphi1 db1 db2 x')), -> (proj1 (IHphi2 db1 db2 x')); destruct_andb! H; auto.
+ * rewrite -> (proj2 (IHphi1 db1 db2 x')), -> (proj2 (IHphi2 db1 db2 x')); destruct_andb! H; auto.
+ * rewrite -> (proj2 (IHphi1 db1 db2 x')), -> (proj1 (IHphi2 db1 db2 x')); destruct_andb! H; auto.
+ * rewrite -> (proj1 (IHphi1 db1 db2 x')), -> (proj2 (IHphi2 db1 db2 x')); destruct_andb! H; auto.
  * rewrite -> (proj1 (IHphi db1 (S db2) x')); auto.
  * rewrite -> (proj2 (IHphi db1 (S db2) x')); auto.
  * rewrite -> (proj1 (IHphi (S db1) db2 x')); auto.
@@ -318,15 +312,9 @@ Lemma wfc_ex_aux_body_mu_imp2:
 Proof using .
  induction phi; firstorder.
  - simpl in H. simpl.
-   destruct_and!.
-   erewrite IHphi1. 2: eassumption.
-   erewrite IHphi2. 2: eassumption.
-   reflexivity.
+   naive_bsolver.
  - simpl in H. simpl.
-   destruct_and!.
-   erewrite IHphi1. 2: eassumption.
-   erewrite IHphi2. 2: eassumption.
-   reflexivity.
+   naive_bsolver.
 Qed.
 
 Lemma wfc_mu_aux_body_mu_imp2:
@@ -387,9 +375,8 @@ generalize dependent n. generalize dependent n'. generalize dependent psi.
 induction phi; intros psi n' H n'' H0; try lia; auto.
 - simpl in *. unfold well_formed_closed_mu_aux. repeat case_match; simpl; auto.
 - simpl. simpl in H.
-  rewrite IHphi1; auto with nocore. 2: rewrite IHphi2; auto. all: destruct_and!; auto.
-- simpl. simpl in H. destruct_and!.
-  rewrite IHphi1; auto with nocore. rewrite IHphi2; auto.
+  rewrite IHphi1; auto with nocore. 2: rewrite IHphi2; auto. all: naive_bsolver.
+- simpl. simpl in H. naive_bsolver.
 - simpl. simpl in H. rewrite IHphi. assumption. 2: reflexivity.
   eauto using well_formed_closed_ex_aux_ind.
 - simpl. simpl in H.
@@ -409,8 +396,8 @@ intros phi psi n n' H H0.
 generalize dependent n. generalize dependent n'. generalize dependent psi.
 induction phi; intros psi n' n'' H H0; try lia; auto.
 - simpl in *. unfold well_formed_closed_ex_aux. repeat case_match; simpl; auto.
-- simpl. simpl in H. destruct_and!. split_and; auto.
-- simpl. simpl in H. destruct_and!. split_and; auto.
+- simpl. simpl in H. naive_bsolver.
+- simpl. simpl in H. naive_bsolver.
 - simpl. simpl in H. rewrite IHphi. assumption.
   eapply well_formed_closed_ex_aux_ind. 2: eassumption. lia. reflexivity.
 - simpl. simpl in H.
@@ -428,10 +415,10 @@ intros phi psi n' H H0.
 generalize dependent n'. generalize dependent psi.
 induction phi; intros psi n' H H0; try lia; auto.
 - simpl in *. unfold well_formed_closed_mu_aux. repeat case_match; simpl; auto. lia.
-- simpl. simpl in H. destruct_and!.
+- simpl. simpl in H. destruct_andb! H.
   rewrite IHphi1. apply H1. assumption. rewrite IHphi2. apply H2. assumption.
   reflexivity.
-- simpl. simpl in H. destruct_and!.
+- simpl. simpl in H. destruct_andb! H.
   rewrite IHphi1. apply H1. assumption. rewrite IHphi2. apply H2. assumption.
   reflexivity.
 - simpl. simpl in H. rewrite IHphi. assumption.
@@ -583,24 +570,23 @@ with no_pos_occ_db_bevar_subst  phi psi dbi1 dbi2:
    no_positive_occurrence_db_b dbi1 (phi^[evar: dbi2 ↦ psi]) = true.
 Proof.
 - move: dbi1 dbi2.
-induction phi; intros dbi1 dbi2 Hwfcpsi Hnonegphi; cbn in *; auto with nocore.
-+ case_match; auto. now apply wfc_impl_no_neg_occ.
-+ destruct_and!.
-rewrite -> IHphi1, -> IHphi2; auto.
-+ destruct_and!.
-fold (no_positive_occurrence_db_b dbi1 (phi1^[evar: dbi2 ↦ psi]) ).
-rewrite no_pos_occ_db_bevar_subst; auto with nocore.
-rewrite -> IHphi2; auto.
+  induction phi; intros dbi1 dbi2 Hwfcpsi Hnonegphi; cbn in *; auto with nocore.
+  + case_match; auto. now apply wfc_impl_no_neg_occ.
+  + naive_bsolver.
+  + destruct_andb! Hnonegphi.
+    fold (no_positive_occurrence_db_b dbi1 (phi1^[evar: dbi2 ↦ psi]) ).
+    rewrite no_pos_occ_db_bevar_subst; auto with nocore.
+    rewrite -> IHphi2; auto.
 - move: dbi1 dbi2.
-induction phi; intros dbi1 dbi2 Hwfcpsi Hnonegphi; cbn in *; auto with nocore.
-+ repeat case_match; auto.
-apply wfc_impl_no_pos_occ. assumption.
-+ destruct_and!.
-rewrite -> IHphi1, -> IHphi2; auto.
-+ destruct_and!.
-fold (no_negative_occurrence_db_b dbi1 (phi1^[evar: dbi2 ↦ psi]) ).
-rewrite no_neg_occ_db_bevar_subst; auto with nocore.
-rewrite -> IHphi2; auto.
+  induction phi; intros dbi1 dbi2 Hwfcpsi Hnonegphi; cbn in *; auto with nocore.
+  + repeat case_match; auto.
+    apply wfc_impl_no_pos_occ. assumption.
+  + destruct_andb!.
+    rewrite -> IHphi1, -> IHphi2; auto.
+  + destruct_andb! Hnonegphi.
+    fold (no_negative_occurrence_db_b dbi1 (phi1^[evar: dbi2 ↦ psi]) ).
+    rewrite no_neg_occ_db_bevar_subst; auto with nocore.
+    rewrite -> IHphi2; auto.
 Qed.
 
 Lemma bevar_subst_positive_2 :
@@ -612,12 +598,12 @@ well_formed_positive (φ^[evar: n ↦ ψ])  = true.
 Proof.
 induction φ; intros ψ n' H0 H1 H2; cbn in *; auto with nocore.
 * break_match_goal; auto.
-* destruct_and!. rewrite -> IHφ1, -> IHφ2; auto.
-* destruct_and!. rewrite -> IHφ1, -> IHφ2; auto.
-* destruct_and!.
-rewrite IHφ; auto with nocore.
-rewrite andb_true_r.
-rewrite no_neg_occ_db_bevar_subst; auto.
+* naive_bsolver.
+* naive_bsolver.
+* destruct_andb! H1.
+  rewrite IHφ; auto with nocore.
+  rewrite andb_true_r.
+  rewrite no_neg_occ_db_bevar_subst; auto.
 Qed.
 
 Corollary wfp_evar_open : forall phi x n,
@@ -963,10 +949,10 @@ Proof.
 generalize dependent dbi1. generalize dependent dbi2.
 induction phi; intros dbi1 dbi2 Hwf1 Hwf2; simpl; auto.
 * break_match_goal; auto. erewrite well_formed_bsvar_subst; auto.
-unfold well_formed_closed in *. destruct_and!.
+unfold well_formed_closed in *. destruct_andb! Hwf1. destruct_andb! Hwf2.
 eapply well_formed_closed_mu_aux_ind. 2: eassumption. lia.
 * break_match_goal; auto. erewrite well_formed_bevar_subst; auto.
-unfold well_formed_closed in *. destruct_and!.
+unfold well_formed_closed in *. destruct_andb! Hwf1. destruct_andb! Hwf2.
 eapply well_formed_closed_ex_aux_ind. 2: eassumption. lia.
 * simpl. rewrite -> IHphi1, -> IHphi2; auto.
 * simpl. rewrite -> IHphi1, -> IHphi2; auto.
@@ -1008,13 +994,13 @@ unfold svar_open.
 induction phi; intros dbi X; split; simpl; try firstorder; cbn in *.
 * do 2 case_match; auto; congruence.
 * case_match; auto; congruence.
-* destruct_and!. apply orb_false_iff in H0 as [H01 H02].
+* destruct_andb! H. apply orb_false_iff in H0 as [H01 H02].
   erewrite -> (proj1 (IHphi1 _ _)), -> (proj1 (IHphi2 _ _)); auto.
-* destruct_and!. apply orb_false_iff in H0 as [H01 H02].
+* destruct_andb! H. apply orb_false_iff in H0 as [H01 H02].
   erewrite -> (proj2 (IHphi1 _ _)), -> (proj2 (IHphi2 _ _)); auto.
-* destruct_and!. apply orb_false_iff in H0 as [H01 H02].
+* destruct_andb! H. apply orb_false_iff in H0 as [H01 H02].
   erewrite -> (proj2 (IHphi1 _ _)), -> (proj1 (IHphi2 _ _)); auto.
-* destruct_and!. apply orb_false_iff in H0 as [H01 H02].
+* destruct_andb! H. apply orb_false_iff in H0 as [H01 H02].
   erewrite -> (proj1 (IHphi1 _ _)), -> (proj2 (IHphi2 _ _)); auto.
 Qed.
 
@@ -1084,16 +1070,16 @@ unfold svar_open.
 induction phi; intros dbi1 dbi2 X Hneq; split; intros H; simpl in *; auto; cbn in *.
 + do 2 case_match; auto; cbn; case_match; auto. lia.
 + case_match; constructor; auto.
-+ destruct_and!; split_and!.
++ destruct_andb! H. apply andb_true_iff. split.
   - now apply IHphi1.
   - now apply IHphi2.
-+ destruct_and!; split_and!.
++ destruct_andb! H. apply andb_true_iff. split.
   - now apply IHphi1.
   - now apply IHphi2.
-+ destruct_and!; split_and!.
++ destruct_andb! H. apply andb_true_iff. split.
   - now apply IHphi1.
   - now apply IHphi2.
-+ destruct_and!; split_and!.
++ destruct_andb! H. apply andb_true_iff. split.
   - now apply IHphi1.
   - now apply IHphi2.
 + now apply IHphi.
@@ -1115,7 +1101,7 @@ induction phi; simpl; intros dbi X H.
 + constructor.
 + inversion H. apply andb_true_iff in H1. destruct H1 as [H1 H2].
   rewrite IHphi1. assumption. rewrite IHphi2. assumption.
-  destruct_and!. symmetry. simpl. split_and!; auto.
+  naive_bsolver.
 + constructor.
 + apply andb_true_iff in H. destruct H as [H1 H2]. rewrite IHphi1. apply H1. rewrite IHphi2. apply H2.
   reflexivity.
@@ -1209,7 +1195,7 @@ Corollary svar_open_bsvar_subst_higher m phi1 phi2 dbi X
     = phi1^{svar: m ↦ X}^[svar: pred dbi ↦ phi2].
 Proof.
   intros H H0. apply bsvar_subst_comm_higher; auto.
-  unfold well_formed_closed in *. destruct_and!. auto.
+  unfold well_formed_closed in *. naive_bsolver.
 Qed.
 
 Corollary svar_open_bsvar_subst_lower m phi1 phi2 dbi X
@@ -1219,7 +1205,7 @@ Corollary svar_open_bsvar_subst_lower m phi1 phi2 dbi X
     = phi1^{svar: S m ↦ X}^[svar: dbi ↦ phi2].
 Proof.
   intros H H0. apply bsvar_subst_comm_lower; auto.
-  unfold well_formed_closed in *. destruct_and!. auto.
+  unfold well_formed_closed in *. naive_bsolver.
 Qed.
 
 Corollary evar_open_bevar_subst_higher m phi1 phi2 dbi X
@@ -1238,7 +1224,7 @@ Corollary evar_open_bevar_subst_lower m phi1 phi2 dbi X
     = phi1^{evar: S m ↦ X}^[evar: dbi ↦ phi2].
 Proof.
   intros H H0. apply bevar_subst_comm_lower; auto.
-  unfold well_formed_closed in *. destruct_and!. auto.
+  unfold well_formed_closed in *. naive_bsolver.
 Qed.
 
 
@@ -1715,7 +1701,7 @@ forall φ x n ψ y, x <> y -> well_formed ψ ->
 Proof.
 induction φ; intros x' n' ψ y H H0; simpl; auto.
 * destruct (decide (y = x)); simpl.
-  ** rewrite evar_open_wfc; auto. unfold well_formed,well_formed_closed in H0. destruct_and!.
+  ** rewrite evar_open_wfc; auto. unfold well_formed,well_formed_closed in H0. destruct_andb! H0.
      assumption.
   ** reflexivity.
 * cbn. break_match_goal; simpl; auto. destruct (decide (y = x')); auto.
@@ -1914,9 +1900,7 @@ Proof.
 induction φ; intros x' n' m H; cbn; auto.
 - destruct (decide (x' = x)); simpl; auto.
 - simpl in H. repeat case_match; auto.
-  destruct_and!. split_and!.
-  + apply IHφ1. assumption.
-  + apply IHφ2. assumption.
+  destruct_andb! H. rewrite IHφ1. assumption. by rewrite IHφ2.
 - simpl in H. apply andb_true_iff in H as [E1 E2]. now rewrite -> IHφ1, -> IHφ2.
 Qed.
 
@@ -1927,9 +1911,7 @@ Proof.
 induction φ; intros x' n' m H; cbn; auto.
 - destruct (decide (x' = x)); simpl; auto.
 - simpl in H. repeat case_match; auto.
-  destruct_and!. split_and!.
-  + apply IHφ1. assumption.
-  + apply IHφ2. assumption.
+  destruct_andb! H. rewrite IHφ1. assumption. by rewrite IHφ2.
 - simpl in H. apply andb_true_iff in H as [E1 E2]. now rewrite -> IHφ1, -> IHφ2.
 Qed.
 
@@ -1970,8 +1952,8 @@ forall φ x, well_formed φ ->
 Proof.
 intros φ x H.
 unfold well_formed, well_formed_closed in *.
-destruct_and!.
-split_and!; simpl.
+destruct_andb! H.
+repeat (apply andb_true_iff; split).
 - apply evar_quantify_positive. assumption.
 - apply evar_quantify_closed_mu. assumption.
 - apply evar_quantify_closed_ex. assumption.
@@ -2029,8 +2011,8 @@ split.
 - simpl. apply evar_quantify_positive. apply Hwfp.
 - unfold well_formed_closed.
   simpl.
-  destruct_and!.
-  split_and!.
+  destruct_andb! Hwfc.
+  apply andb_true_iff; split.
   + apply evar_quantify_closed_mu. assumption.
   + apply evar_quantify_closed_ex. assumption.
 Qed.
@@ -2323,11 +2305,11 @@ Proof.
   induction ϕ; intros level Hϕ Hψ; simpl in *; auto with nocore.
   - case_match; [|reflexivity].
     assumption.
-  - destruct_and!.
+  - destruct_andb! Hϕ.
     rewrite IHϕ1; auto with nocore.
     rewrite IHϕ2; auto with nocore.
     reflexivity.
-  - destruct_and!.
+  - destruct_andb! Hϕ.
     rewrite IHϕ1; auto with nocore.
     rewrite IHϕ2; auto with nocore.
     reflexivity.
@@ -2344,11 +2326,11 @@ Proof.
   induction ϕ; intros level Hϕ Hψ; simpl in *; auto.
   - case_match; [|reflexivity].
     assumption.
-  - destruct_and!.
+  - destruct_andb! Hϕ.
     rewrite IHϕ1; auto with nocore.
     rewrite IHϕ2; auto with nocore.
     reflexivity.
-  - destruct_and!.
+  - destruct_andb! Hϕ.
     rewrite IHϕ1; auto with nocore.
     rewrite IHϕ2; auto with nocore.
     reflexivity.
@@ -2365,11 +2347,11 @@ Proof.
   induction ϕ; intros level Hϕ Hψ; simpl in *; auto.
   - case_match; [|reflexivity].
     repeat case_match; auto.
-  - destruct_and!.
+  - destruct_andb! Hϕ.
     rewrite IHϕ1; auto with nocore.
     rewrite IHϕ2; auto with nocore.
     reflexivity.
-  - destruct_and!.
+  - destruct_andb! Hϕ.
     rewrite IHϕ1; auto with nocore.
     rewrite IHϕ2; auto with nocore.
     reflexivity.
@@ -2386,11 +2368,11 @@ move: level Hϕ Hψ.
 induction ϕ; intros level Hϕ Hψ; simpl in *; auto.
 - case_match; [|reflexivity].
   assumption.
-- destruct_and!.
+- destruct_andb! Hϕ.
   rewrite IHϕ1; auto with nocore.
   rewrite IHϕ2; auto with nocore.
   reflexivity.
-- destruct_and!.
+- destruct_andb! Hϕ.
   rewrite IHϕ1; auto with nocore.
   rewrite IHϕ2; auto with nocore.
   reflexivity.
@@ -2406,10 +2388,11 @@ Lemma wf_evar_open_from_wf_ex x ϕ:
 Proof.
   intros H.
   unfold well_formed, well_formed_closed in *.
-  destruct_and!. cbn in *. split_and!.
-  - apply wfp_evar_open. assumption.
-  - apply wfc_mu_aux_body_ex_imp1. assumption.
-  - apply wfc_mu_aux_body_ex_imp3. lia. assumption.
+  destruct_andb! H. cbn in *.
+  rewrite wfp_evar_open.
+  assumption.
+  rewrite wfc_ex_aux_body_ex_imp1. assumption.
+  by rewrite wfc_mu_aux_body_ex_imp1.
 Qed.
 
 Lemma evar_open_size' :
@@ -2533,8 +2516,8 @@ Proof.
   intros H. move: k H.
   induction ϕ; intros k H; simpl in *; auto with nocore.
   { repeat case_match; auto; try lia. simpl in H. case_match; lia. }
-  { destruct_and!. rewrite IHϕ1;[assumption|]. rewrite IHϕ2;[assumption|]. reflexivity. }
-  { destruct_and!. rewrite IHϕ1;[assumption|]. rewrite IHϕ2;[assumption|]. reflexivity. }
+  { destruct_andb!. rewrite IHϕ1;[assumption|]. rewrite IHϕ2;[assumption|]. reflexivity. }
+  { destruct_andb!. rewrite IHϕ1;[assumption|]. rewrite IHϕ2;[assumption|]. reflexivity. }
 Qed.
 
 Lemma wfc_ex_aux_evar_open_gt dbi x k ϕ:
@@ -2551,13 +2534,13 @@ Proof.
     simpl in H2. case_match; try lia. apply H2.
   }
   {
-    destruct_and!.
+    destruct_andb! H2.
     rewrite (IHϕ1 k dbi);[assumption|assumption|].
     rewrite (IHϕ2 k dbi);[assumption|assumption|].
     reflexivity.
   }
   {
-    destruct_and!.
+    destruct_andb! H2.
     rewrite (IHϕ1 k dbi);[assumption|assumption|].
     rewrite (IHϕ2 k dbi);[assumption|assumption|].
     reflexivity.
@@ -2584,13 +2567,13 @@ Proof.
     simpl in H2. case_match; lia.
   }
   {
-    destruct_and!.
+    destruct_andb!.
     rewrite (IHϕ1 k dbi);[assumption|assumption|].
     rewrite (IHϕ2 k dbi);[assumption|assumption|].
     reflexivity.
   }
   {
-    destruct_and!.
+    destruct_andb!.
     rewrite (IHϕ1 k dbi);[assumption|assumption|].
     rewrite (IHϕ2 k dbi);[assumption|assumption|].
     reflexivity.
@@ -2683,13 +2666,13 @@ Proof.
   move: n1 n2 H.
   induction ϕ; intros n1 n2 H; simpl in *; auto.
   + unfold no_negative_occurrence_db_b in *. simpl in *. fold no_negative_occurrence_db_b in *.
-    destruct_and!.
+    destruct_andb!.
     erewrite -> IHϕ1 by eassumption.
     erewrite -> IHϕ2 by eassumption.
     reflexivity.
   + unfold no_negative_occurrence_db_b in *. simpl in *.
     fold no_negative_occurrence_db_b no_positive_occurrence_db_b in *.
-    destruct_and!.
+    destruct_andb!.
     erewrite -> no_pos_occ_quan_impl_no_pos_occ by eassumption.
     erewrite -> IHϕ2 by eassumption.
     reflexivity.
@@ -2703,13 +2686,13 @@ Proof.
   move: n1 n2 H.
   induction ϕ; intros n1 n2 H; simpl in *; auto.
   + unfold no_positive_occurrence_db_b in *. simpl in *. fold no_positive_occurrence_db_b in *.
-    destruct_and!.
+    destruct_andb!.
     erewrite -> IHϕ1 by eassumption.
     erewrite -> IHϕ2 by eassumption.
     reflexivity.
   + unfold no_positive_occurrence_db_b in *. simpl in *.
     fold no_positive_occurrence_db_b no_negative_occurrence_db_b in *.
-    destruct_and!.
+    destruct_andb!.
     erewrite -> no_neg_occ_quan_impl_no_neg_occ by eassumption.
     erewrite -> IHϕ2 by eassumption.
     reflexivity.
@@ -2728,18 +2711,18 @@ Proof.
  intros H.
  move: n H.
  induction ϕ; intros n' H; simpl in *; auto.
- - destruct_and!.
+ - destruct_andb!.
    erewrite -> IHϕ1 by eassumption.
    erewrite -> IHϕ2 by eassumption.
    reflexivity.
- - destruct_and!.
+ - destruct_andb!.
    erewrite -> IHϕ1 by eassumption.
    erewrite -> IHϕ2 by eassumption.
    reflexivity.
  - erewrite IHϕ by eassumption.
    reflexivity.
  - simpl.
-   destruct_and!.
+   destruct_andb!.
    erewrite -> IHϕ by eassumption.
    erewrite -> no_neg_occ_quan_impl_no_neg_occ by eassumption.
    reflexivity.
@@ -2767,11 +2750,11 @@ Lemma wfcmu_evar_quan_impl_wfcmu x n dbi ϕ:
     intros H.
     move: n dbi H.
     induction ϕ; intros n' dbi H; simpl in *; auto.
-    - destruct_and!.
+    - destruct_andb!.
       erewrite -> IHϕ1 by eassumption.
       erewrite -> IHϕ2 by eassumption.
       reflexivity.
-    - destruct_and!.
+    - destruct_andb!.
       erewrite -> IHϕ1 by eassumption.
       erewrite -> IHϕ2 by eassumption.
       reflexivity.
@@ -2808,11 +2791,11 @@ Proof.
  intros H.
  move: n dbi H.
  induction ϕ; intros n' dbi H; simpl in *; auto.
- - destruct_and!.
+ - destruct_andb!.
    erewrite -> IHϕ1 by eassumption.
    erewrite -> IHϕ2 by eassumption.
    reflexivity.
- - destruct_and!.
+ - destruct_andb!.
    erewrite -> IHϕ1 by eassumption.
    erewrite -> IHϕ2 by eassumption.
    reflexivity.
@@ -2866,15 +2849,15 @@ Proof.
 intros wfcψ wfpψ wfpϕ.
 induction ϕ; simpl; auto.
 - case_match; auto.
-- simpl in wfpϕ. destruct_and!.
+- simpl in wfpϕ. destruct_andb!.
   rewrite -> IHϕ1 by assumption.
   rewrite -> IHϕ2 by assumption.
   reflexivity.
-- simpl in wfpϕ. destruct_and!.
+- simpl in wfpϕ. destruct_andb!.
   rewrite -> IHϕ1 by assumption.
   rewrite -> IHϕ2 by assumption.
   reflexivity.
-- simpl in wfpϕ. destruct_and!.
+- simpl in wfpϕ. destruct_andb!.
   specialize (IHϕ H0).
   rewrite -> IHϕ.
   rewrite nno_free_svar_subst.
@@ -2903,35 +2886,39 @@ Lemma Private_no_negative_occurrence_svar_quantify ϕ level X:
     - apply orb_false_iff in Hnolevel. destruct_and!.
       pose proof (IH1 := IHϕ1 level).
       destruct IH1 as [IH11 _].
+      destruct_andb! HnoX.
       specialize (IH11 ltac:(assumption) ltac:(assumption)).
       pose proof (IH2 := IHϕ2 level).
       destruct IH2 as [IH21 _].
       specialize (IH21 ltac:(assumption) ltac:(assumption)).
-      split_and!; assumption.
+      naive_bsolver.
     - apply orb_false_iff in Hnolevel. destruct_and!.
       pose proof (IH1 := IHϕ1 level).
       destruct IH1 as [_ IH12].
+      destruct_andb! HnoX.
       specialize (IH12 ltac:(assumption) ltac:(assumption)).
       pose proof (IH2 := IHϕ2 level).
       destruct IH2 as [_ IH22].
       specialize (IH22 ltac:(assumption) ltac:(assumption)).
-      split_and!; assumption.
+      naive_bsolver.
     - apply orb_false_iff in Hnolevel. destruct_and!.
       pose proof (IH1 := IHϕ1 level).
       destruct IH1 as [_ IH12].
+      destruct_andb! HnoX.
       specialize (IH12 ltac:(assumption) ltac:(assumption)).
       pose proof (IH2 := IHϕ2 level).
       destruct IH2 as [IH21 _].
       specialize (IH21 ltac:(assumption) ltac:(assumption)).
-      split_and!; assumption.
+      naive_bsolver.
     - apply orb_false_iff in Hnolevel. destruct_and!.
       pose proof (IH1 := IHϕ1 level).
       destruct IH1 as [IH11 _].
+      destruct_andb! HnoX.
       specialize (IH11 ltac:(assumption) ltac:(assumption)).
       pose proof (IH2 := IHϕ2 level).
       destruct IH2 as [_ IH22].
       specialize (IH22 ltac:(assumption) ltac:(assumption)).
-      split_and!; assumption.
+      naive_bsolver.
     - firstorder.
     - firstorder.
     - firstorder.
@@ -2995,23 +2982,23 @@ Lemma Private_no_negative_occurrence_svar_quantify ϕ level X:
     induction ϕ; intros dbi; simpl; auto.
     - case_match; reflexivity.
     - simpl in Hϕ.
-      destruct_and!.
+      destruct_andb! Hϕ.
       specialize (IHϕ1 ltac:(assumption)).
       specialize (IHϕ2 ltac:(assumption)).
       rewrite IHϕ1. rewrite IHϕ2.
       reflexivity.
     - simpl in Hϕ.
-      destruct_and!.
+      destruct_andb! Hϕ.
       specialize (IHϕ1 ltac:(assumption)).
       specialize (IHϕ2 ltac:(assumption)).
       rewrite IHϕ1. rewrite IHϕ2.
       reflexivity.
     - simpl in Hϕ.
-      destruct_and!.
+      destruct_andb! Hϕ.
       specialize (IHϕ ltac:(assumption)).
       rewrite IHϕ.
       rewrite no_negative_occurrence_svar_quantify_2. lia.
-      split_and!; auto.
+      naive_bsolver.
   Qed.
 
   Lemma free_evar_subst_bevar_subst φ ψ η x n :
@@ -3114,7 +3101,7 @@ Lemma Private_no_negative_occurrence_svar_quantify ϕ level X:
         all: clear -H; apply andb_true_iff in H; apply H.
       * cbn. fold evar_has_positive_occurrence.
         cbn in H. fold no_positive_occurrence_db_b in H.
-        destruct_and! H.
+        destruct_andb! H.
         rewrite negb_orb. unfold is_true in *.
         rewrite IHϕ2; auto. clear -H0. set_solver.
         rewrite no_pos_svar_subst; auto. clear -H0. set_solver.
@@ -3127,13 +3114,13 @@ Lemma Private_no_negative_occurrence_svar_quantify ϕ level X:
       * case_match; auto. case_match; auto.
       * cbn in H.
         rewrite negb_orb. fold evar_has_positive_occurrence.
-        unfold is_true in *. destruct_and! H.
+        unfold is_true in *. destruct_andb! H.
         rewrite IHϕ1; auto.
         2: rewrite IHϕ2; auto.
         all: clear -H0; set_solver.
       * cbn. fold evar_has_negative_occurrence.
         cbn in H. fold no_negative_occurrence_db_b in H.
-        destruct_and! H.
+        destruct_andb! H.
         rewrite negb_orb. unfold is_true in *.
         rewrite IHϕ2; auto. clear -H0. set_solver.
         rewrite no_neg_svar_subst; auto. clear -H0. set_solver.
@@ -3202,8 +3189,8 @@ Lemma Private_no_negative_occurrence_svar_quantify ϕ level X:
   Proof.
     induction φ; intros; simpl; auto.
     * case_match; auto.
-    * rewrite IHφ1. 3: rewrite IHφ2. all: simpl in H; destruct_and! H; auto.
-    * rewrite IHφ1. 3: rewrite IHφ2. all: simpl in H; destruct_and! H; auto.
+    * rewrite IHφ1. 3: rewrite IHφ2. all: simpl in H; destruct_andb! H; auto.
+    * rewrite IHφ1. 3: rewrite IHφ2. all: simpl in H; destruct_andb! H; auto.
   Qed.
 
 End subst.

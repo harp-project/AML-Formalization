@@ -1,8 +1,8 @@
 -R src MatchingLogic
 
 src/Utils/extralibrary.v
-src/Utils/Lattice.v
 src/Utils/stdpp_ext.v
+src/Utils/Lattice.v
 src/Utils/Surj.v
 
 src/Signature.v
