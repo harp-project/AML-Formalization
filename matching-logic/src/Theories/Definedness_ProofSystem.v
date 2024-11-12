@@ -4794,6 +4794,43 @@ Proof.
 Defined.
 
 
+Tactic Notation "mlRewriteBy" "->" constr(name) "at" constr(atn) := mlRewriteBy name at atn.
+
+Tactic Notation "mlRewriteBy" "<-" constr(name) "at" constr(atn) :=
+  mlSymmetry in name;
+  mlRewriteBy name at atn;
+  mlSymmetry in name.
+
+(* TODO: Replace with something safer *)
+Tactic Notation "mlRewriteBy" constr(name) "at" constr(atn) "in" constr(hypo) :=
+  mlRevert hypo;
+  mlRewriteBy name at atn;
+  mlIntro hypo.
+
+Tactic Notation "mlRewriteBy" "->" constr(name) "at" constr(atn) "in" constr(hypo) := mlRewriteBy name at atn in hypo.
+
+Tactic Notation "mlRewriteBy" "<-" constr(name) "at" constr(atn) "in" constr(hypo) :=
+  mlSymmetry in name;
+  mlRewriteBy name at atn in hypo;
+  mlSymmetry in name.
+
+Local Example mlRewriteBy_test {Σ : Signature} {syntax : Syntax} Γ ϕ ψ :
+  theory ⊆ Γ -> well_formed ϕ -> well_formed ψ ->
+  Γ ⊢i
+    ! (ψ ---> ϕ) --->
+    ! (ϕ =ml ψ)
+    using AnyReasoning.
+Proof.
+  intros.
+  toMLGoal;[wf_auto2|].
+  mlIntro "P1"; mlIntro "P2".
+  mlRewriteBy <- "P2" at 1 in "P1".
+  mlAssert ("idPh" : (ϕ ---> ϕ)); wf_auto2.
+  mlIntro; mlAssumption.
+  mlApply "idPh" in "P1".
+  mlAssumption.
+Defined.
+
 (* TODO: eliminate mu_free *)
 Lemma patt_equal_trans {Σ : Signature} {syntax : Syntax} Γ φ1 φ2 φ3:
   theory ⊆ Γ ->
