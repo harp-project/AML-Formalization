@@ -374,7 +374,7 @@ Section Bool.
            Potentially we could base this on typeclasses too. *)
         eval_simpl; auto.
         1: apply indec_bool.
-        intros. mlSimpl. cbn. exists (coreBoolSym sTrue). case_match.
+        intros. mlSimpl. exists (coreBoolSym sTrue). case_match.
         + remember (fresh_evar (mlTrue =ml b0)) as x. clear Heqx.
           unfold patt_equal, patt_total, patt_defined, mlTrue.
           repeat eval_simpl. cbn. unfold bool_sym_interp.
@@ -390,7 +390,7 @@ Section Bool.
       (* false is functional *)
       - eval_simpl; auto.
         1: apply indec_bool.
-        intros. mlSimpl. cbn. exists (coreBoolSym sFalse). case_match.
+        intros. mlSimpl. exists (coreBoolSym sFalse). case_match.
         + remember (fresh_evar (mlFalse =ml b0)) as x. clear Heqx.
           unfold patt_equal, patt_total, patt_defined, mlFalse.
           repeat eval_simpl. cbn. unfold bool_sym_interp.
@@ -407,14 +407,9 @@ Section Bool.
       - eval_simpl; auto.
         1: apply indec_bool.
         apply propset_fa_intersection_full. intros. case_match. 2: by reflexivity.
-        pose proof sorted_forall_binder as BF. destruct BF as [BF].
-        pose proof sorted_exists_binder as BE. destruct BE as [BE].
-        erewrite (BF _ (evar_open _)); eauto.
-        erewrite (BE _ (evar_open _)); eauto.
-        mlSimpl. cbn.
+        mlSimpl.
         eval_simpl; auto. 1: apply indec_bool.
         eapply propset_fa_intersection_full. intros. case_match. 2: by reflexivity.
-        erewrite (BE _ (evar_open _)); eauto.
         mlSimpl. cbn.
         eval_simpl; auto. 1: apply indec_bool.
         remember (fresh_evar _) as X.
@@ -452,7 +447,7 @@ Section Bool.
         (* false and false                          except this      v   *)
         + eapply propset_fa_union_full. intros. exists (coreBoolSym sFalse).
           case_match.
-          ** clear H e. mlSimpl. cbn.
+          ** clear H e. mlSimpl.
              unfold mlBAnd, mlsBAnd.
              revert t.
              apply propset_top_elem_of.
@@ -557,9 +552,7 @@ Section Bool.
       - eval_simpl; auto.
         1: apply indec_bool.
         apply propset_fa_intersection_full. intros. case_match. 2: by reflexivity.
-        pose proof sorted_exists_binder as BE. destruct BE as [BE].
-        erewrite (BE _ (evar_open _)); eauto.
-        mlSimpl. cbn.
+        mlSimpl.
         eval_simpl; auto. 1: apply indec_bool.
         remember (fresh_evar _) as X.
         remember (fresh_evar (mlBNeg (patt_free_evar X) =ml b0)) as Y.
@@ -653,25 +646,12 @@ Section Bool.
       - unfold mlBNeg, mlsBNeg, mlTrue, mlFalse.
         apply equal_iff_interpr_same. assumption.
         eval_simpl. simpl. unfold bool_sym_interp.
-        unfold app_ext.
-        (* TODO: app_ext for singletons *)
-        eapply set_eq. split.
-        + intros. destruct H as [le [re [EQ1 [EQ2 EQ3] ] ] ].
-          apply elem_of_singleton in EQ1, EQ2. subst.
-          unfold bool_app_interp in EQ3. set_solver.
-        + intros. do 2 eexists. split_and!. 1-2: by apply elem_of_singleton.
-          set_solver.
+        setoid_rewrite app_ext_singleton. reflexivity.
       - unfold mlBNeg, mlsBNeg, mlTrue, mlFalse.
         apply equal_iff_interpr_same. assumption.
         eval_simpl. simpl. unfold bool_sym_interp.
         unfold app_ext.
-        (* TODO: app_ext for singletons *)
-        eapply set_eq. split.
-        + intros. destruct H as [le [re [EQ1 [EQ2 EQ3] ] ] ].
-          apply elem_of_singleton in EQ1, EQ2. subst.
-          unfold bool_app_interp in EQ3. set_solver.
-        + intros. do 2 eexists. split_and!. 1-2: by apply elem_of_singleton.
-          set_solver.
+        setoid_rewrite app_ext_singleton. reflexivity.
       - unfold mlBAnd, mlsBAnd, mlTrue, mlFalse, mlBool.
         eval_simpl. 1: apply indec_bool.
         apply propset_fa_intersection_full. 2: assumption. intros.
@@ -684,35 +664,12 @@ Section Bool.
         unfold Sorts_Semantics.sym in EQ1. simp eval in EQ1.
         simpl in *. unfold bool_sym_interp in *. apply elem_of_singleton in EQ1, EQ2.
         subst. unfold bool_app_interp in *. simpl in *.
-        unfold app_ext.
         (* TODO: app_ext for singletons *)
-        eapply set_eq. split.
-        + intros. destruct H as [le1 [re1 [EQ1 [EQ2 EQ4] ] ] ].
-          apply elem_of_singleton in EQ2. subst.
-          apply elem_of_PropSet in EQ1.
-          destruct EQ1 as [le2 [re2 [EQ5 [EQ6 EQ7] ] ] ].
-          simp eval in EQ6. rewrite update_evar_val_same in EQ6.
-          apply elem_of_singleton in EQ5, EQ6. subst.
-          assert (c = coreBoolSym sFalse \/ c = coreBoolSym sTrue) as [|] by set_solver; subst.
-          ** eval_simpl. rewrite update_evar_val_same.
-             simpl in *. apply elem_of_singleton in EQ7. subst.
-             unfold bool_app_interp in EQ4. apply elem_of_singleton in EQ4.
-             set_solver.
-          ** eval_simpl. rewrite update_evar_val_same.
-             simpl in *. apply elem_of_singleton in EQ7. subst.
-             unfold bool_app_interp in EQ4. apply elem_of_singleton in EQ4.
-             set_solver.
-        + intros. eval_simpl_in H.
-          rewrite update_evar_val_same in H. apply elem_of_singleton in H. subst.
-          assert (c = coreBoolSym sFalse \/ c = coreBoolSym sTrue) as [|] by set_solver; subst.
-          ** do 2 eexists. split_and!. 2: by apply elem_of_singleton.
-             do 2 eexists. split_and!. 1: by apply elem_of_singleton.
-             eval_simpl. rewrite update_evar_val_same. by apply elem_of_singleton.
-             by apply elem_of_singleton. cbn. set_solver.
-          ** do 2 eexists. split_and!. 2: by apply elem_of_singleton.
-             do 2 eexists. split_and!. 1: by apply elem_of_singleton.
-             eval_simpl. rewrite update_evar_val_same. by apply elem_of_singleton.
-             by apply elem_of_singleton. cbn. set_solver.
+        assert (c = coreBoolSym sFalse \/ c = coreBoolSym sTrue) as [|] by set_solver; subst.
+        + simp eval. setoid_rewrite app_ext_singleton.
+          setoid_rewrite app_ext_singleton. reflexivity.
+        + simp eval. setoid_rewrite app_ext_singleton.
+          setoid_rewrite app_ext_singleton. reflexivity.
       - unfold mlBAnd, mlsBAnd, mlTrue, mlFalse, mlBool.
         eval_simpl. 1: apply indec_bool.
         apply propset_fa_intersection_full. 2: assumption. intros.
@@ -725,32 +682,11 @@ Section Bool.
         unfold Sorts_Semantics.sym in EQ1. simp eval in EQ1.
         simpl in *. unfold bool_sym_interp in *. apply elem_of_singleton in EQ1, EQ2.
         subst. unfold bool_app_interp in *. simpl in *.
-        unfold app_ext.
-        (* TODO: app_ext for singletons *)
-        eapply set_eq. split.
-        + intros. destruct H as [le1 [re1 [EQ1 [EQ2 EQ4] ] ] ].
-          apply elem_of_singleton in EQ2. subst.
-          apply elem_of_PropSet in EQ1.
-          destruct EQ1 as [le2 [re2 [EQ5 [EQ6 EQ7] ] ] ].
-          simp eval in EQ6. rewrite update_evar_val_same in EQ6.
-          apply elem_of_singleton in EQ5, EQ6. subst.
-          assert (c = coreBoolSym sFalse \/ c = coreBoolSym sTrue) as [|] by set_solver; subst.
-          ** simpl in *. apply elem_of_singleton in EQ7. subst.
-             unfold bool_app_interp in EQ4. apply elem_of_singleton in EQ4.
-             set_solver.
-          ** simpl in *. apply elem_of_singleton in EQ7. subst.
-             unfold bool_app_interp in EQ4. apply elem_of_singleton in EQ4.
-             set_solver.
-        + intros. eval_simpl_in H. apply elem_of_singleton in H. subst.
-          assert (c = coreBoolSym sFalse \/ c = coreBoolSym sTrue) as [|] by set_solver; subst.
-          ** do 2 eexists. split_and!. 2: by apply elem_of_singleton.
-             do 2 eexists. split_and!. 1: by apply elem_of_singleton.
-             eval_simpl. rewrite update_evar_val_same. by apply elem_of_singleton.
-             by apply elem_of_singleton. cbn. set_solver.
-          ** do 2 eexists. split_and!. 2: by apply elem_of_singleton.
-             do 2 eexists. split_and!. 1: by apply elem_of_singleton.
-             eval_simpl. rewrite update_evar_val_same. by apply elem_of_singleton.
-             by apply elem_of_singleton. cbn. set_solver.
+        assert (c = coreBoolSym sFalse \/ c = coreBoolSym sTrue) as [|] by set_solver; subst.
+        + simp eval. setoid_rewrite app_ext_singleton.
+          setoid_rewrite app_ext_singleton. reflexivity.
+        + simp eval. setoid_rewrite app_ext_singleton.
+          setoid_rewrite app_ext_singleton. reflexivity.
       - unfold mlBAnd, mlsBAnd, mlTrue, mlFalse, mlBool.
         eval_simpl. 1: apply indec_bool.
         apply propset_fa_intersection_full. 2: assumption. intros.
@@ -763,36 +699,11 @@ Section Bool.
         unfold Sorts_Semantics.sym in EQ1. simp eval in EQ1.
         simpl in *. unfold bool_sym_interp in *. apply elem_of_singleton in EQ1, EQ2.
         subst. unfold bool_app_interp in *. simpl in *.
-        unfold app_ext.
-        (* TODO: app_ext for singletons *)
-        eapply set_eq. split.
-        + intros. destruct H as [le1 [re1 [EQ1 [EQ2 EQ4] ] ] ].
-          apply elem_of_PropSet in EQ1.
-          destruct EQ1 as [le2 [re2 [EQ5 [EQ6 EQ7] ] ] ].
-          simp eval in *. rewrite update_evar_val_same in EQ2.
-          apply elem_of_singleton in EQ5, EQ6, EQ2. subst.
-          assert (c = coreBoolSym sFalse \/ c = coreBoolSym sTrue) as [|] by set_solver; subst.
-          ** eval_simpl. rewrite update_evar_val_same.
-             simpl in *. apply elem_of_singleton in EQ7. subst.
-             unfold bool_app_interp in EQ4. apply elem_of_singleton in EQ4.
-             set_solver.
-          ** eval_simpl. rewrite update_evar_val_same.
-             simpl in *. apply elem_of_singleton in EQ7. subst.
-             unfold bool_app_interp in EQ4. apply elem_of_singleton in EQ4.
-             set_solver.
-        + intros. eval_simpl_in H.
-          rewrite update_evar_val_same in H. apply elem_of_singleton in H. subst.
-          assert (c = coreBoolSym sFalse \/ c = coreBoolSym sTrue) as [|] by set_solver; subst.
-          ** do 2 eexists. split_and!.
-             2: simp eval; rewrite update_evar_val_same. 2: by apply elem_of_singleton.
-             do 2 eexists. split_and!. 1: by apply elem_of_singleton.
-             eval_simpl. by apply elem_of_singleton.
-             by apply elem_of_singleton. cbn. set_solver.
-          ** do 2 eexists. split_and!.
-             2: simp eval; rewrite update_evar_val_same. 2: by apply elem_of_singleton.
-             do 2 eexists. split_and!. 1: by apply elem_of_singleton.
-             eval_simpl. by apply elem_of_singleton.
-             by apply elem_of_singleton. cbn. set_solver.
+        assert (c = coreBoolSym sFalse \/ c = coreBoolSym sTrue) as [|] by set_solver; subst.
+        + simp eval. setoid_rewrite app_ext_singleton.
+          setoid_rewrite app_ext_singleton. reflexivity.
+        + simp eval. setoid_rewrite app_ext_singleton.
+          setoid_rewrite app_ext_singleton. reflexivity.
       - unfold mlBAnd, mlsBAnd, mlTrue, mlFalse, mlBool.
         eval_simpl. 1: apply indec_bool.
         apply propset_fa_intersection_full. 2: assumption. intros.
@@ -805,33 +716,11 @@ Section Bool.
         unfold Sorts_Semantics.sym in EQ1. simp eval in EQ1.
         simpl in *. unfold bool_sym_interp in *. apply elem_of_singleton in EQ1, EQ2.
         subst. unfold bool_app_interp in *. simpl in *.
-        unfold app_ext.
-        (* TODO: app_ext for singletons *)
-        eapply set_eq. split.
-        + intros. destruct H as [le1 [re1 [EQ1 [EQ2 EQ4] ] ] ].
-          apply elem_of_PropSet in EQ1.
-          destruct EQ1 as [le2 [re2 [EQ5 [EQ6 EQ7] ] ] ].
-          simp eval in *. rewrite update_evar_val_same in EQ2.
-          apply elem_of_singleton in EQ5, EQ6, EQ2. subst.
-          assert (c = coreBoolSym sFalse \/ c = coreBoolSym sTrue) as [|] by set_solver; subst.
-          ** simpl in *. apply elem_of_singleton in EQ7. subst.
-             unfold bool_app_interp in EQ4. apply elem_of_singleton in EQ4.
-             set_solver.
-          ** simpl in *. apply elem_of_singleton in EQ7. subst.
-             unfold bool_app_interp in EQ4. apply elem_of_singleton in EQ4.
-             set_solver.
-        + intros. apply elem_of_singleton in H. subst.
-          assert (c = coreBoolSym sFalse \/ c = coreBoolSym sTrue) as [|] by set_solver; subst.
-          ** do 2 eexists. split_and!.
-             2: simp eval; rewrite update_evar_val_same. 2: by apply elem_of_singleton.
-             do 2 eexists. split_and!. 1: by apply elem_of_singleton.
-             eval_simpl. by apply elem_of_singleton.
-             by apply elem_of_singleton. cbn. set_solver.
-          ** do 2 eexists. split_and!.
-             2: simp eval; rewrite update_evar_val_same. 2: by apply elem_of_singleton.
-             do 2 eexists. split_and!. 1: by apply elem_of_singleton.
-             eval_simpl. by apply elem_of_singleton.
-             by apply elem_of_singleton. cbn. set_solver.
+        assert (c = coreBoolSym sFalse \/ c = coreBoolSym sTrue) as [|] by set_solver; subst.
+        + simp eval. setoid_rewrite app_ext_singleton.
+          setoid_rewrite app_ext_singleton. reflexivity.
+        + simp eval. setoid_rewrite app_ext_singleton.
+          setoid_rewrite app_ext_singleton. reflexivity.
       - unfold mlBAndThen, mlsBAndThen, mlTrue, mlFalse, mlBool.
         eval_simpl. 1: apply indec_bool.
         apply propset_fa_intersection_full. 2: assumption. intros.
@@ -844,67 +733,21 @@ Section Bool.
         unfold Sorts_Semantics.sym in EQ1. simp eval in EQ1.
         simpl in *. unfold bool_sym_interp in *. apply elem_of_singleton in EQ1, EQ2.
         subst. unfold bool_app_interp in *. simpl in *.
-        unfold app_ext.
-        (* TODO: app_ext for singletons *)
-        eapply set_eq. split.
-        + intros. destruct H as [le1 [re1 [EQ1 [EQ2 EQ4] ] ] ].
-          apply elem_of_singleton in EQ2. subst.
-          apply elem_of_PropSet in EQ1.
-          destruct EQ1 as [le2 [re2 [EQ5 [EQ6 EQ7] ] ] ].
-          simp eval in *. rewrite update_evar_val_same in EQ6.
-          simpl in EQ5. unfold bool_sym_interp in EQ5.
-          apply elem_of_singleton in EQ5, EQ6. subst.
-          assert (c = coreBoolSym sFalse \/ c = coreBoolSym sTrue) as [|] by set_solver; subst.
-          ** eval_simpl. rewrite update_evar_val_same.
-             simpl in *.
-             set_solver.
-          ** eval_simpl. rewrite update_evar_val_same.
-             simpl in *.
-             set_solver.
-        + intros. eval_simpl_in H.
-          rewrite update_evar_val_same in H. apply elem_of_singleton in H. subst.
-          assert (c = coreBoolSym sFalse \/ c = coreBoolSym sTrue) as [|] by set_solver; subst.
-          ** do 2 eexists. split_and!. 2: by apply elem_of_singleton.
-             do 2 eexists. split_and!.
-             1: simp eval; by apply elem_of_singleton.
-             eval_simpl. rewrite update_evar_val_same. by apply elem_of_singleton.
-             simpl. by apply elem_of_singleton. cbn. set_solver.
-          ** do 2 eexists. split_and!. 2: by apply elem_of_singleton.
-             do 2 eexists. split_and!. 1: simp eval; by apply elem_of_singleton.
-             eval_simpl. rewrite update_evar_val_same. by apply elem_of_singleton.
-             by apply elem_of_singleton. cbn. set_solver.
+        assert (c = coreBoolSym sFalse \/ c = coreBoolSym sTrue) as [|] by set_solver; subst.
+        + simp eval. setoid_rewrite app_ext_singleton.
+          setoid_rewrite app_ext_singleton. reflexivity.
+        + simp eval. setoid_rewrite app_ext_singleton.
+          setoid_rewrite app_ext_singleton. reflexivity.
       - unfold mlBAndThen, mlsBAndThen, mlTrue, mlFalse, mlBool. simpl.
         eval_simpl. simpl.
         eapply propset_fa_intersection_full. intros.
         mlSimpl. cbn. remember (fresh_evar _) as X. clear HeqX.
         apply (@equal_iff_interpr_same _ _ BoolModel HDef).
         eval_simpl. simpl. unfold bool_sym_interp.
-        unfold app_ext. case_match. 2: congruence.
-        simpl in *.
-        (* TODO: app_ext for singletons *)
-        eapply set_eq. intros. rewrite elem_of_PropSet. split.
-        + intros. destruct H0 as [le1 [re1 [EQ1 [EQ2 EQ4] ] ] ].
-          apply elem_of_singleton in EQ2. subst.
-          apply elem_of_PropSet in EQ1.
-          destruct EQ1 as [le2 [re2 [EQ5 [EQ6 EQ7] ] ] ].
-          apply elem_of_singleton in EQ5, EQ6. subst.
-          unfold bool_app_interp in *. destruct c. destruct s.
-          ** set_solver.
-          ** set_solver.
-          ** apply elem_of_singleton in EQ7. subst. assumption.
-          ** set_solver.
-          ** set_solver.
-          ** set_solver.
-          ** set_solver.
-          ** set_solver.
-          ** set_solver.
-          ** set_solver.
-        + intros. apply elem_of_singleton in H0. subst.
-          destruct c; try destruct s; do 2 eexists; split_and!. all: try by apply elem_of_singleton.
-          all: try apply elem_of_PropSet; try do 2 eexists; try split_and!.
-          all: try by apply elem_of_singleton.
-          all:unfold bool_app_interp. 3-6: set_solver.
-          all: set_solver.
+        case_match. 2: congruence.
+        setoid_rewrite app_ext_singleton.
+        cbn. destruct c. destruct s.
+        all: by setoid_rewrite app_ext_singleton.
       - unfold mlBAndThen, mlsBAndThen, mlTrue, mlFalse, mlBool.
         eval_simpl. 1: apply indec_bool.
         apply propset_fa_intersection_full. 2: assumption. intros.
@@ -917,65 +760,21 @@ Section Bool.
         unfold Sorts_Semantics.sym in EQ1. simp eval in EQ1.
         simpl in *. unfold bool_sym_interp in *. apply elem_of_singleton in EQ1, EQ2.
         subst. unfold bool_app_interp in *. simpl in *.
-        unfold app_ext.
-        (* TODO: app_ext for singletons *)
-        eapply set_eq. split.
-        + intros. destruct H as [le1 [re1 [EQ1 [EQ2 EQ4] ] ] ].
-          apply elem_of_PropSet in EQ1. simp eval in *.
-          destruct EQ1 as [le2 [re2 [EQ5 [EQ6 EQ7] ] ] ].
-          simp eval in *. rewrite update_evar_val_same in EQ2. simpl in *.
-          apply elem_of_singleton in EQ5, EQ6, EQ2. subst.
-          unfold bool_app_interp in EQ7.
-          apply elem_of_singleton in EQ7. subst.
-          assert (c = coreBoolSym sFalse \/ c = coreBoolSym sTrue) as [|] by set_solver; subst.
-          ** set_solver.
-          ** set_solver.
-        + intros. eval_simpl_in H.
-          rewrite update_evar_val_same in H. apply elem_of_singleton in H. subst.
-          assert (c = coreBoolSym sFalse \/ c = coreBoolSym sTrue) as [|] by set_solver; subst.
-          ** do 2 eexists. split_and!.
-             2: simp eval; rewrite update_evar_val_same; by apply elem_of_singleton.
-             do 2 eexists. split_and!.
-             1: simp eval; by apply elem_of_singleton.
-             eval_simpl. by apply elem_of_singleton.
-             simpl. by apply elem_of_singleton. cbn. set_solver.
-          ** do 2 eexists. split_and!.
-             2: simp eval; rewrite update_evar_val_same; by apply elem_of_singleton.
-             do 2 eexists. split_and!. 1: simp eval; by apply elem_of_singleton.
-             eval_simpl. by apply elem_of_singleton.
-             by apply elem_of_singleton. cbn. set_solver.
+        assert (c = coreBoolSym sFalse \/ c = coreBoolSym sTrue) as [|] by set_solver; subst.
+        + simp eval. setoid_rewrite app_ext_singleton.
+          setoid_rewrite app_ext_singleton. reflexivity.
+        + simp eval. setoid_rewrite app_ext_singleton.
+          setoid_rewrite app_ext_singleton. reflexivity.
       - unfold mlBAndThen, mlsBAndThen, mlTrue, mlFalse, mlBool. simpl.
         eval_simpl. simpl.
         eapply propset_fa_intersection_full. intros.
         mlSimpl. cbn. remember (fresh_evar _) as X. clear HeqX.
         apply (@equal_iff_interpr_same _ _ BoolModel HDef).
         eval_simpl. simpl. unfold bool_sym_interp.
-        unfold app_ext. case_match. 2: congruence.
-        simpl in *.
-        (* TODO: app_ext for singletons *)
-        eapply set_eq. intros. rewrite elem_of_PropSet. split.
-        + intros. destruct H0 as [le1 [re1 [EQ1 [EQ2 EQ4] ] ] ].
-          apply elem_of_singleton in EQ2. subst.
-          apply elem_of_PropSet in EQ1.
-          destruct EQ1 as [le2 [re2 [EQ5 [EQ6 EQ7] ] ] ].
-          apply elem_of_singleton in EQ5, EQ6. subst.
-          unfold bool_app_interp in *. destruct c. destruct s.
-          ** set_solver.
-          ** set_solver.
-          ** apply elem_of_singleton in EQ7. subst. assumption.
-          ** set_solver.
-          ** set_solver.
-          ** set_solver.
-          ** set_solver.
-          ** set_solver.
-          ** set_solver.
-          ** set_solver.
-        + intros. apply elem_of_singleton in H0. subst.
-          destruct c; try destruct s; do 2 eexists; split_and!. all: try by apply elem_of_singleton.
-          all: try apply elem_of_PropSet; try do 2 eexists; try split_and!.
-          all: try by apply elem_of_singleton.
-          all:unfold bool_app_interp. 3-6: set_solver.
-          all: set_solver.
+        case_match. 2: congruence.
+        setoid_rewrite app_ext_singleton. simpl.
+        setoid_rewrite app_ext_singleton. simpl.
+        reflexivity.
   Unshelve.
     all: apply (@propset_leibniz_equiv _ BoolModel).
   Qed.
@@ -1275,18 +1074,7 @@ Section Nat.
         repeat rewrite update_evar_val_same.
         rewrite update_evar_val_neq. 2: auto.
         rewrite update_evar_val_same.
-        (* These are manual steps *)
-        assert (forall n, app_ext (sym_interp NatModel (inj sSucc)) {[natVal n]} = {[natVal (S n)]}). {
-          intros. unfold app_ext.
-          apply set_eq. intros. rewrite elem_of_PropSet. split; intro.
-          + destruct H0 as [le [re [EQ1 [EQ2 EQ3] ] ] ].
-            cbn in *.
-            apply elem_of_singleton in EQ1, EQ2. subst.
-            by cbn in EQ3.
-          + do 2 eexists. cbn. split_and!. 1-2: by apply elem_of_singleton.
-            by cbn.
-        }
-        do 2 rewrite H0.
+        setoid_rewrite app_ext_singleton. simpl.
         (* helper to rewrite: *)
         assert (forall (S1 S2 : propset NatModel), S2 = ∅ -> app_ext S1 S2 = ∅) as E.
         {
@@ -1308,7 +1096,8 @@ Section Nat.
           }
           rewrite difference_empty_L, difference_diag_L, union_empty_l_L.
           reflexivity.
-        + rewrite 2! definedness_app_ext_not_empty; try assumption.
+        + pose proof definedness_app_ext_not_empty NatModel HDef as E2.
+          rewrite 2! E2; try assumption.
           all: set_solver.
       (* inductive domain *)
       - unfold patt_inhabitant_set, Sorts_Syntax.sym, Nat, Zero, Succ.
@@ -1363,18 +1152,13 @@ Section Nat.
         eval_simpl. 1: apply indec_nat. 2: assumption.
         apply propset_fa_intersection_full. intros.
         case_match. 2: reflexivity.
-        pose proof sorted_forall_binder as BF. destruct BF as [BF].
-        pose proof sorted_exists_binder as BE. destruct BE as [BE].
-        erewrite (BF _ (evar_open _)); eauto.
-        erewrite (BE _ (evar_open _)); eauto.
-        mlSimpl. cbn.
+        mlSimpl.
         remember (fresh_evar _) as x. clear Heqx.
         (* 2nd sorted forall *)
         eval_simpl. 1: apply indec_nat. 2: assumption.
         apply propset_fa_intersection_full. intros.
         case_match. 2: reflexivity.
-        erewrite (BE _ (evar_open _)); eauto.
-        mlSimpl. cbn. remember (fresh_evar _) as y.
+        mlSimpl. remember (fresh_evar _) as y.
         assert (x <> y). {
           subst y. clear.
           pose proof (X_eq_evar_fresh_impl_X_notin_S x (free_evars (patt_exists_of_sort Nat (mlAddNat b1 (patt_free_evar x) =ml b0)))).
@@ -1406,7 +1190,7 @@ Section Nat.
             set_solver. (* this is slow for some reason *)
           }
           clear Heqz.
-          mlSimpl. cbn.
+          mlSimpl.
           unfold mlAddNat, AddNat.
           assert (forall S : propset nat_carrier, S = ⊤ -> forall t, t ∈ S) as HX. {
             set_solver.
@@ -1450,26 +1234,10 @@ Section Nat.
         unfold mlAddNat, AddNat, Zero.
         apply (@equal_iff_interpr_same _ _ NatModel). assumption.
         eval_simpl. simpl. rewrite decide_eq_same.
-        unfold app_ext.
-        apply set_eq; split.
-        ** intros. destruct H as [le [re [EQ1 [EQ2 EQ3] ] ] ].
-           destruct EQ1 as [le2 [re2 [EQ12 [EQ22 EQ32] ] ] ]. simpl in *.
-           apply elem_of_singleton in EQ22, EQ2, EQ12. subst.
-           simpl in *.
-           apply elem_of_singleton in EQ32. subst.
-           simpl in EQ3.
-           (* trick here: *)
-           by rewrite Nat.add_0_r in EQ3.
-        ** intros. do 2 eexists. split_and!.
-           do 2 eexists. split_and!.
-           all: cbn.
-           all: try by apply elem_of_singleton.
-           (* trick here: *)
-           simpl. by rewrite Nat.add_0_r.
-        (* the tricks above were needed, because Coq's nat operations are defined
-           with recursion on the left argument, not the right one -
-
-           Similar tricks are needed in the next subgoal *)
+        setoid_rewrite app_ext_singleton. cbn.
+        setoid_rewrite app_ext_singleton. cbn.
+        (* Trick: *)
+        by rewrite Nat.add_0_r.
       (* add rule 2 *)
       - eval_simpl. 1: apply indec_nat. 2: assumption.
         apply propset_fa_intersection_full. intros.
@@ -1482,7 +1250,7 @@ Section Nat.
         destruct H as [n ?]. subst.
         clear e.
         remember (fresh_evar _) as x. clear Heqx.
-        mlSortedSimpl. mlSimpl. cbn.
+        mlSimpl.
         (* 2nd sorted forall *)
         eval_simpl. 1: apply indec_nat. 2: assumption.
         apply propset_fa_intersection_full. intros.
@@ -1506,36 +1274,13 @@ Section Nat.
         apply (@equal_iff_interpr_same _ _ NatModel). assumption.
         eval_simpl. simpl.
         repeat rewrite decide_eq_same.
-        case_match. congruence. unfold app_ext.
-        apply set_eq; split; intro X; destruct X as [le [re [EQ1 [EQ2 EQ3] ] ] ];
-          simpl in *.
-        ** destruct EQ1 as [le2 [re2 [EQ12 [EQ22 EQ32] ] ] ],
-                    EQ2 as [le3 [re3 [EQ13 [EQ23 EQ33] ] ] ].
-           apply elem_of_singleton in EQ23, EQ13, EQ22, EQ12. subst.
-           simpl in *.
-           apply elem_of_singleton in EQ32, EQ33. subst.
-           simpl in *.
-           do 2 eexists. split_and!.
-           2: do 2 eexists; split_and!.
-           2: do 2 eexists; split_and!.
-           all: try by apply elem_of_singleton.
-           simpl.
-           (* trick *)
-           by rewrite PeanoNat.Nat.add_succ_r in EQ3.
-        ** destruct EQ2 as [le2 [re2 [EQ12 [EQ22 EQ32] ] ] ].
-           destruct EQ12 as [le3 [re3 [EQ13 [EQ23 EQ33] ] ] ].
-           apply elem_of_singleton in EQ13, EQ23, EQ22, EQ1. subst.
-           simpl in *.
-           destruct re. 1-2,4-5: set_solver.
-           apply elem_of_singleton in EQ33, EQ3. subst.
-           simpl in *.
-           do 2 eexists. split_and!.
-           1-2: do 2 eexists; split_and!.
-           all: simpl; try by apply elem_of_singleton.
-           simpl.
-           (* trick - although, set_solver also used n1 = m + n -> S n1 = S (m + n)*)
-           rewrite PeanoNat.Nat.add_succ_r.
-           set_solver.
+        case_match. congruence.
+        do 3 setoid_rewrite app_ext_singleton.
+        cbn.
+        (* trick - although, set_solver also used n1 = m + n -> S n1 = S (m + n)*)
+        by rewrite PeanoNat.Nat.add_succ_r.
+  Unshelve.
+    all: apply (@propset_leibniz_equiv _ NatModel).
   Qed.
 
 End Nat.

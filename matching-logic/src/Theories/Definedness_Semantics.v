@@ -863,12 +863,6 @@ Module equivalence_insufficient.
     app_interp := example_app_interp;
   |}.
 
-  Theorem app_ext_singleton : forall x y,
-    app_ext {[x]} {[y]} ≡ @app_interp mySignature exampleModel x y.
-  Proof.
-    intros x y. unfold app_ext. set_solver.
-  Qed.
-
   Example equiv_not_eq :
     forall ρ, @eval _ exampleModel ρ (ex , (patt_sym sym_f ⋅ patt_free_evar "x"%string <---> b0)) = ⊤.
   Proof.

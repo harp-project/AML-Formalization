@@ -12,6 +12,7 @@ Require Import
 From MatchingLogic
 Require Import
     Syntax
+    IndexManipulation
 .
 
 Set Default Proof Mode "Classic".
@@ -924,6 +925,7 @@ Ltac2 fm_solve () :=
                pose proof (free_svars_bsvar_subst);
                pose proof (free_evars_evar_open);
                pose proof free_evars_free_evar_subst;
+               pose proof free_evars_nest_ex;
                subst; (solve_fresh + set_solver))
     | [ _ : _ |- _] => Message.print (Message.of_string "fm_solve() failed")
     end
@@ -1005,6 +1007,9 @@ Proof.
       fm_solve.
     }
     assert (x ∉ free_evars (evar_open x0 0 ϕ₁)). {
+      fm_solve.
+    }
+    assert (x ∉ free_evars (nest_ex ϕ₁)). {
       fm_solve.
     }
     exact I.

@@ -244,6 +244,9 @@ end.
 Tactic Notation "mlSortedSimpl" := repeat mlESortedSimpl_single.
 Tactic Notation "mlSortedSimpl" "in" hyp(H) := repeat mlESortedSimpl_single_hyp H.
 
+Tactic Notation "mlSimpl" := repeat (mlUnsortedSimpl; mlSortedSimpl); cbn.
+Tactic Notation "mlSimpl" "in" hyp(H) := repeat (mlUnsortedSimpl in H; mlSortedSimpl in H); cbn.
+
 Section simplTest.
   (* NOTE: these tactics are not exported!!!!! *)
   Import Substitution.Notations.
@@ -343,8 +346,6 @@ Section simplTest.
          (all Nat, b0 ∈ml (ex Nat, b0 and Zero +ml b0 =ml b0) ) ).
   Proof.
     intros. mlSimpl.
-    mlSortedSimpl. mlSimpl.
-    cbn.
     case_match.
     - reflexivity.
     - try congruence.

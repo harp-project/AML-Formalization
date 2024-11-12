@@ -274,7 +274,7 @@ Section with_model.
       intros x Hpred.
       unfold patt_exists_of_sort.
       apply M_predicate_exists.
-      unfold evar_open. mlSimpl.
+      unfold evar_open. mlUnsortedSimpl.
       rewrite {1}[bevar_subst _ _ _]/=.
       apply M_predicate_and.
       - apply T_predicate_in.
@@ -316,11 +316,11 @@ Section with_model.
     Proof.
       unfold is_total_function.
       rewrite eval_forall_of_sort_predicate.
-      1: { mlSortedSimpl. eapply M_predicate_exists_of_sort. eauto. }
+      1: { mlSimpl. eapply M_predicate_exists_of_sort. eauto. }
 
       remember (fresh_evar (patt_exists_of_sort (nest_ex s₂) (patt_equal ((nest_ex (nest_ex f)) ⋅ b1) b0))) as x'.
       rewrite [nest_ex s₂]/nest_ex.
-      mlSortedSimpl.
+      mlSimpl.
       unfold nest_ex. repeat rewrite nest_ex_same.
       rewrite fuse_nest_ex_same.
       unfold evar_open.
@@ -409,12 +409,12 @@ Section with_model.
             ⊆ {[m₂]}.
     Proof.
       rewrite eval_forall_of_sort_predicate.
-      1: { mlSortedSimpl. eauto. }
+      1: { mlSimpl. eauto. }
 
       unfold evar_open. mlSimpl.
       remember (fresh_evar (patt_exists_of_sort (nest_ex s₂) (patt_subseteq ((nest_ex (nest_ex f)) ⋅ b1) b0))) as x'.
       rewrite [nest_ex s₂]/nest_ex.
-      mlSortedSimpl.
+      mlSimpl.
       rewrite nest_ex_same.
       unfold nest_ex.
       rewrite fuse_nest_ex_same.
@@ -524,14 +524,14 @@ Section with_model.
         match goal with
         | [ |- M_predicate _ (evar_open _ ?x _) ] => remember x
         end.
-        unfold evar_open. mlSortedSimpl. mlSimpl. simpl.
+        unfold evar_open. mlSimpl.
         case_match; try lia.
         case_match; try lia.
         apply M_predicate_forall_of_sort.
         match goal with
         | [ |- M_predicate _ (evar_open _ ?x _) ] => remember x
         end.
-        unfold evar_open. mlSimpl. simpl.
+        unfold evar_open. mlSimpl.
         eauto.
       }
       remember
@@ -645,7 +645,7 @@ Section with_model.
         match goal with
         | [ |- M_predicate _ (evar_open _ ?x _) ] => remember x
         end.
-        unfold evar_open. mlSortedSimpl. mlSimpl. simpl.
+        unfold evar_open. mlSimpl.
         apply M_predicate_forall_of_sort.
         match goal with
         | [ |- M_predicate _ (evar_open _ ?x _) ] => remember x
@@ -663,13 +663,13 @@ Section with_model.
       apply all_iff_morphism. intros m₁.
       apply all_iff_morphism. intros Hm₁s.
 
-      unfold evar_open. mlSortedSimpl. mlSimpl.
+      unfold evar_open. mlSimpl.
       rewrite eval_forall_of_sort_predicate.
       1: {
                 match goal with
         | [ |- M_predicate _ (evar_open _ ?x _) ] => remember x
         end.
-        unfold evar_open. mlSimpl. simpl.
+        unfold evar_open. mlSimpl.
         eauto.
       }
       remember
@@ -711,7 +711,7 @@ Section with_model.
       rewrite nest_ex_same.
       rewrite eval_free_evar_independent.
       {
-         rewrite Heqx₂. unfold evar_is_fresh_in.
+         unfold evar_is_fresh_in.
          eapply evar_is_fresh_in_richer'.
          2: apply set_evar_fresh_is_fresh'. cbn.
          solve_free_evars_inclusion 5.
@@ -760,7 +760,7 @@ Section with_model.
       {
         clear Hm.
         rename e into Hinh.
-        unfold evar_open. mlSimpl. simpl.
+        unfold evar_open. mlSimpl.
         unfold nest_ex. rewrite nest_ex_same.
         rewrite eval_and_simpl.
         unfold Minterp_inhabitant in Hinh.
@@ -842,7 +842,7 @@ Section with_model.
       {
         clear Hm.
         rename e into Hinh.
-        unfold evar_open. mlSimpl. simpl.
+        unfold evar_open. mlSimpl.
         unfold nest_ex. rewrite nest_ex_same.
         unfold Minterp_inhabitant in Hinh.
         replace m with (evar_valuation (update_evar_val x m ρ) x) in Hinh.

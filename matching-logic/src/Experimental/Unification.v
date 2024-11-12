@@ -16,8 +16,6 @@ From MatchingLogic Require Import Logic ProofMode.MLPM Substitution.
 From MatchingLogic.Theories Require Import Definedness_Syntax Definedness_ProofSystem FOEquality_ProofSystem DeductionTheorem.
 From MatchingLogic.Utils Require Import stdpp_ext.
 
-Require Import MatchingLogic.wftactics.
-
 From stdpp Require Import base fin_sets sets propset proof_irrel option list.
 
 Import extralibrary.
@@ -272,10 +270,9 @@ Section unification.
     wf_auto2.
     mlExists x.
     mlSimpl.
-    unfold evar_open.
-    rewrite bevar_subst_not_occur.
+    rewrite evar_open_not_occur.
     wf_auto2.
-    simpl.
+    unfold evar_open. simpl.
     mlReflexivity.
   Defined.
 

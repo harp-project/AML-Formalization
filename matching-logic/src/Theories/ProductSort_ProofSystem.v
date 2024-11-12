@@ -14,8 +14,6 @@ From MatchingLogic Require Import Logic ProofMode.MLPM.
 From MatchingLogic.Theories Require Import Definedness_Syntax Definedness_ProofSystem.
 From MatchingLogic.Utils Require Import stdpp_ext.
 
-Require Import MatchingLogic.wftactics.
-
 From stdpp Require Import base fin_sets sets propset proof_irrel option list.
 
 Import extralibrary.
@@ -84,11 +82,8 @@ Section productsort.
         1-2:clear H;wf_auto2.
         solve_fresh.
       }
-    mlSortedSimpl. 
     mlSimpl.
     mlIntro.
-    mlSortedSimpl.
-    mlSimpl. simpl. cbn.
     repeat rewrite bevar_subst_not_occur.
     1-2: clear H;wf_auto2.
     
@@ -103,10 +98,6 @@ Section productsort.
     
     mlSpecialize "f" with x.
     mlSimpl.
-    
-    pose proof sorted_exists_binder as BE. destruct BE as [BE].
-    erewrite (BE _ (evar_open _)); eauto.
-    mlSimpl. simpl. cbn.
     unfold evar_open.
     rewrite bevar_subst_not_occur.
     1:{ clear H. wf_auto2. }
@@ -131,19 +122,17 @@ Section productsort.
         solve_fresh.
       }
       
-    unfold evar_open. mlSimpl. simpl. unfold nest_ex. rewrite nest_ex_aux_wfcex.
+    mlSimpl. unfold nest_ex. rewrite nest_ex_aux_wfcex.
     1:{ clear H. wf_auto2. }
-    rewrite bevar_subst_not_occur. 
+    
+    rewrite evar_open_not_occur. 
     1:{ clear H. wf_auto2. }
     mlDestructAnd "C".
     mlClear "f".
       
     mlSpecialize "g" with x.
     mlSimpl.
-    erewrite (BE _ (evar_open _)); eauto.
-    mlSimpl. simpl. cbn.
-    unfold evar_open.
-    rewrite bevar_subst_not_occur.
+    rewrite evar_open_not_occur.
     1:{ clear H. wf_auto2. }
     
     mlAssert ("C" : ( patt_free_evar x ∈ml 〚 mlProd (s1, s2) 〛) ).
@@ -165,32 +154,32 @@ Section productsort.
           1-2:clear H;wf_auto2.
           solve_fresh.
       }
-    unfold evar_open. mlSimpl. simpl. unfold nest_ex. rewrite nest_ex_aux_wfcex.
+    mlSimpl. unfold nest_ex. rewrite nest_ex_aux_wfcex.
     1:clear H;wf_auto2.
-    rewrite bevar_subst_not_occur. 
+    rewrite evar_open_not_occur. 
     1:clear H;wf_auto2.
     mlDestructAnd "C".
     mlClear "g".
     
     mlExists y. mlSimpl. 
     mlSplitAnd.
-    * unfold evar_open. mlSimpl. simpl. unfold nest_ex. rewrite nest_ex_aux_wfcex.
+    * mlSimpl. unfold nest_ex. rewrite nest_ex_aux_wfcex.
       1:clear H;wf_auto2. 
-      rewrite bevar_subst_not_occur. 
+      rewrite evar_open_not_occur. 
       1:clear H;wf_auto2. 
       mlAssumption.
-    * mlSortedSimpl. mlSimpl. simpl. cbn.
-      unfold evar_open. rewrite bevar_subst_not_occur.
+    * mlSimpl.
+      rewrite evar_open_not_occur.
       1:{ clear H. wf_auto2. }
-      mlExists z. mlSimpl. simpl. cbn. unfold nest_ex. rewrite nest_ex_aux_wfcex.
-      1:clear H;wf_auto2. unfold evar_open.
-      rewrite bevar_subst_not_occur.
+      mlExists z. mlSimpl. unfold nest_ex. rewrite nest_ex_aux_wfcex.
+      1:clear H;wf_auto2.
+      rewrite evar_open_not_occur.
       clear H;wf_auto2.
       mlSplitAnd.
       + mlAssumption.
       + mlSymmetry in "2". mlRewriteBy "2" at 1.
         mlSymmetry in "4". mlRewriteBy "4" at 1.
-        mlSpecialize "z" with x. mlSimpl. simpl. cbn.
+        mlSpecialize "z" with x. mlSimpl.
         mlApply "z".
         mlAssumption.
   Defined.

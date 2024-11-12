@@ -14,8 +14,6 @@ From MatchingLogic Require Export Logic ProofMode.MLPM.
 From MatchingLogic.Theories Require Export Definedness_Syntax Definedness_ProofSystem Sorts_Syntax FOEquality_ProofSystem.
 From MatchingLogic.Utils Require Export stdpp_ext.
 
-Require Export MatchingLogic.wftactics.
-
 From stdpp Require Import base fin_sets sets propset proof_irrel option list.
 Import FreshnessManager.
 Import extralibrary.
@@ -48,7 +46,8 @@ Local Lemma simplTest
   Definedness_Syntax.theory ⊆ Γ ->
   Γ ⊢ ((all ψ , φ) ---> ex ψ ,  φ)^[[evar:x↦τ]].
 Proof.
-  intros. mlSimpl. mlSortedSimpl. mlSortedSimpl. mlSimpl.
+  intros.
+  mlSimpl.
   remember (fresh_evar (ψ ⋅ φ ⋅ τ)) as y.
   mlIntro.
   mlSpecialize "0" with x.

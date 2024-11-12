@@ -107,7 +107,7 @@ Proof.
     toMLGoal.
     { wf_auto2. }
     mlIntroAll y.
-    mlSimpl. cbn.
+    mlSimpl.
     mlApplyMeta membership_imp_2.
     2: exact HΓ.
     mlIntro "H".
@@ -130,7 +130,8 @@ Proof.
         mlApplyMeta membership_refl.
         2: exact HΓ.
         mlExists y.
-        mlSimpl. cbn.
+        mlSimpl.
+        unfold evar_open. cbn.
         mlReflexivity.
     }
     {
@@ -145,7 +146,7 @@ Proof.
           cbn in H5. set_solver.
         }
         mlExists y.
-        mlSimpl. cbn.
+        mlSimpl.
         mlApplyMeta membership_and_2.
         3: {
             eapply well_formed_closed_ex_aux_ind with (ind_evar1 := 0).
@@ -160,7 +161,8 @@ Proof.
             mlApplyMeta membership_refl.
             2: exact HΓ.
             mlExists y.
-            mlSimpl. cbn.
+            mlSimpl.
+            unfold evar_open. cbn.
             mlReflexivity.
         }
         unfold evar_open.
@@ -187,9 +189,10 @@ Proof.
     { wf_auto2. }
     mlIntro "H".
     mlDestructEx "H" as x.
-    mlSimpl. cbn.
+    mlSimpl.
     mlDestructAnd "H" as "H1" "H2".
     unfold evar_open.
+    cbn.
     rewrite bevar_subst_not_occur.
     { wf_auto2. }
     mlRevert "H1".

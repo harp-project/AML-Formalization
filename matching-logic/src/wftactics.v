@@ -474,9 +474,16 @@ lazymatch goal with
 | _ => idtac
 end.
 
-Tactic Notation "mlSimpl" :=
+Tactic Notation "mlUnsortedSimpl" :=
   repeat (rewrite mlSimpl'); try rewrite [increase_ex _ _]/=; try rewrite [increase_mu]/=; try_wfauto2.
 
-Tactic Notation "mlSimpl" "in" hyp(H) :=
+Tactic Notation "mlUnsortedSimpl" "in" hyp(H) :=
   repeat (rewrite mlSimpl' in H); try rewrite [increase_ex _ _]/= in H; try rewrite [increase_mu _ _]/= in H; try_wfauto2.
+
+(** These will be shadowed in Sorts_Syntax.v *)
+Tactic Notation "mlSimpl" :=
+  mlUnsortedSimpl.
+
+Tactic Notation "mlSimpl" "in" hyp(H) :=
+  mlUnsortedSimpl in H.
 

@@ -14,8 +14,6 @@ From MatchingLogic Require Export Logic ProofMode.MLPM.
 From MatchingLogic.Theories Require Export Definedness_Syntax Definedness_ProofSystem.
 From MatchingLogic.Utils Require Export stdpp_ext.
 
-Require Export MatchingLogic.wftactics.
-
 From stdpp Require Import base fin_sets sets propset proof_irrel option list.
 
 Import extralibrary.
@@ -1076,6 +1074,7 @@ same chain of thoughts as 1st one for totality.
     mlIntroAll x.
  
     mlSpecialize "H1" with x.
+    
     mlSimpl. simpl.
    
     mlSortedSimpl. mlSimpl. cbn. fold Nat.

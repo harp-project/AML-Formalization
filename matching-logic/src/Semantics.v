@@ -239,6 +239,12 @@ Section semantics.
     apply not_elem_of_empty in H2. exact H2.
   Qed.
 
+  Theorem app_ext_singleton : forall (x y : M),
+    app_ext {[x]} {[y]} = app_interp _ x y.
+  Proof.
+    intros x y. unfold app_ext. set_solver.
+  Qed.
+
   Lemma app_ext_bot_l :
       forall S : propset (Domain M),
         app_ext ∅ S = ∅.
