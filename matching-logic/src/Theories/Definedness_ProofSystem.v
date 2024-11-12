@@ -4814,7 +4814,7 @@ Tactic Notation "mlRewriteBy" "<-" constr(name) "at" constr(atn) "in" constr(hyp
   mlRewriteBy name at atn in hypo;
   mlSymmetry in name.
 
-Local Example mlRewriteBy_test {Σ : Signature} {syntax : Syntax} Γ ϕ ψ :
+Local Example mlRewriteBy_test_in_barr {Σ : Signature} {syntax : Syntax} Γ ϕ ψ :
   theory ⊆ Γ -> well_formed ϕ -> well_formed ψ ->
   Γ ⊢i
     ! (ψ ---> ϕ) --->
@@ -4830,6 +4830,39 @@ Proof.
   mlApply "idPh" in "P1".
   mlAssumption.
 Defined.
+
+Local Example mlRewriteBy_test_in {Σ : Signature} {syntax : Syntax} Γ ϕ ψ :
+  theory ⊆ Γ -> well_formed ϕ -> well_formed ψ ->
+  Γ ⊢i
+    ! (ψ ---> ϕ) --->
+    ! (ψ =ml ϕ)
+    using AnyReasoning.
+Proof.
+  intros.
+  toMLGoal;[wf_auto2|].
+  mlIntro "P1"; mlIntro "P2".
+  mlRewriteBy "P2" at 1 in "P1".
+  mlAssert ("idPh" : (ϕ ---> ϕ)); wf_auto2.
+  mlIntro; mlAssumption.
+  mlApply "idPh" in "P1".
+  mlAssumption.
+Defined.
+
+Local Example mlRewriteBy_test_barr {Σ : Signature} {syntax : Syntax} Γ ϕ ψ :
+  theory ⊆ Γ -> well_formed ϕ -> well_formed ψ ->
+  Γ ⊢i
+    (ψ =ml ϕ) --->
+    ! ψ ---> ! ϕ
+    using AnyReasoning.
+Proof.
+  intros.
+  toMLGoal;[wf_auto2|].
+  mlIntro "P1"; mlIntro.
+  mlRewriteBy <- "P1" at 1.
+  mlAssumption.
+Defined.
+
+
 
 (* TODO: eliminate mu_free *)
 Lemma patt_equal_trans {Σ : Signature} {syntax : Syntax} Γ φ1 φ2 φ3:
