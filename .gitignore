@@ -46,3 +46,7 @@ nra.cache
 
 # Generated documentation
 html/*
+
+# Envrc and Direnv files
+.envrc
+.direnv/*
