@@ -1,18 +1,4 @@
-From Coq Require Import ssreflect ssrfun ssrbool.
-
-From stdpp Require Import base tactics sets.
-
-From MatchingLogic.Utils
-Require Import
-    extralibrary
-.
-
-From MatchingLogic
-Require Import
-    Signature
-    Pattern
-    Substitution
-.
+From MatchingLogic Require Export Substitution.
 
 Import MatchingLogic.Substitution.Notations.
 

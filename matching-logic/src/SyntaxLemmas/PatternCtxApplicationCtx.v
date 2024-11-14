@@ -1,25 +1,8 @@
-From Coq Require Import ssreflect ssrfun ssrbool.
+From MatchingLogic Require Export SyntaxLemmas.ApplicationCtxSubstitution
+                                  PatternContext
+                                  Freshness.
 
-From Coq Require Import Logic.Classical_Prop.
-
-From stdpp Require Import base tactics sets.
-
-From MatchingLogic.Utils
-Require Import
-    extralibrary
-    stdpp_ext
-.
-
-From MatchingLogic
-Require Import
-    Signature
-    Pattern
-    Substitution
-    PatternContext
-    ApplicationContext
-    Freshness
-    SyntaxLemmas.ApplicationCtxSubstitution
-.
+From Coq Require Import ProofIrrelevance.
 
 Section with_signature.
     Context {Σ : Signature}.

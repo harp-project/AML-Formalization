@@ -1,20 +1,6 @@
-From Coq Require Import ssreflect ssrfun ssrbool.
-
-From stdpp Require Import base tactics sets.
-
-From MatchingLogic.Utils
-Require Import
-    extralibrary
-.
-
-From MatchingLogic
-Require Import
-    Signature
-    Pattern
-    Substitution
-    Freshness
-    ApplicationContext
-.
+From MatchingLogic Require Export Substitution
+                                  Freshness
+                                  ApplicationContext.
 
 Import Substitution.Notations.
 
@@ -80,8 +66,8 @@ Section lemmas.
     - unfold well_formed_closed.
       simpl.
       unfold well_formed_closed in *.
-      destruct_and!.
-      split_and!; simpl.
+      destruct_andb! Hwfc.
+      apply andb_true_iff; split.
       + apply evar_quantify_closed_mu. apply wcmu_sctx.
         apply wfc_mu_aux_body_ex_imp1. simpl in *. assumption.
       + apply evar_quantify_closed_ex. apply wcex_sctx.
@@ -98,13 +84,13 @@ Proof.
     rewrite [p0^[evar: n ↦ q] ]bevar_subst_not_occur.
     2: { reflexivity. }
     unfold well_formed,well_formed_closed in Prf.
-    destruct_and!.
+    destruct_andb! Prf.
     auto. eapply well_formed_closed_ex_aux_ind. 2: exact H2. lia.
   - simpl. rewrite IHAC. clear IHAC.
     rewrite [p0^[evar: n ↦ q] ]bevar_subst_not_occur.
     2: { reflexivity. }
     unfold well_formed,well_formed_closed in Prf.
-    destruct_and!.
+    destruct_andb! Prf.
     auto. eapply well_formed_closed_ex_aux_ind. 2: exact H2. lia.
 Qed.
 

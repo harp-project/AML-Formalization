@@ -1,14 +1,5 @@
-From Coq Require Import ssreflect ssrfun ssrbool.
-
-From Coq.Logic Require Import FunctionalExtensionality PropExtensionality Classical_Pred_Type Classical_Prop.
-From Coq.micromega Require Import Lia.
-From Coq.Program Require Import Wf.
-
-From stdpp Require Import base fin_sets.
-From stdpp Require Import pmap gmap mapset fin_sets sets propset.
-
-From MatchingLogic.Utils Require Import stdpp_ext extralibrary.
-From MatchingLogic Require Import Pattern Substitution Freshness.
+From MatchingLogic Require Export Substitution
+                                  Freshness.
 
 Import MatchingLogic.Substitution.Notations.
 
@@ -102,8 +93,8 @@ Section index_manipulation.
     move: level.
     induction ϕ; simpl; intros level H; auto.
     - case_match;[reflexivity|congruence].
-    - destruct_and!. by rewrite -> IHϕ1, -> IHϕ2.
-    - destruct_and!. by rewrite -> IHϕ1, -> IHϕ2.
+    - destruct_andb! H. by rewrite -> IHϕ1, -> IHϕ2.
+    - destruct_andb! H. by rewrite -> IHϕ1, -> IHϕ2.
     - by rewrite IHϕ.
     - by rewrite IHϕ.
   Qed.
@@ -115,8 +106,8 @@ Section index_manipulation.
     move: level.
     induction ϕ; simpl; intros level H; auto.
     - case_match;[reflexivity|congruence].
-    - destruct_and!. by rewrite -> IHϕ1, -> IHϕ2.
-    - destruct_and!. by rewrite -> IHϕ1, -> IHϕ2.
+    - destruct_andb! H. by rewrite -> IHϕ1, -> IHϕ2.
+    - destruct_andb! H. by rewrite -> IHϕ1, -> IHϕ2.
     - by rewrite IHϕ.
     - by rewrite IHϕ.
   Qed.
@@ -514,14 +505,14 @@ Section index_manipulation.
     move: level level' H.
     induction psi; intros level level' H; simpl in *; auto.
     - repeat case_match; auto; lia.
-    - destruct_and!.
+    - destruct_andb! H.
       specialize (IHpsi1 level level' ltac:(assumption)).
       specialize (IHpsi2 level level' ltac:(assumption)).
-      split_and!; auto.
-    - destruct_and!.
+      naive_bsolver.
+    - destruct_andb! H.
       specialize (IHpsi1 level level' ltac:(assumption)).
       specialize (IHpsi2 level level' ltac:(assumption)).
-      split_and!; auto.
+      naive_bsolver.
     - specialize (IHpsi (S level) (S level') ltac:(assumption)).
       simpl in IHpsi. auto.
   Qed.
@@ -546,14 +537,14 @@ Section index_manipulation.
     move: level level' H.
     induction psi; intros level level' H; simpl in *; auto.
     - repeat case_match; auto; lia.
-    - destruct_and!.
+    - destruct_andb! H.
       specialize (IHpsi1 level level' ltac:(assumption)).
       specialize (IHpsi2 level level' ltac:(assumption)).
-      split_and!; auto.
-    - destruct_and!.
+      naive_bsolver.
+    - destruct_andb! H.
       specialize (IHpsi1 level level' ltac:(assumption)).
       specialize (IHpsi2 level level' ltac:(assumption)).
-      split_and!; auto.
+      naive_bsolver.
     - specialize (IHpsi (S level) (S level') ltac:(assumption)).
       simpl in IHpsi. auto.
   Qed.

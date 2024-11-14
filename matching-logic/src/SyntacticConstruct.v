@@ -1,25 +1,9 @@
-From Coq Require Import ssreflect ssrfun ssrbool.
-
-
-From Coq Require Import Btauto.
-
-From stdpp Require Import base.
-
-From MatchingLogic.Utils
-Require Import
-    extralibrary
-    stdpp_ext
-.
-
-From stdpp Require Import fin_sets.
-
-From MatchingLogic
-Require Import
-    Pattern
+From MatchingLogic Require Export
     DerivedOperators_Syntax
-    Substitution
     IndexManipulation
 .
+
+Import Btauto.
 
 Import MatchingLogic.Substitution.Notations.
 

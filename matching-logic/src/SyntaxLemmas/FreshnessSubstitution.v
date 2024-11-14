@@ -1,19 +1,5 @@
-From Coq Require Import ssreflect ssrfun ssrbool.
-
-From stdpp Require Import base tactics sets.
-
-From MatchingLogic.Utils
-Require Import
-    extralibrary
-.
-
-From MatchingLogic
-Require Import
-    Signature
-    Pattern
-    Substitution
-    Freshness
-.
+From MatchingLogic Require Export Substitution
+                                  Freshness.
 
 Import Substitution.Notations.
 
@@ -59,8 +45,8 @@ Section lemmas.
     intros WFE. unfold wfc_body_ex in WFE. unfold well_formed_closed. simpl.
     unfold well_formed_closed in WFE.
     pose proof (Htmp := WFE (fresh_evar phi) ltac:(apply set_evar_fresh_is_fresh)).
-    destruct_and!.
-    split_and.
+    destruct_andb! Htmp.
+    apply andb_true_iff; split.
     2: { rewrite -> wfc_ex_aux_body_iff. eassumption. }
     eapply wfc_mu_aux_body_ex_imp2. eassumption.
   Qed.
@@ -519,46 +505,41 @@ Section lemmas.
     rewrite wfpq.
     (* rewrite wfp_nest_ex_aux.
     rewrite wfpq. simpl in *.*)
-    unfold well_formed_closed in wfcq. destruct_and!.
+    unfold well_formed_closed in wfcq. destruct_andb! wfp. destruct_andb! wfcq.
     pose proof (H1' := @well_formed_closed_mu_aux_ind Σ q 0 n2 ltac:(lia) H).
     pose proof (H2' := wfc_impl_no_neg_pos_occ _ _ H1').
-    destruct_and!.
-    
-    split_and!; auto.
+    destruct_andb! H2'.
+    repeat (apply andb_true_iff; split); try assumption.
     + eapply well_formed_closed_ex_aux_ind.
       2: eassumption. lia.
   - cbn in *.
-    destruct_and!. split_and!; auto.
-    repeat case_match; lia.
+    repeat case_match; try lia; naive_bsolver.
   - unfold well_formed, well_formed_closed in *. simpl in *.
-    destruct_and!.
+    destruct_andb! wfq.
     specialize (IHp1 n1 n2). specialize (IHp2 n1 n2).
     ospecialize* IHp1.
-    { split_and!; auto. }
+    { naive_bsolver. }
     ospecialize* IHp2.
-    { split_and!; auto. }
-    destruct_and!.
-    cbn.
-    split_and!; auto.
+    { naive_bsolver. }
+    naive_bsolver.
   - unfold well_formed, well_formed_closed in *. simpl in *.
-    destruct_and!.
+    destruct_andb! wfq.
     specialize (IHp1 n1 n2). specialize (IHp2 n1 n2).
     ospecialize* IHp1.
-    { split_and!; auto. }
+    { naive_bsolver. }
     ospecialize* IHp2.
-    { split_and!; auto. }
-    destruct_and!.
-    cbn.
-    split_and!; auto.
+    { naive_bsolver. }
+    naive_bsolver.
   - unfold well_formed, well_formed_closed in *. simpl in *.
-    destruct_and!.
+    destruct_andb! wfq.
     pose proof (IHp' := IHp).
     specialize (IHp n1 (S n2)).
     ospecialize* IHp.
-    { split_and!; auto. }
-    destruct_and!.
+    { naive_bsolver. }
+    destruct_andb! IHp.
     cbn in *.
-    split_and!; auto.
+    destruct_andb! wfp.
+    repeat (apply andb_true_iff; split); try assumption.
     rewrite free_evar_subst_preserves_no_negative_occurrence; auto.
   Qed.
 
@@ -571,10 +552,9 @@ Section lemmas.
     intros wfq wfp.
     pose proof (H := @Private_well_formed_free_evar_subst x p q 0 0 wfq).
     unfold well_formed,well_formed_closed in *.
-    destruct_and!.
-    ospecialize* H.
-    { split_and!; assumption. }
-    destruct_and!. split_and!; auto.
+    destruct_andb! wfq.
+    destruct_andb! wfp.
+    ospecialize* H; naive_bsolver.
   Qed.
 
   Lemma well_formed_xy_free_evar_subst x m n p q:
@@ -585,10 +565,8 @@ Section lemmas.
     intros wfq wfp.
     pose proof (H := @Private_well_formed_free_evar_subst x p q m n wfq).
     unfold well_formed_xy. unfold well_formed_xy in wfp.
-    destruct_and!.
-    ospecialize* H.
-    { split_and!; assumption. }
-    destruct_and!. split_and!; assumption.
+    destruct_andb! wfp.
+    ospecialize* H; naive_bsolver.
   Qed.
 
   Lemma well_formed_free_evar_subst_0 x p q:
@@ -751,20 +729,20 @@ Proof.
     + case_match; [|reflexivity].
       assumption.
     + cbn in Hwfpϕ.
-      destruct_and!.
+      destruct_andb! Hwfpϕ.
       specialize (IHϕ1 ltac:(assumption)).
       specialize (IHϕ2 ltac:(assumption)).
-      split_and!; auto.
+      naive_bsolver.
     + cbn in Hwfpϕ.
-      destruct_and!.
+      destruct_andb! Hwfpϕ.
       pose proof (IH1 := wfp_neg_free_evar_subst ϕ1 ψ x ltac:(assumption)).
       ospecialize* IH1.
       { assumption. }
       { assumption. }
       specialize (IHϕ2 ltac:(assumption)).
-      split_and!; auto.
-    + cbn in Hwfpϕ. destruct_and!.
-      rewrite IHϕ. assumption. split_and!; auto.
+      naive_bsolver.
+    + cbn in Hwfpϕ. destruct_andb! Hwfpϕ.
+      rewrite IHϕ. assumption.
       rewrite free_evar_subst_preserves_no_negative_occurrence; auto.
   -
     intros Hwfcψ Hwfpψ Hwfpϕ.
@@ -772,20 +750,20 @@ Proof.
     + case_match; [|reflexivity].
       assumption.
     + cbn in Hwfpϕ.
-      destruct_and!.
+      destruct_andb! Hwfpϕ.
       specialize (IHϕ1 ltac:(assumption)).
       specialize (IHϕ2 ltac:(assumption)).
-      split_and!; auto.
+      naive_bsolver.
     + cbn in Hwfpϕ.
-      destruct_and!.
+      destruct_andb! Hwfpϕ.
       pose proof (IH1 := wfp_free_evar_subst ϕ1 ψ x ltac:(assumption)).
       ospecialize* IH1.
       { assumption. }
       { assumption. }
       specialize (IHϕ2 ltac:(assumption)).
-      split_and!; auto.
-    + cbn in Hwfpϕ. destruct_and!.
-      rewrite IHϕ. assumption. split_and!; auto.
+      naive_bsolver.
+    + cbn in Hwfpϕ. destruct_andb! Hwfpϕ.
+      rewrite IHϕ. assumption.
       rewrite free_evar_subst_preserves_no_negative_occurrence; auto.
 Qed.
 

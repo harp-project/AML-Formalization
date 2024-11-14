@@ -1,15 +1,5 @@
-From Coq Require Import ssreflect ssrfun ssrbool.
-
-From stdpp Require Import base gmap.
-
-From MatchingLogic.Utils
-Require Import
-    extralibrary
-    stdpp_ext
-.
-
 From MatchingLogic
-Require Import
+Require Export
     Pattern
 .
 

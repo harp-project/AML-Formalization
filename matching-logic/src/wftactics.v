@@ -1,27 +1,11 @@
 From LibHyps Require Import LibHyps.
-
-From Coq Require Import ssreflect ssrfun ssrbool.
-
 From Ltac2 Require Import Ltac2.
-
 From Coq Require Import Btauto.
 
-From stdpp Require Import countable infinite.
-From stdpp Require Import pmap gmap mapset fin_sets propset.
-
-
-Require Import stdpp_ext.
-
-From MatchingLogic
-Require Import
-  Utils.extralibrary
-  Pattern
-  Substitution
-  ApplicationContext
-  SyntaxLemmas.FreshnessSubstitution
-  SyntacticConstruct
-  IndexManipulation
-.
+From MatchingLogic Require Export ApplicationContext
+                                  SyntaxLemmas.FreshnessSubstitution
+                                  SyntacticConstruct
+                                  IndexManipulation.
 
 Set Default Proof Mode "Classic".
 

@@ -1,27 +1,6 @@
-From Coq Require Import ssreflect ssrfun ssrbool.
-Require Import Setoid.
-Require Import List.
-Require Import Coq.Strings.String.
-
-From Coq Require Import Logic.Classical_Prop.
-From stdpp Require Import countable infinite.
-From stdpp Require Import pmap gmap mapset fin_sets propset.
-Require Import stdpp_ext.
-
-Require Import extralibrary.
-
 From MatchingLogic Require Export
-  Signature
-  Pattern
-  Substitution
-  Freshness
-  SyntacticConstruct
-  PatternContext
-  ApplicationContext
-  SyntaxLemmas.FreshnessSubstitution
   SyntaxLemmas.PatternCtxApplicationCtx
   SyntaxLemmas.FreshnessApplicationCtx
-  SyntaxLemmas.ApplicationCtxSubstitution
   wftactics
 .
 

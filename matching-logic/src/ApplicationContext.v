@@ -1,18 +1,4 @@
-From Coq Require Import ssreflect ssrfun ssrbool.
-
-
-From stdpp Require Import base tactics sets.
-
-From MatchingLogic.Utils
-Require Import
-    extralibrary
-.
-
-From MatchingLogic
-Require Import
-    Signature
-    Pattern
-.
+From MatchingLogic Require Export Pattern.
 
 Section with_signature.
     Context {Σ : Signature}.
@@ -55,9 +41,9 @@ Section with_signature.
       unfold well_formed in Prf. apply andb_true_iff in Prf. destruct Prf as [Prf1 Prf2].
       rewrite Prf1. simpl.
       unfold well_formed_closed in *. simpl.
-      destruct_and!. split_and!; auto.
+      naive_bsolver.
     - unfold well_formed,well_formed_closed in *. simpl in *.
-      destruct_and!. split_and!; auto.
+      naive_bsolver.
   Qed.
 
   Lemma wp_sctx (C : Application_context) (A : Pattern) :
@@ -80,11 +66,11 @@ Section with_signature.
     - auto.
     - simpl. rewrite IHC. simpl.
       unfold well_formed,well_formed_closed in *.
-      destruct_and!.
+      destruct_andb! Prf.
       eapply well_formed_closed_ex_aux_ind. 2: eassumption. lia.
     - simpl. rewrite IHC.
       unfold well_formed,well_formed_closed in *.
-      destruct_and!. split_and!; auto.
+      destruct_andb! Prf. apply andb_true_iff; split. 2: reflexivity.
       eapply well_formed_closed_ex_aux_ind. 2: eassumption. lia.
   Qed.
 
@@ -96,14 +82,14 @@ Section with_signature.
     - auto.
     - simpl. rewrite IHC. simpl.
       unfold well_formed,well_formed_closed in *.
-      destruct_and!.
+      destruct_andb! Prf.
       eapply well_formed_closed_mu_aux_ind. 2: eassumption. lia.
     - simpl. rewrite IHC.
       unfold well_formed,well_formed_closed in *.
-      destruct_and!. split_and!; auto.
+      destruct_andb! Prf. apply andb_true_iff; split. 2: reflexivity.
       eapply well_formed_closed_mu_aux_ind. 2: eassumption. lia.
   Qed.
-  
+
   Fixpoint free_evars_ctx (C : Application_context)
     : (EVarSet) :=
     match C with
