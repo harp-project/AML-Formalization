@@ -9,6 +9,17 @@ From MatchingLogic Require Export ApplicationContext
 
 Set Default Proof Mode "Classic".
 
+Tactic Notation "split_and" :=
+  match goal with
+  | |- _ /\ _ => split
+  | |- is_true (_ && _) => apply andb_true_iff; split
+  | |- Is_true (_ && _) => apply andb_True; split
+  | |- (_ && _) = true  => apply andb_true_iff; split
+  | |- true = (_ && _)  => symmetry; apply andb_true_iff; split
+  end.
+Tactic Notation "split_and" "?" := repeat split_and.
+Tactic Notation "split_and" "!" := hnf; split_and; split_and?.
+
 
 (* This hook is specifically intended to be filled with a tactic which
    transforms provability hypotheses into well_formedness hypotheses.
@@ -90,7 +101,6 @@ Ltac compositeSimplifyAllWfHyps :=
   (*proved_hook_wfauto;*)
   (onAllHyps simplifyWfxyHyp)
 .
-
 
 Ltac compoundDecomposeWfGoal :=
   rewrite ?wfToWfxySimplifications;
