@@ -1,8 +1,7 @@
+From Coq Require Import ProofIrrelevance.
 From MatchingLogic Require Export SyntaxLemmas.ApplicationCtxSubstitution
                                   PatternContext
                                   Freshness.
-
-From Coq Require Import ProofIrrelevance.
 
 Section with_signature.
     Context {Σ : Signature}.

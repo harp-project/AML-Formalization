@@ -1,17 +1,5 @@
-From Coq Require Import ssreflect ssrfun ssrbool.
-
-Require Setoid.
-From stdpp Require Import base sets propset.
-From Coq Require Import Logic.Classical_Prop Logic.FunctionalExtensionality.
-From MatchingLogic.Utils Require Import Lattice stdpp_ext extralibrary.
-From MatchingLogic
-Require Import
-  Syntax
-  Semantics
-  IndexManipulation
-  PrePredicate
-  DerivedOperators_Syntax
-.
+From Coq Require Import Logic.Classical_Prop.
+From MatchingLogic Require Export PrePredicate.
 
 Import MatchingLogic.Syntax.Notations.
 Import MatchingLogic.Substitution.Notations.

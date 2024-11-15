@@ -1,21 +1,11 @@
-From Coq Require Import ssreflect ssrfun ssrbool.
+From Coq Require Import Classical_Prop.
+From Coq Require Export Program.Wf
+                        PropExtensionality.
+From Equations Require Export Equations.
 
-From Coq.Logic Require Import FunctionalExtensionality PropExtensionality Classical_Pred_Type Classical_Prop.
-From Coq.micromega Require Import Lia.
-From Coq.Program Require Import Wf.
-
-From Equations Require Import Equations.
-
-From stdpp Require Import base fin_sets.
-From stdpp Require Import pmap gmap mapset fin_sets sets propset list_numbers.
-
-From MatchingLogic.Utils Require Import Lattice stdpp_ext extralibrary.
-From MatchingLogic Require Import
-  Syntax
-  Freshness
-  NamedAxioms
-  IndexManipulation
-.
+From MatchingLogic Require Export Lattice
+                                  NamedAxioms
+                                  Syntax.
 
 Import MatchingLogic.Syntax.Notations.
 Import MatchingLogic.Substitution.Notations.
@@ -289,7 +279,6 @@ Section semantics.
 
     Let OS := PropsetOrderedSet (Domain M).
     Let  L := PowersetLattice (Domain M).
-
 
     Equations? eval (ρ : Valuation) (ϕ : Pattern)
       : propset (@Domain M) by wf (size ϕ) :=
@@ -2263,8 +2252,7 @@ Section with_model.
         }
         erewrite (eval_free_svar_independent _ MuZ x psi); try assumption.
         reflexivity.
-        unfold well_formed,well_formed_closed in Hwf.
-        destruct_and!. all: try assumption.
+        unfold well_formed,well_formed_closed in Hwf. wf_auto2.
         {
           simpl in H2. apply not_elem_of_singleton_1 in H2. assumption.
         }

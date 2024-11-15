@@ -19,14 +19,14 @@ src/SyntaxLemmas/FreshnessSubstitution.v
 src/SyntaxLemmas/PatternCtxApplicationCtx.v
 src/SyntaxLemmas/FreshnessApplicationCtx.v
 src/SyntaxLemmas/ApplicationCtxSubstitution.v
-src/Syntax.v
 src/wftactics.v
+src/Syntax.v
 src/NamedAxioms.v
 
 src/Semantics.v
+src/monotonic.v
 src/ModelIsomorphism.v
 src/PrePredicate.v
-src/monotonic.v
 src/DerivedOperators_Semantics.v
 
 src/ProofSystem.v

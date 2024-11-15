@@ -1,9 +1,9 @@
 From Coq Require Import Btauto.
 
 From MatchingLogic Require Export
-    stdpp_ext
+    Signature
     extralibrary
-    Signature.
+    stdpp_ext.
 
 
 (* TODO have different type for element variable and for set variable index *)
@@ -96,7 +96,7 @@ Fixpoint count_binders
   | patt_mu ϕ' =>
     S (count_binders ϕ')
   end
-.    
+.
 
 Definition Theory {Σ : Signature} := propset Pattern.
 

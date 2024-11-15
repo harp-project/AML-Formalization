@@ -1,26 +1,5 @@
-From Coq Require Import ssreflect ssrfun ssrbool.
-
-Require Import Coq.Setoids.Setoid Coq.Classes.Morphisms Coq.Relations.Relations.
-Require Import Logic.IndefiniteDescription Coq.Logic.FunctionalExtensionality.
-
-From stdpp
-Require Import
-    base
-    decidable
-    propset
-    sets
-.
-
-From MatchingLogic
-Require Import
-    Utils.stdpp_ext
-    Utils.extralibrary
-    Utils.Surj
-    Pattern
-    Syntax
-    Semantics
-    monotonic
-.
+From MatchingLogic Require Export Surj
+                                  monotonic.
 
 Import MatchingLogic.Substitution.Notations.
 
@@ -191,8 +170,8 @@ Section isomorphism.
       |}.
   Next Obligation.
       intros.
-      destruct i,j. simpl. simpl in H.
-      unfold Inj in *.
+      destruct i,j. simpl. (* simpl in H. *)
+      unfold Inj in *. intros.
       apply mi_inj1 in H.
       apply mi_inj0 in H.
       exact H.

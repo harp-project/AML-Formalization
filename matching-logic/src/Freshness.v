@@ -1,7 +1,4 @@
-From MatchingLogic
-Require Export
-    Pattern
-.
+From MatchingLogic Require Export Pattern.
 
 Section freshness.
     Context {Σ : Signature}.

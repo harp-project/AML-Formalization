@@ -1,12 +1,12 @@
-From Coq Require Import ssreflect ssrfun ssrbool.
+(* From Coq Require Import ssreflect ssrfun ssrbool.
 
 Require Import Setoid.
 From Coq.Logic Require Import FunctionalExtensionality.
-From Coq.Logic Require Import PropExtensionality ClassicalFacts.
+From Coq.Logic Require Import PropExtensionality ClassicalFacts. *)
 
-From stdpp Require Import base list sets propset.
+(* From stdpp Require Import base list sets propset. *)
 
-From MatchingLogic Require Import
+(* From MatchingLogic Require Import
   Syntax
   Semantics
   DerivedOperators_Syntax
@@ -16,6 +16,9 @@ From MatchingLogic Require Import
   Utils.stdpp_ext
   IndexManipulation
 .
+ *)
+From MatchingLogic Require Export DerivedOperators_Semantics
+                                  monotonic.
 
 Import MatchingLogic.Syntax.Notations.
 Import MatchingLogic.Substitution.Notations.

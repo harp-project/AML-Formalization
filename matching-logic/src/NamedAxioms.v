@@ -1,8 +1,4 @@
-From Coq Require Import ssreflect ssrfun ssrbool.
-
-From stdpp Require Import propset.
-
-From MatchingLogic Require Import Syntax.
+From MatchingLogic Require Export Pattern.
 
 (* TODO: set? *)
 (* TODO: well-formedness *)

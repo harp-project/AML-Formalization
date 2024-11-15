@@ -1,9 +1,9 @@
+From Coq Require Import Btauto.
+
 From MatchingLogic Require Export
     DerivedOperators_Syntax
     IndexManipulation
 .
-
-Import Btauto.
 
 Import MatchingLogic.Substitution.Notations.
 

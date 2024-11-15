@@ -1,5 +1,4 @@
-From MatchingLogic Require Export
-    Pattern.
+From MatchingLogic Require Export Pattern.
 
 Section subst.
     Context {Σ : Signature}.

@@ -1,10 +1,11 @@
+From Coq Require Import Logic.Classical_Prop.
+
 From MatchingLogic Require Export
   SyntaxLemmas.PatternCtxApplicationCtx
   SyntaxLemmas.FreshnessApplicationCtx
   wftactics
 .
 
-From Coq Require Import Logic.Classical_Prop.
 Import MatchingLogic.Substitution.Notations.
 
 Close Scope boolean_if_scope.
@@ -987,14 +988,14 @@ Section with_signature.
   evar_is_fresh_in x (foldr patt_imp g l) <-> evar_is_fresh_in x g /\ evar_is_fresh_in_list x l.
   Proof.
   induction l; simpl; split; intros H.
-  - split;[assumption|]. unfold evar_is_fresh_in_list. apply Forall_nil. exact I.
+  - split;[assumption|]. unfold evar_is_fresh_in_list. apply Forall_nil.
   - destruct H as [H _]. exact H.
   - unfold evar_is_fresh_in_list,evar_is_fresh_in in *. simpl in *.
     split;[set_solver|].
     apply Forall_cons.
     destruct IHl as [IHl1 IHl2].
-    split;[set_solver|].
-    apply IHl1. set_solver.
+    set_solver.
+    apply IHl. set_solver.
   - unfold evar_is_fresh_in_list,evar_is_fresh_in in *. simpl in *.
     destruct IHl as [IHl1 IHl2].
     destruct H as [H1 H2].
