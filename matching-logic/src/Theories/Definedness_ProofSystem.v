@@ -1,33 +1,10 @@
-From Coq Require Import ssreflect ssrfun ssrbool.
-
-From Ltac2 Require Import Ltac2.
-
-Require Import Equations.Prop.Equations.
-
-From Coq Require Import String Setoid.
-Require Import Coq.Program.Equality.
-Require Import Coq.Logic.Classical_Prop.
-From Coq.Logic Require Import FunctionalExtensionality Eqdep_dec.
-From Coq.Classes Require Import Morphisms_Prop.
-(* From Coq.Unicode Require Import Utf8. *)
-From Coq.micromega Require Import Lia.
-
-From MatchingLogic Require Import Logic ProofMode.MLPM.
-From MatchingLogic.Theories Require Import Definedness_Syntax.
-From MatchingLogic.Utils Require Import stdpp_ext.
-Import extralibrary.
-
-From stdpp Require Import base fin_sets sets propset proof_irrel option list coGset finite infinite gmap.
-
-Import MatchingLogic.Logic.Notations.
-Import MatchingLogic.DerivedOperators_Syntax.Notations.
+From MatchingLogic Require Export Definedness_Syntax MLPM.
+Import MatchingLogic.Logic.Notations
+       MatchingLogic.Theories.Definedness_Syntax.Notations.
 
 Set Default Proof Mode "Classic".
 
-Close Scope equations_scope. (* Because of [!] *)
-Open Scope ml_scope.
-
-Import Notations.
+Open Scope list_scope.
 
 Section ProofSystemTheorems.
 
@@ -1575,7 +1552,7 @@ Section ProofSystemTheorems.
     (Hfree : {[ev_x; x]} ∪ free_evars φ1 ∪ free_evars φ2 ∪ free_evars (pcPattern C) ## xs)
 (*   TODO: use this:  (Hfree : fresh_evars xs {[ev_x; x]} ∪ free_evars φ1 ∪ free_evars φ2 ∪ free_evars (pcPattern C))  *)
     (Hfree2 : x ∉ free_evars φ1 ∪ free_evars φ2 ∪ free_evars (pcPattern C))
-    (Henough : size xs >= maximal_exists_depth_to 0 (pcEvar C) (pcPattern C))
+    (Henough : base.size xs >= maximal_exists_depth_to 0 (pcEvar C) (pcPattern C))
     (Hmu_less : mu_in_evar_path (pcEvar C) (pcPattern C) 0 = false):
     ProofInfoLe (ExGen := {[ev_x; x]} ∪ coGset.gset_to_coGset xs,
            SVSubst := ∅,

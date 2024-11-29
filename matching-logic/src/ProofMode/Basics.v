@@ -708,5 +708,3 @@ Proof.
   Fail mlRename "6"%string into "6"%string.
   Fail mlRename "4"%string into "1"%string.
 Abort.
-
-Close Scope ml_scope.

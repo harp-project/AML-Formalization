@@ -1,19 +1,9 @@
-From Coq Require Import ssreflect ssrfun ssrbool.
-
-From Ltac2 Require Import Ltac2.
-From stdpp Require Import base gmap sets list.
-
-From MatchingLogic.Utils
-Require Import
-    extralibrary
-    stdpp_ext
-.
-
 From MatchingLogic
-Require Import
+Require Export
     Syntax
     IndexManipulation
 .
+From Ltac2 Require Import Ltac2.
 
 Set Default Proof Mode "Classic".
 
@@ -800,13 +790,13 @@ Qed.
 
 Ltac2 rec _fm_export_everything () :=
     lazy_match! goal with
-    | [ fm : (FreshnessManager ?ps ?aevs ?asvs ?evs ?svs) |- _]
+    | [ fm : (FreshnessManager ?_ps ?_aevs ?_asvs ?_evs ?_svs) |- _]
         =>
         clear -$fm
     end;
     repeat (
     lazy_match! goal with
-    | [ fm : (FreshnessManager ?ps ?aevs ?asvs ?evs ?svs) |- _]
+    | [ fm : (FreshnessManager ?_ps ?_aevs ?_asvs ?_evs ?_svs) |- _]
         =>
         apply FreshMan_export_vars_inclusion in $fm;
         let h := Control.hyp fm in
@@ -815,7 +805,7 @@ Ltac2 rec _fm_export_everything () :=
     );
     repeat (
     lazy_match! goal with
-    | [ fm : (FreshnessManager ?ps ?aevs ?asvs ?evs ?svs) |- _]
+    | [ fm : (FreshnessManager ?_ps ?_aevs ?_asvs ?_evs ?_svs) |- _]
         =>
         apply FreshMan_export_evars_nodup in $fm;
         let h := Control.hyp fm in
@@ -824,7 +814,7 @@ Ltac2 rec _fm_export_everything () :=
     );
     repeat (
     lazy_match! goal with
-    | [ fm : (FreshnessManager ?ps ?aevs ?asvs ?evs ?svs) |- _]
+    | [ fm : (FreshnessManager ?_ps ?_aevs ?_asvs ?_evs ?_svs) |- _]
         =>
         apply FreshMan_export_svars_nodup in $fm;
         let h := Control.hyp fm in
@@ -832,9 +822,9 @@ Ltac2 rec _fm_export_everything () :=
     end
     );
     lazy_match! goal with
-    | [ fm : (FreshnessManager ?ps ?aevs ?asvs ?evs ?svs) |- _]
+    | [ fm : (FreshnessManager ?_ps ?_aevs ?_asvs ?_evs ?_svs) |- _]
         =>
-        clear fm
+        clear $fm
     end
 .
 
@@ -913,7 +903,7 @@ Ltac2 fm_solve () :=
         let fmt := (Control.hyp fm) in
         let pf := constr:(fm_svars_nodup $ps $aevs $asvs $evs $svs $fmt $i $j $x $y) in
         apply $pf > [reflexivity|reflexivity|ltac1:(lia)]
-    | [ fm : (FreshnessManager ?ps ?aevs ?asvs ?evs ?svs) |- _ (* (not (@elem_of _ _ _ ?x _)) *) ] =>
+    | [ _fm : (FreshnessManager ?_ps ?_aevs ?_asvs ?_evs ?_svs) |- _ (* (not (@elem_of _ _ _ ?x _)) *) ] =>
         (* This might not be the most scalable approach, but it works for now. *)
         _fm_export_everything ();
         cbn;
@@ -1035,5 +1025,3 @@ Proof.
   pose proof (free_evars_bevar_subst).
   set_solver.
 Qed.
-
-Close Scope ml_scope.

@@ -241,376 +241,705 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
     .
     Proof.
       induction n.
-      - (* n = 0 *)
-        intros. destruct phi; simpl in H; try inversion H.
-        + (* EVar free *)
-          unfold MonotonicFunction. unfold AntiMonotonicFunction. unfold leq. simpl.
+      1: { intros. destruct phi; simpl in H; try inversion H. }
+      intros. destruct phi; simpl in H; try inversion H.
+      + (* EVar free *)
+        unfold MonotonicFunction. unfold AntiMonotonicFunction. unfold leq. simpl.
+        setoid_rewrite -> elem_of_subseteq.
+        unfold In. split; intros; rewrite -> eval_free_evar_simpl in *; assumption.
+      + unfold MonotonicFunction. unfold AntiMonotonicFunction. unfold leq. simpl.
+        setoid_rewrite -> elem_of_subseteq.
+        unfold In. split; intros; rewrite -> eval_free_evar_simpl in *; assumption.
+      + (* SVar free *)
+        unfold MonotonicFunction. unfold AntiMonotonicFunction. unfold leq. simpl.
+        setoid_rewrite -> elem_of_subseteq.
+        split; intros; rewrite -> eval_free_svar_simpl in *;
+          unfold update_svar_val in *; destruct (decide (X = x)); subst.
+        * unfold respects_blacklist in H1.
+          specialize (H1 x).
+          destruct H1 as [Hneg Hpos].
+          specialize (Hneg H2).
+          inversion Hneg. subst. cbn in H5. case_match; congruence.
+        * simpl. simpl in H4. destruct (decide (X = x)). contradiction.
+          cbn in H5. case_match. congruence. apply H5.
+        * simpl. simpl in H4. rewrite decide_eq_same.
+          cbn in H5. rewrite decide_eq_same in H5. by auto.
+        * simpl. simpl in H4. destruct (decide (X = x)). contradiction.
+          cbn in H5. case_match. congruence. apply H5.
+      + unfold MonotonicFunction. unfold AntiMonotonicFunction. unfold leq. simpl.
+        setoid_rewrite -> elem_of_subseteq.
+        split; intros; rewrite -> eval_free_svar_simpl in *;
+          unfold update_svar_val in *; destruct (decide (X = x)); subst.
+        * unfold respects_blacklist in H1.
+          specialize (H1 x).
+          destruct H1 as [Hneg Hpos]. cbn in *.
+          rewrite -> decide_eq_same in *.
+          apply Hneg in H4. congruence.
+        * simpl. simpl in H4. destruct (decide (X = x)). contradiction.
+          cbn in H6. case_match. congruence. apply H6.
+        * simpl. simpl in H6. rewrite decide_eq_same.
+          cbn in H6. rewrite decide_eq_same in H6. by auto.
+        * simpl. simpl in H6. destruct (decide (X = x)). contradiction.
+          cbn in H6. assumption.
+      + (* EVar bound *)
+        unfold AntiMonotonicFunction. unfold MonotonicFunction. unfold leq. simpl.
+        split; intros; repeat rewrite -> eval_bound_evar_simpl;
+          setoid_rewrite -> elem_of_subseteq;
+          unfold In; intros; assumption.
+      + unfold AntiMonotonicFunction. unfold MonotonicFunction. unfold leq. simpl.
+        split; intros; repeat rewrite -> eval_bound_evar_simpl;
+          setoid_rewrite -> elem_of_subseteq;
+          unfold In; intros; assumption.
+      + (* SVar bound *)
+        unfold AntiMonotonicFunction. unfold MonotonicFunction. unfold leq. simpl.
+        split; intros; repeat rewrite -> eval_bound_svar_simpl;
+          setoid_rewrite -> elem_of_subseteq;
+          unfold In; intros; assumption.
+      + unfold AntiMonotonicFunction. unfold MonotonicFunction. unfold leq. simpl.
+        split; intros; repeat rewrite -> eval_bound_svar_simpl;
+          setoid_rewrite -> elem_of_subseteq;
+          unfold In; intros; assumption.
+      + (* Sym *)
+        unfold AntiMonotonicFunction. unfold MonotonicFunction. unfold leq. simpl.
+        split; intros; repeat rewrite -> eval_sym_simpl;
+          setoid_rewrite -> elem_of_subseteq;
+          unfold In; intros; assumption.
+      + unfold AntiMonotonicFunction. unfold MonotonicFunction. unfold leq. simpl.
+        split; intros; repeat rewrite -> eval_sym_simpl;
+          setoid_rewrite -> elem_of_subseteq;
+          unfold In; intros; assumption.
+      + (* App *)
+        remember (respects_blacklist_app_1 phi1 phi2 Bp Bn H1) as Hrb1. clear HeqHrb1.
+        remember (respects_blacklist_app_2 phi1 phi2 Bp Bn H1) as Hrb2. clear HeqHrb2.
+        rename H0 into Hwfp.
+        simpl in Hwfp.
+        apply andb_true_iff in Hwfp.
+        destruct Hwfp as [Hwfp1 Hwfp2].
+
+        (* phi1 and phi2 are smaller then the whole implication *)
+        assert (Hsz1: size phi1 <= n).
+        { unfold size in *; lia. }
+        assert (Hsz2: size phi2 <= n).
+        { unfold size in *; lia. }
+
+        split.
+        {
+          intros HBp. unfold AntiMonotonicFunction in *.
+          intros.
+          repeat rewrite -> eval_app_simpl.
+          unfold app_ext. unfold leq in *. simpl in *.
           setoid_rewrite -> elem_of_subseteq.
-          unfold In. split; intros; rewrite -> eval_free_evar_simpl in *; assumption.
-        + (* SVar free *)
-          unfold MonotonicFunction. unfold AntiMonotonicFunction. unfold leq. simpl.
+          rewrite -> elem_of_subseteq in H0.
+          intros.
+          destruct H2 as [le [re [? [? ?] ] ] ].
+          exists le. exists re.
+          split.
+          - specialize (IHn phi1 Hsz1 Hwfp1 Bp Bn Hrb1 ρ X).
+            destruct IHn as [IHam IHmo].
+            eapply (IHam HBp); eassumption.
+          - split.
+            + specialize (IHn phi2 Hsz2 Hwfp2 Bp Bn Hrb2 ρ X).
+              destruct IHn as [IHam IHmo].
+              eapply (IHam HBp); eassumption.
+            + assumption.
+        }
+        {
+          intros HBp. unfold MonotonicFunction in *.
+          intros.
+          repeat rewrite -> eval_app_simpl.
+          unfold app_ext. unfold leq in *. simpl in *.
           setoid_rewrite -> elem_of_subseteq.
-          split; intros; rewrite -> eval_free_svar_simpl in *;
-            unfold update_svar_val in *; destruct (decide (X = x)); subst.
-          * unfold respects_blacklist in H1.
-            specialize (H1 x).
-            destruct H1 as [Hneg Hpos].
-            specialize (Hneg H2).
-            inversion Hneg. subst. cbn in H5. case_match; congruence.
-          * simpl. simpl in H4. destruct (decide (X = x)). contradiction. apply H4.
-          * simpl. simpl in H4. rewrite decide_eq_same. rewrite decide_eq_same in H4.
-            auto.
-          * simpl. simpl in H4. destruct (decide (X = x)). contradiction. apply H4.
-            
-        + (* EVar bound *)
-          unfold AntiMonotonicFunction. unfold MonotonicFunction. unfold leq. simpl.
-          split; intros; repeat rewrite -> eval_bound_evar_simpl;
-            setoid_rewrite -> elem_of_subseteq;
-            unfold In; intros; assumption.
-        + (* SVar bound *)
-          unfold AntiMonotonicFunction. unfold MonotonicFunction. unfold leq. simpl.
-          split; intros; repeat rewrite -> eval_bound_svar_simpl;
-            setoid_rewrite -> elem_of_subseteq;
-            unfold In; intros; assumption.
-        + (* Sym *)
-          unfold AntiMonotonicFunction. unfold MonotonicFunction. unfold leq. simpl.
-          split; intros; repeat rewrite -> eval_sym_simpl;
-            setoid_rewrite -> elem_of_subseteq;
-            unfold In; intros; assumption.
-        + (* Bot *)
-          unfold AntiMonotonicFunction. unfold MonotonicFunction. unfold leq. simpl.
-          split; intros; rewrite -> eval_bott_simpl;
-            setoid_rewrite -> elem_of_subseteq; intros; inversion H4.
-      - (* S n *)
-        intros phi Hsz Hwfp Bp Bn Hrb ρ V.
-        destruct phi.
-        * apply IHn. simpl. lia. assumption. assumption.
-        * apply IHn. simpl. lia. assumption. assumption.
-        * apply IHn. simpl. lia. assumption. assumption.
-        * apply IHn. simpl. lia. assumption. assumption.
-        * apply IHn. simpl. lia. assumption. assumption.
-        * (* App *)
-          remember (respects_blacklist_app_1 phi1 phi2 Bp Bn Hrb) as Hrb1. clear HeqHrb1.
-          remember (respects_blacklist_app_2 phi1 phi2 Bp Bn Hrb) as Hrb2. clear HeqHrb2.
-          simpl in Hwfp.
-          apply andb_true_iff in Hwfp.
-          destruct Hwfp as [Hwfp1 Hwfp2].
+          rewrite -> elem_of_subseteq in H0.
+          intros.
+          destruct H2 as [le [re [? [? ?] ] ] ].
 
-          (* phi1 and phi2 are smaller then the whole implication *)
-          simpl in Hsz.
-          assert (Hsz1: size phi1 <= n).
-          { lia. }
-          assert (Hsz2: size phi2 <= n).
-          { lia. }
-
+          exists le. exists re.
           split.
-          {
-            intros HBp. unfold AntiMonotonicFunction in *.
-            intros.
-            repeat rewrite -> eval_app_simpl.
-            unfold app_ext. unfold leq in *. simpl in *.
-            setoid_rewrite -> elem_of_subseteq.
-            rewrite -> elem_of_subseteq in H.
-            intros.
-            destruct H0. destruct H0. destruct H0. destruct H1.
-            
-            exists x1. exists x2.
-            split.
-            - specialize (IHn phi1 Hsz1 Hwfp1 Bp Bn Hrb1 ρ V).
+          - specialize (IHn phi1 Hsz1 Hwfp1 Bp Bn Hrb1 ρ X).
+            destruct IHn as [IHam IHmo].
+            eapply (IHmo HBp); eassumption.
+          - split.
+            + specialize (IHn phi2 Hsz2 Hwfp2 Bp Bn Hrb2 ρ X).
               destruct IHn as [IHam IHmo].
-              apply (IHam HBp x y H x1). assumption.
-            - split.
-              + specialize (IHn phi2 Hsz2 Hwfp2 Bp Bn Hrb2 ρ V).
-                destruct IHn as [IHam IHmo].
-                apply (IHam HBp x y H x2). assumption.
-              + assumption.
-          }
-          {
-            intros HBp. unfold MonotonicFunction in *.
-            intros.
-            repeat rewrite -> eval_app_simpl.
-            unfold app_ext. unfold leq in *. simpl in *.
-            setoid_rewrite -> elem_of_subseteq.
-            rewrite -> elem_of_subseteq in H.
-            intros.
-            destruct H0. destruct H0. destruct H0. destruct H1.
-            
-            exists x1. exists x2.
-            split.
-            - specialize (IHn phi1 Hsz1 Hwfp1 Bp Bn Hrb1 ρ V).
+              eapply (IHmo HBp); eassumption.
+            + assumption.
+        }
+      + remember (respects_blacklist_app_1 phi1 phi2 Bp Bn H1) as Hrb1. clear HeqHrb1.
+        remember (respects_blacklist_app_2 phi1 phi2 Bp Bn H1) as Hrb2. clear HeqHrb2.
+        rename H0 into Hwfp.
+        simpl in Hwfp.
+        apply andb_true_iff in Hwfp.
+        destruct Hwfp as [Hwfp1 Hwfp2].
+
+        (* phi1 and phi2 are smaller then the whole implication *)
+        assert (Hsz1: size phi1 <= n).
+        { unfold size in *; lia. }
+        assert (Hsz2: size phi2 <= n).
+        { unfold size in *; lia. }
+
+        split.
+        {
+          intros HBp. unfold AntiMonotonicFunction in *.
+          intros.
+          repeat rewrite -> eval_app_simpl.
+          unfold app_ext. unfold leq in *. simpl in *.
+          setoid_rewrite -> elem_of_subseteq.
+          rewrite -> elem_of_subseteq in H0.
+          intros.
+          destruct H4 as [le [re [? [? ?] ] ] ].
+          exists le. exists re.
+          split.
+          - specialize (IHn phi1 Hsz1 Hwfp1 Bp Bn Hrb1 ρ X).
+            destruct IHn as [IHam IHmo].
+            eapply (IHam HBp); eassumption.
+          - split.
+            + specialize (IHn phi2 Hsz2 Hwfp2 Bp Bn Hrb2 ρ X).
               destruct IHn as [IHam IHmo].
-              apply (IHmo HBp x y H x1). assumption.
-            - split.
-              + specialize (IHn phi2 Hsz2 Hwfp2 Bp Bn Hrb2 ρ V).
-                destruct IHn as [IHam IHmo].
-                apply (IHmo HBp x y H x2). assumption.
-              + assumption.
-          }
-          
-        * (* Bot *)
-          apply IHn. simpl. lia. assumption. assumption.
-        * (* Impl *)
-          (* phi1 and phi2 are well-formed-positive *)
-          simpl in Hwfp.
-          apply andb_true_iff in Hwfp.
-          destruct Hwfp as [Hwfp1 Hwfp2].
+              eapply (IHam HBp); eassumption.
+            + assumption.
+        }
+        {
+          intros HBp. unfold MonotonicFunction in *.
+          intros.
+          repeat rewrite -> eval_app_simpl.
+          unfold app_ext. unfold leq in *. simpl in *.
+          setoid_rewrite -> elem_of_subseteq.
+          rewrite -> elem_of_subseteq in H0.
+          intros.
+          destruct H4 as [le [re [? [? ?] ] ] ].
 
-          (* phi1 and phi2 are smaller then the whole implication *)
-          simpl in Hsz.
-          assert (Hsz1: size phi1 <= n).
-          { lia. }
-          assert (Hsz2: size phi2 <= n).
-          { lia. }
-          
-          
-          remember (respects_blacklist_impl_1 phi1 phi2 Bp Bn Hrb) as Hrb1. clear HeqHrb1.
-          remember (respects_blacklist_impl_2 phi1 phi2 Bp Bn Hrb) as Hrb2. clear HeqHrb2.
-          remember IHn as IHn1. clear HeqIHn1.
-          rename IHn into IHn2.
-          specialize (IHn1 phi1 Hsz1 Hwfp1 Bn Bp Hrb1 ρ V).
-          specialize (IHn2 phi2 Hsz2 Hwfp2 Bp Bn Hrb2 ρ V).
-          unfold AntiMonotonicFunction in *.
-          unfold MonotonicFunction in *.
-          
+          exists le. exists re.
           split.
-          {
-            intros HBp.
+          - specialize (IHn phi1 Hsz1 Hwfp1 Bp Bn Hrb1 ρ X).
+            destruct IHn as [IHam IHmo].
+            eapply (IHmo HBp); eassumption.
+          - split.
+            + specialize (IHn phi2 Hsz2 Hwfp2 Bp Bn Hrb2 ρ X).
+              destruct IHn as [IHam IHmo].
+              eapply (IHmo HBp); eassumption.
+            + assumption.
+        }
+      + (* Bot *)
+        unfold AntiMonotonicFunction. unfold MonotonicFunction. unfold leq. simpl.
+        split; intros; rewrite -> eval_bott_simpl;
+          setoid_rewrite -> elem_of_subseteq; intros; set_solver.
+      + unfold AntiMonotonicFunction. unfold MonotonicFunction. unfold leq. simpl.
+        split; intros; rewrite -> eval_bott_simpl;
+          setoid_rewrite -> elem_of_subseteq; intros; set_solver.
+      + (* Impl *)
+        (* phi1 and phi2 are well-formed-positive *)
+        rename H0 into Hwfp.
+        simpl in Hwfp.
+        apply andb_true_iff in Hwfp.
+        destruct Hwfp as [Hwfp1 Hwfp2].
+
+        (* phi1 and phi2 are smaller then the whole implication *)
+        assert (Hsz1: size phi1 <= n).
+        { unfold size in *; lia. }
+        assert (Hsz2: size phi2 <= n).
+        { unfold size in *; lia. }
+        
+        
+        remember (respects_blacklist_impl_1 phi1 phi2 Bp Bn H1) as Hrb1. clear HeqHrb1.
+        remember (respects_blacklist_impl_2 phi1 phi2 Bp Bn H1) as Hrb2. clear HeqHrb2.
+        remember IHn as IHn1. clear HeqIHn1.
+        rename IHn into IHn2.
+        specialize (IHn1 phi1 Hsz1 Hwfp1 Bn Bp Hrb1 ρ X).
+        specialize (IHn2 phi2 Hsz2 Hwfp2 Bp Bn Hrb2 ρ X).
+        unfold AntiMonotonicFunction in *.
+        unfold MonotonicFunction in *.
+        
+        split.
+        {
+          intros HBp.
+          intros.
+          repeat rewrite -> eval_imp_simpl.
+          unfold leq in *. simpl in *.
+          setoid_rewrite -> elem_of_subseteq.
+          rewrite -> elem_of_subseteq in H0.
+          intros.
+          destruct H2.
+          + left.
+            rewrite -> elem_of_difference in H2.
+            destruct H2 as [_ H2].
+            rewrite -> elem_of_difference.
+            split.
+            { apply elem_of_top'. }
+            
+            unfold not in *. intros.
+            apply H2.
+            
+            destruct IHn1 as [IHn11 IHn12].
+            eapply (IHn12 HBp); eassumption.
+          + right. unfold Ensembles.In in *.
+            destruct IHn2 as [IHn21 IHn22].
+            by eapply (IHn21 HBp).
+        }
+        {
+          intros HBn.
+          intros. repeat rewrite -> eval_imp_simpl.
+          unfold leq in *. simpl in *.
+          rewrite elem_of_subseteq. rewrite -> elem_of_subseteq in H0.
+          intros.
+          destruct H2.
+          + left.
+
+            rewrite -> elem_of_difference in H2.
+            destruct H2 as [_ H2].
+            rewrite -> elem_of_difference.
+            split.
+            { apply elem_of_top'. }
+
+            unfold not in *. intros.
+            apply H2.
+
+            destruct IHn1 as [IHn11 IHn12].
+            eapply (IHn11 HBn); eassumption.
+          + right. unfold In in *.
+            destruct IHn2 as [IHn21 IHn22].
+            by eapply (IHn22 HBn).
+        }
+      + rename H0 into Hwfp.
+        simpl in Hwfp.
+        apply andb_true_iff in Hwfp.
+        destruct Hwfp as [Hwfp1 Hwfp2].
+
+        (* phi1 and phi2 are smaller then the whole implication *)
+        assert (Hsz1: size phi1 <= n).
+        { unfold size in *; lia. }
+        assert (Hsz2: size phi2 <= n).
+        { unfold size in *; lia. }
+        
+        
+        remember (respects_blacklist_impl_1 phi1 phi2 Bp Bn H1) as Hrb1. clear HeqHrb1.
+        remember (respects_blacklist_impl_2 phi1 phi2 Bp Bn H1) as Hrb2. clear HeqHrb2.
+        remember IHn as IHn1. clear HeqIHn1.
+        rename IHn into IHn2.
+        specialize (IHn1 phi1 Hsz1 Hwfp1 Bn Bp Hrb1 ρ X).
+        specialize (IHn2 phi2 Hsz2 Hwfp2 Bp Bn Hrb2 ρ X).
+        unfold AntiMonotonicFunction in *.
+        unfold MonotonicFunction in *.
+        
+        split.
+        {
+          intros HBp.
+          intros.
+          repeat rewrite -> eval_imp_simpl.
+          unfold leq in *. simpl in *.
+          setoid_rewrite -> elem_of_subseteq.
+          rewrite -> elem_of_subseteq in H0.
+          intros.
+          destruct H4.
+          + left.
+            rewrite -> elem_of_difference in H4.
+            destruct H4 as [_ H4].
+            rewrite -> elem_of_difference.
+            split.
+            { apply elem_of_top'. }
+            
+            unfold not in *. intros.
+            apply H4.
+            
+            destruct IHn1 as [IHn11 IHn12].
+            eapply (IHn12 HBp); eassumption.
+          + right. unfold Ensembles.In in *.
+            destruct IHn2 as [IHn21 IHn22].
+            by eapply (IHn21 HBp).
+        }
+        {
+          intros HBn.
+          intros. repeat rewrite -> eval_imp_simpl.
+          unfold leq in *. simpl in *.
+          rewrite elem_of_subseteq. rewrite -> elem_of_subseteq in H0.
+          intros.
+          destruct H4.
+          + left.
+
+            rewrite -> elem_of_difference in H4.
+            destruct H4 as [_ H4].
+            rewrite -> elem_of_difference.
+            split.
+            { apply elem_of_top'. }
+
+            unfold not in *. intros.
+            apply H4.
+
+            destruct IHn1 as [IHn11 IHn12].
+            eapply (IHn11 HBn); eassumption.
+          + right. unfold In in *.
+            destruct IHn2 as [IHn21 IHn22].
+            by eapply (IHn22 HBn).
+        }
+      + (* Ex *)
+        simpl. remember (respects_blacklist_ex phi Bp Bn H1) as Hrb'. clear HeqHrb'.
+        specialize (IHn (phi^{evar: 0 ↦ (evar_fresh (elements (free_evars phi)))})).
+        rewrite <- evar_open_size in IHn.
+        assert (Hsz': size phi <= n). simpl in *. unfold size in *; lia.
+        remember (evar_fresh (elements (free_evars phi))) as fresh.
+        pose proof (Hwfp' := @wfp_evar_open Σ phi fresh 0 H0).
+        specialize (IHn Hsz' Hwfp' Bp Bn).
+        pose proof (Hrb'' := evar_open_respects_blacklist phi Bp Bn fresh 0 Hrb').
+        unfold MonotonicFunction in *. unfold AntiMonotonicFunction in *.
+        unfold leq. simpl.
+        setoid_rewrite elem_of_subseteq.
+
+        split; intros HBp S1 S2 Hincl; rewrite -> eval_ex_simpl; simpl;
+        unfold stdpp_ext.propset_fa_union; intros m; rewrite -> elem_of_PropSet;
+          intros [c Hc]; rewrite -> eval_ex_simpl; simpl;
+            unfold stdpp_ext.propset_fa_union; rewrite -> elem_of_PropSet; exists c;
+            remember (update_evar_val fresh c ρ) as ρ';
+            specialize (IHn Hrb'' ρ' X);
+            destruct IHn as [IHn1 IHn2].
+        {
+          specialize (IHn1 HBp S1 S2 Hincl).
+          remember (phi^{evar: 0 ↦ fresh}) as phi'.
+          remember (update_svar_val X S1 ρ') as ρ''.
+          unfold leq in IHn1. simpl in *. unfold Included in *. unfold In in *.
+          subst.
+          apply IHn1. apply Hc.
+        }
+        {
+          specialize (IHn2 HBp S1 S2 Hincl).
+          remember (phi^{evar: 0 ↦ fresh}) as phi'.
+          remember (update_svar_val X S1 ρ') as ρ''.
+          unfold leq in IHn1. simpl in *. unfold Included in *. unfold In in *.
+          subst.
+          apply IHn2. apply Hc.
+        }
+      + simpl. remember (respects_blacklist_ex phi Bp Bn H1) as Hrb'. clear HeqHrb'.
+        specialize (IHn (phi^{evar: 0 ↦ (evar_fresh (elements (free_evars phi)))})).
+        rewrite <- evar_open_size in IHn.
+        assert (Hsz': size phi <= n). simpl in *. unfold size in *; lia.
+        remember (evar_fresh (elements (free_evars phi))) as fresh.
+        pose proof (Hwfp' := @wfp_evar_open Σ phi fresh 0 H0).
+        specialize (IHn Hsz' Hwfp' Bp Bn).
+        pose proof (Hrb'' := evar_open_respects_blacklist phi Bp Bn fresh 0 Hrb').
+        unfold MonotonicFunction in *. unfold AntiMonotonicFunction in *.
+        unfold leq. simpl.
+        setoid_rewrite elem_of_subseteq.
+
+        split; intros HBp S1 S2 Hincl; rewrite -> eval_ex_simpl; simpl;
+        unfold stdpp_ext.propset_fa_union; intros ?; rewrite -> elem_of_PropSet;
+          intros [c Hc]; rewrite -> eval_ex_simpl; simpl;
+            unfold stdpp_ext.propset_fa_union; rewrite -> elem_of_PropSet; exists c;
+            remember (update_evar_val fresh c ρ) as ρ';
+            specialize (IHn Hrb'' ρ' X);
+            destruct IHn as [IHn1 IHn2].
+        {
+          specialize (IHn1 HBp S1 S2 Hincl).
+          remember (phi^{evar: 0 ↦ fresh}) as phi'.
+          remember (update_svar_val X S1 ρ') as ρ''.
+          unfold leq in IHn1. simpl in *. unfold Included in *. unfold In in *.
+          subst.
+          apply IHn1. apply Hc.
+        }
+        {
+          specialize (IHn2 HBp S1 S2 Hincl).
+          remember (phi^{evar: 0 ↦ fresh}) as phi'.
+          remember (update_svar_val X S1 ρ') as ρ''.
+          unfold leq in IHn1. simpl in *. unfold Included in *. unfold In in *.
+          subst.
+          apply IHn2. apply Hc.
+        }
+      + (* Mu *)
+        remember H0 as Hwfpmu. clear HeqHwfpmu.
+        assert (Hsz': size phi <= n).
+        { unfold size in *; lia. }
+        split.
+        {
+          unfold AntiMonotonicFunction. intros.
+          repeat rewrite -> eval_mu_simpl.
+          Arguments LeastFixpointOf : simpl never.
+          Arguments leq : simpl never.
+          simpl.
+
+          remember (fresh_svar phi) as X'.
+          remember (phi^{svar: 0 ↦ X'}) as phi'.
+          pose proof (Hszeq := svar_open_size 0 X' phi).
+          assert (Hsz'': size phi' <= n).
+          { rewrite -> Heqphi'. rewrite <- Hszeq. assumption. }
+          specialize (IHn phi' Hsz'').
+          simpl in H0.
+
+          assert (Hrb': respects_blacklist phi' (Empty_set svar) (Ensembles.Singleton svar X')).
+          { subst. apply mu_wellformed_respects_blacklist. apply Hwfpmu. apply set_svar_fresh_is_fresh. }
+
+          simpl in Hwfpmu. apply andb_true_iff in Hwfpmu.
+          destruct Hwfpmu as [Hnonegphi Hwfpphi].
+          assert (Hwfp' : well_formed_positive phi').
+          { subst. apply wfp_svar_open. exact Hwfpphi. }
+
+          remember IHn as IHn'. clear HeqIHn'.
+          specialize (IHn' Hwfp' (Empty_set svar) (Ensembles.Singleton svar X') Hrb').
+          remember IHn' as Hy. clear HeqHy.
+          rename IHn' into Hx.
+          specialize (Hx (update_svar_val X x ρ) X').
+          specialize (Hy (update_svar_val X y ρ) X').
+
+          apply lfp_preserves_order.
+          - apply Hy. constructor.
+          - apply Hx. constructor.
+          - clear Hx. clear Hy.
             intros.
-            repeat rewrite -> eval_imp_simpl.
-            unfold leq in *. simpl in *.
-            setoid_rewrite -> elem_of_subseteq.
-            rewrite -> elem_of_subseteq in H.
+            destruct (decide (X' = X)).
+            + (* X' = X *)
+              rewrite <- e.
+              repeat rewrite -> update_svar_val_shadow.
+              unfold leq. simpl. unfold Included. unfold In. auto.
+            + (* X' <> X *)
+              pose proof (Uhsvcx := @update_svar_val_comm Σ M X' X x0 x ρ n0).
+              rewrite -> Uhsvcx.
+              pose proof (Uhsvcy := @update_svar_val_comm Σ M X' X x0 y ρ n0).
+              rewrite -> Uhsvcy.
+
+              assert (HrbV: respects_blacklist phi' (Ensembles.Singleton svar X) (Empty_set svar)).
+              {
+                unfold respects_blacklist. intros. split.
+                - intros. inversion H5. rewrite <- H6.
+                  unfold respects_blacklist in H1.
+                  specialize (H1 X).
+                  destruct H1 as [Hrbn Hrbp].
+                  specialize (Hrbn H2).
+                  rewrite <- H6 in *. clear H6.
+                  subst.
+                  apply positive_negative_occurrence_named_svar_open.
+                  *
+                    unfold not. intros. assert (fresh_svar phi = X).
+                    {
+                      symmetry. assumption.
+                    }
+                    unfold not in n0. destruct (n0 H3).
+                  * assumption.
+                - intros. destruct H5.
+              }
+
+              specialize (IHn Hwfp' (Ensembles.Singleton svar X) (Empty_set svar) HrbV).
+              specialize (IHn (update_svar_val X' x0 ρ) X).
+              destruct IHn as [IHam IHmo].
+              apply IHam. constructor. assumption.
+        }
+        (* This is the same as the previous, with minor changes *)
+        {
+          unfold MonotonicFunction. intros.
+          repeat rewrite -> eval_mu_simpl.
+          Arguments LeastFixpointOf : simpl never.
+          Arguments leq : simpl never.
+          simpl.
+
+          remember (fresh_svar phi) as X'.
+          remember (phi^{svar: 0 ↦ X'}) as phi'.
+          pose proof (Hszeq := svar_open_size 0 X' phi).
+          assert (Hsz'': size phi' <= n).
+          { rewrite -> Heqphi'. rewrite <- Hszeq. assumption. }
+          specialize (IHn phi' Hsz'').
+          simpl in H0.
+
+          assert (Hrb': respects_blacklist phi' (Empty_set svar) (Ensembles.Singleton svar X')).
+          { subst. apply mu_wellformed_respects_blacklist. apply Hwfpmu. apply set_svar_fresh_is_fresh. }
+
+          simpl in Hwfpmu. apply andb_true_iff in Hwfpmu.
+          destruct Hwfpmu as [Hnonegphi Hwfpphi].
+          assert (Hwfp' : well_formed_positive phi').
+          { subst. apply wfp_svar_open. exact Hwfpphi. }
+
+          remember IHn as IHn'. clear HeqIHn'.
+          specialize (IHn' Hwfp' (Empty_set svar) (Ensembles.Singleton svar X') Hrb').
+          remember IHn' as Hy. clear HeqHy.
+          rename IHn' into Hx.
+          specialize (Hx (update_svar_val X x ρ) X').
+          specialize (Hy (update_svar_val X y ρ) X').
+
+          apply lfp_preserves_order.
+          - apply Hx. constructor.
+          - apply Hy. constructor.
+          - clear Hy. clear Hx.
             intros.
-            destruct H0.
-            + left.
-              rewrite -> elem_of_difference in H0.
-              destruct H0 as [_ H0].
-              rewrite -> elem_of_difference.
-              split.
-              { apply elem_of_top'. }
-              
-              unfold not in *. intros.
-              apply H0.
-              
-              destruct IHn1 as [IHn11 IHn12].
-              apply (IHn12 HBp x y H x0).
-              apply H1.
-            + right. unfold Ensembles.In in *.
-              destruct IHn2 as [IHn21 IHn22].
-              apply (IHn21 HBp x y H x0 H0).
-          }
-          {
-            intros HBn.
-            intros. repeat rewrite -> eval_imp_simpl.
-            unfold leq in *. simpl in *.
-            rewrite elem_of_subseteq. rewrite -> elem_of_subseteq in H.
+            destruct (decide (X' = X)).
+            + (* X' = X *)
+              rewrite <- e.
+              repeat rewrite -> update_svar_val_shadow.
+              unfold leq. simpl. unfold Included. unfold Ensembles.In. auto.
+            + (* X' <> X *)
+              pose proof (Uhsvcx := @update_svar_val_comm Σ M X' X x0 x ρ n0).
+              rewrite -> Uhsvcx.
+              pose proof (Uhsvcy := @update_svar_val_comm Σ M X' X x0 y ρ n0).
+              rewrite -> Uhsvcy.
+
+              assert (HrbV: respects_blacklist phi' (Empty_set svar) (Ensembles.Singleton svar X)).
+              {
+                unfold respects_blacklist. intros. split.
+                - intros. inversion H5.
+                - intros. inversion H5. rewrite <- H6.
+                  unfold respects_blacklist in H1.
+                  specialize (H1 X).
+                  destruct H1 as [Hrbn Hrbp].
+                  specialize (Hrbp H2).
+                  rewrite <- H6 in *. clear H6.
+                  subst.
+                  apply positive_negative_occurrence_named_svar_open.
+                  *
+                    unfold not. intros. assert (fresh_svar phi = X).
+                    {
+                      symmetry. assumption.
+                    }
+                    unfold not in n0. destruct (n0 H3).
+                  * assumption.
+              }
+
+              specialize (IHn Hwfp' (Empty_set svar) (Ensembles.Singleton svar X) HrbV).
+              specialize (IHn (update_svar_val X' x0 ρ) X).
+              destruct IHn as [IHam IHmo].
+              apply IHmo. constructor. assumption.
+        }
+      + remember H0 as Hwfpmu. clear HeqHwfpmu.
+        assert (Hsz': size phi <= n).
+        { unfold size in *; lia. }
+        split.
+        {
+          unfold AntiMonotonicFunction. intros.
+          repeat rewrite -> eval_mu_simpl.
+          Arguments LeastFixpointOf : simpl never.
+          Arguments leq : simpl never.
+          simpl.
+
+          remember (fresh_svar phi) as X'.
+          remember (phi^{svar: 0 ↦ X'}) as phi'.
+          pose proof (Hszeq := svar_open_size 0 X' phi).
+          assert (Hsz'': size phi' <= n).
+          { rewrite -> Heqphi'. rewrite <- Hszeq. assumption. }
+          specialize (IHn phi' Hsz'').
+          simpl in H0.
+
+          assert (Hrb': respects_blacklist phi' (Empty_set svar) (Ensembles.Singleton svar X')).
+          { subst. apply mu_wellformed_respects_blacklist. apply Hwfpmu. apply set_svar_fresh_is_fresh. }
+
+          simpl in Hwfpmu. apply andb_true_iff in Hwfpmu.
+          destruct Hwfpmu as [Hnonegphi Hwfpphi].
+          assert (Hwfp' : well_formed_positive phi').
+          { subst. apply wfp_svar_open. exact Hwfpphi. }
+
+          remember IHn as IHn'. clear HeqIHn'.
+          specialize (IHn' Hwfp' (Empty_set svar) (Ensembles.Singleton svar X') Hrb').
+          remember IHn' as Hy. clear HeqHy.
+          rename IHn' into Hx.
+          specialize (Hx (update_svar_val X x ρ) X').
+          specialize (Hy (update_svar_val X y ρ) X').
+
+          apply lfp_preserves_order.
+          - apply Hy. constructor.
+          - apply Hx. constructor.
+          - clear Hx. clear Hy.
             intros.
-            destruct H0.
-            + left.
+            destruct (decide (X' = X)).
+            + (* X' = X *)
+              rewrite <- e.
+              repeat rewrite -> update_svar_val_shadow.
+              unfold leq. simpl. unfold Included. unfold In. auto.
+            + (* X' <> X *)
+              pose proof (Uhsvcx := @update_svar_val_comm Σ M X' X x0 x ρ n0).
+              rewrite -> Uhsvcx.
+              pose proof (Uhsvcy := @update_svar_val_comm Σ M X' X x0 y ρ n0).
+              rewrite -> Uhsvcy.
 
-              rewrite -> elem_of_difference in H0.
-              destruct H0 as [_ H0].
-              rewrite -> elem_of_difference.
-              split.
-              { apply elem_of_top'. }
-           
-              unfold not in *. intros.
-              apply H0.
+              assert (HrbV: respects_blacklist phi' (Ensembles.Singleton svar X) (Empty_set svar)).
+              {
+                unfold respects_blacklist. intros. split.
+                - intros. inversion H6. rewrite <- H7.
+                  unfold respects_blacklist in H1.
+                  specialize (H1 X).
+                  destruct H1 as [Hrbn Hrbp].
+                  specialize (Hrbn H4).
+                  rewrite <- H7 in *. clear H7.
+                  subst.
+                  apply positive_negative_occurrence_named_svar_open.
+                  *
+                    unfold not. intros. assert (fresh_svar phi = X).
+                    {
+                      symmetry. assumption.
+                    }
+                    unfold not in n0. destruct (n0 H2).
+                  * assumption.
+                - intros. destruct H6.
+              }
 
-              destruct IHn1 as [IHn11 IHn12].
-              apply (IHn11 HBn x y H x0).
-              apply H1.
-            + right. unfold In in *.
-              destruct IHn2 as [IHn21 IHn22].
-              apply (IHn22 HBn x y H x0 H0).
-          }
-        * (* Ex *)
-          simpl. remember (respects_blacklist_ex phi Bp Bn Hrb) as Hrb'. clear HeqHrb'.
-          specialize (IHn (phi^{evar: 0 ↦ (evar_fresh (elements (free_evars phi)))})).
-          rewrite <- evar_open_size in IHn.
-          assert (Hsz': size phi <= n). simpl in *. lia.
-          remember (evar_fresh (elements (free_evars phi))) as fresh.
-          pose proof (Hwfp' := @wfp_evar_open Σ phi fresh 0 Hwfp).
-          specialize (IHn Hsz' Hwfp' Bp Bn).
-          pose proof (Hrb'' := evar_open_respects_blacklist phi Bp Bn fresh 0 Hrb').
-          unfold MonotonicFunction in *. unfold AntiMonotonicFunction in *.
-          unfold leq. simpl.
-          setoid_rewrite elem_of_subseteq.
+              specialize (IHn Hwfp' (Ensembles.Singleton svar X) (Empty_set svar) HrbV).
+              specialize (IHn (update_svar_val X' x0 ρ) X).
+              destruct IHn as [IHam IHmo].
+              apply IHam. constructor. assumption.
+        }
+        (* This is the same as the previous, with minor changes *)
+        {
+          unfold MonotonicFunction. intros.
+          repeat rewrite -> eval_mu_simpl.
+          Arguments LeastFixpointOf : simpl never.
+          Arguments leq : simpl never.
+          simpl.
 
-          split; intros HBp S1 S2 Hincl; rewrite -> eval_ex_simpl; simpl;
-          unfold stdpp_ext.propset_fa_union; intros m; rewrite -> elem_of_PropSet;
-            intros [c Hc]; rewrite -> eval_ex_simpl; simpl;
-              unfold stdpp_ext.propset_fa_union; rewrite -> elem_of_PropSet; exists c;
-              remember (update_evar_val fresh c ρ) as ρ';
-              specialize (IHn Hrb'' ρ' V);
-              destruct IHn as [IHn1 IHn2].
-          {
-            specialize (IHn1 HBp S1 S2 Hincl).
-            remember (phi^{evar: 0 ↦ fresh}) as phi'.
-            remember (update_svar_val V S1 ρ') as ρ''.
-            unfold leq in IHn1. simpl in *. unfold Included in *. unfold In in *.
-            subst.
-            apply IHn1. apply Hc.
-          }
-          {
-            specialize (IHn2 HBp S1 S2 Hincl).
-            remember (phi^{evar: 0 ↦ fresh}) as phi'.
-            remember (update_svar_val V S1 ρ') as ρ''.
-            unfold leq in IHn1. simpl in *. unfold Included in *. unfold In in *.
-            subst.
-            apply IHn2. apply Hc.
-          }
-        * (* Mu *)
-          remember Hwfp as Hwfpmu. clear HeqHwfpmu.
-          simpl in Hsz.
-          assert (Hsz': size phi <= n).
-          { lia. }
-          split.
-          {
-            unfold AntiMonotonicFunction. intros.
-            repeat rewrite -> eval_mu_simpl.
-            Arguments LeastFixpointOf : simpl never.
-            Arguments leq : simpl never.
-            simpl.
+          remember (fresh_svar phi) as X'.
+          remember (phi^{svar: 0 ↦ X'}) as phi'.
+          pose proof (Hszeq := svar_open_size 0 X' phi).
+          assert (Hsz'': size phi' <= n).
+          { rewrite -> Heqphi'. rewrite <- Hszeq. assumption. }
+          specialize (IHn phi' Hsz'').
+          simpl in H0.
 
-            remember (fresh_svar phi) as X'.
-            remember (phi^{svar: 0 ↦ X'}) as phi'.
-            pose proof (Hszeq := svar_open_size 0 X' phi).
-            assert (Hsz'': size phi' <= n).
-            { rewrite -> Heqphi'. rewrite <- Hszeq. assumption. }
-            specialize (IHn phi' Hsz'').
-            simpl in Hwfp.
+          assert (Hrb': respects_blacklist phi' (Empty_set svar) (Ensembles.Singleton svar X')).
+          { subst. apply mu_wellformed_respects_blacklist. apply Hwfpmu. apply set_svar_fresh_is_fresh. }
 
-            assert (Hrb': respects_blacklist phi' (Empty_set svar) (Ensembles.Singleton svar X')).
-            { subst. apply mu_wellformed_respects_blacklist. apply Hwfpmu. apply set_svar_fresh_is_fresh. }
+          simpl in Hwfpmu. apply andb_true_iff in Hwfpmu.
+          destruct Hwfpmu as [Hnonegphi Hwfpphi].
+          assert (Hwfp' : well_formed_positive phi').
+          { subst. apply wfp_svar_open. exact Hwfpphi. }
 
-            simpl in Hwfpmu. apply andb_true_iff in Hwfpmu.
-            destruct Hwfpmu as [Hnonegphi Hwfpphi].
-            assert (Hwfp' : well_formed_positive phi').
-            { subst. apply wfp_svar_open. exact Hwfpphi. }
+          remember IHn as IHn'. clear HeqIHn'.
+          specialize (IHn' Hwfp' (Empty_set svar) (Ensembles.Singleton svar X') Hrb').
+          remember IHn' as Hy. clear HeqHy.
+          rename IHn' into Hx.
+          specialize (Hx (update_svar_val X x ρ) X').
+          specialize (Hy (update_svar_val X y ρ) X').
 
-            remember IHn as IHn'. clear HeqIHn'.
-            specialize (IHn' Hwfp' (Empty_set svar) (Ensembles.Singleton svar X') Hrb').
-            remember IHn' as Hy. clear HeqHy.
-            rename IHn' into Hx.
-            specialize (Hx (update_svar_val V x ρ) X').
-            specialize (Hy (update_svar_val V y ρ) X').
+          apply lfp_preserves_order.
+          - apply Hx. constructor.
+          - apply Hy. constructor.
+          - clear Hy. clear Hx.
+            intros.
+            destruct (decide (X' = X)).
+            + (* X' = X *)
+              rewrite <- e.
+              repeat rewrite -> update_svar_val_shadow.
+              unfold leq. simpl. unfold Included. unfold Ensembles.In. auto.
+            + (* X' <> X *)
+              pose proof (Uhsvcx := @update_svar_val_comm Σ M X' X x0 x ρ n0).
+              rewrite -> Uhsvcx.
+              pose proof (Uhsvcy := @update_svar_val_comm Σ M X' X x0 y ρ n0).
+              rewrite -> Uhsvcy.
 
-            apply lfp_preserves_order.
-            - apply Hy. constructor.
-            - apply Hx. constructor.
-            - clear Hx. clear Hy.
-              intros.
-              destruct (decide (X' = V)).
-              + (* X' = V *)
-                rewrite <- e.
-                repeat rewrite -> update_svar_val_shadow.
-                unfold leq. simpl. unfold Included. unfold In. auto.
-              + (* X' <> V*)
-                pose proof (Uhsvcx := @update_svar_val_comm Σ M X' V x0 x ρ n0).
-                rewrite -> Uhsvcx.
-                pose proof (Uhsvcy := @update_svar_val_comm Σ M X' V x0 y ρ n0).
-                rewrite -> Uhsvcy.
+              assert (HrbV: respects_blacklist phi' (Empty_set svar) (Ensembles.Singleton svar X)).
+              {
+                unfold respects_blacklist. intros. split.
+                - intros. inversion H6.
+                - intros. inversion H6. rewrite <- H7.
+                  unfold respects_blacklist in H1.
+                  specialize (H1 X).
+                  destruct H1 as [Hrbn Hrbp].
+                  specialize (Hrbp H4).
+                  rewrite <- H7 in *. clear H7.
+                  subst.
+                  apply positive_negative_occurrence_named_svar_open.
+                  *
+                    unfold not. intros. assert (fresh_svar phi = X).
+                    {
+                      symmetry. assumption.
+                    }
+                    unfold not in n0. destruct (n0 H2).
+                  * assumption.
+              }
 
-                assert (HrbV: respects_blacklist phi' (Ensembles.Singleton svar V) (Empty_set svar)).
-                {
-                  unfold respects_blacklist. intros. split.
-                  - intros. inversion H1. rewrite <- H2.
-                    unfold respects_blacklist in Hrb.
-                    specialize (Hrb V).
-                    destruct Hrb as [Hrbn Hrbp].
-                    specialize (Hrbn H).
-                    rewrite <- H2 in *. clear H2.                  
-                    subst.
-                    apply positive_negative_occurrence_named_svar_open.
-                    *
-                      unfold not. intros. assert (fresh_svar phi = V).
-                      {
-                        symmetry. assumption.
-                      }
-                      unfold not in n0. destruct (n0 H3).
-                    * assumption.
-                  - intros. destruct H1.
-                }
-
-                specialize (IHn Hwfp' (Ensembles.Singleton svar V) (Empty_set svar) HrbV).
-                specialize (IHn (update_svar_val X' x0 ρ) V).
-                destruct IHn as [IHam IHmo].
-                apply IHam. constructor. assumption.
-          }
-          (* This is the same as the previous, with minor changes *)
-          {
-            unfold MonotonicFunction. intros.
-            repeat rewrite -> eval_mu_simpl.
-            Arguments LeastFixpointOf : simpl never.
-            Arguments leq : simpl never.
-            simpl.
-
-            remember (fresh_svar phi) as X'.
-            remember (phi^{svar: 0 ↦ X'}) as phi'.
-            pose proof (Hszeq := svar_open_size 0 X' phi).
-            assert (Hsz'': size phi' <= n).
-            { rewrite -> Heqphi'. rewrite <- Hszeq. assumption. }
-            specialize (IHn phi' Hsz'').
-            simpl in Hwfp.
-
-            assert (Hrb': respects_blacklist phi' (Empty_set svar) (Ensembles.Singleton svar X')).
-            { subst. apply mu_wellformed_respects_blacklist. apply Hwfpmu. apply set_svar_fresh_is_fresh. }
-
-            simpl in Hwfpmu. apply andb_true_iff in Hwfpmu.
-            destruct Hwfpmu as [Hnonegphi Hwfpphi].
-            assert (Hwfp' : well_formed_positive phi').
-            { subst. apply wfp_svar_open. exact Hwfpphi. }
-
-            remember IHn as IHn'. clear HeqIHn'.
-            specialize (IHn' Hwfp' (Empty_set svar) (Ensembles.Singleton svar X') Hrb').
-            remember IHn' as Hy. clear HeqHy.
-            rename IHn' into Hx.
-            specialize (Hx (update_svar_val V x ρ) X').
-            specialize (Hy (update_svar_val V y ρ) X').
-
-            apply lfp_preserves_order.
-            - apply Hx. constructor.
-            - apply Hy. constructor.
-            - clear Hy. clear Hx.
-              intros.
-              destruct (decide (X' = V)).
-              + (* X' = V *)
-                rewrite <- e.
-                repeat rewrite -> update_svar_val_shadow.
-                unfold leq. simpl. unfold Included. unfold Ensembles.In. auto.
-              + (* X' <> V*)
-                pose proof (Uhsvcx := @update_svar_val_comm Σ M X' V x0 x ρ n0).
-                rewrite -> Uhsvcx.
-                pose proof (Uhsvcy := @update_svar_val_comm Σ M X' V x0 y ρ n0).
-                rewrite -> Uhsvcy.
-
-                assert (HrbV: respects_blacklist phi' (Empty_set svar) (Ensembles.Singleton svar V)).
-                {
-                  unfold respects_blacklist. intros. split.
-                  - intros. inversion H1.
-                  - intros. inversion H1. rewrite <- H2.
-                    unfold respects_blacklist in Hrb.
-                    specialize (Hrb V).
-                    destruct Hrb as [Hrbn Hrbp].
-                    specialize (Hrbp H).
-                    rewrite <- H2 in *. clear H2.                  
-                    subst.
-                    apply positive_negative_occurrence_named_svar_open.
-                    *
-                      unfold not. intros. assert (fresh_svar phi = V).
-                      {
-                        symmetry. assumption.
-                      }
-                      unfold not in n0. destruct (n0 H3).
-                    * assumption.
-                }
-
-                specialize (IHn Hwfp' (Empty_set svar) (Ensembles.Singleton svar V) HrbV).
-                specialize (IHn (update_svar_val X' x0 ρ) V).
-                destruct IHn as [IHam IHmo].
-                apply IHmo. constructor. assumption.
-          }
+              specialize (IHn Hwfp' (Empty_set svar) (Ensembles.Singleton svar X) HrbV).
+              specialize (IHn (update_svar_val X' x0 ρ) X).
+              destruct IHn as [IHam IHmo].
+              apply IHmo. constructor. assumption.
+        }
     Qed.
 
     Lemma is_monotonic : forall (phi : Pattern)

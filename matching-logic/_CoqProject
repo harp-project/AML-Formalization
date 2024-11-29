@@ -36,6 +36,8 @@ src/StringSignature.v
 src/ProofInfo.v
 src/Logic.v
 
+src/FreshnessManager.v
+
 src/BasicProofSystemLemmas.v
 src/ProofMode/Basics.v
 src/ProofMode/Propositional.v
@@ -44,7 +46,7 @@ src/ProofMode/FixPoint.v
 src/ProofMode/Reshaper.v
 src/ProofMode/Misc.v
 src/ProofMode/MLPM.v
-src/FreshnessManager.v
+
 
 src/Theories/Definedness_Syntax.v
 src/Theories/Definedness_Semantics.v

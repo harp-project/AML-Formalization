@@ -1,46 +1,14 @@
-From Coq Require Import ssreflect ssrfun ssrbool.
+From MatchingLogic Require Export FreshnessManager.
+From MatchingLogic.ProofMode Require Export Firstorder.
 
-From Ltac2 Require Import Ltac2.
+Import MatchingLogic.Logic.Notations.
 
-From Coq Require Import Bool String.
-From Coq.Logic Require Import FunctionalExtensionality Eqdep_dec.
-From Equations Require Import Equations.
-
-Require Import Coq.Program.Tactics.
-
-From MatchingLogic Require Import
-    Syntax
-    DerivedOperators_Syntax
-    ProofSystem
-    IndexManipulation
-    wftactics
-    ProofInfo
-.
-From MatchingLogic.ProofMode Require Import Basics
-                                            Propositional
-                                            Firstorder.
-
-From stdpp Require Import list tactics fin_sets coGset gmap sets.
-
-From MatchingLogic.Utils Require Import stdpp_ext.
-
-Import extralibrary.
-
-Import
-  MatchingLogic.Syntax.Notations
-  MatchingLogic.DerivedOperators_Syntax.Notations
-  MatchingLogic.ProofInfo.Notations
-.
+Open Scope list_scope. (* needed for mlAssert *)
 
 Set Default Proof Mode "Classic".
 
-Open Scope ml_scope.
-Open Scope string_scope.
-Open Scope list_scope.
-
 Section with_signature.
   Context {Σ : Signature}.
-  Open Scope ml_scope.
 
   Structure TaggedPattern := TagPattern { untagPattern :> Pattern; }.
 
@@ -226,12 +194,7 @@ Section with_signature.
       }
 
       assert (well_formed p).
-      {
-        rewrite Heqxs in wfxs.
-        apply wfapp_proj_2 in wfxs.
-        unfold Pattern.wf in wfxs. simpl in wfxs.
-        destruct_and!; assumption.
-      }
+      { wf_auto2. }
 
       assert (Pattern.wf (rev l)).
       { apply wf_rev. assumption. }

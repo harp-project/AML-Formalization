@@ -1,47 +1,12 @@
-From Coq Require Import ssreflect ssrfun ssrbool.
+From MatchingLogic Require Export FreshnessManager.
+From MatchingLogic.ProofMode Require Export Propositional.
 
-From Ltac2 Require Import Ltac2 Control.
-
-From Coq Require Import Bool String.
-From Coq.Logic Require Import FunctionalExtensionality Eqdep_dec.
-From Equations Require Import Equations.
-
-Require Import Coq.Program.Tactics.
-
-From MatchingLogic Require Import
-    ProofSystem
-    Syntax
-    DerivedOperators_Syntax
-    ProofSystem
-    IndexManipulation
-    wftactics
-    ProofInfo
-    BasicProofSystemLemmas
-    FreshnessManager
-.
-From MatchingLogic.ProofMode Require Import Basics
-                                            Propositional.
-
-From stdpp Require Import list tactics fin_sets coGset gmap sets.
-
-From MatchingLogic.Utils Require Import stdpp_ext.
-
-Import extralibrary.
-
-Import
-  MatchingLogic.Syntax.Notations
-  MatchingLogic.Substitution.Notations
-  MatchingLogic.DerivedOperators_Syntax.Notations
-  MatchingLogic.ProofInfo.Notations
-.
+Import MatchingLogic.Logic.Notations.
 
 Set Default Proof Mode "Classic".
 
 Section with_signature.
   Context {Σ : Signature}.
-  Open Scope ml_scope.
-  Open Scope string_scope.
-  Open Scope list_scope.
 
   (*
     Γ ⊢ φ₁ → φ₂
@@ -378,11 +343,7 @@ Section with_signature.
     - fromMLGoal.
       apply strip_exists_quantify_l with (x := x).
       { set_solver. }
-      (* TODO: make wf_auto2 solve this *)
-      { simpl. rewrite !andbT. split_and!.
-        + wf_auto2.
-        + wf_auto2.
-      }
+      { simpl. wf_auto2. }
       apply strip_exists_quantify_r with (x := x).
       {
         simpl. set_solver.
@@ -905,11 +866,11 @@ else fail "mlIntroAll: matching logic goal is not a universally quantified patte
 Tactic Notation "mlIntroAllManual" constr(x) :=
 _ensureProofMode;
 tryif apply (MLGoal_forallIntro _ _ _ x);
-[   try fm_solve; try subst x; try solve_fresh; try solve_free_evars 10
-  | try fm_solve; try subst x; try solve_fresh; try solve_free_evars 10
-  | try subst x; try_solve_pile
+[
+  |
+  |
   | unfold evar_open; mlSimpl;
-    repeat (rewrite bevar_subst_not_occur; [by wf_auto2|])
+    repeat (rewrite bevar_subst_not_occur; [try by wf_auto2|])
 ]
 then idtac
 else fail "mlIntroAll: matching logic goal is not a universally quantified pattern".
@@ -927,6 +888,11 @@ Restart.
   mlFreshEvar as x.
   mlIntroAll x.
   Fail mlIntroAll y.
+  mlIntro "A". mlSplitAnd; mlAssumption.
+Restart.
+  intros.
+  remember (fresh_evar ϕ) as x.
+  mlIntroAllManual x. 1-2: subst x; solve_fresh. 1: try_solve_pile.
   mlIntro "A". mlSplitAnd; mlAssumption.
 Qed.
 
@@ -1105,11 +1071,10 @@ Ltac _mlDestructExManual name' x :=
   _ensureProofMode;
   _mlReshapeHypsByName name';
   tryif apply (MLGoal_destructEx _ _ _ _ x name');[
-    try subst x; simpl; try_solve_pile
-  | try fm_solve; try subst x; simpl; try solve_fresh; try solve_free_evars 10
-  | try fm_solve; try subst x; simpl; try solve_fresh; try solve_free_evars 10
-  | try fm_solve; try subst x; simpl; try solve_fresh; try solve_free_evars 10
-  | try fm_solve; try subst x; simpl; try solve_fresh; try solve_free_evars 10
+  |
+  |
+  |
+  |
   | _mlReshapeHypsBack]
   then idtac
   else fail "_mlDestructExManual: given local hypothesis is not existentially quantified".
@@ -1128,14 +1093,14 @@ Ltac _mlDestructExFresh name' x :=
     then idtac
     else fail "_mlDestructExFresh: given local hypothesis is not existentially quantified".
 
-Tactic Notation "mlDestructEx" constr(name') "as" constr(x) :=
+Tactic Notation "mlDestructExManual" constr(name') "as" constr(x) :=
   _mlDestructExManual name' x.
 
 Tactic Notation "mlDestructEx" constr(name') "as" ident(x) :=
-  tryif is_var x (* we need to check whether x is a used ident! *)
+(*   tryif is_var x (* we need to check whether x is a used ident! *)
   then
     _mlDestructExManual name' x (* Do not use idtac here, because it breaks tryif for some reason *)
-  else
+  else *)
     _mlDestructExFresh name' x (* Do not use idtac here, because it breaks tryif for some reason *)
   .
 
@@ -1149,17 +1114,15 @@ Tactic Notation "mlDestructEx" constr(name') "as" ident(x) :=
   else _mlDestructExFresh name' as x
 . *)
 
-From Ltac2 Require Import Ltac2 Control.
-
-Set Default Proof Mode "Classic".
-
 Local Lemma destructExDouble_Test {Σ : Signature} Γ ϕ ψ :
   well_formed (ex, ϕ) -> well_formed (ex, ψ) ->
   Γ ⊢ (ex, ϕ and ψ) ---> (ex, ϕ and ψ) ---> ex, ϕ.
 Proof.
   intros.
   mlIntro "H". mlIntro "H0".
-  mlDestructEx "H" as (fresh_evar (ϕ ⋅ ψ)). { cbn. solve_fresh. }
+  mlDestructExManual "H" as (fresh_evar (ϕ ⋅ ψ)).
+  1: try_solve_pile.
+  1-4: cbn; solve_fresh.
   Fail mlDestructEx "H" as x.
   mlClear "H". mlDestructEx "H0" as x.
   Fail mlDestructEx "H0" as x.
@@ -1176,7 +1139,7 @@ Proof.
   mlIntro "H".
   
   remember (fresh_evar (ϕ and ψ)) as x0.
-  mlDestructEx "H" as x0.
+  mlDestructExManual "H" as x0; try (cbn; solve_fresh).
   Undo. Undo.
   
   mlDestructEx "H" as x.

@@ -1,39 +1,11 @@
-From Coq Require Import ssreflect ssrfun ssrbool.
+From MatchingLogic Require Export FreshnessManager.
+From MatchingLogic.ProofMode Require Export Reshaper FixPoint.
 
-From Ltac2 Require Import Ltac2.
+Import MatchingLogic.Logic.Notations.
 
-From Coq Require Import Bool String.
-
-From Coq.Logic Require Import FunctionalExtensionality Eqdep_dec.
-From Equations Require Import Equations.
-
-Require Import Coq.Program.Tactics.
-
-From MatchingLogic Require Import Syntax DerivedOperators_Syntax ProofSystem IndexManipulation wftactics.
-
-From stdpp Require Import list tactics fin_sets coGset gmap sets.
-
-From MatchingLogic.Utils Require Import stdpp_ext.
-Import extralibrary.
-From MatchingLogic Require Import Logic
-  ProofSystem
-  ProofInfo
-  BasicProofSystemLemmas
-.
-From MatchingLogic.ProofMode Require Import Basics
-                                            Propositional
-                                            Firstorder
-                                            FixPoint
-                                            Reshaper.
-
-Import MatchingLogic.Logic.Notations
-       MatchingLogic.ProofInfo.Notations.
+Open Scope list_scope. (* needed for mlAssert, ++ *)
 
 Set Default Proof Mode "Classic".
-
-Open Scope ml_scope.
-Open Scope string_scope.
-Open Scope list_scope.
 
 (* TODO: create error messages for these tactics *)
 Ltac2 _callCompletedTransformedAndCast0
@@ -430,8 +402,8 @@ Section FOL_helpers.
     }
   Defined.
 
-  Arguments Prop_bott_left _ (_%ml) _ : clear implicits.
-  Arguments Prop_bott_right _ (_%ml) _ : clear implicits.
+  Arguments Prop_bott_left _ (_%_ml) _ : clear implicits.
+  Arguments Prop_bott_right _ (_%_ml) _ : clear implicits.
 
   Lemma Prop_bot_ctx (Γ : Theory) (C : Application_context) :
     Γ ⊢i ((subst_ctx C patt_bott) ---> patt_bott)
@@ -771,9 +743,7 @@ Proof.
       apply andb_prop in Hwf. destruct Hwf as [Hwfp Hwfc].
       apply (wp_sctx AC p) in Hwfp. rewrite Hwfp. simpl. clear Hwfp.
       unfold well_formed_closed. unfold well_formed_closed in Hwfc. simpl in Hwfc. simpl.
-      split_and!.
-      + apply wcmu_sctx. destruct_and!. assumption.
-      + apply wcex_sctx. destruct_and!. assumption.
+      clear Hx. wf_auto2.
     }
 
     assert(Hxfr1: evar_is_fresh_in x (subst_ctx AC p)).
@@ -1312,7 +1282,7 @@ Section FOL_helpers.
     (wfp : well_formed p)
     (wfq : well_formed q)
     E ψ edepth sdepth
-    (Hsz: size' ψ <= sz)
+    (Hsz: size ψ <= sz)
     (wfψ : well_formed ψ)
     (gpi : ProofInfo)
     (** We need to do a number of Ex_Gen (and Substitution) steps
@@ -1393,10 +1363,10 @@ Section FOL_helpers.
     {
       assert (wfψ1 : well_formed ψ1 = true).
       { clear -wfψ. abstract (wf_auto2). }
-      assert (size' ψ1 <= sz) by abstract(lia).
+      assert (size ψ1 <= sz) by abstract( unfold size in *; lia).
       assert (wfψ2 : well_formed ψ2 = true).
       { clear -wfψ. abstract (wf_auto2). }
-      assert (size' ψ2 <= sz) by abstract(lia).
+      assert (size ψ2 <= sz) by abstract( unfold size in *; lia).
       
       simpl in *.
       pose proof (Hef1 := fresh_evars_bigger (free_evars ψ1 ∪ free_evars p ∪ free_evars q ∪ {[E]}) Hel1 ltac:(set_solver)).
@@ -1427,10 +1397,10 @@ Section FOL_helpers.
     {
       assert (wfψ1 : well_formed ψ1 = true).
       { clear -wfψ. abstract (wf_auto2). }
-      assert (size' ψ1 <= sz) by abstract(lia).
+      assert (size ψ1 <= sz) by abstract( unfold size in *; lia).
       assert (wfψ2 : well_formed ψ2 = true).
       { clear -wfψ. abstract (wf_auto2). }
-      assert (size' ψ2 <= sz) by abstract(lia).
+      assert (size ψ2 <= sz) by abstract( unfold size in *; lia).
 
       pose proof (Hef1 := fresh_evars_bigger (free_evars ψ1 ∪ free_evars p ∪ free_evars q ∪ {[E]}) Hel1 ltac:(set_solver)).
       
@@ -1468,7 +1438,7 @@ Section FOL_helpers.
       }
       
       assert (well_formed (ψ^{evar: 0 ↦ x})) by (unfold i' in pile; clear i'; abstract(wf_auto2)).
-      assert (size' (ψ^{evar: 0 ↦ x}) <= sz) by abstract(rewrite evar_open_size'; lia).
+      assert (size (ψ^{evar: 0 ↦ x}) <= sz) by abstract(rewrite -evar_open_size;  unfold size in *; lia).
 
       assert (fresh_evars els (free_evars ψ^{evar:0↦x} ∪ free_evars p ∪ free_evars q ∪ {[E]})) as HVars. { constructor.
         * destruct Hel1. apply evar_duplicates.
@@ -1527,7 +1497,7 @@ Section FOL_helpers.
       }
 
       assert (well_formed (ψ^{svar: 0 ↦ X}) = true) by (abstract(clear -wfψ;wf_auto2)).
-      assert (size' (ψ^{svar: 0 ↦ X}) <= sz) by abstract(rewrite svar_open_size'; lia).
+      assert (size (ψ^{svar: 0 ↦ X}) <= sz) by abstract(rewrite -svar_open_size;  unfold size in *; lia).
 
       simpl in *.
 
@@ -2115,8 +2085,8 @@ Ltac2 mlRewrite (hiff : constr) (atn : int) :=
          else () ;
          let heq := (* Control.hyp *) (hr.(equality)) in
          let pc := (hr.(pc)) in
-         let var := (hr.(star_ident)) in
-         let ctx_p := (hr.(ctx_pat)) in
+(*          let var := (hr.(star_ident)) in
+         let ctx_p := (hr.(ctx_pat)) in *)
 
          eapply (@cast_proof_ml_goal _ $g) with (goal := emplace $pc $a) >
            [ ltac1:(heq |- rewrite [left in _ = left] heq; reflexivity) (Ltac1.of_ident heq) | ()];
@@ -2129,7 +2099,7 @@ Ltac2 mlRewrite (hiff : constr) (atn : int) :=
            apply (@MLGoal_rewriteIff $sgm $g _ _ $pc $l $gpi $wfCpf $hiff)  >
            [
            (lazy_match! goal with
-           | [ |- of_MLGoal (@mkMLGoal ?sgm ?g ?l ?p _)]
+           | [ |- of_MLGoal (@mkMLGoal ?_sgm ?g ?_l ?p _)]
              =>
                let heq2 := Fresh.in_goal ident:(heq2) in
                let plugged := Pattern.instantiate (hr.(ctx)) a' in
@@ -2306,7 +2276,7 @@ Ltac2 rec convertToNNF_rewrite_pat := fun (ctx : constr) (p : constr) (i : const
 Ltac2 toNNF () := 
   repeat (do_mlRevertLast ());
   lazy_match! goal with
-    | [ |- @of_MLGoal ?sgm (@mkMLGoal ?sgm ?ctx ?ll ?g ?i) ] 
+    | [ |- @of_MLGoal ?sgm (@mkMLGoal ?sgm ?ctx ?_ll ?g ?i) ] 
       =>
         do_mlApplyMetaRaw constr:(@useBasicReasoning _ _ _ $i (@not_not_elim $sgm $ctx $g ltac2:(wf_auto2 ())));
         convertToNNF_rewrite_pat ctx constr:(!$g) i
@@ -2481,9 +2451,3 @@ Proof.
   { wf_auto2. }
   mlTauto.
 Defined.
-
-
-
-Close Scope ml_scope.
-Close Scope list_scope.
-Close Scope string_scope.

@@ -13,10 +13,11 @@ Module Notations.
          MatchingLogic.Substitution.Notations
          MatchingLogic.DerivedOperators_Syntax.Notations
          MatchingLogic.ApplicationContext.Notations
-         MatchingLogic.ProofInfo.Notations.
+         MatchingLogic.ProofInfo.Notations
+         MatchingLogic.Semantics.Notations.
   Export Pattern.BoundVarSugar.
 End Notations.
 
 Open Scope string_scope.
-Open Scope list_scope.
 Open Scope ml_scope.
+Open Scope list_scope.

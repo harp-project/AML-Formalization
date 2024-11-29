@@ -146,24 +146,24 @@ Ltac clear_all_impls :=
     in *;
     simpl in *
   .
-  
+
 
 Ltac solve_size :=
   repeat (
   match goal with
-  | [ |- size' (evar_open _ _ _) < _ ]
-    => rewrite evar_open_size'
+  | [ |- size (evar_open _ _ _) < _ ]
+    => rewrite evar_open_size
 
-  | [ |- size' (svar_open _ _ _) < _ ]
-    => rewrite svar_open_size'
+  | [ |- size (svar_open _ _ _) < _ ]
+    => rewrite svar_open_size
 
-  | [ |- size' _ < size' (patt_app _ _) ]
+  | [ |- size _ < size (patt_app _ _) ]
     => simpl; lia
 
-  | [ |- size' _ < size' (patt_imp _ _) ]
+  | [ |- size _ < size (patt_imp _ _) ]
     => simpl; lia
 
-  | [ |- size' _ < size' (patt_exists _) ]
+  | [ |- size _ < size (patt_exists _) ]
     => simpl; lia
   end
   )
@@ -243,7 +243,7 @@ Definition lwfCexSimplifications := (
 ).
 
 Ltac2 mutable simplify_wf_hyp_part_hook
-:= (fun (h : ident) => () ).
+:= (fun (_h : ident) => () ).
 
 Ltac _simplify_wf_hyp_part_hook H :=
   let tac := ltac2:(h |- simplify_wf_hyp_part_hook (Option.get (Ltac1.to_ident h))) in

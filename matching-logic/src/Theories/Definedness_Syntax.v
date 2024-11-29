@@ -4,31 +4,19 @@
    In this module we define the definedness symbol and use it to build derived notions
    like totality and equality.
  *)
-From Coq Require Import ssreflect ssrfun ssrbool.
 
-From Coq Require Import String Setoid.
-Require Import Coq.Program.Equality.
-Require Import Coq.Logic.Classical_Prop.
-From Coq.Logic Require Import FunctionalExtensionality Eqdep_dec.
-From Coq.Classes Require Import Morphisms_Prop.
-From Coq.Unicode Require Import Utf8.
-From Coq.micromega Require Import Lia.
-
-From MatchingLogic.Utils Require Import stdpp_ext.
-
-From stdpp Require Import base fin_sets sets propset proof_irrel option list.
-
-
-From MatchingLogic Require Import Logic.
+From MatchingLogic Require Export Logic.
 Import MatchingLogic.Logic.Notations.
 
-Import extralibrary.
+Set Default Proof Mode "Classic".
 
 (* We have only one symbol *)
 Inductive Symbols := definedness.
 
 Global Instance Symbols_eqdec : EqDecision Symbols.
-Proof. unfold EqDecision. intros x y. unfold Decision. destruct x. decide equality. (*solve_decision.*) Defined.
+Proof.
+  solve_decision.
+Defined.
 
 #[global]
 Program Instance Symbols_finite : finite.Finite Symbols.

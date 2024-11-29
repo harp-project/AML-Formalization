@@ -1,7 +1,9 @@
 From Coq Require Export ssrbool.
 From Coq Require Export String.
 
-From stdpp Require Export countable infinite list.
+From stdpp Require Export countable infinite list finite.
+
+
 
 Class MLVariables := {
   evar : Set;

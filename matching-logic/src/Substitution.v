@@ -1585,17 +1585,12 @@ Proof.
   - set_solver.
 Qed.
 
+
 Lemma free_evar_subst_no_occurrence x p q:
   x ∉ free_evars p ->
   p^[[evar:x ↦ q]] = p.
 Proof.
-  intros H.
-  remember (size' p) as sz.
-  assert (Hsz: size' p <= sz) by lia.
-  clear Heqsz.
-
-  move: p Hsz H.
-  induction sz; intros p Hsz H; destruct p; simpl in *; try lia; auto.
+  size_induction p; simpl; intros; auto.
   - simpl in H. simpl.
     destruct (decide (x = x0)).
     + subst x0. set_solver.
@@ -1606,7 +1601,7 @@ Proof.
   - rewrite IHsz; auto. lia.
 Qed.
 
-
+(* 
 Lemma Private_bsvar_occur_evar_open sz dbi1 dbi2 X phi:
 size phi <= sz ->
 bsvar_occur phi dbi1 = false ->
@@ -1616,34 +1611,56 @@ move: phi dbi1 dbi2.
 induction sz; move=> phi; destruct phi; simpl; move=> dbi1 dbi2 Hsz H; try rewrite !IHsz; auto; try lia; try apply orb_false_elim in H; firstorder.
 2: { simpl. lia. }
 cbn. case_match; reflexivity.
-Qed.
+Qed. *)
 
 Corollary bsvar_occur_evar_open dbi1 dbi2 X phi:
-bsvar_occur phi dbi1 = false ->
-bsvar_occur (phi^{evar: dbi2 ↦ X}) dbi1 = false.
+  bsvar_occur phi dbi1 = false ->
+  bsvar_occur (phi^{evar: dbi2 ↦ X}) dbi1 = false.
 Proof.
-apply Private_bsvar_occur_evar_open with (sz := size phi). lia.
+  revert dbi1 dbi2.
+  size_induction phi; intros; simpl; try reflexivity.
+  * cbn in *. case_match; reflexivity.
+  * cbn in *. case_match; lia.
+  * simpl in *. apply orb_false_elim in H; firstorder.
+    eapply IHsz in H, H0. by rewrite H H0. all: lia.
+  * simpl in *. apply orb_false_elim in H; firstorder.
+    eapply IHsz in H, H0. by rewrite H H0. all: lia.
+  * unfold evar_open in IHsz. rewrite IHsz. lia. assumption. reflexivity.
+  * unfold evar_open in IHsz. rewrite IHsz. lia. assumption. reflexivity.
+Unshelve.
+  all: exact dbi2.
 Qed.
 
-Lemma Private_bevar_occur_svar_open sz dbi1 dbi2 X phi:
-size phi <= sz ->
-bevar_occur phi dbi1 = false ->
-bevar_occur (phi^{svar: dbi2 ↦ X}) dbi1 = false.
+(* Lemma Private_bevar_occur_svar_open sz dbi1 dbi2 X phi:
+  size phi <= sz ->
+  bevar_occur phi dbi1 = false ->
+  bevar_occur (phi^{svar: dbi2 ↦ X}) dbi1 = false.
 Proof.
-move: phi dbi1 dbi2.
-induction sz; move=> phi; destruct phi; simpl; move=> dbi1 dbi2 Hsz H; try rewrite !IHsz; auto; try lia; try apply orb_false_elim in H; firstorder.
-{ cbn. case_match; reflexivity. }
-simpl. lia.
-Qed.
+  move: phi dbi1 dbi2.
+  induction sz; move=> phi; destruct phi; simpl; move=> dbi1 dbi2 Hsz H; try rewrite !IHsz; auto; try lia; try apply orb_false_elim in H; firstorder.
+  { cbn. case_match; reflexivity. }
+  simpl. lia.
+Qed. *)
 
 Corollary bevar_occur_svar_open dbi1 dbi2 X phi:
-bevar_occur phi dbi1 = false ->
-bevar_occur (phi^{svar: dbi2 ↦ X}) dbi1 = false.
+  bevar_occur phi dbi1 = false ->
+  bevar_occur (phi^{svar: dbi2 ↦ X}) dbi1 = false.
 Proof.
-apply Private_bevar_occur_svar_open with (sz := size phi). lia.
+  revert dbi1 dbi2.
+  size_induction phi; intros; simpl; try reflexivity.
+  * cbn in *. assumption.
+  * cbn in *. case_match; reflexivity.
+  * simpl in *. apply orb_false_elim in H; firstorder.
+    eapply IHsz in H, H0. by rewrite H H0. all: lia.
+  * simpl in *. apply orb_false_elim in H; firstorder.
+    eapply IHsz in H, H0. by rewrite H H0. all: lia.
+  * unfold evar_open in IHsz. rewrite IHsz. lia. assumption. reflexivity.
+  * unfold evar_open in IHsz. rewrite IHsz. lia. assumption. reflexivity.
+Unshelve.
+  all: exact dbi2.
 Qed.
 
-Lemma Private_bevar_occur_evar_open sz dbi1 dbi2 X phi:
+(* Lemma Private_bevar_occur_evar_open sz dbi1 dbi2 X phi:
 size phi <= sz -> dbi1 < dbi2 ->
 bevar_occur phi dbi1 = false ->
 bevar_occur (phi^{evar: dbi2 ↦ X}) dbi1 = false.
@@ -1655,43 +1672,56 @@ induction sz; move=> phi; destruct phi; simpl; move=> dbi1 dbi2 Hsz H H1; try re
   { case_match; try lia. }
 }
 simpl. lia.
-Qed.
+Qed. *)
 
 Corollary bevar_occur_evar_open dbi1 dbi2 X phi:
-bevar_occur phi dbi1 = false -> dbi1 < dbi2 ->
-bevar_occur (phi^{evar: dbi2 ↦ X}) dbi1 = false.
+  bevar_occur phi dbi1 = false -> dbi1 < dbi2 ->
+  bevar_occur (phi^{evar: dbi2 ↦ X}) dbi1 = false.
 Proof.
-intros H H0. apply Private_bevar_occur_evar_open with (sz := size phi); auto.
+  revert dbi1 dbi2.
+  size_induction phi; intros; simpl; try reflexivity.
+  * cbn in *. repeat case_match; cbn; try reflexivity; try lia.
+    all: case_match; lia.
+  * simpl in *. apply orb_false_elim in H; firstorder.
+    rewrite IHsz. lia. assumption. lia.
+    rewrite IHsz. lia. assumption. lia.
+    reflexivity.
+  * simpl in *. apply orb_false_elim in H; firstorder.
+    rewrite IHsz. lia. assumption. lia.
+    rewrite IHsz. lia. assumption. lia.
+    reflexivity.
+  * unfold evar_open in IHsz. rewrite IHsz. lia. assumption. lia. reflexivity.
+  * unfold evar_open in IHsz. rewrite IHsz. lia. assumption. lia. reflexivity.
 Qed.
 
 Lemma well_formed_positive_bevar_subst φ : forall n ψ,
-mu_free φ ->
-well_formed_positive φ = true -> well_formed_positive ψ = true
-->
-well_formed_positive (φ^[evar: n ↦ ψ]) = true.
+  mu_free φ ->
+  well_formed_positive φ = true -> well_formed_positive ψ = true
+  ->
+  well_formed_positive (φ^[evar: n ↦ ψ]) = true.
 Proof.
-induction φ; intros n' ψ H H0 H1; simpl; auto.
-2-3: apply andb_true_iff in H as [E1 E2];
-     simpl in H0; apply eq_sym, andb_true_eq in H0; destruct H0; 
-     rewrite -> IHφ1, -> IHφ2; auto.
-* break_match_goal; auto.
+  induction φ; intros n' ψ H H0 H1; simpl; auto.
+  2-3: apply andb_true_iff in H as [E1 E2];
+       simpl in H0; apply eq_sym, andb_true_eq in H0; destruct H0; 
+       rewrite -> IHφ1, -> IHφ2; auto.
+  * break_match_goal; auto.
 Qed.
 
 Lemma mu_free_bevar_subst :
-forall φ ψ, mu_free φ -> mu_free ψ -> forall n, mu_free (φ^[evar: n ↦ ψ]).
+  forall φ ψ, mu_free φ -> mu_free ψ -> forall n, mu_free (φ^[evar: n ↦ ψ]).
 Proof.
-induction φ; intros ψ H H0 n'; simpl; try now constructor.
-* break_match_goal; auto.
-* simpl in H. apply andb_true_iff in H as [E1 E2]. now rewrite -> IHφ1, -> IHφ2.
-* simpl in H. apply andb_true_iff in H as [E1 E2]. now rewrite -> IHφ1, -> IHφ2.
-* simpl in H. now apply IHφ.
-* inversion H.
+  induction φ; intros ψ H H0 n'; simpl; try now constructor.
+  * break_match_goal; auto.
+  * simpl in H. apply andb_true_iff in H as [E1 E2]. now rewrite -> IHφ1, -> IHφ2.
+  * simpl in H. apply andb_true_iff in H as [E1 E2]. now rewrite -> IHφ1, -> IHφ2.
+  * simpl in H. now apply IHφ.
+  * inversion H.
 Qed.
 
 Corollary mu_free_evar_open :
-forall φ, mu_free φ -> forall x n, mu_free (φ^{evar: n ↦ x}).
+  forall φ, mu_free φ -> forall x n, mu_free (φ^{evar: n ↦ x}).
 Proof.
-intros φ H x n. apply mu_free_bevar_subst; auto.
+  intros φ H x n. apply mu_free_bevar_subst; auto.
 Qed.
 
 Theorem evar_open_free_evar_subst_swap :
@@ -2392,32 +2422,6 @@ Proof.
   assumption.
   rewrite wfc_ex_aux_body_ex_imp1. assumption.
   by rewrite wfc_mu_aux_body_ex_imp1.
-Qed.
-
-Lemma evar_open_size' :
-  forall (k : db_index) (n : evar) (p : Pattern),
-    size' (p^{evar: k ↦ n}) = size' p.
-Proof.
-  intros k n p. generalize dependent k.
-  induction p; intros k; cbn; try reflexivity.
-  break_match_goal; reflexivity.
-  rewrite (IHp1 k); rewrite (IHp2 k); reflexivity.
-  rewrite (IHp1 k); rewrite (IHp2 k); reflexivity.
-  rewrite (IHp (S k)); reflexivity.
-  rewrite (IHp k); reflexivity.
-Qed.
-
-Lemma svar_open_size' :
-  forall (k : db_index) (n : svar) (p : Pattern),
-    size' (p^{svar: k ↦ n}) = size' p.
-Proof.
-  intros k n p. generalize dependent k.
-  induction p; intros k; cbn; try reflexivity.
-  break_match_goal; reflexivity.
-  rewrite (IHp1 k); rewrite (IHp2 k); reflexivity.
-  rewrite (IHp1 k); rewrite (IHp2 k); reflexivity.
-  rewrite (IHp k); reflexivity.
-  rewrite (IHp (S k)); reflexivity.
 Qed.
 
 Definition bcmcloseex

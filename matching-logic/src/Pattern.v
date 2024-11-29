@@ -101,26 +101,22 @@ Fixpoint count_binders
 Definition Theory {Σ : Signature} := propset Pattern.
 
 Section syntax.
-    Context {Σ : Signature}.
+  Context {Σ : Signature}.
 
-Fixpoint size (p : Pattern) : nat :=
-    match p with
-    | patt_app ls rs => 1 + (size ls) + (size rs)
-    | patt_imp ls rs => 1 + (size ls) + (size rs)
-    | patt_exists p' => 1 + size p'
-    | patt_mu p' => 1 + size p'
-    | _ => 0
-    end.
+  Fixpoint pat_size (p : Pattern) : nat :=
+      match p with
+      | patt_app ls rs => 1 + (pat_size ls) + (pat_size rs)
+      | patt_imp ls rs => 1 + (pat_size ls) + (pat_size rs)
+      | patt_exists p' => 1 + pat_size p'
+      | patt_mu p' => 1 + pat_size p'
+      | _ => 1
+      end.
 
+  Global Instance PatternSize : Size Pattern := {
+    size := pat_size;
+  }.
 
-Fixpoint size' (p : Pattern) : nat :=
-    match p with
-    | patt_app ls rs => 1 + (size' ls) + (size' rs)
-    | patt_imp ls rs => 1 + (size' ls) + (size' rs)
-    | patt_exists p' => 1 + size' p'
-    | patt_mu p' => 1 + size' p'
-    | _ => 1
-    end.
+(*   Arguments PatternSize /. *)
 
   (** The free names of a type are defined as follow.  Notice the
   [exists] and [mu] cases: they do not bind any name. *)
@@ -1110,14 +1106,14 @@ match type of φ with
 | Pattern => let sz := fresh "sz" in
              let Hsz := fresh "Hsz" in
              let H := fresh "H" in
-               remember (size' φ) as sz eqn:H;
-               assert (size' φ <= sz) as Hsz by lia;
+               remember (size φ) as sz eqn:H;
+               assert (size φ <= sz) as Hsz by lia;
                clear H;
                revert φ Hsz;
                induction sz; intros φ Hsz; [
-                 destruct φ; simpl size' in Hsz; lia
+                 destruct φ; simpl size in Hsz; lia
                |
-                 destruct φ; simpl size' in Hsz
+                 destruct φ; unfold PatternSize, size in *; simpl in Hsz
                ]
 end.
 

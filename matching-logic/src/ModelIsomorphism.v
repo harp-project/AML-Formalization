@@ -307,8 +307,8 @@ Section isomorphism.
           ≡@{propset (Domain M₂)} (@eval Σ M₂ (mkValuation ((mi_f i) ∘ (evar_valuation ρ)) (λ X, (mi_f i) <$> (svar_valuation ρ X))) ϕ).
   Proof.
       intros ϕ.
-      remember (size' ϕ) as sz.
-      assert (Hsz: size' ϕ <= sz) by lia.
+      remember (size ϕ) as sz.
+      assert (Hsz: size ϕ <= sz) by lia.
       clear Heqsz.
       move: ϕ Hsz.
       induction sz; intros ϕ Hsz.
@@ -369,9 +369,9 @@ Section isomorphism.
                   destruct Hx as [le [re [Hle [Hre Hx] ] ] ].
                   rewrite mi_app in Hx.
                   rewrite -IHsz.
-                  { lia. }
+                  { unfold size in *; lia. }
                   rewrite -IHsz.
-                  { lia. }
+                  { unfold size in *; lia. }
                   unfold app_ext.
                   rewrite elem_of_PropSet.
                   exists (mi_f i le).
@@ -387,9 +387,9 @@ Section isomorphism.
                   rewrite elem_of_PropSet.
                   destruct Hx as [le [re [Hle [Hre Hx] ] ] ].
                   rewrite -IHsz in Hle.
-                  { lia. }
+                  { unfold size in *; lia. }
                   rewrite -IHsz in Hre.
-                  { lia. }
+                  { unfold size in *; lia. }
                   apply elem_of_fmap_1 in Hle.
                   apply elem_of_fmap_1 in Hre.
                   destruct Hle as [x1 [Hx1 Hle] ].
@@ -413,9 +413,9 @@ Section isomorphism.
               do 2 rewrite eval_imp_simpl.
               simpl in Hsz.
               rewrite -IHsz.
-              { lia. }
+              { unfold size in *; lia. }
               rewrite -IHsz.
-              { lia. }
+              { unfold size in *; lia. }
               remember (eval ρ ϕ1) as X1.
               remember (eval ρ ϕ2) as X2.
               unfold fmap.
@@ -507,7 +507,7 @@ Section isomorphism.
                   }
 
                   setoid_rewrite <- IHsz.
-                  2: { rewrite evar_open_size'. simpl in Hsz. lia. }
+                  2: { rewrite -evar_open_size. simpl in Hsz. unfold size in *; lia. }
                   unfold propset_fa_union.
                   rewrite elem_of_PropSet.
                   exists (mi_f i c).
@@ -538,7 +538,7 @@ Section isomorphism.
                   replace c with ((mi_f i) (@surj'_inv _ _ _ _ (mi_surj i) c)) in Hc by apply surj'_pf.
                   rewrite update_evar_val_compose in Hc.
                   rewrite -IHsz in Hc.
-                  { rewrite evar_open_size'. simpl in Hsz. lia. }
+                  { rewrite -evar_open_size. simpl in Hsz. unfold size in *; lia. }
                   apply elem_of_fmap in Hc.
                   destruct Hc as [y [Hy Hc] ]. subst.
                   replace (surj'_inv (mi_f i y)) with y.
@@ -592,7 +592,7 @@ Section isomorphism.
 
                   rewrite update_svar_val_compose in He.
                   rewrite -IHsz in He.
-                  { rewrite svar_open_size'. lia. }
+                  { rewrite -svar_open_size.  unfold size in *; lia. }
                   specialize (Hx ((@surj'_inv _ _ _ _ (mi_surj i)) <$> e)).
                   ospecialize* Hx.
                   {
@@ -636,7 +636,7 @@ Section isomorphism.
                       specialize (Hx ((mi_f i) <$> e)).
                       rewrite update_svar_val_compose in Hx.
                       rewrite -IHsz in Hx.
-                      { rewrite svar_open_size'. lia. }
+                      { rewrite -svar_open_size. unfold size in *; lia. }
                       clear IHsz.
 
                       replace e with (((@surj'_inv _ _ _ _ (mi_surj i)) <$> ((mi_f i) <$> e))).

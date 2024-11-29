@@ -1,31 +1,11 @@
-From Coq Require Import ssreflect ssrfun ssrbool.
+From Coq Require Import Logic.Classical_Prop
+                        Classes.Morphisms_Prop.
+From MatchingLogic Require Export Logic
+                                  Definedness_Syntax.
+Import MatchingLogic.Logic.Notations
+       MatchingLogic.Theories.Definedness_Syntax.Notations.
 
-Require Import Equations.Prop.Equations.
-
-From Coq Require Import String Setoid.
-Require Import Coq.Program.Equality.
-Require Import Coq.Logic.Classical_Prop.
-From Coq.Logic Require Import FunctionalExtensionality Eqdep_dec.
-From Coq.Classes Require Import Morphisms_Prop.
-From Coq.Unicode Require Import Utf8.
-From Coq.micromega Require Import Lia.
-
-From MatchingLogic Require Import Logic.
-From MatchingLogic Require Import
-  Semantics
-  DerivedOperators_Semantics
-  PrePredicate
-.
-Import MatchingLogic.Logic.Notations.
-From MatchingLogic.Utils Require Import stdpp_ext.
-
-From stdpp Require Import base fin_sets sets propset proof_irrel option list finite.
-
-Import extralibrary.
-
-Require Import MatchingLogic.Theories.Definedness_Syntax.
-Import Definedness_Syntax.Notations.
-Import MatchingLogic.Semantics.Notations.
+Set Default Proof Mode "Classic".
 
 Section definedness.
   Context
@@ -118,7 +98,7 @@ Section definedness.
     intros M H ϕ ρ H0.
     pose proof (H1 := empty_impl_not_full _ H0).
     pose proof (H2 := modus_tollens _ _ (definedness_not_empty_1 M H ϕ ρ) H1).
-    apply NNPP in H2. apply H2.
+    apply Classical_Prop.NNPP in H2. apply H2.
   Qed.
 
   Lemma definedness_not_empty_2 : forall (M : Model),
@@ -761,7 +741,7 @@ Section definedness.
       rewrite evar_open_free_evar_subst_swap; try assumption.
       rewrite evar_open_free_evar_subst_swap; try assumption.
       apply IHsz.
-      - rewrite evar_open_size'. lia.
+      - setoid_rewrite <- evar_open_size. unfold size, PatternSize in *. lia.
       - rewrite !eval_free_evar_independent.
         1-2: unfold evar_is_fresh_in; subst z; solve_fresh.
         assumption.
@@ -777,7 +757,7 @@ Section definedness.
       rewrite -free_evar_subst_bsvar_subst. wf_auto2. unfold evar_is_fresh_in. set_solver.
       rewrite -free_evar_subst_bsvar_subst. wf_auto2. unfold evar_is_fresh_in. set_solver.
       apply IHsz.
-      - rewrite svar_open_size'. lia.
+      - setoid_rewrite <- svar_open_size. unfold size, PatternSize in *. lia.
       - rewrite !eval_free_svar_independent.
         1-2: unfold evar_is_fresh_in; subst Z; solve_sfresh.
         assumption.
