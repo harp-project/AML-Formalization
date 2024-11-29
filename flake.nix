@@ -2,7 +2,7 @@
   description = "A Coq Library for Matching Logic";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/release-24.05";
+    nixpkgs.url = "github:NixOS/nixpkgs/release-24.11";
     flake-utils.url = "github:numtide/flake-utils";
     pyk.url = "github:runtimeverification/pyk/v0.1.491";
    };
@@ -11,10 +11,10 @@
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
-        coqPackages = pkgs.coqPackages_8_19;
+        coqPackages = pkgs.coqPackages_8_20;
         pyk-py = pyk.packages.${system}.pyk-python311;
         python = pyk-py.python;
-        stdpp = coqPackages.stdpp.overrideAttrs (o : { src = fetchTarball { url = "https://gitlab.mpi-sws.org/iris/stdpp/-/archive/master/stdpp-master.tar.bz2"; sha256="sha256:1f8v61mcixcai8ki1l350hlnypc7v3rrxjcx4m0xclb01rlf9afa";}; });
+        # stdpp = coqPackages.stdpp.overrideAttrs (o : { src = fetchTarball { url = "https://gitlab.mpi-sws.org/iris/stdpp/-/archive/master/stdpp-master.tar.bz2"; sha256="sha256:1f8v61mcixcai8ki1l350hlnypc7v3rrxjcx4m0xclb01rlf9afa";}; });
 
         # The 'matching logic in Coq' library
         
@@ -28,7 +28,8 @@
           propagatedBuildInputs = [
             coq
             coqPackages.equations
-            stdpp
+            # stdpp
+            coqPackages.stdpp
             coqPackages.LibHyps
           ];
           enableParallelBuilding = true;

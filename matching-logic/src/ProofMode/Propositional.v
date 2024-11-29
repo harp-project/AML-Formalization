@@ -1,4 +1,4 @@
-From Coq Require Import ssreflect ssrfun ssrbool.
+(* From Coq Require Import ssreflect ssrfun ssrbool.
 
 From Ltac2 Require Import Ltac2 Control.
 
@@ -15,14 +15,15 @@ From MatchingLogic Require Import
     DerivedOperators_Syntax
     ProofInfo
     BasicProofSystemLemmas
-.
+. *)
 From MatchingLogic.ProofMode Require Import Basics.
+From MatchingLogic Require Import BasicProofSystemLemmas.
 
-From stdpp Require Import list tactics fin_sets coGset gmap sets.
+(* From stdpp Require Import list tactics fin_sets coGset gmap sets.
 
 From MatchingLogic.Utils Require Import stdpp_ext.
 
-Import extralibrary.
+Import extralibrary. *)
 
 Import
   MatchingLogic.Logic.Notations
@@ -174,7 +175,7 @@ Proof.
   }
   assert (H2 : Γ ⊢i ((a ---> ((a ---> b) ---> b)) ---> ((a ---> (a ---> b)) ---> (a ---> b))) using BasicReasoning).
   {
-    apply P2; wf_auto2.
+    apply BasicProofSystemLemmas.P2; wf_auto2.
   }
   eapply MP. 2: apply H2. apply H1.
 Defined.
@@ -2228,7 +2229,12 @@ Ltac2 rec fillWithUnderscoresAndCall0
   *)
   let cont := (fun () =>
     lazy_match! Constr.type t with
-    | (?t' -> ?t's) =>
+    | (?t' -> ?t's) => (* NOTE, (COQ BUG?) If I omit ?t's from here,
+                          forall withh match this branch
+                          
+                          NOTE2: This matching is fragile. Implication
+                          hypotheses also seem to match the second branch
+                          with forall _ : _ , _*)
       lazy_match! goal with
       | [|- ?g] =>
         let h := Fresh.in_goal ident:(hasserted) in
@@ -2245,7 +2251,7 @@ Ltac2 rec fillWithUnderscoresAndCall0
         ]
       end
     | (forall _ : _, _) => fillWithUnderscoresAndCall0 tac open_constr:($t _) args
-    | ?remainder => throw (Invalid_argument (Some (Message.concat (Message.concat (Message.of_string "Remainder type: ") (Message.of_constr remainder)) (Message.concat (Message.of_string ", of term") (Message.of_constr t)))))
+    | ?remainder => Control.throw (Invalid_argument (Some (Message.concat (Message.concat (Message.of_string "Remainder type: ") (Message.of_constr remainder)) (Message.concat (Message.of_string ", of term") (Message.of_constr t)))))
     end
   ) in
   match (applyRec t args) with
@@ -2425,7 +2431,7 @@ Proof.
     }
 
     mlApplyMeta pf_conj_elim_r.
-    repeat rewrite app_length; simpl.
+    repeat rewrite length_app; simpl.
     rewrite take_app_add. simpl.
     rewrite Nat.sub_diag take_0 app_nil_r.
     apply MLGoal_exactn.
@@ -2472,11 +2478,11 @@ Proof.
     repeat rewrite drop_all.
     repeat rewrite Nat.sub_diag.
     repeat rewrite drop_0 take_0.
-    repeat rewrite app_length; simpl in *.
+    repeat rewrite length_app; simpl in *.
     rewrite Nat.add_0_r Nat.sub_diag take_0 app_nil_r app_nil_r.
     rewrite take_app_add.
     apply MLGoal_exactn.
-    assumption.
+    wf_auto2.
   }
 
   eapply cast_proof_ml_hyps.
@@ -2492,7 +2498,7 @@ Proof.
   }
   simpl.
   repeat (
-  repeat rewrite app_length; simpl;
+  repeat rewrite length_app; simpl;
   repeat rewrite Nat.sub_diag; simpl;
   repeat rewrite take_0; simpl;
   repeat rewrite drop_0; simpl;
@@ -2500,7 +2506,7 @@ Proof.
   repeat rewrite Nat.add_0_r;
   repeat rewrite take_app_add; simpl).
   rewrite drop_app drop_app_add. simpl.
-  rewrite app_length. simpl. rewrite Nat.sub_diag. rewrite drop_0.
+  rewrite length_app. simpl. rewrite Nat.sub_diag. rewrite drop_0.
   rewrite drop_ge. lia. simpl.
   replace (length l₁ + 1 - length l₁) with 1 by lia. simpl.
   rewrite -app_assoc.

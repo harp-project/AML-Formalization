@@ -1,32 +1,12 @@
-From Coq Require Import ssreflect ssrfun ssrbool.
-
-From Ltac2 Require Import Ltac2.
-
-From Coq Require Import Bool String Btauto.
-From Coq.Logic Require Import FunctionalExtensionality Eqdep_dec.
-From Equations Require Import Equations.
-
-Require Import Coq.Program.Tactics.
-
-From MatchingLogic Require Import Syntax
-                                  ProofSystem
-                                  wftactics
-                                  NamedAxioms
-                                  IndexManipulation.
-
-From stdpp Require Import list tactics fin_sets coGset gmap sets.
-
-From MatchingLogic.Utils Require Import stdpp_ext.
-
-Import extralibrary.
-
+From Ltac2 Require Export Ltac2.
+From MatchingLogic Require Export ProofSystem
+                                  NamedAxioms.
+Set Default Proof Mode "Classic".
 Import
   MatchingLogic.Syntax.Notations
   MatchingLogic.DerivedOperators_Syntax.Notations
   MatchingLogic.ProofSystem.Notations_private
 .
-
-Set Default Proof Mode "Classic".
 
 Open Scope ml_scope.
 
@@ -285,8 +265,7 @@ Fixpoint uses_of_ex_gen Γ ϕ (pf : ML_proof_system Γ ϕ) : EVarSet :=
     intros H.
     induction pf; simpl in *; try apply reflexivity; try congruence.
     {
-      destruct_and!. specialize (IHpf1 ltac:(assumption)). specialize (IHpf2 ltac:(assumption)).
-      rewrite IHpf1. rewrite IHpf2. set_solver.
+      destruct_andb! H. set_solver.
     }
   Qed.
 
@@ -294,37 +273,37 @@ Fixpoint uses_of_ex_gen Γ ϕ (pf : ML_proof_system Γ ϕ) : EVarSet :=
     propositional_only Γ ϕ pf = true -> uses_kt Γ ϕ pf = false.
   Proof.
     induction pf; simpl; intros H; try reflexivity; try congruence.
-    { destruct_and!. rewrite IHpf1;[assumption|]. rewrite IHpf2;[assumption|]. reflexivity. }
+    { destruct_andb! H. rewrite IHpf1;[assumption|]. rewrite IHpf2;[assumption|]. reflexivity. }
   Qed.
 
   Lemma propositional_implies_no_uses_svar Γ ϕ (pf : ML_proof_system Γ ϕ) (SvS : SVarSet) :
     propositional_only Γ ϕ pf = true -> uses_svar_subst SvS Γ ϕ pf = false.
   Proof.
     induction pf; simpl; intros H; try reflexivity; try congruence.
-    { destruct_and!. rewrite IHpf1;[assumption|]. rewrite IHpf2;[assumption|]. reflexivity. }
+    { destruct_andb! H. rewrite IHpf1;[assumption|]. rewrite IHpf2;[assumption|]. reflexivity. }
   Qed.
 
   Lemma propositional_implies_no_uses_ex_gen Γ ϕ (pf : ML_proof_system Γ ϕ) (EvS : EVarSet) :
     propositional_only Γ ϕ pf = true -> uses_ex_gen EvS Γ ϕ pf = false.
   Proof.
     induction pf; simpl; intros H; try reflexivity; try congruence.
-    { destruct_and!. rewrite IHpf1;[assumption|]. rewrite IHpf2;[assumption|]. reflexivity. }
+    { destruct_andb! H. rewrite IHpf1;[assumption|]. rewrite IHpf2;[assumption|]. reflexivity. }
   Qed.
   
   Lemma propositional_implies_no_uses_ex_gen_2 Γ ϕ (pf : ML_proof_system Γ ϕ) :
     propositional_only Γ ϕ pf = true -> uses_of_ex_gen Γ ϕ pf = ∅.
   Proof.
     induction pf; simpl; intros H; try reflexivity; try congruence.
-    { destruct_and!. rewrite IHpf1;[assumption|]. rewrite IHpf2;[assumption|]. set_solver. }
+    { destruct_andb! H. rewrite IHpf1;[assumption|]. rewrite IHpf2;[assumption|]. set_solver. }
   Qed.
 
   Lemma propositional_implies_no_uses_svar_2 Γ ϕ (pf : ML_proof_system Γ ϕ)  :
     propositional_only Γ ϕ pf = true -> uses_of_svar_subst Γ ϕ pf = ∅.
   Proof.
     induction pf; simpl; intros H; try reflexivity; try congruence.
-    { destruct_and!. rewrite IHpf1;[assumption|]. rewrite IHpf2;[assumption|]. set_solver. }
+    { destruct_andb! H. rewrite IHpf1;[assumption|]. rewrite IHpf2;[assumption|]. set_solver. }
   Qed.
-    
+
   Definition proofbpred := forall (Γ : Theory) (ϕ : Pattern),  Γ ⊢H ϕ -> bool.
 
   Definition indifferent_to_cast (P : proofbpred)
@@ -339,7 +318,7 @@ Fixpoint uses_of_ex_gen Γ ϕ (pf : ML_proof_system Γ ϕ) : EVarSet :=
      unfold eq_rec; unfold eq_rect; unfold eq_sym; simpl; auto;
      pose proof (e' := e); move: e; rewrite e'; clear e'; intros e;
      match type of e with
-     | ?x = ?x => replace e with (@erefl _ x) by (apply UIP_dec; intros x' y'; apply Pattern_eqdec)
+     | ?x = ?x => replace e with (@erefl _ x) by (apply Eqdep_dec.UIP_dec; intros x' y'; apply Pattern_eqdec)
      end; simpl; try reflexivity.
   Qed.
 
@@ -351,7 +330,7 @@ Fixpoint uses_of_ex_gen Γ ϕ (pf : ML_proof_system Γ ϕ) : EVarSet :=
      unfold eq_rec; unfold eq_rect; unfold eq_sym; simpl; auto;
      pose proof (e' := e); move: e; rewrite e'; clear e'; intros e;
      match type of e with
-     | ?x = ?x => replace e with (@erefl _ x) by (apply UIP_dec; intros x' y'; apply Pattern_eqdec)
+     | ?x = ?x => replace e with (@erefl _ x) by (apply Eqdep_dec.UIP_dec; intros x' y'; apply Pattern_eqdec)
      end; simpl; try reflexivity.
   Qed.
 
@@ -364,7 +343,7 @@ Fixpoint uses_of_ex_gen Γ ϕ (pf : ML_proof_system Γ ϕ) : EVarSet :=
      unfold eq_rec; unfold eq_rect; unfold eq_sym; simpl; auto;
      pose proof (e' := e); move: e; rewrite e'; clear e'; intros e;
      match type of e with
-     | ?x = ?x => replace e with (@erefl _ x) by (apply UIP_dec; intros x' y'; apply Pattern_eqdec)
+     | ?x = ?x => replace e with (@erefl _ x) by (apply Eqdep_dec.UIP_dec; intros x' y'; apply Pattern_eqdec)
      end; simpl; try reflexivity.
   Qed.
 
@@ -411,7 +390,7 @@ Fixpoint uses_kt_unreasonably {Σ : Signature} Γ ϕ (pf : ML_proof_system Γ ϕ
      unfold eq_rec; unfold eq_rect; unfold eq_sym; simpl; auto;
      pose proof (e' := e); move: e; rewrite e'; clear e'; intros e;
      match type of e with
-     | ?x = ?x => replace e with (@erefl _ x) by (apply UIP_dec; intros x' y'; apply Pattern_eqdec)
+     | ?x = ?x => replace e with (@erefl _ x) by (apply Eqdep_dec.UIP_dec; intros x' y'; apply Pattern_eqdec)
      end; simpl; try reflexivity.
   Qed.
 
@@ -725,7 +704,7 @@ Proof.
     rewrite implb_true_iff in H11.
     rewrite implb_true_iff in H12.
     intros H'.
-    apply Hpf5 in H'. destruct_and!.
+    apply Hpf5 in H'. destruct_andb! H'.
     apply andb_true_iff. split; auto.
   }
 Defined.

@@ -988,14 +988,13 @@ Section with_signature.
   evar_is_fresh_in x (foldr patt_imp g l) <-> evar_is_fresh_in x g /\ evar_is_fresh_in_list x l.
   Proof.
   induction l; simpl; split; intros H.
-  - split;[assumption|]. unfold evar_is_fresh_in_list. apply Forall_nil.
+  - split;[assumption|]. unfold evar_is_fresh_in_list. by apply Forall_nil.
   - destruct H as [H _]. exact H.
   - unfold evar_is_fresh_in_list,evar_is_fresh_in in *. simpl in *.
     split;[set_solver|].
     apply Forall_cons.
     destruct IHl as [IHl1 IHl2].
     set_solver.
-    apply IHl. set_solver.
   - unfold evar_is_fresh_in_list,evar_is_fresh_in in *. simpl in *.
     destruct IHl as [IHl1 IHl2].
     destruct H as [H1 H2].

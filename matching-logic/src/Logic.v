@@ -16,3 +16,7 @@ Module Notations.
          MatchingLogic.ProofInfo.Notations.
   Export Pattern.BoundVarSugar.
 End Notations.
+
+Open Scope string_scope.
+Open Scope list_scope.
+Open Scope ml_scope.

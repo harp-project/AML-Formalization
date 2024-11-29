@@ -1,39 +1,6 @@
-From Coq Require Import ssreflect ssrfun ssrbool.
-
-From Ltac2 Require Import Ltac2 Control.
-
-From Coq Require Import Bool String.
-From Coq.Logic Require Import FunctionalExtensionality Eqdep_dec.
-From Equations Require Import Equations.
-
-Require Import Coq.Program.Tactics.
-
-From MatchingLogic Require Import
-    Utils.extralibrary
-    Logic
-    DerivedOperators_Syntax
-    ProofSystem
-    (*ProofMode_base*)
-    ProofInfo
-.
-
-From stdpp Require Import list tactics fin_sets coGset gmap sets.
-
-From MatchingLogic.Utils Require Import stdpp_ext.
-
-Import extralibrary.
-
-Import
-  MatchingLogic.Logic.Notations
-  MatchingLogic.DerivedOperators_Syntax.Notations
-  MatchingLogic.ProofInfo.Notations
-.
-
+From MatchingLogic Require Export Logic.
+Import Logic.Notations.
 Set Default Proof Mode "Classic".
-
-Open Scope string_scope.
-Open Scope list_scope.
-Open Scope ml_scope.
 
 Lemma MP {Σ : Signature} {Γ : Theory} {ϕ₁ ϕ₂ : Pattern} {i : ProofInfo} :
   Γ ⊢i ϕ₁ using i ->
@@ -174,9 +141,9 @@ Proof.
   }
 Defined.
 
-Arguments P1 {Σ} _ (_%ml) (_%ml) _ _ .
-Arguments P2 {Σ} _ (_%ml) (_%ml) (_%ml) _ _ _.
-Arguments P3 {Σ} _ (_%ml) _.
+Arguments P1 {Σ} _ (_%_ml) (_%_ml) _ _ .
+Arguments P2 {Σ} _ (_%_ml) (_%_ml) (_%_ml) _ _ _.
+Arguments P3 {Σ} _ (_%_ml) _.
 
 Lemma P4m  {Σ : Signature}(Γ : Theory) (A B : Pattern) :
   well_formed A ->
@@ -1656,7 +1623,7 @@ Proof.
       }
       {
         rewrite H1 in Hpf5. simpl in Hpf5.
-        destruct_and!. assumption.
+        destruct_andb! Hpf5. assumption.
       }
     }
   }
@@ -1749,7 +1716,7 @@ Proof.
         rewrite implb_true_iff in H0.
         apply implb_true_iff. intro X. apply H0 in X as X'.
         apply kt_unreasonably_implies_somehow in X.
-        destruct_and!. split_and!; assumption.
+        naive_bsolver.
     - apply IHx2. 2: assumption.
       destruct p. constructor; simpl in *.
       1-2: set_solver.
@@ -1760,7 +1727,7 @@ Proof.
         rewrite implb_true_iff in H0.
         apply implb_true_iff. intro X. apply H0 in X as X'.
         apply kt_unreasonably_implies_somehow in X.
-        destruct_and!. split_and!; assumption.
+        naive_bsolver.
   * unshelve (eexists). apply Ex_quan; try assumption.
     simpl. constructor; simpl; auto; set_solver.
   * apply Ex_gen. all: try assumption.
@@ -1832,7 +1799,3 @@ Proof.
   * unshelve (eexists). apply Singleton_ctx; try assumption.
     simpl. constructor; simpl; auto; set_solver.
 Defined.
-
-Close Scope string_scope.
-Close Scope list_scope.
-Close Scope ml_scope.

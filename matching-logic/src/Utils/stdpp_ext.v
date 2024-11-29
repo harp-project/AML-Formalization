@@ -2,6 +2,7 @@
 From Coq Require Export ssreflect ssrfun ssrbool String.
 From Coq.Logic Require Import Classical_Prop Classical_Pred_Type Eqdep_dec.
 From stdpp Require Export list propset sets pmap gmap mapset coGset.
+Export list. (* to overwrite module qualifiers *)
 
 Lemma foldl_fold_left :
   forall {A B} f (l : list A) (b : B),
@@ -141,7 +142,7 @@ Proof.
       { intros Contra.
         assert (Heqlen: length (rev l' ++ [b]) = @length A []).
         { rewrite Contra. reflexivity. }
-        rewrite app_length in Heqlen. simpl in Heqlen. lia.
+        rewrite length_app in Heqlen. simpl in Heqlen. lia.
       }
       simpl. reflexivity.
 Qed.
@@ -218,7 +219,7 @@ Proof.
   assert (H2: length (a :: l1) = length (l2 ++ [b])).
   { rewrite H1. reflexivity. }
   simpl in H2.
-  rewrite app_length in H2. simpl in H2. lia.
+  rewrite length_app in H2. simpl in H2. lia.
 Qed.
 
 Fixpoint skip_eq {A} {eqdec: EqDecision A} (l : list (A * A)) :=
@@ -466,7 +467,7 @@ Proof.
     rewrite reverse_cons.
 
     assert (reverse l' = take (length (tail (reverse l' ++ [x']))) (reverse l' ++ [x'])).
-    { rewrite length_tail. rewrite app_length. simpl.
+    { rewrite length_tail. rewrite length_app. simpl.
       assert (length (reverse l') + 1 - 1 = length (reverse l')).
       { lia. }
       rewrite H2.
@@ -480,12 +481,12 @@ Proof.
     rewrite drop_all. simpl.
     rewrite length_take.
     rewrite Nat.min_l.
-    1: rewrite length_tail app_length; lia.
-    rewrite app_nil_r length_tail app_length. simpl.
+    1: rewrite length_tail length_app; lia.
+    rewrite app_nil_r length_tail length_app. simpl.
     replace ((_ + 1 - 1)) with ((length (reverse l'))) by lia.
     rewrite firstn_all.
     rewrite <-zip_smaller with (l3 := [x']). reflexivity.
-    rewrite length_tail app_length. simpl. lia.
+    rewrite length_tail length_app. simpl. lia.
 Qed.
 
 Lemma Forall_zip_flip_reverse {A : Type} (f : A -> A -> Prop) (m : A) (l : list A) :

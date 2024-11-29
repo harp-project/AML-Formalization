@@ -177,7 +177,7 @@ Module Notations.
   Notation "e ^{{ 'svar:' x ↦ db }}" := (svar_quantify x db e) (at level 2, x at level 200, left associativity,
   format "e ^{{ 'svar:' x ↦ db }}" ) : ml_scope.
 
-  Notation "e ^ [ e' ]" := (instantiate e e') (at level 2, e' at level 200, left associativity) : ml_scope.
+  Notation "e ^[ e' ]" := (instantiate e e') (at level 2, e' at level 200, left associativity, format "e ^[ e' ]") : ml_scope.
 
 End Notations.
 

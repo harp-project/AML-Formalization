@@ -1,12 +1,11 @@
 From Coq Require Import Classical_Prop.
 From Coq Require Export Program.Wf
-                        PropExtensionality.
-From Equations Require Export Equations.
-
+                        PropExtensionality
+                        FunctionalExtensionality.
+From Equations Require Export -(notations) Equations.
 From MatchingLogic Require Export Lattice
                                   NamedAxioms
                                   Syntax.
-
 Import MatchingLogic.Syntax.Notations.
 Import MatchingLogic.Substitution.Notations.
 
