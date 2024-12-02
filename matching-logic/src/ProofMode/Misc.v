@@ -1282,7 +1282,7 @@ Section FOL_helpers.
     (wfp : well_formed p)
     (wfq : well_formed q)
     E ψ edepth sdepth
-    (Hsz: size ψ <= sz)
+    (Hsz: pat_size ψ <= sz)
     (wfψ : well_formed ψ)
     (gpi : ProofInfo)
     (** We need to do a number of Ex_Gen (and Substitution) steps
@@ -1363,16 +1363,16 @@ Section FOL_helpers.
     {
       assert (wfψ1 : well_formed ψ1 = true).
       { clear -wfψ. abstract (wf_auto2). }
-      assert (size ψ1 <= sz) by abstract( unfold size in *; lia).
+      assert (pat_size ψ1 <= sz) by abstract( lia).
       assert (wfψ2 : well_formed ψ2 = true).
       { clear -wfψ. abstract (wf_auto2). }
-      assert (size ψ2 <= sz) by abstract( unfold size in *; lia).
-      
+      assert (pat_size ψ2 <= sz) by abstract(lia).
+
       simpl in *.
       pose proof (Hef1 := fresh_evars_bigger (free_evars ψ1 ∪ free_evars p ∪ free_evars q ∪ {[E]}) Hel1 ltac:(set_solver)).
-      
+
       pose proof (Hsf1 := fresh_svars_bigger (free_svars ψ1 ∪ free_svars p ∪ free_svars q) Hsl1 ltac:(set_solver)).
-      
+
       unshelve (epose proof (pf₁ := IHsz edepth sdepth ψ1 ltac:(assumption) ltac:(assumption) evs svs gpi _ pf el Hef1 _ Hel3 sl Hsf1 _ Hsl3)). 2-3: lia.
       { clear - i' pile. subst i'.
         cbn in *. unfold mu_in_evar_path in *. cbn in *.
@@ -1397,10 +1397,10 @@ Section FOL_helpers.
     {
       assert (wfψ1 : well_formed ψ1 = true).
       { clear -wfψ. abstract (wf_auto2). }
-      assert (size ψ1 <= sz) by abstract( unfold size in *; lia).
+      assert (pat_size ψ1 <= sz) by abstract(lia).
       assert (wfψ2 : well_formed ψ2 = true).
       { clear -wfψ. abstract (wf_auto2). }
-      assert (size ψ2 <= sz) by abstract( unfold size in *; lia).
+      assert (pat_size ψ2 <= sz) by abstract(lia).
 
       pose proof (Hef1 := fresh_evars_bigger (free_evars ψ1 ∪ free_evars p ∪ free_evars q ∪ {[E]}) Hel1 ltac:(set_solver)).
       
@@ -1438,7 +1438,7 @@ Section FOL_helpers.
       }
       
       assert (well_formed (ψ^{evar: 0 ↦ x})) by (unfold i' in pile; clear i'; abstract(wf_auto2)).
-      assert (size (ψ^{evar: 0 ↦ x}) <= sz) by abstract(rewrite -evar_open_size;  unfold size in *; lia).
+      assert (pat_size (ψ^{evar: 0 ↦ x}) <= sz) by abstract(rewrite -evar_open_size; lia).
 
       assert (fresh_evars els (free_evars ψ^{evar:0↦x} ∪ free_evars p ∪ free_evars q ∪ {[E]})) as HVars. { constructor.
         * destruct Hel1. apply evar_duplicates.
@@ -1497,7 +1497,7 @@ Section FOL_helpers.
       }
 
       assert (well_formed (ψ^{svar: 0 ↦ X}) = true) by (abstract(clear -wfψ;wf_auto2)).
-      assert (size (ψ^{svar: 0 ↦ X}) <= sz) by abstract(rewrite -svar_open_size;  unfold size in *; lia).
+      assert (pat_size (ψ^{svar: 0 ↦ X}) <= sz) by abstract(rewrite -svar_open_size;  lia).
 
       simpl in *.
 

@@ -1,40 +1,24 @@
-From Coq Require Import ssreflect ssrfun ssrbool.
+From Coq Require Import Classes.Morphisms_Prop.
+From MatchingLogic Require Export Definedness_Semantics
+                                  Sorts_Syntax.
+Import MatchingLogic.Logic.Notations
+       MatchingLogic.Theories.Definedness_Syntax.Notations
+       MatchingLogic.Theories.Sorts_Syntax.Notations.
 
-Require Import Setoid.
-From Coq Require Import Unicode.Utf8.
-From Coq.Logic Require Import Classical_Prop FunctionalExtensionality.
-From Coq.Classes Require Import Morphisms_Prop.
-
-From stdpp Require Import base sets.
-
-From MatchingLogic Require Export
-    Logic
-    Utils.extralibrary
-    Theories.Definedness_Syntax
-    Theories.Definedness_Semantics
-    Theories.Sorts_Syntax.
-
-
-Import MatchingLogic.Logic.Notations.
-Import MatchingLogic.DerivedOperators_Syntax.Notations.
-Import MatchingLogic.Semantics.Notations.
+Set Default Proof Mode "Classic".
 
 Section with_model.
     Context
       {Σ : Signature}
       {syntax : Sorts_Syntax.Syntax}
       {M : Model}.
-    Open Scope ml_scope.
     Hypothesis M_satisfies_theory : M ⊨ᵀ Definedness_Syntax.theory.
 
-    Local Definition sym (s : Symbols) : Pattern :=
-      patt_sym (inj s).
-
-    Definition Mpatt_inhabitant_set m := app_ext (sym_interp M (inj inhabitant)) {[m]}.
+    Definition Mpatt_inhabitant_set m := app_ext (sym_interp M (sym_inj sym_inh)) {[m]}.
 
     (* ϕ is expected to be a sort pattern *)
     Definition Minterp_inhabitant (ϕ : Pattern) (ρ : Valuation)
-      := @eval Σ M ρ (patt_app (sym inhabitant) ϕ).
+      := @eval Σ M ρ (patt_app inhabitant ϕ).
 
     Lemma eval_forall_of_sort_predicate s ϕ ρ:
       let x := fresh_evar ϕ in
@@ -60,11 +44,10 @@ Section with_model.
       }
       subst x.
       remember (patt_in b0 (patt_inhabitant_set (nest_ex s)) ---> ϕ) as Bigϕ.
-      assert (Hfresh: fresh_evar Bigϕ ∉ free_evars (patt_sym (inj inhabitant) ⋅ (nest_ex s))).
+      assert (Hfresh: fresh_evar Bigϕ ∉ free_evars (inhabitant ⋅ (nest_ex s))).
       { rewrite HeqBigϕ.
         unfold patt_inhabitant_set.
-        fold (evar_is_fresh_in (fresh_evar (patt_in b0 (sym inhabitant ⋅ s) ---> ϕ)) (patt_sym (inj inhabitant) ⋅ s)).
-        unfold sym.
+        fold (evar_is_fresh_in (fresh_evar (patt_in b0 (inhabitant ⋅ s) ---> ϕ)) (inhabitant ⋅ s)).
         eapply evar_fresh_in_subformula.
         2: apply set_evar_fresh_is_fresh.
         (* TODO automation *)
@@ -105,10 +88,10 @@ Section with_model.
         simpl. fold evar_open.
 
         unfold Minterp_inhabitant in H'.
-        pose proof (Hfeip := free_evar_in_patt M M_satisfies_theory (fresh_evar Bigϕ) (patt_sym (inj inhabitant) ⋅ (nest_ex s)^{evar: 0 ↦ (fresh_evar Bigϕ)}) (update_evar_val (fresh_evar Bigϕ) m ρ)).
+        pose proof (Hfeip := free_evar_in_patt M M_satisfies_theory (fresh_evar Bigϕ) (inhabitant ⋅ (nest_ex s)^{evar: 0 ↦ (fresh_evar Bigϕ)}) (update_evar_val (fresh_evar Bigϕ) m ρ)).
         destruct Hfeip as [Hfeip1 _]. apply Hfeip1. clear Hfeip1.
         rewrite update_evar_val_same.
-        clear H. unfold sym in H'.
+        clear H.
 
         rewrite eval_app_simpl.
         unfold evar_open. rewrite nest_ex_same.
@@ -123,7 +106,7 @@ Section with_model.
         apply H'.
 
       - intros H m.
-        pose proof (Hfeip := free_evar_in_patt  M M_satisfies_theory (fresh_evar Bigϕ) (patt_sym (inj inhabitant) ⋅ (nest_ex s)^{evar: 0 ↦ (fresh_evar Bigϕ)}) (update_evar_val (fresh_evar Bigϕ) m ρ)).
+        pose proof (Hfeip := free_evar_in_patt  M M_satisfies_theory (fresh_evar Bigϕ) (inhabitant ⋅ (nest_ex s)^{evar: 0 ↦ (fresh_evar Bigϕ)}) (update_evar_val (fresh_evar Bigϕ) m ρ)).
         destruct Hfeip as [_ Hfeip2].
         rewrite {3}HeqBigϕ.
         unfold evar_open. mlSimpl. simpl.
@@ -135,7 +118,7 @@ Section with_model.
         rewrite -(eval_fresh_evar_subterm _ Bigϕ) in H.
         apply Hsub. apply H. clear H.
 
-        unfold Minterp_inhabitant. unfold sym.
+        unfold Minterp_inhabitant.
 
 
         rewrite eval_app_simpl in Hfeip2.
@@ -176,11 +159,10 @@ Section with_model.
       }
       subst x.
       remember (patt_in b0 (patt_inhabitant_set (nest_ex s)) and ϕ) as Bigϕ.
-      assert (Hfresh: fresh_evar Bigϕ ∉ free_evars (patt_sym (inj inhabitant) ⋅ (nest_ex s))).
+      assert (Hfresh: fresh_evar Bigϕ ∉ free_evars (inhabitant ⋅ (nest_ex s))).
       { rewrite HeqBigϕ.
         unfold patt_inhabitant_set.
-        fold (evar_is_fresh_in (fresh_evar (patt_in b0 (sym inhabitant ⋅ s) and ϕ)) (patt_sym (inj inhabitant) ⋅ s)).
-        unfold sym.
+        fold (evar_is_fresh_in (fresh_evar (patt_in b0 (inhabitant ⋅ s) and ϕ)) (inhabitant ⋅ s)).
         eapply evar_fresh_in_subformula.
         2: apply set_evar_fresh_is_fresh.
         (* TODO automation *)
@@ -220,12 +202,11 @@ Section with_model.
         destruct H as [H1 H2].
         split. 2: apply H2. clear H2.
         unfold Minterp_inhabitant.
-        pose proof (Hfeip := free_evar_in_patt M M_satisfies_theory (fresh_evar Bigϕ) (patt_sym (inj inhabitant) ⋅ (nest_ex s)^{evar: 0 ↦ (fresh_evar Bigϕ)}) (update_evar_val (fresh_evar Bigϕ) m ρ)).
+        pose proof (Hfeip := free_evar_in_patt M M_satisfies_theory (fresh_evar Bigϕ) (inhabitant ⋅ (nest_ex s)^{evar: 0 ↦ (fresh_evar Bigϕ)}) (update_evar_val (fresh_evar Bigϕ) m ρ)).
         destruct Hfeip as [_ Hfeip2].
 
         apply Hfeip2 in H1. clear Hfeip2.
         rewrite update_evar_val_same in H1.
-        unfold sym.
 
         rewrite eval_app_simpl in H1.
         unfold evar_open in H1.
@@ -241,14 +222,14 @@ Section with_model.
         apply H1.
 
       - intros [m [H1 H2] ]. exists m.
-        pose proof (Hfeip := free_evar_in_patt M M_satisfies_theory (fresh_evar Bigϕ) (patt_sym (inj inhabitant) ⋅ (nest_ex s)^{evar: 0 ↦ (fresh_evar Bigϕ)}) (update_evar_val (fresh_evar Bigϕ) m ρ)).
+        pose proof (Hfeip := free_evar_in_patt M M_satisfies_theory (fresh_evar Bigϕ) (inhabitant ⋅ (nest_ex s)^{evar: 0 ↦ (fresh_evar Bigϕ)}) (update_evar_val (fresh_evar Bigϕ) m ρ)).
         destruct Hfeip as [Hfeip1 _].
         rewrite {3}HeqBigϕ.
         apply eval_and_full. fold evar_open.
         split.
         + apply Hfeip1. clear Hfeip1.
           rewrite -> update_evar_val_same.
-          unfold Minterp_inhabitant in H1. unfold sym in H1.
+          unfold Minterp_inhabitant in H1.
 
           rewrite eval_app_simpl in H1.
           rewrite eval_sym_simpl in H1.
@@ -857,7 +838,6 @@ Section with_model.
         1: { apply M_satisfies_theory. }
         unfold patt_inhabitant_set.
         unfold Sorts_Syntax.sym.
-        unfold sym in Hinh.
         rewrite eval_imp_simpl.
         rewrite Hinh.
         remember (fresh_evar ϕ) as x'.

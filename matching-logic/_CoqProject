@@ -52,15 +52,17 @@ src/Theories/Definedness_Syntax.v
 src/Theories/Definedness_Semantics.v
 src/Theories/Definedness_ProofSystem.v
 
-src/Theories/FOEquality_ProofSystem.v
 src/Theories/DeductionTheorem.v
-src/Theories/Nat_Syntax.v
-
-src/Theories/SumSort_Syntax.v
+src/Theories/FOEquality_ProofSystem.v
+src/Theories/Subseteq_ProofSystem.v
 
 src/Theories/Sorts_Syntax.v
 src/Theories/Sorts_Semantics.v
 src/Theories/Sorts_ProofSystem.v
+
+src/Theories/Nat_Syntax.v
+
+src/Theories/SumSort_Syntax.v
 
 src/Theories/Bool_Syntax.v
 src/Theories/Bool_Semantics.v
@@ -71,7 +73,6 @@ src/Theories/ProductSort_ProofSystem.v
 src/Theories/ProductSortWithLookup.v
 src/Theories/RecursiveSymbol.v
 
-src/Theories/Subseteq_ProofSystem.v
 src/Theories/ContextualImplication.v
 
 src/Theories/ModelExtension.v

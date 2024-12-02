@@ -15,12 +15,12 @@ Section definedness.
   Open Scope ml_scope.
 
   Let sym (s : Symbols) : Pattern :=
-    @patt_sym Σ (inj s).
+    @patt_sym Σ (sym_inj s).
 
   Lemma definedness_app_ext_not_empty : forall (M : Model),
     M ⊨ᵀ theory ->
       forall S, S ≠ ∅ ->
-        app_ext (sym_interp M (inj definedness)) S = ⊤.
+        app_ext (sym_interp M (sym_inj def_sym)) S = ⊤.
   Proof.
     intros.
     pose proof (H' := proj1 (satisfies_theory_iff_satisfies_named_axioms named_axioms M)).
@@ -60,7 +60,7 @@ Section definedness.
     { rewrite -> elem_of_subseteq. intros.  inversion H2. subst. assumption. }
 
     pose proof (Hincl' := app_ext_monotonic_r
-                            (eval ρ (patt_sym (inj definedness)))
+                            (eval ρ definedness)
                             {[x]}
                             (eval ρ ϕ)
                             Hincl
@@ -576,7 +576,7 @@ Section definedness.
 
   Lemma single_element_definedness_impl_satisfies_definedness (M : Model) :
     (exists (hashdef : Domain M),
-        sym_interp M (inj definedness) = {[hashdef]}
+        sym_interp M (sym_inj def_sym) = {[hashdef]}
         /\ forall x, app_interp _ hashdef x = ⊤
     ) ->
         satisfies_model M (axiom AxDefinedness).
@@ -588,7 +588,7 @@ Section definedness.
     unfold patt_defined.
     unfold p_x.
     rewrite -> eval_app_simpl.
-    rewrite -> eval_sym_simpl.
+    setoid_rewrite -> eval_sym_simpl.
     rewrite -> set_eq_subseteq.
     split.
     { apply top_subseteq. }
@@ -613,7 +613,7 @@ Section definedness.
     M ⊨ᵀ theory ->
     forall (x y : Domain M),
       exists (z : Domain M),
-        z ∈ sym_interp M (inj definedness)
+        z ∈ sym_interp M (sym_inj def_sym)
         /\ y ∈ app_interp _ z x.
   Proof.
     intros HM x y.
@@ -741,7 +741,7 @@ Section definedness.
       rewrite evar_open_free_evar_subst_swap; try assumption.
       rewrite evar_open_free_evar_subst_swap; try assumption.
       apply IHsz.
-      - setoid_rewrite <- evar_open_size. unfold size, PatternSize in *. lia.
+      - setoid_rewrite <- evar_open_size. lia.
       - rewrite !eval_free_evar_independent.
         1-2: unfold evar_is_fresh_in; subst z; solve_fresh.
         assumption.
@@ -757,7 +757,7 @@ Section definedness.
       rewrite -free_evar_subst_bsvar_subst. wf_auto2. unfold evar_is_fresh_in. set_solver.
       rewrite -free_evar_subst_bsvar_subst. wf_auto2. unfold evar_is_fresh_in. set_solver.
       apply IHsz.
-      - setoid_rewrite <- svar_open_size. unfold size, PatternSize in *. lia.
+      - setoid_rewrite <- svar_open_size. lia.
       - rewrite !eval_free_svar_independent.
         1-2: unfold evar_is_fresh_in; subst Z; solve_sfresh.
         assumption.
@@ -783,8 +783,8 @@ Section definedness.
 End definedness.
 
 From MatchingLogic Require Import StringSignature.
-
 Module equivalence_insufficient.
+
   Open Scope ml_scope.
   Inductive exampleSymbols : Set :=
   | sym_f.

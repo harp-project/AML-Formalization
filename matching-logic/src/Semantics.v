@@ -280,7 +280,7 @@ Section semantics.
     Let  L := PowersetLattice (Domain M).
 
     Equations? eval (ρ : Valuation) (ϕ : Pattern)
-      : propset (@Domain M) by wf (size ϕ) :=
+      : propset (@Domain M) by wf (pat_size ϕ) :=
     eval ρ (patt_free_evar x)  := {[ evar_valuation ρ x ]} ;
     eval ρ (patt_free_svar X)  := svar_valuation ρ X ;
     eval ρ (patt_bound_evar n) := ∅ ;
@@ -829,7 +829,7 @@ Section with_model.
 
   (* Can change updated/opened fresh variable variable *)
   Lemma Private_eval_fresh_var_open sz ϕ dbi ρ:
-    size ϕ <= sz ->
+    pat_size ϕ <= sz ->
     (
       forall X Y S,
         svar_is_fresh_in X ϕ ->
@@ -1135,7 +1135,7 @@ Section with_model.
     = eval (update_evar_val y c ρ) (ϕ^{evar: dbi ↦ y}).
   Proof.
     move=> Hfrx Hfry.
-    eapply (proj2 (Private_eval_fresh_var_open (size ϕ) ϕ dbi ρ _) x y c); assumption.
+    eapply (proj2 (Private_eval_fresh_var_open (pat_size ϕ) ϕ dbi ρ _) x y c); assumption.
     Unshelve. lia.
   Qed.
 
@@ -1146,7 +1146,7 @@ Section with_model.
     = eval (update_svar_val Y S ρ) (ϕ^{svar: dbi ↦ Y}).
   Proof.
     move=> HfrX HfrY.
-    eapply (proj1 (Private_eval_fresh_var_open (size ϕ) ϕ dbi ρ _) X Y S); assumption.
+    eapply (proj1 (Private_eval_fresh_var_open (pat_size ϕ) ϕ dbi ρ _) X Y S); assumption.
     Unshelve. lia.
   Qed.
 
@@ -1155,7 +1155,7 @@ Section with_model.
    or evaluate phi2 first and then evaluate phi1 with valuation updated to the result of phi2
   *)
   Lemma Private_plugging_patterns : forall (sz : nat) (dbi : db_index) (phi1 phi2 : Pattern),
-      size phi1 <= sz -> forall (ρ : Valuation) (X : svar),
+      pat_size phi1 <= sz -> forall (ρ : Valuation) (X : svar),
         well_formed_closed phi2 -> well_formed_closed_mu_aux phi1 (S dbi) ->
         ~ elem_of X (free_svars phi1) ->
         @eval M ρ (phi1^[svar:dbi ↦ phi2])
@@ -1508,13 +1508,13 @@ Section with_model.
         = eval (update_svar_val X (@eval M ρ phi2) ρ) (phi1^{svar: dbi ↦ X}).
   Proof.
     intros.
-    apply Private_plugging_patterns with (sz := size phi1).
+    apply Private_plugging_patterns with (sz := pat_size phi1).
     lia. all: auto.
   Qed.
 
   Lemma Private_plugging_patterns_bevar_subst : forall (sz : nat) (dbi : db_index) 
     (phi : Pattern) (y : evar),
-      size phi <= sz -> forall (ρ : Valuation) (x : evar),
+      pat_size phi <= sz -> forall (ρ : Valuation) (x : evar),
         evar_is_fresh_in x phi -> well_formed_closed_ex_aux phi (S dbi) ->
         @eval M ρ (phi^[evar: dbi ↦ patt_free_evar y])
         = eval (update_evar_val x (evar_valuation ρ y) ρ) (phi^{evar: dbi ↦ x}).
@@ -1826,7 +1826,7 @@ Section with_model.
     = @eval M (update_evar_val x (evar_valuation ρ y) ρ) (phi^{evar: dbi ↦ x}).
   Proof.
     intros.
-    apply Private_plugging_patterns_bevar_subst with (sz := size phi);auto.
+    apply Private_plugging_patterns_bevar_subst with (sz := pat_size phi);auto.
   Qed.
 
   (* eval unchanged within subformula over fresh element variable *)
@@ -1872,7 +1872,7 @@ Section with_model.
    *)
   Lemma Private_free_svar_subst_update_exchange :
     ∀ sz phi psi X ρ,
-      le (size phi) sz → well_formed psi → well_formed_closed phi → 
+      le (pat_size phi) sz → well_formed psi → well_formed_closed phi → 
       eval ρ (phi^[[svar: X ↦ psi]]) =
       eval (@update_svar_val M X (eval ρ psi) ρ) phi.
   Proof.
@@ -2296,7 +2296,7 @@ Section with_model.
       eval ρ (phi^[[svar: X ↦ psi]]) =
       eval (@update_svar_val M X (eval ρ psi) ρ) phi.
   Proof. 
-    intros. apply Private_free_svar_subst_update_exchange with (sz := size phi). 
+    intros. apply Private_free_svar_subst_update_exchange with (sz := pat_size phi). 
     lia. assumption. assumption.
   Qed.
 

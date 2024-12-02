@@ -1,14 +1,9 @@
-From Coq Require Import ssreflect ssrfun ssrbool.
+From MatchingLogic Require Export Sorts_Syntax.
+Import MatchingLogic.Logic.Notations
+       MatchingLogic.Theories.Definedness_Syntax.Notations
+       MatchingLogic.Theories.Sorts_Syntax.Notations.
 
-Require Import Setoid.
-From Coq Require Import Unicode.Utf8.
-From Coq.Logic Require Import Classical_Prop FunctionalExtensionality.
-From Coq.Classes Require Import Morphisms_Prop.
-
-From stdpp Require Import base sets.
-
-From MatchingLogic Require Export Logic.
-Require Export MatchingLogic.Theories.Sorts_Syntax.
+Set Default Proof Mode "Classic".
 
 Inductive Symbols : Set :=
 | sBool
@@ -37,17 +32,11 @@ Defined.
 Global Instance Symbols_countable : countable.Countable Symbols.
 Proof. apply finite.finite_countable. Defined.
 
-Import MatchingLogic.Logic.Notations.
-Import MatchingLogic.Theories.Definedness_Syntax.Notations.
-Import MatchingLogic.Theories.Sorts_Syntax.Notations.
-Import BoundVarSugar.
-
 Section bool_syntax.
-  Open Scope ml_scope.
   Context {Σ : Signature}.
 
   Class Syntax :=
-    { inj : Symbols -> symbols;
+    { sym_inj : Symbols -> symbols;
       imported_sorts : Sorts_Syntax.Syntax;
     }.
 
@@ -56,12 +45,12 @@ Section bool_syntax.
 
   Context {self : Syntax}.
 
-  Definition mlBool     := patt_sym (inj sBool).
-  Definition mlTrue     := patt_sym (inj sTrue).
-  Definition mlFalse    := patt_sym (inj sFalse).
-  Definition mlsBAnd    := patt_sym (inj sAnd).
-  Definition mlsBNeg    := patt_sym (inj sNeg).
-  Definition mlsBAndThen := patt_sym ( inj sAndThen).
+  Definition mlBool     := patt_sym (sym_inj sBool).
+  Definition mlTrue     := patt_sym (sym_inj sTrue).
+  Definition mlFalse    := patt_sym (sym_inj sFalse).
+  Definition mlsBAnd    := patt_sym (sym_inj sAnd).
+  Definition mlsBNeg    := patt_sym (sym_inj sNeg).
+  Definition mlsBAndThen := patt_sym (sym_inj sAndThen).
 
   Definition mlBAnd (φ1 φ2 : Pattern) : Pattern :=
     mlsBAnd ⋅ φ1 ⋅ φ2.

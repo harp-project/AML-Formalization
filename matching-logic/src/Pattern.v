@@ -112,9 +112,9 @@ Section syntax.
       | _ => 1
       end.
 
-  Global Instance PatternSize : Size Pattern := {
+(*   Global Instance PatternSize : Size Pattern := {
     size := pat_size;
-  }.
+  }. *)
 
 (*   Arguments PatternSize /. *)
 
@@ -1106,16 +1106,30 @@ match type of φ with
 | Pattern => let sz := fresh "sz" in
              let Hsz := fresh "Hsz" in
              let H := fresh "H" in
-               remember (size φ) as sz eqn:H;
-               assert (size φ <= sz) as Hsz by lia;
+               remember (pat_size φ) as sz eqn:H;
+               assert (pat_size φ <= sz) as Hsz by lia;
                clear H;
                revert φ Hsz;
-               induction sz; intros φ Hsz; [
-                 destruct φ; simpl size in Hsz; lia
+               let sz' := fresh "sz" in
+               let IHsz := fresh "IHsz" in
+               induction sz as [|sz' IHsz]; intros φ Hsz; [
+                 destruct φ; simpl pat_size in Hsz; lia
                |
-                 destruct φ; unfold PatternSize, size in *; simpl in Hsz
+                 destruct φ;
+(*                  unfold PatternSize in Hsz, IHsz; *)
+                 simpl in Hsz
+(*                  replace pat_size with (size : Pattern -> nat) in * by reflexivity *)
                ]
 end.
+
+Local Lemma test_ind :
+  forall {Σ : Signature} (φ : Pattern),
+    size (∅ : EVarSet) = 0 -> pat_size φ = pat_size (patt_app φ φ).
+Proof.
+  intros ? φ.
+  size_induction φ.
+  6: {
+Abort.
 
 
 Module BoundVarSugar.

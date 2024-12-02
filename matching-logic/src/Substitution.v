@@ -196,7 +196,7 @@ Section subst.
 
   Lemma evar_open_size :
     forall (k : db_index) (n : evar) (p : Pattern),
-      size p = size (p^{evar: k ↦ n}).
+      pat_size p = pat_size (p^{evar: k ↦ n}).
   Proof.
     intros k n p. generalize dependent k.
     induction p; intros k; cbn; try reflexivity.
@@ -209,7 +209,7 @@ Section subst.
 
   Lemma svar_open_size :
     forall (k : db_index) (n : svar) (p : Pattern),
-      size p = size (p^{svar: k ↦ n}).
+      pat_size p = pat_size (p^{svar: k ↦ n}).
   Proof.
     intros k n p. generalize dependent k.
     induction p; intros k; cbn; try reflexivity.

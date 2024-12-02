@@ -224,7 +224,7 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
 
     Lemma respects_blacklist_implies_monotonic :
       forall (n : nat) (phi : Pattern),
-        le (size phi) n -> well_formed_positive phi ->
+        le (pat_size phi) n -> well_formed_positive phi ->
         forall (Bp Bn : Ensemble svar),
           respects_blacklist phi Bp Bn ->
           forall (ρ : @Valuation _ M)
@@ -317,10 +317,10 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
         destruct Hwfp as [Hwfp1 Hwfp2].
 
         (* phi1 and phi2 are smaller then the whole implication *)
-        assert (Hsz1: size phi1 <= n).
-        { unfold size in *; lia. }
-        assert (Hsz2: size phi2 <= n).
-        { unfold size in *; lia. }
+        assert (Hsz1: pat_size phi1 <= n).
+        { lia. }
+        assert (Hsz2: pat_size phi2 <= n).
+        { lia. }
 
         split.
         {
@@ -372,10 +372,10 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
         destruct Hwfp as [Hwfp1 Hwfp2].
 
         (* phi1 and phi2 are smaller then the whole implication *)
-        assert (Hsz1: size phi1 <= n).
-        { unfold size in *; lia. }
-        assert (Hsz2: size phi2 <= n).
-        { unfold size in *; lia. }
+        assert (Hsz1: pat_size phi1 <= n).
+        { lia. }
+        assert (Hsz2: pat_size phi2 <= n).
+        { lia. }
 
         split.
         {
@@ -434,12 +434,11 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
         destruct Hwfp as [Hwfp1 Hwfp2].
 
         (* phi1 and phi2 are smaller then the whole implication *)
-        assert (Hsz1: size phi1 <= n).
-        { unfold size in *; lia. }
-        assert (Hsz2: size phi2 <= n).
-        { unfold size in *; lia. }
-        
-        
+        assert (Hsz1: pat_size phi1 <= n).
+        { lia. }
+        assert (Hsz2: pat_size phi2 <= n).
+        { lia. }
+
         remember (respects_blacklist_impl_1 phi1 phi2 Bp Bn H1) as Hrb1. clear HeqHrb1.
         remember (respects_blacklist_impl_2 phi1 phi2 Bp Bn H1) as Hrb2. clear HeqHrb2.
         remember IHn as IHn1. clear HeqIHn1.
@@ -505,10 +504,10 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
         destruct Hwfp as [Hwfp1 Hwfp2].
 
         (* phi1 and phi2 are smaller then the whole implication *)
-        assert (Hsz1: size phi1 <= n).
-        { unfold size in *; lia. }
-        assert (Hsz2: size phi2 <= n).
-        { unfold size in *; lia. }
+        assert (Hsz1: pat_size phi1 <= n).
+        {  lia. }
+        assert (Hsz2: pat_size phi2 <= n).
+        {  lia. }
         
         
         remember (respects_blacklist_impl_1 phi1 phi2 Bp Bn H1) as Hrb1. clear HeqHrb1.
@@ -574,7 +573,7 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
         simpl. remember (respects_blacklist_ex phi Bp Bn H1) as Hrb'. clear HeqHrb'.
         specialize (IHn (phi^{evar: 0 ↦ (evar_fresh (elements (free_evars phi)))})).
         rewrite <- evar_open_size in IHn.
-        assert (Hsz': size phi <= n). simpl in *. unfold size in *; lia.
+        assert (Hsz': pat_size phi <= n). simpl in *.  lia.
         remember (evar_fresh (elements (free_evars phi))) as fresh.
         pose proof (Hwfp' := @wfp_evar_open Σ phi fresh 0 H0).
         specialize (IHn Hsz' Hwfp' Bp Bn).
@@ -609,7 +608,7 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
       + simpl. remember (respects_blacklist_ex phi Bp Bn H1) as Hrb'. clear HeqHrb'.
         specialize (IHn (phi^{evar: 0 ↦ (evar_fresh (elements (free_evars phi)))})).
         rewrite <- evar_open_size in IHn.
-        assert (Hsz': size phi <= n). simpl in *. unfold size in *; lia.
+        assert (Hsz': pat_size phi <= n). simpl in *.  lia.
         remember (evar_fresh (elements (free_evars phi))) as fresh.
         pose proof (Hwfp' := @wfp_evar_open Σ phi fresh 0 H0).
         specialize (IHn Hsz' Hwfp' Bp Bn).
@@ -643,8 +642,8 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
         }
       + (* Mu *)
         remember H0 as Hwfpmu. clear HeqHwfpmu.
-        assert (Hsz': size phi <= n).
-        { unfold size in *; lia. }
+        assert (Hsz': pat_size phi <= n).
+        {  lia. }
         split.
         {
           unfold AntiMonotonicFunction. intros.
@@ -656,7 +655,7 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
           remember (fresh_svar phi) as X'.
           remember (phi^{svar: 0 ↦ X'}) as phi'.
           pose proof (Hszeq := svar_open_size 0 X' phi).
-          assert (Hsz'': size phi' <= n).
+          assert (Hsz'': pat_size phi' <= n).
           { rewrite -> Heqphi'. rewrite <- Hszeq. assumption. }
           specialize (IHn phi' Hsz'').
           simpl in H0.
@@ -729,7 +728,7 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
           remember (fresh_svar phi) as X'.
           remember (phi^{svar: 0 ↦ X'}) as phi'.
           pose proof (Hszeq := svar_open_size 0 X' phi).
-          assert (Hsz'': size phi' <= n).
+          assert (Hsz'': pat_size phi' <= n).
           { rewrite -> Heqphi'. rewrite <- Hszeq. assumption. }
           specialize (IHn phi' Hsz'').
           simpl in H0.
@@ -792,8 +791,8 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
               apply IHmo. constructor. assumption.
         }
       + remember H0 as Hwfpmu. clear HeqHwfpmu.
-        assert (Hsz': size phi <= n).
-        { unfold size in *; lia. }
+        assert (Hsz': pat_size phi <= n).
+        {  lia. }
         split.
         {
           unfold AntiMonotonicFunction. intros.
@@ -805,7 +804,7 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
           remember (fresh_svar phi) as X'.
           remember (phi^{svar: 0 ↦ X'}) as phi'.
           pose proof (Hszeq := svar_open_size 0 X' phi).
-          assert (Hsz'': size phi' <= n).
+          assert (Hsz'': pat_size phi' <= n).
           { rewrite -> Heqphi'. rewrite <- Hszeq. assumption. }
           specialize (IHn phi' Hsz'').
           simpl in H0.
@@ -878,7 +877,7 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
           remember (fresh_svar phi) as X'.
           remember (phi^{svar: 0 ↦ X'}) as phi'.
           pose proof (Hszeq := svar_open_size 0 X' phi).
-          assert (Hsz'': size phi' <= n).
+          assert (Hsz'': pat_size phi' <= n).
           { rewrite -> Heqphi'. rewrite <- Hszeq. assumption. }
           specialize (IHn phi' Hsz'').
           simpl in H0.
@@ -957,9 +956,9 @@ respects_blacklist (evar_open 0 (evar_fresh variables (free_evars phi)) phi) Bp 
       simpl in Hrb.
       inversion Hwfp.
       remember (phi^{svar: 0 ↦ X}) as phi'.
-      assert (Hsz : size phi' <= size phi').
+      assert (Hsz : pat_size phi' <= pat_size phi').
       { lia. }
-      pose proof (Hmono := respects_blacklist_implies_monotonic (size phi') phi').
+      pose proof (Hmono := respects_blacklist_implies_monotonic (pat_size phi') phi').
       assert (Hwfp' : well_formed_positive phi').
       { subst. apply wfp_svar_open.
         apply andb_true_iff in Hwfp.

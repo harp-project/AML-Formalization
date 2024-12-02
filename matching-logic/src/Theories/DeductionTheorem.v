@@ -1,38 +1,9 @@
-From Coq Require Import ssreflect ssrfun ssrbool.
-
-From Ltac2 Require Import Ltac2.
-
-Require Import Equations.Prop.Equations.
-
-From Coq Require Import String Setoid Btauto.
-Require Import Coq.Program.Equality.
-Require Import Coq.Logic.Classical_Prop.
-From Coq.Logic Require Import FunctionalExtensionality Eqdep_dec.
-From Coq.Classes Require Import Morphisms_Prop.
-From Coq.Unicode Require Import Utf8.
-From Coq.micromega Require Import Lia.
-
-From stdpp Require Import base fin_sets sets propset proof_irrel option list coGset finite infinite gmap.
-
-From MatchingLogic Require Import
-  Logic
-  DerivedOperators_Syntax
-  ProofMode.MLPM
-  FreshnessManager
-.
-From MatchingLogic.Theories Require Import Definedness_Syntax Definedness_ProofSystem.
-From MatchingLogic.Utils Require Import stdpp_ext.
-Import extralibrary.
-
-Import MatchingLogic.Logic.Notations.
-Import MatchingLogic.DerivedOperators_Syntax.Notations.
+From MatchingLogic Require Export Definedness_ProofSystem.
+Import MatchingLogic.Logic.Notations
+       MatchingLogic.Theories.Definedness_Syntax.Notations.
 
 Set Default Proof Mode "Classic".
 
-Import Notations.
-
-Open Scope ml_scope.
-Open Scope string_scope.
 Open Scope list_scope.
 
 (* TODO: These 3 lemmas are used only here as is, but maybe it should be somewhere else? *)
@@ -50,8 +21,8 @@ Local Lemma impl_ctx_impl {Σ : Signature} Γ ctx ϕ ψ i :
 Proof.
   intros wfϕ wfψ wfc pile H.
 
-  remember (size' (pcPattern ctx)) as sz.
-  assert (Hsz: size' (pcPattern ctx) <= sz) by lia.
+  remember (pat_size (pcPattern ctx)) as sz.
+  assert (Hsz: pat_size (pcPattern ctx) <= sz) by lia.
   clear Heqsz.
 
   unfold emplace.
@@ -91,7 +62,7 @@ Proof.
         clear -Hp. unfold is_positive_context in *. simpl in *.
         unfold evar_has_negative_occurrence in Hp.
         simpl in Hp. fold evar_has_negative_occurrence in Hp.
-        rewrite negb_or in Hp. destruct_and! Hp.
+        rewrite negb_or in Hp. destruct_andb! Hp.
         assumption.
       }
       pose proof (IH2 := IHsz cpatt2).
@@ -103,7 +74,7 @@ Proof.
         clear -Hp. unfold is_positive_context in *. simpl in *.
         unfold evar_has_negative_occurrence in Hp.
         simpl in Hp. fold evar_has_negative_occurrence in Hp.
-        rewrite negb_or in Hp. destruct_and! Hp.
+        rewrite negb_or in Hp. destruct_andb! Hp.
         assumption.
       }
 
@@ -126,7 +97,7 @@ Proof.
       unfold evar_has_negative_occurrence in Hp. simpl in Hp.
       fold evar_has_positive_occurrence evar_has_negative_occurrence in Hp.
       rewrite negb_orb in Hp.
-      destruct_and! Hp.
+      destruct_andb! Hp.
 
       pose proof (IH := IHsz (cpatt2)).
       ospecialize* IH.
@@ -158,7 +129,7 @@ Proof.
       pose proof (IH := IHsz (evar_open x 0 cpatt)).
       ospecialize* IH.
       { wf_auto2. }
-      { rewrite evar_open_size'. lia. }
+      { rewrite -evar_open_size. lia. }
       destruct IH as [IH _]. ospecialize* IH.
       {
         clear -Hp Heqx. unfold is_positive_context in *. simpl in *.
@@ -213,7 +184,7 @@ Proof.
       pose proof (IH := IHsz (svar_open X 0 cpatt)).
       ospecialize* IH.
       { wf_auto2. }
-      { rewrite svar_open_size'. lia. }
+      { rewrite -svar_open_size. lia. }
       destruct IH as [IH _]. ospecialize* IH.
       {
         clear -Hp. unfold is_positive_context in *. simpl in *.
@@ -273,7 +244,7 @@ Proof.
       {
         clear -Hp. unfold is_negative_context in *. simpl in *.
         cbn in Hp.
-        rewrite negb_or in Hp. destruct_and! Hp.
+        rewrite negb_or in Hp. destruct_andb! Hp.
         assumption.
       }
       pose proof (IH2 := IHsz cpatt2).
@@ -284,7 +255,7 @@ Proof.
       {
         clear -Hp. unfold is_negative_context in *. simpl in *.
         cbn in Hp.
-        rewrite negb_or in Hp. destruct_and! Hp.
+        rewrite negb_or in Hp. destruct_andb! Hp.
         assumption.
       }
 
@@ -307,7 +278,7 @@ Proof.
       unfold evar_has_positive_occurrence in Hp. simpl in Hp.
       fold evar_has_positive_occurrence evar_has_negative_occurrence in Hp.
       rewrite negb_orb in Hp.
-      destruct_and! Hp.
+      destruct_andb! Hp.
 
       pose proof (IH := IHsz (cpatt2)).
       ospecialize* IH.
@@ -339,7 +310,7 @@ Proof.
       pose proof (IH := IHsz (evar_open x 0 cpatt)).
       ospecialize* IH.
       { wf_auto2. }
-      { rewrite evar_open_size'. lia. }
+      { rewrite -evar_open_size. lia. }
       destruct IH as [_ IH]. ospecialize* IH.
       {
         clear -Hp Heqx. unfold is_negative_context in *. simpl in *.
@@ -393,7 +364,7 @@ Proof.
       pose proof (IH := IHsz (svar_open X 0 cpatt)).
       ospecialize* IH.
       { wf_auto2. }
-      { rewrite svar_open_size'. lia. }
+      { rewrite -svar_open_size. lia. }
       destruct IH as [_ IH]. ospecialize* IH.
       {
         clear -Hp. unfold is_negative_context in *. simpl in *.
@@ -470,8 +441,8 @@ Lemma pred_and_ctx_and {Σ : Signature} {syntax : Syntax} Γ ctx ϕ ψ:
 Proof.
   intros HΓ wfm wfψ wfc Hmf Hp.
 
-  remember (size' (pcPattern ctx)) as sz.
-  assert (Hsz: size' (pcPattern ctx) <= sz) by lia.
+  remember (pat_size (pcPattern ctx)) as sz.
+  assert (Hsz: pat_size (pcPattern ctx) <= sz) by lia.
   clear Heqsz.
 
   unfold emplace.
@@ -728,7 +699,7 @@ Proof.
         exact H.
       }
       {
-        rewrite evar_open_size'. lia.
+        rewrite -evar_open_size. lia.
       }
 
       mlExists x0. mlSimpl.
@@ -773,7 +744,7 @@ Proof.
         exact H.
       }
       {
-        rewrite evar_open_size'. lia.
+        rewrite -evar_open_size. lia.
       }
       mlExists x0. mlSimpl.
       mlAssert ("Hand": (ψ and (cpatt^{evar:0↦x0}^[[evar:cvar↦ψ and ϕ]]))).
@@ -838,15 +809,7 @@ Proof.
     clear -wfm wfψ.
     unfold well_formed,well_formed_closed in *.
     cbn in *. fold no_negative_occurrence_db_b.
-    destruct_and!.
-    split_and!; try reflexivity; try assumption.
-    {
-      apply wfc_impl_no_neg_occ.
-      assumption.
-    }
-    {
-      wf_auto2.
-    }
+    wf_auto2.
   }
 
   apply pf_iff_split.
@@ -912,7 +875,7 @@ Proof.
     
     toMLGoal.
     { wf_auto2. }
-    assert (Htmp : is_true (well_formed (mu , ϕ) ^ [ψ ---> (mu , ψ and ϕ)])).
+    assert (Htmp : is_true (well_formed (mu , ϕ)^[ψ ---> (mu , ψ and ϕ)])).
     { wf_auto2. }
     cbn in Htmp.
     simpl.
@@ -1002,7 +965,7 @@ Proof.
     { unfold is_positive_context. cbn.
       unfold well_formed in wfm.
       cbn in wfm.
-      destruct_and! wfm.
+      destruct_andb! wfm.
       apply no_neg_svar_subst.
       {  clear -H2 Heqx. subst. eapply evar_is_fresh_in_richer'. 2: apply set_evar_fresh_is_fresh. set_solver. }
       { assumption. }
@@ -1087,12 +1050,11 @@ Proof.
     apply P3; assumption.
   - (* Modus Ponens *)
     assert (well_formed phi2).
-    { unfold well_formed, well_formed_closed in *. simpl in *.
-      destruct_and!. split_and!; auto.
+    { wf_auto2.
     }
     assert (well_formed phi1).
     {
-      clear -pf1. apply proved_impl_wf in pf1. exact pf1.
+      wf_auto2.
     }
 
     remember_constraint as i'.
@@ -1232,20 +1194,16 @@ Proof.
     apply Prop_ex_right; assumption.
   - (* Framing left *)
     assert (well_formed (phi1)).
-    { unfold well_formed,well_formed_closed in *. simpl in *.
-      destruct_and!. split_and!; auto. }
+    { wf_auto2. }
 
     assert (well_formed (phi2)).
-    { unfold well_formed,well_formed_closed in *. simpl in *.
-      destruct_and!. split_and!; auto. }
+    { wf_auto2. }
 
     assert (well_formed (psi)).
-    { unfold well_formed,well_formed_closed in *. simpl in *.
-      destruct_and!. split_and!; auto. }
+    { wf_auto2. }
     
     assert (well_formed (phi1 ---> phi2)).
-    { unfold well_formed,well_formed_closed in *. simpl in *.
-      destruct_and!. split_and!; auto. }
+    { wf_auto2. }
     destruct Hpf as [Hpf2 Hpf3 Hpf4 Hpf5].
     simpl in Hpf2,Hpf3,Hpf4.
     ospecialize* IHpf.
@@ -1266,20 +1224,16 @@ Proof.
     { exact IHpf. }
   - (* Framing right *)
     assert (well_formed (phi1)).
-    { unfold well_formed,well_formed_closed in *. simpl in *.
-      destruct_and!. split_and!; auto. }
+    { wf_auto2. }
 
     assert (well_formed (phi2)).
-    { unfold well_formed,well_formed_closed in *. simpl in *.
-      destruct_and!. split_and!; auto. }
+    { wf_auto2. }
 
     assert (well_formed (psi)).
-    { unfold well_formed,well_formed_closed in *. simpl in *.
-      destruct_and!. split_and!; auto. }
+    { wf_auto2. }
 
     assert (well_formed (phi1 ---> phi2)).
-    { unfold well_formed,well_formed_closed in *. simpl in *.
-      destruct_and!. split_and!; auto. }
+    { wf_auto2. }
     simpl in HnoExGen. simpl in HnoSvarSubst.
 
     destruct Hpf as [Hpf2 Hpf3 Hpf4 Hpf5].
@@ -1465,7 +1419,7 @@ Proof.
   intros wf1 wf2. cbn in *.
   ospecialize* H.
   { wf_auto2. }
-  { cbn in wf2. cbn. destruct_and!. assumption. }
+  { cbn in wf2. cbn. destruct_andb! wf2. assumption. }
   cbn in *.
   eapply deduction_theorem.
   { apply H. }
@@ -1504,11 +1458,11 @@ Proof.
   }
   assert (wf (map nh_patt l₁)).
   {
-    destruct_and!. assumption.
+    destruct_andb! wf2. assumption.
   }
   assert (wf (map nh_patt l₂)).
   {
-    destruct_and!. assumption.
+    destruct_andb! wf2. assumption.
   }
   
   ospecialize* H.
@@ -1518,8 +1472,8 @@ Proof.
     rewrite map_app. cbn.
     rewrite foldr_app. cbn.
     rewrite foldr_andb_true_iff.
-    destruct_and!.
-    split_and!;assumption.
+    destruct_andb! wf2.
+    by apply andb_true_iff.
   }
   cbn in *.
   rewrite map_app.
@@ -1733,7 +1687,7 @@ Proof.
     mlSplitAnd; mlAssumption.
 
     Unshelve.
-    rewrite evar_open_size'; lia.
+    rewrite -evar_open_size; lia.
     1-3: wf_auto2.
     by apply kt_well_formed_evar_open.
 
@@ -1799,13 +1753,13 @@ Proof.
     (** size-based induction is needed to make this `apply` *)
     apply IHsz.
     Unshelve.
-    rewrite svar_open_size'. lia.
+    rewrite -svar_open_size. lia.
     assumption.
     1-3, 5-6: wf_auto2.
-    destruct_and!. apply kt_well_formed_svar_open; wf_auto2.
+    destruct_andb! Hmu. apply kt_well_formed_svar_open; wf_auto2.
     {
       (** Mu-pattern side condition of the monotonicity theorem *)
-      destruct_and!.
+      destruct_andb! Hmu.
       apply bound_svar_is_banned_under_mus_fevar_subst_alternative.
       * wf_auto2.
       * apply bsvar_occur_false_impl_banned.
@@ -1972,7 +1926,6 @@ Proof.
   intros H H0 H1.
   (* first, we get rid of the ∃, and the conjunction *)
   mlIntro.
-  mlFreshEvar as x.
 
   mlDestructEx "0" as x. mlSimpl. cbn.
   mlDestructAnd "0".
@@ -2013,7 +1966,3 @@ Proof.
    mlApplyMeta H2.
    mlSplitAnd; mlAssumption.
 Defined.
-
-Close Scope ml_scope.
-Close Scope string_scope.
-Close Scope list_scope.

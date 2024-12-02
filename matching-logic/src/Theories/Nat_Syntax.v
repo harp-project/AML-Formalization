@@ -1,43 +1,9 @@
-From Coq Require Import ssreflect ssrfun ssrbool.
-
-From Ltac2 Require Import Ltac2.
-
-From Coq Require Import String Setoid.
-Require Import Coq.Program.Equality.
-Require Import Coq.Logic.Classical_Prop.
-From Coq.Logic Require Import FunctionalExtensionality Eqdep_dec.
-From Coq.Classes Require Import Morphisms_Prop.
-From Coq.Unicode Require Import Utf8.
-From Coq.micromega Require Import Lia.
-
-From MatchingLogic Require Import Logic.
-From MatchingLogic.Theories Require Import Definedness_Syntax Definedness_ProofSystem.
-From MatchingLogic.Utils Require Import stdpp_ext.
-
-Require Import MatchingLogic.wftactics.
-
-From stdpp Require Import base fin_sets sets propset proof_irrel option list.
-
-Import extralibrary.
-
-Import MatchingLogic.Logic.Notations.
-Import MatchingLogic.Theories.Definedness_Syntax.Notations.
+From MatchingLogic Require Export Sorts_Syntax.
+Import MatchingLogic.Logic.Notations
+       MatchingLogic.Theories.Definedness_Syntax.Notations
+       MatchingLogic.Theories.Sorts_Syntax.Notations.
 
 Set Default Proof Mode "Classic".
-
-From MatchingLogic Require Import
-  Theories.DeductionTheorem
-  Theories.Sorts_Syntax
-  FOEquality_ProofSystem
-  Sorts_ProofSystem
-.
-
-Import MatchingLogic.Theories.Sorts_Syntax.Notations.
-
-Open Scope ml_scope.
-Open Scope string_scope.
-Open Scope list_scope.
-
 
 Section nat_syntax.
 
@@ -50,18 +16,18 @@ Section nat_syntax.
   Defined.
 
   Class Syntax :=
-    { inj : Symbols -> symbols;
+    { sym_inj : Symbols -> symbols;
       imported_sorts : Sorts_Syntax.Syntax;
     }.
-  
+
   #[global] Existing Instance imported_sorts.
 
   Context {self : Syntax}.
 
-  Definition Nat := patt_sym (inj sNat).
-  Definition Zero := patt_sym (inj sZero).
-  Definition Succ := patt_sym (inj sSucc).
-  Definition AddNat := patt_sym (inj sAddNat).
+  Definition Nat := patt_sym (sym_inj sNat).
+  Definition Zero := patt_sym (sym_inj sZero).
+  Definition Succ := patt_sym (sym_inj sSucc).
+  Definition AddNat := patt_sym (sym_inj sAddNat).
   
   Definition mlAddNat (φ1 φ2 : Pattern) : Pattern :=
     AddNat ⋅ φ1 ⋅ φ2 .
@@ -144,7 +110,3 @@ Section axioms.
   Definition theory := Definedness_Syntax.theory ∪ theory_of_NamedAxioms named_axioms.
 
 End axioms.
-
-Close Scope ml_scope.
-Close Scope string_scope.
-Close Scope list_scope.

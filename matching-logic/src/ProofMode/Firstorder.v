@@ -850,6 +850,7 @@ Open Scope ml_scope.
 Open Scope string_scope.
 
 (* TODO: reformulate in Ltac2 - depends on the Freshness Manager *)
+(* NOTE: This tactic should work even if x was already introduced by the freshness manager. If x is present, but was not introduced by the freshness manager, use mlIntroAllManual. *)
 Tactic Notation "mlIntroAll" ident(x) :=
 _ensureProofMode;
 try mlFreshEvar as x;
@@ -1079,10 +1080,11 @@ Ltac _mlDestructExManual name' x :=
   then idtac
   else fail "_mlDestructExManual: given local hypothesis is not existentially quantified".
 
+(* NOTE: This tactic should work even if x was already introduced by the freshness manager. If x is present, but was not introduced by the freshness manager, use mlDestructExManual. *)
 Ltac _mlDestructExFresh name' x :=
     _ensureProofMode;
     _mlReshapeHypsByName name';
-    mlFreshEvar as x;
+    try mlFreshEvar as x;
     tryif apply (MLGoal_destructEx _ _ _ _ x name');[
       try subst x; try_solve_pile
     | fm_solve

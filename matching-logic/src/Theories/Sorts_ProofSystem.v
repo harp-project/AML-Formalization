@@ -1,38 +1,13 @@
-From Coq Require Import ssreflect ssrfun ssrbool.
-
-From Ltac2 Require Import Ltac2.
-
-From Coq Require Import String Setoid.
-Require Import Coq.Program.Equality.
-Require Import Coq.Logic.Classical_Prop.
-From Coq.Logic Require Import FunctionalExtensionality Eqdep_dec.
-From Coq.Classes Require Import Morphisms_Prop.
-From Coq.Unicode Require Import Utf8.
-From Coq.micromega Require Import Lia.
-
-From MatchingLogic Require Export Logic ProofMode.MLPM.
-From MatchingLogic.Theories Require Export Definedness_Syntax Definedness_ProofSystem Sorts_Syntax FOEquality_ProofSystem.
-From MatchingLogic.Utils Require Export stdpp_ext.
-
-From stdpp Require Import base fin_sets sets propset proof_irrel option list.
-Import FreshnessManager.
-Import extralibrary.
-
-Import MatchingLogic.Logic.Notations.
-Import MatchingLogic.Theories.Definedness_Syntax.Notations.
+From MatchingLogic Require Export Sorts_Syntax
+                                  MLPM
+                                  FOEquality_ProofSystem.
+Import MatchingLogic.Logic.Notations
+       MatchingLogic.Theories.Definedness_Syntax.Notations
+       MatchingLogic.Theories.Sorts_Syntax.Notations.
 
 Set Default Proof Mode "Classic".
 
-Require Import MatchingLogic.Theories.DeductionTheorem.
-
-Require MatchingLogic.Theories.Sorts_Syntax.
-Export MatchingLogic.Theories.Sorts_Syntax.Notations.
-
-Open Scope ml_scope.
-Open Scope string_scope.
 Open Scope list_scope.
-
-Set Printing All.
 
 Local Lemma simplTest
   {Σ : Signature}
@@ -119,7 +94,3 @@ Proof.
     use AnyReasoning in H1.
     mlExactMeta H1.
 Defined.
-
-Close Scope ml_scope.
-Close Scope string_scope.
-Close Scope list_scope.

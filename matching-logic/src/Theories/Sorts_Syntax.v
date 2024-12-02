@@ -1,20 +1,11 @@
-From Coq Require Import ssreflect ssrfun ssrbool.
+From MatchingLogic Require Export Definedness_Syntax.
+Import MatchingLogic.Logic.Notations
+       MatchingLogic.Theories.Definedness_Syntax.Notations.
 
-Require Import Setoid.
-From Coq Require Import Unicode.Utf8.
-From Coq.Logic Require Import Classical_Prop FunctionalExtensionality.
-From Coq.Classes Require Import Morphisms_Prop.
+Set Default Proof Mode "Classic".
 
-From stdpp Require Import base sets.
 
-From MatchingLogic Require Export Logic.
-Import MatchingLogic.Logic.Notations.
-Require Export MatchingLogic.Theories.Definedness_Syntax.
-
-Import MatchingLogic.Theories.Definedness_Syntax.Notations.
-Import BoundVarSugar.
-
-Inductive Symbols := inhabitant.
+Inductive Symbols := sym_inh.
 
 Global Instance Symbols_eqdec : EqDecision Symbols.
 Proof. unfold EqDecision. intros x y. unfold Decision. destruct x. decide equality. (*solve_decision.*) Defined.
@@ -22,7 +13,7 @@ Proof. unfold EqDecision. intros x y. unfold Decision. destruct x. decide equali
 #[global]
 Program Instance Symbols_finite : finite.Finite Symbols.
 Next Obligation.
-  exact [inhabitant].
+  exact [sym_inh].
 Defined.
 Next Obligation.
   unfold Symbols_finite_obligation_1.
@@ -36,23 +27,23 @@ Global Instance Symbols_countable : countable.Countable Symbols.
 Proof. apply finite.finite_countable. Defined.
 
 Section sorts_syntax.
-  Open Scope ml_scope.
   Context {Σ : Signature}.
 
   Class Syntax :=
-    { inj : Symbols -> symbols;
+    { sym_inj : Symbols -> symbols;
       imported_definedness : Definedness_Syntax.Syntax;
     }.
-  
   #[global] Existing Instance imported_definedness.
 
   Context {self : Syntax}.
 
   Local Definition sym (s : Symbols) : Pattern :=
-    patt_sym (inj s).
+    patt_sym (sym_inj s).
 
-  Example test_pattern_1 := patt_equal (sym inhabitant) (sym inhabitant).
-  Definition patt_inhabitant_set(phi : Pattern) : Pattern := sym inhabitant ⋅ phi.
+  Definition inhabitant := sym sym_inh.
+
+  Example test_pattern_1 := patt_equal (inhabitant) (inhabitant).
+  Definition patt_inhabitant_set(phi : Pattern) : Pattern := inhabitant ⋅ phi.
 
   Definition patt_element_of (φ ψ : Pattern) := ⌈ φ and ψ ⌉.
 
@@ -330,8 +321,6 @@ Section simplTest.
   Local Definition Nat := patt_bott.
   Local Definition Zero := patt_bott.
   Local Definition Succ := patt_bott.
-  Local Definition patt_subseteq := patt_app.
-  Notation "p ⊆ml q" := (patt_subseteq p q) (at level 67) : ml_scope.
 
   Goal forall X,
     (( patt_free_svar X ⊆ml 〚 Nat 〛 --->

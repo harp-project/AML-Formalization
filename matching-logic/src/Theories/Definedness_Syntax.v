@@ -11,7 +11,7 @@ Import MatchingLogic.Logic.Notations.
 Set Default Proof Mode "Classic".
 
 (* We have only one symbol *)
-Inductive Symbols := definedness.
+Inductive Symbols := def_sym.
 
 Global Instance Symbols_eqdec : EqDecision Symbols.
 Proof.
@@ -21,7 +21,7 @@ Defined.
 #[global]
 Program Instance Symbols_finite : finite.Finite Symbols.
 Next Obligation.
-  exact [definedness].
+  exact [def_sym].
 Defined.
 Next Obligation.
   unfold Symbols_finite_obligation_1.
@@ -35,12 +35,12 @@ Global Instance Symbols_countable : countable.Countable Symbols.
 Proof. apply finite.finite_countable. Defined.
 
   Class Syntax {Σ : Signature} :=
-    {
+  {
     (* 'Symbols' are a 'subset' of all the symbols from the signature *)
-    inj: Symbols -> symbols;
+    sym_inj: Symbols -> symbols;
     (* TODO make it injective? *)
     (* for convenience *)
-    }.
+  }.
 
 Section definedness.
 
@@ -50,8 +50,11 @@ Section definedness.
 
   Context {syntax : Syntax}.
 
+  Definition definedness : Pattern :=
+    patt_sym (sym_inj def_sym).
+
   Definition patt_defined (phi : Pattern) : Pattern :=
-    patt_sym (inj definedness) ⋅ phi.
+    definedness ⋅ phi.
 
   Definition patt_total (phi: Pattern) : Pattern :=
     patt_not (patt_defined (patt_not phi)).
@@ -66,7 +69,7 @@ Section definedness.
     patt_defined (patt_and phi1 phi2).
 
   Definition AC_patt_defined : Application_context :=
-    @ctx_app_r _ (patt_sym (inj definedness)) box ltac:(auto).
+    @ctx_app_r _ definedness box ltac:(auto).
 
   Definition is_predicate_pattern ψ : Pattern :=
     (patt_equal ψ patt_top) or (patt_equal ψ patt_bott).
@@ -80,8 +83,8 @@ Module Notations.
   Notation "p =ml q" := (patt_equal p q) (at level 67) : ml_scope.
   Notation "p ⊆ml q" := (patt_subseteq p q) (at level 67) : ml_scope.
   Notation "p ∈ml q" := (patt_in p q) (at level 67) : ml_scope.
-  Notation "⌈ '_' ⌉" := (patt_sym (inj definedness)) : ml_scope.
-
+  
+  Notation "'⌈_⌉'" := definedness : ml_scope.
 End Notations.
 
 Section definedness.

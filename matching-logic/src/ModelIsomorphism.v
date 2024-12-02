@@ -307,269 +307,334 @@ Section isomorphism.
           ≡@{propset (Domain M₂)} (@eval Σ M₂ (mkValuation ((mi_f i) ∘ (evar_valuation ρ)) (λ X, (mi_f i) <$> (svar_valuation ρ X))) ϕ).
   Proof.
       intros ϕ.
-      remember (size ϕ) as sz.
-      assert (Hsz: size ϕ <= sz) by lia.
-      clear Heqsz.
-      move: ϕ Hsz.
-      induction sz; intros ϕ Hsz.
+      size_induction ϕ; intros ρ.
       {
-          destruct ϕ; simpl in Hsz; lia.
+          (* patt_free_evar x *)
+          do 2 rewrite eval_free_evar_simpl.
+          simpl.
+          unfold fmap.
+          with_strategy transparent [propset_fmap] unfold propset_fmap.
+          clear. set_solver.
       }
       {
-          destruct ϕ; intros ρ.
-          {
-              (* patt_free_evar x *)
-              do 2 rewrite eval_free_evar_simpl.
-              simpl.
-              unfold fmap.
-              with_strategy transparent [propset_fmap] unfold propset_fmap.
-              clear. set_solver.
-          }
-          {
-              (* patt_free_svar X *)
-              do 2 rewrite eval_free_svar_simpl.
-              simpl.
-              unfold fmap.
-              with_strategy transparent [propset_fmap] unfold propset_fmap.
-              clear. set_solver.
-          }
-          {
-              (* patt_bound_evar n *)
-              do 2 rewrite eval_bound_evar_simpl.
-              simpl.
-              unfold fmap.
-              with_strategy transparent [propset_fmap] unfold propset_fmap.
-              clear. set_solver.
-          }
-          {
-              (* patt_bound_svar n *)
-              do 2 rewrite eval_bound_svar_simpl.
-              simpl.
-              unfold fmap.
-              with_strategy transparent [propset_fmap] unfold propset_fmap.
-              clear. set_solver.
-          }
-          {
-              (* patt_sym s *)
-              do 2 rewrite eval_sym_simpl.
-              apply mi_sym.
-          }
-          {
-              (* patt_app ϕ1 ϕ2 *)
-              do 2 rewrite eval_app_simpl.
-              rewrite fmap_app_ext.
+          (* patt_free_svar X *)
+          do 2 rewrite eval_free_svar_simpl.
+          simpl.
+          unfold fmap.
+          with_strategy transparent [propset_fmap] unfold propset_fmap.
+          clear. set_solver.
+      }
+      {
+          (* patt_bound_evar n *)
+          do 2 rewrite eval_bound_evar_simpl.
+          simpl.
+          unfold fmap.
+          with_strategy transparent [propset_fmap] unfold propset_fmap.
+          clear. set_solver.
+      }
+      {
+          (* patt_bound_svar n *)
+          do 2 rewrite eval_bound_svar_simpl.
+          simpl.
+          unfold fmap.
+          with_strategy transparent [propset_fmap] unfold propset_fmap.
+          clear. set_solver.
+      }
+      {
+          (* patt_sym s *)
+          do 2 rewrite eval_sym_simpl.
+          apply mi_sym.
+      }
+      {
+          (* patt_app ϕ1 ϕ2 *)
+          do 2 rewrite eval_app_simpl.
+          rewrite fmap_app_ext.
 
-              simpl in Hsz.
-              rewrite set_equiv_subseteq.
-              do 2 rewrite elem_of_subseteq.
-              split.
-              {
-                  intros x Hx.
-                  rewrite elem_of_PropSet in Hx.
-                  destruct Hx as [le [re [Hle [Hre Hx] ] ] ].
-                  rewrite mi_app in Hx.
-                  rewrite -IHsz.
-                  { unfold size in *; lia. }
-                  rewrite -IHsz.
-                  { unfold size in *; lia. }
-                  unfold app_ext.
-                  rewrite elem_of_PropSet.
-                  exists (mi_f i le).
-                  exists (mi_f i re).
-                  repeat split.
-                  3: { exact Hx. }
-                  { apply elem_of_fmap_2. assumption. }
-                  { apply elem_of_fmap_2. assumption. }
-              }
-              {
-                  intros x Hx.
-                  rewrite elem_of_PropSet in Hx.
-                  rewrite elem_of_PropSet.
-                  destruct Hx as [le [re [Hle [Hre Hx] ] ] ].
-                  rewrite -IHsz in Hle.
-                  { unfold size in *; lia. }
-                  rewrite -IHsz in Hre.
-                  { unfold size in *; lia. }
-                  apply elem_of_fmap_1 in Hle.
-                  apply elem_of_fmap_1 in Hre.
-                  destruct Hle as [x1 [Hx1 Hle] ].
-                  destruct Hre as [x2 [Hx2 Hre] ].
-                  subst.
-                  rewrite -(mi_app i) in Hx.
-                  exists x1. exists x2.
-                  repeat split; assumption.
-              }
-          }
+          simpl in Hsz.
+          rewrite set_equiv_subseteq.
+          do 2 rewrite elem_of_subseteq.
+          split.
           {
-              (* patt_bott *)
-              do 2 rewrite eval_bott_simpl.
-              unfold fmap.
-              with_strategy transparent [propset_fmap] unfold propset_fmap.
-              clear.
-              set_solver.
-          }
-          {
-              (* patt_imp ϕ1 ϕ2 *)
-              do 2 rewrite eval_imp_simpl.
-              simpl in Hsz.
+              intros x Hx.
+              rewrite elem_of_PropSet in Hx.
+              destruct Hx as [le [re [Hle [Hre Hx] ] ] ].
+              rewrite mi_app in Hx.
               rewrite -IHsz.
               { unfold size in *; lia. }
               rewrite -IHsz.
               { unfold size in *; lia. }
-              remember (eval ρ ϕ1) as X1.
-              remember (eval ρ ϕ2) as X2.
-              unfold fmap.
-              with_strategy transparent [propset_fmap] unfold propset_fmap.
-              rewrite set_equiv_subseteq.
-              split.
+              unfold app_ext.
+              rewrite elem_of_PropSet.
+              exists (mi_f i le).
+              exists (mi_f i re).
+              repeat split.
+              3: { exact Hx. }
+              { apply elem_of_fmap_2. assumption. }
+              { apply elem_of_fmap_2. assumption. }
+          }
+          {
+              intros x Hx.
+              rewrite elem_of_PropSet in Hx.
+              rewrite elem_of_PropSet.
+              destruct Hx as [le [re [Hle [Hre Hx] ] ] ].
+              rewrite -IHsz in Hle.
+              { unfold size in *; lia. }
+              rewrite -IHsz in Hre.
+              { unfold size in *; lia. }
+              apply elem_of_fmap_1 in Hle.
+              apply elem_of_fmap_1 in Hre.
+              destruct Hle as [x1 [Hx1 Hle] ].
+              destruct Hre as [x2 [Hx2 Hre] ].
+              subst.
+              rewrite -(mi_app i) in Hx.
+              exists x1. exists x2.
+              repeat split; assumption.
+          }
+      }
+      {
+          (* patt_bott *)
+          do 2 rewrite eval_bott_simpl.
+          unfold fmap.
+          with_strategy transparent [propset_fmap] unfold propset_fmap.
+          clear.
+          set_solver.
+      }
+      {
+          (* patt_imp ϕ1 ϕ2 *)
+          do 2 rewrite eval_imp_simpl.
+          simpl in Hsz.
+          rewrite -IHsz.
+          { unfold size in *; lia. }
+          rewrite -IHsz.
+          { unfold size in *; lia. }
+          remember (eval ρ ϕ1) as X1.
+          remember (eval ρ ϕ2) as X2.
+          unfold fmap.
+          with_strategy transparent [propset_fmap] unfold propset_fmap.
+          rewrite set_equiv_subseteq.
+          split.
+          {
+              rewrite elem_of_subseteq.
+              intros x Hx.
+              rewrite elem_of_PropSet in Hx.
+              destruct Hx as [a [Ha Hx] ].
+              subst.
+              destruct Hx as [Hx1|Hx2].
               {
-                  rewrite elem_of_subseteq.
-                  intros x Hx.
+                  left.
+                  rewrite elem_of_PropSet.
+                  split.
+                  { clear. set_solver. }
+                  intros HContra.
+                  rewrite elem_of_PropSet in Hx1.
+                  apply Hx1. clear Hx1.
+                  rewrite elem_of_PropSet in HContra.
+                  destruct HContra as [a0 [Ha0 HContra] ].
+                  apply (mi_inj) in Ha0. subst.
+                  exact HContra.
+              }
+              {
+                  right.
+                  rewrite elem_of_PropSet.
+                  exists a.
+                  split;[reflexivity|assumption].
+              }
+          }
+          {
+              pose (j := ModelIsomorphism_sym _ _ i).
+              rewrite elem_of_subseteq.
+              intros x Hx.
+              rewrite elem_of_PropSet.
+              destruct Hx as [Hx|Hx].
+              {
+                  rewrite elem_of_PropSet in Hx.
+                  destruct Hx as [_ Hx].
+                  pose (mi_surj i) as i'.
+                  pose (@surj'_inv _ _ (=) _ i') as d.
+                  exists (d x).
+                  rewrite surj'_pf.
+                  split;[reflexivity|].
+                  left.
+                  rewrite elem_of_PropSet.
+                  split;[(clear;set_solver)|].
+                  rewrite elem_of_PropSet in Hx.
+                  intros HContra.
+                  apply Hx. clear Hx.
+                  exists (d x).
+                  rewrite surj'_pf.
+                  split;[reflexivity|assumption].
+              }
+              {
                   rewrite elem_of_PropSet in Hx.
                   destruct Hx as [a [Ha Hx] ].
                   subst.
-                  destruct Hx as [Hx1|Hx2].
-                  {
-                      left.
-                      rewrite elem_of_PropSet.
-                      split.
-                      { clear. set_solver. }
-                      intros HContra.
-                      rewrite elem_of_PropSet in Hx1.
-                      apply Hx1. clear Hx1.
-                      rewrite elem_of_PropSet in HContra.
-                      destruct HContra as [a0 [Ha0 HContra] ].
-                      apply (mi_inj) in Ha0. subst.
-                      exact HContra.
-                  }
-                  {
-                      right.
-                      rewrite elem_of_PropSet.
-                      exists a.
-                      split;[reflexivity|assumption].
-                  }
+                  exists a.
+                  split;[reflexivity|].
+                  right.
+                  exact Hx.
               }
+          }
+      }
+      {
+          do 2 rewrite eval_ex_simpl.
+          simpl.
+          rewrite set_equiv_subseteq.
+          split.
+          {
+              rewrite elem_of_subseteq.
+              intros x Hx.
+              with_strategy transparent [propset_fmap] unfold propset_fmap in Hx.
+              rewrite elem_of_PropSet in Hx.
+              destruct Hx as [a [Ha Hx] ].
+              subst.
+              rewrite elem_of_PropSet in Hx.
+              destruct Hx as [c Hc].
+
+              under [fun e => _]functional_extensionality => e.
               {
-                  pose (j := ModelIsomorphism_sym _ _ i).
-                  rewrite elem_of_subseteq.
-                  intros x Hx.
-                  rewrite elem_of_PropSet.
-                  destruct Hx as [Hx|Hx].
+                  rewrite -{1}[e](@surj'_pf _ _ (=) _ (i)).
+                  rewrite update_evar_val_compose.
+                  over.
+              }
+
+              setoid_rewrite <- IHsz.
+              2: { rewrite -evar_open_size. simpl in Hsz. unfold size in *; lia. }
+              unfold propset_fa_union.
+              rewrite elem_of_PropSet.
+              exists (mi_f i c).
+              apply elem_of_fmap_2.
+              replace (surj'_inv (mi_f i c)) with c.
+              2: {
+                  apply (@mi_inj Σ M₁ M₂ i).
+                  rewrite surj'_pf.
+                  reflexivity.
+              }
+              exact Hc.
+          }
+          {
+              rewrite elem_of_subseteq.
+              intros x Hx.
+              with_strategy transparent [propset_fmap] unfold propset_fmap.
+              rewrite elem_of_PropSet.
+              unfold propset_fa_union in Hx.
+              rewrite elem_of_PropSet in Hx.
+              destruct Hx as [c Hc].
+              exists (@surj'_inv _ _ _ _ (mi_surj i) x).
+              split.
+              {
+                  rewrite surj'_pf. reflexivity.
+              }
+              rewrite elem_of_PropSet.
+              exists (@surj'_inv _ _ _ _ (mi_surj i) c).
+              replace c with ((mi_f i) (@surj'_inv _ _ _ _ (mi_surj i) c)) in Hc by apply surj'_pf.
+              rewrite update_evar_val_compose in Hc.
+              rewrite -IHsz in Hc.
+              { rewrite -evar_open_size. simpl in Hsz. unfold size in *; lia. }
+              apply elem_of_fmap in Hc.
+              destruct Hc as [y [Hy Hc] ]. subst.
+              replace (surj'_inv (mi_f i y)) with y.
+              2: {
+                  apply (@mi_inj Σ M₁ M₂ i).
+                  rewrite surj'_pf.
+                  reflexivity.
+              }
+              exact Hc.
+          }
+      }
+      {
+          (* patt_mu ϕ *)
+          simpl in Hsz.
+          do 2 rewrite eval_mu_simpl. simpl.
+          unfold Lattice.LeastFixpointOf,Lattice.meet,Lattice.PrefixpointsOf.
+          simpl.
+          unfold Lattice.propset_Meet.
+          rewrite set_equiv_subseteq.
+          do 2 rewrite elem_of_subseteq.
+          with_strategy transparent [propset_fmap] unfold propset_fmap.
+          do 3 setoid_rewrite elem_of_PropSet.
+          split.
+          {
+              intros x [a [Ha Hx] ]. subst.
+              intros e He.
+              replace e with ((mi_f i) <$> ((@surj'_inv _ _ _ _ (mi_surj i)) <$> e)) in He at 1.
+              2: {
+                  clear.
+                  unfold_leibniz.
+                  rewrite -(set_fmap_compose (surj'_inv) (mi_f i)).
+                  unfold fmap.
+                  with_strategy transparent [propset_fmap] unfold propset_fmap.
+                  rewrite set_equiv_subseteq.
+                  do 2 rewrite elem_of_subseteq.
+                  split; intros x Hx.
                   {
                       rewrite elem_of_PropSet in Hx.
-                      destruct Hx as [_ Hx].
-                      pose (mi_surj i) as i'.
-                      pose (@surj'_inv _ _ (=) _ i') as d.
-                      exists (d x).
-                      rewrite surj'_pf.
-                      split;[reflexivity|].
-                      left.
-                      rewrite elem_of_PropSet.
-                      split;[(clear;set_solver)|].
-                      rewrite elem_of_PropSet in Hx.
-                      intros HContra.
-                      apply Hx. clear Hx.
-                      exists (d x).
-                      rewrite surj'_pf.
-                      split;[reflexivity|assumption].
-                  }
-                  {
-                      rewrite elem_of_PropSet in Hx.
-                      destruct Hx as [a [Ha Hx] ].
-                      subst.
-                      exists a.
-                      split;[reflexivity|].
-                      right.
+                      destruct Hx as [a [Ha Hx] ]. subst.
+                      unfold compose. rewrite surj'_pf.
                       exact Hx.
                   }
-              }
-          }
-          {
-              do 2 rewrite eval_ex_simpl.
-              simpl.
-              rewrite set_equiv_subseteq.
-              split.
-              {
-                  rewrite elem_of_subseteq.
-                  intros x Hx.
-                  with_strategy transparent [propset_fmap] unfold propset_fmap in Hx.
-                  rewrite elem_of_PropSet in Hx.
-                  destruct Hx as [a [Ha Hx] ].
-                  subst.
-                  rewrite elem_of_PropSet in Hx.
-                  destruct Hx as [c Hc].
-
-                  under [fun e => _]functional_extensionality => e.
                   {
-                      rewrite -{1}[e](@surj'_pf _ _ (=) _ (i)).
-                      rewrite update_evar_val_compose.
-                      over.
-                  }
-
-                  setoid_rewrite <- IHsz.
-                  2: { rewrite -evar_open_size. simpl in Hsz. unfold size in *; lia. }
-                  unfold propset_fa_union.
-                  rewrite elem_of_PropSet.
-                  exists (mi_f i c).
-                  apply elem_of_fmap_2.
-                  replace (surj'_inv (mi_f i c)) with c.
-                  2: {
-                      apply (@mi_inj Σ M₁ M₂ i).
+                      unfold compose.
+                      rewrite elem_of_PropSet.
+                      exists x.
                       rewrite surj'_pf.
-                      reflexivity.
+                      split;[reflexivity|assumption].
                   }
-                  exact Hc.
               }
+
+              rewrite update_svar_val_compose in He.
+              rewrite -IHsz in He.
+              { rewrite -svar_open_size.  unfold size in *; lia. }
+              specialize (Hx ((@surj'_inv _ _ _ _ (mi_surj i)) <$> e)).
+              ospecialize* Hx.
               {
+                  clear -He.
+                  rewrite elem_of_subseteq in He.
                   rewrite elem_of_subseteq.
-                  intros x Hx.
-                  with_strategy transparent [propset_fmap] unfold propset_fmap.
-                  rewrite elem_of_PropSet.
-                  unfold propset_fa_union in Hx.
-                  rewrite elem_of_PropSet in Hx.
-                  destruct Hx as [c Hc].
-                  exists (@surj'_inv _ _ _ _ (mi_surj i) x).
+                  intros x.
+                  specialize (He (mi_f i x)).
+                  remember (eval
+                  (update_svar_val (fresh_svar ϕ) (surj'_inv <$> e) ρ)
+                  (ϕ^{svar: 0 ↦ fresh_svar ϕ})) as PI.
+                  intros Hx.
+                  apply (elem_of_fmap_2 (mi_f i)) in Hx.
+                  specialize (He Hx). clear Hx.
+                  apply elem_of_fmap.
+                  exists (mi_f i x).
                   split.
                   {
-                      rewrite surj'_pf. reflexivity.
-                  }
-                  rewrite elem_of_PropSet.
-                  exists (@surj'_inv _ _ _ _ (mi_surj i) c).
-                  replace c with ((mi_f i) (@surj'_inv _ _ _ _ (mi_surj i) c)) in Hc by apply surj'_pf.
-                  rewrite update_evar_val_compose in Hc.
-                  rewrite -IHsz in Hc.
-                  { rewrite -evar_open_size. simpl in Hsz. unfold size in *; lia. }
-                  apply elem_of_fmap in Hc.
-                  destruct Hc as [y [Hy Hc] ]. subst.
-                  replace (surj'_inv (mi_f i y)) with y.
-                  2: {
-                      apply (@mi_inj Σ M₁ M₂ i).
+                      apply (@mi_inj _ _ _ i).
                       rewrite surj'_pf.
                       reflexivity.
                   }
-                  exact Hc.
+                  {
+                      exact He.
+                  }
               }
+              apply elem_of_fmap in Hx.
+              destruct Hx as [y [Hy Hx] ]. subst.
+              rewrite surj'_pf.
+              exact Hx.
           }
           {
-              (* patt_mu ϕ *)
-              simpl in Hsz.
-              do 2 rewrite eval_mu_simpl. simpl.
-              unfold Lattice.LeastFixpointOf,Lattice.meet,Lattice.PrefixpointsOf.
-              simpl.
-              unfold Lattice.propset_Meet.
-              rewrite set_equiv_subseteq.
-              do 2 rewrite elem_of_subseteq.
-              with_strategy transparent [propset_fmap] unfold propset_fmap.
-              do 3 setoid_rewrite elem_of_PropSet.
+              intros x Hx.
+              exists (@surj'_inv _ _ _ _ (mi_surj i) x).
               split.
               {
-                  intros x [a [Ha Hx] ]. subst.
+                  rewrite surj'_pf. reflexivity.
+              }
+              {
                   intros e He.
-                  replace e with ((mi_f i) <$> ((@surj'_inv _ _ _ _ (mi_surj i)) <$> e)) in He at 1.
+                  specialize (Hx ((mi_f i) <$> e)).
+                  rewrite update_svar_val_compose in Hx.
+                  rewrite -IHsz in Hx.
+                  { rewrite -svar_open_size. unfold size in *; lia. }
+                  clear IHsz.
+
+                  replace e with (((@surj'_inv _ _ _ _ (mi_surj i)) <$> ((mi_f i) <$> e))).
                   2: {
                       clear.
                       unfold_leibniz.
-                      rewrite -(set_fmap_compose (surj'_inv) (mi_f i)).
+                      rewrite -(set_fmap_compose (mi_f i) (surj'_inv)).
                       unfold fmap.
                       with_strategy transparent [propset_fmap] unfold propset_fmap.
                       rewrite set_equiv_subseteq.
@@ -578,136 +643,61 @@ Section isomorphism.
                       {
                           rewrite elem_of_PropSet in Hx.
                           destruct Hx as [a [Ha Hx] ]. subst.
-                          unfold compose. rewrite surj'_pf.
+                          unfold compose.
+                          replace (surj'_inv (mi_f i a)) with a.
+                          2: {
+                              apply (@mi_inj _ _ _ i).
+                              rewrite surj'_pf.
+                              reflexivity.
+                          }
                           exact Hx.
                       }
                       {
                           unfold compose.
                           rewrite elem_of_PropSet.
                           exists x.
-                          rewrite surj'_pf.
-                          split;[reflexivity|assumption].
-                      }
-                  }
-
-                  rewrite update_svar_val_compose in He.
-                  rewrite -IHsz in He.
-                  { rewrite -svar_open_size.  unfold size in *; lia. }
-                  specialize (Hx ((@surj'_inv _ _ _ _ (mi_surj i)) <$> e)).
-                  ospecialize* Hx.
-                  {
-                      clear -He.
-                      rewrite elem_of_subseteq in He.
-                      rewrite elem_of_subseteq.
-                      intros x.
-                      specialize (He (mi_f i x)).
-                      remember (eval
-                      (update_svar_val (fresh_svar ϕ) (surj'_inv <$> e) ρ)
-                      (ϕ^{svar: 0 ↦ fresh_svar ϕ})) as PI.
-                      intros Hx.
-                      apply (elem_of_fmap_2 (mi_f i)) in Hx.
-                      specialize (He Hx). clear Hx.
-                      apply elem_of_fmap.
-                      exists (mi_f i x).
-                      split.
-                      {
-                          apply (@mi_inj _ _ _ i).
-                          rewrite surj'_pf.
-                          reflexivity.
-                      }
-                      {
-                          exact He.
-                      }
-                  }
-                  apply elem_of_fmap in Hx.
-                  destruct Hx as [y [Hy Hx] ]. subst.
-                  rewrite surj'_pf.
-                  exact Hx.
-              }
-              {
-                  intros x Hx.
-                  exists (@surj'_inv _ _ _ _ (mi_surj i) x).
-                  split.
-                  {
-                      rewrite surj'_pf. reflexivity.
-                  }
-                  {
-                      intros e He.
-                      specialize (Hx ((mi_f i) <$> e)).
-                      rewrite update_svar_val_compose in Hx.
-                      rewrite -IHsz in Hx.
-                      { rewrite -svar_open_size. unfold size in *; lia. }
-                      clear IHsz.
-
-                      replace e with (((@surj'_inv _ _ _ _ (mi_surj i)) <$> ((mi_f i) <$> e))).
-                      2: {
-                          clear.
-                          unfold_leibniz.
-                          rewrite -(set_fmap_compose (mi_f i) (surj'_inv)).
-                          unfold fmap.
-                          with_strategy transparent [propset_fmap] unfold propset_fmap.
-                          rewrite set_equiv_subseteq.
-                          do 2 rewrite elem_of_subseteq.
-                          split; intros x Hx.
-                          {
-                              rewrite elem_of_PropSet in Hx.
-                              destruct Hx as [a [Ha Hx] ]. subst.
-                              unfold compose.
-                              replace (surj'_inv (mi_f i a)) with a.
-                              2: {
-                                  apply (@mi_inj _ _ _ i).
-                                  rewrite surj'_pf.
-                                  reflexivity.
-                              }
-                              exact Hx.
-                          }
-                          {
-                              unfold compose.
-                              rewrite elem_of_PropSet.
-                              exists x.
-                              replace (surj'_inv (mi_f i x)) with x.
-                              2: {
-                                  apply (@mi_inj _ _ _ i).
-                                  rewrite surj'_pf.
-                                  reflexivity.
-                              }
-                              split;[reflexivity|assumption].
-                          } 
-                      }
-                      apply elem_of_fmap.
-                      exists x.
-                      split;[reflexivity|].
-                      apply Hx. clear Hx.
-                      rewrite elem_of_subseteq.
-                      intros x0.
-                      rewrite elem_of_subseteq in He.
-                      intros H.
-                      specialize (He ((@surj'_inv _ _ _ _ (mi_surj i)) x0)).
-                      apply (elem_of_fmap_2 (mi_f i)) in He.
-                      {
-                          rewrite surj'_pf in He. exact He.
-                      }
-                      apply (elem_of_fmap_2 ((@surj'_inv _ _ _ _ (mi_surj i)))) in H.
-                      rewrite -(set_fmap_compose (mi_f i) (surj'_inv)) in H.
-                      unfold compose in H. simpl in H.
-                      move: H.
-                      under [fun x => _]functional_extensionality => x1.
-                      {
-                          replace (surj'_inv (mi_f i x1)) with x1.
+                          replace (surj'_inv (mi_f i x)) with x.
                           2: {
                               apply (@mi_inj _ _ _ i).
                               rewrite surj'_pf.
                               reflexivity.
                           }
-                          over.
-                      }
-                      move=> H.
-                      unfold fmap in H.
-                      with_strategy transparent [propset_fmap] unfold propset_fmap in H.
-                      rewrite elem_of_PropSet in H.
-                      destruct H as [a [Ha H] ]. subst.
-                      exact H.
+                          split;[reflexivity|assumption].
+                      } 
                   }
+                  apply elem_of_fmap.
+                  exists x.
+                  split;[reflexivity|].
+                  apply Hx. clear Hx.
+                  rewrite elem_of_subseteq.
+                  intros x0.
+                  rewrite elem_of_subseteq in He.
+                  intros H.
+                  specialize (He ((@surj'_inv _ _ _ _ (mi_surj i)) x0)).
+                  apply (elem_of_fmap_2 (mi_f i)) in He.
+                  {
+                      rewrite surj'_pf in He. exact He.
+                  }
+                  apply (elem_of_fmap_2 ((@surj'_inv _ _ _ _ (mi_surj i)))) in H.
+                  rewrite -(set_fmap_compose (mi_f i) (surj'_inv)) in H.
+                  unfold compose in H. simpl in H.
+                  move: H.
+                  under [fun x => _]functional_extensionality => x1.
+                  {
+                      replace (surj'_inv (mi_f i x1)) with x1.
+                      2: {
+                          apply (@mi_inj _ _ _ i).
+                          rewrite surj'_pf.
+                          reflexivity.
+                      }
+                      over.
+                  }
+                  move=> H.
+                  unfold fmap in H.
+                  with_strategy transparent [propset_fmap] unfold propset_fmap in H.
+                  rewrite elem_of_PropSet in H.
+                  destruct H as [a [Ha H] ]. subst.
+                  exact H.
               }
           }
       }

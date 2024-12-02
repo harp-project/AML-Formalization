@@ -1,35 +1,9 @@
-From Coq Require Import ssreflect ssrfun ssrbool.
-
-From Ltac2 Require Import Ltac2.
-
-Require Import Equations.Prop.Equations.
-
-From Coq Require Import String Setoid Btauto.
-Require Import Coq.Program.Equality.
-From Coq.Classes Require Import Morphisms_Prop.
-From Coq.Unicode Require Import Utf8.
-From Coq.micromega Require Import Lia.
-
-From stdpp Require Import base fin_sets sets propset proof_irrel option list coGset finite infinite gmap.
-
-From MatchingLogic Require Import
-  Logic
-  DerivedOperators_Syntax
-  ProofMode.MLPM
-.
-From MatchingLogic.Theories Require Import Definedness_Syntax Definedness_ProofSystem DeductionTheorem.
-From MatchingLogic.Utils Require Import stdpp_ext.
-Import extralibrary.
-
-Import MatchingLogic.Logic.Notations.
-Import MatchingLogic.DerivedOperators_Syntax.Notations.
+From MatchingLogic Require Export FOEquality_ProofSystem.
+Import MatchingLogic.Logic.Notations
+       MatchingLogic.Theories.Definedness_Syntax.Notations.
 
 Set Default Proof Mode "Classic".
 
-Import Notations.
-
-Open Scope ml_scope.
-Open Scope string_scope.
 Open Scope list_scope.
 
 Lemma patt_subseteq_trans

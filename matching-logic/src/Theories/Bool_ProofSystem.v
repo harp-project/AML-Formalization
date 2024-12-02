@@ -1,29 +1,13 @@
-From Coq Require Import ssreflect ssrfun ssrbool String.
-
-From Ltac2 Require Import Ltac2.
-
-From MatchingLogic Require Export Logic ProofMode.MLPM.
-From MatchingLogic.Theories Require Export Definedness_Syntax
-                                           Definedness_ProofSystem
-                                           Sorts_Syntax
-                                           Sorts_ProofSystem
-                                           FOEquality_ProofSystem
-                                           Bool_Syntax.
-
-From stdpp Require Import base propset.
-
-Import MatchingLogic.Logic.Notations.
-Import MatchingLogic.Theories.Definedness_Syntax.Notations.
-Import MatchingLogic.Theories.Sorts_Syntax.Notations.
+From MatchingLogic Require Export Sorts_ProofSystem
+                                  Bool_Syntax.
+Import MatchingLogic.Logic.Notations
+       MatchingLogic.Theories.Definedness_Syntax.Notations
+       MatchingLogic.Theories.Sorts_Syntax.Notations
+       MatchingLogic.Theories.Bool_Syntax.Notations.
 
 Set Default Proof Mode "Classic".
 
-Require Import MatchingLogic.Theories.DeductionTheorem.
-
-Import MatchingLogic.Theories.Definedness_Syntax.Notations.
-Import MatchingLogic.Theories.Bool_Syntax.Notations.
-
-Set Default Proof Mode "Classic".
+Open Scope list_scope.
 
 Section bools.
 Context

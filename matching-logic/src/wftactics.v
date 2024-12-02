@@ -151,19 +151,19 @@ Ltac clear_all_impls :=
 Ltac solve_size :=
   repeat (
   match goal with
-  | [ |- size (evar_open _ _ _) < _ ]
+  | [ |- pat_size (evar_open _ _ _) < _ ]
     => rewrite evar_open_size
 
-  | [ |- size (svar_open _ _ _) < _ ]
+  | [ |- pat_size (svar_open _ _ _) < _ ]
     => rewrite svar_open_size
 
-  | [ |- size _ < size (patt_app _ _) ]
+  | [ |- pat_size _ < pat_size (patt_app _ _) ]
     => simpl; lia
 
-  | [ |- size _ < size (patt_imp _ _) ]
+  | [ |- pat_size _ < pat_size (patt_imp _ _) ]
     => simpl; lia
 
-  | [ |- size _ < size (patt_exists _) ]
+  | [ |- pat_size _ < pat_size (patt_exists _) ]
     => simpl; lia
   end
   )
