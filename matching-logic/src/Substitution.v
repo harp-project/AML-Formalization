@@ -3196,6 +3196,31 @@ Lemma Private_no_negative_occurrence_svar_quantify ϕ level X:
     * rewrite IHφ1. 3: rewrite IHφ2. all: simpl in H; destruct_andb! H; auto.
   Qed.
 
+  (* Same proof as `bevar_subst_evar_quantify_free_evar`, *)
+  (* but more general statement. *)
+  Lemma bevar_subst_evar_quantify x p dbi ϕ:
+    well_formed_closed_ex_aux ϕ dbi ->
+    (ϕ^{{evar: x ↦ dbi}})^[evar: dbi ↦ p] = ϕ^[[evar: x ↦ p]].
+  Proof.
+    revert dbi.
+    induction ϕ; intros dbi Hwf; simpl in *; auto.
+    - case_match; simpl; [|reflexivity].
+      case_match; simpl; try lia. reflexivity.
+    - do 2 case_match; try lia; auto. congruence. congruence.
+    - apply andb_true_iff in Hwf.
+      destruct_and!.
+      rewrite IHϕ1;[assumption|].
+      rewrite IHϕ2;[assumption|].
+      reflexivity.
+    - apply andb_true_iff in Hwf.
+      destruct_and!.
+      rewrite IHϕ1;[assumption|].
+      rewrite IHϕ2;[assumption|].
+      reflexivity.
+    - rewrite IHϕ;[assumption|reflexivity].
+    - rewrite IHϕ;[assumption|reflexivity].
+  Qed.
+
 End subst.
 
 (*

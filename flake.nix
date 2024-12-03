@@ -70,7 +70,7 @@
         packages.coq-matching-logic = coq-matching-logic { coqPackages = coqPackages; };
 
         # The 'matching logic in Coq' library
-        packages.coq-matching-logic-v8_17 = coq-matching-logic { coqPackages = pkgs.coqPackages_8_17; };
+        # packages.coq-matching-logic-v8_17 = coq-matching-logic { coqPackages = pkgs.coqPackages_8_17; };
 
         # Documentation of the 'matching logic in Coq' library
         packages.coq-matching-logic-doc
@@ -216,14 +216,14 @@
               };
 
 
-          coq-matching-logic-v8_17 =
-            let
-              coq-matching-logic = self.outputs.packages.${system}.coq-matching-logic-v8_17;
-            in
-              pkgs.mkShell {
-                inputsFrom = [coq-matching-logic];
-                packages = [coq-matching-logic.coqPackages.coq-lsp];
-              };
+          #coq-matching-logic-v8_17 =
+          #  let
+          #    coq-matching-logic = self.outputs.packages.${system}.coq-matching-logic-v8_17;
+          #  in
+          #    pkgs.mkShell {
+          #      inputsFrom = [coq-matching-logic];
+          #      packages = [coq-matching-logic.coqPackages.coq-lsp];
+          #    };
 
           coq-matching-logic-example-fol =
             let
