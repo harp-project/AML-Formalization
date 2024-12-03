@@ -329,7 +329,7 @@ Module MMTest.
 End MMTest.
 
 Extraction Language Haskell.
-
+Require Import Coq.extraction.ExtrHaskellString.
 Extraction "proof_1_mm.hs" MMTest.proof_1.
 Extraction "proof_2_mm.hs" MMTest.proof_2.
 Extraction "proof_3_mm.hs" MMTest.proof_3.
