@@ -1,11 +1,6 @@
-From Coq Require Import ssreflect ssrfun ssrbool.
+From MatchingLogic Require Export Logic.
 
-From Equations Require Import Equations.
-
-From stdpp Require Import base pmap gmap fin_maps finite.
-From MatchingLogic Require Import Syntax Utils.stdpp_ext StringSignature.
-
-Require Import String.
+Set Default Proof Mode "Classic".
 
 Section named.
   Context

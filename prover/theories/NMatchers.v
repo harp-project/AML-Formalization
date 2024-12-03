@@ -1,28 +1,8 @@
-From Coq Require Import ssreflect ssrfun ssrbool.
-From Coq Require Import Ensembles Logic.Classical_Prop.
-From Coq Require Import Arith.Wf_nat Relations.Relation_Operators Wellfounded.Wellfounded.
-From Coq Require Import Logic.FunctionalExtensionality.
-From Coq.micromega Require Import Lia.
+From MatchingLogicProver Require Export Named.
 
-From Equations Require Import Equations.
+Import MatchingLogic.Logic.Notations.
 
-From stdpp Require Import base option.
-
-From MatchingLogic Require Import
-     Syntax Semantics DerivedOperators_Syntax ProofSystem ProofMode.MLPM
-     Utils.extralibrary
-.
-
-Import MatchingLogic.Syntax.Notations MatchingLogic.DerivedOperators_Syntax.Notations.
-
-From MatchingLogicProver Require Import Named.
-
-Global Set Transparent Obligations.
-Derive NoConfusion for NamedPattern.
-Derive Subterm for NamedPattern.
-
-
-Open Scope ml_scope.
+Set Default Proof Mode "Classic".
 
 Equations nmatch_not {Σ : Signature} (p : NamedPattern)
   : ({ p' : NamedPattern & p = npatt_not p'} ) + (forall p', p <> npatt_not p')

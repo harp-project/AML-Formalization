@@ -1,22 +1,11 @@
-From Coq Require Import ssreflect.
-From Coq Require Extraction extraction.ExtrHaskellString.
+From MatchingLogicProver Require Export MMProofExtractor.
+From MatchingLogic Require Export MLPM.
 
+Import MatchingLogic.Logic.Notations.
 
-From Coq Require Import Strings.String.
-From Equations Require Import Equations.
-
-From stdpp Require Export base.
-From MatchingLogic Require Import Syntax StringSignature ProofSystem ProofMode.MLPM wftactics.
-From MatchingLogicProver Require Import MMProofExtractor Named.
-
-From stdpp Require Import base finite gmap mapset listset_nodup numbers.
-
+Set Default Proof Mode "Classic".
 Open Scope ml_scope.
 Module MMTest.
-  Import
-    MatchingLogic.Syntax.Notations
-    MatchingLogic.DerivedOperators_Syntax.Notations
-  .
 
   Import MetaMath.
 

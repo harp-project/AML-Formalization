@@ -1,18 +1,8 @@
-From Coq Require Import ssreflect ssrfun ssrbool.
+From MatchingLogic Require Import Logic.
+From MatchingLogicProver Require Import NamedProofSystem.
+Set Default Proof Mode "Classic".
 
-From Coq Require Import Strings.String.
-From Coq Require Import Logic.PropExtensionality Logic.Eqdep_dec.
-From Equations Require Import Equations.
-
-From stdpp Require Export base gmap fin_sets sets list countable.
-From MatchingLogic Require Import Syntax Semantics StringSignature ProofSystem ProofMode.MLPM.
-From MatchingLogicProver Require Import Named NamedProofSystem NMatchers.
-
-From stdpp Require Import base finite gmap mapset listset_nodup numbers propset list.
-
-(* TODO: move this near to the definition of Pattern *)
-Derive NoConfusion for Pattern.
-Derive Subterm for Pattern.
+Open Scope list_scope.
 
 Ltac invert_tuples :=
   repeat (match goal with
@@ -164,7 +154,7 @@ Fixpoint rename {Σ : Signature}
       f_equal; apply proof_irrelevance.
     Qed.
 
-  Arguments pbr {A%type_scope} {_eqd _cnt} p.
+  Arguments pbr {A%_type_scope} {_eqd _cnt} p.
 
   Definition myswap {A : Type} (p : prod A A) : prod A A := (p.2, p.1).
 
@@ -398,7 +388,6 @@ Fixpoint rename {Σ : Signature}
   Proof.
     intros x.
     unfold set_map.
-    Search list_to_set elements.
     rewrite -[x in _ = x]list_to_set_elements_L.
     rewrite elements_list_to_set.
     {

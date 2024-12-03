@@ -1,8 +1,8 @@
 -R theories MatchingLogicProver
 
 theories/Matchers.v
-theories/NMatchers.v
 theories/Named.v
+theories/NMatchers.v
 theories/NamedProofSystem.v
 theories/PSTStateless.v
 theories/PSTReader.v
