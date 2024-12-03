@@ -1,22 +1,9 @@
-From Coq Require Import String.
+From MatchingLogic Require Import Theories.Definedness_Syntax
+                                  ProofMode.MLPM.
 
-From Coq Require Import ssreflect ssrfun ssrbool. (* <- needed for mlAssert *)
-From stdpp Require Import list. (* <- needed for mlRevertLast *)
-From MatchingLogic Require Import
-    Logic
-    DerivedOperators_Syntax
-    ProofSystem
-    ProofMode.MLPM
-.
+Import MatchingLogic.Logic.Notations.
 
-Import
-  MatchingLogic.Logic.Notations
-  MatchingLogic.DerivedOperators_Syntax.Notations
-.
-
-Open Scope string_scope.
-Open Scope list_scope.
-Open Scope ml_scope.
+Set Default Proof Mode "Classic".
 
 (** Low-level proof, using only the proof system *)
 Lemma ex1_low : forall {Σ : Signature} (Γ : Theory) (A B : Pattern),
@@ -57,12 +44,6 @@ Proof.
     1-43: wf_auto2.
 Defined.
 
-From Coq Require Import ssreflect ssrfun ssrbool.
-
-Open Scope string_scope.
-Open Scope list_scope.
-Open Scope ml_scope.
-
 (** Proof using proof mode *)
 Lemma ex1_pm : forall {Σ : Signature} (Γ : Theory) (A B : Pattern),
   well_formed A = true ->
@@ -97,12 +78,6 @@ Proof.
 Defined.
 
 Section compute.
-  From MatchingLogic.Theories Require Import Definedness_Syntax
-                                             Definedness_Semantics
-                                             Sorts_Syntax
-                                             Sorts_Semantics
-                                             Definedness_ProofSystem.
-  From stdpp Require Import base fin_sets sets propset finite.
 
   Inductive Symbols :=
     | sym_import_definedness (d : Definedness_Syntax.Symbols)
@@ -118,7 +93,7 @@ Section compute.
   Program Instance Symbols_fin : Finite Symbols :=
   {|
     enum := [Zero; Succ; TT ; FF; even;
-      sym_import_definedness Definedness_Syntax.definedness] ;
+      sym_import_definedness Definedness_Syntax.def_sym] ;
   |}.
   Next Obligation.
     repeat constructor; set_solver.
@@ -137,7 +112,7 @@ Section compute.
 
   Instance definedness_syntax : Definedness_Syntax.Syntax :=
     {|
-       Definedness_Syntax.inj := sym_import_definedness;
+       Definedness_Syntax.sym_inj := sym_import_definedness;
     |}.
 
   Open Scope string_scope.

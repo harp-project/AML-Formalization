@@ -1,24 +1,11 @@
-From Coq Require Import ssreflect ssrfun ssrbool.
-
-From Coq.Vectors Require Import Vector.
-
 From Equations Require Import Equations.
-
-From stdpp Require Import
-    base
-    gmap
-    infinite
-    list
-    natmap
-    option
-    strings
-    stringmap
-    sets
-    vector
-.
-From MatchingLogic Require Import
+From MatchingLogic Require Export
     Signature
     Pattern
+.
+From stdpp Require Export
+    strings
+    stringmap
 .
 
 Require Import String.
@@ -441,7 +428,7 @@ Section sec.
             pose proof (wfpf' := wfpf).
             unfold well_formed in wfpf'.
             unfold is_true in wfpf'.
-            apply andb_prop in wfpf'.
+            apply andb_true_iff in wfpf'.
             destruct wfpf' as [wfp wfc].
             unfold well_formed_closed in wfc.
             apply andb_prop in wfc.

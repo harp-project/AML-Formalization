@@ -1,22 +1,9 @@
-From Coq Require Import String.
+From MatchingLogic Require Import Theories.DeductionTheorem.
 
-From MatchingLogic Require Import
-    Logic
-    ProofMode.MLPM
-    FreshnessManager
-    Theories.Definedness_Syntax
-    Theories.Definedness_ProofSystem
-    Theories.DeductionTheorem
-    Theories.FOEquality_ProofSystem.
+Import MatchingLogic.Logic.Notations
+       MatchingLogic.Theories.Definedness_Syntax.Notations.
 
-Import
-  MatchingLogic.Logic.Notations
-  MatchingLogic.DerivedOperators_Syntax.Notations
-  MatchingLogic.Theories.Definedness_Syntax.Notations.
-
-Open Scope string_scope.
-Open Scope list_scope.
-Open Scope ml_scope.
+Set Default Proof Mode "Classic".
 
 Section running.
   Notation definedness_theory := Theories.Definedness_Syntax.theory.
@@ -138,7 +125,7 @@ Section functional_subst.
     use AnyReasoning in EQ.
     epose proof (PC := prf_conclusion Γ (patt_equal t Z) (instantiate (ex , φ) (patt_free_evar Zvar) ---> ex , φ) AnyReasoning ltac:(shelve) _ EQ).
 
-    assert (Γ ⊢ patt_equal t Z ---> (ex , φ) ^ [t] ---> ex , φ) as HSUB.
+    assert (Γ ⊢ patt_equal t Z ---> (ex , φ)^[t] ---> ex , φ) as HSUB.
     {
       epose proof (EE := equality_elimination_proj Γ t Z φ HΓ
                                                mfφ wft WFZ _ _).

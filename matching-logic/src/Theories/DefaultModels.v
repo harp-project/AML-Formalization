@@ -1,28 +1,10 @@
-From Equations Require Import Equations.
-
-From MatchingLogic Require Import Logic.
-Import MatchingLogic.Logic.Notations.
-From MatchingLogic.Utils Require Import Lattice stdpp_ext extralibrary.
-
-From stdpp Require Import base propset countable.
-
-Import extralibrary.
-
-From MatchingLogic.Theories Require Import Definedness_Syntax
-                                           Sorts_Syntax
-                                           Bool_Syntax
-                                           Definedness_Semantics
-                                           Sorts_Semantics
-                                           Bool_Semantics
+From MatchingLogic.Theories Require Export Bool_Semantics
                                            Nat_Syntax
 .
 Import Definedness_Syntax.Notations.
-Import MatchingLogic.Semantics.Notations.
+Import Logic.Notations.
 
 Set Default Proof Mode "Classic".
-
-Open Scope ml_scope.
-Open Scope list_scope.
 
 (*
   Subtasks:
@@ -45,7 +27,7 @@ Section Definedness.
     ml_symbols := Build_MLSymbols (@symbols (@ml_symbols Σ) + Definedness_Syntax.Symbols) _ _;
   }.
   Instance definedness_syntax : Definedness_Syntax.Syntax := {
-     inj := inr;
+     sym_inj := inr;
   }.
 
   Definition definedness_carrier : Type := Domain M + unit.
@@ -104,9 +86,9 @@ Section Sorts.
   }.
 
   Instance sorts_syntax : @Sorts_Syntax.Syntax sorts_Σ := {
-     inj := inr;
+     sym_inj := inr;
      imported_definedness := {|
-        Definedness_Syntax.inj :=
+        Definedness_Syntax.sym_inj :=
           λ x : Definedness_Syntax.Symbols,
             match x with
             | definedness => inl (inr definedness)
@@ -150,7 +132,8 @@ Section Sorts.
     unfold satisfies_theory. intros.
     rewrite elem_of_PropSet in H. destruct H. destruct x. subst.
     cbn. unfold satisfies_model. intros.
-    unfold patt_defined. unfold p_x, ev_x. simp eval.
+    unfold patt_defined.
+    unfold definedness, p_x, ev_x. simp eval.
     unfold sym_interp, app_ext. simpl.
     eapply leibniz_equiv. Unshelve. 2: exact (@propset_leibniz_equiv _ SortsModel).
     apply set_equiv. intros. split; intros.
@@ -237,11 +220,11 @@ Section Bool.
   }.
 
   Program Instance bool_syntax : @Bool_Syntax.Syntax bools_Σ := {
-    inj := coreBoolSym;
+    sym_inj := coreBoolSym;
     imported_sorts := {|
-      Sorts_Syntax.inj := fun x => inhBool;
+      Sorts_Syntax.sym_inj := fun x => inhBool;
       imported_definedness := {|
-        Definedness_Syntax.inj := fun x => defBool;
+        Definedness_Syntax.sym_inj := fun x => defBool;
       |};
     |};
   }.
@@ -323,7 +306,7 @@ Section Bool.
     intros.
     unfold Minterp_inhabitant.
     simp eval. simpl.
-    unfold Sorts_Semantics.sym.
+    unfold inhabitant. unfold Sorts_Syntax.sym.
     simp eval. simpl.
     unfold bool_sym_interp.
     destruct s; unfold app_ext.
@@ -351,7 +334,7 @@ Section Bool.
       unfold satisfies_theory. intros.
       rewrite elem_of_PropSet in H. destruct H. destruct x. subst.
       cbn. unfold satisfies_model. intros.
-      unfold patt_defined. unfold p_x, ev_x. simp eval.
+      unfold patt_defined. unfold definedness, p_x, ev_x. simp eval.
       unfold sym_interp, app_ext. simpl.
       eapply leibniz_equiv. Unshelve. 2: exact (@propset_leibniz_equiv _ BoolModel).
       apply set_equiv. intros. split; intros; set_solver.
@@ -376,7 +359,7 @@ Section Bool.
         1: apply indec_bool.
         intros. mlSimpl. exists (coreBoolSym sTrue). case_match.
         + remember (fresh_evar (mlTrue =ml b0)) as x. clear Heqx.
-          unfold patt_equal, patt_total, patt_defined, mlTrue.
+          unfold patt_equal, patt_total, patt_defined, definedness, mlTrue.
           repeat eval_simpl. cbn. unfold bool_sym_interp.
           rewrite decide_eq_same. unfold app_ext. eapply elem_of_compl.
           (* Unshelve. 2: exact (@propset_leibniz_equiv _ BoolModel). *)
@@ -384,7 +367,7 @@ Section Bool.
           apply elem_of_singleton_1 in Hle. subst.
           apply (proj1 (elem_of_compl _ _)) in Hre; auto. apply Hre.
           set_solver.
-        + unfold Minterp_inhabitant, Sorts_Semantics.sym in n.
+        + unfold Minterp_inhabitant, Sorts_Syntax.sym in n.
           simpl in n. clear H. simp eval in n. exfalso.
           apply n. clear. exists (inhBool), (coreBoolSym sBool); split; try split; set_solver.
       (* false is functional *)
@@ -392,7 +375,7 @@ Section Bool.
         1: apply indec_bool.
         intros. mlSimpl. exists (coreBoolSym sFalse). case_match.
         + remember (fresh_evar (mlFalse =ml b0)) as x. clear Heqx.
-          unfold patt_equal, patt_total, patt_defined, mlFalse.
+          unfold patt_equal, patt_total, patt_defined, definedness, mlFalse.
           repeat eval_simpl. cbn. unfold bool_sym_interp.
           rewrite decide_eq_same. unfold app_ext. eapply elem_of_compl.
           (* Unshelve. 2: exact (@propset_leibniz_equiv _ BoolModel). *)
@@ -400,29 +383,32 @@ Section Bool.
           apply elem_of_singleton_1 in Hle. subst.
           apply (proj1 (elem_of_compl _ _)) in Hre; auto. apply Hre.
           set_solver.
-        + unfold Minterp_inhabitant, Sorts_Semantics.sym in n.
+        + unfold Minterp_inhabitant, Sorts_Syntax.sym in n.
           simpl in n. clear H. simp eval in n. exfalso.
           apply n. clear. exists (inhBool), (coreBoolSym sBool); split; try split; set_solver.
       (* and is functional *)
-      - eval_simpl; auto.
-        1: apply indec_bool.
+      - erewrite eval_forall_of_sort.
+        2: assumption. Unshelve. 4: apply indec_bool. 2-3: shelve.
         apply propset_fa_intersection_full. intros. case_match. 2: by reflexivity.
         mlSimpl.
-        eval_simpl; auto. 1: apply indec_bool.
+        erewrite eval_forall_of_sort.
+        2: assumption. Unshelve. 4: apply indec_bool. 2-3: shelve.
         eapply propset_fa_intersection_full. intros. case_match. 2: by reflexivity.
         mlSimpl. cbn.
-        eval_simpl; auto. 1: apply indec_bool.
+        erewrite eval_exists_of_sort.
+        2: assumption. Unshelve. 5: apply indec_bool. 2-4: shelve.
         remember (fresh_evar _) as X.
         remember (fresh_evar (patt_exists_of_sort mlBool (mlBAnd b1 (patt_free_evar X) =ml b0))) as Y.
         unfold Minterp_inhabitant in *.
         clear H0 H. eval_simpl_in e. eval_simpl_in e0.
-        unfold app_ext in *.
+        unfold app_ext, inhabitant in *.
         apply elem_of_PropSet in e, e0.
         destruct e as [le1 [re1 [Hle1 [Hre1 Hlere1] ] ] ].
         destruct e0 as [le2 [re2 [Hle2 [Hre2 Hlere2] ] ] ].
-        unfold Sorts_Semantics.sym in *.
+        unfold Sorts_Syntax.sym in *.
         simp eval in *. simpl in *.
-        unfold bool_sym_interp in *. apply elem_of_singleton in Hle1, Hle2, Hre1, Hre2.
+        unfold bool_sym_interp in *.
+        apply elem_of_singleton in Hle1, Hle2, Hre1, Hre2.
         subst le1 le2 re1 re2.
         unfold bool_app_interp in *.
         assert ((c = coreBoolSym sFalse \/ c = coreBoolSym sTrue) /\
@@ -467,7 +453,7 @@ Section Bool.
                 2: by apply elem_of_singleton.
                 apply elem_of_PropSet. do 2 eexists. split_and!.
                 all: try by apply elem_of_singleton.
-          ** unfold Minterp_inhabitant, Sorts_Semantics.sym in n.
+          ** unfold Minterp_inhabitant, Sorts_Syntax.sym in n.
              simpl in n. clear H. simp eval in n. exfalso.
              apply n. clear. exists (inhBool), (coreBoolSym sBool); split; try split; set_solver.
         (* false and true *)
@@ -493,7 +479,7 @@ Section Bool.
                 2: by apply elem_of_singleton.
                 apply elem_of_PropSet. do 2 eexists. split_and!.
                 all: try by apply elem_of_singleton.
-          ** unfold Minterp_inhabitant, Sorts_Semantics.sym in n.
+          ** unfold Minterp_inhabitant, Sorts_Syntax.sym in n.
              simpl in n. clear H. simp eval in n. exfalso.
              apply n. clear. exists (inhBool), (coreBoolSym sBool); split; try split; set_solver.
         (* true and false *)
@@ -519,7 +505,7 @@ Section Bool.
                 2: by apply elem_of_singleton.
                 apply elem_of_PropSet. do 2 eexists. split_and!.
                 all: try by apply elem_of_singleton.
-          ** unfold Minterp_inhabitant, Sorts_Semantics.sym in n.
+          ** unfold Minterp_inhabitant, Sorts_Syntax.sym in n.
              simpl in n. clear H. simp eval in n. exfalso.
              apply n. clear. exists (inhBool), (coreBoolSym sBool); split; try split; set_solver.
         (* true and true *)
@@ -545,12 +531,13 @@ Section Bool.
                 2: by apply elem_of_singleton.
                 apply elem_of_PropSet. do 2 eexists. split_and!.
                 all: try by apply elem_of_singleton.
-          ** unfold Minterp_inhabitant, Sorts_Semantics.sym in n.
+          ** unfold Minterp_inhabitant, Sorts_Syntax.sym in n.
              simpl in n. clear H. simp eval in n. exfalso.
              apply n. clear. exists (inhBool), (coreBoolSym sBool); split; try split; set_solver.
       (* not is functional *)
-      - eval_simpl; auto.
-        1: apply indec_bool.
+      - erewrite eval_forall_of_sort.
+        2: assumption. Unshelve. 2-13: try apply (@propset_leibniz_equiv _ BoolModel).
+        2: apply indec_bool.
         apply propset_fa_intersection_full. intros. case_match. 2: by reflexivity.
         mlSimpl.
         eval_simpl; auto. 1: apply indec_bool.
@@ -561,7 +548,7 @@ Section Bool.
         unfold app_ext in *.
         apply elem_of_PropSet in e.
         destruct e as [le [re [Hle [Hre Hlere] ] ] ].
-        unfold Sorts_Semantics.sym in *.
+        unfold inhabitant, Sorts_Syntax.sym in *.
         simp eval in *. simpl in *.
         unfold bool_sym_interp in *. apply elem_of_singleton in Hre, Hle.
         subst le re.
@@ -593,7 +580,7 @@ Section Bool.
              -- intros. do 2 eexists. split. 2: split.
                 1-2: by apply elem_of_singleton.
                 assumption.
-          ** unfold Minterp_inhabitant, Sorts_Semantics.sym in n.
+          ** unfold Minterp_inhabitant, Sorts_Syntax.sym in n.
              simpl in n. clear H. simp eval in n. exfalso.
              apply n. clear. exists (inhBool), (coreBoolSym sBool); split; try split; set_solver.
         + eapply propset_fa_union_full. intros. exists (coreBoolSym sFalse).
@@ -615,7 +602,7 @@ Section Bool.
              -- intros. do 2 eexists. split. 2: split.
                 1-2: by apply elem_of_singleton.
                 assumption.
-          ** unfold Minterp_inhabitant, Sorts_Semantics.sym in n.
+          ** unfold Minterp_inhabitant, Sorts_Syntax.sym in n.
              simpl in n. clear H. simp eval in n. exfalso.
              apply n. clear. exists (inhBool), (coreBoolSym sBool); split; try split; set_solver.
       (* NoConfusion *)
@@ -635,7 +622,8 @@ Section Bool.
         unfold patt_inhabitant_set, mlTrue, mlFalse, mlBool. simpl.
         eval_simpl. simp eval. simpl. unfold bool_sym_interp.
         unfold app_ext. eapply set_eq.
-        intros. rewrite elem_of_PropSet. cbn. unfold Sorts_Syntax.sym.
+        intros. rewrite elem_of_PropSet. cbn.
+        unfold inhabitant, Sorts_Syntax.sym.
         simp eval. cbn. unfold bool_sym_interp. split.
         + intros. destruct H as [le [re [EQ1 [EQ2 EQ3] ] ] ].
           apply elem_of_singleton in EQ1, EQ2. subst.
@@ -653,15 +641,17 @@ Section Bool.
         unfold app_ext.
         setoid_rewrite app_ext_singleton. reflexivity.
       - unfold mlBAnd, mlsBAnd, mlTrue, mlFalse, mlBool.
-        eval_simpl. 1: apply indec_bool.
-        apply propset_fa_intersection_full. 2: assumption. intros.
+        erewrite eval_forall_of_sort.
+        2: assumption. Unshelve. 2-8: try apply (@propset_leibniz_equiv _ BoolModel).
+        2: apply indec_bool.
+        apply propset_fa_intersection_full. intros.
         case_match. 2: reflexivity.
         apply equal_iff_interpr_same. assumption.
         eval_simpl. simpl. unfold bool_sym_interp.
         clear H. unfold Minterp_inhabitant in e. simp eval in e.
         unfold app_ext in e. simpl in e. apply elem_of_PropSet in e.
         destruct e as [le [re [EQ1 [EQ2 EQ3] ] ] ].
-        unfold Sorts_Semantics.sym in EQ1. simp eval in EQ1.
+        unfold inhabitant, Sorts_Syntax.sym in EQ1. simp eval in EQ1.
         simpl in *. unfold bool_sym_interp in *. apply elem_of_singleton in EQ1, EQ2.
         subst. unfold bool_app_interp in *. simpl in *.
         (* TODO: app_ext for singletons *)
@@ -671,15 +661,17 @@ Section Bool.
         + simp eval. setoid_rewrite app_ext_singleton.
           setoid_rewrite app_ext_singleton. reflexivity.
       - unfold mlBAnd, mlsBAnd, mlTrue, mlFalse, mlBool.
-        eval_simpl. 1: apply indec_bool.
-        apply propset_fa_intersection_full. 2: assumption. intros.
+        erewrite eval_forall_of_sort.
+        2: assumption. Unshelve.
+        2: apply indec_bool.
+        apply propset_fa_intersection_full. intros.
         case_match. 2: reflexivity.
         apply equal_iff_interpr_same. assumption.
         eval_simpl. simpl. unfold bool_sym_interp.
         clear H. unfold Minterp_inhabitant in e. simp eval in e.
         unfold app_ext in e. simpl in e. apply elem_of_PropSet in e.
         destruct e as [le [re [EQ1 [EQ2 EQ3] ] ] ].
-        unfold Sorts_Semantics.sym in EQ1. simp eval in EQ1.
+        unfold inhabitant, Sorts_Syntax.sym in EQ1. simp eval in EQ1.
         simpl in *. unfold bool_sym_interp in *. apply elem_of_singleton in EQ1, EQ2.
         subst. unfold bool_app_interp in *. simpl in *.
         assert (c = coreBoolSym sFalse \/ c = coreBoolSym sTrue) as [|] by set_solver; subst.
@@ -688,15 +680,17 @@ Section Bool.
         + simp eval. setoid_rewrite app_ext_singleton.
           setoid_rewrite app_ext_singleton. reflexivity.
       - unfold mlBAnd, mlsBAnd, mlTrue, mlFalse, mlBool.
-        eval_simpl. 1: apply indec_bool.
-        apply propset_fa_intersection_full. 2: assumption. intros.
+        erewrite eval_forall_of_sort.
+        2: assumption. Unshelve. 2: try apply (@propset_leibniz_equiv _ BoolModel).
+        2: apply indec_bool.
+        apply propset_fa_intersection_full. intros.
         case_match. 2: reflexivity.
         apply equal_iff_interpr_same. assumption.
         eval_simpl. simpl. unfold bool_sym_interp.
         clear H. unfold Minterp_inhabitant in e. simp eval in e.
         unfold app_ext in e. simpl in e. apply elem_of_PropSet in e.
         destruct e as [le [re [EQ1 [EQ2 EQ3] ] ] ].
-        unfold Sorts_Semantics.sym in EQ1. simp eval in EQ1.
+        unfold inhabitant, Sorts_Syntax.sym in EQ1. simp eval in EQ1.
         simpl in *. unfold bool_sym_interp in *. apply elem_of_singleton in EQ1, EQ2.
         subst. unfold bool_app_interp in *. simpl in *.
         assert (c = coreBoolSym sFalse \/ c = coreBoolSym sTrue) as [|] by set_solver; subst.
@@ -705,15 +699,17 @@ Section Bool.
         + simp eval. setoid_rewrite app_ext_singleton.
           setoid_rewrite app_ext_singleton. reflexivity.
       - unfold mlBAnd, mlsBAnd, mlTrue, mlFalse, mlBool.
-        eval_simpl. 1: apply indec_bool.
-        apply propset_fa_intersection_full. 2: assumption. intros.
+        erewrite eval_forall_of_sort.
+        2: assumption. Unshelve. 2: try apply (@propset_leibniz_equiv _ BoolModel).
+        2: apply indec_bool.
+        apply propset_fa_intersection_full. intros.
         case_match. 2: reflexivity.
         apply equal_iff_interpr_same. assumption.
         eval_simpl. simpl. unfold bool_sym_interp.
         clear H. unfold Minterp_inhabitant in e. simp eval in e.
         unfold app_ext in e. simpl in e. apply elem_of_PropSet in e.
         destruct e as [le [re [EQ1 [EQ2 EQ3] ] ] ].
-        unfold Sorts_Semantics.sym in EQ1. simp eval in EQ1.
+        unfold inhabitant, Sorts_Syntax.sym in EQ1. simp eval in EQ1.
         simpl in *. unfold bool_sym_interp in *. apply elem_of_singleton in EQ1, EQ2.
         subst. unfold bool_app_interp in *. simpl in *.
         assert (c = coreBoolSym sFalse \/ c = coreBoolSym sTrue) as [|] by set_solver; subst.
@@ -722,15 +718,17 @@ Section Bool.
         + simp eval. setoid_rewrite app_ext_singleton.
           setoid_rewrite app_ext_singleton. reflexivity.
       - unfold mlBAndThen, mlsBAndThen, mlTrue, mlFalse, mlBool.
-        eval_simpl. 1: apply indec_bool.
-        apply propset_fa_intersection_full. 2: assumption. intros.
+        erewrite eval_forall_of_sort.
+        2: assumption. Unshelve. 2: try apply (@propset_leibniz_equiv _ BoolModel).
+        2: apply indec_bool.
+        apply propset_fa_intersection_full. intros.
         case_match. 2: reflexivity.
         apply equal_iff_interpr_same. assumption.
         eval_simpl. simpl. unfold bool_sym_interp.
         clear H. unfold Minterp_inhabitant in e. simp eval in e.
         unfold app_ext in e. simpl in e. apply elem_of_PropSet in e.
         destruct e as [le [re [EQ1 [EQ2 EQ3] ] ] ].
-        unfold Sorts_Semantics.sym in EQ1. simp eval in EQ1.
+        unfold inhabitant, Sorts_Syntax.sym in EQ1. simp eval in EQ1.
         simpl in *. unfold bool_sym_interp in *. apply elem_of_singleton in EQ1, EQ2.
         subst. unfold bool_app_interp in *. simpl in *.
         assert (c = coreBoolSym sFalse \/ c = coreBoolSym sTrue) as [|] by set_solver; subst.
@@ -739,7 +737,7 @@ Section Bool.
         + simp eval. setoid_rewrite app_ext_singleton.
           setoid_rewrite app_ext_singleton. reflexivity.
       - unfold mlBAndThen, mlsBAndThen, mlTrue, mlFalse, mlBool. simpl.
-        eval_simpl. simpl.
+        rewrite eval_all_simpl.
         eapply propset_fa_intersection_full. intros.
         mlSimpl. cbn. remember (fresh_evar _) as X. clear HeqX.
         apply (@equal_iff_interpr_same _ _ BoolModel HDef).
@@ -749,15 +747,17 @@ Section Bool.
         cbn. destruct c. destruct s.
         all: by setoid_rewrite app_ext_singleton.
       - unfold mlBAndThen, mlsBAndThen, mlTrue, mlFalse, mlBool.
-        eval_simpl. 1: apply indec_bool.
-        apply propset_fa_intersection_full. 2: assumption. intros.
+        erewrite eval_forall_of_sort.
+        2: assumption. Unshelve. 2: try apply (@propset_leibniz_equiv _ BoolModel).
+        2: apply indec_bool.
+        apply propset_fa_intersection_full. intros.
         case_match. 2: reflexivity.
         apply equal_iff_interpr_same. assumption.
         eval_simpl. simpl. unfold bool_sym_interp.
         clear H. unfold Minterp_inhabitant in e. simp eval in e.
         unfold app_ext in e. simpl in e. apply elem_of_PropSet in e.
         destruct e as [le [re [EQ1 [EQ2 EQ3] ] ] ].
-        unfold Sorts_Semantics.sym in EQ1. simp eval in EQ1.
+        unfold inhabitant, Sorts_Syntax.sym in EQ1. simp eval in EQ1.
         simpl in *. unfold bool_sym_interp in *. apply elem_of_singleton in EQ1, EQ2.
         subst. unfold bool_app_interp in *. simpl in *.
         assert (c = coreBoolSym sFalse \/ c = coreBoolSym sTrue) as [|] by set_solver; subst.
@@ -766,7 +766,7 @@ Section Bool.
         + simp eval. setoid_rewrite app_ext_singleton.
           setoid_rewrite app_ext_singleton. reflexivity.
       - unfold mlBAndThen, mlsBAndThen, mlTrue, mlFalse, mlBool. simpl.
-        eval_simpl. simpl.
+        rewrite eval_all_simpl. simpl.
         eapply propset_fa_intersection_full. intros.
         mlSimpl. cbn. remember (fresh_evar _) as X. clear HeqX.
         apply (@equal_iff_interpr_same _ _ BoolModel HDef).
@@ -837,11 +837,11 @@ Section Nat.
   }.
 
   Program Instance nat_syntax : @Nat_Syntax.Syntax nat_Σ := {
-    inj := coreNatSym;
+    sym_inj := coreNatSym;
     imported_sorts := {|
-      Sorts_Syntax.inj := fun x => inhNat;
+      Sorts_Syntax.sym_inj := fun x => inhNat;
       imported_definedness := {|
-        Definedness_Syntax.inj := fun x => defNat;
+        Definedness_Syntax.sym_inj := fun x => defNat;
       |};
     |};
   }.
@@ -900,7 +900,7 @@ Section Nat.
     intros.
     unfold Minterp_inhabitant.
     simp eval. simpl.
-    unfold Sorts_Semantics.sym.
+    unfold inhabitant, Sorts_Syntax.sym.
     simp eval. simpl.
     unfold bool_sym_interp.
     destruct s; unfold app_ext.
@@ -957,7 +957,7 @@ Section Nat.
         intros. mlSimpl. cbn. exists (natVal 0).
         case_match.
         2: { unfold Minterp_inhabitant in n.
-             unfold Sorts_Semantics.sym in n. clear H.
+             unfold inhabitant, Sorts_Syntax.sym in n. clear H.
              eval_simpl_in n. cbn in n.
              unfold app_ext in n. rewrite elem_of_PropSet in n.
              exfalso. apply n. do 2 eexists. split_and!.
@@ -965,7 +965,7 @@ Section Nat.
              cbn. apply elem_of_PropSet. by eexists.
            }
         remember (fresh_evar (Zero =ml b0)) as x. clear Heqx.
-        unfold patt_equal, patt_total, patt_defined, mlFalse.
+        unfold patt_equal, patt_total, patt_defined, mlFalse, definedness.
         repeat eval_simpl. cbn.
         rewrite decide_eq_same. unfold app_ext. eapply elem_of_compl.
         (* Unshelve. 2: exact (@propset_leibniz_equiv _ BoolModel). *)
@@ -974,8 +974,9 @@ Section Nat.
         apply (proj1 (elem_of_compl _ _)) in Hre; auto. apply Hre.
         set_solver.
       (* succ is functional - essentially same as for bnot *)
-      - eval_simpl; auto.
-        1: apply indec_nat.
+      - erewrite eval_forall_of_sort.
+        2: assumption. Unshelve. 2: try apply (@propset_leibniz_equiv _ NatModel).
+        2: apply indec_nat.
         apply propset_fa_intersection_full. intros. case_match. 2: by reflexivity.
         pose proof sorted_exists_binder as BE. destruct BE as [BE].
         erewrite (BE _ (evar_open _)); eauto.
@@ -988,7 +989,7 @@ Section Nat.
         unfold app_ext in *.
         apply elem_of_PropSet in e.
         destruct e as [le [re [Hle [Hre Hlere] ] ] ].
-        unfold Sorts_Semantics.sym in *.
+        unfold inhabitant, Sorts_Syntax.sym in *.
         simp eval in *. simpl in *.
         unfold bool_sym_interp in *. apply elem_of_singleton in Hre, Hle.
         subst le re.
@@ -1019,12 +1020,14 @@ Section Nat.
            -- intros. do 2 eexists. split. 2: split.
               1-2: by apply elem_of_singleton.
               assumption.
-        ** unfold Minterp_inhabitant, Sorts_Semantics.sym in n.
+        ** unfold Minterp_inhabitant, Sorts_Syntax.sym in n.
            simpl in n. clear H. simp eval in n. exfalso.
            apply n. clear. exists (inhNat), (coreNatSym sNat); split; try split.
            all: simpl; set_solver.
       (* no confusion *)
-      - eval_simpl. apply indec_nat. 2: assumption.
+      - erewrite eval_forall_of_sort.
+        2: assumption. Unshelve. 2: try apply (@propset_leibniz_equiv _ NatModel).
+        2: apply indec_nat.
         apply propset_fa_intersection_full. intros. case_match. 2: reflexivity.
         mlSimpl. cbn. remember (fresh_evar _) as x. clear Heqx.
         eval_simpl. eapply complement_full_iff_empty.
@@ -1032,7 +1035,7 @@ Section Nat.
         unfold Zero, Succ. simp eval. cbn. unfold app_ext.
         intro.
         assert (exists n, c = natVal n). {
-          unfold Minterp_inhabitant, Sorts_Semantics.sym in e.
+          unfold Minterp_inhabitant, inhabitant, Sorts_Syntax.sym in e.
           clear H.
           simp eval in e. set_solver.
         }
@@ -1045,20 +1048,24 @@ Section Nat.
         rewrite decide_eq_same in EQ2. apply elem_of_singleton in EQ1, EQ2.
         subst. simpl in EQ3. set_solver.
       (* injectivity of succ *)
-      - eval_simpl. apply indec_nat. 2: assumption.
+      - erewrite eval_forall_of_sort.
+        2: assumption. Unshelve. 2: try apply (@propset_leibniz_equiv _ NatModel).
+        2: apply indec_nat.
         apply propset_fa_intersection_full. intros. case_match. 2: reflexivity.
         clear H.
         assert (exists n, c = natVal n) as [n ?]. {
-          unfold Minterp_inhabitant, Sorts_Semantics.sym in e.
+          unfold Minterp_inhabitant, inhabitant, Sorts_Syntax.sym in e.
           eval_simpl_in e. set_solver.
         }
         clear e. subst. remember (fresh_evar _) as x. clear Heqx.
         mlSortedSimpl. mlSimpl. cbn.
-        eval_simpl. 1: apply indec_nat. 2: assumption.
+        erewrite eval_forall_of_sort.
+        2: assumption. Unshelve. 2: try apply (@propset_leibniz_equiv _ NatModel).
+        2: apply indec_nat.
         eapply propset_fa_intersection_full. intros. case_match. 2: reflexivity.
         clear H.
         assert (exists n, c = natVal n) as [m ?]. {
-          unfold Minterp_inhabitant, Sorts_Semantics.sym in e.
+          unfold Minterp_inhabitant, inhabitant, Sorts_Syntax.sym in e.
           eval_simpl_in e. set_solver.
         }
         clear e. subst. remember (fresh_evar _) as y.
@@ -1069,10 +1076,10 @@ Section Nat.
         }
         clear Heqy. mlSimpl. cbn. unfold Succ.
         repeat eval_simpl.
-        unfold patt_equal, patt_total, patt_defined.
+        unfold patt_equal, patt_total, patt_defined, definedness.
         repeat eval_simpl.
         repeat rewrite update_evar_val_same.
-        rewrite update_evar_val_neq. 2: auto.
+        rewrite update_evar_val_neq. 1: auto.
         rewrite update_evar_val_same.
         setoid_rewrite app_ext_singleton. simpl.
         (* helper to rewrite: *)
@@ -1082,25 +1089,27 @@ Section Nat.
         }
         destruct (decide (n = m)).
         + subst.
-          rewrite 2!E.
+          erewrite 2!E. set_solver.
           (* TODO for some reason, set_solver won't work here *)
-          2: {
+          {
+            rewrite union_with_complement. clear.
+            erewrite (proj2 (complement_empty_iff_full ⊤) eq_refl).
+            do 2 erewrite union_empty_l_L. reflexivity.
+            Unshelve.
+            all: apply (@propset_leibniz_equiv _ NatModel).
+          }
+          {
             rewrite union_with_complement. clear.
             erewrite (subseteq_intersection_1_L ⊤ ⊤). 2: set_solver.
             erewrite difference_diag_L. reflexivity.
           }
-          2: {
-            rewrite union_with_complement. clear.
-            erewrite (subseteq_intersection_1_L ⊤ ⊤). 2: set_solver.
-            erewrite difference_diag_L. reflexivity.
-          }
-          rewrite difference_empty_L, difference_diag_L, union_empty_l_L.
-          reflexivity.
+          Unshelve.
+          all: try apply (@propset_leibniz_equiv _ NatModel).
         + pose proof definedness_app_ext_not_empty NatModel HDef as E2.
-          rewrite 2! E2; try assumption.
+          erewrite 2! E2; try assumption.
           all: set_solver.
       (* inductive domain *)
-      - unfold patt_inhabitant_set, Sorts_Syntax.sym, Nat, Zero, Succ.
+      - unfold patt_inhabitant_set, inhabitant, Sorts_Syntax.sym, Nat, Zero, Succ.
         apply equal_iff_interpr_same. 1: assumption.
         eval_simpl.
         remember (fresh_svar _) as X. simpl. unfold app_ext. clear HeqX.
@@ -1149,13 +1158,17 @@ Section Nat.
         }
       (* add is functional *)
       - (* 1st sorted forall *)
-        eval_simpl. 1: apply indec_nat. 2: assumption.
+        erewrite eval_forall_of_sort.
+        2: assumption. Unshelve. 2: try apply (@propset_leibniz_equiv _ NatModel).
+        2: apply indec_nat.
         apply propset_fa_intersection_full. intros.
         case_match. 2: reflexivity.
         mlSimpl.
         remember (fresh_evar _) as x. clear Heqx.
         (* 2nd sorted forall *)
-        eval_simpl. 1: apply indec_nat. 2: assumption.
+        erewrite eval_forall_of_sort.
+        2: assumption. Unshelve. 2: try apply (@propset_leibniz_equiv _ NatModel).
+        2: apply indec_nat.
         apply propset_fa_intersection_full. intros.
         case_match. 2: reflexivity.
         mlSimpl. remember (fresh_evar _) as y.
@@ -1171,12 +1184,12 @@ Section Nat.
         clear H H0.
         assert (exists n, c = natVal n). {
           clear -e.
-          unfold Minterp_inhabitant, Sorts_Semantics.sym in e.
+          unfold Minterp_inhabitant, inhabitant, Sorts_Syntax.sym in e.
           eval_simpl_in e. set_solver.
         }
         assert (exists n, c0 = natVal n). {
           clear -e0.
-          unfold Minterp_inhabitant, Sorts_Semantics.sym in e0.
+          unfold Minterp_inhabitant, inhabitant, Sorts_Syntax.sym in e0.
           eval_simpl_in e0. set_solver.
         }
         destruct H as [n ?], H0 as [m ?]. subst.
@@ -1199,10 +1212,10 @@ Section Nat.
           eapply (@equal_iff_interpr_same _ _ NatModel). assumption.
           eval_simpl. unfold app_ext.
           repeat rewrite update_evar_val_same.
-          rewrite update_evar_val_neq. 2: by auto.
+          rewrite update_evar_val_neq. 1: by auto.
           rewrite update_evar_val_same.
-          rewrite update_evar_val_neq. 2: by auto.
-          rewrite update_evar_val_neq. 2: by auto.
+          rewrite update_evar_val_neq. 1: by auto.
+          rewrite update_evar_val_neq. 1: by auto.
           rewrite update_evar_val_same.
           apply set_eq; split.
           ** intros. destruct H as [le [re [EQ1 [EQ2 EQ3] ] ] ].
@@ -1216,16 +1229,18 @@ Section Nat.
              all: cbn.
              all: try by apply elem_of_singleton.
         + clear H. exfalso. apply n0. clear.
-          unfold Minterp_inhabitant, Sorts_Semantics.sym. eval_simpl.
+          unfold Minterp_inhabitant, inhabitant, Sorts_Syntax.sym. eval_simpl.
           do 2 eexists. split_and!. 1-2: cbn; by apply elem_of_singleton.
           cbn. set_solver.
       (* add rule 1 *)
-      - eval_simpl. 1: apply indec_nat. 2: assumption.
+      - erewrite eval_forall_of_sort.
+        2: assumption. Unshelve. 2: try apply (@propset_leibniz_equiv _ NatModel).
+        2: apply indec_nat.
         apply propset_fa_intersection_full. intros.
         case_match. 2: reflexivity. clear H.
         assert (exists n, c = natVal n). {
           clear -e.
-          unfold Minterp_inhabitant, Sorts_Semantics.sym in e.
+          unfold Minterp_inhabitant, inhabitant, Sorts_Syntax.sym in e.
           eval_simpl_in e. set_solver.
         }
         destruct H as [n ?]. subst.
@@ -1239,12 +1254,14 @@ Section Nat.
         (* Trick: *)
         by rewrite Nat.add_0_r.
       (* add rule 2 *)
-      - eval_simpl. 1: apply indec_nat. 2: assumption.
+      - erewrite eval_forall_of_sort.
+        2: assumption. Unshelve. 2: try apply (@propset_leibniz_equiv _ NatModel).
+        2: apply indec_nat.
         apply propset_fa_intersection_full. intros.
         case_match. 2: reflexivity. clear H.
         assert (exists n, c = natVal n). {
           clear -e.
-          unfold Minterp_inhabitant, Sorts_Semantics.sym in e.
+          unfold Minterp_inhabitant, inhabitant, Sorts_Syntax.sym in e.
           eval_simpl_in e. set_solver.
         }
         destruct H as [n ?]. subst.
@@ -1252,12 +1269,14 @@ Section Nat.
         remember (fresh_evar _) as x. clear Heqx.
         mlSimpl.
         (* 2nd sorted forall *)
-        eval_simpl. 1: apply indec_nat. 2: assumption.
+        erewrite eval_forall_of_sort.
+        2: assumption. Unshelve. 2: try apply (@propset_leibniz_equiv _ NatModel).
+        2: apply indec_nat.
         apply propset_fa_intersection_full. intros.
         case_match. 2: reflexivity. clear H.
         assert (exists n, c = natVal n). {
           clear -e.
-          unfold Minterp_inhabitant, Sorts_Semantics.sym in e.
+          unfold Minterp_inhabitant, inhabitant, Sorts_Syntax.sym in e.
           eval_simpl_in e. set_solver.
         }
         destruct H as [m ?]. subst.
@@ -1279,8 +1298,6 @@ Section Nat.
         cbn.
         (* trick - although, set_solver also used n1 = m + n -> S n1 = S (m + n)*)
         by rewrite PeanoNat.Nat.add_succ_r.
-  Unshelve.
-    all: apply (@propset_leibniz_equiv _ NatModel).
   Qed.
 
 End Nat.
@@ -1304,6 +1321,7 @@ End Nat.
 
  *)
 Require Import ModelExtension.
+Set Default Proof Mode "Classic".
 
 Inductive extend_def_inh {A B : Set} : Set :=
 | inj_def
@@ -1361,21 +1379,21 @@ Section BoolNat.
     Here, we say that we use the new definedness
   *)
   Program Instance nat_bool_syntax_bool_part : @Bool_Syntax.Syntax nat_bool_Σ := {
-    inj := fromB ∘ coreBoolSym;
+    sym_inj := fromB ∘ coreBoolSym;
     imported_sorts := {|
-      Sorts_Syntax.inj := fun x => inj_inh;
+      Sorts_Syntax.sym_inj := fun x => inj_inh;
       imported_definedness := {|
-        Definedness_Syntax.inj := fun x => inj_def;
+        Definedness_Syntax.sym_inj := fun x => inj_def;
       |};
     |};
   }.
 
   Program Instance nat_bool_syntax_nat_part : @Nat_Syntax.Syntax nat_bool_Σ := {
-    inj := fromA ∘ coreNatSym;
+    sym_inj := fromA ∘ coreNatSym;
     imported_sorts := {|
-      Sorts_Syntax.inj := fun x => inj_inh;
+      Sorts_Syntax.sym_inj := fun x => inj_inh;
       imported_definedness := {|
-        Definedness_Syntax.inj := fun x => inj_def;
+        Definedness_Syntax.sym_inj := fun x => inj_def;
       |};
     |};
   }.

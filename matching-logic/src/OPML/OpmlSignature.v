@@ -1,8 +1,8 @@
-From Coq Require Import ssreflect ssrfun ssrbool.
+From Coq Require Export ssreflect ssrfun ssrbool.
 
-From Coq.Classes Require Import RelationClasses.
+From Coq.Classes Require Export RelationClasses.
 
-From stdpp Require Import
+From stdpp Require Export
   countable
   infinite
 .

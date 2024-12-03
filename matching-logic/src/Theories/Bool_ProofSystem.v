@@ -14,10 +14,6 @@ Context
   { Σ : Signature}
   { syntax : Syntax}.
 
-Open Scope ml_scope.
-Open Scope string_scope.
-Open Scope list_scope.
-  
   Lemma use_bool_axiom ax Γ : 
     Bool_Syntax.theory ⊆ Γ ->
       Γ ⊢ axiom ax.

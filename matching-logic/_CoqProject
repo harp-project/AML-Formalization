@@ -84,6 +84,7 @@ src/Tests/TEST_proofmode_proof_size.v
 src/Tests/TEST_ProofMode_relative_completeness.v
 
 
+src/Evaluation/tutorial.v
 src/Evaluation/Propositional.v
 src/Evaluation/Rewrite.v
 src/Evaluation/Firstorder.v

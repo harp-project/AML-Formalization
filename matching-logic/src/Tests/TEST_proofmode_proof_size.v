@@ -1,12 +1,8 @@
-From MatchingLogic Require Import Logic ProofMode.MLPM.
+From MatchingLogic Require Import Logic
+                                  ProofMode.MLPM
+                                  Definedness_Syntax.
 
 From Coq Require Import String.
-
-(** Importing this file opens the necessary scope for the proof mode to work
-    properly! *)
-Open Scope ml_scope.
-Open Scope string_scope.
-Open Scope list_scope.
 
 Import
   MatchingLogic.Logic.Notations
@@ -112,13 +108,6 @@ match pf with
 end.
 
 Section compute.
-  From MatchingLogic.Theories Require Import Definedness_Syntax
-                                             Definedness_Semantics
-                                             Sorts_Syntax
-                                             Sorts_Semantics
-                                             Definedness_ProofSystem.
-  Import Definedness_Syntax.Notations.
-  From stdpp Require Import base fin_sets sets propset finite.
 
   Inductive Symbols :=
     | sym_import_definedness (d : Definedness_Syntax.Symbols)
@@ -134,7 +123,7 @@ Section compute.
   Program Instance Symbols_fin : Finite Symbols :=
   {|
     enum := [Zero; Succ; TT ; FF; even;
-      sym_import_definedness Definedness_Syntax.definedness] ;
+      sym_import_definedness Definedness_Syntax.def_sym] ;
   |}.
   Next Obligation.
     repeat constructor; set_solver.
@@ -153,7 +142,7 @@ Section compute.
 
   Instance definedness_syntax : Definedness_Syntax.Syntax :=
     {|
-       Definedness_Syntax.inj := sym_import_definedness;
+       Definedness_Syntax.sym_inj := sym_import_definedness;
     |}.
     Open Scope string_scope.
     Open Scope ml_scope.

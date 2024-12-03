@@ -1,15 +1,5 @@
-From Coq Require Import ssreflect ssrfun ssrbool.
-From Coq Require Import String.
-Require Import Coq.Logic.Classical_Prop.
-
-From stdpp Require Import base fin_sets sets propset finite.
-
-From MatchingLogic Require Import Logic
-                                  ProofMode.MLPM.
-From MatchingLogic.Theories Require Import Definedness_Syntax
-                                           Definedness_Semantics
+From MatchingLogic.Theories Require Import Definedness_Semantics
                                            Sorts_Syntax
-                                           Sorts_Semantics
                                            Definedness_ProofSystem.
 From MatchingLogic.Utils Require Import stdpp_ext.
 
@@ -17,6 +7,7 @@ Import MatchingLogic.Logic.Notations.
 Import MatchingLogic.Theories.Definedness_Syntax.Notations.
 Import MatchingLogic.Semantics.Notations.
 Import MatchingLogic.DerivedOperators_Syntax.Notations.
+Set Default Proof Mode "Classic".
 
 (* In this module we show how to define a signature and build patterns *)
 Module test_1.
@@ -94,8 +85,6 @@ End test_1.
 (* Here we show how to use the Definedness module. *)
 Module test_2.
   Section test_2.
-    Import Definedness_Syntax.
-    Open Scope ml_scope.
     (* We must include all the symbols from the Definedness module into our signature.
        We do this by defining a constructor `sym_import_definedness : Definedness.Symbols -> Symbols`.
        And we also define a bunch of other symbols.
@@ -115,8 +104,8 @@ Module test_2.
     Program Instance Symbols_fin : Finite Symbols :=
     {|
       enum := [sym_c; sym_zero; sym_succ; sym_SortNat;
-        sym_import_sorts Sorts_Syntax.inhabitant;
-        sym_import_definedness Definedness_Syntax.definedness] ;
+        sym_import_sorts Sorts_Syntax.sym_inh;
+        sym_import_definedness Definedness_Syntax.def_sym] ;
     |}.
     Next Obligation.
       repeat constructor; set_solver.
@@ -136,12 +125,12 @@ Module test_2.
 
     Instance definedness_syntax : Definedness_Syntax.Syntax :=
       {|
-         Definedness_Syntax.inj := sym_import_definedness;
+         Definedness_Syntax.sym_inj := sym_import_definedness;
       |}.
 
     Instance sorts_syntax : Sorts_Syntax.Syntax :=
       {|
-      Sorts_Syntax.inj := sym_import_sorts;
+      Sorts_Syntax.sym_inj := sym_import_sorts;
       Sorts_Syntax.imported_definedness := definedness_syntax;
       |}.
 
@@ -201,7 +190,6 @@ Module test_2.
     Arguments Domain : simpl never.
 
     (* TODO a tactic that solves this, or a parameterized lemma. *)
-    
     Lemma M1_satisfies_definedness1 : @satisfies_model signature M1 (Definedness_Syntax.axiom Definedness_Syntax.AxDefinedness).
     Proof.
       apply single_element_definedness_impl_satisfies_definedness.
@@ -220,8 +208,7 @@ End test_2.
 
 Module test_3.
   Section test_3.
-    Import Definedness_Syntax.
-    Open Scope ml_scope.
+
     Inductive Symbols :=
     | sym_import_definedness (d : Definedness_Syntax.Symbols)
     | Zero | Succ (* constructors for Nats *)
@@ -236,7 +223,7 @@ Module test_3.
     Program Instance Symbols_fin : Finite Symbols :=
     {|
       enum := [Zero; Succ; TT ; FF; even;
-        sym_import_definedness Definedness_Syntax.definedness] ;
+        sym_import_definedness Definedness_Syntax.def_sym] ;
     |}.
     Next Obligation.
       repeat constructor; set_solver.
@@ -255,7 +242,7 @@ Module test_3.
 
     Instance definedness_syntax : Definedness_Syntax.Syntax :=
       {|
-         Definedness_Syntax.inj := sym_import_definedness;
+         Definedness_Syntax.sym_inj := sym_import_definedness;
       |}.
 
     Open Scope string_scope.
@@ -289,7 +276,7 @@ Module test_3.
       Γₙₐₜ ⊢i sym_tt ∈ml sym_even ⋅ (sym_succ ⋅ (sym_succ ⋅ (sym_succ ⋅ (sym_succ ⋅ sym_zero)))) using AnyReasoning.
     Proof.
       assert (Γₙₐₜ ⊢i ruleA using AnyReasoning) as RA.
-      { gapply BasicProofSystemLemmas.hypothesis; [ apply pile_any | wf_auto2 | set_solver ]. } 
+      { pose proof BasicProofSystemLemmas.hypothesis. gapply hypothesis; [ apply pile_any | wf_auto2 | set_solver ]. } 
       (* TODO: <- create a tactic for the previous assertion *)
       assert (Γₙₐₜ ⊢i ruleC using AnyReasoning) as RC.
       { gapply BasicProofSystemLemmas.hypothesis; [ apply pile_any | wf_auto2 | set_solver ]. }

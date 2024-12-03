@@ -1,29 +1,16 @@
-From Coq Require Import ssreflect ssrfun ssrbool.
-
-From Ltac2 Require Import Ltac2.
-
-From Coq Require Import String Ensembles Setoid.
-Require Import Coq.Program.Equality.
-Require Import Coq.Logic.Classical_Prop.
-From Coq.Logic Require Import FunctionalExtensionality Eqdep_dec.
-From Coq.Classes Require Import Morphisms_Prop.
-From Coq.Unicode Require Import Utf8.
-From Coq.micromega Require Import Lia.
-
-From MatchingLogic Require Export Logic ProofMode.MLPM.
-From MatchingLogic.Theories Require Export Definedness_Syntax Definedness_ProofSystem.
-From MatchingLogic.Utils Require Export stdpp_ext.
-
-From stdpp Require Import base fin_sets sets propset proof_irrel option list.
-
-Import extralibrary.
+From MatchingLogic Require Export ProofMode.MLPM
+                                  FOEquality_ProofSystem
+                                  Sorts_ProofSystem.
+From MatchingLogic.Theories Require Export Nat_Syntax.
 
 Import MatchingLogic.Logic.Notations.
 Import MatchingLogic.Theories.Definedness_Syntax.Notations.
+Import MatchingLogic.Theories.Sorts_Syntax.Notations.
+Import MatchingLogic.Theories.Nat_Syntax.Notations.
 
 Set Default Proof Mode "Classic".
 
-Require Import MatchingLogic.Theories.DeductionTheorem.
+(* Require Import MatchingLogic.Theories.DeductionTheorem.
 
 Require MatchingLogic.Theories.Sorts_Syntax.
 Export MatchingLogic.Theories.Sorts_Syntax.Notations.
@@ -44,7 +31,7 @@ Set Default Proof Mode "Classic".
 Open Scope ml_scope.
 Open Scope string_scope.
 Open Scope list_scope.
-  
+   *)
 Section nat.
   Context
     {Σ : Signature}
@@ -68,9 +55,9 @@ Section nat.
     rewrite evar_open_not_occur. wf_auto2.
   Admitted.
 
-  Lemma use_nat_axiom ax Γ :
+  Lemma use_nat_axiom (ax : Nat_Syntax.AxiomName) Γ :
     Nat_Syntax.theory ⊆ Γ ->
-      Γ ⊢ axiom ax.
+      Γ ⊢ Nat_Syntax.axiom ax.
   Proof.
     intro HΓ.
     apply useBasicReasoning.
@@ -85,7 +72,7 @@ Section nat.
         reflexivity.
       }
       {
-        unfold theory in HΓ.
+        unfold Nat_Syntax.theory in HΓ.
         set_solver.
       }
     }
@@ -370,8 +357,7 @@ Section nat.
     { wf_auto2. }
 
     mlApplyMeta nat_subset_imp_in.
-
-    mlAdd (use_nat_axiom AxInductiveDomain theory ltac:(reflexivity)) as "ind". unfold axiom.
+    mlAdd (use_nat_axiom AxInductiveDomain Nat_Syntax.theory ltac:(reflexivity)) as "ind". unfold axiom.
     mlRewriteBy "ind" at 1.
     { unfold theory. set_solver. }
 
@@ -383,7 +369,7 @@ Section nat.
     { wf_auto2. }
     { apply pile_any. }
 
-    apply Knaster_tarski.
+    apply BasicProofSystemLemmas.Knaster_tarski.
     { apply pile_any. }
     { wf_auto2. }
     unfold instantiate. mlSimpl. simpl.
@@ -558,7 +544,7 @@ Section nat.
     mlAssumption.
   Defined.
   
-  Theorem add_zero_l: forall Γ , theory ⊆ Γ ->
+  Theorem add_zero_l: forall Γ , Nat_Syntax.theory ⊆ Γ ->
                        Γ ⊢ all Nat, Zero +ml b0 =ml b0.
   Proof.
     intros.
@@ -571,11 +557,11 @@ Section nat.
 
     (*   Ψ ≡ ∃z:Nat.z ∧ ϕ(z)  *)
 
-    apply Svar_subst with (X:= X) (ψ:= ex Nat, b0 and Zero +ml b0 =ml b0 )  in H0.
+    apply BasicProofSystemLemmas.Svar_subst with (X:= X) (ψ:= ex Nat, b0 and Zero +ml b0 =ml b0 )  in H0.
     2:try_solve_pile.
     2:wf_auto2.
 
-    apply extend_theory with (Γ':= Γ) in H0.
+    apply BasicProofSystemLemmas.extend_theory with (Γ':= Γ) in H0.
     2: assumption.
 
     mlAdd H0.
@@ -712,11 +698,11 @@ Section nat.
                 mlRewriteBy "ind" at 1.
                     
                 epose proof membership_monotone_functional Γ 
-                 ( (mu , Zero or Succ ⋅ B0) ^ [mu , Zero or Succ ⋅ B0] ) 
+                 ( (mu , Zero or Succ ⋅ B0)^[mu , Zero or Succ ⋅ B0] ) 
                  (mu , Zero or Succ ⋅ B0) (Zero) (AnyReasoning) ltac:(set_solver) ltac:(wf_auto2) 
                   ltac:(wf_auto2) ltac:(wf_auto2) _ .
                     
-                pose proof Pre_fixp Γ (Zero or Succ ⋅ B0) ltac:(wf_auto2).
+                pose proof BasicProofSystemLemmas.Pre_fixp Γ (Zero or Succ ⋅ B0) ltac:(wf_auto2).
                     
                 use AnyReasoning in H3.
                 specialize (H2 H3).
@@ -787,11 +773,11 @@ Section nat.
                    mlRewriteBy "ind" at 1.
                     
                    epose proof membership_monotone_functional Γ 
-                    ( (mu , Zero or Succ ⋅ B0) ^ [mu , Zero or Succ ⋅ B0] ) 
+                    ( (mu , Zero or Succ ⋅ B0)^[mu , Zero or Succ ⋅ B0] ) 
                     (mu , Zero or Succ ⋅ B0) (Zero) (AnyReasoning) ltac:(set_solver) ltac:(wf_auto2) 
                     ltac:(wf_auto2) ltac:(wf_auto2) _ .
                     
-                   pose proof Pre_fixp Γ (Zero or Succ ⋅ B0) ltac:(wf_auto2).
+                   pose proof BasicProofSystemLemmas.Pre_fixp Γ (Zero or Succ ⋅ B0) ltac:(wf_auto2).
                     
                    use AnyReasoning in H5.
                    specialize (H4 H5).
@@ -1006,11 +992,11 @@ same chain of thoughts as 1st one for totality.
                    mlRewriteBy "ind" at 1.
                    
                    epose proof membership_monotone_functional Γ 
-                    ( (mu , Zero or Succ ⋅ B0) ^ [mu , Zero or Succ ⋅ B0] ) 
+                    ( (mu , Zero or Succ ⋅ B0)^[mu , Zero or Succ ⋅ B0] ) 
                     (mu , Zero or Succ ⋅ B0) (Zero) (AnyReasoning) ltac:(set_solver) ltac:(wf_auto2) 
                     ltac:(wf_auto2) ltac:(wf_auto2) _ .
                     
-                   pose proof Pre_fixp Γ (Zero or Succ ⋅ B0) ltac:(wf_auto2).
+                   pose proof BasicProofSystemLemmas.Pre_fixp Γ (Zero or Succ ⋅ B0) ltac:(wf_auto2).
                     
                    use AnyReasoning in H2.
                    specialize (H0 H2).
@@ -1101,7 +1087,3 @@ same chain of thoughts as 1st one for totality.
   Defined.
 
 End nat.
-
-Close Scope ml_scope.
-Close Scope string_scope.
-Close Scope list_scope.

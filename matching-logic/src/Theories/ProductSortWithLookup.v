@@ -1,18 +1,11 @@
-From Coq Require Import ssreflect ssrfun ssrbool.
+From MatchingLogic Require Export ProductSort.
+Import MatchingLogic.Logic.Notations
+       MatchingLogic.Theories.Definedness_Syntax.Notations
+       MatchingLogic.Theories.Sorts_Syntax.Notations
+       MatchingLogic.Theories.ProductSort.Notations.
 
-From Coq Require Import Unicode.Utf8.
-From stdpp Require Import base sets list.
+Set Default Proof Mode "Classic".
 
-From MatchingLogic Require Import
-    Logic
-    Theories.Sorts_Syntax
-    Theories.ProductSort
-.
-
-Import BoundVarSugar.
-Import Definedness_Syntax.Notations.
-Import Sorts_Syntax.Notations.
-Import ProductSort.Notations.
 
 Inductive Symbols {Σ : Signature} (s1 s2 : Pattern) :=
 | ml_sym_lookup

@@ -1,36 +1,13 @@
-From Coq Require Import ssreflect ssrfun ssrbool.
-
-Require Import Logic.Classical_Prop Coq.Logic.FunctionalExtensionality.
-
-From stdpp
-Require Import
-    base
-    decidable
-    propset
-    fin_maps
-    fin_sets
-.
-
-From MatchingLogic
-Require Import
-    Utils.extralibrary
-    Utils.stdpp_ext
-    Pattern
-    Syntax
-    Semantics
-    DerivedOperators_Syntax
-    DerivedOperators_Semantics
-    PrePredicate
-    monotonic
-    Theories.Definedness_Syntax
-    Theories.Definedness_Semantics
-    Theories.Sorts_Syntax
-    Theories.Sorts_Semantics
-.
+Require Import Logic.Classical_Prop.
 
 
-Import MatchingLogic.Logic.Notations.
-Import MatchingLogic.Semantics.Notations.
+From MatchingLogic.Theories Require Export Sorts_Semantics.
+From MatchingLogic Require Export monotonic.
+Import Definedness_Syntax.Notations.
+Import Sorts_Syntax.Notations.
+Import Logic.Notations.
+
+Set Default Proof Mode "Classic".
 
 Section with_syntax.
     Context
@@ -39,12 +16,12 @@ Section with_syntax.
         {ds : Definedness_Syntax.Syntax}
         {ss : Sorts_Syntax.Syntax}
         (HSortImptDef : imported_definedness = ds)
-        (HDefNeqInh : Definedness_Syntax.inj definedness <> Sorts_Syntax.inj inhabitant)
+        (HDefNeqInh : Definedness_Syntax.sym_inj def_sym <> Sorts_Syntax.sym_inj sym_inh)
     .
     Open Scope ml_scope.
 
     Definition is_core_symbol (s : symbols) : Prop
-        := s = Definedness_Syntax.inj definedness \/ s = Sorts_Syntax.inj inhabitant.
+        := s = Definedness_Syntax.sym_inj def_sym \/ s = Sorts_Syntax.sym_inj sym_inh.
 
 
     Instance is_core_symbol_dec (s : symbols) : Decision (is_core_symbol s).
@@ -259,7 +236,7 @@ Section with_syntax.
             | cel el =>
                 match el with
                 | inl m =>
-                    cel <$> (@fmap propset _ _ _ inl (@app_ext _ M (sym_interp M (Sorts_Syntax.inj inhabitant)) {[m]}))
+                    cel <$> (@fmap propset _ _ _ inl (@app_ext _ M (sym_interp M (Sorts_Syntax.sym_inj sym_inh)) {[m]}))
                 | inr r =>
                     cel <$> finh r
                 end
@@ -283,10 +260,10 @@ Section with_syntax.
         end.
 
     Definition new_sym_interp (s : symbols) : propset Carrier :=
-        match (decide (s = Definedness_Syntax.inj definedness)) with
+        match (decide (s = Definedness_Syntax.sym_inj def_sym)) with
         | left _ => {[ cdef ]}
         | right _ =>
-            match (decide (s = Sorts_Syntax.inj inhabitant)) with
+            match (decide (s = Sorts_Syntax.sym_inj sym_inh)) with
             | left _ => {[ cinh ]}
             | right _ => cel <$> (@fmap propset _ _ _ inl (@sym_interp _ M s))
             end
@@ -655,7 +632,7 @@ Section with_syntax.
             do 2 rewrite eval_sym_simpl.
             unfold sym_interp at 1. simpl. unfold new_sym_interp.
             rewrite decide_eq_same.
-            destruct (decide (inj inhabitant = Definedness_Syntax.inj definedness)) as [Heq|Hneq] eqn:Hnid.
+            destruct (decide (sym_inj sym_inh = Definedness_Syntax.sym_inj def_sym)) as [Heq|Hneq] eqn:Hnid.
             { clear -HDefNeqInh Heq. congruence. }
             {
                 clear Hneq Hnid.
@@ -770,7 +747,7 @@ Section with_syntax.
             :
             (
                 forall (ϕ : Pattern) (ρ : @Valuation _ M),
-                size' ϕ < sz ->
+                pat_size ϕ < sz ->
                 is_SData ϕ ->
                 well_formed ϕ ->
                 @eval Σ Mext (lift_val ρ) ϕ
@@ -779,7 +756,7 @@ Section with_syntax.
             /\
             (
                 forall (ψ : Pattern) (ρ : @Valuation _ M),
-                size' ψ < sz ->
+                pat_size ψ < sz ->
                 is_SPredicate ψ ->
                 well_formed ψ ->
                 (@eval Σ Mext (lift_val ρ) ψ = ∅
@@ -1135,7 +1112,7 @@ Section with_syntax.
                                 rewrite IHszdata in Hc.
                                 3: { wf_auto2. }
                                 2: { apply is_SData_evar_open. assumption. }
-                                1: { rewrite evar_open_size'. lia. }
+                                1: { rewrite -evar_open_size. lia. }
 
                                 (* [x] comes from [Domain M] *)
                                 unfold lift_set,fmap in Hc.
@@ -1219,7 +1196,7 @@ Section with_syntax.
                                 rewrite IHszdata.
                                 3: { wf_auto2. }
                                 2: { apply is_SData_evar_open. assumption. }
-                                1: { rewrite evar_open_size'. lia. }
+                                1: { rewrite -evar_open_size. lia. }
                                 unfold lift_set,fmap.
                                 with_strategy transparent [propset_fmap] unfold propset_fmap.
                                 rewrite elem_of_PropSet.
@@ -1264,7 +1241,7 @@ Section with_syntax.
                             apply Hmono.
                             {
                                 unfold well_formed in Hwf. simpl in Hwf.
-                                destruct_and!. split_and!; assumption.
+                                wf_auto2.
                             }
                             {
                                 apply set_svar_fresh_is_fresh.
@@ -1296,7 +1273,7 @@ Section with_syntax.
                             rewrite update_svar_val_lift_set_comm.
                             rewrite IHszdata.
                             {
-                                rewrite svar_open_size'. lia.
+                                rewrite -svar_open_size. lia.
                             }
                             {
                                 apply is_SData_svar_open. assumption.
@@ -1400,7 +1377,7 @@ Section with_syntax.
                             ⊆  @eval Σ Mext (update_svar_val (fresh_svar ϕ) A (lift_val ρ)) (ϕ^{svar: 0 ↦ (fresh_svar ϕ)})).
                             {
                                 apply is_monotonic.
-                                { unfold well_formed in Hwf. destruct_and!. assumption. }
+                                { unfold well_formed in Hwf. wf_auto2. }
                                 { apply set_svar_fresh_is_fresh. }
                                 apply Hliftstrip.
                             }
@@ -1408,7 +1385,7 @@ Section with_syntax.
                             2: { apply H. }
                             rewrite update_svar_val_lift_set_comm.
                             rewrite IHszdata.
-                            { rewrite svar_open_size'. lia. }
+                            { rewrite -svar_open_size. lia. }
                             { apply is_SData_svar_open. assumption. }
                             { wf_auto2. }
                             apply reflexivity.
@@ -1448,7 +1425,7 @@ Section with_syntax.
                         Arguments Domain : simpl never.
                         unfold app_ext.
                         simpl.
-                        assert (Htmp: new_sym_interp (Definedness_Syntax.inj definedness) = {[cdef]}).
+                        assert (Htmp: new_sym_interp (Definedness_Syntax.sym_inj def_sym) = {[cdef]}).
                         {
                             unfold new_sym_interp.
                             repeat case_match.
@@ -1859,15 +1836,13 @@ Section with_syntax.
                             2: {
                                 unfold well_formed,well_formed_closed in Hwf.
                                 simpl in Hwf.
-                                destruct_and!.
-                                assumption.
+                                wf_auto2.
                             }
                             apply SPred_is_predicate in HSPred2.
                             2: {
                                 unfold well_formed,well_formed_closed in Hwf.
                                 simpl in Hwf.
-                                destruct_and!.
-                                assumption.
+                                wf_auto2.
                             }
                             specialize (HSPred1 ρ).
                             specialize (HSPred2 ρ).
@@ -1961,7 +1936,7 @@ Section with_syntax.
                                 specialize (IHszpred (update_evar_val (fresh_evar ϕ) c ρ)).
                                 ospecialize* IHszpred.
                                 {
-                                    rewrite evar_open_size'. lia.
+                                    rewrite -evar_open_size. lia.
                                 }
                                 {
                                     apply is_SPredicate_evar_open. assumption.
@@ -2061,7 +2036,7 @@ Section with_syntax.
                                     specialize (IHszpred (update_evar_val (fresh_evar ϕ) d0 ρ)).
                                     ospecialize* IHszpred.
                                     {
-                                        rewrite evar_open_size'. lia.
+                                        rewrite -evar_open_size. lia.
                                     }
                                     {
                                         apply is_SPredicate_evar_open. assumption.
@@ -2118,7 +2093,6 @@ Section with_syntax.
                             apply closed_M_pre_pre_predicate_is_M_predicate in HSPred'.
                             2: {
                                 unfold well_formed,well_formed_closed in Hwf. simpl in Hwf.
-                                destruct_and!.
                                 wf_auto2.
                             }
                             split; intros H' t.
@@ -2176,7 +2150,7 @@ Section with_syntax.
                                         specialize (IHszpred (update_evar_val (fresh_evar ϕ) a0 ρ)).
                                         ospecialize* IHszpred.
                                         {
-                                            rewrite evar_open_size'. lia.
+                                            rewrite -evar_open_size. lia.
                                         }
                                         {
                                             apply is_SPredicate_evar_open. assumption.
@@ -2215,7 +2189,7 @@ Section with_syntax.
                                         specialize (IHszpred (update_evar_val (fresh_evar ϕ) c ρ)).
                                         ospecialize* IHszpred.
                                         {
-                                            rewrite evar_open_size'. lia.
+                                            rewrite -evar_open_size. lia.
                                         }
                                         {
                                             apply is_SPredicate_evar_open. assumption.
@@ -2362,7 +2336,7 @@ Section with_syntax.
                                     specialize (IHszpred (ϕ^{evar: 0 ↦ fresh_evar ϕ}) (update_evar_val (fresh_evar ϕ) a0 ρ)).
                                     ospecialize* IHszpred.
                                     {
-                                        rewrite evar_open_size'.
+                                        rewrite -evar_open_size.
                                         lia.
                                     }
                                     {
@@ -2387,7 +2361,6 @@ Section with_syntax.
                                         2: {
                                             unfold well_formed,well_formed_closed in Hwf.
                                             simpl in Hwf.
-                                            destruct_and!.
                                             wf_auto2.
                                         }
                                         specialize (HSPred' (update_evar_val (fresh_evar ϕ) a0 ρ)).
@@ -2436,7 +2409,7 @@ Section with_syntax.
                                     specialize (IHszpred (ϕ^{evar: 0 ↦ fresh_evar ϕ}) (update_evar_val (fresh_evar ϕ) c ρ)).
                                     ospecialize* IHszpred.
                                     {
-                                        rewrite evar_open_size'.
+                                        rewrite -evar_open_size.
                                         lia.
                                     }
                                     {
@@ -2461,7 +2434,6 @@ Section with_syntax.
                                         2: {
                                             unfold well_formed,well_formed_closed in Hwf. 
                                             simpl in Hwf.
-                                            destruct_and!.
                                             wf_auto2.
                                         }
                                         specialize (HSPred' (update_evar_val (fresh_evar ϕ) c ρ)).
@@ -2538,7 +2510,7 @@ Section with_syntax.
                                     specialize (IHszpred (ϕ^{evar: 0 ↦ fresh_evar ϕ}) (update_evar_val (fresh_evar ϕ) c ρ)).
                                     ospecialize* IHszpred.
                                     {
-                                        rewrite evar_open_size'.
+                                        rewrite -evar_open_size.
                                         lia.
                                     }
                                     {
@@ -2654,7 +2626,7 @@ Section with_syntax.
                                 specialize (IHszpred (ϕ^{evar: 0 ↦ fresh_evar ϕ}) (update_evar_val (fresh_evar ϕ) a1 ρ)).
                                 ospecialize* IHszpred.
                                 {
-                                    rewrite evar_open_size'.
+                                    rewrite -evar_open_size.
                                     lia.
                                 }
                                 {

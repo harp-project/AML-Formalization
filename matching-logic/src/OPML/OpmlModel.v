@@ -1,14 +1,6 @@
-From Coq Require Import ssreflect ssrfun ssrbool.
-
-From stdpp Require Import base list list_numbers propset.
-(* This is unset by stdpp. We need to set it again.*)
-Set Transparent Obligations.
-
-From Equations Require Import Equations.
-(* Set Equations Transparent. *)
-
-From MatchingLogic.Utils Require Import Surj.
-From MatchingLogic.OPML Require Import OpmlSignature.
+From MatchingLogic.Utils Require Export Surj.
+From MatchingLogic.OPML Require Export OpmlSignature.
+From stdpp Require Export propset.
 
 Polymorphic Cumulative
 Record OPMLModel {Σ : OPMLSignature} := {

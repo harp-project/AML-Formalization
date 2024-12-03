@@ -1,42 +1,14 @@
-From Coq Require Import ssreflect ssrfun ssrbool.
-
-From Ltac2 Require Import Ltac2.
-
-From Coq Require Import String Ensembles Setoid.
-Require Import Coq.Program.Equality.
-Require Import Coq.Logic.Classical_Prop.
-From Coq.Logic Require Import FunctionalExtensionality Eqdep_dec.
-From Coq.Classes Require Import Morphisms_Prop.
-From Coq.Unicode Require Import Utf8.
-From Coq.micromega Require Import Lia.
-
-From MatchingLogic Require Import Logic ProofMode.MLPM.
-From MatchingLogic.Theories Require Import Definedness_Syntax Definedness_ProofSystem.
-From MatchingLogic.Utils Require Import stdpp_ext.
-
-From stdpp Require Import base fin_sets sets propset proof_irrel option list.
-
-Import extralibrary.
+From MatchingLogic Require Export ProofMode.MLPM
+                                  FOEquality_ProofSystem
+                                  Sorts_ProofSystem.
+From MatchingLogic.Theories Require Export SumSort_Syntax.
 
 Import MatchingLogic.Logic.Notations.
 Import MatchingLogic.Theories.Definedness_Syntax.Notations.
-
-Set Default Proof Mode "Classic".
-
-From MatchingLogic Require Import
-  Theories.DeductionTheorem
-  Theories.Sorts_Syntax
-  FOEquality_ProofSystem
-  Sorts_ProofSystem
-  SumSort_Syntax
-.
-
 Import MatchingLogic.Theories.Sorts_Syntax.Notations.
 Import MatchingLogic.Theories.SumSort_Syntax.Notations.
 
-Open Scope ml_scope.
-Open Scope string_scope.
-Open Scope list_scope.
+Set Default Proof Mode "Classic".
 
 Section sumsort.
   Context
@@ -266,7 +238,7 @@ Section sumsort.
               1:wf_auto2.
               rewrite nest_ex_aux_wfcex.
               1:{ clear H; wf_auto2. }
-              epose proof membership_axiom_v2 Γ  (patt_sym (inj (ml_injectL s1 s2))) (〚 s1 〛) (x)
+              epose proof membership_axiom_v2 Γ  (patt_sym (sym_inj (ml_injectL s1 s2))) (〚 s1 〛) (x)
                 ltac:(set_solver) ltac:(wf_auto2) ltac:(wf_auto2).
 
               mlAdd H1. mlClear "INJECT Right";mlClear "coproduct".
@@ -375,7 +347,7 @@ Section sumsort.
               rewrite nest_ex_aux_wfcex.
               1:clear H;wf_auto2.
 
-              epose proof membership_axiom_v2 Γ  (patt_sym (inj (ml_injectR s1 s2))) (〚 s2 〛) (x)
+              epose proof membership_axiom_v2 Γ  (patt_sym (sym_inj (ml_injectR s1 s2))) (〚 s2 〛) (x)
                ltac:(set_solver) ltac:(wf_auto2) ltac:(wf_auto2).
               mlAdd H1.
               mlRevert "0".
