@@ -1,19 +1,9 @@
-From MatchingLogic Require Export BasicProofSystemLemmas
-                                  Logic 
-                                  Theories.Definedness_Syntax
-                                  Theories.Definedness_ProofSystem
-                                  ProofMode.MLPM
-                                  .
-Import MatchingLogic.Logic.Notations MatchingLogic.DerivedOperators_Syntax.Notations.
-From Coq Require Import ssreflect ssrfun ssrbool.
-Require Export Coq.Program.Wf 
-               Lia 
-               FunctionalExtensionality
-               Logic.PropExtensionality
-               Program.Equality.
-From stdpp Require Import countable finite sets strings list base numbers vector.
-From MatchingLogic Require Export Utils.extralibrary.
-Require Export Vector PeanoNat String Arith.Lt.
+From MatchingLogic Require Export Theories.Definedness_ProofSystem.
+Import MatchingLogic.Logic.Notations.
+
+Require Export Vector PeanoNat String.
+
+Set Default Proof Mode "Classic".
 
 Ltac separate :=
 match goal with
@@ -30,7 +20,9 @@ Lemma Forall_map (T : Set) n (l : vec n) : forall (P : T -> Prop) (f : T -> T),
 Proof.
   induction l; intros P f H; constructor;
   inversion H0; subst. auto.
-  apply IHl; auto. simpl_existT. subst. auto.
+  apply IHl; auto.
+  apply ProofIrrelevance.ProofIrrelevanceTheory.EqdepTheory.inj_pair2 in H3.
+  subst. auto.
 Qed.
 
 Theorem fold_left_map  (T Q : Set) n (v : vec n) :
@@ -47,7 +39,9 @@ Lemma map_Forall (T : Set) n (l : vec n) : forall (P : T -> Prop) (f : T -> T),
 Proof.
   induction l; intros P f H; constructor;
   inversion H0; subst. auto.
-  eapply IHl; eauto. simpl_existT. now subst.
+  eapply IHl; eauto.
+  apply ProofIrrelevance.ProofIrrelevanceTheory.EqdepTheory.inj_pair2 in H3.
+  now subst.
 Qed.
 
 Lemma Forall_map_ext (T : Set) n (l : vec n) : forall (P : T -> Prop) (f : T -> T),
@@ -57,7 +51,9 @@ Lemma Forall_map_ext (T : Set) n (l : vec n) : forall (P : T -> Prop) (f : T -> 
 Proof.
   induction l; intros P f H; constructor;
   inversion H0; subst. auto. apply H. constructor. auto.
-  apply IHl; auto. intros x H1 H2. apply H. constructor 2. auto. auto. simpl_existT. now subst.
+  apply IHl; auto. intros x H1 H2. apply H. constructor 2. auto. auto.
+  apply ProofIrrelevance.ProofIrrelevanceTheory.EqdepTheory.inj_pair2 in H3.
+  now subst.
 Qed.
 
 Lemma map_Forall_ext (T : Set) n (l : vec n) : forall (P : T -> Prop) (f : T -> T),
@@ -67,7 +63,8 @@ Lemma map_Forall_ext (T : Set) n (l : vec n) : forall (P : T -> Prop) (f : T -> 
 Proof.
   induction l; intros P f H; constructor;
   inversion H0; subst. auto. apply H. constructor; auto. auto.
-  eapply IHl; auto. intros x H1 H2. apply H. constructor 2. auto. exact H2. simpl_existT.
+  eapply IHl; auto. intros x H1 H2. apply H. constructor 2. auto. exact H2.
+  apply ProofIrrelevance.ProofIrrelevanceTheory.EqdepTheory.inj_pair2 in H3.
   now subst.
 Qed.
 
@@ -77,7 +74,8 @@ Proof.
   induction l; intros H H0; constructor; inversion H0; subst.
   apply H. constructor; auto. auto.
   apply IHl; auto. intros a H1 H2. apply H; auto. constructor 2. auto.
-  simpl_existT. now subst.
+  apply ProofIrrelevance.ProofIrrelevanceTheory.EqdepTheory.inj_pair2 in H3.
+  now subst.
 Qed.
 
 Global Hint Constructors Forall : core.
@@ -172,7 +170,8 @@ Section fix_signature.
     (forall x, p (bvar x)) -> 
     (forall F v, (ForallT p v) -> p (func F v)) -> forall (t : term), p t.
   Proof.
-    intros f1 f2 f3. fix strong_term_ind' 1. destruct t as [n|n|F v].
+    intros f1 f2 f3.
+    fix strong_term_ind' 1. destruct t as [n|n|F v].
     - apply f2.
     - apply f1.
     - apply f3. induction v.
@@ -394,7 +393,7 @@ Section semantics.
       { f_equal. }
     Qed.
 
-    Notation "rho ⊨ phi" := (sat rho phi) (at level 20).
+    Notation "rho ⊨ phi" := (sat rho phi).
 
   Theorem sat_dec : forall sz φ, form_size φ <= sz -> forall ρ, {ρ ⊨ φ} + {~ ρ ⊨ φ}.
   Proof.
@@ -486,21 +485,23 @@ Section soundness_completeness.
       simpl in *.
       clear IH. induction v. inversion H.
       inversion H; subst.
-      - simpl_existT. subst. simpl in Fresh.
+      - apply ProofIrrelevance.ProofIrrelevanceTheory.EqdepTheory.inj_pair2 in H3.
+        subst. simpl in Fresh.
         rewrite in_app_iff in Fresh.
         clear -Fresh. tauto.
-      - simpl_existT. subst. simpl in Fresh.
+      - apply ProofIrrelevance.ProofIrrelevanceTheory.EqdepTheory.inj_pair2 in H3.
+        subst. simpl in Fresh.
         rewrite in_app_iff in Fresh.
         intros HContra. apply Fresh. clear Fresh.
         inversion H; subst; clear H.
         {
-          simpl_existT.
+          apply ProofIrrelevance.ProofIrrelevanceTheory.EqdepTheory.inj_pair2 in H4.
           subst.
           left.
           apply HContra.
         }
         {
-          simpl_existT.
+          apply ProofIrrelevance.ProofIrrelevanceTheory.EqdepTheory.inj_pair2 in H4.
           subst.
           clear H3.
           right.
@@ -527,9 +528,12 @@ Section soundness_completeness.
       is_true (fold_right (λ t Acc, Acc && P t) v true) ->
       forall (e : T), In e v -> is_true (P e).
   Proof.
-    induction v; intros H e HIn; inversion HIn; simpl_existT; subst.
-    * simpl in H. apply andb_true_iff in H. apply H.
-    * apply IHv; auto. apply andb_true_iff in H. apply H.
+    induction v; intros H e HIn; inversion HIn; subst.
+    * apply ProofIrrelevance.ProofIrrelevanceTheory.EqdepTheory.inj_pair2 in H3.
+      simpl in H. apply andb_true_iff in H. apply H.
+    * apply ProofIrrelevance.ProofIrrelevanceTheory.EqdepTheory.inj_pair2 in H3.
+      apply IHv; auto. apply andb_true_iff in H. apply H.
+      now subst.
   Qed.
 
   Lemma bsubst_term_wf :
@@ -596,10 +600,12 @@ Section soundness_completeness.
     * f_equal. apply VectorSpec.map_ext_in. intros.
       apply IH; auto. simpl in *.
       clear IH.
-      induction v; inversion H; simpl_existT; subst.
+      induction v; inversion H; subst.
       - simpl in HNIn. rewrite in_app_iff in HNIn. apply Decidable.not_or in HNIn.
         naive_solver.
       - apply IHv; auto. rewrite in_app_iff in HNIn. apply Decidable.not_or in HNIn. naive_solver.
+        apply ProofIrrelevance.ProofIrrelevanceTheory.EqdepTheory.inj_pair2 in H3.
+        now subst.
   Qed.
 
   Theorem fresh_irrelevant_form :
@@ -609,9 +615,11 @@ Section soundness_completeness.
     induction φ; intros D fail I rho d x0 HNIn; simpl; auto.
     * do 2 rewrite sat_atom. erewrite VectorSpec.map_ext_in. reflexivity.
       intros. apply fresh_irrelevant_term. simpl in HNIn.
-      induction v; inversion H; simpl_existT; subst.
+      induction v; inversion H; subst.
       - simpl in HNIn. rewrite in_app_iff in HNIn. naive_solver.
       - apply IHv; auto. rewrite in_app_iff in HNIn. naive_solver.
+        apply ProofIrrelevance.ProofIrrelevanceTheory.EqdepTheory.inj_pair2 in H3.
+        now subst.
     * do 2 rewrite sat_impl.
       rewrite in_app_iff in HNIn. apply Decidable.not_or in HNIn.
       naive_solver.
@@ -642,10 +650,12 @@ Section soundness_completeness.
         clear Sat.
         induction v. inversion H.
         inversion H; subst.
-        + simpl_existT. subst. simpl in Fresh.
+        + apply ProofIrrelevance.ProofIrrelevanceTheory.EqdepTheory.inj_pair2 in H3.
+          subst. simpl in Fresh.
           rewrite in_app_iff in Fresh.
           naive_solver.
-        + simpl_existT. subst. simpl in Fresh.
+        + apply ProofIrrelevance.ProofIrrelevanceTheory.EqdepTheory.inj_pair2 in H3.
+          subst. simpl in Fresh.
           rewrite in_app_iff in Fresh.
           apply IHv; intros; auto.
 
@@ -654,10 +664,12 @@ Section soundness_completeness.
         clear Sat.
         induction v. inversion H.
         inversion H; subst.
-        + simpl_existT. subst. simpl in Fresh.
+        + apply ProofIrrelevance.ProofIrrelevanceTheory.EqdepTheory.inj_pair2 in H3.
+          subst. simpl in Fresh.
           rewrite in_app_iff in Fresh.
           tauto.
-        + simpl_existT. subst. simpl in Fresh.
+        + apply ProofIrrelevance.ProofIrrelevanceTheory.EqdepTheory.inj_pair2 in H3.
+          subst. simpl in Fresh.
           rewrite in_app_iff in Fresh.
           tauto.
     * do 2 rewrite sat_impl. intros.
@@ -733,7 +745,6 @@ Section FOL_ML_correspondence.
     repeat decide equality.
     apply Σ_funcs.
     apply Σ_preds.
-    destruct d,d0. left. auto.
   Defined.
 
   Instance Symbols_countable : Countable Symbols.
@@ -753,7 +764,7 @@ Section FOL_ML_correspondence.
          match c with
            | inl name       => Some (sym_fun name)
            | inr (inl name) => Some (sym_pred name)
-           | (inr (inr ())) => Some (sym_import_definedness (Definedness_Syntax.definedness))
+           | (inr (inr ())) => Some (sym_import_definedness (Definedness_Syntax.def_sym))
            end
         ).
     refine (inj_countable enc dec _).
@@ -786,7 +797,7 @@ Section FOL_ML_correspondence.
 
   Instance definedness_syntax : Definedness_Syntax.Syntax :=
   {|
-     Definedness_Syntax.inj := sym_import_definedness;
+     Definedness_Syntax.sym_inj := sym_import_definedness;
   |}.
 
   Fixpoint convert_term (t : term) : Pattern :=
@@ -936,7 +947,7 @@ Section FOL_ML_correspondence.
   Proof.
     intros t H. unfold well_formed. separate. split.
     - apply positive_term_FOL_ML.
-    - unfold well_formed_closed. split_and!.
+    - unfold well_formed_closed. apply andb_true_iff; split.
       + eapply closed_mu_term_FOL_ML. eassumption.
       + apply closed_ex_term_FOL_ML. assumption.
   Qed.
@@ -946,7 +957,7 @@ Section FOL_ML_correspondence.
   Proof.
     intros φ H. unfold well_formed. separate. split.
     - apply positive_form_FOL_ML.
-    - unfold well_formed_closed. split_and!.
+    - unfold well_formed_closed. apply andb_true_iff; split.
       + eapply closed_form_FOL_ML. eassumption.
       + apply closed_ex_form_FOL_ML. assumption.
   Qed.
@@ -958,7 +969,7 @@ Section FOL_ML_correspondence.
   Proof.
     induction n; simpl; auto; intros.
     do 2 rewrite andb_true_r.
-    rewrite -> IHn, -> NPeano.Nat.add_succ_r. auto.
+    rewrite -> IHn, -> Nat.add_succ_r. auto.
   Qed.
 
   Lemma well_formed_closed_prefix φ : forall n m,
@@ -1064,7 +1075,7 @@ Section FOL_ML_correspondence.
     - unfold well_formed, well_formed_closed. apply andb_true_intro. split.
       + apply well_formed_positive_prefix. simpl. rewrite well_formed_positive_list. auto.
         auto.
-      + split_and!.
+      + apply andb_true_iff; split.
         * apply well_formed_closed_prefix. simpl. rewrite well_formed_closed_list.
           simpl. auto.  all: now simpl.
         * apply well_formed_closed_ex_prefix. simpl. rewrite well_formed_closed_ex_list.
@@ -1073,7 +1084,7 @@ Section FOL_ML_correspondence.
     - unfold well_formed, well_formed_closed. apply andb_true_intro. split.
       + apply well_formed_positive_prefix. simpl. rewrite well_formed_positive_list0. auto.
         auto.
-      + split_and!.
+      + apply andb_true_iff; split.
         * apply well_formed_closed_prefix. simpl. rewrite well_formed_closed_mu_list0.
           2: reflexivity.
           simpl. auto.
@@ -1452,20 +1463,22 @@ Section FOL_ML_correspondence.
             + rewrite <- H. auto.
             + rewrite IHn; auto. simpl. rewrite <- H. auto.
           - clear H.
-            split_and!.
+            apply andb_true_iff; split.
             + apply well_formed_closed_mu_all, well_formed_closed_prefix.
               simpl.
-              split_and!; auto.
+              repeat (apply andb_true_iff; split); auto.
               all: apply well_formed_closed_list; simpl; symmetry in H0;
-                unfold well_formed_closed in *; destruct_and!; split_and; auto.
+                unfold well_formed_closed in *; naive_bsolver.
             + apply well_formed_closed_ex_all, well_formed_closed_ex_prefix.
               simpl.
-              split_and!; auto.
+              repeat (apply andb_true_iff; split); auto.
               all: apply well_formed_closed_ex_list; try lia; simpl; symmetry in H0;
-                unfold well_formed_closed in *; destruct_and!; split_and;
+                unfold well_formed_closed in *;
                   try case_match;
-                  auto; try lia.
-              all: eapply well_formed_closed_ex_aux_ind; try eassumption; lia.
+                  auto; destruct_andb! H0; try lia.
+              all: apply andb_true_iff; split; auto.
+              all: eapply well_formed_closed_ex_aux_ind.
+              2, 4: eassumption. all: lia.
         }
         assert (from_FOL_theory Γ ⊢_ML ((all , A) and ex , patt_equal (convert_term h) BoundVarSugar.b0 ) ). {
           apply conj_intro_meta; auto.
@@ -1474,7 +1487,7 @@ Section FOL_ML_correspondence.
           pose proof (E2' := E2).
           eapply closed_ex_term_FOL_ML in E2.
           eapply closed_mu_term_FOL_ML in E2'.
-          split_and!; eauto.
+          repeat (apply andb_true_iff; split); eauto.
         }
         apply MP in H0; auto.
         simpl in H0.
@@ -1504,9 +1517,9 @@ Section FOL_ML_correspondence.
         + apply have_definedness.
         (** asserted hypotheses *)
         + apply andb_true_iff in WfA as [_ WfA]. apply andb_true_iff in WfA as [_ WfA]. cbn in WfA.
-          now destruct_and!.
+          wf_auto2.
         + apply andb_true_iff in WfA as [_ WfA]. apply andb_true_iff in WfA as [WfA _]. cbn in WfA.
-          now destruct_and!.
+          wf_auto2.
         + intros. simpl. rewrite HIND. erewrite well_formed_bevar_subst.
           auto.
           2: { apply closed_ex_term_FOL_ML. inversion H0. separate. eassumption. }
@@ -1515,7 +1528,8 @@ Section FOL_ML_correspondence.
         + unfold well_formed, well_formed_closed in *.
           simpl. apply eq_sym, andb_true_eq in WFS. destruct WFS.
           symmetry in H2, H3.
-          destruct_and!. split_and!; auto.
+          destruct_andb! H3. destruct_andb! H0.
+          repeat (apply andb_true_iff; split); auto.
           ++ apply positive_term_FOL_ML.
           ++ eapply closed_mu_term_FOL_ML; eassumption.
           ++ apply closed_ex_term_FOL_ML; assumption.
@@ -1546,7 +1560,7 @@ Section FOL_ML_correspondence.
       all: try rewrite -> closed_ex_term_FOL_ML.
       all: try rewrite -> closed_mu_term_FOL_ML.
       all: try eassumption.
-      all: split_and?; auto; simpl in *.
+      all: repeat (apply andb_true_iff; split); auto; simpl in *.
       10: apply have_definedness.
       all: try apply closed_ex_form_FOL_ML; try assumption.
       all: try apply form_mu_free.
@@ -1558,7 +1572,7 @@ Section FOL_ML_correspondence.
       all: try eapply closed_form_FOL_ML; try eassumption.
       all: try eapply closed_mu_term_FOL_ML; try eassumption.
       all: try apply bevar_subst_closed_ex; try apply closed_ex_form_FOL_ML; try assumption.
-      apply closed_ex_term_FOL_ML. assumption.
+      try apply closed_ex_term_FOL_ML; assumption.
     * simpl. rewrite quantify_form_correspondence. gapply Ex_gen; auto.
       1-2: apply pile_any.
       now apply form_vars_free_vars_notin.
@@ -1648,7 +1662,7 @@ Section tests.
 
   Instance definedness_syntax2 : Definedness_Syntax.Syntax :=
   {|
-     Definedness_Syntax.inj := sym_import_definedness;
+     Definedness_Syntax.sym_inj := sym_import_definedness;
   |}.
 
   Goal axiom (AxFun Mult) = patt_forall (patt_forall (patt_exists (patt_equal 
