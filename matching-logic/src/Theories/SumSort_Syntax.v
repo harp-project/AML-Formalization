@@ -1,19 +1,9 @@
-From Coq Require Import ssreflect ssrfun ssrbool.
+From MatchingLogic Require Export Sorts_Syntax.
+Import MatchingLogic.Logic.Notations
+       MatchingLogic.Theories.Definedness_Syntax.Notations
+       MatchingLogic.Theories.Sorts_Syntax.Notations.
 
-From Coq Require Import Unicode.Utf8.
-From stdpp Require Import base sets.
-
-From MatchingLogic Require Import
-    Logic
-    Theories.Sorts_Syntax
-.
-
-Require Import Setoid.
-From Coq.Logic Require Import Classical_Prop FunctionalExtensionality.
-From Coq.Classes Require Import Morphisms_Prop.
-Import BoundVarSugar.
-Import Definedness_Syntax.Notations.
-Import Sorts_Syntax.Notations.
+Set Default Proof Mode "Classic".
 
 Open Scope ml_scope.
 
@@ -32,8 +22,8 @@ Proof. solve_decision. Defined.
 Class Syntax {Σ : Signature} (s1 s2 : Pattern) :=
 {
     imported_sorts : Sorts_Syntax.Syntax;
-    inj: Symbols s1 s2 -> symbols;
-    inj_inj: Inj (=) (=) inj;
+    sym_inj: Symbols s1 s2 -> symbols;
+    inj_inj: Inj (=) (=) sym_inj;
 }.
 
 #[global] Existing Instance imported_sorts.
@@ -43,27 +33,27 @@ Module Notations.
 
 
     Notation "'mlSum' '(' s1 ',' s2 ')'" := 
-        (patt_sym (inj (ml_sum s1 s2)))
+        (patt_sym (sym_inj (ml_sum s1 s2)))
         : ml_scope
     .
-    
+
     Notation "'(' phi ').mlInjectL(' s1 ',' s2 ')'" := 
-        (patt_app (patt_sym (inj (ml_injectL s1 s2))) phi)
+        (patt_app (patt_sym (sym_inj (ml_injectL s1 s2))) phi)
         : ml_scope
     .
-    
+
     Notation "'(' phi ').mlInjectR(' s1 ',' s2 ')'" := 
-        (patt_app (patt_sym (inj (ml_injectR s1 s2))) phi)
+        (patt_app (patt_sym (sym_inj (ml_injectR s1 s2))) phi)
         : ml_scope
     .
-    
+
     Notation "'(' phi ').mlEjectL(' s1 ',' s2 ')'" := 
-        (patt_app (patt_sym (inj (ml_ejectL s1 s2))) phi)
+        (patt_app (patt_sym (sym_inj (ml_ejectL s1 s2))) phi)
         : ml_scope
     .
     
     Notation "'(' phi ').mlEjectR(' s1 ',' s2 ')'" := 
-        (patt_app (patt_sym (inj (ml_ejectR s1 s2))) phi)
+        (patt_app (patt_sym (sym_inj (ml_ejectR s1 s2))) phi)
         : ml_scope
     .
 

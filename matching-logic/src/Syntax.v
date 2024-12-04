@@ -1,27 +1,8 @@
-From Coq Require Import ssreflect ssrfun ssrbool.
-Require Import Setoid.
-Require Import List.
-Require Import Coq.Strings.String.
-
 From Coq Require Import Logic.Classical_Prop.
-From stdpp Require Import countable infinite.
-From stdpp Require Import pmap gmap mapset fin_sets propset.
-Require Import stdpp_ext.
-
-Require Import extralibrary.
 
 From MatchingLogic Require Export
-  Signature
-  Pattern
-  Substitution
-  Freshness
-  SyntacticConstruct
-  PatternContext
-  ApplicationContext
-  SyntaxLemmas.FreshnessSubstitution
   SyntaxLemmas.PatternCtxApplicationCtx
   SyntaxLemmas.FreshnessApplicationCtx
-  SyntaxLemmas.ApplicationCtxSubstitution
   wftactics
 .
 
@@ -747,24 +728,23 @@ Section with_signature.
         assumption.
       + cbn in Hnoneg. cbn in Hwfpϕ.
         apply orb_false_iff in Hnoneg.
-        destruct_and!.
+        destruct_and!. destruct_andb! Hwfpϕ.
         specialize (IHϕ1 ltac:(assumption) ltac:(assumption)).
         specialize (IHϕ2 ltac:(assumption) ltac:(assumption)).
-        split_and!; auto.
+        naive_bsolver.
       + cbn in Hnoneg. cbn in Hwfpϕ.
         apply orb_false_iff in Hnoneg.
-        destruct_and!.
+        destruct_and!. destruct_andb! Hwfpϕ.
         pose proof (IH1 := wfp_neg_free_svar_subst ϕ1 ψ X ltac:(assumption)).
         ospecialize* IH1.
         { assumption. }
         { assumption. }
         { assumption. }
         specialize (IHϕ2 ltac:(assumption)).
-        split_and!; auto.
-      + cbn in Hnoneg. cbn in Hwfpϕ. destruct_and!.
-        rewrite IHϕ. assumption. assumption. split_and!; auto.
-        rewrite nno_free_svar_subst.
-        assumption. assumption.
+        naive_bsolver.
+      + cbn in Hnoneg. cbn in Hwfpϕ. destruct_andb! Hwfpϕ.
+        rewrite IHϕ. assumption. assumption.
+        rewrite nno_free_svar_subst; naive_bsolver.
     -
       intros Hwfcψ Hwfpψ Hwfpϕ Hnoneg.
       induction ϕ; simpl; auto.
@@ -772,24 +752,23 @@ Section with_signature.
         assumption.
       + cbn in Hnoneg. cbn in Hwfpϕ.
         apply orb_false_iff in Hnoneg.
-        destruct_and!.
+        destruct_and!. destruct_andb! Hwfpϕ.
         specialize (IHϕ1 ltac:(assumption) ltac:(assumption)).
         specialize (IHϕ2 ltac:(assumption) ltac:(assumption)).
-        split_and!; auto.
+        naive_bsolver.
       + cbn in Hnoneg. cbn in Hwfpϕ.
         apply orb_false_iff in Hnoneg.
-        destruct_and!.
+        destruct_and!. destruct_andb! Hwfpϕ.
         pose proof (IH1 := wfp_free_svar_subst ϕ1 ψ X ltac:(assumption)).
         ospecialize* IH1.
         { assumption. }
         { assumption. }
         { assumption. }
         specialize (IHϕ2 ltac:(assumption)).
-        split_and!; auto.
-      + cbn in Hnoneg. cbn in Hwfpϕ. destruct_and!.
-        rewrite IHϕ. assumption. assumption. split_and!; auto.
-        rewrite nno_free_svar_subst.
-        assumption. assumption.
+        naive_bsolver.
+      + cbn in Hnoneg. cbn in Hwfpϕ. destruct_andb! Hwfpϕ.
+        rewrite IHϕ. assumption. assumption.
+        rewrite nno_free_svar_subst; naive_bsolver.
   Qed.
 
   Lemma count_evar_occurrences_bevar_subst pcEvar ϕ ψ k:
@@ -843,13 +822,15 @@ Section with_signature.
     well_formed (patt_mu ϕ) ->
     well_formed (ϕ^{svar: 0 ↦ X}).
   Proof.
-    intros H. (*compoundDecomposeWfGoal.
-    apply (unary_wfxy_compose _).*) wf_auto2.
+    intros H.
+    wf_auto2.
+    (*compoundDecomposeWfGoal.
+    apply (unary_wfxy_compose _).*) (* wf_auto2. *)
     (*
     wf_auto2_fast_done.
     compositeSimplifyAllWfHyps.
     wf_auto2_composite_step.
-    wf_auto2_composite_step.
+    (* wf_auto2_composite_step. *)
     Set Printing All.
     Search well_formed svar_open.
     wf_auto2.
@@ -967,11 +948,11 @@ Section with_signature.
   Proof.
     intros H.
     unfold well_formed,well_formed_closed in *.
-    destruct_and!.
-    split_and!.
-    - eapply wfp_after_subst_impl_wfp_before. eassumption.
-    - eapply wfcmu_after_subst_impl_wfcmu_before. eassumption.
-    - eapply wfcex_after_subst_impl_wfcex_before. eassumption.
+    destruct_andb! H.
+    eapply wfp_after_subst_impl_wfp_before in H0.
+    eapply wfcmu_after_subst_impl_wfcmu_before in H.
+    eapply wfcex_after_subst_impl_wfcex_before in H2.
+    naive_bsolver.
   Qed.
 
   Lemma wf_emplaced_impl_wf_context (C : PatternCtx) (ψ : Pattern) :
@@ -1007,14 +988,13 @@ Section with_signature.
   evar_is_fresh_in x (foldr patt_imp g l) <-> evar_is_fresh_in x g /\ evar_is_fresh_in_list x l.
   Proof.
   induction l; simpl; split; intros H.
-  - split;[assumption|]. unfold evar_is_fresh_in_list. apply Forall_nil. exact I.
+  - split;[assumption|]. unfold evar_is_fresh_in_list. by apply Forall_nil.
   - destruct H as [H _]. exact H.
   - unfold evar_is_fresh_in_list,evar_is_fresh_in in *. simpl in *.
     split;[set_solver|].
     apply Forall_cons.
     destruct IHl as [IHl1 IHl2].
-    split;[set_solver|].
-    apply IHl1. set_solver.
+    set_solver.
   - unfold evar_is_fresh_in_list,evar_is_fresh_in in *. simpl in *.
     destruct IHl as [IHl1 IHl2].
     destruct H as [H1 H2].
@@ -1047,18 +1027,21 @@ Section with_signature.
     well_formed_closed_ex_aux ϕ (S n) = true ->
     well_formed_closed_ex_aux ϕ n = true.
   Proof.
-    intros H1 H2.
-    move: n H1 H2.
+    revert n.
     induction ϕ; intros n' H1 H2; simpl in *; auto.
     - repeat case_match; auto. lia.
     - apply orb_false_elim in H1. destruct_and!.
-      erewrite -> IHϕ1 by eassumption.
-      erewrite -> IHϕ2 by eassumption.
+      erewrite -> IHϕ1.
+      erewrite -> IHϕ2.
       reflexivity.
+      all: try assumption.
+      1-2: naive_bsolver.
     - apply orb_false_elim in H1. destruct_and!.
-      erewrite -> IHϕ1 by eassumption.
-      erewrite -> IHϕ2 by eassumption.
+      erewrite -> IHϕ1.
+      erewrite -> IHϕ2.
       reflexivity.
+      all: try assumption.
+      1-2: naive_bsolver.
   Qed.
 
   Lemma wfc_mu_lower ϕ n:
@@ -1070,14 +1053,18 @@ Section with_signature.
     move: n H1 H2.
     induction ϕ; intros n' H1 H2; simpl in *; auto.
     - repeat case_match; auto. lia.
-    - apply orb_false_elim in H1. destruct_and!.
-      erewrite -> IHϕ1 by eassumption.
-      erewrite -> IHϕ2 by eassumption.
+   - apply orb_false_elim in H1. destruct_and!.
+      erewrite -> IHϕ1.
+      erewrite -> IHϕ2.
       reflexivity.
+      all: try assumption.
+      1-2: naive_bsolver.
     - apply orb_false_elim in H1. destruct_and!.
-      erewrite -> IHϕ1 by eassumption.
-      erewrite -> IHϕ2 by eassumption.
+      erewrite -> IHϕ1.
+      erewrite -> IHϕ2.
       reflexivity.
+      all: try assumption.
+      1-2: naive_bsolver.
   Qed.
 
   Lemma wf_ex_quan_impl_wf (x : evar) (ϕ : Pattern):
@@ -1086,12 +1073,12 @@ Section with_signature.
     well_formed ϕ = true.
   Proof.
     intros H0 H. unfold exists_quantify in H.
-    unfold well_formed, well_formed_closed in *. destruct_and!. simpl in *.
-    split_and!.
-    - eapply wfp_evar_quan_impl_wfp. eassumption.
-    - eapply wfcmu_evar_quan_impl_wfcmu. eassumption.
-    - apply wfcex_evar_quan_impl_wfcex in H3.
-      apply wfc_ex_lower; assumption.
+    unfold well_formed, well_formed_closed in *. destruct_andb! H. simpl in *.
+    apply wfp_evar_quan_impl_wfp in H1.
+    apply wfcmu_evar_quan_impl_wfcmu in H.
+    apply wfcex_evar_quan_impl_wfcex in H3.
+    apply wfc_ex_lower in H3. 2: assumption.
+    naive_bsolver.
   Qed.
 
   Lemma bevar_occur_evar_open_2 dbi x ϕ:
@@ -1103,9 +1090,9 @@ Section with_signature.
     induction ϕ; intros dbi Hwf; simpl; try reflexivity.
     - case_match; simpl; auto.
       case_match; try lia. simpl in Hwf. case_match; [lia | congruence ].
-    - simpl in Hwf. destruct_and!.
+    - simpl in Hwf. destruct_andb! Hwf.
       rewrite IHϕ1; auto. rewrite IHϕ2; auto.
-    - simpl in Hwf. destruct_and!.
+    - simpl in Hwf. destruct_andb! Hwf.
       rewrite IHϕ1; auto. rewrite IHϕ2; auto.
     - rewrite IHϕ; auto.
     - rewrite IHϕ; auto.
@@ -1120,9 +1107,9 @@ Section with_signature.
     induction ϕ; intros dbi Hwf; simpl; try reflexivity.
     - case_match; simpl; auto.
       case_match; try lia. simpl in Hwf. case_match; [lia | congruence ].
-    - simpl in Hwf. destruct_and!.
+    - simpl in Hwf. destruct_andb! Hwf.
       rewrite IHϕ1; auto. rewrite IHϕ2; auto.
-    - simpl in Hwf. destruct_and!.
+    - simpl in Hwf. destruct_andb! Hwf.
       rewrite IHϕ1; auto. rewrite IHϕ2; auto.
     - rewrite IHϕ; auto.
     - rewrite IHϕ; auto.
@@ -2028,7 +2015,7 @@ Section with_signature.
         split.
         {
           apply IHcpatt1.
-          { destruct_and!. assumption. }
+          { naive_bsolver. }
           { exact Hin1. }
           { lia. }
           { exact Hltϕ. }
@@ -2036,7 +2023,7 @@ Section with_signature.
         }
         {
           apply IHcpatt2.
-          { destruct_and!. assumption. }
+          { naive_bsolver. }
           { exact Hin2. }
           { lia. }
           { exact Hltϕ. }
@@ -2047,7 +2034,7 @@ Section with_signature.
         split.
         {
           apply IHcpatt1.
-          { destruct_and!. assumption. }
+          { naive_bsolver. }
           { exact Hin1. }
           { lia. }
           { exact Hltϕ. }
@@ -2068,7 +2055,7 @@ Section with_signature.
         }
         {
           apply IHcpatt2.
-          { destruct_and!. assumption. }
+          { naive_bsolver. }
           { exact Hin2. }
           { lia. }
           { exact Hltϕ. }
@@ -2085,7 +2072,7 @@ Section with_signature.
         split.
         {
           apply IHcpatt1.
-          { destruct_and!. assumption. }
+          { naive_bsolver. }
           { exact Hin1. }
           { lia. }
           { exact Hltϕ. }
@@ -2093,7 +2080,7 @@ Section with_signature.
         }
         {
           apply IHcpatt2.
-          { destruct_and!. assumption. }
+          { naive_bsolver. }
           { exact Hin2. }
           { lia. }
           { exact Hltϕ. }
@@ -2104,7 +2091,7 @@ Section with_signature.
         split.
         {
           apply IHcpatt1.
-          { destruct_and!. assumption. }
+          { naive_bsolver. }
           { exact Hin1. }
           { lia. }
           { exact Hltϕ. }
@@ -2125,7 +2112,7 @@ Section with_signature.
         }
         {
           apply IHcpatt2.
-          { destruct_and!. assumption. }
+          { naive_bsolver. }
           { exact Hin2. }
           { lia. }
           { exact Hltϕ. }
@@ -2267,11 +2254,11 @@ Section with_signature.
     induction ϕ; cbn; intros depth1 depth2 banned Hlt H;
       try reflexivity.
     {
-      destruct_and! H. erewrite IHϕ1, IHϕ2; try eassumption.
+      destruct_andb! H. erewrite IHϕ1, IHϕ2; try eassumption.
       reflexivity.
     }
     {
-      destruct_and! H. erewrite IHϕ1, IHϕ2; try eassumption.
+      destruct_andb! H. erewrite IHϕ1, IHϕ2; try eassumption.
       reflexivity.
     }
     {
@@ -2370,7 +2357,7 @@ Section with_signature.
       destruct Hfr as [Hfr1 Hfr2].
       rewrite andb_true_iff in Hbs.
       destruct Hbs as [Hbs1 Hbs2].
-      destruct_and!.
+      destruct_andb! Hwf.
       specialize (IHϕ1 d dbi level ltac:(wf_auto2) Hfr1 Hbs1).
       specialize (IHϕ2 d dbi level ltac:(wf_auto2) Hfr2 Hbs2).
       lia.
@@ -2381,7 +2368,7 @@ Section with_signature.
       destruct Hfr as [Hfr1 Hfr2].
       rewrite andb_true_iff in Hbs.
       destruct Hbs as [Hbs1 Hbs2].
-      destruct_and!.
+      destruct_andb! Hwf.
       specialize (IHϕ1 d dbi level ltac:(wf_auto2) Hfr1 Hbs1).
       specialize (IHϕ2 d dbi level ltac:(wf_auto2) Hfr2 Hbs2).
       lia.
@@ -2628,13 +2615,13 @@ Section with_signature.
       assumption.
     }
     {
-      destruct_and! H3.
+      destruct_andb! H3.
       rewrite IHϕ1; try assumption.
       rewrite IHϕ2; try assumption.
       reflexivity.
     }
     {
-      destruct_and! H3.
+      destruct_andb! H3.
       rewrite IHϕ1; try assumption.
       rewrite IHϕ2; try assumption.
       reflexivity.
@@ -2833,13 +2820,13 @@ Section with_signature.
       repeat case_match; cbn in *; try reflexivity.
     }
     {
-      destruct_and! H.
+      destruct_andb! H.
       rewrite IHϕ1; try assumption.
       rewrite IHϕ2; try assumption.
       reflexivity.
     }
     {
-      destruct_and! H.
+      destruct_andb! H.
       rewrite IHϕ1; try assumption.
       rewrite IHϕ2; try assumption.
       reflexivity.
@@ -2871,13 +2858,13 @@ Section with_signature.
     move: level dbi n.
     induction ϕ; cbn; intros level dbi n' H1 H2; try reflexivity.
     {
-      destruct_and!.
+      destruct_andb! H1. destruct H2.
       rewrite IHϕ1; try assumption.
       rewrite IHϕ2; try assumption.
       reflexivity.
     }
     {
-      destruct_and!.
+      destruct_andb! H1. destruct H2.
       rewrite IHϕ1; try assumption.
       rewrite IHϕ2; try assumption.
       reflexivity.
@@ -2953,9 +2940,8 @@ Section with_signature.
     * specialize (IHφ1 x dbi). specialize (IHφ2 x dbi). naive_bsolver.
     * specialize (IHφ1 x dbi). specialize (IHφ2 x dbi). naive_bsolver.
     * by apply IHφ.
-    * destruct_and!. rewrite IHφ. naive_bsolver.
-      split_and!. 2: reflexivity.
-      by apply bound_svar_is_banned_under_mus_evar_open.
+    * rewrite IHφ. naive_bsolver.
+      rewrite bound_svar_is_banned_under_mus_evar_open; naive_bsolver.
   Qed.
 
   Lemma bsvar_occur_bsvar_subst_wf :
@@ -3021,8 +3007,8 @@ Section with_signature.
     * specialize (IHφ1 X dbi). specialize (IHφ2 X dbi). naive_bsolver.
     * specialize (IHφ1 X dbi). specialize (IHφ2 X dbi). naive_bsolver.
     * by apply IHφ.
-    * destruct_and!. rewrite IHφ. 1-2: naive_bsolver.
-      split_and!. 2: reflexivity.
+    * destruct_andb! H0. rewrite IHφ. 1-2: naive_bsolver.
+      apply andb_true_iff; split. 2: reflexivity.
       rewrite bound_svar_is_banned_bsvar_subst; wf_auto2.
   Qed.
 

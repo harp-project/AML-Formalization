@@ -1,31 +1,11 @@
-From Coq Require Import ssreflect ssrfun ssrbool.
+From Coq Require Import Logic.Classical_Prop
+                        Classes.Morphisms_Prop.
+From MatchingLogic Require Export Logic
+                                  Definedness_Syntax.
+Import MatchingLogic.Logic.Notations
+       MatchingLogic.Theories.Definedness_Syntax.Notations.
 
-Require Import Equations.Prop.Equations.
-
-From Coq Require Import String Setoid.
-Require Import Coq.Program.Equality.
-Require Import Coq.Logic.Classical_Prop.
-From Coq.Logic Require Import FunctionalExtensionality Eqdep_dec.
-From Coq.Classes Require Import Morphisms_Prop.
-From Coq.Unicode Require Import Utf8.
-From Coq.micromega Require Import Lia.
-
-From MatchingLogic Require Import Logic.
-From MatchingLogic Require Import
-  Semantics
-  DerivedOperators_Semantics
-  PrePredicate
-.
-Import MatchingLogic.Logic.Notations.
-From MatchingLogic.Utils Require Import stdpp_ext.
-
-From stdpp Require Import base fin_sets sets propset proof_irrel option list finite.
-
-Import extralibrary.
-
-Require Import MatchingLogic.Theories.Definedness_Syntax.
-Import Definedness_Syntax.Notations.
-Import MatchingLogic.Semantics.Notations.
+Set Default Proof Mode "Classic".
 
 Section definedness.
   Context
@@ -35,12 +15,12 @@ Section definedness.
   Open Scope ml_scope.
 
   Let sym (s : Symbols) : Pattern :=
-    @patt_sym Σ (inj s).
+    @patt_sym Σ (sym_inj s).
 
   Lemma definedness_app_ext_not_empty : forall (M : Model),
     M ⊨ᵀ theory ->
       forall S, S ≠ ∅ ->
-        app_ext (sym_interp M (inj definedness)) S = ⊤.
+        app_ext (sym_interp M (sym_inj def_sym)) S = ⊤.
   Proof.
     intros.
     pose proof (H' := proj1 (satisfies_theory_iff_satisfies_named_axioms named_axioms M)).
@@ -80,7 +60,7 @@ Section definedness.
     { rewrite -> elem_of_subseteq. intros.  inversion H2. subst. assumption. }
 
     pose proof (Hincl' := app_ext_monotonic_r
-                            (eval ρ (patt_sym (inj definedness)))
+                            (eval ρ definedness)
                             {[x]}
                             (eval ρ ϕ)
                             Hincl
@@ -118,7 +98,7 @@ Section definedness.
     intros M H ϕ ρ H0.
     pose proof (H1 := empty_impl_not_full _ H0).
     pose proof (H2 := modus_tollens _ _ (definedness_not_empty_1 M H ϕ ρ) H1).
-    apply NNPP in H2. apply H2.
+    apply Classical_Prop.NNPP in H2. apply H2.
   Qed.
 
   Lemma definedness_not_empty_2 : forall (M : Model),
@@ -596,7 +576,7 @@ Section definedness.
 
   Lemma single_element_definedness_impl_satisfies_definedness (M : Model) :
     (exists (hashdef : Domain M),
-        sym_interp M (inj definedness) = {[hashdef]}
+        sym_interp M (sym_inj def_sym) = {[hashdef]}
         /\ forall x, app_interp _ hashdef x = ⊤
     ) ->
         satisfies_model M (axiom AxDefinedness).
@@ -608,7 +588,7 @@ Section definedness.
     unfold patt_defined.
     unfold p_x.
     rewrite -> eval_app_simpl.
-    rewrite -> eval_sym_simpl.
+    setoid_rewrite -> eval_sym_simpl.
     rewrite -> set_eq_subseteq.
     split.
     { apply top_subseteq. }
@@ -633,7 +613,7 @@ Section definedness.
     M ⊨ᵀ theory ->
     forall (x y : Domain M),
       exists (z : Domain M),
-        z ∈ sym_interp M (inj definedness)
+        z ∈ sym_interp M (sym_inj def_sym)
         /\ y ∈ app_interp _ z x.
   Proof.
     intros HM x y.
@@ -761,7 +741,7 @@ Section definedness.
       rewrite evar_open_free_evar_subst_swap; try assumption.
       rewrite evar_open_free_evar_subst_swap; try assumption.
       apply IHsz.
-      - rewrite evar_open_size'. lia.
+      - setoid_rewrite <- evar_open_size. lia.
       - rewrite !eval_free_evar_independent.
         1-2: unfold evar_is_fresh_in; subst z; solve_fresh.
         assumption.
@@ -777,7 +757,7 @@ Section definedness.
       rewrite -free_evar_subst_bsvar_subst. wf_auto2. unfold evar_is_fresh_in. set_solver.
       rewrite -free_evar_subst_bsvar_subst. wf_auto2. unfold evar_is_fresh_in. set_solver.
       apply IHsz.
-      - rewrite svar_open_size'. lia.
+      - setoid_rewrite <- svar_open_size. lia.
       - rewrite !eval_free_svar_independent.
         1-2: unfold evar_is_fresh_in; subst Z; solve_sfresh.
         assumption.
@@ -803,8 +783,8 @@ Section definedness.
 End definedness.
 
 From MatchingLogic Require Import StringSignature.
-
 Module equivalence_insufficient.
+
   Open Scope ml_scope.
   Inductive exampleSymbols : Set :=
   | sym_f.
@@ -827,10 +807,10 @@ Module equivalence_insufficient.
     {
       apply NoDup_nil. exact I.
     }
-  Qed.
+  Defined.
   Next Obligation.
   intros []. set_solver.
-  Qed.
+  Defined.
 
   #[local]
   Instance mySignature : Signature :=
@@ -862,12 +842,6 @@ Module equivalence_insufficient.
                       {[ f ]};
     app_interp := example_app_interp;
   |}.
-
-  Theorem app_ext_singleton : forall x y,
-    app_ext {[x]} {[y]} ≡ @app_interp mySignature exampleModel x y.
-  Proof.
-    intros x y. unfold app_ext. set_solver.
-  Qed.
 
   Example equiv_not_eq :
     forall ρ, @eval _ exampleModel ρ (ex , (patt_sym sym_f ⋅ patt_free_evar "x"%string <---> b0)) = ⊤.
@@ -966,6 +940,123 @@ Module equivalence_insufficient.
   Qed.
   Close Scope ml_scope.
 End equivalence_insufficient.
+
+
+Module equivalence_insufficient2.
+  Open Scope ml_scope.
+  Inductive exampleSymbols : Set :=
+  | sym_f
+  | sym_g.
+
+  Local
+  Instance exampleSymbols_eqdec : EqDecision exampleSymbols.
+  Proof. unfold EqDecision. intros x y. unfold Decision. decide equality. Defined.
+
+  Local
+  Program Instance exampleSymbols_fin : Finite exampleSymbols :=
+  {|
+    enum := [sym_f; sym_g] ;
+  |}.
+  Next Obligation.
+    apply NoDup_cons.
+    split.
+    {
+      intros HContra. inversion HContra.
+      subst. inversion H1.
+    }
+    apply NoDup_cons. split.
+    {
+      intro. inversion H.
+    }
+    {
+      apply NoDup_nil. exact I.
+    }
+  Defined.
+  Next Obligation.
+    intros []; set_solver.
+  Defined.
+
+  #[local]
+  Instance mySignature : Signature :=
+  {| variables := StringMLVariables;
+     ml_symbols := {|
+      symbols := exampleSymbols;
+      sym_eqdec := exampleSymbols_eqdec;
+     |};
+  |}.
+
+  Inductive exampleDomain : Set :=
+  | one | two | f | g.
+
+  Instance exampleDomain_Inhabited : Inhabited exampleDomain.
+  Proof. constructor. apply one. Defined.
+
+  Definition example_sym_interp (x : symbols) : propset exampleDomain :=
+    match x with
+    | sym_f => {[f]}
+    | sym_g => {[g]}
+    end.
+
+  Definition example_app_interp (d1 d2 : exampleDomain) : propset exampleDomain :=
+  match d1, d2 with
+  | g, f => {[two]}
+  | g, g => {[f]}
+  | _, _ => ∅
+  end.
+
+  Definition exampleModel : @Model mySignature :=
+  {|
+    Domain := exampleDomain;
+    Domain_inhabited := exampleDomain_Inhabited;
+    sym_interp := example_sym_interp;
+    app_interp := example_app_interp;
+  |}.
+
+  Theorem app_ext_singleton : forall x y,
+    app_ext {[x]} {[y]} = @app_interp mySignature exampleModel x y.
+  Proof.
+    intros x y. unfold app_ext.
+    apply set_eq. set_solver.
+  Qed.
+
+  Example equiv_elim_not :
+    forall ρ,
+        @eval _ exampleModel ρ
+          (patt_sym sym_f <---> patt_sym sym_g --->
+          patt_sym sym_g ⋅ patt_sym sym_f ---> patt_sym sym_g ⋅ patt_sym sym_g) ≠ ⊤.
+  Proof.
+    intros.
+    (** First, we simplify the interpretation *)
+    rewrite eval_imp_simpl eval_imp_simpl.
+    rewrite eval_iff_simpl.
+    repeat rewrite eval_simpl.
+    (** Next, we simplify the model-specific parts:*)
+    cbn.
+    rewrite 2!app_ext_singleton.
+    cbn. intro.
+    (**
+      Now we derive a counterexample by showing that the element "two"
+      won't be in the LHS of H. This only involves simplification of set
+      operations.
+    *)
+    epose proof (proj1 (set_eq _ _) H two) as [_ ?]. Unshelve.
+    2: { apply (@propset_leibniz_equiv mySignature exampleModel). } (* why is this not automatic?? *)
+    clear H.
+    specialize (H0 ltac:(set_solver)).
+    (* set_solver should work at this point... *)
+    apply elem_of_union in H0 as [|].
+    * apply elem_of_difference in H as [? ?].
+      apply H0.
+      apply elem_of_intersection. split.
+      - apply elem_of_union_r. set_solver.
+      - apply elem_of_union_l. set_solver.
+    * apply elem_of_union in H as [|].
+      - apply elem_of_difference in H as [? ?].
+        set_solver.
+      - set_solver.
+  Qed.
+
+End equivalence_insufficient2.
 
 #[export]
 Hint Resolve T_predicate_defined : core.

@@ -1,19 +1,9 @@
-From Coq Require Import ssreflect ssrfun ssrbool.
-
-From Coq Require Import Strings.String.
-From Coq Require Import Logic.PropExtensionality Logic.Eqdep_dec.
-
-From stdpp Require Export base gmap fin_sets sets list countable.
-From MatchingLogic Require Import
-  Syntax
-  DerivedOperators_Syntax
-  ProofSystem
-  ProofInfo
-  Utils.stdpp_ext
+From MatchingLogic Require Export
+  Logic
 .
-From MatchingLogicProver Require Import Named NamedProofSystem.
+From MatchingLogicProver Require Import NamedProofSystem.
+Set Default Proof Mode "Classic".
 
-From stdpp Require Import base finite gmap mapset listset_nodup numbers propset list pretty strings.
 
 Section ProofConversionAbstractReader.
 

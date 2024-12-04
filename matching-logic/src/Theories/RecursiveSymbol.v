@@ -1,19 +1,10 @@
-From Coq Require Import ssreflect ssrfun ssrbool.
+From MatchingLogic Require Export ProductSortWithLookup.
+Import MatchingLogic.Logic.Notations
+       MatchingLogic.Theories.Definedness_Syntax.Notations
+       MatchingLogic.Theories.Sorts_Syntax.Notations
+       MatchingLogic.Theories.ProductSort.Notations.
 
-From Coq Require Import Unicode.Utf8.
-From stdpp Require Import base sets list.
-
-From MatchingLogic Require Import
-    Logic
-    Theories.Sorts_Syntax
-    Theories.ProductSort
-    Theories.ProductSortWithLookup
-.
-
-Import Logic.Notations.
-Import BoundVarSugar.
-Import Definedness_Syntax.Notations.
-Import ProductSort.Notations.
+Set Default Proof Mode "Classic".
 
 Delimit Scope ml_scope with ml. (* TODO move this somewhere else *)
 

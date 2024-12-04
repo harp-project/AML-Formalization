@@ -1,29 +1,9 @@
-From Coq Require Import String.
+From MatchingLogic Require Import Theories.Definedness_ProofSystem.
 
-From MatchingLogic.Theories Require Import Definedness_Syntax
-                                           Definedness_Semantics
-                                           Sorts_Syntax
-                                           Sorts_Semantics
-                                           Definedness_ProofSystem
-                                           DeductionTheorem.
+Import MatchingLogic.Logic.Notations
+       MatchingLogic.Theories.Definedness_Syntax.Notations.
 
-From MatchingLogic Require Import
-    Logic
-    DerivedOperators_Syntax
-    ProofSystem
-    ProofMode.MLPM
-    BasicProofSystemLemmas
-    FreshnessManager
-.
-
-Import
-  MatchingLogic.Logic.Notations
-  MatchingLogic.DerivedOperators_Syntax.Notations
-  MatchingLogic.Theories.Definedness_Syntax.Notations.
-
-Open Scope string_scope.
-Open Scope list_scope.
-Open Scope ml_scope.
+Set Default Proof Mode "Classic".
 
 Section running.
   Notation definedness_theory := Theories.Definedness_Syntax.theory.
@@ -174,7 +154,6 @@ Section running.
 End running.
 
 Section compute.
-  From stdpp Require Import base fin_sets sets propset finite.
 
   Inductive Symbols :=
   | sym_import_definedness (d : Definedness_Syntax.Symbols)
@@ -189,27 +168,27 @@ Section compute.
   #[local]
   Program Instance Symbols_fin : Finite Symbols :=
   {|
-  enum := [Zero; Succ; TT ; FF; even;
-  sym_import_definedness Definedness_Syntax.definedness] ;
+    enum := [Zero; Succ; TT ; FF; even;
+    sym_import_definedness Definedness_Syntax.def_sym] ;
   |}.
   Next Obligation.
-  repeat constructor; set_solver.
+    repeat constructor; set_solver.
   Qed.
   Next Obligation.
-  destruct x; try set_solver.
-  destruct d; set_solver.
+    destruct x; try set_solver.
+    destruct d; set_solver.
   Qed.
 
   Instance signature : Signature :=
   {| variables := StringMLVariables ;
-  ml_symbols := {|
-  symbols := Symbols ;
-  |}
+    ml_symbols := {|
+      symbols := Symbols ;
+    |}
   |}.
 
   Instance definedness_syntax : Definedness_Syntax.Syntax :=
   {|
-  Definedness_Syntax.inj := sym_import_definedness;
+    Definedness_Syntax.sym_inj := sym_import_definedness;
   |}.
 
   Open Scope string_scope.

@@ -9,6 +9,8 @@ From MatchingLogic Require Import
 
 Import MatchingLogic.Syntax.Notations.
 
+Set Default Proof Mode "Classic".
+
 (* Below we prove that in matching logic, ϕ -> ϕ for any pattern ϕ. *)
 Example phi_implies_phi
     (* Formulas are formed over a particular signature *)
@@ -46,7 +48,7 @@ Example phi_implies_phi_from_empty_theory {Σ : Signature} (ϕ : Pattern) :
 .
 Proof.
     intros wfϕ.
-    toMLGoal;[wf_auto2|].
+    toMLGoal;[wf_auto2| ].
     mlTauto.
 Qed.
 
@@ -167,6 +169,8 @@ From MatchingLogic Require Import
 Import Theories.Definedness_Syntax.Notations.
 Open Scope ml_scope.
 Open Scope string_scope.
+
+Set Default Proof Mode "Classic".
 
 (* Obviously, without the definedness symbol, we cannot use equality. *)
 Fail Example use_rewriteBy {Σ : Signature} (Γ : Theory) (ϕ₁ ϕ₂ ϕ₃ ϕ₄ : Pattern) :
@@ -289,7 +293,3 @@ Proof.
     *)
     mlExact "H2".
 Defined.
-
-Close Scope ml_scope.
-Close Scope string_scope.
-Close Scope list_scope.

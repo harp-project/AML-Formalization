@@ -1,7 +1,12 @@
-From Coq Require Import ssreflect ssrfun ssrbool.
+From Coq Require Import ssreflect
+                        ssrfun
+                        ssrbool.
 
-Require Import Coq.Setoids.Setoid Coq.Classes.Morphisms Coq.Relations.Relations.
-Require Import Logic.IndefiniteDescription Coq.Logic.FunctionalExtensionality.
+Require Import Coq.Setoids.Setoid
+               Coq.Classes.Morphisms
+               Coq.Relations.Relations.
+Require Import Logic.IndefiniteDescription
+               Coq.Logic.FunctionalExtensionality.
 
 From stdpp
 Require Import

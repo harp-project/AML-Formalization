@@ -1,22 +1,5 @@
-From Coq Require Import ssreflect ssrfun ssrbool.
-
-Require Import Setoid.
-From Coq.Logic Require Import FunctionalExtensionality.
-From Coq.Logic Require Import PropExtensionality ClassicalFacts.
-
-From stdpp Require Import base list sets propset.
-
-From MatchingLogic Require Import
-  Syntax
-  Semantics
-  DerivedOperators_Syntax
-  DerivedOperators_Semantics
-  monotonic
-  Utils.Lattice
-  Utils.stdpp_ext
-  IndexManipulation
-.
-
+From MatchingLogic Require Export monotonic
+                                  DerivedOperators_Semantics.
 Import MatchingLogic.Syntax.Notations.
 Import MatchingLogic.Substitution.Notations.
 Import MatchingLogic.DerivedOperators_Syntax.Notations.
@@ -359,7 +342,7 @@ Section with_signature.
           destruct (reverse (m::l)) eqn:Heq.
           { assert ( length (reverse (m::l)) = @length (Domain M) []).
             { rewrite Heq. reflexivity. }
-            rewrite reverse_length in H.
+            rewrite length_reverse in H.
             simpl in H. inversion H.
           }
 
@@ -750,7 +733,7 @@ Section with_signature.
             simpl in mp.
             epose proof (Htot := (list_lookup_lookup_total_lt (rev (d0 :: x' :: l')) 1 _)).
             Unshelve. 2: { constructor. exact d0. }
-            2: { simpl. rewrite app_length. rewrite app_length. simpl.  lia.  }
+            2: { simpl. rewrite length_app. rewrite length_app. simpl.  lia.  }
 
             remember (@lookup_total nat (@Domain Σ M) (list (@Domain Σ M))
                  (@list_lookup_total (@Domain Σ M) {| inhabitant := d0 |}) (S O)
@@ -803,7 +786,7 @@ Section with_signature.
               inversion H2. subst x' l'. clear H2.
               simpl in Htot.
               destruct (l ++ [m]) eqn:Hcontra.
-              { pose proof (Hcontra' := @app_length _ l [m]).
+              { pose proof (Hcontra' := @length_app _ l [m]).
                 rewrite Hcontra in Hcontra'.
                 simpl in Hcontra'. lia.
               }
@@ -1079,7 +1062,7 @@ Section with_signature.
             {
               assert (Hlendrop: length (drop (length l₂ - 1) l₁) = 1).
               { rewrite Heq. reflexivity. }
-              rewrite drop_length in Hlendrop.
+              rewrite length_drop in Hlendrop.
               assert (length l₂ <> 0).
               { intros Hcontra'.
                 apply nil_length_inv in Hcontra'.

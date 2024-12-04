@@ -1,36 +1,6 @@
-From Coq Require Import ssreflect ssrfun ssrbool.
-
-From Ltac2 Require Import Ltac2.
-
-From Coq Require Import Bool String.
-From Coq.Logic Require Import FunctionalExtensionality Eqdep_dec.
-From Equations Require Import Equations.
-
-Require Import Coq.Program.Tactics.
-
-From MatchingLogic Require Import
-  Syntax
-  DerivedOperators_Syntax
-  ProofSystem
-  IndexManipulation
-  ProofInfo
-  wftactics
-  Logic
-.
-
-From stdpp Require Import list tactics fin_sets coGset gmap sets.
-
-Import
-  MatchingLogic.Utils.stdpp_ext
-  MatchingLogic.Utils.extralibrary
-  MatchingLogic.ProofSystem.Notations_private
-  MatchingLogic.ProofInfo.Notations
-  MatchingLogic.Logic.Notations
-.
-
+From MatchingLogic Require Export Logic.
+Import Logic.Notations.
 Set Default Proof Mode "Classic".
-
-Open Scope ml_scope.
 
 Record named_hypothesis {Σ : Signature} := mkNH
   {
@@ -464,7 +434,7 @@ Defined.
 
 Ltac2 _simplLocalContext () :=
   match! goal with
-    | [ |- @of_MLGoal ?sgm (mkMLGoal ?sgm ?ctx ?l ?g ?i) ]
+    | [ |- @of_MLGoal _ (mkMLGoal _ _ ?l _ _) ]
       => let f := ltac1:(l |- rewrite {1}[l]/app) in
          (f (Ltac1.of_constr l))
     | [ |- _] => throw_pm_exn_with_goal "_simplLocalContext: Not a matching logic proof mode goal: "
@@ -680,9 +650,9 @@ Defined.
 Ltac2 do_mlRevertLast () :=
   Control.enter(fun () =>
     match! goal with
-    | [|- @of_MLGoal ?sgm (mkMLGoal ?sgm ?ctx [] ?g ?i)] =>
+    | [|- @of_MLGoal _ (mkMLGoal _ _ [] _ _)] =>
       throw_pm_exn (Message.of_string ("do_mlRevertLast: There are no hypotheses to revert!"))
-    | [|- @of_MLGoal ?sgm (mkMLGoal ?sgm ?ctx ?l ?g ?i)]
+    | [|- @of_MLGoal _ (mkMLGoal _ _ ?l _ _)]
     => eapply cast_proof_ml_hyps>
       [(ltac1:(l |- rewrite -[l](take_drop (length l - 1)); rewrite [take _ _]/=; rewrite [drop _ _]/=) (Ltac1.of_constr l); reflexivity)|()];
       apply MLGoal_revertLast
@@ -738,5 +708,3 @@ Proof.
   Fail mlRename "6"%string into "6"%string.
   Fail mlRename "4"%string into "1"%string.
 Abort.
-
-Close Scope ml_scope.

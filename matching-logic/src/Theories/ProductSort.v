@@ -1,23 +1,9 @@
-From Coq Require Import ssreflect ssrfun ssrbool.
+From MatchingLogic Require Export Sorts_Syntax.
+Import MatchingLogic.Logic.Notations
+       MatchingLogic.Theories.Definedness_Syntax.Notations
+       MatchingLogic.Theories.Sorts_Syntax.Notations.
 
-From Coq Require Import Unicode.Utf8.
-From stdpp Require Import base sets.
-
-From MatchingLogic Require Import
-    Logic
-    Theories.Sorts_Syntax
-.
-
-
-Require Import Setoid.
-From Coq.Logic Require Import Classical_Prop FunctionalExtensionality.
-From Coq.Classes Require Import Morphisms_Prop.
-Import BoundVarSugar.
-Import Definedness_Syntax.Notations.
-Import Sorts_Syntax.Notations.
-
-
-Open Scope ml_scope.
+Set Default Proof Mode "Classic".
 
 Inductive Symbols {Σ : Signature} (s1 s2 : Pattern) :=
 | ml_prod
@@ -93,7 +79,7 @@ Section axioms.
     | InversePairProjb
     .
 
-    Arguments patt_forall_of_sort {Σ self} sort phi%ml_scope.
+    Arguments patt_forall_of_sort {Σ self} sort phi%_ml_scope.
 
     Definition axiom (name : AxiomName) : Pattern :=
     match name with

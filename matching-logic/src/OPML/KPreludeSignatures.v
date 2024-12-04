@@ -1,18 +1,9 @@
-From Coq Require Import ssreflect ssrfun ssrbool.
 
-From stdpp Require Import base finite list list_numbers propset strings.
+From stdpp Require Export finite strings.
 (* This is unset by stdpp. We need to set it again.*)
 Set Transparent Obligations.
 
-From Equations Require Import Equations.
-(* Set Equations Transparent. *)
-
-Require Import Coq.Program.Equality. (* Dependent destruction *)
-Require Import Coq.Logic.Classical_Prop. (* Proof irrelevance *)
-
-From MatchingLogic.OPML Require Import
-    OpmlSignature
-.
+From MatchingLogic.OPML Require Export OpmlSignature.
 
 #[global]
 Instance eq_partial_order (A : Type) : PartialOrder (@eq A).

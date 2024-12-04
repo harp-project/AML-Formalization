@@ -1,39 +1,19 @@
-From Coq Require Import ssreflect ssrfun ssrbool String.
-
-From Ltac2 Require Import Ltac2.
-
-From MatchingLogic Require Export Logic ProofMode.MLPM.
-From MatchingLogic.Theories Require Export Definedness_Syntax
-                                           Definedness_ProofSystem
-                                           Sorts_Syntax
-                                           Sorts_ProofSystem
-                                           FOEquality_ProofSystem
-                                           Bool_Syntax.
-
-From stdpp Require Import base propset.
-
-Import MatchingLogic.Logic.Notations.
-Import MatchingLogic.Theories.Definedness_Syntax.Notations.
-Import MatchingLogic.Theories.Sorts_Syntax.Notations.
+From MatchingLogic Require Export Sorts_ProofSystem
+                                  Bool_Syntax.
+Import MatchingLogic.Logic.Notations
+       MatchingLogic.Theories.Definedness_Syntax.Notations
+       MatchingLogic.Theories.Sorts_Syntax.Notations
+       MatchingLogic.Theories.Bool_Syntax.Notations.
 
 Set Default Proof Mode "Classic".
 
-Require Import MatchingLogic.Theories.DeductionTheorem.
-
-Import MatchingLogic.Theories.Definedness_Syntax.Notations.
-Import MatchingLogic.Theories.Bool_Syntax.Notations.
-
-Set Default Proof Mode "Classic".
+Open Scope list_scope.
 
 Section bools.
 Context
   { Σ : Signature}
   { syntax : Syntax}.
 
-Open Scope ml_scope.
-Open Scope string_scope.
-Open Scope list_scope.
-  
   Lemma use_bool_axiom ax Γ : 
     Bool_Syntax.theory ⊆ Γ ->
       Γ ⊢ axiom ax.
@@ -246,9 +226,7 @@ Open Scope list_scope.
     toMLGoal.
     wf_auto2.
     mlIntroAll x.
-    mlSortedSimpl.
-    mlSimpl.
-    cbn. fold mlBool.
+    mlSimpl. fold mlBool.
     unfold theory in H.
     pose proof use_bool_axiom AxInductiveDomain Γ H.
     simpl in H0. mlAdd H0 as "ind".
@@ -264,7 +242,7 @@ Open Scope list_scope.
         + simpl. auto.
         + wf_auto2.
         + wf_auto2.
-        + mlExists x. mlSimpl. cbn. fromMLGoal. apply useBasicReasoning.  
+        + mlExists x. mlSimpl. fromMLGoal. apply useBasicReasoning.  
           epose proof patt_equal_refl  (patt_free_evar x) Γ.
           apply H2. wf_auto2.
         + mlApplyMeta ex_sort_impl_ex.
@@ -291,7 +269,7 @@ Open Scope list_scope.
               + simpl. auto.
               + wf_auto2.
               + wf_auto2.
-              + mlExists y. mlSimpl. cbn. fromMLGoal. apply useBasicReasoning.  
+              + mlExists y. mlSimpl. fromMLGoal. apply useBasicReasoning.  
                 epose proof patt_equal_refl  (patt_free_evar y) Γ.
                 apply H3. wf_auto2.
               + mlApplyMeta ex_sort_impl_ex.
@@ -308,7 +286,7 @@ Open Scope list_scope.
               + simpl. auto.
               + wf_auto2.
               + wf_auto2.
-              + mlExists y. mlSimpl. cbn. fromMLGoal. apply useBasicReasoning.  
+              + mlExists y. mlSimpl. fromMLGoal. apply useBasicReasoning.  
                 epose proof patt_equal_refl  (patt_free_evar y) Γ.
                 apply H3. wf_auto2.
               + mlApplyMeta ex_sort_impl_ex.
@@ -318,7 +296,7 @@ Open Scope list_scope.
                 mlRewriteBy "H" at 1.
                 mlRewriteBy "H" at 1.
                 pose proof use_bool_axiom AxDefAndRightTrue Γ H.
-                simpl in H3. mlAdd H3. mlSpecialize "1" with y. mlSimpl. cbn. fold mlBool. mlRevert "1".
+                simpl in H3. mlAdd H3. mlSpecialize "1" with y. mlSimpl. fold mlBool. mlRevert "1".
                 mlRewriteBy "H" at 2.
                 mlRewriteBy "H" at 2.
                 mlIntro "H1".
@@ -327,7 +305,7 @@ Open Scope list_scope.
                 1: { mlClear "H1".
                   pose proof use_bool_axiom AxDefAndLeftTrue Γ H.
                   simpl in H4. mlAdd H4.
-                  mlSpecialize "1" with y. mlSimpl. cbn. fold mlBool. mlRevert "1".
+                  mlSpecialize "1" with y. mlSimpl. fold mlBool. mlRevert "1".
                   mlRewriteBy "H" at 2.
                   mlRewriteBy "H" at 2.
                   mlIntro "H1". mlApply "H1".
@@ -359,7 +337,7 @@ Open Scope list_scope.
         + simpl. auto.
         + wf_auto2.
         + wf_auto2.
-        + mlExists x. mlSimpl. cbn. fromMLGoal. apply useBasicReasoning.  
+        + mlExists x. mlSimpl. fromMLGoal. apply useBasicReasoning.  
           epose proof patt_equal_refl  (patt_free_evar x) Γ.
           apply H2. wf_auto2.
         + mlApplyMeta ex_sort_impl_ex.
@@ -386,7 +364,7 @@ Open Scope list_scope.
             + simpl. auto.
             + wf_auto2.
             + wf_auto2.
-            + mlExists y. mlSimpl. cbn. fromMLGoal. apply useBasicReasoning.  
+            + mlExists y. mlSimpl. fromMLGoal. apply useBasicReasoning.  
               epose proof patt_equal_refl  (patt_free_evar y) Γ.
               apply H3. wf_auto2.
             + mlApplyMeta ex_sort_impl_ex.
@@ -396,7 +374,7 @@ Open Scope list_scope.
               mlRewriteBy "H" at 1.
               mlRewriteBy "H" at 1.
               pose proof use_bool_axiom AxDefAndRightFalse Γ H.
-              simpl in H3. mlAdd H3. mlSpecialize "0" with y. mlSimpl. cbn. fold mlBool. mlRevert "0".
+              simpl in H3. mlAdd H3. mlSpecialize "0" with y. mlSimpl. fold mlBool. mlRevert "0".
               mlRewriteBy "H" at 2.
               mlIntro "H1".
               mlAssert ("P" : (mlFalse &&ml mlTrue =ml mlFalse)).
@@ -404,7 +382,7 @@ Open Scope list_scope.
               1: { mlClear "H1".
                   pose proof use_bool_axiom AxDefAndLeftFalse Γ H.
                   simpl in H4. mlAdd H4.
-                  mlSpecialize "0" with y. mlSimpl. cbn. fold mlBool. mlRevert "0".
+                  mlSpecialize "0" with y. mlSimpl. fold mlBool. mlRevert "0".
                   mlRewriteBy "H" at 2.
                   mlIntro "H1". mlApply "H1".
                   mlRewriteBy "ind" at 1.
@@ -434,7 +412,7 @@ Open Scope list_scope.
             + simpl. auto.
             + wf_auto2.
             + wf_auto2.
-            + mlExists y. mlSimpl. cbn. fromMLGoal. apply useBasicReasoning.  
+            + mlExists y. mlSimpl. fromMLGoal. apply useBasicReasoning.  
               epose proof patt_equal_refl  (patt_free_evar y) Γ.
               apply H3. wf_auto2.
             + mlApplyMeta ex_sort_impl_ex.
@@ -462,7 +440,7 @@ Open Scope list_scope.
     unfold theory in H.
     pose proof use_bool_axiom AxDefAndThenRightTrue Γ H.
     simpl in H0. mlAdd H0. 
-    mlSpecialize "0" with x. mlSimpl. cbn. fold mlBool.
+    mlSpecialize "0" with x. mlSimpl. fold mlBool.
     mlAssumption. 
   Qed.
 
@@ -476,7 +454,7 @@ Open Scope list_scope.
     mlIntroAll x.
     cbn.
     pose proof use_bool_axiom AxDefAndThenRightFalse Γ H.
-    simpl in H0. mlAdd H0. mlSpecialize "0" with x. mlSimpl. cbn.
+    simpl in H0. mlAdd H0. mlSpecialize "0" with x. mlSimpl.
     mlAssumption. 
   Qed.
 

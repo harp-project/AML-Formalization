@@ -1,9 +1,5 @@
-From Coq Require Import ssreflect ssrfun ssrbool.
-
-From stdpp Require Import base list list_numbers propset.
-
-From MatchingLogic Require Import Signature Semantics ModelIsomorphism.
-From MatchingLogic.OPML Require Import OpmlSignature OpmlModel.
+From MatchingLogic Require Export ModelIsomorphism.
+From MatchingLogic.OPML Require Export OpmlSignature OpmlModel.
 
 Record OpmlAmlSigRel
     {Σo : OPMLSignature} {Σa : Signature} := {

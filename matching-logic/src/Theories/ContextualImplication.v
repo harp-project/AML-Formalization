@@ -1,37 +1,8 @@
-From Coq Require Import ssreflect ssrfun ssrbool.
-
-From Ltac2 Require Import Ltac2.
-
-Require Import Equations.Prop.Equations.
-
-From Coq Require Import String Setoid Btauto.
-Require Import Coq.Program.Equality.
-From Coq.Classes Require Import Morphisms_Prop.
-From Coq.Unicode Require Import Utf8.
-From Coq.micromega Require Import Lia.
-
-From stdpp Require Import base fin_sets sets propset proof_irrel option list coGset finite infinite gmap.
-
-From MatchingLogic Require Import
-  Logic
-  DerivedOperators_Syntax
-  ProofMode.MLPM
-  FreshnessManager
-.
-From MatchingLogic.Theories Require Import Definedness_Syntax Definedness_ProofSystem DeductionTheorem Subseteq_ProofSystem.
-From MatchingLogic.Utils Require Import stdpp_ext.
-Import extralibrary.
-
-Import MatchingLogic.Logic.Notations.
-Import MatchingLogic.DerivedOperators_Syntax.Notations.
+From MatchingLogic Require Export Definedness_ProofSystem.
+Import MatchingLogic.Logic.Notations
+       MatchingLogic.Theories.Definedness_Syntax.Notations.
 
 Set Default Proof Mode "Classic".
-
-Import Notations.
-
-Open Scope ml_scope.
-Open Scope string_scope.
-Open Scope list_scope.
 
 (* TODO split this file into syntax / proof system parts*)
 
@@ -107,7 +78,7 @@ Proof.
     toMLGoal.
     { wf_auto2. }
     mlIntroAll y.
-    mlSimpl. cbn.
+    mlSimpl.
     mlApplyMeta membership_imp_2.
     2: exact HΓ.
     mlIntro "H".
@@ -130,7 +101,8 @@ Proof.
         mlApplyMeta membership_refl.
         2: exact HΓ.
         mlExists y.
-        mlSimpl. cbn.
+        mlSimpl.
+        unfold evar_open. cbn.
         mlReflexivity.
     }
     {
@@ -145,7 +117,7 @@ Proof.
           cbn in H5. set_solver.
         }
         mlExists y.
-        mlSimpl. cbn.
+        mlSimpl.
         mlApplyMeta membership_and_2.
         3: {
             eapply well_formed_closed_ex_aux_ind with (ind_evar1 := 0).
@@ -160,7 +132,8 @@ Proof.
             mlApplyMeta membership_refl.
             2: exact HΓ.
             mlExists y.
-            mlSimpl. cbn.
+            mlSimpl.
+            unfold evar_open. cbn.
             mlReflexivity.
         }
         unfold evar_open.
@@ -187,9 +160,10 @@ Proof.
     { wf_auto2. }
     mlIntro "H".
     mlDestructEx "H" as x.
-    mlSimpl. cbn.
+    mlSimpl.
     mlDestructAnd "H" as "H1" "H2".
     unfold evar_open.
+    cbn.
     rewrite bevar_subst_not_occur.
     { wf_auto2. }
     mlRevert "H1".

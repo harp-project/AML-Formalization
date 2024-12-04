@@ -1,18 +1,9 @@
-From Coq Require Import ssreflect ssrfun ssrbool.
-
-From Ltac2 Require Import Ltac2.
-From stdpp Require Import base gmap sets list.
-
-From MatchingLogic.Utils
-Require Import
-    extralibrary
-    stdpp_ext
-.
-
 From MatchingLogic
-Require Import
+Require Export
     Syntax
+    IndexManipulation
 .
+From Ltac2 Require Import Ltac2.
 
 Set Default Proof Mode "Classic".
 
@@ -799,13 +790,13 @@ Qed.
 
 Ltac2 rec _fm_export_everything () :=
     lazy_match! goal with
-    | [ fm : (FreshnessManager ?ps ?aevs ?asvs ?evs ?svs) |- _]
+    | [ fm : (FreshnessManager ?_ps ?_aevs ?_asvs ?_evs ?_svs) |- _]
         =>
         clear -$fm
     end;
     repeat (
     lazy_match! goal with
-    | [ fm : (FreshnessManager ?ps ?aevs ?asvs ?evs ?svs) |- _]
+    | [ fm : (FreshnessManager ?_ps ?_aevs ?_asvs ?_evs ?_svs) |- _]
         =>
         apply FreshMan_export_vars_inclusion in $fm;
         let h := Control.hyp fm in
@@ -814,7 +805,7 @@ Ltac2 rec _fm_export_everything () :=
     );
     repeat (
     lazy_match! goal with
-    | [ fm : (FreshnessManager ?ps ?aevs ?asvs ?evs ?svs) |- _]
+    | [ fm : (FreshnessManager ?_ps ?_aevs ?_asvs ?_evs ?_svs) |- _]
         =>
         apply FreshMan_export_evars_nodup in $fm;
         let h := Control.hyp fm in
@@ -823,7 +814,7 @@ Ltac2 rec _fm_export_everything () :=
     );
     repeat (
     lazy_match! goal with
-    | [ fm : (FreshnessManager ?ps ?aevs ?asvs ?evs ?svs) |- _]
+    | [ fm : (FreshnessManager ?_ps ?_aevs ?_asvs ?_evs ?_svs) |- _]
         =>
         apply FreshMan_export_svars_nodup in $fm;
         let h := Control.hyp fm in
@@ -831,9 +822,9 @@ Ltac2 rec _fm_export_everything () :=
     end
     );
     lazy_match! goal with
-    | [ fm : (FreshnessManager ?ps ?aevs ?asvs ?evs ?svs) |- _]
+    | [ fm : (FreshnessManager ?_ps ?_aevs ?_asvs ?_evs ?_svs) |- _]
         =>
-        clear fm
+        clear $fm
     end
 .
 
@@ -912,19 +903,20 @@ Ltac2 fm_solve () :=
         let fmt := (Control.hyp fm) in
         let pf := constr:(fm_svars_nodup $ps $aevs $asvs $evs $svs $fmt $i $j $x $y) in
         apply $pf > [reflexivity|reflexivity|ltac1:(lia)]
-    | [ fm : (FreshnessManager ?ps ?aevs ?asvs ?evs ?svs) |- (not (@elem_of _ _ _ ?x _))] =>
+    | [ _fm : (FreshnessManager ?_ps ?_aevs ?_asvs ?_evs ?_svs) |- _ (* (not (@elem_of _ _ _ ?x _)) *) ] =>
         (* This might not be the most scalable approach, but it works for now. *)
         _fm_export_everything ();
         cbn;
+        unfold evar_open;
+        unfold svar_open;
+        (* Message.print (Message.of_string "trying default strategy"); *)
+        (* TODO: rework this logic into solve_fresh *)
         ltac1:(pose proof (free_evars_bevar_subst);
                pose proof (free_svars_bsvar_subst);
+               pose proof (free_evars_evar_open);
                pose proof free_evars_free_evar_subst;
+               pose proof free_evars_nest_ex;
                subst; (solve_fresh + set_solver))
-    | [ fm : (FreshnessManager ?ps ?aevs ?asvs ?evs ?svs) |- (not (@elem_of evar _ _ ?x (free_evars_of_list ?phis)))] =>
-        (* This might not be the most scalable approach, but it works for now. *)        
-        _fm_export_everything (); cbn;
-        repeat (apply free_evars_of_list_unfold; split);
-        ltac1:(pose proof (free_evars_bevar_subst); subst; set_solver)
     | [ _ : _ |- _] => Message.print (Message.of_string "fm_solve() failed")
     end
 .
@@ -1004,6 +996,12 @@ Proof.
     assert (X ∉ free_svars (patt_imp ϕ₁ (patt_free_svar X0))). {
       fm_solve.
     }
+    assert (x ∉ free_evars (evar_open x0 0 ϕ₁)). {
+      fm_solve.
+    }
+    assert (x ∉ free_evars (nest_ex ϕ₁)). {
+      fm_solve.
+    }
     exact I.
 Qed.
 
@@ -1027,5 +1025,3 @@ Proof.
   pose proof (free_evars_bevar_subst).
   set_solver.
 Qed.
-
-Close Scope ml_scope.

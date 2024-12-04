@@ -1,29 +1,24 @@
 From LibHyps Require Import LibHyps.
-
-From Coq Require Import ssreflect ssrfun ssrbool.
-
 From Ltac2 Require Import Ltac2.
-
 From Coq Require Import Btauto.
 
-From stdpp Require Import countable infinite.
-From stdpp Require Import pmap gmap mapset fin_sets propset.
-
-
-Require Import stdpp_ext.
-
-From MatchingLogic
-Require Import
-  Utils.extralibrary
-  Pattern
-  Substitution
-  ApplicationContext
-  SyntaxLemmas.FreshnessSubstitution
-  SyntacticConstruct
-  IndexManipulation
-.
+From MatchingLogic Require Export ApplicationContext
+                                  SyntaxLemmas.FreshnessSubstitution
+                                  SyntacticConstruct
+                                  IndexManipulation.
 
 Set Default Proof Mode "Classic".
+
+Tactic Notation "split_and" :=
+  match goal with
+  | |- _ /\ _ => split
+  | |- is_true (_ && _) => apply andb_true_iff; split
+  | |- Is_true (_ && _) => apply andb_True; split
+  | |- (_ && _) = true  => apply andb_true_iff; split
+  | |- true = (_ && _)  => symmetry; apply andb_true_iff; split
+  end.
+Tactic Notation "split_and" "?" := repeat split_and.
+Tactic Notation "split_and" "!" := hnf; split_and; split_and?.
 
 
 (* This hook is specifically intended to be filled with a tactic which
@@ -107,7 +102,6 @@ Ltac compositeSimplifyAllWfHyps :=
   (onAllHyps simplifyWfxyHyp)
 .
 
-
 Ltac compoundDecomposeWfGoal :=
   rewrite ?wfToWfxySimplifications;
   rewrite ?wfxySimplifications;
@@ -152,24 +146,24 @@ Ltac clear_all_impls :=
     in *;
     simpl in *
   .
-  
+
 
 Ltac solve_size :=
   repeat (
   match goal with
-  | [ |- size' (evar_open _ _ _) < _ ]
-    => rewrite evar_open_size'
+  | [ |- pat_size (evar_open _ _ _) < _ ]
+    => rewrite evar_open_size
 
-  | [ |- size' (svar_open _ _ _) < _ ]
-    => rewrite svar_open_size'
+  | [ |- pat_size (svar_open _ _ _) < _ ]
+    => rewrite svar_open_size
 
-  | [ |- size' _ < size' (patt_app _ _) ]
+  | [ |- pat_size _ < pat_size (patt_app _ _) ]
     => simpl; lia
 
-  | [ |- size' _ < size' (patt_imp _ _) ]
+  | [ |- pat_size _ < pat_size (patt_imp _ _) ]
     => simpl; lia
 
-  | [ |- size' _ < size' (patt_exists _) ]
+  | [ |- pat_size _ < pat_size (patt_exists _) ]
     => simpl; lia
   end
   )
@@ -249,7 +243,7 @@ Definition lwfCexSimplifications := (
 ).
 
 Ltac2 mutable simplify_wf_hyp_part_hook
-:= (fun (h : ident) => () ).
+:= (fun (_h : ident) => () ).
 
 Ltac _simplify_wf_hyp_part_hook H :=
   let tac := ltac2:(h |- simplify_wf_hyp_part_hook (Option.get (Ltac1.to_ident h))) in
@@ -474,12 +468,16 @@ lazymatch goal with
 | _ => idtac
 end.
 
-Tactic Notation "mlSimpl" :=
+Tactic Notation "mlUnsortedSimpl" :=
   repeat (rewrite mlSimpl'); try rewrite [increase_ex _ _]/=; try rewrite [increase_mu]/=; try_wfauto2.
 
-Tactic Notation "mlSimpl" "in" hyp(H) :=
+Tactic Notation "mlUnsortedSimpl" "in" hyp(H) :=
   repeat (rewrite mlSimpl' in H); try rewrite [increase_ex _ _]/= in H; try rewrite [increase_mu _ _]/= in H; try_wfauto2.
 
-Tactic Notation "mlSortedSimpl" := simpl_sorted_quantification; try rewrite [increase_mu]/=; try_wfauto2.
-Tactic Notation "mlSortedSimpl" "in" hyp(H) := simpl_sorted_quantification_hyp H; try rewrite [increase_mu]/=; try_wfauto2.
+(** These will be shadowed in Sorts_Syntax.v *)
+Tactic Notation "mlSimpl" :=
+  mlUnsortedSimpl.
+
+Tactic Notation "mlSimpl" "in" hyp(H) :=
+  mlUnsortedSimpl in H.
 

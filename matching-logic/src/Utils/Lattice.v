@@ -1,5 +1,4 @@
-From stdpp Require Import base sets propset.
-From MatchingLogic.Utils Require Import stdpp_ext.
+From MatchingLogic.Utils Require Export stdpp_ext.
 
 
 Class OrderedSet A : Type :=

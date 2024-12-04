@@ -1,6 +1,6 @@
 # AML-Formalization
 
-In this project we attempt to fully implement the "Applicative Matching Logic" framework in Coq, with example intances.
+In this project, we attempt to fully implement the "Applicative Matching Logic" framework in Coq, with example instances.
 
 ## Documentation
 
@@ -14,10 +14,10 @@ In this project we attempt to fully implement the "Applicative Matching Logic" f
 ### Build
 
 The matching logic library (in the directory `matching-logic/`) depends on:
-- Coq 8.18.0
-- stdpp 1.9
-- equations 1.3
-- LibHyps 2.0.6
+- [Coq 8.20.0](https://coq.inria.fr)
+- [stdpp 1.11.0](https://gitlab.mpi-sws.org/iris/stdpp)
+- [equations 1.3.1+8.20](https://github.com/mattam82/Coq-Equations)
+- [LibHyps 2.0.8](https://github.com/Matafou/LibHyps)
 
 The easiest way to build the library is using the [Nix package manager](https://nixos.org/download.html),
 using the [Nix Flakes](https://nixos.wiki/wiki/Flakes) feature.
@@ -39,7 +39,7 @@ build the matching-logic library in an isolated environment:
 $ nix build '.#coq-matching-logic'
 ```
 (this is what CI does).
-Note that every time you run `nix build`, it starts from the fresh environment.
+Every time you run `nix build`, it starts from the fresh environment.
 
 
 If you want to work on the Metamath extractor:

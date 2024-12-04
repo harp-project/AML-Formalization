@@ -40,7 +40,9 @@
 | First-order tactics | |
 |-----------------------------------------:|------------------------------------|
 | `mlDestructEx "H" as x`                  | Uses the local hypothesis `"H"` to extract a witness `x`, where `x` already is a fresh variable - elimination of existential quantifier. |
+| `mlDestructExManual "H" as x`            | Provides the same behaviour as the tactic above, but does not try to solve the freshness conditions automatically. |
 | `mlIntroAll x`                           | Introduction of universal quantifier. |
+| `mlIntroAllManual x`                     | Introduction of universal quantifier. This variant does not try to solve the freshness side conditions for `x`. |
 | `mlSpecialize "H" with x`                | Specializes a local hypothesis `"H"` using a variable `x` - elimination of universal quantifier. |
 | `mlExists x`                             | Uses `x` to specialize an existential goal - introduction of existential quantifier. |
 | `mlRevertAll x`                          | Moves the free variable `x` back into the goal by quantifying over it. |

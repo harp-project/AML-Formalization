@@ -1,24 +1,11 @@
-From Coq Require Import ssreflect ssrfun ssrbool.
-
-From Coq.Vectors Require Import Vector.
-
 From Equations Require Import Equations.
-
-From stdpp Require Import
-    base
-    gmap
-    infinite
-    list
-    natmap
-    option
-    strings
-    stringmap
-    sets
-    vector
-.
-From MatchingLogic Require Import
+From MatchingLogic Require Export
     Signature
     Pattern
+.
+From stdpp Require Export
+    strings
+    stringmap
 .
 
 Require Import String.
@@ -200,7 +187,7 @@ Lemma max_value_in_leq
 Proof.
     unfold max_value.
     move: m.
-    eapply (map_fold_ind (
+    eapply (map_fold_weak_ind (
         fun resulting_value original_map =>
         original_map !! name = Some d ->
         d <= resulting_value
@@ -409,15 +396,15 @@ Section sec.
         ospecialize* Htmp.
         {
             rewrite length_list_map_pfin.
-            rewrite vec_to_list_length.
+            rewrite length_vec_to_list.
             reflexivity.
         }
         {
-            rewrite vec_to_list_length.
+            rewrite length_vec_to_list.
             reflexivity.
         }
         {
-            rewrite vec_to_list_length.
+            rewrite length_vec_to_list.
             reflexivity.
         }
         destruct Htmp as [ϕ_in_context Hϕ_in_context].
@@ -441,7 +428,7 @@ Section sec.
             pose proof (wfpf' := wfpf).
             unfold well_formed in wfpf'.
             unfold is_true in wfpf'.
-            apply andb_prop in wfpf'.
+            apply andb_true_iff in wfpf'.
             destruct wfpf' as [wfp wfc].
             unfold well_formed_closed in wfc.
             apply andb_prop in wfc.

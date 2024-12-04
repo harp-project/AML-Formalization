@@ -1,37 +1,9 @@
-From Coq Require Import ssreflect ssrfun ssrbool.
-
-From Ltac2 Require Import Ltac2.
-
-From Coq Require Import String Setoid.
-Require Import Coq.Program.Equality.
-Require Import Coq.Logic.Classical_Prop.
-From Coq.Logic Require Import FunctionalExtensionality Eqdep_dec.
-From Coq.Classes Require Import Morphisms_Prop.
-From Coq.Unicode Require Import Utf8.
-From Coq.micromega Require Import Lia.
-
-From MatchingLogic Require Import Logic ProofMode.MLPM.
-From MatchingLogic.Theories Require Import Definedness_Syntax Definedness_ProofSystem.
-From MatchingLogic.Utils Require Import stdpp_ext.
-
-Require Import MatchingLogic.wftactics.
-
-From stdpp Require Import base fin_sets sets propset proof_irrel option list.
-
-Import extralibrary.
-
-Import MatchingLogic.Logic.Notations.
-Import MatchingLogic.Theories.Definedness_Syntax.Notations.
-
-Require Import MatchingLogic.Theories.DeductionTheorem.
-
-Require MatchingLogic.Theories.Sorts_Syntax.
-Import MatchingLogic.Theories.Sorts_Syntax.Notations.
+From MatchingLogic Require Export DeductionTheorem.
+Import MatchingLogic.Logic.Notations
+       MatchingLogic.Theories.Definedness_Syntax.Notations.
 
 Set Default Proof Mode "Classic".
 
-Open Scope ml_scope.
-Open Scope string_scope.
 Open Scope list_scope.
 
 Lemma membership_imp_equal {Σ : Signature} {syntax : Syntax} Γ φ φ' :
@@ -87,7 +59,7 @@ Proof.
   apply H1.
   { wf_auto2. }
   clear H1.
-  now apply overlapping_variables_equal.
+  now apply membership_var.
 Defined.
 
 Lemma membership_imp_equal_meta {Σ : Signature} {syntax : Syntax} Γ φ φ' :
@@ -134,7 +106,7 @@ Proof.
     2: { apply set_evar_fresh_is_fresh'. }
     clear. set_solver.
   }
-  2: { cbn. split_and!; try reflexivity; fold well_formed_closed_ex_aux; wf_auto2. }
+  2: { cbn. wf_auto2. }
   apply universal_generalization;[apply pile_any|wf_auto2|].
   mlSimpl. unfold evar_open. simpl.
 
@@ -191,7 +163,7 @@ Proof.
   assumption.
   { wf_auto2. }
   { wf_auto2. }
-  { cbn. split_and!;[assumption|reflexivity|reflexivity]. }
+  { cbn. naive_bsolver. }
   { assumption. }
 Defined.
 
@@ -366,7 +338,8 @@ Section nary_functions.
   Proof.
     revert φ.
     induction l; intros φ HΓ Hwfl Hwf HMF1 HMF2; cbn in *. mlIntro. mlAssumption.
-    destruct_and!.
+    destruct_andb! HMF2.
+    destruct_andb! Hwfl.
     opose proof* (IHl (φ ⋅ a) HΓ H2 ltac:(wf_auto2)).
     { simpl. by rewrite H HMF1. }
     { assumption. }
@@ -494,7 +467,7 @@ Theorem exists_functional_subst_meta: ∀ {Σ : Signature} {syntax : Syntax} (Γ
   well_formed φ' ->
   well_formed_closed_ex_aux φ 1 ->
   well_formed_closed_mu_aux φ 0 ->
-  Γ ⊢ (ex , φ) ^ [φ'] ->
+  Γ ⊢ (ex , φ)^[φ'] ->
   Γ ⊢ is_functional φ' -> 
   Γ ⊢i (ex , φ) using AnyReasoning.
 Proof.
@@ -807,7 +780,6 @@ Proof.
   mlRewrite H3 at 1.
   unfold is_functional.
   mlIntro.
-  remember (fresh_evar(φ₂)) as x.
   mlDestructEx "0" as x.
   mlSimpl. cbn.
   rewrite evar_open_not_occur.
@@ -989,7 +961,4 @@ Section Example.
     assumption.
   Qed.
 End Example.
- 
-Close Scope ml_scope.
-Close Scope string_scope.
-Close Scope list_scope.
+

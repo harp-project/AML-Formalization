@@ -1,14 +1,5 @@
-From Coq Require Import ssreflect.
-From Coq Require Extraction extraction.ExtrHaskellString.
-
-From Coq Require Import Strings.String.
-From Equations Require Import Equations.
-
-From stdpp Require Export base.
-From MatchingLogic Require Import Syntax StringSignature ProofSystem .
-From MatchingLogicProver Require Import MMProofExtractor Named.
-
-From stdpp Require Import base finite gmap mapset listset_nodup numbers propset.
+From MatchingLogicProver Require Export MMProofExtractor.
+Set Default Proof Mode "Classic".
 
 Section named_proof_system.
 

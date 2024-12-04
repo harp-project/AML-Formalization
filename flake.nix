@@ -2,7 +2,7 @@
   description = "A Coq Library for Matching Logic";
 
   inputs = {
-    nixpkgs.url = "github:NixOs/nixpkgs";
+    nixpkgs.url = "github:NixOS/nixpkgs/release-24.11";
     flake-utils.url = "github:numtide/flake-utils";
     pyk.url = "github:runtimeverification/pyk/v0.1.491";
    };
@@ -11,11 +11,13 @@
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
-        coqPackages = pkgs.coqPackages_8_18;
+        coqPackages = pkgs.coqPackages_8_20;
         pyk-py = pyk.packages.${system}.pyk-python311;
         python = pyk-py.python;
+        # stdpp = coqPackages.stdpp.overrideAttrs (o : { src = fetchTarball { url = "https://gitlab.mpi-sws.org/iris/stdpp/-/archive/master/stdpp-master.tar.bz2"; sha256="sha256:1f8v61mcixcai8ki1l350hlnypc7v3rrxjcx4m0xclb01rlf9afa";}; });
 
         # The 'matching logic in Coq' library
+        
         coq-matching-logic = { coqPackages }: (
         coqPackages.callPackage 
         ( { coq, stdenv }:
@@ -26,6 +28,7 @@
           propagatedBuildInputs = [
             coq
             coqPackages.equations
+            # stdpp
             coqPackages.stdpp
             coqPackages.LibHyps
           ];
@@ -67,7 +70,7 @@
         packages.coq-matching-logic = coq-matching-logic { coqPackages = coqPackages; };
 
         # The 'matching logic in Coq' library
-        packages.coq-matching-logic-v8_17 = coq-matching-logic { coqPackages = pkgs.coqPackages_8_17; };
+        # packages.coq-matching-logic-v8_17 = coq-matching-logic { coqPackages = pkgs.coqPackages_8_17; };
 
         # Documentation of the 'matching logic in Coq' library
         packages.coq-matching-logic-doc
@@ -213,14 +216,14 @@
               };
 
 
-          coq-matching-logic-v8_17 =
-            let
-              coq-matching-logic = self.outputs.packages.${system}.coq-matching-logic-v8_17;
-            in
-              pkgs.mkShell {
-                inputsFrom = [coq-matching-logic];
-                packages = [coq-matching-logic.coqPackages.coq-lsp];
-              };
+          #coq-matching-logic-v8_17 =
+          #  let
+          #    coq-matching-logic = self.outputs.packages.${system}.coq-matching-logic-v8_17;
+          #  in
+          #    pkgs.mkShell {
+          #      inputsFrom = [coq-matching-logic];
+          #      packages = [coq-matching-logic.coqPackages.coq-lsp];
+          #    };
 
           coq-matching-logic-example-fol =
             let

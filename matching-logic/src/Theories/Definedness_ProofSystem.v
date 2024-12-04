@@ -1,33 +1,10 @@
-From Coq Require Import ssreflect ssrfun ssrbool.
-
-From Ltac2 Require Import Ltac2.
-
-Require Import Equations.Prop.Equations.
-
-From Coq Require Import String Setoid.
-Require Import Coq.Program.Equality.
-Require Import Coq.Logic.Classical_Prop.
-From Coq.Logic Require Import FunctionalExtensionality Eqdep_dec.
-From Coq.Classes Require Import Morphisms_Prop.
-(* From Coq.Unicode Require Import Utf8. *)
-From Coq.micromega Require Import Lia.
-
-From MatchingLogic Require Import Logic ProofMode.MLPM.
-From MatchingLogic.Theories Require Import Definedness_Syntax.
-From MatchingLogic.Utils Require Import stdpp_ext.
-Import extralibrary.
-
-From stdpp Require Import base fin_sets sets propset proof_irrel option list coGset finite infinite gmap.
-
-Import MatchingLogic.Logic.Notations.
-Import MatchingLogic.DerivedOperators_Syntax.Notations.
+From MatchingLogic Require Export Definedness_Syntax MLPM.
+Import MatchingLogic.Logic.Notations
+       MatchingLogic.Theories.Definedness_Syntax.Notations.
 
 Set Default Proof Mode "Classic".
 
-Close Scope equations_scope. (* Because of [!] *)
-Open Scope ml_scope.
-
-Import Notations.
+Open Scope list_scope.
 
 Section ProofSystemTheorems.
 
@@ -37,7 +14,7 @@ Context
 .
 
 
-  Definition defFP : coWfpSet := {[(exist (λ p, well_formed p = true) (patt_sym (Definedness_Syntax.inj definedness)) erefl)]}. 
+  Definition defFP : coWfpSet := {[(exist (λ p, well_formed p = true) (definedness) erefl)]}. 
 
   Lemma phi_impl_total_phi_meta Γ φ i:
     well_formed φ ->
@@ -335,7 +312,7 @@ Section ProofSystemTheorems.
     apply not_not_elim_meta in Htmp.
     3: { wf_auto2. }
     2: { wf_auto2. }
-    replace (patt_sym (Definedness_Syntax.inj definedness) ⋅ (patt_free_evar x and ! φ))%ml
+    replace (definedness ⋅ (patt_free_evar x and ! φ))%ml
       with (patt_defined (patt_free_evar x and ! φ)) in Htmp by reflexivity.
     
     toMLGoal.
@@ -1289,10 +1266,10 @@ Section ProofSystemTheorems.
     assert (S2: Γ ⊢i ⌈ patt_free_evar x and ! φ ⌉ ---> ! ⌈ patt_free_evar x and φ ⌉ using BasicReasoning).
     {
 
-      replace (patt_sym (Definedness_Syntax.inj definedness) ⋅ (patt_free_evar x and φ))
+      replace (definedness ⋅ (patt_free_evar x and φ))
         with (⌈ patt_free_evar x and φ ⌉) in S1 by reflexivity.
 
-      replace (patt_sym (Definedness_Syntax.inj definedness) ⋅ (patt_free_evar x and ! φ))
+      replace (definedness ⋅ (patt_free_evar x and ! φ))
         with (⌈ patt_free_evar x and ! φ ⌉) in S1 by reflexivity.
 
       toMLGoal.
@@ -1715,7 +1692,7 @@ Section ProofSystemTheorems.
       1-2: pose proof free_evars_free_evar_subst; set_solver.
       (* *** *)
       simpl. mlExists z.
-      opose proof* (IHsz (evar_open z 0 φ4) ltac:( rewrite evar_open_size'; lia) φ1 φ2 (list_to_set l) x Γ HΓ).
+      opose proof* (IHsz (evar_open z 0 φ4) ltac:(rewrite -evar_open_size; lia) φ1 φ2 (list_to_set l) x Γ HΓ).
       1-3: wf_auto2.
       - clear -Hfree e HZ.
         pose proof free_evars_evar_open φ4 z 0.
@@ -2092,7 +2069,7 @@ Section ProofSystemTheorems.
     use AnyReasoning in EQ.
     epose proof (PC := prf_conclusion Γ (patt_equal φ' Z) (instantiate (ex , φ) (patt_free_evar Zvar) ---> ex , φ) AnyReasoning ltac:(apply well_formed_equal;wf_auto2) _ EQ).
 
-    assert (Γ ⊢ patt_equal φ' Z ---> (ex , φ) ^ [φ'] ---> ex , φ) as HSUB.
+    assert (Γ ⊢ patt_equal φ' Z ---> (ex , φ)^[φ'] ---> ex , φ) as HSUB.
     {
       pose proof (EE := equality_elimination_proj Γ φ' Z φ HΓ
                                                ltac:(auto) ltac:(auto) ltac:(auto) WFB WFM).
@@ -2524,8 +2501,8 @@ Proof.
   intros HΓ Hx wfφ.
   eapply (cast_proof').
   { 
-    remember (ctx_app_r (patt_sym (Definedness_Syntax.inj definedness)) box ltac:(wf_auto2)) as AC1.
-    remember (ctx_app_r (patt_sym (Definedness_Syntax.inj definedness)) AC1 ltac:(wf_auto2)) as AC2.
+    remember (ctx_app_r (definedness) box ltac:(wf_auto2)) as AC1.
+    remember (ctx_app_r (definedness) AC1 ltac:(wf_auto2)) as AC2.
     replace (⌈ ⌈ φ ⌉ ⌉) with (subst_ctx AC2 φ) by (subst; reflexivity).
     subst. reflexivity.
   }
@@ -2931,6 +2908,50 @@ Proof.
   1-3: eassumption.
 Defined.
 
+Lemma membership_forall_1 {Σ : Signature} {syntax : Definedness_Syntax.Syntax} Γ φ x y i:
+  theory ⊆ Γ ->
+  well_formed (ex , φ) ->
+  y ∉ free_evars φ ∪ {[x]}->
+  ProofInfoLe (ExGen := {[ev_x; y]}, SVSubst := ∅, KT := false, AKT := false) i ->
+  Γ ⊢i patt_free_evar x ∈ml (all , φ) ---> (all , patt_free_evar x ∈ml φ) using i.
+Proof.
+  intros H H0 H1 H2.
+  mlIntro. unfold patt_forall.
+  mlApplyMeta membership_not_1 in "0". 2: assumption.
+  mlIntro. mlApply "0".
+  mlApplyMeta membership_exists_2.
+  2: instantiate (1 := y); try_solve_pile.
+  2: set_solver.
+  2: assumption.
+  mlDestructExManual "1" as y. 1: try_solve_pile. 1-4: cbn; set_solver.
+  mlExists y.
+  mlSimpl. cbn.
+  mlApplyMeta membership_not_2. 2: try_solve_pile. 2: assumption.
+  mlAssumption.
+Defined.
+
+Lemma membership_forall_2 {Σ : Signature} {syntax : Definedness_Syntax.Syntax} Γ φ x y i:
+  theory ⊆ Γ ->
+  well_formed (ex , φ) ->
+  y ∉ free_evars φ ∪ {[x]} ->
+  ProofInfoLe (ExGen := {[ev_x; y]}, SVSubst := ∅, KT := false, AKT := false) i ->
+  Γ ⊢i (all , patt_free_evar x ∈ml φ) ---> patt_free_evar x ∈ml (all , φ) using i.
+Proof.
+  intros H H0 H1 H2.
+  mlIntro. unfold patt_forall.
+  mlApplyMeta membership_not_2. 2: try_solve_pile. 2: assumption.
+  mlIntro. mlApply "0".
+  mlApplyMeta membership_exists_1 in "1".
+  2: instantiate (1 := y); try_solve_pile.
+  2: set_solver.
+  2: assumption.
+  mlDestructExManual "1" as y. 1: try_solve_pile. 1-4: cbn; set_solver.
+  mlExists y.
+  mlSimpl. cbn.
+  mlApplyMeta membership_not_1. 2: assumption.
+  mlAssumption.
+Defined.
+
 Lemma membership_symbol_ceil_aux_aux_0 {Σ : Signature} {syntax : Syntax} Γ x φ i:
   theory ⊆ Γ ->
   well_formed φ ->
@@ -2974,7 +2995,7 @@ Proof.
             with (subst_ctx AC_patt_defined (patt_free_evar x and φ))
                  by reflexivity.
     replace (⌈ ⌈ patt_free_evar x and ! φ ⌉ ⌉)
-            with (subst_ctx (ctx_app_r ((patt_sym (Definedness_Syntax.inj definedness))) AC_patt_defined ltac:(wf_auto2)) (patt_free_evar x and ! φ))
+            with (subst_ctx (ctx_app_r ((definedness)) AC_patt_defined ltac:(wf_auto2)) (patt_free_evar x and ! φ))
       by reflexivity.
     reflexivity.
   }
@@ -2995,7 +3016,7 @@ Proof.
   toMLGoal.
   { wf_auto2. }
   mlSplitAnd; mlIntro "H0".
-  - mlApplyMeta (useBasicReasoning (ExGen := ∅, SVSubst := ∅, KT := false, AKT := false) (Prop_disj_right Γ φ₁ φ₂ (patt_sym (Definedness_Syntax.inj definedness)) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) )).
+  - mlApplyMeta (useBasicReasoning (ExGen := ∅, SVSubst := ∅, KT := false, AKT := false) (Prop_disj_right Γ φ₁ φ₂ (definedness) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) )).
     mlExact "H0".
   - mlDestructOr "H0" as "H1" "H2".
     + fromMLGoal. unshelve (eapply Framing_right).
@@ -4523,19 +4544,16 @@ Proof.
     - mlRevertLast. mlExact "H2".
 Defined.
 
-Definition overlaps_with {Σ : Signature} {syntax : Syntax} (p q : Pattern) : Pattern
-:= ⌈ p and q ⌉.
-
-Lemma overlapping_variables_equal {Σ : Signature} {syntax : Syntax} :
+Lemma membership_var {Σ : Signature} {syntax : Syntax} :
   forall x y Γ,
   theory ⊆ Γ ->
-  Γ ⊢ overlaps_with (patt_free_evar y) (patt_free_evar x) ---> patt_free_evar y =ml patt_free_evar x.
+  Γ ⊢ patt_free_evar y ∈ml patt_free_evar x ---> patt_free_evar y =ml patt_free_evar x.
 Proof.
   intros x y Γ HΓ.
 
   remember (patt_free_evar x) as pX. assert (well_formed pX) by (rewrite HeqpX;auto).
   remember (patt_free_evar y) as pY. assert (well_formed pY) by (rewrite HeqpY;auto).
-  unfold overlaps_with.
+  unfold patt_in.
   toMLGoal. wf_auto2.
   unfold patt_equal, patt_iff.
   epose proof (H2 := liftProofInfoLe _ _ _ AnyReasoning (patt_total_and Γ
@@ -4554,6 +4572,8 @@ Proof.
     use AnyReasoning in MH.
     mlRevertLast.
     mlRewrite MH at 1. fold AnyReasoning.
+    (* Check ⌈_⌉. *)
+    (* Locate "⌈_⌉". *)
     unshelve (epose proof (MH1 := Singleton_ctx Γ 
            (⌈_⌉ $ᵣ □)
            (⌈_⌉ $ᵣ □) pX y ltac:(wf_auto2))). 1-2: wf_auto2.
@@ -5150,9 +5170,3 @@ Proof.
     use AnyReasoning in H1.
     mlExactMeta H1.
 Defined.
-
-
-
-Close Scope ml_scope.
-Close Scope string_scope.
-Close Scope list_scope.

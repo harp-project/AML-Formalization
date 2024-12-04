@@ -1,4 +1,4 @@
-From Coq Require Import ssreflect ssrfun ssrbool.
+(* From Coq Require Import ssreflect ssrfun ssrbool.
 
 From stdpp Require Import base list list_numbers propset.
 (* This is unset by stdpp. We need to set it again.*)
@@ -6,14 +6,13 @@ Set Transparent Obligations.
 
 From Equations Require Import Equations.
 (* Set Equations Transparent. *)
-
+*)
 Require Import Coq.Program.Equality. (* Dependent destruction *)
 Require Import Coq.Logic.Classical_Prop. (* Proof irrelevance *)
+From MatchingLogic.OPML Require Export OpmlModel.
 
-From MatchingLogic.OPML Require Import
-    OpmlSignature
-    OpmlModel
-.
+Set Transparent Obligations.
+Set Default Proof Mode "Classic".
 
 Definition UnifiedCarrierInfo := Type.
 
@@ -134,9 +133,29 @@ Program Definition bool_UCC : UnifiedCarrierComponent := {|
         ;
 |}.
 Next Obligation.
+  intros; subst wildcard'; split; congruence.
+Defined.
+Next Obligation.
+  intros; subst wildcard'; split; congruence.
+Defined.
+Next Obligation.
+  intros; subst wildcard'; split; congruence.
+Defined.
+Next Obligation.
+  intros; subst wildcard'; split; congruence.
+Defined.
+Next Obligation.
+  intros; subst wildcard'; split; congruence.
+Defined.
+Next Obligation.
+  intros; subst wildcard'; split; congruence.
+Defined.
+Next Obligation.
     (* Injectivity *)
+    intros.
+    (repeat case_match); simplify_eq/=.
     (repeat case_match); simplify_eq/=; reflexivity.
-Qed.
+Defined.
 
 Program Definition bool_component {Σ : OPMLSignature} : Component := {|
     comp_UCC :=  bool_UCC ;
@@ -155,6 +174,7 @@ Program Definition bool_component {Σ : OPMLSignature} : Component := {|
         ; *)
 |}.
 Next Obligation.
+    intros. destruct nla as [l l0].
     destruct l.
     { inversion H. }
     destruct n,l,l0; inversion H; subst; clear H.
@@ -192,6 +212,15 @@ Program Definition empty_component {Σ : OPMLSignature} : Component := {|
     comp_invertor_complete
         := _;
 |}.
+Next Obligation.
+    intros. destruct args1, args2; congruence.
+Qed.
+Next Obligation.
+    intros. destruct nla as [l l0].
+    destruct l.
+    { inversion H. }
+    destruct n,l,l0; inversion H; subst; clear H.
+Qed.
 Fail Next Obligation.
 
 Section paircomb_ucf.
@@ -267,7 +296,15 @@ Section paircomb.
             ;
     |}.
     Next Obligation.
+      intros; subst wildcard'; split; congruence.
+    Defined.
+    Next Obligation.
+      intros; subst wildcard'; split; congruence.
+    Defined.
+    Next Obligation.
         (* Injectivity *)
+        intros.
+        (repeat case_match); simplify_eq/=; try reflexivity.
         (repeat case_match); simplify_eq/=; try reflexivity.
         {
             rewrite fmap_Some in H.
@@ -275,7 +312,7 @@ Section paircomb.
             destruct H as [a [Ha1 Ha2]].
             destruct H0 as [b [Hb1 Hb2]].
             rewrite Ha2 in Hb2. inversion Hb2; subst; clear Hb2.
-            pose proof (ucc_ctor_family_inj (comp_UCC C1) A (l4,l2) (l3, l0) b Ha1 Hb1).
+            pose proof (ucc_ctor_family_inj (comp_UCC C1) A _ _ b Ha1 Hb1).
             simplify_eq/=. reflexivity.
         }
         {
@@ -298,20 +335,26 @@ Section paircomb.
             destruct H as [a [Ha1 Ha2]].
             destruct H0 as [b [Hb1 Hb2]].
             rewrite Ha2 in Hb2. inversion Hb2; subst; clear Hb2.
-            pose proof (ucc_ctor_family_inj (comp_UCC C2) A (l4,l2) (l3, l0) b Ha1 Hb1).
+            pose proof (ucc_ctor_family_inj (comp_UCC C2) A _ _ b Ha1 Hb1).
             simplify_eq/=. reflexivity.
         }
     Qed.
     Next Obligation.
-        rewrite H. reflexivity.
-    Defined.
+       cbn. intros.
+       subst x. destruct tmp. destruct x. cbn in *.
+       by rewrite e.
+    Qed.
     Next Obligation.
-        rewrite H. reflexivity.
-    Defined.
+       cbn. intros.
+       subst x. destruct tmp. destruct x. cbn in *.
+       by rewrite e.
+    Qed.
     Next Obligation.
         unfold paircomb_ucf_UnifiedCarrierFunctor in *.
+        cbn in *; intros.
         destruct x.
         {
+            destruct nla as [l l0].
             destruct l.
             { inversion H. }
             destruct n.
@@ -361,6 +404,7 @@ Section paircomb.
             }
         }
         {
+            destruct nla as [l l0].
             destruct l.
             { inversion H. }
             destruct n.
@@ -452,7 +496,18 @@ Section list_component.
             ;
     |}.
     Next Obligation.
+      intros; subst wildcard'; congruence.
+    Defined.
+    Next Obligation.
+      intros; subst wildcard'; congruence.
+    Defined.
+    Next Obligation.
+      intros; subst wildcard'; congruence.
+    Defined.
+    Next Obligation.
         (* Injectivity *)
+        intros.
+        (repeat case_match); simplify_eq/=; try reflexivity.
         (repeat case_match); simplify_eq/=; try reflexivity.
     Qed.
 
@@ -465,7 +520,8 @@ Section list_component.
         comp_invertor_complete := _ ;
     |}.
     Next Obligation.
-        (repeat case_match); simplify_eq/=; exists erefl; reflexivity.
+       intros. cbn in *.
+       (repeat case_match); simplify_eq/=; exists erefl; reflexivity.
     Qed.
     Fail Next Obligation.
 

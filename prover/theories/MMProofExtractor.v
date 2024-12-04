@@ -1,12 +1,11 @@
-From Coq Require Import Strings.String Strings.Ascii.
+From Coq Require Export Strings.String Strings.Ascii.
+From MatchingLogicProver Require Export Named.
+From stdpp Require Export listset_nodup numbers.
 
-From Equations Require Import Equations.
+Open Scope list_scope.
+Open Scope string_scope.
 
-From stdpp Require Import base finite gmap mapset listset_nodup numbers.
-
-From MatchingLogic Require Import Syntax DerivedOperators_Syntax ProofSystem.
-
-From MatchingLogicProver Require Import Named.
+Set Default Proof Mode "Classic".
 
 Module MetaMath.
 
@@ -232,7 +231,7 @@ Module MetaMath.
             if (decide (v = " "%char)) then
               "\SPC" ++ rest
             else
-              if (n <? 33) || (126 <? n)
+              if (n <? 33)%nat || (126 <? n)%nat
               then "$$$GENERATE_SYNTAX_ERROR$$$" (* TODO metamath can't handle characters in this range *)
               else
                 String v rest
@@ -324,12 +323,14 @@ Section gen.
                                (isSetVar X)
                                (tc (constant (ms "#SetVariable")))
                                (variable (printSvar X))))).
-  
+
+  Close Scope string_scope. (* !!! don't delete *)
+
   Definition dependenciesForPattern (p : NamedPattern) : Database :=
     let sms := listset_nodup_car (symbols_of p) in
     let nevs := listset_nodup_car (nevars_of p) in
     let nsvs := listset_nodup_car (nsvars_of p) in
-    (concat (map constantAndAxiomForSymbol sms))
+    (concat (map constantAndAxiomForSymbol sms)%list)
       ++ (if decide (0 < length nevs) then
             [(oss_s (stmt_variable_stmt (vs (map (variable ∘ printEvar) nevs))))]
           else []
@@ -445,8 +446,6 @@ Section gen.
   (* (exists x, x) -> exists x, (exists y, y)  *)
   (* (exists, 0) -> (exists, exists, 0)  *)
   (* (exists x, x) -> (phi -> (exists y, y)) *)
-
-  Print Ex_quan.
 
  Equations? proof2proof'
             Γ

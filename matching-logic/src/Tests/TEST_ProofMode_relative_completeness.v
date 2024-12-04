@@ -1,18 +1,11 @@
 From MatchingLogic Require Import Logic ProofMode.MLPM.
 
-From Coq Require Import String.
-
 Import
   MatchingLogic.Logic.Notations
   MatchingLogic.DerivedOperators_Syntax.Notations
 .
 
 Set Default Proof Mode "Classic".
-
-
-Open Scope ml_scope.
-Open Scope string_scope.
-Open Scope list_scope.
 
 Section with_signature.
 
@@ -64,7 +57,7 @@ Qed.
 
 Local Lemma Ex_quan_complete (Γ : Theory) (ϕ : Pattern) (y : evar):
   well_formed (ex , ϕ) -> 
-  mkMLGoal _ Γ [] ((ex , ϕ) ^ [patt_free_evar y] ---> (ex , ϕ)) BasicReasoning.
+  mkMLGoal _ Γ [] ((ex , ϕ)^[patt_free_evar y] ---> (ex , ϕ)) BasicReasoning.
 Proof.
   intros. mlIntro "H".
   unfold instantiate.
@@ -80,7 +73,8 @@ Local Lemma Ex_gen_complete (Γ : Theory) (ϕ₁ ϕ₂ : Pattern) (x : evar) (i 
 Proof.
   unfold exists_quantify. intros.
   mlIntro "H0".
-  mlDestructEx "H0" as x.
+  mlDestructEx "H0" as x. 1-4: cbn; try set_solver.
+  { apply evar_quantify_no_occurrence. }
   rewrite evar_open_evar_quantify. wf_auto2.
   mlRevertLast. assumption.
 Qed.

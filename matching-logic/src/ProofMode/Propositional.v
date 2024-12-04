@@ -1,40 +1,9 @@
-From Coq Require Import ssreflect ssrfun ssrbool.
+From MatchingLogic.ProofMode Require Export Basics.
+From MatchingLogic Require Export BasicProofSystemLemmas.
 
-From Ltac2 Require Import Ltac2 Control.
-
-From Coq Require Import Bool String.
-From Coq.Logic Require Import FunctionalExtensionality Eqdep_dec.
-From Equations Require Import Equations.
-
-Require Import Coq.Program.Tactics.
-
-From MatchingLogic Require Import
-    ProofSystem
-    Utils.extralibrary
-    Logic
-    DerivedOperators_Syntax
-    ProofInfo
-    BasicProofSystemLemmas
-.
-From MatchingLogic.ProofMode Require Import Basics.
-
-From stdpp Require Import list tactics fin_sets coGset gmap sets.
-
-From MatchingLogic.Utils Require Import stdpp_ext.
-
-Import extralibrary.
-
-Import
-  MatchingLogic.Logic.Notations
-  MatchingLogic.DerivedOperators_Syntax.Notations
-  MatchingLogic.ProofInfo.Notations
-.
+Import MatchingLogic.Logic.Notations.
 
 Set Default Proof Mode "Classic".
-
-Open Scope string_scope.
-Open Scope list_scope.
-Open Scope ml_scope.
 
 Lemma MLGoal_exactn {Σ : Signature}
   (Γ : Theory)
@@ -174,7 +143,7 @@ Proof.
   }
   assert (H2 : Γ ⊢i ((a ---> ((a ---> b) ---> b)) ---> ((a ---> (a ---> b)) ---> (a ---> b))) using BasicReasoning).
   {
-    apply P2; wf_auto2.
+    apply BasicProofSystemLemmas.P2; wf_auto2.
   }
   eapply MP. 2: apply H2. apply H1.
 Defined.
@@ -900,14 +869,14 @@ Qed.
 
 Ltac2 _getGoalProofInfo () : constr :=
   lazy_match! goal with
-  | [|- @of_MLGoal ?sgm (@mkMLGoal ?sgm ?ctx ?l ?g ?i)]
+  | [|- @of_MLGoal _ (@mkMLGoal _ _ _ _ ?i)]
     => i
   end.
 
 
 Ltac2 _getGoalTheory () : constr :=
   lazy_match! goal with
-  | [|- @of_MLGoal ?sgm (@mkMLGoal ?sgm ?ctx ?l ?g ?i)]
+  | [|- @of_MLGoal _ (@mkMLGoal _ ?ctx _ _ _)]
     => ctx
   end.
 
@@ -934,7 +903,7 @@ Ltac2 mlAssert_using_first
     [()|
       let h := Fresh.in_goal ident:(H) in
       let l1_constr := Control.hyp l1 in
-      let l2_constr := Control.hyp l2 in
+(*       let l2_constr := Control.hyp l2 in *)
       let heql1_constr := Control.hyp heql1 in
       let hwf_constr := Control.hyp hwf in
       assert ($h : @of_MLGoal $sgm (@mkMLGoal $sgm $ctx $l1_constr $t $i)) >
@@ -1671,7 +1640,7 @@ Ltac2 do_mlDestructOr_as (name : constr) (name1 : constr) (name2 : constr) :=
   do_failIfUsed name1;
   do_failIfUsed name2;
   lazy_match! goal with
-  | [|- @of_MLGoal ?sgm (@mkMLGoal ?sgm ?ctx ?l ?g ?i)] =>
+  | [|- @of_MLGoal _ (@mkMLGoal _ _ _ _ _)] =>
     (* let htd := Fresh.in_goal ident:(Htd) in *)
     eapply cast_proof_ml_hyps;
     f_equal;
@@ -2195,7 +2164,7 @@ Ltac2 rec applyRec (f : constr) (xs : constr list) : constr option :=
   | [] => Some f
   | y::ys =>
     lazy_match! Constr.type f with
-    | (forall _ : ?t, _) =>
+    | (forall _ : _, _) =>
       Control.plus (fun () => applyRec constr:($f $y) ys) (fun _ => None)
     | _ => None
     end
@@ -2228,7 +2197,12 @@ Ltac2 rec fillWithUnderscoresAndCall0
   *)
   let cont := (fun () =>
     lazy_match! Constr.type t with
-    | (?t' -> ?t's) =>
+    | (?t' -> ?_t's) => (* NOTE, (COQ BUG?) If I omit ?t's from here,
+                          forall withh match this branch
+                          
+                          NOTE2: This matching is fragile. Implication
+                          hypotheses also seem to match the second branch
+                          with forall _ : _ , _*)
       lazy_match! goal with
       | [|- ?g] =>
         let h := Fresh.in_goal ident:(hasserted) in
@@ -2245,7 +2219,7 @@ Ltac2 rec fillWithUnderscoresAndCall0
         ]
       end
     | (forall _ : _, _) => fillWithUnderscoresAndCall0 tac open_constr:($t _) args
-    | ?remainder => throw (Invalid_argument (Some (Message.concat (Message.concat (Message.of_string "Remainder type: ") (Message.of_constr remainder)) (Message.concat (Message.of_string ", of term") (Message.of_constr t)))))
+    | ?remainder => Control.throw (Invalid_argument (Some (Message.concat (Message.concat (Message.of_string "Remainder type: ") (Message.of_constr remainder)) (Message.concat (Message.of_string ", of term") (Message.of_constr t)))))
     end
   ) in
   match (applyRec t args) with
@@ -2425,7 +2399,7 @@ Proof.
     }
 
     mlApplyMeta pf_conj_elim_r.
-    repeat rewrite app_length; simpl.
+    repeat rewrite length_app; simpl.
     rewrite take_app_add. simpl.
     rewrite Nat.sub_diag take_0 app_nil_r.
     apply MLGoal_exactn.
@@ -2472,11 +2446,11 @@ Proof.
     repeat rewrite drop_all.
     repeat rewrite Nat.sub_diag.
     repeat rewrite drop_0 take_0.
-    repeat rewrite app_length; simpl in *.
+    repeat rewrite length_app; simpl in *.
     rewrite Nat.add_0_r Nat.sub_diag take_0 app_nil_r app_nil_r.
     rewrite take_app_add.
     apply MLGoal_exactn.
-    assumption.
+    wf_auto2.
   }
 
   eapply cast_proof_ml_hyps.
@@ -2492,7 +2466,7 @@ Proof.
   }
   simpl.
   repeat (
-  repeat rewrite app_length; simpl;
+  repeat rewrite length_app; simpl;
   repeat rewrite Nat.sub_diag; simpl;
   repeat rewrite take_0; simpl;
   repeat rewrite drop_0; simpl;
@@ -2500,7 +2474,7 @@ Proof.
   repeat rewrite Nat.add_0_r;
   repeat rewrite take_app_add; simpl).
   rewrite drop_app drop_app_add. simpl.
-  rewrite app_length. simpl. rewrite Nat.sub_diag. rewrite drop_0.
+  rewrite length_app. simpl. rewrite Nat.sub_diag. rewrite drop_0.
   rewrite drop_ge. lia. simpl.
   replace (length l₁ + 1 - length l₁) with 1 by lia. simpl.
   rewrite -app_assoc.
@@ -3583,7 +3557,7 @@ Defined.
 Ltac2 rec tryExact (l : constr) (idx : constr) :=
   lazy_match! l with
     | nil => throw_pm_exn_with_goal "tryExact: there was no matching logic hypothesis which is exactly matched by the goal: "
-    | (?a :: ?m) => Control.plus (fun () => do_mlExactn idx) (fun exn => tryExact m constr:($idx + 1))
+    | (_ :: ?m) => Control.plus (fun () => do_mlExactn idx) (fun _ => tryExact m constr:($idx + 1))
   end.
 
 #[global]
@@ -3591,7 +3565,7 @@ Ltac2 do_mlAssumption () :=
   Control.enter(fun () =>
     _ensureProofMode;
     lazy_match! goal with
-      | [ |- @of_MLGoal ?sgm (@mkMLGoal ?sgm ?ctx ?l ?g ?i) ] 
+      | [ |- @of_MLGoal _ (@mkMLGoal _ _ ?l _ _) ] 
         =>
           tryExact l constr:(0)
     end
@@ -3910,7 +3884,7 @@ Ltac2 do_mlClassic_as (p : constr) (n1 : constr) (n2 : constr) :=
     let tmpName := eval cbv in (fresh $hyps) in
     let wfName := Fresh.in_goal ident:(Hwf) in
     lazy_match! goal with
-    | [|- @of_MLGoal ?sgm (@mkMLGoal ?sgm ?ctx ?l ?g ?i)]
+    | [|- @of_MLGoal _ (@mkMLGoal _ ?ctx ?_l ?_g ?i)]
       => assert ($wfName : well_formed $p = true)>
         [()|(
           let wf_hyp := Control.hyp wfName in
@@ -4043,9 +4017,9 @@ Proof.
     clear -Wfl. unfold patterns_of in *; rewrite -> map_app in *.
     simpl in *. rewrite -> map_app in *. simpl in *.
     apply wfapp_proj_1 in Wfl as Wfl1.
-    apply wfapp_proj_2 in Wfl. cbn in Wfl. destruct_and!.
+    apply wfapp_proj_2 in Wfl. cbn in Wfl. destruct_andb! Wfl.
     apply wfapp_proj_1 in H0 as Wfl2.
-    apply wfapp_proj_2 in H0. cbn in H0. destruct_and!.
+    apply wfapp_proj_2 in H0. cbn in H0. destruct_andb! H0.
     firstorder.
   }
   ospecialize* H. 1: assumption.
@@ -4088,7 +4062,7 @@ Ltac2 do_mlApplyIn (name1' : constr) (name2' : constr) :=
     (
     (* Check the order of the hypotheses *)
     match! goal with
-    | [ |- @of_MLGoal _ (@mkMLGoal _ _ (_ ++ ((@mkNH _ _ ?h :: _) ++ (@mkNH _ _ (?h ---> _) :: _))) _ _) ] =>
+    | [ |- @of_MLGoal _ (@mkMLGoal _ _ (_ ++ ((@mkNH _ _ ?_h :: _) ++ (@mkNH _ _ (?_h ---> _) :: _))) _ _) ] =>
       apply MLGoal_ApplyIn;
       _mlReshapeHypsBackTwice
     | [ |- _ ] => _mlReshapeHypsBackTwice;
@@ -4237,7 +4211,7 @@ Ltac2 rec do_mlConj_many l (name : constr) : unit :=
     | b :: t2 => 
       match t2 with
       | [] => mlConj $a $b as $name
-      | c :: t3 => 
+      | _ :: _ => 
         do_mlConj_many t1 name;
         let hyps := do_getHypNames () in
         let newname := eval cbv in (fresh $hyps) in
@@ -4420,7 +4394,7 @@ Defined.
     Control.enter(fun () =>
       _ensureProofMode;
       lazy_match! goal with
-      | [ |- @of_MLGoal _ (@mkMLGoal _ _ _ (?op ?g ?g) _) ] =>
+      | [ |- @of_MLGoal _ (@mkMLGoal _ _ _ (?op ?_g ?_g) _) ] =>
         match! goal with (* error handling *)
         | [ |- _] => now (apply MLGoal_reflexivity; eauto)
         | [ |- _] =>
@@ -4601,7 +4575,3 @@ Proof.
     mlIntro.
     mlAssumption.
 Defined.
-
-Close Scope string_scope.
-Close Scope list_scope.
-Close Scope ml_scope.

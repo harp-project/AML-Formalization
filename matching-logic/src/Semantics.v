@@ -1,22 +1,11 @@
-From Coq Require Import ssreflect ssrfun ssrbool.
-
-From Coq.Logic Require Import FunctionalExtensionality PropExtensionality Classical_Pred_Type Classical_Prop.
-From Coq.micromega Require Import Lia.
-From Coq.Program Require Import Wf.
-
-From Equations Require Import Equations.
-
-From stdpp Require Import base fin_sets.
-From stdpp Require Import pmap gmap mapset fin_sets sets propset list_numbers.
-
-From MatchingLogic.Utils Require Import Lattice stdpp_ext extralibrary.
-From MatchingLogic Require Import
-  Syntax
-  Freshness
-  NamedAxioms
-  IndexManipulation
-.
-
+From Coq Require Import Classical_Prop.
+From Coq Require Export Program.Wf
+                        PropExtensionality
+                        FunctionalExtensionality.
+From Equations Require Export -(notations) Equations.
+From MatchingLogic Require Export Lattice
+                                  NamedAxioms
+                                  Syntax.
 Import MatchingLogic.Syntax.Notations.
 Import MatchingLogic.Substitution.Notations.
 
@@ -239,6 +228,12 @@ Section semantics.
     apply not_elem_of_empty in H2. exact H2.
   Qed.
 
+  Theorem app_ext_singleton : forall (x y : M),
+    app_ext {[x]} {[y]} = app_interp _ x y.
+  Proof.
+    intros x y. unfold app_ext. set_solver.
+  Qed.
+
   Lemma app_ext_bot_l :
       forall S : propset (Domain M),
         app_ext ∅ S = ∅.
@@ -284,9 +279,8 @@ Section semantics.
     Let OS := PropsetOrderedSet (Domain M).
     Let  L := PowersetLattice (Domain M).
 
-
     Equations? eval (ρ : Valuation) (ϕ : Pattern)
-      : propset (@Domain M) by wf (size ϕ) :=
+      : propset (@Domain M) by wf (pat_size ϕ) :=
     eval ρ (patt_free_evar x)  := {[ evar_valuation ρ x ]} ;
     eval ρ (patt_free_svar X)  := svar_valuation ρ X ;
     eval ρ (patt_bound_evar n) := ∅ ;
@@ -308,9 +302,9 @@ Section semantics.
                                     eval ρ' (ϕ'^{svar: 0 ↦ X})
                                   ) .
     Proof.
-      all: simpl; try lia.
-      { rewrite -evar_open_size. lia. }
-      { rewrite -svar_open_size. lia. }
+      all: try by (simpl; unfold size; try lia).
+      { rewrite -evar_open_size. cbv. lia. }
+      { rewrite -svar_open_size. cbv. lia. }
     Defined.
 
     Definition Fassoc ρ ϕ X :=
@@ -835,7 +829,7 @@ Section with_model.
 
   (* Can change updated/opened fresh variable variable *)
   Lemma Private_eval_fresh_var_open sz ϕ dbi ρ:
-    size ϕ <= sz ->
+    pat_size ϕ <= sz ->
     (
       forall X Y S,
         svar_is_fresh_in X ϕ ->
@@ -860,52 +854,11 @@ Section with_model.
         (* base case - svar *)
         move=> X Y S HfrX HfrY.
         destruct ϕ; simpl in Hsz; try lia.
-        + rewrite 2!eval_free_evar_simpl. reflexivity.
-        + rewrite 2!eval_free_svar_simpl.
-          unfold svar_is_fresh_in in HfrX, HfrY. simpl in HfrX, HfrY.
-          apply not_elem_of_singleton_1 in HfrX.
-          apply not_elem_of_singleton_1 in HfrY.
-          unfold update_svar_val.
-          destruct ρ as [ρₑ ρₛ]. simpl.
-          destruct (decide (X = x)),(decide (Y = x)); simpl; congruence.
-        + rewrite 2!eval_bound_evar_simpl. reflexivity.
-        + unfold svar_open. simpl. case_match.
-          * rewrite 2!eval_bound_svar_simpl.
-            reflexivity.
-          * rewrite 2!eval_free_svar_simpl.
-            rewrite 2!update_svar_val_same. reflexivity.
-          * rewrite 2!eval_bound_svar_simpl.
-            reflexivity.
-        + rewrite 2!eval_sym_simpl.
-          reflexivity.
-        + rewrite 2!eval_bott_simpl.
-          reflexivity.
       }
       {
         (* base case - evar *)
         move=> x y c Hfrx Hfry.
         destruct ϕ; simpl in Hsz; try lia.
-        + rewrite 2!eval_free_evar_simpl.
-          unfold evar_is_fresh_in in Hfrx, Hfry. simpl in Hfrx, Hfry.
-          apply not_elem_of_singleton_1 in Hfrx.
-          apply not_elem_of_singleton_1 in Hfry.
-          apply f_equal. unfold update_evar_val.
-          destruct ρ as [ρₑ ρₛ]. simpl.
-          destruct (decide (x = x0)),(decide (y = x0)); simpl; congruence.
-        + rewrite 2!eval_free_svar_simpl.
-          reflexivity.
-        + unfold evar_open. simpl. case_match.
-          * rewrite 2!eval_bound_evar_simpl.
-            reflexivity.
-          * rewrite 2!eval_free_evar_simpl.
-            rewrite 2!update_evar_val_same. reflexivity.
-          * rewrite 2!eval_bound_evar_simpl.
-            reflexivity.
-        + rewrite 2!eval_bound_svar_simpl. reflexivity.
-        + rewrite 2!eval_sym_simpl.
-          reflexivity.
-        + rewrite 2!eval_bott_simpl.
-          reflexivity.
       }
     - move=> ϕ dbi ρ Hsz.
       split.
@@ -913,25 +866,37 @@ Section with_model.
         (* inductive case - svar *)
         move=> X Y S HfrX HfrY.
         destruct ϕ; simpl in Hsz.
-        + rewrite (proj1 (IHsz _ _ _ _) X Y). 4: reflexivity. 3,2: auto. simpl. lia.
-        + rewrite (proj1 (IHsz _ _ _ _) X Y). 4: reflexivity. 3,2: auto. simpl. lia.
-        + rewrite (proj1 (IHsz _ _ _ _) X Y). 4: reflexivity. 3,2: auto. simpl. lia.
-        + rewrite (proj1 (IHsz _ _ _ _) X Y). 4: reflexivity. 3,2: auto. simpl. lia.
-        + rewrite (proj1 (IHsz _ _ _ _) X Y). 4: reflexivity. 3,2: auto. simpl. lia.
+        + cbn. simp eval. reflexivity.
+        + cbn. simp eval.
+          destruct (decide (x = X)).
+          1: { subst. unfold svar_is_fresh_in in HfrX. set_solver. }
+          destruct (decide (x = Y)).
+          1: { subst. unfold svar_is_fresh_in in HfrY. set_solver. }
+          rewrite update_svar_val_neq; auto.
+          rewrite update_svar_val_neq; auto.
+        + cbn. simp eval. reflexivity.
+        + cbn. simp eval. case_match; try reflexivity.
+          simp eval.
+          by rewrite 2!update_svar_val_same.
+        + cbn. simp eval. reflexivity.
         + rewrite 2!eval_app_simpl. fold svar_open.
-          rewrite (proj1 (IHsz _ _ _ _) X Y). 4: rewrite (proj1 (IHsz _ _ _ _) X Y). lia.
+          rewrite (proj1 (IHsz _ _ _ _) X Y).
+          4: rewrite (proj1 (IHsz _ _ _ _) X Y).
+          unfold size in *; lia.
           eapply svar_is_fresh_in_app_l. apply HfrX.
           eapply svar_is_fresh_in_app_l. apply HfrY.
-          lia.
+          unfold size in *; lia.
           eapply svar_is_fresh_in_app_r. apply HfrX.
           eapply svar_is_fresh_in_app_r. apply HfrY.
           reflexivity.
-        + rewrite (proj1 (IHsz _ _ _ _) X Y). 4: reflexivity. 3,2: auto. simpl. lia.
+        + cbn. simp eval. reflexivity.
         + rewrite 2!eval_imp_simpl. fold svar_open.
-          rewrite (proj1 (IHsz _ _ _ _) X Y). 4: rewrite (proj1 (IHsz _ _ _ _) X Y). lia.
+          rewrite (proj1 (IHsz _ _ _ _) X Y).
+          4: rewrite (proj1 (IHsz _ _ _ _) X Y).
+          unfold size in *; lia.
           eapply svar_is_fresh_in_app_l. apply HfrX.
           eapply svar_is_fresh_in_app_l. apply HfrY.
-          lia.
+          unfold size in *; lia.
           eapply svar_is_fresh_in_app_r. apply HfrX.
           eapply svar_is_fresh_in_app_r. apply HfrY.
           reflexivity.
@@ -941,7 +906,7 @@ Section with_model.
           fold bsvar_subst.
           simpl. rewrite 2!update_evar_val_svar_val_comm.
           rewrite (proj1 (IHsz _ _ _ _) X Y).
-          { rewrite -evar_open_size. lia. }
+          { rewrite -evar_open_size. unfold size in *; lia. }
           { apply svar_is_fresh_in_exists in HfrX.
             apply svar_is_fresh_in_exists in HfrY.
             apply svar_fresh_evar_open. apply HfrX.
@@ -950,7 +915,8 @@ Section with_model.
           }
           rewrite -2!svar_open_evar_open_comm.
           rewrite -2!update_evar_val_svar_val_comm.
-          rewrite (proj2 (IHsz _ _ _ _) _ (fresh_evar (ϕ^{svar: dbi ↦ Y}))). rewrite -svar_open_size. lia.
+          rewrite (proj2 (IHsz _ _ _ _) _ (fresh_evar (ϕ^{svar: dbi ↦ Y}))). rewrite -svar_open_size.
+          unfold size in *; lia.
           rewrite fresh_evar_svar_open.
           apply evar_fresh_svar_open. apply set_evar_fresh_is_fresh.
           apply set_evar_fresh_is_fresh.
@@ -991,7 +957,7 @@ Section with_model.
                                               (free_svars (ϕ^{svar: Datatypes.S dbi ↦ X})) 
                                               B0).
           subst B0. subst B1. subst B2. subst B3. subst B4. subst B.
-          
+
           apply i in HB. clear i. destruct HB as [Hneqfr1 HB].        
           apply not_elem_of_singleton_1 in Hneqfr1.
 
@@ -1009,9 +975,11 @@ Section with_model.
           destruct HB as [HnotinFree2 HnotinFree].
           fold bsvar_subst.
 
-          rewrite (proj1 (IHsz _ _ _ _) X' fresh3). rewrite -svar_open_size. lia.
+          rewrite (proj1 (IHsz _ _ _ _) X' fresh3). rewrite -svar_open_size.
+          unfold size in *; lia.
           rewrite HeqX'. apply set_svar_fresh_is_fresh. unfold svar_is_fresh_in. apply HnotinFree1.
-          rewrite (proj1 (IHsz _ _ _ _) Y' fresh3). rewrite -svar_open_size. lia.
+          rewrite (proj1 (IHsz _ _ _ _) Y' fresh3). rewrite -svar_open_size.
+          unfold size in *; lia.
           rewrite HeqY'. apply set_svar_fresh_is_fresh. unfold svar_is_fresh_in. apply HnotinFree2.
           rewrite (svar_open_comm_higher 0 (Datatypes.S dbi) _ fresh3 X ϕ). lia.
           rewrite (svar_open_comm_higher 0 (Datatypes.S dbi) _ fresh3 Y ϕ). lia.
@@ -1020,7 +988,8 @@ Section with_model.
           rewrite (update_svar_val_comm fresh3 Y). apply Hneqfr2.
           apply svar_is_fresh_in_exists in HfrX.
           apply svar_is_fresh_in_exists in HfrY.
-          rewrite (proj1 (IHsz _ _ _ _) X Y). rewrite -svar_open_size. lia.
+          rewrite (proj1 (IHsz _ _ _ _) X Y). rewrite -svar_open_size.
+          unfold size in *; lia.
           unfold svar_is_fresh_in.
           apply svar_open_fresh_notin.
           apply HfrX. apply HnotinFree. intros Contra. symmetry in Contra. contradiction.
@@ -1032,25 +1001,37 @@ Section with_model.
         (* inductive case - evar *)
         move=> x y c Hfrx Hfry.
         destruct ϕ; simpl in Hsz.
-        + rewrite (proj2 (IHsz _ _ _ _) x y). 4: reflexivity. 3,2: auto. simpl. lia.
-        + rewrite (proj2 (IHsz _ _ _ _) x y). 4: reflexivity. 3,2: auto. simpl. lia.
-        + rewrite (proj2 (IHsz _ _ _ _) x y). 4: reflexivity. 3,2: auto. simpl. lia.
-        + rewrite (proj2 (IHsz _ _ _ _) x y). 4: reflexivity. 3,2: auto. simpl. lia.
-        + rewrite (proj2 (IHsz _ _ _ _) x y). 4: reflexivity. 3,2: auto. simpl. lia.
+        + cbn. simp eval.
+          destruct (decide (x0 = x)).
+          1: { subst. unfold evar_is_fresh_in in Hfrx. set_solver. }
+          destruct (decide (x0 = y)).
+          1: { subst. unfold evar_is_fresh_in in Hfry. set_solver. }
+          rewrite update_evar_val_neq; auto.
+          rewrite update_evar_val_neq; auto.
+        + cbn. simp eval. reflexivity.
+        + cbn. simp eval. case_match; try reflexivity.
+          simp eval.
+          by rewrite 2!update_evar_val_same.
+        + cbn. simp eval. reflexivity.
+        + cbn. simp eval. reflexivity.
         + rewrite 2!eval_app_simpl. fold evar_open.
-          rewrite (proj2 (IHsz _ _ _ _) x y). 4: rewrite (proj2 (IHsz _ _ _ _) x y). lia.
+          rewrite (proj2 (IHsz _ _ _ _) x y).
+          4: rewrite (proj2 (IHsz _ _ _ _) x y).
+          unfold size in *; lia.
           eapply evar_is_fresh_in_app_l. apply Hfrx.
           eapply evar_is_fresh_in_app_l. apply Hfry.
-          lia.
+          unfold size in *; lia.
           eapply evar_is_fresh_in_app_r. apply Hfrx.
           eapply evar_is_fresh_in_app_r. apply Hfry.
           reflexivity.
-        + rewrite (proj2 (IHsz _ _ _ _) x y). 4: reflexivity. 3,2: auto. simpl. lia.
+        + reflexivity.
         + rewrite 2!eval_imp_simpl. fold evar_open.
-          rewrite (proj2 (IHsz _ _ _ _) x y). 4: rewrite (proj2 (IHsz _ _ _ _) x y). lia.
+          rewrite (proj2 (IHsz _ _ _ _) x y).
+          4: rewrite (proj2 (IHsz _ _ _ _) x y).
+          unfold size in *; lia.
           eapply evar_is_fresh_in_app_l. apply Hfrx.
           eapply evar_is_fresh_in_app_l. apply Hfry.
-          lia.
+          unfold size in *; lia.
           eapply evar_is_fresh_in_app_r. apply Hfrx.
           eapply evar_is_fresh_in_app_r. apply Hfry.
           reflexivity.
@@ -1101,9 +1082,11 @@ Section with_model.
           apply i3 in HB. clear i3. destruct HB as [HnotinFree1 HB].
           apply not_elem_of_union in HB.
           destruct HB as [HnotinFree2 HnotinFree].
-          rewrite (proj2 (IHsz _ _ _ _) x' fresh3). rewrite -evar_open_size. lia.
+          rewrite (proj2 (IHsz _ _ _ _) x' fresh3). rewrite -evar_open_size.
+          unfold size in *; lia.
           rewrite Heqx'. apply set_evar_fresh_is_fresh. unfold evar_is_fresh_in. apply HnotinFree1.
-          rewrite (proj2 (IHsz _ _ _ _) y' fresh3). rewrite -evar_open_size. lia.
+          rewrite (proj2 (IHsz _ _ _ _) y' fresh3). rewrite -evar_open_size.
+          unfold size in *; lia.
           rewrite Heqy'. apply set_evar_fresh_is_fresh. unfold evar_is_fresh_in. apply HnotinFree2.
           rewrite (evar_open_comm_higher 0 (Datatypes.S dbi) _ fresh3 x ϕ). lia.
           rewrite (evar_open_comm_higher 0 (Datatypes.S dbi) _ fresh3 y ϕ). lia.
@@ -1112,7 +1095,8 @@ Section with_model.
           rewrite (update_evar_val_comm fresh3 y). apply Hneqfr2.
           apply evar_is_fresh_in_exists in Hfrx.
           apply evar_is_fresh_in_exists in Hfry.
-          rewrite (proj2 (IHsz _ _ _ _) x y). rewrite -evar_open_size. lia.
+          rewrite (proj2 (IHsz _ _ _ _) x y). rewrite -evar_open_size.
+          unfold size in *; lia.
           unfold evar_is_fresh_in.
           apply evar_open_fresh_notin.
           apply Hfrx. apply HnotinFree. intros Contra. symmetry in Contra. contradiction.
@@ -1125,7 +1109,8 @@ Section with_model.
           rewrite -2!svar_open_evar_open_comm.
           fold bevar_subst.
           rewrite -2!update_evar_val_svar_val_comm.
-          rewrite (proj2 (IHsz _ _ _ _) x y). rewrite -svar_open_size. lia.
+          rewrite (proj2 (IHsz _ _ _ _) x y). rewrite -svar_open_size.
+          unfold size in *; lia.
           apply evar_is_fresh_in_mu in Hfrx.
           apply evar_is_fresh_in_mu in Hfry.
           apply evar_fresh_svar_open. apply Hfrx.
@@ -1133,7 +1118,8 @@ Section with_model.
           rewrite 2!svar_open_evar_open_comm.
           rewrite 2!update_evar_val_svar_val_comm.
           rewrite (proj1 (IHsz _ _ _ _) _ (fresh_svar (ϕ^{evar: dbi ↦ y}))).
-          rewrite -evar_open_size. lia.
+          rewrite -evar_open_size.
+          unfold size in *; lia.
           apply svar_fresh_evar_open.
           rewrite fresh_svar_evar_open. apply set_svar_fresh_is_fresh.
           apply set_svar_fresh_is_fresh.
@@ -1149,7 +1135,7 @@ Section with_model.
     = eval (update_evar_val y c ρ) (ϕ^{evar: dbi ↦ y}).
   Proof.
     move=> Hfrx Hfry.
-    eapply (proj2 (Private_eval_fresh_var_open (size ϕ) ϕ dbi ρ _) x y c); assumption.
+    eapply (proj2 (Private_eval_fresh_var_open (pat_size ϕ) ϕ dbi ρ _) x y c); assumption.
     Unshelve. lia.
   Qed.
 
@@ -1160,7 +1146,7 @@ Section with_model.
     = eval (update_svar_val Y S ρ) (ϕ^{svar: dbi ↦ Y}).
   Proof.
     move=> HfrX HfrY.
-    eapply (proj1 (Private_eval_fresh_var_open (size ϕ) ϕ dbi ρ _) X Y S); assumption.
+    eapply (proj1 (Private_eval_fresh_var_open (pat_size ϕ) ϕ dbi ρ _) X Y S); assumption.
     Unshelve. lia.
   Qed.
 
@@ -1169,7 +1155,7 @@ Section with_model.
    or evaluate phi2 first and then evaluate phi1 with valuation updated to the result of phi2
   *)
   Lemma Private_plugging_patterns : forall (sz : nat) (dbi : db_index) (phi1 phi2 : Pattern),
-      size phi1 <= sz -> forall (ρ : Valuation) (X : svar),
+      pat_size phi1 <= sz -> forall (ρ : Valuation) (X : svar),
         well_formed_closed phi2 -> well_formed_closed_mu_aux phi1 (S dbi) ->
         ~ elem_of X (free_svars phi1) ->
         @eval M ρ (phi1^[svar:dbi ↦ phi2])
@@ -1244,11 +1230,11 @@ Section with_model.
         simpl in Hsz.
         rewrite <- (IHsz _ phi1_1), <- (IHsz _ phi1_2).
         * reflexivity.
-        * lia.
+        * unfold size in *; lia.
         * assumption.
         * now apply andb_true_iff in Hwfphi1.
         * auto.
-        * lia.
+        * unfold size in *; lia.
         * assumption.
         * now apply andb_true_iff in Hwfphi1.
         * auto.
@@ -1261,11 +1247,11 @@ Section with_model.
         do 2 rewrite -> eval_imp_simpl.
         rewrite <- IHsz, <- IHsz.
         * reflexivity.
-        * lia.
+        * unfold size in *; lia.
         * assumption.
         * now apply andb_true_iff in Hwfphi1.
         * auto.
-        * lia.
+        * unfold size in *; lia.
         * assumption.
         * now apply andb_true_iff in Hwfphi1.
         * auto.
@@ -1341,7 +1327,7 @@ Section with_model.
           rewrite -Heqρe1'.
           rewrite <- IHsz.
         * reflexivity.
-        * rewrite <- evar_open_size. lia. 
+        * rewrite <- evar_open_size. unfold size in *; lia.
         * auto.
         * now apply wfc_mu_aux_body_ex_imp1.
         * rewrite -> free_svars_evar_open. auto.
@@ -1458,7 +1444,7 @@ Section with_model.
                apply H.
           }
           3: { apply Hwfc2. }
-          2: { rewrite -svar_open_size. simpl in Hsz. lia. }
+          2: { rewrite -svar_open_size. simpl in Hsz. unfold size in *; lia. }
 
           rewrite svar_open_bsvar_subst_higher.
           { apply Hwfc2. }
@@ -1522,13 +1508,13 @@ Section with_model.
         = eval (update_svar_val X (@eval M ρ phi2) ρ) (phi1^{svar: dbi ↦ X}).
   Proof.
     intros.
-    apply Private_plugging_patterns with (sz := size phi1).
+    apply Private_plugging_patterns with (sz := pat_size phi1).
     lia. all: auto.
   Qed.
 
   Lemma Private_plugging_patterns_bevar_subst : forall (sz : nat) (dbi : db_index) 
     (phi : Pattern) (y : evar),
-      size phi <= sz -> forall (ρ : Valuation) (x : evar),
+      pat_size phi <= sz -> forall (ρ : Valuation) (x : evar),
         evar_is_fresh_in x phi -> well_formed_closed_ex_aux phi (S dbi) ->
         @eval M ρ (phi^[evar: dbi ↦ patt_free_evar y])
         = eval (update_evar_val x (evar_valuation ρ y) ρ) (phi^{evar: dbi ↦ x}).
@@ -1607,10 +1593,10 @@ Section with_model.
         simpl in Hsz.
         repeat rewrite <- IHsz.
         * reflexivity.
-        * lia.
+        * unfold size in *; lia.
         * assumption.
         * now apply andb_true_iff in Hwf.
-        * lia.
+        * unfold size in *; lia.
         * auto.
         * now apply andb_true_iff in Hwf.
       + (* Bot. Again, a duplication of the sz=0 case *)
@@ -1622,10 +1608,10 @@ Section with_model.
         repeat rewrite -> eval_imp_simpl.
         repeat rewrite <- IHsz.
         * reflexivity.
-        * lia.
+        * unfold size in *; lia.
         * assumption.
         * now apply andb_true_iff in Hwf.
-        * lia.
+        * unfold size in *; lia.
         * auto.
         * now apply andb_true_iff in Hwf.
 
@@ -1727,7 +1713,7 @@ Section with_model.
           { lia. }
           { auto. }
           { lia. }
-          { rewrite <- evar_open_size. lia. }
+          { rewrite <- evar_open_size. unfold size in *; lia. }
           { apply evar_is_fresh_in_evar_open. apply not_eq_sym. apply HyBx. apply H. }
           { replace (pred (S dbi)) with dbi by lia. apply wfc_mu_aux_body_ex_imp3; auto. lia. }
       + mlSimpl. simpl.
@@ -1788,7 +1774,7 @@ Section with_model.
 
           rewrite <- IHsz.
         * reflexivity.
-        * rewrite <- svar_open_size. simpl in Hsz. lia.
+        * rewrite <- svar_open_size. simpl in Hsz. unfold size in *; lia.
         * apply evar_fresh_svar_open. apply evar_is_fresh_in_mu. apply H.
         * apply wfc_ex_aux_body_mu_imp1. eapply well_formed_closed_ex_aux_ind.
           2: exact Hwf. auto.
@@ -1840,7 +1826,7 @@ Section with_model.
     = @eval M (update_evar_val x (evar_valuation ρ y) ρ) (phi^{evar: dbi ↦ x}).
   Proof.
     intros.
-    apply Private_plugging_patterns_bevar_subst with (sz := size phi);auto.
+    apply Private_plugging_patterns_bevar_subst with (sz := pat_size phi);auto.
   Qed.
 
   (* eval unchanged within subformula over fresh element variable *)
@@ -1886,7 +1872,7 @@ Section with_model.
    *)
   Lemma Private_free_svar_subst_update_exchange :
     ∀ sz phi psi X ρ,
-      le (Pattern.size phi) sz → well_formed psi → well_formed_closed phi → 
+      le (pat_size phi) sz → well_formed psi → well_formed_closed phi → 
       eval ρ (phi^[[svar: X ↦ psi]]) =
       eval (@update_svar_val M X (eval ρ psi) ρ) phi.
   Proof.
@@ -1903,48 +1889,52 @@ Section with_model.
       + reflexivity.
       + rewrite -> eval_free_svar_simpl. reflexivity.
     - repeat rewrite -> eval_app_simpl.
-      erewrite -> IHsz. erewrite -> IHsz. reflexivity. lia. assumption.
+      erewrite -> IHsz. erewrite -> IHsz. reflexivity. unfold size in *; lia.
+      assumption.
       + apply andb_true_iff in Hwfc as [Hwfc1 Hwfc2]. simpl in Hwfc1, Hwfc2.
         apply andb_true_iff in Hwfc1 as [Hwfc11 Hwfc12].
         apply andb_true_iff in Hwfc2 as [Hwfc21 Hwfc22].
         apply andb_true_iff. split; auto.
-      + lia.
+      + unfold size in *; lia.
       + auto.
       + apply andb_true_iff in Hwfc as [Hwfc1 Hwfc2]. simpl in Hwfc1, Hwfc2.
         apply andb_true_iff in Hwfc1 as [Hwfc11 Hwfc12].
         apply andb_true_iff in Hwfc2 as [Hwfc21 Hwfc22].
         apply andb_true_iff. split; auto.
     - repeat rewrite -> eval_app_simpl.
-      erewrite -> IHsz. erewrite -> IHsz. reflexivity. lia. assumption.
+      erewrite -> IHsz. erewrite -> IHsz. reflexivity. 
+      unfold size in *; lia. assumption.
        + apply andb_true_iff in Hwfc as [Hwfc1 Hwfc2]. simpl in Hwfc1, Hwfc2.
         apply andb_true_iff in Hwfc1 as [Hwfc11 Hwfc12].
         apply andb_true_iff in Hwfc2 as [Hwfc21 Hwfc22].
         apply andb_true_iff. split; auto.
-      + lia.
+      + unfold size in *; lia.
       + auto.
       + apply andb_true_iff in Hwfc as [Hwfc1 Hwfc2]. simpl in Hwfc1, Hwfc2.
         apply andb_true_iff in Hwfc1 as [Hwfc11 Hwfc12].
         apply andb_true_iff in Hwfc2 as [Hwfc21 Hwfc22].
         apply andb_true_iff. split; auto.
     - repeat rewrite -> eval_imp_simpl.
-      erewrite -> IHsz. erewrite -> IHsz. reflexivity. lia. assumption.
+      erewrite -> IHsz. erewrite -> IHsz. reflexivity. unfold size in *; lia.
+      assumption.
        + apply andb_true_iff in Hwfc as [Hwfc1 Hwfc2]. simpl in Hwfc1, Hwfc2.
         apply andb_true_iff in Hwfc1 as [Hwfc11 Hwfc12].
         apply andb_true_iff in Hwfc2 as [Hwfc21 Hwfc22].
         apply andb_true_iff. split; auto.
-      + lia.
+      + unfold size in *; lia.
       + auto.
       + apply andb_true_iff in Hwfc as [Hwfc1 Hwfc2]. simpl in Hwfc1, Hwfc2.
         apply andb_true_iff in Hwfc1 as [Hwfc11 Hwfc12].
         apply andb_true_iff in Hwfc2 as [Hwfc21 Hwfc22].
         apply andb_true_iff. split; auto.
     - repeat rewrite -> eval_imp_simpl.
-      erewrite -> IHsz. erewrite -> IHsz. reflexivity. lia. assumption.
+      erewrite -> IHsz. erewrite -> IHsz. reflexivity. unfold size in *; lia.
+      assumption.
        + apply andb_true_iff in Hwfc as [Hwfc1 Hwfc2]. simpl in Hwfc1, Hwfc2.
         apply andb_true_iff in Hwfc1 as [Hwfc11 Hwfc12].
         apply andb_true_iff in Hwfc2 as [Hwfc21 Hwfc22].
         apply andb_true_iff. split; auto.
-      + lia.
+      + unfold size in *; lia.
       + auto.
       + apply andb_true_iff in Hwfc as [Hwfc1 Hwfc2]. simpl in Hwfc1, Hwfc2.
         apply andb_true_iff in Hwfc1 as [Hwfc11 Hwfc12].
@@ -2257,8 +2247,7 @@ Section with_model.
         }
         erewrite (eval_free_svar_independent _ MuZ x psi); try assumption.
         reflexivity.
-        unfold well_formed,well_formed_closed in Hwf.
-        destruct_and!. all: try assumption.
+        unfold well_formed,well_formed_closed in Hwf. wf_auto2.
         {
           simpl in H2. apply not_elem_of_singleton_1 in H2. assumption.
         }
@@ -2281,11 +2270,11 @@ Section with_model.
         }
         assumption. apply set_evar_fresh_is_fresh. assumption.
         {
-          erewrite <- evar_open_size. lia.
+          erewrite <- evar_open_size. unfold size in *; lia.
         }
         assumption. apply set_evar_fresh_is_fresh. assumption.
         {
-          erewrite <- evar_open_size. lia.
+          erewrite <- evar_open_size. unfold size in *; lia.
         }
         assumption.
         {
@@ -2298,7 +2287,7 @@ Section with_model.
           -- now apply wfc_mu_aux_body_mu_imp1.
           -- now apply wfc_ex_aux_body_mu_imp1.
         }
-        subst sz. erewrite <- svar_open_size. lia.
+        subst sz. erewrite <- svar_open_size. unfold size in *; lia.
         assumption.
   Qed.
 
@@ -2307,7 +2296,7 @@ Section with_model.
       eval ρ (phi^[[svar: X ↦ psi]]) =
       eval (@update_svar_val M X (eval ρ psi) ρ) phi.
   Proof. 
-    intros. apply Private_free_svar_subst_update_exchange with (sz := size phi). 
+    intros. apply Private_free_svar_subst_update_exchange with (sz := pat_size phi). 
     lia. assumption. assumption.
   Qed.
 

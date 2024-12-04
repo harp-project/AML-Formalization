@@ -1,16 +1,4 @@
-From Coq Require Import ssreflect ssrfun ssrbool.
-
-From stdpp Require Import base finite list list_numbers strings propset.
-(* This is unset by stdpp. We need to set it again.*)
-Set Transparent Obligations.
-
-From Equations Require Import Equations.
-(* Set Equations Transparent. *)
-
-From MatchingLogic.Utils Require Import Surj.
-From MatchingLogic.OPML Require Import
-    OpmlSignature
-    OpmlModel
+From MatchingLogic.OPML Require Export
     GenericModel
     KPreludeSignatures
 .
@@ -159,6 +147,13 @@ Module example01.
         }
     Qed.
     Next Obligation.
+       intros. cbn in *.
+       unfold Identity_relation in subsort.
+       subst.
+       set_solver.
+    Qed.
+    Next Obligation.
+        intros. intros x H.
         destruct sym; simpl in H.
         {
             rewrite elem_of_PropSet in H.
@@ -272,6 +267,37 @@ Module example02.
          ;
     |}.
     Next Obligation.
+      intros. intros [? ?].
+      subst wildcard' wildcard'0. subst.
+      inversion H.
+    Qed.
+    Next Obligation.
+      intros. intros [? ?].
+      subst wildcard' wildcard'0. subst.
+      inversion H.
+    Qed.
+    Next Obligation.
+      intros. intros [? ?].
+      subst wildcard' wildcard'0. subst.
+      inversion H.
+    Qed.
+    Next Obligation.
+      intros. intros [? ?].
+      subst wildcard' wildcard'0. subst.
+      inversion H0.
+    Qed.
+    Next Obligation.
+      intros. intros [? ?].
+      subst wildcard' wildcard'0. subst.
+      inversion H0.
+    Qed.
+    Next Obligation.
+      intros. intros [? ?].
+      subst wildcard' wildcard'0. subst.
+      inversion H0.
+    Qed.
+    Next Obligation.
+        intros.
         repeat split.
         {
             (* reflexivity *)

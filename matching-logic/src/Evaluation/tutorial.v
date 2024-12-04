@@ -1,16 +1,16 @@
 
 (* What follows is a minimal example of how to use the ProofMode. *)
 
-From MatchingLogic Require Import
-    Syntax
-    ProofSystem
-    ProofMode.MLPM
-.
+From MatchingLogic Require Import ProofMode.MLPM
+                                  Definedness_ProofSystem.
 
-Import MatchingLogic.Syntax.Notations.
+Import MatchingLogic.Logic.Notations
+       MatchingLogic.Theories.Definedness_Syntax.Notations.
 
-From stdpp Require Import base.
-From Coq Require Import String.
+Set Default Proof Mode "Classic".
+
+Open Scope string_scope.
+Open Scope list_scope.
 
 Section tutorial.
 
@@ -18,11 +18,6 @@ Context {Σ : Signature}
         {Γ : Theory}
         (ϕ : Pattern)
         (wfϕ : well_formed ϕ).
-
-Open Scope string_scope.
-
-Open Scope string_scope.
-Open Scope ml_scope.
 
 (* Below we prove that in matching logic, ϕ -> ϕ for any pattern ϕ. *)
 Example phi_implies_phi :
@@ -33,7 +28,6 @@ Proof.
 Qed.
 
 (* We can also work with conjunction and disjunction. *)
-Import MatchingLogic.DerivedOperators_Syntax.Notations.
 
 Context (ϕ₁ : Pattern)
         (wfϕ₁ : well_formed ϕ₁)
@@ -66,8 +60,8 @@ Context (ϕ₃ : Pattern)
 
 Example use_rewrite :
     Γ ⊢ ϕ₁ <---> ϕ₂ ->
-    (* The [$] operator is an application. *)
-    Γ ⊢ (ϕ₃ $ ϕ₁ $ ϕ₄) <---> (ϕ₃ $ ϕ₂ $ ϕ₄)
+    (* The [⋅] operator is an application. *)
+    Γ ⊢ (ϕ₃ ⋅ ϕ₁ ⋅ ϕ₄) <---> (ϕ₃ ⋅ ϕ₂ ⋅ ϕ₄)
 .
 Proof.
     intros H.
@@ -87,17 +81,9 @@ Qed.
    Otherwise, the signature and axiom can be arbitrary.
 *)
 
-From MatchingLogic Require Import
-    Theories.Definedness_Syntax
-    Theories.Definedness_ProofSystem
-.
-Import Theories.Definedness_Syntax.Notations.
-Open Scope ml_scope.
-Open Scope string_scope.
-
 (* Obviously, without the definedness symbol, we cannot use equality. *)
 Fail Example use_rewriteBy :
-    Γ ⊢ (ϕ₁ $ ϕ₄ =ml ϕ₂ $ ϕ₄ ) ---> (ϕ₁ =ml ϕ₂) ---> ((ϕ₃ $ ϕ₁ $ ϕ₄) <---> (ϕ₃ $ ϕ₂ $ ϕ₄))
+    Γ ⊢ (ϕ₁ ⋅ ϕ₄ =ml ϕ₂ ⋅ ϕ₄ ) ---> (ϕ₁ =ml ϕ₂) ---> ((ϕ₃ ⋅ ϕ₁ ⋅ ϕ₄) <---> (ϕ₃ ⋅ ϕ₂ ⋅ ϕ₄))
 .
 
 (* The typeclass [Definedness_Syntax.Syntax] ensures the presence of the definedness symbol
@@ -106,7 +92,7 @@ Fail Example use_rewriteBy :
 Context {syntax : Definedness_Syntax.Syntax}.
 
 Example use_rewriteBy :
-    Γ ⊢ (ϕ₁ $ ϕ₄ =ml ϕ₂ $ ϕ₄) ---> (ϕ₁ =ml ϕ₂) ---> ((ϕ₃ $ ϕ₁ $ ϕ₄) <---> (ϕ₃ $ ϕ₂ $ ϕ₄))
+    Γ ⊢ (ϕ₁ ⋅ ϕ₄ =ml ϕ₂ ⋅ ϕ₄) ---> (ϕ₁ =ml ϕ₂) ---> ((ϕ₃ ⋅ (ϕ₁ ⋅ ϕ₄)) <---> (ϕ₃ ⋅ (ϕ₂ ⋅ ϕ₄)))
 .
 Proof.
     mlIntro "H1". mlIntro "H2".
@@ -124,7 +110,7 @@ Abort.
 Context {HΓ : Definedness_Syntax.theory ⊆ Γ}.
 
 Example use_rewriteBy :
-    Γ ⊢ (ϕ₁ $ ϕ₄ =ml ϕ₂ $ ϕ₄ ) ---> (ϕ₁ =ml ϕ₂) ---> ((ϕ₃ $ ϕ₁ $ ϕ₄) <---> (ϕ₃ $ ϕ₂ $ ϕ₄))
+    Γ ⊢ (ϕ₁ ⋅ ϕ₄ =ml ϕ₂ ⋅ ϕ₄ ) ---> (ϕ₁ =ml ϕ₂) ---> ((ϕ₃ ⋅ (ϕ₁ ⋅ ϕ₄)) <---> (ϕ₃ ⋅ (ϕ₂ ⋅ ϕ₄)))
 .
 Proof.
     mlIntro "H1". mlIntro "H2".
@@ -141,7 +127,7 @@ Defined.
    We now demonstrate how to use local hypotheses that are implications.
 *)
 Example use_mlApply :
-    Γ ⊢ (ϕ₁ ---> ϕ₂ $ ϕ₃) ---> (ϕ₂ $ ϕ₃ ---> ϕ₃) ---> (ϕ₁ ---> ϕ₃).
+    Γ ⊢ (ϕ₁ ---> ϕ₂ ⋅ ϕ₃) ---> (ϕ₂ ⋅ ϕ₃ ---> ϕ₃) ---> (ϕ₁ ---> ϕ₃).
 Proof.
     mlIntro "H1". mlIntro "H2". mlIntro "H3".
     (* replace the goal with the premise of "H2", since the goal is exactly
@@ -163,7 +149,7 @@ Context (ψ : Pattern)
    or in a lemma? There is `mlApplyMeta` for that.
 *)
 Example use_mlApplyMeta :
-    Γ ⊢ ϕ₁ ---> ((ex, ψ) $ ϕ₂) ---> ϕ₃ ---> (ex, (ψ $ ϕ₂)).
+    Γ ⊢ ϕ₁ ---> ((ex, ψ) ⋅ ϕ₂) ---> ϕ₃ ---> (ex, (ψ ⋅ ϕ₂)).
 Proof.
     mlIntro "H1". mlIntro "H2". mlIntro "H3".
 
@@ -173,7 +159,7 @@ Proof.
         : ∀ (Γ : Theory) (ϕ ψ : Pattern),
             well_formed (ex , ϕ)
             → well_formed ψ
-            → Γ ⊢i (ex , ϕ) $ ψ ---> (ex , ϕ $ ψ) using BasicReasoning
+            → Γ ⊢i (ex , ϕ) ⋅ ψ ---> (ex , ϕ ⋅ ψ) using BasicReasoning
     *)
     mlApplyMeta Prop_ex_left.
     (* Did you notice that [mlApplyMeta] automatically instantiated
@@ -185,6 +171,4 @@ Proof.
     mlExact "H2".
 Defined.
 
-Close Scope ml_scope.
-Close Scope string_scope.
-Close Scope list_scope.
+End tutorial.

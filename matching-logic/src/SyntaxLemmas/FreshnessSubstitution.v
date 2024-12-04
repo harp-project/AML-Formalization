@@ -1,19 +1,5 @@
-From Coq Require Import ssreflect ssrfun ssrbool.
-
-From stdpp Require Import base tactics sets.
-
-From MatchingLogic.Utils
-Require Import
-    extralibrary
-.
-
-From MatchingLogic
-Require Import
-    Signature
-    Pattern
-    Substitution
-    Freshness
-.
+From MatchingLogic Require Export Substitution
+                                  Freshness.
 
 Import Substitution.Notations.
 
@@ -59,8 +45,8 @@ Section lemmas.
     intros WFE. unfold wfc_body_ex in WFE. unfold well_formed_closed. simpl.
     unfold well_formed_closed in WFE.
     pose proof (Htmp := WFE (fresh_evar phi) ltac:(apply set_evar_fresh_is_fresh)).
-    destruct_and!.
-    split_and.
+    destruct_andb! Htmp.
+    apply andb_true_iff; split.
     2: { rewrite -> wfc_ex_aux_body_iff. eassumption. }
     eapply wfc_mu_aux_body_ex_imp2. eassumption.
   Qed.
@@ -82,61 +68,61 @@ Section lemmas.
 
   (* TODO make a wrapper that does not have the 'sz' variable *)
   Lemma bevar_subst_fresh_notin: 
-    forall sz phi psi v,
-      le (size phi) sz ->
+    forall phi psi v,
       v ∉ (free_evars phi) ->
       v ∉ (free_evars psi) ->
       forall n,
         v ∉ (free_evars (phi^[evar: n ↦ psi])).
   Proof.
-    induction sz; destruct phi; intros psi v Hsz Hlsv Hneq n0; simpl in *; try inversion Hsz; auto.
+    intro.
+    size_induction phi; intros psi v Hlsv Hneq n0; simpl in *; try inversion Hsz; auto.
     - case_match; set_solver.
     - case_match; set_solver.
-    - specialize (IHsz phi1 psi v ltac:(lia) ltac:(set_solver) ltac:(set_solver) n0) as IH1.
-      specialize (IHsz phi2 psi v ltac:(lia) ltac:(set_solver) ltac:(set_solver) n0) as IH2.
+    - specialize (IHsz phi1 ltac:(lia) psi v ltac:(set_solver) ltac:(set_solver) n0) as IH1.
+      specialize (IHsz phi2 ltac:(lia) psi v ltac:(set_solver) ltac:(set_solver) n0) as IH2.
       set_solver.
-    - specialize (IHsz phi1 psi v ltac:(lia) ltac:(set_solver) ltac:(set_solver) n0) as IH1.
-      specialize (IHsz phi2 psi v ltac:(lia) ltac:(set_solver) ltac:(set_solver) n0) as IH2.
+    - specialize (IHsz phi1 ltac:(lia) psi v ltac:(set_solver) ltac:(set_solver) n0) as IH1.
+      specialize (IHsz phi2 ltac:(lia) psi v ltac:(set_solver) ltac:(set_solver) n0) as IH2.
       set_solver.
-    - specialize (IHsz phi1 psi v ltac:(lia) ltac:(set_solver) ltac:(set_solver) n0) as IH1.
-      specialize (IHsz phi2 psi v ltac:(lia) ltac:(set_solver) ltac:(set_solver) n0) as IH2.
+    - specialize (IHsz phi1 ltac:(lia) psi v ltac:(set_solver) ltac:(set_solver) n0) as IH1.
+      specialize (IHsz phi2 ltac:(lia) psi v ltac:(set_solver) ltac:(set_solver) n0) as IH2.
       set_solver.
-    - specialize (IHsz phi1 psi v ltac:(lia) ltac:(set_solver) ltac:(set_solver) n0) as IH1.
-      specialize (IHsz phi2 psi v ltac:(lia) ltac:(set_solver) ltac:(set_solver) n0) as IH2.
+    - specialize (IHsz phi1 ltac:(lia) psi v ltac:(set_solver) ltac:(set_solver) n0) as IH1.
+      specialize (IHsz phi2 ltac:(lia) psi v ltac:(set_solver) ltac:(set_solver) n0) as IH2.
       set_solver.
-    - now specialize (IHsz phi psi v ltac:(lia) ltac:(set_solver) ltac:(set_solver) (S n0)).
-    - now specialize (IHsz phi psi v ltac:(lia) ltac:(set_solver) ltac:(set_solver) (S n0)).
-    - now specialize (IHsz phi psi v ltac:(lia) ltac:(set_solver) ltac:(set_solver) n0).
-    - now specialize (IHsz phi psi v ltac:(lia) ltac:(set_solver) ltac:(set_solver) n0).
+    - now specialize (IHsz phi ltac:(lia) psi v ltac:(set_solver) ltac:(set_solver) (S n0)).
+    - now specialize (IHsz phi ltac:(lia) psi v ltac:(set_solver) ltac:(set_solver) (S n0)).
+    - now specialize (IHsz phi ltac:(lia) psi v ltac:(set_solver) ltac:(set_solver) n0).
+    - now specialize (IHsz phi ltac:(lia) psi v ltac:(set_solver) ltac:(set_solver) n0).
   Qed.
 
   Lemma bsvar_subst_fresh_notin: 
-    forall sz phi psi v,
-      le (size phi) sz ->
+    forall phi psi v,
       v ∉ (free_svars phi) ->
       v ∉ (free_svars psi) ->
       forall n,
         v ∉ (free_svars (phi^[svar: n ↦ psi])).
   Proof.
-    induction sz; destruct phi; intros psi v Hsz Hlsv Hneq n0; simpl in *; try inversion Hsz; auto.
+    intro.
+    size_induction phi; intros psi v Hlsv Hneq n0; simpl in *; try inversion Hsz; auto.
     - case_match; set_solver.
     - case_match; set_solver.
-    - specialize (IHsz phi1 psi v ltac:(lia) ltac:(set_solver) ltac:(set_solver) n0) as IH1.
-      specialize (IHsz phi2 psi v ltac:(lia) ltac:(set_solver) ltac:(set_solver) n0) as IH2.
+    - specialize (IHsz phi1 ltac:(lia) psi v ltac:(set_solver) ltac:(set_solver) n0) as IH1.
+      specialize (IHsz phi2 ltac:(lia) psi v ltac:(set_solver) ltac:(set_solver) n0) as IH2.
       set_solver.
-    - specialize (IHsz phi1 psi v ltac:(lia) ltac:(set_solver) ltac:(set_solver) n0) as IH1.
-      specialize (IHsz phi2 psi v ltac:(lia) ltac:(set_solver) ltac:(set_solver) n0) as IH2.
+    - specialize (IHsz phi1 ltac:(lia) psi v ltac:(set_solver) ltac:(set_solver) n0) as IH1.
+      specialize (IHsz phi2 ltac:(lia) psi v ltac:(set_solver) ltac:(set_solver) n0) as IH2.
       set_solver.
-    - specialize (IHsz phi1 psi v ltac:(lia) ltac:(set_solver) ltac:(set_solver) n0) as IH1.
-      specialize (IHsz phi2 psi v ltac:(lia) ltac:(set_solver) ltac:(set_solver) n0) as IH2.
+    - specialize (IHsz phi1 ltac:(lia) psi v ltac:(set_solver) ltac:(set_solver) n0) as IH1.
+      specialize (IHsz phi2 ltac:(lia) psi v ltac:(set_solver) ltac:(set_solver) n0) as IH2.
       set_solver.
-    - specialize (IHsz phi1 psi v ltac:(lia) ltac:(set_solver) ltac:(set_solver) n0) as IH1.
-      specialize (IHsz phi2 psi v ltac:(lia) ltac:(set_solver) ltac:(set_solver) n0) as IH2.
+    - specialize (IHsz phi1 ltac:(lia) psi v ltac:(set_solver) ltac:(set_solver) n0) as IH1.
+      specialize (IHsz phi2 ltac:(lia) psi v ltac:(set_solver) ltac:(set_solver) n0) as IH2.
       set_solver.
-    - now specialize (IHsz phi psi v ltac:(lia) ltac:(set_solver) ltac:(set_solver) (n0)).
-    - now specialize (IHsz phi psi v ltac:(lia) ltac:(set_solver) ltac:(set_solver) (n0)).
-    - now specialize (IHsz phi psi v ltac:(lia) ltac:(set_solver) ltac:(set_solver) (S n0)).
-    - now specialize (IHsz phi psi v ltac:(lia) ltac:(set_solver) ltac:(set_solver) (S n0)).
+    - now specialize (IHsz phi ltac:(lia) psi v ltac:(set_solver) ltac:(set_solver) n0).
+    - now specialize (IHsz phi ltac:(lia) psi v ltac:(set_solver) ltac:(set_solver) n0).
+    - now specialize (IHsz phi ltac:(lia) psi v ltac:(set_solver) ltac:(set_solver) (S n0)).
+    - now specialize (IHsz phi ltac:(lia) psi v ltac:(set_solver) ltac:(set_solver) (S n0)).
   Qed.
 
   Corollary evar_open_fresh_notin: 
@@ -148,7 +134,6 @@ Section lemmas.
         v ∉ (free_evars (phi^{evar: n ↦ w})).
   Proof.
     intros phi v w N1 N2 NEQ n. eapply bevar_subst_fresh_notin.
-    reflexivity.
     auto.
     set_solver.
   Qed.
@@ -163,7 +148,6 @@ Section lemmas.
   Proof.
     intros phi v w N1 N2 NEQ n.
     unfold svar_open. eapply bsvar_subst_fresh_notin.
-    reflexivity.
     auto.
     set_solver.
   Qed.
@@ -327,89 +311,67 @@ Section lemmas.
 
 
 
-  Lemma Private_evar_open_free_svar_subst_comm: ∀ sz phi psi fresh n X,
-    ((size phi) <= sz) → (well_formed_closed_ex_aux psi 0) → evar_is_fresh_in fresh phi →
+  Lemma evar_open_free_svar_subst_comm: ∀ phi psi fresh n X,
+    (well_formed_closed_ex_aux psi 0) →
+    evar_is_fresh_in fresh phi →
     evar_is_fresh_in fresh (phi^[[svar: X ↦ psi]])
     →
     (phi^[[svar: X ↦ psi]])^{evar: n ↦ fresh} = (phi^{evar: n ↦ fresh})^[[svar:X ↦ psi]].
   Proof.
-  induction sz; destruct phi; intros psi fresh n0 X Hsz Hwf Hfresh1 Hfresh2; try inversion Hsz; auto.
-  - simpl. case_match.
-  + rewrite -> evar_open_closed. reflexivity.
-    assumption.
-  + simpl. reflexivity.
-  - cbn. case_match; done.
-  - simpl. unfold evar_open in *. simpl. 
-    rewrite -> (IHsz phi1), -> (IHsz phi2); try lia; try assumption. reflexivity.
-    apply (evar_is_fresh_in_app_r _ _ _ Hfresh1). simpl in Hfresh2.
-    apply (evar_is_fresh_in_app_r _ _ _ Hfresh2).
-    apply (evar_is_fresh_in_app_l _ _ _ Hfresh1).
-    apply (evar_is_fresh_in_app_l _ _ _ Hfresh2).
-  - simpl. unfold evar_open in *. simpl. rewrite -> (IHsz phi1), -> (IHsz phi2); try lia; try assumption. reflexivity.
-    apply (evar_is_fresh_in_imp_r _ _ _ Hfresh1). simpl in Hfresh2.
-    apply (evar_is_fresh_in_imp_r _ _ _ Hfresh2).
-    apply (evar_is_fresh_in_app_l _ _ _ Hfresh1).
-    apply (evar_is_fresh_in_imp_l _ _ _ Hfresh2).
-  - simpl. unfold evar_open in *. simpl. rewrite -> IHsz. reflexivity.
-    lia. assumption.
-    apply evar_is_fresh_in_exists in Hfresh1. assumption.
-    simpl in Hfresh2. apply evar_is_fresh_in_exists in Hfresh1. assumption.
-  - simpl. unfold evar_open in *. simpl.
-    f_equal.
-    rewrite -> IHsz; auto. lia.
+    intro phi.
+    size_induction phi; intros psi fresh n0 X Hwf Hfresh1 Hfresh2; try inversion Hsz; auto.
+    - simpl. case_match.
+    + rewrite -> evar_open_closed. reflexivity.
+      assumption.
+    + simpl. reflexivity.
+    - cbn. case_match; done.
+    - simpl. unfold evar_open in *. simpl. 
+      rewrite -> (IHsz phi1), -> (IHsz phi2); try lia; try assumption. reflexivity.
+      apply (evar_is_fresh_in_app_r _ _ _ Hfresh1). simpl in Hfresh2.
+      apply (evar_is_fresh_in_app_r _ _ _ Hfresh2).
+      apply (evar_is_fresh_in_app_l _ _ _ Hfresh1).
+      apply (evar_is_fresh_in_app_l _ _ _ Hfresh2).
+    - simpl. unfold evar_open in *. simpl. rewrite -> (IHsz phi1), -> (IHsz phi2); try lia; try assumption. reflexivity.
+      apply (evar_is_fresh_in_imp_r _ _ _ Hfresh1). simpl in Hfresh2.
+      apply (evar_is_fresh_in_imp_r _ _ _ Hfresh2).
+      apply (evar_is_fresh_in_app_l _ _ _ Hfresh1).
+      apply (evar_is_fresh_in_imp_l _ _ _ Hfresh2).
+    - simpl. unfold evar_open in *. simpl. rewrite -> IHsz. reflexivity.
+      lia. assumption.
+      apply evar_is_fresh_in_exists in Hfresh1. assumption.
+      simpl in Hfresh2. apply evar_is_fresh_in_exists in Hfresh1. assumption.
+    - simpl. unfold evar_open in *. simpl.
+      f_equal.
+      rewrite -> IHsz; auto. lia.
   Qed.
 
-  Corollary evar_open_free_svar_subst_comm: ∀ phi psi fresh n X,
-    (well_formed_closed_ex_aux psi 0) → evar_is_fresh_in fresh phi →
-    evar_is_fresh_in fresh (phi^[[svar: X ↦ psi]])
-    →
-    (phi^[[svar: X ↦ psi]])^{evar: n ↦ fresh} = phi^{evar: n ↦ fresh}^[[svar: X ↦ psi]].
-  Proof.
-    intros phi psi fresh n X H H0 H1.
-    apply Private_evar_open_free_svar_subst_comm with (sz := (size phi)); 
-      try lia; try assumption.
-  Qed.
-
-  Lemma Private_svar_open_free_svar_subst_comm : ∀ sz phi psi fresh n X,
-    ((size phi) <= sz) → (well_formed_closed_mu_aux psi 0) →  
+  Lemma svar_open_free_svar_subst_comm : ∀ phi psi fresh n X,
+    (well_formed_closed_mu_aux psi 0) →  
     svar_is_fresh_in fresh phi → svar_is_fresh_in fresh (phi^[[svar: X ↦ psi]]) → (fresh ≠ X) 
     →
     phi^[[svar: X ↦ psi]]^{svar: n ↦ fresh} = phi^{svar: n ↦ fresh}^[[svar: X ↦ psi]].
   Proof.
-    unfold free_svar_subst.
-    induction sz; destruct phi; intros psi fresh n0 X Hsz Hwf (* Hwfc *) Hfresh1 Hfresh2 Hneq; auto.
+    intro phi.
+    size_induction phi; intros psi fresh n0 X Hwf Hfresh1 Hfresh2 Hneq; try inversion Hsz; auto.
     - simpl. case_match; auto.
-    rewrite -> svar_open_closed; auto.
+      rewrite -> svar_open_closed; auto.
     - cbn. case_match; auto. simpl.
-    + case_match.
-      * congruence.
-      * reflexivity.
-    - inversion Hsz.
-    - inversion Hsz.
-    - inversion Hsz.
-    - inversion Hsz.
-    - simpl. case_match; auto.
-    rewrite -> svar_open_closed; auto.
-    - cbn. case_match; auto. simpl.
-    + case_match.
-      * congruence.
-      * reflexivity.
+      + case_match.
+        * congruence.
+        * reflexivity.
     - simpl.
       unfold svar_open in *. simpl. rewrite -> (IHsz phi1), -> (IHsz phi2); try lia; try assumption; try lia; try assumption.
       reflexivity.
-      simpl in Hsz. lia.
+      simpl in Hsz.
       simpl in Hfresh1. apply svar_is_fresh_in_app_r in Hfresh1. assumption.
       simpl in Hfresh2. apply svar_is_fresh_in_app_r in Hfresh2. assumption.
-      simpl in Hsz. lia.
       simpl in Hfresh1. apply svar_is_fresh_in_app_l in Hfresh1. assumption.
       simpl in Hfresh2. apply svar_is_fresh_in_app_l in Hfresh2. assumption.
     - simpl.
       unfold svar_open in *. simpl. rewrite -> (IHsz phi1), -> (IHsz phi2); try lia; try assumption; try lia; try assumption.
       reflexivity.
-      simpl in Hsz. lia.
       simpl in Hfresh1. apply svar_is_fresh_in_app_r in Hfresh1. assumption.
       simpl in Hfresh2. apply svar_is_fresh_in_app_r in Hfresh2. assumption.
-      simpl in Hsz. lia.
       simpl in Hfresh1. apply svar_is_fresh_in_app_l in Hfresh1. assumption.
       simpl in Hfresh2. apply svar_is_fresh_in_app_l in Hfresh2. assumption.
     - remember ((free_evars (phi^[[svar: X ↦ psi]]^{svar: n0 ↦ fresh})) ∪
@@ -451,18 +413,6 @@ Section lemmas.
       apply -> svar_is_fresh_in_mu in Hfresh2. 2: auto.
       fold free_svar_subst in *. auto.
     Unshelve. all: assumption.
-  Qed.
-
-  Corollary svar_open_free_svar_subst_comm : ∀ phi psi fresh n X,
-    (well_formed_closed_mu_aux psi 0) →  
-    svar_is_fresh_in fresh phi → svar_is_fresh_in fresh (phi^[[svar: X ↦ psi]]) → (fresh ≠ X) 
-    →
-    phi^[[svar: X ↦ psi]]^{svar: n ↦ fresh} = 
-    phi^{svar: n ↦ fresh}^[[svar: X ↦ psi]].
-  Proof.
-    intros phi psi fresh n X H H0 H1 H2.
-    apply (Private_svar_open_free_svar_subst_comm) with (sz := (size phi));
-      try lia; try assumption.
   Qed.
 
   Lemma free_evar_subst_preserves_no_negative_occurrence x p q n:
@@ -519,46 +469,41 @@ Section lemmas.
     rewrite wfpq.
     (* rewrite wfp_nest_ex_aux.
     rewrite wfpq. simpl in *.*)
-    unfold well_formed_closed in wfcq. destruct_and!.
+    unfold well_formed_closed in wfcq. destruct_andb! wfp. destruct_andb! wfcq.
     pose proof (H1' := @well_formed_closed_mu_aux_ind Σ q 0 n2 ltac:(lia) H).
     pose proof (H2' := wfc_impl_no_neg_pos_occ _ _ H1').
-    destruct_and!.
-    
-    split_and!; auto.
+    destruct_andb! H2'.
+    repeat (apply andb_true_iff; split); try assumption.
     + eapply well_formed_closed_ex_aux_ind.
       2: eassumption. lia.
   - cbn in *.
-    destruct_and!. split_and!; auto.
-    repeat case_match; lia.
+    repeat case_match; try lia; naive_bsolver.
   - unfold well_formed, well_formed_closed in *. simpl in *.
-    destruct_and!.
+    destruct_andb! wfq.
     specialize (IHp1 n1 n2). specialize (IHp2 n1 n2).
     ospecialize* IHp1.
-    { split_and!; auto. }
+    { naive_bsolver. }
     ospecialize* IHp2.
-    { split_and!; auto. }
-    destruct_and!.
-    cbn.
-    split_and!; auto.
+    { naive_bsolver. }
+    naive_bsolver.
   - unfold well_formed, well_formed_closed in *. simpl in *.
-    destruct_and!.
+    destruct_andb! wfq.
     specialize (IHp1 n1 n2). specialize (IHp2 n1 n2).
     ospecialize* IHp1.
-    { split_and!; auto. }
+    { naive_bsolver. }
     ospecialize* IHp2.
-    { split_and!; auto. }
-    destruct_and!.
-    cbn.
-    split_and!; auto.
+    { naive_bsolver. }
+    naive_bsolver.
   - unfold well_formed, well_formed_closed in *. simpl in *.
-    destruct_and!.
+    destruct_andb! wfq.
     pose proof (IHp' := IHp).
     specialize (IHp n1 (S n2)).
     ospecialize* IHp.
-    { split_and!; auto. }
-    destruct_and!.
+    { naive_bsolver. }
+    destruct_andb! IHp.
     cbn in *.
-    split_and!; auto.
+    destruct_andb! wfp.
+    repeat (apply andb_true_iff; split); try assumption.
     rewrite free_evar_subst_preserves_no_negative_occurrence; auto.
   Qed.
 
@@ -571,10 +516,9 @@ Section lemmas.
     intros wfq wfp.
     pose proof (H := @Private_well_formed_free_evar_subst x p q 0 0 wfq).
     unfold well_formed,well_formed_closed in *.
-    destruct_and!.
-    ospecialize* H.
-    { split_and!; assumption. }
-    destruct_and!. split_and!; auto.
+    destruct_andb! wfq.
+    destruct_andb! wfp.
+    ospecialize* H; naive_bsolver.
   Qed.
 
   Lemma well_formed_xy_free_evar_subst x m n p q:
@@ -585,10 +529,8 @@ Section lemmas.
     intros wfq wfp.
     pose proof (H := @Private_well_formed_free_evar_subst x p q m n wfq).
     unfold well_formed_xy. unfold well_formed_xy in wfp.
-    destruct_and!.
-    ospecialize* H.
-    { split_and!; assumption. }
-    destruct_and!. split_and!; assumption.
+    destruct_andb! wfp.
+    ospecialize* H; naive_bsolver.
   Qed.
 
   Lemma well_formed_free_evar_subst_0 x p q:
@@ -751,20 +693,20 @@ Proof.
     + case_match; [|reflexivity].
       assumption.
     + cbn in Hwfpϕ.
-      destruct_and!.
+      destruct_andb! Hwfpϕ.
       specialize (IHϕ1 ltac:(assumption)).
       specialize (IHϕ2 ltac:(assumption)).
-      split_and!; auto.
+      naive_bsolver.
     + cbn in Hwfpϕ.
-      destruct_and!.
+      destruct_andb! Hwfpϕ.
       pose proof (IH1 := wfp_neg_free_evar_subst ϕ1 ψ x ltac:(assumption)).
       ospecialize* IH1.
       { assumption. }
       { assumption. }
       specialize (IHϕ2 ltac:(assumption)).
-      split_and!; auto.
-    + cbn in Hwfpϕ. destruct_and!.
-      rewrite IHϕ. assumption. split_and!; auto.
+      naive_bsolver.
+    + cbn in Hwfpϕ. destruct_andb! Hwfpϕ.
+      rewrite IHϕ. assumption.
       rewrite free_evar_subst_preserves_no_negative_occurrence; auto.
   -
     intros Hwfcψ Hwfpψ Hwfpϕ.
@@ -772,20 +714,20 @@ Proof.
     + case_match; [|reflexivity].
       assumption.
     + cbn in Hwfpϕ.
-      destruct_and!.
+      destruct_andb! Hwfpϕ.
       specialize (IHϕ1 ltac:(assumption)).
       specialize (IHϕ2 ltac:(assumption)).
-      split_and!; auto.
+      naive_bsolver.
     + cbn in Hwfpϕ.
-      destruct_and!.
+      destruct_andb! Hwfpϕ.
       pose proof (IH1 := wfp_free_evar_subst ϕ1 ψ x ltac:(assumption)).
       ospecialize* IH1.
       { assumption. }
       { assumption. }
       specialize (IHϕ2 ltac:(assumption)).
-      split_and!; auto.
-    + cbn in Hwfpϕ. destruct_and!.
-      rewrite IHϕ. assumption. split_and!; auto.
+      naive_bsolver.
+    + cbn in Hwfpϕ. destruct_andb! Hwfpϕ.
+      rewrite IHϕ. assumption.
       rewrite free_evar_subst_preserves_no_negative_occurrence; auto.
 Qed.
 

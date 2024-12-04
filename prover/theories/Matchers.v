@@ -1,29 +1,16 @@
-From Coq Require Import ssreflect ssrfun ssrbool.
-From Coq Require Import Ensembles Logic.Classical_Prop.
-From Coq Require Import Arith.Wf_nat Relations.Relation_Operators Wellfounded.Wellfounded.
-From Coq Require Import Logic.FunctionalExtensionality.
-From Coq.micromega Require Import Lia.
-
-From Equations Require Import Equations.
-
-From stdpp Require Import base option.
-
-From MatchingLogic Require Import
-     Syntax
-     Semantics
-     DerivedOperators_Syntax
-     ProofSystem
-     ProofMode.MLPM
-     Utils.extralibrary
+From MatchingLogic Require Export
+     Logic
 .
 
 
-Import MatchingLogic.Syntax.Notations MatchingLogic.DerivedOperators_Syntax.Notations.
+Import MatchingLogic.Logic.Notations.
 
 
 Global Set Transparent Obligations.
 Derive NoConfusion for Pattern.
 Derive Subterm for Pattern.
+
+Set Default Proof Mode "Classic".
 
 
 Open Scope ml_scope.
@@ -98,7 +85,7 @@ Proof. reflexivity. Qed.
 
 Lemma match_and_patt_or  {Σ : Signature} p1 p2: is_inl (match_and (patt_or p1 p2)) = false.
 Proof.
-  funelim (match_and _); rewrite -Heqcall; simpl; try reflexivity.
+  funelim (match_and _); try rewrite -Heqcall; simpl; try reflexivity.
   subst. try inversion e'.
 Qed.
 

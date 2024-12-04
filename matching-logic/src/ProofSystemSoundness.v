@@ -1,11 +1,8 @@
-From Coq Require Import ssreflect ssrfun ssrbool.
 
-From Coq Require Import Logic.Classical_Prop Logic.Eqdep_dec.
-From MatchingLogic.Utils Require Import stdpp_ext Lattice.
-From MatchingLogic Require Import Syntax NamedAxioms DerivedOperators_Syntax DerivedOperators_Semantics monotonic wftactics ProofSystem Semantics.
-From stdpp Require Import base fin_sets sets propset.
-
-From MatchingLogic.Utils Require Import extralibrary.
+From Coq Require Import Logic.Classical_Prop.
+From MatchingLogic Require Export DerivedOperators_Semantics
+                                  ProofSystem
+                                  monotonic.
 
 Import MatchingLogic.Syntax.Notations.
 Import MatchingLogic.Substitution.Notations.
@@ -74,7 +71,7 @@ Section soundness.
           apply not_elem_of_union in n. destruct n. assumption.
         }
       + unfold well_formed,well_formed_closed in *. simpl in *.
-        destruct_and!.
+        destruct_andb! Hwf. destruct_andb! H. destruct_andb! H0.
         erewrite -> eval_free_evar_independent.
         erewrite -> evar_open_closed.
         split.
@@ -146,7 +143,7 @@ Section soundness.
           apply not_elem_of_union in n. destruct n. assumption.
         }
         unfold well_formed,well_formed_closed in *. simpl in *.
-        destruct_and!.
+        destruct_andb! Hwf.
         assumption.
       + split; try assumption.
         erewrite -> (eval_fresh_evar_open) in Hext_re. exact Hext_re.
@@ -276,15 +273,7 @@ Proof.
     rename i into H. rename i0 into H0.
     rewrite eval_iff_subset.
     assert (Hwf_imp: well_formed (phi1 ---> phi2)).
-    { unfold well_formed. simpl. unfold well_formed in H, H0.
-      unfold well_formed_closed. unfold well_formed_closed in H, H0.
-      simpl. apply andb_true_iff in H. apply andb_true_iff in H0.
-      destruct H as [Hwfp_phi1 Hwfc_phi1].
-      destruct H0 as [Hwfp_phi2 Hwfc_phi2].
-      unfold well_formed,well_formed_closed in *. simpl in *.
-      destruct_and!.
-      split_and!; assumption.
-    }
+    { wf_auto2. }
     specialize (IHHp Hwf_imp Hv). clear Hv. clear Hwf_imp.
     assert (H2: forall ρ,
                (@eval _ m ρ phi1)
@@ -317,9 +306,7 @@ Proof.
          unfold well_formed_closed in Hwfc.
          rewrite -> evar_open_evar_quantify in H3.
          assumption.
-         unfold well_formed,well_formed_closed in *. simpl in *.
-         destruct_and!.
-         assumption.
+         wf_auto2.
        }
        rewrite -> elem_of_subseteq in Hinc.
        apply Hinc. apply Hphi1.
@@ -421,25 +408,7 @@ Proof.
     split. apply e. assumption.
     Unshelve.
     split; assumption.
-    {
-      unfold well_formed in Hwf.
-      apply andb_true_iff in Hwf.
-      inversion Hwf.
-      simpl in H.
-      unfold well_formed.
-      apply andb_true_iff in H. destruct H as [H1 H2].
-      apply andb_true_iff in H1. destruct H1 as [H3 H4].
-      apply andb_true_iff in H2. destruct H2 as [H5 H6].
-      simpl. rewrite H3. rewrite H5. simpl.
-      unfold well_formed_closed.
-      unfold well_formed_closed in H0. simpl in H0.
-      apply andb_true_iff in H0. destruct H0 as [H01 H02].
-      apply andb_true_iff in H01. destruct H01 as [H011 H012].
-      apply andb_true_iff in H02. destruct H02 as [H021 H022].
-      simpl.
-      destruct_and!.
-      split_and!; assumption.
-    }
+    { wf_auto2. }
 
   (* Framing - right *)
   - intros Hv ρ.
@@ -455,22 +424,7 @@ Proof.
     Unshelve.
     split. apply e. assumption.
     assumption.
-    {
-      unfold well_formed in Hwf.
-      apply andb_true_iff in Hwf.
-      destruct Hwf as [Hwf1 Hwf2].
-      simpl in Hwf1. apply andb_true_iff in Hwf1. destruct Hwf1 as [Hwf11 Hwf12].
-      apply andb_true_iff in Hwf11. destruct Hwf11 as [Hwf111 Hwf112].
-      apply andb_true_iff in Hwf12. destruct Hwf12 as [Hwf121 Hwf122].
-      unfold well_formed. simpl.
-      rewrite Hwf112. rewrite Hwf122. simpl.
-      unfold well_formed_closed in Hwf2. simpl in Hwf2.
-      apply andb_true_iff in Hwf2. destruct Hwf2 as [Hwfc1 Hwfc2].
-      apply andb_true_iff in Hwfc1. destruct Hwfc1 as [Hwfc3 Hwfc4].
-      apply andb_true_iff in Hwfc2. destruct Hwfc2 as [H2fc5 Hwfc6].
-      unfold well_formed_closed. simpl.
-      destruct_and!. split_and!; assumption.
-    }
+    { wf_auto2. }
 
   (* Set Variable Substitution *)
   - intros. epose proof (IHHp ltac:(auto) Hv ) as IH.
@@ -533,7 +487,8 @@ Proof.
     pose (L := Lattice.PowersetLattice (@Domain Σ m)).
 
     assert (Ffix : Lattice.isFixpoint F (Lattice.LeastFixpointOf F)).
-    { apply Lattice.LeastFixpoint_fixpoint. subst. apply is_monotonic.
+    { apply Lattice.LeastFixpoint_fixpoint. subst.
+      apply is_monotonic.
       unfold well_formed in Hwf.
       apply andb_true_iff in Hwf.
       destruct Hwf as [Hwfp Hwfc].
@@ -569,19 +524,7 @@ Proof.
     apply Htmp.
 
     assert (Hwf': well_formed (instantiate (mu , phi) psi ---> psi)).
-    { unfold well_formed in Hwf. apply andb_true_iff in Hwf.
-      destruct Hwf as [Hwfp Hwfc].
-      simpl in Hwfp. apply andb_true_iff in Hwfp as [Hwfp1 Hwfp2]. 
-      destruct_and!.
-      apply andb_true_iff in Hwfc as [Hwfc1 Hwfc2]. simpl in Hwfc1, Hwfc2.
-      destruct_and!.
-      apply andb_true_iff; split; simpl.
-      apply andb_true_iff in i as [i1 i2].
-      * apply andb_true_iff; split; auto. apply wfp_bsvar_subst; auto.
-      * apply andb_true_iff; split; simpl; apply andb_true_iff; split; auto.
-        apply wfc_mu_aux_bsvar_subst; auto.
-        apply wfc_ex_aux_bsvar_subst; auto.
-    }
+    { wf_auto2. }
     specialize (IHHp Hwf').
 
 
@@ -598,10 +541,7 @@ Proof.
     subst F.
     rewrite <- set_substitution_lemma.
     apply Hv. 3: apply set_svar_fresh_is_fresh.
-    {
-      destruct_and!. apply andb_true_iff in H1 as [H10 H11]. simpl in H10, H11.
-      destruct_and!. apply andb_true_iff. auto.
-    }
+    { wf_auto2. }
     { apply andb_true_iff in i as [_ i]. apply andb_true_iff in i as [i _]. auto. }
 
 

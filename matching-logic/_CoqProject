@@ -1,8 +1,8 @@
 -R src MatchingLogic
 
 src/Utils/extralibrary.v
-src/Utils/Lattice.v
 src/Utils/stdpp_ext.v
+src/Utils/Lattice.v
 src/Utils/Surj.v
 
 src/Signature.v
@@ -19,14 +19,14 @@ src/SyntaxLemmas/FreshnessSubstitution.v
 src/SyntaxLemmas/PatternCtxApplicationCtx.v
 src/SyntaxLemmas/FreshnessApplicationCtx.v
 src/SyntaxLemmas/ApplicationCtxSubstitution.v
-src/Syntax.v
 src/wftactics.v
+src/Syntax.v
 src/NamedAxioms.v
 
 src/Semantics.v
+src/monotonic.v
 src/ModelIsomorphism.v
 src/PrePredicate.v
-src/monotonic.v
 src/DerivedOperators_Semantics.v
 
 src/ProofSystem.v
@@ -36,6 +36,8 @@ src/StringSignature.v
 src/ProofInfo.v
 src/Logic.v
 
+src/FreshnessManager.v
+
 src/BasicProofSystemLemmas.v
 src/ProofMode/Basics.v
 src/ProofMode/Propositional.v
@@ -44,21 +46,23 @@ src/ProofMode/FixPoint.v
 src/ProofMode/Reshaper.v
 src/ProofMode/Misc.v
 src/ProofMode/MLPM.v
-src/FreshnessManager.v
+
 
 src/Theories/Definedness_Syntax.v
 src/Theories/Definedness_Semantics.v
 src/Theories/Definedness_ProofSystem.v
 
-src/Theories/FOEquality_ProofSystem.v
 src/Theories/DeductionTheorem.v
-src/Theories/Nat_Syntax.v
-
-src/Theories/SumSort_Syntax.v
+src/Theories/FOEquality_ProofSystem.v
+src/Theories/Subseteq_ProofSystem.v
 
 src/Theories/Sorts_Syntax.v
 src/Theories/Sorts_Semantics.v
 src/Theories/Sorts_ProofSystem.v
+
+src/Theories/Nat_Syntax.v
+
+src/Theories/SumSort_Syntax.v
 
 src/Theories/Bool_Syntax.v
 src/Theories/Bool_Semantics.v
@@ -69,7 +73,6 @@ src/Theories/ProductSort_ProofSystem.v
 src/Theories/ProductSortWithLookup.v
 src/Theories/RecursiveSymbol.v
 
-src/Theories/Subseteq_ProofSystem.v
 src/Theories/ContextualImplication.v
 
 src/Theories/ModelExtension.v
@@ -81,6 +84,7 @@ src/Tests/TEST_proofmode_proof_size.v
 src/Tests/TEST_ProofMode_relative_completeness.v
 
 
+src/Evaluation/tutorial.v
 src/Evaluation/Propositional.v
 src/Evaluation/Rewrite.v
 src/Evaluation/Firstorder.v

@@ -1,15 +1,9 @@
-From Coq Require Import ssreflect ssrfun ssrbool.
-
 From Coq Require Import Btauto.
 
-From stdpp Require Import countable infinite.
-From stdpp Require Import pmap gmap mapset fin_sets propset.
-Require Import stdpp_ext.
-
-Require Import extralibrary.
-
 From MatchingLogic Require Export
-    Signature.
+    Signature
+    extralibrary
+    stdpp_ext.
 
 
 (* TODO have different type for element variable and for set variable index *)
@@ -102,31 +96,27 @@ Fixpoint count_binders
   | patt_mu ϕ' =>
     S (count_binders ϕ')
   end
-.    
+.
 
 Definition Theory {Σ : Signature} := propset Pattern.
 
 Section syntax.
-    Context {Σ : Signature}.
+  Context {Σ : Signature}.
 
-Fixpoint size (p : Pattern) : nat :=
-    match p with
-    | patt_app ls rs => 1 + (size ls) + (size rs)
-    | patt_imp ls rs => 1 + (size ls) + (size rs)
-    | patt_exists p' => 1 + size p'
-    | patt_mu p' => 1 + size p'
-    | _ => 0
-    end.
+  Fixpoint pat_size (p : Pattern) : nat :=
+      match p with
+      | patt_app ls rs => 1 + (pat_size ls) + (pat_size rs)
+      | patt_imp ls rs => 1 + (pat_size ls) + (pat_size rs)
+      | patt_exists p' => 1 + pat_size p'
+      | patt_mu p' => 1 + pat_size p'
+      | _ => 1
+      end.
 
+(*   Global Instance PatternSize : Size Pattern := {
+    size := pat_size;
+  }. *)
 
-Fixpoint size' (p : Pattern) : nat :=
-    match p with
-    | patt_app ls rs => 1 + (size' ls) + (size' rs)
-    | patt_imp ls rs => 1 + (size' ls) + (size' rs)
-    | patt_exists p' => 1 + size' p'
-    | patt_mu p' => 1 + size' p'
-    | _ => 1
-    end.
+(*   Arguments PatternSize /. *)
 
   (** The free names of a type are defined as follow.  Notice the
   [exists] and [mu] cases: they do not bind any name. *)
@@ -328,8 +318,7 @@ Lemma well_formed_imp ϕ₁ ϕ₂:
 Proof.
   unfold well_formed. unfold well_formed_closed. simpl.
   intros H1 H2.
-  destruct_and!.
-  split_and!; auto.
+  naive_bsolver.
 Qed.
 
 Lemma well_formed_app ϕ₁ ϕ₂:
@@ -355,8 +344,9 @@ Lemma well_formed_impl_well_formed_ex ϕ:
   well_formed (patt_exists ϕ) = true.
 Proof.
   unfold well_formed,well_formed_closed.
-  intros. destruct_and!. split_and!; auto.
-  eapply well_formed_closed_ex_aux_ind in H2. simpl. eassumption. lia.
+  intros. destruct_andb!. simpl.
+  eapply well_formed_closed_ex_aux_ind with (ind_evar2 := 1) in H2. 2: lia.
+  naive_bsolver.
 Qed.
 
 
@@ -377,23 +367,23 @@ Qed.
       subst. lia.
     - split.
       + simpl in Hwfc.
-        destruct_and!.
+        destruct_andb!.
         unfold no_negative_occurrence_db_b.
-        split_and!; naive_bsolver auto.
+        naive_bsolver auto.
       + simpl in Hwfc.
-        destruct_and!.
+        destruct_andb!.
         unfold no_positive_occurrence_db_b.
-        split_and!; naive_bsolver auto.
+        naive_bsolver auto.
     - split.
       + simpl in Hwfc.
-        destruct_and!. split_and!; naive_bsolver auto.
+        destruct_andb!. naive_bsolver auto.
       + simpl in Hwfc.
-        destruct_and!. split_and!; naive_bsolver auto.
+        destruct_andb!. naive_bsolver auto.
     - simpl in Hwfc.
-      split_and!; naive_bsolver auto.
+      naive_bsolver auto.
     - simpl in Hwfc.
-      split_and!; eapply IHpsi.
-      1,3: eassumption. all: lia.
+      eapply IHpsi.
+      1: eassumption. lia.
   Qed.
 
   Corollary wfc_impl_no_neg_occ psi dbi:
@@ -466,10 +456,10 @@ Qed.
     - repeat case_match; try reflexivity; try lia. congruence.
     - apply andb_prop in H. destruct H as [H1 H2].
       specialize (IHp1 m H1). specialize (IHp2 m H2).
-      destruct_and!. split_and!; assumption.
+      naive_bsolver.
     - apply andb_prop in H. destruct H as [H1 H2].
       specialize (IHp1 m H1). specialize (IHp2 m H2).
-      destruct_and!. split_and!; assumption.
+      naive_bsolver.
   Qed.
 
     
@@ -507,6 +497,7 @@ Qed.
   Proof.
     intros H.
     induction p; simpl in *; destruct_and?; split_and?; auto.
+    all: naive_bsolver.
   Qed.
 
 
@@ -514,7 +505,7 @@ Qed.
     mu_free φ -> well_formed_positive φ.
   Proof.
     induction φ; intros Hmf; simpl; auto.
-    all: simpl in Hmf; destruct_and!; rewrite -> IHφ1, -> IHφ2; auto.
+    all: simpl in Hmf; naive_bsolver.
   Qed.
 
 
@@ -612,8 +603,7 @@ Lemma well_formed_app_proj1 {Σ : Signature} p q:
 Proof.
   intros H.
   unfold well_formed,well_formed_closed in *. simpl in *.
-  destruct_and!.
-  unfold well_formed,well_formed_closed. split_and!; assumption.
+  naive_bsolver.
 Qed.
 
 Lemma well_formed_app_proj2 {Σ : Signature} p q:
@@ -622,8 +612,7 @@ Lemma well_formed_app_proj2 {Σ : Signature} p q:
 Proof.
   intros H.
   unfold well_formed,well_formed_closed in *. simpl in *.
-  destruct_and!.
-  unfold well_formed,well_formed_closed. split_and!; assumption.
+  naive_bsolver.
 Qed.
 
 Lemma well_formed_imp_proj1 {Σ : Signature} p q:
@@ -632,8 +621,7 @@ Lemma well_formed_imp_proj1 {Σ : Signature} p q:
 Proof.
   intros H.
   unfold well_formed,well_formed_closed in *. simpl in *.
-  destruct_and!.
-  unfold well_formed,well_formed_closed. split_and!; assumption.
+  naive_bsolver.
 Qed.
 
 Lemma well_formed_imp_proj2 {Σ : Signature} p q:
@@ -642,8 +630,7 @@ Lemma well_formed_imp_proj2 {Σ : Signature} p q:
 Proof.
   intros H.
   unfold well_formed,well_formed_closed in *. simpl in *.
-  destruct_and!.
-  unfold well_formed,well_formed_closed. split_and!; assumption.
+  naive_bsolver.
 Qed.
 
 
@@ -784,8 +771,7 @@ Lemma lwf_xy_cons_decompose
 Proof.
   intros H.
   rewrite lwf_xy_cons in H.
-  destruct_and!.
-  split; assumption.
+  naive_bsolver.
 Qed.
 
 Lemma lwf_positive_cons
@@ -843,8 +829,7 @@ Lemma lwf_xy_app_decompose
 Proof.
   intros H.
   rewrite lwf_xy_app in H.
-  destruct_and!.
-  split; assumption.
+  naive_bsolver.
 Qed.
 
 Lemma lwf_positive_app
@@ -1065,7 +1050,7 @@ Lemma map_wf :
 Proof.
   induction l; intros; try by cbn in *.
   cbn in *.
-  destruct_and!. apply H0 in H1.
+  destruct_andb! H. apply H0 in H1.
   specialize (IHl H2 H0). unfold wf in IHl.
   by rewrite H1 IHl.
 Qed.
@@ -1140,16 +1125,30 @@ match type of φ with
 | Pattern => let sz := fresh "sz" in
              let Hsz := fresh "Hsz" in
              let H := fresh "H" in
-               remember (size' φ) as sz eqn:H;
-               assert (size' φ <= sz) as Hsz by lia;
+               remember (pat_size φ) as sz eqn:H;
+               assert (pat_size φ <= sz) as Hsz by lia;
                clear H;
                revert φ Hsz;
-               induction sz; intros φ Hsz; [
-                 destruct φ; simpl size' in Hsz; lia
+               let sz' := fresh "sz" in
+               let IHsz := fresh "IHsz" in
+               induction sz as [|sz' IHsz]; intros φ Hsz; [
+                 destruct φ; simpl pat_size in Hsz; lia
                |
-                 destruct φ; simpl size' in Hsz
+                 destruct φ;
+(*                  unfold PatternSize in Hsz, IHsz; *)
+                 simpl in Hsz
+(*                  replace pat_size with (size : Pattern -> nat) in * by reflexivity *)
                ]
 end.
+
+Local Lemma test_ind :
+  forall {Σ : Signature} (φ : Pattern),
+    size (∅ : EVarSet) = 0 -> pat_size φ = pat_size (patt_app φ φ).
+Proof.
+  intros ? φ.
+  size_induction φ.
+  6: {
+Abort.
 
 
 Module BoundVarSugar.

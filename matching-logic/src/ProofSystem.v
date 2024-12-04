@@ -1,13 +1,6 @@
-From Coq Require Import ssreflect ssrfun ssrbool.
-
 From Ltac2 Require Import Ltac2.
-
-From Coq Require Import Logic.Classical_Prop Logic.Eqdep_dec Btauto.
-From MatchingLogic.Utils Require Import stdpp_ext Lattice.
-From MatchingLogic Require Import Syntax NamedAxioms DerivedOperators_Syntax wftactics.
-From stdpp Require Import base fin_sets sets propset gmap.
-
-From MatchingLogic.Utils Require Import extralibrary.
+From MatchingLogic Require Export Syntax
+                                  DerivedOperators_Syntax.
 
 Import MatchingLogic.Syntax.Notations.
 Import MatchingLogic.Substitution.Notations.

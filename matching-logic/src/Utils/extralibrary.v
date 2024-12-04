@@ -1,11 +1,11 @@
 (** * Module [extralibrary]: library functions, theorems, and tactics *)
-From Coq Require Import ssreflect ssrfun ssrbool.
+From Coq Require Export ssreflect ssrfun.
 From Coq Require Import Bool.Bool.
-From stdpp Require Import base tactics.
+From stdpp Require Export base tactics.
 Require Import Arith.
 Require Import ZArith.
 Require Import List.
-Require Import Coq.micromega.Lia.
+Require Export Coq.micromega.Lia.
 
 (* alternative to destruct: when hypotheses/goals contain match expressions *)
 Ltac break_match_hyp :=

@@ -1,22 +1,9 @@
-From Coq Require Import String.
+From MatchingLogic Require Import Theories.Definedness_Syntax
+                                  ProofMode.MLPM.
 
-From stdpp Require Import base pmap gmap fin_maps finite.
+Import MatchingLogic.Logic.Notations.
 
-From MatchingLogic Require Import
-    Logic
-    DerivedOperators_Syntax
-    ProofSystem
-    ProofMode.MLPM
-.
-
-Import
-  MatchingLogic.Logic.Notations
-  MatchingLogic.DerivedOperators_Syntax.Notations
-.
-
-Open Scope string_scope.
-Open Scope list_scope.
-Open Scope ml_scope.
+Set Default Proof Mode "Classic".
 
 Fixpoint proof_size {Σ : Signature} {φ : Pattern} {Γ}
    (pf : ML_proof_system Γ φ) : nat :=
@@ -121,12 +108,6 @@ Proof.
   all: subst x; try solve_fresh.
 Defined.
 
-From Coq Require Import ssreflect ssrfun ssrbool.
-
-Open Scope string_scope.
-Open Scope list_scope.
-Open Scope ml_scope.
-
 (** Proof using proof mode *)
 Lemma ex2_pm {Σ : Signature} (A B C D : Pattern) (Γ : Theory) :
   well_formed (A ---> B ---> C ---> D) = true ->
@@ -138,8 +119,6 @@ Proof.
   mlRewrite H at 1.
   mlIntro "H1". mlExact "H1".
 Defined.
-
-Import PropExtensionality.
 
 Lemma ex2_coq {T : Type} A (B : T -> Prop) C D:
   B C <-> D ->
@@ -163,13 +142,6 @@ Proof.
 Defined.
 
 Section compute.
-  From MatchingLogic.Theories Require Import Definedness_Syntax
-                                             Definedness_Semantics
-                                             Sorts_Syntax
-                                             Sorts_Semantics
-                                             Definedness_ProofSystem.
-  Import Definedness_Syntax.Notations.
-  From stdpp Require Import base fin_sets sets propset finite.
 
   Inductive Symbols :=
     | sym_import_definedness (d : Definedness_Syntax.Symbols)
@@ -185,7 +157,7 @@ Section compute.
   Program Instance Symbols_fin : Finite Symbols :=
   {|
     enum := [Zero; Succ; TT ; FF; even;
-      sym_import_definedness Definedness_Syntax.definedness] ;
+      sym_import_definedness Definedness_Syntax.def_sym] ;
   |}.
   Next Obligation.
     repeat constructor; set_solver.
@@ -204,11 +176,9 @@ Section compute.
 
   Instance definedness_syntax : Definedness_Syntax.Syntax :=
     {|
-       Definedness_Syntax.inj := sym_import_definedness;
+       Definedness_Syntax.sym_inj := sym_import_definedness;
     |}.
 
-  Open Scope string_scope.
-  Open Scope ml_scope.
   Let Z := patt_free_evar "Z".
   Let X := patt_free_evar "X".
   Let Y := patt_free_evar "Y".

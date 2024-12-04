@@ -1,13 +1,10 @@
-From Coq Require Import ssreflect ssrfun ssrbool.
-
-From stdpp Require Import base list list_numbers.
+(* From Coq Require Import ssreflect ssrfun ssrbool. *)
+From MatchingLogic.OPML Require Export OpmlSignature.
+From stdpp Require Export base list list_numbers.
 (* This is unset by stdpp. We need to set it again.*)
 Set Transparent Obligations.
 
-From Equations Require Import Equations.
-(* Set Equations Transparent. *)
-
-From MatchingLogic.OPML Require Import OpmlSignature.
+Set Default Proof Mode "Classic".
 
 (* De Bruijn indices for element and set variables*)
 Record Edbi := { edbi_n : nat; }.
@@ -119,7 +116,7 @@ Proof.
     remember (OPMLPattern_size φ') as sz.
     assert (Hsz: OPMLPattern_size φ' <= sz) by lia.
     clear Heqsz.
-    move: φ' Hsz.
+    revert φ' Hsz.
     induction sz;
         intros φ' Hsz.
     {

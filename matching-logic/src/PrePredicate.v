@@ -1,22 +1,4 @@
-From Coq Require Import ssreflect ssrfun ssrbool.
-
-From Coq.Logic Require Import FunctionalExtensionality PropExtensionality Classical_Pred_Type Classical_Prop.
-From Coq.micromega Require Import Lia.
-From Coq.Program Require Import Wf.
-
-From Equations Require Import Equations.
-
-From stdpp Require Import base fin_sets.
-From stdpp Require Import pmap gmap mapset fin_sets sets propset list_numbers.
-
-From MatchingLogic.Utils Require Import Lattice stdpp_ext extralibrary.
-From MatchingLogic Require Import
-  Syntax
-  Freshness
-  NamedAxioms
-  IndexManipulation
-  Semantics
-.
+From MatchingLogic Require Export Semantics.
 
 Import MatchingLogic.Syntax.Notations.
 Import MatchingLogic.Substitution.Notations.
@@ -55,8 +37,8 @@ Section with_signature.
     unfold M_pre_pre_predicate.
     intros H l Hl Hci Hwf.
     apply H.
-    { clear -Hl. induction l. apply Forall_nil. exact I. inversion Hl. subst.
-      apply Forall_cons. split;[lia|]. apply IHl. assumption.
+    { clear -Hl. induction l. by apply Forall_nil. inversion Hl. subst.
+      apply Forall_cons; split. lia. apply IHl. assumption.
     }
     { exact Hci. }
     { exact Hwf. }
@@ -304,7 +286,7 @@ Section with_signature.
           destruct_and!.
           apply Forall_app. split.
           {
-              apply Forall_forall.
+              apply list.Forall_forall.
               intros.
               clear Heq.
               apply elem_of_take in H1.
@@ -524,7 +506,7 @@ Section with_signature.
       }
       {
         unfold evar_open in *. simpl in Hwfc. rewrite bcmcloseex_app in Hwfc.
-        simpl in Hwfc. destruct_and!.
+        simpl in Hwfc. destruct_andb! Hwfc.
         specialize (IHϕ1 p k l Hnk ltac:(assumption) Hci).
         specialize (IHϕ2 p k l Hnk ltac:(assumption) Hci).
         rewrite IHϕ1.
@@ -533,7 +515,7 @@ Section with_signature.
       }
       {
         unfold evar_open in *. simpl in Hwfc. rewrite bcmcloseex_imp in Hwfc.
-        simpl in Hwfc. destruct_and!.
+        simpl in Hwfc. destruct_andb! Hwfc.
         specialize (IHϕ1 p k l Hnk ltac:(assumption) Hci).
         specialize (IHϕ2 p k l Hnk ltac:(assumption) Hci).
         rewrite IHϕ1.
@@ -738,16 +720,16 @@ Section with_signature.
           simpl in H0.
           inversion Hci; subst.
           {
-            apply Forall_cons. split.
+            apply Forall_cons; split.
             simpl. inversion H0. subst. simpl in *.
-            lia. apply Forall_nil. exact I.
+            lia. by apply Forall_nil.
           }
           {
             specialize (IHl ltac:(assumption)).
             inversion H0. subst. clear H0. simpl in *.
             specialize (IHl (k1,x1) erefl). simpl in IHl.
             specialize (IHl ltac:(lia)).
-            apply Forall_cons. split.
+            apply Forall_cons; split.
             {
               simpl. lia.
             }
@@ -804,9 +786,8 @@ Section with_signature.
       intros Hci Hwfc.
       funelim (make_zero_list dummy_x l).
       {
-          rewrite -Heqcall. clear Heqcall.
-          destruct_and!. clear Heq.
           rewrite bcmcloseex_append.
+          destruct_and!. clear Heq.
           rewrite H.
           {
               simpl. apply closure_increasing_lower_closing_list.
@@ -842,7 +823,6 @@ Section with_signature.
           }
       }
       {
-        rewrite <- Heqcall at 1.
         reflexivity.
       }
   Qed.
@@ -864,10 +844,10 @@ Section with_signature.
       clear -Hzeros.
       induction Hzeros.
       {
-        apply Forall_nil. exact I.
+        by apply Forall_nil.
       }
       {
-        apply Forall_cons. split.
+        apply Forall_cons; split.
         { lia. }
         apply IHHzeros.
       }
@@ -911,7 +891,7 @@ Section with_signature.
     unfold M_pre_pre_predicate in Hpp.
     specialize (Hpp []). simpl in Hpp.
     apply Hpp.
-    { apply Forall_nil. exact I. }
+    { by apply Forall_nil. }
     { apply ci_nil. }
     apply Hwfcex.
   Qed.
@@ -935,7 +915,7 @@ Section with_signature.
     rewrite bcmcloseex_imp.
     rewrite bcmcloseex_imp in H.
     simpl in H.
-    destruct_and!.
+    destruct_andb! H.
     apply M_predicate_impl.
     { apply Hp. assumption. assumption. assumption. }
     { apply Hq. assumption. assumption. assumption. }
@@ -990,14 +970,14 @@ Section with_signature.
     rewrite bcmcloseex_propagate_last_zero.
     apply H.
     {
-      apply Forall_cons. split. simpl;lia.
+      apply Forall_cons; split. simpl;lia.
       clear -Hk.
       induction Hk.
       {
-        apply Forall_nil. exact I.
+        by apply Forall_nil.
       }
       {
-        apply Forall_cons. split. lia. assumption.
+        apply Forall_cons; split. lia. assumption.
       }
     }
     {
@@ -1108,7 +1088,7 @@ Section with_signature.
     replace (bcmcloseex l (ϕ^{evar: 0 ↦ x}))
     with (bcmcloseex ((0,x)::l) ϕ) by reflexivity.
     apply H with (k := dbi').
-    { apply Forall_cons. simpl. split. lia. assumption. }
+    { apply Forall_cons; split. simpl. lia. assumption. }
     {
       destruct l.
       { apply ci_single. }
