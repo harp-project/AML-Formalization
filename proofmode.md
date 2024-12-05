@@ -28,6 +28,7 @@
 | `mlApply "H"`                            | Applies an implication from a local hypothesis `"H"` to the goal. |
 | `mlApply "H" in "H0"`                    | Applies an implication from a local hypothesis `"H"` to another hypothesis `"H0"`. |
 | `mlConj "H1" "H2" as "HC"`               | Makes a conjunction of two hypotheses. |
+| `mlAssert ("H" : phi)`                   | Creates an additional goal about the validity of `phi`, and puts `phi` as a hypothesis in the original proof state. |
 
 
 | Meta-level propositional tactics | |
@@ -36,6 +37,7 @@
 | `mlRewrite term at n`, `mlRewrite <- term at n` | Rewrites using a global hypothesis or a lemma that is a matching logic equivalence, where `term` is fully specialized. |
 | `mlApplyMeta term`                              | Applies an implication (or a chain of implications) from a lemma or a Coq hypothesis to the goal. |
 | `mlApplyMeta term in "H"`                       | Applies an implication (or a chain of implications) from a lemma or a Coq hypothesis to a local hypothesis. |
+| `mlDeduct "H"`                                  | Uses the deduction theorem on hypothesis `"H"`. Note that `"H"` should be a totality pattern. |
 
 | First-order tactics | |
 |-----------------------------------------:|------------------------------------|
@@ -49,7 +51,7 @@
 
 | Tactics for equational reasoning | |
 |-----------------------------------------:|------------------------------------|
-| `mlRewriteBy "H" at n`                   | Rewrites using a local hypothesis that is a matching logic equality (when working under the theory of definedness, and without restrictions on the reasoning, i.e., `AnyReasoning` is used) - elimination of equality. |
+| `mlRewriteBy "H" at n`, `mlRewriteBy <- "H" at n` | Rewrites using a local hypothesis that is a matching logic equality (when working under the theory of definedness, and without restrictions on the reasoning, i.e., `AnyReasoning` is used) - elimination of equality. |
 | `mlReflexivity`                          | Solves a goal of the shape `op phi phi` - for reflexive operators (e.g., `=ml`, `--->`, `<--->`). |
 | `mlSymmetry`, `mlSymmetry in "H"`        | Swaps the sides of an equality. |
 
@@ -57,5 +59,10 @@
 |-----------------------------------------:|------------------------------------|
 | `mlSimpl`, `mlSimpl in H` | Simplifies substitutions by preserving the structure of derived operators and it can be used outside of the proof mode too. Note that this tactic does not work for sorted quantification. |
 | `mlSortedSimpl`, `mlSortedSimpl in H` | Simplifies substitutions by preserving the structure of derived operators for sorted quantifiers. |
+| `mlFreshEvar as x`, `mlFreshSvar as X` | Creates a fresh element/set variable `x`/`X` which is different from all element/set variables in the context, and do not occur in any patterns in the context. These tactics are based on a `FreshnessManager` used to maintain fresh variables.  |
 | `solve_fresh` | Uses heuristics to solve freshness goals shaped as `not (elem_of (fresh_evar phi) S)` (`S` is a set of variable names). |
 | `use <reasoning> in H` | Replaces the reasoning type of the Coq hypothesis `H` with `<reasoning>`, if `<reasoning>` is less restrictive than the reasoning used in `H`. |
+| `try_solve_pile` | Attempts to solve a proof constraint goal. |
+| `ltac2:(fm_solve())` | Attempts to solve a freshness condition based on the `FreshnessManager` in the context. |
+| `ltac2:(_fm_export_everything())` | Removes the `FreshnessManager` from the context, while explicitly generating hypotheses for all freshness conditions maintained by it. |
+| `wf_auto2` | Attempts to solve any well-formedness condition. |
