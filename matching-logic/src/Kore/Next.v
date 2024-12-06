@@ -154,7 +154,7 @@ Section Lemmas.
     forall Γ (x : evar), rule ∈ Γ ->
     Nat_Syntax.theory ⊆ Γ ->
     Γ ⊢ patt_free_evar x ∈ml 〚 Nat 〛 --->
-        ((patt_free_evar x =ml Zero and patt_free_evar x) ⇒ One).
+        ((patt_free_evar x =ml Zero and patt_free_evar x) ⇒ (One and patt_free_evar x =ml Zero)).
   Proof.
     intros.
     pose proof (BasicProofSystemLemmas.hypothesis) Γ rule ltac:(wf_auto2) H as Hyp.
@@ -182,6 +182,7 @@ Section Lemmas.
     mlIntro "Hx".
     (* mlDestructAnd "0". *)
     mlRevert "H".
+    mlRewriteBy "E" at 1. 1: unfold theory in H0; set_solver.
     mlRewriteBy "E" at 1. 1: unfold theory in H0; set_solver.
     mlRewriteBy "E" at 1. 1: unfold theory in H0; set_solver.
     mlRewriteBy "E" at 1. 1: unfold theory in H0; set_solver.
@@ -264,9 +265,29 @@ Section Lemmas.
     }
     mlRevert "H".
     mlRewriteBy "E2" at 1. 1: unfold theory in H0; set_solver.
+    (* We separate the condition of 0 = 0 in the RHS: *)
+    epose proof predicate_propagate_right_2_meta Γ One (Zero =ml Zero) (patt_sym (Next.sym_inj sym_next)) _ _ _ _.
+    assert (Γ ⊢ is_predicate_pattern (Zero =ml Zero)). {
+      mlFreshEvar as x.
+      mlFreshEvar as y.
+      mlFreshEvar as z.
+      apply floor_is_predicate with (x := x) (y := y) (z := z); try by wf_auto2.
+      1: unfold theory in H0; set_solver.
+      1: fm_solve.
+      1: fm_solve.
+    }
+    apply H in H1.
+    fold (patt_next One) in H1.
+    fold (patt_next (Zero =ml Zero and One)) in H1.
+    epose proof patt_and_comm Γ (Zero =ml Zero) One _ _.
+    use AnyReasoning in H2.
+    mlRewrite <- H2 at 1.
+    mlRewrite <- H1 at 1.
+    clear H H1 H2.
+    mlIntro "H".
+    mlSplitAnd. 1: mlReflexivity.
     (* finally, we prove that we reached One indeed by applying the rewrite rule
        which we specialized *)
-    mlIntro "H".
     mlApply "H".
     mlSplitAnd.
     { (* We prove the premise of the rule: 0 != 1 *)
@@ -288,6 +309,7 @@ Section Lemmas.
     }
     Unshelve.
       all: wf_auto2.
+      1: unfold theory in H0; set_solver.
   Defined.
 
   (* One is final *)
