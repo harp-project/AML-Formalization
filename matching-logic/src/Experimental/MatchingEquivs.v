@@ -135,7 +135,7 @@ mlAdd H. mlAdd H0. mlAdd H1. clear H H0 H1.
       all: wf_auto2.
   Admitted.
 
-  Lemma valami : forall l ti,
+  Goal forall l ti,
     well_formed (ex, l) ->
     well_formed ti ->
     mu_free l ->
@@ -164,7 +164,7 @@ mlAdd H. mlAdd H0. mlAdd H1. clear H H0 H1.
       pose proof (MP fpti H1); clear H1.
       pose proof (MP (fpl x) H2); clear H2.
       mlSymmetry. now fromMLGoal.
-  Defined.
+  Qed.
 
   Fixpoint functional_when_applied (n : nat) (φ : Pattern) :=
     match n with
@@ -267,48 +267,6 @@ mlAdd H. mlAdd H0. mlAdd H1. clear H H0 H1.
     mlReflexivity.
   Defined.
 
-  (* Goal forall n m φ φ', *)
-  (*   m <= n -> *)
-  (*   well_formed_closed_ex_aux φ m -> *)
-  (*   well_formed_closed_mu_aux φ 0 -> *)
-  (*   well_formed_positive φ -> *)
-  (*   well_formed_closed_ex_aux φ' m -> *)
-  (*   well_formed_closed_mu_aux φ' 0 -> *)
-  (*   well_formed_positive φ' -> *)
-  (*   Γ ⊢ φ <---> φ' -> *)
-  (*   Γ ⊢ many_ex_l n φ <---> many_ex_l n φ'. *)
-  (* Proof. *)
-  (*   induction n; simpl; intros. *)
-  (*   - *)
-  (*     assumption. *)
-  (*   - *)
-  (*     (1* apply le_lt_eq_dec in H as []. shelve. *1) *)
-  (*     (1* subst. *1) *)
-  (*     toMLGoal. shelve. *)
-  (*     mlFreshEvar as y. *)
-  (*     mlSplitAnd; mlIntro. *)
-  (*     * *)
-  (*       epose proof (MLGoal_destructEx Γ [] [] (ex, many_ex_l n φ') y "1" (many_ex_l n φ) AnyReasoning _ _ _ _ _). *)
-  (*       simpl in X. apply X. clear X. *)
-  (*       mlExists y. *)
-  (*       rewrite ! many_ex_subst. *)
-  (*       simpl. *)
-  (*       ospecialize (IHn (φ^{evar:n↦y}) (φ'^{evar:n↦y}) _). shelve. *)
-  (*       apply pf_iff_proj1 in IHn. mlApplyMeta IHn. mlAssumption. *)
-  (*       shelve. shelve. *)
-  (*     * *)
-  (*       epose proof (MLGoal_destructEx Γ [] [] (ex, many_ex_l n φ) y "1" (many_ex_l n φ') AnyReasoning _ _ _ _ _). *)
-  (*       simpl in X. apply X. clear X. *)
-  (*       mlExists y. *)
-  (*       rewrite ! many_ex_subst. *)
-  (*       simpl. *)
-  (*       ospecialize (IHn (φ'^{evar:n↦y}) (φ^{evar:n↦y}) _). shelve. *)
-  (*       apply pf_iff_proj1 in IHn. mlApplyMeta IHn. mlAssumption. *)
-  (*       shelve. shelve. *)
-  (* Abort. *)
-
-
-
   Tactic Notation "aepose" "proof" uconstr(prf) "using" constr(pi) :=
     let H := fresh in epose proof prf as H; use pi in H.
 
@@ -318,175 +276,6 @@ mlAdd H. mlAdd H0. mlAdd H1. clear H H0 H1.
     | [ |- derives_using _ _ ?pi ] => aepose proof prf using pi
     | [ |- derives _ _ ] => aepose proof prf using AnyReasoning
     end.
-
-  (* Goal forall M ρ l ti, (∀ x p, ti^{evar:x↦p} = ti) -> free_evars ti = ∅ -> @eval _ M ρ ((ex , l =ml ti) <---> (ex , l) =ml ti) = ⊤. *)
-  (* Proof. *)
-  (*   intros. *)
-  (*   rewrite ! eval_simpl. simpl. mlSimpl. *)
-  (*   rewrite ! H. *)
-  (*   rewrite ! union_empty_r_L. *)
-  (*   rewrite ! Compl_Compl_propset. *)
-  (*   assert (fresh_evar (l =ml ti) = fresh_evar l). { *)
-  (*     intros. *)
-  (*     unfold fresh_evar. simpl. *)
-  (*     rewrite ! H0 ! union_empty_l_L ! union_empty_r_L. *)
-  (*     f_equal. set_solver. *)
-  (*   } *)
-  (*   rewrite ! H1. *)
-  (*   pose (λ p, propset_fa_union (λ e, eval (update_evar_val (fresh_evar l) e ρ) p)) as f. *)
-  (*   repeat match goal with [ |- context[propset_fa_union (λ e, eval (update_evar_val (fresh_evar l) e ρ) ?p)] ] => fold (f p) end. *)
-  (*   apply complement_full_iff_empty. *)
-  (*   assert (∀ X Y : propset M, X ∪ Y = ∅ <-> X = ∅ /\ Y = ∅) by set_solver. *)
-  (*   apply H2. split. *)
-  (*   all: apply complement_empty_iff_full. *)
-  (*   assert (forall X Y : propset M, ⊤ ∖ X ∪ ⊤ ∖ Y = ⊤ ∖ (X ∩ Y)). { *)
-  (*     intros. set_unfold. *)
-  (*     split; intros. *)
-  (*     split. auto. *)
-  (*     intros []. *)
-  (*     destruct H3 as [ [_ ?] | [_ ?] ]. *)
-  (*     1-2: contradiction. *)
-  (*     Search elem_of propset. *)
-  (*     epose proof elem_of_PropSet (propset_car X) x. *)
-  (*     Search Prop "dec". *)
-  (*   assert (forall X Y : propset M, ⊤ ∖ X ∪ ⊤ ∖ Y = ⊤ <-> X ## Y). { *)
-  (*     intros. *)
-  (*     set_unfold. *)
-  (*     Search disjoint. *)
-  (*     split; intros. *)
-  (*     specialize (H3 x) as [_ ?]. *)
-  (*     specialize (H3 I) as [ [_ ?] | [_ ?] ]. *)
-  (*     1-2: contradiction. *)
-  (*     Search (_ -> _ -> False). *)
-  (*     Search (_ /\ _ -> False). *)
-  (*     Search elem_of propset. *)
-  (* Abort. *)
-
-
-
-
-  (* Goal forall l ti n m, *)
-  (*   m <= n -> *)
-  (*   well_formed_closed_ex_aux l m -> *)
-  (*   well_formed_closed_mu_aux l 0 -> *)
-  (*   well_formed_positive l -> *)
-  (*   well_formed ti -> *)
-  (*   (1* mu_free l -> *1) *)
-  (*   (1* functional_when_applied n l -> *1) *)
-  (*   (1* Γ ⊢ is_functional ti -> *1) *)
-  (*   Γ ⊢ many_ex_r n (ex , l =ml ti) <---> many_ex_r n ((ex , l) =ml ti). *)
-  (* Proof. *)
-  (*   intros * Hmlen Hwfceal Hwfcmal Hwfpl Hwfti. *)
-  (*   pose proof (evar_open_closed ti ltac:(wf_auto2)). *)
-  (*   generalize dependent l. *)
-  (*   generalize dependent m. *)
-  (*   induction n; simpl; intros. *)
-  (*   - *)
-      (* assert (∀ a b, Γ ⊢ ! a <---> ! b -> Γ ⊢ a <---> b). { *)
-      (*   intros. *)
-      (*   apply extract_wfp in H0 as ?. *)
-      (*   apply extract_wfq in H0 as ?. *)
-      (*   toMLGoal. wf_auto2. *)
-      (*   mlSplitAnd; mlIntro; *)
-      (*   [apply pf_iff_proj2 in H0 | apply pf_iff_proj1 in H0]; *)
-      (*   auto; *)
-      (*   [opose proof (P4 Γ b a _ _) | opose proof (P4 Γ a b _ _)]; *)
-      (*   try solve [wf_auto2]; *)
-      (*   use AnyReasoning in H3; *)
-      (*   mlApplyMeta (MP H0 H3) in "0"; mlAssumption. *)
-      (* } *)
-      (* apply H0. *)
-      (* unfold patt_equal, patt_total. *)
-
-
-
-
-      (* Search patt_defined patt_total. *)
-      (* Search patt_iff patt_not. *)
-      (* match goal with [ |- context[?a <---> ?b] ] => pose proof (not_not_eq Γ a); pose proof (not_not_eq Γ b) end. *)
-      (* specialize (H0 ltac:(wf_auto2)). *)
-      (* specialize (H1 ltac:(wf_auto2)). *)
-      (* apply pf_iff_equiv_sym in H0. 2-3: wf_auto2. *)
-      (* use AnyReasoning in H0. *)
-      (* use AnyReasoning in H1. *)
-      (* apply pf_iff_equiv_trans with (4 := H0). *)
-      (* 1-3: wf_auto2. *)
-      (* apply pf_iff_equiv_trans with (5 := H1). *)
-      (* 1-3: wf_auto2. *)
-      (* Search patt_defined patt_exists. *)
-
-
-
-
-      (* toMLGoal. inversion Hmlen; subst. wf_auto2. *)
-      (* mlSplitAnd; mlIntro. *)
-      (* mlDestructEx "0" as x. *)
-      (* mlSimpl. rewrite H. *)
-      (* mlSymmetry in "0". *)
-      (* mlRewriteBy "0" at 1. *)
-      (* mlClear "0". fromMLGoal. *)
-      (* Search patt_total. *)
-      (* apply phi_impl_total_phi_meta. *)
-      (* wf_auto2. try_solve_pile. *)
-      (* toMLGoal. wf_auto2. *)
-      (* mlSplitAnd; mlIntro. *)
-      (* mlFreshEvar as y. *)
-      (* opose proof (MLGoal_destructEx Γ [] [] (l^{evar:0↦x}) y "0" l AnyReasoning _ _ _ _ _). *)
-      (* try_solve_pile. *)
-      (* ltac2:(fm_solve ()). *)
-      (* ltac2:(fm_solve ()). *)
-      (* ltac2:(fm_solve ()). *)
-      (* Search free_evars evar_open. *)
-      (* ltac2:(fm_solve ()). *)
-  (* Abort. *)
-
-  Goal forall φ n, functional_when_applied (S n) φ -> functional_when_applied n (ex, φ).
-  Proof.
-    induction n; simpl.
-    intros. unfold is_functional in *.
-    toMLGoal. admit.
-    mlFreshEvar as y.
-    (* mlExists y. mlSimpl. unfold evar_open at 2. simpl. *)
-    specialize (H y).
-    mlAdd H.
-    mlFreshEvar as z.
-    assert (∀ X : EVarSet, X ∪ X = X) by set_solver.
-    opose proof (MLGoal_destructEx Γ [] [] (ex , (ex , φ) =ml b0) z "0" (φ^{evar:0↦y} =ml b0) AnyReasoning _ _ _ _ _).
-    try_solve_pile.
-    ltac2:(fm_solve ()).
-    ltac2:(fm_solve ()).
-    simpl. rewrite ! union_empty_l_L ! union_empty_r_L H0.
-    apply evar_open_fresh_notin.
-    ltac2:(fm_solve ()).
-    ltac2:(fm_solve ()).
-    ltac2:(fm_solve ()).
-    simpl. rewrite ! union_empty_l_L ! union_empty_r_L H0.
-    (* apply evar_open_fresh_notin. *)
-    (* repeat (apply not_elem_of_union; split). *)
-    (* 1,4: apply evar_open_fresh_notin. *)
-    (* ltac2:(fm_solve ()). *)
-    (* ltac2:(fm_solve ()). *)
-    (* ltac2:(fm_solve ()). *)
-    (* ltac2:(fm_solve ()). *)
-    (* ltac2:(fm_solve ()). *)
-    (* ltac2:(fm_solve ()). *)
-    (* ltac2:(fm_solve ()). *)
-    ltac2:(fm_solve ()).
-    apply X. simpl. mlSimpl. unfold evar_open at 3. simpl.
-    mlExists z. mlSimpl. unfold evar_open at 4. simpl.
-    mlSymmetry in "0". mlRewriteBy "0" at 1. mlClear "0".
-  Abort.
-
-
-  (* Lemma func_applied_drop_high : forall n l y, *)
-  (*   functional_when_applied (S n) l → functional_when_applied n l^{evar:n↦y}. *)
-  (* Proof. *)
-  (*   induction n; intros. *)
-  (*   apply H. *)
-  (*   simpl. intro. *)
-  (*   rewrite evar_open_comm_higher. lia. simpl. *)
-  (*   apply IHn. exact (H x). *)
-  (* Defined. *)
 
   Lemma fwa_drop_one : forall n m l y,
     m <= n ->
@@ -500,21 +289,6 @@ mlAdd H. mlAdd H0. mlAdd H1. clear H H0 H1.
     rewrite evar_open_comm_higher. lia.
     apply IHn. lia. exact (H0 x).
   Defined.
-
-  Goal ∀ n m l,
-    m ≤ n ->
-    well_formed_closed_ex_aux l m ->
-    functional_when_applied m l ->
-    functional_when_applied n l.
-  Proof.
-    induction n; intros.
-    apply Nat.le_0_r in H as ->. assumption.
-    apply le_lt_eq_dec in H as [| ->].
-    2: auto.
-    unfold lt in l0. apply le_S_n in l0.
-    simpl. intro.
-    pose proof evar_open_wfc_aux m n x l l0 H0.
-  Abort.
 
   Tactic Notation "decide_le" hyp(Hle) :=
     apply le_lt_eq_dec in Hle as [Hle%Arith_prebase.lt_n_Sm_le | ->].
@@ -613,219 +387,89 @@ mlAdd H. mlAdd H0. mlAdd H1. clear H H0 H1.
       1,3: apply pf_iff_proj1 in IHn.
       7,8: apply pf_iff_proj2 in IHn.
       all: try solve [(eapply extract_wfp + eapply extract_wfq); eauto]; mlApplyMeta IHn in "0"; mlAssumption.
-  Defined.
-        
+  Qed.
 
-      (* ospecialize (IHn n _ (l^{evar:n↦y}) _ _ _ _ _). *)
-      (* only 6,13: shelve; *)
-      (* (1* try apply fwa_drop_one; *1) *)
-      (* try solve [auto | now apply mu_free_evar_open | wf_auto2]. *)
-      (* apply pf_iff_proj1 in IHn. *)
-      (* 4: apply pf_iff_proj2 in IHn. *)
-      (* all: try solve [(eapply extract_wfp + eapply extract_wfq); eauto]; *)
-      (* mlApplyMeta IHn in "0"; mlAssumption. *)
-      (* pose proof many_ex_subst. *)
-      
-
-      (* ospecialize (IHn n _ (ex, l) _ _ _ _ _). *)
-      (* lia. 1-3: wf_auto2. auto. *)
-
-      
-      (* unfold functional_when_applied, is_functional. *)
-      (* pose proof valami. *)
-      (* Search patt_imp patt_exists. *)
-
-
-
-      (* 8: subst; ospecialize (IHn n _ (ex, l) _ _ _ _ _). *)
-      (* 1,8: lia. *)
-      (* 1-3,7-9: wf_auto2. *)
-      (* 1,4: auto. *)
-      (* 1,3: shelve. *)
-      (* toMLGoal. *)
-      (* 3: toMLGoal. *)
-      (* 1,3: apply well_formed_iff, well_formed_in; auto; eapply well_formed_many_ex; wf_auto2. *)
-      (* all: apply pf_iff_equiv_sym_meta in IHn; *)
-      (* mlRewrite IHn at 1; *)
-      (* clear IHn. *)
-      (* fromMLGoal. *)
-      (* 2: fromMLGoal. *)
-      (* generalize dependent l. *)
-      (* induction n; simpl in *; intros. *)
-      (* * *)
-      (*   aepose proof (patt_equal_comm (ex, l) ti Γ HΓ ltac:(wf_auto2) Hwfti). *)
-      (*   mlRewrite H at 1. *)
-      (*   epose proof (membership_equal_equal Γ ti (ex, l) HΓ Hmfl Hwfti ltac:(wf_auto2) Hfpti _). *)
-      (*   mlAdd H0. *)
-      (*   mlSymmetry in "0". *)
-      (*   mlRewriteBy "0" at 1. *)
-      (*   mlFreshEvar as y. *)
-      (*   epose proof (membership_exists Γ ti y l AnyReasoning HΓ _ Hwfti _ _). *)
-      (*   mlRewrite H1 at 1. *)
-      (*   epose proof (membership_equal_equal Γ ti l HΓ Hmfl Hwfti _ Hfpti _). *)
-      (*   mlAdd H2. *)
-      (*   mlRewriteBy "1" at 1. *)
-      (*   mlSplitAnd; mlIntro. *)
-      (*   mlDestructEx "2" as x. *)
-      (*   mlExists x. *)
-      (*   mlSimpl. mlSymmetry. mlAssumption. *)
-      (*   mlDestructEx "2" as x. *)
-      (*   mlExists x. *)
-      (*   mlSimpl. mlSymmetry. mlAssumption. *)
-      (* * *)
-      (*   rewrite <- many_ex_r_travels. *)
-      (*   rewrite <- (many_ex_r_travels n ((ex, l) =ml ti)). *)
-      (*   toMLGoal. shelve. *)
-      (*   mlSplitAnd; mlIntro. *)
-      (*   mlFreshEvar as x. *)
-      (*   opose proof (MLGoal_destructEx Γ [] [] (ex, many_ex_r n ((ex, l) =ml ti)) x "0" (many_ex_r n (ex, l =ml ti)) AnyReasoning _ _ _ _ _). *)
-      (*   try_solve_pile. *)
-      (*   ltac2:(fm_solve ()). *)
-      (*   ltac2:(fm_solve ()). *)
-      (*   pose proof free_evars_many_ex n (ex, l =ml ti) as ->%many_ex_lr_equiv. ltac2:(fm_solve ()). *)
-      (*   simpl. pose proof free_evars_many_ex n ((ex, l) =ml ti) as ->%many_ex_lr_equiv. ltac2:(fm_solve ()). *)
-      (*   apply X. clear X. simpl. mlExists x. *)
-      (*   do 2 rewrite <- many_ex_lr. *)
-      (*   rewrite ! many_ex_subst ! many_ex_lr. *)
-      (*   mlSimpl. *)
-      (*   epose proof evar_open_closed ti ltac:(wf_auto2). *)
-      (*   rewrite ! H. *)
-      (*   ospecialize (IHn (l^{evar:S n↦x}) _ _ _ _ _). *)
-      (*   shelve. *)
-      (*   1,2: wf_auto2. *)
-      (*   now apply mu_free_evar_open. *)
-      (*   shelve. *)
-      (*   apply pf_iff_proj1 in IHn. mlApplyMeta IHn in "0". *)
-      (*   mlAssumption. *)
-      (*   1-2: shelve. *)
-
-      (*   mlFreshEvar as x. *)
-      (*   opose proof (MLGoal_destructEx Γ [] [] (ex, many_ex_r n (ex, l =ml ti)) x "0" (many_ex_r n ((ex,l) =ml ti)) AnyReasoning _ _ _ _ _). *)
-      (*   try_solve_pile. *)
-      (*   ltac2:(fm_solve ()). *)
-      (*   ltac2:(fm_solve ()). *)
-      (*   pose proof free_evars_many_ex n ((ex,l) =ml ti) as ->%many_ex_lr_equiv. ltac2:(fm_solve ()). *)
-      (*   simpl. pose proof free_evars_many_ex n (ex, l =ml ti) as ->%many_ex_lr_equiv. ltac2:(fm_solve ()). *)
-      (*   apply X. clear X. simpl. *)
-      (*   mlExists x. *)
-      (*   do 2 rewrite <- many_ex_lr. *)
-      (*   rewrite ! many_ex_subst ! many_ex_lr. *)
-      (*   mlSimpl. *)
-      (*   epose proof evar_open_closed ti ltac:(wf_auto2). *)
-      (*   rewrite ! H. *)
-      (*   ospecialize (IHn (l^{evar:S n↦x}) _ _ _ _ _). *)
-      (*   1-3: wf_auto2. *)
-      (*   now apply mu_free_evar_open. *)
-      (*   shelve. *)
-      (*   apply pf_iff_proj2 in IHn. *)
-      (*   mlApplyMeta IHn in "0". mlAssumption. *)
-      (*   Unshelve. *)
-      (*   eapply well_formed_many_ex. *)
-      (*   3,4: wf_auto2. *)
-        
-        
-
-
-
-      (* enough (Γ ⊢ (ex, l =ml ti) <---> ((ex, l) =ml ti)). *)
-      (* mlFreshEvar as y. *)
-      (* opose proof (prf_equiv_congruence _ _ _ {| pcEvar := y; pcPattern := many_ex_r n (patt_free_evar y) |} _ _ _ _ _ H). *)
-      (* 1-3: try solve [wf_auto2]. *)
-      (* Search patt_exists well_formed_closed_ex_aux. *)
-
-
-
-      (* assert (Γ ⊢ (ex , many_ex n (ti =ml l)) <---> (ex , ti ∈ml many_ex n l)). *)
-      (* toMLGoal. admit. *)
-      (* mlSplitAnd; mlIntro. *)
-      (* pose proof free_evars_many_ex. *)
-      (* mlFreshEvar as x. *)
-      (* opose proof (MLGoal_destructEx Γ [] [] (ex, ti ∈ml many_ex n l) x "0" (many_ex n (ti =ml l)) AnyReasoning _ _ _ _ _). *)
-      (* try_solve_pile. *)
-      (* 1,2: now set_unfold. *)
-      (* 1,2: simpl; rewrite free_evars_many_ex. *)
-      (* (1* Again, sequencing doesn't work *1) *)
-      (* ltac2:(fm_solve ()). *)
-      (* ltac2:(fm_solve ()). *)
-      (* apply X. clear X. simpl. *)
-      (* mlExists x. *)
-      (* mlSimpl. rewrite ! many_ex_subst. mlSimpl. simpl. *)
-
-      
-
-      (* Search patt_exists "quan". *)
-      (* Search patt_exists patt_iff. *)
-
-  (* Abort. *)
-
-  Fixpoint many_ex (n : nat) (φ : Pattern) :=
+  Fixpoint fully_apply (n : nat) (p : Pattern) :=
     match n with
-    | 0 => φ
-    | S m => many_ex m (ex, φ)
+    | 0 => p
+    | S m => fully_apply m (p^{evar:m↦fresh_evar p})
     end.
 
-  (* Goal forall φ, *)
-  (*   mu_free φ -> *)
-  (*   well_formed_closed_ex_aux φ 0 -> *)
-  (*   well_formed φ. *)
-  (* Proof. *)
-  (*   induction φ; intros Hmf Hwfcea; *)
-  (*   unfold well_formed; apply andb_true_iff; split; *)
-  (*   unfold well_formed_closed; try apply andb_true_iff; *)
-  (*   repeat split; auto. *)
-  (*   - *)
-  (*     unfold well_formed_closed_mu_aux. case_match; auto. *)
-  (*     simpl in *. *)
-  (*     unfold well_formed_closed_ex_aux in Hwfcea. *)
+  Lemma well_formed_fully_apply : forall n m p,
+    m <= n ->
+    well_formed_closed_ex_aux p m ->
+    well_formed_closed_mu_aux p 0 ->
+    well_formed_positive p ->
+    well_formed (fully_apply n p).
+  Proof.
+    induction n; intros; simpl.
+    apply Nat.le_0_r in H. subst. wf_auto2.
+    decide_le H.
+    apply (IHn m); auto.
+    rewrite (evar_open_wfc_aux m n); auto.
+    apply (IHn n); auto.
+  Defined.
 
-    (* wf_auto2. *)
-    (* induction φ eqn:Hφ; auto; simpl in *. *)
-    (* 1,2: apply andb_true_iff in Hmf, Hwfcea; apply andb_true_iff. *)
-  (* Abort. *)
-
-    
-
-  Goal forall l ti n,
-    well_formed_closed_ex_aux l n ->
+  Goal forall n m l ti,
+    m <= n ->
+    well_formed_closed_ex_aux l m ->
     well_formed_closed_mu_aux l 0 ->
     well_formed_positive l ->
     well_formed ti ->
-    mu_free l ->
-    functional_when_applied n l ->
+    mu_free ti ->
+    functional_when_applied m l ->
     Γ ⊢ is_functional ti ->
-    Γ ⊢ (many_ex n (l =ml ti)) <---> ti ∈ml (many_ex n l).
+    Γ ⊢ ⌈fully_apply n l and ti⌉ ---> (many_ex_l n (l =ml ti)).
   Proof.
-    intros * Hwfceal Hwfcmal Hwfpl Hwfti Hmfl Hfpl Hfpti.
+    intros * Hmlen Hwfceal Hwfcmal Hwfpl Hwfti Hmfti Hfpl Hfpti.
     generalize dependent l.
-    induction n; intros; simpl in *.
-    (* induction n; simpl in *. *)
-    -
-      epose proof membership_equal_equal Γ ti l HΓ Hmfl Hwfti ltac:(wf_auto2) Hfpti Hfpl.
-      toMLGoal. wf_auto2.
-      mlAdd H.
-      mlRewriteBy "0" at 1.
-      mlSplitAnd; mlIntro.
-      (* TODO: Why don't they work with sequencing? *)
-      mlSymmetry; mlAssumption.
-      mlSymmetry; mlAssumption.
-    -
-      opose proof* (lemma1 l ti); auto.
-      admit.
-      admit.
-      toMLGoal. admit.
-      mlRewrite H at 1.
+    generalize dependent m .
+    induction n; intros.
+    simpl. fold (l ∈ml ti).
+    apply Nat.le_0_r in Hmlen; subst.
+    apply membership_imp_equal_meta; auto. wf_auto2.
+    simpl.
+    toMLGoal. simpl. clear Halmost. shelve.
+    mlIntro.
+    remember (fresh_evar l) as y.
+    mlExists y. rewrite many_ex_subst. mlSimpl.
+    rewrite (evar_open_wfc_aux 0 n y ti). lia. wf_auto2.
+    replace (0 + n) with n by auto.
+    decide_le Hmlen.
+    ospecialize (IHn m Hmlen l^{evar:n↦y} _ _ _ _);
+    only 1,4: rewrite (evar_open_wfc_aux m n y l); auto.
+    mlApplyMeta IHn. mlAssumption.
+    ospecialize (IHn n _ l^{evar:n↦y} _ _ _ _); auto.
+    now apply fwa_drop_one.
+    mlApplyMeta IHn. mlAssumption.
+    Unshelve.
+    apply well_formed_imp.
+    apply well_formed_defined, well_formed_and.
+    2: auto.
+    2: {
+      opose proof (well_formed_many_ex (S n) m (l =ml ti) Hmlen _ _ _).
+      (* TODO: I should not have to do this. *)
+      assert (well_formed_closed_ex_aux ti m). {
+        clear dependent l n Hfpti.
+        induction ti; simpl; auto.
+        1,2: simpl in Hmfti; apply andb_true_iff in Hmfti as [];
+        apply andb_true_iff; split.
+        apply IHti1. eapply well_formed_app_proj1. eauto. auto.
+        apply IHti2. eapply well_formed_app_proj2. eauto. auto.
+        apply IHti1. eapply well_formed_imp_proj1. eauto. auto.
+        apply IHti2. eapply well_formed_imp_proj2. eauto. auto.
+        apply well_formed_closed_ex_all. wf_auto2.
+      }
+      1-3: wf_auto2.
+      rewrite - many_ex_lr in H. simpl in H. exact H.
+    }
+    decide_le Hmlen.
+    rewrite (evar_open_wfc_aux m n); auto.
+    eapply well_formed_fully_apply; eauto.
+    eapply well_formed_fully_apply. reflexivity.
+    all: wf_auto2.
+  Qed.
 
-
-      
-      mlFreshEvar as y.
-      ospecialize* (IHn l^{evar:0↦y}).
-      apply wfc_mu_aux_body_ex_imp3. lia. auto.
-      apply wfc_mu_aux_body_ex_imp1. auto.
-      apply wfp_evar_open. auto.
-      apply mu_free_evar_open. auto. auto.
-      Search evar_open patt_exists.
-  Abort.
-  
   Goal forall l ti,
     well_formed (ex, l) ->
     well_formed ti ->
