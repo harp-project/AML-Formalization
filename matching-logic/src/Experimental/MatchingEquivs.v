@@ -39,6 +39,9 @@ Section MatchingEquivs.
   Context (Γ : Theory).
   Hypothesis (HΓ : theory ⊆ Γ).
 
+  (* Proof for Γ ⊢ (θ -> (l = ti)) <-> (l /\ θ = ti /\ θ) *) 
+
+  (* Helper lemma for predicate patterns. *)
   Lemma predicate_iff φ₁ φ₂ :
 well_formed φ₁ ->
     well_formed φ₂ ->
@@ -135,6 +138,9 @@ mlAdd H. mlAdd H0. mlAdd H1. clear H H0 H1.
       all: wf_auto2.
   Admitted.
 
+  (* Proof for Γ ⊢ (∃. (l = ti)) <-> (ti ∈ ∃. l) *) 
+
+  (* Single exists version. *)
   Goal forall l ti,
     well_formed (ex, l) ->
     well_formed ti ->
@@ -166,76 +172,49 @@ mlAdd H. mlAdd H0. mlAdd H1. clear H H0 H1.
       mlSymmetry. now fromMLGoal.
   Qed.
 
+  (* Definitions for multiple exists version. *)
+
   Fixpoint functional_when_applied (n : nat) (φ : Pattern) :=
     match n with
     | 0 => derives Γ (is_functional φ)
     | S m => forall x, functional_when_applied m (evar_open x 0 φ)
     end.
 
-  Fixpoint many_ex_l (n : nat) (φ : Pattern) :=
+  Fixpoint many_ex (n : nat) (φ : Pattern) :=
     match n with
     | 0 => φ
-    | S m => ex, many_ex_l m φ
+    | S m => ex, many_ex m φ
     end.
 
-  Fixpoint many_ex_r (n : nat) (φ : Pattern) :=
-    match n with
-    | 0 => φ
-    | S m => many_ex_r m (ex, φ)
-    end.
-
-  Eval simpl in functional_when_applied 3 Top.
-
-  Lemma many_ex_l_travels n : forall φ, (ex, many_ex_l n φ) = many_ex_l n (ex, φ).
+  Lemma many_ex_travels n : forall φ, (ex, many_ex n φ) = many_ex n (ex, φ).
   Proof.
     induction n; simpl; intros.
     reflexivity.
     rewrite IHn. reflexivity.
   Defined. 
 
-  Lemma many_ex_r_travels n : forall φ, (ex, many_ex_r n φ) = many_ex_r n (ex, φ).
-  Proof.
-    induction n; simpl; intros.
-    reflexivity.
-    rewrite IHn. reflexivity.
-  Defined.
-
-  Lemma many_ex_lr n φ : many_ex_l n φ = many_ex_r n φ.
-  Proof.
-    induction n; simpl.
-    reflexivity.
-    rewrite IHn.
-    apply many_ex_r_travels.
-  Defined.
-
-  Lemma many_ex_lr_equiv P n φ : P (many_ex_l n φ) <-> P (many_ex_r n φ).
-  Proof.
-    rewrite many_ex_lr. auto.
-  Defined.
-
   Lemma well_formed_many_ex n : ∀ m φ,
     m <= n ->
     well_formed_closed_ex_aux φ m ->
     well_formed_closed_mu_aux φ 0 ->
     well_formed_positive φ ->
-    well_formed (many_ex_r n φ).
+    well_formed (many_ex n φ).
   Proof.
     induction n; simpl; intros.
     inversion H; subst. wf_auto2.
+    rewrite many_ex_travels.
     inversion H; subst.
     apply well_formed_closed_ex_all in H0.
-    apply (IHn n (ex, φ)).
-    reflexivity. 1-3: wf_auto2.
-    apply (IHn m (ex, φ)).
-    auto. 1-3: wf_auto2.
+    apply (IHn n (ex, φ)); auto. wf_auto2.
+    apply (IHn m (ex, φ)); auto. wf_auto2.
   Defined.
 
-  Lemma free_evars_many_ex n φ : free_evars (many_ex_l n φ) = free_evars φ.
+  Lemma free_evars_many_ex n φ : free_evars (many_ex n φ) = free_evars φ.
   Proof.
     now induction n.
   Defined.
 
-  Lemma many_ex_subst n x φ : ∀ m, (many_ex_l n φ)^{evar:m↦x} = many_ex_l n (φ^{evar:m + n↦x}).
+  Lemma many_ex_subst n x φ : ∀ m, (many_ex n φ)^{evar:m↦x} = many_ex n (φ^{evar:m + n↦x}).
   Proof.
     induction n; simpl; intros.
     f_equal. auto.
@@ -244,38 +223,24 @@ mlAdd H. mlAdd H0. mlAdd H1. clear H H0 H1.
 
   Lemma membership_many_ex n φ φ' :
     well_formed φ -> well_formed φ' ->
-    Γ ⊢ φ ∈ml (many_ex_l n φ') <---> many_ex_l n (φ ∈ml φ').
+    Γ ⊢ φ ∈ml (many_ex n φ') <---> many_ex n (φ ∈ml φ').
   Proof.
     intros Hwfφ Hwfφ'.
     induction n; simpl.
     aapply pf_iff_equiv_refl. wf_auto2.
-    assert (∀ p, well_formed p -> well_formed (many_ex_l n p)) as Hwfmexln. {
-      intros * Hwfp.
-      apply many_ex_lr_equiv. apply well_formed_many_ex with (m := 0).
-      lia. all: wf_auto2.
-    }
-    specialize (Hwfmexln φ' Hwfφ') as Hwfmexlnφ'.
-    specialize (Hwfmexln (φ ∈ml φ') ltac:(wf_auto2)).
     mlFreshEvar as y.
-    opose proof (membership_exists Γ φ y (many_ex_l n φ') AnyReasoning HΓ _ _ _ _).
-    1-2: wf_auto2.
+    opose proof (well_formed_many_ex n 0 φ' _ _ _ _). lia. 1-3: wf_auto2.
+    opose proof (well_formed_many_ex n 0 (φ ∈ml φ') _ _ _ _). lia. 1-3: wf_auto2.
+    opose proof (membership_exists Γ φ y (many_ex n φ') AnyReasoning HΓ _ _ _ _).
+    wf_auto2. auto.
     rewrite (free_evars_many_ex n φ'). ltac2:(fm_solve ()).
     try_solve_pile.
-    toMLGoal. wf_auto2.
-    mlRewrite H at 1.
+    toMLGoal.
+    wf_auto2.
+    mlRewrite H1 at 1.
     mlRewrite IHn at 1.
     mlReflexivity.
   Defined.
-
-  Tactic Notation "aepose" "proof" uconstr(prf) "using" constr(pi) :=
-    let H := fresh in epose proof prf as H; use pi in H.
-
-  Tactic Notation "aepose" "proof" uconstr(prf) :=
-    match goal with
-    | [ |- of_MLGoal (mkMLGoal _ _ _ _ ?pi) ] => aepose proof prf using pi
-    | [ |- derives_using _ _ ?pi ] => aepose proof prf using pi
-    | [ |- derives _ _ ] => aepose proof prf using AnyReasoning
-    end.
 
   Lemma fwa_drop_one : forall n m l y,
     m <= n ->
@@ -290,25 +255,11 @@ mlAdd H. mlAdd H0. mlAdd H1. clear H H0 H1.
     apply IHn. lia. exact (H0 x).
   Defined.
 
+  (* In place of inversion for Set. *)
   Tactic Notation "decide_le" hyp(Hle) :=
     apply le_lt_eq_dec in Hle as [Hle%Arith_prebase.lt_n_Sm_le | ->].
 
-  Goal ∀ m n l y,
-    m ≤ S n ->
-    well_formed_closed_ex_aux l m ->
-    functional_when_applied m l ->
-    functional_when_applied n l^{evar:n↦y}.
-  Proof.
-    intros.
-    decide_le H.
-    2: now apply fwa_drop_one.
-    pose proof evar_open_wfc_aux m n y l H H0 as ->.
-    clear H0. generalize dependent m. induction n; intros.
-    now apply Nat.le_0_r in H as ->.
-    decide_le H.
-    2: auto.
-  Abort.
-
+  (* Multiple exists version. *)
   Goal forall l ti n m,
     m <= n ->
     well_formed_closed_ex_aux l m ->
@@ -318,9 +269,7 @@ mlAdd H. mlAdd H0. mlAdd H1. clear H H0 H1.
     mu_free l ->
     functional_when_applied m l ->
     Γ ⊢ is_functional ti ->
-    Γ ⊢ (many_ex_r n (l =ml ti)) <---> ti ∈ml (many_ex_r n l).
-    (* Γ ⊢ (ti =ml (many_ex_r n l)) <---> ti ∈ml (many_ex_r n l). *)
-    (* (exists x1...xn, l = ti) <---> ti ∈ (exists x1...xn, l) *)
+    Γ ⊢ (many_ex n (l =ml ti)) <---> ti ∈ml (many_ex n l).
   Proof.
     intros * Hmlen Hwfceal Hwfcmal Hwfpl Hwfti Hmfl Hfpl Hfpti.
     generalize dependent l.
@@ -336,14 +285,12 @@ mlAdd H. mlAdd H0. mlAdd H1. clear H H0 H1.
       mlSymmetry; mlAssumption.
       mlSymmetry; mlAssumption.
     -
-      rewrite -! many_ex_r_travels.
       mlFreshEvar as y.
-      opose proof (membership_exists Γ ti y (many_ex_r n l) AnyReasoning HΓ _ _ _ _).
-      rewrite many_ex_r_travels.
-      replace (many_ex_r n (ex, l)) with (many_ex_r (S n) l) by reflexivity.
+      opose proof (membership_exists Γ ti y (many_ex n l) AnyReasoning HΓ _ _ _ _).
+      replace (ex, many_ex n l) with (many_ex (S n) l) by reflexivity.
       eapply well_formed_many_ex; eauto.
       auto.
-      epose proof (free_evars_many_ex n l) as ->%many_ex_lr_equiv.
+      rewrite free_evars_many_ex.
       ltac2:(fm_solve ()).
       try_solve_pile.
       apply pf_iff_equiv_sym in H.
@@ -351,33 +298,22 @@ mlAdd H. mlAdd H0. mlAdd H1. clear H H0 H1.
       4: toMLGoal.
       4: simpl; apply well_formed_iff.
       all: try solve [(eapply extract_wfp + eapply extract_wfq); eauto].
-      1,2: rewrite many_ex_r_travels; eapply well_formed_many_ex; only 1,5: reflexivity; wf_auto2.
-      eassert (∀ p : Pattern, _) as ?H. {
-        intro.
-        pose proof free_evars_many_ex n p.
-        apply many_ex_lr_equiv in H0.
-        exact H0.
-      }
-      eassert (∀ p : Pattern, _) as ?H. {
-        intro.
-        pose proof many_ex_subst n y p 0.
-        rewrite ! many_ex_lr in H1.
-        exact H1.
-      }
+      1,2: rewrite many_ex_travels; eapply well_formed_many_ex; only 1,5: reflexivity; wf_auto2.
       mlSplitAnd; mlIntro;
       apply (MLGoal_destructEx Γ [] [] _ y "0" _ AnyReasoning);
-      simpl; try rewrite H0.
-      1,7: try_solve_pile.
+      simpl.
+      4,5,10,11: rewrite free_evars_many_ex.
+      1,9: try_solve_pile.
       ltac2:(fm_solve ()).
       ltac2:(fm_solve ()).
       ltac2:(fm_solve ()).
       ltac2:(fm_solve ()).
-      2: ltac2:(fm_solve ()).
-      2: ltac2:(fm_solve ()).
+      ltac2:(fm_solve ()).
+      ltac2:(fm_solve ()).
       2: ltac2:(fm_solve ()).
       2: ltac2:(fm_solve ()).
       all: mlExists y; mlSimpl;
-      rewrite ! H1; mlSimpl;
+      rewrite ! many_ex_subst; mlSimpl;
       rewrite ! (evar_open_wfc_aux 0 _ y ti);
       try solve [lia | wf_auto2];
       replace (0 + n) with n by reflexivity;
@@ -388,6 +324,31 @@ mlAdd H. mlAdd H0. mlAdd H1. clear H H0 H1.
       7,8: apply pf_iff_proj2 in IHn.
       all: try solve [(eapply extract_wfp + eapply extract_wfq); eauto]; mlApplyMeta IHn in "0"; mlAssumption.
   Qed.
+
+  (* Proof for Γ ⊢ (⌈l /\ ti⌉) -> (ti ∈ ∃. l) *) 
+
+  (* Single exists version. *)
+  Goal forall l ti,
+    well_formed (ex, l) ->
+    well_formed ti ->
+    mu_free ti ->
+    (forall x, Γ ⊢ is_functional l^{evar:0↦x}) ->
+    Γ ⊢ is_functional ti ->
+    Γ ⊢ ⌈l^{evar: 0 ↦ fresh_evar l} and ti⌉ ---> (ex, l =ml ti).
+  Proof.
+    intros * wfl wfti mfti fpl fpti.
+    remember (fresh_evar _) as y.
+    pose proof evar_open_not_occur 0 y ti ltac:(wf_auto2).
+    mlIntro.
+      mlExists y. mlSimpl. rewrite H.
+      fold (l^{evar:0↦y} ∈ml ti).
+      epose proof membership_imp_equal Γ (l^{evar:0↦y}) ti HΓ mfti ltac:(wf_auto2) ltac:(wf_auto2).
+      pose proof (MP (fpl y) H0). clear H0.
+      pose proof (MP fpti H1). clear H1.
+      now fromMLGoal.
+  Defined.
+
+  (* Definitions for multiple exists version. *)
 
   Fixpoint fully_apply (n : nat) (p : Pattern) :=
     match n with
@@ -410,6 +371,7 @@ mlAdd H. mlAdd H0. mlAdd H1. clear H H0 H1.
     apply (IHn n); auto.
   Defined.
 
+  (* Multiple exists version. *)
   Goal forall n m l ti,
     m <= n ->
     well_formed_closed_ex_aux l m ->
@@ -419,7 +381,7 @@ mlAdd H. mlAdd H0. mlAdd H1. clear H H0 H1.
     mu_free ti ->
     functional_when_applied m l ->
     Γ ⊢ is_functional ti ->
-    Γ ⊢ ⌈fully_apply n l and ti⌉ ---> (many_ex_l n (l =ml ti)).
+    Γ ⊢ ⌈fully_apply n l and ti⌉ ---> (many_ex n (l =ml ti)).
   Proof.
     intros * Hmlen Hwfceal Hwfcmal Hwfpl Hwfti Hmfti Hfpl Hfpti.
     generalize dependent l.
@@ -447,7 +409,8 @@ mlAdd H. mlAdd H0. mlAdd H1. clear H H0 H1.
     apply well_formed_defined, well_formed_and.
     2: auto.
     2: {
-      opose proof (well_formed_many_ex (S n) m (l =ml ti) Hmlen _ _ _).
+      replace (ex , many_ex n (l =ml ti)) with (many_ex (S n) (l =ml ti)) by reflexivity.
+      eapply well_formed_many_ex; eauto.
       (* TODO: I should not have to do this. *)
       assert (well_formed_closed_ex_aux ti m). {
         clear dependent l n Hfpti.
@@ -461,7 +424,6 @@ mlAdd H. mlAdd H0. mlAdd H1. clear H H0 H1.
         apply well_formed_closed_ex_all. wf_auto2.
       }
       1-3: wf_auto2.
-      rewrite - many_ex_lr in H. simpl in H. exact H.
     }
     decide_le Hmlen.
     rewrite (evar_open_wfc_aux m n); auto.
@@ -470,26 +432,7 @@ mlAdd H. mlAdd H0. mlAdd H1. clear H H0 H1.
     all: wf_auto2.
   Qed.
 
-  Goal forall l ti,
-    well_formed (ex, l) ->
-    well_formed ti ->
-    mu_free ti ->
-    (forall x, Γ ⊢ is_functional l^{evar:0↦x}) ->
-    Γ ⊢ is_functional ti ->
-    Γ ⊢ ⌈l^{evar: 0 ↦ fresh_evar l} and ti⌉ ---> (ex, l =ml ti).
-  Proof.
-    intros * wfl wfti mfti fpl fpti.
-    remember (fresh_evar _) as y.
-    pose proof evar_open_not_occur 0 y ti ltac:(wf_auto2).
-    mlIntro.
-      mlExists y. mlSimpl. rewrite H.
-      fold (l^{evar:0↦y} ∈ml ti).
-      epose proof membership_imp_equal Γ (l^{evar:0↦y}) ti HΓ mfti ltac:(wf_auto2) ltac:(wf_auto2).
-      pose proof (MP (fpl y) H0). clear H0.
-      pose proof (MP fpti H1). clear H1.
-      now fromMLGoal.
-  Defined.
-
+  (* Counter-proof for Γ ⊢ (ti ∈ ∃. l) -> (⌈l /\ ti⌉) *) 
   Goal forall y (sy : symbols), exists (M : Model), forall (ρ' : @Valuation _ M), exists ρ l ti,
     well_formed ti ->
     @eval _ M ρ ((ex, l =ml ti) ---> ⌈l^{evar: 0 ↦ y} and ti⌉) ≠ ⊤.
@@ -552,6 +495,8 @@ mlAdd H. mlAdd H0. mlAdd H1. clear H H0 H1.
     all: typeclasses eauto.
   Defined.
 
+  (* Counter-proofs for Γ ⊢ (θ -> (l = ti)) <-> (l /\ θ = ti) *) 
+
   Context (σ : list (evar * Pattern)).
   Hypothesis (Hwfσ : wf (map snd σ)).
 
@@ -613,18 +558,6 @@ mlAdd H. mlAdd H0. mlAdd H1. clear H H0 H1.
     Unshelve. all: try typeclasses eauto.
     (* TODO: possible to make this part of typeclasses eauto's search? *)
     all: exact (@propset_leibniz_equiv _ M).
-  Defined.
-
-  Goal forall l ti,
-    well_formed (ex, l) ->
-    well_formed ti ->
-    Γ ⊢ ⌈(ex, l) and ti⌉ <---> (ti ∈ml ex, l).
-  Proof.
-    intros * wfl wfti.
-    toMLGoal. wf_auto2.
-    pose proof patt_and_comm Γ (ex, l) ti wfl wfti.
-    use AnyReasoning in H. mlRewrite H at 1.
-    fold (ti ∈ml (ex, l)). mlReflexivity.
   Defined.
 
   Goal forall l ti,
@@ -700,6 +633,23 @@ mlAdd H. mlAdd H0. mlAdd H1. clear H H0 H1.
     -
       rewrite eval_simpl. simpl.
       apply Contains_Elements_Not_Empty. set_solver.
+  Defined.
+
+  (* Proof for Γ ⊢ (⌈∃. l /\ ti⌉) <-> (ti ∈ ∃. l) *) 
+
+  (* This is just a consequence of the commutativity of /\ and *)
+  (* the definition of ∈. A proof can be counstructed for *)
+  (* multiple exists in the same way *)
+  Goal forall l ti,
+    well_formed (ex, l) ->
+    well_formed ti ->
+    Γ ⊢ ⌈(ex, l) and ti⌉ <---> (ti ∈ml ex, l).
+  Proof.
+    intros * wfl wfti.
+    toMLGoal. wf_auto2.
+    pose proof patt_and_comm Γ (ex, l) ti wfl wfti.
+    use AnyReasoning in H. mlRewrite H at 1.
+    fold (ti ∈ml (ex, l)). mlReflexivity.
   Defined.
 End MatchingEquivs.
 
