@@ -129,6 +129,7 @@ Section axioms.
     {syntax : Syntax}.
 
   Inductive AxiomName := 
+  | AxBoolSort
   | AxFunTrue
   | AxFunFalse
   | AxFunAnd
@@ -151,6 +152,7 @@ Section axioms.
 
   Definition axiom (name : AxiomName) : Pattern :=
     match name with
+    | AxBoolSort => mlBool ∈ml Sorts
     | AxFunTrue => ex mlBool , mlTrue =ml b0
     | AxFunFalse => ex mlBool , mlFalse =ml b0
     | AxFunAnd =>

@@ -5,15 +5,15 @@ Import MatchingLogic.Logic.Notations
 Set Default Proof Mode "Classic".
 
 
-Inductive Symbols := sym_inh.
+Inductive Symbols := sym_inh | sym_sorts.
 
 Global Instance Symbols_eqdec : EqDecision Symbols.
-Proof. unfold EqDecision. intros x y. unfold Decision. destruct x. decide equality. (*solve_decision.*) Defined.
+Proof. unfold EqDecision. intros x y. unfold Decision; destruct x; decide equality. (*solve_decision.*) Defined.
 
 #[global]
 Program Instance Symbols_finite : finite.Finite Symbols.
 Next Obligation.
-  exact [sym_inh].
+  exact [sym_inh; sym_sorts].
 Defined.
 Next Obligation.
   unfold Symbols_finite_obligation_1.
@@ -41,6 +41,7 @@ Section sorts_syntax.
     patt_sym (sym_inj s).
 
   Definition inhabitant := sym sym_inh.
+  Definition Sorts := sym sym_sorts.
 
   Example test_pattern_1 := patt_equal (inhabitant) (inhabitant).
   Definition patt_inhabitant_set(phi : Pattern) : Pattern := inhabitant ⋅ phi.
@@ -187,6 +188,9 @@ Section sorts.
       )
     )
   .
+
+  ______ TODO: nonempty Sorts!
+
 
 End sorts.
 

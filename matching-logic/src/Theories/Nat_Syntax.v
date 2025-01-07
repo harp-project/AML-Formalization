@@ -70,6 +70,7 @@ Section axioms.
   .
 
   Inductive AxiomName := 
+  | AxNatSort
   | AxFun1
   | AxFun2
   | AxNoConfusion1
@@ -82,6 +83,7 @@ Section axioms.
   
   Definition axiom (name : AxiomName) : Pattern :=
     match name with
+    | AxNatSort => Nat ∈ Sorts
     | AxFun1 => ex Nat , Zero =ml b0
     | AxFun2 => all Nat, ex Nat, Succ ⋅ b1 =ml b0
     | AxNoConfusion1 => all Nat, !(Zero =ml Succ ⋅ b0)
