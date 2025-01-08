@@ -230,9 +230,9 @@ Module Notations.
   Notation "'all' s ,  phi" := (patt_sorted_forall s phi) (at level 80) : ml_scope.
   Notation "'ex' s ,  phi" := (patt_sorted_exists s phi) (at level 80) : ml_scope.
   Notation "'allₛ' ,  phi" := 
-    (patt_forall_sort phi) (at level 70) : ml_scope.
+    (patt_forall_sort phi) (at level 80) : ml_scope.
   Notation "'exₛ' ,  phi" := 
-    (patt_exists_sort phi) (at level 70) : ml_scope.
+    (patt_exists_sort phi) (at level 80) : ml_scope.
   Notation "phi :ml s1 × s2 -> s3" :=  (patt_total_binary_function phi s1 s2 s3) (at level 70) : ml_scope.
 End Notations.
 
