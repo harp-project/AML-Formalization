@@ -186,6 +186,7 @@ Section Bool.
   (**)
   | defBool
   | inhBool
+  | SortsBool
   .
 
   #[global]
@@ -199,7 +200,7 @@ Section Bool.
   Next Obligation.
     exact (fmap coreBoolSym [sBool; sTrue; sFalse; sAnd; sNeg; sAndThen] ++ 
            [partialAnd true; partialAnd false;
-            partialAndThen (Some true); partialAndThen (Some false); partialAndThen None; defBool; inhBool]).
+            partialAndThen (Some true); partialAndThen (Some false); partialAndThen None; defBool; inhBool;SortsBool]).
   Defined.
   Next Obligation.
     compute_done.
@@ -222,7 +223,10 @@ Section Bool.
   Program Instance bool_syntax : @Bool_Syntax.Syntax bools_Σ := {
     sym_inj := coreBoolSym;
     imported_sorts := {|
-      Sorts_Syntax.sym_inj := fun x => inhBool;
+      Sorts_Syntax.sym_inj := fun x => match x with
+                                       | sym_inh => inhBool
+                                       | sym_sorts => SortsBool
+                                       end;
       imported_definedness := {|
         Definedness_Syntax.sym_inj := fun x => defBool;
       |};
@@ -284,8 +288,10 @@ Section Bool.
      match m2 with
      | coreBoolSym sBool => {[ coreBoolSym sFalse; coreBoolSym sTrue ]}
                             (* type value set *)
+     | SortsBool => {[coreBoolSym sBool]}
      | _ => ∅
      end
+   | SortsBool => ∅
   end.
 
   Global Instance bool_carrier_inhabited : Inhabited bool_carrier.
@@ -311,16 +317,26 @@ Section Bool.
     unfold bool_sym_interp.
     destruct s; unfold app_ext.
     1: destruct s.
-    2-8: right; intro; destruct H as [le [re [Hle [Hre Ht] ] ] ];
+    2-10: right; intro; destruct H as [le [re [Hle [Hre Ht] ] ] ];
          apply elem_of_singleton_1 in Hle, Hre; subst;
          cbn in Ht; set_solver.
-    destruct m.
-    destruct s.
-    1, 4-12: right; intro; destruct H as [le [re [Hle [Hre Ht] ] ] ];
+    {
+      destruct m.
+      destruct s.
+      1, 4-11: right; intro; destruct H as [le [re [Hle [Hre Ht] ] ] ];
+              apply elem_of_singleton_1 in Hle, Hre; subst;
+              cbn in Ht; set_solver.
+      1-2: left;
+           exists (inhBool), (coreBoolSym sBool); split; try split; set_solver.
+    }
+    {
+      destruct m. destruct s.
+      2-11: right; intro; destruct H as [le [re [Hle [Hre Ht] ] ] ];
             apply elem_of_singleton_1 in Hle, Hre; subst;
             cbn in Ht; set_solver.
-    1-2: left;
-         exists (inhBool), (coreBoolSym sBool); split; try split; set_solver.
+      1: left;
+           exists (inhBool), SortsBool; split; try split; set_solver.
+    }
   Defined.
 
   Hint Resolve propset_leibniz_equiv : core.
@@ -342,18 +358,28 @@ Section Bool.
     unfold Bool_Syntax.theory, Definedness_Syntax.theory.
     unfold theory_of_NamedAxioms. simpl.
     unfold satisfies_theory. intros.
+    pose (@propset_leibniz_equiv _ BoolModel) as Hpropset.
     rewrite elem_of_union in H. destruct H as [H | H].
     * (* This subgoal uses boiler-plate proof *)
       rewrite elem_of_PropSet in H. destruct H. destruct x. subst.
       cbn. unfold satisfies_model. intros.
       unfold patt_defined. unfold p_x, ev_x. simp eval.
       unfold sym_interp, app_ext. simpl.
-      eapply leibniz_equiv. Unshelve. 2: exact (@propset_leibniz_equiv _ BoolModel).
+      eapply leibniz_equiv. Unshelve.
       apply set_equiv. intros. split; intros; set_solver.
     * rewrite elem_of_PropSet in H. destruct H.
       destruct x;subst;cbn; unfold satisfies_model; intros.
-      (* true is functional *)
-      - (* TODO: simplification tactic for eval is needed!
+      (* Bool ∈ [[Sorts]] *)
+      - apply definedness_not_empty_1. assumption.
+        eval_simpl.
+        unfold patt_not, mlBool, Sorts, patt_inhabitant_set, inhabitant.
+        unfold Sorts_Syntax.sym.
+
+        eval_simpl. simpl. unfold bool_sym_interp.
+        rewrite app_ext_singleton. simpl.
+        set_solver.
+      - (* true is functional *)
+        (* TODO: simplification tactic for eval is needed!
            Potentially we could base this on typeclasses too. *)
         eval_simpl; auto.
         1: apply indec_bool.
@@ -388,15 +414,15 @@ Section Bool.
           apply n. clear. exists (inhBool), (coreBoolSym sBool); split; try split; set_solver.
       (* and is functional *)
       - erewrite eval_forall_of_sort.
-        2: assumption. Unshelve. 4: apply indec_bool. 2-3: shelve.
+        2: assumption. Unshelve. 2: apply indec_bool.
         apply propset_fa_intersection_full. intros. case_match. 2: by reflexivity.
         mlSimpl.
         erewrite eval_forall_of_sort.
-        2: assumption. Unshelve. 4: apply indec_bool. 2-3: shelve.
+        2: assumption. Unshelve. 2: apply indec_bool.
         eapply propset_fa_intersection_full. intros. case_match. 2: by reflexivity.
         mlSimpl. cbn.
         erewrite eval_exists_of_sort.
-        2: assumption. Unshelve. 5: apply indec_bool. 2-4: shelve.
+        2: assumption. Unshelve. 2: apply indec_bool.
         remember (fresh_evar _) as X.
         remember (fresh_evar (patt_exists_of_sort mlBool (mlBAnd b1 (patt_free_evar X) =ml b0))) as Y.
         unfold Minterp_inhabitant in *.
@@ -536,8 +562,7 @@ Section Bool.
              apply n. clear. exists (inhBool), (coreBoolSym sBool); split; try split; set_solver.
       (* not is functional *)
       - erewrite eval_forall_of_sort.
-        2: assumption. Unshelve. 2-13: try apply (@propset_leibniz_equiv _ BoolModel).
-        2: apply indec_bool.
+        2: assumption. Unshelve. 2: apply indec_bool.
         apply propset_fa_intersection_full. intros. case_match. 2: by reflexivity.
         mlSimpl.
         eval_simpl; auto. 1: apply indec_bool.
@@ -561,7 +586,8 @@ Section Bool.
         }
         clear HeqX HeqY.
         destruct H; subst c.
-        + eapply propset_fa_union_full. intros. exists (coreBoolSym sTrue).
+        + intros.
+          exists (coreBoolSym sTrue).
           case_match.
           ** clear H e. mlSimpl. cbn.
              unfold mlBNeg, mlsBNeg.
@@ -583,7 +609,7 @@ Section Bool.
           ** unfold Minterp_inhabitant, Sorts_Syntax.sym in n.
              simpl in n. clear H. simp eval in n. exfalso.
              apply n. clear. exists (inhBool), (coreBoolSym sBool); split; try split; set_solver.
-        + eapply propset_fa_union_full. intros. exists (coreBoolSym sFalse).
+        + intros. exists (coreBoolSym sFalse).
           case_match.
           ** clear H e. mlSimpl. cbn.
              unfold mlBNeg, mlsBNeg.
@@ -642,8 +668,7 @@ Section Bool.
         setoid_rewrite app_ext_singleton. reflexivity.
       - unfold mlBAnd, mlsBAnd, mlTrue, mlFalse, mlBool.
         erewrite eval_forall_of_sort.
-        2: assumption. Unshelve. 2-8: try apply (@propset_leibniz_equiv _ BoolModel).
-        2: apply indec_bool.
+        2: assumption. Unshelve. 2: apply indec_bool.
         apply propset_fa_intersection_full. intros.
         case_match. 2: reflexivity.
         apply equal_iff_interpr_same. assumption.
@@ -775,8 +800,6 @@ Section Bool.
         setoid_rewrite app_ext_singleton. simpl.
         setoid_rewrite app_ext_singleton. simpl.
         reflexivity.
-  Unshelve.
-    all: apply (@propset_leibniz_equiv _ BoolModel).
   Qed.
 
 End Bool.
@@ -791,6 +814,7 @@ Section Nat.
   (**)
   | defNat
   | inhNat
+  | SortsNat
   .
 
   #[global]
@@ -813,11 +837,13 @@ Section Nat.
       | natVal n => inr (inl n)
       | partialAdd n => inr (inr n)
       | defNat => inl (inr (inr (inr (inr (inl ())))))
-      | inhNat => inl (inr (inr (inr (inr (inr ())))))
+      | inhNat => inl (inr (inr (inr (inr (inr (inl ()))))))
+      | SortsNat => inl (inr (inr (inr (inr (inr (inr ()))))))
       end).
     set (dec := fun t =>
       match t with
-      | inl (inr (inr (inr (inr (inr ()))))) => inhNat
+      | inl (inr (inr (inr (inr (inr (inl ())))))) => inhNat
+      | inl (inr (inr (inr (inr (inr (inr ())))))) => SortsNat
       | inl (inr (inr (inr (inr (inl ()))))) => defNat
       | inl (inr (inr (inr (inl ())))) => coreNatSym sAddNat
       | inl (inr (inr (inl ()))) => coreNatSym sSucc
@@ -839,7 +865,10 @@ Section Nat.
   Program Instance nat_syntax : @Nat_Syntax.Syntax nat_Σ := {
     sym_inj := coreNatSym;
     imported_sorts := {|
-      Sorts_Syntax.sym_inj := fun x => inhNat;
+      Sorts_Syntax.sym_inj := fun x => match x with
+                                       | sym_inh => inhNat
+                                       | sym_sorts => SortsNat
+                                       end;
       imported_definedness := {|
         Definedness_Syntax.sym_inj := fun x => defNat;
       |};
@@ -878,8 +907,10 @@ Section Nat.
    | inhNat =>
      match m2 with
      | coreNatSym sNat => {[ m | exists n, m = natVal n ]}
+     | SortsNat => {[coreNatSym sNat]}
      | _ => ∅
      end
+   | SortsNat => ∅
   end.
 
   Global Instance nat_carrier_inhabited : Inhabited nat_carrier.
@@ -908,18 +939,31 @@ Section Nat.
     2-8: right; intro; destruct H as [le [re [Hle [Hre Ht] ] ] ];
          try apply elem_of_singleton_1 in Hle, Hre; subst;
          cbn in Ht; set_solver.
-    destruct m.
-    destruct s.
-    1-5,7-8: right; intro; destruct H as [le [re [Hle [Hre Ht] ] ] ];
-            try apply elem_of_singleton_1 in Hle;
-            try apply elem_of_singleton_1 in Hre; subst;
-            cbn in Ht; try set_solver.
-    all: try destruct re; try set_solver.
-    all: try destruct s; try set_solver.
-    destruct s0; try set_solver.
-    destruct s0; try set_solver.
-    left. do 2 eexists. split_and!. 1-2: cbn; by apply elem_of_singleton.
-    simpl. set_solver.
+    {
+      destruct m.
+      destruct s.
+      1-5,7-9: right; intro; destruct H as [le [re [Hle [Hre Ht] ] ] ];
+              try apply elem_of_singleton_1 in Hle;
+              try apply elem_of_singleton_1 in Hre; subst;
+              cbn in Ht; try set_solver.
+      all: try destruct re; try set_solver.
+      all: try destruct s; try set_solver.
+      destruct s0; try set_solver.
+      destruct s0; try set_solver.
+      left. do 2 eexists. split_and!. 1-2: cbn; by apply elem_of_singleton.
+      simpl. set_solver.
+    }
+    {
+      destruct m.
+      destruct s.
+      2-9: right; intro; destruct H as [le [re [Hle [Hre Ht] ] ] ];
+              try apply elem_of_singleton_1 in Hle;
+              try apply elem_of_singleton_1 in Hre; subst;
+              cbn in Ht; try set_solver.
+      all: try destruct re; try set_solver.
+      left. do 2 eexists. split_and!. 1-2: cbn; by apply elem_of_singleton.
+      simpl. set_solver.
+    }
   Defined.
 
   Hint Resolve propset_leibniz_equiv : core.
@@ -952,6 +996,15 @@ Section Nat.
       apply set_equiv. intros. split; intros; set_solver.
     * rewrite elem_of_PropSet in H. destruct H.
       destruct x;subst;cbn; unfold satisfies_model; intros.
+      (* Nat ∈ [[Sorts]] *)
+      - apply definedness_not_empty_1. assumption.
+        eval_simpl.
+        unfold patt_not, Nat, Sorts, patt_inhabitant_set, inhabitant.
+        unfold Sorts_Syntax.sym.
+
+        eval_simpl. simpl. unfold bool_sym_interp.
+        rewrite app_ext_singleton. simpl.
+        set_solver.
       (* zero is functional - same as for true/false *)
       - eval_simpl; auto. apply indec_nat.
         intros. mlSimpl. cbn. exists (natVal 0).
@@ -1152,7 +1205,7 @@ Section Nat.
             destruct EQ2 as [le2 [re2 [EQ12 [EQ22 EQ32] ] ] ].
             apply elem_of_singleton in EQ1, EQ12, EQ22. subst.
             simpl in *.
-            destruct re. 1-2,4-5: set_solver.
+            destruct re. 1-2,4-6: set_solver.
             do 2 eexists. split_and!. 1-2: by apply elem_of_singleton.
             simpl. set_solver.
         }

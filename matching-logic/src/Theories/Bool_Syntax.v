@@ -152,15 +152,15 @@ Section axioms.
 
   Definition axiom (name : AxiomName) : Pattern :=
     match name with
-    | AxBoolSort => mlBool ∈ml Sorts
+    | AxBoolSort => mlBool ∈ml ⟦Sorts⟧
     | AxFunTrue => ex mlBool , mlTrue =ml b0
     | AxFunFalse => ex mlBool , mlFalse =ml b0
     | AxFunAnd =>
       all mlBool , all mlBool , ex mlBool , b1 &&ml b2 =ml b0
     | AxFunNeg => all mlBool , ex mlBool , !b b1 =ml b0
     | AxNoConfusion => !(mlTrue =ml mlFalse)
-    | AxInductiveDomain => 〚 mlBool 〛 =ml (mlTrue or mlFalse)
-    (* TODO: extend this with the DEFINITION axioms from "ML explained" *)
+    | AxInductiveDomain => ⟦ mlBool ⟧ =ml (mlTrue or mlFalse)
+
     | AxDefNegTrue =>  !b mlTrue =ml mlFalse
     | AxDefNegFalse => !b mlFalse =ml mlTrue 
     | AxDefAndRightTrue =>  
@@ -171,7 +171,7 @@ Section axioms.
       all mlBool, mlTrue &&ml b0 =ml b0
     | AxDefAndLeftFalse =>
       all mlBool, mlFalse &&ml b0 =ml mlFalse 
-    (* extend to support andThen operator   *)
+
     | AxDefAndThenRightTrue => 
       all mlBool, b0 andThen mlTrue =ml b0
     | AxDefAndThenRightFalse =>

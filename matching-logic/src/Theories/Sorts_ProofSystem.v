@@ -46,8 +46,8 @@ Proof.
 
   unfold nest_ex; simpl.
 
-  remember (fresh_evar (b0 ∈ml 〚 patt_sym s 〛 and ϕ)) as x.
-  rewrite <- evar_quantify_evar_open with (n := 0) (x := x) (phi := b0 ∈ml 〚 patt_sym s 〛 and ϕ).
+  remember (fresh_evar (b0 ∈ml ⟦ patt_sym s ⟧ and ϕ)) as x.
+  rewrite <- evar_quantify_evar_open with (n := 0) (x := x) (phi := b0 ∈ml ⟦ patt_sym s ⟧ and ϕ).
   2: {
     subst x. eapply evar_is_fresh_in_richer'.
     2: apply set_evar_fresh_is_fresh'.

@@ -189,13 +189,10 @@ Section sorts.
     )
   .
 
-  ______ TODO: nonempty Sorts!
-
-
 End sorts.
 
 Module Notations.
-  Notation "〚 phi 〛" := (patt_inhabitant_set phi) (at level 0) : ml_scope.
+  Notation "⟦ phi ⟧" := (patt_inhabitant_set phi) (at level 0) : ml_scope.
   Notation "'all' s ,  phi" := (patt_forall_of_sort s phi) (at level 80) : ml_scope.
   Notation "'ex' s ,  phi" := (patt_exists_of_sort s phi) (at level 80) : ml_scope.
   Notation "phi :ml s1 × s2 -> s3" :=  (patt_total_binary_function phi s1 s2 s3) (at level 70) : ml_scope.
@@ -318,7 +315,7 @@ Section simplTest.
   Local Notation "a ∈ml b" := (ml_in a b) (at level 67).
   Local Notation "'ex' , phi" := (patt_exists phi) (at level 80) : ml_scope.
   Local Notation "'mu' , phi" := (patt_mu phi) (at level 80) : ml_scope.
-  Local Notation "〚 phi 〛" := (patt_inhabitant_set phi) (at level 0) : ml_scope.
+  Local Notation "⟦ phi ⟧" := (patt_inhabitant_set phi) (at level 0) : ml_scope.
 
   Open Scope ml_scope.
 
@@ -327,12 +324,12 @@ Section simplTest.
   Local Definition Succ := patt_bott.
 
   Goal forall X,
-    (( patt_free_svar X ⊆ml 〚 Nat 〛 --->
+    (( patt_free_svar X ⊆ml ⟦ Nat ⟧ --->
          Zero ∈ml patt_free_svar X --->
          (all Nat, (b0 ∈ml patt_free_svar X ---> 
          Succ ⋅ b0 ∈ml patt_free_svar X)) --->
          (all Nat, b0 ∈ml patt_free_svar X ) ) ^[[svar:X↦ex Nat, b0 and Zero +ml b0 =ml b0]] ) = 
-        ( (ex Nat, b0 and Zero +ml b0 =ml b0) ⊆ml 〚 Nat 〛 --->
+        ( (ex Nat, b0 and Zero +ml b0 =ml b0) ⊆ml ⟦ Nat ⟧ --->
          Zero ∈ml (ex Nat, b0 and Zero +ml b0 =ml b0) --->
          (all Nat, (b0 ∈ml (ex Nat, b0 and Zero +ml b0 =ml b0) ---> 
          Succ ⋅ b0 ∈ml (ex Nat, b0 and Zero +ml b0 =ml b0))) --->

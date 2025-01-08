@@ -80,15 +80,15 @@ Section axioms.
   | AxFunAdd
   | AxDefAddId
   | AxDefAdd.
-  
+
   Definition axiom (name : AxiomName) : Pattern :=
     match name with
-    | AxNatSort => Nat ∈ Sorts
+    | AxNatSort => Nat ∈ml ⟦Sorts⟧
     | AxFun1 => ex Nat , Zero =ml b0
     | AxFun2 => all Nat, ex Nat, Succ ⋅ b1 =ml b0
     | AxNoConfusion1 => all Nat, !(Zero =ml Succ ⋅ b0)
     | AxNoConfusion2 => all Nat, all Nat, (Succ ⋅ b1 =ml Succ ⋅ b0 ---> b1 =ml b0)
-    | AxInductiveDomain => 〚 Nat 〛 =ml mu , Zero or Succ ⋅ B0
+    | AxInductiveDomain => ⟦ Nat ⟧ =ml mu , Zero or Succ ⋅ B0
     (* extend to support addition operator*)
     | AxFunAdd =>
       all Nat, all Nat, ex Nat, b1 +ml b2 =ml b0
