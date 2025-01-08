@@ -52,9 +52,9 @@ Section with_syntax.
     | spred_imp (ϕ₁ ϕ₂ : Pattern)
         : is_SPredicate ϕ₁ -> is_SPredicate ϕ₂ -> is_SPredicate (patt_imp ϕ₁ ϕ₂)
     | spred_ex (ϕ : Pattern) (s : symbols)
-        : is_SPredicate ϕ -> is_not_core_symbol s -> is_SPredicate (patt_exists_of_sort (patt_sym s) ϕ)
+        : is_SPredicate ϕ -> is_not_core_symbol s -> is_SPredicate (ex (patt_sym s) , ϕ)
     | spred_all (ϕ : Pattern) (s : symbols)
-        : is_SPredicate ϕ -> is_not_core_symbol s -> is_SPredicate (patt_forall_of_sort (patt_sym s) ϕ)
+        : is_SPredicate ϕ -> is_not_core_symbol s -> is_SPredicate (all (patt_sym s), ϕ)
     with is_SData
     : Pattern -> Prop :=
     | sdata_bott
@@ -80,13 +80,13 @@ Section with_syntax.
     | sdata_filter (ϕ ψ : Pattern)
         : is_SData ϕ -> is_SPredicate ψ -> is_SData (patt_and ϕ ψ)
     | sdata_ex (ϕ : Pattern) (s : symbols)
-        : is_SData ϕ -> is_not_core_symbol s -> is_SData (patt_exists_of_sort (patt_sym s) ϕ)
+        : is_SData ϕ -> is_not_core_symbol s -> is_SData (ex (patt_sym s) , ϕ)
     (* This is disabled, because if the sort is empty, then the forall evaluates to full set,
        and that does not get lifted to full set in the extended model.
      *)
     (*
     | sdata_all (ϕ : Pattern) (s : symbols)
-        : is_SData ϕ -> is_not_core_symbol s -> is_SData (patt_forall_of_sort (patt_sym s) ϕ)
+        : is_SData ϕ -> is_not_core_symbol s -> is_SData (patt_sorted_forall (patt_sym s) ϕ)
     *)
     | sdata_mu (ϕ : Pattern)
         : is_SData ϕ -> is_SData (patt_mu ϕ)
@@ -201,9 +201,9 @@ Section with_syntax.
 
 (*
     Lemma is_SPredicate_forall_of_sort (s : symbols) (ϕ : Pattern)  :
-        is_SPredicate (patt_forall_of_sort (patt_sym s) ϕ).
+        is_SPredicate (patt_sorted_forall (patt_sym s) ϕ).
     Proof.
-        unfold patt_forall_of_sort,patt_forall.
+        unfold patt_sorted_forall,patt_forall.
         apply is_SPredicate_patt_not.
     Qed.
 *)
@@ -554,7 +554,7 @@ Section with_syntax.
             { apply (@M_pre_pre_predicate_impl_M_pre_predicate _ 0). apply T_pre_predicate_subseteq. exact M_def. }
             { apply M_pre_predicate_imp; assumption. }
             { 
-                unfold patt_exists_of_sort.
+                unfold patt_sorted_exists.
                 apply M_pre_predicate_exists.
                 apply M_pre_predicate_and.
                 2: { exact IHHSPred. }
@@ -564,7 +564,7 @@ Section with_syntax.
                 exact M_def.
             }
             {
-                unfold patt_forall_of_sort.
+                unfold patt_sorted_forall.
                 apply M_pre_predicate_forall.
                 apply M_pre_predicate_imp.
                 2: { exact IHHSPred. }
@@ -1024,7 +1024,7 @@ Section with_syntax.
                         }
                     }
                     {
-                        (* patt_exists_of_sort (patt_sym s) ϕ *)
+                        (* patt_sorted_exists (patt_sym s) ϕ *)
                         unshelve(erewrite eval_exists_of_sort).
                         3: { rewrite HSortImptDef. apply Mext_satisfies_definedness. }
                         { intros. apply Mext_indec. assumption. }

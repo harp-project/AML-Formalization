@@ -10,28 +10,6 @@ Import MatchingLogic.Theories.Nat_Syntax.Notations.
 
 Set Default Proof Mode "Classic".
 
-(* Require Import MatchingLogic.Theories.DeductionTheorem.
-
-Require MatchingLogic.Theories.Sorts_Syntax.
-Export MatchingLogic.Theories.Sorts_Syntax.Notations.
-
-Require Import Setoid.
-From Coq.Logic Require Import Classical_Prop FunctionalExtensionality.
-
-From stdpp Require Import base sets.
-
-From MatchingLogic Require Import Logic MLPM.
-From MatchingLogic.Theories Require Import Sorts_ProofSystem FOEquality_ProofSystem.
-Require Import MatchingLogic.Theories.Nat_Syntax.
-
-Import MatchingLogic.Theories.Nat_Syntax.Notations.
-
-Set Default Proof Mode "Classic".
-
-Open Scope ml_scope.
-Open Scope string_scope.
-Open Scope list_scope.
-   *)
 Section nat.
   Context
     {Σ : Signature}
@@ -79,14 +57,14 @@ Section nat.
   Defined.
 
   Lemma nat_subset_imp_in X :
-    theory ⊢ (〚 Nat 〛 ⊆ml patt_free_svar X) ---> (all Nat, b0 ∈ml patt_free_svar X).
+    theory ⊢ (⟦ Nat ⟧ ⊆ml patt_free_svar X) ---> (all Nat, b0 ∈ml patt_free_svar X).
   Proof.
-    unfold patt_forall_of_sort.
+    unfold patt_sorted_forall.
     unfold patt_in.
     unfold nest_ex; simpl; fold Nat.
     unfold patt_subseteq.
     apply deduction_theorem with (gpi := (ExGen := {[fresh_evar ⊥]}, SVSubst := ∅, KT := false, AKT := false)).
-    rewrite <- evar_quantify_evar_open with (n := 0) (phi := (⌈ b0 and 〚 Nat 〛 ⌉ ---> ⌈ b0 and patt_free_svar X ⌉)) (x := fresh_evar ⊥).
+    rewrite <- evar_quantify_evar_open with (n := 0) (phi := (⌈ b0 and ⟦ Nat ⟧ ⌉ ---> ⌈ b0 and patt_free_svar X ⌉)) (x := fresh_evar ⊥).
     apply universal_generalization.
     { try_solve_pile. }
     { wf_auto2. }
@@ -118,7 +96,7 @@ Section nat.
   Defined.
 
   Theorem peano_induction X :
-    theory ⊢ (* patt_free_svar X ⊆ml 〚 Nat 〛 --->  *)
+    theory ⊢ (* patt_free_svar X ⊆ml ⟦ Nat ⟧ --->  *)
     Zero ∈ml patt_free_svar X  --->
     ( all Nat, (b0 ∈ml patt_free_svar X ---> Succ ⋅ b0 ∈ml patt_free_svar X) ) --->
     all Nat, b0 ∈ml patt_free_svar X.
@@ -295,7 +273,7 @@ Section nat.
         + mlApplyMeta ex_sort_impl_ex;[|unfold theory; set_solver].
           mlAdd (use_nat_axiom AxFun2 theory ltac:(set_solver)) as "H"; unfold axiom.
           unfold "all _ , _", nest_ex; simpl; fold Nat.
-          rewrite <- evar_quantify_evar_open with (x := y) (n := 0) (phi := b0 ∈ml 〚 Nat 〛 ---> (ex Nat , Succ ⋅ b1 =ml b0)).
+          rewrite <- evar_quantify_evar_open with (x := y) (n := 0) (phi := b0 ∈ml ⟦ Nat ⟧ ---> (ex Nat , Succ ⋅ b1 =ml b0)).
           2: {
             subst y. eapply evar_is_fresh_in_richer'.
             2: apply set_evar_fresh_is_fresh'.
@@ -346,7 +324,7 @@ Section nat.
   Admitted.
   
   Theorem peano_induction_1 X :
-    theory ⊢ patt_free_svar X ⊆ml 〚 Nat 〛 -> 
+    theory ⊢ patt_free_svar X ⊆ml ⟦ Nat ⟧ -> 
     theory ⊢ Zero ∈ml patt_free_svar X ->
     theory ⊢ all Nat, ( b0 ∈ml patt_free_svar X ---> Succ ⋅ b0 ∈ml patt_free_svar X ) -> 
     theory ⊢ all Nat, b0 ∈ml patt_free_svar X.
@@ -428,7 +406,7 @@ Section nat.
 
       mlRewrite Htmp at 1. clear Htmp. fold AnyReasoning.
 
-      unfold patt_forall_of_sort, nest_ex in S; simpl in S; fold Nat in S.
+      unfold patt_sorted_forall, nest_ex in S; simpl in S; fold Nat in S.
 
       pose proof (Htmp := membership_symbol_right theory (patt_free_svar X) Succ x).
       ospecialize* Htmp.
@@ -484,7 +462,7 @@ Section nat.
         + mlApplyMeta ex_sort_impl_ex;[|unfold theory; set_solver].
           mlAdd (use_nat_axiom AxFun2 theory ltac:(set_solver)) as "H". unfold axiom.
           unfold "all _ , _", nest_ex. simpl. fold Nat.
-          rewrite <- evar_quantify_evar_open with (x := y) (n := 0) (phi := b0 ∈ml 〚 Nat 〛 ---> (ex Nat , Succ ⋅ b1 =ml b0)).
+          rewrite <- evar_quantify_evar_open with (x := y) (n := 0) (phi := b0 ∈ml ⟦ Nat ⟧ ---> (ex Nat , Succ ⋅ b1 =ml b0)).
           2: { fm_solve. }
           2: wf_auto2.
           mlApplyMeta forall_variable_substitution in "H".
@@ -574,7 +552,7 @@ Section nat.
     clear H0 e.
 
 
-    mlAssert ( "H": ( (ex Nat, b0 and Zero +ml b0 =ml b0 ) ⊆ml 〚 Nat 〛 ) ).
+    mlAssert ( "H": ( (ex Nat, b0 and Zero +ml b0 =ml b0 ) ⊆ml ⟦ Nat ⟧ ) ).
     1:wf_auto2.
     1:{ 
         unfold "⊆ml".
@@ -616,11 +594,11 @@ Section nat.
         mlIntro "H".
         mlClear "0".
         
-        unfold patt_exists_of_sort.
+        unfold patt_sorted_exists.
         mlFreshEvar as x.
         mlFreshEvar as y.
         
-        epose proof membership_exists_2 Γ (patt_free_evar x) (b0 ∈ml 〚 nest_ex Nat 〛 and (b0 and Zero +ml b0 =ml b0)) y AnyReasoning ltac:(set_solver) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(fm_solve) ltac:(try_solve_pile).
+        epose proof membership_exists_2 Γ (patt_free_evar x) (b0 ∈ml ⟦ nest_ex Nat ⟧ and (b0 and Zero +ml b0 =ml b0)) y AnyReasoning ltac:(set_solver) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(fm_solve) ltac:(try_solve_pile).
         unfold nest_ex in *. simpl in *. fold Nat in *.
         
         apply universal_generalization with (x := x ) in H1 .
@@ -659,7 +637,7 @@ Section nat.
         mlApply "0".
           
         pose proof exists_functional_subst 
-         (Zero ∈ml (b0 ∈ml 〚 Nat 〛 and (b0 and Zero +ml b0 =ml b0)))
+         (Zero ∈ml (b0 ∈ml ⟦ Nat ⟧ and (b0 and Zero +ml b0 =ml b0)))
          (Zero) Γ.
           
         mlApplyMeta H2.
@@ -690,7 +668,7 @@ Section nat.
           2-3: wf_auto2.
  
           mlSplitAnd.
-          + assert ( P1: (  Γ ⊢ Zero ∈ml 〚 Nat 〛) ).
+          + assert ( P1: (  Γ ⊢ Zero ∈ml ⟦ Nat ⟧) ).
             1:{ 
                 toMLGoal.
                 wf_auto2.
@@ -725,7 +703,7 @@ Section nat.
                 pose proof use_nat_axiom AxFun1 Γ H; simpl in H4; mlAdd H4 as "f";mlExact "f".
               }
               
-              epose proof membership_symbol_ceil_aux_0_functional Γ (〚 Nat 〛 ) (Zero) (Zero) ltac:(wf_auto2)
+              epose proof membership_symbol_ceil_aux_0_functional Γ (⟦ Nat ⟧ ) (Zero) (Zero) ltac:(wf_auto2)
                ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2).
                
               mlApplyMeta H2.
@@ -830,14 +808,14 @@ same chain of thoughts as 1st one for totality.
                      ) ).
     1:wf_auto2.
     1:{ 
-        unfold patt_exists_of_sort. 
+        unfold patt_sorted_exists. 
         mlIntroAll x. simpl. unfold nest_ex. simpl. fold Nat.
         mlIntro "H1".
         mlIntro "H2".
         mlClear "0";mlClear "H";mlClear "H0".
 
         mlFreshEvar as y.
-        epose proof membership_exists_2 Γ (patt_free_evar x) (b0 ∈ml 〚 nest_ex Nat 〛 and (b0 and Zero +ml b0 =ml b0)) y AnyReasoning
+        epose proof membership_exists_2 Γ (patt_free_evar x) (b0 ∈ml ⟦ nest_ex Nat ⟧ and (b0 and Zero +ml b0 =ml b0)) y AnyReasoning
          ltac:(set_solver) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(fm_solve) ltac:(try_solve_pile).
        
         apply universal_generalization with (x := x ) in H0 .
@@ -872,7 +850,7 @@ same chain of thoughts as 1st one for totality.
         mlApply "H3". mlClear "H3".
        
         pose proof exists_functional_subst 
-         ( (Succ ⋅ patt_free_evar x) ∈ml (b0 ∈ml 〚 Nat 〛 and (b0 and Zero +ml b0 =ml b0)))
+         ( (Succ ⋅ patt_free_evar x) ∈ml (b0 ∈ml ⟦ Nat ⟧ and (b0 and Zero +ml b0 =ml b0)))
          (Succ ⋅ patt_free_evar x) Γ.
        
         mlApplyMeta H0.
@@ -884,7 +862,7 @@ same chain of thoughts as 1st one for totality.
       
        mlSplitAnd.
        * clear H0.
-         pose proof membership_exists_subst Γ (patt_free_evar x ) (b0 ∈ml 〚 Nat 〛 and (b0 and Zero +ml b0 =ml b0)) 
+         pose proof membership_exists_subst Γ (patt_free_evar x ) (b0 ∈ml ⟦ Nat ⟧ and (b0 and Zero +ml b0 =ml b0)) 
           (AnyReasoning) ltac:(set_solver) ltac:(wf_auto2) ltac:(wf_auto2).
          mlApplyMeta H0 in "H2".
          clear H0.
@@ -894,7 +872,7 @@ same chain of thoughts as 1st one for totality.
          mlClear "0". 
       
          pose proof membership_and_2_functional Γ 
-          (Succ ⋅ patt_free_evar x ∈ml 〚 Nat 〛)
+          (Succ ⋅ patt_free_evar x ∈ml ⟦ Nat ⟧)
           (Succ ⋅ patt_free_evar x and Zero +ml (Succ ⋅ patt_free_evar x) =ml Succ ⋅ patt_free_evar x)
           (Succ ⋅ patt_free_evar x)
           ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)  ltac:(set_solver).
@@ -905,7 +883,7 @@ same chain of thoughts as 1st one for totality.
           1: mlAssumption.
          
           mlSplitAnd.
-          - assert ( P2: ( Γ ⊢ patt_free_evar x ∈ml 〚 Nat 〛 ---> Succ ⋅ patt_free_evar x  ∈ml 〚 Nat 〛) ).
+          - assert ( P2: ( Γ ⊢ patt_free_evar x ∈ml ⟦ Nat ⟧ ---> Succ ⋅ patt_free_evar x  ∈ml ⟦ Nat ⟧) ).
                 1:{ 
                     mlIntro "H".
                     pose proof use_nat_axiom AxFun2 Γ H. simpl in H0.
@@ -918,14 +896,14 @@ same chain of thoughts as 1st one for totality.
                     mlAssumption.
                   }
                   
-            mlAssert ( "P1" : (  (Succ ⋅ patt_free_evar x)  ∈ml 〚 Nat 〛 ) ).
+            mlAssert ( "P1" : (  (Succ ⋅ patt_free_evar x)  ∈ml ⟦ Nat ⟧ ) ).
             1:{ wf_auto2. }
             1:{      
                 mlApplyMeta P2.
                 mlAssumption.
               }
             epose proof membership_symbol_ceil_aux_0_functional Γ 
-             (〚 Nat 〛) (Succ ⋅ patt_free_evar x) (Succ ⋅ patt_free_evar x) ltac:(wf_auto2)
+             (⟦ Nat ⟧) (Succ ⋅ patt_free_evar x) (Succ ⋅ patt_free_evar x) ltac:(wf_auto2)
               ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) .
             
             mlApplyMeta H0.
@@ -1067,15 +1045,15 @@ same chain of thoughts as 1st one for totality.
    
     mlIntro "H".
    
-    mlAssert ( "f" : ( patt_free_evar x ∈ml 〚 Nat 〛 )  ).
+    mlAssert ( "f" : ( patt_free_evar x ∈ml ⟦ Nat ⟧ )  ).
     1: wf_auto2.
     1: mlExact "H".
      
     mlApply "H1" in "H".
     mlClear "H1".
-    unfold patt_exists_of_sort.
+    unfold patt_sorted_exists.
     
-    pose proof membership_exists_subst Γ (patt_free_evar x ) (b0 ∈ml 〚 nest_ex Nat 〛 and (b0 and Zero +ml b0 =ml b0))
+    pose proof membership_exists_subst Γ (patt_free_evar x ) (b0 ∈ml ⟦ nest_ex Nat ⟧ and (b0 and Zero +ml b0 =ml b0))
      (AnyReasoning) ltac:(set_solver) ltac:(wf_auto2) ltac:(wf_auto2).
     mlApplyMeta H0 in "H".
     clear H0.

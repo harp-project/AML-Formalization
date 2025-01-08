@@ -80,8 +80,6 @@ Section axioms.
     | InversePairProjb
     .
 
-    Arguments patt_forall_of_sort {Σ self} sort phi%_ml_scope.
-
     Definition axiom (name : AxiomName) : Pattern :=
     match name with
     | AxProdSort =>

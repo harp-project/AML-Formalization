@@ -23,12 +23,12 @@ Section with_model.
     Lemma eval_forall_of_sort_predicate s ϕ ρ:
       let x := fresh_evar ϕ in
       M_predicate M (ϕ^{evar: 0 ↦ x}) ->
-      eval ρ (patt_forall_of_sort s ϕ) = ⊤
+      eval ρ (patt_sorted_forall s ϕ) = ⊤
       <-> (∀ m : Domain M, m ∈ Minterp_inhabitant s ρ ->
                            eval (update_evar_val x m ρ) (ϕ^{evar: 0 ↦ x}) = ⊤).
     Proof.
       intros x Hpred.
-      unfold patt_forall_of_sort.
+      unfold patt_sorted_forall.
       assert (Hsub: is_subformula_of_ind ϕ (patt_in b0 (patt_inhabitant_set (nest_ex s)) ---> ϕ)).
       { apply sub_imp_r. apply sub_eq. reflexivity.  }
       rewrite eval_forall_predicate.
@@ -138,12 +138,12 @@ Section with_model.
     Lemma eval_exists_of_sort_predicate s ϕ ρ:
       let x := fresh_evar ϕ in
       M_predicate M (ϕ^{evar: 0 ↦ x}) ->
-      eval ρ (patt_exists_of_sort s ϕ) = ⊤
+      eval ρ (patt_sorted_exists s ϕ) = ⊤
       <-> (∃ m : Domain M, m ∈ Minterp_inhabitant s ρ /\
                            eval (update_evar_val x m ρ) (ϕ^{evar: 0 ↦ x}) = ⊤).
     Proof.
       intros x Hpred.
-      unfold patt_exists_of_sort.
+      unfold patt_sorted_exists.
       assert (Hsub: is_subformula_of_ind ϕ (patt_in b0 (patt_inhabitant_set (nest_ex s)) and ϕ)).
       { unfold patt_and. unfold patt_or.  apply sub_imp_l. apply sub_imp_r. apply sub_imp_l. apply sub_eq. reflexivity. }
       rewrite eval_exists_predicate_full.
@@ -250,10 +250,10 @@ Section with_model.
 
     Lemma M_predicate_exists_of_sort s ϕ :
       let x := fresh_evar ϕ in
-      M_predicate M (ϕ^{evar: 0 ↦ x}) -> M_predicate M (patt_exists_of_sort s ϕ).
+      M_predicate M (ϕ^{evar: 0 ↦ x}) -> M_predicate M (patt_sorted_exists s ϕ).
     Proof.
       intros x Hpred.
-      unfold patt_exists_of_sort.
+      unfold patt_sorted_exists.
       apply M_predicate_exists.
       unfold evar_open. mlUnsortedSimpl.
       rewrite {1}[bevar_subst _ _ _]/=.
@@ -273,10 +273,10 @@ Section with_model.
 
     Lemma M_predicate_forall_of_sort s ϕ :
       let x := fresh_evar ϕ in
-      M_predicate M (ϕ^{evar: 0 ↦ x}) -> M_predicate M (patt_forall_of_sort s ϕ).
+      M_predicate M (ϕ^{evar: 0 ↦ x}) -> M_predicate M (patt_sorted_forall s ϕ).
     Proof.
       intros x Hpred.
-      unfold patt_forall_of_sort.
+      unfold patt_sorted_forall.
       apply M_predicate_forall.
       unfold evar_open. mlSimpl.
       apply M_predicate_impl.
@@ -299,7 +299,7 @@ Section with_model.
       rewrite eval_forall_of_sort_predicate.
       1: { mlSimpl. eapply M_predicate_exists_of_sort. eauto. }
 
-      remember (fresh_evar (patt_exists_of_sort (nest_ex s₂) (patt_equal ((nest_ex (nest_ex f)) ⋅ b1) b0))) as x'.
+      remember (fresh_evar (patt_sorted_exists (nest_ex s₂) (patt_equal ((nest_ex (nest_ex f)) ⋅ b1) b0))) as x'.
       rewrite [nest_ex s₂]/nest_ex.
       mlSimpl.
       unfold nest_ex. repeat rewrite nest_ex_same.
@@ -393,7 +393,7 @@ Section with_model.
       1: { mlSimpl. eauto. }
 
       unfold evar_open. mlSimpl.
-      remember (fresh_evar (patt_exists_of_sort (nest_ex s₂) (patt_subseteq ((nest_ex (nest_ex f)) ⋅ b1) b0))) as x'.
+      remember (fresh_evar (patt_sorted_exists (nest_ex s₂) (patt_subseteq ((nest_ex (nest_ex f)) ⋅ b1) b0))) as x'.
       rewrite [nest_ex s₂]/nest_ex.
       mlSimpl.
       rewrite nest_ex_same.
@@ -517,7 +517,7 @@ Section with_model.
       }
       remember
       (fresh_evar
-             (patt_forall_of_sort (nest_ex s)
+             (patt_sorted_forall (nest_ex s)
                 (! patt_equal (nest_ex (nest_ex f) ⋅ b1) ⊥ --->
                  patt_equal (nest_ex (nest_ex f) ⋅ b1) (nest_ex (nest_ex f) ⋅ b0) --->
                  patt_equal b1 b0)))
@@ -638,7 +638,7 @@ Section with_model.
       }
       remember
       (fresh_evar
-               (patt_forall_of_sort (nest_ex s)
+               (patt_sorted_forall (nest_ex s)
                   (patt_equal (nest_ex (nest_ex f) ⋅ b1) (nest_ex (nest_ex f) ⋅ b0) ---> patt_equal b1 b0)))
       as x₁.
       apply all_iff_morphism. intros m₁.
@@ -724,7 +724,7 @@ Section with_model.
       (ρ : Valuation)
       (indec : forall (m : Domain M), Decision (m ∈ Minterp_inhabitant s ρ))
       (ϕ : Pattern):
-    eval ρ (patt_exists_of_sort s ϕ)
+    eval ρ (patt_sorted_exists s ϕ)
     = stdpp_ext.propset_fa_union (λ (m : Domain M),
       match (indec m) with
       | left _ => eval (update_evar_val (fresh_evar ϕ) m ρ) (ϕ^{evar: 0 ↦ (fresh_evar ϕ)})
@@ -732,7 +732,7 @@ Section with_model.
       end
     ).
     Proof.
-      unfold patt_exists_of_sort.
+      unfold patt_sorted_exists.
       rewrite eval_ex_simpl. simpl.
       f_equal. apply functional_extensionality.
       intros m.
@@ -804,7 +804,7 @@ Section with_model.
       (ρ : Valuation)
       (indec : forall (m : Domain M), Decision (m ∈ Minterp_inhabitant s ρ))
       (ϕ : Pattern):
-    eval ρ (patt_forall_of_sort s ϕ)
+    eval ρ (patt_sorted_forall s ϕ)
     = stdpp_ext.propset_fa_intersection (λ (m : Domain M),
       match (indec m) with
       | left _ => eval (update_evar_val (fresh_evar ϕ) m ρ) (ϕ^{evar: 0 ↦ (fresh_evar ϕ)})
@@ -812,7 +812,7 @@ Section with_model.
       end
     ).
     Proof.
-      unfold patt_forall_of_sort.
+      unfold patt_sorted_forall.
       rewrite eval_all_simpl.
       simpl.
       f_equal. apply functional_extensionality.

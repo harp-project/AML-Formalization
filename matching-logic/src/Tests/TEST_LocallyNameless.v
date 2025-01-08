@@ -105,6 +105,7 @@ Module test_2.
     {|
       enum := [sym_c; sym_zero; sym_succ; sym_SortNat;
         sym_import_sorts Sorts_Syntax.sym_inh;
+        sym_import_sorts Sorts_Syntax.sym_sorts;
         sym_import_definedness Definedness_Syntax.def_sym] ;
     |}.
     Next Obligation.

@@ -100,17 +100,17 @@ Section sorts.
     intros. wf_auto2.
   Qed.
 
-  Definition patt_exists_of_sort (sort phi : Pattern) : Pattern :=
+  Definition patt_sorted_exists (sort phi : Pattern) : Pattern :=
     ex , ((b0 ∈ml 〚nest_ex sort〛) and phi).
   Local Notation "'ex' s ,  phi" := 
-    (patt_exists_of_sort s phi) (at level 70) : ml_scope.
+    (patt_sorted_exists s phi) (at level 70) : ml_scope.
 
   #[global]
-  Program Instance sorted_exists_binder : ESortedBinder patt_exists_of_sort := {}.
+  Program Instance sorted_exists_binder : ESortedBinder patt_sorted_exists := {}.
   Next Obligation.
     intros.
     repeat rewrite pm_correctness.
-    unfold patt_exists_of_sort.
+    unfold patt_sorted_exists.
     repeat rewrite <- pm_correctness.
     mlSimpl.
     rewrite pm_correctness. cbn.
@@ -124,18 +124,18 @@ Section sorts.
     reflexivity.
   Defined.
 
-  Definition patt_forall_of_sort (sort phi : Pattern) : Pattern :=
+  Definition patt_sorted_forall (sort phi : Pattern) : Pattern :=
     all , ((b0 ∈ml 〚nest_ex sort〛) ---> phi).
 
   Local Notation "'all' s ,  phi" := 
-    (patt_forall_of_sort s phi) (at level 70) : ml_scope.
+    (patt_sorted_forall s phi) (at level 70) : ml_scope.
 
   #[global]
-  Program Instance sorted_forall_binder : ESortedBinder patt_forall_of_sort := {}.
+  Program Instance sorted_forall_binder : ESortedBinder patt_sorted_forall := {}.
   Next Obligation.
     intros.
     repeat rewrite pm_correctness.
-    unfold patt_exists_of_sort.
+    unfold patt_sorted_exists.
     repeat rewrite <- pm_correctness.
     mlSimpl.
     rewrite pm_correctness. cbn.
@@ -149,9 +149,43 @@ Section sorts.
     reflexivity.
   Defined.
 
-  (* TODO patt_forall_of_sort and patt_exists_of_sort are duals - a lemma *)
+  Definition patt_forall_sort (φ : Pattern) : Pattern :=
+    all Sorts , φ.
+  Local Notation "'allₛ' ,  phi" := 
+    (patt_forall_sort phi) (at level 70) : ml_scope.
+  Definition patt_exists_sort (φ : Pattern) : Pattern :=
+    ex Sorts , φ.
+  Local Notation "'exₛ' ,  phi" := 
+    (patt_exists_sort phi) (at level 70) : ml_scope.
 
-  (* TODO a lemma about patt_forall_of_sort *)
+  #[global]
+  Program Instance forall_sort_ebinder : EBinder patt_forall_sort := {}.
+  Next Obligation.
+    intros A f m φ a.
+    rewrite pm_correctness. unfold patt_forall_sort.
+    unfold patt_sorted_forall.
+    simpl.
+    unfold patt_forall, patt_not, patt_in, patt_and.
+    do 5 f_equal.
+    2: by rewrite pm_correctness.
+    rewrite pm_ezero_increase. reflexivity.
+  Defined.
+
+  #[global]
+  Program Instance exists_sort_ebinder : EBinder patt_exists_sort := {}.
+  Next Obligation.
+    intros A f m φ a.
+    rewrite pm_correctness. unfold patt_exists_sort.
+    unfold patt_sorted_exists.
+    simpl.
+    unfold patt_in, patt_and, patt_or, patt_not.
+    do 5 f_equal.
+    2: by rewrite pm_correctness.
+    rewrite pm_ezero_increase. reflexivity.
+  Defined.
+
+
+  (* TODO patt_sorted_forall and patt_sorted_exists are duals - a lemma *)
 
   Definition patt_total_function(phi from to : Pattern) : Pattern :=
     all from , (ex (nest_ex to) , ((nest_ex (nest_ex phi) ⋅ b1) =ml b0)).
@@ -180,9 +214,9 @@ Section sorts.
 
   Definition patt_total_binary_function(phi from1 from2 to : Pattern)
   : Pattern :=
-    patt_forall_of_sort from1 (
-      patt_forall_of_sort (nest_ex from2) (
-        patt_exists_of_sort (nest_ex (nest_ex to)) (
+    patt_sorted_forall from1 (
+      patt_sorted_forall (nest_ex from2) (
+        patt_sorted_exists (nest_ex (nest_ex to)) (
           (((nest_ex (nest_ex (nest_ex phi)) ⋅ b2) ⋅ b1) =ml b0)
         )
       )
@@ -193,8 +227,12 @@ End sorts.
 
 Module Notations.
   Notation "⟦ phi ⟧" := (patt_inhabitant_set phi) (at level 0) : ml_scope.
-  Notation "'all' s ,  phi" := (patt_forall_of_sort s phi) (at level 80) : ml_scope.
-  Notation "'ex' s ,  phi" := (patt_exists_of_sort s phi) (at level 80) : ml_scope.
+  Notation "'all' s ,  phi" := (patt_sorted_forall s phi) (at level 80) : ml_scope.
+  Notation "'ex' s ,  phi" := (patt_sorted_exists s phi) (at level 80) : ml_scope.
+  Notation "'allₛ' ,  phi" := 
+    (patt_forall_sort phi) (at level 70) : ml_scope.
+  Notation "'exₛ' ,  phi" := 
+    (patt_exists_sort phi) (at level 70) : ml_scope.
   Notation "phi :ml s1 × s2 -> s3" :=  (patt_total_binary_function phi s1 s2 s3) (at level 70) : ml_scope.
 End Notations.
 
@@ -267,18 +305,18 @@ Section simplTest.
   Qed.
 
   Goal forall s ψ x X, well_formed_closed ψ ->
-  (patt_forall_of_sort s ψ)^[[evar: x ↦ ψ]] = patt_bott ->
-  (patt_forall_of_sort s ψ)^{evar: 0 ↦ x} = patt_bott ->
-  (patt_forall_of_sort s ψ)^{{evar: x ↦ 0}} = patt_bott ->
-  (patt_forall_of_sort s ψ)^[[svar: X ↦ ψ]] = patt_bott ->
-  (patt_forall_of_sort s ψ)^{svar: 0 ↦ X} = patt_bott ->
-  (patt_forall_of_sort s ψ)^{{svar: X ↦ 0}} = patt_bott ->
-  (patt_forall_of_sort s ψ)^[[svar: X ↦ ψ]] = patt_bott /\
-  (patt_forall_of_sort s ψ)^{svar: 0 ↦ X} = patt_bott /\
-  (patt_forall_of_sort s ψ)^{{svar: X ↦ 0}} = patt_bott /\
-  (patt_forall_of_sort s ψ)^[[evar: x ↦ ψ]] = patt_bott /\ 
-  (patt_forall_of_sort s ψ)^{evar: 0 ↦ x} = patt_bott /\
-  (patt_forall_of_sort s ψ)^{{evar: x ↦ 0}} = patt_bott
+  (patt_sorted_forall s ψ)^[[evar: x ↦ ψ]] = patt_bott ->
+  (patt_sorted_forall s ψ)^{evar: 0 ↦ x} = patt_bott ->
+  (patt_sorted_forall s ψ)^{{evar: x ↦ 0}} = patt_bott ->
+  (patt_sorted_forall s ψ)^[[svar: X ↦ ψ]] = patt_bott ->
+  (patt_sorted_forall s ψ)^{svar: 0 ↦ X} = patt_bott ->
+  (patt_sorted_forall s ψ)^{{svar: X ↦ 0}} = patt_bott ->
+  (patt_sorted_forall s ψ)^[[svar: X ↦ ψ]] = patt_bott /\
+  (patt_sorted_forall s ψ)^{svar: 0 ↦ X} = patt_bott /\
+  (patt_sorted_forall s ψ)^{{svar: X ↦ 0}} = patt_bott /\
+  (patt_sorted_forall s ψ)^[[evar: x ↦ ψ]] = patt_bott /\ 
+  (patt_sorted_forall s ψ)^{evar: 0 ↦ x} = patt_bott /\
+  (patt_sorted_forall s ψ)^{{evar: x ↦ 0}} = patt_bott
   .
   Proof.
     intros.
@@ -293,7 +331,7 @@ Section simplTest.
   Qed.
 
   Goal forall s ψ x, (* well_formed_closed ψ -> *)
-  (patt_forall_of_sort (patt_imp s s) ψ)^[[evar: x ↦ ψ]] = patt_bott
+  (patt_sorted_forall (patt_imp s s) ψ)^[[evar: x ↦ ψ]] = patt_bott
   .
   Proof.
     intros.

@@ -424,7 +424,7 @@ Section Bool.
         erewrite eval_exists_of_sort.
         2: assumption. Unshelve. 2: apply indec_bool.
         remember (fresh_evar _) as X.
-        remember (fresh_evar (patt_exists_of_sort mlBool (mlBAnd b1 (patt_free_evar X) =ml b0))) as Y.
+        remember (fresh_evar (patt_sorted_exists mlBool (mlBAnd b1 (patt_free_evar X) =ml b0))) as Y.
         unfold Minterp_inhabitant in *.
         clear H0 H. eval_simpl_in e. eval_simpl_in e0.
         unfold app_ext, inhabitant in *.
@@ -444,7 +444,7 @@ Section Bool.
         assert (X <> Y /\ Y <> Z /\ X <> Z) as [HXY [HYZ HXZ] ]. {
           split_and!.
           * subst Y. clear.
-            unfold fresh_evar. pose proof (X_eq_evar_fresh_impl_X_notin_S X (free_evars (patt_exists_of_sort mlBool ((mlBAnd b1 (patt_free_evar X)) =ml b0)))).
+            unfold fresh_evar. pose proof (X_eq_evar_fresh_impl_X_notin_S X (free_evars (patt_sorted_exists mlBool ((mlBAnd b1 (patt_free_evar X)) =ml b0)))).
             set_solver.
           * subst Z. clear.
             unfold fresh_evar. pose proof (X_eq_evar_fresh_impl_X_notin_S Y (free_evars ((mlBAnd (patt_free_evar Y) (patt_free_evar X)) =ml b0))).
@@ -1227,7 +1227,7 @@ Section Nat.
         mlSimpl. remember (fresh_evar _) as y.
         assert (x <> y). {
           subst y. clear.
-          pose proof (X_eq_evar_fresh_impl_X_notin_S x (free_evars (patt_exists_of_sort Nat (mlAddNat b1 (patt_free_evar x) =ml b0)))).
+          pose proof (X_eq_evar_fresh_impl_X_notin_S x (free_evars (patt_sorted_exists Nat (mlAddNat b1 (patt_free_evar x) =ml b0)))).
           set_solver.
         }
         clear Heqy.

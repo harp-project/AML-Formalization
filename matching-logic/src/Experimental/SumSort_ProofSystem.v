@@ -196,7 +196,7 @@ Section sumsort.
   Admitted.
 
   Theorem sum_inj : forall Γ , theory s1 s2 wfs1 wfs2 ⊆ Γ ->
-                              Γ ⊢ 〚 mlSum (s1, s2) 〛 =ml  ( (〚s1〛).mlInjectL( s1 , s2 )  or  (〚s2〛).mlInjectR( s1 , s2 ) ) .
+                              Γ ⊢ ⟦ mlSum (s1, s2) ⟧ =ml  ( (⟦s1⟧).mlInjectL( s1 , s2 )  or  (⟦s2⟧).mlInjectR( s1 , s2 ) ) .
   Proof.
     intros.
     toMLGoal.
@@ -209,17 +209,17 @@ Section sumsort.
     simpl in H2. mlAdd H2 as "INJECT Right".
     clear H0;clear H1;clear H2.
 
-    mlAssert ( "P" : (  ( (〚s1〛).mlInjectL( s1 , s2 )  or  (〚s2〛).mlInjectR( s1 , s2 ) )  ⊆ml  〚 mlSum (s1, s2) 〛 ) ) .
+    mlAssert ( "P" : (  ( (⟦s1⟧).mlInjectL( s1 , s2 )  or  (⟦s2⟧).mlInjectR( s1 , s2 ) )  ⊆ml  ⟦ mlSum (s1, s2) ⟧ ) ) .
     1:{ clear H;wf_auto2. }
     1:{ 
-        epose proof subset_disj Γ (〚 mlSum (s1, s2) 〛)   ( (〚 s1 〛 ).mlInjectL( s1 , s2 ) ) ( (〚 s2 〛 ).mlInjectR( s1 , s2 )) 
+        epose proof subset_disj Γ (⟦ mlSum (s1, s2) ⟧)   ( (⟦ s1 ⟧ ).mlInjectL( s1 , s2 ) ) ( (⟦ s2 ⟧ ).mlInjectR( s1 , s2 )) 
          AnyReasoning ltac:(set_solver) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2).
          
         mlRewrite H0 at 1.
         mlSplitAnd.
-        (* (〚 s1 〛 ).mlInjectL ⊆ml 〚 mlSum (s1, s2) 〛 *)
+        (* (⟦ s1 ⟧ ).mlInjectL ⊆ml ⟦ mlSum (s1, s2) ⟧ *)
         * clear H0.
-          epose proof subseteq_iff_membership Γ ((〚 s1 〛 ).mlInjectL( s1 , s2 )) ( 〚 mlSum (s1, s2) 〛) 
+          epose proof subseteq_iff_membership Γ ((⟦ s1 ⟧ ).mlInjectL( s1 , s2 )) ( ⟦ mlSum (s1, s2) ⟧) 
             ltac:(set_solver) ltac:(wf_auto2) ltac:(wf_auto2).
 
           mlRewrite H0 at 1.
@@ -232,13 +232,13 @@ Section sumsort.
 
           mlAssert ("P" : ( ex s1, (b0).mlInjectL( s1 , s2 ) =ml patt_free_evar x ) ).
           1:{ clear H; wf_auto2. }
-          1:{ unfold patt_exists_of_sort.
+          1:{ unfold patt_sorted_exists.
               unfold nest_ex.
               rewrite nest_ex_aux_wfcex.
               1:wf_auto2.
               rewrite nest_ex_aux_wfcex.
               1:{ clear H; wf_auto2. }
-              epose proof membership_axiom_v2 Γ  (patt_sym (sym_inj (ml_injectL s1 s2))) (〚 s1 〛) (x)
+              epose proof membership_axiom_v2 Γ  (patt_sym (sym_inj (ml_injectL s1 s2))) (⟦ s1 ⟧) (x)
                 ltac:(set_solver) ltac:(wf_auto2) ltac:(wf_auto2).
 
               mlAdd H1. mlClear "INJECT Right";mlClear "coproduct".
@@ -265,7 +265,7 @@ Section sumsort.
               rewrite evar_open_not_occur.
               1:{clear H;wf_auto2. }
 
-              mlAssert ( "3" : (patt_free_evar y ∈ml 〚 s1 〛)).
+              mlAssert ( "3" : (patt_free_evar y ∈ml ⟦ s1 ⟧)).
               1:{ clear H. wf_auto2. }
               1:mlAssumption.
               mlApply "INJECT Left" in "0".
@@ -326,9 +326,9 @@ Section sumsort.
           mlRewriteBy "4" at 1.
           mlAssumption.
 
-        (* (〚 s2 〛 ).mlInjectR ⊆ml 〚 mlSum (s1, s2) 〛 *) 
+        (* (⟦ s2 ⟧ ).mlInjectR ⊆ml ⟦ mlSum (s1, s2) ⟧ *) 
         * clear H0.
-          epose proof subseteq_iff_membership Γ ((〚 s2 〛 ).mlInjectR( s1 , s2 )) (〚 mlSum (s1, s2) 〛) 
+          epose proof subseteq_iff_membership Γ ((⟦ s2 ⟧ ).mlInjectR( s1 , s2 )) (⟦ mlSum (s1, s2) ⟧) 
            ltac:(set_solver) ltac:(wf_auto2) ltac:(wf_auto2).
           mlRewrite H0 at 1.
 
@@ -340,14 +340,14 @@ Section sumsort.
           
           mlAssert ("P" : ( ex s2, (b0).mlInjectR( s1 , s2 ) =ml patt_free_evar x ) ).
           1:{ clear H; wf_auto2. }
-          1:{ unfold patt_exists_of_sort.
+          1:{ unfold patt_sorted_exists.
               unfold nest_ex.
               rewrite nest_ex_aux_wfcex.
               1:wf_auto2.
               rewrite nest_ex_aux_wfcex.
               1:clear H;wf_auto2.
 
-              epose proof membership_axiom_v2 Γ  (patt_sym (sym_inj (ml_injectR s1 s2))) (〚 s2 〛) (x)
+              epose proof membership_axiom_v2 Γ  (patt_sym (sym_inj (ml_injectR s1 s2))) (⟦ s2 ⟧) (x)
                ltac:(set_solver) ltac:(wf_auto2) ltac:(wf_auto2).
               mlAdd H1.
               mlRevert "0".
@@ -372,7 +372,7 @@ Section sumsort.
               rewrite bevar_subst_not_occur.
               1:{clear H;wf_auto2. }
 
-              mlAssert( "3" : (patt_free_evar y ∈ml 〚 s2 〛  )).
+              mlAssert( "3" : (patt_free_evar y ∈ml ⟦ s2 ⟧  )).
               1:{ clear H; wf_auto2. }
               mlAssumption.
               mlClear "1";mlClear "INJECT Left".
@@ -441,7 +441,7 @@ Section sumsort.
       }
 
     mlConj  "coproduct" "P" as "f".
-    epose proof subset_iff_eq Γ (〚 mlSum (s1, s2) 〛) ( (〚 s1 〛 ).mlInjectL( s1 , s2 ) or (〚 s2 〛 ).mlInjectR( s1 , s2 ) ) 
+    epose proof subset_iff_eq Γ (⟦ mlSum (s1, s2) ⟧) ( (⟦ s1 ⟧ ).mlInjectL( s1 , s2 ) or (⟦ s2 ⟧ ).mlInjectR( s1 , s2 ) ) 
      AnyReasoning _ _ _ .
     
     apply pf_iff_proj1 in H0.
