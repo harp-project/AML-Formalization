@@ -39,7 +39,7 @@ Section nat.
   Proof.
     intro HΓ.
     apply useBasicReasoning.
-    apply BasicProofSystemLemmas.hypothesis.
+    apply hypothesis.
     { destruct ax; wf_auto2. }
     {
       apply elem_of_weaken with (X := theory_of_NamedAxioms named_axioms).
@@ -81,7 +81,7 @@ Section nat.
       { wf_auto2. }
       { wf_auto2. }
       apply useBasicReasoning.
-      apply BasicProofSystemLemmas.hypothesis.
+      apply hypothesis.
       { wf_auto2. }
       { clear. set_solver. }
     }
@@ -230,7 +230,7 @@ Section nat.
         wf_auto2.
       }
 
-      gapply BasicProofSystemLemmas.Ex_gen.
+      gapply Ex_gen.
       { apply pile_any. }
       { apply pile_any. }
       {
@@ -265,7 +265,7 @@ Section nat.
         mlApply "M". mlClear "M".
         mlSplitAnd. mlSplitAnd.
         + mlClear "ys". mlClear "H0".
-          mlApplyMeta BasicProofSystemLemmas.Ex_quan.
+          mlApplyMeta Ex_quan.
           unfold instantiate. mlSimpl. simpl.
           fromMLGoal.
           aapply patt_equal_refl.
@@ -347,7 +347,7 @@ Section nat.
     { wf_auto2. }
     { apply pile_any. }
 
-    apply BasicProofSystemLemmas.Knaster_tarski.
+    apply Knaster_tarski.
     { apply pile_any. }
     { wf_auto2. }
     unfold instantiate. mlSimpl. simpl.
@@ -423,7 +423,7 @@ Section nat.
       mlFreshEvar as y.
       rewrite <- evar_quantify_evar_open with (n := 0) (x := y) (phi := b0 ∈ml patt_free_svar X and patt_free_evar x ∈ml Succ ⋅ b0). 2: fm_solve. 2: wf_auto2.
 
-      gapply BasicProofSystemLemmas.Ex_gen.
+      gapply Ex_gen.
       { apply pile_any. }
       { apply pile_any. }
       { fm_solve. }
@@ -454,7 +454,7 @@ Section nat.
         mlApply "M". mlClear "M".
         mlSplitAnd. mlSplitAnd.
         + mlClear "ys". mlClear "H0".
-          mlApplyMeta BasicProofSystemLemmas.Ex_quan.
+          mlApplyMeta Ex_quan.
           unfold instantiate. mlSimpl. simpl.
           fromMLGoal.
           aapply patt_equal_refl.
@@ -535,7 +535,7 @@ Section nat.
 
     (*   Ψ ≡ ∃z:Nat.z ∧ ϕ(z)  *)
 
-    apply BasicProofSystemLemmas.Svar_subst with (X:= X) (ψ:= ex Nat, b0 and Zero +ml b0 =ml b0 )  in H0.
+    apply Svar_subst with (X:= X) (ψ:= ex Nat, b0 and Zero +ml b0 =ml b0 )  in H0.
     2:try_solve_pile.
     2:wf_auto2.
 
@@ -680,7 +680,7 @@ Section nat.
                  (mu , Zero or Succ ⋅ B0) (Zero) (AnyReasoning) ltac:(set_solver) ltac:(wf_auto2) 
                   ltac:(wf_auto2) ltac:(wf_auto2) _ .
                     
-                pose proof BasicProofSystemLemmas.Pre_fixp Γ (Zero or Succ ⋅ B0) ltac:(wf_auto2).
+                pose proof Pre_fixp Γ (Zero or Succ ⋅ B0) ltac:(wf_auto2).
                     
                 use AnyReasoning in H3.
                 specialize (H2 H3).
@@ -755,7 +755,7 @@ Section nat.
                     (mu , Zero or Succ ⋅ B0) (Zero) (AnyReasoning) ltac:(set_solver) ltac:(wf_auto2) 
                     ltac:(wf_auto2) ltac:(wf_auto2) _ .
                     
-                   pose proof BasicProofSystemLemmas.Pre_fixp Γ (Zero or Succ ⋅ B0) ltac:(wf_auto2).
+                   pose proof Pre_fixp Γ (Zero or Succ ⋅ B0) ltac:(wf_auto2).
                     
                    use AnyReasoning in H5.
                    specialize (H4 H5).
@@ -974,7 +974,7 @@ same chain of thoughts as 1st one for totality.
                     (mu , Zero or Succ ⋅ B0) (Zero) (AnyReasoning) ltac:(set_solver) ltac:(wf_auto2) 
                     ltac:(wf_auto2) ltac:(wf_auto2) _ .
                     
-                   pose proof BasicProofSystemLemmas.Pre_fixp Γ (Zero or Succ ⋅ B0) ltac:(wf_auto2).
+                   pose proof Pre_fixp Γ (Zero or Succ ⋅ B0) ltac:(wf_auto2).
                     
                    use AnyReasoning in H2.
                    specialize (H0 H2).

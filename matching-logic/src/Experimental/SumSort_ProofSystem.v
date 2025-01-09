@@ -25,7 +25,7 @@ Section sumsort.
   Proof.
     intro HΓ.
     apply useBasicReasoning.
-    apply BasicProofSystemLemmas.hypothesis.
+    apply hypothesis.
     { clear HΓ. destruct ax; wf_auto2. }
     {
       apply elem_of_weaken with (X := theory_of_NamedAxioms (named_axioms _ _ wfs1 wfs2 ) ).

@@ -20,35 +20,35 @@ Section ml_proof_system.
     Pattern -> Set :=
 
   (* Hypothesis *)
-  | hypothesis (axiom : Pattern) :
+  | ML_hypothesis (axiom : Pattern) :
       well_formed axiom ->
       (axiom ∈ theory) -> theory ⊢H axiom
 
   (* FOL reasoning *)
   (* Propositional tautology *)
-  | P1 (phi psi : Pattern) :
+  | ML_P1 (phi psi : Pattern) :
       well_formed phi -> well_formed psi ->
       theory ⊢H (phi ---> (psi ---> phi))
-  | P2 (phi psi xi : Pattern) :
+  | ML_P2 (phi psi xi : Pattern) :
       well_formed phi -> well_formed psi -> well_formed xi ->
       theory ⊢H ((phi ---> (psi ---> xi)) ---> ((phi ---> psi) ---> (phi ---> xi)))
-  | P3 (phi : Pattern) :
+  | ML_P3 (phi : Pattern) :
       well_formed phi ->
       theory ⊢H (((phi ---> ⊥) ---> ⊥) ---> phi)
 
   (* Modus ponens *)
-  | Modus_ponens (phi1 phi2 : Pattern) :
+  | ML_Modus_ponens (phi1 phi2 : Pattern) :
       theory ⊢H phi1 ->
       theory ⊢H (phi1 ---> phi2) ->
       theory ⊢H phi2
 
   (* Existential quantifier *)
-  | Ex_quan (phi : Pattern) (y : evar) :
+  | ML_Ex_quan (phi : Pattern) (y : evar) :
       well_formed (patt_exists phi) ->
       theory ⊢H (instantiate (patt_exists phi) (patt_free_evar y) ---> (patt_exists phi))
 
   (* Existential generalization *)
-  | Ex_gen (phi1 phi2 : Pattern) (x : evar) :
+  | ML_Ex_gen (phi1 phi2 : Pattern) (x : evar) :
       well_formed phi1 -> well_formed phi2 ->
       theory ⊢H (phi1 ---> phi2) ->
       x ∉ (free_evars phi2) ->
@@ -56,66 +56,66 @@ Section ml_proof_system.
 
   (* Frame reasoning *)
   (* Propagation bottom *)
-  | Prop_bott_left (phi : Pattern) :
+  | ML_Prop_bott_left (phi : Pattern) :
       well_formed phi ->
       theory ⊢H (⊥ ⋅ phi ---> ⊥)
 
-  | Prop_bott_right (phi : Pattern) :
+  | ML_Prop_bott_right (phi : Pattern) :
       well_formed phi ->
       theory ⊢H (phi ⋅ ⊥ ---> ⊥)
 
   (* Propagation disjunction *)
-  | Prop_disj_left (phi1 phi2 psi : Pattern) :
+  | ML_Prop_disj_left (phi1 phi2 psi : Pattern) :
       well_formed phi1 -> well_formed phi2 -> well_formed psi ->
       theory ⊢H (((phi1 or phi2) ⋅ psi) ---> ((phi1 ⋅ psi) or (phi2 ⋅ psi)))
 
-  | Prop_disj_right (phi1 phi2 psi : Pattern) :
+  | ML_Prop_disj_right (phi1 phi2 psi : Pattern) :
       well_formed phi1 -> well_formed phi2 -> well_formed psi ->
       theory ⊢H ((psi ⋅ (phi1 or phi2)) ---> ((psi ⋅ phi1) or (psi ⋅ phi2)))
 
   (* Propagation exist *)
-  | Prop_ex_left (phi psi : Pattern) :
+  | ML_Prop_ex_left (phi psi : Pattern) :
       well_formed (ex , phi) -> well_formed psi ->
       theory ⊢H (((ex , phi) ⋅ psi) ---> (ex , phi ⋅ psi))
 
-  | Prop_ex_right (phi psi : Pattern) :
+  | ML_Prop_ex_right (phi psi : Pattern) :
       well_formed (ex , phi) -> well_formed psi ->
       theory ⊢H ((psi ⋅ (ex , phi)) ---> (ex , psi ⋅ phi))
 
   (* Framing *)
-  | Framing_left (phi1 phi2 psi : Pattern) :
+  | ML_Framing_left (phi1 phi2 psi : Pattern) :
       well_formed psi ->
       theory ⊢H (phi1 ---> phi2) ->
       theory ⊢H ((phi1 ⋅ psi) ---> (phi2 ⋅ psi))
 
-  | Framing_right (phi1 phi2 psi : Pattern) :
+  | ML_Framing_right (phi1 phi2 psi : Pattern) :
       well_formed psi ->
       theory ⊢H (phi1 ---> phi2) ->
       theory ⊢H ((psi ⋅ phi1) ---> (psi ⋅ phi2))
 
   (* Fixpoint reasoning *)
   (* Set Variable Substitution *)
-  | Svar_subst (phi psi : Pattern) (X : svar) :
+  | ML_Svar_subst (phi psi : Pattern) (X : svar) :
       well_formed phi -> well_formed psi ->
       theory ⊢H phi -> theory ⊢H (phi^[[svar: X ↦ psi]])
 
   (* Pre-Fixpoint *)
-  | Pre_fixp (phi : Pattern) :
+  | ML_Pre_fixp (phi : Pattern) :
       well_formed (patt_mu phi) ->
       theory ⊢H (instantiate (patt_mu phi) (patt_mu phi) ---> (patt_mu phi))
 
   (* Knaster-Tarski *)
-  | Knaster_tarski (phi psi : Pattern) :
+  | ML_Knaster_tarski (phi psi : Pattern) :
       well_formed (patt_mu phi) ->
       theory ⊢H ((instantiate (patt_mu phi) psi) ---> psi) ->
       theory ⊢H ((@patt_mu Σ phi) ---> psi)
 
   (* Technical rules *)
   (* Existence *)
-  | Existence : theory ⊢H (ex , patt_bound_evar 0)
+  | ML_Existence : theory ⊢H (ex , patt_bound_evar 0)
 
   (* Singleton *)
-  | Singleton_ctx (C1 C2 : Application_context) (phi : Pattern) (x : evar) :
+  | ML_Singleton_ctx (C1 C2 : Application_context) (phi : Pattern) (x : evar) :
       well_formed phi ->
       theory ⊢H (! ((subst_ctx C1 (patt_free_evar x and phi)) and
                    (subst_ctx C2 (patt_free_evar x and (! phi)))))
@@ -137,19 +137,19 @@ Section ml_proof_system.
   Lemma cast_proof {Γ} {ϕ} {ψ} (e : ψ = ϕ) : ML_proof_system Γ ϕ -> ML_proof_system Γ ψ.
   Proof. intros H. rewrite <- e in H. exact H. Defined.
 
-  Theorem extend_theory (Γ Γ' : Theory) φ :
+  Theorem Private_extend_theory (Γ Γ' : Theory) φ :
     Γ ⊆ Γ' ->
     Γ ⊢H φ ->
     Γ' ⊢H φ.
   Proof.
     intros H IH. revert Γ' H. induction IH; intros; try now constructor.
     * constructor. assumption. set_solver.
-    * eapply Modus_ponens; [apply IHIH1; assumption | apply IHIH2; assumption].
-    * apply Ex_gen; try assumption. now apply IHIH.
-    * apply Framing_left. assumption. now apply IHIH.
-    * apply Framing_right. assumption. now apply IHIH.
-    * apply Svar_subst; try assumption. now apply IHIH.
-    * apply Knaster_tarski; try assumption. now apply IHIH.
+    * eapply ML_Modus_ponens; [apply IHIH1; assumption | apply IHIH2; assumption].
+    * apply ML_Ex_gen; try assumption. now apply IHIH.
+    * apply ML_Framing_left. assumption. now apply IHIH.
+    * apply ML_Framing_right. assumption. now apply IHIH.
+    * apply ML_Svar_subst; try assumption. now apply IHIH.
+    * apply ML_Knaster_tarski; try assumption. now apply IHIH.
   Defined.
 
 End ml_proof_system.

@@ -381,7 +381,7 @@ Section FOL_helpers.
     intros wfϕ.
     unshelve (eexists).
     {
-      apply ProofSystem.Prop_bott_left. exact wfϕ.
+      apply ML_Prop_bott_left. exact wfϕ.
     }
     {
       abstract(solve_pim_simple).
@@ -395,7 +395,7 @@ Section FOL_helpers.
     intros wfϕ.
     unshelve (eexists).
     {
-      apply ProofSystem.Prop_bott_right. exact wfϕ.
+      apply ML_Prop_bott_right. exact wfϕ.
     }
     {
       abstract(solve_pim_simple).
@@ -545,7 +545,7 @@ Proof.
   intros wfϕ₁ wfϕ₂ wfψ.
   unshelve (eexists).
   {
-    apply Prop_disj_left; assumption.
+    apply ML_Prop_disj_left; assumption.
   }
   {
     abstract (solve_pim_simple).
@@ -561,7 +561,7 @@ Proof.
   intros wfϕ₁ wfϕ₂ wfψ.
   unshelve (eexists).
   {
-    apply Prop_disj_right; assumption.
+    apply ML_Prop_disj_right; assumption.
   }
   {
     abstract (solve_pim_simple).
@@ -656,7 +656,7 @@ Proof.
   intros Hwf.
   unshelve (eexists).
   {
-    apply ProofSystem.Singleton_ctx. apply Hwf.
+    apply ML_Singleton_ctx. apply Hwf.
   }
   {
     abstract (solve_pim_simple).
@@ -668,7 +668,7 @@ Lemma Existence {Σ : Signature} (Γ : Theory) :
 Proof.
   unshelve (eexists).
   {
-    apply ProofSystem.Existence.
+    apply ML_Existence.
   }
   {
     abstract (solve_pim_simple).
@@ -684,7 +684,7 @@ Proof.
   intros wfϕ wfψ.
   unshelve (eexists).
   {
-    apply ProofSystem.Prop_ex_left.
+    apply ML_Prop_ex_left.
     { exact wfϕ. }
     { exact wfψ. }
   }
@@ -700,7 +700,7 @@ Proof.
   intros wfϕ wfψ.
   unshelve (eexists).
   {
-    apply ProofSystem.Prop_ex_right.
+    apply ML_Prop_ex_right.
     { exact wfϕ. }
     { exact wfψ. }
   }

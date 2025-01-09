@@ -18,13 +18,13 @@ Require Import ExtrHaskellNatInt. *)
 Fixpoint proof_size {Σ : Signature} {φ : Pattern} {Γ}
    (pf : ML_proof_system Γ φ) : nat :=
 match pf with
- | Modus_ponens _ phi1 phi2 x x0 => 1 + proof_size x + proof_size x0
- | ProofSystem.Ex_gen _ phi1 phi2 x x0 x1 x2 x3 => 1 + proof_size x2
- | ProofSystem.Framing_left _ phi1 phi2 psi x x0 => 1 + proof_size x0
- | ProofSystem.Framing_right _ phi1 phi2 psi x x0 => 1 + proof_size x0
- | ProofSystem.Svar_subst _ phi psi X x x0 x1 => 1 + proof_size x1
- | ProofSystem.Knaster_tarski _ phi psi x x0 => 1 + proof_size x0
- | ProofSystem.Existence _ => 1
+ | ML_Modus_ponens _ phi1 phi2 x x0 => 1 + proof_size x + proof_size x0
+ | ML_Ex_gen _ phi1 phi2 x x0 x1 x2 x3 => 1 + proof_size x2
+ | ML_Framing_left _ phi1 phi2 psi x x0 => 1 + proof_size x0
+ | ML_Framing_right _ phi1 phi2 psi x x0 => 1 + proof_size x0
+ | ML_Svar_subst _ phi psi X x x0 x1 => 1 + proof_size x1
+ | ML_Knaster_tarski _ phi psi x x0 => 1 + proof_size x0
+ | ML_Existence _ => 1
  | _ => 1
 end.
 

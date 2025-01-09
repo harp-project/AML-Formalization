@@ -1,43 +1,14 @@
-From Coq Require Import ssreflect ssrfun ssrbool.
-
-From Ltac2 Require Import Ltac2.
-
-From Coq Require Import String Setoid.
-Require Import Coq.Program.Equality.
-Require Import Coq.Logic.Classical_Prop.
-From Coq.Logic Require Import FunctionalExtensionality Eqdep_dec.
-From Coq.Classes Require Import Morphisms_Prop.
-From Coq.Unicode Require Import Utf8.
-From Coq.micromega Require Import Lia.
-
-From MatchingLogic Require Import Logic ProofMode.MLPM.
-From MatchingLogic.Theories Require Import Definedness_Syntax Definedness_ProofSystem.
-From MatchingLogic.Utils Require Import stdpp_ext.
-
-Require Import MatchingLogic.wftactics.
-
-From stdpp Require Import base fin_sets sets propset proof_irrel option list.
-
-Import extralibrary.
+From MatchingLogic Require Export ProofMode.MLPM
+                                  FOEquality_ProofSystem
+                                  Sorts_ProofSystem.
+From MatchingLogic.Theories Require Export Nat_Syntax.
 
 Import MatchingLogic.Logic.Notations.
 Import MatchingLogic.Theories.Definedness_Syntax.Notations.
+Import MatchingLogic.Theories.Sorts_Syntax.Notations.
+Import MatchingLogic.Theories.Nat_Syntax.Notations.
 
 Set Default Proof Mode "Classic".
-
-From MatchingLogic Require Import
-  Theories.DeductionTheorem
-  Theories.Sorts_Syntax
-  FOEquality_ProofSystem
-  Sorts_ProofSystem
-  Nat_Syntax
-.
-
-Import MatchingLogic.Theories.Sorts_Syntax.Notations.
-
-Open Scope ml_scope.
-Open Scope string_scope.
-Open Scope list_scope.
 
 Section nat.
   Context
@@ -51,7 +22,7 @@ Section nat.
   Proof.
     intro HΓ.
     apply useBasicReasoning.
-    apply BasicProofSystemLemmas.hypothesis.
+    apply hypothesis.
     { destruct ax; wf_auto2. }
     {
       apply elem_of_weaken with (X := theory_of_NamedAxioms named_axioms).
@@ -93,7 +64,7 @@ Section nat.
       { wf_auto2. }
       { wf_auto2. }
       apply useBasicReasoning.
-      apply BasicProofSystemLemmas.hypothesis.
+      apply hypothesis.
       { wf_auto2. }
       { clear. set_solver. }
     }
@@ -223,7 +194,7 @@ Section nat.
         wf_auto2.
       }
 
-      gapply BasicProofSystemLemmas.Ex_gen.
+      gapply Ex_gen.
       { apply pile_any. }
       { apply pile_any. }
       {
@@ -258,7 +229,7 @@ Section nat.
         mlApply "M". mlClear "M".
         mlSplitAnd. mlSplitAnd.
         + mlClear "ys". mlClear "H0".
-          mlApplyMeta BasicProofSystemLemmas.Ex_quan.
+          mlApplyMeta Ex_quan.
           unfold instantiate. mlSimpl. simpl.
           fromMLGoal.
           aapply patt_equal_refl.

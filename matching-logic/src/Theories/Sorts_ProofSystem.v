@@ -57,7 +57,7 @@ Proof.
     wf_auto2.
   }
 
-  gapply BasicProofSystemLemmas.Ex_gen.
+  gapply Ex_gen.
   { apply pile_any. }
   { apply pile_any. }
   {
@@ -74,7 +74,7 @@ Proof.
   mlDestructAnd "H" as "H0" "H1".
   mlClear "H0".
 
-  mlApplyMeta BasicProofSystemLemmas.Ex_quan. simpl.
+  mlApplyMeta Ex_quan. simpl.
   mlExact "H1".
 Defined.
 

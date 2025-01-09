@@ -143,7 +143,7 @@ Proof.
   }
   assert (H2 : Γ ⊢i ((a ---> ((a ---> b) ---> b)) ---> ((a ---> (a ---> b)) ---> (a ---> b))) using BasicReasoning).
   {
-    apply BasicProofSystemLemmas.P2; wf_auto2.
+    apply P2; wf_auto2.
   }
   eapply MP. 2: apply H2. apply H1.
 Defined.

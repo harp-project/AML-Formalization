@@ -48,7 +48,23 @@ Section derived_operations.
   Definition kore_sym (s : Symbols) : Pattern := patt_sym (sym_inj s).
 
   Definition kore_bottom (s : Pattern) := patt_bott.
+  #[global]
+  Program Instance kore_bottom_Nullary s : Nullary (kore_bottom s).
+  Next Obligation.
+    intros. rewrite pm_correctness. simpl. reflexivity.
+  Defined.
+  Solve Obligations of kore_bottom_Nullary with wf_auto2.
+
   Definition kore_top (s : Pattern) := patt_inhabitant_set s.
+(*   #[global]
+  Program Instance kore_top_Nullary s : Nullary (kore_top s).
+  Next Obligation.
+    intros. rewrite pm_correctness. simpl.
+    mlSimpl. reflexivity.
+  Defined.
+  Next Obligation.
+    intros. rewrite pm_correctness. simpl. reflexivity.
+  Defined. *)
   Definition kore_valid (s : Pattern) (ph1 : Pattern) :=
     patt_equal ph1 (kore_top s).
   Definition kore_not (s : Pattern) (ph1 : Pattern) :=
@@ -244,26 +260,52 @@ Section KoreTheory.
     {syntax : Syntax}
   .
 
-  Inductive AxiomName : Set :=
+ (*  Inductive AxiomName : Set :=
   | InjId
   | SortNext
   | SortDv.
 
-
+  Print kore_dv. *)
   (* REMARK: all of these three axioms from Metamath seem to be too strong. Quantification is
      missing! *)
-  Definition axiom (name : AxiomName) : Pattern :=
+(*   Definition axiom (name : AxiomName) : Pattern :=
   match name with
   (* kore-inj-id $a |- ( \eq ( \kore-inj ph0 ph1 ph2 ) ph2 ) $. *)
   | InjId => allₛ, allₛ, all b1, kore_inj b2 b1 b0 =ml b0
   (* kore-next-sorting $a |- ( \imp ( \in-sort ph1 ph0 ) ( \in-sort ( \kore-next ph0 ph1 ) ph0 ) ) $. *)
-  | SortNext => allₛ, all b0, b0 ∈ml b1 ---> •(b1) b0 ∈ml b1
+  | SortNext => allₛ, all b0, b0 ⊆ml ⟦b1⟧ ---> •(b1) b0 ⊆ml ⟦b1⟧
   (* kore-dv-sorting $a |- ( \in-sort ( \kore-dv ph0 ph1 ) ph0 ) $. *)
-  | SortDv => allₛ, all b0, kore_dv b1 b0 ∈ml b1
+  | SortDv => allₛ, all b0, kore_dv b1 b0 ⊆ml ⟦b1⟧
+  (*
+    ∀s : Sorts, ∀x : s, kore_dv x s ∈ ⟦s⟧
+    kore-dv ph0 ph1 ⊆ ⟦ph0⟧
+  *)
   end.
   Eval simpl in axiom InjId.
   Eval simpl in axiom SortNext.
-  Eval simpl in axiom SortDv.
+  Eval simpl in axiom SortDv. *)
+
+  Inductive AxiomName : Set :=
+  | InjId φ1 φ2 φ3 : well_formed φ1 -> well_formed φ2 -> well_formed φ3 -> AxiomName
+  | SortNext φ1 φ2 : well_formed φ1 -> well_formed φ2 -> AxiomName
+  | SortDv φ1 φ2 : well_formed φ1 -> well_formed φ2 -> AxiomName.
+
+  Definition axiom (name : AxiomName) : Pattern :=
+  match name with
+  (* kore-inj-id $a |- ( \eq ( \kore-inj ph0 ph1 ph2 ) ph2 ) $. *)
+  | InjId φ0 φ1 φ2 _ _ _ => kore_inj φ0 φ1 φ2 =ml φ2
+  (* kore-next-sorting $a |- ( \imp ( \in-sort ph1 ph0 ) ( \in-sort ( \kore-next ph0 ph1 ) ph0 ) ) $. *)
+  | SortNext φ0 φ1 _ _ => φ1 ⊆ml ⟦φ0⟧ ---> •(φ0) φ1 ⊆ml ⟦φ0⟧
+  (* kore-dv-sorting $a |- ( \in-sort ( \kore-dv ph0 ph1 ) ph0 ) $. *)
+  | SortDv φ0 φ1 _ _ => kore_dv φ0 φ1 ⊆ml ⟦φ0⟧
+  (*
+    ∀s : Sorts, ∀x : s, kore_dv x s ∈ ⟦s⟧
+    kore-dv ph0 ph1 ⊆ ⟦ph0⟧
+  *)
+  end.
+  Eval simpl in axiom (InjId ⊥ ⊥ ⊥ ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
+  Eval simpl in axiom (SortNext ⊥ ⊥ ltac:(wf_auto2) ltac:(wf_auto2)).
+  Eval simpl in axiom (SortDv ⊥ ⊥ ltac:(wf_auto2) ltac:(wf_auto2)).
 
   Program Definition named_axioms : NamedAxioms :=
     {|
@@ -276,6 +318,15 @@ Section KoreTheory.
 
   Definition KoreTheory := Definedness_Syntax.theory ∪
                            theory_of_NamedAxioms named_axioms.
+
+  Local Goal KoreTheory ⊢ kore_dv ⊥ Top ⊆ml ⟦⊥⟧.
+  Proof.
+    gapply hypothesis. 2: wf_auto2. try_solve_pile.
+    unfold KoreTheory.
+    unfold theory_of_NamedAxioms.
+    apply elem_of_union_r.
+    exists (SortDv ⊥ Top ltac:(wf_auto2) ltac:(wf_auto2)). set_solver.
+  Qed.
 
 End KoreTheory.
 
@@ -300,8 +351,8 @@ Section Lemmas.
     mlDestructAnd "H" as "H_1" "H_2".
     mlSplitAnd. 2: mlAssumption.
     mlClear "H_2".
-    pose proof BasicProofSystemLemmas.Pre_fixp as HPF.
-    pose proof BasicProofSystemLemmas.Knaster_tarski as HKT.
+    pose proof Pre_fixp as HPF.
+    pose proof Knaster_tarski as HKT.
     unfold kore_always, kore_all_path_next.
     assert (nest_mu s = s) as Hs by admit.
     repeat rewrite Hs. unfold nest_mu. simpl.
