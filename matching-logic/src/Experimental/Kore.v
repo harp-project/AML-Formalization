@@ -47,6 +47,7 @@ Section derived_operations.
   Context {self : Syntax}.
   Definition kore_sym (s : Symbols) : Pattern := patt_sym (sym_inj s).
 
+  (* TODO: check if s is needed! *)
   Definition kore_bottom (s : Pattern) := patt_bott.
   #[global]
   Program Instance kore_bottom_Nullary s : Nullary (kore_bottom s).
@@ -56,34 +57,152 @@ Section derived_operations.
   Solve Obligations of kore_bottom_Nullary with wf_auto2.
 
   Definition kore_top (s : Pattern) := patt_inhabitant_set s.
-(*   #[global]
-  Program Instance kore_top_Nullary s : Nullary (kore_top s).
+  #[global]
+  Program Instance kore_top_Unary : Unary kore_top.
   Next Obligation.
     intros. rewrite pm_correctness. simpl.
-    mlSimpl. reflexivity.
+    rewrite pm_correctness. reflexivity.
   Defined.
-  Next Obligation.
-    intros. rewrite pm_correctness. simpl. reflexivity.
-  Defined. *)
+  Solve Obligations of kore_top_Unary with wf_auto2.
+
   Definition kore_valid (s : Pattern) (ph1 : Pattern) :=
     patt_equal ph1 (kore_top s).
+  #[global]
+  Program Instance kore_top_Binary : Binary kore_valid.
+  Next Obligation.
+    intros. repeat rewrite pm_correctness. simpl.
+    repeat rewrite pm_correctness. reflexivity.
+  Defined.
+  Solve Obligations of kore_top_Binary with wf_auto2.
+
   Definition kore_not (s : Pattern) (ph1 : Pattern) :=
     patt_and (patt_not ph1) (kore_top s).
-  Definition kore_and (s : Pattern) (ph1 : Pattern) (ph2 : Pattern) := patt_and ph1 ph2.
-  Definition kore_or (s : Pattern) (ph1 : Pattern) (ph2 : Pattern) := patt_or ph1 ph2.
+  #[global]
+  Program Instance kore_not_Binary : Binary kore_not.
+  Next Obligation.
+    intros. repeat rewrite pm_correctness. simpl.
+    repeat rewrite pm_correctness. reflexivity.
+  Defined.
+  Solve Obligations of kore_not_Binary with wf_auto2.
+
+  (* TODO: check if s is needed! *)
+  Definition kore_and (s : Pattern) (ph1 : Pattern) (ph2 : Pattern) :=
+    patt_and ph1 ph2.
+  #[global]
+  Program Instance kore_and_Binary s : Binary (kore_and s).
+  Next Obligation.
+    intros. repeat rewrite pm_correctness. simpl.
+    repeat rewrite pm_correctness. reflexivity.
+  Defined.
+  Solve Obligations of kore_and_Binary with intros;wf_auto2.
+
+  Local Goal forall φ1, well_formed φ1 -> well_formed (kore_and b0 φ1 ⊥).
+  Proof.
+    intros. wf_auto2.
+  Qed.
+
+  (* TODO: check if s is needed! *)
+  Definition kore_or (s : Pattern) (ph1 : Pattern) (ph2 : Pattern) :=
+    patt_or ph1 ph2.
+  #[global]
+  Program Instance kore_or_Binary s : Binary (kore_or s).
+  Solve Obligations of kore_or_Binary with intros;wf_auto2.
+  Next Obligation.
+    intros. wf_auto2.
+  Defined.
+
+  Local Goal forall φ1, well_formed φ1 -> well_formed (kore_or b0 φ1 ⊥).
+  Proof.
+    intros. wf_auto2.
+  Qed.
+
+
   Definition kore_implies (s : Pattern) (ph1 : Pattern) (ph2 : Pattern) :=
     kore_or s (kore_not s ph1) ph2.
+  #[global]
+  Program Instance kore_implies_Ternary : Ternary kore_implies.
+  Next Obligation.
+    intros. repeat rewrite pm_correctness. simpl.
+    repeat rewrite pm_correctness. reflexivity.
+  Defined.
+  Solve Obligations of kore_implies_Ternary with intros;wf_auto2.
+
   Definition kore_iff (s : Pattern) (ph1 : Pattern) (ph2 : Pattern) :=
     kore_and s (kore_implies s ph1 ph2) (kore_implies s ph2 ph1).
+  #[global]
+  Program Instance kore_iff_Ternary : Ternary kore_iff.
+  Next Obligation.
+    intros. repeat rewrite pm_correctness. simpl.
+    repeat rewrite pm_correctness. reflexivity.
+  Defined.
+  Solve Obligations of kore_iff_Ternary with intros;wf_auto2.
 
-
+  (* TODO: check if s1 is needed! *)
   Definition kore_ceil (s1 : Pattern) (s2 : Pattern) (ph2 : Pattern) := 
     patt_and (patt_defined ph2) (kore_top s2).
+  #[global]
+  Program Instance kore_ceil_Binary s : Binary (kore_ceil s).
+  Next Obligation.
+    intros. repeat rewrite pm_correctness. simpl.
+    repeat rewrite pm_correctness. reflexivity.
+  Defined.
+  Solve Obligations of kore_ceil_Binary with intros;wf_auto2.
+
   Definition kore_floor (s1 : Pattern) (s2 : Pattern) (ph2 : Pattern) := 
     kore_not s2 (kore_ceil s1 s2 (kore_not s1 ph2)).
+  #[global]
+  Program Instance kore_floor_Ternary : Ternary kore_floor.
+  Next Obligation.
+    intros. repeat rewrite pm_correctness. simpl.
+    repeat rewrite pm_correctness. reflexivity.
+  Defined.
+  Solve Obligations of kore_floor_Ternary with intros;wf_auto2.
+
   Definition kore_equals (s1 : Pattern) (s2 : Pattern) (ph2 : Pattern) (ph3: Pattern) := 
     kore_floor s1 s2 (kore_iff s1 ph2 ph3).
+  #[global]
+  Program Instance kore_equals_Quaternary : Quaternary kore_equals.
+  Next Obligation.
+    intros. repeat rewrite pm_correctness. simpl.
+    repeat rewrite pm_correctness. reflexivity.
+  Defined.
+  Next Obligation.
+    intros. unfold kore_equals. 
+    wf_auto2_decompose_hyps_parts.
+    
+    wf_auto2_fallback. wf_auto2_step_parts.
+    wf_auto2_fast_done.
+    wf_auto2_step_parts.
+    
+    
+    rewrite (ternary_wfxy_compose _).
+    unfold is_true;
+  first [
+    split |
+    apply wf_wfxy00_compose |
+    apply wf_lwf_xy_compose |
+    apply free_evar_subst_preserves_no_negative_occurrence |
+    apply wf_sctx |
+    apply well_formed_xy_free_evar_subst |
+    apply (well_formed_xy_foldr_binary_compose _) |
+    apply lwf_xy_cons_compose |
+    apply lwf_xy_app_compose |
+    apply (binary_wfxy_compose _) |
+    apply (ternary_wfxy_compose _) |
+    apply (quaternary_wfxy_compose _) |
+    apply (unary_wfxy_compose _) |
+    apply (nullary_wfxy _) |
+    apply wf_evar_open_from_wf_ex |
+    apply wf_sctx
+  ].
+    wf_auto2_composite_step.
+    repeat rewrite ternary_wfp. wf_auto2.
+  Defined.
+  Solve Obligations of kore_equals_Quaternary with intros;wf_auto2.
+
+
   (* Q: why not kore_ceil and conjunction? *)
+  (* A: because this is not kore-in, but rather kore-subseteq *)
   Definition kore_in (s1 : Pattern) (s2 : Pattern) (ph2 : Pattern) (ph3: Pattern) := 
     kore_floor s1 s2 (kore_implies s1 ph2 ph3).
 

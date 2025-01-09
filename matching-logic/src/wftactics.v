@@ -40,6 +40,8 @@ Definition wfToWfxySimplifications := (
 
 Definition wfxySimplifications := (
   @binary_wfxy,
+  @ternary_wfxy,
+  @quaternary_wfxy,
   @unary_wfxy,
   @nullary_wfxy,
   @lwf_xy_app,
@@ -85,6 +87,26 @@ Ltac simplifyWfxyHyp H :=
       destruct H as [H1 H2];
       simplifyWfxyHyp H1;
       simplifyWfxyHyp H2
+  | well_formed_xy ?x ?y (?ternary ?ψ1 ?ψ2 ?ψ3) = true
+    => apply (ternary_wfxy_decompose _) in H;
+      let H1 := fresh "H1" in
+      let H2 := fresh "H2" in
+      let H3 := fresh "H3" in
+      destruct H as [H1 [H2 H3] ];
+      simplifyWfxyHyp H1;
+      simplifyWfxyHyp H2;
+      simplifyWfxyHyp H3
+  | well_formed_xy ?x ?y (?quaternary ?ψ1 ?ψ2 ?ψ3 ?ψ4) = true
+    => apply (quaternary_wfxy_decompose _) in H;
+      let H1 := fresh "H1" in
+      let H2 := fresh "H2" in
+      let H3 := fresh "H3" in
+      let H4 := fresh "H3" in
+      destruct H as [H1 [H2 [H3 H4] ] ];
+      simplifyWfxyHyp H1;
+      simplifyWfxyHyp H2;
+      simplifyWfxyHyp H3;
+      simplifyWfxyHyp H4
   | well_formed_xy ?x ?y (?unary ?ψ1) = true
     => apply (unary_wfxy_decompose _) in H;
        simplifyWfxyHyp H
@@ -137,7 +159,7 @@ Ltac clear_all_impls :=
   ).
 
 
-  Ltac wf_auto2_decompose_hyps :=
+(*   Ltac wf_auto2_decompose_hyps :=
     proved_hook_wfauto;
     unfold
       is_true,
@@ -145,7 +167,7 @@ Ltac clear_all_impls :=
       svar_open
     in *;
     simpl in *
-  .
+  . *)
 
 
 Ltac solve_size :=
@@ -178,7 +200,7 @@ Ltac wf_auto2_fast_done :=
   
 Ltac wf_auto2_composite_step :=
   unfold is_true;
-  simpl;
+  (* simpl; *)
   first [
     split |
     apply wf_wfxy00_compose |
@@ -190,6 +212,8 @@ Ltac wf_auto2_composite_step :=
     apply lwf_xy_cons_compose |
     apply lwf_xy_app_compose |
     apply (binary_wfxy_compose _) |
+    apply (ternary_wfxy_compose _) |
+    apply (quaternary_wfxy_compose _) |
     apply (unary_wfxy_compose _) |
     apply (nullary_wfxy _) |
     apply wf_evar_open_from_wf_ex |
@@ -204,6 +228,8 @@ Definition wfPositiveSimplifications := (
   @nullary_wfp,
   @unary_wfp,
   @binary_wfp,
+  @ternary_wfp,
+  @quaternary_wfp,
   @wfp_evar_quan
 ).
 
@@ -211,7 +237,9 @@ Definition wfCexSimplifications := (
   @well_formed_cex_foldr_binary,
   @nullary_wfcex,
   @unary_wfcex,
-  @binary_wfcex
+  @binary_wfcex,
+  @ternary_wfcex,
+  @quaternary_wfcex
 ).
 
 Definition wfCmuSimplifications := (
@@ -219,6 +247,8 @@ Definition wfCmuSimplifications := (
   @nullary_wfcmu,
   @unary_wfcmu,
   @binary_wfcmu,
+  @ternary_wfcmu,
+  @quaternary_wfcmu,
   @wfcmu_evar_quan
 ).
 
@@ -367,15 +397,15 @@ Ltac wf_auto2_unfolds :=
 Ltac wf_auto2_decompose_hyps_parts :=
   proved_hook_wfauto;
   wf_auto2_unfolds;
-  simpl in *;
-  destruct_andb?;
+  (* cbn in *; *)
+  repeat destruct_andb?;
   decomposeWfHypsIntoParts
 .
 
 Ltac wf_auto2_step_parts :=
   wf_auto2_unfolds;
   try partsDecomposeWfGoal;
-  cbn in *; subst; cbn in *;
+  (* cbn in *; subst; cbn in *; *)
   split_and?;
   wf_auto2_fast_done;
   try lazymatch goal with
@@ -409,7 +439,7 @@ Ltac wf_auto2_step_parts :=
   apply wfc_ex_aux_bsvar_subst|
   apply impl_well_formed_positive_nest_ex_aux|
   apply impl_wfc_mu_nest_ex|
-  (apply wfc_ex_nest_ex';[lia|cbn])
+  (apply wfc_ex_nest_ex';[lia|(* cbn *)])
   ];
   try (lazymatch goal with
   | [ H : well_formed_closed_mu_aux ?p 0 = true |- no_negative_occurrence_db_b _ ?p = true]
@@ -467,6 +497,22 @@ lazymatch goal with
 | [|- wf _ = true ] => wf_auto2
 | _ => idtac
 end.
+
+Open Scope ml_scope.
+Import Logic.
+Import Pattern.Notations.
+Import Substitution.Notations.
+Lemma wf_svar_open_from_wf_mu {Σ : Signature} X ϕ:
+    well_formed (patt_mu ϕ) ->
+    well_formed (ϕ^{svar: 0 ↦ X}).
+Proof.
+  intros.
+  wf_auto2_fast.
+  repeat wf_auto2_decompose_hyps_parts.
+  (* ISSUE: cbn/simpl handled the well-formedness of exists and mu patterns
+     SOLUTION: create wf classes for binders
+   *)
+Qed.
 
 Tactic Notation "mlUnsortedSimpl" :=
   repeat (rewrite mlSimpl'); try rewrite [increase_ex _ _]/=; try rewrite [increase_mu]/=; try_wfauto2.
