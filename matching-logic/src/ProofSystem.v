@@ -131,7 +131,7 @@ Section ml_proof_system.
     Γ ⊢H ϕ -> well_formed ϕ.
   Proof.
     intros pf.
-    induction pf; wf_auto2. Set Printing All.
+    induction pf; wf_auto2.
   Qed.
 
   Lemma cast_proof {Γ} {ϕ} {ψ} (e : ψ = ϕ) : ML_proof_system Γ ϕ -> ML_proof_system Γ ψ.

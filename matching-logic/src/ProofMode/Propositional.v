@@ -1,5 +1,6 @@
-From MatchingLogic.ProofMode Require Export Basics.
+(* Order of Exports is important for mutable tacs *)
 From MatchingLogic Require Export BasicProofSystemLemmas.
+From MatchingLogic.ProofMode Require Export Basics.
 
 Import MatchingLogic.Logic.Notations.
 

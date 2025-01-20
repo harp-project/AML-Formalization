@@ -157,10 +157,15 @@ Section derived_operations.
     repeat rewrite pm_correctness. reflexivity.
   Defined.
   Solve Obligations of kore_floor_Ternary with intros;wf_auto2.
-
+  Next Obligation.
+  admit.
+  Admitted.
+  Next Obligation.
+  admit.
+  Admitted.
   Definition kore_equals (s1 : Pattern) (s2 : Pattern) (ph2 : Pattern) (ph3: Pattern) := 
     kore_floor s1 s2 (kore_iff s1 ph2 ph3).
-  #[global]
+(*   #[global]
   Program Instance kore_equals_Quaternary : Quaternary kore_equals.
   Next Obligation.
     intros. repeat rewrite pm_correctness. simpl.
@@ -198,7 +203,7 @@ Section derived_operations.
     wf_auto2_composite_step.
     repeat rewrite ternary_wfp. wf_auto2.
   Defined.
-  Solve Obligations of kore_equals_Quaternary with intros;wf_auto2.
+  Solve Obligations of kore_equals_Quaternary with intros;wf_auto2. *)
 
 
   (* Q: why not kore_ceil and conjunction? *)
@@ -233,6 +238,7 @@ Section derived_operations.
     kore_not s (kore_next s (kore_not s ph1)).
   Definition kore_eventually (s : Pattern) (ph1 : Pattern) :=
     kore_mu s (kore_or (nest_mu s) (nest_mu ph1) (kore_next (nest_mu s) B0)).
+  (* TODO: check. not well_founded and eventually is equivalent to this: *)
   Definition kore_weak_eventually (s : Pattern) (ph1 : Pattern) :=
     kore_not s (kore_mu s (kore_not (nest_mu s)
                              (kore_or (nest_mu s)
@@ -290,6 +296,21 @@ Section derived_operations.
     - kore_well_founded <---> kore_well_founded_alt?
   *)
 
+  Next Obligation.
+  admit.
+  Admitted.
+  Next Obligation.
+  admit.
+  Admitted.
+Next Obligation.
+  admit.
+  Admitted.
+  Next Obligation.
+  admit.
+  Admitted.
+
+
+
 End derived_operations.
 
 Module Notations.
@@ -317,8 +338,8 @@ Module Notations.
   Check ⌊(Nat, Nat) ⊥⌋.
   Notation "p1 '=ml(' s1 ',' s2 ')' p2" := (kore_equals s1 s2 p1 p2) (at level 67, format "p1  '=ml(' s1 ',' s2 ')'  p2") : ml_scope.
   Check ⊥ =ml(Nat, Nat) Top.
-  Notation "p1 '∈ml(' s1 ',' s2 ')' p2" := (kore_in s1 s2 p1 p2) (at level 67, format "p1  '∈ml(' s1 ',' s2 ')'  p2") : ml_scope.
-  Check ⊥ ∈ml(Nat, Nat) Top.
+  Notation "p1 '⊆ml(' s1 ',' s2 ')' p2" := (kore_in s1 s2 p1 p2) (at level 67, format "p1  '⊆ml(' s1 ',' s2 ')'  p2") : ml_scope.
+  Check ⊥ ⊆ml(Nat, Nat) Top.
 
   Notation "'ex' s1 '∷' s2 ',' p" := (kore_exists s1 s2 p) (at level 80, format "'ex'  s1  '∷'  s2 ','  p") : ml_scope.
   Check ex Nat ∷ Nat , ⊥.
@@ -477,6 +498,77 @@ Section Lemmas.
     repeat rewrite Hs. unfold nest_mu. simpl.
     unfold kore_mu.
 
+  Abort.
+
+  Local Goal
+    forall A B s,
+      Γ ⊢ kore_and s A B <---> kore_not s (kore_or s (kore_not s A) (kore_not s B)).
+  Proof.
+    intros. unfold kore_and, kore_not, kore_or, kore_top.
+    toMLGoal. admit.
+    mlSplitAnd.
+    * mlIntro.
+      mlIntro.
+      mlDestructAnd "0".
+      mlDestructOr "1". admit. admit.
+    *
+  Abort.
+
+  Local Goal
+    forall s1 s2 φ,
+      well_formed s1 ->
+      well_formed s2 ->
+      well_formed (ex, φ) ->
+      Γ ⊢ kore_forall s1 s2 φ <---> (all s1 , φ) and ⟦s2⟧.
+  Proof.
+    intros.
+    unfold kore_forall, kore_not, kore_exists, kore_top.
+    toMLGoal. { simpl in *. wf_auto2. }
+    mlSplitAnd.
+    * mlIntro.
+      mlDestructAnd "0".
+      mlSplitAnd. 2: mlAssumption.
+      mlIntroAll x. mlSimpl. cbn.
+      setoid_rewrite nest_ex_same.
+      mlIntro.
+      pose proof deMorgan_nand Γ (ex s1, ! φ and ⟦ s2 ⟧) ⟦ s2 ⟧
+         ltac:(wf_auto2) ltac:(wf_auto2).
+      use AnyReasoning in H2.
+      mlAdd H2 as "H2".
+      mlDestructAnd "H2". mlClear "4".
+      mlApply "3" in "1". mlClear "3".
+      mlDestructOr "1".
+      - mlSpecialize "3" with x.
+        mlSimpl. simpl.
+        setoid_rewrite nest_ex_same.
+        rewrite (evar_open_not_occur _ _ s2). wf_auto2.
+        mlDestructOr "3".
+        + mlApply "1" in "0". mlDestructBot "0".
+        + pose proof deMorgan_nand Γ
+              (! φ^{evar:0↦x}) ⟦ s2 ⟧
+         ltac:(wf_auto2) ltac:(wf_auto2).
+         use AnyReasoning in H3.
+         mlAdd H3 as "H3".
+         mlDestructAnd "H3". mlClear "3".
+         mlApply "1" in "4". mlClear "1".
+         mlDestructOr "4".
+         ** mlApplyMeta Misc.notnot_taut_1 in "1".
+            mlAssumption.
+         ** mlApply "3" in "2". mlDestructBot "2".
+      - mlExFalso. mlApply "4". mlAssumption.
+    * mlIntro. mlDestructAnd "0" as "H" "Hs".
+      mlSplitAnd. 2: mlAssumption.
+      mlIntro "E". mlDestructAnd "E" as "E1" "E2".
+      mlDestructEx "E1" as x.
+      mlSimpl.
+      setoid_rewrite nest_ex_same.
+      rewrite (evar_open_not_occur _ _ s2). wf_auto2.
+      mlDestructAnd "E1" as "E1_1" "E1_2".
+      mlDestructAnd "E1_2".
+      mlApply "0".
+      mlSpecialize "H" with x. mlSimpl. simpl.
+      setoid_rewrite nest_ex_same.
+      mlApply "H". mlAssumption.
   Defined.
 
   Lemma well_founded_alt_1 :

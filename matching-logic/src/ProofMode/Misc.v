@@ -1,6 +1,9 @@
 From MatchingLogic Require Export FreshnessManager.
 From MatchingLogic.ProofMode Require Export Reshaper FixPoint.
 
+(* 
+Require Import wftactics2. *)
+
 Import MatchingLogic.Logic.Notations.
 
 Open Scope list_scope. (* needed for mlAssert, ++ *)
@@ -157,6 +160,7 @@ Proof.
     cbn in Hwf2. cbn.
     rewrite foldr_andb_true_iff in Hwf2.
     rewrite foldr_andb_true_iff.
+    cbn in *.
     wf_auto2.
   }
 

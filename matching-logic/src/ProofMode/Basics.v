@@ -233,6 +233,26 @@ Tactic Notation "mlExtractWF" ident(wfl) ident(wfg) :=
   f wfl wfg
 .
 
+(* New unfold is injected into wf_auto2 *)
+Ltac2 Set proved_hook_wfauto as oldhook
+:= (fun () => (*Message.print (Message.of_string "hook_wfauto p2w");*) clear_piles (); pfs_to_wfs (); unfold nh_patt in *; oldhook ()).
+
+(* Test hook: *)
+Local Goal forall {Σ : Signature} p pqn q l₁ l₂,
+  wf
+    (map nh_patt l₁ ++
+     (map nh_patt
+          (cons
+             {|
+               nh_name := pqn; nh_patt := patt_or p q
+             |} l₂))) ->
+  well_formed p.
+Proof.
+  intros.
+  apply wfl₁hl₂_proj_h in H.
+  wf_auto2.
+Qed.
+
 Local Example ex_extractWfAssumptions {Σ : Signature} Γ (p : Pattern) :
   well_formed p ->
   Γ ⊢i p ---> p using BasicReasoning.

@@ -623,13 +623,13 @@ Ltac2 clear_piles () :=
       => clear $h
     end
   )
-.  
+.
 
 Ltac2 pfs_to_wfs () :=
   repeat (
     match! goal with
     | [h : @derives _ _ _ |- _]
-      => unfold derives
+      => unfold derives in $h; unfold derives
     | [h : @derives_using _ _ _ _ |- _]
       => apply @raw_proof_of in $h
     | [ h: @ML_proof_system _ _ _ |- _]
@@ -640,6 +640,7 @@ Ltac2 pfs_to_wfs () :=
 
 Ltac2 Set proved_hook_wfauto as oldhook
 := (fun () => (*Message.print (Message.of_string "hook_wfauto p2w");*) clear_piles (); pfs_to_wfs () (*; oldhook ()*)).
+
 
 (*
 Ltac2 Set hook_wfauto
