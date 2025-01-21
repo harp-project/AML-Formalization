@@ -239,7 +239,7 @@ Section syntax.
     | patt_exists psi => well_formed_positive psi
     | patt_mu psi => no_negative_occurrence_db_b 0 psi && well_formed_positive psi
     end.
-  
+
   Fixpoint well_formed_closed_mu_aux (phi : Pattern) (max_ind_svar : db_index) : bool :=
     match phi with
     | patt_free_evar _ => true
@@ -271,7 +271,7 @@ Section syntax.
     | patt_exists psi => well_formed_closed_ex_aux psi (S max_ind_evar)
     | patt_mu psi => well_formed_closed_ex_aux psi max_ind_evar
     end.
-  
+
   Definition well_formed_closed (phi : Pattern) : bool
     := well_formed_closed_mu_aux phi 0 && well_formed_closed_ex_aux phi 0.
 

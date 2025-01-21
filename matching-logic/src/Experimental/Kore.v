@@ -9,6 +9,12 @@ Import MatchingLogic.Theories.Sorts_Syntax.Notations.
 Import MatchingLogic.Theories.Nat_Syntax.Notations.
 
 Set Default Proof Mode "Classic".
+
+(* For the well-formedness tactics, we forbid simplifications *)
+Arguments well_formed_positive : simpl never.
+Arguments well_formed_closed_mu_aux : simpl never.
+Arguments well_formed_closed_ex_aux : simpl never.
+
 Inductive Symbols := kore_next_symbol | kore_dv_symbol | kore_inj_symbol.
 
 #[global]
@@ -54,7 +60,8 @@ Section derived_operations.
   Next Obligation.
     intros. rewrite pm_correctness. simpl. reflexivity.
   Defined.
-  Solve Obligations of kore_bottom_Nullary with wf_auto2.
+  Solve Obligations of kore_bottom_Nullary with intros;wf_auto2.
+  Fail Next Obligation.
 
   Definition kore_top (s : Pattern) := patt_inhabitant_set s.
   #[global]
@@ -63,7 +70,8 @@ Section derived_operations.
     intros. rewrite pm_correctness. simpl.
     rewrite pm_correctness. reflexivity.
   Defined.
-  Solve Obligations of kore_top_Unary with wf_auto2.
+  Solve Obligations of kore_top_Unary with intros;wf_auto2.
+  Fail Next Obligation.
 
   Definition kore_valid (s : Pattern) (ph1 : Pattern) :=
     patt_equal ph1 (kore_top s).
@@ -73,7 +81,8 @@ Section derived_operations.
     intros. repeat rewrite pm_correctness. simpl.
     repeat rewrite pm_correctness. reflexivity.
   Defined.
-  Solve Obligations of kore_top_Binary with wf_auto2.
+  Solve Obligations of kore_top_Binary with intros; unfold kore_valid; wf_auto2.
+  Fail Next Obligation.
 
   Definition kore_not (s : Pattern) (ph1 : Pattern) :=
     patt_and (patt_not ph1) (kore_top s).
@@ -83,7 +92,8 @@ Section derived_operations.
     intros. repeat rewrite pm_correctness. simpl.
     repeat rewrite pm_correctness. reflexivity.
   Defined.
-  Solve Obligations of kore_not_Binary with wf_auto2.
+  Solve Obligations of kore_not_Binary with intros; unfold kore_not; wf_auto2.
+  Fail Next Obligation.
 
   (* TODO: check if s is needed! *)
   Definition kore_and (s : Pattern) (ph1 : Pattern) (ph2 : Pattern) :=
@@ -94,7 +104,8 @@ Section derived_operations.
     intros. repeat rewrite pm_correctness. simpl.
     repeat rewrite pm_correctness. reflexivity.
   Defined.
-  Solve Obligations of kore_and_Binary with intros;wf_auto2.
+  Solve Obligations of kore_and_Binary with intros; unfold kore_and; wf_auto2.
+  Fail Next Obligation.
 
   Local Goal forall φ1, well_formed φ1 -> well_formed (kore_and b0 φ1 ⊥).
   Proof.
@@ -106,10 +117,12 @@ Section derived_operations.
     patt_or ph1 ph2.
   #[global]
   Program Instance kore_or_Binary s : Binary (kore_or s).
-  Solve Obligations of kore_or_Binary with intros;wf_auto2.
   Next Obligation.
-    intros. wf_auto2.
+    intros. rewrite pm_correctness. simpl.
+    repeat rewrite pm_correctness. reflexivity.
   Defined.
+  Solve Obligations of kore_or_Binary with intros; unfold kore_or; wf_auto2.
+  Fail Next Obligation.
 
   Local Goal forall φ1, well_formed φ1 -> well_formed (kore_or b0 φ1 ⊥).
   Proof.
@@ -125,7 +138,13 @@ Section derived_operations.
     intros. repeat rewrite pm_correctness. simpl.
     repeat rewrite pm_correctness. reflexivity.
   Defined.
-  Solve Obligations of kore_implies_Ternary with intros;wf_auto2.
+  Solve Obligations of kore_implies_Ternary with intros; unfold kore_implies; wf_auto2.
+  Fail Next Obligation.
+
+  Local Goal forall φ1, well_formed φ1 -> well_formed (kore_implies (p_x) φ1 ⊥).
+  Proof.
+    intros. wf_auto2.
+  Qed.
 
   Definition kore_iff (s : Pattern) (ph1 : Pattern) (ph2 : Pattern) :=
     kore_and s (kore_implies s ph1 ph2) (kore_implies s ph2 ph1).
@@ -135,7 +154,13 @@ Section derived_operations.
     intros. repeat rewrite pm_correctness. simpl.
     repeat rewrite pm_correctness. reflexivity.
   Defined.
-  Solve Obligations of kore_iff_Ternary with intros;wf_auto2.
+  Solve Obligations of kore_iff_Ternary with intros; unfold kore_iff; wf_auto2.
+  Fail Next Obligation.
+
+  Local Goal forall φ1, well_formed φ1 -> well_formed (kore_iff (p_x) φ1 ⊥).
+  Proof.
+    intros. wf_auto2.
+  Qed.
 
   (* TODO: check if s1 is needed! *)
   Definition kore_ceil (s1 : Pattern) (s2 : Pattern) (ph2 : Pattern) := 
@@ -146,7 +171,13 @@ Section derived_operations.
     intros. repeat rewrite pm_correctness. simpl.
     repeat rewrite pm_correctness. reflexivity.
   Defined.
-  Solve Obligations of kore_ceil_Binary with intros;wf_auto2.
+  Solve Obligations of kore_ceil_Binary with intros; unfold kore_ceil; wf_auto2.
+  Fail Next Obligation.
+  Local Goal forall s2 φ1, well_formed φ1 -> well_formed s2 -> well_formed (kore_ceil b0 s2 φ1).
+  Proof.
+    intros. wf_auto2.
+  Qed.
+
 
   Definition kore_floor (s1 : Pattern) (s2 : Pattern) (ph2 : Pattern) := 
     kore_not s2 (kore_ceil s1 s2 (kore_not s1 ph2)).
@@ -156,61 +187,53 @@ Section derived_operations.
     intros. repeat rewrite pm_correctness. simpl.
     repeat rewrite pm_correctness. reflexivity.
   Defined.
-  Solve Obligations of kore_floor_Ternary with intros;wf_auto2.
-  Next Obligation.
-  admit.
-  Admitted.
-  Next Obligation.
-  admit.
-  Admitted.
+  Solve Obligations of kore_floor_Ternary with intros; unfold kore_floor; wf_auto2.
+  Fail Next Obligation.
+
+  Local Goal forall s2 φ1, well_formed φ1 -> well_formed s2 -> well_formed (kore_floor ⊥ s2 φ1).
+  Proof.
+    intros. wf_auto2.
+  Qed.
+
   Definition kore_equals (s1 : Pattern) (s2 : Pattern) (ph2 : Pattern) (ph3: Pattern) := 
     kore_floor s1 s2 (kore_iff s1 ph2 ph3).
-(*   #[global]
+  #[global]
   Program Instance kore_equals_Quaternary : Quaternary kore_equals.
   Next Obligation.
     intros. repeat rewrite pm_correctness. simpl.
     repeat rewrite pm_correctness. reflexivity.
   Defined.
-  Next Obligation.
-    intros. unfold kore_equals. 
-    wf_auto2_decompose_hyps_parts.
-    
-    wf_auto2_fallback. wf_auto2_step_parts.
-    wf_auto2_fast_done.
-    wf_auto2_step_parts.
-    
-    
-    rewrite (ternary_wfxy_compose _).
-    unfold is_true;
-  first [
-    split |
-    apply wf_wfxy00_compose |
-    apply wf_lwf_xy_compose |
-    apply free_evar_subst_preserves_no_negative_occurrence |
-    apply wf_sctx |
-    apply well_formed_xy_free_evar_subst |
-    apply (well_formed_xy_foldr_binary_compose _) |
-    apply lwf_xy_cons_compose |
-    apply lwf_xy_app_compose |
-    apply (binary_wfxy_compose _) |
-    apply (ternary_wfxy_compose _) |
-    apply (quaternary_wfxy_compose _) |
-    apply (unary_wfxy_compose _) |
-    apply (nullary_wfxy _) |
-    apply wf_evar_open_from_wf_ex |
-    apply wf_sctx
-  ].
-    wf_auto2_composite_step.
-    repeat rewrite ternary_wfp. wf_auto2.
-  Defined.
-  Solve Obligations of kore_equals_Quaternary with intros;wf_auto2. *)
+  Solve Obligations of kore_equals_Quaternary with intros; unfold kore_equals; wf_auto2.
+  Fail Next Obligation.
 
+  Local Goal forall s2 φ1 φ2,
+    well_formed φ1 ->
+    well_formed s2 ->
+    well_formed φ2 -> well_formed (kore_equals s2 Top φ1 φ2).
+  Proof.
+    intros. wf_auto2.
+  Qed.
 
   (* Q: why not kore_ceil and conjunction? *)
   (* A: because this is not kore-in, but rather kore-subseteq *)
   Definition kore_in (s1 : Pattern) (s2 : Pattern) (ph2 : Pattern) (ph3: Pattern) := 
     kore_floor s1 s2 (kore_implies s1 ph2 ph3).
+  #[global]
+  Program Instance kore_in_Quaternary : Quaternary kore_in.
+  Next Obligation.
+    intros. repeat rewrite pm_correctness. simpl.
+    repeat rewrite pm_correctness. reflexivity.
+  Defined.
+  Solve Obligations of kore_in_Quaternary with intros; unfold kore_in; wf_auto2.
+  Fail Next Obligation.
 
+  Local Goal forall s2 φ1 φ2,
+    well_formed φ1 ->
+    well_formed s2 ->
+    well_formed φ2 -> well_formed (kore_in s2 Top φ1 φ2).
+  Proof.
+    intros. wf_auto2.
+  Qed.
 
   Definition kore_exists (s1 : Pattern) (s2 : Pattern) (ph2 : Pattern) :=
     patt_and (patt_sorted_exists s1 ph2) (patt_inhabitant_set s2).

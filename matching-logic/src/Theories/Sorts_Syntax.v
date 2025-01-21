@@ -170,6 +170,15 @@ Section sorts.
     2: by rewrite pm_correctness.
     rewrite pm_ezero_increase. reflexivity.
   Defined.
+  Next Obligation.
+    intros. wf_auto2.
+  Defined.
+  Next Obligation.
+    intros. wf_auto2.
+  Defined.
+  Next Obligation.
+    intros. wf_auto2.
+  Defined.
 
   #[global]
   Program Instance exists_sort_ebinder : EBinder patt_exists_sort := {}.
@@ -183,8 +192,15 @@ Section sorts.
     2: by rewrite pm_correctness.
     rewrite pm_ezero_increase. reflexivity.
   Defined.
-
-
+  Next Obligation.
+    intros. wf_auto2.
+  Defined.
+  Next Obligation.
+    intros. wf_auto2.
+  Defined.
+  Next Obligation.
+    intros. wf_auto2.
+  Defined.
   (* TODO patt_sorted_forall and patt_sorted_exists are duals - a lemma *)
 
   Definition patt_total_function(phi from to : Pattern) : Pattern :=

@@ -2622,10 +2622,7 @@ Proof.
   - mlExact "H1".
   - mlExact "H2".
   Unshelve.
-  all: wf_auto2.
-  exact (set_evar_fresh_is_fresh (φ₁ ⋅ φ₂)).
-  pose proof (set_evar_fresh_is_fresh (φ₁ ⋅ φ₂)).
-  unfold evar_is_fresh_in in H. set_solver.
+    all: subst x; solve_fresh.
 Defined.
 
 Lemma propagate_membership_conjunct_1 {Σ : Signature} {syntax : Syntax}
@@ -5125,9 +5122,7 @@ Theorem forall_functional_subst_meta: ∀ {Σ : Signature} {syntax : Syntax} (Γ
   Γ ⊢ (all , φ) -> Γ ⊢i φ^[evar:0↦φ'] using AnyReasoning.
 Proof.
   intros.
-  toMLGoal.
-  wf_auto2.
-  now apply mu_free_wfp.
+  toMLGoal. 1: wf_auto2.
   mlApplyMeta forall_functional_subst.
   2-5:assumption.
   mlSplitAnd.

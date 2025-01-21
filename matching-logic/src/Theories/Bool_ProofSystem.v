@@ -76,7 +76,7 @@ Context
     pose proof (bott_not_defined Γ) as H.
     use AnyReasoning in H.
     mlApplyMeta H.
-    fromMLGoal. wf_auto2.
+    fromMLGoal.
 
     apply ceil_monotonic; auto.
     { wf_auto2. }
