@@ -235,47 +235,63 @@ Section derived_operations.
     intros. wf_auto2.
   Qed.
 
+  (*
+    TODO:
+    the following constructs do not match into the
+    class scheme described in SyntacticConstruct.v!
+  *)
+
   Definition kore_exists (s1 : Pattern) (s2 : Pattern) (ph2 : Pattern) :=
     patt_and (patt_sorted_exists s1 ph2) (patt_inhabitant_set s2).
   Definition kore_forall (s1 : Pattern) (s2 : Pattern) (ph2 : Pattern) :=
     kore_not s2 (kore_exists s1 s2 (kore_not s2 ph2)).
 (*   Definition kore_forall_sort (s : Pattern) :=
     patt_forall_sort s. *)
-  Definition kore_is_sort (s : Pattern) := patt_exists_sort (patt_equal b0 s).
+  Definition kore_is_sort (s : Pattern) := patt_exists_sort (patt_equal b0 (nest_ex s)).
+  #[global]
+  Program Instance kore_is_sort_Unary : Unary kore_is_sort.
+  Next Obligation.
+    intros. unfold kore_is_sort.
+    rewrite ebinder_morphism.
+    rewrite binary_morphism.
+    f_equal. f_equal.
+    rewrite pm_correctness. simpl. by rewrite pm_ezero_increase.
+    Search nest_ex increase_ex.
+  Defined.
+  Solve Obligations of kore_top_Unary with intros;wf_auto2.
+  Fail Next Obligation.
+
+
   Definition kore_is_predicate (s : Pattern) (ph1 : Pattern) :=
     patt_or (kore_valid s ph1) (patt_equal ph1 patt_bott).
   Definition kore_is_nonempty_sort (s : Pattern) :=
     patt_defined (patt_inhabitant_set s).
 
-
-  Definition kore_mu (s : Pattern) (ph1 : Pattern) :=
-    patt_and (patt_mu ph1) (patt_inhabitant_set s).
-  Definition kore_nu (s : Pattern) (ph1 : Pattern) :=
-    let ph2 := bsvar_subst (kore_not s B0) 0 ph1 in
-      kore_not s (kore_mu s (kore_not s ph2)).
-
+  (* These are just ml primitives *)
+  Definition kore_mu := patt_mu.
+  Definition kore_nu := patt_nu.
 
   Definition kore_next (s : Pattern) (ph1 : Pattern) :=
     patt_app (kore_sym kore_next_symbol) ph1.
   Definition kore_all_path_next (s : Pattern) (ph1 : Pattern) :=
     kore_not s (kore_next s (kore_not s ph1)).
   Definition kore_eventually (s : Pattern) (ph1 : Pattern) :=
-    kore_mu s (kore_or (nest_mu s) (nest_mu ph1) (kore_next (nest_mu s) B0)).
+    kore_mu (kore_or (nest_mu s) (nest_mu ph1) (kore_next (nest_mu s) B0)).
   (* TODO: check. not well_founded and eventually is equivalent to this: *)
   Definition kore_weak_eventually (s : Pattern) (ph1 : Pattern) :=
-    kore_not s (kore_mu s (kore_not (nest_mu s)
+    kore_not s (kore_mu (kore_not (nest_mu s)
                              (kore_or (nest_mu s)
                                       (nest_mu ph1)
                                       (kore_next (nest_mu s)
                                         (kore_not (nest_mu s) B0))))).
   Definition kore_always (s : Pattern) (ph1 : Pattern) := 
-    kore_not s (kore_mu s (kore_not (nest_mu s)
+    kore_not s (kore_mu (kore_not (nest_mu s)
        (kore_and (nest_mu s) (nest_mu ph1)
          (kore_all_path_next (nest_mu s) (kore_not (nest_mu s) B0))))).
   Definition kore_well_founded (s : Pattern) :=
-    kore_mu s (kore_all_path_next (nest_mu s) B0).
+    kore_mu (kore_all_path_next (nest_mu s) B0).
   Definition kore_well_founded_alt (s : Pattern) :=
-    kore_mu s (kore_all_path_next (nest_mu s) (kore_always (nest_mu s) B0)).
+    kore_mu (kore_all_path_next (nest_mu s) (kore_always (nest_mu s) B0)).
   Definition kore_rewrites (s : Pattern) (ph1 : Pattern) (ph2 : Pattern) :=
     kore_implies s ph1 (kore_next s ph2).
   Definition kore_rewrites_star (s : Pattern) (ph1 : Pattern) (ph2 : Pattern) :=
@@ -295,7 +311,7 @@ Section derived_operations.
   Definition kore_all_path_next_nt (s : Pattern) (ph1 : Pattern) :=
     kore_and s (kore_all_path_next s ph1) (kore_non_terminating s).
   Definition kore_all_path_eventually (s : Pattern) (ph1 : Pattern) :=
-    kore_mu s (kore_or (nest_mu s) (nest_mu ph1) (kore_all_path_next_nt (nest_mu s) B0)).
+    kore_mu (kore_or (nest_mu s) (nest_mu ph1) (kore_all_path_next_nt (nest_mu s) B0)).
   Definition kore_all_path_rewrites (s : Pattern) (ph1 : Pattern) (ph2 : Pattern) :=
     kore_implies s ph1 (kore_all_path_next_nt s ph2).
   Definition kore_all_path_rewrites_star (s : Pattern) (ph1 : Pattern) (ph2 : Pattern) :=
