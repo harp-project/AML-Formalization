@@ -3002,30 +3002,49 @@ Proof.
   all: try_solve_pile.
 Defined.
 
-Lemma ceil_compat_in_or {Σ : Signature} {syntax : Syntax} Γ φ₁ φ₂:
+Lemma patt_defined_or_1 {Σ : Signature} {syntax : Syntax} Γ φ₁ φ₂:
+  theory ⊆ Γ ->
+  well_formed φ₁ ->
+  well_formed φ₂ ->
+  Γ ⊢i ( (⌈ φ₁ or φ₂ ⌉) ---> (⌈ φ₁ ⌉ or ⌈ φ₂ ⌉))
+  using BasicReasoning.
+Proof.
+  intros HΓ wfφ₁ wfφ₂. mlIntro "H0".
+  mlApplyMeta (useBasicReasoning (ExGen := ∅, SVSubst := ∅, KT := false, AKT := false) (Prop_disj_right Γ φ₁ φ₂ (definedness) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) )).
+  mlExact "H0".
+Defined.
+
+Lemma patt_defined_or_2 {Σ : Signature} {syntax : Syntax} Γ φ₁ φ₂:
+  theory ⊆ Γ ->
+  well_formed φ₁ ->
+  well_formed φ₂ ->
+  Γ ⊢i ( (⌈ φ₁ ⌉ or ⌈ φ₂ ⌉) ---> (⌈ φ₁ or φ₂ ⌉))
+  using BasicReasoning.
+Proof.
+  intros HΓ wfφ₁ wfφ₂. mlIntro "H0".
+  mlDestructOr "H0" as "H1" "H2".
+  + fromMLGoal. unshelve (eapply Framing_right).
+    * wf_auto2.
+    * try_solve_pile.
+    * toMLGoal. wf_auto2. mlIntro "H0'". mlLeft. mlExact "H0'".
+  + fromMLGoal. unshelve (eapply Framing_right).
+    * wf_auto2.
+    * try_solve_pile.
+    * toMLGoal. wf_auto2. mlIntro "H0'". mlRight. mlExact "H0'".
+Defined.
+
+Lemma patt_defined_or {Σ : Signature} {syntax : Syntax} Γ φ₁ φ₂:
   theory ⊆ Γ ->
   well_formed φ₁ ->
   well_formed φ₂ ->
   Γ ⊢i ( (⌈ φ₁ or φ₂ ⌉) <---> (⌈ φ₁ ⌉ or ⌈ φ₂ ⌉))
-  using (ExGen := ∅, SVSubst := ∅, KT := false, AKT := false).
+  using BasicReasoning.
 Proof.
   intros HΓ wfφ₁ wfφ₂.
-  toMLGoal.
-  { wf_auto2. }
   mlSplitAnd; mlIntro "H0".
-  - mlApplyMeta (useBasicReasoning (ExGen := ∅, SVSubst := ∅, KT := false, AKT := false) (Prop_disj_right Γ φ₁ φ₂ (definedness) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) )).
-    mlExact "H0".
-  - mlDestructOr "H0" as "H1" "H2".
-    + fromMLGoal. unshelve (eapply Framing_right).
-      * wf_auto2.
-      * try_solve_pile.
-      * toMLGoal. wf_auto2. mlIntro "H0'". mlLeft. mlExact "H0'".
-    + fromMLGoal. unshelve (eapply Framing_right).
-      * wf_auto2.
-      * try_solve_pile.
-      * toMLGoal. wf_auto2. mlIntro "H0'". mlRight. mlExact "H0'".
+  - mlApplyMeta patt_defined_or_1. mlAssumption. assumption.
+  - mlApplyMeta patt_defined_or_2. mlAssumption. assumption.
 Defined.
-
 
 Lemma helper_propositional_lemma_1 (Σ : Signature) Γ φ₁ φ₂:
   well_formed φ₁ = true ->
@@ -3068,7 +3087,7 @@ Proof.
   fold (⌈ ! ⌈ patt_free_evar x and φ ⌉ ⌉ or ⌈ patt_free_evar y and ⌈ patt_free_evar x and φ ⌉ ⌉).
   toMLGoal.
   { wf_auto2. }
-  mlRewrite <- (@liftProofInfoLe _ _ _ (ExGen := ∅, SVSubst := ∅, KT := false, AKT := false) i ltac:(try_solve_pile) (ceil_compat_in_or Γ (! ⌈ patt_free_evar x and φ ⌉) (patt_free_evar y and ⌈ patt_free_evar x and φ ⌉) HΓ ltac:(wf_auto2) ltac:(wf_auto2))) at 1.
+  mlRewrite <- (@liftProofInfoLe _ _ _ (ExGen := ∅, SVSubst := ∅, KT := false, AKT := false) i ltac:(try_solve_pile) (patt_defined_or Γ (! ⌈ patt_free_evar x and φ ⌉) (patt_free_evar y and ⌈ patt_free_evar x and φ ⌉) HΓ ltac:(wf_auto2) ltac:(wf_auto2))) at 1.
 
   ltac2:(mlApplyMeta ceil_monotonic with (φ₁ := (patt_free_evar y))).
   3: { exact HΓ. }
@@ -4507,38 +4526,61 @@ Proof.
   mlIntro "H1". mlExact "H1".
 Defined.
 
+Lemma patt_total_and_1 {Σ : Signature} {syntax : Syntax}:
+  forall Γ φ ψ,
+  theory ⊆ Γ ->
+  well_formed φ -> well_formed ψ ->
+  Γ ⊢i ⌊ φ and ψ ⌋ ---> ⌊ φ ⌋ and ⌊ ψ ⌋
+  using BasicReasoning.
+Proof.
+  intros Γ φ ψ HΓ Wf1 Wf2. unfold patt_and.
+  pose proof (Htmp := def_propagate_not Γ (! φ or ! ψ) HΓ ltac:(wf_auto2)).
+  mlRewrite <- Htmp at 1.
+  mlIntro "H1".
+  mlIntro "H2".
+  mlApply "H1".
+  mlClear "H1".
+  mlRewrite (patt_defined_or Γ (! φ) (! ψ) HΓ ltac:(wf_auto2) ltac:(wf_auto2)) at 1.
+  mlDestructOr "H2" as "H2'" "H2'".
+  - mlLeft. mlRevertLast. unfold patt_total.
+    mlRewrite <- (useBasicReasoning (ExGen := ∅, SVSubst := ∅, KT := false, AKT := false) (not_not_iff Γ ⌈ ! φ ⌉ ltac:(wf_auto2))) at 1.
+    mlIntro "H3". mlExact "H3".
+  - mlRight. mlRevertLast. unfold patt_total.
+    mlRewrite <- (useBasicReasoning (ExGen := ∅, SVSubst := ∅, KT := false, AKT := false) (not_not_iff Γ ⌈ ! ψ ⌉ ltac:(wf_auto2))) at 1.
+    mlIntro "H3". mlExact "H3".
+Defined.
+
+Lemma patt_total_and_2 {Σ : Signature} {syntax : Syntax}:
+  forall Γ φ ψ,
+  theory ⊆ Γ ->
+  well_formed φ -> well_formed ψ ->
+  Γ ⊢i ⌊ φ ⌋ and ⌊ ψ ⌋ ---> ⌊ φ and ψ ⌋
+  using BasicReasoning.
+Proof.
+  intros Γ φ ψ HΓ Wf1 Wf2.
+  mlIntro "H0". mlDestructAnd "H0" as "H1" "H2".
+  unfold patt_and.
+  pose proof (Htmp := def_propagate_not Γ (! φ or ! ψ) HΓ ltac:(wf_auto2)).
+  mlRewrite <- Htmp at 1.
+  mlRewrite (patt_defined_or Γ (! φ) (! ψ) HΓ ltac:(wf_auto2) ltac:(wf_auto2)) at 1.
+  mlIntro "H3". mlDestructOr "H3" as "H3'" "H3'".
+  - mlRevertLast. mlExact "H1".
+  - mlRevertLast. mlExact "H2".
+Defined.
+
 Lemma patt_total_and {Σ : Signature} {syntax : Syntax}:
   forall Γ φ ψ,
   theory ⊆ Γ ->
   well_formed φ -> well_formed ψ ->
   Γ ⊢i ⌊ φ and ψ ⌋ <---> ⌊ φ ⌋ and ⌊ ψ ⌋
-  using (ExGen := ∅, SVSubst := ∅, KT := false, AKT := false).
+  using BasicReasoning.
 Proof.
-  intros Γ φ ψ HΓ Wf1 Wf2. toMLGoal. wf_auto2.
+  intros Γ φ ψ HΓ Wf1 Wf2.
   mlSplitAnd.
-  * unfold patt_and.
-    pose proof (Htmp := def_propagate_not Γ (! φ or ! ψ) HΓ ltac:(wf_auto2)).
-    mlRewrite <- Htmp at 1.
-    mlIntro "H1".
-    mlIntro "H2".
-    mlApply "H1".
-    mlClear "H1".
-    mlRewrite (ceil_compat_in_or Γ (! φ) (! ψ) HΓ ltac:(wf_auto2) ltac:(wf_auto2)) at 1.
-    mlDestructOr "H2" as "H2'" "H2'".
-    - mlLeft. mlRevertLast. unfold patt_total.
-      mlRewrite <- (useBasicReasoning (ExGen := ∅, SVSubst := ∅, KT := false, AKT := false) (not_not_iff Γ ⌈ ! φ ⌉ ltac:(wf_auto2))) at 1.
-      mlIntro "H3". mlExact "H3".
-    - mlRight. mlRevertLast. unfold patt_total.
-      mlRewrite <- (useBasicReasoning (ExGen := ∅, SVSubst := ∅, KT := false, AKT := false) (not_not_iff Γ ⌈ ! ψ ⌉ ltac:(wf_auto2))) at 1.
-      mlIntro "H3". mlExact "H3".
-  * mlIntro "H0". mlDestructAnd "H0" as "H1" "H2".
-    unfold patt_and.
-    pose proof (Htmp := def_propagate_not Γ (! φ or ! ψ) HΓ ltac:(wf_auto2)).
-    mlRewrite <- Htmp at 1.
-    mlRewrite (ceil_compat_in_or Γ (! φ) (! ψ) HΓ ltac:(wf_auto2) ltac:(wf_auto2)) at 1.
-    mlIntro "H3". mlDestructOr "H3" as "H3'" "H3'".
-    - mlRevertLast. mlExact "H1".
-    - mlRevertLast. mlExact "H2".
+  * mlIntro "H". mlApplyMeta patt_total_and_1. 2: assumption.
+    mlAssumption.
+  * mlIntro "H". mlApplyMeta patt_total_and_2. 2: assumption.
+    mlAssumption.
 Defined.
 
 Lemma membership_var {Σ : Signature} {syntax : Syntax} :

@@ -3627,26 +3627,73 @@ Proof.
     mlAssumption.
 Defined.
 
+Lemma deMorgan_nand_1 {Σ : Signature} Γ a b:
+    well_formed a ->
+    well_formed b ->
+    Γ ⊢i ( !(a and b) ---> (!a or !b) )
+    using BasicReasoning.
+Proof.
+  intros wfa wfb.
+  mlIntro "H".
+  mlIntro "H0".
+  mlIntro "H1".
+  mlApply "H".
+  mlSplitAnd. 2: mlAssumption.
+  mlApplyMeta not_not_elim in "H0".
+  mlAssumption.
+Defined.
+
+Lemma deMorgan_nand_2 {Σ : Signature} Γ a b:
+    well_formed a ->
+    well_formed b ->
+    Γ ⊢i ( (!a or !b) ---> !(a and b) )
+    using BasicReasoning.
+Proof.
+  intros wfa wfb.
+  mlIntro "H".
+  mlIntro "H0".
+  mlDestructAnd "H0".
+  mlDestructOr "H" as "H1" "H1"; mlApply "H1"; mlAssumption.
+Defined.
 
 Lemma deMorgan_nand {Σ : Signature} Γ a b:
     well_formed a ->
     well_formed b ->
     Γ ⊢i ( !(a and b) <---> (!a or !b) )
     using BasicReasoning.
-  Proof.
-    intros wfa wfb.
-    toMLGoal.
-    { wf_auto2. }
-    mlIntro "H0".
-    mlDestructOr "H0" as "H1" "H2".
-    - mlRevertLast.
-      mlApplyMeta not_not_intro. mlIntro "H0".
-      mlApplyMeta not_not_elim in "H0".
-      mlAssumption.
-    - mlRevertLast.
-      mlApplyMeta not_not_intro. mlIntro "H0".
-      mlApplyMeta not_not_intro.
-      mlAssumption.
+Proof.
+  intros wfa wfb.
+  mlSplitAnd.
+  * mlIntro "H". mlApplyMeta deMorgan_nand_1. mlAssumption.
+  * mlIntro "H". mlApplyMeta deMorgan_nand_2. mlAssumption.
+Defined.
+
+Lemma deMorgan_nor_1 {Σ : Signature} Γ a b:
+    well_formed a ->
+    well_formed b ->
+    Γ ⊢i ( !(a or b) ---> (!a and !b))
+    using BasicReasoning.
+Proof.
+  intros wfa wfb.
+  mlIntro "H".
+  mlSplitAnd; mlIntro "H0"; mlApply "H".
+  * mlLeft. mlAssumption.
+  * mlRight. mlAssumption.
+Defined.
+
+Lemma deMorgan_nor_2 {Σ : Signature} Γ a b:
+    well_formed a ->
+    well_formed b ->
+    Γ ⊢i ( (!a and !b) ---> !(a or b))
+    using BasicReasoning.
+Proof.
+  intros wfa wfb.
+  mlIntro "H".
+  mlIntro "H0".
+  mlDestructAnd "H" as "H1" "H2".
+  mlDestructOr "H0" as "H" "H".
+  * mlApply "H1". mlAssumption.
+  * mlApply "H2". mlAssumption.
 Defined.
 
 Lemma deMorgan_nor {Σ : Signature} Γ a b:
@@ -3654,29 +3701,12 @@ Lemma deMorgan_nor {Σ : Signature} Γ a b:
     well_formed b ->
     Γ ⊢i ( !(a or b) <---> (!a and !b))
     using BasicReasoning.
-  Proof.
-    intros wfa wfb.
-    toMLGoal.
-    { wf_auto2. }
-    mlIntro "H0".
-    mlDestructOr "H0" as "H1" "H2".
-    - mlRevertLast.
-      mlApplyMeta not_not_intro.
-      mlIntro "H0". mlIntro "H1".
-      mlApply "H0".
-      mlDestructOr "H1" as "H2" "H3".
-      + mlApplyMeta not_not_elim in "H2".
-        mlLeft. mlAssumption.
-      + mlApplyMeta not_not_elim in "H3".
-        mlRight. mlAssumption.
-    - mlRevertLast.
-      mlApplyMeta not_not_intro.
-      mlIntro "H0". mlIntro "H1".
-      mlDestructAnd "H0" as "H2" "H3".
-      mlDestructOr "H1" as "H4" "H5".
-      + mlApply "H2". mlAssumption.
-      + mlApply "H3". mlAssumption.
-  Defined.
+Proof.
+  intros wfa wfb.
+  mlSplitAnd.
+  * mlIntro "H". mlApplyMeta deMorgan_nor_1. mlAssumption.
+  * mlIntro "H". mlApplyMeta deMorgan_nor_2. mlAssumption.
+Defined.
 
 Lemma not_not_eq {Σ : Signature} (Γ : Theory) (a : Pattern) :
   well_formed a ->
