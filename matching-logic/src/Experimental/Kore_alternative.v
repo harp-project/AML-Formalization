@@ -95,36 +95,36 @@ Section derived_operations.
   Solve Obligations of kore_not_Binary with intros; unfold kore_not; wf_auto2.
   Fail Next Obligation.
 
-  (* TODO: check if s is needed! *)
+  (* NOTE: this is changed wrt MM *)
   Definition kore_and (s : Pattern) (ph1 : Pattern) (ph2 : Pattern) :=
-    patt_and ph1 ph2.
+    patt_and (patt_and ph1 ph2) (kore_top s).
   #[global]
-  Program Instance kore_and_Binary s : Binary (kore_and s).
+  Program Instance kore_and_Ternary : Ternary kore_and.
   Next Obligation.
     intros. repeat rewrite pm_correctness. simpl.
     repeat rewrite pm_correctness. reflexivity.
   Defined.
-  Solve Obligations of kore_and_Binary with intros; unfold kore_and; wf_auto2.
+  Solve Obligations of kore_and_Ternary with intros; unfold kore_and; wf_auto2.
   Fail Next Obligation.
 
-  Local Goal forall φ1, well_formed φ1 -> well_formed (kore_and b0 φ1 ⊥).
+  Local Goal forall φ1 s, well_formed φ1 -> well_formed s -> well_formed (kore_and s φ1 ⊥).
   Proof.
     intros. wf_auto2.
   Qed.
 
-  (* TODO: check if s is needed! *)
+  (* NOTE: this is changed wrt MM *)
   Definition kore_or (s : Pattern) (ph1 : Pattern) (ph2 : Pattern) :=
-    patt_or ph1 ph2.
+    patt_and (patt_or ph1 ph2) (kore_top s).
   #[global]
-  Program Instance kore_or_Binary s : Binary (kore_or s).
+  Program Instance kore_or_Ternary : Ternary kore_or.
   Next Obligation.
     intros. rewrite pm_correctness. simpl.
     repeat rewrite pm_correctness. reflexivity.
   Defined.
-  Solve Obligations of kore_or_Binary with intros; unfold kore_or; wf_auto2.
+  Solve Obligations of kore_or_Ternary with intros; unfold kore_or; wf_auto2.
   Fail Next Obligation.
 
-  Local Goal forall φ1, well_formed φ1 -> well_formed (kore_or b0 φ1 ⊥).
+  Local Goal forall φ1 s, well_formed φ1 -> well_formed s -> well_formed (kore_or s φ1 ⊥).
   Proof.
     intros. wf_auto2.
   Qed.
@@ -162,18 +162,20 @@ Section derived_operations.
     intros. wf_auto2.
   Qed.
 
-  (* TODO: check if s1 is needed! *)
+  (* TODO: check if s1 is needed!
+     TODO: this seems to be wrong. s1 is not used for ph2!
+  *)
   Definition kore_ceil (s1 : Pattern) (s2 : Pattern) (ph2 : Pattern) := 
-    patt_and (patt_defined ph2) (kore_top s2).
+    patt_and (patt_defined (patt_and ph2 (kore_top s1))) (kore_top s2).
   #[global]
-  Program Instance kore_ceil_Binary s : Binary (kore_ceil s).
+  Program Instance kore_ceil_Ternary : Ternary kore_ceil.
   Next Obligation.
     intros. repeat rewrite pm_correctness. simpl.
     repeat rewrite pm_correctness. reflexivity.
   Defined.
-  Solve Obligations of kore_ceil_Binary with intros; unfold kore_ceil; wf_auto2.
+  Solve Obligations of kore_ceil_Ternary with intros; unfold kore_ceil; wf_auto2.
   Fail Next Obligation.
-  Local Goal forall s2 φ1, well_formed φ1 -> well_formed s2 -> well_formed (kore_ceil b0 s2 φ1).
+  Local Goal forall s1 s2 φ1, well_formed φ1 -> well_formed s1 -> well_formed s2 -> well_formed (kore_ceil s1 s2 φ1).
   Proof.
     intros. wf_auto2.
   Qed.
@@ -359,15 +361,15 @@ Module Notations.
   Check ⊥(Nat).
   Notation "'Top(' s ')'" := (kore_top s) (format "'Top(' s ')'") : ml_scope.
   Check Top(Nat).
-  (* Notation "" := (kore_valid s p). *)
+  Notation "'⊢(' s ')' p" := (kore_valid s p) (at level 80, format "'⊢(' s ')'  p").
   Notation "'!(' s ')' p" := (kore_not s p) (at level 71, format "'!(' s ')'  p") : ml_scope.
   Check !(Nat) ⊥.
   Notation "p1 'and(' s ')' p2" := (kore_and s p1 p2) (at level 72, format "p1  'and(' s ')'  p2") : ml_scope.
   Check ⊥ and(Nat) Top.
   Notation "p1 'or(' s ')' p2" := (kore_or s p1 p2) (at level 73, format "p1  'or(' s ')'  p2") : ml_scope.
   Check ⊥ or(Nat) Top.
-  Notation "p1 '--(' s ')->' p2" := (kore_implies s p1 p2) (at level 75, format "p1  '--(' s ')->'  p2") : ml_scope.
-  Check ⊥ --(Nat)-> Top.
+  Notation "p1 '-(' s ')->' p2" := (kore_implies s p1 p2) (at level 75, format "p1  '-(' s ')->'  p2") : ml_scope.
+  Check ⊥ -(Nat)-> Top.
   Notation "p1 '<-(' s ')->' p2" := (kore_iff s p1 p2) (at level 74, format "p1  '<-(' s ')->'  p2") : ml_scope.
   Check ⊥ <-(Nat)-> Top.
 
@@ -522,246 +524,518 @@ Arguments well_formed_closed_ex_aux /. *)
     (Γ : Theory)
     (HΓ : KoreTheory ⊆ Γ)
   .
-  Check kore_well_founded.
-  Lemma well_founded_alt_1 :
-    forall s,
+
+  Search patt_and patt_or derives_using.
+
+  Lemma implies_equiv_1 :
+    forall s φ ψ,
       well_formed s ->
-      Γ ⊢ kore_well_founded_alt s ---> kore_well_founded s.
+      well_formed φ ->
+      well_formed ψ ->
+      Γ ⊢ (φ -(s)-> ψ) ---> ((φ ---> ψ) and Top(s)).
   Proof.
-(*     intros. unfold kore_well_founded, kore_well_founded_alt.
-    toMLGoal. { admit. }
-    mlIntro "H".
-    mlDestructAnd "H" as "H_1" "H_2".
+    intros. mlIntro "H".
+    mlDestructAnd "H" as "H1" "H2".
     mlSplitAnd. 2: mlAssumption.
-    mlClear "H_2".
-    pose proof Pre_fixp as HPF.
-    pose proof Knaster_tarski as HKT.
-    unfold kore_always, kore_all_path_next.
-    assert (nest_mu s = s) as Hs by admit.
-    repeat rewrite Hs. unfold nest_mu. simpl.
-    unfold kore_mu. *)
+    mlIntro "H3".
+    mlDestructOr "H1" as "H" "H". 2: mlAssumption.
+    mlDestructAnd "H" as "H0" "H1".
+    mlApply "H0" in "H3". mlDestructBot "H3".
+  Defined.
 
-  Abort.
-
-  Local Goal
-    forall A B s,
-      Γ ⊢ kore_and s A B <---> kore_not s (kore_or s (kore_not s A) (kore_not s B)).
+  Lemma implies_equiv_2 :
+    forall s φ ψ,
+      well_formed s ->
+      well_formed φ ->
+      well_formed ψ ->
+      Γ ⊢ ((φ ---> ψ) and Top(s)) ---> (φ -(s)-> ψ).
   Proof.
-    intros. unfold kore_and, kore_not, kore_or, kore_top.
-    toMLGoal. admit.
-    mlSplitAnd.
-    * mlIntro.
-      mlIntro.
-      mlDestructAnd "0".
-      mlDestructOr "1". admit. admit.
-    *
-  Abort.
+    intros.
+    mlIntro "H".
+    mlDestructAnd "H" as "H1" "H2".
+    mlSplitAnd. 2: mlAssumption.
+    mlIntro "H3".
+    mlApplyMeta deMorgan_nand_1 in "H3".
+    mlDestructOr "H3" as "H" "H".
+    * mlApply "H1". mlApplyMeta not_not_elim in "H".
+      mlAssumption.
+    * mlExFalso. mlApply "H". mlAssumption.
+  Defined.
 
-  Local Goal
+  Theorem implies_equiv :
+    forall s φ ψ,
+      well_formed s ->
+      well_formed φ ->
+      well_formed ψ ->
+      Γ ⊢ (φ -(s)-> ψ) <---> ((φ ---> ψ) and Top(s)).
+  Proof.
+    intros.
+    mlSplitAnd.
+    * mlIntro. mlApplyMeta implies_equiv_1. mlAssumption.
+    * mlIntro. mlApplyMeta implies_equiv_2. mlAssumption.
+  Defined.
+
+  Lemma iff_equiv_1 :
+    forall s φ ψ,
+      well_formed s ->
+      well_formed φ ->
+      well_formed ψ ->
+      Γ ⊢ (φ <-(s)-> ψ) ---> ((φ <---> ψ) and Top(s)).
+  Proof.
+    intros. unfold kore_iff.
+    pose proof implies_equiv s φ ψ H H0 H1 as HH.
+    pose proof implies_equiv s ψ φ H H1 H0 as FF.
+    mlRewrite HH at 1.
+    mlRewrite FF at 1.
+    unfold kore_and.
+    mlIntro "H"; mlDestructAnd "H".
+    all: mlSplitAnd; try mlAssumption.
+    mlDestructAnd "0". mlDestructAnd "2".
+    mlDestructAnd "3". mlSplitAnd; mlAssumption.
+  Defined.
+
+  Lemma iff_equiv_2 :
+    forall s φ ψ,
+      well_formed s ->
+      well_formed φ ->
+      well_formed ψ ->
+      Γ ⊢ ((φ <---> ψ) and Top(s)) ---> (φ <-(s)-> ψ).
+  Proof.
+    intros. unfold kore_iff.
+    pose proof implies_equiv s φ ψ H H0 H1 as HH.
+    pose proof implies_equiv s ψ φ H H1 H0 as FF.
+    mlRewrite HH at 1.
+    mlRewrite FF at 1.
+    unfold kore_and.
+    mlIntro "H". mlDestructAnd "H" as "H1" "H2".
+    mlDestructAnd "H1".
+    repeat mlSplitAnd; try mlAssumption.
+  Defined.
+
+  Theorem iff_equiv :
+    forall s φ ψ,
+      well_formed s ->
+      well_formed φ ->
+      well_formed ψ ->
+      Γ ⊢ (φ <-(s)-> ψ) <---> ((φ <---> ψ) and Top(s)).
+  Proof.
+    intros.
+    mlSplitAnd.
+    * mlIntro. mlApplyMeta iff_equiv_1. mlAssumption.
+    * mlIntro. mlApplyMeta iff_equiv_2. mlAssumption.
+  Defined.
+
+  Lemma valid_equiv_1 :
+    forall s φ ψ,
+      well_formed s ->
+      well_formed φ ->
+      well_formed ψ ->
+      Γ ⊢ (⊢(s) φ <-(s)-> ψ) ---> ((φ and Top(s)) =ml (ψ and Top(s))).
+  Proof.
+    intros. unfold kore_valid.
+    pose proof (iff_equiv s φ ψ H H0 H1).
+    mlRewrite H2 at 1.
+    mlIntro "H".
+    mlApplyMeta patt_total_and_2.
+    2: unfold KoreTheory in HΓ; set_solver.
+    mlSplitAnd.
+    * mlApplyMeta floor_monotonic. mlExact "H".
+      2: wf_auto2.
+      2: unfold KoreTheory in HΓ; set_solver.
+      clear hasserted.
+      instantiate (1 := AnyReasoning).
+      mlIntro "H".
+      mlIntro "H0".
+      mlDestructAnd "H0" as "H0_1" "H0_2".
+      mlSplitAnd. 2: mlAssumption.
+      mlDestructAnd "H" as "H_1" "H_2".
+      mlApply "H_2" in "H0_2".
+      mlDestructAnd "H0_2" as "H3" "H4".
+      mlDestructAnd "H3" as "H5" "H6".
+      mlApply "H5".
+      mlAssumption.
+    * mlApplyMeta floor_monotonic. mlExact "H".
+      2: wf_auto2.
+      2: unfold KoreTheory in HΓ; set_solver.
+      clear hasserted.
+      instantiate (1 := AnyReasoning).
+      mlIntro "H".
+      mlIntro "H0".
+      mlDestructAnd "H0" as "H0_1" "H0_2".
+      mlSplitAnd. 2: mlAssumption.
+      mlDestructAnd "H" as "H_1" "H_2".
+      mlApply "H_2" in "H0_2".
+      mlDestructAnd "H0_2" as "H3" "H4".
+      mlDestructAnd "H3" as "H5" "H6".
+      mlApply "H6".
+      mlAssumption.
+  Defined.
+
+  Lemma valid_equiv_2 :
+    forall s φ ψ,
+      well_formed s ->
+      well_formed φ ->
+      well_formed ψ ->
+      Γ ⊢ ((φ and Top(s)) =ml (ψ and Top(s))) ---> (⊢(s) φ <-(s)-> ψ).
+  Proof.
+    intros. unfold kore_valid.
+    pose proof (iff_equiv s φ ψ H H0 H1).
+    mlRewrite H2 at 1.
+    mlIntro "H".
+    mlApplyMeta patt_total_and_2.
+    2: unfold KoreTheory in HΓ; set_solver.
+    mlSplitAnd.
+    * mlApplyMeta floor_monotonic. mlExact "H".
+      2: wf_auto2.
+      2: unfold KoreTheory in HΓ; set_solver.
+      clear hasserted.
+      instantiate (1 := AnyReasoning).
+      mlIntro "H".
+      mlIntro "H0".
+      mlDestructAnd "H0" as "H0_1" "H0_2".
+      mlAssumption.
+    * mlApplyMeta floor_monotonic. mlExact "H".
+      2: wf_auto2.
+      2: unfold KoreTheory in HΓ; set_solver.
+      clear hasserted.
+      instantiate (1 := AnyReasoning).
+      mlIntro "H".
+      mlIntro "H0".
+      mlDestructAnd "H" as "H_1" "H_2".
+      mlSplitAnd. 2: mlAssumption.
+      mlSplitAnd.
+      - mlIntro "H".
+        mlConj "H" "H0" as "H2".
+        mlApply "H_1" in "H2".
+        mlDestructAnd "H2".
+        mlAssumption.
+      - mlIntro "H".
+        mlConj "H" "H0" as "H2".
+        mlApply "H_2" in "H2".
+        mlDestructAnd "H2".
+        mlAssumption.
+  Defined.
+
+  Theorem valid_equiv :
+    forall s φ ψ,
+      well_formed s ->
+      well_formed φ ->
+      well_formed ψ ->
+      Γ ⊢ (⊢(s) φ <-(s)-> ψ) <---> ((φ and Top(s)) =ml (ψ and Top(s))).
+  Proof.
+    intros.
+    mlSplitAnd.
+    * mlIntro. mlApplyMeta valid_equiv_1. mlAssumption.
+    * mlIntro. mlApplyMeta valid_equiv_2. mlAssumption.
+  Defined.
+
+  Lemma floor_equiv_1 :
+    forall s1 s2 φ,
+      well_formed s1 ->
+      well_formed s2 ->
+      well_formed φ ->
+      Γ ⊢ ⌊(s1, s2) φ⌋ ---> ⌊φ or !Top(s1)⌋ and Top(s2).
+  Proof.
+    intros.
+    unfold kore_floor, kore_ceil, kore_not.
+    mlIntro "H".
+    mlDestructAnd "H" as "H1" "H2".
+    mlSplitAnd. 2: mlAssumption.
+    unfold patt_total.
+    mlApplyMeta deMorgan_nand_1 in "H1".
+    mlDestructOr "H1" as "H" "H".
+    2: { mlApply "H" in "H2". mlDestructBot "H2". }
+    mlClear "H2".
+    mlIntro "H0".
+    mlApply "H". mlClear "H".
+    mlApplyMeta ceil_monotonic. mlAssumption.
+    2: wf_auto2.
+    2: unfold KoreTheory in HΓ; set_solver.
+    instantiate (1 := AnyReasoning).
+    mlIntro "H".
+    mlApplyMeta deMorgan_nor_1 in "H".
+    mlDestructAnd "H" as "H1" "H2".
+    mlApplyMeta not_not_elim in "H2".
+    repeat mlSplitAnd; mlAssumption.
+  Defined.
+
+  Lemma floor_equiv_2 :
+    forall s1 s2 φ,
+      well_formed s1 ->
+      well_formed s2 ->
+      well_formed φ ->
+      Γ ⊢ ⌊φ or !Top(s1)⌋ and Top(s2) ---> ⌊(s1, s2) φ⌋.
+  Proof.
+    intros.
+    unfold kore_floor, kore_ceil, kore_not.
+    mlIntro "H".
+    mlDestructAnd "H" as "H1" "H2".
+    mlSplitAnd. 2: mlAssumption.
+    mlIntro "H". mlDestructAnd "H" as "H0" "H3".
+    mlApply "H1".
+    mlApplyMeta ceil_monotonic. mlExact "H0".
+    2: wf_auto2.
+    2: unfold KoreTheory in HΓ; set_solver.
+    instantiate (1 := AnyReasoning).
+    mlIntro "H".
+    mlIntro "H0".
+    mlDestructAnd "H" as "H1" "H2".
+    mlDestructAnd "H1" as "H3" "H4".
+    mlDestructOr "H0" as "H5" "H5".
+    * mlApply "H3". mlAssumption.
+    * mlApply "H5". mlAssumption.
+  Defined.
+
+  Theorem floor_equiv :
+    forall s1 s2 φ,
+      well_formed s1 ->
+      well_formed s2 ->
+      well_formed φ ->
+      Γ ⊢ ⌊(s1, s2) φ⌋ <---> ⌊φ or !Top(s1)⌋ and Top(s2).
+  Proof.
+    intros.
+    mlSplitAnd.
+    * mlIntro. mlApplyMeta floor_equiv_1. mlAssumption.
+    * mlIntro. mlApplyMeta floor_equiv_2. mlAssumption.
+  Defined.
+
+  Lemma equals_equiv_1 :
+    forall s1 s2 φ ψ,
+      well_formed s1 ->
+      well_formed s2 ->
+      well_formed φ ->
+      well_formed ψ ->
+      Γ ⊢ φ =ml(s1,s2) ψ ---> (φ and Top(s1)) =ml (ψ and Top(s1)) and Top(s2).
+  Proof.
+    intros.
+    unfold kore_equals.
+    mlIntro "H".
+    mlApplyMeta floor_equiv_1 in "H".
+    mlDestructAnd "H" as "H0" "H1".
+    mlSplitAnd. 2: mlAssumption.
+    mlClear "H1".
+    mlApplyMeta floor_monotonic. mlExact "H0".
+    2: wf_auto2.
+    2: unfold KoreTheory in HΓ; set_solver.
+    instantiate (1 := AnyReasoning).
+    mlIntro "H".
+    mlSplitAnd; mlIntro "H0";
+      mlDestructAnd "H0" as "H0_1" "H0_2";
+      mlDestructOr "H" as "H1" "H1".
+    * mlApplyMeta iff_equiv_1 in "H1".
+      mlDestructAnd "H1" as "H2" "H3".
+      mlDestructAnd "H2" as "H4" "H5".
+      mlApply "H4" in "H0_1".
+      mlSplitAnd; mlAssumption.
+    * mlApply "H1" in "H0_2".
+      mlDestructBot "H0_2".
+    * mlApplyMeta iff_equiv_1 in "H1".
+      mlDestructAnd "H1" as "H2" "H3".
+      mlDestructAnd "H2" as "H4" "H5".
+      mlApply "H5" in "H0_1".
+      mlSplitAnd; mlAssumption.
+    * mlApply "H1" in "H0_2".
+      mlDestructBot "H0_2".
+  Defined.
+
+  Lemma equals_equiv_2 :
+    forall s1 s2 φ ψ,
+      well_formed s1 ->
+      well_formed s2 ->
+      well_formed φ ->
+      well_formed ψ ->
+      Γ ⊢ (φ and Top(s1)) =ml (ψ and Top(s1)) and Top(s2) ---> φ =ml(s1,s2) ψ.
+  Proof.
+    intros.
+    mlIntro "H".
+    mlApplyMeta floor_equiv_2.
+    mlDestructAnd "H" as "H0" "H1".
+    mlSplitAnd. 2: mlAssumption.
+    mlApplyMeta floor_monotonic. mlExact "H0".
+    2: wf_auto2.
+    2: unfold KoreTheory in HΓ; set_solver.
+    instantiate (1 := AnyReasoning).
+    mlIntro "H".
+    mlDestructAnd "H" as "H0" "H1".
+    mlIntro "H". mlIntro "H2".
+    mlApply "H".
+    mlApplyMeta iff_equiv_2.
+    mlSplitAnd. 2: mlAssumption.
+    mlSplitAnd; mlIntro "H3"; mlConj "H3" "H2" as "D".
+    * mlApply "H0" in "D". mlDestructAnd "D". mlAssumption.
+    * mlApply "H1" in "D". mlDestructAnd "D". mlAssumption.
+  Defined.
+
+  Theorem equals_equiv :
+    forall s1 s2 φ ψ,
+      well_formed s1 ->
+      well_formed s2 ->
+      well_formed φ ->
+      well_formed ψ ->
+      Γ ⊢ φ =ml(s1,s2) ψ <--->
+          (φ and Top(s1)) =ml (ψ and Top(s1)) and Top(s2).
+  Proof.
+    intros.
+    mlSplitAnd.
+    * mlIntro. mlApplyMeta equals_equiv_1. mlAssumption.
+    * mlIntro. mlApplyMeta equals_equiv_2. mlAssumption.
+  Defined.
+
+  Lemma in_equiv_1 :
+    forall s1 s2 φ ψ,
+      well_formed s1 ->
+      well_formed s2 ->
+      well_formed φ ->
+      well_formed ψ ->
+      Γ ⊢ φ ⊆ml(s1,s2) ψ ---> (φ and Top(s1)) ⊆ml (ψ and Top(s1)) and Top(s2).
+  Proof.
+    intros.
+    unfold kore_equals.
+    mlIntro "H".
+    mlApplyMeta floor_equiv_1 in "H".
+    mlDestructAnd "H" as "H0" "H1".
+    mlSplitAnd. 2: mlAssumption.
+    mlClear "H1".
+    mlApplyMeta floor_monotonic. mlExact "H0".
+    2: wf_auto2.
+    2: unfold KoreTheory in HΓ; set_solver.
+    instantiate (1 := AnyReasoning).
+    mlIntro "H".
+    mlIntro "H0".
+    mlDestructAnd "H0" as "H1" "H2".
+    mlDestructOr "H" as "H0" "H0".
+    2: { mlApply "H0" in "H2". mlDestructBot "H2". }
+    mlApplyMeta implies_equiv_1 in "H0".
+    mlDestructAnd "H0" as "H" "H3".
+    mlApply "H" in "H1".
+    mlSplitAnd; mlAssumption.
+  Defined.
+
+  Lemma in_equiv_2 :
+    forall s1 s2 φ ψ,
+      well_formed s1 ->
+      well_formed s2 ->
+      well_formed φ ->
+      well_formed ψ ->
+      Γ ⊢ (φ and Top(s1)) ⊆ml (ψ and Top(s1)) and Top(s2) ---> φ ⊆ml(s1,s2) ψ.
+  Proof.
+    intros.
+    mlIntro "H".
+    mlApplyMeta floor_equiv_2.
+    mlDestructAnd "H" as "H0" "H1".
+    mlSplitAnd. 2: mlAssumption.
+    mlApplyMeta floor_monotonic. mlExact "H0".
+    2: wf_auto2.
+    2: unfold KoreTheory in HΓ; set_solver.
+    instantiate (1 := AnyReasoning).
+    mlIntro "H".
+    mlIntro "H0".
+    mlIntro "H1".
+    mlApply "H0".
+    mlApplyMeta implies_equiv_2.
+    mlSplitAnd. 2: mlAssumption.
+    mlIntro "H2".
+    mlConj "H2" "H1" as "D".
+    mlApply "H" in "D".
+    mlDestructAnd "D".
+    mlAssumption.
+  Defined.
+
+  Theorem in_equiv :
+    forall s1 s2 φ ψ,
+      well_formed s1 ->
+      well_formed s2 ->
+      well_formed φ ->
+      well_formed ψ ->
+      Γ ⊢ φ ⊆ml(s1,s2) ψ <---> (φ and Top(s1)) ⊆ml (ψ and Top(s1)) and Top(s2).
+  Proof.
+    intros.
+    mlSplitAnd.
+    * mlIntro. mlApplyMeta in_equiv_1. mlAssumption.
+    * mlIntro. mlApplyMeta in_equiv_2. mlAssumption.
+  Defined.
+
+  Lemma forall_equiv_1 :
     forall s1 s2 φ,
       well_formed s1 ->
       well_formed s2 ->
       well_formed (ex, φ) ->
-      Γ ⊢ kore_forall s1 s2 φ <---> (all s1 , φ) and ⟦s2⟧.
+      Γ ⊢ (all s1 ∷ s2, φ) ---> (all s1 , φ) and ⟦s2⟧.
   Proof.
     intros.
     unfold kore_forall, kore_not, kore_exists, kore_top.
     toMLGoal. { unfold kore_forall, kore_exists, patt_sorted_forall, patt_sorted_exists. wf_auto2. }
-    mlSplitAnd.
-    * mlIntro.
-      mlDestructAnd "0".
-      mlSplitAnd. 2: mlAssumption.
-      mlIntroAll x. mlSimpl. cbn.
-      setoid_rewrite nest_ex_same.
-      mlIntro.
-      epose proof deMorgan_nand Γ (ex s1, ! φ and ⟦ s2 ⟧) ⟦ s2 ⟧
-         ltac:(wf_auto2) ltac:(wf_auto2).
-      use AnyReasoning in H2.
-      mlAdd H2 as "H2".
-      mlDestructAnd "H2". mlClear "4".
-      mlApply "3" in "1". mlClear "3".
-      mlDestructOr "1".
-      - mlSpecialize "3" with x.
-        mlSimpl. simpl.
-        setoid_rewrite nest_ex_same.
-        rewrite (evar_open_not_occur _ _ s2). wf_auto2.
-        mlDestructOr "3".
-        + mlApply "1" in "0". mlDestructBot "0".
-        + pose proof deMorgan_nand Γ
-              (! φ^{evar:0↦x}) ⟦ s2 ⟧
-         ltac:(wf_auto2) ltac:(wf_auto2).
-         use AnyReasoning in H3.
-         mlAdd H3 as "H3".
-         mlDestructAnd "H3". mlClear "3".
-         mlApply "1" in "4". mlClear "1".
-         mlDestructOr "4".
-         ** mlApplyMeta Misc.notnot_taut_1 in "1".
-            mlAssumption.
-         ** mlApply "3" in "2". mlDestructBot "2".
-      - mlExFalso. mlApply "4". mlAssumption.
-    * mlIntro. mlDestructAnd "0" as "H" "Hs".
-      mlSplitAnd. 2: mlAssumption.
-      mlIntro "E". mlDestructAnd "E" as "E1" "E2".
-      mlDestructEx "E1" as x.
-      mlSimpl.
+    mlIntro.
+    mlDestructAnd "0".
+    mlSplitAnd. 2: mlAssumption.
+    mlIntroAll x. mlSimpl. cbn.
+    setoid_rewrite nest_ex_same.
+    mlIntro.
+    epose proof deMorgan_nand Γ (ex s1, ! φ and ⟦ s2 ⟧) ⟦ s2 ⟧ _ _.
+    use AnyReasoning in H2.
+    mlAdd H2 as "H2".
+    mlDestructAnd "H2". mlClear "4".
+    mlApply "3" in "1". mlClear "3".
+    mlDestructOr "1".
+    - mlSpecialize "3" with x.
+      mlSimpl. simpl.
       setoid_rewrite nest_ex_same.
       rewrite (evar_open_not_occur _ _ s2). wf_auto2.
-      mlDestructAnd "E1" as "E1_1" "E1_2".
-      mlDestructAnd "E1_2".
-      mlApply "0".
-      mlSpecialize "H" with x. mlSimpl. simpl.
-      setoid_rewrite nest_ex_same.
-      mlApply "H". mlAssumption.
-     Unshelve.
-       all: unfold kore_forall, kore_exists, patt_sorted_forall, patt_sorted_exists; wf_auto2; admit.
-  Admitted.
-
-  Print kore_forall.
-  Print kore_exists.
-  Print patt_sorted_exists.
-  Print kore_ceil.
-  Print kore_floor.
-  Print kore_equals.
-  Print kore_in.
-  Print kore_and.
-  Print kore_iff.
-  Print kore_next.
-  Print kore_not.
-
-  Local Goal
-    forall s φ ψ,
-      well_formed s ->
-      well_formed φ ->
-      well_formed ψ ->
-      Γ ⊢ (φ and(s) ψ) <-(s)-> (!(s) (!(s) φ or(s) !(s) ψ)).
-  Proof.
-    intros.
-    toMLGoal. wf_auto2.
-    mlSplitAnd.
-    {
-      unfold kore_implies, kore_not, kore_and, kore_or.
-      Search derives_using patt_or patt_imp.
-      repeat mlIntro.
-      mlAssert ("H" : ((φ and ψ) or ! Top(s)) ). wf_auto2.
-      {
-        mlClear "1".
-        mlIntro. mlIntro.
-        mlApply "0".
-        mlSplitAnd; mlAssumption.
-      }
-      mlClear "0".
-      pose proof (not_not_eq Γ (! φ and Top(s) or ! ψ and Top(s)) ltac:(wf_auto2)). use AnyReasoning in H2.
-      mlRevert "1".
-      mlRewrite H2 at 1.
-      mlIntro "1".
-      
-      (* addition of unproved assertions *)
-      mlAssert ("Hass" : (φ and ψ and Top(s))). wf_auto2. admit.
-      
-      admit.
-    }
-    {
-      admit.
-    }
-  Admitted.
-
-  Local Goal
-    forall s φ ψ,
-      well_formed s ->
-      well_formed φ ->
-      well_formed ψ ->
-      Γ ⊢ (φ and ψ and Top(s)) <-(s)-> (!(s) (!(s) φ or(s) !(s) ψ)).
-  Proof.
-    intros.
-    toMLGoal. wf_auto2.
-    mlSplitAnd.
-    {
-      unfold kore_implies, kore_not, kore_and, kore_or.
-      Search derives_using patt_or patt_imp.
-      repeat mlIntro.
-      mlAssert ("H" : ((φ and ψ and Top(s)) or ! Top(s)) ). wf_auto2.
-      {
-        mlClear "1".
-        mlIntro. mlIntro.
-        mlApply "0".
-        mlSplitAnd; try mlAssumption.
-      }
-      mlClear "0".
-      pose proof (not_not_eq Γ (! φ and Top(s) or ! ψ and Top(s)) ltac:(wf_auto2)). use AnyReasoning in H2.
-      mlRevert "1".
-      mlRewrite H2 at 1.
-      mlIntro "1".
-  Abort.
-
-  Local Goal
-    forall s φ ψ,
-      well_formed s ->
-      well_formed φ ->
-      well_formed ψ ->
-      Γ ⊢ (φ and ψ and Top(s)) <-(s)-> (!(s) ((!(s) φ or !(s) ψ) and Top(s))).
-  Proof.
-    intros.
-    toMLGoal. wf_auto2.
-    mlSplitAnd.
-    {
-      unfold kore_implies, kore_not, kore_and, kore_or.
-      Search derives_using patt_or patt_imp.
-      repeat mlIntro.
-      mlAssert ("H" : ((φ and ψ and Top(s)) or ! Top(s)) ). wf_auto2.
-      {
-        mlClear "1".
-        mlIntro. mlIntro.
-        mlApply "0".
-        mlSplitAnd; try mlAssumption.
-      }
-      mlClear "0".
-      pose proof (not_not_eq Γ ((! φ and Top(s) or ! ψ and Top(s)) and Top(s)) ltac:(wf_auto2)). use AnyReasoning in H2.
-      mlRevert "1".
-      mlRewrite H2 at 1.
-      mlIntro "1".
-      Print kore_implies.
-      Print kore_not.
-  Abort.
-
-  Definition kore_and_2 (s φ ψ : Pattern) :=
-    (φ and ψ) and Top(s).
-  Definition kore_or_2 (s φ ψ : Pattern) :=
-    (φ or ψ) and Top(s).
-  Definition kore_implies_2 (s φ ψ : Pattern) :=
-    kore_or_2 s (!(s) φ) ψ.
-
-  Local Goal
-    forall s φ ψ,
-      well_formed s ->
-      well_formed φ ->
-      well_formed ψ ->
-      Γ ⊢ (kore_and_2 s φ ψ) ---> (!(s) (kore_or_2 s (!(s) φ) (!(s) ψ))).
-  Proof.
-    intros.
-    unfold kore_implies_2, kore_or_2, kore_and_2, kore_not.
-    toMLGoal. wf_auto2.
-    mlIntro "H".
-    mlTauto.
+      mlDestructOr "3".
+      + mlApply "1" in "0". mlDestructBot "0".
+      + pose proof deMorgan_nand Γ
+            (! φ^{evar:0↦x}) ⟦ s2 ⟧
+       ltac:(wf_auto2) ltac:(wf_auto2).
+       use AnyReasoning in H3.
+       mlAdd H3 as "H3".
+       mlDestructAnd "H3". mlClear "3".
+       mlApply "1" in "4". mlClear "1".
+       mlDestructOr "4".
+       ** mlApplyMeta Misc.notnot_taut_1 in "1".
+          mlAssumption.
+       ** mlApply "3" in "2". mlDestructBot "2".
+    - mlExFalso. mlApply "4". mlAssumption.
+    Unshelve.
+      all: unfold patt_sorted_exists in *; wf_auto2.
   Defined.
 
-  Local Goal
-    forall s φ ψ,
-      well_formed s ->
-      well_formed φ ->
-      well_formed ψ ->
-      Γ ⊢ Top(s) =ml ((φ and(s) ψ) <-(s)-> (!(s) (!(s) φ or(s) !(s) ψ))).
+  Lemma forall_equiv_2 :
+    forall s1 s2 φ,
+      well_formed s1 ->
+      well_formed s2 ->
+      well_formed (ex, φ) ->
+      Γ ⊢ (all s1 , φ) and ⟦s2⟧ --->  (all s1 ∷ s2, φ).
   Proof.
     intros.
-    Search 
-    unfold kore_implies, kore_or, kore_and, kore_not.
+    toMLGoal. { unfold kore_forall, kore_exists, patt_sorted_forall, patt_sorted_exists. wf_auto2. }
+    mlIntro. mlDestructAnd "0" as "H" "Hs".
+    mlSplitAnd. 2: mlAssumption.
+    mlIntro "E". mlDestructAnd "E" as "E1" "E2".
+    mlDestructEx "E1" as x.
+    mlSimpl.
+    setoid_rewrite nest_ex_same.
+    rewrite (evar_open_not_occur _ _ s2). wf_auto2.
+    mlDestructAnd "E1" as "E1_1" "E1_2".
+    mlDestructAnd "E1_2".
+    mlApply "0".
+    mlSpecialize "H" with x. mlSimpl. simpl.
+    setoid_rewrite nest_ex_same.
+    mlApply "H". mlAssumption.
   Defined.
 
-  Lemma well_founded_alt_1 :
-    forall s,
-      well_formed s ->
-      Γ ⊢ kore_well_founded_alt s ---> kore_well_founded s.
+  Theorem forall_equiv :
+    forall s1 s2 φ,
+      well_formed s1 ->
+      well_formed s2 ->
+      well_formed (ex, φ) ->
+      Γ ⊢ (all s1 ∷ s2, φ) <---> (all s1 , φ) and ⟦s2⟧.
   Proof.
-  
+    intros.
+    toMLGoal. { unfold kore_forall, kore_exists, patt_sorted_forall, patt_sorted_exists. wf_auto2. }
+    mlSplitAnd.
+    * mlIntro. mlApplyMeta forall_equiv_1. mlAssumption.
+    * mlIntro. mlApplyMeta forall_equiv_2. mlAssumption.
   Defined.
+
 End Lemmas.
 
