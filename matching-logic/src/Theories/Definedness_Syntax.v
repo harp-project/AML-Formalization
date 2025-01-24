@@ -80,9 +80,9 @@ Module Notations.
 
   Notation "⌈ p ⌉" := (patt_defined p) : ml_scope.
   Notation "⌊ p ⌋" := (patt_total p) : ml_scope.
-  Notation "p =ml q" := (patt_equal p q) (at level 67) : ml_scope.
-  Notation "p ⊆ml q" := (patt_subseteq p q) (at level 67) : ml_scope.
-  Notation "p ∈ml q" := (patt_in p q) (at level 67) : ml_scope.
+  Notation "p =ml q" := (patt_equal p q) (at level 68) : ml_scope.
+  Notation "p ⊆ml q" := (patt_subseteq p q) (at level 68) : ml_scope.
+  Notation "p ∈ml q" := (patt_in p q) (at level 68) : ml_scope.
   
   Notation "'⌈_⌉'" := definedness : ml_scope.
 End Notations.

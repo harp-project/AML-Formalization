@@ -73,6 +73,17 @@ Section derived_operations.
   Solve Obligations of kore_top_Unary with intros;wf_auto2.
   Fail Next Obligation.
 
+  Definition kore_cast (s p : Pattern) :=
+    patt_and p (kore_top s).
+  #[global]
+  Program Instance kore_cast_Binary : Binary kore_cast.
+  Next Obligation.
+    intros. repeat rewrite pm_correctness. simpl.
+    repeat rewrite pm_correctness. reflexivity.
+  Defined.
+  Solve Obligations of kore_cast_Binary with intros; unfold kore_cast; wf_auto2.
+  Fail Next Obligation.
+
   Definition kore_valid (s : Pattern) (ph1 : Pattern) :=
     patt_equal ph1 (kore_top s).
   #[global]
@@ -85,7 +96,7 @@ Section derived_operations.
   Fail Next Obligation.
 
   Definition kore_not (s : Pattern) (ph1 : Pattern) :=
-    patt_and (patt_not ph1) (kore_top s).
+    kore_cast s (patt_not ph1).
   #[global]
   Program Instance kore_not_Binary : Binary kore_not.
   Next Obligation.
@@ -97,7 +108,7 @@ Section derived_operations.
 
   (* NOTE: this is changed wrt MM *)
   Definition kore_and (s : Pattern) (ph1 : Pattern) (ph2 : Pattern) :=
-    patt_and (patt_and ph1 ph2) (kore_top s).
+    kore_cast s (patt_and ph1 ph2).
   #[global]
   Program Instance kore_and_Ternary : Ternary kore_and.
   Next Obligation.
@@ -114,7 +125,7 @@ Section derived_operations.
 
   (* NOTE: this is changed wrt MM *)
   Definition kore_or (s : Pattern) (ph1 : Pattern) (ph2 : Pattern) :=
-    patt_and (patt_or ph1 ph2) (kore_top s).
+    kore_cast s (patt_or ph1 ph2).
   #[global]
   Program Instance kore_or_Ternary : Ternary kore_or.
   Next Obligation.
@@ -166,7 +177,7 @@ Section derived_operations.
      TODO: this seems to be wrong. s1 is not used for ph2!
   *)
   Definition kore_ceil (s1 : Pattern) (s2 : Pattern) (ph2 : Pattern) := 
-    patt_and (patt_defined (patt_and ph2 (kore_top s1))) (kore_top s2).
+    kore_cast s2 (patt_defined (kore_cast s1 ph2)).
   #[global]
   Program Instance kore_ceil_Ternary : Ternary kore_ceil.
   Next Obligation.
@@ -244,7 +255,7 @@ Section derived_operations.
   *)
 
   Definition kore_exists (s1 : Pattern) (s2 : Pattern) (ph2 : Pattern) :=
-    patt_and (patt_sorted_exists s1 ph2) (patt_inhabitant_set s2).
+    kore_cast s2 (patt_sorted_exists s1 ph2).
   Definition kore_forall (s1 : Pattern) (s2 : Pattern) (ph2 : Pattern) :=
     kore_not s2 (kore_exists s1 s2 (kore_not s2 ph2)).
 (*   Definition kore_forall_sort (s : Pattern) :=
@@ -267,7 +278,7 @@ Section derived_operations.
   Definition kore_is_predicate (s : Pattern) (ph1 : Pattern) :=
     patt_or (kore_valid s ph1) (patt_equal ph1 patt_bott).
   Definition kore_is_nonempty_sort (s : Pattern) :=
-    patt_defined (patt_inhabitant_set s).
+    patt_defined (kore_top s).
 
   (* These are just ml primitives *)
   Definition kore_mu := patt_mu.
@@ -361,14 +372,17 @@ Module Notations.
   Check ⊥(Nat).
   Notation "'Top(' s ')'" := (kore_top s) (format "'Top(' s ')'") : ml_scope.
   Check Top(Nat).
+  Notation "p ∷ s" := (kore_cast s p) (at level 65, format "p  ∷  s", right associativity).
+  Check Zero ∷ Nat.
   Notation "'⊢(' s ')' p" := (kore_valid s p) (at level 80, format "'⊢(' s ')'  p").
+  Check ⊢(Nat) ⊥.
   Notation "'!(' s ')' p" := (kore_not s p) (at level 71, format "'!(' s ')'  p") : ml_scope.
   Check !(Nat) ⊥.
-  Notation "p1 'and(' s ')' p2" := (kore_and s p1 p2) (at level 72, format "p1  'and(' s ')'  p2") : ml_scope.
+  Notation "p1 'and(' s ')' p2" := (kore_and s p1 p2) (at level 72, format "p1  'and(' s ')'  p2", left associativity) : ml_scope.
   Check ⊥ and(Nat) Top.
-  Notation "p1 'or(' s ')' p2" := (kore_or s p1 p2) (at level 73, format "p1  'or(' s ')'  p2") : ml_scope.
+  Notation "p1 'or(' s ')' p2" := (kore_or s p1 p2) (at level 73, format "p1  'or(' s ')'  p2", left associativity) : ml_scope.
   Check ⊥ or(Nat) Top.
-  Notation "p1 '-(' s ')->' p2" := (kore_implies s p1 p2) (at level 75, format "p1  '-(' s ')->'  p2") : ml_scope.
+  Notation "p1 '-(' s ')->' p2" := (kore_implies s p1 p2) (at level 75, format "p1  '-(' s ')->'  p2", right associativity) : ml_scope.
   Check ⊥ -(Nat)-> Top.
   Notation "p1 '<-(' s ')->' p2" := (kore_iff s p1 p2) (at level 74, format "p1  '<-(' s ')->'  p2") : ml_scope.
   Check ⊥ <-(Nat)-> Top.
@@ -377,15 +391,18 @@ Module Notations.
   Check ⌈(Nat, Nat) ⊥⌉.
   Notation "'⌊(' s1 , s2 ')' p ⌋" := (kore_floor s1 s2 p) (format "'⌊(' s1 ',' s2 ')'  p ⌋") : ml_scope.
   Check ⌊(Nat, Nat) ⊥⌋.
-  Notation "p1 '=ml(' s1 ',' s2 ')' p2" := (kore_equals s1 s2 p1 p2) (at level 67, format "p1  '=ml(' s1 ',' s2 ')'  p2") : ml_scope.
+  Notation "p1 '=ml(' s1 ',' s2 ')' p2" := (kore_equals s1 s2 p1 p2) (at level 68, format "p1  '=ml(' s1 ',' s2 ')'  p2", left associativity) : ml_scope.
   Check ⊥ =ml(Nat, Nat) Top.
-  Notation "p1 '⊆ml(' s1 ',' s2 ')' p2" := (kore_in s1 s2 p1 p2) (at level 67, format "p1  '⊆ml(' s1 ',' s2 ')'  p2") : ml_scope.
+  Notation "p1 '⊆ml(' s1 ',' s2 ')' p2" := (kore_in s1 s2 p1 p2) (at level 68, format "p1  '⊆ml(' s1 ',' s2 ')'  p2", left associativity) : ml_scope.
   Check ⊥ ⊆ml(Nat, Nat) Top.
 
-  Notation "'ex' s1 '∷' s2 ',' p" := (kore_exists s1 s2 p) (at level 80, format "'ex'  s1  '∷'  s2 ','  p") : ml_scope.
-  Check ex Nat ∷ Nat , ⊥.
-  Notation "'all' s1 '∷' s2 ',' p" := (kore_forall s1 s2 p) (at level 80, format "'all'  s1  '∷'  s2 ','  p") : ml_scope.
-  Check all Nat ∷ Nat , ⊥.
+  Notation "'ex' s1 ',' p 'as' s2" := (kore_exists s1 s2 p) (at level 80, s2 at level 65, format "'ex'  s1 ','  p  'as'  s2") : ml_scope.
+  Check ex Nat , ⊥ as Nat.
+  Notation "'all' s1 ',' p 'as' s2" := (kore_forall s1 s2 p) (at level 80, s2 at level 65, format "'all'  s1 ','  p  'as'  s2") : ml_scope.
+  Goal forall {Σ : Signature} {s1 : Syntax} {s2 : Nat_Syntax.Syntax},
+    ~ (all Nat , ⊥ as Nat ⋅ Nat) = (all Nat , ⊥ as (Nat ⋅ Nat)).
+  Proof. intros. intro. inversion H. Qed.
+
 (*   Notation "''" := (kore_is_sort s).
   Notation := (kore_is_predicate s p).
   Notation := (kore_is_nonempty_sort s). *)
@@ -525,14 +542,12 @@ Arguments well_formed_closed_ex_aux /. *)
     (HΓ : KoreTheory ⊆ Γ)
   .
 
-  Search patt_and patt_or derives_using.
-
   Lemma implies_equiv_1 :
     forall s φ ψ,
       well_formed s ->
       well_formed φ ->
       well_formed ψ ->
-      Γ ⊢ (φ -(s)-> ψ) ---> ((φ ---> ψ) and Top(s)).
+      Γ ⊢ (φ -(s)-> ψ) ---> (φ ---> ψ) ∷ s.
   Proof.
     intros. mlIntro "H".
     mlDestructAnd "H" as "H1" "H2".
@@ -548,7 +563,7 @@ Arguments well_formed_closed_ex_aux /. *)
       well_formed s ->
       well_formed φ ->
       well_formed ψ ->
-      Γ ⊢ ((φ ---> ψ) and Top(s)) ---> (φ -(s)-> ψ).
+      Γ ⊢ (φ ---> ψ) ∷ s ---> (φ -(s)-> ψ).
   Proof.
     intros.
     mlIntro "H".
@@ -567,7 +582,7 @@ Arguments well_formed_closed_ex_aux /. *)
       well_formed s ->
       well_formed φ ->
       well_formed ψ ->
-      Γ ⊢ (φ -(s)-> ψ) <---> ((φ ---> ψ) and Top(s)).
+      Γ ⊢ (φ -(s)-> ψ) <---> (φ ---> ψ) ∷ s.
   Proof.
     intros.
     mlSplitAnd.
@@ -580,7 +595,7 @@ Arguments well_formed_closed_ex_aux /. *)
       well_formed s ->
       well_formed φ ->
       well_formed ψ ->
-      Γ ⊢ (φ <-(s)-> ψ) ---> ((φ <---> ψ) and Top(s)).
+      Γ ⊢ (φ <-(s)-> ψ) ---> ((φ <---> ψ) ∷ s).
   Proof.
     intros. unfold kore_iff.
     pose proof implies_equiv s φ ψ H H0 H1 as HH.
@@ -599,7 +614,7 @@ Arguments well_formed_closed_ex_aux /. *)
       well_formed s ->
       well_formed φ ->
       well_formed ψ ->
-      Γ ⊢ ((φ <---> ψ) and Top(s)) ---> (φ <-(s)-> ψ).
+      Γ ⊢ (φ <---> ψ) ∷ s ---> (φ <-(s)-> ψ).
   Proof.
     intros. unfold kore_iff.
     pose proof implies_equiv s φ ψ H H0 H1 as HH.
@@ -617,7 +632,7 @@ Arguments well_formed_closed_ex_aux /. *)
       well_formed s ->
       well_formed φ ->
       well_formed ψ ->
-      Γ ⊢ (φ <-(s)-> ψ) <---> ((φ <---> ψ) and Top(s)).
+      Γ ⊢ (φ <-(s)-> ψ) <---> (φ <---> ψ) ∷ s.
   Proof.
     intros.
     mlSplitAnd.
@@ -630,7 +645,7 @@ Arguments well_formed_closed_ex_aux /. *)
       well_formed s ->
       well_formed φ ->
       well_formed ψ ->
-      Γ ⊢ (⊢(s) φ <-(s)-> ψ) ---> ((φ and Top(s)) =ml (ψ and Top(s))).
+      Γ ⊢ (⊢(s) φ <-(s)-> ψ) ---> (φ ∷ s =ml ψ ∷ s).
   Proof.
     intros. unfold kore_valid.
     pose proof (iff_equiv s φ ψ H H0 H1).
@@ -676,7 +691,7 @@ Arguments well_formed_closed_ex_aux /. *)
       well_formed s ->
       well_formed φ ->
       well_formed ψ ->
-      Γ ⊢ ((φ and Top(s)) =ml (ψ and Top(s))) ---> (⊢(s) φ <-(s)-> ψ).
+      Γ ⊢ (φ ∷ s =ml ψ ∷ s) ---> (⊢(s) φ <-(s)-> ψ).
   Proof.
     intros. unfold kore_valid.
     pose proof (iff_equiv s φ ψ H H0 H1).
@@ -706,11 +721,13 @@ Arguments well_formed_closed_ex_aux /. *)
       mlSplitAnd.
       - mlIntro "H".
         mlConj "H" "H0" as "H2".
+        fold (φ ∷ s).
         mlApply "H_1" in "H2".
         mlDestructAnd "H2".
         mlAssumption.
       - mlIntro "H".
         mlConj "H" "H0" as "H2".
+        fold (ψ ∷ s).
         mlApply "H_2" in "H2".
         mlDestructAnd "H2".
         mlAssumption.
@@ -721,7 +738,7 @@ Arguments well_formed_closed_ex_aux /. *)
       well_formed s ->
       well_formed φ ->
       well_formed ψ ->
-      Γ ⊢ (⊢(s) φ <-(s)-> ψ) <---> ((φ and Top(s)) =ml (ψ and Top(s))).
+      Γ ⊢ (⊢(s) φ <-(s)-> ψ) <---> (φ ∷ s =ml ψ ∷ s).
   Proof.
     intros.
     mlSplitAnd.
@@ -734,7 +751,7 @@ Arguments well_formed_closed_ex_aux /. *)
       well_formed s1 ->
       well_formed s2 ->
       well_formed φ ->
-      Γ ⊢ ⌊(s1, s2) φ⌋ ---> ⌊φ or !Top(s1)⌋ and Top(s2).
+      Γ ⊢ ⌊(s1, s2) φ⌋ ---> ⌊φ or !Top(s1)⌋ ∷ s2.
   Proof.
     intros.
     unfold kore_floor, kore_ceil, kore_not.
@@ -764,7 +781,7 @@ Arguments well_formed_closed_ex_aux /. *)
       well_formed s1 ->
       well_formed s2 ->
       well_formed φ ->
-      Γ ⊢ ⌊φ or !Top(s1)⌋ and Top(s2) ---> ⌊(s1, s2) φ⌋.
+      Γ ⊢ ⌊φ or !Top(s1)⌋ ∷ s2 ---> ⌊(s1, s2) φ⌋.
   Proof.
     intros.
     unfold kore_floor, kore_ceil, kore_not.
@@ -791,7 +808,7 @@ Arguments well_formed_closed_ex_aux /. *)
       well_formed s1 ->
       well_formed s2 ->
       well_formed φ ->
-      Γ ⊢ ⌊(s1, s2) φ⌋ <---> ⌊φ or !Top(s1)⌋ and Top(s2).
+      Γ ⊢ ⌊(s1, s2) φ⌋ <---> ⌊φ or !Top(s1)⌋ ∷ s2.
   Proof.
     intros.
     mlSplitAnd.
@@ -805,7 +822,7 @@ Arguments well_formed_closed_ex_aux /. *)
       well_formed s2 ->
       well_formed φ ->
       well_formed ψ ->
-      Γ ⊢ φ =ml(s1,s2) ψ ---> (φ and Top(s1)) =ml (ψ and Top(s1)) and Top(s2).
+      Γ ⊢ φ =ml(s1,s2) ψ ---> ((φ ∷ s1) =ml (ψ ∷ s1)) ∷ s2.
   Proof.
     intros.
     unfold kore_equals.
@@ -844,7 +861,7 @@ Arguments well_formed_closed_ex_aux /. *)
       well_formed s2 ->
       well_formed φ ->
       well_formed ψ ->
-      Γ ⊢ (φ and Top(s1)) =ml (ψ and Top(s1)) and Top(s2) ---> φ =ml(s1,s2) ψ.
+      Γ ⊢ ((φ ∷ s1) =ml (ψ ∷ s1)) ∷ s2 ---> φ =ml(s1,s2) ψ.
   Proof.
     intros.
     mlIntro "H".
@@ -862,8 +879,10 @@ Arguments well_formed_closed_ex_aux /. *)
     mlApplyMeta iff_equiv_2.
     mlSplitAnd. 2: mlAssumption.
     mlSplitAnd; mlIntro "H3"; mlConj "H3" "H2" as "D".
-    * mlApply "H0" in "D". mlDestructAnd "D". mlAssumption.
-    * mlApply "H1" in "D". mlDestructAnd "D". mlAssumption.
+    * fold (φ ∷ s1).
+      mlApply "H0" in "D". mlDestructAnd "D". mlAssumption.
+    * fold (ψ ∷ s1).
+      mlApply "H1" in "D". mlDestructAnd "D". mlAssumption.
   Defined.
 
   Theorem equals_equiv :
@@ -873,7 +892,7 @@ Arguments well_formed_closed_ex_aux /. *)
       well_formed φ ->
       well_formed ψ ->
       Γ ⊢ φ =ml(s1,s2) ψ <--->
-          (φ and Top(s1)) =ml (ψ and Top(s1)) and Top(s2).
+          ((φ ∷ s1) =ml (ψ ∷ s1)) ∷ s2.
   Proof.
     intros.
     mlSplitAnd.
@@ -887,7 +906,7 @@ Arguments well_formed_closed_ex_aux /. *)
       well_formed s2 ->
       well_formed φ ->
       well_formed ψ ->
-      Γ ⊢ φ ⊆ml(s1,s2) ψ ---> (φ and Top(s1)) ⊆ml (ψ and Top(s1)) and Top(s2).
+      Γ ⊢ φ ⊆ml(s1,s2) ψ ---> ((φ ∷ s1) ⊆ml (ψ ∷ s1)) ∷ s2.
   Proof.
     intros.
     unfold kore_equals.
@@ -917,7 +936,7 @@ Arguments well_formed_closed_ex_aux /. *)
       well_formed s2 ->
       well_formed φ ->
       well_formed ψ ->
-      Γ ⊢ (φ and Top(s1)) ⊆ml (ψ and Top(s1)) and Top(s2) ---> φ ⊆ml(s1,s2) ψ.
+      Γ ⊢ ((φ ∷ s1) ⊆ml (ψ ∷ s1)) ∷ s2 ---> φ ⊆ml(s1,s2) ψ.
   Proof.
     intros.
     mlIntro "H".
@@ -936,6 +955,7 @@ Arguments well_formed_closed_ex_aux /. *)
     mlSplitAnd. 2: mlAssumption.
     mlIntro "H2".
     mlConj "H2" "H1" as "D".
+    fold (φ ∷ s1).
     mlApply "H" in "D".
     mlDestructAnd "D".
     mlAssumption.
@@ -947,7 +967,7 @@ Arguments well_formed_closed_ex_aux /. *)
       well_formed s2 ->
       well_formed φ ->
       well_formed ψ ->
-      Γ ⊢ φ ⊆ml(s1,s2) ψ <---> (φ and Top(s1)) ⊆ml (ψ and Top(s1)) and Top(s2).
+      Γ ⊢ φ ⊆ml(s1,s2) ψ <---> ((φ ∷ s1) ⊆ml (ψ ∷ s1)) ∷ s2.
   Proof.
     intros.
     mlSplitAnd.
@@ -960,7 +980,7 @@ Arguments well_formed_closed_ex_aux /. *)
       well_formed s1 ->
       well_formed s2 ->
       well_formed (ex, φ) ->
-      Γ ⊢ (all s1 ∷ s2, φ) ---> (all s1 , φ) and ⟦s2⟧.
+      Γ ⊢ all s1, φ as s2 ---> (all s1 , φ) ∷ s2.
   Proof.
     intros.
     unfold kore_forall, kore_not, kore_exists, kore_top.
@@ -1004,7 +1024,7 @@ Arguments well_formed_closed_ex_aux /. *)
       well_formed s1 ->
       well_formed s2 ->
       well_formed (ex, φ) ->
-      Γ ⊢ (all s1 , φ) and ⟦s2⟧ --->  (all s1 ∷ s2, φ).
+      Γ ⊢ (all s1 , φ) ∷ s2 --->  all s1 , φ as s2.
   Proof.
     intros.
     toMLGoal. { unfold kore_forall, kore_exists, patt_sorted_forall, patt_sorted_exists. wf_auto2. }
@@ -1028,13 +1048,38 @@ Arguments well_formed_closed_ex_aux /. *)
       well_formed s1 ->
       well_formed s2 ->
       well_formed (ex, φ) ->
-      Γ ⊢ (all s1 ∷ s2, φ) <---> (all s1 , φ) and ⟦s2⟧.
+      Γ ⊢ all s1, φ as s2 <---> (all s1 , φ) ∷ s2.
   Proof.
     intros.
     toMLGoal. { unfold kore_forall, kore_exists, patt_sorted_forall, patt_sorted_exists. wf_auto2. }
     mlSplitAnd.
     * mlIntro. mlApplyMeta forall_equiv_1. mlAssumption.
     * mlIntro. mlApplyMeta forall_equiv_2. mlAssumption.
+  Defined.
+
+  Theorem kore_equals_elim :
+    forall φ ψ (C : PatternCtx) s1 s2,
+      well_formed φ ->
+      well_formed ψ ->
+      well_formed s1 ->
+      well_formed s2 ->
+      PC_wf C ->
+      pattern_kt_well_formed (pcPattern C) ->
+      Γ ⊢ φ =ml(s1, s2) ψ --->
+          emplace C (φ ∷ s1) --->
+          emplace C (ψ ∷ s1) ∷ s2.
+  Proof.
+    intros.
+    unfold PC_wf in H3.
+    toMLGoal. wf_auto2.
+    mlIntro "H".
+    mlApplyMeta equals_equiv_1 in "H".
+    mlDestructAnd "H" as "H0" "Hsort".
+    mlIntro "HC".
+    mlSplitAnd. 2: mlAssumption.
+    pose proof (HEQ := equality_elimination Γ (φ ∷ s1) (ψ ∷ s1) C ltac:(unfold KoreTheory in HΓ;set_solver) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) H4).
+    mlApplyMeta HEQ.
+    mlSplitAnd; mlAssumption.
   Defined.
 
 End Lemmas.

@@ -365,11 +365,11 @@ Section simplTest.
   Import Pattern.BoundVarSugar.
 
   Local Notation "a +ml b" := (ml_plus a b) (at level 67).
-  Local Notation "a =ml b" := (ml_eq a b) (at level 67).
-  Local Notation "a ∈ml b" := (ml_in a b) (at level 67).
-  Local Notation "'ex' , phi" := (patt_exists phi) (at level 80) : ml_scope.
+ (*  Local Notation "a =ml b" := (ml_eq a b) (at level 67).
+  Local Notation "a ∈ml b" := (ml_in a b) (at level 67). *)
+(*   Local Notation "'ex' , phi" := (patt_exists phi) (at level 80) : ml_scope.
   Local Notation "'mu' , phi" := (patt_mu phi) (at level 80) : ml_scope.
-  Local Notation "⟦ phi ⟧" := (patt_inhabitant_set phi) (at level 0) : ml_scope.
+ *)  Local Notation "⟦ phi ⟧" := (patt_inhabitant_set phi) (at level 0) : ml_scope.
 
   Open Scope ml_scope.
 
