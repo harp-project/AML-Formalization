@@ -1084,3 +1084,137 @@ Arguments well_formed_closed_ex_aux /. *)
 
 End Lemmas.
 
+Section countermodel_equal.
+
+(*   Context {Σ : Signature}
+          {S : Syntax}
+          {Γ : Theory}
+          (HΓ : KoreTheory ⊆ Γ). *)
+
+  Inductive syms := X_sym | Y_sym | def_sym | inh_sym | sorts_sym | s1_sym | s2_sym | next_sym | dv_sym | inj_sym.
+  Instance syms_eqdec : EqDecision syms.
+  Proof. solve_decision. Defined.
+  Program Instance syms_Finite : Finite syms.
+  Next Obligation.
+    exact ([X_sym; Y_sym; def_sym; inh_sym; sorts_sym; s1_sym; s2_sym; next_sym; dv_sym; inj_sym]).
+  Defined.
+  Next Obligation.
+    compute_done.
+  Defined.
+  Next Obligation.
+    destruct x; try compute_done.
+  Defined.
+
+
+  Program Instance KoreSig : Signature := {|
+    variables := StringMLVariables;
+    ml_symbols := {|
+      symbols := syms;
+    |};
+  |}.
+
+  Inductive carrier := a | b | c | def | inh | s1 | s2 | sorts.
+  Instance asd : Inhabited carrier.
+  Proof.
+    constructor. exact a.
+  Defined.
+
+(*   Definition sym_eval (s : syms) : propset syms :=
+    match s with
+    | X_sym => {[a ; b]}
+    | Y_sym => {[a ; c]}
+    end. *)
+
+  Program Definition KoreModel : @Model KoreSig :=
+    {|
+      Domain := carrier;
+    |}.
+  Next Obligation.
+    intros x y.
+    destruct x eqn:P.
+    * exact ∅.
+    * exact ∅.
+    * exact ∅.
+    * exact ⊤.
+    * destruct y eqn:Q.
+      - exact ∅.
+      - exact ∅.
+      - exact ∅.
+      - exact ∅.
+      - exact ∅.
+      - exact {[a]}.
+      - exact {[a;b;c]}.
+      - exact {[s1; s2]}.
+    * exact ∅.
+    * exact ∅.
+    * exact ∅.
+  Defined.
+  Next Obligation.
+    intros s. destruct s eqn:P.
+    * exact {[a; b]}.
+    * exact {[a; c]}.
+    * exact {[def]}.
+    * exact {[inh]}.
+    * exact {[sorts]}.
+    * exact {[s1]}.
+    * exact {[s2]}.
+    * exact ∅.
+    * exact ∅.
+    * exact ∅.
+  Defined.
+  Fail Next Obligation.
+
+  Import Notations.
+
+  Program Instance Syn : Syntax.
+  Next Obligation.
+    intros x. destruct x eqn:P.
+    * exact next_sym.
+    * exact dv_sym.
+    * exact inj_sym.
+  Defined.
+  Next Obligation.
+    constructor.
+    * intros x. destruct x eqn:P.
+      - exact inh_sym.
+      - exact sorts_sym.
+    * constructor. intros. exact def_sym.
+  Defined.
+
+  Local Goal
+    forall ρ,
+      @eval _ KoreModel ρ (patt_sym X_sym =ml(patt_sym s1_sym, patt_sym s2_sym) patt_sym Y_sym) = {[a;b;c]}.
+  Proof.
+    Search LeibnizEquiv propset.
+    pose proof (@propset_leibniz_equiv _ KoreModel).
+    intros.
+    unfold kore_equals, kore_iff, kore_implies, kore_ceil, kore_floor, kore_not, kore_and, kore_or, kore_cast, kore_top.
+    repeat rewrite eval_simpl.
+    simpl.
+    repeat rewrite app_ext_singleton.
+    repeat rewrite union_empty_l_L.
+    do 10 rewrite union_empty_r_L.
+    do 8 rewrite union_empty_r_L.
+    simpl.
+    repeat rewrite Compl_Compl_propset.
+    assert ((⊤ ∖ {[a; b; c]} ∪ ∅ = ({[def;inh;s1;s2;sorts]} : propset KoreModel))). {
+      rewrite union_empty_r_L.
+      apply set_eq; intros; destruct x; split; intros; set_solver.
+    }
+    repeat rewrite H0.
+    repeat rewrite Compl_Compl_propset.
+    apply set_eq; intros; destruct x; split; intros; try set_solver.
+    * apply elem_of_compl; intro X.
+      apply elem_of_union in X as [X | X].
+      - 
+      - set_solver.
+    *
+    *
+  Qed.
+
+  Local Goal
+    forall ρ,
+      @eval _ KoreModel ρ (patt_sym X_sym =ml(patt_sym s2_sym, patt_sym s2_sym) patt_sym Y_sym) ≠ ⊤.
+
+End countermodel_equal.
+

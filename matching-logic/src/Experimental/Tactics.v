@@ -104,7 +104,7 @@ Ltac arity_of x k :=
     trial.
     trial.
     trial.
-    
+    φ ⊆ ⊤ₛ -> ψ ⊆ ⊤ₛ -> φ ∧ ψ ⊆ ⊤ₛ
     rewrite (@wf_n_ary _ _ _ ltac:(typeclasses eauto)).
     rewrite (@wf_n_ary _ _ _ ltac:(typeclasses eauto)).
     rewrite H1.
