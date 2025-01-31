@@ -339,3 +339,27 @@ Proof.
     *)
     mlExact "H2".
 Defined.
+
+(* If you need to compose implications, bijections or equalities, you can use [mlTransitivity]. *)
+Example use_mlTransitivity {Σ : Signature} {syntax : Syntax} Γ a b c :
+  theory ⊆ Γ -> well_formed a -> well_formed b -> well_formed c ->
+  Γ ⊢i
+    (a ---> b) --->
+    (c or b ---> c) --->
+    (a ---> c)
+    using AnyReasoning.
+Proof.
+  intros.
+  toMLGoal;[wf_auto2|].
+  mlIntro "H1"; mlIntro "H2".
+  (* Lets create a hypothesis to convert from b to c or b. *)
+  mlAssert ("T" : (b ---> c or b)); wf_auto2.
+  mlIntro "B".
+  mlRight.
+  mlAssumption.
+  (* Now we can compose H1 and T *)
+  mlTransitivity "H1" -> "T" as "H1T".
+  (* And now H1T and H2 *)
+  mlTransitivity "H1T" -> "H2" as "H1TH2".
+  mlExact "H1TH2".
+Defined.
