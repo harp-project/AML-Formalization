@@ -306,6 +306,7 @@ Proof.
   wf_auto2. (* To prove well-formedness *)
   mlIntro "A".
   mlTauto.
+  mlAssumption.
 Defined.
 
 (*
