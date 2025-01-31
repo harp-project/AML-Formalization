@@ -210,6 +210,7 @@ Proof.
 Abort.
 
 
+
 Example use_rewriteBy {Σ : Signature} {syntax : Definedness_Syntax.Syntax}
     (Γ : Theory) (ϕ₁ ϕ₂ ϕ₃ ϕ₄ : Pattern) :
     (* This makes the difference. *)
@@ -231,6 +232,32 @@ Proof.
 
     mlSplitAnd; mlIntro "Hyp"; mlExact "Hyp".
 Defined.
+
+
+(* [mlRewriteBy] supports rewriting hypotheses and rewriting backwards. *)
+Example advanced_rewriteBy {Σ : Signature} {syntax : Definedness_Syntax.Syntax}
+    (Γ : Theory) (ϕ₁ ϕ₂ : Pattern) :
+    (* This makes the difference. *)
+    Definedness_Syntax.theory ⊆ Γ ->
+    well_formed ϕ₁ = true ->
+    well_formed ϕ₂ = true ->
+    Γ ⊢ ! (ϕ₂ ---> ϕ₁) ---> ! (ϕ₁ =ml ϕ₂).
+Proof.
+    intros HΓ.
+    mlIntro "H1". mlIntro "H2".
+    (* We could rewrite the occurence of ϕ₁ in H1, we can use mlRewriteBy "H2" at 1 in "H1" *)
+    mlRewriteBy "H2" at 1 in "H1".
+    Undo.
+    (* We can also rewrite the other way around by using [mlSymmetry] or [mlRewriteBy ... <-]  *)
+    mlRewriteBy <- "H2" at 1 in "H1".
+    Undo.
+    mlSymmetry in "H2".
+    mlRewriteBy "H2" at 1 in "H1".
+    mlApply "H1".
+    mlIntro; mlAssumption.
+Defined.
+
+
 
 (* A solver for boolean tautologies. *)
 From Coq Require Import btauto.Btauto.
@@ -261,6 +288,24 @@ Proof.
     
     mlApply "H1".
     mlExact "H3".
+Defined.
+
+(* What if we want to make a new hypothesis? We can use [mlAssert] *)
+Example use_mlAssert  {Σ : Signature} (Γ : Theory) (a b c : Pattern) :
+    well_formed a = true ->
+    well_formed b = true ->
+    well_formed c = true ->
+    Γ ⊢ (a ---> b) ---> (b ---> c) ---> (a ---> c).
+Proof.
+  mlIntro "H1"; mlIntro "H2".
+  (* When using [mlAssert], we have to specify the type of the new hypothesis that we want. Giving it a name is optional
+     Syntax: mlAssert (nam : typ) or mlAssert (typ)
+   *)
+  mlAssert ("NewHypo" : (a ---> c)).
+  (* This introduces two new goals, one for proving the well-formedness of the new hypothesis and for actually proving it*)
+  wf_auto2. (* To prove well-formedness *)
+  mlIntro "A".
+  mlTauto.
 Defined.
 
 (*
