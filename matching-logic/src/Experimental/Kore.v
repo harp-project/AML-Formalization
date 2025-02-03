@@ -826,22 +826,135 @@ Arguments well_formed_closed_ex_aux /. *)
     * mlIntro. mlApplyMeta equals_equiv_2. mlAssumption.
   Defined.
 
+  Lemma valid_equiv_1 :
+    forall s φ ψ,
+      well_formed s ->
+      well_formed φ ->
+      well_formed ψ ->
+      Γ ⊢ (⊢(s) φ <-(s)-> ψ) ---> (φ ∷ s =ml ψ ∷ s).
+  Proof.
+    intros. unfold kore_valid.
+    mlIntro "H".
+    mlApplyMeta patt_total_and_2.
+    2: unfold KoreTheory in HΓ; set_solver.
+    mlSplitAnd.
+    * mlApplyMeta floor_monotonic. mlExact "H".
+      2: wf_auto2.
+      2: unfold KoreTheory in HΓ; set_solver.
+      clear hasserted.
+      instantiate (1 := AnyReasoning).
+      mlIntro "H".
+      mlIntro "H0".
+      mlDestructAnd "H0" as "H0_1" "H0_2".
+      mlSplitAnd. 2: mlAssumption.
+      mlDestructAnd "H" as "H_1" "H_2".
+      mlApply "H_2" in "H0_2".
+      mlDestructAnd "H0_2" as "H3" "H4".
+      mlApply "H3".
+      mlIntro. mlDestructAnd "0".
+      mlApply "1".
+      mlAssumption.
+    * mlApplyMeta floor_monotonic. mlExact "H".
+      2: wf_auto2.
+      2: unfold KoreTheory in HΓ; set_solver.
+      clear hasserted.
+      instantiate (1 := AnyReasoning).
+      mlIntro "H".
+      mlIntro "H0".
+      mlDestructAnd "H0" as "H0_1" "H0_2".
+      mlSplitAnd. 2: mlAssumption.
+      mlDestructAnd "H" as "H_1" "H_2".
+      mlApply "H_2" in "H0_2".
+      mlDestructAnd "H0_2" as "H3" "H4".
+      mlApply "H4".
+      mlIntro. mlDestructAnd "0".
+      mlApply "1".
+      mlAssumption.
+  Defined.
+
+  Lemma valid_equiv_2 :
+    forall s φ ψ,
+      well_formed s ->
+      well_formed φ ->
+      well_formed ψ ->
+      Γ ⊢ (φ ∷ s =ml ψ ∷ s) ---> (⊢(s) φ <-(s)-> ψ).
+  Proof.
+    intros. unfold kore_valid.
+(*    mlIntro "H".
+    mlApplyMeta patt_total_and_2.
+    2: unfold KoreTheory in HΓ; set_solver.
+    mlSplitAnd.
+    * mlApplyMeta floor_monotonic. mlExact "H".
+      2: wf_auto2.
+      2: unfold KoreTheory in HΓ; set_solver.
+      clear hasserted.
+      instantiate (1 := AnyReasoning).
+      mlIntro "H".
+      mlIntro "H0".
+      mlDestructAnd "H0" as "H0_1" "H0_2".
+      unfold kore_implies, kore_not, kore_cast.
+      mlAssumption.
+    * mlApplyMeta floor_monotonic. mlExact "H".
+      2: wf_auto2.
+      2: unfold KoreTheory in HΓ; set_solver.
+      clear hasserted.
+      instantiate (1 := AnyReasoning).
+      mlIntro "H".
+      mlIntro "H0".
+      mlDestructAnd "H" as "H_1" "H_2".
+      mlSplitAnd. 2: mlAssumption.
+      mlSplitAnd.
+      - mlIntro "H".
+        mlConj "H" "H0" as "H2".
+        fold (φ ∷ s).
+        mlApply "H_1" in "H2".
+        mlDestructAnd "H2".
+        mlAssumption.
+      - mlIntro "H".
+        mlConj "H" "H0" as "H2".
+        fold (ψ ∷ s).
+        mlApply "H_2" in "H2".
+        mlDestructAnd "H2".
+        mlAssumption.
+  Defined. *)
+  Abort.
+
+(*   Theorem valid_equiv :
+    forall s φ ψ,
+      well_formed s ->
+      well_formed φ ->
+      well_formed ψ ->
+      Γ ⊢ (⊢(s) φ <-(s)-> ψ) <---> (φ ∷ s =ml ψ ∷ s).
+  Proof.
+    intros.
+    mlSplitAnd.
+    * mlIntro. mlApplyMeta valid_equiv_1. mlAssumption.
+    * mlIntro. mlApplyMeta valid_equiv_2. mlAssumption.
+  Defined. *)
+
 
   Lemma implies_equiv_1 :
     forall s φ ψ,
       well_formed s ->
       well_formed φ ->
       well_formed ψ ->
-      Γ ⊢ (φ -(s)-> ψ) ---> (φ ---> ψ) ∷ s.
+      Γ ⊢ ψ ⊆ml Top(s) ---> (φ -(s)-> ψ) ---> (φ ---> ψ) ∷ s.
   Proof.
-    intros. mlIntro "H".
+    intros. mlIntro "Hsort". mlIntro "H".
     unfold kore_implies.
-    mlDestructAnd "H" as "H1" "H2".
-    mlSplitAnd. 2: mlAssumption.
-    mlIntro "H3".
-    mlDestructOr "H1" as "H" "H". 2: mlAssumption.
-    mlDestructAnd "H" as "H0" "H1".
-    mlApply "H0" in "H3". mlDestructBot "H3".
+    mlDestructOr "H" as "H1" "H1".
+    * mlDestructAnd "H1" as "H0" "H2".
+      mlSplitAnd. 2: mlAssumption.
+      mlIntro "H".
+      mlApply "H0" in "H".
+      mlDestructBot "H".
+    * mlSplitAnd.
+      - mlIntro. mlAssumption.
+      - mlApplyMeta total_phi_impl_phi in "Hsort".
+        3: unfold KoreTheory in HΓ; set_solver.
+        2: instantiate (1 := fresh_evar (ψ ⋅ s)); solve_fresh.
+        mlApply "Hsort".
+        mlAssumption.
   Defined.
 
   Lemma implies_equiv_2 :
@@ -854,13 +967,13 @@ Arguments well_formed_closed_ex_aux /. *)
     intros.
     mlIntro "H".
     mlDestructAnd "H" as "H1" "H2".
-    mlSplitAnd. 2: mlAssumption.
-    mlIntro "H3".
-    mlApplyMeta deMorgan_nand_1 in "H3".
-    mlDestructOr "H3" as "H" "H".
-    * mlApply "H1". mlApplyMeta not_not_elim in "H".
-      mlAssumption.
-    * mlExFalso. mlApply "H". mlAssumption.
+    mlIntro "H".
+    mlApply "H1".
+    unfold kore_not, kore_cast.
+    mlApplyMeta deMorgan_nand_1 in "H".
+    mlDestructOr "H" as "H0" "H0".
+    * mlApplyMeta not_not_elim in "H0". mlAssumption.
+    * mlExFalso. mlApply "H0". mlAssumption.
   Defined.
 
   Theorem implies_equiv :
@@ -868,11 +981,14 @@ Arguments well_formed_closed_ex_aux /. *)
       well_formed s ->
       well_formed φ ->
       well_formed ψ ->
-      Γ ⊢ (φ -(s)-> ψ) <---> (φ ---> ψ) ∷ s.
+      Γ ⊢ ψ ⊆ml Top(s) ---> (φ -(s)-> ψ) <---> (φ ---> ψ) ∷ s.
   Proof.
     intros.
+    mlIntro "H".
     mlSplitAnd.
-    * mlIntro. mlApplyMeta implies_equiv_1. mlAssumption.
+    * mlIntro. mlAdd (implies_equiv_1 s φ ψ H H0 H1) as "H0".
+      mlApply "H0" in "H". mlApply "H" in "0".
+      mlAssumption.
     * mlIntro. mlApplyMeta implies_equiv_2. mlAssumption.
   Defined.
 
@@ -924,112 +1040,6 @@ Arguments well_formed_closed_ex_aux /. *)
     mlSplitAnd.
     * mlIntro. mlApplyMeta iff_equiv_1. mlAssumption.
     * mlIntro. mlApplyMeta iff_equiv_2. mlAssumption.
-  Defined.
-
-  Lemma valid_equiv_1 :
-    forall s φ ψ,
-      well_formed s ->
-      well_formed φ ->
-      well_formed ψ ->
-      Γ ⊢ (⊢(s) φ <-(s)-> ψ) ---> (φ ∷ s =ml ψ ∷ s).
-  Proof.
-    intros. unfold kore_valid.
-    pose proof (iff_equiv s φ ψ H H0 H1).
-    mlRewrite H2 at 1.
-    mlIntro "H".
-    mlApplyMeta patt_total_and_2.
-    2: unfold KoreTheory in HΓ; set_solver.
-    mlSplitAnd.
-    * mlApplyMeta floor_monotonic. mlExact "H".
-      2: wf_auto2.
-      2: unfold KoreTheory in HΓ; set_solver.
-      clear hasserted.
-      instantiate (1 := AnyReasoning).
-      mlIntro "H".
-      mlIntro "H0".
-      mlDestructAnd "H0" as "H0_1" "H0_2".
-      mlSplitAnd. 2: mlAssumption.
-      mlDestructAnd "H" as "H_1" "H_2".
-      mlApply "H_2" in "H0_2".
-      mlDestructAnd "H0_2" as "H3" "H4".
-      mlDestructAnd "H3" as "H5" "H6".
-      mlApply "H5".
-      mlAssumption.
-    * mlApplyMeta floor_monotonic. mlExact "H".
-      2: wf_auto2.
-      2: unfold KoreTheory in HΓ; set_solver.
-      clear hasserted.
-      instantiate (1 := AnyReasoning).
-      mlIntro "H".
-      mlIntro "H0".
-      mlDestructAnd "H0" as "H0_1" "H0_2".
-      mlSplitAnd. 2: mlAssumption.
-      mlDestructAnd "H" as "H_1" "H_2".
-      mlApply "H_2" in "H0_2".
-      mlDestructAnd "H0_2" as "H3" "H4".
-      mlDestructAnd "H3" as "H5" "H6".
-      mlApply "H6".
-      mlAssumption.
-  Defined.
-
-  Lemma valid_equiv_2 :
-    forall s φ ψ,
-      well_formed s ->
-      well_formed φ ->
-      well_formed ψ ->
-      Γ ⊢ (φ ∷ s =ml ψ ∷ s) ---> (⊢(s) φ <-(s)-> ψ).
-  Proof.
-    intros. unfold kore_valid.
-    pose proof (iff_equiv s φ ψ H H0 H1).
-    mlRewrite H2 at 1.
-    mlIntro "H".
-    mlApplyMeta patt_total_and_2.
-    2: unfold KoreTheory in HΓ; set_solver.
-    mlSplitAnd.
-    * mlApplyMeta floor_monotonic. mlExact "H".
-      2: wf_auto2.
-      2: unfold KoreTheory in HΓ; set_solver.
-      clear hasserted.
-      instantiate (1 := AnyReasoning).
-      mlIntro "H".
-      mlIntro "H0".
-      mlDestructAnd "H0" as "H0_1" "H0_2".
-      mlAssumption.
-    * mlApplyMeta floor_monotonic. mlExact "H".
-      2: wf_auto2.
-      2: unfold KoreTheory in HΓ; set_solver.
-      clear hasserted.
-      instantiate (1 := AnyReasoning).
-      mlIntro "H".
-      mlIntro "H0".
-      mlDestructAnd "H" as "H_1" "H_2".
-      mlSplitAnd. 2: mlAssumption.
-      mlSplitAnd.
-      - mlIntro "H".
-        mlConj "H" "H0" as "H2".
-        fold (φ ∷ s).
-        mlApply "H_1" in "H2".
-        mlDestructAnd "H2".
-        mlAssumption.
-      - mlIntro "H".
-        mlConj "H" "H0" as "H2".
-        fold (ψ ∷ s).
-        mlApply "H_2" in "H2".
-        mlDestructAnd "H2".
-        mlAssumption.
-  Defined.
-
-  Theorem valid_equiv :
-    forall s φ ψ,
-      well_formed s ->
-      well_formed φ ->
-      well_formed ψ ->
-      Γ ⊢ (⊢(s) φ <-(s)-> ψ) <---> (φ ∷ s =ml ψ ∷ s).
-  Proof.
-    intros.
-    mlSplitAnd.
-    * mlIntro. mlApplyMeta valid_equiv_1. mlAssumption.
-    * mlIntro. mlApplyMeta valid_equiv_2. mlAssumption.
   Defined.
 
   Lemma forall_equiv_1 :
