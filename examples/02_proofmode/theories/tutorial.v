@@ -303,9 +303,8 @@ Proof.
    *)
   mlAssert ("NewHypo" : (a ---> c)).
   (* This introduces two new goals, one for proving the well-formedness of the new hypothesis and for actually proving it*)
-  wf_auto2. (* To prove well-formedness *)
-  mlIntro "A".
-  mlTauto.
+  { wf_auto2. (* Proving well-formedness *) }
+  { mlIntro "A". mlTauto. (* Proving the introduced assumption *) }
   mlAssumption.
 Defined.
 
@@ -353,10 +352,9 @@ Proof.
   toMLGoal;[wf_auto2|].
   mlIntro "H1"; mlIntro "H2".
   (* Lets create a hypothesis to convert from b to c or b. *)
-  mlAssert ("T" : (b ---> c or b)); wf_auto2.
-  mlIntro "B".
-  mlRight.
-  mlAssumption.
+  mlAssert ("T" : (b ---> c or b)).
+  { wf_auto2. }
+  { mlIntro "B". mlRight. mlAssumption. }
   (* Now we can compose H1 and T *)
   mlTransitivity "H1" -> "T" as "H1T".
   (* And now H1T and H2 *)
