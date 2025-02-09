@@ -17,9 +17,7 @@ Section MatchingEquivs.
   Context (Γ : Theory).
   Hypothesis (HΓ : theory ⊆ Γ).
 
-  (* Proof for Γ ⊢ (θ -> (l = ti)) <-> (l /\ θ = ti /\ θ) *) 
-
-  (* Helper lemma for predicate patterns. *)
+  (* No longer needed. *)
   Lemma predicate_iff φ₁ φ₂ :
     well_formed φ₁ ->
     well_formed φ₂ ->
@@ -45,76 +43,6 @@ mlAssert ("1dup" : (is_predicate_pattern φ₂)).
     mlApply "2" in "1". mlApply "1" in "0dup".
     mlExact "0dup".
   Defined.
-
-  Lemma extract_common_from_equality_r_2 a b p :
-    well_formed a -> well_formed b -> well_formed p ->
-    Γ ⊢ is_predicate_pattern p --->
-    (p ---> a =ml b) <---> (a and p) =ml (b and p).
-  Proof.
-    intros Hwfa Hwfb Hwfp.
-    mlIntro.
-    mlSplitAnd; mlIntro.
-    - 
-      assert (Γ ⊢ is_predicate_pattern (a =ml b)). {
-        unfold patt_equal.
-        mlFreshEvar as x.
-        mlFreshEvar as y.
-        mlFreshEvar as z.
-        apply (floor_is_predicate Γ (a <---> b) AnyReasoning x y z).
-        auto. wf_auto2. fm_solve. fm_solve. fm_solve. try_solve_pile.
-      }
-      opose proof* (predicate_imp Γ p (a =ml b));
-      [auto .. | wf_auto2 |].
-      mlAdd H. mlAdd H0. clear H H0.
-      mlApply "3" in "0". mlApply "0" in "2". mlClear "0". mlClear "3".
-      opose proof* (predicate_equiv Γ (p ---> a =ml b)).
-      auto. wf_auto2.
-      mlApplyMeta H in "2". mlDestructAnd "2". mlApply "0" in "1".
-      mlClear "0". mlClear "3".
-      mlFreshEvar as x.
-      mlDeduct "1".
-      remember (ExGen := _, SVSubst := _, KT:= _, AKT := _) as i.
-      remember (_ ∪ _ : Theory) as Γ'.
-      opose proof* (hypothesis Γ' (p ---> a =ml b)).
-      wf_auto2. set_solver.
-      use i in H0.
-      opose proof* (total_phi_impl_phi Γ' (a <---> b) x).
-      set_solver. fm_solve. wf_auto2.
-      use i in H1.
-      epose proof syllogism_meta _ _ _ H0 H1.
-      pose proof extract_common_from_equivalence_r Γ' _ _ _ i Hwfp Hwfa Hwfb.
-      epose proof pf_iff_proj2 _ _ _ _ _ _ H3.
-      pose proof MP H2 H4.
-      mlRewrite H5 at 1. mlReflexivity.
-      Unshelve.
-      subst i. simpl.
-      admit. (* TODO: revise definedness to make solvable *)
-      all: wf_auto2.
-    -
-      mlIntro.
-      mlApplyMeta (predicate_equiv _ _ HΓ Hwfp) in "0".
-      mlDestructAnd "0". mlApply "3" in "2".
-      mlClear "3". mlClear "4".
-      epose proof patt_total_and _ _ _ HΓ _ _.
-      use AnyReasoning in H.
-      epose proof pf_iff_proj2 _ _ _ _ _ _ H.
-      mlConj "1" "2" as "0".
-      mlApplyMeta H0 in "0".
-      clear H H0. mlClear "1". mlClear "2".
-      mlDeduct "0".
-      remember (ExGen := _, SVSubst := _, KT:= _, AKT := _) as i.
-      remember (_ ∪ _ : Theory) as Γ'.
-      opose proof* (hypothesis Γ' (((a and p <---> b and p) and p))).
-      wf_auto2. set_solver. use i in H.
-      pose proof extract_common_from_equivalence_r Γ' _ _ _ i Hwfp Hwfa Hwfb.
-      epose proof pf_iff_proj1 Γ' _ _ i _ _ H0.
-      epose proof lhs_from_and Γ' _ _ _ i _ _ _ H1.
-      pose proof MP H H2.
-      mlRewrite H3 at 1.
-      mlReflexivity.
-      Unshelve.
-      all: wf_auto2.
-  Admitted.
 
   (* Proof for Γ ⊢ (∃. (l = ti)) <-> (ti ∈ ∃. l) *) 
 
@@ -275,21 +203,11 @@ mlAssert ("1dup" : (is_predicate_pattern φ₂)).
       eapply pf_iff_equiv_trans with (5 := H).
       4: toMLGoal.
       4: simpl; apply well_formed_iff.
-      all: try solve [(eapply extract_wfp + eapply extract_wfq); eauto].
+      all: try by (eapply extract_wfp + eapply extract_wfq).
       1,2: rewrite many_ex_travels; eapply well_formed_many_ex; only 1,5: reflexivity; wf_auto2.
-      mlSplitAnd; mlIntro;
-      apply (MLGoal_destructEx Γ [] [] _ y "0" _ AnyReasoning);
-      simpl.
-      4,5,10,11: rewrite free_evars_many_ex.
-      1,9: try_solve_pile.
-      ltac2:(fm_solve ()).
-      ltac2:(fm_solve ()).
-      ltac2:(fm_solve ()).
-      ltac2:(fm_solve ()).
-      ltac2:(fm_solve ()).
-      ltac2:(fm_solve ()).
-      2: ltac2:(fm_solve ()).
-      2: ltac2:(fm_solve ()).
+      mlSplitAnd; mlIntro; mlDestructExManual "0" as y; simpl.
+      1,7: try_solve_pile.
+      par: try solve [rewrite ? free_evars_many_ex; fm_solve].
       all: mlExists y; mlSimpl;
       rewrite ! many_ex_subst; mlSimpl;
       rewrite ! (evar_open_wfc_aux 0 _ y ti);

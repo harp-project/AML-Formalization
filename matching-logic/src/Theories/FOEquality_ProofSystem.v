@@ -882,8 +882,8 @@ Section EqCon.
     now aapply patt_equal_refl.
     simpl in Hσ1, Hσ2. apply wf_cons_iff in Hσ1 as [], Hσ2 as [].
     simpl in Hmfσ1, Hmfσ2. apply andb_true_iff in Hmfσ1 as [], Hmfσ2 as [].
-    simpl in Hfpσ.
-    destruct X as [? ?%(IHl H0 H2)]. clear IHl.
+    simpl in Hfpσ. destruct Hfpσ.
+    destruct X as [? ?%(IHl H0 H2 H4 H6 f)]. clear IHl.
     apply equality_elimination_functional_subst; auto.
     - eapply wf_foldr. auto. exact H0.
       intros ? [[] ?] **. wf_auto2.
@@ -895,10 +895,6 @@ Section EqCon.
       intros ? [[] ?] **. simpl in H8 |- *. now apply mu_free_free_evar_subst.
     - now apply mf_imp_ktwf.
     - now apply mf_imp_ktwf.
-    - exact (Hfpσ.1).
-    - auto.
-    - auto.
-    - exact (Hfpσ.2).
   Defined.
 End EqCon.
 
