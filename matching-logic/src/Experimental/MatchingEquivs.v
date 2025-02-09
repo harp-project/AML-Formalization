@@ -1,29 +1,7 @@
-From Coq Require Import ssreflect ssrfun ssrbool.
-
-Require Import Equations.Prop.Equations.
-
-From Coq Require Import String Setoid.
-Require Import Coq.Program.Equality.
-Require Import Coq.Logic.Classical_Prop.
-From Coq.Logic Require Import FunctionalExtensionality Eqdep_dec.
-From Coq.Classes Require Import Morphisms_Prop.
-From Coq.Unicode Require Import Utf8.
-From Coq.micromega Require Import Lia.
-
-From MatchingLogic Require Import Logic ProofMode.MLPM Substitution DerivedOperators_Semantics.
-From MatchingLogic.Theories Require Import Definedness_Syntax Definedness_ProofSystem FOEquality_ProofSystem DeductionTheorem Definedness_Semantics.
-From MatchingLogic.Utils Require Import stdpp_ext.
-
-Require Import MatchingLogic.wftactics.
-
-From stdpp Require Import base fin_sets sets propset proof_irrel option list tactics.
-
-Import extralibrary.
-
+Require Import MatchingLogic.Theories.Definedness_Semantics.
+From MatchingLogic.Experimental Require Export Unification.
 Import MatchingLogic.Logic.Notations.
 Import MatchingLogic.Theories.Definedness_Syntax.Notations.
-
-Require Import Experimental.Unification.
 
 Set Default Proof Mode "Classic".
 
@@ -43,7 +21,7 @@ Section MatchingEquivs.
 
   (* Helper lemma for predicate patterns. *)
   Lemma predicate_iff φ₁ φ₂ :
-well_formed φ₁ ->
+    well_formed φ₁ ->
     well_formed φ₂ ->
     Γ ⊢ is_predicate_pattern φ₁ --->
         is_predicate_pattern φ₂ --->
@@ -60,7 +38,7 @@ well_formed φ₁ ->
 mlAdd H. mlAdd H0. mlAdd H1. clear H H0 H1.
     mlAssert ("0dup" : (is_predicate_pattern φ₁)).
     wf_auto2. mlExact "0".
-    mlAssert ("1dup" : (is_predicate_pattern φ₂)).
+mlAssert ("1dup" : (is_predicate_pattern φ₂)).
     wf_auto2. mlExact "1".
     mlApply "3" in "0". mlApply "0" in "1".
     mlApply "4" in "1dup". mlApply "1dup" in "0dup".
@@ -257,7 +235,7 @@ mlAdd H. mlAdd H0. mlAdd H1. clear H H0 H1.
 
   (* In place of inversion for Set. *)
   Tactic Notation "decide_le" hyp(Hle) :=
-    apply le_lt_eq_dec in Hle as [Hle%Arith_prebase.lt_n_Sm_le | ->].
+    apply le_lt_eq_dec in Hle as [Hle%le_S_n | ->].
 
   (* Multiple exists version. *)
   Goal forall l ti n m,
@@ -291,7 +269,7 @@ mlAdd H. mlAdd H0. mlAdd H1. clear H H0 H1.
       eapply well_formed_many_ex; eauto.
       auto.
       rewrite free_evars_many_ex.
-      ltac2:(fm_solve ()).
+      fm_solve.
       try_solve_pile.
       apply pf_iff_equiv_sym in H.
       eapply pf_iff_equiv_trans with (5 := H).
