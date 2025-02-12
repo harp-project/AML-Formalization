@@ -33,10 +33,10 @@ Section MatchingEquivs.
     [auto | wf_auto2 .. |].
     opose proof* (predicate_imp Γ φ₁ φ₂); auto.
     opose proof* (predicate_imp Γ φ₂ φ₁); auto.
-mlAdd H. mlAdd H0. mlAdd H1. clear H H0 H1.
+    mlAdd H. mlAdd H0. mlAdd H1. clear H H0 H1.
     mlAssert ("0dup" : (is_predicate_pattern φ₁)).
     wf_auto2. mlExact "0".
-mlAssert ("1dup" : (is_predicate_pattern φ₂)).
+    mlAssert ("1dup" : (is_predicate_pattern φ₂)).
     wf_auto2. mlExact "1".
     mlApply "3" in "0". mlApply "0" in "1".
     mlApply "4" in "1dup". mlApply "1dup" in "0dup".
@@ -86,17 +86,17 @@ mlAssert ("1dup" : (is_predicate_pattern φ₂)).
     | S m => forall x, functional_when_applied m (evar_open x 0 φ)
     end.
 
-  Fixpoint many_ex (n : nat) (φ : Pattern) :=
-    match n with
-    | 0 => φ
-    | S m => ex, many_ex m φ
-    end.
+  (* Fixpoint many_ex (n : nat) (φ : Pattern) := *)
+  (*   match n with *)
+  (*   | 0 => φ *)
+  (*   | S m => ex, many_ex m φ *)
+  (*   end. *)
+
+  Definition many_ex (n : nat) (φ : Pattern) := Nat.iter n patt_exists φ.
 
   Lemma many_ex_travels n : forall φ, (ex, many_ex n φ) = many_ex n (ex, φ).
   Proof.
-    induction n; simpl; intros.
-    reflexivity.
-    rewrite IHn. reflexivity.
+    symmetry. apply Nat.iter_swap.
   Defined. 
 
   Lemma well_formed_many_ex n : ∀ m φ,
@@ -117,7 +117,7 @@ mlAssert ("1dup" : (is_predicate_pattern φ₂)).
 
   Lemma free_evars_many_ex n φ : free_evars (many_ex n φ) = free_evars φ.
   Proof.
-    now induction n.
+    unfold many_ex. apply Nat.iter_invariant; auto.
   Defined.
 
   Lemma many_ex_subst n x φ : ∀ m, (many_ex n φ)^{evar:m↦x} = many_ex n (φ^{evar:m + n↦x}).
