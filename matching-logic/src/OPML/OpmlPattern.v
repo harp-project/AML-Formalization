@@ -15,35 +15,30 @@ Inductive dephlist {A : Type} {F : A -> Type} : list A -> Type :=
   | dhcons {x : A} {xs : list A} : F x -> dephlist xs -> dephlist (x :: xs)
 .
 
-(* Inductive OPMLPattern {Σ : OPMLSignature} : opml_sort -> Type := *)
-(*   | op_upcast (from to : opml_sort) (subsort : opml_subsort from to) (φ : OPMLPattern from) : OPMLPattern to *)
-(*   | op_bot {s : opml_sort} : OPMLPattern s *)
-(*   | op_bevar {s : opml_sort} (dbi : Edbi) : OPMLPattern s *)
-(*   | op_bsvar {s : opml_sort} (dbi : Sdbi) : OPMLPattern s *)
-(*   | op_fevar {s : opml_sort} (x : opml_evar s) : OPMLPattern s *)
-(*   | op_fsvar {s : opml_sort} (X : opml_svar s) : OPMLPattern s *)
-(*   | op_imp {s : opml_sort} (φ1 φ2 : OPMLPattern s) : OPMLPattern s *)
-(*   | op_app (σ : opml_symbol) (args : @dephlist _ OPMLPattern (opml_arg_sorts σ)) : OPMLPattern (opml_ret_sort σ) *)
-(*   | op_ex {s : opml_sort} (φ : OPMLPattern s) : OPMLPattern s *)
-(*   | op_mu {s : opml_sort} (φ : OPMLPattern s) : OPMLPattern s *)
-(* . *)
-
-Inductive hlist3 {A B C : Set} {F : A -> B -> C -> Set} : list A -> list B -> list C -> Set :=
-  | hnil3 : hlist3 [] [] []
-  | hcons3 {x : A} {y : B} {z : C} {xs : list A} {ys : list B} {zs : list C} : F x y z -> hlist3 xs ys zs -> hlist3 (x :: xs) (y :: ys) (z :: zs)
+Inductive OPMLPattern {Σ : OPMLSignature} : opml_sort -> Type :=
+  | op_upcast (from to : opml_sort) (subsort : opml_subsort from to) (φ : OPMLPattern from) : OPMLPattern to
+  | op_bot {s : opml_sort} : OPMLPattern s
+  | op_bevar {s : opml_sort} (dbi : Edbi) : OPMLPattern s
+  | op_bsvar {s : opml_sort} (dbi : Sdbi) : OPMLPattern s
+  | op_fevar {s : opml_sort} (x : opml_evar s) : OPMLPattern s
+  | op_fsvar {s : opml_sort} (X : opml_svar s) : OPMLPattern s
+  | op_imp {s : opml_sort} (φ1 φ2 : OPMLPattern s) : OPMLPattern s
+  | op_app (σ : opml_symbol) (args : @dephlist _ OPMLPattern (opml_arg_sorts σ)) : OPMLPattern (opml_ret_sort σ)
+  | op_ex {s : opml_sort} (φ : OPMLPattern s) : OPMLPattern s
+  | op_mu {s : opml_sort} (φ : OPMLPattern s) : OPMLPattern s
 .
 
-Inductive OPMLPattern {Σ : OPMLSignature} : opml_sort -> nat -> nat -> Type :=
-  | op_upcast {ex mu : nat} (from to : opml_sort) (subsort : opml_subsort from to) (φ : OPMLPattern from ex mu) : OPMLPattern to ex mu
-  | op_bot {s : opml_sort} {ex mu : nat} : OPMLPattern s ex mu
-  | op_bevar {s : opml_sort} {mu : nat} (dbi : Edbi) : OPMLPattern s (S (edbi_n dbi)) mu
-  | op_bsvar {s : opml_sort} {ex : nat} (dbi : Sdbi) : OPMLPattern s ex (S (sdbi_n dbi))
-  | op_fevar {s : opml_sort} {ex mu : nat} (x : opml_evar s) : OPMLPattern s ex mu
-  | op_fsvar {s : opml_sort} {ex mu : nat} (X : opml_svar s) : OPMLPattern s ex mu
-  | op_imp {s : opml_sort} {ex1 mu1 ex2 mu2 : nat} (φ1 : OPMLPattern s ex1 mu1) (φ2 : OPMLPattern s ex2 mu2) : OPMLPattern s (max ex1 ex2) (max mu1 mu2)
-  | op_app {ex mu : list nat} (σ : opml_symbol) (args : @hlist3 _ _ _ OPMLPattern (opml_arg_sorts σ) ex mu) : OPMLPattern (opml_ret_sort σ) (list_max ex) (list_max mu)
-  | op_ex {s : opml_sort} {ex mu : nat} (φ : OPMLPattern s (S ex) mu) : OPMLPattern s ex mu
-  | op_mu {s : opml_sort} {ex mu : nat} (φ : OPMLPattern s ex (S mu)) : OPMLPattern s ex mu
+Inductive OPMLClosedPattern {Σ : OPMLSignature} : opml_sort -> nat -> nat -> Type :=
+  | ocp_upcast {ex mu : nat} (from to : opml_sort) (subsort : opml_subsort from to) (φ : OPMLClosedPattern from ex mu) : OPMLClosedPattern to ex mu
+  | ocp_bot {s : opml_sort} {ex mu : nat} : OPMLClosedPattern s ex mu
+  | ocp_bevar {s : opml_sort} {ex mu : nat} (dbi : Edbi) : OPMLClosedPattern s (S (edbi_n dbi) + ex) mu
+  | ocp_bsvar {s : opml_sort} {ex mu : nat} (dbi : Sdbi) : OPMLClosedPattern s ex (S (sdbi_n dbi) + mu)
+  | ocp_fevar {s : opml_sort} {ex mu : nat} (x : opml_evar s) : OPMLClosedPattern s ex mu
+  | ocp_fsvar {s : opml_sort} {ex mu : nat} (X : opml_svar s) : OPMLClosedPattern s ex mu
+  | ocp_imp {s : opml_sort} {ex mu : nat} (φ1 : OPMLClosedPattern s ex mu) (φ2 : OPMLClosedPattern s ex mu) : OPMLClosedPattern s ex mu
+  | ocp_app {ex mu : nat} (σ : opml_symbol) (args : @dephlist _ (OPMLClosedPattern ^~ ex ^~ mu) (opml_arg_sorts σ)) : OPMLClosedPattern (opml_ret_sort σ) ex mu
+  | ocp_ex {s : opml_sort} {ex mu : nat} (φ : OPMLClosedPattern s (S ex) mu) : OPMLClosedPattern s ex mu
+  | ocp_mu {s : opml_sort} {ex mu : nat} (φ : OPMLClosedPattern s ex (S mu)) : OPMLClosedPattern s ex mu
 .
 
 Definition test : OPMLSignature.
@@ -55,8 +50,6 @@ Proof.
   intros []. exact [1;3;2]. exact [2;0].
   intros []. exact 0. exact 4.
 Defined.
-
-Check @op_app test [0;0] [0;0] false (hcons3 op_bot (hcons3 op_bot hnil3)) : @OPMLPattern test 4 0 0.
 
 Notation "[ ]" := dhnil (format "[ ]").
 Notation "[ x ]" := (dhcons x dhnil).
@@ -73,6 +66,10 @@ Defined.
 Print test2.
 
 Check @op_app test false [op_bot; @op_app test true [op_bot; op_bot; op_bot]].
+
+Check @ocp_app test _ _ false [ocp_bot; ocp_bot] : @OPMLClosedPattern test 4 0 0.
+Check @ocp_ex test 12 _ _ (ocp_ex (ocp_bevar {| edbi_n := 4 |})) : @OPMLClosedPattern test 12 3 0.
+Check @ocp_imp test 1 _ _ (ocp_bevar {| edbi_n := 3 |}) (ocp_bevar {| edbi_n := 4 |}) : @OPMLClosedPattern test 1 5 0.
 
 Fixpoint OPMLPattern_size
     {Σ : OPMLSignature}
