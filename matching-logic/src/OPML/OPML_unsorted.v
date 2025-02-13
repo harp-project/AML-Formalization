@@ -396,21 +396,23 @@ Print OPMLSymbols.
 
   Open Scope string_scope.
   Goal
-    well_sorted (op_fevar "x") (fun _ => nat) (fun _ => nat) nat.
+    well_sorted (op_fevar "x") default nat.
   Proof.
     constructor. by cbn.
   Qed.
 
   Goal
     well_sorted (op_ex nat (op_app succ [op_fevar "x"]))
-      (fun _ => nat) (fun _ => nat) nat.
+      default nat.
   Proof.
     repeat constructor.
   Qed.
 
   Goal
     well_sorted (op_ex nat (op_app is0 [op_bevar 0]))
-      (fun _ => nat) (fun _ => nat) bool.
+      default bool.
   Proof.
     repeat constructor.
   Qed.
+
+End Test.
