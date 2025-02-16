@@ -17,37 +17,10 @@ Section MatchingEquivs.
   Context (Γ : Theory).
   Hypothesis (HΓ : theory ⊆ Γ).
 
-  (* No longer needed. *)
-  Lemma predicate_iff φ₁ φ₂ :
-    well_formed φ₁ ->
-    well_formed φ₂ ->
-    Γ ⊢ is_predicate_pattern φ₁ --->
-        is_predicate_pattern φ₂ --->
-        is_predicate_pattern (φ₁ <---> φ₂).
-  Proof.
-    intros Hwfφ₁ Hwfφ₂.
-    toMLGoal. simpl. unfold is_predicate_pattern. wf_auto2.
-    do 2 mlIntro.
-    unfold patt_iff.
-    opose proof* (predicate_and Γ (φ₁ ---> φ₂) (φ₂ ---> φ₁));
-    [auto | wf_auto2 .. |].
-    opose proof* (predicate_imp Γ φ₁ φ₂); auto.
-    opose proof* (predicate_imp Γ φ₂ φ₁); auto.
-    mlAdd H. mlAdd H0. mlAdd H1. clear H H0 H1.
-    mlAssert ("0dup" : (is_predicate_pattern φ₁)).
-    wf_auto2. mlExact "0".
-    mlAssert ("1dup" : (is_predicate_pattern φ₂)).
-    wf_auto2. mlExact "1".
-    mlApply "3" in "0". mlApply "0" in "1".
-    mlApply "4" in "1dup". mlApply "1dup" in "0dup".
-    mlApply "2" in "1". mlApply "1" in "0dup".
-    mlExact "0dup".
-  Defined.
-
   (* Proof for Γ ⊢ (∃. (l = ti)) <-> (ti ∈ ∃. l) *) 
 
   (* Single exists version. *)
-  Goal forall l ti,
+  Lemma exists_equal_equiv_in_exists_single l ti :
     well_formed (ex, l) ->
     well_formed ti ->
     mu_free l ->
@@ -76,21 +49,19 @@ Section MatchingEquivs.
       pose proof (MP fpti H1); clear H1.
       pose proof (MP (fpl x) H2); clear H2.
       mlSymmetry. now fromMLGoal.
-  Qed.
+  Defined.
 
   (* Definitions for multiple exists version. *)
 
-  Fixpoint functional_when_applied (n : nat) (φ : Pattern) :=
+  (* functional_when_opened n φ := ∀ x₁ ... xₙ. φ[x₁/0]...[xₙ/0] is functional *)
+
+  Fixpoint functional_when_opened (n : nat) (φ : Pattern) :=
     match n with
     | 0 => derives Γ (is_functional φ)
-    | S m => forall x, functional_when_applied m (evar_open x 0 φ)
+    | S m => forall x, functional_when_opened m (evar_open x 0 φ)
     end.
 
-  (* Fixpoint many_ex (n : nat) (φ : Pattern) := *)
-  (*   match n with *)
-  (*   | 0 => φ *)
-  (*   | S m => ex, many_ex m φ *)
-  (*   end. *)
+  (* many_ex n φ := ∃ x₁ ... xₙ. φ *)
 
   Definition many_ex (n : nat) (φ : Pattern) := Nat.iter n patt_exists φ.
 
@@ -148,9 +119,9 @@ Section MatchingEquivs.
     mlReflexivity.
   Defined.
 
-  Lemma fwa_drop_one : forall n m l y,
+  Lemma fwo_drop_one : forall n m l y,
     m <= n ->
-    functional_when_applied (S n) l → functional_when_applied n l^{evar:m↦y}.
+    functional_when_opened (S n) l → functional_when_opened n l^{evar:m↦y}.
   Proof.
     induction n; intros.
     apply Nat.le_0_r in H. subst. apply H0.
@@ -166,14 +137,14 @@ Section MatchingEquivs.
     apply le_lt_eq_dec in Hle as [Hle%le_S_n | ->].
 
   (* Multiple exists version. *)
-  Goal forall l ti n m,
+  Lemma exists_equal_equiv_in_exists_many l ti n m :
     m <= n ->
     well_formed_closed_ex_aux l m ->
     well_formed_closed_mu_aux l 0 ->
     well_formed_positive l ->
     well_formed ti ->
     mu_free l ->
-    functional_when_applied m l ->
+    functional_when_opened m l ->
     Γ ⊢ is_functional ti ->
     Γ ⊢ (many_ex n (l =ml ti)) <---> ti ∈ml (many_ex n l).
   Proof.
@@ -215,7 +186,7 @@ Section MatchingEquivs.
       replace (0 + n) with n by reflexivity;
       decide_le Hmlen.
       1,3: rewrite ! (evar_open_wfc_aux m n); auto; specialize (IHn m Hmlen l Hwfceal Hwfcmal Hwfpl Hmfl Hfpl).
-      3,4: ospecialize (IHn n _ l^{evar:n↦y} _ _ _ _ _); auto; [now apply mu_free_evar_open | now apply fwa_drop_one |].
+      3,4: ospecialize (IHn n _ l^{evar:n↦y} _ _ _ _ _); auto; [now apply mu_free_evar_open | now apply fwo_drop_one |].
       1,3: apply pf_iff_proj1 in IHn.
       7,8: apply pf_iff_proj2 in IHn.
       all: try solve [(eapply extract_wfp + eapply extract_wfq); eauto]; mlApplyMeta IHn in "0"; mlAssumption.
@@ -224,7 +195,7 @@ Section MatchingEquivs.
   (* Proof for Γ ⊢ (⌈l /\ ti⌉) -> (ti ∈ ∃. l) *) 
 
   (* Single exists version. *)
-  Goal forall l ti,
+  Lemma def_conj_imp_in_exists_single l ti :
     well_formed (ex, l) ->
     well_formed ti ->
     mu_free ti ->
@@ -246,18 +217,18 @@ Section MatchingEquivs.
 
   (* Definitions for multiple exists version. *)
 
-  Fixpoint fully_apply (n : nat) (p : Pattern) :=
+  Fixpoint many_open (n : nat) (p : Pattern) :=
     match n with
     | 0 => p
-    | S m => fully_apply m (p^{evar:m↦fresh_evar p})
+    | S m => many_open m (p^{evar:m↦fresh_evar p})
     end.
 
-  Lemma well_formed_fully_apply : forall n m p,
+  Lemma well_formed_many_open : forall n m p,
     m <= n ->
     well_formed_closed_ex_aux p m ->
     well_formed_closed_mu_aux p 0 ->
     well_formed_positive p ->
-    well_formed (fully_apply n p).
+    well_formed (many_open n p).
   Proof.
     induction n; intros; simpl.
     apply Nat.le_0_r in H. subst. wf_auto2.
@@ -268,16 +239,16 @@ Section MatchingEquivs.
   Defined.
 
   (* Multiple exists version. *)
-  Goal forall n m l ti,
+  Lemma def_conj_imp_in_exists_many n m l ti :
     m <= n ->
     well_formed_closed_ex_aux l m ->
     well_formed_closed_mu_aux l 0 ->
     well_formed_positive l ->
     well_formed ti ->
     mu_free ti ->
-    functional_when_applied m l ->
+    functional_when_opened m l ->
     Γ ⊢ is_functional ti ->
-    Γ ⊢ ⌈fully_apply n l and ti⌉ ---> (many_ex n (l =ml ti)).
+    Γ ⊢ ⌈many_open n l and ti⌉ ---> (many_ex n (l =ml ti)).
   Proof.
     intros * Hmlen Hwfceal Hwfcmal Hwfpl Hwfti Hmfti Hfpl Hfpti.
     generalize dependent l.
@@ -298,7 +269,7 @@ Section MatchingEquivs.
     only 1,4: rewrite (evar_open_wfc_aux m n y l); auto.
     mlApplyMeta IHn. mlAssumption.
     ospecialize (IHn n _ l^{evar:n↦y} _ _ _ _); auto.
-    now apply fwa_drop_one.
+    now apply fwo_drop_one.
     mlApplyMeta IHn. mlAssumption.
     Unshelve.
     apply well_formed_imp.
@@ -323,8 +294,8 @@ Section MatchingEquivs.
     }
     decide_le Hmlen.
     rewrite (evar_open_wfc_aux m n); auto.
-    eapply well_formed_fully_apply; eauto.
-    eapply well_formed_fully_apply. reflexivity.
+    eapply well_formed_many_open; eauto.
+    eapply well_formed_many_open. reflexivity.
     all: wf_auto2.
   Qed.
 
@@ -485,6 +456,9 @@ Section MatchingEquivs.
     }
     set_solver.
   Defined.
+
+  (* Auxilary proof for the above, showing that its conditions
+     are satisfiable *)
 
   Goal forall (sy : symbols) (a : evar), exists ti s M, forall ρ,
     satisfies_theory M theory /\
