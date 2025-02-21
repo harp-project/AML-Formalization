@@ -3,6 +3,7 @@ From MatchingLogic.OPML Require Export OpmlSignature.
 From stdpp Require Export base list list_numbers fin.
 (* This is unset by stdpp. We need to set it again.*)
 Set Transparent Obligations.
+From Coq Require Import Program.Equality.
 
 Set Default Proof Mode "Classic".
 
@@ -15,6 +16,11 @@ Inductive dephlist {A : Type} {F : A -> Type} : list A -> Type :=
   | dhcons {x : A} {xs : list A} : F x -> dephlist xs -> dephlist (x :: xs)
 .
 
+(* Inductive dephlist : list Type -> Type := *)
+(*   | dhnil : dephlist [] *)
+(*   | dhcons {T : Type} {Ts : list Type} : T -> dephlist Ts -> dephlist (T :: Ts) *)
+(* . *)
+
 Inductive OPMLPattern {Σ : OPMLSignature} : opml_sort -> Type :=
   | op_upcast (from to : opml_sort) (subsort : opml_subsort from to) (φ : OPMLPattern from) : OPMLPattern to
   | op_bot {s : opml_sort} : OPMLPattern s
@@ -24,6 +30,7 @@ Inductive OPMLPattern {Σ : OPMLSignature} : opml_sort -> Type :=
   | op_fsvar {s : opml_sort} (X : opml_svar s) : OPMLPattern s
   | op_imp {s : opml_sort} (φ1 φ2 : OPMLPattern s) : OPMLPattern s
   | op_app (σ : opml_symbol) (args : @dephlist _ OPMLPattern (opml_arg_sorts σ)) : OPMLPattern (opml_ret_sort σ)
+  (* | op_app (σ : opml_symbol) (args : dephlist (map OPMLPattern (opml_arg_sorts σ))) : OPMLPattern (opml_ret_sort σ) *)
   | op_ex {s : opml_sort} (φ : OPMLPattern s) : OPMLPattern s
   | op_mu {s : opml_sort} (φ : OPMLPattern s) : OPMLPattern s
 .
@@ -119,6 +126,145 @@ Inductive OPMLClosedPattern {Σ : OPMLSignature} : opml_sort -> list opml_sort -
   | ocp_ex {s s' : opml_sort} {ex mu : list opml_sort} (φ : OPMLClosedPattern s (s' :: ex) mu) : OPMLClosedPattern s ex mu
   | ocp_mu {s s' : opml_sort} {ex mu : list opml_sort} (φ : OPMLClosedPattern s ex (s' :: mu)) : OPMLClosedPattern s ex mu
 .
+
+Definition dephlist_map {A : Type} {F G : A -> Type} (l : list A) (f : forall (a : A), F a -> G a) (xs : @dephlist A F l) : @dephlist A G l.
+Proof.
+  induction l. left.
+  inversion_clear xs; subst.
+  right; auto.
+Defined.
+
+(* (1* evar_open *1) *)
+(* Goal forall {Σ : OPMLSignature} `{ex : list opml_sort} `(x : opml_evar s') `(OPMLClosedPattern s (s' :: ex) mu), OPMLClosedPattern s ex mu. *)
+(* Proof. *)
+(*   intros * ? *. *)
+(*   generalize mu, s. *)
+(*   fix IH 3. *)
+(*   inversion_clear 1; subst. *)
+(*   - eapply (ocp_upcast); eauto. *)
+(*   - apply ocp_bot. *)
+(*   - inversion dbi; subst. *)
+(*     + apply ocp_fevar; auto. *)
+(*     + apply ocp_bevar; auto. *)
+(*   - apply ocp_bsvar; auto. *)
+(*   - apply ocp_fevar; auto. *)
+(*   - apply ocp_fsvar; auto. *)
+(*   - apply ocp_imp; auto. *)
+(*   - apply ocp_app. eapply dephlist_map. exact (IH mu0). auto. *)
+(*   - eapply ocp_ex. admit. *)
+(*   - eapply ocp_mu; eauto. *)
+(* Abort. *)
+
+Inductive sub {Σ : OPMLSignature} : list opml_sort -> list opml_sort -> list opml_sort -> Set :=
+  | subp {xs ys : list opml_sort} {x : opml_sort} : sub (x :: xs) xs ys
+  | subz {xs ys : list opml_sort} {x : opml_sort} : OPMLClosedPattern x xs ys -> sub xs (x :: xs) ys
+  | subs {xs ys zs : list opml_sort} {x : opml_sort} : sub xs ys zs -> sub (x :: xs) (x :: ys) zs
+  .
+
+Fixpoint test `(base : @OPMLClosedPattern Σ s ex0 mu0) `(sub ex1 ex0 mu0) : OPMLClosedPattern s ex1 mu0. 
+Proof.
+  dependent induction base.
+  3: {
+    inversion sub0; subst.
+    3: {
+      inversion dbi; subst.
+      2: {
+        epose (test _ _ _ _ _ _).
+
+  refine (match base with
+          | ocp_upcast from to subsort φ => _ (*test _ _ _ _ φ _ sub0*)
+          | ocp_bot => ocp_bot
+          | ocp_bevar dbi => _
+          | ocp_bsvar dbi => ocp_bsvar dbi
+          | ocp_fevar x => ocp_fevar x
+          | ocp_fsvar X => ocp_fsvar X
+          | @ocp_imp _ s ex mu φ1 φ2 => _
+          | @ocp_app _ ex mu σ args => _
+          | @ocp_ex _ s s' ex mu φ => _
+          | @ocp_mu _ s s' ex mu φ => _
+          end).
+          admit.
+
+Abort.
+
+Goal forall `(base : @OPMLClosedPattern Σ s ex0 mu0) `(sub ex1 ex0 mu0), OPMLClosedPattern s ex1 mu0.
+Proof.
+  intros.
+  (* generalize dependent ex1. *)
+  (* induction base; intros. *)
+  (* generalize dependent base. *)
+  (* generalize dependent s. *)
+  (* fix IH 2. *)
+  (* inversion_clear 1; subst. *)
+  dependent induction base.
+  - eapply ocp_upcast; eauto.
+  - apply ocp_bot.
+  - dependent induction sub0.
+    + apply ocp_bevar, edbis, dbi.
+    + dependent induction dbi.
+      * exact o.
+      * apply ocp_bevar, dbi.
+    + clear IHsub0. dependent induction dbi.
+      * apply ocp_bevar. left.
+      * destruct ys.
+        ** inversion dbi.
+        ** specialize (IHdbi ys o eq_refl). admit.
+  - apply ocp_bsvar; auto.
+  - apply ocp_fevar; auto.
+  - apply ocp_fsvar; auto.
+  (* - apply ocp_imp; apply IH; [exact φ1 | exact φ2]. *)
+  - apply ocp_imp; [apply IHbase1 | apply IHbase2]; auto.
+  - apply ocp_app. admit.
+    (* eapply dephlist_map. apply IH. exact args. Guarded. *)
+  (* - specialize (IHbase (s' :: ex1) (subs sub0)). epose proof ocp_ex IHbase. exact H. *)
+  - eapply ocp_ex. eauto using subs.
+  - eapply ocp_mu. eauto. admit.
+Abort.
+
+Goal forall `(base : @OPMLClosedPattern Σ s ex0 mu0) `(dbi : Edbi2 ex0 s') `(repl : OPMLClosedPattern s' ex0 mu0), OPMLClosedPattern s ex0 mu0.
+Proof.
+  intros.
+  dependent induction base.
+  (* generalize dependent base. *)
+  (* generalize dependent s. *)
+  (* generalize dependent dbi. *)
+  (* generalize dependent ex0. *)
+  (* fix IH 5. *)
+  (* inversion_clear 3; subst. *)
+  - eapply ocp_upcast; eauto.
+  - apply ocp_bot.
+  - inversion dbi; subst.
+    + inversion dbi0; subst.
+      * exact repl.
+      * apply ocp_bevar. exact dbi0. (*Not happy with this.*)
+      (* * admit. *)
+    + inversion dbi0; subst.
+      * apply ocp_bevar. exact dbi0.
+      * admit.
+  - apply ocp_bsvar; auto.
+  - apply ocp_fevar; auto.
+  - apply ocp_fsvar; auto.
+  - apply ocp_imp; auto.
+  - apply ocp_app. eapply dephlist_map; [apply IH |]; auto.
+  - eapply ocp_ex. eapply IH. 2: exact (edbis dbi). 2: exact φ. admit.
+  - eapply ocp_mu. admit.
+Abort.
+
+(* Goal forall `(base : @OPMLClosedPattern Σ s (s' :: ex0) mu0) `(repl : OPMLClosedPattern s' ex1 mu1) `(dbi : Edbi2 ex1 s'), OPMLClosedPattern s ex1 mu1. *)
+(* Proof. *)
+(*   intros. *)
+(*   (1* generalize dependent base. *1) *)
+(*   (1* generalize dependent s. *1) *)
+(*   (1* fix IH 2. *1) *)
+(*   (1* inversion_clear 1; subst. *1) *)
+(*   inversion_clear base; subst. *)
+(*   - eapply ocp_upcast; eauto. *)
+(*   - apply ocp_bot. *)
+(*   - inversion dbi; subst. *)
+(*     + inversion dbi0; subst. *)
+(*       * exact repl. *)
+(*       * apply ocp_bevar. *)
+(* Abort. *)
 
 (* Goal forall {Σ : OPMLSignature} (ex mu ex' mu' : list opml_sort) (s s' : opml_sort) (in_what : OPMLClosedPattern s ex mu) (change_what : OPMLClosedPattern s' ex' mu') (dbi : Edbi2 ex' s'), OPMLClosedPattern s ex mu. *)
 (* Proof. *)
