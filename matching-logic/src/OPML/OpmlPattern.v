@@ -156,35 +156,83 @@ Defined.
 (* Abort. *)
 
 Inductive sub {Σ : OPMLSignature} : list opml_sort -> list opml_sort -> list opml_sort -> Set :=
-  | subp {xs ys : list opml_sort} {x : opml_sort} : sub (x :: xs) xs ys
-  | subz {xs ys : list opml_sort} {x : opml_sort} : OPMLClosedPattern x xs ys -> sub xs (x :: xs) ys
-  | subs {xs ys zs : list opml_sort} {x : opml_sort} : sub xs ys zs -> sub (x :: xs) (x :: ys) zs
+  | subp {xs mu : list opml_sort} {x : opml_sort} : sub (x :: xs) xs mu
+  | subz {xs mu : list opml_sort} {x : opml_sort} : OPMLClosedPattern x xs mu -> sub xs (x :: xs) mu
+  | subs {xs ys mu : list opml_sort} {x : opml_sort} : sub xs ys mu -> sub (x :: xs) (x :: ys) mu
   .
+
+(* Fixpoint sub_evar `(dbi : @Edbi2 Σ ex0 s) `(σ : sub ex1 ex0 mu) : OPMLClosedPattern s ex1 mu. *)
+(* Proof. *)
+(*   inversion σ; subst. *)
+(*   - apply ocp_bevar, edbis, dbi. *)
+(*   - inversion dbi; subst. *)
+(*     + exact H. *)
+(*     + apply ocp_bevar, H3. *)
+(*   - inversion dbi; subst. *)
+(*     + apply ocp_bevar, edbi0. *)
+(*     + specialize (sub_evar _ _ _ H3 _ _ H). *)
+
+(* About OPMLClosedPattern_rect. *)
+
+Fixpoint sub_subp {Σ : OPMLSignature} (ex mu : list opml_sort) (s x : opml_sort) (φ : OPMLClosedPattern s ex mu) : OPMLClosedPattern s (x :: ex) mu.
+Proof.
+  intros.
+  inversion φ; subst.
+  - eapply ocp_upcast. eauto. apply sub_subp, φ0.
+  - apply ocp_bot.
+  - apply ocp_bevar, edbis, dbi.
+  - apply ocp_bsvar. auto.
+  - apply ocp_fevar. auto.
+  - apply ocp_fsvar. auto.
+  - apply ocp_imp; apply sub_subp; [exact φ1 | exact φ2].
+  - apply ocp_app. eapply dephlist_map. 2: exact args.
+    intros. apply sub_subp, H.
+  - eapply ocp_ex. 
+Abort.
 
 Fixpoint test `(base : @OPMLClosedPattern Σ s ex0 mu0) `(sub ex1 ex0 mu0) : OPMLClosedPattern s ex1 mu0. 
 Proof.
-  dependent induction base.
+  inversion_clear base; subst.
   3: {
     inversion sub0; subst.
-    3: {
-      inversion dbi; subst.
-      2: {
-        epose (test _ _ _ _ _ _).
+    - apply ocp_bevar, edbis, dbi.
+    - inversion dbi; subst.
+      + exact H.
+      + apply ocp_bevar, H3.
+    - inversion dbi; subst.
+      + apply ocp_bevar, edbi0.
+      + epose (test _ _ _ _ (ocp_bevar H3) _ H).
+        epose (test _ _ _ _ o _ subp).
+        exact o0. Fail Guarded.
+  }
+  7: {
+    eapply ocp_app, dephlist_map, args.
+    intros. simpl in H. eapply test; eauto.
+    Fail Guarded.
+  }
+  7: {
+    eapply ocp_ex.
+    epose (test _ _ _ _ φ _ (subs sub0)).
+    exact o. Fail Guarded.
+  }
+  7: {
+    eapply ocp_mu.
+    epose (test _ _ _ _ φ). admit.
+  }
 
-  refine (match base with
-          | ocp_upcast from to subsort φ => _ (*test _ _ _ _ φ _ sub0*)
-          | ocp_bot => ocp_bot
-          | ocp_bevar dbi => _
-          | ocp_bsvar dbi => ocp_bsvar dbi
-          | ocp_fevar x => ocp_fevar x
-          | ocp_fsvar X => ocp_fsvar X
-          | @ocp_imp _ s ex mu φ1 φ2 => _
-          | @ocp_app _ ex mu σ args => _
-          | @ocp_ex _ s s' ex mu φ => _
-          | @ocp_mu _ s s' ex mu φ => _
-          end).
-          admit.
-
+  (* refine (match base with *)
+  (*         | ocp_upcast from to subsort φ => _ (*test _ _ _ _ φ _ sub0*) *)
+  (*         | ocp_bot => ocp_bot *)
+  (*         | ocp_bevar dbi => _ *)
+  (*         | ocp_bsvar dbi => ocp_bsvar dbi *)
+  (*         | ocp_fevar x => ocp_fevar x *)
+  (*         | ocp_fsvar X => ocp_fsvar X *)
+  (*         | @ocp_imp _ s ex mu φ1 φ2 => _ *)
+  (*         | @ocp_app _ ex mu σ args => _ *)
+  (*         | @ocp_ex _ s s' ex mu φ => _ *)
+  (*         | @ocp_mu _ s s' ex mu φ => _ *)
+  (*         end). *)
+  (*         admit. *)
 Abort.
 
 Goal forall `(base : @OPMLClosedPattern Σ s ex0 mu0) `(sub ex1 ex0 mu0), OPMLClosedPattern s ex1 mu0.
