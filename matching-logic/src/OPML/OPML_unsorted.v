@@ -566,11 +566,13 @@ Section Semantics.
              | hnil => fun (H0 : [] = s :: ss) => False_rect Prop ltac:(discriminate H0)
              | @hcons _ _ a' l0' y ys =>
                fun (H0 : a' :: l0' = s :: ss) =>
-                 pointwise_elem_of _ _ ss _ _
+                 x ∈ y /\ pointwise_elem_of _ _ ss _ _
              end
             ) eq_refl
         end) eq_refl
       end).
+    * injection H. injection H0. intros. rewrite H4. rewrite H2.
+      typeclasses eauto.
     * injection H. intros. rewrite H1 in xs. exact xs.
     * injection H0. intros. rewrite H1 in ys. exact ys.
   Defined.
@@ -711,6 +713,19 @@ Section Semantics.
     forall p, p ∈ Γ ->
       exists s, { pf : well_sorted default default s p & satM p s pf }.
 
+  Import PropExtensionality.
+  #[export]
+  Instance propset_leibniz_equiv A : LeibnizEquiv (propset A).
+  Proof.
+    intros x y H. unfold equiv in H. unfold set_equiv_instance in H.
+    destruct x,y.
+    apply f_equal. apply functional_extensionality.
+    intros x. apply propositional_extensionality.
+    specialize (H x). destruct H as [H1 H2].
+    split; auto.
+  Qed.
+
+
 End with_model.
 End Semantics.
 End Semantics.
@@ -729,13 +744,13 @@ Module TestSemantics.
     (σ : symbols)
     (l : @hlist _ nat_carrier (opml_arg_sorts σ))
     : propset (nat_carrier (opml_ret_sort σ)) :=
-  match σ with
+  match σ as s with
   | add  => _
   | is0  => _
-  | zero => _
+  | zero => {[0]}
   | succ => _
-  | true => _
-  | false => _
+  | true => {[Datatypes.true]}
+  | false => {[Datatypes.false]}
   end.
   Next Obligation.
     inversion l; subst.
@@ -753,18 +768,9 @@ Module TestSemantics.
             end ]}.
   Defined.
   Next Obligation.
-    exact {[0]}.
-  Defined.
-  Next Obligation.
     inversion l. subst.
     simpl in *.
     exact {[S H0]}.
-  Defined.
-  Next Obligation.
-    exact {[Datatypes.true]}.
-  Defined.
-  Next Obligation.
-    exact {[Datatypes.false]}.
   Defined.
 
   Program Definition NatModel : OPMLModel := {|
@@ -780,6 +786,8 @@ Module TestSemantics.
     op_eq bool nat (op_app is0 [op_app zero []]) (op_app true []) (* ;
     op_app is0 [op_app succ [op_ev x]] *)
   ]}.
+
+  Require Import Coq.Program.Equality.
 
   Goal
     @satT _ NatModel NatTheory.
@@ -802,7 +810,36 @@ Module TestSemantics.
     simp opml_eval.
     unfold opml_eval_obligation_7.
     cbn.
-    Search PropSet.
+    unfold decide. (* simpl never - this should be unfolded manually *)
+    simpl. cbn.
+    (* set_eq does not work for some reason *)
+    apply set_eq.
+    intros. split. set_solver.
+    intro. apply elem_of_PropSet.
+    unfold app_ext.
+    apply set_eq.
+    split; intro X; apply elem_of_PropSet; destruct X as [c [X1 X2]].
+    * simpl in c. dependent destruction c. dependent destruction c.
+      simpl in X1. destruct X1 as [X1 _].
+      simp opml_eval in X1. unfold opml_eval_obligation_7 in X1.
+      cbn in X1. unfold decide in X1. simpl in X1. cbn in X1.
+      unfold app_ext in X1.
+      destruct X1 as [? [? ?]]. cbn in H0.
+      simpl in H1. apply elem_of_singleton in H1. subst.
+      exists hnil. simpl; split; set_solver.
+    * simpl in c. dependent destruction c.
+      simpl in X2. apply elem_of_singleton in X2. subst.
+      simpl.
+      eexists (hcons _ hnil). Unshelve. 2: exact 0.
+      (* for some reason, if 0 is put into _, we get a type error *)
+      simpl. split.
+      - simp opml_eval. unfold opml_eval_obligation_7. unfold decide.
+        simpl. cbn. split. 2: auto.
+        unfold app_ext. apply elem_of_PropSet.
+        exists hnil.
+        simpl. split. auto.
+        apply elem_of_singleton. reflexivity.
+      - cbn. set_solver.
   Qed.
 
 End TestSemantics.
