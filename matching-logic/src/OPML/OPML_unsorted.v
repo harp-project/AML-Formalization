@@ -43,17 +43,14 @@ Class OPMLSorts := {
 }.
 
 Class OPMLVariables {Ss : OPMLSorts} := mkOPMLVariables {
-  opml_evar : Set;
-  opml_svar : Set;
-  opml_evar_eqdec :: EqDecision opml_evar;
-  opml_evar_countable :: Countable opml_evar;
-  opml_evar_infinite :: Infinite opml_evar;
-  opml_svar_eqdec :: EqDecision opml_svar;
-  opml_svar_countable :: Countable opml_svar;
-  opml_svar_infinite :: Infinite opml_svar;
-
-  evar_sort : opml_evar -> opml_sort;
-  svar_sort : opml_svar -> opml_sort;
+  opml_evar : opml_sort -> Set;
+  opml_svar : opml_sort -> Set;
+  opml_evar_eqdec :: forall s, EqDecision (opml_evar s);
+  opml_evar_countable :: forall s, Countable (opml_evar s);
+  opml_evar_infinite :: forall s, Infinite (opml_evar s);
+  opml_svar_eqdec :: forall s, EqDecision (opml_svar s);
+  opml_svar_countable :: forall s, Countable (opml_svar s);
+  opml_svar_infinite :: forall s, Infinite (opml_svar s);
 }.
 
 Class OPMLSymbols {Ss : OPMLSorts} := {
@@ -88,8 +85,8 @@ Inductive OPMLPattern :=
 | op_bot
 | op_bevar (dbi : nat)
 | op_bsvar (dbi : nat)
-| op_fevar (x : opml_evar)
-| op_fsvar (X : opml_svar)
+| op_fevar (s : opml_sort) (x : opml_evar s)
+| op_fsvar (s : opml_sort) (X : opml_svar s)
 | op_imp (φ1 φ2 : OPMLPattern)
 | op_app (σ : opml_symbol) (args : list OPMLPattern)
 | op_eq (s1 s2 : opml_sort) (φ1 φ2 : OPMLPattern)
@@ -103,9 +100,9 @@ Section pat_ind.
   Hypotheses
     (P_bot : P op_bot)
     (P_bevar : forall dbi, P (op_bevar dbi))
-    (P_fevar : forall x, P (op_fevar x))
+    (P_fevar : forall x s, P (op_fevar x s))
     (P_bsvar : forall dbi, P (op_bsvar dbi))
-    (P_fsvar : forall x, P (op_fsvar x))
+    (P_fsvar : forall x s, P (op_fsvar x s))
     (P_imp : forall φ, P φ -> forall ψ, P ψ -> P (op_imp φ ψ))
     (P_app : forall σ args, Forall P args -> P (op_app σ args))
     (P_ex : forall σ φ, P φ -> P (op_ex σ φ))
@@ -122,9 +119,9 @@ Section pat_ind.
     match φ with
      | op_bot => P_bot
      | op_bevar dbi => P_bevar dbi
-     | op_fevar x => P_fevar x
+     | op_fevar s x => P_fevar s x
      | op_bsvar dbi => P_bsvar dbi
-     | op_fsvar x => P_fsvar x
+     | op_fsvar s x => P_fsvar s x
      | op_imp φ1 φ2 => P_imp _ (OPML_ind φ1) _ (OPML_ind φ2) 
      | op_app σ args => _
      | op_ex σ φ => P_ex σ _ (OPML_ind φ)
@@ -170,8 +167,8 @@ Proof.
    | op_bot => true
    | op_bevar dbi => decide (esorts dbi = Some s)
    | op_bsvar dbi => decide (ssorts dbi = Some s)
-   | op_fevar x => decide (evar_sort x = s)
-   | op_fsvar X => decide (svar_sort X = s)
+   | op_fevar s0 x => decide (s0 = s)
+   | op_fsvar s0 X => decide (s0 = s)
    | op_imp φ1 φ2 => well_sorted esorts ssorts s φ1 &&
                      well_sorted esorts ssorts s φ2
    | op_app σ args =>
@@ -224,16 +221,30 @@ Inductive well_sorted :
   well_sorted (op_mu s0 p) esorts ssorts s
 .
  *)
-Fixpoint free_evar_subst (ps : OPMLPattern) (y : opml_evar)
-  (p : OPMLPattern) : OPMLPattern :=
-match p with
- | op_fevar x => if decide (x = y) then ps else p
- | op_imp φ1 φ2 => op_imp (free_evar_subst ps y φ1) (free_evar_subst ps y φ2)
- | op_app σ args => op_app σ (map (free_evar_subst ps y) args)
- | op_ex s φ => op_ex s (free_evar_subst ps y φ)
- | op_mu s φ => op_mu s (free_evar_subst ps y φ)
- | r => r
-end.
+Check True.
+Fixpoint free_evar_subst (ps : OPMLPattern) (s : opml_sort)
+  (y : opml_evar s)
+  (p : OPMLPattern) : OPMLPattern.
+Proof.
+  refine (
+  match p with
+   | op_fevar s0 x => let s1 := decide (s = s0) in
+                        match s1 with
+                        | left _ => _
+                        | right _ => p
+                        end
+   | op_imp φ1 φ2 => op_imp (free_evar_subst ps s y φ1) (free_evar_subst ps s y φ2)
+   | op_eq s1 s2 φ1 φ2 => op_eq s1 s2 (free_evar_subst ps s y φ1) (free_evar_subst ps s y φ2)
+   | op_app σ args => op_app σ (map (free_evar_subst ps s y) args)
+   | op_ex s0 φ => op_ex s0 (free_evar_subst ps s y φ)
+   | op_mu s0 φ => op_mu s0 (free_evar_subst ps s y φ)
+   | r => r
+  end
+  ).
+  rewrite e in y. destruct (decide (x = y)).
+  - exact ps.
+  - exact (op_fevar s0 x).
+Defined.
 
 Fixpoint bevar_subst (ps : OPMLPattern) (x : nat)
   (p : OPMLPattern) : OPMLPattern :=
@@ -284,6 +295,44 @@ end.
     if decide (x = y) then d else f y. *)
 
 Definition default : nat -> option opml_sort := fun _ : nat => None.
+
+Fixpoint free_evars {s} (φ : OPMLPattern) (pf : well_sorted default default s φ) {struct φ} : gset (opml_evar s).
+Proof.
+  refine
+    (match φ as p return well_sorted default default s p -> gset (opml_evar s) with
+     | op_fevar s0 x => fun H => {[x]}
+     | op_imp φ1 φ2 => fun H => (free_evars s φ1 _ ∪ free_evars s φ2 _)
+     | op_app σ args => fun H => (foldr (fun x acc => free_evars s x _ ∪ acc) ∅ args)
+     | op_eq s1 s2 φ1 φ2 => fun H => (free_evars s φ1 _ ∪ free_evars s φ2 _)
+     | op_ex s0 φ => fun H => (free_evars s φ _)
+     | op_mu s0 φ => fun H => (free_evars s φ _)
+     | _ => fun H => ∅
+    end pf).
+  * simpl in H. destruct decide. 2: simpl in H; congruence.
+    rewrite e. typeclasses eauto.
+  * by apply andb_split_1 in H.
+  * by apply andb_split_2 in H.
+Defined.
+
+Fixpoint free_svars (φ : OPMLPattern) : gset opml_svar :=
+match φ with
+ | op_fsvar X => {[X]}
+ | op_imp φ1 φ2 => free_svars φ1 ∪ free_svars φ2
+ | op_app σ args => foldr (fun x acc => free_svars x ∪ acc) ∅ args
+ | op_eq s1 s2 φ1 φ2 => free_svars φ1 ∪ free_svars φ2
+ | op_ex s φ => free_svars φ
+ | op_mu s φ => free_svars φ
+ | _ => ∅
+end.
+
+Definition fresh_evar (φ : OPMLPattern) : opml_evar :=
+  fresh (elements (free_evars φ)).
+Definition fresh_svar (φ : OPMLPattern) : opml_svar :=
+  fresh (elements (free_svars φ)).
+
+
+
+
 
 Definition is_weaker (f1 f2 : nat -> option opml_sort) : Prop :=
   forall n s, f2 n = Some s -> f1 n = Some s.
@@ -502,7 +551,9 @@ Section Semantics.
   Inductive hlist {A : Type} {F : A -> Type} : list A -> Type :=
   | hnil : hlist []
   | hcons {x : A} {xs : list A} : F x -> hlist xs -> hlist (x :: xs)
-.
+  .
+  Arguments hcons {_} {_} {_} {_} & _ _.
+
 
   Declare Scope opml_scope.
   Delimit Scope opml_scope with opml.
@@ -510,24 +561,12 @@ Section Semantics.
   Notation "[ x ]" := (hcons _ x hnil)  : opml_scope.
   Notation "[ x ; y ; .. ; z ]" := (hcons x (hcons y .. (hcons z hnil) ..))  : opml_scope.
 
-  Program Definition test_list : @hlist bool (fun x => _) [true; false] :=
+  Program Definition test_list : @hlist bool (fun x => if x then nat else bool) [true; false] :=
     [1; true]%opml.
-  Next Obligation.
-    destruct x.
-    exact nat.
-    exact bool.
-  Defined.
-  Print test_list_obligation_1.
   Check test_list.
 
-  Program Definition test_list2 : @hlist bool (fun x => _) [true; false] :=
+  Program Definition test_list2 : @hlist bool (fun x => propset (if x then nat else bool)) [true; false] :=
     [{[1]} : propset nat; {[true]} : propset bool]%opml.
-  Next Obligation.
-    apply propset. destruct x.
-    exact nat.
-    exact bool.
-  Defined.
-  Print test_list2_obligation_1.
   Check test_list.
 
   Record OPMLModel := {
@@ -544,6 +583,27 @@ Section Semantics.
     evar_valuation (x : opml_evar) : opml_carrier M (evar_sort x);
     svar_valuation (X : opml_svar) : propset (opml_carrier M (svar_sort X)) ;
   }.
+  Program Definition update_evar_val
+    (ev : opml_evar)
+    (x : opml_carrier M (evar_sort ev)) (val : OPMLValuation) : OPMLValuation :=
+    {|
+    evar_valuation := fun ev' : opml_evar =>
+      if decide (ev = ev') is left _ then x else evar_valuation val ev' ;
+    svar_valuation := (svar_valuation val)
+    |}.
+
+  Program Definition update_svar_val
+    (sv : opml_svar)
+    (X : propset (opml_carrier M (svar_sort sv)))
+    (val : OPMLValuation) : OPMLValuation :=
+    {|
+    evar_valuation := (evar_valuation val);
+    svar_valuation := fun sv' : opml_svar =>
+      if decide (sv = sv') is left _ then _ else svar_valuation val sv' ;
+    |}.
+  Next Obligation.
+    exact X.
+  Defined.
 
   Fixpoint pointwise_elem_of {A} T ss {struct ss} :
     (* (l : @hlist A T ss)
@@ -696,7 +756,17 @@ Section Semantics.
         Unshelve.
         all: lia.
       * (* op_ex *)
-        exact ∅.
+        eapply (propset_fa_union (
+          fun c : opml_carrier M s =>
+            let newx := fresh_evar φ in
+            opml_eval (update_evar_val newx _ ρ)
+                      (bevar_subst (op_fevar newx) 0 φ)
+                      _ _ _
+        )).
+        Unshelve.
+        - 
+        -
+        -
       * (* op_mu *)
         exact ∅.
     Defined.
