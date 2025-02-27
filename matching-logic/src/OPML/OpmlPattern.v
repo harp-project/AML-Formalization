@@ -4,6 +4,7 @@ From stdpp Require Export base list list_numbers fin.
 (* This is unset by stdpp. We need to set it again.*)
 Set Transparent Obligations.
 From Coq Require Import Program.Equality.
+From Equations Require Export -(notations) Equations.
 
 Set Default Proof Mode "Classic".
 
@@ -15,6 +16,12 @@ Inductive dephlist {A : Type} {F : A -> Type} : list A -> Type :=
   | dhnil : dephlist []
   | dhcons {x : A} {xs : list A} : F x -> dephlist xs -> dephlist (x :: xs)
 .
+
+Arguments dhcons {_} {_} {_} {_} & _ _.
+
+Notation "[ ]" := dhnil (format "[ ]").
+Notation "[ x ]" := (dhcons x dhnil).
+Notation "[ x ; y ; .. ; z ]" := (dhcons x (dhcons y .. (dhcons z dhnil) ..)).
 
 (* Inductive dephlist : list Type -> Type := *)
 (*   | dhnil : dephlist [] *)
@@ -127,7 +134,7 @@ Inductive OPMLClosedPattern {Σ : OPMLSignature} : opml_sort -> list opml_sort -
   | ocp_mu {s s' : opml_sort} {ex mu : list opml_sort} (φ : OPMLClosedPattern s ex (s' :: mu)) : OPMLClosedPattern s ex mu
 .
 
-Definition dephlist_map {A : Type} {F G : A -> Type} (l : list A) (f : forall (a : A), F a -> G a) (xs : @dephlist A F l) : @dephlist A G l.
+Definition dephlist_map {A : Type} {F G : A -> Type} {l : list A} (f : forall (a : A), F a -> G a) (xs : @dephlist A F l) : @dephlist A G l.
 Proof.
   induction l. left.
   inversion_clear xs; subst.
@@ -155,7 +162,13 @@ Defined.
 (*   - eapply ocp_mu; eauto. *)
 (* Abort. *)
 
-Inductive sub {Σ : OPMLSignature} : list opml_sort -> list opml_sort -> list opml_sort -> Set :=
+(* Inductive sub {Σ : OPMLSignature} : list opml_sort -> list opml_sort -> Type := *)
+(*   | subp {xs : list opml_sort} {x : opml_sort} : sub (x :: xs) xs *)
+(*   | subz {xs mu : list opml_sort} {x : opml_sort} : OPMLClosedPattern x xs mu -> sub xs (x :: xs) *)
+(*   | subs {xs ys : list opml_sort} {x : opml_sort} : sub xs ys -> sub (x :: xs) (x :: ys) *)
+(*   . *)
+
+Inductive sub {Σ : OPMLSignature} : list opml_sort -> list opml_sort -> list opml_sort -> Type :=
   | subp {xs mu : list opml_sort} {x : opml_sort} : sub (x :: xs) xs mu
   | subz {xs mu : list opml_sort} {x : opml_sort} : OPMLClosedPattern x xs mu -> sub xs (x :: xs) mu
   | subs {xs ys mu : list opml_sort} {x : opml_sort} : sub xs ys mu -> sub (x :: xs) (x :: ys) mu
@@ -174,21 +187,282 @@ Inductive sub {Σ : OPMLSignature} : list opml_sort -> list opml_sort -> list op
 
 (* About OPMLClosedPattern_rect. *)
 
-Fixpoint sub_subp {Σ : OPMLSignature} (ex mu : list opml_sort) (s x : opml_sort) (φ : OPMLClosedPattern s ex mu) : OPMLClosedPattern s (x :: ex) mu.
+(* Fixpoint sub_subp {Σ : OPMLSignature} (ex mu : list opml_sort) (s x : opml_sort) (φ : OPMLClosedPattern s ex mu) : OPMLClosedPattern s (x :: ex) mu. *)
+(* Proof. *)
+(*   intros. *)
+(*   inversion φ; subst. *)
+(*   - eapply ocp_upcast. eauto. apply sub_subp, φ0. *)
+(*   - apply ocp_bot. *)
+(*   - apply ocp_bevar, edbis, dbi. *)
+(*   - apply ocp_bsvar. auto. *)
+(*   - apply ocp_fevar. auto. *)
+(*   - apply ocp_fsvar. auto. *)
+(*   - apply ocp_imp; apply sub_subp; [exact φ1 | exact φ2]. *)
+(*   - apply ocp_app. eapply dephlist_map. 2: exact args. *)
+(*     intros. apply sub_subp, X. *)
+(*   - eapply ocp_ex. *) 
+(* Abort. *)
+
+Fixpoint measure_Edbi2 `(dbi : @Edbi2 Σ xs x) : nat :=
+  match dbi with
+  | edbi0 => 0
+  | edbis dbi' => S (measure_Edbi2 dbi')
+  end.
+
+Fixpoint dephlist_foldr {A B : Type} {F : A -> Type} {xs : list A} (f : ∀ a, F a -> B -> B) (def : B) (l : @dephlist A F xs) : B.
+Proof.
+  dependent destruction l.
+  exact def.
+  eapply f. exact f0.
+  eapply dephlist_foldr. exact f. exact def. exact l.
+Defined.
+
+Compute dephlist_foldr (bool_rect _ plus (bool_rect _ (plus 1) (plus 0))) 0 ([2; true; 4; 5; false; false] : @dephlist _ (bool_rect _ nat bool) [true; false; true; true; false; false]).
+
+(* Lemma OPMLClosedPattern_custom_ind : *)
+(*   ∀ (Σ : OPMLSignature) (P : ∀ (o : opml_sort) (l l0 : list opml_sort), *)
+(*   OPMLClosedPattern o l l0 → Prop), *)
+(*   (∀ (ex mu : list opml_sort) (from to : opml_sort) (subsort : opml_subsort from to) (φ : OPMLClosedPattern from ex mu), P from ex mu φ → P to ex mu (ocp_upcast from to subsort φ)) → *)
+(*   (∀ (s : opml_sort) (ex mu : list opml_sort), P s ex mu ocp_bot) → *)
+(*   (∀ (s : opml_sort) (ex mu : list opml_sort) (dbi : Edbi2 ex s), P s ex mu (ocp_bevar dbi)) → *)
+(*   (∀ (s : opml_sort) (ex mu : list opml_sort) (dbi : Edbi2 mu s), P s ex mu (ocp_bsvar dbi)) → *)
+(*   (∀ (s : opml_sort) (ex mu : list opml_sort) (x : opml_evar s), P s ex mu (ocp_fevar x)) → *)
+(*   (∀ (s : opml_sort) (ex mu : list opml_sort) (X : opml_svar s), P s ex mu (ocp_fsvar X)) → *)
+(*   (∀ (s : opml_sort) (ex mu : list opml_sort) (φ1 : OPMLClosedPattern s ex mu), P s ex mu φ1 → ∀ φ2 : OPMLClosedPattern s ex mu, P s ex mu φ2 → P s ex mu (ocp_imp φ1 φ2)) → *)
+(*   (∀ (ex mu : list opml_sort) (σ : opml_symbol) (args : dephlist (opml_arg_sorts σ)), dephlist_foldr (λ a x y, P a ex mu x /\ y) True args -> P (opml_ret_sort σ) ex mu (ocp_app σ args)) → *)
+(*   (∀ (s s' : opml_sort) (ex mu : list opml_sort) (φ : OPMLClosedPattern s (s' :: ex) mu), P s (s' :: ex) mu φ → P s ex mu (ocp_ex φ)) → *)
+(*   (∀ (s s' : opml_sort) (ex mu : list opml_sort) (φ : OPMLClosedPattern s ex (s' :: mu)), P s ex (s' :: mu) φ → P s ex mu (ocp_mu φ)) → *)
+(*   ∀ (o : opml_sort) (l l0 : list opml_sort) (o0 : OPMLClosedPattern o l l0), P o l l0 o0. *)
+(* Proof. *)
+(*   intros * Hupcast Hbot Hbevar Hbsvar Hfevar Hfsvar Himp Happ Hex Hmu *. *)
+(*   dependent induction o0. *)
+(*   apply Hupcast. exact IHo0. *)
+(*   7: { *)
+(*     apply Happ. *)
+
+Goal forall {Σ : OPMLSignature} (s : opml_sort) (ex mu : list opml_sort), OPMLClosedPattern s ex mu -> sigT (uncurry (OPMLClosedPattern s)).
 Proof.
   intros.
-  inversion φ; subst.
-  - eapply ocp_upcast. eauto. apply sub_subp, φ0.
+  exists (ex, mu). simpl. exact X.
+  (* Succeed Qed. *)
+  Undo To 2.
+  refine (existT (ex, mu) X).
+Qed.
+
+(* Inductive dephlistIn {A : Type} {F : A -> Type} {x : A} {xs : list A} : F x -> @dephlist A F xs -> Prop := *)
+(*   | dhIn_hd x xs : dephlistIn x (dhcons x xs) *)
+(*   | dhIn_tl x y ys : dephlistIn x ys -> dephlistIn x (dhcons y ys) *)
+(* . *)
+
+Arguments dephlist {_} {_} & _.
+
+Inductive dephlistIn {A : Type} {F : A -> Type} : forall {x : A} {xs : list A}, F x -> @dephlist A F xs -> Prop :=
+  | dhIn_hd x xs y ys : @dephlistIn _ _ x (x :: xs) y (dhcons y ys)
+  | dhIn_tl x x' xs y y' ys: @dephlistIn _ _ x xs y ys -> @dephlistIn _ _ x (x' :: xs) y (dhcons y' ys)
+.
+
+Arguments dephlistIn {_} {_} {_} {_} & _ _.
+
+Goal @dephlistIn _ (bool_rect _ nat bool) true _ 5 ([4; true; 3; 5; false] : @dephlist _ (bool_rect _ nat bool) [true; false; true; true; false]).
+Proof.
+  repeat constructor.
+Qed.
+
+Definition thing {Σ : OPMLSignature} : Type := sigT (λ '(s, ex, mu), OPMLClosedPattern s ex mu).
+
+Inductive SubPatternOf {Σ : OPMLSignature} : thing -> thing -> Prop :=
+  | sp_upcast from to subsort ex mu φ : SubPatternOf (existT (from, ex, mu) φ) (existT (to, ex, mu) (ocp_upcast from to subsort φ))
+  | sp_imp_l s ex mu φ1 φ2 : SubPatternOf (existT (s, ex, mu) φ1) (existT (s, ex, mu) (ocp_imp φ1 φ2))
+  | sp_imp_r s ex mu φ1 φ2 : SubPatternOf (existT (s, ex, mu) φ2) (existT (s, ex, mu) (ocp_imp φ1 φ2))
+  | sp_ex s s' ex mu φ : SubPatternOf (existT (s, s' :: ex, mu) φ) (existT (s, ex, mu) (ocp_ex φ))
+  | sp_mu s s' ex mu φ : SubPatternOf (existT (s, ex, s' :: mu) φ) (existT (s, ex, mu) (ocp_mu φ))
+  | sp_app s ex mu σ args (φ : OPMLClosedPattern s ex mu) : @dephlistIn _ _ s (opml_arg_sorts σ) φ args -> SubPatternOf (existT (s, ex, mu) φ) (existT (opml_ret_sort σ, ex, mu) (ocp_app σ args))
+.
+
+Definition ex_signature : OPMLSignature.
+Proof.
+  unshelve esplit.
+  unshelve esplit. exact nat. exact le. 1-3: typeclasses eauto.
+  unshelve esplit. 1-2: exact (const nat). 1-6: typeclasses eauto.
+  unshelve esplit. exact bool. 1-2: typeclasses eauto.
+  intros []; simpl. exact [1; 3; 2]%list. exact [2; 0]%list.
+  intros []; simpl. exact 0. exact 4.
+Defined.
+
+Goal @SubPatternOf ex_signature (existT (3, []%list, []%list) ocp_bot) (existT (0, []%list, []%list) (@ocp_app ex_signature _ _ true [ocp_bot; ocp_bot; ocp_bot])).
+Proof.
+  apply (@sp_app ex_signature 3 [] [] true [ocp_bot; ocp_bot; ocp_bot]).
+  repeat constructor.
+Qed.
+
+Print Acc.
+
+Goal forall {Σ : OPMLSignature}, well_founded SubPatternOf.
+Proof.
+  intros. split.
+  destruct a as [[[s ex] mu] a].
+  induction a; intros.
+  7: {
+    dependent induction H.
+  intros.
+  Search Acc.
+  (* dependent induction H. *)
+  inversion H; subst.
+  split. intros.
+  (* inversion H0; subst. *)
+  (* destruct a as [[[s ex] mu] a]. *)
+  (* dependent induction a. *)
+  (* - inversion H. *)
+  (*   + inversion_sigma. *) 
+  (*     About eq_rect. *)
+
+  (* destruct y as [[[s ex] mu] y]. dependent induction y. *)
+  (* dependent induction H. *)
+Admitted.
+
+
+(* Equations? measure_OCP `(φ : @OPMLClosedPattern Σ s xs ys) : nat := *)
+(*   measure_OCP (ocp_upcast from to subsort φ) => measure_OCP φ ; *)
+(*   measure_OCP ocp_bot => 0 ; *)
+(*   measure_OCP (ocp_bevar dbi) => measure_Edbi2 dbi ; *)
+(*   measure_OCP (ocp_bsvar dbi) => measure_Edbi2 dbi ; *)
+(*   measure_OCP (ocp_fevar x) => 0 ; *)
+(*   measure_OCP (ocp_fsvar X) => 0 ; *)
+(*   measure_OCP (ocp_imp φ1 φ2) => measure_OCP φ1 + measure_OCP φ2 ; *)
+(*   (1* measure_OCP (ocp_app σ args) => _ (*dephlist_foldr (λ _ a c, measure_OCP a + c) 0 args*) ; *1) *)
+(*   measure_OCP (ocp_app σ dhnil) => 0 ; *)
+(*   measure_OCP (ocp_app σ (dhcons x xs)) => measure_OCP x + measure_OCP (ocp_app σ xs) ; *)
+(*   measure_OCP (ocp_ex φ) => measure_OCP φ ; *)
+(*   measure_OCP (ocp_mu φ) => measure_OCP φ ; *)
+(*   . *)
+(* Proof. *)
+(*   refine (dephlist_foldr _ 0 args). *)
+(*   intros. apply plus. eapply measure_OCP. exact X. exact H. *)
+(* Defined. *)
+
+Section asd.
+Context {Σ : OPMLSignature}.
+
+Instance wfspo : WellFounded SubPatternOf. Admitted.
+
+(* Definition dephlist_rect' : ∀ (A : Type) (F : A → Type) (P : ∀ l : list A, dephlist l → Type), *)
+(*   P []%list [] -> *)
+(*   (∀ (x : A) (xs : list A) (f : F x) (d : dephlist xs), dephlistIn f (dhcons f d) -> P xs d -> P (x :: xs) (dhcons f d)) -> *)
+(*   ∀ (l : list A) (d : dephlist l), P l d. *)
+(* Proof. *)
+(*   intros. *)
+(*   dependent induction d. *)
+(*   exact X. *)
+(*   apply X0. 2: exact IHd. *)
+(*   left. *)
+(* Defined. *)
+
+Fixpoint dephlist_map' {A : Type} {F G : A -> Type} {l : list A} (xs : @dephlist A F l) (f : forall (a : A) (x : F a), dephlistIn x xs -> G a) {struct xs} : @dephlist A G l.
+Proof.
+  dependent destruction xs. left.
+  right. eapply f0. left.
+  eapply dephlist_map'.
+  intros.
+  eapply f0.
+  right. exact H.
+Defined.
+
+Goal @dephlist _ (bool_rect _ nat bool) [true; false; false; true].
+Proof.
+  epose (@dephlist_map' _ (bool_rect _ nat bool) (bool_rect _ nat bool) [true; false; false; true] [3; true; false; 6]).
+  apply d.
+  intros.
+  destruct a; simpl in x |- *. exact (x + 1). exact (negb x).
+Defined dhlmptest.
+Compute dhlmptest.
+
+Axiom tobesolved : forall `(sub a b c), `(sub a b (x :: c)).
+
+#[tactic=idtac]
+Equations? test (base : thing) (ex' : list opml_sort) (sub0 : sub ex' ((projT1 base).1.2) ((projT1 base).2)) : OPMLClosedPattern ((projT1 base).1.1) ex' ((projT1 base).2) by wf base SubPatternOf := 
+  test _ _ _ := _
+  (* test (existT _ (ocp_upcast _ _ _ _)) _ sub0 := _ ; *)
+  (* test (existT _ (ocp_bot))          _ sub0 := _ ; *)
+  (* test (existT _ (ocp_bevar _))      _ sub0 := _ ; *)
+  (* test (existT _ (ocp_bsvar _))      _ sub0 := _ ; *)
+  (* test (existT _ (ocp_fevar _))      _ sub0 := _ ; *)
+  (* test (existT _ (ocp_fsvar _))      _ sub0 := _ ; *)
+  (* test (existT _ (ocp_imp _ _))      _ sub0 := _ ; *)
+  (* test (existT _ (ocp_app _ _))      _ sub0 := _ ; *)
+  (* test (existT _ (ocp_ex _))         _ sub0 := _ ; *)
+  (* test (existT _ (ocp_mu _))         _ sub0 := _ ; *)
+.
+Proof.
+  destruct base as [[[s ex] mu] base].
+  simpl in *.
+  dependent destruction base.
+  - eapply ocp_upcast. eauto. apply (test (existT (from, ex, mu) base)). simpl. auto. constructor.
   - apply ocp_bot.
-  - apply ocp_bevar, edbis, dbi.
+  - dependent destruction sub0.
+    + apply ocp_bevar, edbis, dbi.
+    + dependent destruction dbi.
+      * auto.
+      * apply ocp_bevar, dbi.
+    + dependent destruction dbi.
+      * apply ocp_bevar. left.
+      * epose (test (existT (s, ys, mu) (ocp_bevar dbi)) _ sub0 _).
+        simpl in o.
+        epose (test (existT (s, xs, mu) o) _ subp _).
+        simpl in o0. exact o0.
+        Unshelve.
+        2: { subst o. simpl.
   - apply ocp_bsvar. auto.
   - apply ocp_fevar. auto.
   - apply ocp_fsvar. auto.
-  - apply ocp_imp; apply sub_subp; [exact φ1 | exact φ2].
-  - apply ocp_app. eapply dephlist_map. 2: exact args.
-    intros. apply sub_subp, H.
-  - eapply ocp_ex. 
+  - apply ocp_imp.
+    + apply (test (existT (s, ex, mu) base1)). simpl. auto. constructor.
+    + apply (test (existT (s, ex, mu) base2)). simpl. auto. constructor.
+  - apply ocp_app. unshelve eapply dephlist_map'. 2: exact args.
+    intros. simpl in x. apply (test (existT (a, ex, mu) x)). simpl. auto.
+    constructor. auto.
+  - eapply ocp_ex. apply (test (existT (s, s' :: ex, mu) base)).
+    simpl. apply subs. auto.
+    constructor.
+  - eapply ocp_mu. apply (test (existT (s, ex, s' :: mu) base)).
+    simpl. apply tobesolved. auto.
+    constructor.
+
 Abort.
+
+Program Fixpoint test (base : thing) (ex' : list opml_sort) {wf SubPatternOf base} : sub ex' ((projT1 base).1.2) ((projT1 base).2) -> OPMLClosedPattern ((projT1 base).1.1) ex' ((projT1 base).2) := _.
+
+End asd.
+(* Program Fixpoint test `(base : @OPMLClosedPattern Σ s ex0 mu0) `(sub ex1 ex0 mu0) {wf SubPatternOf (existT (s, ex0, mu0) base)} : OPMLClosedPattern s ex1 mu0 := _. *) 
+
+#[tactic=idtac]
+Equations? test {Σ : OPMLSignature} {s : opml_sort} {ex ex' mu : list opml_sort} (base : OPMLClosedPattern s ex mu) (σ : sub ex' ex mu) : OPMLClosedPattern s ex' mu by wf (existT (s, ex, mu) base) SubPatternOf :=
+test (s := s) (ocp_upcast from s H φ) σ := ocp_upcast from s H (test φ σ) ;
+test ocp_bot _ := ocp_bot ;
+test (ocp_bevar dbi) subp := ocp_bevar (edbis dbi) ;
+test (ocp_bevar edbi0) (subz repl) := repl ;
+test (ocp_bevar (edbis dbi)) (subz repl) := ocp_bevar dbi ;
+test (ocp_bevar edbi0) (subs σ) := ocp_bevar edbi0 ;
+test (ocp_bevar (edbis dbi)) (subs σ) := _ ;
+(* test (ocp_bevar (edbis dbi)) (subs σ) := test (test (ocp_bevar dbi) σ) subp ; *)
+test (ocp_bsvar dbi) _ := ocp_bsvar dbi ;
+test (ocp_fevar ev) _ := ocp_fevar ev ;
+test (ocp_fsvar ev) _ := ocp_fsvar ev ;
+test (ocp_imp φ1 φ2) σ := ocp_imp (test φ1 σ) (test φ2 σ) ;
+test (ocp_app sy args) σ := ocp_app sy (dephlist_map (λ s' φ, _) args) ;
+(* test (ocp_app sy args) σ := ocp_app sy (dephlist_map (λ s' φ, test φ σ) args) ; *)
+test (ocp_ex φ) σ := ocp_ex (test φ (subs σ)) ;
+test (ocp_mu φ) σ := ocp_mu (test φ _) ;
+.
+Proof.
+  - eapply test. 2: exact subp.
+    eapply test. exact (ocp_bevar dbi). exact σ.
+  - eapply test. exact φ. exact σ.
+  - apply trustmebro. exact σ.
+Defined.
+    
+(* Proof. *)
+(*   2: { *)
+(*     eapply test. 2: exact σ. exact φ. Guarded. *)
 
 Fixpoint test `(base : @OPMLClosedPattern Σ s ex0 mu0) `(sub ex1 ex0 mu0) : OPMLClosedPattern s ex1 mu0. 
 Proof.
@@ -331,9 +605,17 @@ Proof.
   intros []. exact 0. exact 4.
 Defined.
 
-Notation "[ ]" := dhnil (format "[ ]").
-Notation "[ x ]" := (dhcons x dhnil).
-Notation "[ x ; y ; .. ; z ]" := (dhcons x (dhcons y .. (dhcons z dhnil) ..)).
+(* Check @ocp_bevar test [_;_;_] _ 2 _. *)
+(* Proof shouldn't be in type. *)
+
+(* Check @ocp_bevar test [_;_;_] _ 2. *)
+(* Check @ocp_ex test _ _ _ _ (@ocp_bevar test [_] _ 0) : @OPMLClosedPattern test 4 [] []. *)
+(* Can't figure out list. *)
+
+Check @ocp_ex test _ _ _ _ (ocp_bevar edbi0) : @OPMLClosedPattern test 4 [] [].
+Check @ocp_bevar test _ _ _ (edbis (edbis edbi0)).
+(* Check @ocp_bevar test _ _ _ (fin_to_edbi2 2%fin). *)
+(* Conversion functions might not work, but it's implicit. *)
 
 (* Check @ocp_bevar test [_;_;_] _ 2 _. *)
 (* Proof shouldn't be in type. *)
