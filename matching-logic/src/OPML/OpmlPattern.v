@@ -42,7 +42,7 @@ Inductive OPMLPattern {Σ : OPMLSignature} : opml_sort -> Type :=
   | op_mu {s : opml_sort} (φ : OPMLPattern s) : OPMLPattern s
 .
 
-Inductive Edbi2 {Σ : OPMLSignature} : list opml_sort -> opml_sort -> Set :=
+Inductive Edbi2 {Σ : OPMLSignature} : list opml_sort -> opml_sort -> Type :=
   | edbi0 {s : opml_sort} {ss : list opml_sort} : Edbi2 (s :: ss) s
   | edbis {s s' : opml_sort} {ss : list opml_sort} : Edbi2 ss s -> Edbi2 (s' :: ss) s
 .
@@ -130,6 +130,8 @@ Inductive OPMLClosedPattern {Σ : OPMLSignature} : opml_sort -> list opml_sort -
   | ocp_fsvar {s : opml_sort} {ex mu : list opml_sort} (X : opml_svar s) : OPMLClosedPattern s ex mu
   | ocp_imp {s : opml_sort} {ex mu : list opml_sort} (φ1 : OPMLClosedPattern s ex mu) (φ2 : OPMLClosedPattern s ex mu) : OPMLClosedPattern s ex mu
   | ocp_app {ex mu : list opml_sort} (σ : opml_symbol) (args : @dephlist _ (OPMLClosedPattern ^~ ex ^~ mu) (opml_arg_sorts σ)) : OPMLClosedPattern (opml_ret_sort σ) ex mu
+  (* | ocp_app {ex mu : list opml_sort} (σ : opml_symbol) : foldr (λ c a, OPMLClosedPattern c ex mu -> a) (OPMLClosedPattern (opml_ret_sort σ) ex mu) (opml_arg_sorts σ) *)
+  (* | ocp_app {ex mu : list opml_sort} (σ : opml_symbol) (args : foldr (λ c a, (OPMLClosedPattern c ex mu * a)%type) unit (opml_arg_sorts σ)) : OPMLClosedPattern (opml_ret_sort σ) ex mu *)
   | ocp_ex {s s' : opml_sort} {ex mu : list opml_sort} (φ : OPMLClosedPattern s (s' :: ex) mu) : OPMLClosedPattern s ex mu
   | ocp_mu {s s' : opml_sort} {ex mu : list opml_sort} (φ : OPMLClosedPattern s ex (s' :: mu)) : OPMLClosedPattern s ex mu
 .
@@ -268,7 +270,58 @@ Proof.
   repeat constructor.
 Qed.
 
+Fixpoint dephlistIn' {A : Type} {F : A -> Type} {x : A} {xs : list A} {ED : EqDecision A} (y : F x) (ys : @dephlist A F xs) : Prop :=
+  match ys with
+  | dhnil => False
+  | @dhcons _ _ x' _ y' ys => match decide (x = x') with
+                              | left e => eq_rect x F y _ e = y'
+                              | right _ => False
+                              end \/ dephlistIn' y ys
+  end.
+
+Arguments dephlistIn' {_} {_} {_} {_} {_} & _ _ /.
+
+Goal @dephlistIn' bool (bool_rect _ nat bool) true [true; false; true; true; false] _ 5 ([4; true; 3; 5; false] : @dephlist _ (bool_rect _ nat bool) [true; false; true; true; false]).
+Proof.
+  cbv. auto.
+Qed.
+
 Definition thing {Σ : OPMLSignature} : Type := sigT (λ '(s, ex, mu), OPMLClosedPattern s ex mu).
+
+(* Lemma OPMLClosedPattern_custom_ind : *)
+(*   ∀ (Σ : OPMLSignature) (P : ∀ (o : opml_sort) (l l0 : list opml_sort), *)
+(*   OPMLClosedPattern o l l0 → Prop), *)
+(*   (∀ (ex mu : list opml_sort) (from to : opml_sort) (subsort : opml_subsort from to) (φ : OPMLClosedPattern from ex mu), P from ex mu φ → P to ex mu (ocp_upcast from to subsort φ)) → *)
+(*   (∀ (s : opml_sort) (ex mu : list opml_sort), P s ex mu ocp_bot) → *)
+(*   (∀ (s : opml_sort) (ex mu : list opml_sort) (dbi : Edbi2 ex s), P s ex mu (ocp_bevar dbi)) → *)
+(*   (∀ (s : opml_sort) (ex mu : list opml_sort) (dbi : Edbi2 mu s), P s ex mu (ocp_bsvar dbi)) → *)
+(*   (∀ (s : opml_sort) (ex mu : list opml_sort) (x : opml_evar s), P s ex mu (ocp_fevar x)) → *)
+(*   (∀ (s : opml_sort) (ex mu : list opml_sort) (X : opml_svar s), P s ex mu (ocp_fsvar X)) → *)
+(*   (∀ (s : opml_sort) (ex mu : list opml_sort) (φ1 : OPMLClosedPattern s ex mu), P s ex mu φ1 → ∀ φ2 : OPMLClosedPattern s ex mu, P s ex mu φ2 → P s ex mu (ocp_imp φ1 φ2)) → *)
+(*   (∀ (ex mu : list opml_sort) (σ : opml_symbol) (args : dephlist (opml_arg_sorts σ)), (∀ s φ, @dephlistIn' _ _ s _ _ φ args -> P s ex mu φ) -> P (opml_ret_sort σ) ex mu (ocp_app σ args)) → *)
+(*   (∀ (s s' : opml_sort) (ex mu : list opml_sort) (φ : OPMLClosedPattern s (s' :: ex) mu), P s (s' :: ex) mu φ → P s ex mu (ocp_ex φ)) → *)
+(*   (∀ (s s' : opml_sort) (ex mu : list opml_sort) (φ : OPMLClosedPattern s ex (s' :: mu)), P s ex (s' :: mu) φ → P s ex mu (ocp_mu φ)) → *)
+(*   ∀ (o : opml_sort) (l l0 : list opml_sort) (o0 : OPMLClosedPattern o l l0), P o l l0 o0. *)
+(* Proof. *)
+(*   intros * Hupcast Hbot Hbevar Hbsvar Hfevar Hfsvar Himp Happ Hex Hmu *. *)
+(*   destruct o0. *)
+(*   (1* dependent induction o0. *1) *)
+(*   (1* apply Hupcast. exact IHo0. *1) *)
+(*   8: { *)
+(*     apply Happ. intros. *)
+(*     clear Hupcast Hbot Hbevar Hbsvar Hfevar Hfsvar Himp Happ Hex Hmu. *)
+(*     (1* generalize dependent args. *1) *)
+(*     (1* fix IHargs 1. destruct args; intros. *1) *)
+(*     induction args; intros. *)
+(*     simpl in H. destruct H. *)
+(*     simpl in H. destruct H. *)
+(*     2: apply IHargs, H. *)
+(*     case_match. 2: destruct H. *)
+
+(* Goal forall {Σ : OPMLSignature} (P : thing -> Prop), forall ex mu σ args, (forall s φ, @dephlistIn' _ _ s (opml_arg_sorts σ) _ φ args -> P (existT (s, ex, mu) φ)) -> P (existT (opml_ret_sort σ, ex, mu) (ocp_app σ args)). *)
+(* Proof. *)
+(*   intros. *)
+(*   dependent induction args. *)
 
 Inductive SubPatternOf {Σ : OPMLSignature} : thing -> thing -> Prop :=
   | sp_upcast from to subsort ex mu φ : SubPatternOf (existT (from, ex, mu) φ) (existT (to, ex, mu) (ocp_upcast from to subsort φ))
@@ -295,10 +348,90 @@ Proof.
   repeat constructor.
 Qed.
 
-Print Acc.
+Definition SubPatternOf' {Σ : OPMLSignature} : relation thing.
+Proof.
+  intros [[[s ex] mu] φ] [[[s' ex'] mu'] φ'].
+  destruct φ'.
+  2-6: exact False.
+  - refine (match (decide ((s, ex, mu) = (from, ex0, mu0))) with
+            | left e => eq_rect (s, ex, mu) (uncurry3 OPMLClosedPattern) φ _ e = φ'
+            | right _ => False
+            end).
+  - refine (match (decide ((s, ex, mu) = (s0, ex0, mu0))) with
+            | left e => eq_rect (s, ex, mu) (uncurry3 OPMLClosedPattern) φ _ e = φ'1 \/ eq_rect (s, ex, mu) (uncurry3 OPMLClosedPattern) φ _ e = φ'2
+            | right _ => False
+            end).
+  - refine (match (decide ((ex, mu) = (ex0, mu0))) with
+            | left e => let asd : OPMLClosedPattern s ex0 mu0 := (eq_rect (ex, mu) (uncurry (OPMLClosedPattern s)) φ _ e) in dephlistIn' asd args
+            | right _ => False
+            end).
+  - refine (match (decide ((s, ex, mu) = (s0, s' :: ex0, mu0))) with
+            | left e => eq_rect (s, ex, mu) (uncurry3 OPMLClosedPattern) φ _ e = φ'
+            | right _ => False
+            end).
+  - refine (match (decide ((s, ex, mu) = (s0, ex0, s' :: mu0))) with
+            | left e => eq_rect (s, ex, mu) (uncurry3 OPMLClosedPattern) φ _ e = φ'
+            | right _ => False
+            end).
+Defined.
+
+Arguments SubPatternOf' {_} _ _ /.
+
+Goal forall {Σ : OPMLSignature}, well_founded SubPatternOf'.
+Proof.
+  intro.
+  unfold well_founded.
+  fix pleasework 1.
+  intros [[[s ex] mu] a].
+  induction a.
+  2-6: split; intros [[[s' ex'] mu'] y] H; simpl in H; destruct H.
+  - split; intros [[[s' ex'] mu'] y] H; simpl in H.
+    case_match.
+    rewrite (eq_existT_curried e H). exact IHa.
+    destruct H.
+  - split; intros [[[s' ex'] mu'] y] H; simpl in H.
+    case_match.
+    destruct H.
+    rewrite (eq_existT_curried e H). exact IHa1.
+    rewrite (eq_existT_curried e H). exact IHa2.
+    destruct H.
+  - split; intros [[[s' ex'] mu'] y] H; simpl in H.
+    case_match.
+    2: destruct H.
+    induction args.
+    destruct H.
+    destruct H.
+    2: apply IHargs, H.
+    clear IHargs.
+    case_match.
+    2: destruct H.
+    enough (@existT _ (uncurry3 OPMLClosedPattern) (s', ex', mu') y = existT (x, ex, mu) f).
+    rewrite H2.
+    (* It doesn't. And I don't know why. *)
+    (* apply pleasework. Guarded. *)
+    Search eq_rect.
+    Search (eq_rect _ _ (eq_rect _ _ _ _ _) _ _).
+    pose proof (eq_existT_curried e0 H).
+Abort.
 
 Goal forall {Σ : OPMLSignature}, well_founded SubPatternOf.
 Proof.
+  intros.
+  unfold well_founded.
+  fix pleasework 1.
+  intros. destruct a as [[[s ex] mu] a].
+  destruct a.
+  8: {
+    split.
+    dependent induction args; intros.
+    - (*inversion H; subst.*)
+      dependent induction H.
+
+      inversion_sigma.
+      Search hyp:eq_rect.
+      Search hyp:eq_dep1.
+
+
   intros. split.
   destruct a as [[[s ex] mu] a].
   induction a; intros.
@@ -307,8 +440,8 @@ Proof.
   intros.
   Search Acc.
   (* dependent induction H. *)
-  inversion H; subst.
-  split. intros.
+  (* inversion H; subst. *)
+  (* split. intros. *)
   (* inversion H0; subst. *)
   (* destruct a as [[[s ex] mu] a]. *)
   (* dependent induction a. *)
@@ -329,16 +462,18 @@ Admitted.
 (*   measure_OCP (ocp_fevar x) => 0 ; *)
 (*   measure_OCP (ocp_fsvar X) => 0 ; *)
 (*   measure_OCP (ocp_imp φ1 φ2) => measure_OCP φ1 + measure_OCP φ2 ; *)
-(*   (1* measure_OCP (ocp_app σ args) => _ (*dephlist_foldr (λ _ a c, measure_OCP a + c) 0 args*) ; *1) *)
-(*   measure_OCP (ocp_app σ dhnil) => 0 ; *)
-(*   measure_OCP (ocp_app σ (dhcons x xs)) => measure_OCP x + measure_OCP (ocp_app σ xs) ; *)
+(*   measure_OCP (ocp_app σ args) => _ (*dephlist_foldr (λ _ a c, measure_OCP a + c) 0 args*) ; *)
+(*   (1* measure_OCP (ocp_app σ dhnil) => 0 ; *1) *)
+(*   (1* measure_OCP (ocp_app σ (dhcons x xs)) => measure_OCP x + measure_OCP (ocp_app σ xs) ; *1) *)
 (*   measure_OCP (ocp_ex φ) => measure_OCP φ ; *)
 (*   measure_OCP (ocp_mu φ) => measure_OCP φ ; *)
 (*   . *)
 (* Proof. *)
-(*   refine (dephlist_foldr _ 0 args). *)
-(*   intros. apply plus. eapply measure_OCP. exact X. exact H. *)
+(*   exact (dephlist_foldr (λ _ c a, measure_OCP Σ _ xs ys c + a) 0 args). *)
 (* Defined. *)
+(*   (1* refine (dephlist_foldr _ 0 args). *1) *)
+(*   (1* intros. apply plus. eapply measure_OCP. exact X. exact H. *1) *)
+(* (1* Defined. *1) *)
 
 Section asd.
 Context {Σ : OPMLSignature}.
