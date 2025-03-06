@@ -222,9 +222,14 @@ Proof.
   match φs, ss with
   | [], [] => Sort r
   | φ::φs, s::ss =>
-    match decide (infer φ = Sort s) with
-    | left _ => app_infer infer φs ss r
-    | right _ => BadSort
+    match infer φ with
+    | Sort s' =>
+      match decide (s' = s) with
+      | left _ => app_infer infer φs ss r
+      | right _ => BadSort
+      end
+    | AnySort => app_infer infer φs ss r
+    | BadSort => BadSort
     end
   | _, _ => BadSort
   end.
@@ -266,6 +271,7 @@ Proof.
       app_infer (infer_sort esorts ssorts) φs ss d <> AnySort.
   Proof.
     induction φs; simpl; intros; intro; case_match; try congruence.
+    case_match; try congruence.
     case_match; try congruence.
   Defined.
 
@@ -310,7 +316,7 @@ Proof.
       all: destruct infer_sort eqn:Q2 in H; simpl in H; try congruence.
       - inversion H; subst. clear H.
         rewrite IHφ2; auto.
-        rewrite infer_sound_Any; by auto.
+        rewrite infer_sound_Any; auto.
       - inversion H; subst. clear H.
         rewrite IHφ1; auto.
         rewrite infer_sound_Any; by auto.
@@ -324,12 +330,19 @@ Proof.
       induction H; simpl in *; intros.
       - case_match; try congruence.
         inversion H0. by rewrite decide_eq_same.
-      - case_match; try congruence.
-        case_match; try congruence.
-        rewrite H; auto.
-        specialize (IHForall _ H1).
-        apply andb_true_iff in IHForall as [H11 H22].
-        by rewrite H11 H22.
+      - destruct ss eqn:Pss; try congruence.
+        destruct (infer_sort esorts ssorts x) eqn:P;
+          try congruence.
+        + apply infer_sound_Any with (s := o) in P.
+          rewrite P.
+          specialize (IHForall _ H1).
+          apply andb_true_iff in IHForall as [H11 H22].
+          by rewrite H11 H22.
+        + destruct decide in H1. 2: by simpl in H1. subst.
+          rewrite H; auto.
+          specialize (IHForall _ H1).
+          apply andb_true_iff in IHForall as [H11 H22].
+          by rewrite H11 H22.
     * case_match; try congruence.
       {
         inversion H; subst; clear H.
@@ -365,26 +378,84 @@ Proof.
       }
   Defined.
 
-  Lemma infer_sound_BadSort :
-    forall φ esorts ssorts s,
-      infer_sort esorts ssorts φ = BadSort ->
-      well_sorted esorts ssorts s φ = false.
-  Proof.
-  Admitted.
-
   Lemma well_sorted_infer :
     forall φ esorts ssorts s,
       well_sorted esorts ssorts s φ = true ->
       infer_sort esorts ssorts φ = Sort s \/
       infer_sort esorts ssorts φ = AnySort.
   Proof.
-  Admitted.
+     induction φ using OPML_ind; simpl; intros; auto; try congruence.
+     * destruct decide. 2: by simpl in H. rewrite e.
+       by left.
+     * destruct decide. 2: by simpl in H. left.
+       by rewrite e.
+     * destruct decide. 2: by simpl in H. rewrite e.
+       by left.
+     * destruct decide. 2: by simpl in H. left.
+       by rewrite e.
+     * apply andb_true_iff in H as [H1 H2].
+       apply IHφ1 in H1.
+       apply IHφ2 in H2.
+       destruct H1 as [H1 | H1], H2 as [H2 | H2];
+         rewrite H1 H2; simpl; try by left.
+       rewrite decide_eq_same; simpl; by left.
+       by right.
+     * apply andb_true_iff in H0 as [H0 H1].
+       destruct decide. 2: by simpl in H0.
+       subst. clear H0.
+       remember (opml_arg_sorts σ) as sorts. clear Heqsorts.
+       generalize dependent sorts.
+       induction H; intros; simpl in *.
+       - destruct sorts; try congruence. by left.
+       - destruct sorts; try congruence.
+         apply andb_true_iff in H1 as [H1_1 H1_2].
+         apply H in H1_1 as [H1_1|H1_1]; rewrite H1_1.
+         + rewrite decide_eq_same.
+           apply IHForall in H1_2. assumption.
+         + apply IHForall in H1_2. assumption.
+     * apply andb_true_iff in H as [H H3].
+       apply andb_true_iff in H as [H1 H2].
+       destruct decide. 2: by simpl in H3. subst.
+       apply IHφ1 in H1.
+       apply IHφ2 in H2.
+       destruct H1 as [H1 | H1], H2 as [H2 | H2];
+         rewrite H1 H2; simpl; try by left.
+       all: rewrite decide_eq_same; simpl; try by left.
+       rewrite decide_eq_same; simpl; try by left.
+  Qed.
 
   Lemma non_well_sorted_infer :
     forall φ esorts ssorts s,
       well_sorted esorts ssorts s φ = false ->
       infer_sort esorts ssorts φ = BadSort.
   Proof.
+  Admitted.
+
+  Lemma infer_sound_BadSort :
+    forall φ esorts ssorts,
+      infer_sort esorts ssorts φ = BadSort ->
+      forall s, well_sorted esorts ssorts s φ = false.
+  Proof.
+    induction φ using OPML_ind; simpl; intros; auto; try congruence.
+    * case_match; try congruence.
+      destruct decide; try congruence. reflexivity.
+    * case_match; try congruence.
+      destruct decide; try congruence. reflexivity.
+    * destruct infer_sort eqn:Q1 in H; simpl in H; try congruence.
+      - eapply IHφ1 in Q1. by rewrite Q1.
+      - destruct infer_sort eqn:Q2 in H.
+        + eapply IHφ2 in Q2. rewrite Q2.
+          apply andb_false_r.
+        + congruence.
+        + congruence.
+      - destruct infer_sort eqn:Q2 in H.
+        + eapply IHφ2 in Q2. rewrite Q2.
+          apply andb_false_r.
+        + congruence.
+        + case_match; try congruence.
+          
+    *
+    *
   Admitted.
 
 (* (* If extraction is needed, this could be problematic: *)
