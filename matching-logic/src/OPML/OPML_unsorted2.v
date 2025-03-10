@@ -1,4 +1,16 @@
 
+Definition is_leftb {A B : Set} (x : A + B) : bool :=
+match x with
+| inl _ => true
+| _ => false
+end.
+
+Definition is_rightb {A B : Set} (x : A + B) : bool :=
+match x with
+| inl _ => false
+| _ => true
+end.
+
 Definition andb_split_1 (b1 b2 : bool) : andb b1 b2 = true -> b1 = true.
 Proof.
   destruct b1, b2; simpl; try reflexivity.
@@ -22,6 +34,7 @@ From stdpp Require Export
   list
   countable
   infinite
+  finite
 .
 
 From MatchingLogic Require Export Lattice.
@@ -38,8 +51,8 @@ Class OPMLSorts := {
     opml_sort : Set;
     opml_sort_eqdec :: EqDecision opml_sort;
     opml_sort_countable :: Countable opml_sort;
-    opml_subsort : relation opml_sort;
-    opml_subsort_po :: PartialOrder opml_subsort;
+    (* opml_subsort : relation opml_sort;
+    opml_subsort_po :: PartialOrder opml_subsort; *)
 }.
 
 Class OPMLVariables {Ss : OPMLSorts} := mkOPMLVariables {
@@ -60,6 +73,57 @@ Class OPMLVariables {Ss : OPMLSorts} := mkOPMLVariables {
   opml_svar_infinite s ::
     Infinite {x : opml_svar & decide (svar_sort x = s)}
 }.
+
+Print Countable.
+Search Countable.
+
+Program Instance String_OPMLVariables {Ss : OPMLSorts} : OPMLVariables := {|
+  opml_evar := opml_sort * string;
+  opml_svar := opml_sort * string;
+  evar_sort := fun x => fst x;
+  svar_sort := fun x => fst x;
+|}.
+Next Obligation.
+  unshelve econstructor.
+  * intro l.
+    pose (map (snd ∘ projT1) l) as l_mapped.
+    pose (fresh l_mapped) as new.
+    apply (existT (s, new)). simpl.
+    destruct decide. reflexivity. by simpl in n.
+  * intros. unfold fresh.
+    simpl.
+    intro.
+    apply (@infinite_is_fresh _ string_infinite (map (snd ∘ projT1) xs)).
+    unfold fresh.
+    epose proof elem_of_list_fmap_1 (snd ∘ projT1) _ _ H.
+    simpl in H0. assumption.
+  * unfold fresh.
+    intros xs ys EQ.
+    pose proof (@infinite_fresh_Permutation _ string_infinite (map (snd ∘ projT1) xs) (map (snd ∘ projT1) ys)).
+    unfold fresh in H. rewrite H. 2: reflexivity.
+    by apply Permutation_map.
+Defined.
+Final Obligation.
+  unshelve econstructor.
+  * intro l.
+    pose (map (snd ∘ projT1) l) as l_mapped.
+    pose (fresh l_mapped) as new.
+    apply (existT (s, new)). simpl.
+    destruct decide. reflexivity. by simpl in n.
+  * intros. unfold fresh.
+    simpl.
+    intro.
+    apply (@infinite_is_fresh _ string_infinite (map (snd ∘ projT1) xs)).
+    unfold fresh.
+    epose proof elem_of_list_fmap_1 (snd ∘ projT1) _ _ H.
+    simpl in H0. assumption.
+  * unfold fresh.
+    intros xs ys EQ.
+    pose proof (@infinite_fresh_Permutation _ string_infinite (map (snd ∘ projT1) xs) (map (snd ∘ projT1) ys)).
+    unfold fresh in H. rewrite H. 2: reflexivity.
+    by apply Permutation_map.
+Defined.
+
 
 Check opml_evar_infinite.
 
@@ -119,9 +183,6 @@ Section pat_ind.
     (P_mu : forall σ φ, P φ -> P (op_mu σ φ))
     (P_eq : forall s1 s2 φ, P φ -> forall ψ, P ψ -> P (op_eq s1 s2 φ ψ)).
 
-  Search Forall.
-  Check Forall_ind.
-
   Definition OPML_ind (φ : OPMLPattern) : P φ.
   Proof.
     revert φ.
@@ -171,11 +232,7 @@ Fixpoint well_sorted
   (esorts : nat -> option opml_sort)
   (ssorts : nat -> option opml_sort)
   (s : opml_sort)
-  (p : OPMLPattern) {struct p} : bool :=(* 
-Proof.
-  revert p esorts ssorts s.
-  refine (
-  fix well_sorted p esorts ssorts s := *)
+  (p : OPMLPattern) {struct p} : bool :=
   match p with
    | op_bot => true
    | op_bevar dbi => decide (esorts dbi = Some s)
@@ -424,79 +481,6 @@ Proof.
        rewrite decide_eq_same; simpl; try by left.
   Qed.
 
-  Lemma non_well_sorted_infer :
-    forall φ esorts ssorts s,
-      well_sorted esorts ssorts s φ = false ->
-      infer_sort esorts ssorts φ = BadSort.
-  Proof.
-  Admitted.
-
-  Lemma infer_sound_BadSort :
-    forall φ esorts ssorts,
-      infer_sort esorts ssorts φ = BadSort ->
-      forall s, well_sorted esorts ssorts s φ = false.
-  Proof.
-    induction φ using OPML_ind; simpl; intros; auto; try congruence.
-    * case_match; try congruence.
-      destruct decide; try congruence. reflexivity.
-    * case_match; try congruence.
-      destruct decide; try congruence. reflexivity.
-    * destruct infer_sort eqn:Q1 in H; simpl in H; try congruence.
-      - eapply IHφ1 in Q1. by rewrite Q1.
-      - destruct infer_sort eqn:Q2 in H.
-        + eapply IHφ2 in Q2. rewrite Q2.
-          apply andb_false_r.
-        + congruence.
-        + congruence.
-      - destruct infer_sort eqn:Q2 in H.
-        + eapply IHφ2 in Q2. rewrite Q2.
-          apply andb_false_r.
-        + congruence.
-        + case_match; try congruence.
-          
-    *
-    *
-  Admitted.
-
-(* (* If extraction is needed, this could be problematic: *)
-Inductive well_sorted :
-  OPMLPattern ->
-  (nat -> option opml_sort) ->
-  (nat -> option opml_sort) ->
-  opml_sort -> Prop :=
-| sorted_bot esorts ssorts s :
-  well_sorted op_bot esorts ssorts s
-| sorted_bevar n esorts ssorts s :
-  esorts n = Some s ->
-  well_sorted (op_bevar n) esorts ssorts s
-| sorted_bsvar n esorts ssorts s :
-  ssorts n = Some s ->
-  well_sorted (op_bsvar n) esorts ssorts s
-| sorted_fevar x esorts ssorts s :
-  evar_sort x = s ->
-  well_sorted (op_fevar x) esorts ssorts s
-| sorted_fsvar X esorts ssorts s :
-  svar_sort X = s ->
-  well_sorted (op_fsvar X) esorts ssorts s
-| sorted_imp p1 p2 esorts ssorts s :
-  well_sorted p1 esorts ssorts s ->
-  well_sorted p2 esorts ssorts s ->
-  well_sorted (op_imp p1 p2) esorts ssorts s
-
-| sorted_app σ args esorts ssorts s :
-  Forall (fun p => well_sorted (fst p) esorts ssorts (snd p)) (zip args (opml_arg_sorts σ)) ->
-  opml_ret_sort σ = s
-->
-  well_sorted (op_app σ args) esorts ssorts s
-
-| sorted_ex p s0 esorts ssorts s :
-  well_sorted p (shift esorts (Some s0)) ssorts s ->
-  well_sorted (op_ex s0 p) esorts ssorts s
-| sorted_mu p s0 esorts ssorts s :
-  well_sorted p esorts (shift ssorts (Some s0)) s ->
-  well_sorted (op_mu s0 p) esorts ssorts s
-.
- *)
 Fixpoint free_evar_subst (ps : OPMLPattern) (y : opml_evar)
   (p : OPMLPattern) : OPMLPattern :=
 match p with
@@ -568,10 +552,6 @@ Proof.
   * by erewrite IHφ.
   * by rewrite ->IHφ1, ->IHφ2.
 Defined.
-
-(* Definition update {T : Set} (x : nat) (d : T) (f : nat -> T) : nat -> T :=
-  fun y =>
-    if decide (x = y) then d else f y. *)
 
 Fixpoint free_evars (φ : OPMLPattern) {struct φ} : gset (opml_evar) :=
 match φ with
@@ -789,26 +769,45 @@ Module Test.
   Inductive sorts := bool | nat.
   Inductive symbols := add | is0 | zero | succ | true | false.
 
+  #[global]
+  Instance sorts_eqdec : EqDecision sorts.
+  Proof.
+    solve_decision.
+  Defined.
+
+  #[global]
+  Program Instance sorts_finite : Finite sorts := {
+    enum := [bool; nat];
+  }.
+  Next Obligation.
+    compute_done.
+  Defined.
+  Next Obligation.
+    destruct x; set_solver.
+  Defined.
+
+  #[global]
+  Instance symbols_eqdec : EqDecision symbols.
+  Proof.
+    solve_decision.
+  Defined.
+
+  #[global]
+  Program Instance symbols_finite : Finite symbols := {
+    enum := [add; is0; zero; succ; true; false];
+  }.
+  Next Obligation.
+    compute_done.
+  Defined.
+  Next Obligation.
+    destruct x; set_solver.
+  Defined.
+
   Program Instance NatSig : OPMLSignature := {|
     opml_sorts := {|
       opml_sort := sorts;
     |};
-    opml_variables := {|
-      opml_evar := string + string;
-      opml_svar := string + string;
-      evar_sort :=
-        fun x =>
-          match x with
-          | inl _ => nat
-          | inr _ => bool
-          end;
-      svar_sort :=
-        fun x =>
-            match x with
-            | inl _ => nat
-            | inr _ => bool
-            end;
-    |};
+    opml_variables := String_OPMLVariables;
     opml_symbols := {|
       opml_symbol := symbols;
       opml_arg_sorts :=
@@ -833,35 +832,16 @@ Module Test.
           end;
     |};
   |}.
-  Next Obligation.
-    solve_decision.
-  Defined.
-  Next Obligation.
-  Admitted.
-  Next Obligation.
-  Admitted.
-  Next Obligation.
-  Admitted.
-  Next Obligation.
-  Admitted.
-  Next Obligation.
-  Admitted.
-  Next Obligation.
-    solve_decision.
-  Defined.
-  Next Obligation.
-  Admitted.
-  Fail Next Obligation.
 
   Open Scope string_scope.
   Goal
-    well_sorted  default default nat (op_fevar (inl "x")).
+    well_sorted  default default nat (op_fevar (nat, "x")).
   Proof.
     by cbn.
   Qed.
 
   Goal
-    well_sorted default default nat (op_ex nat (op_app succ [op_fevar (inl "x")])).
+    well_sorted default default nat (op_ex nat (op_app succ [op_fevar (nat, "x")])).
   Proof.
     by cbn.
   Qed.
@@ -1138,10 +1118,7 @@ Section Semantics.
 
   Definition satM φ s (ws : well_sorted default default s φ) :=
     forall ρ, opml_eval ρ φ ws = ⊤.
-  Definition Theory :=
-    (* { Γ : propset OPMLPattern & forall φ, φ ∈ Γ -> exists s, well_sorted default default s φ}. *)
-    (* propset {φ : OPMLPattern & exists s, well_sorted default default s φ}. *)
-    propset OPMLPattern.
+  Definition Theory := propset OPMLPattern.
     (* dependent pairs are not well-supported by stdpp *)
   Definition satT (Γ : Theory) :=
     forall p, p ∈ Γ ->
@@ -1179,11 +1156,6 @@ Section Semantics.
     | _, _ => False
     end.
 
-(*   Lemma etaM :
-    forall y, [eta M] y = M y.
-  Proof.
-    destruct M; simpl. reflexivity.
-  Defined. *)
   Fixpoint hmap {J} {A B : J -> Type}
     (f : ∀ j, A j -> B j)
     {js : list J} (v : @hlist J A js) : @hlist J B js :=
@@ -1192,18 +1164,6 @@ Section Semantics.
   | hcons x xs => hcons (f _ x) (hmap f xs)
   end.
 
-(*   Lemma app_ext_singleton :
-    forall σ (* (l : @hlist _  (fun s => propset (opml_carrier M s)) (opml_arg_sorts σ)) *) (l' : @hlist _ (fun s => opml_carrier M s) (opml_arg_sorts σ)),
-    (* l = hmap (fun _ x => {[x]}) l' -> *)
-    (* HBiForall (fun sT eT set elem => set = {[_]}) l l' -> *)
-    app_ext σ (hmap (fun _ x => {[x]}) l') = opml_app M σ l'.
-  Proof.
-    simpl. intro. induction l'. 
-  
-    intro σ. simpl. intros.
-    induction (opml_arg_sorts σ).
-    remember (opml_arg_sorts σ) as x.
-  Defined. *)
 End with_model.
 End Semantics.
 End Semantics.
@@ -1341,12 +1301,17 @@ Module TestSemantics.
        apply complement_full_iff_empty.
        apply propset_fa_union_empty.
        intros.
-       remember (fresh_evar _ _) as x.
-       
+       simpl. simp opml_eval.
+
+       (* NOTE: this works very poorly in a dependently-typed setting:
+          remember (fresh_evar _ _) as x.
+
        (* Some magic happens here that I don't understand *)
-       dependent destruction x.
+       dependent inversion x.
+       simpl. simpl in i.
+       rewrite i.
        unfold is_true, is_left in i. simpl.
-       destruct x; simpl in *. 2: { congruence. }
+       dependent destruction i; simpl in *. *)
        simp opml_eval.
        unfold opml_eval_obligation_8, decide. simpl.
        rewrite union_empty_r_L.
