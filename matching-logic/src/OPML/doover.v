@@ -136,44 +136,48 @@ Defined.
 
 Arguments bevar_subst {_} {_} {_} _ {_} {_} !_ _.
 
-Module Example.
-Inductive sorts := nat_s | bool_s.
-Inductive symbols := add_s | is0_s | zero_s | succ_s | true_s | false_s.
+Module NatBool.
+  Inductive sorts := nat_s | bool_s.
+  Inductive symbols := add_s | is0_s | zero_s | succ_s | true_s | false_s.
 
-Fixpoint pos_idx {A : Type} (l : list A) (p : positive) {struct l} : option A :=
-  match p, l with
-  | 1%positive, (x :: xs) => Some x
-  | 1%positive, [] => None
-  | p, (x :: xs) => pos_idx xs (Pos.pred p)
-  | _, [] => None
-  end.
+  Fixpoint pos_idx {A : Type} (l : list A) (p : positive) {struct l} : option A :=
+    match p, l with
+    | 1%positive, (x :: xs) => Some x
+    | 1%positive, [] => None
+    | p, (x :: xs) => pos_idx xs (Pos.pred p)
+    | _, [] => None
+    end.
 
-Instance NatBool : OPMLSignature.
-Proof.
-  unshelve esplit.
-  unshelve esplit.
-  exact sorts. exact (λ x y, x = y).
-  unfold EqDecision, Decision. decide equality.
-  unshelve esplit. exact (sorts_rect _ 1%positive 2%positive).
-  exact (pos_idx [nat_s; bool_s]).
-  simpl. intros []; auto.
-  split. split. auto. intros ? ? ? ? ?. rewrite <- H0. exact H.
-  intros ? ? ? ?. exact H.
-  unshelve esplit.
-  1,2: exact (const string).
-  1-6: typeclasses eauto.
-  unshelve esplit.
-  exact symbols.
-  unfold EqDecision, Decision. decide equality.
-  unshelve esplit.
-  exact (symbols_rect _ 1%positive 2%positive 3%positive 4%positive 5%positive 6%positive).
-  exact (pos_idx [add_s; is0_s; zero_s; succ_s; true_s; false_s]).
-  intros []; auto.
-  exact (symbols_rect _ [nat_s; nat_s] [nat_s] [] [nat_s] [] []).
-  exact (symbols_rect _ nat_s bool_s nat_s nat_s bool_s bool_s).
-Defined.
+  Arguments pos_idx {_} _ _ : simpl nomatch.
 
-End Example.
+  Create HintDb opml.
+  Hint Unfold AntiSymm : opml.
+  Hint Constructors PartialOrder : opml.
+  Hint Extern 5 (EqDecision _) => unfold EqDecision, Decision; decide equality : opml.
+
+  Instance NatBool : OPMLSignature.
+  Proof.
+    unshelve esplit.
+    unshelve esplit;
+    [exact sorts | exact eq | ..];
+    auto with typeclass_instances opml.
+    unshelve esplit. exact (sorts_rect _ 1%positive 2%positive).
+    exact (pos_idx [nat_s; bool_s]).
+    intros []; auto.
+    unshelve esplit;
+    only 1,2: exact (const string);
+    auto with typeclass_instances.
+    unshelve esplit;
+    only 1: exact symbols;
+    auto with opml.
+    unshelve esplit.
+    exact (symbols_rect _ 1%positive 2%positive 3%positive 4%positive 5%positive 6%positive).
+    exact (pos_idx [add_s; is0_s; zero_s; succ_s; true_s; false_s]).
+    intros []; auto.
+    exact (symbols_rect _ [nat_s; nat_s] [nat_s] [] [nat_s] [] []).
+    exact (symbols_rect _ nat_s bool_s nat_s nat_s bool_s bool_s).
+  Defined.
+End NatBool.
 
 Section asd.
   Context {Σ : OPMLSignature}.
@@ -250,20 +254,59 @@ Section asd.
 
   Arguments opml_size {_} {_} {_} & !_.
 
-  Obligation Tactic := idtac.
-
-  Fixpoint hlistIn {A} {F : A -> Type} {x} {xs} {ED : EqDecision A} (y : F x) (ys : hlist F xs) : Type.
+  Lemma JMeq_eq_rect {U : Type} {P : U → Type} {p q : U} {x : P p} {y : P q} (H : p = q) : JMeq x y -> eq_rect p P x q H = y.
   Proof.
-    destruct ys.
-    exact False.
-    destruct (decide (x = x0)).
-    exact ((eq_rect x F y x0 e = f) + (hlistIn _ _ _ _ _ y ys))%type.
-    exact False.
+    intros.
+    apply JMeq_eq_dep, eq_dep_eq_sigT, eq_sigT_sig_eq in H0 as [].
+    rewrite (Eqdep.EqdepTheory.UIP _ _ _ H x0).
+    all: assumption.
   Defined.
 
-  Arguments hlistIn {_} {_} {_} {_} {_} & _ !_.
+  Hint Unfold eq_rect_r : opml.
+  Hint Rewrite -> Eqdep.EqdepTheory.eq_rect_eq : opml.
+  Hint Rewrite <- Eqdep.EqdepTheory.eq_rect_eq : opml.
 
-  Program Fixpoint opml_eval {ex mu} (ρ : OPMLValuation) {s} (φ : OPMLPattern s ex mu) {measure (opml_size φ)} : propset (opml_carrier M s) :=
+  Lemma inc_evar_size : forall s ex ex' ex'' mu (φ : OPMLPattern s (ex ++ ex'') mu), opml_size (@inc_evar _ s ex ex' ex'' mu φ) = opml_size φ.
+  Proof.
+    fix IH 6. intros.
+    dependent destruction φ; simpl; try reflexivity.
+    1,3: auto.
+    - induction h; auto.
+    - autounfold with opml. autorewrite with opml.
+      specialize (IH s (s' :: ex) ex' ex'' mu φ). auto.
+  Defined.
+
+  Hint Unfold Equality.block solution_left : opml.
+
+  Lemma bevar_subst_size : forall ex ex' mu s s' (φ : OPMLPattern s (ex ++ s' :: ex') mu) o, opml_size (bevar_subst ex φ (op_fevar o)) = opml_size φ.
+  Proof.
+    fix IH 6.
+    intros.
+    dependent destruction φ; simpl; try reflexivity.
+    2,4: auto.
+    - autounfold with opml.
+      simpl. clear IH.
+      dependent induction d; simpl;
+      apply (JMeq_eq_rect x1) in x as <-;
+      destruct ex; simpl in *;
+      pose proof (cons_eq_inv x1) as [];
+      subst; autorewrite with opml;
+      simpl; try reflexivity.
+
+      autounfold with opml. simpl.
+      specialize (IHd _ _ _ d erefl JMeq_refl o). rewrite <- IHd.
+
+      remember (sub_evar _ _).
+      exact (inc_evar_size y [] [o0] (ex ++ ex') mu o1).
+    - induction h; auto.
+    - autounfold with opml. autorewrite with opml.
+      specialize (IH (s'0 :: ex) ex' mu s s'). auto.
+  Defined.
+
+  Obligation Tactic := idtac.
+
+  #[program]
+  Fixpoint opml_eval {ex mu} (ρ : OPMLValuation) {s} (φ : OPMLPattern s ex mu) {measure (opml_size φ)} : propset (opml_carrier M s) :=
     match φ with
     | op_bot | op_bevar _ => empty
     | op_fevar x => {[evar_valuation ρ x]}
@@ -273,75 +316,64 @@ Section asd.
     | @op_ex _ _ s' _ _ φ => propset_fa_union (λ X, let o := fresh_evar s' φ in opml_eval (update_evar_val o X ρ) (bevar_subst [] φ (op_fevar o)))
     end.
 
+  Solve Obligations with intros; subst; simpl; try lia.
+
   Next Obligation.
-    intros. subst. simpl. lia.
-  Defined.
-  Next Obligation.
-    intros. subst. simpl. lia.
-  Defined.
-  Next Obligation.
-    intros. subst.
+    intros; subst.
     simpl in opml_eval.
     induction l. left.
     right. apply (opml_eval _ _ ρ _ f). lia.
     apply IHl. intros.
     apply (opml_eval _ _ ρ0 _ φ). lia.
   Defined.
-  Next Obligation.
-    intros. subst. simpl. lia.
-  Defined.
-  Next Obligation.
-    intros. subst. simpl. lia.
-  Defined.
-
-  Lemma JMeq_eq_rect {U : Type} {P : U → Type} {p q : U} {x : P p} {y : P q} (H : p = q) : x ~= y -> eq_rect p P x q H = y.
-  Proof.
-    intros.
-    apply JMeq_eq_dep, eq_dep_eq_sigT, eq_sigT_sig_eq in H0 as [].
-    rewrite (Eqdep.EqdepTheory.UIP _ _ _ H x0).
-    all: assumption.
-  Defined.
-
-  Lemma inc_evar_size : forall s ex ex' ex'' mu (φ : OPMLPattern s (ex ++ ex'') mu), opml_size (@inc_evar _ s ex ex' ex'' mu φ) = opml_size φ.
-  Proof.
-    fix IH 6. intros.
-    dependent destruction φ; simpl; try reflexivity.
-    1,3: auto.
-    - induction h; auto.
-    - unfold eq_rect_r. rewrite <- ! Eqdep.EqdepTheory.eq_rect_eq.
-      specialize (IH s (s' :: ex) ex' ex'' mu φ). auto.
-  Defined.
-
-  Lemma bevar_subst_size : forall ex ex' mu s s' (φ : OPMLPattern s (ex ++ s' :: ex') mu) o, opml_size (bevar_subst ex φ (op_fevar o)) = opml_size φ.
-  Proof.
-    fix IH 6.
-    intros.
-    dependent destruction φ; simpl; try reflexivity.
-    2,4: auto.
-    - unfold Equality.block, solution_left, eq_rect_r.
-      simpl. clear IH.
-      dependent induction d; simpl;
-      apply (JMeq_eq_rect x1) in x as <-;
-      destruct ex; simpl in *;
-      pose proof (cons_eq_inv x1) as [];
-      subst; rewrite <- Eqdep.EqdepTheory.eq_rect_eq;
-      simpl; try reflexivity.
-
-      unfold eq_rect_r. simpl.
-      specialize (IHd _ _ _ d erefl JMeq_refl o). rewrite <- IHd.
-
-      remember (sub_evar _ _).
-      exact (inc_evar_size y [] [o0] (ex ++ ex') mu o1).
-    - induction h; auto.
-    - unfold eq_rect_r.
-      rewrite <- ! Eqdep.Eq_rect_eq.eq_rect_eq.
-      specialize (IH (s'0 :: ex) ex' mu s s'). auto.
-  Defined.
 
   Next Obligation.
-    intros. subst. simpl.
+    intros; subst.
     rewrite (bevar_subst_size [] ex mu s s' φ o). left.
   Defined.
+
   Next Obligation.
-    apply measure_wf, lt_wf.
+    auto with arith.
+  Defined.
+
+End asd.
+
+Module NatBool_Sematics.
+  Import NatBool.
+
+  Fixpoint hlist_to_prod `(@hlist A F xs) : foldr (prod ∘ F) unit xs.
+  Proof.
+    destruct xs; simpl.
+    split.
+    unshelve eapply (hcons_inv _ _ H); intros.
+    split. exact y. apply hlist_to_prod. exact ys.
+  Defined.
+
+  Definition mk_OPMLModel {Σ : OPMLSignature} (opml_carrier : opml_sort → Set) : (forall (σ : opml_symbol), foldr (λ c a, opml_carrier c -> a) (propset (opml_carrier (opml_ret_sort σ))) (opml_arg_sorts σ)) → (∀ s : opml_sort, Inhabited (opml_carrier s)) → OPMLModel.
+  Proof.
+    intros.
+    unshelve esplit.
+    exact opml_carrier.
+    intros.
+    specialize (X σ).
+    induction (opml_arg_sorts σ). simpl in X. exact X.
+    simpl in X. unshelve eapply (hcons_inv _ _ X0); intros.
+    specialize (X y). specialize (IHl X ys). exact IHl.
+    exact H.
+  Defined.
+
+  Definition NatBool_Model : OPMLModel.
+  Proof.
+    unshelve eapply mk_OPMLModel.
+    exact (sorts_rect _ nat bool).
+    refine (symbols_rect _ _ _ _ _ _ _); simpl.
+    intros []; simpl.
+    decompose record X; clear X.
+    exact {[a + a0]}.
+    destruct a. exact {[true]}. exact {[false]}.
+    exact {[0]}.
+    exact {[S a]}.
+    exact {[true]}.
+    exact {[false]}.
+    intros []; auto with typeclass_instances.
   Defined.
