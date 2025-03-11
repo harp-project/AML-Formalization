@@ -32,7 +32,7 @@ Tactic Notation "hlist_map" uconstr(f) "in" ident(h) :=
   [eapply f; eauto using y | exact H].
 
 Tactic Notation "hlist_foldr" uconstr(f) "with" uconstr(def) "in" ident(h) :=
-  let y := fresh in let H := fresh in
+let y := fresh in let H := fresh in
   induction h as [ | ?x ?xs y _ H ];
   [exact def | eapply f];
   [exact y | exact H].
@@ -42,6 +42,8 @@ Inductive Dbi {Σ : OPMLSignature} : opml_sort -> list opml_sort -> Type :=
   | dbis {x y} {xs} : Dbi y xs -> Dbi y (x :: xs)
 .
 
+Definition cons_eq_inv {A} {x y : A} {xs ys} (H : x :: xs = y :: ys) : x = y /\ xs = ys := conj (f_equal (list_rect _ x (λ a _ _, a)) H) (f_equal (list_rect _ xs (λ _ a _, a)) H).
+
 Fixpoint inc_dbi {Σ : OPMLSignature} {s} {ex ex' ex''} (dbi : Dbi s (ex ++ ex'')) : Dbi s (ex ++ ex' ++ ex'').
 Proof.
   dependent destruction dbi.
@@ -49,14 +51,14 @@ Proof.
     + induction ex'; simpl.
       * rewrite <- x. left.
       * right. exact IHex'.
-    + apply cons_eq_inj in x as [-> ->].
+    + apply cons_eq_inv in x as [-> ->].
       left.
   - destruct ex; simpl in *.
     + induction ex'; simpl.
       * rewrite <- x.
         right. exact dbi.
       * right. exact IHex'.
-    + apply cons_eq_inj in x as [-> ->].
+    + apply cons_eq_inv in x as [-> ->].
       right. apply inc_dbi. exact dbi.
 Defined. 
 
@@ -98,14 +100,17 @@ Arguments inc_evar {_} {_} {_} {_} {_} {_} !_.
 
 Fixpoint sub_evar {Σ : OPMLSignature} {s s'} {ex ex' mu} (dbi : Dbi s (ex ++ s' :: ex')) (repl : OPMLPattern s' ex' mu) {struct dbi} : OPMLPattern s (ex ++ ex') mu.
 Proof.
-  dependent destruction dbi.
-  - destruct ex; simpl in *; apply cons_eq_inj in x as [-> ->].
+  refine (match dbi in (Dbi o l) return (o = s -> l = ex ++ s' :: ex' -> OPMLPattern s (ex ++ ex') mu) with
+          | dbiz => _
+          | dbis dbi => _
+          end eq_refl eq_refl); intros; subst.
+  - destruct ex; simpl in *; apply cons_eq_inv in H0 as [-> ->].
     + exact repl.
     + apply op_bevar, dbiz.
-  - destruct ex; simpl in *; apply cons_eq_inj in x as [-> ->].
+  - destruct ex; simpl in *; apply cons_eq_inv in H0 as [-> ->].
     + apply op_bevar, dbi.
     + specialize (sub_evar _ _ _ _ _ _ dbi repl).
-      apply (@inc_evar _ _ [] [o]). simpl. exact sub_evar.
+      apply (@inc_evar _ _ [] [o0]). simpl. exact sub_evar.
 Defined.
 
 Arguments sub_evar {_} {_} {_} {_} {_} {_} !_ _.
@@ -187,8 +192,6 @@ Section asd.
     svar_valuation {s : opml_sort} (X : opml_svar s) : propset (opml_carrier M s) ;
   }.
 
-  (* Definition cons_eq_inv {A} {x y : A} {xs ys} (H : x :: xs = y :: ys) : x = y /\ xs = ys := conj (f_equal (list_rect _ x (λ a _ _, a)) H) (f_equal (list_rect _ xs (λ _ a _, a)) H). *)
-
   Definition hcons_inv {A} {F : A -> Type} {x} {xs} P (X : forall (y : F x) (ys : hlist F xs), P) (ys : hlist F (x :: xs)) : P :=
     match ys in (hlist _ l) return (l = x :: xs -> P) with
     | hnil => λ H, False_rect _ (eq_ind nil (list_rect _ True (λ _ _ _, False)) I _ H)
@@ -223,16 +226,6 @@ Section asd.
     exact (@svar_valuation val).
   Defined.
 
-  (* Fixpoint map_hlist {A : Type} {F G : A -> Type} {l : list A} (f : forall (a : A), F a -> G a) (xs : hlist F l) {struct l} : hlist G l. *)
-  (* Proof. *)
-  (*   induction l. *)
-  (*   left. *)
-  (*   inversion xs; subst. *)
-  (*   right. *)
-  (*   apply f, X. *)
-  (*   apply IHl, X0. *)
-  (* Defined. *)
-
   Fixpoint free_evars {s} {ex mu} (sTarget : opml_sort) (φ : OPMLPattern s ex mu) : gset (opml_evar sTarget) :=
     match φ in (OPMLPattern s' _ _) return (s = s' -> gset (opml_evar sTarget)) with
     | op_bot | op_bevar _ => λ _, empty
@@ -251,7 +244,7 @@ Section asd.
     match φ with
     | op_bot | op_bevar _ | op_fevar _ => 1
     | op_imp φ1 φ2 | op_eq φ1 φ2 => S (opml_size φ1 + opml_size φ2)
-    | op_app σ l => ltac:(hlist_foldr (plus ∘ opml_size _ _ _) with 0 in l)
+    | op_app σ l => S (hlist_rect 0 (λ _ _ a _ b, opml_size a + b) l)
     | op_ex φ => S (opml_size φ)
     end.
 
@@ -259,12 +252,12 @@ Section asd.
 
   Obligation Tactic := idtac.
 
-  Fixpoint hlistIn {A} {F : A -> Type} {x} {xs} {ED : EqDecision A} (y : F x) (ys : hlist F xs) : Prop.
+  Fixpoint hlistIn {A} {F : A -> Type} {x} {xs} {ED : EqDecision A} (y : F x) (ys : hlist F xs) : Type.
   Proof.
     destruct ys.
     exact False.
     destruct (decide (x = x0)).
-    exact (eq_rect x F y x0 e = f \/ hlistIn _ _ _ _ _ y ys).
+    exact ((eq_rect x F y x0 e = f) + (hlistIn _ _ _ _ _ y ys))%type.
     exact False.
   Defined.
 
@@ -275,7 +268,7 @@ Section asd.
     | op_bot | op_bevar _ => empty
     | op_fevar x => {[evar_valuation ρ x]}
     | op_imp φ1 φ2 => (⊤ ∖ (opml_eval ρ φ1)) ∪ (opml_eval ρ φ2)
-    | op_app σ l => app_ext σ _
+    | op_app σ l => app_ext σ _ (*@hlist_rect _ _ (λ l _, hlist (propset ∘ M) l) hnil (λ _ _ a _ b, hcons (opml_eval ρ a) b) _ l*)
     | op_eq φ1 φ2 => PropSet (λ _, (opml_eval ρ φ1) = (opml_eval ρ φ2))
     | @op_ex _ _ s' _ _ φ => propset_fa_union (λ X, let o := fresh_evar s' φ in opml_eval (update_evar_val o X ρ) (bevar_subst [] φ (op_fevar o)))
     end.
@@ -287,33 +280,68 @@ Section asd.
     intros. subst. simpl. lia.
   Defined.
   Next Obligation.
-    intros. subst. simpl in opml_eval.
-  Admitted.
-  Next Obligation.
-    intros. subst. simpl. lia.
+    intros. subst.
+    simpl in opml_eval.
+    induction l. left.
+    right. apply (opml_eval _ _ ρ _ f). lia.
+    apply IHl. intros.
+    apply (opml_eval _ _ ρ0 _ φ). lia.
   Defined.
   Next Obligation.
     intros. subst. simpl. lia.
   Defined.
-  Lemma bevar_subst_opml_size : forall s s' ex mu (φ : OPMLPattern s (s' :: ex) mu) x, opml_size (bevar_subst [] φ (op_fevar x)) = opml_size φ.
+  Next Obligation.
+    intros. subst. simpl. lia.
+  Defined.
+
+  Lemma JMeq_eq_rect {U : Type} {P : U → Type} {p q : U} {x : P p} {y : P q} (H : p = q) : x ~= y -> eq_rect p P x q H = y.
   Proof.
     intros.
-    dependent induction φ; simpl; auto.
-    * erewrite <- IHφ1, <- IHφ2. simpl.
-    * f_equal. induction H; simpl.
-      reflexivity.
-      rewrite IHForall.
-      erewrite H.
-      reflexivity.
-    * by erewrite IHφ.
-    * by erewrite IHφ.
-    * by rewrite ->IHφ1, ->IHφ2.
+    apply JMeq_eq_dep, eq_dep_eq_sigT, eq_sigT_sig_eq in H0 as [].
+    rewrite (Eqdep.EqdepTheory.UIP _ _ _ H x0).
+    all: assumption.
   Defined.
+
+  Lemma inc_evar_size : forall s ex ex' ex'' mu (φ : OPMLPattern s (ex ++ ex'') mu), opml_size (@inc_evar _ s ex ex' ex'' mu φ) = opml_size φ.
+  Proof.
+    fix IH 6. intros.
+    dependent destruction φ; simpl; try reflexivity.
+    1,3: auto.
+    - induction h; auto.
+    - unfold eq_rect_r. rewrite <- ! Eqdep.EqdepTheory.eq_rect_eq.
+      specialize (IH s (s' :: ex) ex' ex'' mu φ). auto.
+  Defined.
+
+  Lemma bevar_subst_size : forall ex ex' mu s s' (φ : OPMLPattern s (ex ++ s' :: ex') mu) o, opml_size (bevar_subst ex φ (op_fevar o)) = opml_size φ.
+  Proof.
+    fix IH 6.
+    intros.
+    dependent destruction φ; simpl; try reflexivity.
+    2,4: auto.
+    - unfold Equality.block, solution_left, eq_rect_r.
+      simpl. clear IH.
+      dependent induction d; simpl;
+      apply (JMeq_eq_rect x1) in x as <-;
+      destruct ex; simpl in *;
+      pose proof (cons_eq_inv x1) as [];
+      subst; rewrite <- Eqdep.EqdepTheory.eq_rect_eq;
+      simpl; try reflexivity.
+
+      unfold eq_rect_r. simpl.
+      specialize (IHd _ _ _ d erefl JMeq_refl o). rewrite <- IHd.
+
+      remember (sub_evar _ _).
+      exact (inc_evar_size y [] [o0] (ex ++ ex') mu o1).
+    - induction h; auto.
+    - unfold eq_rect_r.
+      rewrite <- ! Eqdep.Eq_rect_eq.eq_rect_eq.
+      specialize (IH (s'0 :: ex) ex' mu s s'). auto.
+  Defined.
+
   Next Obligation.
     intros. subst. simpl.
-    clear. subst o.
-    induction φ; simpl.
-  Admitted.
+    rewrite (bevar_subst_size [] ex mu s s' φ o). left.
+  Defined.
   Next Obligation.
     apply measure_wf, lt_wf.
   Defined.
