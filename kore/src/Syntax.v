@@ -35,12 +35,12 @@ Section Syntax.
      become not computable! *)
   | kore_ceil  (s1 s2 : sort) (φ : Pattern)
   | kore_floor (s1 s2 : sort) (φ : Pattern)
-  | kore_equal (s1 s2 : sort) (φ1 φ2 : Pattern)
+  | kore_equals (s1 s2 : sort) (φ1 φ2 : Pattern)
   | kore_in    (s1 s2 : sort) (φ1 φ2 : Pattern)
 
-  | kore_next     (* (s : sort) ? *) (φ : Pattern)
+(*   | kore_next     (* (s : sort) ? *) (φ : Pattern)
   | kore_rewrites (* (s : sort) ? *) (φ1 φ2 : Pattern)
-  | kore_dv       (s : sort) (s : string).
+  | kore_dv       (s : sort) (s : string) *).
 
 
   Section pat_ind.
@@ -70,12 +70,12 @@ Section Syntax.
 
       (P_ceil : forall s1 s2 φ, P φ -> P (kore_ceil s1 s2 φ))
       (P_floor : forall s1 s2 φ, P φ -> P (kore_floor s1 s2 φ))
-      (P_equal : forall s1 s2 φ, P φ -> forall ψ, P ψ -> P (kore_equal s1 s2 φ ψ))
+      (P_equal : forall s1 s2 φ, P φ -> forall ψ, P ψ -> P (kore_equals s1 s2 φ ψ))
       (P_in : forall s1 s2 φ, P φ -> forall ψ, P ψ -> P (kore_in s1 s2 φ ψ))
 
-      (P_next : forall φ, P φ -> P (kore_next φ))
+(*       (P_next : forall φ, P φ -> P (kore_next φ))
       (P_rewrites : forall φ, P φ -> forall ψ, P ψ -> P (kore_rewrites φ ψ))
-      (P_dv : forall s str, P (kore_dv s str)).
+      (P_dv : forall s str, P (kore_dv s str)) *).
 
     Definition Pat_ind (φ : Pattern) : P φ.
     Proof.
@@ -97,20 +97,20 @@ Section Syntax.
        | kore_imp φ1 φ2 => P_imp _ (Pat_ind φ1) _ (Pat_ind φ2)
        | kore_iff φ1 φ2 => P_iff _ (Pat_ind φ1) _ (Pat_ind φ2)
 
-       | kore_exists σ φ => P_exists σ _ (Pat_ind φ)
-       | kore_forall σ φ => P_forall σ _ (Pat_ind φ)
+       | kore_exists s φ => P_exists s _ (Pat_ind φ)
+       | kore_forall s φ => P_forall s _ (Pat_ind φ)
 
-       | kore_mu σ φ => P_mu σ _ (Pat_ind φ)
-       | kore_nu σ φ => P_nu σ _ (Pat_ind φ)
+       | kore_mu s φ => P_mu s _ (Pat_ind φ)
+       | kore_nu s φ => P_nu s _ (Pat_ind φ)
 
        | kore_ceil s1 s2 φ => P_ceil s1 s2 _ (Pat_ind φ)
        | kore_floor s1 s2 φ => P_floor s1 s2 _ (Pat_ind φ)
-       | kore_equal s1 s2 φ1 φ2 => P_equal s1 s2 _ (Pat_ind φ1) _ (Pat_ind φ2)
+       | kore_equals s1 s2 φ1 φ2 => P_equal s1 s2 _ (Pat_ind φ1) _ (Pat_ind φ2)
        | kore_in    s1 s2 φ1 φ2 => P_in s1 s2 _ (Pat_ind φ1) _ (Pat_ind φ2)
 
-       | kore_next φ => P_next _ (Pat_ind φ)
+(*        | kore_next φ => P_next _ (Pat_ind φ)
        | kore_rewrites φ ψ => P_rewrites _ (Pat_ind φ) _ (Pat_ind ψ)
-       | kore_dv s str => P_dv s str
+       | kore_dv s str => P_dv s str *)
       end).
       apply P_app.
       induction args; constructor.
@@ -142,23 +142,27 @@ Module Notations.
   Check (⊥ <---> Top(_))%kore.
 
   Notation "s ⋅ pars" := (kore_app s pars) (at level 70, format "s '⋅' pars") : kore_scope.
+  Check (_ ⋅ [Top(_); Top(_)])%kore.
 
 
-  Notation "'ex' s1 ',' p 'as' s2" := (kore_exists s1 s2 p) (at level 80, s2 at level 65, format "'ex'  s1 ','  p  'as'  s2") : kore_scope.
-  Check ex Nat , ⊥ as Nat.
-  Notation "'all' s1 ',' p 'as' s2" := (kore_forall s1 s2 p) (at level 80, s2 at level 65, format "'all'  s1 ','  p  'as'  s2") : kore_scope.
-  Goal forall {Σ : Signature} {s1 : Syntax} {s2 : Nat_Syntax.Syntax},
-    ~ (all Nat , ⊥ as Nat ⋅ Nat) = (all Nat , ⊥ as (Nat ⋅ Nat)).
-  Proof. intros. intro. inversion H. Qed.
+  Notation "'ex' s1 ',' p" := (kore_exists s1 p) (at level 80, format "'ex'  s1 ','  p") : kore_scope.
+  Check (ex _ , ⊥(_))%kore.
+  Notation "'all' s1 ',' p" := (kore_forall s1 p) (at level 80, format "'all'  s1 ','  p") : kore_scope.
+  Check (all _ , ⊥(_))%kore.
+
+  Notation "'mu' s1 ',' p" := (kore_mu s1 p) (at level 80, format "'mu'  s1 ','  p") : kore_scope.
+  Check (mu _ , ⊥(_))%kore.
+  Notation "'nu' s1 ',' p" := (kore_nu s1 p) (at level 80, format "'nu'  s1 ','  p") : kore_scope.
+  Check (nu _ , ⊥(_))%kore.
 
   Notation "'⌈(' s1 , s2 ')' p ⌉" := (kore_ceil s1 s2 p) (format "'⌈(' s1 ',' s2 ')'  p ⌉") : kore_scope.
-  Check ⌈(Nat, Nat) ⊥⌉.
+  Check (⌈(_, _) ⊥(_)⌉)%kore.
   Notation "'⌊(' s1 , s2 ')' p ⌋" := (kore_floor s1 s2 p) (format "'⌊(' s1 ',' s2 ')'  p ⌋") : kore_scope.
-  Check ⌊(Nat, Nat) ⊥⌋.
+  Check ⌊(_, _) ⊥(_)⌋%kore.
   Notation "p1 '=ml(' s1 ',' s2 ')' p2" := (kore_equals s1 s2 p1 p2) (at level 68, format "p1  '=ml(' s1 ',' s2 ')'  p2", left associativity) : kore_scope.
-  Check ⊥ =ml(Nat, Nat) Top.
+  Check (⊥(_) =ml(_, _) Top(_))%kore.
   Notation "p1 '⊆ml(' s1 ',' s2 ')' p2" := (kore_in s1 s2 p1 p2) (at level 68, format "p1  '⊆ml(' s1 ',' s2 ')'  p2", left associativity) : kore_scope.
-  Check ⊥ ⊆ml(Nat, Nat) Top.
+  Check (⊥(_) ⊆ml(_, _) Top(_))%kore.
 
 
 
@@ -172,7 +176,7 @@ Module Notations.
   Notation "'nu' s , p" := (kore_nu s p) (at level 80).
   Check nu Nat, ⊥. *)
 
-  Notation "'•(' s ')' p"    := (kore_next s p) (at level 30, format "'•(' s ')'  p") : kore_scope.
+  (* Notation "'•(' s ')' p"    := (kore_next s p) (at level 30, format "'•(' s ')'  p") : kore_scope.
   Check •(Nat) ⊥.
   Notation "'○(' s ')' p"    := (kore_all_path_next s p) (at level 71, format "'○(' s ')'  p") : kore_scope.
   Check ○(Nat) ⊥.
@@ -197,14 +201,14 @@ Module Notations.
   Notation "'↺(' s ')' p" := (kore_circularity s p) (at level 71, format "'↺(' s ')'  p").
   Check ↺(Nat) ⊥.
   Notation "s ⇑" := (kore_non_terminating s) (at level 90).
-  Check ⊥ ⋅ ⊥ ⇑.
+  Check ⊥ ⋅ ⊥ ⇑. *)
 
 End Notations.
 
-
 Section Sortedness.
-
+  Import Notations.
   Context {Σ : Signature}.
+  Open Scope kore_scope.
 
   Definition shift {T : Set} (f : nat -> T) (d : T)
     : nat -> T :=
@@ -217,9 +221,9 @@ Section Sortedness.
     : nat -> T :=
     fun m => if decide (n = m) then d else f m.
 
-  Fixpoint app_ws (well_sorted : opml_sort -> OPMLPattern -> bool)
-                  (φs : list OPMLPattern)
-                  (ss : list opml_sort) {struct φs} :=
+  Fixpoint app_ws (well_sorted : sort -> Pattern -> bool)
+                  (φs : list Pattern)
+                  (ss : list sort) {struct φs} :=
     match φs, ss with
     | [], [] => true
     | φ::φs, s::ss => well_sorted s φ &&
@@ -228,31 +232,37 @@ Section Sortedness.
     end.
 
   Fixpoint well_sorted
-    (esorts : nat -> option opml_sort)
-    (ssorts : nat -> option opml_sort)
-    (s : opml_sort)
-    (p : OPMLPattern) {struct p} : bool :=(* 
-  Proof.
-    revert p esorts ssorts s.
-    refine (
-    fix well_sorted p esorts ssorts s := *)
+    (esorts : nat -> option sort)
+    (ssorts : nat -> option sort)
+    (s : sort)
+    (p : Pattern) {struct p} : bool :=
     match p with
-     | kore_bot => true
+     | kore_bot s => true
+     | kore_top s => true
      | kore_bevar dbi => decide (esorts dbi = Some s)
      | kore_bsvar dbi => decide (ssorts dbi = Some s)
      | kore_fevar x => decide (evar_sort x = s)
      | kore_fsvar X => decide (svar_sort X = s)
-     | kore_imp φ1 φ2 => well_sorted esorts ssorts s φ1 &&
-                       well_sorted esorts ssorts s φ2
+     | kore_imp φ1 φ2 | kore_iff φ1 φ2
+     | kore_and φ1 φ2 | kore_or φ1 φ2
+       => well_sorted esorts ssorts s φ1 &&
+          well_sorted esorts ssorts s φ2
+     | kore_not φ => well_sorted esorts ssorts s φ
      | kore_app σ args =>
-        decide (s = opml_ret_sort σ) &&
-        app_ws (well_sorted esorts ssorts) args (opml_arg_sorts σ)
-     | kore_ex s0 φ => well_sorted (shift esorts (Some s0)) ssorts s φ
-     | kore_mu s0 φ => well_sorted esorts (shift ssorts (Some s0)) s φ
-     | kore_eq s1 s2 φ1 φ2
+        decide (s = ret_sort σ) &&
+        app_ws (well_sorted esorts ssorts) args (arg_sorts σ)
+     | kore_exists s0 φ | kore_forall s0 φ =>
+        well_sorted (shift esorts (Some s0)) ssorts s φ
+     | kore_mu s0 φ | kore_nu s0 φ =>
+        well_sorted esorts (shift ssorts (Some s0)) s φ
+     | kore_ceil s1 s2 φ | kore_floor s1 s2 φ
+        => well_sorted esorts ssorts s1 φ &&
+           decide (s2 = s)
+     | kore_equals s1 s2 φ1 φ2 | kore_in s1 s2 φ1 φ2
         => well_sorted esorts ssorts s1 φ1 &&
            well_sorted esorts ssorts s1 φ2 &&
            decide (s2 = s)
     end.
 
-End Syntax.
+End Sortedness.
+
