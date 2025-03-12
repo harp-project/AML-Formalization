@@ -1,7 +1,12 @@
 -R src Kore
 -Q ../matching-logic/src MatchingLogic
 
+src/Basics.v
 src/Signature.v
 src/Syntax.v
+src/Freshness.v
 src/Substitution.v
+src/Semantics.v
+
+src/examples/Nat.v
 

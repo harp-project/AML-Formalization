@@ -1,7 +1,8 @@
-From Kore Require Export Signature.
+From Kore Require Export Signature
+                         Basics.
 From MatchingLogic Require Export extralibrary
                                   Lattice.
-
+From Coq Require Export FunctionalExtensionality.
 
 Set Default Proof Mode "Classic".
 
@@ -119,6 +120,26 @@ Section Syntax.
     Defined.
   End pat_ind.
 
+  Fixpoint pat_size (p : Pattern) : nat :=
+  match p with
+   | kore_imp φ1 φ2 | kore_iff φ1 φ2
+   | kore_and φ1 φ2 | kore_or φ1 φ2
+   | kore_equals _ _ φ1 φ2 | kore_in _ _ φ1 φ2
+      => 1 + pat_size φ1 + pat_size φ2
+   | kore_app σ args
+      => 1 + foldr (fun φ acc => pat_size φ + acc) 0 args
+   | kore_exists _ φ | kore_forall _ φ
+   | kore_nu _ φ | kore_mu _ φ 
+   | kore_not φ | kore_ceil _ _ φ
+   | kore_floor _ _ φ
+       => 1 + pat_size φ
+   | kore_bevar _ | kore_fevar _
+   | kore_bsvar _ | kore_fsvar _
+   | kore_bot _ | kore_top _
+       => 1
+  end.
+
+
 End Syntax.
 
 Module Notations.
@@ -141,7 +162,7 @@ Module Notations.
   Notation "p1 '<--->' p2" := (kore_iff p1 p2) (at level 74, format "p1  '<--->'  p2") : kore_scope.
   Check (⊥ <---> Top(_))%kore.
 
-  Notation "s ⋅ pars" := (kore_app s pars) (at level 70, format "s '⋅' pars") : kore_scope.
+  Notation "s ⋅ pars" := (kore_app s pars) (at level 70, format "s  '⋅'  pars") : kore_scope.
   Check (_ ⋅ [Top(_); Top(_)])%kore.
 
 
@@ -263,6 +284,137 @@ Section Sortedness.
            well_sorted esorts ssorts s1 φ2 &&
            decide (s2 = s)
     end.
+
+  Definition default : nat -> option sort := fun _ : nat => None.
+
+  Definition is_weaker (f1 f2 : nat -> option sort) : Prop :=
+    forall n s, f2 n = Some s -> f1 n = Some s.
+
+  Notation "f '≤ₛ' g" := (is_weaker f g) (at level 50).
+
+  Lemma default_is_strongest :
+    forall f, f ≤ₛ default.
+  Proof.
+    intros f n σ H.
+    unfold default in H.
+    inversion H.
+  Defined.
+
+  Lemma is_weaker_refl :
+    forall f, f ≤ₛ f.
+  Proof.
+    intros. intro. intros.
+    assumption.
+  Defined.
+
+  Lemma is_weaker_shift :
+    forall f1 f2,
+      f1 ≤ₛ f2 ->
+      forall d,
+        (shift f1 d) ≤ₛ (shift f2 d).
+  Proof.
+    intros.
+    unfold is_weaker.
+    intros.
+    destruct n; simpl in *. assumption.
+    by apply H.
+  Defined.
+
+
+  Lemma shift_update :
+    forall {T: Set} (f : nat -> T) n d1 d2,
+      shift (update n d1 f) d2 =
+      update (S n) d1 (shift f d2).
+  Proof.
+    intros. unfold shift, update.
+    extensionality x.
+    destruct x; simpl. reflexivity.
+    destruct decide; simpl;
+    destruct decide; simpl; try lia; reflexivity.
+  Defined.
+
+  Lemma well_sorted_weaken :
+    forall φ s fe fe' fs fs',
+      fe' ≤ₛ fe ->
+      fs' ≤ₛ fs ->
+      well_sorted fe fs s φ ->
+      well_sorted fe' fs' s φ.
+  Proof.
+    induction φ using Pat_ind; intros * Hw1 Hw2 Hwf; try by constructor.
+    * simpl in *. destruct decide. 2: simpl in Hwf; congruence.
+      clear Hwf. apply Hw1 in e.
+      cbn. rewrite e. destruct decide; auto.
+    * simpl in *. assumption.
+    * simpl in *. destruct decide. 2: simpl in Hwf; congruence.
+      clear Hwf. apply Hw2 in e.
+      cbn. rewrite e. destruct decide; auto.
+    * simpl in *. assumption.
+    * simpl in *.
+      apply andb_split_1 in Hwf as H1. rewrite H1. simpl.
+      apply andb_split_2 in Hwf.
+      {
+        clear - H Hwf Hw1 Hw2.
+        remember (arg_sorts σ) as sorts.
+        clear Heqsorts. revert sorts Hwf.
+        induction args; simpl in *; intros.
+        + case_match; by auto.
+        + case_match. by auto.
+          subst.
+          inversion H. subst. erewrite H2. 2-3: eassumption.
+          2: by apply andb_split_1 in Hwf.
+          eapply IHargs. assumption.
+          by apply andb_split_2 in Hwf.
+      }
+    * simpl in *. eapply IHφ in Hwf; eassumption.
+    * simpl in *. apply andb_true_iff in Hwf as [Hwf1 Hwf2].
+      erewrite IHφ1; try eassumption.
+      erewrite IHφ2; try eassumption.
+      reflexivity.
+    * simpl in *. apply andb_true_iff in Hwf as [Hwf1 Hwf2].
+      erewrite IHφ1; try eassumption.
+      erewrite IHφ2; try eassumption.
+      reflexivity.
+    * simpl in *. apply andb_true_iff in Hwf as [Hwf1 Hwf2].
+      erewrite IHφ1; try eassumption.
+      erewrite IHφ2; try eassumption.
+      reflexivity.
+    * simpl in *. apply andb_true_iff in Hwf as [Hwf1 Hwf2].
+      erewrite IHφ1; try eassumption.
+      erewrite IHφ2; try eassumption.
+      reflexivity.
+    * simpl in *. eapply IHφ in Hwf. exact Hwf.
+      by apply is_weaker_shift.
+      assumption.
+    * simpl in *. eapply IHφ in Hwf. exact Hwf.
+      by apply is_weaker_shift.
+      assumption.
+    * simpl in *. eapply IHφ in Hwf. exact Hwf.
+      2: by apply is_weaker_shift.
+      assumption.
+    * simpl in *. eapply IHφ in Hwf. exact Hwf.
+      2: by apply is_weaker_shift.
+      assumption.
+    * simpl in *.
+      erewrite IHφ; try eassumption.
+      simpl. apply andb_split_2 in Hwf. assumption.
+      simpl. apply andb_split_1 in Hwf. assumption.
+    * simpl in *.
+      erewrite IHφ; try eassumption.
+      simpl. apply andb_split_2 in Hwf. assumption.
+      simpl. apply andb_split_1 in Hwf. assumption.
+    * simpl in *.
+      erewrite IHφ1; try eassumption.
+      erewrite IHφ2; try eassumption.
+      simpl. apply andb_split_2 in Hwf. assumption.
+      simpl. apply andb_split_1, andb_split_2 in Hwf. assumption.
+      simpl. apply andb_split_1, andb_split_1 in Hwf. assumption.
+    * simpl in *.
+      erewrite IHφ1; try eassumption.
+      erewrite IHφ2; try eassumption.
+      simpl. apply andb_split_2 in Hwf. assumption.
+      simpl. apply andb_split_1, andb_split_2 in Hwf. assumption.
+      simpl. apply andb_split_1, andb_split_1 in Hwf. assumption.
+  Defined.
 
 End Sortedness.
 

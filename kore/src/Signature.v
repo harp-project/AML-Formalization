@@ -49,7 +49,7 @@ Class Signature := {
 }.
 
 Module StringVariables.
-  Program Instance String_OPMLVariables {Ss : Sorts} : Variables := {|
+  Program Instance StringVariables {Ss : Sorts} : Variables := {|
     evar := sort * string;
     svar := sort * string;
     evar_sort := fun x => fst x;
@@ -96,3 +96,7 @@ Module StringVariables.
       by apply Permutation_map.
   Defined.
 End StringVariables.
+
+
+Ltac invt H :=
+inversion H; subst; clear H.

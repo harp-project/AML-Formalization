@@ -1035,6 +1035,8 @@ Section Semantics.
 
   Require Import Coq.Program.Equality.
 
+  (* Oké-e ha a nem well-sorted dolgoknak valami default értéket
+     adjunk, és így elhagyjuk a well-sorted judgementet (Hws-t) *)
   Equations? opml_eval (ρ : OPMLValuation) (φ : OPMLPattern) {s}
     (Hws : well_sorted default default s φ)
       : propset (opml_carrier M s) by wf (opml_size φ) :=
