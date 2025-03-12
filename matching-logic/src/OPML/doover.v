@@ -1,7 +1,7 @@
 From MatchingLogic.OPML Require Export OpmlSignature.
 From stdpp Require Import base tactics list list_numbers propset.
 Set Transparent Obligations.
-From Coq Require Import Program.Equality String.
+From Coq Require Import Program.Equality String PropExtensionality.
 From Equations Require Export -(notations) Equations.
 From MatchingLogic Require Import stdpp_ext.
 Set Default Proof Mode "Classic".
@@ -305,49 +305,71 @@ Section asd.
 
   Obligation Tactic := idtac.
 
-  #[program]
-  Fixpoint opml_eval {ex mu} (ρ : OPMLValuation) {s} (φ : OPMLPattern s ex mu) {measure (opml_size φ)} : propset (opml_carrier M s) :=
-    match φ with
-    | op_bot | op_bevar _ => empty
-    | op_fevar x => {[evar_valuation ρ x]}
-    | op_imp φ1 φ2 => (⊤ ∖ (opml_eval ρ φ1)) ∪ (opml_eval ρ φ2)
-    | op_app σ l => app_ext σ _ (*@hlist_rect _ _ (λ l _, hlist (propset ∘ M) l) hnil (λ _ _ a _ b, hcons (opml_eval ρ a) b) _ l*)
-    | op_eq φ1 φ2 => PropSet (λ _, (opml_eval ρ φ1) = (opml_eval ρ φ2))
-    | @op_ex _ _ s' _ _ φ => propset_fa_union (λ X, let o := fresh_evar s' φ in opml_eval (update_evar_val o X ρ) (bevar_subst [] φ (op_fevar o)))
-    end.
-
-  Solve Obligations with intros; subst; simpl; try lia.
-
-  Next Obligation.
-    intros; subst.
+  Equations? opml_eval {ex mu} (ρ : OPMLValuation) {s} (φ : OPMLPattern s ex mu) : propset (opml_carrier M s) by wf (opml_size φ) :=
+    opml_eval ρ op_bot                := empty ;
+    opml_eval ρ (op_bevar _)          := empty ;
+    opml_eval ρ (op_fevar x)          := {[evar_valuation ρ x]} ;
+    opml_eval ρ (op_imp φ1 φ2)        := (⊤ ∖ (opml_eval ρ φ1)) ∪ (opml_eval ρ φ2) ;
+    opml_eval ρ (op_app σ l)          := app_ext σ _ (*@hlist_rect _ _ (λ l _, hlist (propset ∘ M) l) hnil (λ _ _ a _ b, hcons (opml_eval ρ a) b) _ l*) ;
+    opml_eval ρ (op_eq φ1 φ2)         := PropSet (λ _, (opml_eval ρ φ1) = (opml_eval ρ φ2)) ;
+    opml_eval ρ (@op_ex _ _ s' _ _ φ) := propset_fa_union (λ X, let o := fresh_evar s' φ in opml_eval (update_evar_val o X ρ) (bevar_subst [] φ (op_fevar o))) ;
+  .
+  Proof.
+    1,2,4,5: simpl; lia.
+    2: rewrite (bevar_subst_size [] ex mu s s' φ o); left.
+    
     simpl in opml_eval.
     induction l. left.
     right. apply (opml_eval _ _ ρ _ f). lia.
     apply IHl. intros.
-    apply (opml_eval _ _ ρ0 _ φ). lia.
+    apply (opml_eval _ _ x2 _ x4). lia.
   Defined.
 
-  Next Obligation.
-    intros; subst.
-    rewrite (bevar_subst_size [] ex mu s s' φ o). left.
-  Defined.
+  Definition Theory := propset (sigT (OPMLPattern ^~ [] ^~ [])).
+  (* Instance elem_of_Theory : ElemOf (sigT (OPMLPattern ^~ [] ^~ [])) Theory. *)
+  (* Proof. *)
+  (*   unfold Theory. typeclasses eauto. *)
+  (* Defined. *)
+  Definition sat (Γ : Theory) := forall (ax : sigT (OPMLPattern ^~ [] ^~ [])), ax ∈ Γ -> forall ρ, @opml_eval [] [] ρ (projT1 ax) (projT2 ax) = ⊤.
 
-  Next Obligation.
-    auto with arith.
-  Defined.
+  (* Fixpoint all_singleton {xs} (ys : hlist (propset ∘ M) xs) : Type. *)
+  (* Proof. *)
+  (*   destruct ys. *)
+  (*   exact True. *)
+  (*   apply prod. exact (sigT (eq c ∘ singleton)). *)
+  (*   eapply all_singleton, ys. *)
+  (* Defined. *)
+
+  (* Fixpoint all_singleton_extract {xs} {ys : hlist (propset ∘ M) xs} (H : all_singleton ys) {struct ys} : hlist M xs. *)
+  (* Proof. *)
+  (*   destruct ys. left. *)
+  (*   simpl in H. destruct H as [[] ?]. *)
+  (*   right. assumption. *)
+  (*   eapply all_singleton_extract. eassumption. *)
+  (* Defined. *)
+
+  (* Lemma app_ext_all_singleton_is_app {σ} {args : hlist (propset ∘ M) (opml_arg_sorts σ)} (H : all_singleton args) : app_ext σ args = opml_app _ σ (all_singleton_extract H). *)
+  (* Proof. *)
+  (*   dependent induction args. *)
+  (*   apply (JMeq_eq_rect x0) in x as <-. *)
+  (*   epose proof map_subst (const (app_ext σ)) x0. simpl in H0. *)
+  (*   epose proof @map_subst (list opml_sort) (hlist (propset ∘ M)) (const Type) (@all_singleton) _ _ x0 hnil. *)
+  (*   rewrite <- H0 in H. *)
 
 End asd.
+
+Arguments sat {_} _ _ /.
 
 Module NatBool_Sematics.
   Import NatBool.
 
-  Fixpoint hlist_to_prod `(@hlist A F xs) : foldr (prod ∘ F) unit xs.
-  Proof.
-    destruct xs; simpl.
-    split.
-    unshelve eapply (hcons_inv _ _ H); intros.
-    split. exact y. apply hlist_to_prod. exact ys.
-  Defined.
+  (* Fixpoint hlist_to_prod `(@hlist A F xs) : foldr (prod ∘ F) unit xs. *)
+  (* Proof. *)
+  (*   destruct xs; simpl. *)
+  (*   split. *)
+  (*   unshelve eapply (hcons_inv _ _ H); intros. *)
+  (*   split. exact y. apply hlist_to_prod. exact ys. *)
+  (* Defined. *)
 
   Definition mk_OPMLModel {Σ : OPMLSignature} (opml_carrier : opml_sort → Set) : (forall (σ : opml_symbol), foldr (λ c a, opml_carrier c -> a) (propset (opml_carrier (opml_ret_sort σ))) (opml_arg_sorts σ)) → (∀ s : opml_sort, Inhabited (opml_carrier s)) → OPMLModel.
   Proof.
@@ -362,18 +384,117 @@ Module NatBool_Sematics.
     exact H.
   Defined.
 
+  Definition mk_OPMLModel_singleton {Σ : OPMLSignature} (opml_carrier : opml_sort → Set) : (forall (σ : opml_symbol), foldr (λ c a, opml_carrier c -> a) (opml_carrier (opml_ret_sort σ)) (opml_arg_sorts σ)) → (∀ s : opml_sort, Inhabited (opml_carrier s)) → OPMLModel.
+  Proof.
+    intros.
+    unshelve esplit.
+    exact opml_carrier.
+    intros.
+    specialize (X σ).
+    induction (opml_arg_sorts σ). simpl in X. exact {[X]}.
+    simpl in X. unshelve eapply (hcons_inv _ _ X0); intros.
+    specialize (X y). specialize (IHl X ys). exact IHl.
+    exact H.
+  Defined.
+
   Definition NatBool_Model : OPMLModel.
   Proof.
-    unshelve eapply mk_OPMLModel.
+    unshelve eapply mk_OPMLModel_singleton.
     exact (sorts_rect _ nat bool).
-    refine (symbols_rect _ _ _ _ _ _ _); simpl.
-    intros []; simpl.
-    decompose record X; clear X.
-    exact {[a + a0]}.
-    destruct a. exact {[true]}. exact {[false]}.
-    exact {[0]}.
-    exact {[S a]}.
-    exact {[true]}.
-    exact {[false]}.
+    exact (symbols_rect _ Nat.add (nat_rect _ true (λ _ _, false)) 0 S true false).
     intros []; auto with typeclass_instances.
   Defined.
+
+  Definition op_not {s} {ex mu} (φ : OPMLPattern s ex mu) := op_imp φ op_bot.
+  Definition op_all {s s'} {ex mu} (φ : OPMLPattern s (s' :: ex) mu) := op_not (op_ex (op_not φ)).
+
+  Definition NatBool_Theory : Theory := {[
+    existT bool_s (op_eq (op_app is0_s [op_app zero_s []]) (op_app true_s []));
+    existT nat_s (op_all (op_eq (op_app is0_s [op_app succ_s [op_bevar dbiz]]) (op_app false_s [])))
+  ]}.
+
+  Arguments NatBool_Theory /.
+
+  Instance propset_leibniz_equiv {A} : LeibnizEquiv (propset A).
+  Proof.
+    intros ? ? ?. unfold equiv, set_equiv_instance in H.
+    destruct x, y. f_equal. apply functional_extensionality.
+    intros. specialize (H x). apply propositional_extensionality.
+    auto.
+  Defined.
+
+  Hint Extern 5 (?x ∈ ⊤) => simple apply elem_of_top' : opml.
+  (* Hint Resolve elem_of_top' : opml. *)
+
+  Lemma propset_top_elem_of_rev {A : Type} (S : propset A) (_ : ∀ t : A, t ∈ S) : S = ⊤.
+  Proof.
+    apply set_eq. auto with opml extcore.
+  Defined.
+
+  Tactic Notation "deconstruct_elem_of_Theory" :=
+    repeat match goal with
+    | [ H : _ ∈ _ |- _ ] => inversion H; clear H
+    end; clear; simpl.
+
+  Tactic Notation "eval_helper" :=
+    repeat match goal with
+           | [ |- PropSet _ = ⊤ ] => let x := fresh "x" in apply propset_top_elem_of_rev; intros x; apply elem_of_PropSet; clear x
+           | [ |- context [opml_eval ?ρ (@op_app ?Σ ?ex ?mu ?σ ?l)] ] => let H := fresh in pose proof (opml_eval_equation_5 ex mu ρ σ l) as H; simpl in H; rewrite H; clear H
+           | [ |- app_ext _ _ = app_ext _ _] => let x := fresh "x" in unfold app_ext; apply set_eq; intros x; simpl in x; split; intros [? []]%elem_of_PropSet; apply elem_of_PropSet
+           | _ => simp opml_eval
+           end.
+
+  Arguments opml_eval_obligation_3 {_} {_} _ _ _ _ _ _ /.
+
+  Goal sat NatBool_Model NatBool_Theory.
+  Proof.
+    simpl. intros.
+    deconstruct_elem_of_Theory.
+
+    eval_helper.
+
+    dependent destruction x0. destruct o. simpl in H0. inversion H0. subst.
+    simpl. repeat split; constructor.
+    simpl. destruct x. repeat split; constructor.
+    simpl in H. destruct H. apply elem_of_PropSet in H as [? []]. congruence.
+
+    dependent destruction x0. simpl in H0. inversion H0. subst.
+    unshelve eexists. simpl. right. simpl. exact 0. left.
+    simpl. repeat split; constructor.
+
+    unfold op_all, op_not.
+
+    eval_helper.
+
+    rewrite union_empty_r_L.
+    apply complement_full_iff_empty.
+    apply propset_fa_union_empty.
+    intros.
+    unfold bevar_subst. autounfold with opml. unfold solution_left, eq_rect_r.
+    simpl. unfold eq_rect_r. simpl.
+
+    eval_helper.
+    rewrite union_empty_r_L.
+    apply complement_empty_iff_full.
+    apply propset_top_elem_of_rev.
+    intros. apply elem_of_PropSet.
+
+    eval_helper.
+
+    simpl. destruct x.
+
+    dependent destruction x0. destruct o.
+    2: simpl in H0; congruence.
+    simpl in H. rewrite decide_eq_same in H. destruct H.
+    remember (λ _, ∃ l, _).
+    epose proof elem_of_PropSet P 0 as [? _]. apply H2 in H. clear H2.
+    subst P. destruct H. destruct H. dependent destruction x. simpl in H2. congruence.
+
+    repeat split. left.
+    simpl. rewrite decide_eq_same.
+    unshelve eexists. simpl. right. simpl. exact (S c). left.
+    simpl.
+    simpl in H0. inversion H0. clear. repeat split.
+    apply elem_of_PropSet.
+    unshelve eexists. right. simpl. exact c. left. simpl. auto with congruence.
+  Qed.
