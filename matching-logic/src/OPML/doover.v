@@ -332,30 +332,63 @@ Section asd.
   (* Defined. *)
   Definition sat (Γ : Theory) := forall (ax : sigT (OPMLPattern ^~ [] ^~ [])), ax ∈ Γ -> forall ρ, @opml_eval [] [] ρ (projT1 ax) (projT2 ax) = ⊤.
 
-  (* Fixpoint all_singleton {xs} (ys : hlist (propset ∘ M) xs) : Type. *)
-  (* Proof. *)
-  (*   destruct ys. *)
-  (*   exact True. *)
-  (*   apply prod. exact (sigT (eq c ∘ singleton)). *)
-  (*   eapply all_singleton, ys. *)
-  (* Defined. *)
+  Fixpoint all_singleton {xs} (ys : hlist (propset ∘ M) xs) : Type :=
+    if ys isn't hcons y ys then unit else prod (sigT (eq y ∘ singleton)) (all_singleton ys).
 
-  (* Fixpoint all_singleton_extract {xs} {ys : hlist (propset ∘ M) xs} (H : all_singleton ys) {struct ys} : hlist M xs. *)
-  (* Proof. *)
-  (*   destruct ys. left. *)
-  (*   simpl in H. destruct H as [[] ?]. *)
-  (*   right. assumption. *)
-  (*   eapply all_singleton_extract. eassumption. *)
-  (* Defined. *)
+  Fixpoint all_singleton_extract {xs} {ys : hlist (propset ∘ M) xs} (H : all_singleton ys) {struct ys} : hlist M xs.
+  Proof.
+    destruct ys. left.
+    simpl in H. destruct H as [[] ?].
+    right. assumption.
+    eapply all_singleton_extract. eassumption.
+  Defined.
 
-  (* Lemma app_ext_all_singleton_is_app {σ} {args : hlist (propset ∘ M) (opml_arg_sorts σ)} (H : all_singleton args) : app_ext σ args = opml_app _ σ (all_singleton_extract H). *)
-  (* Proof. *)
-  (*   dependent induction args. *)
-  (*   apply (JMeq_eq_rect x0) in x as <-. *)
-  (*   epose proof map_subst (const (app_ext σ)) x0. simpl in H0. *)
-  (*   epose proof @map_subst (list opml_sort) (hlist (propset ∘ M)) (const Type) (@all_singleton) _ _ x0 hnil. *)
-  (*   rewrite <- H0 in H. *)
+  Instance propset_leibniz_equiv {A} : LeibnizEquiv (propset A).
+  Proof.
+    intros ? ? ?. unfold equiv, set_equiv_instance in H.
+    destruct x, y. f_equal. apply functional_extensionality.
+    intros. specialize (H x). apply propositional_extensionality.
+    auto.
+  Defined.
 
+  Lemma elem_of_PropSet_1 {A : Type} (P : A → Prop) (x : A) : x ∈ PropSet P -> P x.
+  Proof.
+    intros. apply elem_of_PropSet. assumption.
+  Defined.
+
+  Lemma destruct_hcons {A} {F : A -> Type} {x} {xs} (l : hlist F (x :: xs)) : sigT (λ '(y, ys), l = hcons y ys).
+  Proof.
+    dependent destruction l.
+    exists (f, l). reflexivity.
+  Defined.
+
+  Lemma destruct_hnil {A} {F : A -> Type} (l : hlist F []) : l = hnil.
+  Proof.
+    dependent destruction l.
+    reflexivity.
+  Defined.
+
+  Lemma app_ext_all_singleton_is_app {σ} {args : hlist (propset ∘ M) (opml_arg_sorts σ)} (H : all_singleton args) : app_ext σ args = opml_app _ σ (all_singleton_extract H).
+  Proof.
+    apply set_eq. split; intros.
+    unfold app_ext in H0.
+    apply elem_of_PropSet_1 in H0.
+    destruct H0 as [? []].
+    replace (all_singleton_extract H) with x0. auto.
+    clear x H1. induction args.
+    simpl in *.
+    apply destruct_hnil.
+    simpl in H. destruct H. destruct s.
+    simpl in c. simpl.
+    epose proof destruct_hcons x0 as [[] ?]. rewrite y in H0.
+    simpl in H0. destruct H0. rewrite c in H. inversion H.
+    rewrite y. f_equal. apply IHargs. apply H0.
+    apply elem_of_PropSet. exists (all_singleton_extract H).
+    split. 2: auto. clear. induction args. simpl. split.
+    simpl in H. destruct H. destruct s. simpl in c. subst.
+    simpl. split. congruence.
+    apply IHargs.
+  Defined.
 End asd.
 
 Arguments sat {_} _ _ /.
@@ -414,14 +447,6 @@ Module NatBool_Sematics.
   ]}.
 
   Arguments NatBool_Theory /.
-
-  Instance propset_leibniz_equiv {A} : LeibnizEquiv (propset A).
-  Proof.
-    intros ? ? ?. unfold equiv, set_equiv_instance in H.
-    destruct x, y. f_equal. apply functional_extensionality.
-    intros. specialize (H x). apply propositional_extensionality.
-    auto.
-  Defined.
 
   Hint Extern 5 (?x ∈ ⊤) => simple apply elem_of_top' : opml.
   (* Hint Resolve elem_of_top' : opml. *)
