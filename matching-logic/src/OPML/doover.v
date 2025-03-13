@@ -179,6 +179,14 @@ Module NatBool.
   Defined.
 End NatBool.
 
+Instance propset_leibniz_equiv {A} : LeibnizEquiv (propset A).
+Proof.
+  intros ? ? ?. unfold equiv, set_equiv_instance in H.
+  destruct x, y. f_equal. apply functional_extensionality.
+  intros. specialize (H x). apply propositional_extensionality.
+  auto.
+Defined.
+
 Section asd.
   Context {Σ : OPMLSignature}.
 
@@ -343,14 +351,6 @@ Section asd.
     eapply all_singleton_extract. eassumption.
   Defined.
 
-  Instance propset_leibniz_equiv {A} : LeibnizEquiv (propset A).
-  Proof.
-    intros ? ? ?. unfold equiv, set_equiv_instance in H.
-    destruct x, y. f_equal. apply functional_extensionality.
-    intros. specialize (H x). apply propositional_extensionality.
-    auto.
-  Defined.
-
   Lemma elem_of_PropSet_1 {A : Type} (P : A → Prop) (x : A) : x ∈ PropSet P -> P x.
   Proof.
     intros. apply elem_of_PropSet. assumption.
@@ -465,61 +465,43 @@ Module NatBool_Sematics.
     repeat match goal with
            | [ |- PropSet _ = ⊤ ] => let x := fresh "x" in apply propset_top_elem_of_rev; intros x; apply elem_of_PropSet; clear x
            | [ |- context [opml_eval ?ρ (@op_app ?Σ ?ex ?mu ?σ ?l)] ] => let H := fresh in pose proof (opml_eval_equation_5 ex mu ρ σ l) as H; simpl in H; rewrite H; clear H
-           | [ |- app_ext _ _ = app_ext _ _] => let x := fresh "x" in unfold app_ext; apply set_eq; intros x; simpl in x; split; intros [? []]%elem_of_PropSet; apply elem_of_PropSet
+           (* | [ |- app_ext _ _ = app_ext _ _] => let x := fresh "x" in unfold app_ext; apply set_eq; intros x; simpl in x; split; intros [? []]%elem_of_PropSet; apply elem_of_PropSet *)
            | _ => simp opml_eval
            end.
 
   Arguments opml_eval_obligation_3 {_} {_} _ _ _ _ _ _ /.
 
+  Tactic Notation "rewrite_singleton" constr(sy) :=
+    match goal with
+    | [ |- context [@app_ext ?Σ ?M sy ?l]] => let H := fresh in unshelve epose (_ : (@all_singleton Σ M _ l)) as H; [repeat esplit | rewrite (@app_ext_all_singleton_is_app Σ M sy l H)]
+    end.
+
   Goal sat NatBool_Model NatBool_Theory.
   Proof.
-    simpl. intros.
-    deconstruct_elem_of_Theory.
+    simpl. unfold op_all, op_not. intros.
+    deconstruct_elem_of_Theory; eval_helper.
 
-    eval_helper.
+    rewrite_singleton zero_s.
+    rewrite_singleton true_s.
+    rewrite_singleton is0_s.
+    auto.
 
-    dependent destruction x0. destruct o. simpl in H0. inversion H0. subst.
-    simpl. repeat split; constructor.
-    simpl. destruct x. repeat split; constructor.
-    simpl in H. destruct H. apply elem_of_PropSet in H as [? []]. congruence.
-
-    dependent destruction x0. simpl in H0. inversion H0. subst.
-    unshelve eexists. simpl. right. simpl. exact 0. left.
-    simpl. repeat split; constructor.
-
-    unfold op_all, op_not.
-
-    eval_helper.
-
+    (* TODO: Make/find a tactic for set reasoning *)
     rewrite union_empty_r_L.
     apply complement_full_iff_empty.
     apply propset_fa_union_empty.
     intros.
-    unfold bevar_subst. autounfold with opml. unfold solution_left, eq_rect_r.
-    simpl. unfold eq_rect_r. simpl.
-
+    unfold bevar_subst.
+    repeat (unfold Equality.block, solution_left, eq_rect_r; simpl).
     eval_helper.
     rewrite union_empty_r_L.
     apply complement_empty_iff_full.
     apply propset_top_elem_of_rev.
     intros. apply elem_of_PropSet.
-
-    eval_helper.
-
-    simpl. destruct x.
-
-    dependent destruction x0. destruct o.
-    2: simpl in H0; congruence.
-    simpl in H. rewrite decide_eq_same in H. destruct H.
-    remember (λ _, ∃ l, _).
-    epose proof elem_of_PropSet P 0 as [? _]. apply H2 in H. clear H2.
-    subst P. destruct H. destruct H. dependent destruction x. simpl in H2. congruence.
-
-    repeat split. left.
     simpl. rewrite decide_eq_same.
-    unshelve eexists. simpl. right. simpl. exact (S c). left.
-    simpl.
-    simpl in H0. inversion H0. clear. repeat split.
-    apply elem_of_PropSet.
-    unshelve eexists. right. simpl. exact c. left. simpl. auto with congruence.
+
+    rewrite_singleton succ_s.
+    rewrite_singleton false_s.
+    rewrite_singleton is0_s.
+    auto.
   Qed.
