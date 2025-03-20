@@ -64,20 +64,20 @@ Defined.
 
 Arguments inc_dbi {_} {_} {_} {_} {_} !_.
 
-Inductive OPMLPattern {Σ : OPMLSignature} : opml_sort -> list opml_sort -> list opml_sort -> Type :=
-  | op_bot {s} {ex mu} : OPMLPattern s ex mu
-  | op_bevar {s} {ex mu} : Dbi s ex -> OPMLPattern s ex mu
-  | op_fevar {s} {ex mu} : opml_evar s -> OPMLPattern s ex mu
-  | op_imp {s} {ex mu} : OPMLPattern s ex mu -> OPMLPattern s ex mu -> OPMLPattern s ex mu
-  | op_app {ex mu} (σ : opml_symbol) : hlist (OPMLPattern ^~ ex ^~ mu) (opml_arg_sorts σ) -> OPMLPattern (opml_ret_sort σ) ex mu
-  | op_eq {s s'} {ex mu} : OPMLPattern s ex mu -> OPMLPattern s ex mu -> OPMLPattern s' ex mu
-  | op_ex {s s'} {ex mu} : OPMLPattern s (s' :: ex) mu -> OPMLPattern s ex mu
+Inductive OPMLPattern {Σ : OPMLSignature} : opml_sort -> list opml_sort -> Type :=
+  | op_bot {s} {ex} : OPMLPattern s ex
+  | op_bevar {s} {ex} : Dbi s ex -> OPMLPattern s ex
+  | op_fevar {s} {ex} : opml_evar s -> OPMLPattern s ex
+  | op_imp {s} {ex} : OPMLPattern s ex -> OPMLPattern s ex -> OPMLPattern s ex
+  | op_app {ex} (σ : opml_symbol) : hlist (OPMLPattern ^~ ex) (opml_arg_sorts σ) -> OPMLPattern (opml_ret_sort σ) ex
+  | op_eq {s s'} {ex} : OPMLPattern s ex -> OPMLPattern s ex -> OPMLPattern s' ex
+  | op_ex {s s'} {ex} : OPMLPattern s (s' :: ex) -> OPMLPattern s ex
 .
 
-Fixpoint inc_evar {Σ : OPMLSignature} {s} {ex ex' ex'' mu} (base : OPMLPattern s (ex ++ ex'') mu) : OPMLPattern s (ex ++ ex' ++ ex'') mu.
+Fixpoint inc_evar {Σ : OPMLSignature} {s} {ex ex' ex''} (base : OPMLPattern s (ex ++ ex'')) : OPMLPattern s (ex ++ ex' ++ ex'').
 Proof.
-  revert s ex ex' ex'' mu base.
-  fix IH 6.
+  revert s ex ex' ex'' base.
+  fix IH 5.
   intros.
   dependent destruction base.
   - exact op_bot.
@@ -96,11 +96,11 @@ Proof.
     exact base.
 Defined.
 
-Arguments inc_evar {_} {_} {_} {_} {_} {_} !_.
+Arguments inc_evar {_} {_} {_} {_} {_} !_.
 
-Fixpoint sub_evar {Σ : OPMLSignature} {s s'} {ex ex' mu} (dbi : Dbi s (ex ++ s' :: ex')) (repl : OPMLPattern s' ex' mu) {struct dbi} : OPMLPattern s (ex ++ ex') mu.
+Fixpoint sub_evar {Σ : OPMLSignature} {s s'} {ex ex'} (dbi : Dbi s (ex ++ s' :: ex')) (repl : OPMLPattern s' ex') {struct dbi} : OPMLPattern s (ex ++ ex').
 Proof.
-  refine (match dbi in (Dbi o l) return (o = s -> l = ex ++ s' :: ex' -> OPMLPattern s (ex ++ ex') mu) with
+  refine (match dbi in (Dbi o l) return (o = s -> l = ex ++ s' :: ex' -> OPMLPattern s (ex ++ ex')) with
           | dbiz => _
           | dbis dbi => _
           end eq_refl eq_refl); intros; subst.
@@ -109,13 +109,13 @@ Proof.
     + apply op_bevar, dbiz.
   - destruct ex; simpl in *; apply cons_eq_inv in H0 as [-> ->].
     + apply op_bevar, dbi.
-    + specialize (sub_evar _ _ _ _ _ _ dbi repl).
+    + specialize (sub_evar _ _ _ _ _ dbi repl).
       apply (@inc_evar _ _ [] [o0]). simpl. exact sub_evar.
 Defined.
 
-Arguments sub_evar {_} {_} {_} {_} {_} {_} !_ _.
+Arguments sub_evar {_} {_} {_} {_} {_} !_ _.
 
-Fixpoint bevar_subst {Σ : OPMLSignature} {s s'} {ex ex' mu} (base : OPMLPattern s (ex ++ s' :: ex') mu) (repl : OPMLPattern s' ex' mu) {struct base} : OPMLPattern s (ex ++ ex') mu.
+Fixpoint bevar_subst {Σ : OPMLSignature} {s s'} {ex ex'} (base : OPMLPattern s (ex ++ s' :: ex')) (repl : OPMLPattern s' ex') {struct base} : OPMLPattern s (ex ++ ex').
 Proof.
   intros.
   dependent destruction base.
@@ -134,7 +134,7 @@ Proof.
     rewrite <- app_comm_cons. all: eauto.
 Defined.
 
-Arguments bevar_subst {_} {_} {_} _ {_} {_} !_ _.
+Arguments bevar_subst {_} {_} {_} _ {_} !_ _.
 
 Module NatBool.
   Inductive sorts := nat_s | bool_s.
@@ -187,7 +187,7 @@ Proof.
   auto.
 Defined.
 
-Section asd.
+Section Model.
   Context {Σ : OPMLSignature}.
 
   Record OPMLModel := {
@@ -238,21 +238,21 @@ Section asd.
     exact (@svar_valuation val).
   Defined.
 
-  Fixpoint free_evars {s} {ex mu} (sTarget : opml_sort) (φ : OPMLPattern s ex mu) : gset (opml_evar sTarget) :=
-    match φ in (OPMLPattern s' _ _) return (s = s' -> gset (opml_evar sTarget)) with
+  Fixpoint free_evars {s} {ex} (sTarget : opml_sort) (φ : OPMLPattern s ex) : gset (opml_evar sTarget) :=
+    match φ in (OPMLPattern s' _) return (s = s' -> gset (opml_evar sTarget)) with
     | op_bot | op_bevar _ => λ _, empty
-    | @op_fevar _ o _ _ x => λ H, match decide (s = sTarget) with
+    | @op_fevar _ o _ x => λ H, match decide (s = sTarget) with
                                    | left e => {[eq_rect o opml_evar x sTarget (eq_trans (eq_sym H) e)]}
                                    | _ => empty
                                    end
     | op_imp φ1 φ2 | op_eq φ1 φ2 => λ _, free_evars sTarget φ1 ∪ free_evars sTarget φ2
-    | op_app σ l => λ _, ltac:(hlist_foldr (union ∘ free_evars _ _ _ sTarget) with empty in l)
+    | op_app σ l => λ _, ltac:(hlist_foldr (union ∘ free_evars _ _ sTarget) with empty in l)
     | op_ex x => λ _, free_evars sTarget x
     end eq_refl.
 
-  Definition fresh_evar {s} {ex mu} (sTarget : opml_sort) (φ : OPMLPattern s ex mu) : opml_evar sTarget := fresh (elements (free_evars sTarget φ)).
-  
-  Fixpoint opml_size {s} {ex mu} (φ : OPMLPattern s ex mu) : nat :=
+  Definition fresh_evar {s} {ex} (sTarget : opml_sort) (φ : OPMLPattern s ex) : opml_evar sTarget := fresh (elements (free_evars sTarget φ)).
+
+  Fixpoint opml_size {s} {ex} (φ : OPMLPattern s ex) : nat :=
     match φ with
     | op_bot | op_bevar _ | op_fevar _ => 1
     | op_imp φ1 φ2 | op_eq φ1 φ2 => S (opml_size φ1 + opml_size φ2)
@@ -260,7 +260,7 @@ Section asd.
     | op_ex φ => S (opml_size φ)
     end.
 
-  Arguments opml_size {_} {_} {_} & !_.
+  Arguments opml_size {_} {_} & !_.
 
   Lemma JMeq_eq_rect {U : Type} {P : U → Type} {p q : U} {x : P p} {y : P q} (H : p = q) : JMeq x y -> eq_rect p P x q H = y.
   Proof.
@@ -274,21 +274,21 @@ Section asd.
   Hint Rewrite -> Eqdep.EqdepTheory.eq_rect_eq : opml.
   Hint Rewrite <- Eqdep.EqdepTheory.eq_rect_eq : opml.
 
-  Lemma inc_evar_size : forall s ex ex' ex'' mu (φ : OPMLPattern s (ex ++ ex'') mu), opml_size (@inc_evar _ s ex ex' ex'' mu φ) = opml_size φ.
+  Lemma inc_evar_size : forall s ex ex' ex'' (φ : OPMLPattern s (ex ++ ex'')), opml_size (@inc_evar _ s ex ex' ex'' φ) = opml_size φ.
   Proof.
-    fix IH 6. intros.
+    fix IH 5. intros.
     dependent destruction φ; simpl; try reflexivity.
     1,3: auto.
     - induction h; auto.
     - autounfold with opml. autorewrite with opml.
-      specialize (IH s (s' :: ex) ex' ex'' mu φ). auto.
+      specialize (IH s (s' :: ex) ex' ex'' φ). auto.
   Defined.
 
   Hint Unfold Equality.block solution_left : opml.
 
-  Lemma bevar_subst_size : forall ex ex' mu s s' (φ : OPMLPattern s (ex ++ s' :: ex') mu) o, opml_size (bevar_subst ex φ (op_fevar o)) = opml_size φ.
+  Lemma bevar_subst_size : forall ex ex' s s' (φ : OPMLPattern s (ex ++ s' :: ex')) o, opml_size (bevar_subst ex φ (op_fevar o)) = opml_size φ.
   Proof.
-    fix IH 6.
+    fix IH 5.
     intros.
     dependent destruction φ; simpl; try reflexivity.
     2,4: auto.
@@ -305,40 +305,40 @@ Section asd.
       specialize (IHd _ _ _ d erefl JMeq_refl o). rewrite <- IHd.
 
       remember (sub_evar _ _).
-      exact (inc_evar_size y [] [o0] (ex ++ ex') mu o1).
+      exact (inc_evar_size y [] [o0] (ex ++ ex') o1).
     - induction h; auto.
     - autounfold with opml. autorewrite with opml.
-      specialize (IH (s'0 :: ex) ex' mu s s'). auto.
+      specialize (IH (s'0 :: ex) ex' s s'). auto.
   Defined.
 
   Obligation Tactic := idtac.
 
-  Equations? opml_eval {ex mu} (ρ : OPMLValuation) {s} (φ : OPMLPattern s ex mu) : propset (opml_carrier M s) by wf (opml_size φ) :=
+  Equations? opml_eval {ex} (ρ : OPMLValuation) {s} (φ : OPMLPattern s ex) : propset (opml_carrier M s) by wf (opml_size φ) :=
     opml_eval ρ op_bot                := empty ;
     opml_eval ρ (op_bevar _)          := empty ;
     opml_eval ρ (op_fevar x)          := {[evar_valuation ρ x]} ;
     opml_eval ρ (op_imp φ1 φ2)        := (⊤ ∖ (opml_eval ρ φ1)) ∪ (opml_eval ρ φ2) ;
     opml_eval ρ (op_app σ l)          := app_ext σ _ (*@hlist_rect _ _ (λ l _, hlist (propset ∘ M) l) hnil (λ _ _ a _ b, hcons (opml_eval ρ a) b) _ l*) ;
     opml_eval ρ (op_eq φ1 φ2)         := PropSet (λ _, (opml_eval ρ φ1) = (opml_eval ρ φ2)) ;
-    opml_eval ρ (@op_ex _ _ s' _ _ φ) := propset_fa_union (λ X, let o := fresh_evar s' φ in opml_eval (update_evar_val o X ρ) (bevar_subst [] φ (op_fevar o))) ;
+    opml_eval ρ (@op_ex _ _ s' _ φ) := propset_fa_union (λ X, let o := fresh_evar s' φ in opml_eval (update_evar_val o X ρ) (bevar_subst [] φ (op_fevar o))) ;
   .
   Proof.
     1,2,4,5: simpl; lia.
-    2: rewrite (bevar_subst_size [] ex mu s s' φ o); left.
+    2: rewrite (bevar_subst_size [] ex s s' φ o); left.
     
     simpl in opml_eval.
     induction l. left.
-    right. apply (opml_eval _ _ ρ _ f). lia.
+    right. apply (opml_eval _ ρ _ f). lia.
     apply IHl. intros.
-    apply (opml_eval _ _ x2 _ x4). lia.
+    apply (opml_eval _ x1 _ x3). lia.
   Defined.
 
-  Definition Theory := propset (sigT (OPMLPattern ^~ [] ^~ [])).
+  Definition Theory := propset (sigT (OPMLPattern ^~ [])).
   (* Instance elem_of_Theory : ElemOf (sigT (OPMLPattern ^~ [] ^~ [])) Theory. *)
   (* Proof. *)
   (*   unfold Theory. typeclasses eauto. *)
   (* Defined. *)
-  Definition sat (Γ : Theory) := forall (ax : sigT (OPMLPattern ^~ [] ^~ [])), ax ∈ Γ -> forall ρ, @opml_eval [] [] ρ (projT1 ax) (projT2 ax) = ⊤.
+  Definition sat (Γ : Theory) := forall (ax : sigT (OPMLPattern ^~ [])), ax ∈ Γ -> forall ρ, @opml_eval [] ρ (projT1 ax) (projT2 ax) = ⊤.
 
   Fixpoint all_singleton {xs} (ys : hlist (propset ∘ M) xs) : Type :=
     if ys isn't hcons y ys then unit else prod (sigT (eq y ∘ singleton)) (all_singleton ys).
@@ -389,7 +389,7 @@ Section asd.
     simpl. split. congruence.
     apply IHargs.
   Defined.
-End asd.
+End Model.
 
 Arguments sat {_} _ _ /.
 
@@ -433,13 +433,14 @@ Module NatBool_Sematics.
   Definition NatBool_Model : OPMLModel.
   Proof.
     unshelve eapply mk_OPMLModel_singleton.
-    exact (sorts_rect _ nat bool).
+    exact (sorts_rect _ nat bool). (* carriers of the sorts *)
+    
     exact (symbols_rect _ Nat.add (nat_rect _ true (λ _ _, false)) 0 S true false).
     intros []; auto with typeclass_instances.
   Defined.
 
-  Definition op_not {s} {ex mu} (φ : OPMLPattern s ex mu) := op_imp φ op_bot.
-  Definition op_all {s s'} {ex mu} (φ : OPMLPattern s (s' :: ex) mu) := op_not (op_ex (op_not φ)).
+  Definition op_not {s} {ex} (φ : OPMLPattern s ex) := op_imp φ op_bot.
+  Definition op_all {s s'} {ex} (φ : OPMLPattern s (s' :: ex)) := op_not (op_ex (op_not φ)).
 
   Definition NatBool_Theory : Theory := {[
     existT bool_s (op_eq (op_app is0_s [op_app zero_s []]) (op_app true_s []));
@@ -464,12 +465,12 @@ Module NatBool_Sematics.
   Tactic Notation "eval_helper" :=
     repeat match goal with
            | [ |- PropSet _ = ⊤ ] => let x := fresh "x" in apply propset_top_elem_of_rev; intros x; apply elem_of_PropSet; clear x
-           | [ |- context [opml_eval ?ρ (@op_app ?Σ ?ex ?mu ?σ ?l)] ] => let H := fresh in pose proof (opml_eval_equation_5 ex mu ρ σ l) as H; simpl in H; rewrite H; clear H
+           | [ |- context [opml_eval ?ρ (@op_app ?Σ ?ex ?σ ?l)] ] => let H := fresh in pose proof (opml_eval_equation_5 ex ρ σ l) as H; simpl in H; rewrite H; clear H
            (* | [ |- app_ext _ _ = app_ext _ _] => let x := fresh "x" in unfold app_ext; apply set_eq; intros x; simpl in x; split; intros [? []]%elem_of_PropSet; apply elem_of_PropSet *)
            | _ => simp opml_eval
            end.
 
-  Arguments opml_eval_obligation_3 {_} {_} _ _ _ _ _ _ /.
+  Arguments opml_eval_obligation_3 {_} {_} _ _ _ _ _ /.
 
   Tactic Notation "rewrite_singleton" constr(sy) :=
     match goal with
