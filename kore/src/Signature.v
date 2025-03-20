@@ -15,7 +15,7 @@ Class Sorts := {
     subsort_po :: PartialOrder subsort; *)
 }.
 
-Class Variables {Ss : Sorts} := {
+(* Class Variables {Ss : Sorts} := {
   evar : Set;
   svar : Set;
   evar_eqdec :: EqDecision evar;
@@ -32,6 +32,17 @@ Class Variables {Ss : Sorts} := {
     Infinite {x : evar & decide (evar_sort x = s)};
   svar_infinite s ::
     Infinite {x : svar & decide (svar_sort x = s)}
+}. *)
+
+Class Variables {Ss : Sorts} := {
+  evar : sort -> Set;
+  svar : sort -> Set;
+  evar_eqdec :: forall s, EqDecision (evar s);
+  evar_countable :: forall s, Countable (evar s);
+  evar_infinite :: forall s, Infinite (evar s);
+  svar_eqdec :: forall s, EqDecision (svar s);
+  svar_countable :: forall s, Countable (svar s);
+  svar_infinite :: forall s, Infinite (svar s);
 }.
 
 Class Symbols {Ss : Sorts} := {
@@ -50,51 +61,11 @@ Class Signature := {
 
 Module StringVariables.
   Program Instance StringVariables {Ss : Sorts} : Variables := {|
-    evar := sort * string;
-    svar := sort * string;
-    evar_sort := fun x => fst x;
-    svar_sort := fun x => fst x;
+    evar := fun _ => string;
+    svar := fun _ => string;
   |}.
-  Next Obligation.
-    unshelve econstructor.
-    * intro l.
-      pose (map (snd ∘ projT1) l) as l_mapped.
-      pose (fresh l_mapped) as new.
-      apply (existT (s, new)). simpl.
-      destruct decide. reflexivity. by simpl in n.
-    * intros. unfold fresh.
-      simpl.
-      intro.
-      apply (@infinite_is_fresh _ string_infinite (map (snd ∘ projT1) xs)).
-      unfold fresh.
-      epose proof elem_of_list_fmap_1 (snd ∘ projT1) _ _ H.
-      simpl in H0. assumption.
-    * unfold fresh.
-      intros xs ys EQ.
-      pose proof (@infinite_fresh_Permutation _ string_infinite (map (snd ∘ projT1) xs) (map (snd ∘ projT1) ys)).
-      unfold fresh in H. rewrite H. 2: reflexivity.
-      by apply Permutation_map.
-  Defined.
-  Final Obligation.
-    unshelve econstructor.
-    * intro l.
-      pose (map (snd ∘ projT1) l) as l_mapped.
-      pose (fresh l_mapped) as new.
-      apply (existT (s, new)). simpl.
-      destruct decide. reflexivity. by simpl in n.
-    * intros. unfold fresh.
-      simpl.
-      intro.
-      apply (@infinite_is_fresh _ string_infinite (map (snd ∘ projT1) xs)).
-      unfold fresh.
-      epose proof elem_of_list_fmap_1 (snd ∘ projT1) _ _ H.
-      simpl in H0. assumption.
-    * unfold fresh.
-      intros xs ys EQ.
-      pose proof (@infinite_fresh_Permutation _ string_infinite (map (snd ∘ projT1) xs) (map (snd ∘ projT1) ys)).
-      unfold fresh in H. rewrite H. 2: reflexivity.
-      by apply Permutation_map.
-  Defined.
+  Fail Next Obligation.
+
 End StringVariables.
 
 

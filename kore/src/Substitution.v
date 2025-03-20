@@ -1,73 +1,313 @@
-From Kore Require Export Syntax.
+From Kore Require Export Syntax Freshness.
 
 Import Kore.Syntax.Notations.
+
+Tactic Notation "hlist_map" uconstr(f) "in" ident(h) :=
+  let y := fresh in let H := fresh in
+  induction h as [ | ? ? y _ H];
+  [left | right];
+  [eapply f; eauto using y | exact H].
+
+Tactic Notation "hlist_foldr" uconstr(f) "with" uconstr(def) "in" ident(h) :=
+let y := fresh in let H := fresh in
+  induction h as [ | ?x ?xs y _ H ];
+  [exact def | eapply f];
+  [exact y | exact H].
 
 Section Substitution.
   Context {Σ : Signature}.
   Open Scope kore_scope.
 
-  Fixpoint bevar_subst (ps : Pattern) (x : nat)
-    (p : Pattern) : Pattern :=
-  match p with
-   | kore_top _ | kore_bot _ | kore_fevar _ | kore_fsvar _ | kore_bsvar _ => p
-   | kore_bevar n =>
-     match compare_nat n x with
-     | Nat_less _ _ _ => kore_bevar n
-     | Nat_equal _ _ _ => ps
-     | _ => kore_bevar n (* kore_bevar (Nat.pred n) *)
-     end
-   | kore_not φ  => kore_not (bevar_subst ps x φ)
-   | kore_imp φ1 φ2  => kore_imp (bevar_subst ps x φ1) (bevar_subst ps x φ2)
-   | kore_iff φ1 φ2  => kore_iff (bevar_subst ps x φ1) (bevar_subst ps x φ2)
-   | kore_and φ1 φ2  => kore_and (bevar_subst ps x φ1) (bevar_subst ps x φ2)
-   | kore_or φ1 φ2   => kore_or (bevar_subst ps x φ1) (bevar_subst ps x φ2)
-   | kore_app σ args => kore_app σ (map (bevar_subst ps x) args)
-   | kore_exists s φ => kore_exists s (bevar_subst ps (S x) φ)
-   | kore_forall s φ => kore_forall s (bevar_subst ps (S x) φ)
-   | kore_mu s φ     => kore_mu s (bevar_subst ps x φ)
-   | kore_nu s φ     => kore_nu s (bevar_subst ps x φ)
-   | kore_ceil s1 s2 φ => kore_ceil s1 s2 (bevar_subst ps x φ)
-   | kore_floor s1 s2 φ => kore_floor s1 s2 (bevar_subst ps x φ)
-   | kore_equals s1 s2 φ1 φ2 => kore_equals s1 s2 (bevar_subst ps x φ1) (bevar_subst ps x φ2)
-   | kore_in s1 s2 φ1 φ2 => kore_in s1 s2 (bevar_subst ps x φ1) (bevar_subst ps x φ2)
-  end.
+  Fixpoint inc_var {ex ex' ex'' mu mu' mu''} {s}
+    (base : Pattern (ex ++ ex'') (mu ++ mu'') s)
+    : Pattern (ex ++ ex' ++ ex'') (mu ++ mu' ++ mu'') s.
+  Proof.
+    revert s ex ex' ex'' mu mu' mu'' base.
+    fix IH 8.
+    intros.
+    dependent destruction base.
+    - apply kore_bevar, InTy_app, idx.
+    - apply kore_bsvar, InTy_app, idx.
+    - apply kore_fevar, x.
+    - apply kore_fsvar, X.
+    - apply kore_app.
+      (* hlist_map inc_evar in h. *)
+      (* epose proof (@hlist_rect _ _
+        (fun l => hlist _ l) hnil). *)
+      (* refine (hlist_rect []%hlist
+            (fun _ _ x xs rest => _) args). *)
+      hlist_map inc_var in args.
+    (* bot *)
+    - exact (kore_bot s).
+    (* top *)
+    - exact (kore_top s).
+    (* not *)
+    - apply kore_not; apply inc_var.
+      exact base.
+    (* and *)
+    - apply kore_and; apply inc_var.
+      exact base1. exact base2.
+    (* or *)
+    - apply kore_or; apply inc_var.
+      exact base1. exact base2.
+    (* imp *)
+    - apply kore_imp; apply inc_var.
+      exact base1. exact base2.
+    (* iff *)
+    - apply kore_iff; apply inc_var.
+      exact base1. exact base2.
+    (* exists *)
+    - eapply kore_exists. instantiate (1 := s_var).
+      rewrite app_comm_cons_defined.
+      apply inc_var.
+      rewrite <- app_comm_cons_defined.
+      exact base.
+    (* forall *)
+    - eapply kore_forall. instantiate (1 := s_var).
+      rewrite app_comm_cons_defined.
+      apply inc_var.
+      rewrite <- app_comm_cons_defined.
+      exact base.
+    (* mu *)
+    - eapply kore_mu.
+      rewrite app_comm_cons_defined.
+      apply inc_var.
+      rewrite <- app_comm_cons_defined.
+      exact base.
+    (* nu *)
+    - eapply kore_nu.
+      rewrite app_comm_cons_defined.
+      apply inc_var.
+      rewrite <- app_comm_cons_defined.
+      exact base.
+    (* ceil *)
+    - eapply kore_ceil; apply inc_var.
+      exact base.
+    (* floor *)
+    - eapply kore_floor; apply inc_var.
+      exact base.
+    (* equals *)
+    - eapply kore_equals; apply inc_var.
+      exact base1. exact base2.
+    (* in *)
+    - eapply kore_in; apply inc_var.
+      exact base1. exact base2.
+  Defined.
 
-  Fixpoint bsvar_subst (ps : Pattern) (x : nat)
-    (p : Pattern) : Pattern :=
-  match p with
-   | kore_top _ | kore_bot _ | kore_fevar _ | kore_fsvar _ | kore_bevar _ => p
-   | kore_bsvar n =>
-     match compare_nat n x with
-     | Nat_less _ _ _ => kore_bsvar n
-     | Nat_equal _ _ _ => ps
-     | _ => kore_bsvar n (* kore_bsvar (Nat.pred n) *)
-     end
-   | kore_not φ  => kore_not (bsvar_subst ps x φ)
-   | kore_imp φ1 φ2  => kore_imp (bsvar_subst ps x φ1) (bsvar_subst ps x φ2)
-   | kore_iff φ1 φ2  => kore_iff (bsvar_subst ps x φ1) (bsvar_subst ps x φ2)
-   | kore_and φ1 φ2  => kore_and (bsvar_subst ps x φ1) (bsvar_subst ps x φ2)
-   | kore_or φ1 φ2   => kore_or (bsvar_subst ps x φ1) (bsvar_subst ps x φ2)
-   | kore_app σ args => kore_app σ (map (bsvar_subst ps x) args)
-   | kore_exists s φ => kore_exists s (bsvar_subst ps x φ)
-   | kore_forall s φ => kore_forall s (bsvar_subst ps x φ)
-   | kore_mu s φ     => kore_mu s (bsvar_subst ps (S x) φ)
-   | kore_nu s φ     => kore_nu s (bsvar_subst ps (S x) φ)
-   | kore_ceil s1 s2 φ => kore_ceil s1 s2 (bsvar_subst ps x φ)
-   | kore_floor s1 s2 φ => kore_floor s1 s2 (bsvar_subst ps x φ)
-   | kore_equals s1 s2 φ1 φ2 => kore_equals s1 s2 (bsvar_subst ps x φ1) (bsvar_subst ps x φ2)
-   | kore_in s1 s2 φ1 φ2 => kore_in s1 s2 (bsvar_subst ps x φ1) (bsvar_subst ps x φ2)
-  end.
+  Arguments inc_var {_} {_} {_} {_} {_} {_} {_} !_.
+
+  Fixpoint sub_evar {s s'} {ex ex' mu}
+    (idx : InTy s (ex ++ s' :: ex'))
+    (ψ : Pattern ex' mu s') {struct idx}
+      : Pattern (ex ++ ex') mu s.
+  Proof.
+    refine (match idx in (InTy o l) return (o = s -> l = ex ++ s' :: ex' -> Pattern (ex ++ ex') mu s) with
+            | In_nil => _
+            | In_cons idx => _
+            end eq_refl eq_refl); intros; subst.
+    - destruct ex; simpl in *; apply cons_eq_inv in H0 as [-> ->].
+      + exact ψ.
+      + apply kore_bevar, In_nil.
+    - destruct ex; simpl in *; apply cons_eq_inv in H0 as [-> ->].
+      + apply kore_bevar, idx.
+      + specialize (sub_evar _ _ _ _ _ idx ψ).
+        apply (@inc_var [] [s1] (ex ++ ex') [] [] mu _).
+        simpl. exact sub_evar.
+  Defined.
+
+  Arguments sub_evar {_} {_} {_} {_} {_} !_ _.
+
+  Fixpoint sub_svar {s s'} {ex mu mu'}
+    (dbi : InTy s (mu ++ s' :: mu'))
+    (ψ : Pattern ex mu' s') {struct dbi}
+    : Pattern ex (mu ++ mu') s.
+  Proof.
+    refine (match dbi in (InTy o l) return (o = s -> l = mu ++ s' :: mu' -> Pattern ex (mu ++ mu') s) with
+            | In_nil => _
+            | In_cons idx => _
+            end eq_refl eq_refl); intros; subst.
+    - destruct mu; simpl in *; apply cons_eq_inv in H0 as [-> ->].
+      + exact ψ.
+      + apply kore_bsvar, In_nil.
+    - destruct mu; simpl in *; apply cons_eq_inv in H0 as [-> ->].
+      + apply kore_bsvar, idx.
+      + specialize (sub_svar _ _ _ _ _ idx ψ).
+        apply (@inc_var [] [] ex [] [s1] (mu ++ mu')).
+        simpl. exact sub_svar.
+  Defined.
+
+  Arguments sub_svar {_} {_} {_} {_} {_} !_ _.
+
+  Fixpoint bevar_subst ex {ex' mu : list sort} {s s'}
+    (ψ : Pattern ex' mu s')
+    (φ : Pattern (ex ++ s' :: ex') mu s) {struct φ}
+    : Pattern (ex ++ ex') mu s.
+  Proof.
+    intros.
+    dependent destruction φ.
+    Print Pattern.
+    (* bevar *)
+    - eapply sub_evar; eauto.
+    (* bsvar *)
+    - apply kore_bsvar. exact idx.
+    (* fevar *)
+    - apply kore_fevar, x.
+    (* fsvar *)
+    - apply kore_fsvar, X.
+    (* app *)
+    - apply kore_app.
+      hlist_map bevar_subst in args.
+    (* bot *)
+    - exact (kore_bot s).
+    (* top *)
+    - exact (kore_top s).
+    (* not *)
+    - exact (kore_not (bevar_subst _ _ _ _ _ ψ φ)).
+    (* and *)
+    - exact (kore_and (bevar_subst _ _ _ _ _ ψ φ1)
+                      (bevar_subst _ _ _ _ _ ψ φ2)).
+    (* or *)
+    - exact (kore_or (bevar_subst _ _ _ _ _ ψ φ1)
+                     (bevar_subst _ _ _ _ _ ψ φ2)).
+    (* imp *)
+    - exact (kore_imp (bevar_subst _ _ _ _ _ ψ φ1)
+                      (bevar_subst _ _ _ _ _ ψ φ2)).
+    (* iff *)
+    - exact (kore_iff (bevar_subst _ _ _ _ _ ψ φ1)
+                      (bevar_subst _ _ _ _ _ ψ φ2)).
+    (* exists *)
+    - eapply kore_exists.
+      rewrite app_comm_cons_defined.
+      eapply bevar_subst. exact ψ.
+      rewrite <- app_comm_cons_defined. exact φ.
+    (* forall *)
+    - eapply kore_forall.
+      rewrite app_comm_cons_defined.
+      eapply bevar_subst. exact ψ.
+      rewrite <- app_comm_cons_defined. exact φ.
+    (* mu *)
+    - eapply kore_mu.
+      eapply bevar_subst. 2: exact φ.
+      apply (@inc_var [] [] ex' [] [s] mu s').
+      assumption.
+    (* nu *)
+    - eapply kore_nu.
+      eapply bevar_subst. 2: exact φ.
+      apply (@inc_var [] [] ex' [] [s] mu s').
+      assumption.
+    (* ceil *)
+    - eapply kore_ceil.
+      eapply bevar_subst.
+      exact ψ. exact φ.
+    (* floor *)
+    - eapply kore_ceil.
+      eapply bevar_subst.
+      exact ψ. exact φ.
+    (* equals *)
+    - exact (kore_equals _ (bevar_subst _ _ _ _ _ ψ φ1)
+                      (bevar_subst _ _ _ _ _ ψ φ2)).
+    (* in *)
+    - exact (kore_in _ (bevar_subst _ _ _ _ _ ψ φ1)
+                      (bevar_subst _ _ _ _ _ ψ φ2)).
+  Defined.
+
+  Arguments bevar_subst _ {_} {_} {_} {_} !_ _.
+
+
+  Fixpoint bsvar_subst {ex} mu {mu' : list sort} {s s'}
+    (ψ : Pattern ex mu' s')
+    (φ : Pattern ex (mu ++ s'::mu') s) {struct φ}
+    : Pattern ex (mu ++ mu') s.
+  Proof.
+    intros.
+    dependent destruction φ.
+    (* bevar *)
+    - eapply kore_bevar. exact idx.
+    (* bsvar *)
+    - eapply sub_svar; eauto.
+    (* fevar *)
+    - apply kore_fevar, x.
+    (* fsvar *)
+    - apply kore_fsvar, X.
+    (* app *)
+    - apply kore_app.
+      hlist_map bsvar_subst in args.
+    (* bot *)
+    - exact (kore_bot s).
+    (* top *)
+    - exact (kore_top s).
+    (* not *)
+    - exact (kore_not (bsvar_subst _ _ _ _ _ ψ φ)).
+    (* and *)
+    - exact (kore_and (bsvar_subst _ _ _ _ _ ψ φ1)
+                      (bsvar_subst _ _ _ _ _ ψ φ2)).
+    (* or *)
+    - exact (kore_or (bsvar_subst _ _ _ _ _ ψ φ1)
+                     (bsvar_subst _ _ _ _ _ ψ φ2)).
+    (* imp *)
+    - exact (kore_imp (bsvar_subst _ _ _ _ _ ψ φ1)
+                      (bsvar_subst _ _ _ _ _ ψ φ2)).
+    (* iff *)
+    - exact (kore_iff (bsvar_subst _ _ _ _ _ ψ φ1)
+                      (bsvar_subst _ _ _ _ _ ψ φ2)).
+    (* exists *)
+    - eapply kore_exists.
+      eapply bsvar_subst. 2: exact φ.
+      apply (@inc_var [] [s_var] ex [] [] mu' s').
+      assumption.
+    (* forall *)
+    - eapply kore_forall.
+      eapply bsvar_subst. 2: exact φ.
+      apply (@inc_var [] [s_var] ex [] [] mu' s').
+      assumption.
+    (* mu *)
+    - eapply kore_mu.
+      rewrite app_comm_cons_defined.
+      eapply bsvar_subst. exact ψ.
+      rewrite <- app_comm_cons_defined. exact φ.
+    (* nu *)
+    - eapply kore_nu.
+      rewrite app_comm_cons_defined.
+      eapply bsvar_subst. exact ψ.
+      rewrite <- app_comm_cons_defined. exact φ.
+    (* ceil *)
+    - eapply kore_ceil.
+      eapply bsvar_subst.
+      exact ψ. exact φ.
+    (* floor *)
+    - eapply kore_ceil.
+      eapply bsvar_subst.
+      exact ψ. exact φ.
+    (* equals *)
+    - exact (kore_equals _ (bsvar_subst _ _ _ _ _ ψ φ1)
+                      (bsvar_subst _ _ _ _ _ ψ φ2)).
+    (* in *)
+    - exact (kore_in _ (bsvar_subst _ _ _ _ _ ψ φ1)
+                      (bsvar_subst _ _ _ _ _ ψ φ2)).
+  Defined.
+
+  Arguments bevar_subst {_} _ {_} {_} {_} !_ _.
 
 End Substitution.
 
 Module Notations.
 
-  Notation "p '^[' 'evar:' x ↦ t ']'" :=
-    (bevar_subst t x p) : kore_scope.
-  Notation "p '^[' 'svar:' x ↦ t ']'" :=
-    (bsvar_subst t x p) : kore_scope.
+  Notation "p '^[' 'evar:' s ↦ t ']'" :=
+    (bevar_subst s t p) : kore_scope.
+  Notation "p '^[' 'svar:' s ↦ t ']'" :=
+    (bsvar_subst s t p) : kore_scope.
 
 End Notations.
+
+Create HintDb kore.
+Hint Unfold AntiSymm : kore.
+Hint Constructors PartialOrder : kore.
+Hint Extern 5 (EqDecision _) => unfold EqDecision, Decision; decide equality : kore.
+Hint Unfold eq_rect_r : kore.
+Hint Rewrite -> Eqdep.EqdepTheory.eq_rect_eq : kore.
+Hint Rewrite <- Eqdep.EqdepTheory.eq_rect_eq : kore.
+Hint Unfold Equality.block solution_left : kore.
+Hint Extern 5 (?x ∈ ⊤) => simple apply elem_of_top' : kore.
 
 Section Substitution.
   Import Notations.
@@ -75,204 +315,27 @@ Section Substitution.
 
   Context {Σ : Signature}.
 
-  Lemma bevar_subst_opml_size :
-    forall φ x n,
-      pat_size (bevar_subst (kore_fevar x) n φ) = pat_size φ.
+  Lemma JMeq_eq_rect {U : Type} {P : U → Type} {p q : U} {x : P p} {y : P q} (H : p = q) : JMeq x y -> eq_rect p P x q H = y.
   Proof.
-    induction φ using Pat_ind; simpl; intros; try reflexivity.
-    all: try by erewrite ->IHφ1, ->IHφ2.
-    all: try by erewrite ->IHφ.
-    * by case_match.
-    * f_equal. induction H; simpl.
-      reflexivity.
-      rewrite IHForall.
-      erewrite H.
-      reflexivity.
+    intros.
+    apply JMeq_eq_dep, eq_dep_eq_sigT, eq_sigT_sig_eq in H0 as [].
+    rewrite (Eqdep.EqdepTheory.UIP _ _ _ H x0).
+    all: assumption.
   Defined.
 
-  Lemma bsvar_subst_opml_size :
-    forall φ X n,
-      pat_size (bsvar_subst (kore_fsvar X) n φ) = pat_size φ.
+  Lemma bevar_subst_size : forall ex ex' mu s s'
+    (φ : Pattern (ex ++ s' :: ex') mu s)
+    o,
+      pat_size (bevar_subst ex (kore_fevar o) φ) =
+      pat_size φ.
   Proof.
-    induction φ using Pat_ind; simpl; intros; try reflexivity.
-    all: try by erewrite ->IHφ1, ->IHφ2.
-    all: try by erewrite ->IHφ.
-    * by case_match.
-    * f_equal. induction H; simpl.
-      reflexivity.
-      rewrite IHForall.
-      erewrite H.
-      reflexivity.
-  Defined.
-
-  Lemma well_sorted_bevar_subst :
-    forall φ ψ s s' fe fs n,
-    well_sorted fe fs s φ ->
-    well_sorted default default s' ψ ->
-    fe n = Some s' ->
-    well_sorted (update n None fe) fs s (φ^[evar: n ↦ ψ]).
-  Proof.
-    induction φ using Pat_ind; intros; simpl in *; trivial.
-    * case_match; simpl.
-      - destruct decide in H. 2: by simpl in H.
-        unfold update.
-        destruct decide.
-        + lia.
-        + simpl. rewrite e.
-          rewrite decide_eq_same. reflexivity.
-      - subst. rewrite H1 in H.
-        destruct decide. 2: by simpl in H.
-        inversion e. subst.
-        eapply well_sorted_weaken. 3: eassumption.
-        apply default_is_strongest.
-        apply default_is_strongest.
-      - destruct decide. 2: by simpl in H.
-        unfold update.
-        destruct decide.
-        + lia.
-        + simpl. rewrite e.
-          rewrite decide_eq_same. reflexivity.
-    * apply andb_split_1 in H0 as WF1. rewrite WF1.
-      clear WF1. simpl.
-      apply andb_split_2 in H0.
-      {
-        remember (arg_sorts σ) as xs.
-        clear Heqxs. generalize dependent xs.
-        induction H; simpl; intros. assumption.
-        case_match.
-        - congruence.
-        - apply andb_split_1 in H3 as H31.
-          apply andb_split_2 in H3.
-          erewrite H, IHForall; try eassumption.
-          reflexivity.
-      }
-    * erewrite IHφ; try by eassumption.
-      reflexivity.
-    * erewrite IHφ1, IHφ2; try by eassumption.
-      reflexivity.
-      by apply andb_split_2 in H.
-      by apply andb_split_1 in H.
-    * erewrite IHφ1, IHφ2; try by eassumption.
-      reflexivity.
-      by apply andb_split_2 in H.
-      by apply andb_split_1 in H.
-    * erewrite IHφ1, IHφ2; try by eassumption.
-      reflexivity.
-      by apply andb_split_2 in H.
-      by apply andb_split_1 in H.
-    * erewrite IHφ1, IHφ2; try by eassumption.
-      reflexivity.
-      by apply andb_split_2 in H.
-      by apply andb_split_1 in H.
-    * simpl in *.
-      rewrite shift_update.
-      erewrite IHφ; try by eauto.
-    * simpl in *.
-      rewrite shift_update.
-      erewrite IHφ; try by eauto.
-    * simpl in *.
-      erewrite IHφ; try by eauto.
-    * simpl in *.
-      erewrite IHφ; try by eauto.
-    * erewrite IHφ; try by eassumption.
-      by apply andb_split_2 in H.
-      by apply andb_split_1 in H.
-    * erewrite IHφ; try by eassumption.
-      by apply andb_split_2 in H.
-      by apply andb_split_1 in H.
-    * erewrite IHφ1, IHφ2; try by eassumption.
-        by apply andb_split_2 in H.
-        by apply andb_split_1, andb_split_2 in H.
-        by apply andb_split_1, andb_split_1 in H.
-    * erewrite IHφ1, IHφ2; try by eassumption.
-        by apply andb_split_2 in H.
-        by apply andb_split_1, andb_split_2 in H.
-        by apply andb_split_1, andb_split_1 in H.
-  Defined.
-
-  Lemma well_sorted_bsvar_subst :
-    forall φ ψ s s' fe fs n,
-    well_sorted fe fs s φ ->
-    well_sorted default default s' ψ ->
-    fs n = Some s' ->
-    well_sorted fe (update n None fs) s (φ^[svar: n ↦ ψ]).
-  Proof.
-    induction φ using Pat_ind; intros; simpl in *; trivial.
-    * case_match; simpl.
-      - destruct decide in H. 2: by simpl in H.
-        unfold update.
-        destruct decide.
-        + lia.
-        + simpl. rewrite e.
-          rewrite decide_eq_same. reflexivity.
-      - subst. rewrite H1 in H.
-        destruct decide. 2: by simpl in H.
-        inversion e. subst.
-        eapply well_sorted_weaken. 3: eassumption.
-        apply default_is_strongest.
-        apply default_is_strongest.
-      - destruct decide. 2: by simpl in H.
-        unfold update.
-        destruct decide.
-        + lia.
-        + simpl. rewrite e.
-          rewrite decide_eq_same. reflexivity.
-    * apply andb_split_1 in H0 as WF1. rewrite WF1.
-      clear WF1. simpl.
-      apply andb_split_2 in H0.
-      {
-        remember (arg_sorts σ) as xs.
-        clear Heqxs. generalize dependent xs.
-        induction H; simpl; intros. assumption.
-        case_match.
-        - congruence.
-        - apply andb_split_1 in H3 as H31.
-          apply andb_split_2 in H3.
-          erewrite H, IHForall; try eassumption.
-          reflexivity.
-      }
-    * erewrite IHφ; try by eassumption.
-      reflexivity.
-    * erewrite IHφ1, IHφ2; try by eassumption.
-      reflexivity.
-      by apply andb_split_2 in H.
-      by apply andb_split_1 in H.
-    * erewrite IHφ1, IHφ2; try by eassumption.
-      reflexivity.
-      by apply andb_split_2 in H.
-      by apply andb_split_1 in H.
-    * erewrite IHφ1, IHφ2; try by eassumption.
-      reflexivity.
-      by apply andb_split_2 in H.
-      by apply andb_split_1 in H.
-    * erewrite IHφ1, IHφ2; try by eassumption.
-      reflexivity.
-      by apply andb_split_2 in H.
-      by apply andb_split_1 in H.
-    * simpl in *.
-      erewrite IHφ; try by eauto.
-    * simpl in *.
-      erewrite IHφ; try by eauto.
-    * simpl in *.
-      rewrite shift_update.
-      erewrite IHφ; try by eauto.
-    * simpl in *.
-      rewrite shift_update.
-      erewrite IHφ; try by eauto.
-    * erewrite IHφ; try by eassumption.
-      by apply andb_split_2 in H.
-      by apply andb_split_1 in H.
-    * erewrite IHφ; try by eassumption.
-      by apply andb_split_2 in H.
-      by apply andb_split_1 in H.
-    * erewrite IHφ1, IHφ2; try by eassumption.
-        by apply andb_split_2 in H.
-        by apply andb_split_1, andb_split_2 in H.
-        by apply andb_split_1, andb_split_1 in H.
-    * erewrite IHφ1, IHφ2; try by eassumption.
-        by apply andb_split_2 in H.
-        by apply andb_split_1, andb_split_2 in H.
-        by apply andb_split_1, andb_split_1 in H.
+    fix IH 6.
+    intros.
+    dependent destruction φ; try reflexivity.
+    - admit.
+    - simpl. induction args; auto; simpl.
+    - autounfold with opml. autorewrite with opml.
+      specialize (IH (s'0 :: ex) ex' mu s s'). auto.
   Defined.
 
 End Substitution.

@@ -1,5 +1,6 @@
 From Equations Require Import Equations.
 From Kore Require Export Substitution
+                         Freshness
                          Basics.
 Require Import Coq.Program.Equality.
 
@@ -125,10 +126,12 @@ Section Semantics.
     eval ρ (kore_bot s0)   pf    := ∅ ;
     eval ρ (kore_top s0)   pf    := ⊤ ;
     eval ρ (kore_not φ)   pf    := (⊤ ∖ eval ρ φ _);
-    eval ρ (kore_imp φ1 φ2)  pf := (⊤ ∖ (eval ρ φ1 _)) ∪ (eval ρ φ2 _);
-    eval ρ (kore_iff φ1 φ2)  pf := _;
-    eval ρ (kore_and φ1 φ2)  pf := _;
-    eval ρ (kore_or φ1 φ2)  pf := _;
+    eval ρ (kore_imp φ1 φ2)  pf := (⊤ ∖ eval ρ φ1 _) ∪ (eval ρ φ2 _);
+    (* Dont use let in the following definition, because the missing proofs become harder! *)
+    eval ρ (kore_iff φ1 φ2)  pf := (⊤ ∖ eval ρ φ1 _ ∪ eval ρ φ2 _) ∩
+                                   (⊤ ∖ eval ρ φ2 _ ∪ eval ρ φ1 _);
+    eval ρ (kore_and φ1 φ2)  pf := eval ρ φ1 _ ∩ eval ρ φ2 _;
+    eval ρ (kore_or φ1 φ2)  pf := eval ρ φ1 _ ∪ eval ρ φ2 _;
 
     eval ρ (kore_exists s0 φ)    pf := _;
     eval ρ (kore_forall s0 φ)    pf := _;
@@ -161,26 +164,62 @@ Section Semantics.
         destruct decide.
         rewrite e. exact X.
         inversion pf1.
+      * (* kore_not *)
+        by apply pf.
+      * simpl. lia.
+      * (* kore_and *)
+        by apply andb_split_1 in pf.
+      * simpl. lia.
+      * by apply andb_split_2 in pf.
+      * simpl. lia.
+      * (* kore_or *)
+        by apply andb_split_1 in pf.
+      * simpl. lia.
+      * by apply andb_split_2 in pf.
+      * simpl. lia.
       * (* kore_imp *)
         by apply andb_split_1 in pf.
-      * lia.
-      * (* kore_imp *)
-        by apply andb_split_2 in pf.
-      * lia.
-      * (* kore_eq *)
-        apply andb_split_1 in pf as pf1.
-        apply andb_split_1 in pf1 as pf0.
-        apply andb_split_2 in pf1 as pf2. clear pf1.
-        rename pf0 into pf1.
-        apply andb_split_2 in pf as pf3. clear pf.
-        destruct decide. 2: { simpl in *. congruence. }
-        epose (X1 := eval ρ φ1 s1 pf1 _).
-        epose (X2 := eval ρ φ2 s1 pf2 _).
-        exact (PropSet (fun e => X1 = X2)).
-        Unshelve.
-        all: lia.
-      * (* kore_ex *)
+      * simpl. lia.
+      * by apply andb_split_2 in pf.
+      * simpl. lia.
+      * (* kore_iff *)
+        by apply andb_split_1 in pf.
+      * simpl. lia.
+      * by apply andb_split_2 in pf.
+      * simpl. lia.
+      * by apply andb_split_2 in pf.
+      * simpl. lia.
+      * by apply andb_split_1 in pf.
+      * simpl. lia.
+      * (* kore_exists *)
+        simpl in *.
         eapply (propset_fa_union (
+          fun c : carrier M s0 =>
+            let newx := fresh_evar s0 φ in
+            eval (update_evar_val (projT1 newx) _ ρ)
+                      (bevar_subst (kore_fevar (projT1 newx)) 0 φ)
+                      _ _ _
+        )).
+        Unshelve.
+        - pose proof (projT2 newx) as Is. simpl in Is.
+          destruct decide. 2: simpl in Is; congruence.
+          rewrite e. exact c.
+        - eapply (well_sorted_bevar_subst _ (kore_fevar (projT1 newx)) s s0 _ _ 0) in pf.
+          3: reflexivity.
+          2: { cbn. exact (projT2 newx). }
+          clear -pf.
+          assert (update 0 None (shift default (Some s0)) = default). {
+            unfold update, shift.
+            extensionality x. destruct x; simpl.
+            reflexivity.
+            reflexivity.
+          }
+          rewrite H in pf.
+          exact pf.
+        - rewrite bevar_subst_size. lia.
+      * (* kore_forall *)
+        simpl in *.
+        eapply (propset_fa_intersection (
           fun c : carrier M s0 =>
             let newx := fresh_evar s0 φ in
             eval (update_evar_val (projT1 newx) _ ρ)
@@ -206,6 +245,20 @@ Section Semantics.
         - rewrite bevar_subst_size. lia.
       * (* kore_mu *)
         exact ∅.
+      * (* kore_nu *)
+        exact ∅.
+      * (* kore_eq *)
+        apply andb_split_1 in pf as pf1.
+        apply andb_split_1 in pf1 as pf0.
+        apply andb_split_2 in pf1 as pf2. clear pf1.
+        rename pf0 into pf1.
+        apply andb_split_2 in pf as pf3. clear pf.
+        destruct decide. 2: { simpl in *. congruence. }
+        epose (X1 := eval ρ φ1 s1 pf1 _).
+        epose (X2 := eval ρ φ2 s1 pf2 _).
+        exact (PropSet (fun e => X1 = X2)).
+        Unshelve.
+        all: lia.
     Defined.
   Print eval.
 

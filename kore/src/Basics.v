@@ -1,4 +1,6 @@
-From stdpp Require Import list propset.
+From stdpp Require Export list propset.
+From Coq Require Export Program.Equality.
+
 Import ListNotations.
 
 Definition is_leftb {A B : Set} (x : A + B) : bool :=
@@ -79,3 +81,44 @@ Goal pointwise_elem_of _ test1 test2.
 Proof.
   simpl. set_solver.
 Qed.
+Print Forall.
+
+
+Inductive InTy {A : Type} : A -> list A -> Type :=
+  | In_nil {x} {xs} : InTy x (x :: xs)
+  | In_cons {x y} {xs} : InTy y xs -> InTy y (x :: xs)
+.
+
+Definition cons_eq_inv {A : Type} {x y : A} {xs ys : list A}
+  (H : x :: xs = y :: ys) : x = y /\ xs = ys :=
+    conj (f_equal (list_rect _ x (λ a _ _, a)) H)
+         (f_equal (list_rect _ xs (λ _ a _, a)) H).
+
+Fixpoint InTy_app {A : Type} {s : A} {ex ex' ex'' : list A} 
+  (pf : InTy s (ex ++ ex'')) : InTy s (ex ++ ex' ++ ex'').
+Proof.
+  dependent destruction pf.
+  - destruct ex; simpl in *.
+    + induction ex'; simpl.
+      * rewrite <- x. left.
+      * right. exact IHex'.
+    + apply cons_eq_inv in x as [-> ->].
+      left.
+  - destruct ex; simpl in *.
+    + induction ex'; simpl.
+      * rewrite <- x.
+        right. exact pf.
+      * right. exact IHex'.
+    + apply cons_eq_inv in x as [-> ->].
+      right. apply InTy_app. exact pf.
+Defined.
+
+Arguments InTy_app {_} {_} {_} {_} {_} !_.
+
+Definition app_comm_cons_defined
+ : ∀ (A : Type) (x y : list A) (a : A),
+     a :: x ++ y = (a :: x) ++ y.
+Proof.
+  intros. simpl.
+  reflexivity.
+Defined.
