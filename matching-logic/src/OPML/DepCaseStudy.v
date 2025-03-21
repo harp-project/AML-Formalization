@@ -320,7 +320,7 @@ Section Model.
     opml_eval ρ (op_imp φ1 φ2)        := (⊤ ∖ (opml_eval ρ φ1)) ∪ (opml_eval ρ φ2) ;
     opml_eval ρ (op_app σ l)          := app_ext σ _ (*@hlist_rect _ _ (λ l _, hlist (propset ∘ M) l) hnil (λ _ _ a _ b, hcons (opml_eval ρ a) b) _ l*) ;
     opml_eval ρ (op_eq φ1 φ2)         := PropSet (λ _, (opml_eval ρ φ1) = (opml_eval ρ φ2)) ;
-    opml_eval ρ (@op_ex _ _ s' _ φ) := propset_fa_union (λ X, let o := fresh_evar s' φ in opml_eval (update_evar_val o X ρ) (bevar_subst [] φ (op_fevar o))) ;
+    opml_eval ρ (@op_ex _ _ s' _ φ) := ⊤ ≫= λ X, let o := fresh_evar s' φ in opml_eval (update_evar_val o X ρ) (bevar_subst [] φ (op_fevar o)) ;
   .
   Proof.
     1,2,4,5: simpl; lia.
@@ -338,7 +338,7 @@ Section Model.
   (* Proof. *)
   (*   unfold Theory. typeclasses eauto. *)
   (* Defined. *)
-  Definition sat (Γ : Theory) := forall (ax : sigT (OPMLPattern ^~ [])), ax ∈ Γ -> forall ρ, @opml_eval [] ρ (projT1 ax) (projT2 ax) = ⊤.
+  Definition sat (Γ : Theory) := forall (ax : sigT (OPMLPattern ^~ [])), ax ∈ Γ -> forall ρ, @opml_eval [] ρ (projT1 ax) (projT2 ax) ≡ ⊤.
 
   Fixpoint all_singleton {xs} (ys : hlist (propset ∘ M) xs) : Type :=
     if ys isn't hcons y ys then unit else prod (sigT (eq y ∘ singleton)) (all_singleton ys).
@@ -449,13 +449,13 @@ Module NatBool_Sematics.
 
   Arguments NatBool_Theory /.
 
-  Hint Extern 5 (?x ∈ ⊤) => simple apply elem_of_top' : opml.
-  (* Hint Resolve elem_of_top' : opml. *)
+  (* Hint Extern 5 (?x ∈ ⊤) => simple apply elem_of_top' : opml. *)
+  (* (1* Hint Resolve elem_of_top' : opml. *1) *)
 
-  Lemma propset_top_elem_of_rev {A : Type} (S : propset A) (_ : ∀ t : A, t ∈ S) : S = ⊤.
-  Proof.
-    apply set_eq. auto with opml extcore.
-  Defined.
+  (* Lemma propset_top_elem_of_rev {A : Type} (S : propset A) (_ : ∀ t : A, t ∈ S) : S = ⊤. *)
+  (* Proof. *)
+  (*   apply set_eq. auto with opml extcore. *)
+  (* Defined. *)
 
   Tactic Notation "deconstruct_elem_of_Theory" :=
     repeat match goal with
@@ -464,45 +464,36 @@ Module NatBool_Sematics.
 
   Tactic Notation "eval_helper" :=
     repeat match goal with
-           | [ |- PropSet _ = ⊤ ] => let x := fresh "x" in apply propset_top_elem_of_rev; intros x; apply elem_of_PropSet; clear x
            | [ |- context [opml_eval ?ρ (@op_app ?Σ ?ex ?σ ?l)] ] => let H := fresh in pose proof (opml_eval_equation_5 ex ρ σ l) as H; simpl in H; rewrite H; clear H
-           (* | [ |- app_ext _ _ = app_ext _ _] => let x := fresh "x" in unfold app_ext; apply set_eq; intros x; simpl in x; split; intros [? []]%elem_of_PropSet; apply elem_of_PropSet *)
            | _ => simp opml_eval
            end.
 
   Arguments opml_eval_obligation_3 {_} {_} _ _ _ _ _ /.
 
-  Tactic Notation "rewrite_singleton" constr(sy) :=
-    match goal with
-    | [ |- context [@app_ext ?Σ ?M sy ?l]] => let H := fresh in unshelve epose (_ : (@all_singleton Σ M _ l)) as H; [repeat esplit | rewrite (@app_ext_all_singleton_is_app Σ M sy l H)]
-    end.
+  (* Tactic Notation "rewrite_singleton" constr(sy) := *)
+  (*   match goal with *)
+  (*   | [ |- context [@app_ext ?Σ ?M sy ?l]] => let H := fresh in unshelve epose (_ : (@all_singleton Σ M _ l)) as H; [repeat esplit | rewrite (@app_ext_all_singleton_is_app Σ M sy l H)] *)
+  (*   end. *)
+
+  Tactic Notation "set_helper" :=
+    repeat match goal with
+           | [ |- PropSet ?P ≡ ⊤ ] => enough (forall x, P x) by set_solver; intros
+           | [ |- context[?x ∪ ∅] ] => rewrite union_empty_r
+           (* put these into separate lemmas? *)
+           | [ |- ⊤ ∖ ?X ≡ ⊤ ] => enough (X ≡ ∅) by set_solver
+           | [ |- ⊤ ∖ ?X ≡ ∅ ] => enough (X ≡ ⊤) by set_solver
+           | [ |- ⊤ ≫= ?f ≡ ∅ ] => enough (forall x, f x ≡ ∅) by set_solver; intros
+           end.
+
+  Tactic Notation "rewrite_singleton_all" :=
+    unshelve (rewrite_strat bottomup app_ext_all_singleton_is_app); [repeat esplit.. |].
 
   Goal sat NatBool_Model NatBool_Theory.
   Proof.
     simpl. unfold op_all, op_not. intros.
-    deconstruct_elem_of_Theory; eval_helper.
+    deconstruct_elem_of_Theory; eval_helper; set_helper.
+    now rewrite_singleton_all.
 
-    rewrite_singleton zero_s.
-    rewrite_singleton true_s.
-    rewrite_singleton is0_s.
-    auto.
-
-    (* TODO: Make/find a tactic for set reasoning *)
-    rewrite union_empty_r_L.
-    apply complement_full_iff_empty.
-    apply propset_fa_union_empty.
-    intros.
-    unfold bevar_subst.
-    repeat (unfold Equality.block, solution_left, eq_rect_r; simpl).
-    eval_helper.
-    rewrite union_empty_r_L.
-    apply complement_empty_iff_full.
-    apply propset_top_elem_of_rev.
-    intros. apply elem_of_PropSet.
-    simpl. rewrite decide_eq_same.
-
-    rewrite_singleton succ_s.
-    rewrite_singleton false_s.
-    rewrite_singleton is0_s.
-    auto.
+    repeat (unfold bevar_subst, Equality.block, solution_left, eq_rect_r; simpl).
+    eval_helper. set_helper. now rewrite_singleton_all.
   Qed.
