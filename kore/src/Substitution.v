@@ -323,6 +323,43 @@ Section Substitution.
     all: assumption.
   Defined.
 
+  Lemma inc_var_size : forall s ex ex' ex'' mu mu' mu'' (φ : Pattern (ex ++ ex'') (mu ++ mu'') s),
+    pat_size (@inc_var Σ ex ex' ex'' mu mu' mu'' s φ) =
+    pat_size φ.
+  Proof.
+    fix IH 8. intros.
+    dependent destruction φ; try reflexivity.
+    all: simpl; try by auto.
+    - simpl. induction args.
+      * by auto.
+      * simpl. rewrite IH. by auto.
+    - cbn.
+      specialize (IH s (s_var :: ex) ex' ex'' mu mu' mu'' φ).
+      f_equal. assumption.
+    - cbn.
+      specialize (IH s (s_var :: ex) ex' ex'' mu mu' mu'' φ).
+      f_equal. assumption.
+    - cbn.
+      specialize (IH s ex ex' ex'' (s :: mu) mu' mu'' φ).
+      f_equal. assumption.
+    - cbn.
+      specialize (IH s ex ex' ex'' (s :: mu) mu' mu'' φ).
+      f_equal. assumption.
+  Defined.
+
+  Hint Unfold Equality.block solution_left : kore.
+
+  Lemma sub_evar_size s s' ex ex' mu o idx:
+    pat_size (@sub_evar Σ s s' ex ex' mu idx (kore_fevar o)) = 1.
+  Proof.
+    dependent induction ex; simpl in *.
+    * dependent destruction idx; cbn; reflexivity.
+    * dependent destruction idx; cbn. reflexivity.
+      epose proof inc_var_size _ [] [a] (ex ++ ex') [] [] mu (sub_evar idx (kore_fevar o)).
+      rewrite IHex in H.
+      exact H.
+  Defined.
+
   Lemma bevar_subst_size : forall ex ex' mu s s'
     (φ : Pattern (ex ++ s' :: ex') mu s)
     o,
@@ -331,11 +368,59 @@ Section Substitution.
   Proof.
     fix IH 6.
     intros.
-    dependent destruction φ; try reflexivity.
-    - admit.
-    - simpl. induction args; auto; simpl.
-    - autounfold with opml. autorewrite with opml.
-      specialize (IH (s'0 :: ex) ex' mu s s'). auto.
+    dependent destruction φ; simpl; try reflexivity.
+    all: try by auto.
+    - autounfold with kore.
+      simpl. clear IH.
+      apply sub_evar_size.
+    - induction args; simpl.
+      + reflexivity.
+      + simpl. by auto.
+    - specialize (IH (s_var :: ex) ex' mu s s').
+      cbn. by f_equal.
+    - specialize (IH (s_var :: ex) ex' mu s s').
+      cbn. by f_equal.
+    - specialize (IH ex ex' (s :: mu) s s').
+      cbn. by f_equal.
+    - specialize (IH ex ex' (s :: mu) s s').
+      cbn. by f_equal.
+  Defined.
+
+  Lemma sub_svar_size s s' ex mu mu' o idx:
+    pat_size (@sub_svar Σ s s' ex mu mu' idx (kore_fsvar o)) = 1.
+  Proof.
+    dependent induction mu; simpl in *.
+    * dependent destruction idx; cbn; reflexivity.
+    * dependent destruction idx; cbn. reflexivity.
+      epose proof inc_var_size _ [] [] ex [] [a] (mu ++ mu') (sub_svar idx (kore_fsvar o)).
+      rewrite IHmu in H.
+      exact H.
+  Defined.
+
+  Lemma bsvar_subst_size : forall ex mu mu' s s'
+    (φ : Pattern ex (mu ++ s' :: mu') s)
+    o,
+      pat_size (bsvar_subst mu (kore_fsvar o) φ) =
+      pat_size φ.
+  Proof.
+    fix IH 6.
+    intros.
+    dependent destruction φ; simpl; try reflexivity.
+    all: try by auto.
+    - autounfold with kore.
+      simpl. clear IH.
+      apply sub_svar_size.
+    - induction args; simpl.
+      + reflexivity.
+      + simpl. by auto.
+    - specialize (IH (s_var :: ex) mu mu' s s').
+      cbn. by f_equal.
+    - specialize (IH (s_var :: ex) mu mu' s s').
+      cbn. by f_equal.
+    - specialize (IH ex (s :: mu) mu' s s').
+      cbn. by f_equal.
+    - specialize (IH ex (s :: mu) mu' s s').
+      cbn. by f_equal.
   Defined.
 
 End Substitution.
