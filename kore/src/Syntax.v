@@ -222,6 +222,9 @@ Section Syntax.
    | kore_bot _ | kore_top _
        => 1
   end.
+
+  Definition Theory := propset (sigT (Pattern [] [])).
+
 End Syntax.
 
 Module Notations.

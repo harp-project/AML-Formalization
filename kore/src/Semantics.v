@@ -9,7 +9,7 @@ Require Import Coq.Program.Equality.
 Section Semantics.
   Context {Σ : Signature}.
 
-  Record OPMLModel := {
+  Record Model := {
     carrier :> sort -> Set;
     app (σ : symbol) :
        @hlist _ carrier (arg_sorts σ) -> propset (carrier (ret_sort σ));
@@ -18,10 +18,10 @@ Section Semantics.
 
   Section with_model.
 
-  Context {M : OPMLModel}.
+  Context {M : Model}.
   Record Valuation : Type := {
-    evar_valuation (x : evar) : carrier M (evar_sort x);
-    svar_valuation (X : svar) : propset (carrier M (svar_sort X)) ;
+    evar_valuation {s : sort} (x : evar s) : carrier M s;
+    svar_valuation {s : sort} (X : svar s) : propset (carrier M s) ;
   }.
 
   Definition app_ext
@@ -33,242 +33,106 @@ Section Semantics.
       pointwise_elem_of _ l args /\ e ∈ app M σ l
   ).
 
-  Fixpoint map_to_hlist {A} (F : A -> Type) (f : forall (a : A), F a) (l : list A) {struct l} : @hlist Type id (map F l) :=
-    match l return @hlist _ _ (map F l) with
-    | []    => hnil
-    | x::xs => hcons (f x) (map_to_hlist F f xs)
-    end.
-  Print map_to_hlist.
 
-  Fixpoint app_map (l : list Pattern)
-    {ls}
-    (pf : app_ws (well_sorted default default) l ls)
-    (f : forall (φ :Pattern) {s}
-         (pf : well_sorted default default s φ)
-         (psize : pat_size φ < 1 + foldr (fun φ acc => pat_size φ + acc) 0 l), propset (carrier M s)) {struct l} :
-    @hlist _ (fun x => propset (carrier M x)) ls
-    .
+  Definition update_evar_val {s} (ev : evar s) (x : carrier M s) (val : Valuation) : Valuation.
   Proof.
-    (* refine (
-    match l return  -> @hlist _ (fun x => propset (carrier M x)) ls with
-    | []    => _
-    | x::xs => _
-    end eq_refl
-    ). *)
-    clear app_map.
-    revert ls f pf.
-    induction l; intros.
-    * (* nil *)
+    unshelve esplit.
+    intros s' ev'.
+    destruct (decide (s = s')).
+    destruct (decide (eq_rect s evar ev _ e = ev')).
+    exact (eq_rect s M x _ e).
+    1,2:exact (evar_valuation val ev').
+    exact (@svar_valuation val).
+  Defined.
+
+  Definition update_svar_val {s} (sv : svar s) (X : propset (carrier M s)) (val : Valuation) : Valuation.
+  Proof.
+    unshelve esplit.
+    exact (@evar_valuation val).
+    intros s' sv'.
+    destruct (decide (s = s')).
+    * destruct (decide (eq_rect s svar sv _ e = sv')).
+      - rewrite e in X. exact X.
+      - exact (svar_valuation val sv').
+    * exact (svar_valuation val sv').
+  Defined.
+
+  Let OS s := PropsetOrderedSet (carrier M s).
+  Let  L s := PowersetLattice (carrier M s).
+Check kore_exists.
+  Equations? eval {ex mu} {s} (ρ : Valuation) (φ : Pattern ex mu s) : propset (carrier M s) by wf (pat_size φ) :=
+    eval ρ (kore_bevar _) := empty ;
+    eval ρ (kore_fevar x) := {[evar_valuation ρ x]} ;
+    eval ρ (kore_bsvar _) := empty ;
+    eval ρ (kore_fsvar X) := svar_valuation ρ X ;
+
+    eval ρ (kore_app σ l) := app_ext σ _ (*@hlist_rect _ _ (λ l _, hlist (propset ∘ M) l) hnil (λ _ _ a _ b, hcons (eval ρ a) b) _ l*) ;
+
+    eval ρ kore_bot         := empty ;
+    eval ρ kore_top         := ⊤ ;
+    eval ρ (kore_not φ)     := ⊤ ∖ (eval ρ φ) ;
+    eval ρ (kore_and φ1 φ2) := (eval ρ φ1) ∩ (eval ρ φ2) ;
+    eval ρ (kore_or φ1 φ2)  := (eval ρ φ1) ∪ (eval ρ φ2) ;
+    eval ρ (kore_imp φ1 φ2) := (⊤ ∖ (eval ρ φ1)) ∪ (eval ρ φ2) ;
+    eval ρ (kore_iff φ1 φ2) := (⊤ ∖ eval ρ φ1 ∪ eval ρ φ2) ∩
+                               (⊤ ∖ eval ρ φ2 ∪ eval ρ φ1) ;
+
+    eval ρ (kore_exists s' φ) := (* ⊤ ≫= λ X, let o := fresh_evar s' φ in eval (update_evar_val o X ρ) (bevar_subst [] φ (kore_fevar o)) *)
+      let x := fresh_evar s' φ in
+        propset_fa_union (λ c,
+           eval (update_evar_val x c ρ)
+                (bevar_subst [] (kore_fevar x) φ)) ;
+    eval ρ (kore_forall s' φ) :=
+      let x := fresh_evar s' φ in
+        propset_fa_intersection (λ c,
+           eval (update_evar_val x c ρ)
+                (bevar_subst [] (kore_fevar x) φ)) ;
+
+(*@LeastFixpointOf _ OS L
+                                  (fun S =>
+                                    let ρ' := (update_svar_val X S ρ) in
+                                    eval ρ' (ϕ'^{svar: 0 ↦ X})
+                                  )*)
+
+    eval ρ (kore_mu φ)     :=
+      let X := fresh_svar s φ in
+        @LeastFixpointOf _ (OS s) (L s) (fun S =>
+          eval (update_svar_val X S ρ)
+               (bsvar_subst [] (kore_fsvar X) φ)
+        )
+     ;
+    eval ρ (kore_nu φ)     :=
+      let X := fresh_svar s φ in
+        @GreatestFixpointOf _ (OS s) (L s) (fun S =>
+          eval (update_svar_val X S ρ)
+               (bsvar_subst [] (kore_fsvar X) φ)
+        );
+
+    eval ρ (kore_ceil φ)       := PropSet (λ _, ∃ c, c ∈ eval ρ φ) ;
+    eval ρ (kore_floor φ)      := PropSet (λ _, ∀ c, c ∈ eval ρ φ) ;
+    eval ρ (kore_equals φ1 φ2) := PropSet (λ _, (eval ρ φ1) = (eval ρ φ2)) ;
+    eval ρ (kore_in φ1 φ2)     := PropSet (λ _, (eval ρ φ1) ⊆ (eval ρ φ2)) ;
+  .
+  Proof.
+    1: {
       simpl in *.
-      destruct ls.
-      - exact hnil.
-      - congruence.
-    * (* cons *)
-      simpl in *.
-      destruct ls.
-      - congruence.
-      - apply andb_split_1 in pf as pf1.
-        apply andb_split_2 in pf as pf2.
-        apply hcons.
-        + eapply f.
-          exact pf1.
-          lia.
-        + apply IHl.
-          ** intros. eapply f. exact pf0. lia.
-          ** assumption.
+      induction l.
+      * exact hnil.
+      * apply hcons.
+        - apply (eval _ _ _ ρ f). lia.
+        - apply IHl. intros.
+          apply (eval x0 x1 x2 x3 x4). lia.
+    }
+    all: try by simpl; lia.
+    1-2: rewrite (bevar_subst_size [] ex mu s s' φ x); constructor.
+    1-2: rewrite (bsvar_subst_size ex [] mu s s φ X); constructor.
   Defined.
 
-  Program Definition update_evar_val
-    (ev : evar)
-    (x : carrier M (evar_sort ev))
-    (val : Valuation) : Valuation :=
-    {|
-    evar_valuation := fun ev' : evar => _;
-      (* if decide (ev = ev')
-      then x
-      else evar_valuation val ev' ; *)
-    svar_valuation := (svar_valuation val)
-    |}.
-  Next Obligation.
-    intros ev H ρ ev'.
-    destruct (decide (ev = ev')).
-    * rewrite -e. exact H.
-    * exact (evar_valuation ρ ev').
-  Defined.
-
-  Program Definition update_svar_val
-    (sv : svar)
-    (X : propset (carrier M (svar_sort sv)))
-    (val : Valuation) : Valuation :=
-    {|
-    evar_valuation := (evar_valuation val);
-    svar_valuation := fun sv' : svar =>
-      if decide (sv = sv') is left _ then _ else svar_valuation val sv' ;
-    |}.
-  Next Obligation.
-    intros.
-    rewrite -wildcard'.
-    exact X.
-  Defined.
-
-  (* Oké-e ha a nem well-sorted dolgoknak valami default értéket
-     adjunk, és így elhagyjuk a well-sorted judgementet (Hws-t) *)
-  Equations? eval (ρ : Valuation) (φ : Pattern) {s}
-    (Hws : well_sorted default default s φ)
-      : propset (carrier M s) by wf (pat_size φ) :=
-    eval ρ (kore_fevar x) pf    := _ ;
-    eval ρ (kore_fsvar X) pf    := _;
-    eval ρ (kore_bevar x) pf    := ∅ ;
-    eval ρ (kore_bsvar x) pf    := ∅ ;
-
-    eval ρ (kore_app σ args) pf := _;
-
-    eval ρ (kore_bot s0)   pf    := ∅ ;
-    eval ρ (kore_top s0)   pf    := ⊤ ;
-    eval ρ (kore_not φ)   pf    := (⊤ ∖ eval ρ φ _);
-    eval ρ (kore_imp φ1 φ2)  pf := (⊤ ∖ eval ρ φ1 _) ∪ (eval ρ φ2 _);
-    (* Dont use let in the following definition, because the missing proofs become harder! *)
-    eval ρ (kore_iff φ1 φ2)  pf := (⊤ ∖ eval ρ φ1 _ ∪ eval ρ φ2 _) ∩
-                                   (⊤ ∖ eval ρ φ2 _ ∪ eval ρ φ1 _);
-    eval ρ (kore_and φ1 φ2)  pf := eval ρ φ1 _ ∩ eval ρ φ2 _;
-    eval ρ (kore_or φ1 φ2)  pf := eval ρ φ1 _ ∪ eval ρ φ2 _;
-
-    eval ρ (kore_exists s0 φ)    pf := _;
-    eval ρ (kore_forall s0 φ)    pf := _;
-    eval ρ (kore_mu s0 φ)    pf := _;
-    eval ρ (kore_nu s0 φ)    pf := _;
-
-    eval ρ (kore_ceil s1 s2 φ) pf := _;
-    eval ρ (kore_floor s1 s2 φ) pf := _;
-    eval ρ (kore_equals s1 s2 φ1 φ2) pf := _;
-    eval ρ (kore_in s1 s2 φ1 φ2) pf := _;.
-    Proof.
-      * (* kore_fevar *)
-        simpl in *.
-        epose {[ evar_valuation ρ x ]} as d.
-        exact d.
-        Unshelve.
-        destruct decide.
-        - rewrite e. typeclasses eauto.
-        - simpl in pf. congruence.
-      * (* kore_fsvar *)
-        simpl in *.
-        epose (svar_valuation ρ X) as d.
-        destruct decide.
-        - rewrite <- e. exact d.
-        - simpl in pf. congruence.
-      * (* kore_app *)
-        apply andb_split_1 in pf as pf1.
-        apply andb_split_2 in pf as pf2.
-        pose (app_ext σ (app_map args pf2 (eval ρ))) as X.
-        destruct decide.
-        rewrite e. exact X.
-        inversion pf1.
-      * (* kore_not *)
-        by apply pf.
-      * simpl. lia.
-      * (* kore_and *)
-        by apply andb_split_1 in pf.
-      * simpl. lia.
-      * by apply andb_split_2 in pf.
-      * simpl. lia.
-      * (* kore_or *)
-        by apply andb_split_1 in pf.
-      * simpl. lia.
-      * by apply andb_split_2 in pf.
-      * simpl. lia.
-      * (* kore_imp *)
-        by apply andb_split_1 in pf.
-      * simpl. lia.
-      * by apply andb_split_2 in pf.
-      * simpl. lia.
-      * (* kore_iff *)
-        by apply andb_split_1 in pf.
-      * simpl. lia.
-      * by apply andb_split_2 in pf.
-      * simpl. lia.
-      * by apply andb_split_2 in pf.
-      * simpl. lia.
-      * by apply andb_split_1 in pf.
-      * simpl. lia.
-      * (* kore_exists *)
-        simpl in *.
-        eapply (propset_fa_union (
-          fun c : carrier M s0 =>
-            let newx := fresh_evar s0 φ in
-            eval (update_evar_val (projT1 newx) _ ρ)
-                      (bevar_subst (kore_fevar (projT1 newx)) 0 φ)
-                      _ _ _
-        )).
-        Unshelve.
-        - pose proof (projT2 newx) as Is. simpl in Is.
-          destruct decide. 2: simpl in Is; congruence.
-          rewrite e. exact c.
-        - eapply (well_sorted_bevar_subst _ (kore_fevar (projT1 newx)) s s0 _ _ 0) in pf.
-          3: reflexivity.
-          2: { cbn. exact (projT2 newx). }
-          clear -pf.
-          assert (update 0 None (shift default (Some s0)) = default). {
-            unfold update, shift.
-            extensionality x. destruct x; simpl.
-            reflexivity.
-            reflexivity.
-          }
-          rewrite H in pf.
-          exact pf.
-        - rewrite bevar_subst_size. lia.
-      * (* kore_forall *)
-        simpl in *.
-        eapply (propset_fa_intersection (
-          fun c : carrier M s0 =>
-            let newx := fresh_evar s0 φ in
-            eval (update_evar_val (projT1 newx) _ ρ)
-                      (bevar_subst (kore_fevar (projT1 newx)) 0 φ)
-                      _ _ _
-        )).
-        Unshelve.
-        - pose proof (projT2 newx) as Is. simpl in Is.
-          destruct decide. 2: simpl in Is; congruence.
-          rewrite e. exact c.
-        - eapply (well_sorted_bevar_subst _ (kore_fevar (projT1 newx)) s s0 _ _ 0) in pf.
-          3: reflexivity.
-          2: { cbn. exact (projT2 newx). }
-          clear -pf.
-          assert (update 0 None (shift default (Some s0)) = default). {
-            unfold update, shift.
-            extensionality x. destruct x; simpl.
-            reflexivity.
-            reflexivity.
-          }
-          rewrite H in pf.
-          exact pf.
-        - rewrite bevar_subst_size. lia.
-      * (* kore_mu *)
-        exact ∅.
-      * (* kore_nu *)
-        exact ∅.
-      * (* kore_eq *)
-        apply andb_split_1 in pf as pf1.
-        apply andb_split_1 in pf1 as pf0.
-        apply andb_split_2 in pf1 as pf2. clear pf1.
-        rename pf0 into pf1.
-        apply andb_split_2 in pf as pf3. clear pf.
-        destruct decide. 2: { simpl in *. congruence. }
-        epose (X1 := eval ρ φ1 s1 pf1 _).
-        epose (X2 := eval ρ φ2 s1 pf2 _).
-        exact (PropSet (fun e => X1 = X2)).
-        Unshelve.
-        all: lia.
-    Defined.
-  Print eval.
-
-  Definition satM φ s (ws : well_sorted default default s φ) :=
-    forall ρ, eval ρ φ ws = ⊤.
-  Definition Theory := propset Pattern.
-    (* dependent pairs are not well-supported by stdpp *)
+  Definition satM {ex mu s} (φ : Pattern ex mu s) :=
+    forall ρ, eval ρ φ ≡ ⊤.
+  Print Theory.
   Definition satT (Γ : Theory) :=
-    forall p, p ∈ Γ ->
-      exists s, { pf : well_sorted default default s p & satM p s pf }.
+    forall p, p ∈ Γ -> @satM _ _ (projT1 p) (projT2 p).
 
   Import PropExtensionality.
   #[export]
@@ -282,7 +146,7 @@ Section Semantics.
     split; auto.
   Qed.
 
-  Fixpoint HForall {J} {A : J -> Type}
+(*   Fixpoint HForall {J} {A : J -> Type}
     (P : ∀ j, A j -> Prop)
     {js : list J} (v : @hlist J A js) {struct v} : Prop :=
     match v with
@@ -308,7 +172,7 @@ Section Semantics.
   match v with
   | hnil => hnil
   | hcons x xs => hcons (f _ x) (hmap f xs)
-  end.
+  end. *)
 
 End with_model.
 End Semantics.
