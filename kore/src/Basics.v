@@ -38,9 +38,13 @@ Arguments hlist_rect {_} {_} {_} & _ _ {_} _ /.
 
 Declare Scope hlist_scope.
 Delimit Scope hlist_scope with hlist.
-Notation "[ ]" := hnil (format "[ ]") : hlist_scope.
-Notation "[ x ]" := (hcons _ x hnil)  : hlist_scope.
-Notation "[ x ; y ; .. ; z ]" := (hcons x (hcons y .. (hcons z hnil) ..))  : hlist_scope.
+Notation "⟨ ⟩" := hnil (format "⟨  ⟩") : hlist_scope.
+Notation "⟨ x ⟩" := (hcons x hnil)  : hlist_scope.
+Notation "⟨ x ; y ; .. ; z ⟩" := (hcons x (hcons y .. (hcons z hnil) ..))  : hlist_scope.
+
+Check ⟨⟩%hlist.
+Check ⟨_⟩%hlist.
+Check ⟨_;_;_⟩%hlist.
 
 Fixpoint pointwise_elem_of {A : Type} {T : A -> Type}
   ss {struct ss} :
@@ -75,8 +79,8 @@ Proof.
   * injection H0. intros. rewrite H1 in ys. exact ys.
 Defined.
 
-Definition test1 : hlist (bool_rect _ nat bool) [true; false] := [1; true]%hlist.
-Definition test2 : hlist (propset ∘ bool_rect _ nat bool) [true; false] := [{[1]}; {[true]}]%hlist.
+Definition test1 : hlist (bool_rect _ nat bool) [true; false] := ⟨1; true⟩%hlist.
+Definition test2 : hlist (propset ∘ bool_rect _ nat bool) [true; false] := ⟨{[1]}; {[true]}⟩%hlist.
 Goal pointwise_elem_of _ test1 test2.
 Proof.
   simpl. set_solver.
@@ -122,3 +126,66 @@ Proof.
   intros. simpl.
   reflexivity.
 Defined.
+
+Require Import PropExtensionality.
+Require Import FunctionalExtensionality.
+
+#[export]
+Instance propset_leibniz_equiv A : LeibnizEquiv (propset A).
+Proof.
+  intros x y H. unfold equiv in H. unfold set_equiv_instance in H.
+  destruct x,y.
+  apply f_equal. apply functional_extensionality.
+  intros x. apply propositional_extensionality.
+  specialize (H x). destruct H as [H1 H2].
+  split; auto.
+Qed.
+
+Definition hcons_inv {A} {F : A -> Type} {x} {xs} P (X : forall (y : F x) (ys : hlist F xs), P) (ys : hlist F (x :: xs)) : P :=
+    match ys in (hlist _ l) return (l = x :: xs -> P) with
+    | hnil => λ H, False_rect _ (eq_ind nil (list_rect _ True (λ _ _ _, False)) I _ H)
+    | @hcons _ _ a l y ys => λ H, X (eq_rect a F y x (f_equal (list_rect _ x (λ a _ _, a)) H)) (eq_rect l (hlist F) ys xs (f_equal (list_rect _ xs (λ _ a _, a)) H))
+    end eq_refl.
+
+Lemma destruct_hcons {A} {F : A -> Type} {x} {xs} (l : hlist F (x :: xs)) : sigT (λ '(y, ys), l = hcons y ys).
+Proof.
+  dependent destruction l.
+  exists (f, l). reflexivity.
+Defined.
+
+Lemma destruct_hnil {A} {F : A -> Type} (l : hlist F []) : l = hnil.
+Proof.
+  dependent destruction l.
+  reflexivity.
+Defined.
+
+Fixpoint all_singleton {A : Type} {M : A -> Type} {xs}
+  (ys : @hlist A (propset ∘ M) xs) : Type :=
+    match ys with
+    | hnil => unit 
+    | hcons y ys => prod (sigT (eq y ∘ singleton)) (all_singleton ys)
+    end.
+
+Fixpoint all_singleton_extract
+  {A : Type}
+  {M : A -> Type}
+  {xs : list A}
+  {ys : hlist (propset ∘ M) xs}
+  (H : all_singleton ys) {struct ys}
+  : hlist M xs.
+Proof.
+  destruct ys. left.
+  simpl in H. destruct H as [[] ?].
+  right. assumption.
+  eapply all_singleton_extract. eassumption.
+Defined.
+
+Tactic Notation "set_helper" :=
+  repeat match goal with
+         | [ |- PropSet ?P ≡ ⊤ ] => enough (forall x, P x) by set_solver; intros
+         | [ |- context[?x ∪ ∅] ] => rewrite union_empty_r
+         (* put these into separate lemmas? *)
+         | [ |- ⊤ ∖ ?X ≡ ⊤ ] => enough (X ≡ ∅) by set_solver
+         | [ |- ⊤ ∖ ?X ≡ ∅ ] => enough (X ≡ ⊤) by set_solver
+         | [ |- ⊤ ≫= ?f ≡ ∅ ] => enough (forall x, f x ≡ ∅) by set_solver; intros
+         end.

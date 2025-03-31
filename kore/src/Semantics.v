@@ -128,24 +128,6 @@ Check kore_exists.
     1-2: rewrite (bsvar_subst_size ex [] mu s s φ X); constructor.
   Defined.
 
-  Definition satM {ex mu s} (φ : Pattern ex mu s) :=
-    forall ρ, eval ρ φ ≡ ⊤.
-  Print Theory.
-  Definition satT (Γ : Theory) :=
-    forall p, p ∈ Γ -> @satM _ _ (projT1 p) (projT2 p).
-
-  Import PropExtensionality.
-  #[export]
-  Instance propset_leibniz_equiv A : LeibnizEquiv (propset A).
-  Proof.
-    intros x y H. unfold equiv in H. unfold set_equiv_instance in H.
-    destruct x,y.
-    apply f_equal. apply functional_extensionality.
-    intros x. apply propositional_extensionality.
-    specialize (H x). destruct H as [H1 H2].
-    split; auto.
-  Qed.
-
 (*   Fixpoint HForall {J} {A : J -> Type}
     (P : ∀ j, A j -> Prop)
     {js : list J} (v : @hlist J A js) {struct v} : Prop :=
@@ -174,5 +156,103 @@ Check kore_exists.
   | hcons x xs => hcons (f _ x) (hmap f xs)
   end. *)
 
+  Lemma app_ext_singleton
+    {σ}
+    {args : hlist (propset ∘ M) (arg_sorts σ)}
+    (H : all_singleton args) :
+      app_ext σ args = app _ σ (all_singleton_extract H).
+  Proof.
+    apply set_eq. split; intros.
+    unfold app_ext in H0.
+    destruct H0 as [? []].
+    replace (all_singleton_extract H) with x0. auto.
+    clear x H1. induction args.
+    simpl in *.
+    apply destruct_hnil.
+    simpl in H. destruct H. destruct s.
+    simpl in c. simpl.
+    epose proof destruct_hcons x0 as [[] ?]. rewrite y in H0.
+    simpl in H0. destruct H0. rewrite c in H. inversion H.
+    rewrite y. f_equal. apply IHargs. apply H0.
+    apply elem_of_PropSet. exists (all_singleton_extract H).
+    split. 2: auto. clear. induction args. simpl. split.
+    simpl in H. destruct H. destruct s. simpl in c. subst.
+    simpl. split. congruence.
+    apply IHargs.
+  Defined.
+
 End with_model.
+
+  Definition satM {ex mu s} (φ : Pattern ex mu s) (M : Model) :=
+    forall ρ, @eval M _ _ _ ρ φ ≡ ⊤.
+  Definition satT (Γ : Theory) (M : Model) :=
+    forall p, p ∈ Γ -> @satM _ _ (projT1 p) (projT2 p) M.
+
+  Program Definition mkModel
+    (custom_carrier : sort → Set)
+    (custom_app : forall (σ : symbol),
+      foldr (λ c a, custom_carrier c -> a)
+            (propset (custom_carrier (ret_sort σ)))
+            (arg_sorts σ))
+    (custom_inh : ∀ s : sort, Inhabited (custom_carrier s)) :
+    Model :=
+  {|
+    carrier := custom_carrier;
+    inhabited := custom_inh;
+    app :=
+      fun σ l =>
+        _
+  |}.
+  Next Obligation.
+    intros.
+    specialize (custom_app σ).
+    induction (arg_sorts σ).
+    * simpl in custom_app. exact custom_app.
+    * simpl in custom_app.
+      unshelve eapply (hcons_inv _ _ l); intros.
+      specialize (custom_app y).
+      specialize (IHl0 custom_app ys). exact IHl0.
+  Defined.
+
+  Program Definition mkModel_singleton
+    (custom_carrier : sort → Set)
+    (custom_app : forall (σ : symbol), foldr (λ c a, custom_carrier c -> a) (custom_carrier (ret_sort σ)) (arg_sorts σ))
+    (custom_inh : ∀ s : sort, Inhabited (custom_carrier s)) :
+    Model :=
+  {|
+    carrier := custom_carrier;
+    inhabited := custom_inh;
+    app :=
+      fun σ l =>
+        _
+  |}.
+  Next Obligation.
+    intros.
+    specialize (custom_app σ).
+    induction (arg_sorts σ).
+    * simpl in custom_app. exact {[ custom_app ]}.
+    * simpl in custom_app.
+      unshelve eapply (hcons_inv _ _ l); intros.
+      specialize (custom_app y).
+      specialize (IHl0 custom_app ys). exact IHl0.
+  Defined.
+
 End Semantics.
+
+Tactic Notation "deconstruct_elem_of_Theory" :=
+  repeat match goal with
+  | [ H : _ ∈ _ |- _ ] => inversion H; clear H
+  end; clear; simpl.
+
+Tactic Notation "eval_helper" :=
+  repeat match goal with
+         | [ |- context [eval ?ρ (@kore_app ?Σ ?ex ?σ ?l)] ] =>
+           let H := fresh in
+           pose proof (eval_equation_5 ex ρ σ l) as H;
+           simpl in H;
+           rewrite H; clear H
+         | _ => simp eval
+         end.
+
+Tactic Notation "rewrite_singleton_all" :=
+    unshelve (rewrite_strat bottomup app_ext_singleton); [repeat esplit.. |].

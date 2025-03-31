@@ -247,7 +247,7 @@ Module Notations.
   Notation "p1 '<--->' p2" := (kore_iff p1 p2) (at level 74, format "p1  '<--->'  p2") : kore_scope.
   Check (⊥{_} <---> Top{_})%kore.
 
-  Notation "s ⋅ pars" := (kore_app s pars) (at level 70, format "s  '⋅'  pars") : kore_scope.
+  Notation "s ⋅ pars" := (kore_app s pars) (at level 50, format "s  '⋅'  pars") : kore_scope.
   Fail Check (_ ⋅ [Top{_}; Top{_}]%hlist)%kore.
 
 
@@ -265,10 +265,10 @@ Module Notations.
   Check (⌈{_} ⊥{_}⌉)%kore.
   Notation "'⌊{' s2 '}' p ⌋" := (kore_floor s2 p) (format "'⌊{' s2 '}'  p ⌋") : kore_scope.
   Check ⌊{_} ⊥{_}⌋%kore.
-  Notation "p1 '=ml{' s2 '}' p2" := (kore_equals s2 p1 p2) (at level 68, format "p1  '=ml{' s2 '}'  p2", left associativity) : kore_scope.
-  Check (⊥{_} =ml{_} Top{_})%kore.
-  Notation "p1 '⊆ml{' s2 '}' p2" := (kore_in s2 p1 p2) (at level 68, format "p1  '⊆ml{' s2 '}'  p2", left associativity) : kore_scope.
-  Check (⊥{_} ⊆ml{_} Top{_})%kore.
+  Notation "p1 '=k{' s2 '}' p2" := (kore_equals s2 p1 p2) (at level 68, format "p1  '=k{' s2 '}'  p2", left associativity) : kore_scope.
+  Check (⊥{_} =k{_} Top{_})%kore.
+  Notation "p1 '⊆k{' s2 '}' p2" := (kore_in s2 p1 p2) (at level 68, format "p1  '⊆k{' s2 '}'  p2", left associativity) : kore_scope.
+  Check (⊥{_} ⊆k{_} Top{_})%kore.
 
 
 
