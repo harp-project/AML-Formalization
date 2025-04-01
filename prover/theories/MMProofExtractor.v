@@ -401,26 +401,26 @@ Section gen.
 
   Fixpoint proof_size' Γ (ϕ : Pattern) (pf : ML_proof_system Γ ϕ) : nat :=
     match pf with
-    | hypothesis _ _ _ _ => 1
-    | P1 _ _ _ _ _ => 1
-    | P2 _ _ _ _ _ _ _ => 1
-    | P3 _ _ _ => 1
-    | Modus_ponens _ _ _ pf1 pf2 => 1 + proof_size' _ _ pf1 + proof_size' _ _ pf2
-    | Ex_quan _ _ _ _ => 1
-    | Ex_gen _ _ _ _ _ _ pf' _ => 1 + proof_size' _ _ pf'
-    | Prop_bott_left _ _ _ => 1
-    | Prop_bott_right _ _ _ => 1
-    | Prop_disj_left _ _ _ _ _ _ _ => 1
-    | Prop_disj_right _ _ _ _ _ _ _ => 1
-    | Prop_ex_left _ _ _ _ _ => 1
-    | Prop_ex_right _ _ _ _ _ => 1
-    | Framing_left _ _ _ _ _ pf' => 1 + proof_size' _ _ pf'
-    | Framing_right _ _ _ _ _ pf' => 1 + proof_size' _ _ pf'
-    | Svar_subst _ _ _ _ _ _ pf' => 1 + proof_size' _ _ pf'
-    | Pre_fixp _ _ _ => 1
-    | Knaster_tarski _ _ _ _ pf' => 1 + proof_size' _ _ pf'
-    | Existence _ => 1
-    | Singleton_ctx _ _ _ _ _ _ => 1
+    | ML_hypothesis _ _ _ _ => 1
+    | ML_P1 _ _ _ _ _ => 1
+    | ML_P2 _ _ _ _ _ _ _ => 1
+    | ML_P3 _ _ _ => 1
+    | ML_Modus_ponens _ _ _ pf1 pf2 => 1 + proof_size' _ _ pf1 + proof_size' _ _ pf2
+    | ML_Ex_quan _ _ _ _ => 1
+    | ML_Ex_gen _ _ _ _ _ _ pf' _ => 1 + proof_size' _ _ pf'
+    | ML_Prop_bott_left _ _ _ => 1
+    | ML_Prop_bott_right _ _ _ => 1
+    | ML_Prop_disj_left _ _ _ _ _ _ _ => 1
+    | ML_Prop_disj_right _ _ _ _ _ _ _ => 1
+    | ML_Prop_ex_left _ _ _ _ _ => 1
+    | ML_Prop_ex_right _ _ _ _ _ => 1
+    | ML_Framing_left _ _ _ _ _ pf' => 1 + proof_size' _ _ pf'
+    | ML_Framing_right _ _ _ _ _ pf' => 1 + proof_size' _ _ pf'
+    | ML_Svar_subst _ _ _ _ _ _ pf' => 1 + proof_size' _ _ pf'
+    | ML_Pre_fixp _ _ _ => 1
+    | ML_Knaster_tarski _ _ _ _ pf' => 1 + proof_size' _ _ pf'
+    | ML_Existence _ => 1
+    | ML_Singleton_ctx _ _ _ _ _ _ => 1
     end.
 
   Definition proof_size'' Γ (x : {ϕ : Pattern & ML_proof_system Γ ϕ}) :=
@@ -459,7 +459,7 @@ Section gen.
     proof2proof' Γ acc ((inr l)::pfs')
       := proof2proof' Γ (l::acc) pfs' ;
     
-    proof2proof' Γ acc ((inl (existT ϕ (P1 _ p q _ _)))::pfs')
+    proof2proof' Γ acc ((inl (existT ϕ (ML_P1 _ p q _ _)))::pfs')
       := proof2proof'
            Γ
            ([lbl "proof-rule-prop-1"]
@@ -468,7 +468,7 @@ Section gen.
               ++ acc)
            pfs' ;
     
-    proof2proof' Γ acc ((inl (existT ϕ (P2 _ p q r _ _ _)))::pfs')
+    proof2proof' Γ acc ((inl (existT ϕ (ML_P2 _ p q r _ _ _)))::pfs')
       := proof2proof'
            Γ
            ([lbl "proof-rule-prop-2"]
@@ -478,7 +478,7 @@ Section gen.
               ++ acc)
            pfs' ;
     
-    proof2proof' Γ acc ((inl (existT ϕ (P3 _ p _)))::pfs')
+    proof2proof' Γ acc ((inl (existT ϕ (ML_P3 _ p _)))::pfs')
       := proof2proof'
            Γ
            ([lbl "proof-rule-prop-3"]
@@ -486,7 +486,7 @@ Section gen.
               ++ acc)
            pfs' ;
 
-    proof2proof' Γ acc ((inl (existT _ (Modus_ponens _ p q pfp pfpiq)))::pfs')
+    proof2proof' Γ acc ((inl (existT _ (ML_Modus_ponens _ p q pfp pfpiq)))::pfs')
       := proof2proof'
            Γ
            ((reverse (pattern2proof (to_NamedPattern2 q)))
@@ -494,7 +494,7 @@ Section gen.
               ++ acc)
            ((inl (existT _ pfpiq))::(inl (existT _ pfp))::(inr (lbl "proof-rule-mp"))::pfs') ;
 
-    proof2proof' Γ acc ((inl (existT ϕ (Ex_quan _ p y _)))::pfs')
+    proof2proof' Γ acc ((inl (existT ϕ (ML_Ex_quan _ p y _)))::pfs')
       := proof2proof'
            Γ
            ([lbl "proof-rule-exists"]
