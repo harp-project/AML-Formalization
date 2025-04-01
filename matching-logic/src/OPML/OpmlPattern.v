@@ -10,66 +10,21 @@ Set Default Proof Mode "Classic".
 Record Edbi := { edbi_n : nat; }.
 Record Sdbi := { sdbi_n : nat; }.
 
-Inductive dephlist {A : Type} {F : A -> Type} : list A -> Type :=
-  | dhnil : dephlist []
-  | dhcons {x : A} {xs : list A} : F x -> dephlist xs -> dephlist (x :: xs)
+Inductive OPMLPattern {Σ : OPMLSignature} :=
+| op_upcast
+    (from to : opml_sort)
+    (subsort : opml_subsort from to)
+    (φ : OPMLPattern)
+| op_bot (s : opml_sort)
+| op_bevar (dbi : Edbi)
+| op_bsvar (dbi : Sdbi)
+| op_fevar (s : opml_sort) (x : opml_evar s)
+| op_fsvar (s : opml_sort) (X : opml_svar s)
+| op_imp (φ1 φ2 : OPMLPattern)
+| op_app (s : opml_symbol) (args : list OPMLPattern)
+| op_ex (s : opml_sort) (φ : OPMLPattern)
+| op_mu (s : opml_sort) (φ : OPMLPattern)
 .
-
-Inductive OPMLPattern {Σ : OPMLSignature} : opml_sort -> Type :=
-  | op_upcast (from to : opml_sort) (subsort : opml_subsort from to) (φ : OPMLPattern from) : OPMLPattern to
-  | op_bot {s : opml_sort} : OPMLPattern s
-  | op_bevar {s : opml_sort} (dbi : Edbi) : OPMLPattern s
-  | op_bsvar {s : opml_sort} (dbi : Sdbi) : OPMLPattern s
-  | op_fevar {s : opml_sort} (x : opml_evar s) : OPMLPattern s
-  | op_fsvar {s : opml_sort} (X : opml_svar s) : OPMLPattern s
-  | op_imp {s : opml_sort} (φ1 φ2 : OPMLPattern s) : OPMLPattern s
-  | op_app (σ : opml_symbol) (args : @dephlist _ OPMLPattern (opml_arg_sorts σ)) : OPMLPattern (opml_ret_sort σ)
-  | op_ex {s : opml_sort} (φ : OPMLPattern s) : OPMLPattern s
-  | op_mu {s : opml_sort} (φ : OPMLPattern s) : OPMLPattern s
-.
-
-Inductive OPMLClosedPattern {Σ : OPMLSignature} : opml_sort -> nat -> nat -> Type :=
-  | ocp_upcast {ex mu : nat} (from to : opml_sort) (subsort : opml_subsort from to) (φ : OPMLClosedPattern from ex mu) : OPMLClosedPattern to ex mu
-  | ocp_bot {s : opml_sort} {ex mu : nat} : OPMLClosedPattern s ex mu
-  | ocp_bevar {s : opml_sort} {ex mu : nat} (dbi : Edbi) : OPMLClosedPattern s (S (edbi_n dbi) + ex) mu
-  | ocp_bsvar {s : opml_sort} {ex mu : nat} (dbi : Sdbi) : OPMLClosedPattern s ex (S (sdbi_n dbi) + mu)
-  | ocp_fevar {s : opml_sort} {ex mu : nat} (x : opml_evar s) : OPMLClosedPattern s ex mu
-  | ocp_fsvar {s : opml_sort} {ex mu : nat} (X : opml_svar s) : OPMLClosedPattern s ex mu
-  | ocp_imp {s : opml_sort} {ex mu : nat} (φ1 : OPMLClosedPattern s ex mu) (φ2 : OPMLClosedPattern s ex mu) : OPMLClosedPattern s ex mu
-  | ocp_app {ex mu : nat} (σ : opml_symbol) (args : @dephlist _ (OPMLClosedPattern ^~ ex ^~ mu) (opml_arg_sorts σ)) : OPMLClosedPattern (opml_ret_sort σ) ex mu
-  | ocp_ex {s : opml_sort} {ex mu : nat} (φ : OPMLClosedPattern s (S ex) mu) : OPMLClosedPattern s ex mu
-  | ocp_mu {s : opml_sort} {ex mu : nat} (φ : OPMLClosedPattern s ex (S mu)) : OPMLClosedPattern s ex mu
-.
-
-Definition test : OPMLSignature.
-Proof.
-  unshelve esplit.
-  unshelve esplit. exact nat. exact le. 1-3: typeclasses eauto.
-  unshelve esplit. 1-2: exact (const nat). 1-6: typeclasses eauto.
-  unshelve esplit. exact bool. 1-2: typeclasses eauto.
-  intros []. exact [1;3;2]. exact [2;0].
-  intros []. exact 0. exact 4.
-Defined.
-
-Notation "[ ]" := dhnil (format "[ ]").
-Notation "[ x ]" := (dhcons x dhnil).
-Notation "[ x ; y ; .. ; z ]" := (dhcons x (dhcons y .. (dhcons z dhnil) ..)).
-
-Definition test2 : @OPMLPattern test 4.
-Proof.
-  apply (@op_app test false).
-  simpl. right. constructor. right.
-  apply (@op_app test true).
-  simpl. repeat constructor.
-  left.
-Defined.
-Print test2.
-
-Check @op_app test false [op_bot; @op_app test true [op_bot; op_bot; op_bot]].
-
-Check @ocp_app test _ _ false [ocp_bot; ocp_bot] : @OPMLClosedPattern test 4 0 0.
-Check @ocp_ex test 12 _ _ (ocp_ex (ocp_bevar {| edbi_n := 4 |})) : @OPMLClosedPattern test 12 3 0.
-Check @ocp_imp test 1 _ _ (ocp_bevar {| edbi_n := 3 |}) (ocp_bevar {| edbi_n := 4 |}) : @OPMLClosedPattern test 1 5 0.
 
 Fixpoint OPMLPattern_size
     {Σ : OPMLSignature}
