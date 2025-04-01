@@ -227,6 +227,9 @@ Section Syntax.
 
 End Syntax.
 
+Add Search Blacklist "Pat_ind".
+Add Search Blacklist "Pat_rect".
+
 Module Notations.
 
   Declare Scope kore_scope.

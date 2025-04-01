@@ -241,18 +241,21 @@ End Semantics.
 
 Tactic Notation "deconstruct_elem_of_Theory" :=
   repeat match goal with
-  | [ H : _ ∈ _ |- _ ] => inversion H; clear H
+  | [ H : _ ∈ _ |- _ ] => inversion H; subst; clear H
   end; clear; simpl.
 
 Tactic Notation "eval_helper" :=
   repeat match goal with
-         | [ |- context [eval ?ρ (@kore_app ?Σ ?ex ?σ ?l)] ] =>
-           let H := fresh in
-           pose proof (eval_equation_5 ex ρ σ l) as H;
-           simpl in H;
-           rewrite H; clear H
+         | [ |- context [eval ?ρ (@kore_app ?Σ ?ex ?mu ?σ ?l) ] ] =>
+           rewrite eval_equation_5; cbn
          | _ => simp eval
          end.
 
 Tactic Notation "rewrite_singleton_all" :=
     unshelve (rewrite_strat bottomup app_ext_singleton); [repeat esplit.. |].
+
+
+Add Search Blacklist "_elim".
+Add Search Blacklist "FunctionalElimination_".
+Add Search Blacklist "_graph_mut".
+Add Search Blacklist "_graph_rect".
