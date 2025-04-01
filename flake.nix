@@ -174,6 +174,21 @@
           passthru = { inherit coqPackages; };
         } ) { } ;
  
+        # Kore formalization build
+        packages.coq-kore
+        = coqPackages.callPackage 
+        ( { coq, stdenv }:
+        stdenv.mkDerivation {
+          name = "coq-kore";
+          src = ./kore;
+
+          propagatedBuildInputs = [
+            self.outputs.packages.${system}.coq-matching-logic
+          ];
+          installFlags = [ "COQLIB=$(out)/lib/coq/${coq.coq-version}/" ];
+          passthru = { inherit coqPackages; };
+        } ) { } ;
+ 
         
         # Metamath exporter: Build & Test
         packages.coq-matching-logic-mm-exporter
@@ -242,6 +257,15 @@
               pkgs.mkShell {
                 inputsFrom = [coq-matching-logic-example-proofmode];
                 packages = [coq-matching-logic-example-proofmode.coqPackages.coq-lsp];
+              };
+
+          coq-kore =
+            let
+              coq-kor = self.outputs.packages.${system}.coq-kore;
+            in
+              pkgs.mkShell {
+                inputsFrom = [coq-kore];
+                packages = [coq-kore.coqPackages.coq-lsp];
               };
 
           koreimport =
