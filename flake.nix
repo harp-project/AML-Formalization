@@ -261,7 +261,7 @@
 
           coq-kore =
             let
-              coq-kor = self.outputs.packages.${system}.coq-kore;
+              coq-kore = self.outputs.packages.${system}.coq-kore;
             in
               pkgs.mkShell {
                 inputsFrom = [coq-kore];
