@@ -928,28 +928,25 @@ Proof.
 Qed.
 
 Lemma wf_cons {Σ : Signature} x xs:
-  well_formed x = true ->
-  wf xs = true ->
+  well_formed x = true /\ wf xs = true <->
   wf (x :: xs) = true.
 Proof.
-  intros wfx wfxs.
-  unfold wf. simpl. rewrite wfx.
-  unfold wf in wfxs. rewrite wfxs.
-  reflexivity.
+  unfold wf. simpl. symmetry. apply andb_true_iff.
 Qed.
 
- Lemma wf_app {Σ : Signature} xs ys:
-  wf xs = true ->
-  wf ys = true ->
+Lemma wf_app {Σ : Signature} xs ys:
+  wf xs = true /\ wf ys = true <->
   wf (xs ++ ys) = true.
 Proof.
-  intros wfxs wfys.
-  unfold wf in *.
-  rewrite map_app.
-  rewrite foldr_app.
-  rewrite wfys.
-  rewrite wfxs.
-  reflexivity.
+  unfold wf.
+  rewrite map_app foldr_app.
+  split; intros.
+  destruct H. rewrite H0 H. reflexivity.
+  induction xs; simpl in *.
+  auto.
+  apply andb_prop in H as []. specialize (IHxs H0) as [].
+  split. apply andb_true_intro. split.
+  all: assumption.
 Qed.
 
 (* TODO move somewhere else *)
@@ -1007,7 +1004,7 @@ Proof.
   intros H.
   pose proof (wfl₁hl₂_proj_l₁ _ _ _ H).
   pose proof (wfl₁hl₂_proj_l₂ _ _ _ H).
-  apply wf_app; assumption.
+  apply wf_app; auto.
 Qed.
 
 

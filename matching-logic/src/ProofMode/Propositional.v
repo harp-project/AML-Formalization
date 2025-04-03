@@ -1619,7 +1619,7 @@ Proof.
     pose proof (wfl₁hl₂_proj_l₁ _ _ _ Hwf).
     pose proof (wfl₁hl₂_proj_h _ _ _ Hwf).
     pose proof (wfl₁hl₂_proj_l₂ _ _ _ Hwf).
-    apply wf_app; [assumption|].
+    apply wf_app; split; [assumption|].
     unfold patt_or,patt_not in *.
     simpl.
     wf_auto2.
@@ -1628,7 +1628,7 @@ Proof.
     pose proof (wfl₁hl₂_proj_l₁ _ _ _ Hwf).
     pose proof (wfl₁hl₂_proj_h _ _ _ Hwf).
     pose proof (wfl₁hl₂_proj_l₂ _ _ _ Hwf).
-    apply wf_app; [assumption|].
+    apply wf_app; split; [assumption|].
     unfold patt_or,patt_not in *.
     simpl.
     wf_auto2.

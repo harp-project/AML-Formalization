@@ -17,16 +17,295 @@ Section Anti.
 
   Definition many_ex n φ := Nat.iter n patt_exists φ.
 
-  Definition index_predicate l := foldr patt_and Top (zip_with (patt_equal ∘ patt_bound_evar) (seq 0 (length l)) l).
+  Definition index_predicate' n l := foldr patt_and Top (zip_with (patt_equal ∘ patt_bound_evar) (seq n (length l)) l).
+  Definition index_predicate := index_predicate' 0.
 
   Record AUP : Set := mkAUP {
     termAUP : Pattern;
     subsAUP : list (Pattern * Pattern);
-    varsAUP := length subsAUP;
-    wfTermAUP : well_formed_closed_mu_aux termAUP 0 /\ well_formed_closed_ex_aux termAUP varsAUP /\ well_formed_positive termAUP;
-    wfSubsAUP : wf (map fst subsAUP) /\ wf (map snd subsAUP);
-    predAUP := many_ex varsAUP (termAUP and ((index_predicate (map fst subsAUP)) or (index_predicate (map snd subsAUP))));
+    (* wfTermAUP : well_formed_closed_mu_aux termAUP 0 /\ well_formed_closed_ex_aux termAUP (length subsAUP) /\ well_formed_positive termAUP; *)
   }.
+
+  Record wfAUP (x : AUP) : Set := mkwfAUP {
+    wfTermAUP : well_formed_xy (length (subsAUP x)) 0 (termAUP x);
+    wfSubsAUP : wf (map fst (subsAUP x)) /\ wf (map snd (subsAUP x));
+  }.
+
+Definition predAUP (x : AUP) := many_ex (length (subsAUP x)) (termAUP x and ((index_predicate (map fst (subsAUP x))) or (index_predicate (map snd (subsAUP x))))).
+
+  Reserved Notation "a ~> b" (at level 70, no associativity).
+  Inductive antiunification_step : AUP -> AUP -> Set := 
+    | decAUS t xs ys a b c d : {| termAUP := t; subsAUP := xs ++ (a ⋅ b, c ⋅ d) :: ys |} ~> {| termAUP := (nest_ex_aux (S (length xs)) 2 t)^[evar: length xs ↦ patt_bound_evar (length xs) ⋅ patt_bound_evar (S (length xs))]; subsAUP := xs ++ (a, c) :: (b, d) :: ys |}
+    | deleteAUS t xs ys x : {| termAUP := t; subsAUP := xs ++ (x, x) :: ys |} ~> {| termAUP := t^[evar: length xs ↦ x]; subsAUP := xs ++ ys |}
+    | rgvAUS t xs x y ys zs : {| termAUP := t; subsAUP := xs ++ (x, y) :: ys ++ (x, y) :: zs |} ~> {| termAUP := t^[evar: S (length xs + length ys) ↦ patt_bound_evar (length xs)]; subsAUP := xs ++ (x, y) :: ys ++ zs |}
+  where "a ~> b" := (antiunification_step a b).
+
+  Arguments decAUS {t} xs {ys a b c d} : assert.
+  Arguments deleteAUS {t} xs {ys x} : assert.
+  Arguments rgvAUS {t} xs {x y} ys {zs} : assert.
+
+  (* Goal forall x y, exists f, x ~> y -> wfTermAUP y = f (wfTermAUP x). *)
+  (* Proof. *)
+  (*   intros [] []. *)
+  (*   eexists. *)
+  (*   intros. *)
+  (*   inversion H; subst. clear H. *)
+  (*   simpl in *. *)
+  (*   destruct wfTermAUP1 as [? [] ]. *)
+  (*   destruct wfTermAUP0 as [? [] ]. *)
+  (* Abort. *)
+
+  Lemma decompose_xy x y p : well_formed_xy x y p <-> well_formed_positive p /\ well_formed_closed_ex_aux p x /\ well_formed_closed_mu_aux p y.
+  Proof.
+    unfold well_formed_xy.
+    split; intros.
+    now repeat apply andb_prop in H as [H ?].
+    decompose record H.
+    now repeat (apply andb_true_intro; split).
+  Defined.
+
+  Tactic Notation "simplify_length" :=
+    rewrite_strat (fix f := (try choice length_app length_cons; try subterms f; (fix g := try (Nat.add_succ_r; subterms (g; try Nat.add_assoc))))).
+
+  Tactic Notation "simplify_length" "in" hyp(H) :=
+    rewrite_strat (fix f := (try choice length_app length_cons; try subterms f; (fix g := try (Nat.add_succ_r; subterms (g; try Nat.add_assoc))))) in H.
+
+  Tactic Notation "simplify_map" :=
+    rewrite_strat fix f := (try choice map_app (map_cons; eval simpl); try subterms f).
+
+  Tactic Notation "simplify_map" "in" hyp(H) :=
+    rewrite_strat fix f := (try choice map_app (map_cons; eval simpl); try subterms f) in H.
+
+  Tactic Notation "decompose_wf" :=
+    repeat match goal with
+           | [ |- _ /\ _ ] => split
+           | [ |- is_true (wf _) ] => unfold is_true
+           | [ |- wf (_ ++ _) = true ] => apply wf_app
+           | [ |- wf (_ :: _) = true ] => apply wf_cons
+           end.
+
+  Tactic Notation "decompose_wf_in_hyp" :=
+    repeat match goal with
+           | [ H : _ /\ _ |- _ ] => destruct H
+           | [ H : is_true (wf _) |- _ ] => unfold is_true in H
+           | [ H : wf (_ ++ _) = true |- _ ] => apply wf_app in H
+           | [ H : wf (_ :: _) = true |- _ ] => apply wf_cons in H
+           end.
+
+  Lemma wf_aup_prop a b : a ~> b -> wfAUP a -> wfAUP b.
+  Proof.
+    intros.
+    destruct H0.
+    inversion H; subst; clear H; simpl in *.
+    {
+      simplify_length in wfTermAUP0; apply decompose_xy in wfTermAUP0 as [? [] ].
+      simplify_map in wfSubsAUP0; decompose_wf_in_hyp.
+      split; simpl;
+      [simplify_length; apply decompose_xy; repeat split | simplify_map; decompose_wf];
+      try solve [assumption | wf_auto2].
+      apply wfc_ex_aux_bsvar_subst_le. lia.
+      apply wfc_ex_nest_ex'. lia.
+      simpl. assumption.
+      simpl. rewrite !decide_True; lia.
+    }
+    {
+      simplify_length in wfTermAUP0; apply decompose_xy in wfTermAUP0 as [? [] ].
+      simplify_map in wfSubsAUP0; decompose_wf_in_hyp.
+      split; simpl;
+      [simplify_length; apply decompose_xy; repeat split | simplify_map; decompose_wf];
+      try solve [assumption | wf_auto2].
+      apply wfc_ex_aux_bsvar_subst_le.
+      lia. assumption.
+      apply well_formed_closed_ex_aux_ind with (ind_evar1 := 0).
+      apply le_0_n. wf_auto2.
+    }
+    {
+      simplify_length in wfTermAUP0; apply decompose_xy in wfTermAUP0 as [? [] ].
+      simplify_map in wfSubsAUP0; decompose_wf_in_hyp.
+      split; simpl;
+      [simplify_length; apply decompose_xy; repeat split | simplify_map; decompose_wf];
+      try solve [assumption | wf_auto2].
+      apply wfc_ex_aux_bsvar_subst_le. lia. assumption.
+      simpl. rewrite decide_True; lia.
+    }
+  Defined.
+    
+  Lemma index_predicate_cons n x xs : index_predicate' n (x :: xs) = (patt_bound_evar n =ml x and index_predicate' (S n) xs).
+  Proof.
+    auto.
+  Defined.
+
+  Lemma wf_index_predicate a n : wf a -> well_formed_xy (n + length a) 0 (index_predicate' n a).
+  Proof.
+    intros. revert n.
+    induction a; intros.
+    unfold index_predicate'.
+    simpl. wf_auto2.
+    apply wf_cons in H as [].
+    specialize (IHa H0 (S n)). rewrite index_predicate_cons.
+    simplify_length.
+    wf_auto2.
+    rewrite decide_True. lia. reflexivity.
+  Defined.
+    
+  Lemma well_formed_many_ex n m k p : well_formed_xy (k + n) m p -> well_formed_xy n m (many_ex k p).
+  Proof.
+    revert p.
+    induction k; intros; simpl in *. assumption.
+    pose proof Nat.iter_swap k _ patt_exists p.
+    fold (many_ex k p) in H0. fold (many_ex k (ex, p)) in H0.
+    rewrite <- H0. apply IHk. clear H0 IHk.
+    apply decompose_xy in H as [? [] ].
+    apply decompose_xy; repeat split; wf_auto2.
+  Defined.
+
+  Lemma wf_predAUP a : wfAUP a -> well_formed (predAUP a).
+  Proof.
+    intros.
+    destruct H.
+    apply decompose_xy in wfTermAUP0 as [? [] ].
+    destruct wfSubsAUP0.
+    unfold predAUP.
+    rewrite wf_wfxy00.
+    apply well_formed_many_ex. rewrite Nat.add_0_r.
+    pose proof wf_index_predicate (map fst (subsAUP a)) 0 H2.
+    pose proof wf_index_predicate (map snd (subsAUP a)) 0 H3.
+    simpl in H4, H5. fold index_predicate in H4, H5.
+    rewrite !length_map in H4, H5.
+    apply decompose_xy in H4 as [? [] ], H5 as [? [] ].
+    apply decompose_xy; repeat split; wf_auto2.
+  Defined.
+
+  Reserved Notation "a ~>* b" (at level 70, no associativity).
+  Inductive antiunification_full : AUP -> AUP -> Set := 
+    | doneAUS a : a ~>* a
+    | stepAUS a b c : a ~> b -> b ~>* c -> a ~>* c
+  where "a ~>* b" := (antiunification_full a b).
+
+  Goal forall (a b c d : evar) (cons : symbols), a ≠ c -> b ≠ d -> a ≠ b -> { x : AUP & {| termAUP := b0; subsAUP := [(patt_sym cons ⋅ patt_free_evar a ⋅ patt_free_evar b, patt_sym cons ⋅ patt_free_evar c ⋅ patt_free_evar d)] |} ~>* x & forall y, x ~> y -> False }.
+  Proof.
+    intros.
+    eexists.
+    eright. apply (decAUS []). simpl.
+    eright. apply (decAUS []). simpl.
+    eright. apply (deleteAUS []). simpl.
+    left.
+
+    intros. inversion H2; subst; clear H2.
+    destruct xs; simpl in H5; inversion H5.
+    destruct xs; simpl in H4; inversion H4.
+    destruct xs; simpl in H7; inversion H7.
+    destruct xs; simpl in H5; inversion H5.
+    inversion H4. contradiction.
+    destruct xs; simpl in H4; inversion H4.
+    inversion H7. contradiction.
+    destruct xs; simpl in H7; inversion H7.
+    destruct xs; simpl in H5; inversion H5.
+    destruct ys; simpl in H6; inversion H6.
+    contradiction.
+    destruct ys; simpl in H8; inversion H8.
+    destruct xs; simpl in H4; inversion H4.
+    destruct ys; simpl in H8; inversion H8.
+    destruct xs; simpl in H7; inversion H7.
+  Qed.
+
+  Goal forall (a b : evar) (cons : symbols), a ≠ b -> { x : AUP & {| termAUP := b0; subsAUP := [(patt_sym cons ⋅ patt_free_evar a ⋅ patt_free_evar a, patt_sym cons ⋅ patt_free_evar b ⋅ patt_free_evar b)] |} ~>* x & forall y, x ~> y -> False }.
+  Proof.
+    intros. eexists.
+    eright. apply (decAUS []). simpl.
+    eright. apply (decAUS []). simpl.
+    eright. apply (deleteAUS []). simpl.
+    eright. apply (rgvAUS [] []). simpl.
+    left.
+
+    intros.
+    inversion H0; subst; clear H0.
+    destruct xs; inversion H3.
+    destruct xs; inversion H2.
+    destruct xs; inversion H3.
+    inversion H2. contradiction.
+    destruct xs; inversion H2.
+    destruct xs; inversion H3.
+    destruct ys; inversion H4.
+    destruct xs; inversion H2.
+  Qed.
+
+  Lemma free_evars_many_ex p n : free_evars (many_ex n p) = free_evars p.
+  Proof.
+    induction n; auto.
+  Defined.
+
+  Lemma free_evars_index_predicate_nm n m l : free_evars (index_predicate' n l) = free_evars (index_predicate' m l).
+  Proof.
+    revert n m.
+    induction l; intros; simpl.
+    reflexivity.
+    rewrite !union_empty_r_L !union_empty_l_L.
+    fold (index_predicate' (S n) l).
+    fold (index_predicate' (S m) l).
+    rewrite (IHl (S n) (S m)). reflexivity.
+  Defined.
+
+  Lemma free_evars_index_predicate n l : free_evars (index_predicate' n l) = free_evars_of_list l.
+  Proof.
+    induction l; simpl. auto.
+    rewrite !union_empty_r_L !union_empty_l_L.
+    fold (index_predicate' (S n) l).
+    replace (free_evars_of_list (a :: l)) with (free_evars a ∪ free_evars_of_list l) by auto.
+    replace (free_evars a ∪ free_evars a) with (free_evars a) by set_solver.
+    rewrite <- IHl, free_evars_index_predicate_nm with (m := n).
+    reflexivity.
+  Defined.
+
+  Goal forall Γ x y, wfAUP x -> x ~> y -> Γ ⊢ predAUP x <---> predAUP y.
+  Proof.
+    intros.
+    toMLGoal. clear Halmost. simpl. apply well_formed_iff; apply wf_predAUP.
+    assumption.
+    eapply wf_aup_prop; eassumption.
+    inversion H0; subst.
+    - unfold predAUP. simpl.
+      simplify_map. simplify_length. simpl.
+      mlSplitAnd; mlIntro.
+      mlFreshEvar as x.
+      mlDestructExManual "0" as x.
+      try_solve_pile.
+      fm_solve.
+      fm_solve.
+      rewrite free_evars_many_ex. simpl. rewrite !free_evars_index_predicate.
+      fm_solve.
+      fm_solve.
+
+  (* From Coq.Classes Require Import CRelationClasses CMorphisms CEquivalence. *)
+
+  (* Definition derives_iff Γ : crelation Pattern := λ a b, well_formed a -> well_formed b -> Γ ⊢ a <---> b. *)
+
+  (* Instance diff_eq Γ : Equivalence (derives_iff Γ). *)
+  (* Proof. *)
+  (*   split. *)
+  (*   unfold Reflexive, derives_iff. intros. *)
+  (*   aapply pf_iff_equiv_refl. assumption. *)
+  (*   unfold Symmetric, derives_iff. intros. *)
+  (*   apply pf_iff_equiv_sym_meta, H; assumption. *)
+  (*   unfold Transitive, derives_iff. intros. *)
+  (*   eapply pf_iff_equiv_trans. *)
+  (*   4: apply H. 6: apply H0. all: try assumption. *)
+
+  (* (1* if derives was in Prop, this could be done with Add Morphism *1) *)
+  (* Goal forall Γ, Proper (antiunification_step ==> derives_iff Γ) predAUP. *)
+  (* Proof. *)
+  (*   intros. *)
+  (*   unfold Proper, respectful, derives_iff, predAUP. *)
+  (*   intros [] [] ?. simpl. *)
+  (*   inversion H; subst. *)
+  (*   rewrite !length_app !length_cons !Nat.add_succ_r !map_app !map_cons. simpl. *)
+
+
+
+
+
+
+
 
   Definition plotkin (aup : AUP) : sigT (λ '(xs, a, b, c, d, ys), subsAUP aup = xs ++ (a ⋅ b, c ⋅ d) :: ys) -> AUP.
   Proof.
