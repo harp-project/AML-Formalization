@@ -223,7 +223,7 @@ Section with_signature.
     intros H. induction l; simpl.
     { exact H. }
     {
-      apply wf_app; unfold Pattern.wf in *; simpl in *. destruct_andb! H.
+      apply wf_app; unfold Pattern.wf in *; simpl in *. destruct_andb! H. split.
       {
         apply IHl. apply H1.
       }
