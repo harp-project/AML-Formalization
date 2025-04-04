@@ -184,7 +184,7 @@ Check kore_exists.
 End with_model.
 
   Definition satM {ex mu s} (φ : Pattern ex mu s) (M : Model) :=
-    forall ρ, @eval M _ _ _ ρ φ ≡ ⊤.
+    forall ρ, @eval M _ _ _ ρ φ = ⊤.
   Definition satT (Γ : Theory) (M : Model) :=
     forall p, p ∈ Γ -> @satM _ _ (projT1 p) (projT2 p) M.
 
@@ -236,6 +236,39 @@ End with_model.
       specialize (custom_app y).
       specialize (IHl0 custom_app ys). exact IHl0.
   Defined.
+
+  Program Definition functional_symbol
+    (σ : symbol) (R : sort)
+    (vars : hlist evar (arg_sorts σ))
+    : Pattern [] [] R :=
+    kore_exists (ret_sort σ) (kore_equals R (kore_app σ
+      _
+    ) (kore_bevar In_nil)).
+  Final Obligation.
+    intros.
+    induction vars.
+    * exact hnil.
+    * apply hcons.
+      - exact (kore_fevar f).
+      - exact IHvars.
+  Defined.
+
+  Lemma functional_symbol_is_functional :
+    forall (σ : symbol) (R : sort) (vars : hlist evar (arg_sorts σ)),
+      forall (M : Model),
+        (forall l, exists x, app M σ l = {[x]}) ->
+        satM (functional_symbol σ R vars) M.
+  Proof.
+    fix IH 3.
+    intros.
+    unfold satM, functional_symbol. intros.
+    simp eval. simpl.
+    apply propset_fa_union_full.
+    cbn.
+    dependent destruction vars.
+    *
+    *
+  Qed.
 
 End Semantics.
 

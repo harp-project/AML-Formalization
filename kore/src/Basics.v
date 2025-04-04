@@ -189,3 +189,67 @@ Tactic Notation "set_helper" :=
          | [ |- ⊤ ∖ ?X ≡ ∅ ] => enough (X ≡ ⊤) by set_solver
          | [ |- ⊤ ≫= ?f ≡ ∅ ] => enough (forall x, f x ≡ ∅) by set_solver; intros
          end.
+
+
+Lemma propset_difference_neg :
+  forall {A : Type} (P : A -> Prop),
+    ⊤ ∖ {[x : A | P x]} = {[x : A | ~P x]}.
+Proof.
+  intros.
+  set_solver.
+Qed.
+
+Lemma intersection_top_l_L {A C : Type}
+    {H : ElemOf A C}
+    {H0 : Top C}
+    {H1 : Empty C}
+    {H2 : Singleton A C}
+    {H3 : Intersection C}
+    {H4 : Union C}
+    {H5 : Difference C} :
+    Set_ A C → LeibnizEquiv C →
+    TopSet A C ->
+    LeftId eq (@top _ H0) intersection.
+Proof.
+  intros.
+  unfold LeftId. set_solver.
+Qed.
+
+Lemma intersection_top_r_L {A C : Type}
+    {H : ElemOf A C}
+    {H0 : Top C}
+    {H1 : Empty C}
+    {H2 : Singleton A C}
+    {H3 : Intersection C}
+    {H4 : Union C}
+    {H5 : Difference C} :
+    Set_ A C → LeibnizEquiv C →
+    TopSet A C ->
+    RightId eq (@top _ H0) intersection.
+Proof.
+  intros.
+  unfold RightId. set_solver.
+Qed.
+
+Lemma propset_top_elem_of_2 :
+  forall {A : Type} (S : propset A),
+    (forall (t : A), t ∈ S) -> S = ⊤.
+Proof.
+  intros. set_solver.
+Qed.
+
+(* Ltac autorewrite_set :=
+  repeat (
+    rewrite intersection_top_l_L +
+    rewrite intersection_top_r_L +
+    rewrite union_empty_l_L +
+    rewrite union_empty_r_L +
+    rewrite propset_difference_neg
+  ).
+
+Ltac solve_set_instances :=
+  match goal with
+  | [|- Set_ _ _ ] => typeclasses eauto
+  | [|- LeibnizEquiv _ ] => typeclasses eauto
+  | [|- TopSet _ _ ] => typeclasses eauto
+  end. *)

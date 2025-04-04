@@ -155,15 +155,15 @@ Section Syntax.
       (P_imp : forall {ex mu s} (φ : Pattern ex mu s), P φ -> forall ψ, P ψ -> P (kore_imp φ ψ))
       (P_iff : forall {ex mu s} (φ : Pattern ex mu s), P φ -> forall ψ, P ψ -> P (kore_iff φ ψ))
 
-      (P_exists : forall {ex mu s} s_var φ, @P (s_var :: ex) mu s φ -> @P ex mu s (kore_exists s_var φ))
-      (P_forall : forall {ex mu s} s_var φ, @P (s_var :: ex) mu s φ -> @P ex mu s (kore_forall s_var φ))
-      (P_mu : forall {ex mu s} φ, @P ex (s :: mu) s φ -> @P ex mu s (kore_mu φ))
-      (P_nu : forall {ex mu s} φ, @P ex (s :: mu) s φ -> @P ex mu s (kore_nu φ))
+      (P_exists : forall {ex mu s} s_var (φ : Pattern (s_var::ex) mu s), P φ -> P (kore_exists s_var φ))
+      (P_forall : forall {ex mu s} s_var (φ : Pattern (s_var::ex) mu s), P φ -> P (kore_forall s_var φ))
+      (P_mu : forall {ex mu s} (φ : Pattern ex (s::mu) s), P φ -> P (kore_mu φ))
+      (P_nu : forall {ex mu s} (φ : Pattern ex (s::mu) s), P φ -> P (kore_nu φ))
 
-      (P_ceil : forall {ex mu s1} s2 φ, @P ex mu s1 φ -> P (kore_ceil s2 φ))
-      (P_floor : forall {ex mu s1} s2 φ, @P ex mu s1 φ -> P (kore_floor s2 φ))
-      (P_equal : forall {ex mu s1} s2 φ, @P ex mu s1 φ -> forall ψ, @P ex mu s1 ψ -> P (kore_equals s2 φ ψ))
-      (P_in : forall {ex mu s1} s2 φ, @P ex mu s1 φ -> forall ψ, @P ex mu s1 ψ -> P (kore_in s2 φ ψ)).
+      (P_ceil : forall {ex mu s1} s2 (φ : Pattern ex mu s1), P φ -> P (kore_ceil s2 φ))
+      (P_floor : forall {ex mu s1} s2 (φ : Pattern ex mu s1), P φ -> P (kore_floor s2 φ))
+      (P_equal : forall {ex mu s1} s2 (φ : Pattern ex mu s1), P φ -> forall (ψ : Pattern ex mu s1), P ψ -> P (kore_equals s2 φ ψ))
+      (P_in : forall {ex mu s1} s2 (φ : Pattern ex mu s1), P φ -> forall (ψ : Pattern ex mu s1), P ψ -> P (kore_in s2 φ ψ)).
     Definition Pat_ind {ex mu s} (φ : Pattern ex mu s) : P φ.
     Proof.
       revert ex mu s φ.
@@ -254,10 +254,10 @@ Module Notations.
   Fail Check (_ ⋅ [Top{_}; Top{_}]%hlist)%kore.
 
 
-  Notation "∃ s1 ',' p" := (kore_exists s1 p) (at level 80, format "∃  s1 ','  p") : kore_scope.
-  Check (∃ _ , ⊥{_})%kore.
-  Notation "∀ s1 ',' p" := (kore_forall s1 p) (at level 80, format "∀  s1 ','  p") : kore_scope.
-  Check (∀ _ , ⊥{_})%kore.
+  Notation "'∃k' s1 ',' p" := (kore_exists s1 p) (at level 80, format "'∃k'  s1 ','  p") : kore_scope.
+  Check (∃k _ , ⊥{_})%kore.
+  Notation "'∀k' s1 ',' p" := (kore_forall s1 p) (at level 80, format "'∀k'  s1 ','  p") : kore_scope.
+  Check (∀k _ , ⊥{_})%kore.
 
   Notation "μ ',' p" := (kore_mu p) (at level 80, format "μ ','  p") : kore_scope.
   Check (μ , ⊥{_})%kore.
