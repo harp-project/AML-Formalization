@@ -32,14 +32,16 @@ Module BoolSyntax.
   | KxorBool
   | KorBool
   | KorElseBool
-  | KimpliesBool.
+  | KimpliesBool
+  | KeqBool
+  | KneqBool.
 
   Instance Ksyms_eq_dec : EqDecision Ksyms.
   Proof. solve_decision. Defined.
 
   Program Instance Ksyms_finite : finite.Finite Ksyms := {
     enum := [Ktrue; Kfalse; KnotBool; KandBool; KandThenBool;
-             KxorBool; KorBool; KorElseBool; KimpliesBool];
+             KxorBool; KorBool; KorElseBool; KimpliesBool; KeqBool; KneqBool];
   }.
   Next Obligation. compute_done. Defined.
   Final Obligation. destruct x; set_solver. Defined.
@@ -63,6 +65,8 @@ Module BoolSyntax.
         | KorBool => [Kbool; Kbool]
         | KorElseBool => [Kbool; Kbool]
         | KimpliesBool => [Kbool; Kbool]
+        | KeqBool => [Kbool; Kbool]
+        | KneqBool => [Kbool; Kbool]
         end;
       ret_sort σ := Kbool;
     |};
@@ -365,6 +369,16 @@ dv is only used with the following parameters:
             --->
             (KimpliesBool ⋅ ⟨kore_fevar "X0"; kore_fevar "X1"⟩ =k{R} (kore_fevar "B" and Top{Kbool}))
           )
+      ) \/
+      (* NOTE: there are no other behavioural axioms about ==Bool and =/=Bool! *)
+      ( (* rule `_=/=Bool_`(B1,B2)=>`notBool_`(`_==Bool_`(B1,B2)) *)
+        exists R, pat =
+          existT R (
+            Top{R} and @kore_fevar _ _ _ Kbool "X0" ⊆k{R} kore_fevar "B1" and
+            @kore_fevar _ _ _ Kbool "X1" ⊆k{R} kore_fevar "B2" and Top{R}
+            --->
+            (KneqBool ⋅ ⟨kore_fevar "X0"; kore_fevar "X1"⟩ =k{R} (KnotBool ⋅ ⟨ KeqBool ⋅ ⟨kore_fevar "B1"; kore_fevar "B2"⟩⟩ and Top{Kbool}))
+          )
       )
     ).
     (** functional axioms *)
@@ -407,6 +421,18 @@ dv is only used with the following parameters:
       (
       exists R, pat =
         existT R (
+          kore_exists Kbool (KneqBool ⋅ ⟨kore_fevar "K0"; kore_fevar "K1"⟩ =k{R} kore_bevar (In_nil)
+        ))
+      ) \/
+      (
+      exists R, pat =
+        existT R (
+          kore_exists Kbool (KeqBool ⋅ ⟨kore_fevar "K0"; kore_fevar "K1"⟩ =k{R} kore_bevar (In_nil)
+        ))
+      ) \/
+      (
+      exists R, pat =
+        existT R (
           kore_exists Kbool (KnotBool ⋅ ⟨kore_fevar "K0"⟩ =k{R} kore_bevar (In_nil)
         ))
       )
@@ -436,6 +462,9 @@ Module BoolSemantics.
 
   Import BoolSyntax.
 
+  Definition neqb (b1 b2 : bool) : bool :=
+    negb (eqb b1 b2).
+
   Definition BoolModel : @Model BoolSignature :=
     mkModel_singleton
       (Ksorts_rect _ bool)
@@ -447,7 +476,9 @@ Module BoolSemantics.
                     xorb
                     orb
                     orb
-                    implb)
+                    implb
+                    eqb
+                    neqb)
       ltac:(intros []; auto with typeclass_instances).
 
   Ltac unfold_elem_of :=
