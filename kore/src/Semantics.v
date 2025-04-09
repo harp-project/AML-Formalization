@@ -59,14 +59,15 @@ Section Semantics.
 
   Let OS s := PropsetOrderedSet (carrier M s).
   Let  L s := PowersetLattice (carrier M s).
-Check kore_exists.
+
   Equations? eval {ex mu} {s} (ρ : Valuation) (φ : Pattern ex mu s) : propset (carrier M s) by wf (pat_size φ) :=
     eval ρ (kore_bevar _) := empty ;
     eval ρ (kore_fevar x) := {[evar_valuation ρ x]} ;
     eval ρ (kore_bsvar _) := empty ;
     eval ρ (kore_fsvar X) := svar_valuation ρ X ;
 
-    eval ρ (kore_app σ l) := app_ext σ _ (*@hlist_rect _ _ (λ l _, hlist (propset ∘ M) l) hnil (λ _ _ a _ b, hcons (eval ρ a) b) _ l*) ;
+    eval ρ (kore_app σ l) := app_ext σ _ (*@hlist_rect _ _ (λ l _, hlist (propset ∘ M) l) hnil (λ _ _ a _ b, hcons (eval ρ a) b) _ l*)
+      (* (hmap (fun j (p : Pattern ex mu j) => eval ρ p) l) *) ;
 
     eval ρ kore_bot         := empty ;
     eval ρ kore_top         := ⊤ ;
@@ -128,6 +129,19 @@ Check kore_exists.
     1-2: rewrite (bsvar_subst_size ex [] mu s s φ X); constructor.
   Defined.
 
+  Lemma eval_app_simpl :
+    forall {ex mu} (σ : symbol) (l : hlist (Pattern ex mu) (arg_sorts σ)) (ρ : Valuation),
+      eval ρ (kore_app σ l) = app_ext σ (hmap (fun _ => eval ρ) l).
+  Proof.
+    intros.
+    simp eval. f_equal.
+    simpl in *. unfold eval_obligation_1. simpl. cbn.
+    induction l.
+    * reflexivity.
+    * rewrite IHl. reflexivity.
+  Defined.
+
+
 (*   Fixpoint HForall {J} {A : J -> Type}
     (P : ∀ j, A j -> Prop)
     {js : list J} (v : @hlist J A js) {struct v} : Prop :=
@@ -146,21 +160,13 @@ Check kore_exists.
     | hnil, hnil => True
     | hcons x xs, hcons y ys => P _ _ x y ∧ HBiForall P xs ys
     | _, _ => False
-    end.
-
-  Fixpoint hmap {J} {A B : J -> Type}
-    (f : ∀ j, A j -> B j)
-    {js : list J} (v : @hlist J A js) : @hlist J B js :=
-  match v with
-  | hnil => hnil
-  | hcons x xs => hcons (f _ x) (hmap f xs)
-  end. *)
+    end.*)
 
   Lemma app_ext_singleton
     {σ}
     {args : hlist (propset ∘ M) (arg_sorts σ)}
     (H : all_singleton args) :
-      app_ext σ args = app _ σ (all_singleton_extract H).
+      app_ext σ args = app M σ (all_singleton_extract H).
   Proof.
     apply set_eq. split; intros.
     unfold app_ext in H0.
@@ -181,6 +187,42 @@ Check kore_exists.
     apply IHargs.
   Defined.
 
+  Lemma all_singleton_var_list {l} (vars : hlist evar l) ρ:
+    all_singleton (hmap (fun s (x : evar s) => {[evar_valuation ρ x]}) vars).
+  Proof.
+    induction vars; simpl.
+    * exact tt.
+    * apply pair. 2: exact IHvars.
+      eapply existT. reflexivity.
+  Defined.
+
+  Corollary eval_app_var_list :
+    forall ex mu (σ : symbol) (vars : hlist evar (arg_sorts σ)) (ρ : Valuation),
+      eval ρ (kore_app σ (var_list ex mu vars)) =
+        app M σ (all_singleton_extract (all_singleton_var_list vars ρ)).
+  Proof.
+    intros. rewrite eval_app_simpl.
+    rewrite <- app_ext_singleton.
+    (* there is a slight difference in the arguments *)
+    f_equal.
+    induction vars; simpl.
+    * reflexivity.
+    * rewrite IHvars. reflexivity.
+  Defined.
+
+(*   Lemma functional_symbol_eval :
+    forall (σ : symbol) (R : sort) (vars : hlist evar (arg_sorts σ)) (ρ : Valuation),
+      eval ρ (functional_symbol σ R vars) =
+        app M σ (all_singleton_extract (all_singleton_var_list vars ρ)).
+  Proof.
+    
+  Defined. *)
+
+(*   Lemma app_var_list_eval :
+    forall ex mu (σ : symbol) (vars : hlist evar (arg_sorts σ)) (M : Model) (ρ : Valuation),
+      eval ρ (kore_app σ (var_list ex mu vars)) =
+      app_ext σ (hmap (fun s (x : evar s) => {[evar_valuation ρ x]}) vars). *)
+
 End with_model.
 
   Definition satM {ex mu s} (φ : Pattern ex mu s) (M : Model) :=
@@ -200,8 +242,7 @@ End with_model.
     carrier := custom_carrier;
     inhabited := custom_inh;
     app :=
-      fun σ l =>
-        _
+      fun σ l => _
   |}.
   Next Obligation.
     intros.
@@ -214,7 +255,7 @@ End with_model.
       specialize (IHl0 custom_app ys). exact IHl0.
   Defined.
 
-  Program Definition mkModel_singleton
+  Definition mkModel_singleton
     (custom_carrier : sort → Set)
     (custom_app : forall (σ : symbol), foldr (λ c a, custom_carrier c -> a) (custom_carrier (ret_sort σ)) (arg_sorts σ))
     (custom_inh : ∀ s : sort, Inhabited (custom_carrier s)) :
@@ -222,52 +263,78 @@ End with_model.
   {|
     carrier := custom_carrier;
     inhabited := custom_inh;
-    app :=
-      fun σ l =>
-        _
+    app := fun σ => singleton ∘ uncurry_n (custom_app σ)
   |}.
-  Next Obligation.
-    intros.
-    specialize (custom_app σ).
-    induction (arg_sorts σ).
-    * simpl in custom_app. exact {[ custom_app ]}.
-    * simpl in custom_app.
-      unshelve eapply (hcons_inv _ _ l); intros.
-      specialize (custom_app y).
-      specialize (IHl0 custom_app ys). exact IHl0.
-  Defined.
-
-  Program Definition functional_symbol
-    (σ : symbol) (R : sort)
-    (vars : hlist evar (arg_sorts σ))
-    : Pattern [] [] R :=
-    kore_exists (ret_sort σ) (kore_equals R (kore_app σ
-      _
-    ) (kore_bevar In_nil)).
-  Final Obligation.
-    intros.
-    induction vars.
-    * exact hnil.
-    * apply hcons.
-      - exact (kore_fevar f).
-      - exact IHvars.
-  Defined.
 
   Lemma functional_symbol_is_functional :
     forall (σ : symbol) (R : sort) (vars : hlist evar (arg_sorts σ)),
       forall (M : Model),
-        (forall l, exists x, app M σ l = {[x]}) ->
+        (exists (f : hlist M (arg_sorts σ) -> M (ret_sort σ)), app M σ = singleton ∘ f) ->
         satM (functional_symbol σ R vars) M.
   Proof.
-    fix IH 3.
     intros.
     unfold satM, functional_symbol. intros.
     simp eval. simpl.
-    apply propset_fa_union_full.
+    apply propset_fa_union_full. intro.
     cbn.
-    dependent destruction vars.
-    *
-    *
+    setoid_rewrite eval_equation_19.
+    remember (fresh_evar _ _) as x.
+    assert (X : 
+      hlist_rec sort (Pattern [ret_sort σ] [])
+                   (λ (l : list sort) (_ : hlist 
+                                             (Pattern [ret_sort σ] []) l),
+                      hlist (Pattern [] []) l) ⟨ ⟩%hlist
+                   (λ (x0 : sort) (xs : list sort) 
+                      (H0 : Pattern [ret_sort σ] [] x0) 
+                      (_ : hlist (Pattern [ret_sort σ] []) xs) 
+                      (H1 : hlist (Pattern [] []) xs),
+                      hcons (bevar_subst [] (kore_fevar x) H0) H1)
+                   (arg_sorts σ) (var_list [ret_sort σ] [] vars) =
+                     var_list [] [] vars
+    ). {
+      clear ρ t H M Heqx.
+      induction vars; simpl.
+      * reflexivity.
+      * rewrite IHvars. reflexivity.
+    }
+    rewrite X.
+    clear X.
+    setoid_rewrite elem_of_PropSet.
+    setoid_rewrite eval_app_var_list.
+    simp eval.
+    destruct H as [f H].
+    rewrite H. cbn.
+    setoid_rewrite eval_equation_3.
+    unfold evar_valuation, update_evar_val at 2.
+    rewrite decide_eq_same. simpl.
+    rewrite decide_eq_same.
+    (* c still appears on the lhs *)
+    assert (x ∉ free_evars (ret_sort σ) (kore_app σ (var_list [ret_sort σ] [] vars))). {
+      pose proof (fresh_evar_is_fresh (ret_sort σ) (kore_equals R (kore_app σ (var_list [ret_sort σ] [] vars))
+       (kore_bevar In_nil))).
+       subst x.
+       simpl in *. set_solver.
+    }
+    clear -H0.
+    cbn in H0.
+    exists (f
+      (all_singleton_extract
+         (all_singleton_var_list vars ρ))).
+    f_equal. f_equal.
+    remember (f _) as c. clear f Heqc.
+    revert ρ c.
+    induction vars; intros; simpl in *.
+    * reflexivity.
+    * destruct decide; subst; simpl in *.
+      - destruct decide.
+        + subst. clear-H0. exfalso.
+          set_solver.
+        + f_equal.
+          specialize (IHvars ltac:(set_solver)).
+          by rewrite IHvars.
+      - f_equal.
+        specialize (IHvars ltac:(set_solver)).
+        by rewrite IHvars.
   Qed.
 
 End Semantics.
@@ -280,7 +347,7 @@ Tactic Notation "deconstruct_elem_of_Theory" :=
 Tactic Notation "eval_helper" :=
   repeat match goal with
          | [ |- context [eval ?ρ (@kore_app ?Σ ?ex ?mu ?σ ?l) ] ] =>
-           rewrite eval_equation_5; cbn
+           rewrite eval_app_simpl; cbn
          | _ => simp eval
          end.
 

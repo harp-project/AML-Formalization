@@ -314,6 +314,28 @@ Module Notations.
 
 End Notations.
 
+Section DerivedNotations.
+
+  Context {Σ : Signature}.
+
+  Fixpoint var_list {l} ex mu (vars : hlist evar l)
+    : hlist (Pattern ex mu) l :=
+  match vars with
+  | hnil => hnil
+  | hcons x xs => hcons (kore_fevar x) (var_list ex mu xs)
+  end.
+
+  Definition functional_symbol
+    (σ : symbol) (R : sort)
+    (vars : hlist evar (arg_sorts σ))
+    : Pattern [] [] R :=
+    kore_exists (ret_sort σ) (kore_equals R (kore_app σ
+      (var_list [ret_sort σ] [] vars)
+    ) (kore_bevar In_nil)).
+
+
+End DerivedNotations.
+
 (*
 Section Sortedness.
   Import Notations.

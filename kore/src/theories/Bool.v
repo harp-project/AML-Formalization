@@ -134,7 +134,7 @@ dv is only used with the following parameters:
         \top{SortBool{}}())))
  *)
 
-  Program Definition Kbool_theory : @Theory BoolSignature :=
+  Definition Kbool_theory_behavioural : @Theory BoolSignature :=
     PropSet (fun pat =>
       (** negation: *)
       (* not false = true *)
@@ -365,14 +365,15 @@ dv is only used with the following parameters:
             --->
             (KimpliesBool ⋅ ⟨kore_fevar "X0"; kore_fevar "X1"⟩ =k{R} (kore_fevar "B" and Top{Kbool}))
           )
-      ) \/
+      )
+    ).
     (** functional axioms *)
-      (
+    Definition Kbool_theory_functional : @Theory BoolSignature :=
+      PropSet (fun pat =>
       exists R, pat =
         existT R (
           kore_exists Kbool (KandBool ⋅ ⟨kore_fevar "K0"; kore_fevar "K1"⟩ =k{R} kore_bevar (In_nil)
-        ))
-      ) (* \/
+      )) \/
       (
       exists R, pat =
         existT R (
@@ -382,12 +383,43 @@ dv is only used with the following parameters:
       (
       exists R, pat =
         existT R (
-          kore_exists Kbool (KandBool ⋅ ⟨kore_fevar "K0"; kore_fevar "K1"⟩ =k{R} kore_bevar (In_nil)
+          kore_exists Kbool (KimpliesBool ⋅ ⟨kore_fevar "K0"; kore_fevar "K1"⟩ =k{R} kore_bevar (In_nil)
         ))
-      )*)
+      ) \/
+      (
+      exists R, pat =
+        existT R (
+          kore_exists Kbool (KorBool ⋅ ⟨kore_fevar "K0"; kore_fevar "K1"⟩ =k{R} kore_bevar (In_nil)
+        ))
+      ) \/
+      (
+      exists R, pat =
+        existT R (
+          kore_exists Kbool (KorElseBool ⋅ ⟨kore_fevar "K0"; kore_fevar "K1"⟩ =k{R} kore_bevar (In_nil)
+        ))
+      ) \/
+      (
+      exists R, pat =
+        existT R (
+          kore_exists Kbool (KxorBool ⋅ ⟨kore_fevar "K0"; kore_fevar "K1"⟩ =k{R} kore_bevar (In_nil)
+        ))
+      ) \/
+      (
+      exists R, pat =
+        existT R (
+          kore_exists Kbool (KnotBool ⋅ ⟨kore_fevar "K0"⟩ =k{R} kore_bevar (In_nil)
+        ))
+      )
     )
     .
     (* Sometimes, implicit arguments are needed, e.g. if X ⊆ Y, and X and Y are both free variables. However, this might be resolved if X and Y would be bound *)
+
+
+(*
+  TODO: Lbl'UndsEqlsEqls'Bool'Unds'
+
+
+*)
 
 End BoolSyntax.
 
@@ -482,58 +514,70 @@ Module BoolSemantics.
   | |- ?G => rewrite_app_ext_innnermost G; cbn
   end.
 
-  Goal satT Kbool_theory BoolModel.
+  Goal satT Kbool_theory_behavioural BoolModel.
   Proof.
     (* unfold sat defs *)
     unfold satT, satM. intros.
 
     (* Generate a goal for each axiom: *)
-    unfold Kbool_theory in H.
+    unfold Kbool_theory_behavioural in H.
     unfold_elem_of; destruct_or?; destruct_ex?; subst.
 
-    1-25:
+    all:
       simpl;
       eval_helper;
       autorewrite_set;
       repeat rewrite_app_ext;
       repeat destruct_evar_val;
       set_solver.
-    
-    simpl.
-    eval_helper.
-    cbn.
-    apply propset_fa_union_full.
-    intros.
-    (* eexists. *)
-    (* eval_helper. *)
-    Import Equations.
-    simp eval.
-    
-    cbn.
-    
+  Qed.
 
-(*     (* simplification *)
-    * simpl.
-      eval_helper.
-      autorewrite_set.
-      unshelve (repeat erewrite app_ext_singleton).
-      1-3: simpl; try repeat econstructor. (* This seems to be fragile *)
-      cbn.
-      destruct_evar_val; set_solver.
-    * simpl.
-      eval_helper.
-      autorewrite_set.
-      unshelve (repeat erewrite app_ext_singleton).
-      1-3: simpl; try repeat econstructor. (* This seems to be fragile *)
-      cbn.
-      destruct_evar_val; set_solver.
-    * simpl.
-      eval_helper.
-      autorewrite_set.
-      unshelve (repeat erewrite app_ext_singleton).
-      1-3: simpl; try repeat econstructor. (* This seems to be fragile *)
-      cbn.
-      do 2 destruct_evar_val; set_solver. *)
+  Ltac solve_functional_axiom :=
+  match goal with
+  | [ |- @eval _ ?M _ _ _ ?ρ (kore_exists _
+                  (kore_equals ?s (kore_app ?σ ?l)
+                               (kore_bevar In_nil))) = ⊤]
+                               (* ^- NOTE: this is a restriction on db index 0!!! This pattern checks whether the axiom is a functional axiom *) =>
+    let H := fresh "H" in
+    epose proof (functional_symbol_is_functional σ s (hmap (fun s p =>
+      match p with
+      | kore_fevar x => x
+      | _ => "_"
+      end) l) M);
+    apply H;
+    eexists;
+    reflexivity
+  end.
+
+  Goal satT Kbool_theory_functional BoolModel.
+  Proof.
+    unfold satT, satM. intros.
+
+    (* Generate a goal for each axiom: *)
+    unfold Kbool_theory_behavioural in H.
+    unfold_elem_of; destruct_or?; destruct_ex?; subst; simpl.
+    all: solve_functional_axiom.
+(*     * simpl.
+      Check @eval.
+      Check hmap.
+      match goal with
+      | [ |- @eval _ ?M _ _ _ ?ρ (kore_exists _
+                      (kore_equals ?s (kore_app ?σ ?l)
+                                   (kore_bevar In_nil))) = ⊤] (* <- NOTE: this is a restriction on db index 0!!! *) =>
+        let H := fresh "H" in
+        epose proof (functional_symbol_is_functional σ s (hmap (fun s p =>
+          match p with
+          | kore_fevar x => x
+          | _ => "_"
+          end) l) M);
+        apply H;
+        eexists;
+        reflexivity
+      end.
+    
+      pose proof (functional_symbol_is_functional KandBool x (hcons "K0" (hcons "K1" hnil)) BoolModel). (* just apply does not work for some reason *)
+      apply H.
+      simpl. eexists. reflexivity. *)
   Qed.
 
 End BoolSemantics.

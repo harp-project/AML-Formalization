@@ -253,3 +253,24 @@ Ltac solve_set_instances :=
   | [|- LeibnizEquiv _ ] => typeclasses eauto
   | [|- TopSet _ _ ] => typeclasses eauto
   end. *)
+
+Fixpoint hmap {J} {A B : J -> Type}
+  (f : ∀ j, A j -> B j)
+  {js : list J} (v : @hlist J A js) {struct v} : @hlist J B js :=
+match v with
+| hnil => hnil
+| hcons x xs => hcons (f _ x) (hmap f xs)
+end.
+
+Fixpoint uncurry_n {S}
+  {l : list S} {R : S}
+  {T : S -> Type}
+  (f : foldr (λ c a, T c -> a) (T R) l)
+    (hl : hlist T l) : T R.
+Proof.
+  induction hl.
+  * simpl in f. exact f.
+  * simpl in f.
+    specialize (f f0).
+    specialize (IHhl f). exact IHhl.
+Defined.
