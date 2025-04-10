@@ -969,16 +969,16 @@ End ImpSyntax.
   forall (P : Prop),
     {[_ | P]} = ⊤ \/ {[_ | P]} = ⊥. *)
 
-Module BoolSemantics.
+Module ImpSemantics.
 
-  Import BoolSyntax.
+  Import ImpSyntax.
 
   Definition neqb (b1 b2 : bool) : bool :=
     negb (eqb b1 b2).
 
-  Definition BoolModel : @Model BoolSignature :=
+  Definition ImpModel : @Model ImpSignature :=
     mkModel_singleton
-      (Ksorts_rect _ bool)
+      (Ksorts_rect _ bool Z)
       (Ksyms_rect _ true
                     false
                     negb
@@ -1044,11 +1044,11 @@ Module BoolSemantics.
     (* idtac "last1" σ args; *)
     (* let H := fresh "H" in
     (* we explicitly rewrite: *)
-    unshelve (epose proof (@app_ext_singleton _ BoolModel σ args ltac:(solve_all_singleton)) as H);
+    unshelve (epose proof (@app_ext_singleton _ ImpModel σ args ltac:(solve_all_singleton)) as H);
     (* idtac "last2" σ args; *)
     rewrite H; (* erewrite does not work here, for some reason *)
     clear H *)
-    rewrite (@app_ext_singleton _ BoolModel σ args ltac:(solve_all_singleton))
+    rewrite (@app_ext_singleton _ ImpModel σ args ltac:(solve_all_singleton))
   end.
 
   Ltac rewrite_app_ext :=
@@ -1056,7 +1056,7 @@ Module BoolSemantics.
   | |- ?G => rewrite_app_ext_innnermost G; cbn
   end.
 
-  Goal satT Kbool_theory_behavioural BoolModel.
+  Goal satT Kbool_theory_behavioural ImpModel.
   Proof.
     (* unfold sat defs *)
     unfold satT, satM. intros.
@@ -1091,7 +1091,7 @@ Module BoolSemantics.
     reflexivity
   end.
 
-  Goal satT Kbool_theory_functional BoolModel.
+  Goal satT Kbool_theory_functional ImpModel.
   Proof.
     unfold satT, satM. intros.
 
@@ -1117,7 +1117,7 @@ Module BoolSemantics.
         reflexivity
       end.
     
-      pose proof (functional_symbol_is_functional KandBool x (hcons "K0" (hcons "K1" hnil)) BoolModel). (* just apply does not work for some reason *)
+      pose proof (functional_symbol_is_functional KandBool x (hcons "K0" (hcons "K1" hnil)) ImpModel). (* just apply does not work for some reason *)
       apply H.
       simpl. eexists. reflexivity. *)
   Qed.
