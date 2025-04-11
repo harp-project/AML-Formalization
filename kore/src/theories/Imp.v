@@ -757,10 +757,31 @@ dv is only used with the following parameters:
 
 
    (* Questions here:
-      - How should we model hooked symbols, which do not have any axioms (not even functional ones)?---in some cases (maybe in all) there is an smt-hook on these.
-        These are: KtimeLParRPar_K_IO_Int, KtmodInt, KtdivInt, KltltInt, KgtgtInt, KpowmodInt, KpowInt, KdivInt, KdividesInt, KmodInt, KbitRangeInt, Klog2Int, KrandInt
-      - What should we do with the attributes (e.g., total, functional, freshgenerator)?
+      - How should we model hooked symbols, which do not have any axioms (not even functional ones)?---in some cases (maybe in all) there is a hook/smt-hook on these.
+        These are:
+           KtimeLParRPar_K_IO_Int - Lbl'Hash'time'LParRParUnds'K-IO'Unds'Int - hook: IO.time
+           KtmodInt - Lbl'UndsPerc'Int'Unds' - hook: INT.tmod
+           KtdivInt - Lbl'UndsSlsh'Int'Unds' - hook: INT.tdiv
+           KltltInt - Lbl'Unds-LT--LT-'Int'Unds' - hook: INT.shl
+           KgtgtInt - Lbl'Unds-GT--GT-'Int'Unds' - hook: INT.shr
+           KpowmodInt - Lbl'UndsXor-Perc'Int'UndsUnds' - hook: INT.powmod
+           KpowInt - Lbl'UndsXor-'Int'Unds' - hook: INT.pow
+           KdivInt - Lbl'Unds'divInt'Unds' - hook: INT.ediv
+           KmodInt - Lbl'Unds'modInt'Unds' - hook: INT.emod
+           KbitRangeInt - LblbitRangeInt'LParUndsCommUndsCommUndsRParUnds'INT-COMMON'Unds'Int'Unds'Int'Unds'Int'Unds'Int - hook: INT.bitRange
+           KsignExtendBitRangeInt - LblsignExtendBitRangeInt'LParUndsCommUndsCommUndsRParUnds'INT-COMMON'Unds'Int'Unds'Int'Unds'Int'Unds'Int - hook: INT.signExtendBitRange
+           Klog2Int - Lbllog2Int'LParUndsRParUnds'INT-COMMON'Unds'Int'Unds'Int - hook: INT.log2
+           KrandInt - LblrandInt'LParUndsRParUnds'INT-COMMON'Unds'Int'Unds'Int - hook: INT.rand
+      - There is a potential issue:
+           KdividesInt - Lbl'Unds'dividesInt'UndsUnds'INT-COMMON'Unds'Bool'Unds'Int'Unds'Int
+                         THERE IS NO HOOK for this symbol!!!!
+                         But there is no functional axiom either. However, there
+                         is one behavioural axiom for it.
+      - What should we do with the attributes (e.g., total, functional, freshGenerator)? Why is freshInt the identity function?
       - There are axioms for minInt, but none for maxInt?
+      - Where are the axioms for INT-SYMBOLIC? Should we also include those in the
+        formalisation of the stdlib?
+      - Where is the implementation of INT.rand? I could not find it in the compiler.
    *)
    Definition Kint_theory_behavioural : @Theory ImpSignature :=
     PropSet (fun pat =>
@@ -973,10 +994,63 @@ Module ImpSemantics.
 
   Import ImpSyntax.
 
-  Definition neqb (b1 b2 : bool) : bool :=
-    negb (eqb b1 b2).
+  Definition neqbB (b1 b2 : bool) : bool :=
+    negb (Bool.eqb b1 b2).
+  Definition neqbZ (b1 b2 : Z) : bool :=
+    negb (Z.eqb b1 b2).
 
-  Definition ImpModel : @Model ImpSignature :=
+  Print Ksyms.
+  Open Scope Z_scope.
+
+
+  (* NOTE: Beware the difference between mod and rem
+     (and quot and div) *)
+  (*
+    Following defs are taken from: https://github.com/runtimeverification/k/blob/eff6bea3f2118bb02c185888d1b369c5c2a59ec3/k-frontend/src/main/java/org/kframework/compile/ConstantFolding.java#L552
+  *)
+  (* TODO: Java throws an exception if idx or length is not unsigned *)
+  Definition bitRange (i idx len : Z) : Z :=
+    Z.shiftr
+      (Z.land i (Z.shiftl (Z.shiftl 1 len - 1) idx))
+      idx.
+
+  (* TODO: Java throws an exception if idx or length is not unsigned *)
+  Definition signExtendBitRange (i idx len : Z) : Z :=
+  match len with
+  | 0 => 0
+  | _ =>
+    if Z.testbit i (idx + len - 1)
+    then
+      let max := Z.shiftl 1 (len - 1) in
+        let tmp := bitRange i idx len in
+          bitRange (tmp + max) 0 len - max
+    else bitRange i idx len
+  end.
+
+  Definition emod (a b : Z) : Z :=
+    let rem := Z.rem a b in
+    if rem <? 0
+    then rem + Z.abs b
+    else rem.
+
+  Definition ediv (a b : Z) : Z :=
+    Z.quot (a - emod a b) b.
+
+  (* REPORT modPow:
+     This is how the Java code works, but every other
+     operations is relying on rem, and not mod!
+     Are we sure, that all backends understand mod and
+     div as rem and quot?
+   *)
+  Definition modPow (a b c : Z) : Z :=
+    Z.modulo (Z.pow a b) c.
+
+  Compute modPow (-7) 3 20.
+
+  Definition divides (a b : Z) : bool :=
+    Z.rem a b =? 0.
+
+  Program Definition ImpModel : @Model ImpSignature :=
     mkModel_singleton
       (Ksorts_rect _ bool Z)
       (Ksyms_rect _ true
@@ -989,8 +1063,47 @@ Module ImpSemantics.
                     orb
                     implb
                     eqb
-                    neqb)
+                    neqbB
+                    id
+                    2
+                    0
+                    1
+                    0 (* unsure about this *)
+                    Z.rem
+                    Z.land (* unsure about this *)
+                    Z.mul
+                    Z.add
+                    Z.sub
+                    Z.quot
+                    Z.shiftl
+                    Z.leb
+                    Z.ltb
+                    neqbZ
+                    Z.eqb
+                    Z.geb
+                    Z.shiftr
+                    Z.gtb
+                    modPow (* powmod *)
+                    Z.pow (* pow *)
+                    ediv (* div *)
+                    divides (* divides *)
+                    emod (* mod *)
+                    Z.lxor (* xor *)
+                    Z.lor (* or *)
+                    Z.abs (* abs *)
+                    bitRange (* bitRange *)
+                    (id : Z -> Z) (* fresh *)
+                    Z.log2 (* log2 *)
+                    Z.max
+                    Z.min
+                    _ (* rand - how should we model random generation? I could not find the corresponding implementation! *)
+                    signExtendBitRange (* signExtendBitRangeInt *)
+                    Z.lnot) (* not *)
       ltac:(intros []; auto with typeclass_instances).
+  Final Obligation.
+    simpl.
+    
+  Defined.
 
   Ltac unfold_elem_of :=
   match goal with
