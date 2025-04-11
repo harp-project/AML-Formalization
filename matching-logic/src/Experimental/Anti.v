@@ -257,6 +257,15 @@ Definition predAUP (x : AUP) := many_ex (length (subsAUP x)) (termAUP x and ((in
     reflexivity.
   Defined.
 
+  Lemma many_ex_evar_open : forall n m p p', (many_ex n p)^{evar:m ↦ p'} = many_ex n (p^{evar:n + m ↦ p'}).
+  Proof.
+    induction n; simpl; intros.
+    reflexivity.
+    mlSimpl.
+    specialize (IHn (S m) p p'). rewrite IHn.
+    do 3 f_equal. lia.
+  Defined.
+
   Goal forall Γ x y, wfAUP x -> x ~> y -> Γ ⊢ predAUP x <---> predAUP y.
   Proof.
     intros.
@@ -266,15 +275,40 @@ Definition predAUP (x : AUP) := many_ex (length (subsAUP x)) (termAUP x and ((in
     inversion H0; subst.
     - unfold predAUP. simpl.
       simplify_map. simplify_length. simpl.
+      (* unfold index_predicate, index_predicate'. *)
+
       mlSplitAnd; mlIntro.
-      mlFreshEvar as x.
+      epose proof (EmptyFreshMan (t :: a :: b :: c :: d :: map fst xs ++ map snd xs ++ map fst ys ++ map snd ys) [] []) as FM.
+      apply FreshMan_fresh_evar in FM as [x FM].
       mlDestructExManual "0" as x.
       try_solve_pile.
       fm_solve.
       fm_solve.
-      rewrite free_evars_many_ex. simpl. rewrite !free_evars_index_predicate.
-      fm_solve.
-      fm_solve.
+      (* rewrite free_evars_many_ex. simpl. rewrite !free_evars_index_predicate. unfold free_evars_of_list, union_list. simplify_map. *)
+      (* fm_solve. *)
+      (* fm_solve. *)
+      admit. admit.
+      rewrite many_ex_evar_open Nat.add_0_r. mlSimpl.
+      Search patt_exists patt_and.
+  Admitted.
+
+  Goal forall Γ t1 t2, theory ⊆ Γ -> well_formed t1 -> well_formed t2 -> Γ ⊢ predAUP (mkAUP b0 [(t1, t2)]) <---> (t1 or t2).
+  Proof.
+    intros.
+    unfold predAUP. simpl.
+    unfold index_predicate, index_predicate'. simpl.
+    toMLGoal. wf_auto2.
+    mlSplitAnd; mlIntro.
+    mlDestructEx "0" as x. mlSimpl.
+    replace (b0^{evar:0 ↦ x}) with (patt_free_evar x) by auto.
+    rewrite !evar_open_not_occur. 1,2: wf_auto2.
+    mlDestructAnd "0". mlDestructOr "2".
+    mlDestructAnd "0". mlLeft. mlRevert "3". mlRewriteBy <- "2" at 1.
+    mlIntro. mlAssumption.
+    mlRight. mlDestructAnd "3". mlRevert "2". mlRewriteBy <- "0" at 1.
+    mlIntro. mlAssumption.
+    Search derives_using patt_free_evar.
+
 
   (* From Coq.Classes Require Import CRelationClasses CMorphisms CEquivalence. *)
 
