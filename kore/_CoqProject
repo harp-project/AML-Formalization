@@ -8,5 +8,5 @@ src/Freshness.v
 src/Substitution.v
 src/Semantics.v
 
-src/examples/Nat.v
+src/theories/Imp.v
 

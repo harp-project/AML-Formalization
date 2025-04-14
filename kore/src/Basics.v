@@ -262,11 +262,11 @@ match v with
 | hcons x xs => hcons (f _ x) (hmap f xs)
 end.
 
-Fixpoint uncurry_n {S}
-  {l : list S} {R : S}
+Fixpoint uncurry_n {S R : Type}
+  {l : list S}
   {T : S -> Type}
-  (f : foldr (λ c a, T c -> a) (T R) l)
-    (hl : hlist T l) : T R.
+  (f : foldr (λ c a, T c -> a) R l)
+    (hl : hlist T l) : R.
 Proof.
   induction hl.
   * simpl in f. exact f.
@@ -274,3 +274,17 @@ Proof.
     specialize (f f0).
     specialize (IHhl f). exact IHhl.
 Defined.
+
+Lemma propset_union_simpl :
+  forall T (P Q : T -> Prop),
+    {[ x | P x ]} ∪ {[ x | Q x]} = {[ x | P x \/ Q x ]}.
+Proof.
+  set_solver.
+Qed.
+
+Lemma propset_intersection_simpl :
+  forall T (P Q : T -> Prop),
+    {[ x | P x ]} ∩ {[ x | Q x]} = {[ x | P x /\ Q x ]}.
+Proof.
+  set_solver.
+Qed.

@@ -241,19 +241,8 @@ End with_model.
   {|
     carrier := custom_carrier;
     inhabited := custom_inh;
-    app :=
-      fun σ l => _
+    app := fun σ => uncurry_n (custom_app σ)
   |}.
-  Next Obligation.
-    intros.
-    specialize (custom_app σ).
-    induction (arg_sorts σ).
-    * simpl in custom_app. exact custom_app.
-    * simpl in custom_app.
-      unshelve eapply (hcons_inv _ _ l); intros.
-      specialize (custom_app y).
-      specialize (IHl0 custom_app ys). exact IHl0.
-  Defined.
 
   Definition mkModel_singleton
     (custom_carrier : sort → Set)
@@ -339,21 +328,97 @@ End with_model.
 
 End Semantics.
 
+  Ltac unfold_elem_of :=
+  match goal with
+  | [H : _ ∈ _ |- _]  => destruct H
+  end.
+
+  Ltac destruct_evar_val :=
+  match goal with
+  | [ |- context [evar_valuation ?ρ ?x] ] =>
+    let H := fresh "Val" in
+      destruct (evar_valuation ρ x) eqn:H
+  end.
+
+  Ltac solve_dep_prods :=
+    match goal with
+    | [ |- ()] => exact tt
+    | [ |- prod (sigT _) _] =>
+      apply pair; [
+        eapply existT; reflexivity
+      |
+        solve_dep_prods
+      ]
+    end.
+
+  Ltac solve_all_singleton :=
+  match goal with
+  | [ |- all_singleton _] => cbn; solve_dep_prods
+  end.
+
+  (* This would be much more simple, if rewrite_stat innermost worked... *)
+  Ltac rewrite_app_ext_innnermost G :=
+  match G with
+  | context [@app_ext _ ?M ?σ ?args] =>
+    rewrite_app_ext_innnermost args (* This step is just to reach
+                                        the innermost app_ext *)
+    (* idtac "match" σ args *)
+  | context [@app_ext _ ?M ?σ ?args] => (* This branch fails, if there is no
+                                     more app_exts, therefore
+                                     it succeeds for the last (innermost)
+                                     app_ext *)
+    (* idtac "last1" σ args; *)
+    (* let H := fresh "H" in
+    (* we explicitly rewrite: *)
+    unshelve (epose proof (@app_ext_singleton _ ImpModel σ args ltac:(solve_all_singleton)) as H);
+    (* idtac "last2" σ args; *)
+    rewrite H; (* erewrite does not work here, for some reason *)
+    clear H *)
+    rewrite (@app_ext_singleton _ M σ args ltac:(solve_all_singleton))
+  end.
+
+  Ltac rewrite_app_ext :=
+  match goal with
+  | |- ?G => rewrite_app_ext_innnermost G; cbn
+  end.
+
+
 Tactic Notation "deconstruct_elem_of_Theory" :=
   repeat match goal with
   | [ H : _ ∈ _ |- _ ] => inversion H; subst; clear H
   end; clear; simpl.
 
 Tactic Notation "eval_helper" :=
-  repeat match goal with
-         | [ |- context [eval ?ρ (@kore_app ?Σ ?ex ?mu ?σ ?l) ] ] =>
-           rewrite eval_app_simpl; cbn
-         | _ => simp eval
-         end.
+  repeat
+    match goal with
+    | [ |- context [eval ?ρ (@kore_app ?Σ ?ex ?mu ?σ ?l) ] ] =>
+       let H := fresh "H" in
+       pose proof (eval_app_simpl σ l ρ) as H;
+       rewrite H;
+       clear H;
+       cbn
+    | _ => simp eval
+    end.
 
 Tactic Notation "rewrite_singleton_all" :=
     unshelve (rewrite_strat bottomup app_ext_singleton); [repeat esplit.. |].
 
+  Ltac solve_functional_axiom :=
+  match goal with
+  | [ |- @eval _ ?M _ _ _ ?ρ (kore_exists _
+                  (kore_equals ?s (kore_app ?σ ?l)
+                               (kore_bevar In_nil))) = ⊤]
+                               (* ^- NOTE: this is a restriction on db index 0!!! This pattern checks whether the axiom is a functional axiom *) =>
+    let H := fresh "H" in
+    epose proof (functional_symbol_is_functional σ s (hmap (fun s p =>
+      match p with
+      | kore_fevar x => x
+      | _ => "_"%string
+      end) l) M);
+    apply H;
+    eexists;
+    reflexivity
+  end.
 
 Add Search Blacklist "_elim".
 Add Search Blacklist "FunctionalElimination_".

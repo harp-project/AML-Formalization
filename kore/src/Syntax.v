@@ -259,9 +259,9 @@ Module Notations.
   Notation "'∀k' s1 ',' p" := (kore_forall s1 p) (at level 80, format "'∀k'  s1 ','  p") : kore_scope.
   Check (∀k _ , ⊥{_})%kore.
 
-  Notation "μ ',' p" := (kore_mu p) (at level 80, format "μ ','  p") : kore_scope.
+  Notation "'μ' ',' p" := (kore_mu p) (at level 80, format "'μ' ','  p") : kore_scope.
   Check (μ , ⊥{_})%kore.
-  Notation "ν ',' p" := (kore_nu p) (at level 80, format "ν ','  p") : kore_scope.
+  Notation "'ν' ',' p" := (kore_nu p) (at level 80, format "'ν' ','  p") : kore_scope.
   Check (ν , ⊥{_})%kore.
 
   Notation "'⌈{' s2 '}' p ⌉" := (kore_ceil s2 p) (format "'⌈{' s2 '}'  p ⌉") : kore_scope.

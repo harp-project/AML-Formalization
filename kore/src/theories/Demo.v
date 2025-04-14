@@ -111,7 +111,6 @@ Module ImpSyntax.
 
   Instance Ksyms_eq_dec : EqDecision Ksyms.
   Proof. solve_decision. Defined.
-  Print Ksyms.
 
   (* Program Instance Ksyms_finite : finite.Finite Ksyms := {
     enum := [   Ktrue
@@ -164,8 +163,6 @@ Module ImpSyntax.
   Next Obligation. compute_done. Defined.
   Final Obligation. destruct x; set_solver. Defined. *)
 
-  Check inj_countable.
-
   Local Definition Ksyms_to_gen_tree (σ : Ksyms) : gen_tree (nat + Z) :=
   match σ with
    | Ktrue => GenLeaf (inl 0)
@@ -215,7 +212,7 @@ Module ImpSyntax.
    | KsignExtendBitRangeInt => GenLeaf (inl 43)
    | KnotInt => GenLeaf (inl 44)
   end.
-  Print Ksyms.
+
   Local Definition gen_tree_to_Ksyms (t : gen_tree (nat + Z)) : option Ksyms :=
   match t with
   | GenLeaf (inl x) => match x with
@@ -792,7 +789,7 @@ dv is only used with the following parameters:
         existT R (Top{R} and Top{R} ---> Kstdin_K_IO_Int ⋅⟨⟩ =k{R} KintVal 0 ⋅ ⟨⟩)
       ) \/
       (exists R, pat =
-        existT R (Top{R} and Top{R} ---> Kstdin_K_IO_Int ⋅⟨⟩ =k{R} KintVal 1 ⋅ ⟨⟩)
+        existT R (Top{R} and Top{R} ---> Kstdout_K_IO_Int ⋅⟨⟩ =k{R} KintVal 1 ⋅ ⟨⟩)
       ) \/
       (exists R, pat =
         existT R (
@@ -999,7 +996,6 @@ Module ImpSemantics.
   Definition neqbZ (b1 b2 : Z) : bool :=
     negb (Z.eqb b1 b2).
 
-  Print Ksyms.
   Open Scope Z_scope.
 
 
@@ -1049,59 +1045,9 @@ Module ImpSemantics.
 
   Definition divides (a b : Z) : bool :=
     Z.rem a b =? 0.
-
+  
+  Check Ksyms_rect.
   Program Definition ImpModel : @Model ImpSignature :=
-    mkModel (* _singleton *)
-      (Ksorts_rect _ bool Z)
-      (Ksyms_rect _ {[true]}
-                    {[false]}
-                    (fun x => singleton (negb x))
-                    (fun x y => singleton (andb x y))
-                    (fun x y => singleton (andb x y))
-                    (fun x y => singleton (xorb x y))
-                    (fun x y => singleton (orb x y))
-                    (fun x y => singleton (orb x y))
-                    (fun x y => singleton (implb x y))
-                    (fun x y => singleton (eqb x y))
-                    (fun x y => singleton (neqbB x y))
-                    (fun x => {[x]})
-                    {[2]}
-                    {[0]}
-                    {[1]}
-                    {[0]} (* unsure about this *)
-                    (fun x y => singleton (Z.rem x y))
-                    (fun x y => singleton (Z.land x y)) (* unsure about this *)
-                    (fun x y => singleton (Z.mul x y))
-                    (fun x y => singleton (Z.add x y))
-                    (fun x y => singleton (Z.sub x y))
-                    (fun x y => singleton (Z.quot x y))
-                    (fun x y => singleton (Z.shiftl x y))
-                    (fun x y => singleton (Z.leb x y))
-                    (fun x y => singleton (Z.ltb x y))
-                    (fun x y => singleton (neqbZ x y))
-                    (fun x y => singleton (Z.eqb x y))
-                    (fun x y => singleton (Z.geb x y))
-                    (fun x y => singleton (Z.shiftr x y))
-                    (fun x y => singleton (Z.gtb x y))
-                    (fun x y z => singleton (modPow x y z)) (* powmod *)
-                    (fun x y => singleton (Z.pow x y)) (* pow *)
-                    (fun x y => singleton (ediv x y)) (* div *)
-                    (fun x y => singleton (divides x y)) (* divides *)
-                    (fun x y => singleton (emod x y)) (* mod *)
-                    (fun x y => singleton (Z.lxor x y)) (* xor *)
-                    (fun x y => singleton (Z.lor x y))  (* or *)
-                    (singleton ∘ Z.abs) (* abs *)
-                    (fun x y z => singleton (bitRange x y z)) (* bitRange *)
-                    (fun x => singleton x) (* fresh *)
-                    (fun x => singleton (Z.log2 x)) (* log2 *)
-                    (fun x y => singleton (Z.max x y))
-                    (fun x y => singleton (Z.min x y))
-                    (fun x y z => ⊤) (* rand - how should we model random generation? I could not find the corresponding implementation! *)
-                    (fun x y z => singleton (signExtendBitRange x y z)) (* signExtendBitRangeInt *)
-                    (singleton ∘ Z.lnot)) (* not *)
-      ltac:(intros []; auto with typeclass_instances).
-
-  (* Program Definition ImpModel : @Model ImpSignature :=
     mkModel_singleton
       (Ksorts_rect _ bool Z)
       (Ksyms_rect _ true
@@ -1152,38 +1098,8 @@ Module ImpSemantics.
                     Z.lnot) (* not *)
       ltac:(intros []; auto with typeclass_instances).
   Final Obligation.
-    simpl.
-    
-  Admitted.
-  Print ImpModel. *)
-
-  Ltac unfold_elem_of :=
-  match goal with
-  | [H : _ ∈ _ |- _]  => destruct H
-  end.
-
-  Ltac destruct_evar_val :=
-  match goal with
-  | [ |- context [evar_valuation ?ρ ?x] ] =>
-    let H := fresh "Val" in
-      destruct (evar_valuation ρ x) eqn:H
-  end.
-
-  Ltac solve_dep_prods :=
-    match goal with
-    | [ |- ()] => exact tt
-    | [ |- prod (sigT _) _] =>
-      apply pair; [
-        eapply existT; reflexivity
-      |
-        solve_dep_prods
-      ]
-    end.
-
-  Ltac solve_all_singleton :=
-  match goal with
-  | [ |- all_singleton _] => cbn; solve_dep_prods
-  end.
+    simpl. intros x y z. exact (x + y + z).
+  Defined.
 
   (* For some reason, this tac does not work outside this file *)
   Ltac autorewrite_set :=
@@ -1192,48 +1108,31 @@ Module ImpSemantics.
       rewrite intersection_top_r_L +
       rewrite union_empty_l_L +
       rewrite union_empty_r_L +
-      rewrite propset_difference_neg
+      rewrite propset_difference_neg +
+      rewrite propset_union_simpl +
+      rewrite propset_intersection_simpl
     ).
 
-  (* This would be much more simple, if rewrite_stat innermost worked... *)
-  Ltac rewrite_app_ext_innnermost G :=
-  match G with
-  | context [app_ext ?σ ?args] =>
-    rewrite_app_ext_innnermost args (* This step is just to reach
-                                        the innermost app_ext *)
-    (* idtac "match" σ args *)
-  | context [app_ext ?σ ?args] => (* This branch fails, if there is no
-                                     more app_exts, therefore
-                                     it succeeds for the last (innermost)
-                                     app_ext *)
-    (* idtac "last1" σ args; *)
-    (* let H := fresh "H" in
-    (* we explicitly rewrite: *)
-    unshelve (epose proof (@app_ext_singleton _ ImpModel σ args ltac:(solve_all_singleton)) as H);
-    (* idtac "last2" σ args; *)
-    rewrite H; (* erewrite does not work here, for some reason *)
-    clear H *)
-    rewrite (@app_ext_singleton _ ImpModel σ args ltac:(solve_all_singleton))
-  end.
+  Goal satT Kint_theory_functional ImpModel.
+  Proof.
+    unfold satT, satM. intros.
 
-  Ltac rewrite_app_ext :=
-  match goal with
-  | |- ?G => rewrite_app_ext_innnermost G; cbn
-  end.
+    (* Generate a goal for each axiom: *)
+    unfold Kbool_theory_behavioural in H.
+    unfold_elem_of; destruct_or?; destruct_ex?; subst; simpl.
+    all: solve_functional_axiom.
+  Qed.
 
-  (* Import Equations.
+  Goal satT Kbool_theory_functional ImpModel.
+  Proof.
+    unfold satT, satM. intros.
 
-  Ltac eval_helper2 :=
-  repeat
-    match goal with
-    | [ |- context [eval ?ρ (@kore_app ?Σ ?ex ?mu ?σ ?l) ] ] =>
-       let H := fresh "H" in
-       pose proof (eval_app_simpl σ l ρ) as H;
-       rewrite H;
-       clear H;
-       cbn
-    | _ => simp eval
-    end. *)
+    (* Generate a goal for each axiom: *)
+    unfold Kbool_theory_behavioural in H.
+    unfold_elem_of; destruct_or?; destruct_ex?; subst; simpl.
+    all: solve_functional_axiom.
+  Qed.
+
 
   Goal satT Kbool_theory_behavioural ImpModel.
   Proof.
@@ -1253,96 +1152,57 @@ Module ImpSemantics.
       set_solver.
   Qed.
 
-  Definition nary_comp {R T : Type} {M} {l : list sort}
-    (g : R -> T)
-    (f : foldr (λ c a, M c -> a) R l) :
-      hlist M l -> T.
+  Goal satT Kint_theory_behavioural ImpModel.
   Proof.
-    revert f g.
-    induction l; intros.
-    * simpl in *. exact (g f).
-    * simpl in *.
-      dependent destruction X.
-      apply f in m.
-      apply IHl; assumption.
-  Defined.
-
-  Lemma functional_symbol_is_functional :
-    forall (σ : symbol) (R : sort) (vars : hlist evar (arg_sorts σ)),
-      forall (M : Model),
-        (exists (f : foldr (λ c a, M c -> a) (M (ret_sort σ)) (arg_sorts σ)), app M σ = nary_comp singleton f) ->
-        satM (functional_symbol σ R vars) M.
-  Proof.
-    intros.
-    apply functional_symbol_is_functional.
-    destruct H. rewrite H.
-    exists (uncurry_n x).
-    
-  Admitted.
-
-  Ltac solve_functional_axiom :=
-  match goal with
-  | [ |- @eval _ ?M _ _ _ ?ρ (kore_exists _
-                  (kore_equals ?s (kore_app ?σ ?l)
-                               (kore_bevar In_nil))) = ⊤]
-                               (* ^- NOTE: this is a restriction on db index 0!!! This pattern checks whether the axiom is a functional axiom *) =>
-    let H := fresh "H" in
-    epose proof (functional_symbol_is_functional σ s (hmap (fun s p =>
-      match p with
-      | kore_fevar x => x
-      | _ => "_"
-      end) l) M);
-    apply H;
-    eexists;
-    reflexivity
-  end.
-
-  Goal satT Kbool_theory_functional ImpModel.
-  Proof.
+    (* unfold sat defs *)
     unfold satT, satM. intros.
 
     (* Generate a goal for each axiom: *)
     unfold Kbool_theory_behavioural in H.
-    unfold_elem_of; destruct_or?; destruct_ex?; subst; simpl.
-    
-    * epose proof (functional_symbol_is_functional KandBool x
-        (hmap (fun s p =>
-      match p with
-      | kore_fevar x => x
-      | _ => "_"
-      end) ⟨ kore_fevar "K0"; kore_fevar "K1" ⟩) ImpModel).
-      Opaque uncurry_n.
-      simpl in H.
-      (* cbn in H. *)
-      apply H. clear H.
+    unfold_elem_of; destruct_or?; destruct_ex?; subst.
+
+    1-3:
+      simpl;
+      eval_helper;
+      autorewrite_set;
+      repeat rewrite_app_ext;
+      repeat destruct_evar_val;
+      set_solver.
+    * simpl. eval_helper.
+      autorewrite_set.
+      repeat rewrite_app_ext.
+      set_solver.
+      rewrite propset_union_simpl.
       
-      simpl app.
-      eexists.
-      simpl.
-      repeat apply functional_extensionality. reflexivity.
+      apply set_eq; intros; split; [set_solver |].
+      rewrite propset_union_simpl.
+      intros.
+      rewrite propset_union_simpl.
+      
+      
+      
+      apply elem_of_PropSet.
+      
     
-    all: solve_functional_axiom.
-(*     * simpl.
-      Check @eval.
-      Check hmap.
-      match goal with
-      | [ |- @eval _ ?M _ _ _ ?ρ (kore_exists _
-                      (kore_equals ?s (kore_app ?σ ?l)
-                                   (kore_bevar In_nil))) = ⊤] (* <- NOTE: this is a restriction on db index 0!!! *) =>
-        let H := fresh "H" in
-        epose proof (functional_symbol_is_functional σ s (hmap (fun s p =>
-          match p with
-          | kore_fevar x => x
-          | _ => "_"
-          end) l) M);
-        apply H;
-        eexists;
-        reflexivity
-      end.
     
-      pose proof (functional_symbol_is_functional KandBool x (hcons "K0" (hcons "K1" hnil)) ImpModel). (* just apply does not work for some reason *)
-      apply H.
-      simpl. eexists. reflexivity. *)
+    1:
+      simpl;
+      eval_helper;
+      autorewrite_set;
+      repeat rewrite_app_ext.
+      repeat destruct_evar_val; cbn.
+      1-2: set_solver.
+      replace {[ _ | {[0]} ⊆ {[0]} ]} with ⊤.
+      
+       set_solver.
+      set_solver.
+    1:
+      simpl;
+      eval_helper;
+      autorewrite_set;
+      repeat rewrite_app_ext;
+      repeat destruct_evar_val.
+      set_solver.
   Qed.
 
 End BoolSemantics.
