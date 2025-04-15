@@ -245,10 +245,10 @@ Module Notations.
   Check (⊥{_} and Top{_})%kore.
   Notation "p1 'or' p2" := (kore_or p1 p2) (at level 73, format "p1  'or'  p2", left associativity) : kore_scope.
   Check (⊥{_} or Top{_})%kore.
-  Notation "p1 '--->' p2" := (kore_imp p1 p2) (at level 75, format "p1  '--->'  p2", right associativity) : kore_scope.
-  Check (⊥{_} ---> Top{_})%kore.
-  Notation "p1 '<--->' p2" := (kore_iff p1 p2) (at level 74, format "p1  '<--->'  p2") : kore_scope.
-  Check (⊥{_} <---> Top{_})%kore.
+  Notation "p1 '--->ₖ' p2" := (kore_imp p1 p2) (at level 75, format "p1  '--->ₖ'  p2", right associativity) : kore_scope.
+  Check (⊥{_} --->ₖ Top{_})%kore.
+  Notation "p1 '<--->ₖ' p2" := (kore_iff p1 p2) (at level 74, format "p1  '<--->ₖ'  p2") : kore_scope.
+  Check (⊥{_} <--->ₖ Top{_})%kore.
 
   Notation "s ⋅ pars" := (kore_app s pars) (at level 50, format "s  '⋅'  pars") : kore_scope.
   Fail Check (_ ⋅ [Top{_}; Top{_}]%hlist)%kore.
@@ -272,9 +272,6 @@ Module Notations.
   Check (⊥{_} =k{_} Top{_})%kore.
   Notation "p1 '⊆k{' s2 '}' p2" := (kore_in s2 p1 p2) (at level 68, format "p1  '⊆k{' s2 '}'  p2", left associativity) : kore_scope.
   Check (⊥{_} ⊆k{_} Top{_})%kore.
-
-
-
 
 (*   Notation "''" := (kore_is_sort s).
   Notation := (kore_is_predicate s p).

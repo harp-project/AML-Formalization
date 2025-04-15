@@ -1,4 +1,6 @@
 (* From Equations Require Import Equations. *)
+From SMTCoq Require Import SMTCoq.
+
 From MatchingLogic Require Export stdpp_ext.
 From Kore Require Export Semantics.
 Import Signature.StringVariables.
@@ -455,13 +457,13 @@ dv is only used with the following parameters:
       (* not false = true *)
       (exists R, pat =                              (* v-- this should be dv *)
         existT R ((Top{R} and kore_fevar "X" ⊆k{R} Kfalse ⋅ ⟨⟩)
-          --->                               (* v-- this should be dv *)
+          --->ₖ                               (* v-- this should be dv *)
          (KnotBool ⋅ ⟨kore_fevar "X"⟩ =k{R} (Ktrue ⋅ ⟨⟩ and Top{Kbool})))
       ) \/
       (* not true = false *)
       (exists R, pat =
         existT R ((Top{R} and kore_fevar "X" ⊆k{R} Ktrue ⋅ ⟨⟩)
-          --->
+          --->ₖ
         (KnotBool ⋅ ⟨kore_fevar "X"⟩ =k{R} (Kfalse ⋅ ⟨⟩ and Top{Kbool})))
       ) \/
       (** conjunction *)
@@ -471,20 +473,20 @@ dv is only used with the following parameters:
                    kore_fevar "X0" ⊆k{R} (Kfalse ⋅ ⟨⟩ and kore_fevar "Gen1") and
                    @kore_fevar _ _ _ Kbool "X1" ⊆k{R} kore_fevar "Gen0" and
                    Top{R})
-          --->
+          --->ₖ
         (KandBool ⋅ ⟨kore_fevar "X0"; kore_fevar "X1"⟩ =k{R} (kore_fevar "Gen1" and Top{Kbool})))
       ) \/
       ((* rule `_andBool_`(B,#token("true","Bool"))=>B *)
         exists R, pat =
           existT R (
-            Top{R} --->
+            Top{R} --->ₖ
             KandBool ⋅ ⟨kore_fevar "B"; Ktrue ⋅ ⟨⟩ ⟩ =k{R} (kore_fevar "B" and Top{Kbool})
           )
       ) \/
       ( (* rule `_andBool_`(_Gen0,#token("false","Bool"))=>#token("false","Bool") *)
         exists R, pat =
           existT R (
-            Top{R} --->
+            Top{R} --->ₖ
             KandBool ⋅ ⟨kore_fevar "Gen0"; Kfalse ⋅ ⟨⟩ ⟩ =k{R} (Kfalse ⋅ ⟨ ⟩ and Top{Kbool})
         )
       ) \/
@@ -493,7 +495,7 @@ dv is only used with the following parameters:
           existT R (
             Top{R} and kore_fevar "X0" ⊆k{R} Ktrue ⋅ ⟨⟩ and
             @kore_fevar _ _ _ Kbool "X1" ⊆k{R} kore_fevar "B" and Top{R}
-            --->
+            --->ₖ
             (KandBool ⋅ ⟨kore_fevar "X0"; kore_fevar "X1"⟩ =k{R} (kore_fevar "B" and Top{Kbool}))
           )
       ) \/
@@ -504,7 +506,7 @@ dv is only used with the following parameters:
           existT R (
             Top{R} and kore_fevar "X0" ⊆k{R} (Kfalse ⋅ ⟨⟩ and kore_fevar "Gen1") and
             @kore_fevar _ _ _ Kbool "X1" ⊆k{R} kore_fevar "Gen0" and Top{R}
-            --->
+            --->ₖ
             (KandThenBool ⋅ ⟨kore_fevar "X0"; kore_fevar "X1"⟩ =k{R} (kore_fevar "Gen1" and Top{Kbool}))
           )
       ) \/
@@ -512,7 +514,7 @@ dv is only used with the following parameters:
       (
         exists R, pat =
           existT R (
-            Top{R} --->
+            Top{R} --->ₖ
             KandThenBool ⋅ ⟨kore_fevar "K"; Ktrue ⋅ ⟨⟩ ⟩ =k{R} (kore_fevar "K" and Top{Kbool})
           )
       ) \/
@@ -520,7 +522,7 @@ dv is only used with the following parameters:
       (
         exists R, pat =
           existT R (
-            Top{R} --->
+            Top{R} --->ₖ
             KandThenBool ⋅ ⟨kore_fevar "Gen0"; Kfalse ⋅ ⟨⟩ ⟩ =k{R} (Kfalse ⋅ ⟨ ⟩ and Top{Kbool})
         )
       ) \/
@@ -530,7 +532,7 @@ dv is only used with the following parameters:
           existT R (
             Top{R} and kore_fevar "X0" ⊆k{R} Ktrue ⋅ ⟨⟩ and
             @kore_fevar _ _ _ Kbool "X1" ⊆k{R} kore_fevar "K" and Top{R}
-            --->
+            --->ₖ
             (KandThenBool ⋅ ⟨kore_fevar "X0"; kore_fevar "X1"⟩ =k{R} (kore_fevar "K" and Top{Kbool}))
           )
       ) \/
@@ -541,7 +543,7 @@ dv is only used with the following parameters:
           existT R (
             Top{R} and @kore_fevar _ _ _ Kbool "X0" ⊆k{R} kore_fevar "B" and
             @kore_fevar _ _ _ Kbool "X1" ⊆k{R} kore_fevar "B" and Top{R}
-            --->
+            --->ₖ
             (KxorBool ⋅ ⟨kore_fevar "X0"; kore_fevar "X1"⟩ =k{R} (Kfalse ⋅ ⟨⟩ and Top{Kbool}))
           )
       ) \/
@@ -550,7 +552,7 @@ dv is only used with the following parameters:
         exists R, pat =
           existT R (
             Top{R}
-            --->
+            --->ₖ
             (KxorBool ⋅ ⟨kore_fevar "B"; Kfalse ⋅ ⟨⟩⟩ =k{R} (kore_fevar "B" and Top{Kbool}))
           )
       ) \/
@@ -560,7 +562,7 @@ dv is only used with the following parameters:
           existT R (
             Top{R} and kore_fevar "X0" ⊆k{R} Kfalse ⋅ ⟨⟩ and
             @kore_fevar _ _ _ Kbool "X1" ⊆k{R} kore_fevar "B" and Top{R}
-            --->
+            --->ₖ
             (KxorBool ⋅ ⟨kore_fevar "X0"; kore_fevar "X1"⟩ =k{R} (kore_fevar "B" and Top{Kbool}))
           )
       ) \/
@@ -570,7 +572,7 @@ dv is only used with the following parameters:
         exists R, pat =
           existT R (
             Top{R}
-            --->
+            --->ₖ
             (KorBool ⋅ ⟨kore_fevar "B"; Kfalse ⋅ ⟨⟩⟩ =k{R} (kore_fevar "B" and Top{Kbool}))
           )
       ) \/
@@ -579,7 +581,7 @@ dv is only used with the following parameters:
         exists R, pat =
           existT R (
             Top{R}
-            --->
+            --->ₖ
             (KorBool ⋅ ⟨kore_fevar "Gen0"; Ktrue ⋅ ⟨⟩⟩ =k{R} (Ktrue ⋅ ⟨⟩ and Top{Kbool}))
           )
       ) \/
@@ -589,7 +591,7 @@ dv is only used with the following parameters:
           existT R (
             Top{R} and kore_fevar "X0" ⊆k{R} Kfalse ⋅ ⟨⟩ and
             @kore_fevar _ _ _ Kbool "X1" ⊆k{R} kore_fevar "B" and Top{R}
-            --->
+            --->ₖ
             (KorBool ⋅ ⟨kore_fevar "X0"; kore_fevar "X1"⟩ =k{R} (kore_fevar "B" and Top{Kbool}))
           )
       ) \/
@@ -599,7 +601,7 @@ dv is only used with the following parameters:
           existT R (
             Top{R} and kore_fevar "X0" ⊆k{R} Ktrue ⋅ ⟨⟩ and
             @kore_fevar _ _ _ Kbool "X1" ⊆k{R} kore_fevar "Gen0" and Top{R}
-            --->
+            --->ₖ
             (KorBool ⋅ ⟨kore_fevar "X0"; kore_fevar "X1"⟩ =k{R} (Ktrue ⋅ ⟨⟩ and Top{Kbool}))
           )
       ) \/
@@ -609,7 +611,7 @@ dv is only used with the following parameters:
         exists R, pat =
           existT R (
             Top{R}
-            --->
+            --->ₖ
             (KorBool ⋅ ⟨kore_fevar "K"; Kfalse ⋅ ⟨⟩⟩ =k{R} (kore_fevar "K" and Top{Kbool}))
           )
       ) \/
@@ -618,7 +620,7 @@ dv is only used with the following parameters:
         exists R, pat =
           existT R (
             Top{R}
-            --->
+            --->ₖ
             (KorBool ⋅ ⟨kore_fevar "Gen0"; Ktrue ⋅ ⟨⟩⟩ =k{R} (Ktrue ⋅ ⟨⟩ and Top{Kbool}))
           )
       ) \/
@@ -628,7 +630,7 @@ dv is only used with the following parameters:
           existT R (
             Top{R} and kore_fevar "X0" ⊆k{R} Kfalse ⋅ ⟨⟩ and
             @kore_fevar _ _ _ Kbool "X1" ⊆k{R} kore_fevar "K" and Top{R}
-            --->
+            --->ₖ
             (KorBool ⋅ ⟨kore_fevar "X0"; kore_fevar "X1"⟩ =k{R} (kore_fevar "K" and Top{Kbool}))
           )
       ) \/
@@ -638,7 +640,7 @@ dv is only used with the following parameters:
           existT R (
             Top{R} and kore_fevar "X0" ⊆k{R} Ktrue ⋅ ⟨⟩ and
             @kore_fevar _ _ _ Kbool "X1" ⊆k{R} kore_fevar "Gen0" and Top{R}
-            --->
+            --->ₖ
             (KorBool ⋅ ⟨kore_fevar "X0"; kore_fevar "X1"⟩ =k{R} (Ktrue ⋅ ⟨⟩ and Top{Kbool}))
           )
       ) \/
@@ -648,7 +650,7 @@ dv is only used with the following parameters:
         exists R, pat =
           existT R (
             Top{R}
-            --->
+            --->ₖ
             (KimpliesBool ⋅ ⟨kore_fevar "B"; Kfalse ⋅ ⟨⟩⟩ =k{R} (KnotBool ⋅ ⟨kore_fevar "B"⟩ and Top{Kbool}))
           )
       ) \/
@@ -657,7 +659,7 @@ dv is only used with the following parameters:
         exists R, pat =
           existT R (
             Top{R}
-            --->
+            --->ₖ
             (KimpliesBool ⋅ ⟨kore_fevar "Gen0"; Ktrue ⋅ ⟨⟩⟩ =k{R} (Ktrue ⋅ ⟨⟩ and Top{Kbool}))
           )
       ) \/
@@ -667,7 +669,7 @@ dv is only used with the following parameters:
           existT R (
             Top{R} and kore_fevar "X0" ⊆k{R} Kfalse ⋅ ⟨⟩ and
             @kore_fevar _ _ _ Kbool "X1" ⊆k{R} kore_fevar "Gen0" and Top{R}
-            --->
+            --->ₖ
             (KimpliesBool ⋅ ⟨kore_fevar "X0"; kore_fevar "X1"⟩ =k{R} (Ktrue ⋅ ⟨⟩ and Top{Kbool}))
           )
       ) \/
@@ -677,7 +679,7 @@ dv is only used with the following parameters:
           existT R (
             Top{R} and kore_fevar "X0" ⊆k{R} Ktrue ⋅ ⟨⟩ and
             @kore_fevar _ _ _ Kbool "X1" ⊆k{R} kore_fevar "B" and Top{R}
-            --->
+            --->ₖ
             (KimpliesBool ⋅ ⟨kore_fevar "X0"; kore_fevar "X1"⟩ =k{R} (kore_fevar "B" and Top{Kbool}))
           )
       ) \/
@@ -687,7 +689,7 @@ dv is only used with the following parameters:
           existT R (
             Top{R} and @kore_fevar _ _ _ Kbool "X0" ⊆k{R} kore_fevar "B1" and
             @kore_fevar _ _ _ Kbool "X1" ⊆k{R} kore_fevar "B2" and Top{R}
-            --->
+            --->ₖ
             (KneqBool ⋅ ⟨kore_fevar "X0"; kore_fevar "X1"⟩ =k{R} (KnotBool ⋅ ⟨ KeqBool ⋅ ⟨kore_fevar "B1"; kore_fevar "B2"⟩⟩ and Top{Kbool}))
           )
       )
@@ -783,19 +785,19 @@ dv is only used with the following parameters:
    Definition Kint_theory_behavioural : @Theory ImpSignature :=
     PropSet (fun pat =>
       (exists R, pat =
-        existT R (Top{R} and Top{R} ---> Kstderr_K_IO_Int ⋅⟨⟩ =k{R} KintVal 2 ⋅ ⟨⟩)
+        existT R (Top{R} and Top{R} --->ₖ Kstderr_K_IO_Int ⋅⟨⟩ =k{R} KintVal 2 ⋅ ⟨⟩)
       ) \/
       (exists R, pat =
-        existT R (Top{R} and Top{R} ---> Kstdin_K_IO_Int ⋅⟨⟩ =k{R} KintVal 0 ⋅ ⟨⟩)
+        existT R (Top{R} and Top{R} --->ₖ Kstdin_K_IO_Int ⋅⟨⟩ =k{R} KintVal 0 ⋅ ⟨⟩)
       ) \/
       (exists R, pat =
-        existT R (Top{R} and Top{R} ---> Kstdout_K_IO_Int ⋅⟨⟩ =k{R} KintVal 1 ⋅ ⟨⟩)
+        existT R (Top{R} and Top{R} --->ₖ Kstdout_K_IO_Int ⋅⟨⟩ =k{R} KintVal 1 ⋅ ⟨⟩)
       ) \/
       (exists R, pat =
         existT R (
           Top{R} and @kore_fevar _ _ _ Kint "X0" ⊆k{R} kore_fevar "I1" and
           @kore_fevar _ _ _ Kint "X1" ⊆k{R} kore_fevar "I2" and Top{R}
-          --->
+          --->ₖ
           (KneqInt ⋅ ⟨kore_fevar "X0"; kore_fevar "X1"⟩ =k{R} (KnotBool ⋅ ⟨KeqInt ⋅ ⟨kore_fevar "I1" ; kore_fevar "I2"⟩ ⟩ and Top{Kbool}))
         )
       ) \/
@@ -803,7 +805,7 @@ dv is only used with the following parameters:
         existT R (
           KneqInt ⋅ ⟨kore_fevar "I2"; KintVal 0 ⋅ ⟨⟩ ⟩ =k{R} Ktrue ⋅ ⟨⟩ and
           @kore_fevar _ _ _ Kint "X0" ⊆k{R} kore_fevar "I1" and
-          @kore_fevar _ _ _ Kint "X1" ⊆k{R} kore_fevar "I2" and Top{R} --->
+          @kore_fevar _ _ _ Kint "X1" ⊆k{R} kore_fevar "I2" and Top{R} --->ₖ
           KdivInt ⋅ ⟨kore_fevar "X0"; kore_fevar "X1"⟩ =k{R} (KtdivInt ⋅ ⟨KsubInt ⋅ ⟨kore_fevar "I1" ; KmodInt ⋅ ⟨kore_fevar "I1"; kore_fevar "I2"⟩ ⟩; kore_fevar "I2"⟩ and Top{Kint})
         )
       ) \/
@@ -811,13 +813,13 @@ dv is only used with the following parameters:
         existT R (
           Top{R} and
           @kore_fevar _ _ _ Kint "X0" ⊆k{R} kore_fevar "I1" and
-          @kore_fevar _ _ _ Kint "X1" ⊆k{R} kore_fevar "I2" and Top{R} --->
+          @kore_fevar _ _ _ Kint "X1" ⊆k{R} kore_fevar "I2" and Top{R} --->ₖ
           KdividesInt ⋅ ⟨kore_fevar "X0"; kore_fevar "X1"⟩ =k{R} (KeqInt ⋅ ⟨KtmodInt ⋅ ⟨kore_fevar "I2" ; kore_fevar "I1" ⟩; KintVal 0 ⋅ ⟨⟩⟩ and Top{Kbool})
         )
       ) \/
       (exists R, pat =
         existT R (
-          KneqInt ⋅ ⟨kore_fevar "I2"; KintVal 0 ⋅ ⟨⟩⟩ =k{R} Ktrue ⋅ ⟨⟩ --->
+          KneqInt ⋅ ⟨kore_fevar "I2"; KintVal 0 ⋅ ⟨⟩⟩ =k{R} Ktrue ⋅ ⟨⟩ --->ₖ
           KmodInt ⋅ ⟨kore_fevar "I1"; kore_fevar "I2"⟩ =k{R}
             (KtmodInt ⋅ ⟨KplusInt ⋅
                          ⟨KtmodInt ⋅ ⟨kore_fevar "I1";
@@ -830,7 +832,7 @@ dv is only used with the following parameters:
         existT R (
           @kore_fevar _ _ _ Kint "X0" ⊆k{R} kore_fevar "I" and
           @kore_fevar _ _ _ Kint "X1" ⊆k{R} kore_fevar "IDX" and
-          @kore_fevar _ _ _ Kint "X2" ⊆k{R} kore_fevar "LEN" and Top{R} --->
+          @kore_fevar _ _ _ Kint "X2" ⊆k{R} kore_fevar "LEN" and Top{R} --->ₖ
           KbitRangeInt ⋅⟨ kore_fevar "X0"; kore_fevar "X1"; kore_fevar "X2"⟩ =k{R}
             (KmodInt ⋅ ⟨KgtgtInt ⋅ ⟨kore_fevar "I"; kore_fevar "IDX"⟩;
                         KltltInt ⋅ ⟨KintVal 1 ⋅ ⟨⟩; kore_fevar "LEN"⟩⟩ and Top{Kint})
@@ -838,7 +840,7 @@ dv is only used with the following parameters:
       ) \/
       (exists R, pat =
         existT R (
-          Top{R} and @kore_fevar _ _ _ Kint "X0" ⊆k{R} kore_fevar "I" and Top{R} --->
+          Top{R} and @kore_fevar _ _ _ Kint "X0" ⊆k{R} kore_fevar "I" and Top{R} --->ₖ
           KfreshInt ⋅ ⟨ kore_fevar "X0" ⟩ =k{R} (kore_fevar "I" and Top{Kint})
         )
       ) \/
@@ -846,7 +848,7 @@ dv is only used with the following parameters:
         existT R (
           KltInt ⋅ ⟨kore_fevar "I1"; kore_fevar "I2"⟩ =k{R} Ktrue ⋅ ⟨⟩ and
           @kore_fevar _ _ _ Kint "X0" ⊆k{R} kore_fevar "I1" and
-          @kore_fevar _ _ _ Kint "X1" ⊆k{R} kore_fevar "I2" and Top{R} --->
+          @kore_fevar _ _ _ Kint "X1" ⊆k{R} kore_fevar "I2" and Top{R} --->ₖ
           KminInt⋅⟨ kore_fevar "X0"; kore_fevar "X1"⟩ =k{R} (kore_fevar "I1" and Top{Kint})
         )
       ) \/
@@ -854,7 +856,7 @@ dv is only used with the following parameters:
         existT R (
           KgeInt ⋅ ⟨kore_fevar "I1"; kore_fevar "I2"⟩ =k{R} Ktrue ⋅ ⟨⟩ and
           @kore_fevar _ _ _ Kint "X0" ⊆k{R} kore_fevar "I1" and
-          @kore_fevar _ _ _ Kint "X1" ⊆k{R} kore_fevar "I2" and Top{R} --->
+          @kore_fevar _ _ _ Kint "X1" ⊆k{R} kore_fevar "I2" and Top{R} --->ₖ
           KminInt⋅⟨ kore_fevar "X0"; kore_fevar "X1"⟩ =k{R} (kore_fevar "I2" and Top{Kint})
         )
       ) \/
@@ -863,7 +865,7 @@ dv is only used with the following parameters:
           Top{R} and
           @kore_fevar _ _ _ Kint "X0" ⊆k{R} kore_fevar "I" and
           @kore_fevar _ _ _ Kint "X1" ⊆k{R} kore_fevar "IDX" and
-          @kore_fevar _ _ _ Kint "X2" ⊆k{R} kore_fevar "LEN" and Top{R} --->
+          @kore_fevar _ _ _ Kint "X2" ⊆k{R} kore_fevar "LEN" and Top{R} --->ₖ
           KsignExtendBitRangeInt ⋅ ⟨kore_fevar "X0"; kore_fevar "X1"; kore_fevar "X2"⟩ =k{R}
             (KsubInt ⋅ ⟨KmodInt ⋅ ⟨KplusInt ⋅ ⟨KbitRangeInt ⋅ ⟨kore_fevar "I";kore_fevar "IDX"; kore_fevar "LEN"⟩; KltltInt ⋅ ⟨KintVal 1 ⋅⟨⟩; KsubInt ⋅ ⟨kore_fevar "LEN" ; KintVal 1 ⋅⟨⟩⟩⟩⟩;
                                    KltltInt ⋅ ⟨KintVal 1 ⋅⟨⟩; KsubInt ⋅ ⟨kore_fevar "LEN" ; KintVal 1 ⋅⟨⟩⟩⟩⟩;
@@ -993,8 +995,10 @@ Module ImpSemantics.
 
   Definition neqbB (b1 b2 : bool) : bool :=
     negb (Bool.eqb b1 b2).
+  Arguments neqbB /.
   Definition neqbZ (b1 b2 : Z) : bool :=
     negb (Z.eqb b1 b2).
+  Arguments neqbZ /.
 
   Open Scope Z_scope.
 
@@ -1009,6 +1013,7 @@ Module ImpSemantics.
     Z.shiftr
       (Z.land i (Z.shiftl (Z.shiftl 1 len - 1) idx))
       idx.
+  Arguments bitRange /.
 
   (* TODO: Java throws an exception if idx or length is not unsigned *)
   Definition signExtendBitRange (i idx len : Z) : Z :=
@@ -1022,15 +1027,18 @@ Module ImpSemantics.
           bitRange (tmp + max) 0 len - max
     else bitRange i idx len
   end.
+  Arguments signExtendBitRange /.
 
   Definition emod (a b : Z) : Z :=
     let rem := Z.rem a b in
     if rem <? 0
     then rem + Z.abs b
     else rem.
+  Arguments emod /.
 
   Definition ediv (a b : Z) : Z :=
     Z.quot (a - emod a b) b.
+  Arguments ediv /.
 
   (* REPORT modPow:
      This is how the Java code works, but every other
@@ -1040,13 +1048,14 @@ Module ImpSemantics.
    *)
   Definition modPow (a b c : Z) : Z :=
     Z.modulo (Z.pow a b) c.
+  Arguments modPow /.
 
   Compute modPow (-7) 3 20.
 
   Definition divides (a b : Z) : bool :=
     Z.rem a b =? 0.
-  
-  Check Ksyms_rect.
+  Arguments divides /.
+
   Program Definition ImpModel : @Model ImpSignature :=
     mkModel_singleton
       (Ksorts_rect _ bool Z)
@@ -1110,7 +1119,8 @@ Module ImpSemantics.
       rewrite union_empty_r_L +
       rewrite propset_difference_neg +
       rewrite propset_union_simpl +
-      rewrite propset_intersection_simpl
+      rewrite propset_intersection_simpl +
+      rewrite singleton_subseteq_l
     ).
 
   Goal satT Kint_theory_functional ImpModel.
@@ -1133,6 +1143,24 @@ Module ImpSemantics.
     all: solve_functional_axiom.
   Qed.
 
+  Ltac basic_simplify_krule :=
+    simpl;
+    eval_helper;
+    repeat rewrite_app_ext;
+    autorewrite_set.
+  Ltac simplify_krule :=
+    basic_simplify_krule;
+    apply propset_top_elem_of_2;
+    intro;
+    apply elem_of_PropSet;
+    repeat rewrite elem_of_PropSet;
+    repeat rewrite singleton_subseteq;
+    repeat rewrite singleton_eq.
+
+  Lemma lasd : ¬ ({[true]} ⊆ {[ x0 | false = x0 ∧ true = x0 ]}
+   ∧ false = true) ∨ true && false = true.
+   set_solver. Defined.
+  Print lasd.
 
   Goal satT Kbool_theory_behavioural ImpModel.
   Proof.
@@ -1142,15 +1170,20 @@ Module ImpSemantics.
     (* Generate a goal for each axiom: *)
     unfold Kbool_theory_behavioural in H.
     unfold_elem_of; destruct_or?; destruct_ex?; subst.
+    3: {
+      simplify_krule;
+      repeat destruct_evar_val.
+      3: { set_solver.
+    }
 
     all:
-      simpl;
-      eval_helper;
-      autorewrite_set;
-      repeat rewrite_app_ext;
+      simplify_krule;
       repeat destruct_evar_val;
-      set_solver.
+      try timeout 1 set_solver.
   Qed.
+
+
+
 
   Goal satT Kint_theory_behavioural ImpModel.
   Proof.
@@ -1161,31 +1194,32 @@ Module ImpSemantics.
     unfold Kbool_theory_behavioural in H.
     unfold_elem_of; destruct_or?; destruct_ex?; subst.
 
-    1-3:
-      simpl;
-      eval_helper;
-      autorewrite_set;
-      repeat rewrite_app_ext;
-      repeat destruct_evar_val;
-      set_solver.
-    * simpl. eval_helper.
-      autorewrite_set.
-      repeat rewrite_app_ext.
-      set_solver.
-      rewrite propset_union_simpl.
-      
-      apply set_eq; intros; split; [set_solver |].
-      rewrite propset_union_simpl.
-      intros.
-      rewrite propset_union_simpl.
-      
-      
-      
-      apply elem_of_PropSet.
-      
+    (* 7 axioms are automatically proved *)
+    all: simplify_krule; try lia.
+    (* lia is not capable of handling bit operations and division, therefore the following proofs are manual: *)
+    * repeat match goal with
+      | [|- context [evar_valuation ?σ ?s]] =>
+        let x := fresh "var" in
+        let Hx := fresh "Hvar" in
+          remember (evar_valuation σ s) as x eqn:Hx;
+          clear Hx
+      end.
+      cbn in *.
     
     
-    1:
+      smt.
+      repeat rewrite negb_true_iff.
+      rewrite Z.eqb_neq.
+      repeat case_match; try lia.
+      Search Z.ltb false.
+      all: repeat rewrite -> Z.ltb_lt in *;
+           repeat rewrite -> Z.ltb_nlt in *; try lia.
+
+      rewrite singleton_eq.
+    
+    
+    
+     try lia; set_solver.
       simpl;
       eval_helper;
       autorewrite_set;

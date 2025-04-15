@@ -288,3 +288,12 @@ Lemma propset_intersection_simpl :
 Proof.
   set_solver.
 Qed.
+
+  Check @singleton_subseteq.
+  Lemma singleton_eq :
+    forall (A C : Type) (H : ElemOf A C) (H0 : Empty C)
+         (H1 : Singleton A C) (H2 : Union C) (H3 : LeibnizEquiv C), SemiSet A C ->
+      forall (x y : A), @singleton A C H1 x = {[y]} <-> x = y.
+  Proof.
+    intros. set_solver.
+  Qed.
