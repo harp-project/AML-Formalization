@@ -1157,11 +1157,6 @@ Module ImpSemantics.
     repeat rewrite singleton_subseteq;
     repeat rewrite singleton_eq.
 
-  Lemma lasd : ¬ ({[true]} ⊆ {[ x0 | false = x0 ∧ true = x0 ]}
-   ∧ false = true) ∨ true && false = true.
-   set_solver. Defined.
-  Print lasd.
-
   Goal satT Kbool_theory_behavioural ImpModel.
   Proof.
     (* unfold sat defs *)
@@ -1170,11 +1165,6 @@ Module ImpSemantics.
     (* Generate a goal for each axiom: *)
     unfold Kbool_theory_behavioural in H.
     unfold_elem_of; destruct_or?; destruct_ex?; subst.
-    3: {
-      simplify_krule;
-      repeat destruct_evar_val.
-      3: { set_solver.
-    }
 
     all:
       simplify_krule;
@@ -1182,10 +1172,18 @@ Module ImpSemantics.
       try timeout 1 set_solver.
   Qed.
 
+  Ltac abstract_var := 
+    match goal with
+      | [|- context [evar_valuation ?σ ?s]] =>
+        let x := fresh "var" in
+        let Hx := fresh "Hvar" in
+          remember (evar_valuation σ s) as x eqn:Hx;
+          clear Hx(* ;
+          revert x *)
+      end.
 
-
-
-  Goal satT Kint_theory_behavioural ImpModel.
+  Import ZArithRing.
+  Lemma sasa : satT Kint_theory_behavioural ImpModel.
   Proof.
     (* unfold sat defs *)
     unfold satT, satM. intros.
@@ -1195,48 +1193,74 @@ Module ImpSemantics.
     unfold_elem_of; destruct_or?; destruct_ex?; subst.
 
     (* 7 axioms are automatically proved *)
-    all: simplify_krule; try lia.
+    1-4,9-11: simplify_krule; try set_solver by lia.
     (* lia is not capable of handling bit operations and division, therefore the following proofs are manual: *)
-    * repeat match goal with
-      | [|- context [evar_valuation ?σ ?s]] =>
-        let x := fresh "var" in
-        let Hx := fresh "Hvar" in
-          remember (evar_valuation σ s) as x eqn:Hx;
-          clear Hx
-      end.
+    * (* apply Classical_Prop.imply_to_or. intros [? ?].
       cbn in *.
+      (* smt. *)
+(*       cvc4. *)
+      assert (forall x, x `rem` 2 = 2 * x `rem` 2 ÷ 2). { intro. smt. }
     
-    
-      smt.
-      repeat rewrite negb_true_iff.
-      rewrite Z.eqb_neq.
-      repeat case_match; try lia.
-      Search Z.ltb false.
-      all: repeat rewrite -> Z.ltb_lt in *;
-           repeat rewrite -> Z.ltb_nlt in *; try lia.
-
-      rewrite singleton_eq.
-    
-    
-    
-     try lia; set_solver.
-      simpl;
-      eval_helper;
-      autorewrite_set;
-      repeat rewrite_app_ext.
-      repeat destruct_evar_val; cbn.
-      1-2: set_solver.
-      replace {[ _ | {[0]} ⊆ {[0]} ]} with ⊤.
+      assert (
+        ∀ var var0 var1 var2 : Z,
+    ¬ ((~~ (var2 =? 0) = true ∧ var1 = var0) ∧ var = var2)
+    ∨ (var1 -
+       (if var1 `rem` var <? 0
+        then var1 `rem` var + Z.abs var
+        else var1 `rem` var)) ÷ var =
+      (var0 -
+       (if var0 `rem` var2 <? 0
+        then var0 `rem` var2 + Z.abs var2
+        else var0 `rem` var2)) ÷ var2
+      ) by cvc4_no_check.
       
-       set_solver.
-      set_solver.
-    1:
-      simpl;
-      eval_helper;
-      autorewrite_set;
-      repeat rewrite_app_ext;
-      repeat destruct_evar_val.
-      set_solver.
+      
+      
+       *)
+      simplify_krule.
+      repeat abstract_var.
+      repeat rewrite negb_true_iff.
+      repeat rewrite Z.eqb_neq.
+      apply Classical_Prop.imply_to_or. intros.
+      destruct_and?; subst. lia.
+    * simplify_krule.
+      repeat abstract_var.
+      repeat rewrite negb_true_iff.
+      repeat rewrite Z.eqb_neq.
+      apply Classical_Prop.imply_to_or. intros.
+      destruct_and?; subst.
+      (* INCONSISTENT for var0 = 0 or var2 = 0? Java hook throws
+                                                an exception *)
+      admit.
+    * simplify_krule.
+      repeat abstract_var.
+      repeat rewrite negb_true_iff.
+      repeat rewrite Z.eqb_neq.
+      apply Classical_Prop.imply_to_or. intros.
+      destruct_and?; subst.
+      case_match; try lia.
+      - apply Z.ltb_lt in H0.
+        rewrite -> Z.rem_abs_r by assumption.
+        rewrite -> Z.rem_abs_r by assumption.
+        admit.
+      - apply Z.ltb_nlt in H0.
+        repeat rewrite -> Z.rem_abs_r by assumption.
+        f_equal.
+        admit.
+    * simplify_krule.
+      repeat abstract_var.
+      repeat rewrite negb_true_iff.
+      repeat rewrite Z.eqb_neq.
+      apply Classical_Prop.imply_to_or. intros.
+      destruct_and?; subst.
+      admit.
+    * simplify_krule.
+      repeat abstract_var.
+      repeat rewrite negb_true_iff.
+      repeat rewrite Z.eqb_neq.
+      apply Classical_Prop.imply_to_or. intros.
+      destruct_and?; subst.
+      admit.
   Qed.
 
 End BoolSemantics.
