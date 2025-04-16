@@ -15,25 +15,6 @@ Class Sorts := {
     subsort_po :: PartialOrder subsort; *)
 }.
 
-(* Class Variables {Ss : Sorts} := {
-  evar : Set;
-  svar : Set;
-  evar_eqdec :: EqDecision evar;
-  evar_countable :: Countable evar;
-  (* evar_infinite :: Infinite evar; *)
-  svar_eqdec :: EqDecision svar;
-  svar_countable :: Countable svar;
-  (* svar_infinite :: Infinite svar; *)
-
-  evar_sort : evar -> sort;
-  svar_sort : svar -> sort;
-
-  evar_infinite s ::
-    Infinite {x : evar & decide (evar_sort x = s)};
-  svar_infinite s ::
-    Infinite {x : svar & decide (svar_sort x = s)}
-}. *)
-
 Class Variables {Ss : Sorts} := {
   evar : sort -> Set;
   svar : sort -> Set;
@@ -67,7 +48,3 @@ Module StringVariables.
   Fail Next Obligation.
 
 End StringVariables.
-
-
-Ltac invt H :=
-inversion H; subst; clear H.

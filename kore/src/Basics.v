@@ -3,6 +3,9 @@ From Coq Require Export Program.Equality.
 
 Import ListNotations.
 
+Ltac invt H :=
+inversion H; subst; clear H.
+
 Definition is_leftb {A B : Set} (x : A + B) : bool :=
 match x with
 | inl _ => true
@@ -289,11 +292,31 @@ Proof.
   set_solver.
 Qed.
 
-  Check @singleton_subseteq.
-  Lemma singleton_eq :
-    forall (A C : Type) (H : ElemOf A C) (H0 : Empty C)
-         (H1 : Singleton A C) (H2 : Union C) (H3 : LeibnizEquiv C), SemiSet A C ->
-      forall (x y : A), @singleton A C H1 x = {[y]} <-> x = y.
-  Proof.
-    intros. set_solver.
-  Qed.
+Lemma singleton_eq :
+  forall (A C : Type) (H : ElemOf A C) (H0 : Empty C)
+       (H1 : Singleton A C) (H2 : Union C) (H3 : LeibnizEquiv C), SemiSet A C ->
+    forall (x y : A), @singleton A C H1 x = {[y]} <-> x = y.
+Proof.
+  intros. set_solver.
+Qed.
+
+
+  (*   Fixpoint HForall {J} {A : J -> Type}
+      (P : ∀ j, A j -> Prop)
+      {js : list J} (v : @hlist J A js) {struct v} : Prop :=
+      match v with
+      | hnil => True
+      | hcons x xs => P _ x ∧ HForall P xs
+      end.
+
+    Fixpoint HBiForall {J1 J2} {A1 : J1 -> Type} {A2 : J2 -> Type}
+      (P : ∀ j1 j2, A1 j1 -> A2 j2 -> Prop)
+      {js1 : list J1}
+      {js2 : list J2}
+      (v1 : @hlist J1 A1 js1) (v2 : @hlist J2 A2 js2)
+        {struct v1} : Prop :=
+      match v1, v2 with
+      | hnil, hnil => True
+      | hcons x xs, hcons y ys => P _ _ x y ∧ HBiForall P xs ys
+      | _, _ => False
+      end.*)
