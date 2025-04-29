@@ -99,14 +99,22 @@ Module DemoSyntaxSemantics.
   Definition NatPattern := Pattern [] [] SortNat.
   Definition BoolPattern := Pattern [] [] SortBool.
 
+ (*  Definition test0 : NatPattern := SymAdd ⋅ ⟨SymFalse ⋅ ⟨⟩; SymZero ⋅ ⟨⟩⟩. *)
+
   Definition TruePat : BoolPattern := SymTrue ⋅ ⟨⟩.
   Definition FalsePat : BoolPattern := SymFalse ⋅ ⟨⟩.
 
   Definition ZeroPat : NatPattern := SymZero ⋅ ⟨⟩.
   Definition OnePat : NatPattern := SymSucc ⋅ ⟨ ZeroPat ⟩.
+  Definition TwoPat : NatPattern := SymSucc ⋅ ⟨ OnePat ⟩.
+
+  Fail Definition wrong :=
+    ZeroPat and TruePat.
+  Definition test : Pattern [] [] _ := SymZero ⋅ ⟨⟩.
+  Check test.
+
   Fail Definition wrong : NatPattern := SymSucc ⋅ ⟨ TruePat ⟩.
   Fail Definition wrong : NatPattern := SymZero ⋅ ⟨ OnePat ⟩.
-  Definition TwoPat : NatPattern := SymSucc ⋅ ⟨ OnePat ⟩.
 
   Definition carrier s :=
     match s with
@@ -114,22 +122,20 @@ Module DemoSyntaxSemantics.
     | SortBool => bool
     end.
 
-  Definition inc n := n + 1.
-
   Print DemoSyms.
-  Program Definition DemoModel : @Model DemoSignature :=
+  Definition DemoModel : @Model DemoSignature :=
     mkModel_singleton
       carrier
       (DemoSyms_rect _
         0
-        inc
+        S
         Nat.add
         true
         false)
       ltac:(intros []; auto with typeclass_instances).
 
   Goal
-    forall ρ,
+    forall (ρ : Valuation),
       @eval _ DemoModel _ _ _ ρ ZeroPat = {[0]}.
   Proof.
     intros. unfold ZeroPat.
@@ -138,12 +144,23 @@ Module DemoSyntaxSemantics.
   Qed.
 
   Goal
-    forall ρ,
+    forall (ρ : Valuation),
       @eval _ DemoModel _ _ _ ρ (SymAdd ⋅ ⟨OnePat; TwoPat⟩) = {[3]}.
   Proof.
-    intros. repeat unfold TwoPat, OnePat, ZeroPat.
+    intros. unfold TwoPat, OnePat, ZeroPat.
     basic_simplify_krule.
     reflexivity.
+  Qed.
+
+  Goal
+    forall (ρ : Valuation),
+      @eval _ DemoModel _ _ _ ρ
+        (SymAdd ⋅ ⟨OnePat; TwoPat⟩ =k{SortNat} SymSucc ⋅ ⟨TwoPat⟩)
+        = ⊤.
+  Proof.
+    intros. unfold TwoPat, OnePat, ZeroPat.
+    basic_simplify_krule.
+    set_solver.
   Qed.
 
 End DemoSyntaxSemantics.
@@ -1161,8 +1178,8 @@ Module ImpSemantics.
       | [|- context [evar_valuation ?σ ?s]] =>
         let x := fresh "var" in
         let Hx := fresh "Hvar" in
-          remember (evar_valuation σ s) as x eqn:Hx;
-          clear Hx(* ;
+          remember (evar_valuation σ s) as x eqn:Hx (*;
+          clear Hx;
           revert x *)
       end.
 
@@ -1179,7 +1196,7 @@ Module ImpSemantics.
     (* However, lia is not capable of handling bit operations and
        division, therefore the following proofs are challenginf: *)
     * simplify_krule.
-      repeat abstract_var.
+      repeat abstract_var. clear.
       repeat rewrite negb_true_iff.
       repeat rewrite Z.eqb_neq.
       apply Classical_Prop.imply_to_or. intros.

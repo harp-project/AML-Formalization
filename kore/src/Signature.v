@@ -14,6 +14,7 @@ Class Sorts := {
 (*     subsort : relation sort;
     subsort_po :: PartialOrder subsort; *)
 }.
+Print relation.
 
 Class Variables {Ss : Sorts} := {
   evar : sort -> Set;

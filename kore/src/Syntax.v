@@ -16,10 +16,10 @@ Section Syntax.
     nameless variable presentation:
 
     ```
-    Pattern [s₁, ..., sₙ] [S₁, ..., Sₘ] s
+    φ : Pattern [s₁, ..., sₙ] [S₁, ..., Sₘ] s
     ```
 
-    Should be understood as a pattern of sort `s`, which has
+    φ should be understood as a pattern of sort `s`, which has
     `n` free (dangling) de Bruijn _element_ variables of sorts
     s₁, ..., sₙ, and `m` free de Bruijn _set_ variables of 
     sorts S₁, ..., Sₙ.
