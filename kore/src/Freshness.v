@@ -24,6 +24,7 @@ Section Freshness.
    | kore_exists _ φ | kore_forall _ φ
    | kore_mu φ | kore_nu φ 
    | kore_not φ | kore_ceil _ φ | kore_floor _ φ
+   | kore_inj _ _ φ
       => free_evars sTarget φ
    | kore_bevar _ | kore_fsvar _ | kore_bsvar _
    | kore_bot _ | kore_top _ => ∅
@@ -49,6 +50,7 @@ Section Freshness.
    | kore_exists _ φ | kore_forall _ φ
    | kore_mu φ | kore_nu φ 
    | kore_not φ | kore_ceil _ φ | kore_floor _ φ
+   | kore_inj _ _ φ
       => free_svars sTarget φ
    | kore_bevar _ | kore_fevar _ | kore_bsvar _
    | kore_bot _ | kore_top _ => ∅

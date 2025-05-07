@@ -79,6 +79,12 @@ Section Syntax.
                 (s2 : sort)
                 (φ1 φ2 : Pattern ex mu s1) : Pattern ex mu s2
 
+  (* injections *)
+  | kore_inj {ex mu : list sort} {s1 : sort}
+             (s2 : sort)
+             (pf : subsort s1 s2)
+             (φ : Pattern ex mu s1) : Pattern ex mu s2
+
 (*   | kore_next     (* (s : sort) ? *) (φ : Pattern)
   | kore_rewrites (* (s : sort) ? *) (φ1 φ2 : Pattern)
   | kore_dv       (s : sort) (s : string) *).
@@ -111,7 +117,8 @@ Section Syntax.
       (P_ceil : forall {ex mu s1} s2 φ, @P ex mu s1 φ -> P (kore_ceil s2 φ))
       (P_floor : forall {ex mu s1} s2 φ, @P ex mu s1 φ -> P (kore_floor s2 φ))
       (P_equal : forall {ex mu s1} s2 φ, @P ex mu s1 φ -> forall ψ, @P ex mu s1 ψ -> P (kore_equals s2 φ ψ))
-      (P_in : forall {ex mu s1} s2 φ, @P ex mu s1 φ -> forall ψ, @P ex mu s1 ψ -> P (kore_in s2 φ ψ)).
+      (P_in : forall {ex mu s1} s2 φ, @P ex mu s1 φ -> forall ψ, @P ex mu s1 ψ -> P (kore_in s2 φ ψ))
+      (P_inj : forall {ex mu s1} s2 pf φ, @P ex mu s1 φ -> P (kore_inj s2 pf φ)).
 
     Definition Pat_rect {ex mu s} (φ : Pattern ex mu s) : P φ.
     Proof.
@@ -144,6 +151,7 @@ Section Syntax.
        | kore_floor s2 φ => P_floor s2 _ (Pat_rect φ)
        | kore_equals s2 φ1 φ2 => P_equal s2 _ (Pat_rect φ1) _ (Pat_rect φ2)
        | kore_in    s2 φ1 φ2 => P_in s2 _ (Pat_rect φ1) _ (Pat_rect φ2)
+       | kore_inj s2 _ φ => P_inj _ _ _ (Pat_rect φ)
       end).
       apply P_app.
       induction args; simpl. 1: exact I.
@@ -179,7 +187,8 @@ Section Syntax.
       (P_ceil : forall {ex mu s1} s2 (φ : Pattern ex mu s1), P φ -> P (kore_ceil s2 φ))
       (P_floor : forall {ex mu s1} s2 (φ : Pattern ex mu s1), P φ -> P (kore_floor s2 φ))
       (P_equal : forall {ex mu s1} s2 (φ : Pattern ex mu s1), P φ -> forall (ψ : Pattern ex mu s1), P ψ -> P (kore_equals s2 φ ψ))
-      (P_in : forall {ex mu s1} s2 (φ : Pattern ex mu s1), P φ -> forall (ψ : Pattern ex mu s1), P ψ -> P (kore_in s2 φ ψ)).
+      (P_in : forall {ex mu s1} s2 (φ : Pattern ex mu s1), P φ -> forall (ψ : Pattern ex mu s1), P ψ -> P (kore_in s2 φ ψ))
+      (P_inj : forall {ex mu s1} s2 pf φ, @P ex mu s1 φ -> P (kore_inj s2 pf φ)).
     Definition Pat_ind {ex mu s} (φ : Pattern ex mu s) : P φ.
     Proof.
       revert ex mu s φ.
@@ -211,6 +220,7 @@ Section Syntax.
        | kore_floor s2 φ => P_floor s2 _ (Pat_ind φ)
        | kore_equals s2 φ1 φ2 => P_equal s2 _ (Pat_ind φ1) _ (Pat_ind φ2)
        | kore_in    s2 φ1 φ2 => P_in s2 _ (Pat_ind φ1) _ (Pat_ind φ2)
+       | kore_inj s2 _ φ => P_inj _ _ _ (Pat_ind φ)
       end).
       apply P_app.
       induction args; simpl. 1: exact I.
@@ -231,7 +241,7 @@ Section Syntax.
    | kore_exists _ φ | kore_forall _ φ
    | kore_nu φ | kore_mu φ 
    | kore_not φ | kore_ceil _ φ
-   | kore_floor _ φ
+   | kore_floor _ φ | kore_inj _ _ φ
        => 1 + pat_size φ
    | kore_bevar _ | kore_fevar _
    | kore_bsvar _ | kore_fsvar _

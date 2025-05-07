@@ -13,7 +13,9 @@ Section Semantics.
     carrier :> sort -> Set;
     app (σ : symbol) :
        @hlist _ carrier (arg_sorts σ) -> propset (carrier (ret_sort σ));
-    inhabited (s : sort) : Inhabited (carrier s)
+    inhabited (s : sort) : Inhabited (carrier s) ;
+    inj (s1 s2 : sort) (P : subsort s1 s2) :
+      
   }.
 
   Section with_model.

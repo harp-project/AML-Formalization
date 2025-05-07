@@ -11,8 +11,8 @@ Class Sorts := {
     sort : Set;
     sort_eqdec :: EqDecision sort;
     sort_countable :: Countable sort;
-(*     subsort : relation sort;
-    subsort_po :: PartialOrder subsort; *)
+    subsort : relation sort;
+    subsort_po :: PartialOrder subsort;
 }.
 Print relation.
 
