@@ -87,11 +87,27 @@ Module T.
   Next Obligation. compute_done. Defined.
   Final Obligation. destruct x; set_solver. Defined.
 
+  Inductive Demo_subsort : DemoSorts -> DemoSorts -> Prop :=
+  | subsorts_refl s : Demo_subsort s s
+  | kitem_is_top s : s ≠ SortK -> Demo_subsort s SortKItem.
+
+  Instance Demo_subsort_PartialOrder : PartialOrder Demo_subsort.
+  Proof.
+    apply Build_PartialOrder.
+    apply Build_PreOrder.
+    * intro s. constructor.
+    * intros s1 s2 s3 H H0.
+      invt H; invt H0; try by constructor.
+    * intros s1 s2 H H0.
+      invt H; invt H0; reflexivity.
+  Defined.
+
   (* In the signature, we need to define the sorts, the variable types,
      and the typing/sorting rules for symbols: *)
   Program Instance DemoSignature : Signature := {|
     sorts := {|
       sort := DemoSorts;
+      subsort := Demo_subsort
     |};
     variables := StringVariables;
     symbols := {|
@@ -117,27 +133,69 @@ Module T.
     |};
   |}.
 
-  (* Definition carrier s :=
-    match s with
-    | SortNat => nat
-    | SortBool => bool
-    | SortList => ?
-    | SortK => ?
-    | SortKItem => ?
-    end. *)
   Inductive carrier : DemoSorts -> Set :=
-(*   | c_true : carrier SortBool
-  | c_false : carrier SortBool
-  | c_zero : carrier SortNat
-  | c_succ : carrier SortNat -> carrier SortNat *)
   | c_nat (n : nat) : carrier SortNat
   | c_bool (b : bool) : carrier SortBool
   | c_nil : carrier SortList
-  | c_cons {A} : carrier A -> carrier SortList -> carrier SortList.
+  | c_cons : carrier SortKItem -> carrier SortList -> carrier SortList
+  | c_subsort (s1 s2 : DemoSorts) (P : subsort s1 s2) (x : carrier s1) : carrier s2.
 
   Check c_nat 1.
   Check c_nil.
-  Check c_cons (c_nat 1) c_nil.
-  Check c_cons (c_nat 1) (c_cons (c_bool false) c_nil).
-  Check c_cons (c_nat 1) (c_cons (c_bool false) (c_cons (c_cons (c_nat 1) c_nil) c_nil)).
+  Check c_cons (c_subsort _ _ _ (c_nat 1)) c_nil.
+(*   Check c_cons (c_nat 1) (c_cons (c_bool false) c_nil).
+  Check c_cons (c_nat 1) (c_cons (c_bool false) (c_cons (c_cons (c_nat 1) c_nil) c_nil)). *)
+
+
+  Program Definition DemoModel : @Model DemoSignature :=
+    mkModel_singleton
+      carrier
+      (DemoSyms_rect _
+        (c_nat 0)
+        _
+        _
+        _
+        _
+        _
+        _
+        _
+        _
+      )
+      _
+      _.
+  Next Obligation.
+    simpl.
+    intro. inversion H.
+    exact (c_nat (S n)).
+    inversion P.
+  Defined.
+  Next Obligation.
+    simpl.
+    intros. inversion H. inversion H0.
+    exact (c_nat (n + n0)).
+  Defined.
+  Next Obligation.
+    simpl.
+    exact (c_bool true).
+  Defined.
+  Next Obligation.
+    simpl.
+    exact (c_bool false).
+  Defined.
+  Next Obligation.
+    simpl.
+    Print DemoSyms.
+    intros.
+    inversion H. (* TODO *)
+  Defined.
+  Next Obligation.
+    simpl.
+    exact (c_nil).
+  Defined.
+  Next Obligation.
+    simpl.
+    intros.
+    exact (c_cons H H0).
+  Defined.
+  Next Obligation.
 

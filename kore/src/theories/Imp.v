@@ -6,8 +6,6 @@ Import Kore.Syntax.Notations.
 
 From Coq Require Import ZArith.
 
-Open Scope kore_scope.
-Open Scope hlist_scope.
 Open Scope string_scope.
 
 Ltac autorewrite_set :=
@@ -359,6 +357,11 @@ Module ImpSyntax.
   Program Instance ImpSignature : Signature := {|
     sorts := {|
       sort := Ksorts;
+      subsort s1 s2 :=
+        match decide (s1 = s2) with
+        | left _ => True
+        | _ => False
+        end
     |};
     variables := StringVariables;
     symbols := {|
@@ -479,9 +482,20 @@ Module ImpSyntax.
         end;
     |};
   |}.
+  Next Obligation.
+    cbv; intros; destruct s1, s2; try congruence.
+  Defined.
+  Final Obligation.
+    cbv.
+    apply Build_PartialOrder.
+    * apply Build_PreOrder.
+      - intro s. cbv; by destruct s.
+      - intros s1 s2 s3; by destruct s1, s2, s3.
+    * intros s1 s2; intros. destruct s1, s2; try reflexivity; try by contradiction.
+  Defined.
 
-  Open Scope hlist_scope.
   Open Scope string_scope.
+  Open Scope kore_scope.
 
 (*
 grep -Eo "\\\\dv{[^}]*}[^\(]*\([^\)]*\)" /tmp/definition.kore > /tmp/matches
@@ -1149,10 +1163,9 @@ Module ImpSemantics.
                     (fun x y z => singleton (signExtendBitRange x y z)) (* signExtendBitRangeInt *)
                     (singleton ∘ Z.lnot)) (* not *)
       ltac:(intros []; auto with typeclass_instances). *)
-
   Program Definition ImpModel : @Model ImpSignature :=
     mkModel_singleton
-      (Ksorts_rect _ bool Z)
+      (Ksorts_rect _ _ _ bool Z)
       (Ksyms_rect _ true
                     false
                     negb
@@ -1199,7 +1212,8 @@ Module ImpSemantics.
                     _ (* rand - how should we model random generation? I could not find the corresponding implementation! *)
                     signExtendBitRange (* signExtendBitRangeInt *)
                     Z.lnot) (* not *)
-      ltac:(intros []; auto with typeclass_instances). (* Inhabited proof *)
+      ltac:(intros []; auto with typeclass_instances)
+      _. (* Inhabited proof *)
   Final Obligation.
     simpl. intros x y z. exact (x + y + z).
   Defined.

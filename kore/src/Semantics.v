@@ -14,7 +14,8 @@ Section Semantics.
     app (σ : symbol) :
        @hlist _ carrier (arg_sorts σ) -> propset (carrier (ret_sort σ));
     inhabited (s : sort) : Inhabited (carrier s) ;
-    inj (s1 s2 : sort) (P : subsort s1 s2) : TODO
+    sort_inj (s1 s2 : sort) (P : subsort s1 s2) :
+     carrier s1 -> carrier s2
   }.
 
   Section with_model.
@@ -115,6 +116,7 @@ Section Semantics.
       eval ρ (kore_floor φ)      := PropSet (λ _, ∀ c, c ∈ eval ρ φ) ;
       eval ρ (kore_equals φ1 φ2) := PropSet (λ _, (eval ρ φ1) = (eval ρ φ2)) ;
       eval ρ (kore_in φ1 φ2)     := PropSet (λ _, (eval ρ φ1) ⊆ (eval ρ φ2)) ;
+      eval ρ (kore_inj s2 pf φ)  := sort_inj M _ _ pf <$> eval ρ φ
     .
     Proof.
       1: { (* def. of eval ρ (σ ⋅ l) *)
@@ -208,12 +210,14 @@ End with_model.
       foldr (λ c a, custom_carrier c -> a)
             (propset (custom_carrier (ret_sort σ)))
             (arg_sorts σ))
-    (custom_inh : ∀ s : sort, Inhabited (custom_carrier s)) :
+    (custom_inh : ∀ s : sort, Inhabited (custom_carrier s))
+    (custom_sort_inj : ∀ s1 s2, subsort s1 s2 -> custom_carrier s1 -> custom_carrier s2) :
     Model :=
   {|
     carrier := custom_carrier;
     inhabited := custom_inh;
-    app := fun σ => uncurry_n (custom_app σ)
+    app := fun σ => uncurry_n (custom_app σ);
+    sort_inj := custom_sort_inj;
   |}.
 
   (** Model construction based on curried application of singleton-result
@@ -221,12 +225,14 @@ End with_model.
   Definition mkModel_singleton
     (custom_carrier : sort → Set)
     (custom_app : forall (σ : symbol), foldr (λ c a, custom_carrier c -> a) (custom_carrier (ret_sort σ)) (arg_sorts σ))
-    (custom_inh : ∀ s : sort, Inhabited (custom_carrier s)) :
+    (custom_inh : ∀ s : sort, Inhabited (custom_carrier s))
+    (custom_sort_inj : ∀ s1 s2, subsort s1 s2 -> custom_carrier s1 -> custom_carrier s2) :
     Model :=
   {|
     carrier := custom_carrier;
     inhabited := custom_inh;
-    app := fun σ => singleton ∘ uncurry_n (custom_app σ)
+    app := fun σ => singleton ∘ uncurry_n (custom_app σ);
+    sort_inj := custom_sort_inj;
   |}.
 
   (** If a symbol is modeled by a function, it is consistent: *)
