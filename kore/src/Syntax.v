@@ -9,7 +9,6 @@ Set Default Proof Mode "Classic".
 Section Syntax.
 
   Context {Σ : Signature}.
-
   (**
     This definition is the abstract syntax of Kore, in the
     dependently-typed setting. It also utilises a locally-
@@ -189,6 +188,7 @@ Section Syntax.
       (P_equal : forall {ex mu s1} s2 (φ : Pattern ex mu s1), P φ -> forall (ψ : Pattern ex mu s1), P ψ -> P (kore_equals s2 φ ψ))
       (P_in : forall {ex mu s1} s2 (φ : Pattern ex mu s1), P φ -> forall (ψ : Pattern ex mu s1), P ψ -> P (kore_in s2 φ ψ))
       (P_inj : forall {ex mu s1} s2 pf φ, @P ex mu s1 φ -> P (kore_inj s2 pf φ)).
+
     Definition Pat_ind {ex mu s} (φ : Pattern ex mu s) : P φ.
     Proof.
       revert ex mu s φ.
@@ -260,6 +260,7 @@ Module Notations.
 
   Declare Scope kore_scope.
   Delimit Scope kore_scope with kore.
+  Bind Scope kore_scope with Pattern.
 
   Notation "'⊥{' s '}'" := (kore_bot s) (format "'⊥{' s '}'") : kore_scope.
   Check ⊥{ _ }%kore.
@@ -299,6 +300,20 @@ Module Notations.
   Notation "p1 '⊆k{' s2 '}' p2" := (kore_in s2 p1 p2) (at level 68, format "p1  '⊆k{' s2 '}'  p2", left associativity) : kore_scope.
   Check (⊥{_} ⊆k{_} Top{_})%kore.
 
+  (* Notation "'•(' s ')' p"    := (kore_next s p) (at level 30, format "'•(' s ')'  p") : kore_scope.
+  Check •(Nat) ⊥.
+  Notation "'○(' s ')' p"    := (kore_all_path_next s p) (at level 71, format "'○(' s ')'  p") : kore_scope.
+  Check ○(Nat) ⊥.
+  Notation "'⋄(' s ')' p"    := (kore_eventually s p) (at level 71, format "'⋄(' s ')'  p") : kore_scope.
+  Check ⋄(Nat) ⊥.
+  Notation "'⋄ʷ(' s ')' p"   := (kore_weak_eventually s p) (at level 71, format "'⋄ʷ(' s ')'  p") : kore_scope.
+  Check ⋄ʷ(Nat) ⊥.
+  Notation "p '=(' s ')=>' q"  := (kore_rewrites s p q) (at level 81, format "p  '=(' s ')=>'  q") : kore_scope.
+  Check ⊥ =(Nat)=> Top.
+  Notation "p '=(' s ')=>*' q" := (kore_rewrites_star s p q) (at level 81, format "p  '=(' s ')=>*'  q") : kore_scope.
+  Check ⊥ =(Nat)=>* Top.
+  Notation "p '=(' s ')=>⁺' q" := (kore_rewrites_plus s p q) (at level 81, format "p  '=(' s ')=>⁺'  q") : kore_scope.
+  Check ⊥ =(Nat)=>⁺ Top. *)
 End Notations.
 
 Section DerivedNotations.
@@ -320,22 +335,5 @@ Section DerivedNotations.
       (var_list [ret_sort σ] [] vars)
     ) (kore_bevar In_nil)).
 
-
-  (* Notation "'•(' s ')' p"    := (kore_next s p) (at level 30, format "'•(' s ')'  p") : kore_scope.
-  Check •(Nat) ⊥.
-  Notation "'○(' s ')' p"    := (kore_all_path_next s p) (at level 71, format "'○(' s ')'  p") : kore_scope.
-  Check ○(Nat) ⊥.
-  Notation "'⋄(' s ')' p"    := (kore_eventually s p) (at level 71, format "'⋄(' s ')'  p") : kore_scope.
-  Check ⋄(Nat) ⊥.
-  Notation "'⋄ʷ(' s ')' p"   := (kore_weak_eventually s p) (at level 71, format "'⋄ʷ(' s ')'  p") : kore_scope.
-  Check ⋄ʷ(Nat) ⊥.
-  Notation "p '=(' s ')=>' q"  := (kore_rewrites s p q) (at level 81, format "p  '=(' s ')=>'  q") : kore_scope.
-  Check ⊥ =(Nat)=> Top.
-  Notation "p '=(' s ')=>*' q" := (kore_rewrites_star s p q) (at level 81, format "p  '=(' s ')=>*'  q") : kore_scope.
-  Check ⊥ =(Nat)=>* Top.
-  Notation "p '=(' s ')=>⁺' q" := (kore_rewrites_plus s p q) (at level 81, format "p  '=(' s ')=>⁺'  q") : kore_scope.
-  Check ⊥ =(Nat)=>⁺ Top. *)
-
 End DerivedNotations.
-
 

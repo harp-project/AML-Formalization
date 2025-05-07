@@ -60,7 +60,11 @@ Ltac simplifyWfxyHyp H :=
   end;
   try lazymatch type of H with
   | well_formed_xy ?m ?n (foldr ?binary ?g ?xs) = true
+<<<<<<< HEAD
     => idtac "foldr binary simplify";
+=======
+    => (* idtac "foldr binary simplify"; *)
+>>>>>>> master
        apply (well_formed_xy_foldr_binary_decompose _) in H;
        let H1 := fresh "H1" in
        let H2 := fresh "H2" in
@@ -68,7 +72,11 @@ Ltac simplifyWfxyHyp H :=
        simplifyWfxyHyp H1;
        simplifyWfxyHyp H2
   | lwf_xy ?m ?n (?x::?xs) = true
+<<<<<<< HEAD
     => idtac "lwf_xy :: simplify";
+=======
+    => (* idtac "lwf_xy :: simplify"; *)
+>>>>>>> master
        apply lwf_xy_cons_decompose in H;
        let H1 := fresh "H1" in
        let H2 := fresh "H2" in
@@ -76,7 +84,11 @@ Ltac simplifyWfxyHyp H :=
        simplifyWfxyHyp H1;
        simplifyWfxyHyp H2
   | lwf_xy ?m ?n (?xs ++ ?ys) = true
+<<<<<<< HEAD
     => idtac "lwf_xy ++ simplify";
+=======
+    => (* idtac "lwf_xy ++ simplify"; *)
+>>>>>>> master
       apply lwf_xy_app_decompose in H;
       let H1 := fresh "H1" in
       let H2 := fresh "H2" in
@@ -86,7 +98,11 @@ Ltac simplifyWfxyHyp H :=
 
   (* TODO: the order of these is highly relevant *)
   | well_formed_xy ?x ?y (?quaternary ?_Σ ?ψ1 ?ψ2 ?ψ3 ?ψ4) = true
+<<<<<<< HEAD
     => idtac "quaternary simplify";
+=======
+    => (* idtac "quaternary simplify"; *)
+>>>>>>> master
        apply (quaternary_wfxy_decompose _) in H;
        let H1 := fresh "H1" in
        let H2 := fresh "H2" in
@@ -98,7 +114,11 @@ Ltac simplifyWfxyHyp H :=
        simplifyWfxyHyp H3;
        simplifyWfxyHyp H4
   | well_formed_xy ?x ?y (?ternary ?_Σ ?ψ1 ?ψ2 ?ψ3) = true
+<<<<<<< HEAD
     => idtac "ternary simplify";
+=======
+    => (* idtac "ternary simplify"; *)
+>>>>>>> master
        apply (ternary_wfxy_decompose _) in H;
        let H1 := fresh "H1" in
        let H2 := fresh "H2" in
@@ -108,6 +128,7 @@ Ltac simplifyWfxyHyp H :=
        simplifyWfxyHyp H2;
        simplifyWfxyHyp H3
   | well_formed_xy ?x ?y (?binary ?_Σ ?ψ1 ?ψ2) = true
+<<<<<<< HEAD
     => idtac "binary simplify";
       apply (binary_wfxy_decompose _) in H;
       let H1 := fresh "H1" in
@@ -117,6 +138,17 @@ Ltac simplifyWfxyHyp H :=
       simplifyWfxyHyp H2
   | well_formed_xy ?x ?y (?unary ?_Σ ?ψ1) = true
     => idtac "unary simplify";
+=======
+    => (* idtac "binary simplify"; *)
+       apply (binary_wfxy_decompose _) in H;
+       let H1 := fresh "H1" in
+       let H2 := fresh "H2" in
+       destruct H as [H1 H2];
+       simplifyWfxyHyp H1;
+       simplifyWfxyHyp H2
+  | well_formed_xy ?x ?y (?unary ?_Σ ?ψ1) = true
+    => (* idtac "unary simplify"; *)
+>>>>>>> master
        apply (unary_wfxy_decompose _) in H +
        apply (ebinder_wfxy_decompose _) in H +
        (

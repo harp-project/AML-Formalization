@@ -14,8 +14,7 @@ Section Semantics.
     app (σ : symbol) :
        @hlist _ carrier (arg_sorts σ) -> propset (carrier (ret_sort σ));
     inhabited (s : sort) : Inhabited (carrier s) ;
-    inj (s1 s2 : sort) (P : subsort s1 s2) :
-      
+    inj (s1 s2 : sort) (P : subsort s1 s2) : TODO
   }.
 
   Section with_model.
@@ -412,3 +411,4 @@ Add Search Blacklist "_elim".
 Add Search Blacklist "FunctionalElimination_".
 Add Search Blacklist "_graph_mut".
 Add Search Blacklist "_graph_rect".
+

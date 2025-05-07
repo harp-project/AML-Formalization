@@ -3,9 +3,6 @@ From Coq Require Export Program.Equality.
 
 Import ListNotations.
 
-Ltac invt H :=
-inversion H; subst; clear H.
-
 Definition is_leftb {A B : Set} (x : A + B) : bool :=
 match x with
 | inl _ => true
@@ -40,6 +37,7 @@ Arguments hcons {_} {_} {_} {_} & _ _.
 Arguments hlist_rect {_} {_} {_} & _ _ {_} _ /.
 
 Declare Scope hlist_scope.
+Bind Scope hlist_scope with hlist.
 Delimit Scope hlist_scope with hlist.
 Notation "⟨ ⟩" := hnil (format "⟨  ⟩") : hlist_scope.
 Notation "⟨ x ⟩" := (hcons x hnil)  : hlist_scope.
@@ -84,11 +82,11 @@ Defined.
 
 Definition test1 : hlist (bool_rect _ nat bool) [true; false] := ⟨1; true⟩%hlist.
 Definition test2 : hlist (propset ∘ bool_rect _ nat bool) [true; false] := ⟨{[1]}; {[true]}⟩%hlist.
+
 Goal pointwise_elem_of _ test1 test2.
 Proof.
   simpl. set_solver.
 Qed.
-Print Forall.
 
 
 Inductive InTy {A : Type} : A -> list A -> Type :=
@@ -320,3 +318,25 @@ Qed.
       | hcons x xs, hcons y ys => P _ _ x y ∧ HBiForall P xs ys
       | _, _ => False
       end.*)
+
+Ltac invt H := inversion H; subst; clear H.
+
+Lemma JMeq_eq_rect {U : Type} {P : U → Type} {p q : U} {x : P p} {y : P q} (H : p = q) : JMeq x y -> eq_rect p P x q H = y.
+Proof.
+  intros.
+  apply JMeq_eq_dep, eq_dep_eq_sigT, eq_sigT_sig_eq in H0 as [].
+  rewrite (Eqdep.EqdepTheory.UIP _ _ _ H x0).
+  all: assumption.
+Defined.
+
+
+Create HintDb kore.
+Hint Unfold AntiSymm : kore.
+Hint Constructors PartialOrder : kore.
+Hint Extern 5 (EqDecision _) => unfold EqDecision, Decision; decide equality : kore.
+Hint Unfold eq_rect_r : kore.
+Hint Rewrite -> Eqdep.EqdepTheory.eq_rect_eq : kore.
+Hint Rewrite <- Eqdep.EqdepTheory.eq_rect_eq : kore.
+Hint Unfold Equality.block solution_left : kore.
+Hint Extern 5 (?x ∈ ⊤) => simple apply elem_of_top' : kore.
+Hint Unfold Equality.block solution_left : kore.

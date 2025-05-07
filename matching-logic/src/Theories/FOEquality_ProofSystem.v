@@ -882,8 +882,8 @@ Section EqCon.
     now aapply patt_equal_refl.
     simpl in Hσ1, Hσ2. apply wf_cons_iff in Hσ1 as [], Hσ2 as [].
     simpl in Hmfσ1, Hmfσ2. apply andb_true_iff in Hmfσ1 as [], Hmfσ2 as [].
-    simpl in Hfpσ.
-    destruct X as [? ?%(IHl H0 H2)]. clear IHl.
+    simpl in Hfpσ. destruct Hfpσ.
+    destruct X as [? ?%(IHl H0 H2 H4 H6 f)]. clear IHl.
     apply equality_elimination_functional_subst; auto.
     - eapply wf_foldr. auto. exact H0.
       intros ? [[] ?] **. wf_auto2.
@@ -895,10 +895,6 @@ Section EqCon.
       intros ? [[] ?] **. simpl in H8 |- *. now apply mu_free_free_evar_subst.
     - now apply mf_imp_ktwf.
     - now apply mf_imp_ktwf.
-    - exact (Hfpσ.1).
-    - auto.
-    - auto.
-    - exact (Hfpσ.2).
   Defined.
 End EqCon.
 
@@ -961,4 +957,31 @@ Section Example.
     assumption.
   Qed.
 End Example.
+
+Lemma predicate_iff {Σ : Signature} {syntax : Syntax} Γ φ₁ φ₂ :
+  theory ⊆ Γ ->
+  well_formed φ₁ ->
+  well_formed φ₂ ->
+  Γ ⊢ is_predicate_pattern φ₁ --->
+  is_predicate_pattern φ₂ --->
+  is_predicate_pattern (φ₁ <---> φ₂).
+Proof.
+  intros HΓ Hwfφ₁ Hwfφ₂.
+  toMLGoal. simpl. unfold is_predicate_pattern. wf_auto2.
+  do 2 mlIntro.
+  unfold patt_iff.
+  opose proof* (predicate_and Γ (φ₁ ---> φ₂) (φ₂ ---> φ₁));
+  [auto | wf_auto2 .. |].
+  opose proof* (predicate_imp Γ φ₁ φ₂); auto.
+  opose proof* (predicate_imp Γ φ₂ φ₁); auto.
+  mlAdd H. mlAdd H0. mlAdd H1. clear H H0 H1.
+  mlAssert ("0dup" : (is_predicate_pattern φ₁)).
+  wf_auto2. mlExact "0".
+  mlAssert ("1dup" : (is_predicate_pattern φ₂)).
+  wf_auto2. mlExact "1".
+  mlApply "3" in "0". mlApply "0" in "1".
+  mlApply "4" in "1dup". mlApply "1dup" in "0dup".
+  mlApply "2" in "1". mlApply "1" in "0dup".
+  mlExact "0dup".
+Defined.
 

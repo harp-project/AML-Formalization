@@ -11,42 +11,6 @@ Section unification.
 
   Section helpers.
 
-    Lemma extract_common_from_equality_r a b p Γ :
-      theory ⊆ Γ ->
-      well_formed a -> well_formed b -> well_formed p ->
-      Γ ⊢ is_predicate_pattern p --->
-          p ---> a =ml b <---> (a and p) =ml (b and p).
-    Proof.
-      intros HΓ wfa wfb wfx.
-      mlIntro "H".
-      mlIntro "H0".
-      mlSplitAnd; mlIntro "H1".
-      mlRewriteBy "H1" at 1.
-      mlReflexivity.
-      epose proof (predicate_equiv _ _ _ _).
-      mlApplyMeta H in "H".
-      mlDestructAnd "H" as "H2" "_".
-      mlApply "H2" in "H0".
-      epose proof (patt_total_and _ _ _ _ _ _).
-      apply pf_iff_proj2 in H0.
-      use AnyReasoning in H0.
-      mlConj "H1" "H0" as "H".
-      mlApplyMeta H0 in "H".
-      clear H H0. mlClear "H0". mlClear "H2". mlClear "_". mlClear "H1".
-      mlDeduct "H".
-      remember (_ : ProofInfo) as i. clear Heqi.
-      evar Pattern.
-      epose proof (hypothesis (Γ ∪ {[p0]}) p0 _ ltac:(set_solver)). use i in H.
-      epose proof (extract_common_from_equivalence_r _ _ _ _ _ _ _ _).
-      apply (pf_iff_proj1) in H0.
-      apply lhs_from_and in H0.
-      apply (MP H) in H0.
-      mlAdd H.
-      mlRewrite H0 at 1.
-      mlReflexivity.
-      Unshelve. all: wf_auto2.
-    Defined.
-
     Definition get_fresh_evar (φ : Pattern) : sig (.∉ free_evars φ).
     Proof.
       exists (fresh_evar φ); auto.
@@ -209,6 +173,109 @@ Section unification.
     * exact X.
   Defined.
 
+  (* Similar proof as in Definedness_ProofSystem but object level. *)
+  Lemma def_of_pred_impl_pred_obj Γ ψ :
+    theory ⊆ Γ ->
+    well_formed ψ ->
+    Γ ⊢ is_predicate_pattern ψ ---> ⌈ ψ ⌉ ---> ψ.
+  Proof.
+    intros HΓ wfψ.
+    toMLGoal. wf_auto2. 
+    mlIntro "H0".
+    mlDestructOr "H0" as "H1" "H1".
+    - mlRewriteBy "H1" at 2.
+      mlClear "H1".
+      unfold patt_top. mlIntro. mlIntro. mlExactn 1.
+    - mlRewriteBy "H1" at 2.
+      mlRewriteBy "H1" at 1.
+      mlClear "H1".
+      fromMLGoal.
+      aapply bott_not_defined.
+  Defined.
+
+  Lemma extend_total_to_imp Γ p f :
+    theory ⊆ Γ ->
+    well_formed p ->
+    well_formed f ->
+    Γ ⊢ is_predicate_pattern p ---> (p ---> ⌊ f ⌋) ---> ⌊ p ---> f ⌋.
+  Proof.
+    intros HΓ Hwfp Hwff.
+    do 2 mlIntro.
+    epose proof (def_of_pred_impl_pred_obj Γ p HΓ Hwfp).
+    mlApplyMeta H in "0".
+    opose proof (syllogism Γ ⌈ p ⌉ p ⌊ f ⌋ _ Hwfp _).
+    1-2: wf_auto2. use AnyReasoning in H0.
+    mlApplyMeta H0 in "0". mlApply "0" in "1".
+    opose proof (impl_eq_or Γ ⌈ p ⌉ ⌊ f ⌋ _ _).
+    1-2: wf_auto2. use AnyReasoning in H1.
+    apply pf_iff_proj1 in H1. 2-3: wf_auto2.
+    mlApplyMeta H1 in "1".
+    epose proof (def_propagate_not Γ p HΓ Hwfp).
+    use AnyReasoning in H2.
+    mlAssert ("2" : (⌊ ! p ⌋ or ⌊ f ⌋)).
+    wf_auto2. mlRewrite <- H2 at 1. mlAssumption.
+    opose proof (patt_or_total Γ (! p) f AnyReasoning HΓ _ Hwff).
+    wf_auto2. mlApplyMeta H3 in "2".
+    epose proof (impl_eq_or Γ p f Hwfp Hwff).
+    use AnyReasoning in H4.
+    mlRewrite H4 at 1. mlAssumption.
+  Defined.
+
+  Tactic Notation "mlDeductHypo" constr(name) :=
+    match goal with
+    | [ |- context[ mkNH _ name (⌊ ?p ⌋) ] ] => 
+        match goal with
+        | [ |- context[ mkMLGoal _ ?t _ _ _ ] ] =>
+            mlDeduct name;
+            let i := fresh "i" in remember (ExGen := _, SVSubst := _, KT:= _, AKT := _) as i;
+            let H := fresh "H" in opose proof (hypothesis (t ∪ {[p]}) p _ ltac:(set_solver)) as H;
+            last first;
+            [use i in H |]
+        end
+    end.
+
+  Lemma extract_common_from_equality_r_2 Γ a b p :
+    theory ⊆ Γ ->
+    well_formed a ->
+    well_formed b ->
+    well_formed p ->
+    Γ ⊢ is_predicate_pattern p --->
+    (p ---> a =ml b) <---> (a and p) =ml (b and p).
+  Proof.
+    intros HΓ Hwfa Hwfb Hwfp.
+    mlIntro.
+    mlSplitAnd; mlIntro.
+    -
+      opose proof (extend_total_to_imp Γ p (a <---> b) HΓ Hwfp _). wf_auto2.
+      mlApplyMeta H in "0". mlApply "0" in "1".
+      mlClear "0". mlDeductHypo "1". 2: wf_auto2.
+      remember (Γ ∪ _) as Γ'.
+      epose proof (extract_common_from_equivalence_r Γ' p a b i Hwfp Hwfa Hwfb).
+      apply pf_iff_proj2 in H1. 2-3: wf_auto2.
+      apply (MP H0) in H1. mlRewrite H1 at 1. mlReflexivity.
+    -
+      mlIntro.
+      mlApplyMeta predicate_equiv in "0". 2: auto.
+      mlDestructAnd "0". mlApply "3" in "2".
+      mlClear "3". mlClear "4".
+      mlConj "1" "2" as "0".
+      mlClear "1". mlClear "2".
+      epose proof patt_total_and _ _ _ HΓ _ _.
+      use AnyReasoning in H.
+      apply pf_iff_proj2 in H.
+      mlApplyMeta H in "0". 2-3: wf_auto2. clear H.
+      mlDeductHypo "0".
+      2: wf_auto2.
+      remember (Γ ∪ _) as Γ'.
+      pose proof extract_common_from_equivalence_r Γ' p a b i Hwfp Hwfa Hwfb.
+      apply pf_iff_proj1 in H0.
+      apply lhs_from_and in H0.
+      apply (MP H) in H0.
+      mlRewrite H0 at 1. mlReflexivity.
+      Unshelve.
+      all: wf_auto2.
+  Defined.
+
   Lemma Lemma₅ : forall (σ : list (evar * Pattern)) t₁ t₂ Γ,
     theory ⊆ Γ ->
     well_formed t₁ -> well_formed t₂ ->
@@ -222,13 +289,11 @@ Section unification.
     epose proof (wf_substitute_list σ t₁ wfσ wft₁) as wfsl1.
     epose proof (wf_substitute_list σ t₂ wfσ wft₂) as wfsl2.
     mlIntro "H".
-    mlIntro "H0".
-    epose proof (extract_common_from_equality_r _ _ _ _ _ _ _ _).
-    epose proof (predicate_list_predicate _ _ _ _).
-    apply (MP H0) in H.
-    mlApplyMeta H in "H0".
-    mlDestructAnd "H0" as "H1" "H2".
-    mlApply "H2".
+    opose proof* (predicate_list_predicate Γ σ); auto.
+    opose proof* (extract_common_from_equality_r_2 Γ t₁ t₂ (predicate_list σ)); auto.
+    apply (MP H) in H0.
+    apply pf_iff_proj2 in H0. 2,3: wf_auto2.
+    mlApplyMeta H0.
     epose proof (Lemma₂ Γ t₁ σ AnyReasoning _ _ _ _ _).
     mlRewrite <- H1 at 1.
     epose proof (Lemma₂ Γ t₂ σ AnyReasoning _ _ _ _ _).

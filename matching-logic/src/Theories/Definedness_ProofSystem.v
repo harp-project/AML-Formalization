@@ -4921,7 +4921,73 @@ Proof.
   mlAssumption.
 Defined.
 
+Tactic Notation "mlTransitivity" constr(a1) "->" constr(a2) "as" constr(nam) :=
+  _ensureProofMode;
+  match goal with
+    | [ |- context[mkNH _ a1 (@patt_equal _ _ ?a ?b)] ] =>
+        match goal with
+          | [ |- context[mkNH _ a2 (@patt_equal _ _ b ?c)] ] =>
+              mlAssert (nam : (a =ml c)); [wf_auto2 | mlRewriteBy a1 at 1; mlAssumption | ]
+        end
+    | [ |- context[mkNH _ a1 (@patt_imp _ ?a ?b)] ] =>
+        match goal with
+          | [ |- context[mkNH _ a2 (@patt_imp _ b ?c)] ] =>
+              mlAssert (nam : (a ---> c)); [wf_auto2 | mlIntro; mlApply a2; mlApply a1; mlAssumption | ]
+        end
+    | [ |- context[mkNH _ a1 (@patt_iff _ ?a ?b)] ] =>
+        match goal with
+          | [ |- context[mkNH _ a2 (@patt_iff _ b ?c)] ] =>
+              mlAssert (nam : (a <---> c)); [wf_auto2 | mlSplitAnd; mlIntro; mlDestructAnd a1; mlDestructAnd a2; [mlTauto|mlTauto]|]
+        end
+  end.
 
+Local Example mlTransitivity_test_imp {Σ : Signature} {syntax : Syntax} Γ a b c :
+  theory ⊆ Γ -> well_formed a -> well_formed b -> well_formed c ->
+  Γ ⊢i
+    (a ---> b) --->
+    (b ---> c) --->
+    a ---> c
+    using AnyReasoning.
+Proof.
+  intros.
+  toMLGoal;[wf_auto2|].
+  mlIntro "P1"; mlIntro "P2".
+  mlTransitivity "P1" -> "P2" as "PT".
+  mlAssumption.
+Defined.
+
+
+Local Example mlTransitivity_test_mleq {Σ : Signature} {syntax : Syntax} Γ a b c :
+  theory ⊆ Γ -> well_formed a -> well_formed b -> well_formed c ->
+  Γ ⊢i
+    (a =ml b) --->
+    (b =ml c) --->
+    a =ml c
+    using AnyReasoning.
+Proof.
+  intros.
+  toMLGoal;[wf_auto2|].
+  mlIntro "P1"; mlIntro "P2".
+  mlTransitivity "P1" -> "P2" as "PT".
+  mlAssumption.
+Defined.
+
+
+(* TODO: Super slow due to mlTauto *)
+Local Example mlTransitivity_test_iff {Σ : Signature} {syntax : Syntax} Γ a b c :
+  theory ⊆ Γ -> well_formed a -> well_formed b -> well_formed c ->
+  Γ ⊢i
+    (a <---> b) --->
+    (b <---> c) --->
+    a <---> c
+    using AnyReasoning.
+Proof.
+  intros.
+  toMLGoal;[wf_auto2|].
+  mlIntro "P1"; mlIntro "P2".
+  mlTransitivity "P1" -> "P2" as "PT".
+  mlAssumption.
+Defined.
 
 (* TODO: eliminate mu_free *)
 Lemma patt_equal_trans {Σ : Signature} {syntax : Syntax} Γ φ1 φ2 φ3:

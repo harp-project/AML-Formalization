@@ -29,6 +29,7 @@
 | `mlApply "H" in "H0"`                    | Applies an implication from a local hypothesis `"H"` to another hypothesis `"H0"`. |
 | `mlConj "H1" "H2" as "HC"`               | Makes a conjunction of two hypotheses. |
 | `mlAssert ("H" : phi)`                   | Creates an additional goal about the validity of `phi`, and puts `phi` as a hypothesis in the original proof state. |
+| `mlTransitivity "H1" -> "H2" as "H3"`    | Composes `"H1"` and `"H2"` into a new hypothesis `"H3"`. Works with `=ml`, `--->` and `<--->`.
 
 
 | Meta-level propositional tactics | |
