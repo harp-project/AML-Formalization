@@ -67,7 +67,3 @@ Module StringVariables.
   Fail Next Obligation.
 
 End StringVariables.
-
-
-Ltac invt H :=
-inversion H; subst; clear H.

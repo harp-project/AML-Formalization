@@ -16,7 +16,6 @@ let y := fresh in let H := fresh in
 
 Section Substitution.
   Context {Σ : Signature}.
-  Open Scope kore_scope.
 
   Fixpoint inc_var {ex ex' ex'' mu mu' mu''} {s}
     (base : Pattern (ex ++ ex'') (mu ++ mu'') s)
@@ -96,6 +95,12 @@ Section Substitution.
 
   Arguments inc_var {_} {_} {_} {_} {_} {_} {_} !_.
 
+  (*
+  The following two function substitute the `(length ex)`th index in the dB index
+  `idx` by `ψ`. The result is likely a `kore_bevar idx` (`kore_bsvar dbi` resp.),
+  except when `idx` is the `(length ex)`th index, in which case it is ψ, with its
+  context extended with `ex`.
+  *)
   Fixpoint sub_evar {s s'} {ex ex' mu}
     (idx : InTy s (ex ++ s' :: ex'))
     (ψ : Pattern ex' mu s') {struct idx}
@@ -145,7 +150,6 @@ Section Substitution.
   Proof.
     intros.
     dependent destruction φ.
-    Print Pattern.
     (* bevar *)
     - eapply sub_evar; eauto.
     (* bsvar *)
@@ -299,29 +303,10 @@ Module Notations.
 
 End Notations.
 
-Create HintDb kore.
-Hint Unfold AntiSymm : kore.
-Hint Constructors PartialOrder : kore.
-Hint Extern 5 (EqDecision _) => unfold EqDecision, Decision; decide equality : kore.
-Hint Unfold eq_rect_r : kore.
-Hint Rewrite -> Eqdep.EqdepTheory.eq_rect_eq : kore.
-Hint Rewrite <- Eqdep.EqdepTheory.eq_rect_eq : kore.
-Hint Unfold Equality.block solution_left : kore.
-Hint Extern 5 (?x ∈ ⊤) => simple apply elem_of_top' : kore.
-
 Section Substitution.
   Import Notations.
-  Open Scope kore_scope.
 
   Context {Σ : Signature}.
-
-  Lemma JMeq_eq_rect {U : Type} {P : U → Type} {p q : U} {x : P p} {y : P q} (H : p = q) : JMeq x y -> eq_rect p P x q H = y.
-  Proof.
-    intros.
-    apply JMeq_eq_dep, eq_dep_eq_sigT, eq_sigT_sig_eq in H0 as [].
-    rewrite (Eqdep.EqdepTheory.UIP _ _ _ H x0).
-    all: assumption.
-  Defined.
 
   Lemma inc_var_size : forall s ex ex' ex'' mu mu' mu'' (φ : Pattern (ex ++ ex'') (mu ++ mu'') s),
     pat_size (@inc_var Σ ex ex' ex'' mu mu' mu'' s φ) =
@@ -346,8 +331,6 @@ Section Substitution.
       specialize (IH s ex ex' ex'' (s :: mu) mu' mu'' φ).
       f_equal. assumption.
   Defined.
-
-  Hint Unfold Equality.block solution_left : kore.
 
   Lemma sub_evar_size s s' ex ex' mu o idx:
     pat_size (@sub_evar Σ s s' ex ex' mu idx (kore_fevar o)) = 1.

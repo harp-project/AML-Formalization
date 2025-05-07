@@ -231,6 +231,7 @@ Module Notations.
 
   Declare Scope kore_scope.
   Delimit Scope kore_scope with kore.
+  Bind Scope kore_scope with Pattern.
 
   Notation "'⊥{' s '}'" := (kore_bot s) (format "'⊥{' s '}'") : kore_scope.
   Check ⊥{ _ }%kore.
@@ -265,10 +266,10 @@ Module Notations.
   Check (⌈{_} ⊥{_}⌉)%kore.
   Notation "'⌊{' s2 '}' p ⌋" := (kore_floor s2 p) (format "'⌊{' s2 '}'  p ⌋") : kore_scope.
   Check ⌊{_} ⊥{_}⌋%kore.
-  Notation "p1 '=ml{' s2 '}' p2" := (kore_equals s2 p1 p2) (at level 68, format "p1  '=ml{' s2 '}'  p2", left associativity) : kore_scope.
-  Check (⊥{_} =ml{_} Top{_})%kore.
-  Notation "p1 '⊆ml{' s2 '}' p2" := (kore_in s2 p1 p2) (at level 68, format "p1  '⊆ml{' s2 '}'  p2", left associativity) : kore_scope.
-  Check (⊥{_} ⊆ml{_} Top{_})%kore.
+  Notation "p1 '=k{' s2 '}' p2" := (kore_equals s2 p1 p2) (at level 68, format "p1  '=k{' s2 '}'  p2", left associativity) : kore_scope.
+  Check (⊥{_} =k{_} Top{_})%kore.
+  Notation "p1 '⊆k{' s2 '}' p2" := (kore_in s2 p1 p2) (at level 68, format "p1  '⊆k{' s2 '}'  p2", left associativity) : kore_scope.
+  Check (⊥{_} ⊆k{_} Top{_})%kore.
 
 
 
@@ -315,7 +316,6 @@ End Notations.
 Section Sortedness.
   Import Notations.
   Context {Σ : Signature}.
-  Open Scope kore_scope.
 
   Definition shift {T : Set} (f : nat -> T) (d : T)
     : nat -> T :=

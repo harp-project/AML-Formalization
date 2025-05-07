@@ -59,7 +59,7 @@ Section Semantics.
 
   Let OS s := PropsetOrderedSet (carrier M s).
   Let  L s := PowersetLattice (carrier M s).
-Check kore_exists.
+
   Equations? eval {ex mu} {s} (ρ : Valuation) (φ : Pattern ex mu s) : propset (carrier M s) by wf (pat_size φ) :=
     eval ρ (kore_bevar _) := empty ;
     eval ρ (kore_fevar x) := {[evar_valuation ρ x]} ;
@@ -130,7 +130,7 @@ Check kore_exists.
 
   Definition satM {ex mu s} (φ : Pattern ex mu s) :=
     forall ρ, eval ρ φ ≡ ⊤.
-  Print Theory.
+
   Definition satT (Γ : Theory) :=
     forall p, p ∈ Γ -> @satM _ _ (projT1 p) (projT2 p).
 
