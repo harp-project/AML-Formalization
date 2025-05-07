@@ -10,7 +10,7 @@ Proof.
   intros H1 H2.
   unshelve (eexists).
   {
-    eapply (ProofSystem.Modus_ponens _ _ _).
+    eapply (ML_Modus_ponens _ _ _).
     { apply H1. }
     { apply H2. }
   }
@@ -64,7 +64,7 @@ Lemma P1 {Σ : Signature} (Γ : Theory) (ϕ ψ : Pattern) :
 Proof.
   intros wfϕ wfψ.
   unshelve (eexists).
-  { apply ProofSystem.P1. exact wfϕ. exact wfψ. }
+  { apply ML_P1. exact wfϕ. exact wfψ. }
   { abstract(solve_pim_simple). }
 Defined.
 
@@ -77,7 +77,7 @@ Lemma P2 {Σ : Signature} (Γ : Theory) (ϕ ψ ξ : Pattern) :
 Proof.
   intros wfϕ wfψ wfξ.
   unshelve (eexists).
-  { apply ProofSystem.P2. exact wfϕ. exact wfψ. exact wfξ. }
+  { apply ML_P2. exact wfϕ. exact wfψ. exact wfξ. }
   { abstract (solve_pim_simple). }
 Defined.
 
@@ -88,7 +88,7 @@ Lemma P3 {Σ : Signature} (Γ : Theory) (ϕ : Pattern) :
 Proof.
   intros wfϕ.
   unshelve (eexists).
-  { apply ProofSystem.P3. exact wfϕ. }
+  { apply ML_P3. exact wfϕ. }
   { abstract ( solve_pim_simple ). }
 Defined.
 
@@ -127,7 +127,7 @@ Proof.
   intros Hwf Hin.
   unshelve (eexists).
   {
-    apply ProofSystem.hypothesis. apply Hwf. apply Hin.
+    apply ML_hypothesis. apply Hwf. apply Hin.
   }
   {
     abstract (
@@ -1287,7 +1287,7 @@ Defined.
     intros Hfev [pf Hpf].
     unshelve (eexists).
     {
-      apply ProofSystem.Ex_gen.
+      apply ML_Ex_gen.
       { pose proof (pf' := pf). apply proved_impl_wf in pf'.  wf_auto2. }
       { pose proof (pf' := pf). apply proved_impl_wf in pf'.  wf_auto2. }
       { exact pf. }
@@ -1339,7 +1339,7 @@ Defined.
     intros Hwf.
     unshelve (eexists).
     {
-      apply ProofSystem.Ex_quan. apply Hwf.
+      apply ML_Ex_quan. apply Hwf.
     }
     {
       abstract (
@@ -1514,7 +1514,7 @@ Defined.
     intros [pf Hpf].
     unshelve (eexists).
     {
-      apply ProofSystem.Framing_left.
+      apply ML_Framing_left.
       { exact wfψ. }
       exact pf.
     }
@@ -1546,7 +1546,7 @@ Defined.
     intros [pf Hpf].
     unshelve (eexists).
     {
-      apply ProofSystem.Framing_right.
+      apply ML_Framing_right.
       { exact wfψ. }
       exact pf.
     }
@@ -1583,7 +1583,7 @@ Proof.
   intros Hfev [pf Hpf].
   unshelve (eexists).
   {
-    apply ProofSystem.Knaster_tarski.
+    apply ML_Knaster_tarski.
     { exact Hfev. }
     { exact pf. }
   }
@@ -1644,7 +1644,7 @@ Proof.
   intros wfψ [pf Hpf].
   unshelve (eexists).
   {
-   apply ProofSystem.Svar_subst.
+   apply ML_Svar_subst.
    { pose proof (Hwf := proved_impl_wf _ _ pf). exact Hwf. }
    { exact wfψ. }
    { exact pf. }
@@ -1682,7 +1682,7 @@ Proof.
   intros wfϕ.
   unshelve (eexists).
   {
-    apply ProofSystem.Pre_fixp.
+    apply ML_Pre_fixp.
     { exact wfϕ. }
   }
   {
@@ -1739,17 +1739,17 @@ Proof.
     - destruct p; simpl.
       constructor; simpl in *. 1-2: set_solver.
       1-2: assumption.
-  * unshelve (eexists). apply Prop_bott_left; try assumption.
+  * unshelve (eexists). apply ML_Prop_bott_left; try assumption.
     simpl. constructor; simpl; auto; set_solver.
-  * unshelve (eexists). apply Prop_bott_right; try assumption.
+  * unshelve (eexists). apply ML_Prop_bott_right; try assumption.
     simpl. constructor; simpl; auto; set_solver.
-  * unshelve (eexists). apply Prop_disj_left; try assumption.
+  * unshelve (eexists). apply ML_Prop_disj_left; try assumption.
     simpl. constructor; simpl; auto; set_solver.
-  * unshelve (eexists). apply Prop_disj_right; try assumption.
+  * unshelve (eexists). apply ML_Prop_disj_right; try assumption.
     simpl. constructor; simpl; auto; set_solver.
-  * unshelve (eexists). apply Prop_ex_left; try assumption.
+  * unshelve (eexists). apply ML_Prop_ex_left; try assumption.
     simpl. constructor; simpl; auto; set_solver.
-  * unshelve (eexists). apply Prop_ex_right; try assumption.
+  * unshelve (eexists). apply ML_Prop_ex_right; try assumption.
     simpl. constructor; simpl; auto; set_solver.
   * apply Framing_left. all: try assumption.
     2: apply IHx. 3: assumption.
@@ -1794,8 +1794,8 @@ Proof.
       + apply implb_true_iff. intros H0. rewrite H0 in pwi_pf_kta.
         rewrite orb_true_r in pwi_pf_kta. apply kt_unreasonably_implies_somehow in H0.
         rewrite H0. assumption.
-  * unshelve (eexists). apply Existence; try assumption.
+  * unshelve (eexists). apply ML_Existence; try assumption.
     simpl. constructor; simpl; auto; set_solver.
-  * unshelve (eexists). apply Singleton_ctx; try assumption.
+  * unshelve (eexists). apply ML_Singleton_ctx; try assumption.
     simpl. constructor; simpl; auto; set_solver.
 Defined.

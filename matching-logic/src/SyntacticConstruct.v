@@ -368,6 +368,161 @@ Proof.
   exact H.
 Qed.
 
+Class Ternary (ternary : Pattern -> Pattern -> Pattern -> Pattern) := {
+    ternary_morphism :
+      forall {A : Type} (f : A -> Pattern -> Pattern) (f_morph : PatternMorphism f) (phi1 phi2 phi3 : Pattern) a,
+        f a (ternary phi1 phi2 phi3) =
+          ternary (f a phi1) (f a phi2) (f a phi3);
+    ternary_wfp :
+      forall (ψ1 ψ2 ψ3: Pattern),
+        well_formed_positive (ternary ψ1 ψ2 ψ3)
+        = well_formed_positive ψ1 &&
+          well_formed_positive ψ2 &&
+          well_formed_positive ψ3 ;
+    ternary_wfcex :
+      forall (n : nat) (ψ1 ψ2 ψ3 : Pattern),
+            well_formed_closed_ex_aux (ternary ψ1 ψ2 ψ3) n
+            = well_formed_closed_ex_aux ψ1 n &&
+              well_formed_closed_ex_aux ψ2 n &&
+              well_formed_closed_ex_aux ψ3 n  ;
+    ternary_wfcmu :
+      forall (n : nat) (ψ1 ψ2 ψ3 : Pattern),
+            well_formed_closed_mu_aux (ternary ψ1 ψ2 ψ3) n
+            = well_formed_closed_mu_aux ψ1 n &&
+              well_formed_closed_mu_aux ψ2 n &&
+              well_formed_closed_mu_aux ψ3 n;
+}.
+
+Lemma ternary_wfxy
+  (ternary : Pattern -> Pattern -> Pattern -> Pattern)
+  {_b : Ternary ternary}
+:
+forall (x y : nat) (ψ1 ψ2 ψ3 : Pattern),
+  well_formed_xy x y (ternary ψ1 ψ2 ψ3)
+  = well_formed_xy x y ψ1 && well_formed_xy x y ψ2 && well_formed_xy x y ψ3.
+Proof.
+  unfold well_formed_xy.
+  intros.
+  rewrite ternary_wfp.
+  rewrite ternary_wfcex.
+  rewrite ternary_wfcmu.
+  btauto.
+Qed.
+
+Lemma ternary_wfxy_compose
+  (ternary : Pattern -> Pattern -> Pattern -> Pattern)
+  {_b : Ternary ternary}
+:
+forall (x y : nat) (ψ1 ψ2 ψ3 : Pattern),
+  well_formed_xy x y ψ1 = true /\
+  well_formed_xy x y ψ2 = true /\
+  well_formed_xy x y ψ3 = true ->
+  well_formed_xy x y (ternary ψ1 ψ2 ψ3) = true
+.
+Proof.
+  intros x y ψ1 ψ2 ψ3 H.
+  rewrite ternary_wfxy.
+  destruct H as [H1 [H2 H3] ].
+  rewrite H1 H2 H3.
+  reflexivity.
+Qed.
+
+Lemma ternary_wfxy_decompose
+  (ternary : Pattern -> Pattern -> Pattern -> Pattern)
+  {_b : Ternary ternary}
+:
+forall (x y : nat) (ψ1 ψ2 ψ3 : Pattern),
+  well_formed_xy x y (ternary ψ1 ψ2 ψ3) = true ->
+  well_formed_xy x y ψ1 = true /\ well_formed_xy x y ψ2 = true /\ well_formed_xy x y ψ3 = true
+.
+Proof.
+  intros x y ψ1 ψ2 ψ3 H.
+  rewrite ternary_wfxy in H.
+  apply andb_true_iff in H as [H ?].
+  apply andb_true_iff in H as [? ?].
+  firstorder.
+Qed.
+
+Class Quaternary (quaternary : Pattern -> Pattern -> Pattern -> Pattern -> Pattern) := {
+    quaternary_morphism :
+      forall {A : Type} (f : A -> Pattern -> Pattern) (f_morph : PatternMorphism f) (phi1 phi2 phi3 phi4 : Pattern) a,
+        f a (quaternary phi1 phi2 phi3 phi4) =
+          quaternary (f a phi1) (f a phi2) (f a phi3) (f a phi4);
+    quaternary_wfp :
+      forall (ψ1 ψ2 ψ3 ψ4: Pattern),
+        well_formed_positive (quaternary ψ1 ψ2 ψ3 ψ4)
+        = well_formed_positive ψ1 &&
+          well_formed_positive ψ2 &&
+          well_formed_positive ψ3 &&
+          well_formed_positive ψ4 ;
+    quaternary_wfcex :
+      forall (n : nat) (ψ1 ψ2 ψ3 ψ4 : Pattern),
+            well_formed_closed_ex_aux (quaternary ψ1 ψ2 ψ3 ψ4) n
+            = well_formed_closed_ex_aux ψ1 n &&
+              well_formed_closed_ex_aux ψ2 n &&
+              well_formed_closed_ex_aux ψ3 n &&
+              well_formed_closed_ex_aux ψ4 n  ;
+    quaternary_wfcmu :
+      forall (n : nat) (ψ1 ψ2 ψ3 ψ4 : Pattern),
+            well_formed_closed_mu_aux (quaternary ψ1 ψ2 ψ3 ψ4) n
+            = well_formed_closed_mu_aux ψ1 n &&
+              well_formed_closed_mu_aux ψ2 n &&
+              well_formed_closed_mu_aux ψ3 n &&
+              well_formed_closed_mu_aux ψ4 n;
+}.
+
+Lemma quaternary_wfxy
+  (quaternary : Pattern -> Pattern -> Pattern -> Pattern -> Pattern)
+  {_b : Quaternary quaternary}
+:
+forall (x y : nat) (ψ1 ψ2 ψ3 ψ4 : Pattern),
+  well_formed_xy x y (quaternary ψ1 ψ2 ψ3 ψ4)
+  = well_formed_xy x y ψ1 && well_formed_xy x y ψ2 && well_formed_xy x y ψ3 && well_formed_xy x y ψ4.
+Proof.
+  unfold well_formed_xy.
+  intros.
+  rewrite quaternary_wfp.
+  rewrite quaternary_wfcex.
+  rewrite quaternary_wfcmu.
+  btauto.
+Qed.
+
+Lemma quaternary_wfxy_compose
+  (quaternary : Pattern -> Pattern -> Pattern -> Pattern -> Pattern)
+  {_b : Quaternary quaternary}
+:
+forall (x y : nat) (ψ1 ψ2 ψ3 ψ4 : Pattern),
+  well_formed_xy x y ψ1 = true /\
+  well_formed_xy x y ψ2 = true /\
+  well_formed_xy x y ψ3 = true /\
+  well_formed_xy x y ψ4 = true ->
+  well_formed_xy x y (quaternary ψ1 ψ2 ψ3 ψ4) = true
+.
+Proof.
+  intros x y ψ1 ψ2 ψ3 ψ4 H.
+  rewrite quaternary_wfxy.
+  destruct H as [H1 [H2 [H3 H4] ] ].
+  rewrite H1 H2 H3 H4.
+  reflexivity.
+Qed.
+
+Lemma quaternary_wfxy_decompose
+  (quaternary : Pattern -> Pattern -> Pattern -> Pattern -> Pattern)
+  {_b : Quaternary quaternary}
+:
+forall (x y : nat) (ψ1 ψ2 ψ3 ψ4 : Pattern),
+  well_formed_xy x y (quaternary ψ1 ψ2 ψ3 ψ4) = true ->
+  well_formed_xy x y ψ1 = true /\ well_formed_xy x y ψ2 = true /\ well_formed_xy x y ψ3 = true /\ well_formed_xy x y ψ4 = true
+.
+Proof.
+  intros x y ψ1 ψ2 ψ3 ψ4 H.
+  rewrite quaternary_wfxy in H.
+  do 2 apply andb_true_iff in H as [H ?].
+  apply andb_true_iff in H as [? ?].
+  firstorder.
+Qed.
+
+
 Class Unary (unary : Pattern -> Pattern) := {
     unary_morphism :
       forall {A : Type} (f : A -> Pattern -> Pattern) (f_morph : PatternMorphism f) (phi : Pattern) a,
@@ -569,13 +724,119 @@ Class EBinder (binder : Pattern -> Pattern) := {
     ebinder_morphism :
       forall {A : Type} (f : A -> Pattern -> Pattern) (f_morph : PatternMorphism f) (phi : Pattern) a,
         f a (binder phi) = binder (f (increase_ex pm_spec_data a) phi) ;
+    ebinder_wfp :
+      forall φ, well_formed_positive (binder φ) = well_formed_positive φ;
+    ebinder_wfcex :
+      forall φ n, well_formed_closed_ex_aux (binder φ) n =
+        well_formed_closed_ex_aux φ (S n);
+    ebinder_wfcmu :
+      forall φ n, well_formed_closed_mu_aux (binder φ) n =
+        well_formed_closed_mu_aux φ n;
 }.
+
+Lemma ebinder_wfxy
+  (ebinder : Pattern -> Pattern)
+  {_b : EBinder ebinder}
+:
+forall (x y : nat) (ψ : Pattern),
+  well_formed_xy x y (ebinder ψ)
+  = well_formed_xy (S x) y ψ.
+Proof.
+  unfold well_formed_xy.
+  intros.
+  rewrite ebinder_wfp.
+  rewrite ebinder_wfcex.
+  rewrite ebinder_wfcmu.
+  btauto.
+Qed.
+
+Lemma ebinder_wfxy_compose
+  (ebinder : Pattern -> Pattern)
+  {_b : EBinder ebinder}
+:
+forall (x y : nat) (ψ : Pattern),
+  well_formed_xy (S x) y ψ ->
+  well_formed_xy x y (ebinder ψ) = true
+.
+Proof.
+  intros x y ψ H.
+  rewrite ebinder_wfxy.
+  assumption.
+Qed.
+
+Lemma ebinder_wfxy_decompose
+  (ebinder : Pattern -> Pattern)
+  {_b : EBinder ebinder}
+:
+forall (x y : nat) (ψ : Pattern),
+  well_formed_xy x y (ebinder ψ) = true ->
+  well_formed_xy (S x) y ψ = true.
+Proof.
+  intros x y ψ H.
+  rewrite ebinder_wfxy in H.
+  assumption.
+Qed.
 
 Class SBinder (binder : Pattern -> Pattern) := {
     sbinder_morphism :
       forall {A : Type} (f : A -> Pattern -> Pattern) (f_morph : PatternMorphism f) (phi : Pattern) a,
         f a (binder phi) = binder (f (increase_mu pm_spec_data a) phi) ;
+    sbinder_wfp :
+      forall φ, well_formed_positive (binder φ) =
+                well_formed_positive φ &&
+                no_negative_occurrence_db_b 0 φ;
+    sbinder_wfcex :
+      forall φ n, well_formed_closed_ex_aux (binder φ) n =
+        well_formed_closed_ex_aux φ n;
+    sbinder_wfcmu :
+      forall φ n, well_formed_closed_mu_aux (binder φ) n =
+        well_formed_closed_mu_aux φ (S n);
 }.
+
+Lemma sbinder_wfxy
+  (sbinder : Pattern -> Pattern)
+  {_b : SBinder sbinder}
+:
+forall (x y : nat) (ψ : Pattern),
+  well_formed_xy x y (sbinder ψ)
+  = well_formed_xy x (S y) ψ && no_negative_occurrence_db_b 0 ψ.
+Proof.
+  unfold well_formed_xy.
+  intros.
+  rewrite sbinder_wfp.
+  rewrite sbinder_wfcex.
+  rewrite sbinder_wfcmu.
+  btauto.
+Qed.
+
+Lemma sbinder_wfxy_compose
+  (sbinder : Pattern -> Pattern)
+  {_b : SBinder sbinder}
+:
+forall (x y : nat) (ψ : Pattern),
+  well_formed_xy x (S y) ψ /\
+  no_negative_occurrence_db_b 0 ψ ->
+  well_formed_xy x y (sbinder ψ) = true
+.
+Proof.
+  intros x y ψ H.
+  rewrite sbinder_wfxy.
+  destruct H.
+  by rewrite H H0.
+Qed.
+
+Lemma sbinder_wfxy_decompose
+  (sbinder : Pattern -> Pattern)
+  {_b : SBinder sbinder}
+:
+forall (x y : nat) (ψ : Pattern),
+  well_formed_xy x y (sbinder ψ) = true ->
+  no_negative_occurrence_db_b 0 ψ /\ well_formed_xy x (S y) ψ = true.
+Proof.
+  intros x y ψ H.
+  rewrite sbinder_wfxy in H.
+  split; apply andb_true_iff in H as [? ?]; assumption.
+Qed.
 
 (** Next, we define instances for the primitives of matching logic: *)
 
@@ -585,12 +846,30 @@ Next Obligation.
   intros A f m φ a. repeat rewrite pm_correctness.
   simpl. reflexivity.
 Defined.
+Next Obligation.
+  intros. by simpl.
+Defined.
+Next Obligation.
+  intros. by simpl.
+Defined.
+Next Obligation.
+  intros. by simpl.
+Defined.
 
 #[global]
 Program Instance SBinder_mu : SBinder patt_mu := {}.
 Next Obligation.
   intros A f m φ a. repeat rewrite pm_correctness.
   simpl. reflexivity.
+Defined.
+Next Obligation.
+  intros. simpl. btauto.
+Defined.
+Next Obligation.
+  intros. by simpl.
+Defined.
+Next Obligation.
+  intros. by simpl.
 Defined.
 
 #[global]
@@ -752,6 +1031,15 @@ Next Obligation.
    intros A f m φ a.
    unfold patt_not. repeat rewrite pm_correctness.
    simpl. reflexivity.
+Defined.
+Next Obligation.
+  intros. cbn. by btauto.
+Defined.
+Next Obligation.
+  intros. cbn. by btauto.
+Defined.
+Next Obligation.
+  intros. cbn. by btauto.
 Defined.
 
 Class SwappableEx {A : Type} (f : A -> Pattern -> Pattern) (g : Pattern -> Pattern)

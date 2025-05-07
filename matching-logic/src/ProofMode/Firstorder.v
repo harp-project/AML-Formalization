@@ -27,7 +27,7 @@ Section with_signature.
     intros Hfev [pf Hpf].
     unshelve (eexists).
     {
-      apply ProofSystem.Ex_gen.
+      apply ML_Ex_gen.
       { pose proof (pf' := pf). apply proved_impl_wf in pf'.  wf_auto2. }
       { pose proof (pf' := pf). apply proved_impl_wf in pf'.  wf_auto2. }
       { exact pf. }
@@ -79,7 +79,7 @@ Section with_signature.
     intros Hwf.
     unshelve (eexists).
     {
-      apply ProofSystem.Ex_quan. apply Hwf.
+      apply ML_Ex_quan. apply Hwf.
     }
     {
       abstract (solve_pim_simple).

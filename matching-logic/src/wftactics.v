@@ -39,6 +39,8 @@ Definition wfToWfxySimplifications := (
 ).
 
 Definition wfxySimplifications := (
+  @quaternary_wfxy,
+  @ternary_wfxy,
   @binary_wfxy,
   @unary_wfxy,
   @nullary_wfxy,
@@ -58,35 +60,70 @@ Ltac simplifyWfxyHyp H :=
   end;
   try lazymatch type of H with
   | well_formed_xy ?m ?n (foldr ?binary ?g ?xs) = true
-    => apply (well_formed_xy_foldr_binary_decompose _) in H;
+    => (* idtac "foldr binary simplify"; *)
+       apply (well_formed_xy_foldr_binary_decompose _) in H;
        let H1 := fresh "H1" in
        let H2 := fresh "H2" in
        destruct H as [H1 H2];
        simplifyWfxyHyp H1;
        simplifyWfxyHyp H2
   | lwf_xy ?m ?n (?x::?xs) = true
-    => apply lwf_xy_cons_decompose in H;
+    => (* idtac "lwf_xy :: simplify"; *)
+       apply lwf_xy_cons_decompose in H;
        let H1 := fresh "H1" in
        let H2 := fresh "H2" in
        destruct H as [H1 H2];
        simplifyWfxyHyp H1;
        simplifyWfxyHyp H2
   | lwf_xy ?m ?n (?xs ++ ?ys) = true
-    => apply lwf_xy_app_decompose in H;
+    => (* idtac "lwf_xy ++ simplify"; *)
+      apply lwf_xy_app_decompose in H;
       let H1 := fresh "H1" in
       let H2 := fresh "H2" in
       destruct H as [H1 H2];
       simplifyWfxyHyp H1;
       simplifyWfxyHyp H2
-  | well_formed_xy ?x ?y (?binary ?ψ1 ?ψ2) = true
-    => apply (binary_wfxy_decompose _) in H;
-      let H1 := fresh "H1" in
-      let H2 := fresh "H2" in
-      destruct H as [H1 H2];
-      simplifyWfxyHyp H1;
-      simplifyWfxyHyp H2
-  | well_formed_xy ?x ?y (?unary ?ψ1) = true
-    => apply (unary_wfxy_decompose _) in H;
+
+  (* TODO: the order of these is highly relevant *)
+  | well_formed_xy ?x ?y (?quaternary ?_Σ ?ψ1 ?ψ2 ?ψ3 ?ψ4) = true
+    => (* idtac "quaternary simplify"; *)
+       apply (quaternary_wfxy_decompose _) in H;
+       let H1 := fresh "H1" in
+       let H2 := fresh "H2" in
+       let H3 := fresh "H3" in
+       let H4 := fresh "H3" in
+       destruct H as [H1 [H2 [H3 H4] ] ];
+       simplifyWfxyHyp H1;
+       simplifyWfxyHyp H2;
+       simplifyWfxyHyp H3;
+       simplifyWfxyHyp H4
+  | well_formed_xy ?x ?y (?ternary ?_Σ ?ψ1 ?ψ2 ?ψ3) = true
+    => (* idtac "ternary simplify"; *)
+       apply (ternary_wfxy_decompose _) in H;
+       let H1 := fresh "H1" in
+       let H2 := fresh "H2" in
+       let H3 := fresh "H3" in
+       destruct H as [H1 [H2 H3] ];
+       simplifyWfxyHyp H1;
+       simplifyWfxyHyp H2;
+       simplifyWfxyHyp H3
+  | well_formed_xy ?x ?y (?binary ?_Σ ?ψ1 ?ψ2) = true
+    => (* idtac "binary simplify"; *)
+       apply (binary_wfxy_decompose _) in H;
+       let H1 := fresh "H1" in
+       let H2 := fresh "H2" in
+       destruct H as [H1 H2];
+       simplifyWfxyHyp H1;
+       simplifyWfxyHyp H2
+  | well_formed_xy ?x ?y (?unary ?_Σ ?ψ1) = true
+    => (* idtac "unary simplify"; *)
+       apply (unary_wfxy_decompose _) in H +
+       apply (ebinder_wfxy_decompose _) in H +
+       (
+         let H1 := fresh "H1" in
+         apply (sbinder_wfxy_decompose _) in H as [H1 H]
+         )
+       ;
        simplifyWfxyHyp H
   (* No point in simplifying these *)
   (*
@@ -96,6 +133,24 @@ Ltac simplifyWfxyHyp H :=
   | _ => idtac
   end
 .
+
+Local Goal
+  forall {Σ : Signature} φ φ' φ'' φ''',
+    well_formed (patt_app φ φ') ->
+    well_formed (patt_not φ) ->
+    well_formed (patt_exists φ'') ->
+    well_formed (patt_mu φ''') ->
+    well_formed_xy 1 0 φ'' = true /\
+    well_formed_xy 0 0 φ = true /\
+    well_formed_xy 0 0 φ' = true /\
+    well_formed_xy 0 1 φ''' = true.
+Proof.
+  intros. simplifyWfxyHyp H.
+  simplifyWfxyHyp H0.
+  simplifyWfxyHyp H1.
+  simplifyWfxyHyp H2.
+  split_and?; assumption.
+Qed.
 
 Ltac compositeSimplifyAllWfHyps :=
   (*proved_hook_wfauto;*)
@@ -189,8 +244,12 @@ Ltac wf_auto2_composite_step :=
     apply (well_formed_xy_foldr_binary_compose _) |
     apply lwf_xy_cons_compose |
     apply lwf_xy_app_compose |
+    apply (quaternary_wfxy_compose _) |
+    apply (ternary_wfxy_compose _) |
     apply (binary_wfxy_compose _) |
     apply (unary_wfxy_compose _) |
+    apply (ebinder_wfxy_compose _) |
+    apply (sbinder_wfxy_compose _) |
     apply (nullary_wfxy _) |
     apply wf_evar_open_from_wf_ex |
     apply wf_sctx
@@ -199,11 +258,44 @@ Ltac wf_auto2_composite_step :=
   (*compoundDecomposeWfGoal*)
 .
 
+Local Goal
+  forall {Σ : Signature} φ φ' φ'' φ''',
+    well_formed φ ->
+    well_formed φ' ->
+    well_formed (patt_exists φ'') ->
+    well_formed (patt_mu φ''') ->
+    well_formed (patt_imp
+                  (patt_mu (patt_app φ''' φ))
+                  (patt_exists (patt_app (patt_not φ'') φ))).
+Proof.
+  intros.
+  simplifyWfxyHyp H.
+  simplifyWfxyHyp H0.
+  simplifyWfxyHyp H1.
+  simplifyWfxyHyp H2.
+  wf_auto2_composite_step. (* conversion *)
+  wf_auto2_composite_step. (* ---> *)
+  wf_auto2_composite_step. (* /\ *)
+  * wf_auto2_composite_step. (* mu *)
+    wf_auto2_composite_step. (* /\ *)
+    - wf_auto2_composite_step. (* ⋅ *)
+      wf_auto2_composite_step. (* /\ *)
+      admit.
+    - admit.
+  * wf_auto2_composite_step. (* ex *)
+    wf_auto2_composite_step. (* ⋅ *)
+    wf_auto2_composite_step. (* /\ *)
+    - wf_auto2_composite_step. (* not *)
+    - admit.
+Abort.
+
 Definition wfPositiveSimplifications := (
   @well_formed_positive_foldr_binary,
   @nullary_wfp,
   @unary_wfp,
   @binary_wfp,
+  @ternary_wfp,
+  @quaternary_wfp,
   @wfp_evar_quan
 ).
 
@@ -211,7 +303,9 @@ Definition wfCexSimplifications := (
   @well_formed_cex_foldr_binary,
   @nullary_wfcex,
   @unary_wfcex,
-  @binary_wfcex
+  @binary_wfcex,
+  @ternary_wfcex,
+  @quaternary_wfcex
 ).
 
 Definition wfCmuSimplifications := (
@@ -219,6 +313,8 @@ Definition wfCmuSimplifications := (
   @nullary_wfcmu,
   @unary_wfcmu,
   @binary_wfcmu,
+  @ternary_wfcmu,
+  @quaternary_wfcmu,
   @wfcmu_evar_quan
 ).
 
@@ -457,6 +553,20 @@ Ltac wf_auto2 :=
   wf_auto2_fallback
 .
 
+Local Goal
+  forall {Σ : Signature} φ φ' φ'' φ''',
+    well_formed φ ->
+    well_formed φ' ->
+    well_formed (patt_exists φ'') ->
+    well_formed (patt_mu φ''') ->
+    well_formed (patt_imp
+                  (patt_mu (patt_app φ''' φ))
+                  (patt_exists (patt_app (patt_not φ'') φ))).
+Proof.
+  intros. wf_auto2.
+Qed.
+
+
 Ltac try_wfauto2 :=
 lazymatch goal with
 | [|- is_true (well_formed _)] => wf_auto2
@@ -480,4 +590,3 @@ Tactic Notation "mlSimpl" :=
 
 Tactic Notation "mlSimpl" "in" hyp(H) :=
   mlUnsortedSimpl in H.
-

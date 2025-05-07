@@ -120,7 +120,7 @@ Section functional_subst.
     (****)
 
 
-    pose proof (EQ := BasicProofSystemLemmas.Ex_quan Γ φ Zvar WFEX).
+    pose proof (EQ := Ex_quan Γ φ Zvar WFEX).
     (* change constraint in EQ. *)
     use AnyReasoning in EQ.
     epose proof (PC := prf_conclusion Γ (patt_equal t Z) (instantiate (ex , φ) (patt_free_evar Zvar) ---> ex , φ) AnyReasoning ltac:(shelve) _ EQ).
@@ -152,7 +152,7 @@ Section functional_subst.
         { exact EE. }
     }
 
-    eapply (BasicProofSystemLemmas.Ex_gen Γ _ _ Zvar) in HSUB.
+    eapply (Ex_gen Γ _ _ Zvar) in HSUB.
     3: {
       shelve.
     }

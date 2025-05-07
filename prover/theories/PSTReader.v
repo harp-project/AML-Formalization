@@ -16,29 +16,29 @@ Section ProofConversionAbstractReader.
     : Type
   :=
   match pf with
-  | hypothesis _ _ _ _ => True
-  | P1 _ _ _ _ _ => True
-  | P2 _ _ _ _ _ _ _ => True
-  | P3 _ _ _ => True
-  | Modus_ponens _ _ _ pf1 pf2
+  | ML_hypothesis _ _ _ _ => True
+  | ML_P1 _ _ _ _ _ => True
+  | ML_P2 _ _ _ _ _ _ _ => True
+  | ML_P3 _ _ _ => True
+  | ML_Modus_ponens _ _ _ pf1 pf2
   => ((covers m pf1) * (covers m pf2))%type
-  | Ex_quan _ phi y _ => {ev : evar & {sv : svar & m !! phi = Some (ev,sv) } }
-  | Ex_gen _ phi1 phi2 x _ _ pf' _ => ({ev : evar & {sv : svar & m !! phi1 = Some (ev,sv)}} * covers m pf')%type
-  | Prop_bott_left _ _ _ => True
-  | Prop_bott_right _ _ _ => True
-  | Prop_disj_left _ _ _ _ _ _ _ => True
-  | Prop_disj_right _ _ _ _ _ _ _ => True
-  | Prop_ex_left _ phi psi _ _ =>
+  | ML_Ex_quan _ phi y _ => {ev : evar & {sv : svar & m !! phi = Some (ev,sv) } }
+  | ML_Ex_gen _ phi1 phi2 x _ _ pf' _ => ({ev : evar & {sv : svar & m !! phi1 = Some (ev,sv)}} * covers m pf')%type
+  | ML_Prop_bott_left _ _ _ => True
+  | ML_Prop_bott_right _ _ _ => True
+  | ML_Prop_disj_left _ _ _ _ _ _ _ => True
+  | ML_Prop_disj_right _ _ _ _ _ _ _ => True
+  | ML_Prop_ex_left _ phi psi _ _ =>
     (exists ev sv, m !! phi = Some (ev,sv)) /\ (m !! (patt_app phi psi)) = (m !! phi)
-  | Prop_ex_right _ phi psi _ _ =>
+  | ML_Prop_ex_right _ phi psi _ _ =>
     (exists ev sv, m !! phi = Some (ev,sv)) /\ (m !! (patt_app psi phi)) = (m !! phi)
-  | Framing_left _ _ _ psi wfp pf' => (covers m pf')
-  | Framing_right _ _ _ psi wfp pf' => (covers m pf')
-  | Svar_subst _ _ _ _ _ _ pf' => (covers m pf')
-  | Pre_fixp _ phi _ => {ev : evar & {sv : svar & m !! phi = Some (ev,sv) } }
-  | Knaster_tarski _ _ phi psi pf' => ({ev : evar & {sv : svar & m !! phi = Some (ev,sv)}} * covers m pf')%type
-  | Existence _ => {ev : evar & {sv : svar & m !! (patt_bound_evar 0) = Some (ev,sv) } } (* HERE note that patterns in the map need not be well-formed-closed *)
-  | Singleton_ctx _ _ _ _ _ _ => True
+  | ML_Framing_left _ _ _ psi wfp pf' => (covers m pf')
+  | ML_Framing_right _ _ _ psi wfp pf' => (covers m pf')
+  | ML_Svar_subst _ _ _ _ _ _ pf' => (covers m pf')
+  | ML_Pre_fixp _ phi _ => {ev : evar & {sv : svar & m !! phi = Some (ev,sv) } }
+  | ML_Knaster_tarski _ _ phi psi pf' => ({ev : evar & {sv : svar & m !! phi = Some (ev,sv)}} * covers m pf')%type
+  | ML_Existence _ => {ev : evar & {sv : svar & m !! (patt_bound_evar 0) = Some (ev,sv) } } (* HERE note that patterns in the map need not be well-formed-closed *)
+  | ML_Singleton_ctx _ _ _ _ _ _ => True
   end.
 
 
@@ -59,29 +59,29 @@ Section ProofConversionAbstractReader.
     : Type
   :=
   match pf with
-  | hypothesis _ _ _ _ => True
-  | P1 _ _ _ _ _ => True
-  | P2 _ _ _ _ _ _ _ => True
-  | P3 _ _ _ => True
-  | Modus_ponens _ _ _ pf1 pf2
+  | ML_hypothesis _ _ _ _ => True
+  | ML_P1 _ _ _ _ _ => True
+  | ML_P2 _ _ _ _ _ _ _ => True
+  | ML_P3 _ _ _ => True
+  | ML_Modus_ponens _ _ _ pf1 pf2
   => ((covers' s pf1) * (covers' s pf2))%type
-  | Ex_quan _ phi y _ => phi ∈ (patterns_from_proof s)
-  | Ex_gen _ phi1 phi2 x _ _ pf' _ => ((phi1 ∈ (patterns_from_proof s)) * (x ∈ evars_to_avoid s) * covers' s pf')%type
-  | Prop_bott_left _ _ _ => True
-  | Prop_bott_right _ _ _ => True
-  | Prop_disj_left _ _ _ _ _ _ _ => True
-  | Prop_disj_right _ _ _ _ _ _ _ => True
-  | Prop_ex_left _ phi psi _ _ =>
+  | ML_Ex_quan _ phi y _ => phi ∈ (patterns_from_proof s)
+  | ML_Ex_gen _ phi1 phi2 x _ _ pf' _ => ((phi1 ∈ (patterns_from_proof s)) * (x ∈ evars_to_avoid s) * covers' s pf')%type
+  | ML_Prop_bott_left _ _ _ => True
+  | ML_Prop_bott_right _ _ _ => True
+  | ML_Prop_disj_left _ _ _ _ _ _ _ => True
+  | ML_Prop_disj_right _ _ _ _ _ _ _ => True
+  | ML_Prop_ex_left _ phi psi _ _ =>
     ((phi ∈ (patterns_from_proof s)) * ((patt_app phi psi) ∈ (patterns_from_proof s)))%type
-  | Prop_ex_right _ phi psi _ _ =>
+  | ML_Prop_ex_right _ phi psi _ _ =>
     ((phi ∈ (patterns_from_proof s)) * ((patt_app psi phi) ∈ (patterns_from_proof s)))%type
-  | Framing_left _ _ _ psi wfp pf' => (covers' s pf')
-  | Framing_right _ _ _ psi wfp pf' => (covers' s pf')
-  | Svar_subst _ _ _ _ _ _ pf' => (covers' s pf')
-  | Pre_fixp _ phi _ => phi ∈ (patterns_from_proof s)
-  | Knaster_tarski _ phi psi _ pf' => ((phi ∈ (patterns_from_proof s)) * (covers' s pf'))%type
-  | Existence _ => (patt_bound_evar 0) ∈ (patterns_from_proof s) (* HERE note that patterns in the map need not be well-formed-closed *)
-  | Singleton_ctx _ _ _ _ _ _ => True
+  | ML_Framing_left _ _ _ psi wfp pf' => (covers' s pf')
+  | ML_Framing_right _ _ _ psi wfp pf' => (covers' s pf')
+  | ML_Svar_subst _ _ _ _ _ _ pf' => (covers' s pf')
+  | ML_Pre_fixp _ phi _ => phi ∈ (patterns_from_proof s)
+  | ML_Knaster_tarski _ phi psi _ pf' => ((phi ∈ (patterns_from_proof s)) * (covers' s pf'))%type
+  | ML_Existence _ => (patt_bound_evar 0) ∈ (patterns_from_proof s) (* HERE note that patterns in the map need not be well-formed-closed *)
+  | ML_Singleton_ctx _ _ _ _ _ _ => True
   end.
 
   Class Ln2NamedProperties

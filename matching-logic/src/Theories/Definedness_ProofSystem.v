@@ -98,7 +98,7 @@ Section ProofSystemTheorems.
     using BasicReasoning.
   Proof.
     intros HΓ.
-    apply BasicProofSystemLemmas.hypothesis; auto. unfold theory,theory_of_NamedAxioms in HΓ. simpl in HΓ.
+    apply hypothesis; auto. unfold theory,theory_of_NamedAxioms in HΓ. simpl in HΓ.
     eapply elem_of_weaken.
     2: { apply HΓ. }
     unfold axiom.
@@ -158,12 +158,12 @@ Section ProofSystemTheorems.
   Proof.
     intros HΓ wfφ₁ wfφ₂ H.
     unfold patt_total.
-    apply BasicProofSystemLemmas.modus_tollens.
+    apply modus_tollens.
     apply ceil_monotonic.
     { assumption. }
     { wf_auto2. }
     { wf_auto2. }
-    apply BasicProofSystemLemmas.modus_tollens.
+    apply modus_tollens.
     exact H.
   Defined.
 
@@ -364,7 +364,7 @@ Section ProofSystemTheorems.
         reflexivity.
       }
       rewrite <- Heq.
-      apply BasicProofSystemLemmas.Ex_gen.
+      apply Ex_gen.
       2: {simpl. unfold evar_is_fresh_in in Hx1'. clear -Hx1'. set_solver. }
       1: { try_solve_pile. }
       assumption.
@@ -406,7 +406,7 @@ Section ProofSystemTheorems.
         fromMLGoal.
         replace b0 with ((patt_free_evar x)^{{evar: x ↦ 0}}).
         2: { simpl. case_match;[reflexivity|congruence]. }
-        apply BasicProofSystemLemmas.Ex_gen.
+        apply Ex_gen.
         2: { simpl. case_match;[|congruence]. simpl.
              unfold evar_is_fresh_in in Hx1'. clear -Hx1'. set_solver.
         }
@@ -436,7 +436,7 @@ Section ProofSystemTheorems.
         }
         subst i.
         useBasicReasoning.
-        apply BasicProofSystemLemmas.Ex_quan.
+        apply Ex_quan.
         { wf_auto2. }
       }
       eapply syllogism_meta.
@@ -835,7 +835,7 @@ Section ProofSystemTheorems.
         { wf_auto2. }
         mlIntro. mlClear "0". fromMLGoal.
         eapply useGenericReasoning.
-        2: apply (BasicProofSystemLemmas.hypothesis Γ axiom0 i H).
+        2: apply (hypothesis Γ axiom0 i H).
         try_solve_pile.
     - (* P1 *)
       toMLGoal.
@@ -923,7 +923,7 @@ Section ProofSystemTheorems.
       { wf_auto2. }
       mlIntro. mlClear "0". fromMLGoal.
       useBasicReasoning.
-      apply BasicProofSystemLemmas.Ex_quan. wf_auto2.
+      apply Ex_quan. wf_auto2.
     - (* Existential Generalization *)
       destruct Hpf as [Hpf2 Hpf3 Hpf4 Hpf5].
       simpl in Hpf2, Hpf3, Hpf4.
@@ -944,7 +944,7 @@ Section ProofSystemTheorems.
       apply reorder_meta in IHpf.
       2-4: clear Hpf5; wf_auto2.
 
-      apply BasicProofSystemLemmas.Ex_gen with (x := x) in IHpf.
+      apply Ex_gen with (x := x) in IHpf.
       3: { simpl. set_solver. }
       2: { try_solve_pile. }
       apply reorder_meta in IHpf.
@@ -1851,7 +1851,7 @@ Section ProofSystemTheorems.
         remember_constraint as i.
         assert (Γ' ⊢i (φ1 <---> φ2) using i). {
           subst i. useBasicReasoning.
-          apply BasicProofSystemLemmas.hypothesis.
+          apply hypothesis.
           - abstract (now apply well_formed_iff).
           - abstract (rewrite HeqΓ'; apply elem_of_union_r; constructor).
         }
@@ -2064,7 +2064,7 @@ Section ProofSystemTheorems.
     
     assert (well_formed (ex, φ)) as WFEX.
     { wf_auto2. }
-    pose proof (EQ := BasicProofSystemLemmas.Ex_quan Γ φ Zvar WFEX).
+    pose proof (EQ := Ex_quan Γ φ Zvar WFEX).
     (* change constraint in EQ. *)
     use AnyReasoning in EQ.
     epose proof (PC := prf_conclusion Γ (patt_equal φ' Z) (instantiate (ex , φ) (patt_free_evar Zvar) ---> ex , φ) AnyReasoning ltac:(apply well_formed_equal;wf_auto2) _ EQ).
@@ -2098,7 +2098,7 @@ Section ProofSystemTheorems.
         { exact EE. }
     }
 
-    eapply (BasicProofSystemLemmas.Ex_gen Γ _ _ Zvar) in HSUB.
+    eapply (Ex_gen Γ _ _ Zvar) in HSUB.
     3: {
       rewrite HeqZvar. unfold fresh_evar. simpl.
       apply not_elem_of_union.
@@ -2622,10 +2622,7 @@ Proof.
   - mlExact "H1".
   - mlExact "H2".
   Unshelve.
-  all: wf_auto2.
-  exact (set_evar_fresh_is_fresh (φ₁ ⋅ φ₂)).
-  pose proof (set_evar_fresh_is_fresh (φ₁ ⋅ φ₂)).
-  unfold evar_is_fresh_in in H. set_solver.
+    all: subst x; solve_fresh.
 Defined.
 
 Lemma propagate_membership_conjunct_1 {Σ : Signature} {syntax : Syntax}
@@ -2675,7 +2672,7 @@ Proof.
   { wf_auto2. }
   mlRewrite (useBasicReasoning i (not_not_iff Γ (⌈ φ ⌉) ltac:(wf_auto2))) at 1.
   fromMLGoal.
-  apply BasicProofSystemLemmas.modus_tollens.
+  apply modus_tollens.
   exact H.
 Defined.
 
@@ -2776,7 +2773,7 @@ Proof.
        { wf_auto2. }
        reflexivity.
   }
-  apply BasicProofSystemLemmas.Ex_gen.
+  apply Ex_gen.
   { try_solve_pile. }
   {  simpl. set_solver.
   }
@@ -2786,7 +2783,7 @@ Proof.
   { wf_auto2. }
   { wf_auto2. }
   useBasicReasoning.
-  apply BasicProofSystemLemmas.Ex_quan.
+  apply Ex_quan.
   { wf_auto2. }
 Defined.
 
@@ -2965,7 +2962,7 @@ Proof.
   { wf_auto2. }
   2: { wf_auto2. }
   3: {
-    apply BasicProofSystemLemmas.modus_tollens.
+    apply modus_tollens.
     {
       apply ceil_monotonic.
       { exact HΓ. }
@@ -3005,30 +3002,49 @@ Proof.
   all: try_solve_pile.
 Defined.
 
-Lemma ceil_compat_in_or {Σ : Signature} {syntax : Syntax} Γ φ₁ φ₂:
+Lemma patt_defined_or_1 {Σ : Signature} {syntax : Syntax} Γ φ₁ φ₂:
+  theory ⊆ Γ ->
+  well_formed φ₁ ->
+  well_formed φ₂ ->
+  Γ ⊢i ( (⌈ φ₁ or φ₂ ⌉) ---> (⌈ φ₁ ⌉ or ⌈ φ₂ ⌉))
+  using BasicReasoning.
+Proof.
+  intros HΓ wfφ₁ wfφ₂. mlIntro "H0".
+  mlApplyMeta (useBasicReasoning (ExGen := ∅, SVSubst := ∅, KT := false, AKT := false) (Prop_disj_right Γ φ₁ φ₂ (definedness) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) )).
+  mlExact "H0".
+Defined.
+
+Lemma patt_defined_or_2 {Σ : Signature} {syntax : Syntax} Γ φ₁ φ₂:
+  theory ⊆ Γ ->
+  well_formed φ₁ ->
+  well_formed φ₂ ->
+  Γ ⊢i ( (⌈ φ₁ ⌉ or ⌈ φ₂ ⌉) ---> (⌈ φ₁ or φ₂ ⌉))
+  using BasicReasoning.
+Proof.
+  intros HΓ wfφ₁ wfφ₂. mlIntro "H0".
+  mlDestructOr "H0" as "H1" "H2".
+  + fromMLGoal. unshelve (eapply Framing_right).
+    * wf_auto2.
+    * try_solve_pile.
+    * toMLGoal. wf_auto2. mlIntro "H0'". mlLeft. mlExact "H0'".
+  + fromMLGoal. unshelve (eapply Framing_right).
+    * wf_auto2.
+    * try_solve_pile.
+    * toMLGoal. wf_auto2. mlIntro "H0'". mlRight. mlExact "H0'".
+Defined.
+
+Lemma patt_defined_or {Σ : Signature} {syntax : Syntax} Γ φ₁ φ₂:
   theory ⊆ Γ ->
   well_formed φ₁ ->
   well_formed φ₂ ->
   Γ ⊢i ( (⌈ φ₁ or φ₂ ⌉) <---> (⌈ φ₁ ⌉ or ⌈ φ₂ ⌉))
-  using (ExGen := ∅, SVSubst := ∅, KT := false, AKT := false).
+  using BasicReasoning.
 Proof.
   intros HΓ wfφ₁ wfφ₂.
-  toMLGoal.
-  { wf_auto2. }
   mlSplitAnd; mlIntro "H0".
-  - mlApplyMeta (useBasicReasoning (ExGen := ∅, SVSubst := ∅, KT := false, AKT := false) (Prop_disj_right Γ φ₁ φ₂ (definedness) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2) )).
-    mlExact "H0".
-  - mlDestructOr "H0" as "H1" "H2".
-    + fromMLGoal. unshelve (eapply Framing_right).
-      * wf_auto2.
-      * try_solve_pile.
-      * toMLGoal. wf_auto2. mlIntro "H0'". mlLeft. mlExact "H0'".
-    + fromMLGoal. unshelve (eapply Framing_right).
-      * wf_auto2.
-      * try_solve_pile.
-      * toMLGoal. wf_auto2. mlIntro "H0'". mlRight. mlExact "H0'".
+  - mlApplyMeta patt_defined_or_1. mlAssumption. assumption.
+  - mlApplyMeta patt_defined_or_2. mlAssumption. assumption.
 Defined.
-
 
 Lemma helper_propositional_lemma_1 (Σ : Signature) Γ φ₁ φ₂:
   well_formed φ₁ = true ->
@@ -3071,7 +3087,7 @@ Proof.
   fold (⌈ ! ⌈ patt_free_evar x and φ ⌉ ⌉ or ⌈ patt_free_evar y and ⌈ patt_free_evar x and φ ⌉ ⌉).
   toMLGoal.
   { wf_auto2. }
-  mlRewrite <- (@liftProofInfoLe _ _ _ (ExGen := ∅, SVSubst := ∅, KT := false, AKT := false) i ltac:(try_solve_pile) (ceil_compat_in_or Γ (! ⌈ patt_free_evar x and φ ⌉) (patt_free_evar y and ⌈ patt_free_evar x and φ ⌉) HΓ ltac:(wf_auto2) ltac:(wf_auto2))) at 1.
+  mlRewrite <- (@liftProofInfoLe _ _ _ (ExGen := ∅, SVSubst := ∅, KT := false, AKT := false) i ltac:(try_solve_pile) (patt_defined_or Γ (! ⌈ patt_free_evar x and φ ⌉) (patt_free_evar y and ⌈ patt_free_evar x and φ ⌉) HΓ ltac:(wf_auto2) ltac:(wf_auto2))) at 1.
 
   ltac2:(mlApplyMeta ceil_monotonic with (φ₁ := (patt_free_evar y))).
   3: { exact HΓ. }
@@ -3732,7 +3748,7 @@ Proof.
 
   eassert (Htmp: Γ ⊢i (! (ex, b0 ∈ml φ)) ---> (! (patt_free_evar x ∈ml ⌈ φ ⌉)) using i).
   {
-    apply BasicProofSystemLemmas.modus_tollens.
+    apply modus_tollens.
     eapply membership_symbol_ceil_left; try assumption.
     instantiate (1 := y). set_solver.
     instantiate (1 := z). set_solver.
@@ -3806,7 +3822,7 @@ Proof.
   unfold patt_total at 1.
   unfold patt_total at 2.
   unfold patt_or.
-  apply BasicProofSystemLemmas.modus_tollens.
+  apply modus_tollens.
 
   assert (Γ ⊢i (! ! ⌊ φ ⌋) <---> ⌊ φ ⌋ using i).
   { toMLGoal.
@@ -3924,7 +3940,7 @@ Proof.
         mlExact "H0".
       }
       assert (Htmp: ((Γ ∪ {[! φ]})) ⊢i ! φ using i').
-      { gapply BasicProofSystemLemmas.hypothesis. subst i'. try_solve_pile. wf_auto2. clear. set_solver. }
+      { gapply hypothesis. subst i'. try_solve_pile. wf_auto2. clear. set_solver. }
       apply phi_impl_total_phi_meta in Htmp.
       2: { wf_auto2. }
       2: { subst i'. apply pile_refl.  }
@@ -3968,7 +3984,7 @@ Proof.
           useBasicReasoning. apply top_holds.
         + toMLGoal. wf_auto2.
           mlIntro "H0". mlClear "H0". fromMLGoal.
-          gapply BasicProofSystemLemmas.hypothesis.
+          gapply hypothesis.
           { try_solve_pile. }
           { wf_auto2. }
           clear. set_solver.
@@ -4424,7 +4440,7 @@ Proof.
     - toMLGoal. wf_auto2. mlIntro "H0". mlDestructOr "H0" as "H0'" "H0'".
       + assert (Γ ∪ {[φ₁ ---> φ₂]} ⊢i φ₁ ---> φ₂ using ( (ExGen := ∅, SVSubst := ∅, KT := false, AKT := false))).
         {
-          gapply BasicProofSystemLemmas.hypothesis.
+          gapply hypothesis.
           { try_solve_pile. }
           { wf_auto2. }
           clear. set_solver.
@@ -4510,38 +4526,61 @@ Proof.
   mlIntro "H1". mlExact "H1".
 Defined.
 
+Lemma patt_total_and_1 {Σ : Signature} {syntax : Syntax}:
+  forall Γ φ ψ,
+  theory ⊆ Γ ->
+  well_formed φ -> well_formed ψ ->
+  Γ ⊢i ⌊ φ and ψ ⌋ ---> ⌊ φ ⌋ and ⌊ ψ ⌋
+  using BasicReasoning.
+Proof.
+  intros Γ φ ψ HΓ Wf1 Wf2. unfold patt_and.
+  pose proof (Htmp := def_propagate_not Γ (! φ or ! ψ) HΓ ltac:(wf_auto2)).
+  mlRewrite <- Htmp at 1.
+  mlIntro "H1".
+  mlIntro "H2".
+  mlApply "H1".
+  mlClear "H1".
+  mlRewrite (patt_defined_or Γ (! φ) (! ψ) HΓ ltac:(wf_auto2) ltac:(wf_auto2)) at 1.
+  mlDestructOr "H2" as "H2'" "H2'".
+  - mlLeft. mlRevertLast. unfold patt_total.
+    mlRewrite <- (useBasicReasoning (ExGen := ∅, SVSubst := ∅, KT := false, AKT := false) (not_not_iff Γ ⌈ ! φ ⌉ ltac:(wf_auto2))) at 1.
+    mlIntro "H3". mlExact "H3".
+  - mlRight. mlRevertLast. unfold patt_total.
+    mlRewrite <- (useBasicReasoning (ExGen := ∅, SVSubst := ∅, KT := false, AKT := false) (not_not_iff Γ ⌈ ! ψ ⌉ ltac:(wf_auto2))) at 1.
+    mlIntro "H3". mlExact "H3".
+Defined.
+
+Lemma patt_total_and_2 {Σ : Signature} {syntax : Syntax}:
+  forall Γ φ ψ,
+  theory ⊆ Γ ->
+  well_formed φ -> well_formed ψ ->
+  Γ ⊢i ⌊ φ ⌋ and ⌊ ψ ⌋ ---> ⌊ φ and ψ ⌋
+  using BasicReasoning.
+Proof.
+  intros Γ φ ψ HΓ Wf1 Wf2.
+  mlIntro "H0". mlDestructAnd "H0" as "H1" "H2".
+  unfold patt_and.
+  pose proof (Htmp := def_propagate_not Γ (! φ or ! ψ) HΓ ltac:(wf_auto2)).
+  mlRewrite <- Htmp at 1.
+  mlRewrite (patt_defined_or Γ (! φ) (! ψ) HΓ ltac:(wf_auto2) ltac:(wf_auto2)) at 1.
+  mlIntro "H3". mlDestructOr "H3" as "H3'" "H3'".
+  - mlRevertLast. mlExact "H1".
+  - mlRevertLast. mlExact "H2".
+Defined.
+
 Lemma patt_total_and {Σ : Signature} {syntax : Syntax}:
   forall Γ φ ψ,
   theory ⊆ Γ ->
   well_formed φ -> well_formed ψ ->
   Γ ⊢i ⌊ φ and ψ ⌋ <---> ⌊ φ ⌋ and ⌊ ψ ⌋
-  using (ExGen := ∅, SVSubst := ∅, KT := false, AKT := false).
+  using BasicReasoning.
 Proof.
-  intros Γ φ ψ HΓ Wf1 Wf2. toMLGoal. wf_auto2.
+  intros Γ φ ψ HΓ Wf1 Wf2.
   mlSplitAnd.
-  * unfold patt_and.
-    pose proof (Htmp := def_propagate_not Γ (! φ or ! ψ) HΓ ltac:(wf_auto2)).
-    mlRewrite <- Htmp at 1.
-    mlIntro "H1".
-    mlIntro "H2".
-    mlApply "H1".
-    mlClear "H1".
-    mlRewrite (ceil_compat_in_or Γ (! φ) (! ψ) HΓ ltac:(wf_auto2) ltac:(wf_auto2)) at 1.
-    mlDestructOr "H2" as "H2'" "H2'".
-    - mlLeft. mlRevertLast. unfold patt_total.
-      mlRewrite <- (useBasicReasoning (ExGen := ∅, SVSubst := ∅, KT := false, AKT := false) (not_not_iff Γ ⌈ ! φ ⌉ ltac:(wf_auto2))) at 1.
-      mlIntro "H3". mlExact "H3".
-    - mlRight. mlRevertLast. unfold patt_total.
-      mlRewrite <- (useBasicReasoning (ExGen := ∅, SVSubst := ∅, KT := false, AKT := false) (not_not_iff Γ ⌈ ! ψ ⌉ ltac:(wf_auto2))) at 1.
-      mlIntro "H3". mlExact "H3".
-  * mlIntro "H0". mlDestructAnd "H0" as "H1" "H2".
-    unfold patt_and.
-    pose proof (Htmp := def_propagate_not Γ (! φ or ! ψ) HΓ ltac:(wf_auto2)).
-    mlRewrite <- Htmp at 1.
-    mlRewrite (ceil_compat_in_or Γ (! φ) (! ψ) HΓ ltac:(wf_auto2) ltac:(wf_auto2)) at 1.
-    mlIntro "H3". mlDestructOr "H3" as "H3'" "H3'".
-    - mlRevertLast. mlExact "H1".
-    - mlRevertLast. mlExact "H2".
+  * mlIntro "H". mlApplyMeta patt_total_and_1. 2: assumption.
+    mlAssumption.
+  * mlIntro "H". mlApplyMeta patt_total_and_2. 2: assumption.
+    mlAssumption.
 Defined.
 
 Lemma membership_var {Σ : Signature} {syntax : Syntax} :
@@ -4699,7 +4738,7 @@ Proof.
   intros Γ i HΓ PI.
   (* remember (fresh_evar ⊥) as x. *)
   toMLGoal. wf_auto2.
-  epose proof (BasicProofSystemLemmas.Ex_gen Γ (! ⌈patt_free_evar ev_x⌉) ⊥ ev_x i _ _).
+  epose proof (Ex_gen Γ (! ⌈patt_free_evar ev_x⌉) ⊥ ev_x i _ _).
   unfold exists_quantify in H. cbn in H. case_match. 2: congruence.
   mlIntro "H". mlApplyMeta H. fold (patt_defined b0) (patt_not ⌈b0⌉).
   mlExact "H".
@@ -4972,7 +5011,7 @@ Proof.
   {
     remember (Γ ∪ {[(φ1 <---> φ2) and (φ2 <---> φ3)]}) as Γ'.
     assert (Γ' ⊢i ((φ1 <---> φ2) and (φ2 <---> φ3)) using BasicReasoning). {
-      apply BasicProofSystemLemmas.hypothesis. wf_auto2.
+      apply hypothesis. wf_auto2.
       rewrite HeqΓ'. apply elem_of_union_r. constructor. 
     }
     epose proof (pf_conj_elim_l _ _ _ _ _) as H'.
@@ -5191,9 +5230,7 @@ Theorem forall_functional_subst_meta: ∀ {Σ : Signature} {syntax : Syntax} (Γ
   Γ ⊢ (all , φ) -> Γ ⊢i φ^[evar:0↦φ'] using AnyReasoning.
 Proof.
   intros.
-  toMLGoal.
-  wf_auto2.
-  now apply mu_free_wfp.
+  toMLGoal. 1: wf_auto2.
   mlApplyMeta forall_functional_subst.
   2-5:assumption.
   mlSplitAnd.

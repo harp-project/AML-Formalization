@@ -40,7 +40,6 @@ Section with_signature.
     reflexivity.
   Qed.
 
-
   Lemma reshape (Γ : Theory) (g : Pattern) (xs: list Pattern) (i : ProofInfo) :
     forall (r : ImpReshapeS g xs),
        Γ ⊢i foldr (patt_imp) g xs using i ->

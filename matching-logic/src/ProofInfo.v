@@ -15,82 +15,82 @@ Section with_signature.
   (* TODO make this return well-formed patterns. *)
   Fixpoint framing_patterns Γ ϕ (pf : Γ ⊢H ϕ) : gset wfPattern :=
   match pf with
-  | hypothesis _ _ _ _ => ∅
-  | P1 _ _ _ _ _ => ∅
-  | P2 _ _ _ _ _ _ _ => ∅
-  | P3 _ _ _ => ∅
-  | Modus_ponens _ _ _ m0 m1
+  | ML_hypothesis _ _ _ _ => ∅
+  | ML_P1 _ _ _ _ _ => ∅
+  | ML_P2 _ _ _ _ _ _ _ => ∅
+  | ML_P3 _ _ _ => ∅
+  | ML_Modus_ponens _ _ _ m0 m1
     => (@framing_patterns _ _ m0) ∪ (@framing_patterns _ _ m1)
-  | Ex_quan _ _ _ _ => ∅
-  | Ex_gen _ _ _ x _ _ pf _ => @framing_patterns _ _ pf
-  | Prop_bott_left _ _ _ => ∅
-  | Prop_bott_right _ _ _ => ∅
-  | Prop_disj_left _ _ _ _ _ _ _ => ∅
-  | Prop_disj_right _ _ _ _ _ _ _ => ∅
-  | Prop_ex_left _ _ _ _ _ => ∅
-  | Prop_ex_right _ _ _ _ _ => ∅
-  | Framing_left _ _ _ psi wfp m0 => {[(exist _ psi wfp)]} ∪ (@framing_patterns _ _ m0)
-  | Framing_right _ _ _ psi wfp m0 => {[(exist _ psi wfp)]} ∪ (@framing_patterns _ _ m0)
-  | Svar_subst _ _ _ _ _ _ m0 => @framing_patterns _ _ m0
-  | Pre_fixp _ _ _ => ∅
-  | Knaster_tarski _ _ phi psi m0 => @framing_patterns _ _ m0
-  | Existence _ => ∅
-  | Singleton_ctx _ _ _ _ _ _ => ∅
+  | ML_Ex_quan _ _ _ _ => ∅
+  | ML_Ex_gen _ _ _ x _ _ pf _ => @framing_patterns _ _ pf
+  | ML_Prop_bott_left _ _ _ => ∅
+  | ML_Prop_bott_right _ _ _ => ∅
+  | ML_Prop_disj_left _ _ _ _ _ _ _ => ∅
+  | ML_Prop_disj_right _ _ _ _ _ _ _ => ∅
+  | ML_Prop_ex_left _ _ _ _ _ => ∅
+  | ML_Prop_ex_right _ _ _ _ _ => ∅
+  | ML_Framing_left _ _ _ psi wfp m0 => {[(exist _ psi wfp)]} ∪ (@framing_patterns _ _ m0)
+  | ML_Framing_right _ _ _ psi wfp m0 => {[(exist _ psi wfp)]} ∪ (@framing_patterns _ _ m0)
+  | ML_Svar_subst _ _ _ _ _ _ m0 => @framing_patterns _ _ m0
+  | ML_Pre_fixp _ _ _ => ∅
+  | ML_Knaster_tarski _ _ phi psi m0 => @framing_patterns _ _ m0
+  | ML_Existence _ => ∅
+  | ML_Singleton_ctx _ _ _ _ _ _ => ∅
   end.
 
 
   Fixpoint uses_ex_gen (EvS : EVarSet) Γ ϕ (pf : ML_proof_system Γ ϕ) :=
   match pf with
-  | hypothesis _ _ _ _ => false
-  | P1 _ _ _ _ _ => false
-  | P2 _ _ _ _ _ _ _ => false
-  | P3 _ _ _ => false
-  | Modus_ponens _ _ _ m0 m1
+  | ML_hypothesis _ _ _ _ => false
+  | ML_P1 _ _ _ _ _ => false
+  | ML_P2 _ _ _ _ _ _ _ => false
+  | ML_P3 _ _ _ => false
+  | ML_Modus_ponens _ _ _ m0 m1
     => uses_ex_gen EvS _ _ m0
         || uses_ex_gen EvS _ _ m1
-  | Ex_quan _ _ _ _ => false
-  | Ex_gen _ _ _ x _ _ pf _ => if decide (x ∈ EvS) is left _ then true else uses_ex_gen EvS _ _ pf
-  | Prop_bott_left _ _ _ => false
-  | Prop_bott_right _ _ _ => false
-  | Prop_disj_left _ _ _ _ _ _ _ => false
-  | Prop_disj_right _ _ _ _ _ _ _ => false
-  | Prop_ex_left _ _ _ _ _ => false
-  | Prop_ex_right _ _ _ _ _ => false
-  | Framing_left _ _ _ _ _ m0 => uses_ex_gen EvS _ _ m0
-  | Framing_right _ _ _ _ _ m0 => uses_ex_gen EvS _ _ m0
-  | Svar_subst _ _ _ _ _ _ m0 => uses_ex_gen EvS _ _ m0
-  | Pre_fixp _ _ _ => false
-  | Knaster_tarski _ _ phi psi m0 => uses_ex_gen EvS _ _ m0
-  | Existence _ => false
-  | Singleton_ctx _ _ _ _ _ _ => false
+  | ML_Ex_quan _ _ _ _ => false
+  | ML_Ex_gen _ _ _ x _ _ pf _ => if decide (x ∈ EvS) is left _ then true else uses_ex_gen EvS _ _ pf
+  | ML_Prop_bott_left _ _ _ => false
+  | ML_Prop_bott_right _ _ _ => false
+  | ML_Prop_disj_left _ _ _ _ _ _ _ => false
+  | ML_Prop_disj_right _ _ _ _ _ _ _ => false
+  | ML_Prop_ex_left _ _ _ _ _ => false
+  | ML_Prop_ex_right _ _ _ _ _ => false
+  | ML_Framing_left _ _ _ _ _ m0 => uses_ex_gen EvS _ _ m0
+  | ML_Framing_right _ _ _ _ _ m0 => uses_ex_gen EvS _ _ m0
+  | ML_Svar_subst _ _ _ _ _ _ m0 => uses_ex_gen EvS _ _ m0
+  | ML_Pre_fixp _ _ _ => false
+  | ML_Knaster_tarski _ _ phi psi m0 => uses_ex_gen EvS _ _ m0
+  | ML_Existence _ => false
+  | ML_Singleton_ctx _ _ _ _ _ _ => false
   end.
 
 Fixpoint uses_of_ex_gen Γ ϕ (pf : ML_proof_system Γ ϕ) : EVarSet :=
   match pf with
-  | hypothesis _ _ _ _ => ∅
-  | P1 _ _ _ _ _ => ∅
-  | P2 _ _ _ _ _ _ _ => ∅
-  | P3 _ _ _ => ∅
-  | Modus_ponens _ _ _ m0 m1
+  | ML_hypothesis _ _ _ _ => ∅
+  | ML_P1 _ _ _ _ _ => ∅
+  | ML_P2 _ _ _ _ _ _ _ => ∅
+  | ML_P3 _ _ _ => ∅
+  | ML_Modus_ponens _ _ _ m0 m1
     => uses_of_ex_gen _ _ m0
         ∪ uses_of_ex_gen _ _ m1
-  | Ex_quan _ _ _ _ => ∅
-  | Ex_gen _ _ _ x _ _ pf _ => {[x]} ∪ uses_of_ex_gen _ _ pf
-  | Prop_bott_left _ _ _ => ∅
-  | Prop_bott_right _ _ _ => ∅
-  | Prop_disj_left _ _ _ _ _ _ _ => ∅
-  | Prop_disj_right _ _ _ _ _ _ _ => ∅
-  | Prop_ex_left _ _ _ _ _ => ∅
-  | Prop_ex_right _ _ _ _ _ => ∅
-  | Framing_left _ _ _ _ _ m0 => uses_of_ex_gen _ _ m0
-  | Framing_right _ _ _ _ _ m0 => uses_of_ex_gen _ _ m0
-  | Svar_subst _ _ _ _ _ _ m0 => uses_of_ex_gen _ _ m0
-  | Pre_fixp _ _ _ => ∅
-  | Knaster_tarski _ _ phi psi m0 => uses_of_ex_gen _ _ m0
-  | Existence _ => ∅
-  | Singleton_ctx _ _ _ _ _ _ => ∅
+  | ML_Ex_quan _ _ _ _ => ∅
+  | ML_Ex_gen _ _ _ x _ _ pf _ => {[x]} ∪ uses_of_ex_gen _ _ pf
+  | ML_Prop_bott_left _ _ _ => ∅
+  | ML_Prop_bott_right _ _ _ => ∅
+  | ML_Prop_disj_left _ _ _ _ _ _ _ => ∅
+  | ML_Prop_disj_right _ _ _ _ _ _ _ => ∅
+  | ML_Prop_ex_left _ _ _ _ _ => ∅
+  | ML_Prop_ex_right _ _ _ _ _ => ∅
+  | ML_Framing_left _ _ _ _ _ m0 => uses_of_ex_gen _ _ m0
+  | ML_Framing_right _ _ _ _ _ m0 => uses_of_ex_gen _ _ m0
+  | ML_Svar_subst _ _ _ _ _ _ m0 => uses_of_ex_gen _ _ m0
+  | ML_Pre_fixp _ _ _ => ∅
+  | ML_Knaster_tarski _ _ phi psi m0 => uses_of_ex_gen _ _ m0
+  | ML_Existence _ => ∅
+  | ML_Singleton_ctx _ _ _ _ _ _ => ∅
   end.
-  
+
   Lemma uses_of_ex_gen_correct Γ ϕ (pf : ML_proof_system Γ ϕ) (x : evar) :
     x ∈ uses_of_ex_gen Γ ϕ pf <-> uses_ex_gen {[x]} Γ ϕ pf = true.
   Proof.
@@ -126,54 +126,54 @@ Fixpoint uses_of_ex_gen Γ ϕ (pf : ML_proof_system Γ ϕ) : EVarSet :=
 
   Fixpoint uses_svar_subst (S : SVarSet) Γ ϕ (pf : Γ ⊢H ϕ) :=
     match pf with
-    | hypothesis _ _ _ _ => false
-    | P1 _ _ _ _ _ => false
-    | P2 _ _ _ _ _ _ _ => false
-    | P3 _ _ _ => false
-    | Modus_ponens _ _ _ m0 m1
+    | ML_hypothesis _ _ _ _ => false
+    | ML_P1 _ _ _ _ _ => false
+    | ML_P2 _ _ _ _ _ _ _ => false
+    | ML_P3 _ _ _ => false
+    | ML_Modus_ponens _ _ _ m0 m1
       => uses_svar_subst S _ _ m0
          || uses_svar_subst S _ _ m1
-    | Ex_quan _ _ _ _ => false
-    | Ex_gen _ _ _ _ _ _ pf' _ => uses_svar_subst S _ _ pf'
-    | Prop_bott_left _ _ _ => false
-    | Prop_bott_right _ _ _ => false
-    | Prop_disj_left _ _ _ _ _ _ _ => false
-    | Prop_disj_right _ _ _ _ _ _ _ => false
-    | Prop_ex_left _ _ _ _ _ => false
-    | Prop_ex_right _ _ _ _ _ => false
-    | Framing_left _ _ _ _ _ m0 => uses_svar_subst S _ _ m0
-    | Framing_right _ _ _ _ _ m0 => uses_svar_subst S _ _ m0
-    | Svar_subst _ _ _ X _ _ m0 => if decide (X ∈ S) is left _ then true else uses_svar_subst S _ _ m0
-    | Pre_fixp _ _ _ => false
-    | Knaster_tarski _ _ phi psi m0 => uses_svar_subst S _ _ m0
-    | Existence _ => false
-    | Singleton_ctx _ _ _ _ _ _ => false
+    | ML_Ex_quan _ _ _ _ => false
+    | ML_Ex_gen _ _ _ _ _ _ pf' _ => uses_svar_subst S _ _ pf'
+    | ML_Prop_bott_left _ _ _ => false
+    | ML_Prop_bott_right _ _ _ => false
+    | ML_Prop_disj_left _ _ _ _ _ _ _ => false
+    | ML_Prop_disj_right _ _ _ _ _ _ _ => false
+    | ML_Prop_ex_left _ _ _ _ _ => false
+    | ML_Prop_ex_right _ _ _ _ _ => false
+    | ML_Framing_left _ _ _ _ _ m0 => uses_svar_subst S _ _ m0
+    | ML_Framing_right _ _ _ _ _ m0 => uses_svar_subst S _ _ m0
+    | ML_Svar_subst _ _ _ X _ _ m0 => if decide (X ∈ S) is left _ then true else uses_svar_subst S _ _ m0
+    | ML_Pre_fixp _ _ _ => false
+    | ML_Knaster_tarski _ _ phi psi m0 => uses_svar_subst S _ _ m0
+    | ML_Existence _ => false
+    | ML_Singleton_ctx _ _ _ _ _ _ => false
     end.
 
   Fixpoint uses_of_svar_subst Γ ϕ (pf : Γ ⊢H ϕ) : SVarSet :=
     match pf with
-    | hypothesis _ _ _ _ => ∅
-    | P1 _ _ _ _ _ => ∅
-    | P2 _ _ _ _ _ _ _ => ∅
-    | P3 _ _ _ => ∅
-    | Modus_ponens _ _ _ m0 m1
+    | ML_hypothesis _ _ _ _ => ∅
+    | ML_P1 _ _ _ _ _ => ∅
+    | ML_P2 _ _ _ _ _ _ _ => ∅
+    | ML_P3 _ _ _ => ∅
+    | ML_Modus_ponens _ _ _ m0 m1
       => uses_of_svar_subst _ _ m0
           ∪ uses_of_svar_subst _ _ m1
-    | Ex_quan _ _ _ _ => ∅
-    | Ex_gen _ _ _ _ _ _ pf' _ => uses_of_svar_subst _ _ pf'
-    | Prop_bott_left _ _ _ => ∅
-    | Prop_bott_right _ _ _ => ∅
-    | Prop_disj_left _ _ _ _ _ _ _ => ∅
-    | Prop_disj_right _ _ _ _ _ _ _ => ∅
-    | Prop_ex_left _ _ _ _ _ => ∅
-    | Prop_ex_right _ _ _ _ _ => ∅
-    | Framing_left _ _ _ _ _ m0 => uses_of_svar_subst _ _ m0
-    | Framing_right _ _ _ _ _ m0 => uses_of_svar_subst _ _ m0
-    | Svar_subst _ _ _ X _ _ m0 => {[X]} ∪ uses_of_svar_subst _ _ m0
-    | Pre_fixp _ _ _ => ∅
-    | Knaster_tarski _ _ phi psi m0 => uses_of_svar_subst _ _ m0
-    | Existence _ => ∅
-    | Singleton_ctx _ _ _ _ _ _ => ∅
+    | ML_Ex_quan _ _ _ _ => ∅
+    | ML_Ex_gen _ _ _ _ _ _ pf' _ => uses_of_svar_subst _ _ pf'
+    | ML_Prop_bott_left _ _ _ => ∅
+    | ML_Prop_bott_right _ _ _ => ∅
+    | ML_Prop_disj_left _ _ _ _ _ _ _ => ∅
+    | ML_Prop_disj_right _ _ _ _ _ _ _ => ∅
+    | ML_Prop_ex_left _ _ _ _ _ => ∅
+    | ML_Prop_ex_right _ _ _ _ _ => ∅
+    | ML_Framing_left _ _ _ _ _ m0 => uses_of_svar_subst _ _ m0
+    | ML_Framing_right _ _ _ _ _ m0 => uses_of_svar_subst _ _ m0
+    | ML_Svar_subst _ _ _ X _ _ m0 => {[X]} ∪ uses_of_svar_subst _ _ m0
+    | ML_Pre_fixp _ _ _ => ∅
+    | ML_Knaster_tarski _ _ phi psi m0 => uses_of_svar_subst _ _ m0
+    | ML_Existence _ => ∅
+    | ML_Singleton_ctx _ _ _ _ _ _ => ∅
     end.
 
   Lemma uses_of_svar_subst_correct Γ ϕ (pf : ML_proof_system Γ ϕ) (X : svar) :
@@ -211,52 +211,52 @@ Fixpoint uses_of_ex_gen Γ ϕ (pf : ML_proof_system Γ ϕ) : EVarSet :=
 
   Fixpoint uses_kt Γ ϕ (pf : Γ ⊢H ϕ) :=
     match pf with
-    | hypothesis _ _ _ _ => false
-    | P1 _ _ _ _ _ => false
-    | P2 _ _ _ _ _ _ _ => false
-    | P3 _ _ _ => false
-    | Modus_ponens _ _ _ m0 m1
+    | ML_hypothesis _ _ _ _ => false
+    | ML_P1 _ _ _ _ _ => false
+    | ML_P2 _ _ _ _ _ _ _ => false
+    | ML_P3 _ _ _ => false
+    | ML_Modus_ponens _ _ _ m0 m1
       => uses_kt _ _ m0 || uses_kt _ _ m1
-    | Ex_quan _ _ _ _ => false
-    | Ex_gen _ _ _ _ _ _ pf' _ => uses_kt _ _ pf'
-    | Prop_bott_left _ _ _ => false
-    | Prop_bott_right _ _ _ => false
-    | Prop_disj_left _ _ _ _ _ _ _ => false
-    | Prop_disj_right _ _ _ _ _ _ _ => false
-    | Prop_ex_left _ _ _ _ _ => false
-    | Prop_ex_right _ _ _ _ _ => false
-    | Framing_left _ _ _ _ _ m0 => uses_kt _ _ m0
-    | Framing_right _ _ _ _ _ m0 => uses_kt _ _ m0
-    | Svar_subst _ _ _ X _ _ m0 => uses_kt _ _ m0
-    | Pre_fixp _ _ _ => false
-    | Knaster_tarski _ _ phi psi m0 => true
-    | Existence _ => false
-    | Singleton_ctx _ _ _ _ _ _ => false
+    | ML_Ex_quan _ _ _ _ => false
+    | ML_Ex_gen _ _ _ _ _ _ pf' _ => uses_kt _ _ pf'
+    | ML_Prop_bott_left _ _ _ => false
+    | ML_Prop_bott_right _ _ _ => false
+    | ML_Prop_disj_left _ _ _ _ _ _ _ => false
+    | ML_Prop_disj_right _ _ _ _ _ _ _ => false
+    | ML_Prop_ex_left _ _ _ _ _ => false
+    | ML_Prop_ex_right _ _ _ _ _ => false
+    | ML_Framing_left _ _ _ _ _ m0 => uses_kt _ _ m0
+    | ML_Framing_right _ _ _ _ _ m0 => uses_kt _ _ m0
+    | ML_Svar_subst _ _ _ X _ _ m0 => uses_kt _ _ m0
+    | ML_Pre_fixp _ _ _ => false
+    | ML_Knaster_tarski _ _ phi psi m0 => true
+    | ML_Existence _ => false
+    | ML_Singleton_ctx _ _ _ _ _ _ => false
     end.
 
   Fixpoint propositional_only Γ ϕ (pf : Γ ⊢H ϕ) :=
     match pf with
-    | hypothesis _ _ _ _ => true
-    | P1 _ _ _ _ _ => true
-    | P2 _ _ _ _ _ _ _ => true
-    | P3 _ _ _ => true
-    | Modus_ponens _ _ _ m0 m1
+    | ML_hypothesis _ _ _ _ => true
+    | ML_P1 _ _ _ _ _ => true
+    | ML_P2 _ _ _ _ _ _ _ => true
+    | ML_P3 _ _ _ => true
+    | ML_Modus_ponens _ _ _ m0 m1
       => propositional_only _ _ m0 && propositional_only _ _ m1
-    | Ex_quan _ _ _ _ => false
-    | Ex_gen _ _ _ _ _ _ pf' _ => false
-    | Prop_bott_left _ _ _ => false
-    | Prop_bott_right _ _ _ => false
-    | Prop_disj_left _ _ _ _ _ _ _ => false
-    | Prop_disj_right _ _ _ _ _ _ _ => false
-    | Prop_ex_left _ _ _ _ _ => false
-    | Prop_ex_right _ _ _ _ _ => false
-    | Framing_left _ _ _ _ _ m0 => false
-    | Framing_right _ _ _ _ _ m0 => false
-    | Svar_subst _ _ _ X _ _ m0 => false
-    | Pre_fixp _ _ _ => false
-    | Knaster_tarski _ _ phi psi m0 => false
-    | Existence _ => false
-    | Singleton_ctx _ _ _ _ _ _ => false
+    | ML_Ex_quan _ _ _ _ => false
+    | ML_Ex_gen _ _ _ _ _ _ pf' _ => false
+    | ML_Prop_bott_left _ _ _ => false
+    | ML_Prop_bott_right _ _ _ => false
+    | ML_Prop_disj_left _ _ _ _ _ _ _ => false
+    | ML_Prop_disj_right _ _ _ _ _ _ _ => false
+    | ML_Prop_ex_left _ _ _ _ _ => false
+    | ML_Prop_ex_right _ _ _ _ _ => false
+    | ML_Framing_left _ _ _ _ _ m0 => false
+    | ML_Framing_right _ _ _ _ _ m0 => false
+    | ML_Svar_subst _ _ _ X _ _ m0 => false
+    | ML_Pre_fixp _ _ _ => false
+    | ML_Knaster_tarski _ _ phi psi m0 => false
+    | ML_Existence _ => false
+    | ML_Singleton_ctx _ _ _ _ _ _ => false
     end.
 
   Lemma propositional_implies_no_frame Γ ϕ (pf : Γ ⊢H ϕ) :
@@ -356,30 +356,30 @@ Definition has_bound_variable_under_mu {Σ : Signature} (ϕ : Pattern) : bool
 
 Fixpoint uses_kt_unreasonably {Σ : Signature} Γ ϕ (pf : ML_proof_system Γ ϕ) :=
   match pf with
-  | ProofSystem.hypothesis _ _ _ _ => false
-  | ProofSystem.P1 _ _ _ _ _ => false
-  | ProofSystem.P2 _ _ _ _ _ _ _ => false
-  | ProofSystem.P3 _ _ _ => false
-  | ProofSystem.Modus_ponens _ _ _ m0 m1
+  | ML_hypothesis _ _ _ _ => false
+  | ML_P1 _ _ _ _ _ => false
+  | ML_P2 _ _ _ _ _ _ _ => false
+  | ML_P3 _ _ _ => false
+  | ML_Modus_ponens _ _ _ m0 m1
     => uses_kt_unreasonably _ _ m0 || uses_kt_unreasonably _ _ m1
-  | ProofSystem.Ex_quan _ _ _ _ => false
-  | ProofSystem.Ex_gen _ _ _ _ _ _ pf' _ => uses_kt_unreasonably _ _ pf'
-  | ProofSystem.Prop_bott_left _ _ _ => false
-  | ProofSystem.Prop_bott_right _ _ _ => false
-  | ProofSystem.Prop_disj_left _ _ _ _ _ _ _ => false
-  | ProofSystem.Prop_disj_right _ _ _ _ _ _ _ => false
-  | ProofSystem.Prop_ex_left _ _ _ _ _ => false
-  | ProofSystem.Prop_ex_right _ _ _ _ _ => false
-  | ProofSystem.Framing_left _ _ _ _ _ m0 => uses_kt_unreasonably _ _ m0
-  | ProofSystem.Framing_right _ _ _ _ _ m0 => uses_kt_unreasonably _ _ m0
-  | ProofSystem.Svar_subst _ _ _ X _ _ m0 => uses_kt_unreasonably _ _ m0
-  | ProofSystem.Pre_fixp _ _ _ => false
-  | ProofSystem.Knaster_tarski _ phi psi wf m0 =>
+  | ML_Ex_quan _ _ _ _ => false
+  | ML_Ex_gen _ _ _ _ _ _ pf' _ => uses_kt_unreasonably _ _ pf'
+  | ML_Prop_bott_left _ _ _ => false
+  | ML_Prop_bott_right _ _ _ => false
+  | ML_Prop_disj_left _ _ _ _ _ _ _ => false
+  | ML_Prop_disj_right _ _ _ _ _ _ _ => false
+  | ML_Prop_ex_left _ _ _ _ _ => false
+  | ML_Prop_ex_right _ _ _ _ _ => false
+  | ML_Framing_left _ _ _ _ _ m0 => uses_kt_unreasonably _ _ m0
+  | ML_Framing_right _ _ _ _ _ m0 => uses_kt_unreasonably _ _ m0
+  | ML_Svar_subst _ _ _ X _ _ m0 => uses_kt_unreasonably _ _ m0
+  | ML_Pre_fixp _ _ _ => false
+  | ML_Knaster_tarski _ phi psi wf m0 =>
     (*has_bound_variable_under_mu phi ||*)
     ~~ (bound_svar_is_banned_under_mus phi 0 0) ||
     uses_kt_unreasonably _ _ m0
-  | ProofSystem.Existence _ => false
-  | ProofSystem.Singleton_ctx _ _ _ _ _ _ => false
+  | ML_Existence _ => false
+  | ML_Singleton_ctx _ _ _ _ _ _ => false
   end.
 
   Lemma indifferent_to_cast_uses_kt_unreasonably {Σ : Signature}:
@@ -429,7 +429,7 @@ Section proof_constraint.
   Lemma instantiate_named_axiom (NA : NamedAxioms) (name : (NAName NA)) :
     (theory_of_NamedAxioms NA) ⊢H (@NAAxiom Σ NA name).
   Proof.
-    apply hypothesis.
+    apply ML_hypothesis.
     { apply NAwf. }
     unfold theory_of_NamedAxioms.
     apply propset.elem_of_PropSet.
@@ -623,13 +623,13 @@ Ltac2 clear_piles () :=
       => clear $h
     end
   )
-.  
+.
 
 Ltac2 pfs_to_wfs () :=
   repeat (
     match! goal with
     | [h : @derives _ _ _ |- _]
-      => unfold derives
+      => unfold derives in $h; unfold derives
     | [h : @derives_using _ _ _ _ |- _]
       => apply @raw_proof_of in $h
     | [ h: @ML_proof_system _ _ _ |- _]
@@ -640,6 +640,7 @@ Ltac2 pfs_to_wfs () :=
 
 Ltac2 Set proved_hook_wfauto as oldhook
 := (fun () => (*Message.print (Message.of_string "hook_wfauto p2w");*) clear_piles (); pfs_to_wfs () (*; oldhook ()*)).
+
 
 (*
 Ltac2 Set hook_wfauto

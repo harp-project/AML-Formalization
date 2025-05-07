@@ -20,7 +20,7 @@ Context
   Proof.
     intro HΓ.
     apply useBasicReasoning.
-    apply BasicProofSystemLemmas.hypothesis.
+    apply hypothesis.
     { destruct ax; wf_auto2. }
     {
       apply elem_of_weaken with (X := theory_of_NamedAxioms named_axioms).
@@ -76,7 +76,7 @@ Context
     pose proof (bott_not_defined Γ) as H.
     use AnyReasoning in H.
     mlApplyMeta H.
-    fromMLGoal. wf_auto2.
+    fromMLGoal.
 
     apply ceil_monotonic; auto.
     { wf_auto2. }

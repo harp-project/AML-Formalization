@@ -73,6 +73,7 @@ Open Scope ml_scope.
 
 
   Inductive AxiomName :=
+    | AxSumSort
     | AxInjectLeft
     | AxInjectRight
     
@@ -90,7 +91,8 @@ Open Scope ml_scope.
 
     Definition axiom (name : AxiomName) : Pattern :=
     match name with
-    
+    | AxSumSort =>
+       s1 ∈ml ⟦Sorts⟧ and s2 ∈ml ⟦Sorts⟧ ---> mlSum (s1, s2) ∈ml ⟦Sorts⟧
     | AxInjectLeft =>
         all s1, ex mlSum (s1,s2) , (b1).mlInjectL( s1 , s2 ) =ml b0
         
@@ -116,7 +118,7 @@ Open Scope ml_scope.
         all s1, ( (b0).mlInjectL( s1 , s2 ) ).mlEjectR( s1 , s2 ) =ml patt_bott 
       
     | AxCoProduct => 
-        〚 mlSum (s1, s2) 〛  ⊆ml  patt_or ( (〚s1〛).mlInjectL( s1 , s2 ) )  ( (〚s2〛).mlInjectR( s1 , s2 ) ) 
+        ⟦ mlSum (s1, s2) ⟧  ⊆ml  patt_or ( (⟦s1⟧).mlInjectL( s1 , s2 ) )  ( (⟦s2⟧).mlInjectR( s1 , s2 ) ) 
     end.
 
   Program Definition named_axioms : NamedAxioms :=

@@ -1,0 +1,9 @@
+-R src Kore
+
+src/Basics.v
+src/Signature.v
+src/Syntax.v
+src/Freshness.v
+src/Substitution.v
+src/Semantics.v
+

@@ -5,15 +5,15 @@ Import MatchingLogic.Logic.Notations
 Set Default Proof Mode "Classic".
 
 
-Inductive Symbols := sym_inh.
+Inductive Symbols := sym_inh | sym_sorts.
 
 Global Instance Symbols_eqdec : EqDecision Symbols.
-Proof. unfold EqDecision. intros x y. unfold Decision. destruct x. decide equality. (*solve_decision.*) Defined.
+Proof. unfold EqDecision. intros x y. unfold Decision; destruct x; decide equality. (*solve_decision.*) Defined.
 
 #[global]
 Program Instance Symbols_finite : finite.Finite Symbols.
 Next Obligation.
-  exact [sym_inh].
+  exact [sym_inh; sym_sorts].
 Defined.
 Next Obligation.
   unfold Symbols_finite_obligation_1.
@@ -41,6 +41,7 @@ Section sorts_syntax.
     patt_sym (sym_inj s).
 
   Definition inhabitant := sym sym_inh.
+  Definition Sorts := sym sym_sorts.
 
   Example test_pattern_1 := patt_equal (inhabitant) (inhabitant).
   Definition patt_inhabitant_set(phi : Pattern) : Pattern := inhabitant ⋅ phi.
@@ -99,17 +100,17 @@ Section sorts.
     intros. wf_auto2.
   Qed.
 
-  Definition patt_exists_of_sort (sort phi : Pattern) : Pattern :=
+  Definition patt_sorted_exists (sort phi : Pattern) : Pattern :=
     ex , ((b0 ∈ml 〚nest_ex sort〛) and phi).
   Local Notation "'ex' s ,  phi" := 
-    (patt_exists_of_sort s phi) (at level 70) : ml_scope.
+    (patt_sorted_exists s phi) (at level 70) : ml_scope.
 
   #[global]
-  Program Instance sorted_exists_binder : ESortedBinder patt_exists_of_sort := {}.
+  Program Instance sorted_exists_binder : ESortedBinder patt_sorted_exists := {}.
   Next Obligation.
     intros.
     repeat rewrite pm_correctness.
-    unfold patt_exists_of_sort.
+    unfold patt_sorted_exists.
     repeat rewrite <- pm_correctness.
     mlSimpl.
     rewrite pm_correctness. cbn.
@@ -123,18 +124,18 @@ Section sorts.
     reflexivity.
   Defined.
 
-  Definition patt_forall_of_sort (sort phi : Pattern) : Pattern :=
+  Definition patt_sorted_forall (sort phi : Pattern) : Pattern :=
     all , ((b0 ∈ml 〚nest_ex sort〛) ---> phi).
 
   Local Notation "'all' s ,  phi" := 
-    (patt_forall_of_sort s phi) (at level 70) : ml_scope.
+    (patt_sorted_forall s phi) (at level 70) : ml_scope.
 
   #[global]
-  Program Instance sorted_forall_binder : ESortedBinder patt_forall_of_sort := {}.
+  Program Instance sorted_forall_binder : ESortedBinder patt_sorted_forall := {}.
   Next Obligation.
     intros.
     repeat rewrite pm_correctness.
-    unfold patt_exists_of_sort.
+    unfold patt_sorted_exists.
     repeat rewrite <- pm_correctness.
     mlSimpl.
     rewrite pm_correctness. cbn.
@@ -148,9 +149,59 @@ Section sorts.
     reflexivity.
   Defined.
 
-  (* TODO patt_forall_of_sort and patt_exists_of_sort are duals - a lemma *)
+  Definition patt_forall_sort (φ : Pattern) : Pattern :=
+    all Sorts , φ.
+  Local Notation "'allₛ' ,  phi" := 
+    (patt_forall_sort phi) (at level 70) : ml_scope.
+  Definition patt_exists_sort (φ : Pattern) : Pattern :=
+    ex Sorts , φ.
+  Local Notation "'exₛ' ,  phi" := 
+    (patt_exists_sort phi) (at level 70) : ml_scope.
 
-  (* TODO a lemma about patt_forall_of_sort *)
+  #[global]
+  Program Instance forall_sort_ebinder : EBinder patt_forall_sort := {}.
+  Next Obligation.
+    intros A f m φ a.
+    rewrite pm_correctness. unfold patt_forall_sort.
+    unfold patt_sorted_forall.
+    simpl.
+    unfold patt_forall, patt_not, patt_in, patt_and.
+    do 5 f_equal.
+    2: by rewrite pm_correctness.
+    rewrite pm_ezero_increase. reflexivity.
+  Defined.
+  Next Obligation.
+    intros. wf_auto2.
+  Defined.
+  Next Obligation.
+    intros. wf_auto2.
+  Defined.
+  Next Obligation.
+    intros. wf_auto2.
+  Defined.
+
+  #[global]
+  Program Instance exists_sort_ebinder : EBinder patt_exists_sort := {}.
+  Next Obligation.
+    intros A f m φ a.
+    rewrite pm_correctness. unfold patt_exists_sort.
+    unfold patt_sorted_exists.
+    simpl.
+    unfold patt_in, patt_and, patt_or, patt_not.
+    do 5 f_equal.
+    2: by rewrite pm_correctness.
+    rewrite pm_ezero_increase. reflexivity.
+  Defined.
+  Next Obligation.
+    intros. wf_auto2.
+  Defined.
+  Next Obligation.
+    intros. wf_auto2.
+  Defined.
+  Next Obligation.
+    intros. wf_auto2.
+  Defined.
+  (* TODO patt_sorted_forall and patt_sorted_exists are duals - a lemma *)
 
   Definition patt_total_function(phi from to : Pattern) : Pattern :=
     all from , (ex (nest_ex to) , ((nest_ex (nest_ex phi) ⋅ b1) =ml b0)).
@@ -179,9 +230,9 @@ Section sorts.
 
   Definition patt_total_binary_function(phi from1 from2 to : Pattern)
   : Pattern :=
-    patt_forall_of_sort from1 (
-      patt_forall_of_sort (nest_ex from2) (
-        patt_exists_of_sort (nest_ex (nest_ex to)) (
+    patt_sorted_forall from1 (
+      patt_sorted_forall (nest_ex from2) (
+        patt_sorted_exists (nest_ex (nest_ex to)) (
           (((nest_ex (nest_ex (nest_ex phi)) ⋅ b2) ⋅ b1) =ml b0)
         )
       )
@@ -191,9 +242,13 @@ Section sorts.
 End sorts.
 
 Module Notations.
-  Notation "〚 phi 〛" := (patt_inhabitant_set phi) (at level 0) : ml_scope.
-  Notation "'all' s ,  phi" := (patt_forall_of_sort s phi) (at level 80) : ml_scope.
-  Notation "'ex' s ,  phi" := (patt_exists_of_sort s phi) (at level 80) : ml_scope.
+  Notation "⟦ phi ⟧" := (patt_inhabitant_set phi) (at level 0) : ml_scope.
+  Notation "'all' s ,  phi" := (patt_sorted_forall s phi) (at level 80) : ml_scope.
+  Notation "'ex' s ,  phi" := (patt_sorted_exists s phi) (at level 80) : ml_scope.
+  Notation "'allₛ' ,  phi" := 
+    (patt_forall_sort phi) (at level 80) : ml_scope.
+  Notation "'exₛ' ,  phi" := 
+    (patt_exists_sort phi) (at level 80) : ml_scope.
   Notation "phi :ml s1 × s2 -> s3" :=  (patt_total_binary_function phi s1 s2 s3) (at level 70) : ml_scope.
 End Notations.
 
@@ -266,18 +321,18 @@ Section simplTest.
   Qed.
 
   Goal forall s ψ x X, well_formed_closed ψ ->
-  (patt_forall_of_sort s ψ)^[[evar: x ↦ ψ]] = patt_bott ->
-  (patt_forall_of_sort s ψ)^{evar: 0 ↦ x} = patt_bott ->
-  (patt_forall_of_sort s ψ)^{{evar: x ↦ 0}} = patt_bott ->
-  (patt_forall_of_sort s ψ)^[[svar: X ↦ ψ]] = patt_bott ->
-  (patt_forall_of_sort s ψ)^{svar: 0 ↦ X} = patt_bott ->
-  (patt_forall_of_sort s ψ)^{{svar: X ↦ 0}} = patt_bott ->
-  (patt_forall_of_sort s ψ)^[[svar: X ↦ ψ]] = patt_bott /\
-  (patt_forall_of_sort s ψ)^{svar: 0 ↦ X} = patt_bott /\
-  (patt_forall_of_sort s ψ)^{{svar: X ↦ 0}} = patt_bott /\
-  (patt_forall_of_sort s ψ)^[[evar: x ↦ ψ]] = patt_bott /\ 
-  (patt_forall_of_sort s ψ)^{evar: 0 ↦ x} = patt_bott /\
-  (patt_forall_of_sort s ψ)^{{evar: x ↦ 0}} = patt_bott
+  (patt_sorted_forall s ψ)^[[evar: x ↦ ψ]] = patt_bott ->
+  (patt_sorted_forall s ψ)^{evar: 0 ↦ x} = patt_bott ->
+  (patt_sorted_forall s ψ)^{{evar: x ↦ 0}} = patt_bott ->
+  (patt_sorted_forall s ψ)^[[svar: X ↦ ψ]] = patt_bott ->
+  (patt_sorted_forall s ψ)^{svar: 0 ↦ X} = patt_bott ->
+  (patt_sorted_forall s ψ)^{{svar: X ↦ 0}} = patt_bott ->
+  (patt_sorted_forall s ψ)^[[svar: X ↦ ψ]] = patt_bott /\
+  (patt_sorted_forall s ψ)^{svar: 0 ↦ X} = patt_bott /\
+  (patt_sorted_forall s ψ)^{{svar: X ↦ 0}} = patt_bott /\
+  (patt_sorted_forall s ψ)^[[evar: x ↦ ψ]] = patt_bott /\ 
+  (patt_sorted_forall s ψ)^{evar: 0 ↦ x} = patt_bott /\
+  (patt_sorted_forall s ψ)^{{evar: x ↦ 0}} = patt_bott
   .
   Proof.
     intros.
@@ -292,7 +347,7 @@ Section simplTest.
   Qed.
 
   Goal forall s ψ x, (* well_formed_closed ψ -> *)
-  (patt_forall_of_sort (patt_imp s s) ψ)^[[evar: x ↦ ψ]] = patt_bott
+  (patt_sorted_forall (patt_imp s s) ψ)^[[evar: x ↦ ψ]] = patt_bott
   .
   Proof.
     intros.
@@ -310,11 +365,11 @@ Section simplTest.
   Import Pattern.BoundVarSugar.
 
   Local Notation "a +ml b" := (ml_plus a b) (at level 67).
-  Local Notation "a =ml b" := (ml_eq a b) (at level 67).
-  Local Notation "a ∈ml b" := (ml_in a b) (at level 67).
-  Local Notation "'ex' , phi" := (patt_exists phi) (at level 80) : ml_scope.
+ (*  Local Notation "a =ml b" := (ml_eq a b) (at level 67).
+  Local Notation "a ∈ml b" := (ml_in a b) (at level 67). *)
+(*   Local Notation "'ex' , phi" := (patt_exists phi) (at level 80) : ml_scope.
   Local Notation "'mu' , phi" := (patt_mu phi) (at level 80) : ml_scope.
-  Local Notation "〚 phi 〛" := (patt_inhabitant_set phi) (at level 0) : ml_scope.
+ *)  Local Notation "⟦ phi ⟧" := (patt_inhabitant_set phi) (at level 0) : ml_scope.
 
   Open Scope ml_scope.
 
@@ -323,12 +378,12 @@ Section simplTest.
   Local Definition Succ := patt_bott.
 
   Goal forall X,
-    (( patt_free_svar X ⊆ml 〚 Nat 〛 --->
+    (( patt_free_svar X ⊆ml ⟦ Nat ⟧ --->
          Zero ∈ml patt_free_svar X --->
          (all Nat, (b0 ∈ml patt_free_svar X ---> 
          Succ ⋅ b0 ∈ml patt_free_svar X)) --->
          (all Nat, b0 ∈ml patt_free_svar X ) ) ^[[svar:X↦ex Nat, b0 and Zero +ml b0 =ml b0]] ) = 
-        ( (ex Nat, b0 and Zero +ml b0 =ml b0) ⊆ml 〚 Nat 〛 --->
+        ( (ex Nat, b0 and Zero +ml b0 =ml b0) ⊆ml ⟦ Nat ⟧ --->
          Zero ∈ml (ex Nat, b0 and Zero +ml b0 =ml b0) --->
          (all Nat, (b0 ∈ml (ex Nat, b0 and Zero +ml b0 =ml b0) ---> 
          Succ ⋅ b0 ∈ml (ex Nat, b0 and Zero +ml b0 =ml b0))) --->

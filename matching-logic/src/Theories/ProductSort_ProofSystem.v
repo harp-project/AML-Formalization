@@ -17,14 +17,14 @@ Section productsort.
       (wfs2 : well_formed s2 = true)
       {syntax : ProductSort.Syntax s1 s2}
     .
-    
+
   Lemma use_productsort_axiom ax Γ  :
       ProductSort.theory s1 s2 wfs1 wfs2 ⊆ Γ -> 
         Γ ⊢ axiom _ _ ax.
   Proof.
     intro HΓ.
     apply useBasicReasoning.
-    apply BasicProofSystemLemmas.hypothesis.
+    apply hypothesis.
     { clear HΓ. destruct ax; wf_auto2. }
     {
       apply elem_of_weaken with (X := theory_of_NamedAxioms (named_axioms _ _ wfs1 wfs2 ) ).
@@ -68,7 +68,7 @@ Section productsort.
     rewrite bevar_subst_not_occur.
     1:{ clear H. wf_auto2. }
     
-    mlAssert ("C" : ( patt_free_evar x ∈ml 〚 mlProd (s1, s2) 〛) ).
+    mlAssert ("C" : ( patt_free_evar x ∈ml ⟦ mlProd (s1, s2) ⟧) ).
     1:wf_auto2.
     1:mlAssumption.
     mlApply "C" in "f".
@@ -88,7 +88,7 @@ Section productsort.
     rewrite evar_open_not_occur.
     1:{ clear H. wf_auto2. }
 
-    mlAssert ("C" : ( patt_free_evar x ∈ml 〚 mlProd (s1, s2) 〛) ).
+    mlAssert ("C" : ( patt_free_evar x ∈ml ⟦ mlProd (s1, s2) ⟧) ).
     1:wf_auto2.
     1:mlAssumption.
     mlApply "C" in "g".

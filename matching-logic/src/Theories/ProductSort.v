@@ -70,6 +70,7 @@ Section axioms.
 
 
     Inductive AxiomName :=
+    | AxProdSort
     | AxPair
     | AxProjLeft
     | AxProjRight
@@ -79,11 +80,10 @@ Section axioms.
     | InversePairProjb
     .
 
-    Arguments patt_forall_of_sort {Σ self} sort phi%_ml_scope.
-
     Definition axiom (name : AxiomName) : Pattern :=
     match name with
-    
+    | AxProdSort =>
+       s1 ∈ml Sorts and s2 ∈ml Sorts ---> mlProd(s1, s2) ∈ml Sorts
     | AxPair => 
          patt_total_binary_function
             (patt_sym (inj (ml_pair s1 s2)))

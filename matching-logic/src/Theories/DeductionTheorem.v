@@ -1030,7 +1030,7 @@ Proof.
       { wf_auto2. }
       mlIntro. mlClear "0". fromMLGoal.
       eapply useGenericReasoning.
-      2: apply (BasicProofSystemLemmas.hypothesis Γ axiom0 i H).
+      2: apply (hypothesis Γ axiom0 i H).
       try_solve_pile.
   - (* P1 *)
     toMLGoal.
