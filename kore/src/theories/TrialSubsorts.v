@@ -142,8 +142,9 @@ Module T.
   Inductive carrier : DemoSorts -> Set :=
   | c_nat (n : nat) : carrier SortNat
   | c_bool (b : bool) : carrier SortBool
-  | c_nil : carrier SortList
-  | c_cons : carrier SortKItem -> carrier SortList -> carrier SortList
+  (* | c_nil : carrier SortList *)
+  (* | c_cons : carrier SortKItem -> carrier SortList -> carrier SortList *)
+  | c_list (l : list (carrier SortKItem)) : carrier SortList
   | c_subsort (s1 s2 : DemoSorts) (P : subsort s1 s2) (x : carrier s1) : carrier s2
   (* This should match the subsort relation *)
   (* | c_kitem {A} : A ≠ SortK -> carrier A -> carrier SortKItem *)
@@ -179,6 +180,12 @@ Module T.
     (* left. Search eq_rect. *)
   Admitted.
 
+  Definition inb {A} {_ : EqDecision A} (x : A) (xs : list A) : bool.
+  Proof.
+    induction xs. exact false.
+    exact (if decide (x = a) then true else false).
+  Defined.
+
   Definition DemoModel : @Model DemoSignature.
   Proof.
     unshelve eapply mkModel_singleton.
@@ -194,16 +201,16 @@ Module T.
       * exact (c_bool true).
       * exact (c_bool false).
       * exact (c_bool false). (*TODO: I don't understand this still*)
-      * exact (c_nil).
-      * exact (c_cons H H0).
-      * dependent induction H0. exact (c_bool false).
-        dependent destruction H.
-        dependent destruction H0_.
-        destruct (decide (s0 = s1)). 2: exact (IHcarrier2 erefl).
-        destruct (decide (eq_rect_r carrier H e = H0_)).
-        exact (c_bool true). exact (IHcarrier2 erefl).
+      * exact (c_list []).
+      * dependent induction H0.
+        exact (c_list (H :: l)).
+        inversion P; subst. exact (IHcarrier erefl).
+      * dependent induction H0. exact (c_bool (inb H l)).
         inversion P; subst. now apply IHcarrier.
-      * dependent induction H. exact H0. exact (IHcarrier2 erefl H0). (* ? *)
+      * dependent induction H.
+        dependent induction H0.
+        exact (c_list (Datatypes.app l l0)).
+        inversion P; subst. now apply IHcarrier.
         inversion P; subst. apply IHcarrier. reflexivity. exact H0. (* ? *)
     - destruct s. 1-3,5: repeat constructor. do 2 econstructor; first last; repeat constructor. discriminate.
     - intros. inversion H; subst. assumption. econstructor; eassumption.
@@ -244,7 +251,7 @@ Module T.
     inversion H; destruct H0; subst; simpl.
     simplify_krule. give_up.
     destruct H0; subst; simpl.
-    simplify_krule. reflexivity.
+    simplify_krule. give_up.
     destruct H0; subst; simpl.
     simplify_krule. unfold block, solution_left, eq_rec_r, eq_rect_r, carrier_rec. simpl. give_up.
   Abort.
