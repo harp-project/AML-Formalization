@@ -11,8 +11,9 @@ Class Sorts := {
     sort : Set;
     sort_eqdec :: EqDecision sort;
     sort_countable :: Countable sort;
-    subsort : relation sort;
-    subsort_po :: PartialOrder subsort;
+    subsort : CRelationClasses.crelation sort;
+    subsort_preo :: CRelationClasses.PreOrder subsort;
+    subsort_po :: CRelationClasses.PartialOrder eq subsort;
 }.
 
 Class Variables {Ss : Sorts} := {
