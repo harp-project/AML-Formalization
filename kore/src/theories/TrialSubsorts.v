@@ -163,21 +163,24 @@ Module T.
 
   Instance carrier_eqdec A : EqDecision (carrier A).
   Proof.
-    (* unfold EqDecision, Decision. *)
-    (* intros. *)
-    (* dependent induction x; dependent destruction y; auto. *)
-    (* destruct (decide (n = n0)) as [-> | ?]; [left; reflexivity | right; congruence]. *)
-    (* destruct (decide (b = b0)) as [-> | ?]; [left; reflexivity | right; congruence]. *)
-    (* destruct (IHx1 y1) as [-> | ?]; [| right; congruence]. *)
-    (* destruct (IHx2 y2) as [-> | ?]; [left; reflexivity | right; congruence]. *)
-    (* destruct (decide (A = A0)); [| right; congruence]. *)
-    (* destruct (IHx (eq_rect_r carrier y e)). *)
-    (* 2: { right. intro. inversion H. inversion_sigma. *)
-    (*   apply rew_swap in H2_0. rewrite (Eqdep.EqdepTheory.UIP _ _ _ H2_ e) in H2_0. *)
-    (*   apply n1. assumption. *)
-    (* } *)
-    (* pose proof (neqs_eq n (eq_rect_r (.≠ SortK) n0 e)). *)
-    (* left. Search eq_rect. *)
+    unfold EqDecision, Decision.
+    intros.
+    dependent induction x; dependent destruction y; auto.
+    * destruct (decide (n = n0)) as [-> | ?]; [left; reflexivity | right; congruence].
+    * destruct (decide (b = b0)) as [-> | ?]; [left; reflexivity | right; congruence].
+    * epose proof (list_eq_dec l l0) as [? | ?]; subst.
+      by left. right; congruence.
+    * destruct (decide (s0 = s1)).
+      - subst. destruct (IHx y).
+        + subst.
+          (* Search CRelationClasses.crelation eq.
+           *)
+          admit.
+        + right. intro. inversion H.
+          apply n. inversion_sigma H2.
+          by rewrite <- Eqdep.EqdepTheory.eq_rect_eq in H2_0.
+      - right. intro. inversion H.
+        congruence.
   Admitted.
 
   Definition inb {A} {_ : EqDecision A} (x : A) (xs : list A) : bool.
