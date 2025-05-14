@@ -90,7 +90,7 @@ Module T.
 
   Inductive Demo_subsort : CRelationClasses.crelation DemoSorts :=
   | subsorts_refl s : Demo_subsort s s
-  | kitem_is_top s : s ≠ SortK -> Demo_subsort s SortKItem.
+  | kitem_is_top s : s ≠ SortK -> s ≠ SortKItem -> Demo_subsort s SortKItem.
 
   Instance Demo_subsort_PreOrder : CRelationClasses.PreOrder Demo_subsort.
   Proof.
@@ -161,27 +161,35 @@ Module T.
     apply functional_extensionality. intros. destruct (p x).
   Defined.
 
+  Lemma subsort_unique {s1 s2} (p1 p2 : Demo_subsort s1 s2) : p1 = p2.
+  Proof.
+    dependent induction p1; dependent destruction p2.
+    reflexivity.
+    destruct n0. reflexivity.
+    destruct n0. reflexivity.
+    f_equal; apply neqs_eq.
+  Defined.
+
   Instance carrier_eqdec A : EqDecision (carrier A).
   Proof.
     unfold EqDecision, Decision.
+    (* No induction principle if the type appears in another *)
+    (* type (list here). As usual... *)
+    revert A. fix IH 2.
     intros.
-    dependent induction x; dependent destruction y; auto.
+    dependent destruction x; dependent destruction y; try ((right; discriminate) + (left; reflexivity)).
     * destruct (decide (n = n0)) as [-> | ?]; [left; reflexivity | right; congruence].
     * destruct (decide (b = b0)) as [-> | ?]; [left; reflexivity | right; congruence].
-    * epose proof (list_eq_dec l l0) as [? | ?]; subst.
-      by left. right; congruence.
-    * destruct (decide (s0 = s1)).
-      - subst. destruct (IHx y).
-        + subst.
-          (* Search CRelationClasses.crelation eq.
-           *)
-          admit.
-        + right. intro. inversion H.
-          apply n. inversion_sigma H2.
-          by rewrite <- Eqdep.EqdepTheory.eq_rect_eq in H2_0.
-      - right. intro. inversion H.
-        congruence.
-  Admitted.
+    * pose proof @list_eq_dec _ (IH SortKItem) l l0 as [-> | ?]; [left; reflexivity | right; congruence].
+      Guarded.
+    * destruct (decide (s0 = s1)) as [-> | ?].
+      - destruct (IH _ x y) as [-> | ?].
+        + rewrite (subsort_unique P P0); by left.
+        + right. intro. inversion H. inversion_sigma H2.
+          rewrite <- Eqdep.EqdepTheory.eq_rect_eq in H2_0.
+          congruence.
+      - right. intro. inversion H. congruence.
+  Qed.
 
   Definition inb {A} {_ : EqDecision A} (x : A) (xs : list A) : bool.
   Proof.
@@ -189,73 +197,75 @@ Module T.
     exact (if decide (x = a) then true else false).
   Defined.
 
-  Definition DemoModel : @Model DemoSignature.
-  Proof.
-    unshelve eapply mkModel_singleton.
-    - exact carrier.
-    - destruct_with_eqn σ; simpl; intros.
-      * exact (c_nat 0).
-      * dependent induction H. exact (c_nat (S n)).
-        inversion P; subst. now apply IHcarrier.
-      * dependent induction H. dependent induction H0.
-        exact (c_nat (n + n0)).
-        inversion P; subst. now apply IHcarrier.
-        inversion P; subst. apply IHcarrier. reflexivity. exact H0. (* ? *)
-      * exact (c_bool true).
-      * exact (c_bool false).
-      * exact (c_bool false). (*TODO: I don't understand this still*)
-      * exact (c_list []).
-      * dependent induction H0.
-        exact (c_list (H :: l)).
-        inversion P; subst. exact (IHcarrier erefl).
-      * dependent induction H0. exact (c_bool (inb H l)).
-        inversion P; subst. now apply IHcarrier.
-      * dependent induction H.
-        dependent induction H0.
-        exact (c_list (Datatypes.app l l0)).
-        inversion P; subst. now apply IHcarrier.
-        inversion P; subst. apply IHcarrier. reflexivity. exact H0. (* ? *)
-    - destruct s. 1-3,5: repeat constructor. do 2 econstructor; first last; repeat constructor. discriminate.
-    - intros. inversion H; subst. assumption. econstructor; eassumption.
+  Program Definition DemoModel : @Model DemoSignature := mkModel_singleton
+    carrier
+    _
+    (λ s, match s with
+           | SortNat   => populate (c_nat 0)
+           | SortBool  => populate (c_bool false)
+           | SortK     => populate (c_dotk)
+           | SortKItem => populate (c_subsort _ _ _ (c_nat 0))
+           | SortList  => populate (c_list [])
+           end)
+    (λ s1 s2 P, match P with
+                | subsorts_refl s => id
+                | kitem_is_top s ne ne' => c_subsort s SortKItem (kitem_is_top s ne ne')
+                end)
+  .
+  Next Obligation.
+    refine (λ s, match s with
+                  | SymZero   => c_nat 0
+                  | SymSucc   => λ n, _
+                  | SymAdd    => λ n n', _
+                  | SymTrue   => c_bool true
+                  | SymFalse  => c_bool false
+                  | SymIsList => λ k, c_bool false
+                  | SymNil    => c_list []
+                  | SymCons   => λ x xs, _
+                  | SymInList => λ x xs, _
+                  | SymAppend => λ xs ys, _
+                  end
+    ).
+    * dependent induction n. exact (c_nat (S n)).
+      inversion P; subst. exact (IHn erefl).
+    * dependent induction n. dependent induction n'.
+      exact (c_nat (n + n0)).
+      inversion P; subst. exact (IHn' erefl).
+      inversion P; subst. exact (IHn erefl n'). (* ? *)
+    * dependent induction xs.
+      exact (c_list (x :: l)).
+      inversion P; subst. exact (IHxs erefl).
+    * dependent induction xs. exact (c_bool (inb x l)).
+      inversion P; subst. exact (IHxs erefl).
+    * dependent induction xs.
+      dependent induction ys.
+      exact (c_list (l ++ l0)).
+      inversion P; subst. exact (IHys erefl).
+      inversion P; subst. exact (IHxs erefl ys). (* ? *)
+  Defined.
+  Next Obligation.
+    constructor; discriminate.
   Defined.
 
-  Definition test : @Theory DemoSignature.
-  Proof.
-    split. intros pat.
-    apply Logic.or.
-    refine (exists R, pat = existT R _).
-    eapply kore_equals. epose (kore_app SymTrue hnil). simpl in p. exact p.
-    epose (kore_app SymZero hnil). simpl in p.
-    epose (kore_inj _ _ p).
-    epose (kore_app SymSucc ⟨ p ⟩). simpl in p1. eapply kore_inj in p1.
-    epose (kore_app SymNil hnil). simpl in p2.
-    epose (kore_app SymCons ⟨ p0 ; p2 ⟩). simpl in p3.
-    epose (kore_app SymCons ⟨ p1 ; p3 ⟩). simpl in p4.
-    epose (kore_app SymInList ⟨ p0 ; p4 ⟩). simpl in p5.
-    exact p5. Unshelve. 1,3: right; discriminate.
-    apply Logic.or.
-    refine (exists R, pat = existT R _).
-    eapply kore_equals.
-    unshelve apply kore_app. exact SymAppend. simpl.
-    right. epose (kore_app SymNil hnil). simpl in p. exact p.
-    right. apply kore_fevar. exact "x".
-    left. simpl. apply kore_fevar. exact "x".
-    refine (exists R, pat = existT R _).
-    eapply kore_equals.
-    unshelve apply kore_app. exact SymAppend. simpl.
-    right. apply kore_fevar. exact "x".
-    right. epose (kore_app SymNil hnil). simpl in p. exact p.
-    left. simpl. apply kore_fevar. exact "x".
-  Defined.
+  Program Definition test : @Theory DemoSignature := PropSet (λ pat,
+    (* 0 ∈ [1; 0] *)
+    exists R, pat = existT R (SymTrue ⋅ ⟨ ⟩ =k{R} (let zero := SymZero ⋅ ⟨ ⟩ in let zero_i := kore_inj _ _ zero in kore_app SymInList ⟨ zero_i ; (SymCons ⋅ ⟨ (kore_inj _ _ (SymSucc ⋅ ⟨ zero ⟩)) ; SymCons ⋅ ⟨ zero_i ; SymNil ⋅ ⟨ ⟩ ⟩ ⟩) ⟩)) \/
+    (* [] ++ x = x *)
+    exists R, pat = existT R (SymAppend ⋅ ⟨ SymNil ⋅ ⟨ ⟩ ; kore_fevar "x" ⟩ =k{R} kore_fevar "x") \/
+    (* x ++ [] = x *)
+    exists R, pat = existT R (SymAppend ⋅ ⟨ kore_fevar "x" ; SymNil ⋅ ⟨ ⟩ ⟩ =k{R} kore_fevar "x")
+  ).
+  Solve Obligations with (constructor; discriminate).
 
   Goal satT test DemoModel.
   Proof.
     unfold satT, satM, test. intros.
-    inversion H; destruct H0; subst; simpl.
-    simplify_krule. give_up.
+    inversion H. clear H.
     destruct H0; subst; simpl.
     simplify_krule. give_up.
-    destruct H0; subst; simpl.
+    destruct H; destruct H; subst; simpl.
+    simplify_krule. unfold block, solution_left, eq_rec_r, eq_rect_r. simpl. give_up.
+    destruct H; subst; simpl.
     simplify_krule. unfold block, solution_left, eq_rec_r, eq_rect_r, carrier_rec. simpl. give_up.
   Abort.
 
