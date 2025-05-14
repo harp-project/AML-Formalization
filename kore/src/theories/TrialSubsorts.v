@@ -247,6 +247,7 @@ Module T.
     constructor; discriminate.
   Defined.
 
+  Set Transparent Obligations.
   Program Definition test : @Theory DemoSignature := PropSet (λ pat,
     (* 0 ∈ [1; 0] *)
     exists R, pat = existT R (SymTrue ⋅ ⟨ ⟩ =k{R} (let zero := SymZero ⋅ ⟨ ⟩ in let zero_i := kore_inj _ _ zero in kore_app SymInList ⟨ zero_i ; (SymCons ⋅ ⟨ (kore_inj _ _ (SymSucc ⋅ ⟨ zero ⟩)) ; SymCons ⋅ ⟨ zero_i ; SymNil ⋅ ⟨ ⟩ ⟩ ⟩) ⟩)) \/
@@ -262,9 +263,25 @@ Module T.
     unfold satT, satM, test. intros.
     inversion H. clear H.
     destruct H0; subst; simpl.
-    simplify_krule. give_up.
+    simplify_krule.
+    Transparent propset_fmap. unfold propset_fmap. unshelve erewrite app_ext_singleton.
+    simpl. repeat split.
+    eexists (c_subsort SortNat SortKItem _ (c_nat 0)).
+    simpl.
+    apply set_eq. split; intros. shelve. apply elem_of_PropSet.
+    exists (c_nat 0). apply elem_of_singleton in H.
+    repeat split. exact H.
+    apply elem_of_PropSet. exists hnil. split. split. by apply elem_of_singleton.
+    give_up.
+    give_up.
     destruct H; destruct H; subst; simpl.
-    simplify_krule. unfold block, solution_left, eq_rec_r, eq_rect_r. simpl. give_up.
+    eval_helper. apply propset_top_elem_of_2. intros. apply elem_of_PropSet.
+    rewrite_app_ext.
+    unshelve erewrite app_ext_singleton.
+    simpl. repeat esplit. simpl all_singleton_extract.
+    simpl.
+    unfold block, solution_left, eq_rec_r, eq_rect_r. simpl.
+    give_up.
     destruct H; subst; simpl.
     simplify_krule. unfold block, solution_left, eq_rec_r, eq_rect_r, carrier_rec. simpl. give_up.
   Abort.
