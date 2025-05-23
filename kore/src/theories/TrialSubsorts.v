@@ -90,21 +90,24 @@ Module T.
 
   Inductive Demo_subsort : CRelationClasses.crelation DemoSorts :=
   | subsorts_refl s : Demo_subsort s s
-  | kitem_is_top s : s ≠ SortK -> s ≠ SortKItem -> Demo_subsort s SortKItem.
+  | kitem_is_top s : s ≠ SortK -> s ≠ SortKItem -> Demo_subsort s SortKItem
+  | nemtom : Demo_subsort SortBool SortNat.
 
   Instance Demo_subsort_PreOrder : CRelationClasses.PreOrder Demo_subsort.
   Proof.
     split.
-    cbv. intro. left.
+    cbv. intro. constructor 1.
     cbv. intros. inversion H; subst. assumption.
     inversion H0; subst. assumption. assumption.
-  Defined.
+    admit.
+  Admitted.
 
   Instance Demo_subsort_PartialOrder : CRelationClasses.PartialOrder eq Demo_subsort.
   Proof.
     cbv. intros. split; intros. rewrite H. repeat constructor.
     destruct H. inversion d; subst. reflexivity.
     inversion d0; subst; reflexivity.
+    inversion d0.
   Defined.
 
   (* In the signature, we need to define the sorts, the variable types,
@@ -139,16 +142,29 @@ Module T.
     |};
   |}.
 
-  Inductive carrier : DemoSorts -> Set :=
-  | c_nat (n : nat) : carrier SortNat
-  | c_bool (b : bool) : carrier SortBool
-  (* | c_nil : carrier SortList *)
-  (* | c_cons : carrier SortKItem -> carrier SortList -> carrier SortList *)
-  | c_list (l : list (carrier SortKItem)) : carrier SortList
-  | c_subsort (s1 s2 : DemoSorts) (P : subsort s1 s2) (x : carrier s1) : carrier s2
-  (* This should match the subsort relation *)
-  (* | c_kitem {A} : A ≠ SortK -> carrier A -> carrier SortKItem *)
-  | c_dotk : carrier SortK.
+  Inductive mynat := FromNat (n : nat) | FromBool (b : bool).
+  Inductive kitem := KNat (n : mynat) | KBool (b : bool) | KList (l : list kitem).
+
+  Definition carrier (s : DemoSorts) : Set :=
+    match s with
+    | SortNat => mynat
+    | SortBool => bool
+    | SortList => list kitem
+    | SortKItem => kitem
+    | SortK => unit
+    end.
+
+  (* Inductive carrier : DemoSorts -> Set := *)
+  (* | c_nat (n : nat) : carrier SortNat *)
+  (* | c_bool (b : bool) : carrier SortBool *)
+  (* (1* | c_nil : carrier SortList *1) *)
+  (* (1* | c_cons : carrier SortKItem -> carrier SortList -> carrier SortList *1) *)
+  (* | c_list (l : list (carrier SortKItem)) : carrier SortList *)
+  (* (1* | c_subsort (s1 s2 : DemoSorts) (P : subsort s1 s2) (x : carrier s1) : carrier s2 *1) *)
+  (* (1* This should match the subsort relation *1) *)
+  (* | c_kitem {A} : A ≠ SortK -> A ≠ SortKItem -> carrier A -> carrier SortKItem *)
+  (* | c_boolnat : carrier SortBool -> carrier SortNat *)
+  (* | c_dotk : carrier SortK. *)
 
   (* Check c_nat 1. *)
   (* Check c_nil. *)
@@ -161,35 +177,35 @@ Module T.
     apply functional_extensionality. intros. destruct (p x).
   Defined.
 
-  Lemma subsort_unique {s1 s2} (p1 p2 : Demo_subsort s1 s2) : p1 = p2.
-  Proof.
-    dependent induction p1; dependent destruction p2.
-    reflexivity.
-    destruct n0. reflexivity.
-    destruct n0. reflexivity.
-    f_equal; apply neqs_eq.
-  Defined.
+  (* Lemma subsort_unique {s1 s2} (p1 p2 : Demo_subsort s1 s2) : p1 = p2. *)
+  (* Proof. *)
+  (*   dependent induction p1; dependent destruction p2. *)
+  (*   reflexivity. *)
+  (*   destruct n0. reflexivity. *)
+  (*   destruct n0. reflexivity. *)
+  (*   f_equal; apply neqs_eq. *)
+  (* Defined. *)
 
-  Instance carrier_eqdec A : EqDecision (carrier A).
-  Proof.
-    unfold EqDecision, Decision.
-    (* No induction principle if the type appears in another *)
-    (* type (list here). As usual... *)
-    revert A. fix IH 2.
-    intros.
-    dependent destruction x; dependent destruction y; try ((right; discriminate) + (left; reflexivity)).
-    * destruct (decide (n = n0)) as [-> | ?]; [left; reflexivity | right; congruence].
-    * destruct (decide (b = b0)) as [-> | ?]; [left; reflexivity | right; congruence].
-    * pose proof @list_eq_dec _ (IH SortKItem) l l0 as [-> | ?]; [left; reflexivity | right; congruence].
-      Guarded.
-    * destruct (decide (s0 = s1)) as [-> | ?].
-      - destruct (IH _ x y) as [-> | ?].
-        + rewrite (subsort_unique P P0); by left.
-        + right. intro. inversion H. inversion_sigma H2.
-          rewrite <- Eqdep.EqdepTheory.eq_rect_eq in H2_0.
-          congruence.
-      - right. intro. inversion H. congruence.
-  Qed.
+  (* Instance carrier_eqdec A : EqDecision (carrier A). *)
+  (* Proof. *)
+  (*   unfold EqDecision, Decision. *)
+  (*   (1* No induction principle if the type appears in another *1) *)
+  (*   (1* type (list here). As usual... *1) *)
+  (*   revert A. fix IH 2. *)
+  (*   intros. *)
+  (*   dependent destruction x; dependent destruction y; try ((right; discriminate) + (left; reflexivity)). *)
+  (*   * destruct (decide (n = n0)) as [-> | ?]; [left; reflexivity | right; congruence]. *)
+  (*   * destruct (decide (b = b0)) as [-> | ?]; [left; reflexivity | right; congruence]. *)
+  (*   * pose proof @list_eq_dec _ (IH SortKItem) l l0 as [-> | ?]; [left; reflexivity | right; congruence]. *)
+  (*     Guarded. *)
+  (*   * destruct (decide (s0 = s1)) as [-> | ?]. *)
+  (*     - destruct (IH _ x y) as [-> | ?]. *)
+  (*       + rewrite (subsort_unique P P0); by left. *)
+  (*       + right. intro. inversion H. inversion_sigma H2. *)
+  (*         rewrite <- Eqdep.EqdepTheory.eq_rect_eq in H2_0. *)
+  (*         congruence. *)
+  (*     - right. intro. inversion H. congruence. *)
+  (* Qed. *)
 
   Definition inb {A} {_ : EqDecision A} (x : A) (xs : list A) : bool.
   Proof.
@@ -200,32 +216,25 @@ Module T.
   Program Definition DemoModel : @Model DemoSignature := mkModel_singleton
     carrier
     _
-    (λ s, match s with
-           | SortNat   => populate (c_nat 0)
-           | SortBool  => populate (c_bool false)
-           | SortK     => populate (c_dotk)
-           | SortKItem => populate (c_subsort _ _ _ (c_nat 0))
-           | SortList  => populate (c_list [])
-           end)
-    (λ s1 s2 P, match P with
-                | subsorts_refl s => id
-                | kitem_is_top s ne ne' => c_subsort s SortKItem (kitem_is_top s ne ne')
-                end)
-  .
+    _
+    _.
   Next Obligation.
     refine (λ s, match s with
-                  | SymZero   => c_nat 0
-                  | SymSucc   => λ n, _
+                  | SymZero   => FromNat 0
+                  | SymSucc   => λ n, match n with
+                                       | FromNat n' => FromNat (S n')
+                                       | FromBool b => FromBool b
+                                       end
                   | SymAdd    => λ n n', _
-                  | SymTrue   => c_bool true
-                  | SymFalse  => c_bool false
-                  | SymIsList => λ k, c_bool false
-                  | SymNil    => c_list []
-                  | SymCons   => λ x xs, _
-                  | SymInList => λ x xs, _
-                  | SymAppend => λ xs ys, _
+                  | SymTrue   => true
+                  | SymFalse  => false
+                  | SymIsList => λ k, false
+                  | SymNil    => []
+                  | SymCons   => cons
+                  | SymInList => inb
+                  | SymAppend => Datatypes.app
                   end
-    ).
+    ); simpl in *.
     * dependent induction n. exact (c_nat (S n)).
       inversion P; subst. exact (IHn erefl).
     * dependent induction n. dependent induction n'.
