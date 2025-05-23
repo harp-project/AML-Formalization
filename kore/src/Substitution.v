@@ -292,6 +292,104 @@ Section Substitution.
 
   Arguments bevar_subst {_} _ {_} {_} {_} !_ _.
 
+  Fixpoint fevar_subst ex {ex' mu : list sort} {s s'}
+    (ψ : Pattern ex' mu s')
+    (e : evar s')
+    (φ : Pattern (ex ++ ex') mu s) {struct φ}
+    : Pattern (ex ++ ex') mu s.
+  Proof.
+    dependent destruction φ.
+    - apply kore_bevar, idx.
+    - apply kore_bsvar, idx.
+    - destruct (decide (s = s')).
+      + subst. destruct (decide (e = x)).
+        * exact (@inc_var [] ex ex' [] [] mu s' ψ).
+        * apply kore_fevar, x.
+      + apply kore_fevar, x.
+    - apply kore_fsvar, X.
+    - apply kore_app, args.
+    - apply kore_bot.
+    - apply kore_top.
+    - apply kore_not, (fevar_subst _ _ _ _ _ ψ e φ).
+    - apply kore_and.
+      apply (fevar_subst _ _ _ _ _ ψ e φ1).
+      apply (fevar_subst _ _ _ _ _ ψ e φ2).
+    - apply kore_or.
+      apply (fevar_subst _ _ _ _ _ ψ e φ1).
+      apply (fevar_subst _ _ _ _ _ ψ e φ2).
+    - apply kore_imp.
+      apply (fevar_subst _ _ _ _ _ ψ e φ1).
+      apply (fevar_subst _ _ _ _ _ ψ e φ2).
+    - apply kore_iff.
+      apply (fevar_subst _ _ _ _ _ ψ e φ1).
+      apply (fevar_subst _ _ _ _ _ ψ e φ2).
+    - eapply kore_exists, (fevar_subst (s_var :: ex) _ _ _ _ ψ e φ).
+    - eapply kore_forall, (fevar_subst (s_var :: ex) _ _ _ _ ψ e φ).
+    - apply kore_mu.
+      pose (@inc_var [] [] ex' [] [s] mu s' ψ).
+      apply (fevar_subst _ _ _ _ _ p e φ).
+    - apply kore_nu.
+      pose (@inc_var [] [] ex' [] [s] mu s' ψ).
+      apply (fevar_subst _ _ _ _ _ p e φ).
+    - eapply kore_ceil, (fevar_subst _ _ _ _ _ ψ e φ).
+    - eapply kore_floor, (fevar_subst _ _ _ _ _ ψ e φ).
+    - eapply kore_equals.
+      apply (fevar_subst _ _ _ _ _ ψ e φ1).
+      apply (fevar_subst _ _ _ _ _ ψ e φ2).
+    - eapply kore_in.
+      apply (fevar_subst _ _ _ _ _ ψ e φ1).
+      apply (fevar_subst _ _ _ _ _ ψ e φ2).
+  Defined.
+
+  Fixpoint fsvar_subst ex {mu mu' : list sort} {s s'}
+    (ψ : Pattern ex mu' s')
+    (e : svar s')
+    (φ : Pattern ex (mu ++ mu') s) {struct φ}
+    : Pattern ex (mu ++ mu') s.
+  Proof.
+    dependent destruction φ.
+    - apply kore_bevar, idx.
+    - apply kore_bsvar, idx.
+    - apply kore_fevar, x.
+    - destruct (decide (s = s')).
+      + subst. destruct (decide (e = X)).
+        * exact (@inc_var [] [] ex [] mu mu' s' ψ).
+        * apply kore_fsvar, X.
+      + apply kore_fsvar, X.
+    - apply kore_app, args.
+    - apply kore_bot.
+    - apply kore_top.
+    - apply kore_not, (fsvar_subst _ _ _ _ _ ψ e φ).
+    - apply kore_and.
+      apply (fsvar_subst _ _ _ _ _ ψ e φ1).
+      apply (fsvar_subst _ _ _ _ _ ψ e φ2).
+    - apply kore_or.
+      apply (fsvar_subst _ _ _ _ _ ψ e φ1).
+      apply (fsvar_subst _ _ _ _ _ ψ e φ2).
+    - apply kore_imp.
+      apply (fsvar_subst _ _ _ _ _ ψ e φ1).
+      apply (fsvar_subst _ _ _ _ _ ψ e φ2).
+    - apply kore_iff.
+      apply (fsvar_subst _ _ _ _ _ ψ e φ1).
+      apply (fsvar_subst _ _ _ _ _ ψ e φ2).
+    - eapply kore_exists.
+      pose (@inc_var [] [s_var] ex [] [] mu' s' ψ).
+      apply (fsvar_subst _ _ _ _ _ p e φ).
+    - eapply kore_forall.
+      pose (@inc_var [] [s_var] ex [] [] mu' s' ψ).
+      apply (fsvar_subst _ _ _ _ _ p e φ).
+    - apply kore_mu, (fsvar_subst _ (s :: mu) _ _ _ ψ e φ).
+    - apply kore_nu, (fsvar_subst _ (s :: mu) _ _ _ ψ e φ).
+    - eapply kore_ceil, (fsvar_subst _ _ _ _ _ ψ e φ).
+    - eapply kore_floor, (fsvar_subst _ _ _ _ _ ψ e φ).
+    - eapply kore_equals.
+      apply (fsvar_subst _ _ _ _ _ ψ e φ1).
+      apply (fsvar_subst _ _ _ _ _ ψ e φ2).
+    - eapply kore_in.
+      apply (fsvar_subst _ _ _ _ _ ψ e φ1).
+      apply (fsvar_subst _ _ _ _ _ ψ e φ2).
+  Defined.
+
 End Substitution.
 
 Module Notations.
