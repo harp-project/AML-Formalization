@@ -18,13 +18,14 @@ Ltac autorewrite_set :=
     rewrite propset_difference_neg +
     rewrite propset_union_simpl +
     rewrite propset_intersection_simpl +
-    rewrite singleton_subseteq_l
+    rewrite singleton_subseteq_l +
+    rewrite fmap_propset_singleton
   ).
 
 Ltac basic_simplify_krule :=
-  simpl;
-  eval_helper;
-  repeat rewrite_app_ext;
+  eval_helper2;
+  simpl sort_inj;
+  repeat (rewrite_app_ext; try rewrite fmap_propset_singleton);
   autorewrite_set.
 Ltac simplify_krule :=
   basic_simplify_krule;
@@ -264,14 +265,15 @@ Module T.
       (SymF ⋅ ⟨kore_inj _ inj_bar_foo (SymBar ⋅ ⟨⟩) ⟩) = {[c_baz1]}.
   Proof.
     intros.
-    rewrite eval_app_simpl. simpl.
+    by basic_simplify_krule.
+(*     rewrite eval_app_simpl. simpl.
     rewrite eval_equation_21. simpl.
     rewrite (@eval_app_simpl DemoSignature _ _ _ SymBar).
     simpl hmap.
     rewrite_app_ext.
     rewrite fmap_propset_singleton.
     rewrite_app_ext.
-    reflexivity.
+    reflexivity. *)
   Qed.
 
   Goal
@@ -279,14 +281,15 @@ Module T.
       (SymF ⋅ ⟨kore_inj _ inj_baz_foo (SymBaz2 ⋅ ⟨⟩) ⟩) = {[c_baz1]}.
   Proof.
     intros.
-    rewrite eval_app_simpl. simpl.
+    by basic_simplify_krule.
+(*     rewrite eval_app_simpl. simpl.
     rewrite eval_equation_21. simpl.
     rewrite (@eval_app_simpl DemoSignature _ _ _ SymBaz2).
     simpl hmap.
     rewrite_app_ext.
     rewrite fmap_propset_singleton.
     rewrite_app_ext.
-    reflexivity.
+    reflexivity. *)
   Qed.
 
   Goal
@@ -294,7 +297,8 @@ Module T.
       (SymF ⋅ ⟨kore_inj _ inj_bar_foo (kore_inj _ inj_baz_bar (SymBaz2 ⋅ ⟨⟩)) ⟩) = {[c_baz1]}.
   Proof.
     intros.
-    rewrite eval_app_simpl. simpl.
+    by repeat basic_simplify_krule.
+(*     rewrite eval_app_simpl. simpl.
     rewrite eval_equation_21. simpl.
     rewrite eval_equation_21. simpl.
     rewrite (@eval_app_simpl DemoSignature _ _ _ SymBaz2).
@@ -303,7 +307,7 @@ Module T.
     rewrite fmap_propset_singleton.
     rewrite fmap_propset_singleton.
     rewrite_app_ext.
-    reflexivity.
+    reflexivity. *)
   Qed.
 
   Goal
@@ -311,6 +315,7 @@ Module T.
       (SymF ⋅ ⟨kore_inj _ inj_bax_foo (kore_inj _ inj_baz_bax (SymBaz2 ⋅ ⟨⟩)) ⟩) = {[c_baz1]}.
   Proof.
     intros.
+    repeat basic_simplify_krule. (* 
     rewrite eval_app_simpl. simpl.
     rewrite eval_equation_21. simpl.
     rewrite eval_equation_21. simpl.
@@ -319,7 +324,7 @@ Module T.
     rewrite_app_ext.
     rewrite fmap_propset_singleton.
     rewrite fmap_propset_singleton.
-    rewrite_app_ext.
+    rewrite_app_ext. *)
     Fail reflexivity.
   Abort.
 
