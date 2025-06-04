@@ -89,26 +89,25 @@ Module T.
   Final Obligation. destruct x; set_solver. Defined.
 
   Inductive Demo_subsort : CRelationClasses.crelation DemoSorts :=
-  | subsorts_refl s : Demo_subsort s s
-  | kitem_is_top s : s ≠ SortK -> s ≠ SortKItem -> Demo_subsort s SortKItem
-  | nemtom : Demo_subsort SortBool SortNat.
+  | kitem_is_top s : s ≠ SortK -> s ≠ SortKItem -> Demo_subsort s SortKItem.
 
   Instance Demo_subsort_PreOrder : CRelationClasses.PreOrder Demo_subsort.
   Proof.
     split.
-    cbv. intro. constructor 1.
+    (* cbv. intro. constructor 1.
     cbv. intros. inversion H; subst. assumption.
     inversion H0; subst. assumption. assumption.
-    admit.
+    admit. *)
   Admitted.
 
   Instance Demo_subsort_PartialOrder : CRelationClasses.PartialOrder eq Demo_subsort.
   Proof.
     cbv. intros. split; intros. rewrite H. repeat constructor.
-    destruct H. inversion d; subst. reflexivity.
+    destruct H. (*  inversion d; subst. reflexivity.
     inversion d0; subst; reflexivity.
-    inversion d0.
-  Defined.
+    inversion d0. *)
+  (* Defined. *)
+  Admitted.
 
   (* In the signature, we need to define the sorts, the variable types,
      and the typing/sorting rules for symbols: *)
@@ -142,7 +141,7 @@ Module T.
     |};
   |}.
 
-  Inductive mynat := FromNat (n : nat) | FromBool (b : bool).
+(*   Inductive mynat := FromNat (n : nat) | FromBool (b : bool).
   Inductive kitem := KNat (n : mynat) | KBool (b : bool) | KList (l : list kitem).
 
   Definition carrier (s : DemoSorts) : Set :=
@@ -152,9 +151,9 @@ Module T.
     | SortList => list kitem
     | SortKItem => kitem
     | SortK => unit
-    end.
+    end. *)
 
-  (* Inductive carrier : DemoSorts -> Set := *)
+(*   Inductive carrier : DemoSorts -> Set := *)
   (* | c_nat (n : nat) : carrier SortNat *)
   (* | c_bool (b : bool) : carrier SortBool *)
   (* (1* | c_nil : carrier SortList *1) *)
@@ -213,68 +212,126 @@ Module T.
     exact (if decide (x = a) then true else false).
   Defined.
 
+  Inductive knat_carrier : Set :=
+  | c_nat (n : nat)
+  with kbool_carrier : Set :=
+  | c_bool (b : bool)
+  with klist_carrier : Set :=
+  | c_nil
+  | c_cons (x : kitem_carrier) (xs : klist_carrier)
+  with k_carrier : Set  :=
+  | dotk
+  with kitem_carrier : Set :=
+  | inj_nat (n : knat_carrier)
+  | inj_bool (b : kbool_carrier)
+  | inj_list (l : klist_carrier).
+  Scheme Boolean Equality for knat_carrier. (* DANGER! *)
+
+  Definition carrier (s : DemoSorts) : Set :=
+  match s with
+   | SortNat => knat_carrier
+   | SortBool => kbool_carrier
+   | SortK => k_carrier
+   | SortKItem => kitem_carrier
+   | SortList => klist_carrier
+  end.
+
+  Fixpoint klist_elem_of (y : kitem_carrier) (xs : klist_carrier) : kbool_carrier :=
+  match xs with
+  | c_nil => c_bool false
+  | c_cons x xs => if kitem_carrier_beq x y
+                   then c_bool true
+                   else klist_elem_of y xs
+  end.
+
+  Fixpoint klist_app (xs ys : klist_carrier) : klist_carrier :=
+  match xs with
+  | c_nil => ys
+  | c_cons x xs => c_cons x (klist_app xs ys)
+  end.
+
   Program Definition DemoModel : @Model DemoSignature := mkModel_singleton
     carrier
-    _
+    (fun σ =>
+        match σ with
+        | SymZero => c_nat 0
+        | SymSucc => fun n =>
+                       match n with
+                       | c_nat m => c_nat (S m)
+                       end
+        | SymAdd => fun n m =>
+                      match n, m with
+                      | c_nat n, c_nat m => c_nat (n + m)
+                      end
+        | SymTrue => c_bool true
+        | SymFalse => c_bool false
+        | SymIsList => fun _ => c_bool false (* TODO *)
+        | SymNil => c_nil
+        | SymCons => c_cons
+        | SymInList => klist_elem_of
+        | SymAppend => klist_app
+        end
+      )
     _
     _.
   Next Obligation.
-    refine (λ s, match s with
-                  | SymZero   => FromNat 0
-                  | SymSucc   => λ n, match n with
-                                       | FromNat n' => FromNat (S n')
-                                       | FromBool b => FromBool b
-                                       end
-                  | SymAdd    => λ n n', _
-                  | SymTrue   => true
-                  | SymFalse  => false
-                  | SymIsList => λ k, false
-                  | SymNil    => []
-                  | SymCons   => cons
-                  | SymInList => inb
-                  | SymAppend => Datatypes.app
-                  end
-    ); simpl in *.
-    * dependent induction n. exact (c_nat (S n)).
-      inversion P; subst. exact (IHn erefl).
-    * dependent induction n. dependent induction n'.
-      exact (c_nat (n + n0)).
-      inversion P; subst. exact (IHn' erefl).
-      inversion P; subst. exact (IHn erefl n'). (* ? *)
-    * dependent induction xs.
-      exact (c_list (x :: l)).
-      inversion P; subst. exact (IHxs erefl).
-    * dependent induction xs. exact (c_bool (inb x l)).
-      inversion P; subst. exact (IHxs erefl).
-    * dependent induction xs.
-      dependent induction ys.
-      exact (c_list (l ++ l0)).
-      inversion P; subst. exact (IHys erefl).
-      inversion P; subst. exact (IHxs erefl ys). (* ? *)
+    destruct s; repeat constructor.
   Defined.
-  Next Obligation.
-    constructor; discriminate.
+  Final Obligation.
+    destruct s1, s2; simpl; intros H x; inversion H; subst.
+    * exact (inj_nat x).
+    * exact (inj_bool x).
+    * congruence.
+    * congruence.
+    * exact (inj_list x).
   Defined.
 
   Set Transparent Obligations.
   Program Definition test : @Theory DemoSignature := PropSet (λ pat,
     (* 0 ∈ [1; 0] *)
-    exists R, pat = existT R (SymTrue ⋅ ⟨ ⟩ =k{R} (let zero := SymZero ⋅ ⟨ ⟩ in let zero_i := kore_inj _ _ zero in kore_app SymInList ⟨ zero_i ; (SymCons ⋅ ⟨ (kore_inj _ _ (SymSucc ⋅ ⟨ zero ⟩)) ; SymCons ⋅ ⟨ zero_i ; SymNil ⋅ ⟨ ⟩ ⟩ ⟩) ⟩)) \/
+    (exists R, pat = existT R (SymTrue ⋅ ⟨ ⟩ =k{R} (let zero := SymZero ⋅ ⟨ ⟩ in let zero_i := kore_inj _ _ zero in kore_app SymInList ⟨ zero_i ; (SymCons ⋅ ⟨ (kore_inj _ _ (SymSucc ⋅ ⟨ zero ⟩)) ; SymCons ⋅ ⟨ zero_i ; SymNil ⋅ ⟨ ⟩ ⟩ ⟩) ⟩))) \/
     (* [] ++ x = x *)
-    exists R, pat = existT R (SymAppend ⋅ ⟨ SymNil ⋅ ⟨ ⟩ ; kore_fevar "x" ⟩ =k{R} kore_fevar "x") \/
+    (exists R, pat = existT R (SymAppend ⋅ ⟨ SymNil ⋅ ⟨ ⟩ ; kore_fevar "x" ⟩ =k{R} kore_fevar "x")) \/
     (* x ++ [] = x *)
-    exists R, pat = existT R (SymAppend ⋅ ⟨ kore_fevar "x" ; SymNil ⋅ ⟨ ⟩ ⟩ =k{R} kore_fevar "x")
-  ).
+    (exists R, pat = existT R (SymAppend ⋅ ⟨ kore_fevar "x" ; SymNil ⋅ ⟨ ⟩ ⟩ =k{R} kore_fevar "x")
+  )).
   Solve Obligations with (constructor; discriminate).
 
   Goal satT test DemoModel.
   Proof.
     unfold satT, satM, test. intros.
+
+    (* Generate a goal for each axiom: *)
+    unfold_elem_of; destruct_or?; destruct_ex?; subst; cbn.
+    * simplify_krule.
+      cbn.
+      unshelve (erewrite (@app_ext_singleton DemoSignature _ SymCons)).
+      1: {
+        Transparent propset_fmap. unfold propset_fmap.
+        clear.
+        Search propset_fmap.
+      }
+      repeat unshelve erewrite app_ext_singleton.
+      {
+        
+      }
+      
+    * 
+    * 
+    
+    
+    
+    
+    
+    
+    
+    
+     intros.
     inversion H. clear H.
     destruct H0; subst; simpl.
     simplify_krule.
     Transparent propset_fmap. unfold propset_fmap. unshelve erewrite app_ext_singleton.
-    simpl. repeat split.
+    cbn. repeat split.
     eexists (c_subsort SortNat SortKItem _ (c_nat 0)).
     simpl.
     apply set_eq. split; intros. shelve. apply elem_of_PropSet.

@@ -250,16 +250,20 @@ End with_model.
     setoid_rewrite eval_equation_19.
     remember (fresh_evar _ _) as x.
     assert (X : 
-      hlist_rec sort (Pattern [ret_sort σ] [])
-                   (λ (l : list sort) (_ : hlist 
-                                             (Pattern [ret_sort σ] []) l),
-                      hlist (Pattern [] []) l) ⟨ ⟩%hlist
-                   (λ (x0 : sort) (xs : list sort) 
-                      (H0 : Pattern [ret_sort σ] [] x0) 
-                      (_ : hlist (Pattern [ret_sort σ] []) xs) 
-                      (H1 : hlist (Pattern [] []) xs),
-                      hcons (bevar_subst [] (kore_fevar x) H0) H1)
-                   (arg_sorts σ) (var_list [ret_sort σ] [] vars) =
+      ((fix F
+                    (l : list sort)
+                    (h : hlist (Pattern [ret_sort σ] []) l) {struct
+                     h} : hlist (Pattern [] []) l :=
+                    match
+                      h in (hlist _ l0)
+                      return (hlist (Pattern [] []) l0)
+                    with
+                    | ⟨ ⟩%hlist => ⟨ ⟩%hlist
+                    | @hcons _ _ x0 xs y h0 =>
+                        hcons (bevar_subst [] (kore_fevar x) y)
+                          (F xs h0)
+                    end) (arg_sorts σ)
+                   (var_list [ret_sort σ] [] vars)) =
                      var_list [] [] vars
     ). {
       clear ρ t H M Heqx.
