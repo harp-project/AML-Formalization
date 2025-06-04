@@ -259,16 +259,6 @@ Module T.
     * exact (c_inj_bax_kitem x).
   Defined.
 
-  Search fmap "set".
-
-  Lemma fmap_set_singleton :
-    forall {A B : Type}
-      (f : A -> B) (x : A),
-      f <$> ({[x]} : propset A) = ({[f x]} : propset B).
-  Proof.
-    set_solver.
-  Defined.
-
   Goal
     forall ρ, @eval DemoSignature DemoModel [] [] _ ρ
       (SymF ⋅ ⟨kore_inj _ inj_bar_foo (SymBar ⋅ ⟨⟩) ⟩) = {[c_baz1]}.
@@ -279,7 +269,7 @@ Module T.
     rewrite (@eval_app_simpl DemoSignature _ _ _ SymBar).
     simpl hmap.
     rewrite_app_ext.
-    rewrite fmap_set_singleton.
+    rewrite fmap_propset_singleton.
     rewrite_app_ext.
     reflexivity.
   Qed.
@@ -294,7 +284,7 @@ Module T.
     rewrite (@eval_app_simpl DemoSignature _ _ _ SymBaz2).
     simpl hmap.
     rewrite_app_ext.
-    rewrite fmap_set_singleton.
+    rewrite fmap_propset_singleton.
     rewrite_app_ext.
     reflexivity.
   Qed.
@@ -310,8 +300,8 @@ Module T.
     rewrite (@eval_app_simpl DemoSignature _ _ _ SymBaz2).
     simpl hmap.
     rewrite_app_ext.
-    rewrite fmap_set_singleton.
-    rewrite fmap_set_singleton.
+    rewrite fmap_propset_singleton.
+    rewrite fmap_propset_singleton.
     rewrite_app_ext.
     reflexivity.
   Qed.
@@ -327,8 +317,8 @@ Module T.
     rewrite (@eval_app_simpl DemoSignature _ _ _ SymBaz2).
     simpl hmap.
     rewrite_app_ext.
-    rewrite fmap_set_singleton.
-    rewrite fmap_set_singleton.
+    rewrite fmap_propset_singleton.
+    rewrite fmap_propset_singleton.
     rewrite_app_ext.
     Fail reflexivity.
   Abort.

@@ -329,6 +329,14 @@ Proof.
   all: assumption.
 Defined.
 
+Lemma fmap_propset_singleton :
+  forall {A B : Type}
+    (f : A -> B) (x : A),
+    f <$> ({[x]} : propset A) = ({[f x]} : propset B).
+Proof.
+  set_solver.
+Defined.
+
 
 Create HintDb kore.
 Hint Unfold AntiSymm : kore.

@@ -482,10 +482,10 @@ Module ImpSyntax.
         end;
     |};
   |}.
-  Next Obligation.
+  Final Obligation.
     cbv; intros; destruct s1, s2; try congruence.
   Defined.
-  Final Obligation.
+(*   Final Obligation.
     cbv.
     apply Build_PartialOrder.
     * apply Build_PreOrder.
@@ -493,7 +493,7 @@ Module ImpSyntax.
       - intros s1 s2 s3; by destruct s1, s2, s3.
     * intros s1 s2; intros. destruct s1, s2; try reflexivity; try by contradiction.
   Defined.
-
+ *)
   Open Scope string_scope.
   Open Scope kore_scope.
 

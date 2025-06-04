@@ -134,6 +134,51 @@ Section Semantics.
       1-2: rewrite (bsvar_subst_size ex [] mu s s φ X); constructor.
     Defined.
 
+
+
+    Definition eval_bevar_simpl := eval_equation_1.
+    Definition eval_bsvar_simpl := eval_equation_2.
+    Definition eval_fevar_simpl := eval_equation_3.
+    Definition eval_fsvar_simpl := eval_equation_4.
+    Definition eval_bot_simpl := eval_equation_6.
+    Definition eval_top_simpl := eval_equation_7.
+    Definition eval_not_simpl := eval_equation_8.
+    Definition eval_and_simpl := eval_equation_9.
+    Definition eval_or_simpl := eval_equation_10.
+    Definition eval_imp_simpl := eval_equation_11.
+    Definition eval_iff_simpl := eval_equation_12.
+    Definition eval_exists_simpl := eval_equation_13.
+    Definition eval_forall_simpl := eval_equation_14.
+    Definition eval_mu_simpl := eval_equation_15.
+    Definition eval_nu_simpl := eval_equation_16.
+    Definition eval_ceil_simpl := eval_equation_17.
+    Definition eval_floor_simpl := eval_equation_18.
+    Definition eval_equals_simpl := eval_equation_19.
+    Definition eval_in_simpl := eval_equation_20.
+    Definition eval_inj_simpl := eval_equation_21.
+    Definition eval_simpl :=
+      (eval_bevar_simpl,
+       eval_bsvar_simpl,
+       eval_fevar_simpl,
+       eval_fsvar_simpl,
+       eval_bot_simpl,
+       eval_top_simpl,
+       eval_not_simpl,
+       eval_and_simpl,
+       eval_or_simpl,
+       eval_imp_simpl,
+       eval_iff_simpl,
+       eval_exists_simpl,
+       eval_forall_simpl,
+       eval_mu_simpl,
+       eval_nu_simpl,
+       eval_ceil_simpl,
+       eval_floor_simpl,
+       eval_equals_simpl,
+       eval_in_simpl,
+       eval_inj_simpl).
+
+
     (* simpler evaluation rule for σ ⋅ l *)
     Lemma eval_app_simpl :
       forall {ex mu} (σ : symbol) (l : hlist (Pattern ex mu) (arg_sorts σ)) (ρ : Valuation),
@@ -370,7 +415,7 @@ end.
 
 Ltac rewrite_app_ext :=
 match goal with
-| |- ?G => rewrite_app_ext_innnermost G; cbn
+| |- ?G => rewrite_app_ext_innnermost G; simpl app
 end.
 
 
@@ -392,6 +437,18 @@ Tactic Notation "eval_helper" :=
        clear H;
        cbn
     | _ => simp eval
+    end.
+
+Tactic Notation "eval_helper2" :=
+  repeat
+    match goal with
+    | [ |- context [eval ?ρ (@kore_app ?Σ ?ex ?mu ?σ ?l) ] ] =>
+       let H := fresh "H" in
+       pose proof (eval_app_simpl σ l ρ) as H;
+       rewrite H;
+       clear H;
+       simpl hmap
+    | _ => rewrite eval_simpl
     end.
 
 Tactic Notation "rewrite_singleton_all" :=

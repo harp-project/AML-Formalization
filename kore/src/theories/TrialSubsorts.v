@@ -18,13 +18,14 @@ Ltac autorewrite_set :=
     rewrite propset_difference_neg +
     rewrite propset_union_simpl +
     rewrite propset_intersection_simpl +
-    rewrite singleton_subseteq_l
+    rewrite singleton_subseteq_l +
+    rewrite fmap_propset_singleton
   ).
 
 Ltac basic_simplify_krule :=
-  simpl;
-  eval_helper;
-  repeat rewrite_app_ext;
+  eval_helper2;
+  simpl sort_inj;
+  repeat (rewrite_app_ext; try rewrite fmap_propset_singleton);
   autorewrite_set.
 Ltac simplify_krule :=
   basic_simplify_krule;
@@ -76,22 +77,28 @@ Module T.
   | SymNil
   | SymCons
   | SymInList
-  | SymAppend.
+  | SymAppend
+  | SymDotk
+  | SymKseq.
 
   (* We prove decidable equality and finiteness of the type above. *)
   Instance DemoSyms_eq_dec : EqDecision DemoSyms.
   Proof. solve_decision. Defined.
   Program Instance DemoSyms_finite : finite.Finite DemoSyms := {
     enum := [SymZero;SymSucc;SymAdd;SymTrue;
-    SymFalse;SymIsList;SymNil;SymCons;SymInList;SymAppend];
+    SymFalse;SymIsList;SymNil;SymCons;SymInList;SymAppend;
+    SymDotk;SymKseq];
   }.
   Next Obligation. compute_done. Defined.
   Final Obligation. destruct x; set_solver. Defined.
 
   Inductive Demo_subsort : CRelationClasses.crelation DemoSorts :=
-  | kitem_is_top s : s ≠ SortK -> s ≠ SortKItem -> Demo_subsort s SortKItem.
+ (*  | kitem_is_top s : s ≠ SortK -> s ≠ SortKItem -> Demo_subsort s SortKItem *)
+  | inj_nat_kitem : Demo_subsort SortNat SortKItem
+  | inj_bool_kitem : Demo_subsort SortBool SortKItem
+  | inj_list_kitem : Demo_subsort SortList SortKItem.
 
-  Instance Demo_subsort_PreOrder : CRelationClasses.PreOrder Demo_subsort.
+(*   Instance Demo_subsort_PreOrder : CRelationClasses.PreOrder Demo_subsort.
   Proof.
     split.
     (* cbv. intro. constructor 1.
@@ -107,7 +114,7 @@ Module T.
     inversion d0; subst; reflexivity.
     inversion d0. *)
   (* Defined. *)
-  Admitted.
+  Admitted. *)
 
   (* In the signature, we need to define the sorts, the variable types,
      and the typing/sorting rules for symbols: *)
@@ -131,12 +138,15 @@ Module T.
                  | SymCons => [SortKItem; SortList]
                  | SymInList => [SortKItem; SortList]
                  | SymAppend => [SortList; SortList]
+                 | SymDotk => []
+                 | SymKseq => [SortKItem; SortK]
                  end;
       ret_sort := fun σ => match σ with
                            | SymZero | SymSucc | SymAdd => SortNat
                            | SymTrue | SymFalse => SortBool
                            | SymNil | SymCons | SymAppend => SortList
                            | SymInList | SymIsList => SortBool
+                           | SymDotk | SymKseq => SortK
                            end;
     |};
   |}.
@@ -220,11 +230,13 @@ Module T.
   | c_nil
   | c_cons (x : kitem_carrier) (xs : klist_carrier)
   with k_carrier : Set  :=
-  | dotk
+  | c_dotk
+  | c_kseq (x : kitem_carrier) (xs : k_carrier)
   with kitem_carrier : Set :=
-  | inj_nat (n : knat_carrier)
-  | inj_bool (b : kbool_carrier)
-  | inj_list (l : klist_carrier).
+  | c_nat_kitem (n : knat_carrier)
+  | c_bool_kitem (b : kbool_carrier)
+  | c_list_kitem (l : klist_carrier).
+
   Scheme Boolean Equality for knat_carrier. (* DANGER! *)
 
   Definition carrier (s : DemoSorts) : Set :=
@@ -270,6 +282,8 @@ Module T.
         | SymCons => c_cons
         | SymInList => klist_elem_of
         | SymAppend => klist_app
+        | SymDotk => c_dotk
+        | SymKseq => c_kseq
         end
       )
     _
@@ -279,11 +293,9 @@ Module T.
   Defined.
   Final Obligation.
     destruct s1, s2; simpl; intros H x; inversion H; subst.
-    * exact (inj_nat x).
-    * exact (inj_bool x).
-    * congruence.
-    * congruence.
-    * exact (inj_list x).
+    * exact (c_nat_kitem x).
+    * exact (c_bool_kitem x).
+    * exact (c_list_kitem x).
   Defined.
 
   Set Transparent Obligations.
@@ -297,110 +309,58 @@ Module T.
   )).
   Solve Obligations with (constructor; discriminate).
 
+
   Goal satT test DemoModel.
   Proof.
     unfold satT, satM, test. intros.
-
+    unfold test_obligation_1, test_obligation_2 in *.
     (* Generate a goal for each axiom: *)
     unfold_elem_of; destruct_or?; destruct_ex?; subst; cbn.
+    * by simplify_krule.
+(*    Step-by-step simplification would look like this:
+      rewrite eval_simpl.
+      apply propset_top_elem_of_2;
+      intro;
+      apply elem_of_PropSet.
+      rewrite (@eval_app_simpl DemoSignature _ _ _ SymTrue).
+      simpl.
+      rewrite_app_ext.
+      simpl.
+      rewrite (@eval_app_simpl DemoSignature _ _ _ SymInList).
+      simpl.
+      rewrite eval_simpl. simpl.
+      rewrite (@eval_app_simpl DemoSignature _ _ _ SymZero).
+      simpl hmap.
+      rewrite_app_ext. rewrite fmap_propset_singleton.
+      unfold test_obligation_2, test_obligation_1.
+      rewrite (@eval_app_simpl DemoSignature _ _ _ SymCons).
+      simpl hmap.
+      rewrite eval_simpl. simpl.
+      rewrite (@eval_app_simpl DemoSignature _ _ _ SymSucc).
+      simpl hmap.
+      rewrite (@eval_app_simpl DemoSignature _ _ _ SymZero).
+      simpl hmap.
+      rewrite_app_ext. rewrite_app_ext.
+      rewrite fmap_propset_singleton.
+      rewrite (@eval_app_simpl DemoSignature _ _ _ SymCons).
+      simpl hmap.
+      rewrite eval_simpl. simpl.
+      rewrite (@eval_app_simpl DemoSignature _ _ _ SymZero).
+      simpl hmap.
+      rewrite_app_ext.
+      rewrite fmap_propset_singleton.
+      rewrite (@eval_app_simpl DemoSignature _ _ _ SymNil).
+      simpl hmap.
+      rewrite_app_ext.
+      rewrite_app_ext.
+      rewrite_app_ext.
+      rewrite_app_ext.
+      reflexivity. *)
+    * by simplify_krule.
     * simplify_krule.
-      cbn.
-      unshelve (erewrite (@app_ext_singleton DemoSignature _ SymCons)).
-      1: {
-        Transparent propset_fmap. unfold propset_fmap.
-        clear.
-        Search propset_fmap.
-      }
-      repeat unshelve erewrite app_ext_singleton.
-      {
-        
-      }
-      
-    * 
-    * 
-    
-    
-    
-    
-    
-    
-    
-    
-     intros.
-    inversion H. clear H.
-    destruct H0; subst; simpl.
-    simplify_krule.
-    Transparent propset_fmap. unfold propset_fmap. unshelve erewrite app_ext_singleton.
-    cbn. repeat split.
-    eexists (c_subsort SortNat SortKItem _ (c_nat 0)).
-    simpl.
-    apply set_eq. split; intros. shelve. apply elem_of_PropSet.
-    exists (c_nat 0). apply elem_of_singleton in H.
-    repeat split. exact H.
-    apply elem_of_PropSet. exists hnil. split. split. by apply elem_of_singleton.
-    give_up.
-    give_up.
-    destruct H; destruct H; subst; simpl.
-    eval_helper. apply propset_top_elem_of_2. intros. apply elem_of_PropSet.
-    rewrite_app_ext.
-    unshelve erewrite app_ext_singleton.
-    simpl. repeat esplit. simpl all_singleton_extract.
-    simpl.
-    unfold block, solution_left, eq_rec_r, eq_rect_r. simpl.
-    give_up.
-    destruct H; subst; simpl.
-    simplify_krule. unfold block, solution_left, eq_rec_r, eq_rect_r, carrier_rec. simpl. give_up.
-  Abort.
-
-  (* Program Definition DemoModel : @Model DemoSignature := *)
-  (*   mkModel_singleton *)
-  (*     carrier *)
-  (*     (DemoSyms_rect _ *)
-  (*       (c_nat 0) *)
-  (*       _ *)
-  (*       _ *)
-  (*       _ *)
-  (*       _ *)
-  (*       _ *)
-  (*       _ *)
-  (*       _ *)
-  (*       _ *)
-  (*     ) *)
-  (*     _ *)
-  (*     _. *)
-  (* Next Obligation. *)
-  (*   simpl. *)
-  (*   intro. inversion H. *)
-  (*   exact (c_nat (S n)). *)
-  (*   inversion P. *)
-  (* Defined. *)
-  (* Next Obligation. *)
-  (*   simpl. *)
-  (*   intros. inversion H. inversion H0. *)
-  (*   exact (c_nat (n + n0)). *)
-  (* Defined. *)
-  (* Next Obligation. *)
-  (*   simpl. *)
-  (*   exact (c_bool true). *)
-  (* Defined. *)
-  (* Next Obligation. *)
-  (*   simpl. *)
-  (*   exact (c_bool false). *)
-  (* Defined. *)
-  (* Next Obligation. *)
-  (*   simpl. *)
-  (*   Print DemoSyms. *)
-  (*   intros. *)
-  (*   inversion H. (1* TODO *1) *)
-  (* Defined. *)
-  (* Next Obligation. *)
-  (*   simpl. *)
-  (*   exact (c_nil). *)
-  (* Defined. *)
-  (* Next Obligation. *)
-  (*   simpl. *)
-  (*   intros. *)
-  (*   exact (c_cons H H0). *)
-  (* Defined. *)
-  (* Next Obligation. *)
-
+      (* NOTE This is a simplification rule, therefore, we have
+         to show it by induction. *)
+      { remember (evar_valuation _ _) as l. clear.
+        induction l. by simpl.
+        simpl. by rewrite IHl. }
+  Qed.
