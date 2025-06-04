@@ -39,10 +39,15 @@ nra.cache
 *mm.hs
 *.hi
 
+# kore
+koreimport-test/k/imp-kompiled/*
+
 # Generated makefiles
 *.coq
 *.coq.d
 *.coq.conf
+*.crashcoqide
+*.v#
 
 # Generated documentation
 html/*
@@ -50,3 +55,6 @@ html/*
 # Envrc and Direnv files
 .envrc
 .direnv/*
+
+
+
