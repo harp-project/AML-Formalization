@@ -262,6 +262,10 @@ Module T.
   | c_cons x xs => c_cons x (klist_app xs ys)
   end.
 
+  Fixpoint klist_islist (xs : k_carrier) : kbool_carrier :=
+  c_bool false
+  .
+
   Program Definition DemoModel : @Model DemoSignature := mkModel_singleton
     carrier
     (fun σ =>
@@ -277,7 +281,7 @@ Module T.
                       end
         | SymTrue => c_bool true
         | SymFalse => c_bool false
-        | SymIsList => fun _ => c_bool false (* TODO *)
+        | SymIsList => klist_islist
         | SymNil => c_nil
         | SymCons => c_cons
         | SymInList => klist_elem_of
@@ -306,7 +310,17 @@ Module T.
     (exists R, pat = existT R (SymAppend ⋅ ⟨ SymNil ⋅ ⟨ ⟩ ; kore_fevar "x" ⟩ =k{R} kore_fevar "x")) \/
     (* x ++ [] = x *)
     (exists R, pat = existT R (SymAppend ⋅ ⟨ kore_fevar "x" ; SymNil ⋅ ⟨ ⟩ ⟩ =k{R} kore_fevar "x")
-  )).
+  ) (* \/
+    (* isList (_ : K) = false if K <> kseq List dots *)
+    (exists R, pat = existT R (
+      (! ((∃k R, Top{R} and (kore_fevar "X0" ⊆k{R} SymKseq ⋅ ⟨kore_inj _ _ (@kore_fevar _ _ _ SortList "Gen0"); SymDotk ⋅⟨⟩⟩) and Top{R}) or ⊥{R})
+        and
+        (Top{R} and @kore_fevar _ _ _ SortK "X0" ⊆k{R} kore_fevar "K" and Top{R})
+      )
+      --->ₖ
+      (SymIsList ⋅ ⟨kore_fevar "K"⟩)
+    )) *)
+  ).
   Solve Obligations with (constructor; discriminate).
 
 

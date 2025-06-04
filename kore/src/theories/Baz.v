@@ -92,6 +92,9 @@ Module T.
   Next Obligation. compute_done. Defined.
   Final Obligation. destruct x; set_solver. Defined.
 
+  (* TODO generator: This should be generated based on
+     the subsorting relation/klean typeclass instances.
+     Each constructor is an Inj instance in KLean *)
   Inductive Demo_subsort : CRelationClasses.crelation DemoSorts :=
   | inj_bax_kitem : Demo_subsort SortBax SortKItem
   | inj_foo_kitem : Demo_subsort SortFoo SortKItem
@@ -103,17 +106,18 @@ Module T.
   | inj_baz_bar : Demo_subsort SortBaz SortBar
   | inj_baz_bax : Demo_subsort SortBaz SortBax.
 
+  (* TODO generator: These two goals can be generated as
+     they appear here *)
   Goal
     forall s1 s2 s3, Demo_subsort s1 s2 -> Demo_subsort s2 s3 ->
       Demo_subsort s1 s3.
   Proof.
     intros ??? H1 H2; inversion H1; inversion H2; try constructor; subst; try discriminate.
   Defined.
-
   Goal
     forall s1 s2, Demo_subsort s1 s2 -> Demo_subsort s2 s1 -> s1 = s2.
   Proof.
-    intros; inversion H; subst; inversion H0; subst.
+    intros ?? H H0; inversion H; subst; inversion H0; subst.
   Defined.
 
   (* In the signature, we need to define the sorts, the variable types,
@@ -148,47 +152,12 @@ Module T.
     |};
   |}.
 
-  Lemma neqs_eq {A} {a b : A} (p q : a ≠ b) : p = q.
-  Proof.
-    apply functional_extensionality. intros. destruct (p x).
-  Defined.
-
-  (* Lemma subsort_unique {s1 s2} (p1 p2 : Demo_subsort s1 s2) : p1 = p2. *)
-  (* Proof. *)
-  (*   dependent induction p1; dependent destruction p2. *)
-  (*   reflexivity. *)
-  (*   destruct n0. reflexivity. *)
-  (*   destruct n0. reflexivity. *)
-  (*   f_equal; apply neqs_eq. *)
-  (* Defined. *)
-
-  (* Instance carrier_eqdec A : EqDecision (carrier A). *)
-  (* Proof. *)
-  (*   unfold EqDecision, Decision. *)
-  (*   (1* No induction principle if the type appears in another *1) *)
-  (*   (1* type (list here). As usual... *1) *)
-  (*   revert A. fix IH 2. *)
-  (*   intros. *)
-  (*   dependent destruction x; dependent destruction y; try ((right; discriminate) + (left; reflexivity)). *)
-  (*   * destruct (decide (n = n0)) as [-> | ?]; [left; reflexivity | right; congruence]. *)
-  (*   * destruct (decide (b = b0)) as [-> | ?]; [left; reflexivity | right; congruence]. *)
-  (*   * pose proof @list_eq_dec _ (IH SortKItem) l l0 as [-> | ?]; [left; reflexivity | right; congruence]. *)
-  (*     Guarded. *)
-  (*   * destruct (decide (s0 = s1)) as [-> | ?]. *)
-  (*     - destruct (IH _ x y) as [-> | ?]. *)
-  (*       + rewrite (subsort_unique P P0); by left. *)
-  (*       + right. intro. inversion H. inversion_sigma H2. *)
-  (*         rewrite <- Eqdep.EqdepTheory.eq_rect_eq in H2_0. *)
-  (*         congruence. *)
-  (*     - right. intro. inversion H. congruence. *)
-  (* Qed. *)
-
-  Definition inb {A} {_ : EqDecision A} (x : A) (xs : list A) : bool.
-  Proof.
-    induction xs. exact false.
-    exact (if decide (x = a) then true else false).
-  Defined.
-
+  (* TODO generator: a huge mutually inductive type should
+     be generated. Alternatively, the KLean's approach
+     could also work (by not making all of these mutual).
+     In the KLean project, KCell, GeneratedTop, GeneratedCounter
+     appear here too.
+     *)
   Inductive baz_carrier : Set :=
   | c_baz1
   | c_baz2
@@ -209,9 +178,12 @@ Module T.
   | c_inj_bar_kitem (b : bar_carrier)
   | c_inj_bax_kitem (b : bax_carrier)
   | c_inj_baz_kitem (b : baz_carrier)
-  | c_inj_foo_kitem (b : foo_carrier)
-  .
+  | c_inj_foo_kitem (b : foo_carrier).
 
+  (* TODO generator: This function assigns the inductive
+     types above to their sorts. I don't think, KLean
+     uses this concept. In our case, this will be the
+     sort-indexed carrier. *)
   Definition carrier (s : DemoSorts) : Set :=
   match s with
   | SortBaz => baz_carrier
@@ -222,6 +194,10 @@ Module T.
   | SortKItem => kitem_carrier
   end.
 
+  (* TODO generator: here retr of KLean should be
+     included in the function generation to handle
+     injections. Retr is expressed here with 
+     pattern matching. *)
   Definition f (x : foo_carrier) : baz_carrier :=
   match x with (* This pattern matching is retr of klean! *)
   | c_inj_bar_foo _ => c_baz1
@@ -247,19 +223,22 @@ Module T.
   Next Obligation.
     destruct s; repeat constructor.
   Defined.
+  (* TODO generator: these should be generated based on the injs
+     of KLean. *)
   Final Obligation.
-    destruct s1, s2; simpl; intros H x; inversion H; subst.
-    * exact (c_inj_baz_bar x).
-    * exact (c_inj_baz_foo x).
-    * exact (c_inj_baz_bax x).
-    * exact (c_inj_baz_kitem x).
-    * exact (c_inj_bar_foo x).
-    * exact (c_inj_bar_kitem x).
-    * exact (c_inj_foo_kitem x).
-    * exact (c_inj_bax_foo x).
+    intros s1 s2 H x; inversion H; subst.
     * exact (c_inj_bax_kitem x).
+    * exact (c_inj_foo_kitem x).
+    * exact (c_inj_baz_kitem x).
+    * exact (c_inj_bar_kitem x).
+    * exact (c_inj_bax_foo x).
+    * exact (c_inj_baz_foo x).
+    * exact (c_inj_bar_foo x).
+    * exact (c_inj_baz_bar x).
+    * exact (c_inj_baz_bax x).
   Defined.
 
+  (* TODO generator: these are pre-defined tests *)
   Goal
     forall ρ, @eval DemoSignature DemoModel [] [] _ ρ
       (SymF ⋅ ⟨kore_inj _ inj_bar_foo (SymBar ⋅ ⟨⟩) ⟩) = {[c_baz1]}.
