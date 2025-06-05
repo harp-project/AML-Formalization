@@ -25,7 +25,7 @@ Ltac autorewrite_set :=
 Ltac basic_simplify_krule :=
   eval_helper2;
   simpl sort_inj;
-  repeat (rewrite_app_ext; try rewrite fmap_propset_singleton);
+  repeat (rewrite_app_ext; repeat rewrite fmap_propset_singleton);
   autorewrite_set.
 Ltac simplify_krule :=
   basic_simplify_krule;
@@ -276,7 +276,7 @@ Module T.
       (SymF ⋅ ⟨kore_inj _ inj_bar_foo (kore_inj _ inj_baz_bar (SymBaz2 ⋅ ⟨⟩)) ⟩) = {[c_baz1]}.
   Proof.
     intros.
-    by repeat basic_simplify_krule.
+    by basic_simplify_krule.
 (*     rewrite eval_app_simpl. simpl.
     rewrite eval_equation_21. simpl.
     rewrite eval_equation_21. simpl.
@@ -294,7 +294,7 @@ Module T.
       (SymF ⋅ ⟨kore_inj _ inj_bax_foo (kore_inj _ inj_baz_bax (SymBaz2 ⋅ ⟨⟩)) ⟩) = {[c_baz1]}.
   Proof.
     intros.
-    repeat basic_simplify_krule. (* 
+    basic_simplify_krule. (* 
     rewrite eval_app_simpl. simpl.
     rewrite eval_equation_21. simpl.
     rewrite eval_equation_21. simpl.

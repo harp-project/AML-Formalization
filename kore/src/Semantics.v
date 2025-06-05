@@ -59,6 +59,68 @@ Section Semantics.
       * exact (svar_valuation val sv').
     Defined.
 
+    Lemma update_evar_val_same :
+      forall s (ρ : Valuation) (ev : evar s) c,
+        evar_valuation (update_evar_val ev c ρ) ev = c.
+    Proof.
+      intros. unfold update_evar_val. simpl.
+      rewrite decide_eq_same. simpl.
+      by rewrite decide_eq_same.
+    Qed.
+
+    Lemma update_evar_val_same_sort_neq :
+      forall s (ρ : Valuation) (ev1 ev2 : evar s) c,
+        ev1 <> ev2 ->
+        evar_valuation (update_evar_val ev1 c ρ) ev2 = evar_valuation ρ ev2.
+    Proof.
+      intros. simpl.
+      rewrite decide_eq_same. simpl.
+      case_match. congruence.
+      reflexivity.
+    Qed.
+
+    Lemma update_evar_val_diff_sort :
+      forall s1 s2 (ρ : Valuation) (ev1 : evar s1) (ev2 : evar s2) c,
+        s1 <> s2 ->
+        evar_valuation (update_evar_val ev1 c ρ) ev2 = evar_valuation ρ ev2.
+    Proof.
+      intros. simpl.
+      case_match. congruence.
+      reflexivity.
+    Qed.
+
+    Lemma update_svar_val_same :
+      forall s (ρ : Valuation) (sv : svar s) C,
+        svar_valuation (update_svar_val sv C ρ) sv = C.
+    Proof.
+      intros. unfold update_evar_val. simpl.
+      rewrite decide_eq_same. simpl.
+      by rewrite decide_eq_same.
+    Qed.
+
+    Lemma update_svar_val_same_sort_neq :
+      forall s (ρ : Valuation) (sv1 sv2 : svar s) C,
+        sv1 <> sv2 ->
+        svar_valuation (update_svar_val sv1 C ρ) sv2 = svar_valuation ρ sv2.
+    Proof.
+      intros. simpl.
+      rewrite decide_eq_same. simpl.
+      case_match. congruence.
+      reflexivity.
+    Qed.
+
+    Lemma update_svar_val_diff_sort :
+      forall s1 s2 (ρ : Valuation) (sv1 : svar s1) (sv2 : svar s2) C,
+        s1 <> s2 ->
+        svar_valuation (update_svar_val sv1 C ρ) sv2 = svar_valuation ρ sv2.
+    Proof.
+      intros. simpl.
+      case_match. congruence.
+      reflexivity.
+    Qed.
+
+
+
     Let OS s := PropsetOrderedSet (carrier M s).
     Let  L s := PowersetLattice (carrier M s).
 
@@ -478,4 +540,5 @@ Add Search Blacklist "_elim".
 Add Search Blacklist "FunctionalElimination_".
 Add Search Blacklist "_graph_mut".
 Add Search Blacklist "_graph_rect".
+Add Search Blacklist "eval_equation_".
 

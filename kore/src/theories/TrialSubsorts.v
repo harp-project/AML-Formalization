@@ -262,9 +262,16 @@ Module T.
   | c_cons x xs => c_cons x (klist_app xs ys)
   end.
 
-  Fixpoint klist_islist (xs : k_carrier) : kbool_carrier :=
-  c_bool false
-  .
+  Definition klist_islist (xs : k_carrier) : kbool_carrier :=
+  match xs with
+   | c_kseq x c_dotk =>
+     match x with
+     | c_nat_kitem n => c_bool false
+     | c_bool_kitem b => c_bool false
+     | c_list_kitem l => c_bool true
+     end
+   | _ => c_bool false
+  end.
 
   Program Definition DemoModel : @Model DemoSignature := mkModel_singleton
     carrier
@@ -310,24 +317,23 @@ Module T.
     (exists R, pat = existT R (SymAppend ⋅ ⟨ SymNil ⋅ ⟨ ⟩ ; kore_fevar "x" ⟩ =k{R} kore_fevar "x")) \/
     (* x ++ [] = x *)
     (exists R, pat = existT R (SymAppend ⋅ ⟨ kore_fevar "x" ; SymNil ⋅ ⟨ ⟩ ⟩ =k{R} kore_fevar "x")
-  ) (* \/
+  ) \/
     (* isList (_ : K) = false if K <> kseq List dots *)
     (exists R, pat = existT R (
-      (! ((∃k R, Top{R} and (kore_fevar "X0" ⊆k{R} SymKseq ⋅ ⟨kore_inj _ _ (@kore_fevar _ _ _ SortList "Gen0"); SymDotk ⋅⟨⟩⟩) and Top{R}) or ⊥{R})
+      (! ((∃k SortList, Top{R} and (kore_fevar "X0" ⊆k{R} SymKseq ⋅ ⟨kore_inj _ _ (kore_bevar In_nil); SymDotk ⋅⟨⟩⟩) and Top{R}) or ⊥{R})
         and
         (Top{R} and @kore_fevar _ _ _ SortK "X0" ⊆k{R} kore_fevar "K" and Top{R})
       )
       --->ₖ
-      (SymIsList ⋅ ⟨kore_fevar "K"⟩)
-    )) *)
+      (SymIsList ⋅ ⟨kore_fevar "K"⟩ =k{R} (SymFalse ⋅ ⟨⟩ and Top{SortBool}))
+    ))
   ).
-  Solve Obligations with (constructor; discriminate).
-
+  Solve Obligations with (constructor).
 
   Goal satT test DemoModel.
   Proof.
     unfold satT, satM, test. intros.
-    unfold test_obligation_1, test_obligation_2 in *.
+    unfold test_obligation_1, test_obligation_2, test_obligation_3 in *.
     (* Generate a goal for each axiom: *)
     unfold_elem_of; destruct_or?; destruct_ex?; subst; cbn.
     * by simplify_krule.
@@ -377,4 +383,19 @@ Module T.
       { remember (evar_valuation _ _) as l. clear.
         induction l. by simpl.
         simpl. by rewrite IHl. }
+    * simplify_krule. remember (fresh_evar _ _) as F.
+      simpl bevar_subst. cbn.
+      do 2 abstract_var.
+      destruct (klist_islist _) eqn:P; destruct b.
+      2: by right.
+      left. intros []. subst var var0.
+      apply H. clear H.
+      destruct (evar_valuation ρ "K"); simpl in *; try congruence.
+      destruct c; simpl in *; try congruence.
+      destruct x0; simpl in *; try congruence.
+      exists l. basic_simplify_krule.
+      apply elem_of_PropSet. apply singleton_subseteq.
+      rewrite decide_eq_same.
+      rewrite update_evar_val_diff_sort. congruence.
+      by rewrite H0.
   Qed.
