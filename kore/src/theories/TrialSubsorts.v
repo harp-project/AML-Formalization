@@ -120,17 +120,50 @@ Module T.
   | SortK
   | SortKItem
   | SortList
-  | SortMInt.
+  | SortMInt (n : nat).
+
+  (**
+     These types are no longer finite, but it is still countable, which may
+     be proven via isomorphism with a sum type made up of the constructor
+     arguments. If this type ever becomes recursive, we may need gentree
+     from stdpp. This requires a lot of boilerplate code, but importantly,
+     it can looks to be easy to generate.
+   *)
+  Definition DemoSorts_base : Set :=
+    () + () + () + () + () + nat.
 
   (* We prove decidable equality and finiteness of the type above. *)
   Instance DemoSorts_eq_dec : EqDecision DemoSorts.
   Proof. solve_decision. Defined.
-  Program Instance DemoSorts_finite : finite.Finite DemoSorts := {
-    enum := [SortNat; SortBool; SortK; SortKItem; SortList; SortMInt];
-  }.
-  Next Obligation. compute_done. Defined.
-  Final Obligation. destruct x; set_solver. Defined.
+  (* Program Instance DemoSorts_finite : finite.Finite DemoSorts := { *)
+  (*   enum := [SortNat; SortBool; SortK; SortKItem; SortList; SortMInt]; *)
+  (* }. *)
+  (* Next Obligation. compute_done. Defined. *)
+  (* Final Obligation. destruct x; set_solver. Defined. *)
 
+  Instance DemoSorts_countable : Countable DemoSorts.
+  Proof.
+    unshelve refine (inj_countable' (A := DemoSorts_base) _ _ _).
+    refine (λ x, match x with
+                  | SortNat    => inl (inl (inl (inl (inl ()))))
+                  | SortBool   => inl (inl (inl (inl (inr ()))))
+                  | SortK      => inl (inl (inl (inr ())))
+                  | SortKItem  => inl (inl (inr ()))
+                  | SortList   => inl (inr ())
+                  | SortMInt n => inr n
+                  end
+    ).
+    refine (λ x, match x with
+                  | inl (inl (inl (inl (inl ())))) => SortNat
+                  | inl (inl (inl (inl (inr ())))) => SortBool
+                  | inl (inl (inl (inr ())))       => SortK
+                  | inl (inl (inr ()))             => SortKItem
+                  | inl (inr ())                   => SortList
+                  | inr n                          => SortMInt n
+                  end
+    ).
+    intros []; simpl; reflexivity.
+  Defined.
 
   Inductive DemoSyms :=
   | SymZero
@@ -145,25 +178,65 @@ Module T.
   | SymAppend
   | SymDotk
   | SymKseq
-  | SymBitwidthMInt.
+  | SymBitwidthMInt (n : nat).
+
+  Definition DemoSyms_base : Type :=
+    () + () + () + () + () + () + () + () + () + () + () + () + nat.
 
   (* We prove decidable equality and finiteness of the type above. *)
   Instance DemoSyms_eq_dec : EqDecision DemoSyms.
   Proof. solve_decision. Defined.
-  Program Instance DemoSyms_finite : finite.Finite DemoSyms := {
-    enum := [SymZero;SymSucc;SymAdd;SymTrue;
-    SymFalse;SymIsList;SymNil;SymCons;SymInList;SymAppend;
-    SymDotk;SymKseq;SymBitwidthMInt];
-  }.
-  Next Obligation. compute_done. Defined.
-  Final Obligation. destruct x; set_solver. Defined.
+  (* Program Instance DemoSyms_finite : finite.Finite DemoSyms := { *)
+  (*   enum := [SymZero;SymSucc;SymAdd;SymTrue; *)
+  (*   SymFalse;SymIsList;SymNil;SymCons;SymInList;SymAppend; *)
+  (*   SymDotk;SymKseq;SymBitwidthMInt]; *)
+  (* }. *)
+  (* Next Obligation. compute_done. Defined. *)
+  (* Final Obligation. destruct x; set_solver. Defined. *)
+  Instance DemoSyms_countable : Countable DemoSyms.
+  Proof.
+    unshelve refine (inj_countable' (A := DemoSyms_base) _ _ _).
+    refine (λ x, match x with
+                  | SymZero           => inl (inl (inl (inl (inl (inl (inl (inl (inl (inl (inl (inl ())))))))))))
+                  | SymSucc           => inl (inl (inl (inl (inl (inl (inl (inl (inl (inl (inl (inr ())))))))))))
+                  | SymAdd            => inl (inl (inl (inl (inl (inl (inl (inl (inl (inl (inr ()))))))))))
+                  | SymTrue           => inl (inl (inl (inl (inl (inl (inl (inl (inl (inr ())))))))))
+                  | SymFalse          => inl (inl (inl (inl (inl (inl (inl (inl (inr ()))))))))
+                  | SymIsList         => inl (inl (inl (inl (inl (inl (inl (inr ())))))))
+                  | SymNil            => inl (inl (inl (inl (inl (inl (inr ()))))))
+                  | SymCons           => inl (inl (inl (inl (inl (inr ())))))
+                  | SymInList         => inl (inl (inl (inl (inr ()))))
+                  | SymAppend         => inl (inl (inl (inr ())))
+                  | SymDotk           => inl (inl (inr ()))
+                  | SymKseq           => inl (inr ())
+                  | SymBitwidthMInt n => inr n
+                  end
+    ).
+    refine (λ x, match x with
+                  | inl (inl (inl (inl (inl (inl (inl (inl (inl (inl (inl (inl ()))))))))))) => SymZero
+                  | inl (inl (inl (inl (inl (inl (inl (inl (inl (inl (inl (inr ()))))))))))) => SymSucc
+                  | inl (inl (inl (inl (inl (inl (inl (inl (inl (inl (inr ()))))))))))       => SymAdd
+                  | inl (inl (inl (inl (inl (inl (inl (inl (inl (inr ())))))))))             => SymTrue
+                  | inl (inl (inl (inl (inl (inl (inl (inl (inr ()))))))))                   => SymFalse
+                  | inl (inl (inl (inl (inl (inl (inl (inr ())))))))                         => SymIsList
+                  | inl (inl (inl (inl (inl (inl (inr ()))))))                               => SymNil
+                  | inl (inl (inl (inl (inl (inr ())))))                                     => SymCons
+                  | inl (inl (inl (inl (inr ()))))                                           => SymInList
+                  | inl (inl (inl (inr ())))                                                 => SymAppend
+                  | inl (inl (inr ()))                                                       => SymDotk
+                  | inl (inr ())                                                             => SymKseq
+                  | inr n                                                                    => SymBitwidthMInt n
+                  end
+    ).
+    intros []; simpl; reflexivity.
+  Defined.
 
   Inductive Demo_subsort : CRelationClasses.crelation DemoSorts :=
  (*  | kitem_is_top s : s ≠ SortK -> s ≠ SortKItem -> Demo_subsort s SortKItem *)
   | inj_nat_kitem : Demo_subsort SortNat SortKItem
   | inj_bool_kitem : Demo_subsort SortBool SortKItem
   | inj_list_kitem : Demo_subsort SortList SortKItem
-  | inj_mint_kitem : Demo_subsort SortMInt SortKItem.
+  | inj_mint_kitem n : Demo_subsort (SortMInt n) SortKItem.
 
 (*   Instance Demo_subsort_PreOrder : CRelationClasses.PreOrder Demo_subsort.
   Proof.
@@ -207,10 +280,10 @@ Module T.
                  | SymAppend => [SortList; SortList]
                  | SymDotk => []
                  | SymKseq => [SortKItem; SortK]
-                 | SymBitwidthMInt => [SortMInt]
+                 | SymBitwidthMInt n => [SortMInt n]
                  end;
       ret_sort := fun σ => match σ with
-                           | SymZero | SymSucc | SymAdd | SymBitwidthMInt => SortNat
+                           | SymZero | SymSucc | SymAdd | SymBitwidthMInt _ => SortNat
                            | SymTrue | SymFalse => SortBool
                            | SymNil | SymCons | SymAppend => SortList
                            | SymInList | SymIsList => SortBool
@@ -304,10 +377,10 @@ Module T.
   | c_nat_kitem (n : knat_carrier)
   | c_bool_kitem (b : kbool_carrier)
   | c_list_kitem (l : klist_carrier)
-  | c_mint_kitem (x : kmint_carrier)
-  with kmint_carrier : Set :=
-  | c_mint (n : N) (x : MInt.MInt n).
-  (* | c_mint (x : MInt.MInt_nondep). *)
+  | c_mint_kitem (n : nat) (x : kmint_carrier n)
+  with kmint_carrier : nat -> Set :=
+  | c_mint (n : nat) (x : MInt.MInt (N.of_nat n)) : kmint_carrier n.
+  (* | c_mint (x : MInt.MInt_nondep) : kmint_carrier (N.to_nat (definitions.bvn_n x)). *)
 
   (**
      I don't fully know what this line does and why it's dangerous, but for
@@ -342,10 +415,10 @@ Module T.
     |  c_nat_kitem x,  c_nat_kitem y =>  knat_carrier_beq x y
     | c_bool_kitem x, c_bool_kitem y => kbool_carrier_beq x y
     | c_list_kitem x, c_list_kitem y => klist_carrier_beq x y
-    | c_mint_kitem x, c_mint_kitem y => kmint_carrier_beq x y
+    | c_mint_kitem n x, c_mint_kitem m y => kmint_carrier_beq n m x y
     | _, _ => false
     end
-  with kmint_carrier_beq (x y : kmint_carrier) : bool :=
+  with kmint_carrier_beq (n m : nat) (x : kmint_carrier n) (y : kmint_carrier m) : bool :=
     match x, y with
     | c_mint _ x, c_mint _ y => MInt.eqb x y
     end.
@@ -357,7 +430,7 @@ Module T.
    | SortK => k_carrier
    | SortKItem => kitem_carrier
    | SortList => klist_carrier
-   | SortMInt => kmint_carrier
+   | SortMInt n => kmint_carrier n
   end.
 
   Fixpoint klist_elem_of (y : kitem_carrier) (xs : klist_carrier) : kbool_carrier :=
@@ -382,7 +455,7 @@ Module T.
      | c_bool_kitem b => c_bool false
      | c_list_kitem l => c_bool true
      (* I hope this is right. Why not use | _ => c_bool false? *)
-     | c_mint_kitem b => c_bool false
+     | c_mint_kitem _ _ => c_bool false
      end
    | _ => c_bool false
   end.
@@ -420,7 +493,7 @@ Module T.
            - for ALL of the above: make the MInt module do the conversion
              to nat -> might be best for generation
          *)
-        | SymBitwidthMInt => fun '(c_mint _ x) => c_nat (N.to_nat (MInt.bitwidth x))
+        | SymBitwidthMInt _ => fun '(c_mint _ x) => c_nat (N.to_nat (MInt.bitwidth x))
         end
       )
     _
@@ -428,13 +501,15 @@ Module T.
   Next Obligation.
     (* Important change here to accomodate dependent types! *)
     destruct s; repeat unshelve econstructor.
-  Defined.
+    (* Now this doesn't solve. *)
+  Fail Defined.
+  Admitted.
   Final Obligation.
     destruct s1, s2; simpl; intros H x; inversion H; subst.
     * exact (c_nat_kitem x).
     * exact (c_bool_kitem x).
     * exact (c_list_kitem x).
-    * exact (c_mint_kitem x).
+    * exact (c_mint_kitem n x).
   Defined.
 
   Set Transparent Obligations.
