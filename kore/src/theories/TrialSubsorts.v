@@ -47,6 +47,70 @@ Ltac abstract_var :=
         revert x *)
     end.
 
+(**
+   Metatheoretical implementation of machine integers and their functions
+   since they are hooked. This is a type theoretical approximation of how
+   the native integers might work.
+ *)
+Module MInt.
+
+  From stdpp.bitvector Require Import bitvector.
+
+  Definition MInt : N -> Set := bv.
+  Definition MInt_nondep : Set := bvn.
+
+  Check MInt 3.
+  Check BV 3 5.
+  Check 5%bv : MInt 3.
+
+  Definition bitwidth {n : N} (_ : MInt n) : N := n.
+
+  Compute bitwidth 5%bv.
+  Compute bitwidth (BV 3 5).
+
+  Definition uvalue {n : N} : MInt n -> Z := bv_unsigned.
+  Definition svalue {n : N} : MInt n -> Z := bv_signed.
+
+  Goal let x := BV 3 7 in uvalue x = 7%Z /\ svalue x = (-1)%Z.
+  Proof. auto. Qed.
+
+  (**
+     I'm not sure how exactly the hooked version of this works. Z_to_bv
+     wraps its argument.
+   *)
+  Definition integer {n : N} : Z -> MInt n := Z_to_bv n.
+
+  (**
+     Z_to_bv is opaque, which might cause problems later. For proofs, helper
+     lemmas such as bv_eq might be necessary. There is also bv_simplify and
+     bv_solve.
+   *)
+  (* Transparent Z_to_bv. *)
+  Goal @integer 3 10 = 2%bv.
+  Proof. cbv. apply bv_eq. reflexivity. Restart.
+  cbv. bv_simplify. reflexivity. Qed.
+
+  (**
+     The first check might not be desired, I don't know what the hooked
+     definition does. I made it easy to comment out.
+   *)
+  Definition eqb {n m : N} (x : MInt n) (y : MInt m) : bool :=
+    N.eqb n m &&
+    Z.eqb (uvalue x) (uvalue y).
+
+  Definition eqb_nondep (x y : MInt_nondep) : bool :=
+    match (x, y) with
+    | (bv_to_bvn x, bv_to_bvn y) => eqb x y
+    end.
+
+  (**
+     There is a myriad of operations on bv in this module. I didn't rename
+     all of them, copy them when needed.
+   *)
+  (* Search _ in definitions. *)
+
+End MInt.
+
 Module T.
 
   (* We have two sorts: natural numbers and bools *)
@@ -55,13 +119,14 @@ Module T.
   | SortBool
   | SortK
   | SortKItem
-  | SortList.
+  | SortList
+  | SortMInt.
 
   (* We prove decidable equality and finiteness of the type above. *)
   Instance DemoSorts_eq_dec : EqDecision DemoSorts.
   Proof. solve_decision. Defined.
   Program Instance DemoSorts_finite : finite.Finite DemoSorts := {
-    enum := [SortNat; SortBool; SortK; SortKItem; SortList];
+    enum := [SortNat; SortBool; SortK; SortKItem; SortList; SortMInt];
   }.
   Next Obligation. compute_done. Defined.
   Final Obligation. destruct x; set_solver. Defined.
@@ -79,7 +144,8 @@ Module T.
   | SymInList
   | SymAppend
   | SymDotk
-  | SymKseq.
+  | SymKseq
+  | SymBitwidthMInt.
 
   (* We prove decidable equality and finiteness of the type above. *)
   Instance DemoSyms_eq_dec : EqDecision DemoSyms.
@@ -87,7 +153,7 @@ Module T.
   Program Instance DemoSyms_finite : finite.Finite DemoSyms := {
     enum := [SymZero;SymSucc;SymAdd;SymTrue;
     SymFalse;SymIsList;SymNil;SymCons;SymInList;SymAppend;
-    SymDotk;SymKseq];
+    SymDotk;SymKseq;SymBitwidthMInt];
   }.
   Next Obligation. compute_done. Defined.
   Final Obligation. destruct x; set_solver. Defined.
@@ -96,7 +162,8 @@ Module T.
  (*  | kitem_is_top s : s ≠ SortK -> s ≠ SortKItem -> Demo_subsort s SortKItem *)
   | inj_nat_kitem : Demo_subsort SortNat SortKItem
   | inj_bool_kitem : Demo_subsort SortBool SortKItem
-  | inj_list_kitem : Demo_subsort SortList SortKItem.
+  | inj_list_kitem : Demo_subsort SortList SortKItem
+  | inj_mint_kitem : Demo_subsort SortMInt SortKItem.
 
 (*   Instance Demo_subsort_PreOrder : CRelationClasses.PreOrder Demo_subsort.
   Proof.
@@ -140,9 +207,10 @@ Module T.
                  | SymAppend => [SortList; SortList]
                  | SymDotk => []
                  | SymKseq => [SortKItem; SortK]
+                 | SymBitwidthMInt => [SortMInt]
                  end;
       ret_sort := fun σ => match σ with
-                           | SymZero | SymSucc | SymAdd => SortNat
+                           | SymZero | SymSucc | SymAdd | SymBitwidthMInt => SortNat
                            | SymTrue | SymFalse => SortBool
                            | SymNil | SymCons | SymAppend => SortList
                            | SymInList | SymIsList => SortBool
@@ -235,9 +303,52 @@ Module T.
   with kitem_carrier : Set :=
   | c_nat_kitem (n : knat_carrier)
   | c_bool_kitem (b : kbool_carrier)
-  | c_list_kitem (l : klist_carrier).
+  | c_list_kitem (l : klist_carrier)
+  | c_mint_kitem (x : kmint_carrier)
+  with kmint_carrier : Set :=
+  | c_mint (n : N) (x : MInt.MInt n).
+  (* | c_mint (x : MInt.MInt_nondep). *)
 
-  Scheme Boolean Equality for knat_carrier. (* DANGER! *)
+  (**
+     I don't fully know what this line does and why it's dangerous, but for
+     me it just doesn't work so I tried to recreate it. I hope I did
+     everything right. As stated above, I'm not entirely sure how MInts are
+     supposed to be compared, change the code above if it's wrong.
+   *)
+  (* Scheme Boolean Equality for knat_carrier. (1* DANGER! *1) *)
+
+  Fixpoint knat_carrier_beq (x y : knat_carrier) : bool :=
+    match x, y with
+    | c_nat x, c_nat y => Nat.eqb x y
+    end
+  with kbool_carrier_beq (x y : kbool_carrier) : bool :=
+    match x, y with
+    | c_bool x, c_bool y => eqb x y
+    end
+  with klist_carrier_beq (x y : klist_carrier) : bool :=
+    match x, y with
+    | c_nil, c_nil => true
+    | c_cons x xs, c_cons y ys => kitem_carrier_beq x y && klist_carrier_beq xs ys
+    | _, _ => false
+    end
+  with k_carrier_beq (x y : k_carrier) : bool :=
+    match x, y with
+    | c_dotk, c_dotk => true
+    | c_kseq x xs, c_kseq y ys => kitem_carrier_beq x y && k_carrier_beq xs ys
+    | _, _ => false
+    end
+  with kitem_carrier_beq (x y : kitem_carrier) : bool :=
+    match x, y with
+    |  c_nat_kitem x,  c_nat_kitem y =>  knat_carrier_beq x y
+    | c_bool_kitem x, c_bool_kitem y => kbool_carrier_beq x y
+    | c_list_kitem x, c_list_kitem y => klist_carrier_beq x y
+    | c_mint_kitem x, c_mint_kitem y => kmint_carrier_beq x y
+    | _, _ => false
+    end
+  with kmint_carrier_beq (x y : kmint_carrier) : bool :=
+    match x, y with
+    | c_mint _ x, c_mint _ y => MInt.eqb x y
+    end.
 
   Definition carrier (s : DemoSorts) : Set :=
   match s with
@@ -246,6 +357,7 @@ Module T.
    | SortK => k_carrier
    | SortKItem => kitem_carrier
    | SortList => klist_carrier
+   | SortMInt => kmint_carrier
   end.
 
   Fixpoint klist_elem_of (y : kitem_carrier) (xs : klist_carrier) : kbool_carrier :=
@@ -269,6 +381,8 @@ Module T.
      | c_nat_kitem n => c_bool false
      | c_bool_kitem b => c_bool false
      | c_list_kitem l => c_bool true
+     (* I hope this is right. Why not use | _ => c_bool false? *)
+     | c_mint_kitem b => c_bool false
      end
    | _ => c_bool false
   end.
@@ -295,18 +409,32 @@ Module T.
         | SymAppend => klist_app
         | SymDotk => c_dotk
         | SymKseq => c_kseq
+        (**
+           There are several choices to make here, so I won't add all of
+           them as a comment:
+           - this
+           - just return the ignored parmeter in this instead -> might not
+             be good for generation
+           - with the nondep representation, we need a different
+             bitwidth_nondep function
+           - for ALL of the above: make the MInt module do the conversion
+             to nat -> might be best for generation
+         *)
+        | SymBitwidthMInt => fun '(c_mint _ x) => c_nat (N.to_nat (MInt.bitwidth x))
         end
       )
     _
     _.
   Next Obligation.
-    destruct s; repeat constructor.
+    (* Important change here to accomodate dependent types! *)
+    destruct s; repeat unshelve econstructor.
   Defined.
   Final Obligation.
     destruct s1, s2; simpl; intros H x; inversion H; subst.
     * exact (c_nat_kitem x).
     * exact (c_bool_kitem x).
     * exact (c_list_kitem x).
+    * exact (c_mint_kitem x).
   Defined.
 
   Set Transparent Obligations.
