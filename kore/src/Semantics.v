@@ -431,19 +431,32 @@ End with_model.
         by rewrite IHvars.
   Qed.
 
-  (* Lemma functional_symbol_is_functional_option :
+  Lemma functional_symbol_is_functional_option :
     forall (σ : symbol) (R : sort) (vars : hlist evar (arg_sorts σ)),
       forall (M : Model),
-        (exists (f : (* hlist M (arg_sorts σ) *)(*  -> option (M (ret_sort σ)) *)
-                foldr (fun s acc => M s -> acc) (option (M (ret_sort σ))) (arg_sorts σ)),
-          app M σ = oapp singleton empty ∘ uncurry_n f /\
-          foldr (fun s acc => forall x : s, acc x) f (arg_sorts σ) <> None) ->
+        (exists (f : hlist M (arg_sorts σ) -> option (M (ret_sort σ))),
+(*                 foldr (fun s acc => M s -> acc) (option (M (ret_sort σ))) (arg_sorts σ)), *)
+          app M σ = oapp singleton empty ∘ f /\
+          forall l, f l <> None) ->
         satM (functional_symbol σ R vars) M.
   Proof.
-    intros.
+    intros * [f [H1 H2]].
     apply functional_symbol_is_functional.
-    destruct H.
-  Admitted. *)
+    rewrite H1.
+    clear -H2.
+    epose (
+      _ : hlist M (arg_sorts σ) → M (ret_sort σ)
+    ) as newf. Unshelve. 2: {
+      clear -f. intro l. destruct (f l) eqn:P.
+      * exact c.
+      * apply inhabited. (* Trick: non-empty carrier is exploited here *)
+    } simpl in newf.
+    exists newf.
+    extensionality l. simpl.
+    destruct (f l) eqn:P.
+    * simpl. subst newf. simpl. rewrite P. reflexivity.
+    * by apply H2 in P.
+  Qed.
 
 End Semantics.
 
@@ -561,6 +574,22 @@ match goal with
   apply H;
   eexists;
   reflexivity
+end.
+
+Ltac solve_functional_axiom_option :=
+match goal with
+| [ |- @eval _ ?M _ _ _ ?ρ (kore_exists _
+                (kore_equals ?s (kore_app ?σ ?l)
+                             (kore_bevar In_nil))) = ⊤]
+                             (* ^- NOTE: this is a restriction on db index 0!!! This pattern checks whether the axiom is a functional axiom *) =>
+  let H := fresh "H" in
+  epose proof (functional_symbol_is_functional_option σ s (hmap (fun s p =>
+    match p with
+    | kore_fevar x => x
+    | _ => "_"%string
+    end) l) M);
+  apply H;
+  eexists; split; [reflexivity|]
 end.
 
 Add Search Blacklist "_elim".
