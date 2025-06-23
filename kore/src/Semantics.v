@@ -342,6 +342,19 @@ End with_model.
     sort_inj := custom_sort_inj;
   |}.
 
+  Program Definition mkModel_partial
+    (custom_carrier : sort → Set)
+    (custom_app : forall (σ : symbol), foldr (λ c a, custom_carrier c -> a) (option (custom_carrier (ret_sort σ))) (arg_sorts σ))
+    (custom_inh : ∀ s : sort, Inhabited (custom_carrier s))
+    (custom_sort_inj : ∀ s1 s2, subsort s1 s2 -> custom_carrier s1 -> custom_carrier s2) :
+    Model :=
+  {|
+    carrier := custom_carrier;
+    inhabited := custom_inh;
+    app := fun σ => oapp singleton empty ∘ (uncurry_n (custom_app σ));
+    sort_inj := custom_sort_inj;
+  |}.
+
   (** If a symbol is modeled by a function, it is consistent: *)
   Lemma functional_symbol_is_functional :
     forall (σ : symbol) (R : sort) (vars : hlist evar (arg_sorts σ)),
@@ -417,6 +430,20 @@ End with_model.
         specialize (IHvars ltac:(set_solver)).
         by rewrite IHvars.
   Qed.
+
+  (* Lemma functional_symbol_is_functional_option :
+    forall (σ : symbol) (R : sort) (vars : hlist evar (arg_sorts σ)),
+      forall (M : Model),
+        (exists (f : (* hlist M (arg_sorts σ) *)(*  -> option (M (ret_sort σ)) *)
+                foldr (fun s acc => M s -> acc) (option (M (ret_sort σ))) (arg_sorts σ)),
+          app M σ = oapp singleton empty ∘ uncurry_n f /\
+          foldr (fun s acc => forall x : s, acc x) f (arg_sorts σ) <> None) ->
+        satM (functional_symbol σ R vars) M.
+  Proof.
+    intros.
+    apply functional_symbol_is_functional.
+    destruct H.
+  Admitted. *)
 
 End Semantics.
 

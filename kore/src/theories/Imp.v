@@ -51,7 +51,8 @@ Module ImpSyntax.
   | Kbool
   | Kint
   | Klist
-  | Kitem.
+  | Kitem
+  | K.
 
 
   Instance Ksorts_eq_dec : EqDecision Ksorts.
@@ -59,7 +60,7 @@ Module ImpSyntax.
 
 
   Program Instance Ksorts_finite : finite.Finite Ksorts := {
-    enum := [Kbool; Kint; Klist; Kitem];
+    enum := [Kbool; Kint; Klist; Kitem; K];
   }.
   Next Obligation. compute_done. Defined.
   Final Obligation. destruct x; set_solver. Defined.
@@ -146,10 +147,8 @@ Module ImpSyntax.
   | KsignExtendBitRangeInt (* LblsignExtendBitRangeInt'LParUndsCommUndsCommUndsRParUnds'INT-COMMON'Unds'Int'Unds'Int'Unds'Int'Unds'Int{}(SortInt{}, SortInt{}, SortInt{}) : SortInt{} *)
   | KnotInt
     (* Lbl'Tild'Int'Unds'{}(SortInt{}) : SortInt{} *)
-  
-  
-  
-  
+
+
   (* list *)
   | KNil (* hooked-symbol Lbl'Stop'List{}() : SortList{} *)
   | KgetList (* hooked-symbol LblList'Coln'get{}(SortList{}, SortInt{}) : SortKItem{} *)
@@ -158,7 +157,15 @@ Module ImpSyntax.
   | KlistItem (* hooked-symbol LblListItem{}(SortKItem{}) : SortList{} *)
   | KconcatList (* hooked-symbol Lbl'Unds'List'Unds'{}(SortList{}, SortList{}) : SortList{} *)
   | KinList (* hooked-symbol Lbl'Unds'inList'Unds'{}(SortKItem{}, SortList{}) : SortBool{} *)
-  | KisList
+  | KisList (* symbol LblisList{}(SortK{}) : SortBool{} *)
+
+
+  (* kitem *)
+
+  (* K *)
+  | dotK
+  | Kseq
+  | Kappend
   .
 
   Instance Ksyms_eq_dec : EqDecision Ksyms.
@@ -282,6 +289,9 @@ Module ImpSyntax.
    | KconcatList => GenLeaf (inl 50)
    | KinList => GenLeaf (inl 51)
    | KisList => GenLeaf (inl 52)
+   | dotK => GenLeaf (inl 53)
+   | Kseq => GenLeaf (inl 54)
+   | Kappend => GenLeaf (inl 55)
   end.
   Print Ksyms.
   Local Definition gen_tree_to_Ksyms (t : gen_tree (nat + Z)) : option Ksyms :=
@@ -340,6 +350,9 @@ Module ImpSyntax.
                        | 50 => Some KconcatList
                        | 51 => Some KinList
                        | 52 => Some KisList
+                       | 53 => Some dotK
+                       | 54 => Some Kseq
+                       | 55 => Some Kappend
                        | _ => None
                        end
   | GenLeaf (inr x) => Some (KintVal x)
@@ -422,6 +435,9 @@ Module ImpSyntax.
         | KconcatList => [Klist; Klist]
         | KinList => [Kitem; Klist]
         | KisList => [Kitem]
+        | dotK => []
+        | Kseq => [Kitem; K]
+        | Kappend => [K;K]
         end;
       ret_sort σ :=
         match σ with
@@ -479,6 +495,9 @@ Module ImpSyntax.
          | KconcatList => Klist
          | KinList => Kbool
          | KisList => Kbool
+         | dotK => K
+         | Kseq => K
+         | Kappend => K
         end;
     |};
   |}.
@@ -1034,6 +1053,49 @@ dv is only used with the following parameters:
         )
       )
     ).
+
+  Definition Ktheory_behavioural : @Theory ImpSignature :=
+    PropSet (fun pat =>
+      (
+        exists R, pat = existT R (
+          (Top{R} and (kore_fevar "X0" ⊆k{R} dotK ⋅⟨⟩) and
+          kore_fevar "X1" ⊆k{R} @kore_fevar _ _ _ K "TAIL")
+          --->ₖ
+          (Kappend ⋅ ⟨kore_fevar "X0"; kore_fevar "X1"⟩ =k{R}
+          (kore_fevar "TAIL" and Top{K}))
+        )
+      ) \/
+      (
+        exists R, pat = existT R (
+          (Top{R} and (kore_fevar "X0" ⊆k{R} Kseq ⋅⟨kore_fevar "K"; kore_fevar "KS"⟩) and
+          kore_fevar "X1" ⊆k{R} @kore_fevar _ _ _ K "TAIL")
+          --->ₖ
+          Kappend ⋅ ⟨kore_fevar "X0"; kore_fevar "X1"⟩ =k{R}
+          (Kseq ⋅⟨kore_fevar "K"; Kappend ⋅ ⟨kore_fevar "KS"; kore_fevar "TAIL"⟩ and Top{K} ⟩ )
+        )
+      )
+    ).
+
+  Definition KList_theory_functional : @Theory ImpSignature :=
+    PropSet (fun pat =>
+      (
+        exists R, pat = existT R (
+          
+        )
+      )
+    ).
+
+  Definition KList_theory_behavioural : @Theory ImpSignature :=
+    PropSet (fun pat =>
+      (
+        exists R, pat = existT R (
+          
+        )
+      )
+    ).
+
+
+
 End ImpSyntax.
 
 (* Tactic Notation "deconstruct_elem_of_Theory" :=
@@ -1404,6 +1466,21 @@ Module ImpSemantics.
       apply H.
       simpl. eexists. reflexivity. *)
   Qed. *)
+
+  Goal satT Ktheory_behavioural ImpModel.
+  Proof.
+  
+  Qed.
+
+  Goal satT KList_theory_functional ImpModel.
+  Proof.
+  
+  Qed.
+
+  Goal satT KList_theory_behavioural ImpModel.
+  Proof.
+  
+  Qed.
 
 End BoolSemantics.
 
