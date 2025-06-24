@@ -115,6 +115,13 @@ Module MInt.
   Definition neg {n : N} : MInt n -> MInt n := bv_opp.
 
   (**
+     I added these two myself, so I can test with literals, as we don't have
+     integers in this theory and this is easier than adding them.
+   *)
+  Definition natural {n : N} (m : nat) : MInt n := Z_to_bv n (Z.of_nat m).
+  Definition natvalue {n : N} (x : MInt n) : nat := Z.to_nat (bv_unsigned x).
+
+  (**
      There is a myriad of operations on bv in this module. I didn't rename
      all of them, copy them when needed.
    *)
@@ -190,10 +197,12 @@ Module T.
   | SymDotk
   | SymKseq
   | SymBitwidthMInt (n : nat)
-  | SymMIntNeg (n : nat).
+  | SymMIntNeg (n : nat)
+  | SymMIntToNat (n : nat)
+  | SymNatToMInt (n : nat).
 
   Definition DemoSyms_base : Type :=
-    () + () + () + () + () + () + () + () + () + () + () + () + nat + nat.
+    () + () + () + () + () + () + () + () + () + () + () + () + nat + nat + nat + nat.
 
   (* We prove decidable equality and finiteness of the type above. *)
   Instance DemoSyms_eq_dec : EqDecision DemoSyms.
@@ -209,37 +218,41 @@ Module T.
   Proof.
     unshelve refine (inj_countable' (A := DemoSyms_base) _ _ _).
     refine (λ x, match x with
-                  | SymZero           => inl (inl (inl (inl (inl (inl (inl (inl (inl (inl (inl (inl (inl ()))))))))))))
-                  | SymSucc           => inl (inl (inl (inl (inl (inl (inl (inl (inl (inl (inl (inl (inr ()))))))))))))
-                  | SymAdd            => inl (inl (inl (inl (inl (inl (inl (inl (inl (inl (inl (inr ())))))))))))
-                  | SymTrue           => inl (inl (inl (inl (inl (inl (inl (inl (inl (inl (inr ()))))))))))
-                  | SymFalse          => inl (inl (inl (inl (inl (inl (inl (inl (inl (inr ())))))))))
-                  | SymIsList         => inl (inl (inl (inl (inl (inl (inl (inl (inr ()))))))))
-                  | SymNil            => inl (inl (inl (inl (inl (inl (inl (inr ())))))))
-                  | SymCons           => inl (inl (inl (inl (inl (inl (inr ()))))))
-                  | SymInList         => inl (inl (inl (inl (inl (inr ())))))
-                  | SymAppend         => inl (inl (inl (inl (inr ()))))
-                  | SymDotk           => inl (inl (inl (inr ())))
-                  | SymKseq           => inl (inl (inr ()))
-                  | SymBitwidthMInt n => inl (inr n)
-                  | SymMIntNeg n      => inr n
+                  | SymZero           => inl (inl (inl (inl (inl (inl (inl (inl (inl (inl (inl (inl (inl (inl (inl ()))))))))))))))
+                  | SymSucc           => inl (inl (inl (inl (inl (inl (inl (inl (inl (inl (inl (inl (inl (inl (inr ()))))))))))))))
+                  | SymAdd            => inl (inl (inl (inl (inl (inl (inl (inl (inl (inl (inl (inl (inl (inr ())))))))))))))
+                  | SymTrue           => inl (inl (inl (inl (inl (inl (inl (inl (inl (inl (inl (inl (inr ()))))))))))))
+                  | SymFalse          => inl (inl (inl (inl (inl (inl (inl (inl (inl (inl (inl (inr ())))))))))))
+                  | SymIsList         => inl (inl (inl (inl (inl (inl (inl (inl (inl (inl (inr ()))))))))))
+                  | SymNil            => inl (inl (inl (inl (inl (inl (inl (inl (inl (inr ())))))))))
+                  | SymCons           => inl (inl (inl (inl (inl (inl (inl (inl (inr ()))))))))
+                  | SymInList         => inl (inl (inl (inl (inl (inl (inl (inr ())))))))
+                  | SymAppend         => inl (inl (inl (inl (inl (inl (inr ()))))))
+                  | SymDotk           => inl (inl (inl (inl (inl (inr ())))))
+                  | SymKseq           => inl (inl (inl (inl (inr ()))))
+                  | SymBitwidthMInt n => inl (inl (inl (inr n)))
+                  | SymMIntNeg n      => inl (inl (inr n))
+                  | SymMIntToNat n    => inl (inr n)
+                  | SymNatToMInt n    => inr n
                   end
     ).
     refine (λ x, match x with
-                  | inl (inl (inl (inl (inl (inl (inl (inl (inl (inl (inl (inl (inl ())))))))))))) => SymZero
-                  | inl (inl (inl (inl (inl (inl (inl (inl (inl (inl (inl (inl (inr ())))))))))))) => SymSucc
-                  | inl (inl (inl (inl (inl (inl (inl (inl (inl (inl (inl (inr ())))))))))))       => SymAdd
-                  | inl (inl (inl (inl (inl (inl (inl (inl (inl (inl (inr ()))))))))))             => SymTrue
-                  | inl (inl (inl (inl (inl (inl (inl (inl (inl (inr ())))))))))                   => SymFalse
-                  | inl (inl (inl (inl (inl (inl (inl (inl (inr ()))))))))                         => SymIsList
-                  | inl (inl (inl (inl (inl (inl (inl (inr ())))))))                               => SymNil
-                  | inl (inl (inl (inl (inl (inl (inr ()))))))                                     => SymCons
-                  | inl (inl (inl (inl (inl (inr ())))))                                           => SymInList
-                  | inl (inl (inl (inl (inr ()))))                                                 => SymAppend
-                  | inl (inl (inl (inr ())))                                                       => SymDotk
-                  | inl (inl (inr ()))                                                             => SymKseq
-                  | inl (inr n)                                                                    => SymBitwidthMInt n
-                  | inr n                                                                          => SymMIntNeg n
+                  | inl (inl (inl (inl (inl (inl (inl (inl (inl (inl (inl (inl (inl (inl (inl ())))))))))))))) => SymZero
+                  | inl (inl (inl (inl (inl (inl (inl (inl (inl (inl (inl (inl (inl (inl (inr ())))))))))))))) => SymSucc
+                  | inl (inl (inl (inl (inl (inl (inl (inl (inl (inl (inl (inl (inl (inr ())))))))))))))       => SymAdd
+                  | inl (inl (inl (inl (inl (inl (inl (inl (inl (inl (inl (inl (inr ()))))))))))))             => SymTrue
+                  | inl (inl (inl (inl (inl (inl (inl (inl (inl (inl (inl (inr ())))))))))))                   => SymFalse
+                  | inl (inl (inl (inl (inl (inl (inl (inl (inl (inl (inr ()))))))))))                         => SymIsList
+                  | inl (inl (inl (inl (inl (inl (inl (inl (inl (inr ())))))))))                               => SymNil
+                  | inl (inl (inl (inl (inl (inl (inl (inl (inr ()))))))))                                     => SymCons
+                  | inl (inl (inl (inl (inl (inl (inl (inr ())))))))                                           => SymInList
+                  | inl (inl (inl (inl (inl (inl (inr ()))))))                                                 => SymAppend
+                  | inl (inl (inl (inl (inl (inr ())))))                                                       => SymDotk
+                  | inl (inl (inl (inl (inr ()))))                                                             => SymKseq
+                  | inl (inl (inl (inr n)))                                                                    => SymBitwidthMInt n
+                  | inl (inl (inr n))                                                                          => SymMIntNeg n
+                  | inl (inr n)                                                                                => SymMIntToNat n
+                  | inr n                                                                                      => SymNatToMInt n
                   end
     ).
     intros []; simpl; reflexivity.
@@ -296,14 +309,16 @@ Module T.
                  | SymKseq => [SortKItem; SortK]
                  | SymBitwidthMInt n => [SortMInt n]
                  | SymMIntNeg n => [SortMInt n]
+                 | SymMIntToNat n => [SortMInt n] 
+                 | SymNatToMInt _ => [SortNat]
                  end;
       ret_sort := fun σ => match σ with
-                           | SymZero | SymSucc | SymAdd | SymBitwidthMInt _ => SortNat
+                           | SymZero | SymSucc | SymAdd | SymBitwidthMInt _ | SymMIntToNat _ => SortNat
                            | SymTrue | SymFalse => SortBool
                            | SymNil | SymCons | SymAppend => SortList
                            | SymInList | SymIsList => SortBool
                            | SymDotk | SymKseq => SortK
-                           | SymMIntNeg n => SortMInt n
+                           | SymMIntNeg n | SymNatToMInt n => SortMInt n
                            end;
     |};
   |}.
@@ -511,6 +526,8 @@ Module T.
          *)
         | SymBitwidthMInt _ => fun '(c_mint _ x) => c_nat (N.to_nat (MInt.bitwidth x))
         | SymMIntNeg _ => fun '(c_mint n x) => c_mint n (MInt.neg x)
+        | SymMIntToNat _ => fun '(c_mint _ x) => c_nat (MInt.natvalue x)
+        | SymNatToMInt n => fun '(c_nat m) => c_mint n (MInt.natural m)
         end
       )
     _
@@ -550,9 +567,12 @@ Module T.
       --->ₖ
       (SymIsList ⋅ ⟨kore_fevar "K"⟩ =k{R} (SymFalse ⋅ ⟨⟩ and Top{SortBool}))
     )) \/
-    (* ~~x = x *)
-    (* Where should we get the number for this? *)
-    (exists R, pat = existT R (SymMIntNeg 8 ⋅ ⟨ SymMIntNeg 8 ⋅ ⟨ kore_fevar "x" ⟩ ⟩ =k{R} kore_fevar "x"))
+    (* --x = x *)
+    (exists R n, pat = existT R (SymMIntNeg n ⋅ ⟨ SymMIntNeg n ⋅ ⟨ kore_fevar "x" ⟩ ⟩ =k{R} kore_fevar "x")) \/
+    (* MInt2Nat{2} (Nat2MInt{2} (S (S O))) = S (S O) *)
+    (exists R, pat = existT R (SymMIntToNat 2 ⋅ ⟨ SymNatToMInt 2 ⋅ ⟨ SymSucc ⋅ ⟨ SymSucc ⋅ ⟨ SymZero ⋅ ⟨ ⟩ ⟩ ⟩ ⟩ ⟩ =k{R} SymSucc ⋅ ⟨ SymSucc ⋅ ⟨ SymZero ⋅ ⟨ ⟩ ⟩ ⟩)) \/
+    (* MInt2Nat{2} (Nat2MInt{2} (S (S (S O)))) = O *)
+    (exists R, pat = existT R (SymMIntToNat 2 ⋅ ⟨ SymNatToMInt 2 ⋅ ⟨ SymSucc ⋅ ⟨ SymSucc ⋅ ⟨ SymSucc ⋅ ⟨ SymSucc ⋅ ⟨ SymZero ⋅ ⟨ ⟩ ⟩ ⟩ ⟩ ⟩ ⟩ ⟩ =k{R} SymZero ⋅ ⟨ ⟩))
   ).
   Solve Obligations with (constructor).
 
@@ -636,4 +656,13 @@ Module T.
       rewrite definitions.bv_wrap_opp_idemp.
       rewrite Z.opp_involutive.
       apply definitions.bv_wrap_bv_unsigned.
+    * simplify_krule.
+      unfold MInt.natural, MInt.natvalue.
+      rewrite definitions.Z_to_bv_small.
+      cbv. split; congruence.
+      cbv. reflexivity.
+    * simplify_krule.
+      unfold MInt.natural, MInt.natvalue.
+      rewrite definitions.Z_to_bv_unsigned.
+      cbv. reflexivity.
   Qed.
