@@ -52,9 +52,12 @@ Ltac abstract_var :=
    since they are hooked. This is a type theoretical approximation of how
    the native integers might work.
  *)
+
+From stdpp Require bitvector.
+
 Module MInt.
 
-  From stdpp.bitvector Require Import bitvector.
+  Import bitvector.
 
   Definition MInt : N -> Set := bv.
   Definition MInt_nondep : Set := bvn.
@@ -102,6 +105,12 @@ Module MInt.
     match (x, y) with
     | (bv_to_bvn x, bv_to_bvn y) => eqb x y
     end.
+
+  Instance bv_wf_zero (n : N) : BvWf n 0.
+  Proof.
+    apply bv_wf_in_range. split.
+    apply Z.le_refl. apply bv_modulus_pos.
+  Defined.
 
   (**
      There is a myriad of operations on bv in this module. I didn't rename
@@ -501,9 +510,12 @@ Module T.
   Next Obligation.
     (* Important change here to accomodate dependent types! *)
     destruct s; repeat unshelve econstructor.
-    (* Now this doesn't solve. *)
-  Fail Defined.
-  Admitted.
+    (**
+       The following should be inferred automatically, or via typeclasses
+       eauto. Neither of them work, and I don't know why.
+     *)
+    all: apply MInt.bv_wf_zero.
+  Defined.
   Final Obligation.
     destruct s1, s2; simpl; intros H x; inversion H; subst.
     * exact (c_nat_kitem x).
