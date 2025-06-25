@@ -52,10 +52,11 @@ Module TheorySyntax.
     intros. destruct x; set_solver.
   Defined.
 
-
+  Inductive Theory_subsorts : CRelationClasses.crelation Ksorts := .
   Program Instance TheorySignature : Signature := {|
     sorts := {|
       sort := Ksorts;
+      subsort := Theory_subsorts;
     |};
     variables := StringVariables;
     symbols := {|
@@ -125,61 +126,79 @@ Module TheorySemantics.
     | Ktrue => Kfalse
   end.
 
-  Definition Model : @Model TheorySignature :=
+  Program Definition Model : @Model TheorySignature :=
     mkModel_singleton
       (Ksorts_rect _ Kbool)
       (Ksyms_rect _ KandBool Kfalse KnotBool Ktrue)
-      ltac:(simpl; intros []; do 2 constructor).
+      ltac:(simpl; intros []; do 2 constructor)
+      _.
+  Next Obligation.
+    intros ? ? H; simpl; inversion H.
+  Defined.
+
 
 Ltac autorewrite_set :=
-    repeat (
-      rewrite intersection_top_l_L +
-      rewrite intersection_top_r_L +
-      rewrite union_empty_l_L +
-      rewrite union_empty_r_L +
-      rewrite propset_difference_neg +
-      rewrite propset_union_simpl +
-      rewrite propset_intersection_simpl +
-      rewrite singleton_subseteq_l
-    ).
+  repeat (
+    rewrite intersection_top_l_L +
+    rewrite intersection_top_r_L +
+    rewrite union_empty_l_L +
+    rewrite union_empty_r_L +
+    rewrite propset_difference_neg +
+    rewrite propset_union_simpl +
+    rewrite propset_intersection_simpl +
+    rewrite singleton_subseteq_l +
+    rewrite fmap_propset_singleton
+  ).
 
-  Ltac basic_simplify_krule :=
-    simpl;
-    eval_helper;
-    repeat rewrite_app_ext;
-    autorewrite_set.
-  Ltac simplify_krule :=
-    basic_simplify_krule;
-    apply propset_top_elem_of_2;
-    intro;
-    apply elem_of_PropSet;
-    repeat rewrite elem_of_PropSet;
-    repeat rewrite singleton_subseteq;
-    repeat rewrite singleton_eq.
+Ltac basic_simplify_krule :=
+  eval_helper2;
+  simpl sort_inj;
+  repeat (rewrite_app_ext; repeat rewrite fmap_propset_singleton);
+  autorewrite_set.
+
+Ltac simplify_krule :=
+  basic_simplify_krule;
+  apply propset_top_elem_of_2;
+  intro;
+  apply elem_of_PropSet;
+  repeat rewrite elem_of_PropSet;
+  repeat rewrite singleton_subseteq;
+  repeat rewrite singleton_eq.
+
+Ltac classicize :=
+  apply Classical_Prop.imply_to_or.
+
+Ltac simplify_equality :=
+match goal with
+      | [H : _ _ = _ _ |- _] => simplify_eq H; clear H; intro
+      end.
+
+Ltac abstract_var := 
+  match goal with
+    | [|- context [evar_valuation ?σ ?s]] =>
+      let x := fresh "var" in
+      let Hx := fresh "Hvar" in
+        remember (evar_valuation σ s) as x eqn:Hx (*;
+        clear Hx;
+        revert x *)
+    end.
 
   Goal satT Theory_behavioural Model.
   Proof.
     unfold satT, satM. intros.
     unfold Theory_behavioural in H.
     unfold_elem_of; destruct_or?; destruct_ex?; subst.
-    all: simplify_krule;
-      repeat destruct_evar_val;
-      try tauto;
-      try timeout 1 set_solver; lazymatch goal with
-      | [|- context G [{[?z]} ⊆ {[ x | ?y = x /\ ?y = x]}] ] => 
-        assert ({[ x | y = x /\ y = x]} = {[y]}); [
-          apply set_unfold_2; intros []; set_solver
-        |
-          assert (z ≠ y) by discriminate;
-          set_solver
-        ]
-      | [|- context G [{[?z]} ⊆ {[ x | ?y = x /\ ?w = x]}] ] => 
-        assert ({[ x | y = x /\ w = x]} = ∅); [
-          apply set_unfold_2; intros []; set_solver
-        |
-          set_solver
-        ]
-      end.
+    all: simplify_krule; try reflexivity;
+         try classicize;
+         intros;
+         repeat destruct_evar_val; subst;
+         repeat simplify_equality; subst;
+         try tauto;
+         try congruence.
+    (* simplification proofs: *)
+    all: destruct_and!; subst; apply singleton_subseteq_l in H0;
+         destruct H0;
+         try rewrite singleton_subseteq in H0; set_solver.
   Defined.
 
-End TheorySemantics.
+(* End TheorySemantics. *)

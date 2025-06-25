@@ -348,3 +348,10 @@ Hint Rewrite <- Eqdep.EqdepTheory.eq_rect_eq : kore.
 Hint Unfold Equality.block solution_left : kore.
 Hint Extern 5 (?x ∈ ⊤) => simple apply elem_of_top' : kore.
 Hint Unfold Equality.block solution_left : kore.
+
+Definition orElse {A} (x y : option A) : option A :=
+match x with
+| Some a => Some a
+| None   => y
+end.
+Notation "f <|> g" := (orElse f g) (at level 56, left associativity).
