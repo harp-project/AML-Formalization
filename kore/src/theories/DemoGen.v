@@ -201,4 +201,4 @@ Ltac abstract_var :=
          try rewrite singleton_subseteq in H0; set_solver.
   Defined.
 
-(* End TheorySemantics. *)
+End TheorySemantics.

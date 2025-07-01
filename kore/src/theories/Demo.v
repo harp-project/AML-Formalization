@@ -72,11 +72,14 @@ Module DemoSyntaxSemantics.
   Next Obligation. compute_done. Defined.
   Final Obligation. destruct x; set_solver. Defined.
 
+  Inductive Demo_subsort : CRelationClasses.crelation DemoSorts := .
+
   (* In the signature, we need to define the sorts, the variable types,
      and the typing/sorting rules for symbols: *)
   Program Instance DemoSignature : Signature := {|
     sorts := {|
       sort := DemoSorts;
+      subsort := Demo_subsort;
     |};
     variables := StringVariables;
     symbols := {|
@@ -122,8 +125,7 @@ Module DemoSyntaxSemantics.
     | SortBool => bool
     end.
 
-  Print DemoSyms.
-  Definition DemoModel : @Model DemoSignature :=
+  Program Definition DemoModel : @Model DemoSignature :=
     mkModel_singleton
       carrier
       (DemoSyms_rect _
@@ -132,7 +134,11 @@ Module DemoSyntaxSemantics.
         Nat.add
         true
         false)
-      ltac:(intros []; auto with typeclass_instances).
+      ltac:(intros []; auto with typeclass_instances)
+      _.
+  Final Obligation.
+    intros s1 s2 H x; inversion H; subst.
+  Defined.
 
   Goal
     forall (ρ : Valuation),
@@ -387,11 +393,13 @@ Module ImpSyntax.
     intros x. destruct x; try by simpl.
   Defined.
 
+  Inductive K_subsort : CRelationClasses.crelation Ksorts := .
 
   (* Next, we define the signature of the theory containing bool and int. *)
   Program Instance ImpSignature : Signature := {|
     sorts := {|
       sort := Ksorts;
+      subsort := K_subsort;
     |};
     variables := StringVariables;
     symbols := {|
@@ -498,7 +506,6 @@ Module ImpSyntax.
         end;
     |};
   |}.
-
   (* This file contains the theory of bool and int.  
      The theories are splitted into two part: behavioural axioms and
      functional axioms.
@@ -1131,9 +1138,13 @@ Module ImpSemantics.
                     _ (* rand - how should we model random generation? I could not find the corresponding implementation! *)
                     signExtendBitRange (* signExtendBitRangeInt *)
                     Z.lnot) (* not *)
-      ltac:(intros []; auto with typeclass_instances). (* Inhabited proof *)
-  Final Obligation.
+      ltac:(intros []; auto with typeclass_instances)
+      _. (* Inhabited proof *)
+  Next Obligation.
     simpl. intros x y z. exact (x + y + z).
+  Defined.
+  Final Obligation.
+    intros. inversion X.
   Defined.
 
   (* We prove the satisfyability/consistency of functional axioms first,
@@ -1210,7 +1221,6 @@ Module ImpSemantics.
       (* potentially INCONSISTENT for var0 = 0 or var2 = 0?
          Java hook throws an exception *)
       simpl in *.
-      revert var0 var2. clear.
       Fail smt. admit.
     * simplify_krule.
       repeat abstract_var.
