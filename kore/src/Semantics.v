@@ -15,7 +15,8 @@ Section Semantics.
        @hlist _ carrier (arg_sorts σ) -> propset (carrier (ret_sort σ));
     inhabited (s : sort) : Inhabited (carrier s) ;
     sort_inj (s1 s2 : sort) (P : subsort s1 s2) :
-     carrier s1 -> carrier s2
+     carrier s1 -> carrier s2;
+    sort_parse (s : sort) : string -> option (carrier s)
   }.
 
   Section with_model.
@@ -178,7 +179,8 @@ Section Semantics.
       eval ρ (kore_floor φ)      := PropSet (λ _, ∀ c, c ∈ eval ρ φ) ;
       eval ρ (kore_equals φ1 φ2) := PropSet (λ _, (eval ρ φ1) = (eval ρ φ2)) ;
       eval ρ (kore_in φ1 φ2)     := PropSet (λ _, (eval ρ φ1) ⊆ (eval ρ φ2)) ;
-      eval ρ (kore_inj s2 pf φ)  := sort_inj M _ _ pf <$> eval ρ φ
+      eval ρ (kore_inj s2 pf φ)  := sort_inj M _ _ pf <$> eval ρ φ ;
+      eval ρ (kore_dv s str)     := if sort_parse M s str is Some x then {[x]} else ∅
     .
     Proof.
       1: { (* def. of eval ρ (σ ⋅ l) *)
@@ -218,6 +220,7 @@ Section Semantics.
     Definition eval_equals_simpl := eval_equation_19.
     Definition eval_in_simpl := eval_equation_20.
     Definition eval_inj_simpl := eval_equation_21.
+    Definition eval_dv_simpl := eval_equation_22.
     Definition eval_simpl :=
       (eval_bevar_simpl,
        eval_bsvar_simpl,
@@ -238,7 +241,8 @@ Section Semantics.
        eval_floor_simpl,
        eval_equals_simpl,
        eval_in_simpl,
-       eval_inj_simpl).
+       eval_inj_simpl,
+       eval_dv_simpl).
 
 
     (* simpler evaluation rule for σ ⋅ l *)
@@ -318,13 +322,15 @@ End with_model.
             (propset (custom_carrier (ret_sort σ)))
             (arg_sorts σ))
     (custom_inh : ∀ s : sort, Inhabited (custom_carrier s))
-    (custom_sort_inj : ∀ s1 s2, subsort s1 s2 -> custom_carrier s1 -> custom_carrier s2) :
+    (custom_sort_inj : ∀ s1 s2, subsort s1 s2 -> custom_carrier s1 -> custom_carrier s2)
+    (custom_parser : ∀ s, string -> option (custom_carrier s)) :
     Model :=
   {|
     carrier := custom_carrier;
     inhabited := custom_inh;
     app := fun σ => uncurry_n (custom_app σ);
     sort_inj := custom_sort_inj;
+    sort_parse := custom_parser;
   |}.
 
   (** Model construction based on curried application of singleton-result
@@ -333,26 +339,30 @@ End with_model.
     (custom_carrier : sort → Set)
     (custom_app : forall (σ : symbol), foldr (λ c a, custom_carrier c -> a) (custom_carrier (ret_sort σ)) (arg_sorts σ))
     (custom_inh : ∀ s : sort, Inhabited (custom_carrier s))
-    (custom_sort_inj : ∀ s1 s2, subsort s1 s2 -> custom_carrier s1 -> custom_carrier s2) :
+    (custom_sort_inj : ∀ s1 s2, subsort s1 s2 -> custom_carrier s1 -> custom_carrier s2)
+    (custom_parser : ∀ s, string -> option (custom_carrier s)) :
     Model :=
   {|
     carrier := custom_carrier;
     inhabited := custom_inh;
     app := fun σ => singleton ∘ uncurry_n (custom_app σ);
     sort_inj := custom_sort_inj;
+    sort_parse := custom_parser;
   |}.
 
   Program Definition mkModel_partial
     (custom_carrier : sort → Set)
     (custom_app : forall (σ : symbol), foldr (λ c a, custom_carrier c -> a) (option (custom_carrier (ret_sort σ))) (arg_sorts σ))
     (custom_inh : ∀ s : sort, Inhabited (custom_carrier s))
-    (custom_sort_inj : ∀ s1 s2, subsort s1 s2 -> custom_carrier s1 -> custom_carrier s2) :
+    (custom_sort_inj : ∀ s1 s2, subsort s1 s2 -> custom_carrier s1 -> custom_carrier s2)
+    (custom_parser : ∀ s, string -> option (custom_carrier s)) :
     Model :=
   {|
     carrier := custom_carrier;
     inhabited := custom_inh;
     app := fun σ => oapp singleton empty ∘ (uncurry_n (custom_app σ));
     sort_inj := custom_sort_inj;
+    sort_parse := custom_parser;
   |}.
 
   (** If a symbol is modeled by a function, it is consistent: *)

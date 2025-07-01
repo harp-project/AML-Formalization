@@ -93,6 +93,8 @@ Section Substitution.
       exact base1. exact base2.
     (* inj *)
     - eapply kore_inj. exact pf. apply inc_var. exact base.
+    (* dv *)
+    - apply kore_dv. exact str.
   Defined.
 
   Arguments inc_var {_} {_} {_} {_} {_} {_} {_} !_.
@@ -217,6 +219,8 @@ Section Substitution.
                       (bevar_subst _ _ _ _ _ ψ φ2)).
     (* inj *)
     - exact (kore_inj _ pf (bevar_subst _ _ _ _ _ ψ φ)).
+    (* dv *)
+    - apply kore_dv. exact str.
   Defined.
 
   Arguments bevar_subst _ {_} {_} {_} {_} !_ _.
@@ -294,6 +298,8 @@ Section Substitution.
                       (bsvar_subst _ _ _ _ _ ψ φ2)).
     (* inj *)
     - exact (kore_inj _ pf (bsvar_subst _ _ _ _ _ ψ φ)).
+    (* dv *)
+    - apply kore_dv. exact str.
   Defined.
 
   Arguments bevar_subst {_} _ {_} {_} {_} !_ _.
