@@ -9,6 +9,7 @@ src/Substitution.v
 src/Semantics.v
 
 src/theories/BuiltIns.v
+src/theories/DVParsers.v
 src/theories/Baz.v
 src/theories/DemoGen.v
 src/theories/DemoGen2.v

@@ -3,7 +3,7 @@ From MatchingLogic Require Export stdpp_ext.
 From Kore Require Export Semantics.
 Import Signature.StringVariables.
 Import Kore.Syntax.Notations.
-Require Import BuiltIns.
+Require Import BuiltIns DVParsers.
 
 From Coq Require Import ZArith.
 
@@ -79,8 +79,6 @@ Open Scope hlist_scope.
   | notBool_Unds_ (* notBool_ *)
   | seqcomp (* seqcomp *)
   | while_LParUndsRParUndsUnds_IMP_SYNTAX_Unds_Stmt_Unds_BExp_Unds_Block (* while(_)__IMP-SYNTAX_Stmt_BExp_Block *)
-  | DVSortBooltrue
-  | DVSortBoolfalse
   .
   (*
   Instance Ksyms_eq_dec : EqDecision Ksyms.
@@ -170,8 +168,6 @@ Program Instance TheorySignature : Signature := {|
   | notBool_Unds_ => [SortBool]
   | seqcomp => [SortStmt;SortStmt]
   | while_LParUndsRParUndsUnds_IMP_SYNTAX_Unds_Stmt_Unds_BExp_Unds_Block => [SortBExp;SortBlock]
-  | DVSortBooltrue => []
-  | DVSortBoolfalse => []
       end;
     ret_sort σ :=
       match σ with
@@ -202,8 +198,6 @@ Program Instance TheorySignature : Signature := {|
   | notBool_Unds_ => SortBool
   | seqcomp => SortStmt
   | while_LParUndsRParUndsUnds_IMP_SYNTAX_Unds_Stmt_Unds_BExp_Unds_Block => SortStmt
-  | DVSortBooltrue => SortBool
-  | DVSortBoolfalse => SortBool
       end;
   |};
 |}.
@@ -212,22 +206,22 @@ Definition Theory_behavioural : @Theory TheorySignature :=
   PropSet (fun pat =>
 
 (* Unds_andBool_Unds_ *)
-(exists R, pat = existT R (( ( Top{R} ) and ( ( ( @kore_fevar _ _ _ SortBool "X0" ) ⊆k{R} ( ( DVSortBoolfalse⋅⟨⟩ ) and ( @kore_fevar _ _ _ SortBool "Var'Unds'Gen1" ) ) ) and ( ( ( @kore_fevar _ _ _ SortBool "X1" ) ⊆k{R} ( @kore_fevar _ _ _ SortBool "Var'Unds'Gen0" ) ) and ( Top{R} ) ) ) ) --->ₖ ( ( Unds_andBool_Unds_ ⋅ ⟨@kore_fevar _ _ _ SortBool "X0"; @kore_fevar _ _ _ SortBool "X1"⟩ ) =k{R} ( ( @kore_fevar _ _ _ SortBool "Var'Unds'Gen1" ) and ( Top{SortBool} ) ) ) )) \/
+(exists R, pat = existT R (( ( Top{R} ) and ( ( ( @kore_fevar _ _ _ SortBool "X0" ) ⊆k{R} ( (  kore_dv _ "false" ) and ( @kore_fevar _ _ _ SortBool "Var'Unds'Gen1" ) ) ) and ( ( ( @kore_fevar _ _ _ SortBool "X1" ) ⊆k{R} ( @kore_fevar _ _ _ SortBool "Var'Unds'Gen0" ) ) and ( Top{R} ) ) ) ) --->ₖ ( ( Unds_andBool_Unds_ ⋅ ⟨@kore_fevar _ _ _ SortBool "X0"; @kore_fevar _ _ _ SortBool "X1"⟩ ) =k{R} ( ( @kore_fevar _ _ _ SortBool "Var'Unds'Gen1" ) and ( Top{SortBool} ) ) ) )) \/
 
 (* Unds_andBool_Unds_ simplification *)
-(exists R, pat = existT R (( Top{R} ) --->ₖ ( ( Unds_andBool_Unds_ ⋅ ⟨@kore_fevar _ _ _ SortBool "VarB"; DVSortBooltrue⋅⟨⟩⟩ ) =k{R} ( ( @kore_fevar _ _ _ SortBool "VarB" ) and ( Top{SortBool} ) ) ) )) \/
+(exists R, pat = existT R (( Top{R} ) --->ₖ ( ( Unds_andBool_Unds_ ⋅ ⟨@kore_fevar _ _ _ SortBool "VarB"; kore_dv _ "true"⟩ ) =k{R} ( ( @kore_fevar _ _ _ SortBool "VarB" ) and ( Top{SortBool} ) ) ) )) \/
 
 (* Unds_andBool_Unds_ simplification *)
-(exists R, pat = existT R (( Top{R} ) --->ₖ ( ( Unds_andBool_Unds_ ⋅ ⟨@kore_fevar _ _ _ SortBool "Var'Unds'Gen0"; DVSortBoolfalse⋅⟨⟩⟩ ) =k{R} ( ( DVSortBoolfalse⋅⟨⟩ ) and ( Top{SortBool} ) ) ) )) \/
+(exists R, pat = existT R (( Top{R} ) --->ₖ ( ( Unds_andBool_Unds_ ⋅ ⟨@kore_fevar _ _ _ SortBool "Var'Unds'Gen0"; kore_dv _ "false"⟩ ) =k{R} ( ( kore_dv _ "false" ) and ( Top{SortBool} ) ) ) )) \/
 
 (* Unds_andBool_Unds_ *)
-(exists R, pat = existT R (( ( Top{R} ) and ( ( ( @kore_fevar _ _ _ SortBool "X0" ) ⊆k{R} ( DVSortBooltrue⋅⟨⟩ ) ) and ( ( ( @kore_fevar _ _ _ SortBool "X1" ) ⊆k{R} ( @kore_fevar _ _ _ SortBool "VarB" ) ) and ( Top{R} ) ) ) ) --->ₖ ( ( Unds_andBool_Unds_ ⋅ ⟨@kore_fevar _ _ _ SortBool "X0"; @kore_fevar _ _ _ SortBool "X1"⟩ ) =k{R} ( ( @kore_fevar _ _ _ SortBool "VarB" ) and ( Top{SortBool} ) ) ) )) \/
+(exists R, pat = existT R (( ( Top{R} ) and ( ( ( @kore_fevar _ _ _ SortBool "X0" ) ⊆k{R} ( kore_dv _ "true" ) ) and ( ( ( @kore_fevar _ _ _ SortBool "X1" ) ⊆k{R} ( @kore_fevar _ _ _ SortBool "VarB" ) ) and ( Top{R} ) ) ) ) --->ₖ ( ( Unds_andBool_Unds_ ⋅ ⟨@kore_fevar _ _ _ SortBool "X0"; @kore_fevar _ _ _ SortBool "X1"⟩ ) =k{R} ( ( @kore_fevar _ _ _ SortBool "VarB" ) and ( Top{SortBool} ) ) ) )) \/
 
 (* notBool_Unds_ *)
-(exists R, pat = existT R (( ( Top{R} ) and ( ( ( @kore_fevar _ _ _ SortBool "X0" ) ⊆k{R} ( DVSortBoolfalse⋅⟨⟩ ) ) and ( Top{R} ) ) ) --->ₖ ( ( notBool_Unds_ ⋅ ⟨@kore_fevar _ _ _ SortBool "X0"⟩ ) =k{R} ( ( DVSortBooltrue⋅⟨⟩ ) and ( Top{SortBool} ) ) ) )) \/
+(exists R, pat = existT R (( ( Top{R} ) and ( ( ( @kore_fevar _ _ _ SortBool "X0" ) ⊆k{R} ( kore_dv _ "false" ) ) and ( Top{R} ) ) ) --->ₖ ( ( notBool_Unds_ ⋅ ⟨@kore_fevar _ _ _ SortBool "X0"⟩ ) =k{R} ( ( kore_dv _ "true" ) and ( Top{SortBool} ) ) ) )) \/
 
 (* notBool_Unds_ *)
-(exists R, pat = existT R (( ( Top{R} ) and ( ( ( @kore_fevar _ _ _ SortBool "X0" ) ⊆k{R} ( DVSortBooltrue⋅⟨⟩ ) ) and ( Top{R} ) ) ) --->ₖ ( ( notBool_Unds_ ⋅ ⟨@kore_fevar _ _ _ SortBool "X0"⟩ ) =k{R} ( ( DVSortBoolfalse⋅⟨⟩ ) and ( Top{SortBool} ) ) ) ))
+(exists R, pat = existT R (( ( Top{R} ) and ( ( ( @kore_fevar _ _ _ SortBool "X0" ) ⊆k{R} ( kore_dv _ "true" ) ) and ( Top{R} ) ) ) --->ₖ ( ( notBool_Unds_ ⋅ ⟨@kore_fevar _ _ _ SortBool "X0"⟩ ) =k{R} ( ( kore_dv _ "false" ) and ( Top{SortBool} ) ) ) ))
   ).
 
 Definition Theory_functional : @Theory TheorySignature :=
@@ -856,6 +850,15 @@ Definition _4de6e05 : SortInt_carrier -> SortInt_carrier -> option SortBool_carr
     let _Val1 <- notBool_ _Val0
     return _Val1 end.
 Definition N/A (x0 : SortInt_carrier) (x1 : SortInt_carrier) : option SortBool_carrier := _4de6e05 x0 x1. *)
+      Definition parser (s : Ksorts) : string -> option (carrier s) :=
+            match s with
+             | SortString => map_parser c_dv_SortString string_parser
+             | SortId => map_parser c_dv_SortId string_parser
+             | SortInt => map_parser c_dv_SortInt Z_parser
+             | SortBool => map_parser c_dv_SortBool bool_parser
+             | _ => None_parser
+            end.
+      
       Definition P (σ : symbol) := foldr (λ c a, carrier c -> a) (option (carrier (ret_sort σ))) (arg_sorts σ).
       Program Definition Model : @Model TheorySignature :=
         mkModel_partial
@@ -886,15 +889,15 @@ fun_Unds_andBool_Unds_
 (fun x0 x1 => Some (c_int_UndsSClnUndsUnds_IMP_SYNTAX_Unds_Pgm_Unds_Ids_Unds_Stmt x0 x1))
 fun_notBool_Unds_
 (fun x0 x1 => Some (c_seqcomp x0 x1))
-(fun x0 x1 => Some (c_while_LParUndsRParUndsUnds_IMP_SYNTAX_Unds_Stmt_Unds_BExp_Unds_Block x0 x1))
-(Some (c_dv_SortBool true))
-(Some (c_dv_SortBool false)))
-          _ _.
+(fun x0 x1 => Some (c_while_LParUndsRParUndsUnds_IMP_SYNTAX_Unds_Stmt_Unds_BExp_Unds_Block x0 x1)))
+          _
+          _
+          parser.
       Next Obligation.
-        cbn.
+        (* cbn.
         exact (fun_Unds_andBool_Unds_ c_dv_SortBool).
-        destruct s; repeat constructor.
-      Defined.
+        destruct s; repeat constructor. *)
+      Admitted.
       Final Obligation.
         intros s1 s2 H x; inversion H; subst.
       * exact (c_inj_SortAExp_SortKItem x).
@@ -981,6 +984,13 @@ Ltac abstract_var :=
          repeat simplify_equality; subst;
          try tauto;
          try congruence.
+    (* 4 goals remain *)
+    all: cbn.
+    1: try destruct H; subst; apply singleton_subseteq_l in H;
+         destruct H0;
+         try rewrite singleton_subseteq in H0; set_solver.
+         1-2: by rewrite andb_comm.
+    set_solver.
   Defined.
 
       End TheorySemantics.
