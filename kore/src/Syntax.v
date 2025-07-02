@@ -84,6 +84,8 @@ Section Syntax.
              (pf : subsort s1 s2)
              (φ : Pattern ex mu s1) : Pattern ex mu s2
 
+  | kore_dv {ex mu : list sort} (s : sort) (str : string) : Pattern ex mu s
+
 (*   | kore_next     (* (s : sort) ? *) (φ : Pattern)
   | kore_rewrites (* (s : sort) ? *) (φ1 φ2 : Pattern)
   | kore_dv       (s : sort) (s : string) *).
@@ -117,7 +119,9 @@ Section Syntax.
       (P_floor : forall {ex mu s1} s2 φ, @P ex mu s1 φ -> P (kore_floor s2 φ))
       (P_equal : forall {ex mu s1} s2 φ, @P ex mu s1 φ -> forall ψ, @P ex mu s1 ψ -> P (kore_equals s2 φ ψ))
       (P_in : forall {ex mu s1} s2 φ, @P ex mu s1 φ -> forall ψ, @P ex mu s1 ψ -> P (kore_in s2 φ ψ))
-      (P_inj : forall {ex mu s1} s2 pf φ, @P ex mu s1 φ -> P (kore_inj s2 pf φ)).
+      (P_inj : forall {ex mu s1} s2 pf φ, @P ex mu s1 φ -> P (kore_inj s2 pf φ))
+
+      (P_dv : forall {ex mu} s str, @P ex mu s (kore_dv s str)).
 
     Definition Pat_rect {ex mu s} (φ : Pattern ex mu s) : P φ.
     Proof.
@@ -151,6 +155,8 @@ Section Syntax.
        | kore_equals s2 φ1 φ2 => P_equal s2 _ (Pat_rect φ1) _ (Pat_rect φ2)
        | kore_in    s2 φ1 φ2 => P_in s2 _ (Pat_rect φ1) _ (Pat_rect φ2)
        | kore_inj s2 _ φ => P_inj _ _ _ (Pat_rect φ)
+
+       | kore_dv s str => P_dv s str
       end).
       apply P_app.
       induction args; simpl. 1: exact I.
@@ -187,7 +193,9 @@ Section Syntax.
       (P_floor : forall {ex mu s1} s2 (φ : Pattern ex mu s1), P φ -> P (kore_floor s2 φ))
       (P_equal : forall {ex mu s1} s2 (φ : Pattern ex mu s1), P φ -> forall (ψ : Pattern ex mu s1), P ψ -> P (kore_equals s2 φ ψ))
       (P_in : forall {ex mu s1} s2 (φ : Pattern ex mu s1), P φ -> forall (ψ : Pattern ex mu s1), P ψ -> P (kore_in s2 φ ψ))
-      (P_inj : forall {ex mu s1} s2 pf φ, @P ex mu s1 φ -> P (kore_inj s2 pf φ)).
+      (P_inj : forall {ex mu s1} s2 pf φ, @P ex mu s1 φ -> P (kore_inj s2 pf φ))
+
+      (P_dv : forall {ex mu} s str, @P ex mu s (kore_dv s str)).
 
     Definition Pat_ind {ex mu s} (φ : Pattern ex mu s) : P φ.
     Proof.
@@ -221,6 +229,8 @@ Section Syntax.
        | kore_equals s2 φ1 φ2 => P_equal s2 _ (Pat_ind φ1) _ (Pat_ind φ2)
        | kore_in    s2 φ1 φ2 => P_in s2 _ (Pat_ind φ1) _ (Pat_ind φ2)
        | kore_inj s2 _ φ => P_inj _ _ _ (Pat_ind φ)
+
+       | kore_dv s str => P_dv s str
       end).
       apply P_app.
       induction args; simpl. 1: exact I.
@@ -246,6 +256,7 @@ Section Syntax.
    | kore_bevar _ | kore_fevar _
    | kore_bsvar _ | kore_fsvar _
    | kore_bot _ | kore_top _
+   | kore_dv _ _
        => 1
   end.
 

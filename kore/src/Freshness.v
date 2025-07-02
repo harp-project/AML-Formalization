@@ -27,7 +27,9 @@ Section Freshness.
    | kore_inj _ _ φ
       => free_evars sTarget φ
    | kore_bevar _ | kore_fsvar _ | kore_bsvar _
-   | kore_bot _ | kore_top _ => ∅
+   | kore_bot _ | kore_top _
+   | kore_dv _ _
+       => ∅
   end.
 
   Fixpoint free_svars {ex mu s}
@@ -53,7 +55,9 @@ Section Freshness.
    | kore_inj _ _ φ
       => free_svars sTarget φ
    | kore_bevar _ | kore_fevar _ | kore_bsvar _
-   | kore_bot _ | kore_top _ => ∅
+   | kore_bot _ | kore_top _
+   | kore_dv _ _
+       => ∅
   end.
 
   Definition fresh_evar {s} {ex mu}
