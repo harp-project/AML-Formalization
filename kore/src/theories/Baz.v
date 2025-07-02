@@ -219,7 +219,8 @@ Module T.
         end
       )
     _
-    _.
+    _
+    (λ _ _, None).
   Next Obligation.
     destruct s; repeat constructor.
   Defined.

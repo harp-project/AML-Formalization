@@ -8,3 +8,7 @@ src/Freshness.v
 src/Substitution.v
 src/Semantics.v
 
+src/theories/Baz.v
+src/theories/DemoGen.v
+src/theories/DemoGen2.v
+src/theories/dv_test.v

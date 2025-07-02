@@ -131,7 +131,8 @@ Module TheorySemantics.
       (Ksorts_rect _ Kbool)
       (Ksyms_rect _ KandBool Kfalse KnotBool Ktrue)
       ltac:(simpl; intros []; do 2 constructor)
-      _.
+      _
+      (λ _ _, None).
   Next Obligation.
     intros ? ? H; simpl; inversion H.
   Defined.

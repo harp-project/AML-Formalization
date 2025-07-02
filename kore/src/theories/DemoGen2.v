@@ -209,7 +209,7 @@ Definition symf (x0 : SortS1_carrier) : option SortE_carrier := (_4db77ad x0) <|
         mkModel_partial
           (Ksorts_rect _ SortS1_carrier SortS3_carrier SortE_carrier SortS2_carrier)
           (Ksyms_rect _ (Some c_syme1) (Some c_syme2) (Some c_syme3) symf symg (Some c_syms2) (Some c_syms3))
-          _ _.
+          _ _ (λ _ _, None).
       Next Obligation.
         destruct s; repeat constructor.
       Defined.

@@ -387,6 +387,7 @@ Module T.
       )
     (ltac:(destruct s; repeat constructor))
     _
+    (λ _ _, None)
     .
   Final Obligation.
     destruct s1, s2; simpl; intros H x; inversion H; subst.
