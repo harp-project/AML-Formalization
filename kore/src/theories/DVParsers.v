@@ -20,12 +20,25 @@ Compute nat_parser "123".
 Compute nat_parser "".
 Compute nat_parser "{@}".
 
-Definition Z_parser (str : string) : option Z := let fix F n s := if s is String x xs then F (10 * n + nat_of_ascii x - 48) xs else n in
+Definition Z_parser_with_base (base : nat) (str : string) : option Z :=
+  let fix F n s :=
+    if s is String x xs
+    then F (base * n + (nat_of_ascii x - 48)) xs
+    else n in
   match str with
   | String "-" xs => Some (Z.opp (Z.of_nat (F 0 xs)))
   | String "+" xs => Some (Z.of_nat (F 0 xs))
   | _ => Some (Z.of_nat (F 0 str))
   end.
+
+Compute Z_parser_with_base 10 "1111".
+Compute Z_parser_with_base 2 "1111".
+Compute Z_parser_with_base 8 "123".
+Compute Z_parser_with_base 2 "".
+Compute Z_parser_with_base 2 "{@}".
+Compute Z_parser_with_base 10 "{@}".
+
+Definition Z_parser : string -> option Z := Z_parser_with_base 10.
 
 Definition string_parser (str : string) : option string := Some  str.
 

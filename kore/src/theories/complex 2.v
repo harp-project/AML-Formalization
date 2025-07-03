@@ -349,8 +349,8 @@ with SortAExp_carrier : Set :=
  | c__UndsStarUndsUnds_IMP_SYNTAX_Unds_AExp_Unds_AExp_Unds_AExp(qbpxg:SortAExp_carrier) (bogvs:SortAExp_carrier)
  | c_inj_SortId_SortAExp (b : SortId_carrier)
  | c_inj_SortInt_SortAExp (b : SortInt_carrier)
-with SortMap_carrier : Set :=
-c_dv_SortMap(v:bool)
+(* with SortMap_carrier : Set :=
+c_dv_SortMap(v:bool) *)
 with SortString_carrier : Set :=
 c_dv_SortString(v:string)
 with SortId_carrier : Set :=
@@ -384,6 +384,12 @@ with SortStmt_carrier : Set :=
  | c_inj_SortBlock_SortStmt (b : SortBlock_carrier)
 with SortBool_carrier : Set :=
 c_dv_SortBool(v:bool)
+with SortList_carrier : Set :=
+c_dv_SortList (x : list SortKItem_carrier)
+with SortSet_carrier : Set :=
+c_dv_SortSet (x : list SortKItem_carrier)
+with SortMap_carrier : Set :=
+c_dv_SortMap (x : list (SortKItem_carrier * SortKItem_carrier))
 .
 
       Definition carrier (s : Ksorts) : Set := match s with
@@ -440,10 +446,16 @@ hooked-symbol LblsrandInt'LParUndsRParUnds'INT-COMMON'Unds'K'Unds'Int{}(SortInt{
 
 (* Pure hooks: *)
 (* hooked-symbol Lbl'Stop'List{}() : SortList{} *)
+Definition fun_StopList : option SortList_carrier :=
+Some (c_dv_SortList []).
 
 (* hooked-symbol Lbl'Stop'Map{}() : SortMap{} *)
+Definition fun_StopMap : option SortMap_carrier :=
+Some (c_dv_SortMap []).
 
 (* hooked-symbol Lbl'Stop'Set{}() : SortSet{} *)
+Definition fun_StopSet : option SortSet_carrier :=
+Some (c_dv_SortSet []).
 
 (* hooked-symbol LblBase2String'LParUndsCommUndsRParUnds'STRING-COMMON'Unds'String'Unds'Int'Unds'Int{}(SortInt{}, SortInt{}) : SortString{} *)
 
@@ -452,16 +464,28 @@ hooked-symbol LblsrandInt'LParUndsRParUnds'INT-COMMON'Unds'K'Unds'Int{}(SortInt{
 (* hooked-symbol LblFloatFormat{}(SortFloat{}, SortString{}) : SortString{} *)
 
 (* hooked-symbol LblId2String'LParUndsRParUnds'ID-COMMON'Unds'String'Unds'Id{}(SortId{}) : SortString{} *)
+Definition fun_Id2String (x : SortId_carrier) : option SortString_carrier :=
+Some (c_dv_SortString (SortId_carrier_rect _ id x)).
 
 (* hooked-symbol LblInt2String'LParUndsRParUnds'STRING-COMMON'Unds'String'Unds'Int{}(SortInt{}) : SortString{} *)
 
-(* hooked-symbol LblList'Coln'get{}(SortList{}, SortInt{}) : SortKItem{} *)
+(* hooked-symbol LblList'Coln'get{}(SortList{}, SortInt{}) : SortKItem{} "List:get" *)
+Definition fun_List_get (xs : SortList_carrier) (x : SortInt_carrier) : option SortKItem_carrier :=
+  SortInt_carrier_rect _ (fun z =>
+    SortList_carrier_rect (fun _ => option SortKItem_carrier) (fun xs =>
+      if Z.ltb z 0
+      then nth_error xs (Z.to_nat (Z.of_nat (length xs) + z))
+      else nth_error xs (Z.to_nat z)
+  ) xs) x.
 
-(* hooked-symbol LblList'Coln'range{}(SortList{}, SortInt{}, SortInt{}) : SortList{} *)
+(* hooked-symbol LblList'Coln'range{}(SortList{}, SortInt{}, SortInt{}) : SortList{} "List:range" *)
+(* Definition fun_List_range (xs : SortList_carrier) (x y : SortInt_carrier) : Admitted. *)
 
-(* hooked-symbol LblList'Coln'set{}(SortList{}, SortInt{}, SortKItem{}) : SortList{} *)
+(* hooked-symbol LblList'Coln'set{}(SortList{}, SortInt{}, SortKItem{}) : SortList{} "List:set" *)
 
 (* hooked-symbol LblListItem{}(SortKItem{}) : SortList{} *)
+Definition fun_ListItem (x : SortKItem_carrier) : option SortList_carrier :=
+  Some (c_dv_SortList [x]).
 
 (* hooked-symbol LblMap'Coln'choice{}(SortMap{}) : SortKItem{} *)
 
@@ -488,32 +512,32 @@ hooked-symbol LblsrandInt'LParUndsRParUnds'INT-COMMON'Unds'K'Unds'Int{}(SortInt{
 (* hooked-symbol LblString2Int'LParUndsRParUnds'STRING-COMMON'Unds'Int'Unds'String{}(SortString{}) : SortInt{} *)
 
 (* hooked-symbol Lbl'UndsPerc'Int'Unds'{}(SortInt{}, SortInt{}) : SortInt{} "_%Int_"*)
-Definition fun_UndsPercInt_Unds_ (z1 z2 : carrier SortInt) : option (carrier SortInt) :=
+Definition fun_UndsPercInt_Unds_ (z1 z2 : SortInt_carrier) : option (SortInt_carrier) :=
   Some (c_dv_SortInt (SortInt_carrier_rect (fun _ => Z) (SortInt_carrier_rect _ Z.rem z1) z2)).
 (* hooked-symbol Lbl'UndsAnd-'Int'Unds'{}(SortInt{}, SortInt{}) : SortInt{} *)
-Definition fun_UndsAnd_Int_Unds_ (z1 z2 : carrier SortInt) : option (carrier SortInt) :=
+Definition fun_UndsAnd_Int_Unds_ (z1 z2 : SortInt_carrier) : option (SortInt_carrier) :=
   Some (c_dv_SortInt (SortInt_carrier_rect (fun _ => Z) (SortInt_carrier_rect _ Z.land z1) z2)).
 (* hooked-symbol Lbl'UndsStar'Int'Unds'{}(SortInt{}, SortInt{}) : SortInt{} "_*Int_"*)
-Definition fun_UndsStarInt_Unds_ (z1 z2 : carrier SortInt) : option (carrier SortInt) :=
+Definition fun_UndsStarInt_Unds_ (z1 z2 : SortInt_carrier) : option (SortInt_carrier) :=
   Some (c_dv_SortInt (SortInt_carrier_rect (fun _ => Z) (SortInt_carrier_rect _ Z.mul z1) z2)).
 (* hooked-symbol Lbl'UndsPlus'Int'Unds'{}(SortInt{}, SortInt{}) : SortInt{} "_+Int_" *)
-Definition fun_UndsPlusInt_Unds_ (z1 z2 : carrier SortInt) : option (carrier SortInt) :=
+Definition fun_UndsPlusInt_Unds_ (z1 z2 : SortInt_carrier) : option (SortInt_carrier) :=
   Some (c_dv_SortInt (SortInt_carrier_rect (fun _ => Z) (SortInt_carrier_rect _ Z.add z1) z2)).
 (* hooked-symbol Lbl'UndsPlus'String'UndsUnds'STRING-COMMON'Unds'String'Unds'String'Unds'String{}(SortString{}, SortString{}) : SortString{} *)
 
 (* hooked-symbol Lbl'Unds'-Int'Unds'{}(SortInt{}, SortInt{}) : SortInt{} "_-Int_" *)
-Definition fun_Unds_Int_Unds_ (z1 z2 : carrier SortInt) : option (carrier SortInt) :=
+Definition fun_Unds_Int_Unds_ (z1 z2 : SortInt_carrier) : option (SortInt_carrier) :=
   Some (c_dv_SortInt (SortInt_carrier_rect (fun _ => Z) (SortInt_carrier_rect _ Z.sub z1) z2)).
 (* hooked-symbol Lbl'Unds'-Map'UndsUnds'MAP'Unds'Map'Unds'Map'Unds'Map{}(SortMap{}, SortMap{}) : SortMap{} *)
 
 (* hooked-symbol Lbl'UndsSlsh'Int'Unds'{}(SortInt{}, SortInt{}) : SortInt{} "_/Int_" *)
-Definition fun_UndsSlshInt_Unds_ (z1 z2 : carrier SortInt) : option (carrier SortInt) :=
+Definition fun_UndsSlshInt_Unds_ (z1 z2 : SortInt_carrier) : option (SortInt_carrier) :=
   Some (c_dv_SortInt (SortInt_carrier_rect (fun _ => Z) (SortInt_carrier_rect _ Z.quot z1) z2)).
 (* hooked-symbol Lbl'Unds-LT--LT-'Int'Unds'{}(SortInt{}, SortInt{}) : SortInt{} "_<<Int_" *)
-Definition fun_Unds_LT__LT_Int_Unds_ (z1 z2 : carrier SortInt) : option (carrier SortInt) :=
+Definition fun_Unds_LT__LT_Int_Unds_ (z1 z2 : SortInt_carrier) : option (SortInt_carrier) :=
   Some (c_dv_SortInt (SortInt_carrier_rect (fun _ => Z) (SortInt_carrier_rect _ Z.shiftl z1) z2)).
 (* hooked-symbol Lbl'Unds-LT-Eqls'Int'Unds'{}(SortInt{}, SortInt{}) : SortBool{} "_<=Int_" *)
-Definition fun_Unds_LT_EqlsInt_Unds_ (z1 z2 : carrier SortInt) : option (carrier SortBool) :=
+Definition fun_Unds_LT_EqlsInt_Unds_ (z1 z2 : SortInt_carrier) : option (SortBool_carrier) :=
   Some (c_dv_SortBool (SortInt_carrier_rect (fun _ => bool) (SortInt_carrier_rect _ Z.leb z1) z2)).
 (* hooked-symbol Lbl'Unds-LT-Eqls'Map'UndsUnds'MAP'Unds'Bool'Unds'Map'Unds'Map{}(SortMap{}, SortMap{}) : SortBool{} *)
 
@@ -522,15 +546,15 @@ Definition fun_Unds_LT_EqlsInt_Unds_ (z1 z2 : carrier SortInt) : option (carrier
 (* hooked-symbol Lbl'Unds-LT-Eqls'String'UndsUnds'STRING-COMMON'Unds'Bool'Unds'String'Unds'String{}(SortString{}, SortString{}) : SortBool{} *)
 
 (* hooked-symbol Lbl'Unds-LT-'Int'Unds'{}(SortInt{}, SortInt{}) : SortBool{} "_<Int_" *)
-Definition fun_Unds_LT_Int_Unds_ (z1 z2 : carrier SortInt) : option (carrier SortBool) :=
+Definition fun_Unds_LT_Int_Unds_ (z1 z2 : SortInt_carrier) : option (SortBool_carrier) :=
   Some (c_dv_SortBool (SortInt_carrier_rect (fun _ => bool) (SortInt_carrier_rect _ Z.ltb z1) z2)).
 
 (* hooked-symbol Lbl'UndsEqlsSlshEqls'Bool'Unds'{}(SortBool{}, SortBool{}) : SortBool{} "_=/=Bool_" *)
-Definition fun_Unds_EqlsSlshEqls_Bool_Unds_ (b1 b2 : carrier SortBool) : option (carrier SortBool) :=
+Definition fun_Unds_EqlsSlshEqls_Bool_Unds_ (b1 b2 : SortBool_carrier) : option (SortBool_carrier) :=
   Some (c_dv_SortBool (SortBool_carrier_rect (fun _ => bool) (SortBool_carrier_rect _ neqbB b1) b2)).
 
 (* hooked-symbol Lbl'UndsEqlsSlshEqls'Int'Unds'{}(SortInt{}, SortInt{}) : SortBool{} "_=/=Int_" *)
-Definition fun_Unds_EqlsSlshEqls_Int_Unds_ (z1 z2 : carrier SortInt) : option (carrier SortBool) :=
+Definition fun_Unds_EqlsSlshEqls_Int_Unds_ (z1 z2 : SortInt_carrier) : option (SortBool_carrier) :=
   Some (c_dv_SortBool (SortInt_carrier_rect (fun _ => bool) (SortInt_carrier_rect _ neqbZ z1) z2)).
 
 (* hooked-symbol Lbl'UndsEqlsSlshEqls'K'Unds'{}(SortK{}, SortK{}) : SortBool{} "_=/=K_" *)
@@ -538,11 +562,11 @@ Definition fun_Unds_EqlsSlshEqls_Int_Unds_ (z1 z2 : carrier SortInt) : option (c
 (* hooked-symbol Lbl'UndsEqlsSlshEqls'String'UndsUnds'STRING-COMMON'Unds'Bool'Unds'String'Unds'String{}(SortString{}, SortString{}) : SortBool{} *)
 
 (* hooked-symbol Lbl'UndsEqlsEqls'Bool'Unds'{}(SortBool{}, SortBool{}) : SortBool{} "_==Bool_" *)
-Definition fun_Unds_EqlsEqls_Bool_Unds_ (b1 b2 : carrier SortBool) : option (carrier SortBool) :=
+Definition fun_Unds_EqlsEqls_Bool_Unds_ (b1 b2 : SortBool_carrier) : option (SortBool_carrier) :=
   Some (c_dv_SortBool (SortBool_carrier_rect (fun _ => bool) (SortBool_carrier_rect _ Bool.eqb b1) b2)).
 
 (* hooked-symbol Lbl'UndsEqlsEqls'Int'Unds'{}(SortInt{}, SortInt{}) : SortBool{} "_==Int_" *)
-Definition fun_Unds_EqlsEqls_Int_Unds_ (z1 z2 : carrier SortInt) : option (carrier SortBool) :=
+Definition fun_Unds_EqlsEqls_Int_Unds_ (z1 z2 : SortInt_carrier) : option (SortBool_carrier) :=
   Some (c_dv_SortBool (SortInt_carrier_rect (fun _ => bool) (SortInt_carrier_rect _ Z.eqb z1) z2)).
 
 (* hooked-symbol Lbl'UndsEqlsEqls'K'Unds'{}(SortK{}, SortK{}) : SortBool{} "_==K_" *)
@@ -550,22 +574,25 @@ Definition fun_Unds_EqlsEqls_Int_Unds_ (z1 z2 : carrier SortInt) : option (carri
 (* hooked-symbol Lbl'UndsEqlsEqls'String'UndsUnds'STRING-COMMON'Unds'Bool'Unds'String'Unds'String{}(SortString{}, SortString{}) : SortBool{} *)
 
 (* hooked-symbol Lbl'Unds-GT-Eqls'Int'Unds'{}(SortInt{}, SortInt{}) : SortBool{} "_>=Int_" *)
-Definition fun_Unds_GT_Eqls_Int_Unds_ (z1 z2 : carrier SortInt) : option (carrier SortBool) :=
+Definition fun_Unds_GT_Eqls_Int_Unds_ (z1 z2 : SortInt_carrier) : option (SortBool_carrier) :=
   Some (c_dv_SortBool (SortInt_carrier_rect (fun _ => bool) (SortInt_carrier_rect _ Z.geb z1) z2)).
 
 (* hooked-symbol Lbl'Unds-GT-Eqls'String'UndsUnds'STRING-COMMON'Unds'Bool'Unds'String'Unds'String{}(SortString{}, SortString{}) : SortBool{} *)
 
 (* hooked-symbol Lbl'Unds-GT--GT-'Int'Unds'{}(SortInt{}, SortInt{}) : SortInt{} "_>>Int_" *)
-Definition fun_Unds_GT__GT_Int_Unds_ (z1 z2 : carrier SortInt) : option (carrier SortInt) :=
+Definition fun_Unds_GT__GT_Int_Unds_ (z1 z2 : SortInt_carrier) : option (SortInt_carrier) :=
   Some (c_dv_SortInt (SortInt_carrier_rect (fun _ => Z) (SortInt_carrier_rect _ Z.shiftr z1) z2)).
 
 (* hooked-symbol Lbl'Unds-GT-'Int'Unds'{}(SortInt{}, SortInt{}) : SortBool{} *)
-Definition fun_Unds_GT_Int_Unds_ (z1 z2 : carrier SortInt) : option (carrier SortBool) :=
+Definition fun_Unds_GT_Int_Unds_ (z1 z2 : SortInt_carrier) : option (SortBool_carrier) :=
   Some (c_dv_SortBool (SortInt_carrier_rect (fun _ => bool) (SortInt_carrier_rect _ Z.gtb z1) z2)).
 
 (* hooked-symbol Lbl'Unds-GT-'String'UndsUnds'STRING-COMMON'Unds'Bool'Unds'String'Unds'String{}(SortString{}, SortString{}) : SortBool{} *)
 
 (* hooked-symbol Lbl'Unds'List'Unds'{}(SortList{}, SortList{}) : SortList{} "_List_" *)
+Definition fun__List_ (xs ys : SortList_carrier) : option SortList_carrier :=
+Some (c_dv_SortList (SortList_carrier_rect (fun _ => list SortKItem_carrier) (SortList_carrier_rect _ List.app xs) ys)).
+
 
 (* hooked-symbol Lbl'Unds'Map'Unds'{}(SortMap{}, SortMap{}) : SortMap{} "_Map_" *)
 
@@ -574,27 +601,27 @@ Definition fun_Unds_GT_Int_Unds_ (z1 z2 : carrier SortInt) : option (carrier Sor
 (* hooked-symbol Lbl'UndsLSqBUnds-LT-'-undef'RSqB'{}(SortMap{}, SortKItem{}) : SortMap{} -- MAP remove *)
 
 (* hooked-symbol Lbl'UndsXor-Perc'Int'UndsUnds'{}(SortInt{}, SortInt{}, SortInt{}) : SortInt{} "_^+Int_" *)
-Definition fun_Unds_Xor_Perc_Int_Unds_ (z1 z2 z3 : carrier SortInt) : option (carrier SortInt) :=
+Definition fun_Unds_Xor_Perc_Int_Unds_ (z1 z2 z3 : SortInt_carrier) : option (SortInt_carrier) :=
   Some (c_dv_SortInt (SortInt_carrier_rect (fun _ => Z) (SortInt_carrier_rect (fun _ => Z -> Z) (SortInt_carrier_rect _ modPow z1) z2) z3)).
 
 (* hooked-symbol Lbl'UndsXor-'Int'Unds'{}(SortInt{}, SortInt{}) : SortInt{} "_^Int_" *)
-Definition fun_Unds_Xor_Int_Unds_ (z1 z2 : carrier SortInt) : option (carrier SortInt) :=
+Definition fun_Unds_Xor_Int_Unds_ (z1 z2 : SortInt_carrier) : option (SortInt_carrier) :=
   Some (c_dv_SortInt (SortInt_carrier_rect (fun _ => Z) (SortInt_carrier_rect _ Z.pow z1) z2)).
 
 (* hooked-symbol Lbl'Unds'andBool'Unds'{}(SortBool{}, SortBool{}) : SortBool{} "_andBool_" *)
-Definition fun_Unds_andBool_Unds_ (b1 b2 : carrier SortBool) : option (carrier SortBool) :=
+Definition fun_Unds_andBool_Unds_ (b1 b2 : SortBool_carrier) : option (SortBool_carrier) :=
   Some (c_dv_SortBool (SortBool_carrier_rect (fun _ => bool) (SortBool_carrier_rect _ andb b1) b2)).
 
 (* hooked-symbol Lbl'Unds'andThenBool'Unds'{}(SortBool{}, SortBool{}) : SortBool{} "_andThenBool_" *)
-Definition fun_Unds_andThenBool_Unds_ (b1 b2 : carrier SortBool) : option (carrier SortBool) :=
+Definition fun_Unds_andThenBool_Unds_ (b1 b2 : SortBool_carrier) : option (SortBool_carrier) :=
   Some (c_dv_SortBool (SortBool_carrier_rect (fun _ => bool) (SortBool_carrier_rect _ andb b1) b2)).
 
 (* hooked-symbol Lbl'Unds'divInt'Unds'{}(SortInt{}, SortInt{}) : SortInt{} "_divInt_" *)
-Definition fun_Unds_divInt_Int_Unds_ (z1 z2 : carrier SortInt) : option (carrier SortInt) :=
+Definition fun_Unds_divInt_Int_Unds_ (z1 z2 : SortInt_carrier) : option (SortInt_carrier) :=
   Some (c_dv_SortInt (SortInt_carrier_rect (fun _ => Z) (SortInt_carrier_rect _ ediv z1) z2)).
 
 (* hooked-symbol Lbl'Unds'impliesBool'Unds'{}(SortBool{}, SortBool{}) : SortBool{} "_impliesBool_" *)
-Definition fun_Unds_impliesBool_Unds_ (b1 b2 : carrier SortBool) : option (carrier SortBool) :=
+Definition fun_Unds_impliesBool_Unds_ (b1 b2 : SortBool_carrier) : option (SortBool_carrier) :=
   Some (c_dv_SortBool (SortBool_carrier_rect (fun _ => bool) (SortBool_carrier_rect _ implb b1) b2)).
 
 (* hooked-symbol Lbl'Unds'inList'Unds'{}(SortKItem{}, SortList{}) : SortBool{} "_inList_" *)
@@ -602,39 +629,39 @@ Definition fun_Unds_impliesBool_Unds_ (b1 b2 : carrier SortBool) : option (carri
 (* hooked-symbol Lbl'Unds'in'Unds'keys'LParUndsRParUnds'MAP'Unds'Bool'Unds'KItem'Unds'Map{}(SortKItem{}, SortMap{}) : SortBool{} --- MAP in_keys *)
 
 (* hooked-symbol Lbl'Unds'modInt'Unds'{}(SortInt{}, SortInt{}) : SortInt{} "_modInt_" *)
-Definition fun_Unds_modInt_Int_Unds_ (z1 z2 : carrier SortInt) : option (carrier SortInt) :=
+Definition fun_Unds_modInt_Int_Unds_ (z1 z2 : SortInt_carrier) : option (SortInt_carrier) :=
   Some (c_dv_SortInt (SortInt_carrier_rect (fun _ => Z) (SortInt_carrier_rect _ emod z1) z2)).
 
 (* hooked-symbol Lbl'Unds'orBool'Unds'{}(SortBool{}, SortBool{}) : SortBool{} "_orBool_" *)
-Definition fun_Unds_orBool_Unds_ (b1 b2 : carrier SortBool) : option (carrier SortBool) :=
+Definition fun_Unds_orBool_Unds_ (b1 b2 : SortBool_carrier) : option (SortBool_carrier) :=
   Some (c_dv_SortBool (SortBool_carrier_rect (fun _ => bool) (SortBool_carrier_rect _ orb b1) b2)).
 
 (* hooked-symbol Lbl'Unds'orElseBool'Unds'{}(SortBool{}, SortBool{}) : SortBool{} "_orElseBool_" *)
-Definition fun_Unds_orElseBool_Unds_ (b1 b2 : carrier SortBool) : option (carrier SortBool) :=
+Definition fun_Unds_orElseBool_Unds_ (b1 b2 : SortBool_carrier) : option (SortBool_carrier) :=
   Some (c_dv_SortBool (SortBool_carrier_rect (fun _ => bool) (SortBool_carrier_rect _ orb b1) b2)).
 
 (* hooked-symbol Lbl'Unds'xorBool'Unds'{}(SortBool{}, SortBool{}) : SortBool{} "_xorBool_" *)
-Definition fun_Unds_xorBool_Unds_ (b1 b2 : carrier SortBool) : option (carrier SortBool) :=
+Definition fun_Unds_xorBool_Unds_ (b1 b2 : SortBool_carrier) : option (SortBool_carrier) :=
   Some (c_dv_SortBool (SortBool_carrier_rect (fun _ => bool) (SortBool_carrier_rect _ xorb b1) b2)).
 
 (* hooked-symbol Lbl'Unds'xorInt'Unds'{}(SortInt{}, SortInt{}) : SortInt{} "_xorInt_" *)
-Definition fun_Unds_xorInt_Int_Unds_ (z1 z2 : carrier SortInt) : option (carrier SortInt) :=
+Definition fun_Unds_xorInt_Int_Unds_ (z1 z2 : SortInt_carrier) : option (SortInt_carrier) :=
   Some (c_dv_SortInt (SortInt_carrier_rect (fun _ => Z) (SortInt_carrier_rect _ Z.lxor z1) z2)).
 
 (* hooked-symbol Lbl'UndsPipe'-'-GT-Unds'{}(SortKItem{}, SortKItem{}) : SortMap{} "_|->_" *)
 
 (* hooked-symbol Lbl'UndsPipe'Int'Unds'{}(SortInt{}, SortInt{}) : SortInt{} "_|Int_" *)
-Definition fun_Unds_orInt_Int_Unds_ (z1 z2 : carrier SortInt) : option (carrier SortInt) :=
+Definition fun_Unds_orInt_Int_Unds_ (z1 z2 : SortInt_carrier) : option (SortInt_carrier) :=
   Some (c_dv_SortInt (SortInt_carrier_rect (fun _ => Z) (SortInt_carrier_rect _ Z.lor z1) z2)).
 
 (* hooked-symbol Lbl'UndsPipe'Set'UndsUnds'SET'Unds'Set'Unds'Set'Unds'Set{}(SortSet{}, SortSet{}) : SortSet{} -- SET union *)
 
 (* hooked-symbol LblabsInt'LParUndsRParUnds'INT-COMMON'Unds'Int'Unds'Int{}(SortInt{}) : SortInt{} *)
-Definition fun_absInt (z : carrier SortInt) : option (carrier SortInt) :=
+Definition fun_absInt (z : SortInt_carrier) : option (SortInt_carrier) :=
   Some (c_dv_SortInt (SortInt_carrier_rect _ Z.abs z)).
 
 (* hooked-symbol LblbitRangeInt'LParUndsCommUndsCommUndsRParUnds'INT-COMMON'Unds'Int'Unds'Int'Unds'Int'Unds'Int{}(SortInt{}, SortInt{}, SortInt{}) : SortInt{} *)
-Definition fun_bitRangeInt (z1 z2 z3 : carrier SortInt) : option (carrier SortInt) :=
+Definition fun_bitRangeInt (z1 z2 z3 : SortInt_carrier) : option (SortInt_carrier) :=
   Some (c_dv_SortInt (SortInt_carrier_rect (fun _ => Z) (SortInt_carrier_rect (fun _ => Z -> Z) (SortInt_carrier_rect _ bitRange z1) z2) z3)).
 
 (* hooked-symbol LblcategoryChar'LParUndsRParUnds'STRING-COMMON'Unds'String'Unds'String{}(SortString{}) : SortString{} *)
@@ -662,26 +689,28 @@ Definition fun_bitRangeInt (z1 z2 z3 : carrier SortInt) : option (carrier SortIn
 (* hooked-symbol LbllengthString'LParUndsRParUnds'STRING-COMMON'Unds'Int'Unds'String{}(SortString{}) : SortInt{} *)
 
 (* hooked-symbol Lbllog2Int'LParUndsRParUnds'INT-COMMON'Unds'Int'Unds'Int{}(SortInt{}) : SortInt{} *)
-Definition fun_log2Int (z : carrier SortInt) : option (carrier SortInt) :=
+Definition fun_log2Int (z : SortInt_carrier) : option (SortInt_carrier) :=
   Some (c_dv_SortInt (SortInt_carrier_rect _ Z.log2 z)).
 
 (* hooked-symbol LblmakeList'LParUndsCommUndsRParUnds'LIST'Unds'List'Unds'Int'Unds'KItem{}(SortInt{}, SortKItem{}) : SortList{} *)
 
 (* hooked-symbol LblmaxInt'LParUndsCommUndsRParUnds'INT-COMMON'Unds'Int'Unds'Int'Unds'Int{}(SortInt{}, SortInt{}) : SortInt{} *)
-Definition fun_maxInt (z1 z2 : carrier SortInt) : option (carrier SortInt) :=
+Definition fun_maxInt (z1 z2 : SortInt_carrier) : option (SortInt_carrier) :=
   Some (c_dv_SortInt (SortInt_carrier_rect (fun _ => Z) (SortInt_carrier_rect _ Z.max z1) z2)).
 
 (* hooked-symbol LblminInt'LParUndsCommUndsRParUnds'INT-COMMON'Unds'Int'Unds'Int'Unds'Int{}(SortInt{}, SortInt{}) : SortInt{} *)
-Definition fun_minInt (z1 z2 : carrier SortInt) : option (carrier SortInt) :=
+Definition fun_minInt (z1 z2 : SortInt_carrier) : option (SortInt_carrier) :=
   Some (c_dv_SortInt (SortInt_carrier_rect (fun _ => Z) (SortInt_carrier_rect _ Z.min z1) z2)).
 
 (* hooked-symbol LblnotBool'Unds'{}(SortBool{}) : SortBool{} *)
-Definition fun_notBool_Unds_ (b : carrier SortBool) : option (carrier SortBool) :=
+Definition fun_notBool_Unds_ (b : SortBool_carrier) : option (SortBool_carrier) :=
   Some (c_dv_SortBool (SortBool_carrier_rect _ negb b)).
 
 (* hooked-symbol LblordChar'LParUndsRParUnds'STRING-COMMON'Unds'Int'Unds'String{}(SortString{}) : SortInt{} *)
 
 (* hooked-symbol LblpushList{}(SortKItem{}, SortList{}) : SortList{} "pushList" *)
+Definition fun_pushList (x : SortKItem_carrier) (xs : SortList_carrier) : option SortList_carrier :=
+  Some (c_dv_SortList (SortList_carrier_rect _ (fun xs => x :: xs) xs)).
 
 (* hooked-symbol LblremoveAll'LParUndsCommUndsRParUnds'MAP'Unds'Map'Unds'Map'Unds'Set{}(SortMap{}, SortSet{}) : SortMap{} *)
 
@@ -696,7 +725,7 @@ Definition fun_notBool_Unds_ (b : carrier SortBool) : option (carrier SortBool) 
 (* hooked-symbol LblrfindString'LParUndsCommUndsCommUndsRParUnds'STRING-COMMON'Unds'Int'Unds'String'Unds'String'Unds'Int{}(SortString{}, SortString{}, SortInt{}) : SortInt{} *)
 
 (* hooked-symbol LblsignExtendBitRangeInt'LParUndsCommUndsCommUndsRParUnds'INT-COMMON'Unds'Int'Unds'Int'Unds'Int'Unds'Int{}(SortInt{}, SortInt{}, SortInt{}) : SortInt{} *)
-Definition fun_signExtendBitRangeInt (z1 z2 z3 : carrier SortInt) : option (carrier SortInt) :=
+Definition fun_signExtendBitRangeInt (z1 z2 z3 : SortInt_carrier) : option (SortInt_carrier) :=
   Some (c_dv_SortInt (SortInt_carrier_rect (fun _ => Z) (SortInt_carrier_rect (fun _ => Z -> Z) (SortInt_carrier_rect _ signExtendBitRange z1) z2) z3)).
 
 (* hooked-symbol Lblsize'LParUndsRParUnds'SET'Unds'Int'Unds'Set{}(SortSet{}) : SortInt{} *)
@@ -714,7 +743,7 @@ Definition fun_signExtendBitRangeInt (z1 z2 z3 : carrier SortInt) : option (carr
 (* hooked-symbol Lblvalues'LParUndsRParUnds'MAP'Unds'List'Unds'Map{}(SortMap{}) : SortList{} *)
 
 (* hooked-symbol Lbl'Tild'Int'Unds'{}(SortInt{}) : SortInt{} "~Int_ "*)
-Definition fun_TildInt_Unds_ (z : carrier SortInt) : option (carrier SortInt) :=
+Definition fun_TildInt_Unds_ (z : SortInt_carrier) : option (SortInt_carrier) :=
   Some (c_dv_SortInt (SortInt_carrier_rect _ Z.lnot z)).
 
 End Prelude.
@@ -894,10 +923,9 @@ fun_notBool_Unds_
           _
           parser.
       Next Obligation.
-        (* cbn.
-        exact (fun_Unds_andBool_Unds_ c_dv_SortBool).
-        destruct s; repeat constructor. *)
-      Admitted.
+        destruct s.
+        all: timeout 1 repeat constructor.
+      Defined.
       Final Obligation.
         intros s1 s2 H x; inversion H; subst.
       * exact (c_inj_SortAExp_SortKItem x).
