@@ -11,6 +11,7 @@ Definition fun_Unds_orBool_Unds_ {T : Type} (inj : bool -> T) (b1 b2 : bool) : o
 
 
  *)
+From MatchingLogic Require Export stdpp_ext.
 Require Import ZArith Bool.
 
 Definition neqbB (b1 b2 : bool) : bool :=
@@ -76,3 +77,177 @@ Compute modPow (-7) 3 20.
 Definition divides (a b : Z) : bool :=
   Z.rem b a =? 0.
 
+Module Map.
+  Section Map.
+
+    Context {K V : Set}
+    (**
+       I'm tempted to use eqdecision instead, as that can be an instance,
+       but I'm not sure if we want to go back to that.
+     *)
+    (K_eqb : K -> K -> bool)
+    (V_eqb : V -> V -> bool).
+
+    Definition Map : Set := list (K * V).
+
+    Definition choice (m : Map) : option K := if m is (k, _) :: _ then Some k else None.
+
+    Definition lookup (m : Map) (k : K) : option V :=
+      let fix F m' := if m' is (k', v') :: xs then if K_eqb k k' then Some v' else F xs else None in F m.
+
+    Definition lookupOrDefault (m : Map) (k : K) (v : V) : V :=
+      if lookup m k is Some x then x else v.
+      (* let fix F m' := if m' is (k', v') :: xs then if K_eqb k k' then v' else F xs else v in F m. *)
+
+    (**
+       Since the documentation doesn't mention what happens if the key is
+       not in the map, I decided not to raise an error. It is probably
+       never tested, so it shouldn't matter.
+     *)
+    Definition remove (m : Map) (k : K) : Map :=
+      let fix F m' := if m' is (k', v') :: xs then if K_eqb k k' then xs else (k', v') :: F xs else [] in F m.
+
+    (**
+       Decided to use remove, to make getting the size easier. Please
+       consider if it would be better to deduplicate in the size function
+       and not here. If you do decide to do that, the remove function
+       needs to be updated, so EVERY occurrence of a key is removed. If
+       you keep it this way, but change remove to give an error for a
+       non-existing key, this will be more complicated.
+     *)
+    Definition update (m : Map) (k : K) (v : V) : Map := (k, v) :: remove m k.
+
+    Definition difference (m m' : Map) : Map :=
+      let fix F m'' :=
+        if m'' is (k, v) :: xs then
+          if lookup m' k is Some v' then
+            if V_eqb v v' then
+              F xs
+            else
+              (k, v) :: F xs
+          else
+            (k, v) :: F xs
+        else
+          []
+      in F m.
+
+    (**
+       The documentation says this is supposed to be a strict subset, but
+       neither the <= symbol, nor the name "inclusion" seem to suggest that.
+       This implementation is not strict.
+
+       Here I am using the following lemma: A ⊆ B <=> A \ B = ∅.
+
+       The bottom, commented line should express strict inclusion, using the
+       lemma A ⊂ B <=> A \ B = ∅ /\ B \ A ≠ ∅.
+     *)
+    Definition inclusion (m m' : Map) : bool :=
+      if difference m m' is [] then true else false.
+      (* if difference m m' is [] then if difference m' m isn't [] then true else false else false. *)
+
+    (**
+       This method is not needed directly, and is not in the
+       documentation, but it's easiest to use this for the check at
+       concat. If that check is removed, this can be too.
+
+       For this, I am using the lemma: A ∩ B = A \ (A \ B).
+     *)
+    Definition intersection (m m' : Map) : Map := difference m (difference m m').
+
+    (**
+       I added the disjointness check mentioned in the documentation.
+     *)
+    Definition concat (m m' : Map) : option Map :=
+      if intersection m m' is [] then Some (m ++ m') else None.
+
+    Definition in_keys (k : K) : Map -> bool := fix F m := if m is (k', v') :: xs then if K_eqb k k' then true else F xs else false.
+
+    (**
+       I think this is singleton. Denoted with |->.
+     *)
+    Definition element (k : K) (v : V) : Map := [(k, v)].
+
+    Definition size (m : Map) : Z := Z.of_nat (length m).
+
+    Definition updateAll : Map -> Map -> Map := fix F m m' := if m' is (k, v) :: xs then F (update m k v) xs else [].
+
+    Definition values : Map -> list V := fix F m := if m is (_, v) :: xs then v :: F xs else [].
+
+  End Map.
+  Arguments Map K V : assert, clear implicits.
+End Map.
+
+Module SSet.
+  Section SSet.
+
+    Context {V : Set}
+    (V_eqb : V -> V -> bool).
+
+    Definition SSet : Set := list V.
+
+    Definition choice (s : SSet) : option V := if s is x :: xs then Some x else None.
+
+    Definition in_ (v : V) : SSet -> bool :=
+      fix F s' := if s' is x :: xs then if V_eqb x v then true else F xs else false.
+
+    Definition difference (s s' : SSet) : SSet :=
+      let fix F s'' := if s'' is x :: xs then if in_ x s' then F xs else x :: F xs else [] in F s.
+
+    (**
+       I'm pretty sure this is supposed to be singleton, but it's not
+       explicitly said what the purpose of this function is in the
+       documentation.
+     *)
+    Definition setitem : V -> SSet := (.:: []).
+
+    (**
+       See the note for Map.inclusion, the same things apply here.
+     *)
+    Definition inclusion (s s' : SSet) : bool :=
+      if difference s s' is [] then true else false.
+      (* if difference s s' is [] then if difference s' s isn't [] then true else false else false. *)
+
+    (**
+       For sets, this function is actually used.
+       Based on the same lemma as for maps.
+     *)
+    Definition intersection (s s' : SSet) : SSet := difference s (difference s s').
+
+    Definition union (s s' : SSet) : SSet := s ++ difference s' s.
+
+    (**
+       So this is funny. Technically the disjointness check should be
+       present here, but according to the documentation, concatenating
+       non-disjoint sets "may be silently allowed during concrete
+       execution".
+     *)
+    Definition concat (s s' : SSet) : option SSet :=
+      if intersection s s' is [] then Some (s ++ s') else None.
+
+    Definition size (s : SSet) : Z := Z.of_nat (length s).
+
+  End SSet.
+  Arguments SSet V : assert, clear implicits.
+End SSet.
+
+Module MapSet.
+
+  Import Map.
+  Import SSet.
+
+  Section MapSet.
+
+    Context {K V : Set}
+    (K_eqb : K -> K -> bool).
+
+    Definition keys : Map K V -> SSet K := fix F m := if m is (k, v) :: xs then k :: F xs else [].
+
+    (**
+       Since sets ARE lists, this is easy.
+     *)
+    Definition keys_list : Map K V -> list K := keys.
+
+    Definition removeAll : Map K V -> SSet K -> Map K V := fix F m s := if s is x :: xs then F (Map.remove K_eqb m x) xs else m.
+
+  End MapSet.
+End MapSet.
