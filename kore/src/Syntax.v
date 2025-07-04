@@ -346,5 +346,11 @@ Section DerivedNotations.
       (var_list [ret_sort σ] [] vars)
     ) (kore_bevar In_nil)).
 
+  Definition functional_symbol_sym
+    (σ : symbol) (R : sort)
+    (vars : hlist evar (arg_sorts σ))
+    : Pattern [] [] R :=
+    kore_exists (ret_sort σ) (kore_equals R (kore_bevar In_nil) (kore_app σ (var_list [ret_sort σ] [] vars))).
+
 End DerivedNotations.
 

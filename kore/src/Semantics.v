@@ -441,6 +441,82 @@ End with_model.
         by rewrite IHvars.
   Qed.
 
+  Lemma functional_symbol_is_functional_sym :
+    forall (σ : symbol) (R : sort) (vars : hlist evar (arg_sorts σ)),
+      forall (M : Model),
+        (exists (f : hlist M (arg_sorts σ) -> M (ret_sort σ)), app M σ = singleton ∘ f) ->
+        satM (functional_symbol_sym σ R vars) M.
+  Proof.
+    intros.
+    unfold satM, functional_symbol_sym. intros.
+    simp eval. simpl.
+    apply propset_fa_union_full. intro.
+    cbn.
+    setoid_rewrite eval_equation_19.
+    remember (fresh_evar _ _) as x.
+    assert (X : 
+      ((fix F
+                    (l : list sort)
+                    (h : hlist (Pattern [ret_sort σ] []) l) {struct
+                     h} : hlist (Pattern [] []) l :=
+                    match
+                      h in (hlist _ l0)
+                      return (hlist (Pattern [] []) l0)
+                    with
+                    | ⟨ ⟩%hlist => ⟨ ⟩%hlist
+                    | @hcons _ _ x0 xs y h0 =>
+                        hcons (bevar_subst [] (kore_fevar x) y)
+                          (F xs h0)
+                    end) (arg_sorts σ)
+                   (var_list [ret_sort σ] [] vars)) =
+                     var_list [] [] vars
+    ). {
+      clear ρ t H M Heqx.
+      induction vars; simpl.
+      * reflexivity.
+      * rewrite IHvars. reflexivity.
+    }
+    rewrite X.
+    clear X.
+    setoid_rewrite elem_of_PropSet.
+    setoid_rewrite eval_app_var_list.
+    simp eval.
+    destruct H as [f H].
+    rewrite H. cbn.
+    setoid_rewrite eval_equation_3.
+    unfold evar_valuation, update_evar_val at 2.
+    simpl.
+    rewrite decide_eq_same. simpl.
+    rewrite decide_eq_same.
+    (* c still appears on the lhs *)
+    assert (x ∉ free_evars (ret_sort σ) (kore_app σ (var_list [ret_sort σ] [] vars))). {
+      pose proof (fresh_evar_is_fresh (ret_sort σ) (kore_equals R (kore_bevar In_nil) (kore_app σ (var_list [ret_sort σ] [] vars))
+       )).
+       subst x.
+       simpl in *. set_solver.
+    }
+    clear -H0.
+    cbn in H0.
+    exists (f
+      (all_singleton_extract
+         (all_singleton_var_list vars ρ))).
+    f_equal. f_equal.
+    remember (f _) as c. clear f Heqc.
+    revert ρ c.
+    induction vars; intros; simpl in *.
+    * reflexivity.
+    * destruct decide; subst; simpl in *.
+      - destruct decide.
+        + subst. clear-H0. exfalso.
+          set_solver.
+        + f_equal.
+          specialize (IHvars ltac:(set_solver)).
+          by erewrite IHvars.
+      - f_equal.
+        specialize (IHvars ltac:(set_solver)).
+        by erewrite IHvars.
+  Qed.
+
   Lemma functional_symbol_is_functional_option :
     forall (σ : symbol) (R : sort) (vars : hlist evar (arg_sorts σ)),
       forall (M : Model),
@@ -452,6 +528,33 @@ End with_model.
   Proof.
     intros * [f [H1 H2]].
     apply functional_symbol_is_functional.
+    rewrite H1.
+    clear -H2.
+    epose (
+      _ : hlist M (arg_sorts σ) → M (ret_sort σ)
+    ) as newf. Unshelve. 2: {
+      clear -f. intro l. destruct (f l) eqn:P.
+      * exact c.
+      * apply inhabited. (* Trick: non-empty carrier is exploited here *)
+    } simpl in newf.
+    exists newf.
+    extensionality l. simpl.
+    destruct (f l) eqn:P.
+    * simpl. subst newf. simpl. rewrite P. reflexivity.
+    * by apply H2 in P.
+  Qed.
+
+  Lemma functional_symbol_is_functional_option_sym :
+    forall (σ : symbol) (R : sort) (vars : hlist evar (arg_sorts σ)),
+      forall (M : Model),
+        (exists (f : hlist M (arg_sorts σ) -> option (M (ret_sort σ))),
+(*                 foldr (fun s acc => M s -> acc) (option (M (ret_sort σ))) (arg_sorts σ)), *)
+          app M σ = oapp singleton empty ∘ f /\
+          forall l, f l <> None) ->
+        satM (functional_symbol_sym σ R vars) M.
+  Proof.
+    intros * [f [H1 H2]].
+    apply functional_symbol_is_functional_sym.
     rewrite H1.
     clear -H2.
     epose (
@@ -593,12 +696,27 @@ match goal with
                              (kore_bevar In_nil))) = ⊤]
                              (* ^- NOTE: this is a restriction on db index 0!!! This pattern checks whether the axiom is a functional axiom *) =>
   let H := fresh "H" in
-  epose proof (functional_symbol_is_functional_option σ s (hmap (fun s p =>
+  epose proof (H := functional_symbol_is_functional_option σ s (hmap (fun s p =>
     match p with
     | kore_fevar x => x
     | _ => "_"%string
     end) l) M);
   apply H;
+  eexists; split; [reflexivity|]
+end.
+
+Ltac solve_functional_axiom_option_sym :=
+match goal with
+| [ |- @eval _ ?M _ _ _ ?ρ (kore_exists _
+                (kore_equals ?s (kore_bevar In_nil) (kore_app ?σ ?l))) = ⊤]
+                             (* ^- NOTE: this is a restriction on db index 0!!! This pattern checks whether the axiom is a functional axiom *) =>
+  let H := fresh "H" in
+  epose proof (H := functional_symbol_is_functional_option_sym σ s (hmap (fun s p =>
+    match p with
+    | kore_fevar x => x
+    | _ => "_"%string
+    end) l) M);
+      apply H;
   eexists; split; [reflexivity|]
 end.
 
