@@ -280,3 +280,296 @@ Module List.
   End List.
 End List.
 
+From Coq.Program Require Import Wf.
+
+Module String.
+
+  Open Scope nat_scope.
+
+  Import Ascii.
+
+  (**
+     The documentation says nothing about range checks, so I didn't add
+     any.
+   *)
+  Definition asciiToNat (x : ascii) : nat :=
+    let n := nat_of_ascii x - 48 in
+      if 10 <=? n then
+        let n' := n - 7 in
+          if 36 <=? n' then
+            n' - 32
+          else
+            n'
+      else
+        n
+  .
+
+  Compute asciiToNat "0".
+  Compute asciiToNat "A".
+  Compute asciiToNat "Z".
+  Compute asciiToNat "a".
+  Compute asciiToNat "z".
+
+  (**
+     Similar to the above, no safety checks. Also, the documentation says
+     "whether the letters returned [...] are upper or lowercase is
+     determined by the backend, but the backend will consistently choose
+     one or the other". The backend™ (me) has chosen uppercase.
+   *)
+  Definition natToAscii (n : nat) : ascii :=
+    ascii_of_nat (if n <=? 9 then n + 48 else n + 55).
+
+  Compute natToAscii 0.
+  Compute natToAscii 10.
+  Compute natToAscii 35.
+
+  (**
+     Unfortunately I couldn't avoid a well-founded recursion here. I'm not
+     sure how it will simplify.
+
+     If it causes problems, it might be possible to rewrite it with
+     multiple nested fix-es, similar to reverse later, this time
+     reimplementing div, mod and addition or substraction.
+   *)
+  Program Fixpoint unsafeConvert (num base : nat) (H : 2 <= base) {measure num} : string :=
+    if num is 0 then
+      EmptyString
+    else
+      String
+        (natToAscii (Nat.modulo num base))
+        (unsafeConvert (Nat.div num base) base H)
+  .
+  Next Obligation.
+    intros.
+    apply Nat.div_lt; lia.
+  Defined.
+  Next Obligation.
+    intros. auto.
+  Defined.
+  Final Obligation.
+    apply measure_wf, lt_wf.
+  Defined.
+
+  (**
+     I had to add a check for the base.
+   *)
+  Definition base2string (num base : Z) : option string :=
+    let base' := Z.to_nat base in
+      if decide (2 <= base' <= 36) is left (conj H _) then
+        Some (
+          if Z.ltb num 0 then
+            String "-" (unsafeConvert (Z.to_nat (Z.opp num)) base' H)
+          else
+            unsafeConvert (Z.to_nat num) base' H
+        )
+      else
+        None
+  .
+
+  Definition int2string (num : Z) : option string := base2string num 10.
+
+  (**
+     I check to make sure the base is in range, but I don't check if it's
+     actually right for the string. Also the lack of checking described at
+     asciiToNat applies here. Do we need any of these checks?
+   *)
+  Definition string2base (str : string) (base : Z) : option Z :=
+    if (2 <=? base)%Z && (base <=? 36)%Z then
+      Some (
+        let fix F n str' :=
+          if str' is String x xs then
+            F (10 * n + asciiToNat x) xs
+          else
+            n
+        in match str with
+           | String "-" xs => Z.opp (Z.of_nat (F 0 xs))
+           | String "+" xs => Z.of_nat (F 0 xs)
+           | _ => Z.of_nat (F 0 str)
+           end
+      )
+     else
+       None
+  .
+
+  Compute string2base "-bEeF" 16.
+
+  Definition string2int (str : string) : option Z := string2base str 10.
+
+  (**
+     I guess?
+   *)
+  Definition string2id : string -> string := id.
+
+  Definition concat : string -> string -> string := append.
+
+  (**
+     These functions, very helpfully UNdocumented in the Coq docs, are, I
+     think, lexicographical.
+   *)
+  Definition le : string -> string -> bool := String.leb.
+  Definition lt : string -> string -> bool := String.ltb.
+  Definition ge (s s' : string) : bool := le s' s.
+  Definition gt (s s' : string) : bool := lt s' s.
+  Definition eq : string -> string -> bool := String.eqb.
+  Definition ne (s s' : string) : bool := negb (eq s s').
+
+  (**
+     Yet another pair of barely documented functions. What do I do if the
+     string contains more than 1 character? And if the integer is negative?
+     I made the function partial, but as no one wrote it down, I don't know
+     what actually happens.
+   *)
+  Definition chrChar (x : Z) : option string :=
+    if Z.ltb x 0 then
+      None
+    else
+      Some (String (ascii_of_nat (Z.to_nat x)) EmptyString)
+  .
+  Definition ordChar (x : string) : option Z :=
+    if x is String y EmptyString then
+      Some (Z.of_nat (nat_of_ascii y))
+    else
+      None
+  .
+
+  (**
+     Basic replace function. As there is no documentation for what to do
+     with empty needles, I allow them, but since every haystack "contains"
+     an infinite amount of empty strings, it will just be prefixed by
+     replacement times times. Negative integers also have no documented
+     behaviour, so I treat them as zero. Finally, what to do if there are
+     fewer needles than times was also not mentioned in the documentation,
+     so I just treat it as a maximum (or "fuel" for the recursion). With
+     these assumptions, this is a total function.
+
+     Since this code is definitely in the "write-only" category, I included
+     line-by-line comments, in case anyone actually has to read it at some
+     point.
+   *)
+  Definition replace (haystack needle replacement : string) (times : Z) : string :=
+    (* F is the main loop, decreasing on "fuel" *)
+    let fix F n s :=
+      (* if we have "fuel" *)
+      if n is S n' then
+        (* G tries to do a replacement at the first possibility *)
+        let fix G s' :=
+          (* we need to match the string now to use it for a trick later *)
+          if s' is String x xs then
+            (* H is the one actually doing the replacing *)
+            let fix H hs nd :=
+              (* if we still have chars in the needle *)
+              if nd is String y ys then
+                (* and the haystack *)
+                if hs is String z zs then
+                  (* and they are equal *)
+                  if (y =? z)%char then
+                    (* then keep going *)
+                    H zs ys
+                  else
+                    (* if they weren't equal, replacement failed, try one char later; this is the trick to call G with a decreasing arg *)
+                    String x (G xs)
+                else
+                  (* if ran out of "hay" before the needle, just return what we started with, no replacement or recursion needed here *)
+                  s'
+              else
+                (* if needle ran out, replacement successful, start main loop over with less "fuel" *)
+                append replacement (F n' hs)
+            (* we eat the needle *)
+            in H s' needle
+          else
+            (* this is the price of our trick, bit of repetition if the haystack couldn't be split, shortcircuiting H *)
+            EmptyString
+        (* we eat the "hay" *)
+        in G s
+      else
+        (* if no fuel, return *)
+        s
+    (* convert Z to nat, also eating some "hay" *)
+    in F (Z.to_nat times) haystack
+  .
+
+  Compute replace "ababa" "ab" "cd" 2.
+  Compute replace "ababa" "ba" "cd" 2.
+  Compute replace "ababa" "x" "cd" 2.
+  Compute replace "ababa" "" "cd" 2.
+  Compute replace "ababa" "ab" "cd" 1.
+  Compute replace "ababa" "ab" "cd" 3.
+  Compute replace "ababa" "a" "c" 3.
+  Compute replace "ababa" "b" "c" 3.
+
+  Definition replaceFirst (haystack needle replacement : string) : string := replace haystack needle replacement 1.
+
+  (**
+     If the needle is non-empty, there can be at most |haystack|
+     replacements done, so I use the original replace with the length of
+     haystack. Since if needle could be empty for this function, it would
+     have to run indefinitely. Still, I make no check to ensure this. If it
+     is desired, just wrap it in an if.
+   *)
+  Definition replaceAll (haystack needle replacement : string) : string := replace haystack needle replacement (Z.of_nat (String.length haystack)).
+
+  Compute replaceAll "ababbaba" "ab" "cd".
+  Compute replaceAll "aaaa" "a" "xy".
+  Compute replaceAll "aaaa" "" "xy".
+
+  (**
+     This time I can't allow searching for an empty string in a string
+     because the result would have to be infinity. Otherwise, I just split
+     the needle early and do a lot of code duplication on its head and tail
+     to ensure descreasing arguments for the fixpoints. This function is a
+     lot more verbose and painful than it would be without the decreasing
+     requirement.
+   *)
+  Definition countAllOccurrences (haystack needle : string) : option Z :=
+    let fix F s x' xs' :=
+      if s is String y ys then
+        if (y =? x')%char then
+          let fix G hs nd :=
+            if nd is String z zs then
+              if hs is String w ws then
+                if (z =? w)%char then
+                  G ws zs
+                else
+                  F ws x' xs'
+              else
+                0
+            else
+              S (F hs x' xs')
+          in G ys xs'
+        else
+          F ys x' xs'
+      else
+        0
+    in if needle is String x xs then
+      Some (Z.of_nat (F haystack x xs))
+    else
+      None
+  .
+
+  Compute countAllOccurrences "ababbaba" "ab".
+
+  Definition lengthString (s : string) : Z := Z.of_nat (String.length s).
+
+  (**
+     Still missing:
+
+     I can do:
+     - findChar(_,_,_)_STRING-COMMON_Int_String_String_Int{}(SortString{}, SortString{}, SortInt{}) : SortInt{}
+     - findString(_,_,_)_STRING-COMMON_Int_String_String_Int{}(SortString{}, SortString{}, SortInt{}) : SortInt{}
+     - rfindChar(_,_,_)_STRING-COMMON_Int_String_String_Int{}(SortString{}, SortString{}, SortInt{}) : SortInt{}
+     - rfindString(_,_,_)_STRING-COMMON_Int_String_String_Int{}(SortString{}, SortString{}, SortInt{}) : SortInt{}
+     - substrString(_,_,_)_STRING-COMMON_String_String_Int_Int{}(SortString{}, SortInt{}, SortInt{}) : SortString{}
+
+     I can't do because missing Float carrier:
+     - Float2String(_)_STRING-COMMON_String_Float{}(SortFloat{}) : SortString{}
+     - FloatFormat{}(SortFloat{}, SortString{}) : SortString{}
+     - String2Float(_)_STRING-COMMON_Float_String{}(SortString{}) : SortFloat{}
+
+     I can't do because no documentation and I can't figure them out:
+     - categoryChar(_)_STRING-COMMON_String_String{}(SortString{}) : SortString{}
+     - directionalityChar(_)_STRING-COMMON_String_String{}(SortString{}) : SortString{}
+   *)
+
+  (* Search [is:Definition | is:Fixpoint] in String. *)
+
+End String.
