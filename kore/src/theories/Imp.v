@@ -1076,7 +1076,7 @@ dv is only used with the following parameters:
       )
     ).
 
-  Definition KList_theory_functional : @Theory ImpSignature :=
+(*   Definition KList_theory_functional : @Theory ImpSignature :=
     PropSet (fun pat =>
       (
         exists R, pat = existT R (
@@ -1092,7 +1092,7 @@ dv is only used with the following parameters:
           
         )
       )
-    ).
+    ). *)
 
 
 
@@ -1174,6 +1174,7 @@ Module ImpSemantics.
   Definition divides (a b : Z) : bool :=
     Z.rem b a =? 0.
   Arguments divides /.
+
 
   (* Program Definition ImpModel : @Model ImpSignature :=
     mkModel (* _singleton *)

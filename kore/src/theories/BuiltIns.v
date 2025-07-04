@@ -13,6 +13,8 @@ Definition fun_Unds_orBool_Unds_ {T : Type} (inj : bool -> T) (b1 b2 : bool) : o
  *)
 From MatchingLogic Require Export stdpp_ext.
 Require Import ZArith Bool.
+Require Import List.
+From stdpp Require Import list.
 
 Definition neqbB (b1 b2 : bool) : bool :=
   negb (Bool.eqb b1 b2).
@@ -251,3 +253,30 @@ Module MapSet.
 
   End MapSet.
 End MapSet.
+
+Module List.
+  Section List.
+
+  Context {T : Type}.
+
+  Definition List_get (xs : list T) (z : Z) : option T :=
+    if Z.ltb z 0
+    then nth_error xs (Z.to_nat (Z.of_nat (length xs) + z))
+    else nth_error xs (Z.to_nat z).
+
+  (* TODO: check negative indices in K! *)
+  Definition List_range (xs : list T) (x y : Z) : list T :=
+    take (length xs - Z.to_nat x - Z.to_nat y)%nat (drop (Z.to_nat x) xs).
+  Search nat nat list is:Definition.
+
+  (* TODO: check negative indices in K! *)
+  Definition List_set (xs : list T) (z : Z) (t : T) : option (list T) :=
+    if (Z.to_nat (Z.abs z) <? length xs)%nat
+    then Some (take (Z.to_nat z) xs ++ t :: drop (1 + Z.to_nat z) xs)
+    else None.
+
+
+
+  End List.
+End List.
+

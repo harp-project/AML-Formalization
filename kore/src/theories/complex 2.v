@@ -469,19 +469,21 @@ Some (c_dv_SortString (SortId_carrier_rect _ id x)).
 
 (* hooked-symbol LblInt2String'LParUndsRParUnds'STRING-COMMON'Unds'String'Unds'Int{}(SortInt{}) : SortString{} *)
 
+
 (* hooked-symbol LblList'Coln'get{}(SortList{}, SortInt{}) : SortKItem{} "List:get" *)
 Definition fun_List_get (xs : SortList_carrier) (x : SortInt_carrier) : option SortKItem_carrier :=
-  SortInt_carrier_rect _ (fun z =>
-    SortList_carrier_rect (fun _ => option SortKItem_carrier) (fun xs =>
-      if Z.ltb z 0
-      then nth_error xs (Z.to_nat (Z.of_nat (length xs) + z))
-      else nth_error xs (Z.to_nat z)
-  ) xs) x.
+  SortInt_carrier_rect (fun _ => option SortKItem_carrier) (SortList_carrier_rect (fun _ => Z -> option SortKItem_carrier) List_get xs) x.
 
 (* hooked-symbol LblList'Coln'range{}(SortList{}, SortInt{}, SortInt{}) : SortList{} "List:range" *)
-(* Definition fun_List_range (xs : SortList_carrier) (x y : SortInt_carrier) : Admitted. *)
+Definition fun_List_range (xs : SortList_carrier) (x y : SortInt_carrier) : option SortList_carrier :=
+  Some (c_dv_SortList (SortInt_carrier_rect (fun _ => list SortKItem_carrier) (
+    SortInt_carrier_rect (fun _ => Z -> list SortKItem_carrier) (
+      SortList_carrier_rect _ List_range xs) x) y)).
 
 (* hooked-symbol LblList'Coln'set{}(SortList{}, SortInt{}, SortKItem{}) : SortList{} "List:set" *)
+Definition fun_List_set (xs : SortList_carrier) (x : SortInt_carrier) (y : SortKItem_carrier) : option SortList_carrier :=
+  c_dv_SortList <$> SortInt_carrier_rect (fun _ => SortKItem_carrier -> option (list SortKItem_carrier)) (
+    SortList_carrier_rect (fun _ => Z -> SortKItem_carrier -> _) List_set xs) x y.
 
 (* hooked-symbol LblListItem{}(SortKItem{}) : SortList{} *)
 Definition fun_ListItem (x : SortKItem_carrier) : option SortList_carrier :=
@@ -625,6 +627,8 @@ Definition fun_Unds_impliesBool_Unds_ (b1 b2 : SortBool_carrier) : option (SortB
   Some (c_dv_SortBool (SortBool_carrier_rect (fun _ => bool) (SortBool_carrier_rect _ implb b1) b2)).
 
 (* hooked-symbol Lbl'Unds'inList'Unds'{}(SortKItem{}, SortList{}) : SortBool{} "_inList_" *)
+(* TODO: impossible without equality over all KItems! *)
+
 
 (* hooked-symbol Lbl'Unds'in'Unds'keys'LParUndsRParUnds'MAP'Unds'Bool'Unds'KItem'Unds'Map{}(SortKItem{}, SortMap{}) : SortBool{} --- MAP in_keys *)
 
@@ -673,6 +677,7 @@ Definition fun_bitRangeInt (z1 z2 z3 : SortInt_carrier) : option (SortInt_carrie
 (* hooked-symbol LbldirectionalityChar'LParUndsRParUnds'STRING-COMMON'Unds'String'Unds'String{}(SortString{}) : SortString{} *)
 
 (* hooked-symbol LblfillList'LParUndsCommUndsCommUndsCommUndsRParUnds'LIST'Unds'List'Unds'List'Unds'Int'Unds'Int'Unds'KItem{}(SortList{}, SortInt{}, SortInt{}, SortKItem{}) : SortList{} *)
+
 
 (* hooked-symbol LblfindChar'LParUndsCommUndsCommUndsRParUnds'STRING-COMMON'Unds'Int'Unds'String'Unds'String'Unds'Int{}(SortString{}, SortString{}, SortInt{}) : SortInt{} *)
 
