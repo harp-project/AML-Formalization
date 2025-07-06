@@ -494,6 +494,7 @@ Module String.
   Compute replace "ababa" "" "cd" 2.
   Compute replace "ababa" "ab" "cd" 1.
   Compute replace "ababa" "ab" "cd" 3.
+  Compute replace "abcabcab" "abc" "cd" 3.
   Compute replace "ababa" "a" "c" 3.
   Compute replace "ababa" "b" "c" 3.
 
@@ -551,14 +552,153 @@ Module String.
   Definition lengthString (s : string) : Z := Z.of_nat (String.length s).
 
   (**
-     Still missing:
+     This function is relatively well documented, although the definition
+     of "valid indices" says nothing about negative values, which is
+     especially bad, as with substring, negative indices sometimes mean
+     indexing from the back. Since this functionality is not mentioned, I
+     didn't implement it.
+   *)
+  Definition substr (str : string) (startidx endidx : Z) : option string :=
+    if (startidx <? 0)%Z || (endidx <=? 0)%Z then
+      None
+    else
+      let fix F n m s :=
+        if n is S n' then
+          if (m, s) is (S m', String _ xs) then
+            F n' m' xs
+          else
+            None
+        else
+          let fix G k s' :=
+            if k is S k' then
+              if s' is String x xs then
+                option_map (String x) (G k' xs)
+              else
+                None
+            else
+              Some EmptyString
+          in G m s
+      in F (Z.to_nat startidx) (Z.to_nat endidx) str
+  .
 
-     I can do:
-     - findChar(_,_,_)_STRING-COMMON_Int_String_String_Int{}(SortString{}, SortString{}, SortInt{}) : SortInt{}
-     - findString(_,_,_)_STRING-COMMON_Int_String_String_Int{}(SortString{}, SortString{}, SortInt{}) : SortInt{}
-     - rfindChar(_,_,_)_STRING-COMMON_Int_String_String_Int{}(SortString{}, SortString{}, SortInt{}) : SortInt{}
-     - rfindString(_,_,_)_STRING-COMMON_Int_String_String_Int{}(SortString{}, SortString{}, SortInt{}) : SortInt{}
-     - substrString(_,_,_)_STRING-COMMON_String_String_Int_Int{}(SortString{}, SortInt{}, SortInt{}) : SortString{}
+  Compute substr "abcdefghijkl" 3 6.
+  Compute substr "abcdefghijkl" 3 600.
+  Compute substr "abcdefghijkl" 6 3.
+
+  (**
+     I couldn't figure out what the index does in the reverse version from
+     the 1.5 lines of documentation. Should I be doing the find before or
+     after it?
+
+     Also, there is no mention of a negative index again, so this time I
+     decided to treat it as zero. Why are we using ints instead of nats?
+
+     I treat an index larger than the length of the haystack as if I didn't
+     find the needle. I don't know if this is what should happen.
+
+     There is also no mention of if the returned number should count from
+     the beginning or the start index. I count from the beginning.
+   *)
+  Definition find (haystack needle : string) (index: Z) : Z :=
+    let fix F s n m :=
+      if n is S n' then
+        if s is String x xs then
+          F xs n' (S m)
+        else
+          (-1)%Z
+      else
+        let fix G s' m' :=
+          if s' is String z zs then
+            let fix H hs nd m'' :=
+              if nd is String x xs then
+                if hs is String y ys then
+                  if (x =? y)%char then
+                    H ys xs m''
+                  else
+                    G zs (S m'')
+                else
+                  (-1)%Z
+              else
+                Z.of_nat m''
+            in H s' needle m'
+          else
+            (-1)%Z
+        in G s m
+    in F haystack (Z.to_nat index) 0
+  .
+
+  Compute find "ababbab" "ab" 0.
+  Compute find "ababbab" "ab" 1.
+  Compute find "ababbab" "ab" 2.
+  Compute find "ababbab" "ab" 3.
+  Compute find "ababbab" "ab" 6.
+  Compute find "ababbab" "ac" 0.
+  Compute find "ababbab" "bb" 0.
+  Compute find "ababbab" "bb" 3.
+  Compute find "ababbab" "bb" 4.
+
+  (**
+     The documentation says to find the first occurrence of "one of the
+     characters", not the minimum of their first occurrences. I'm not sure
+     this is correct this way. I included the minimum version below.
+     Same problem with the reverse on as above.
+   *)
+  Definition findChar (haystack needle : string) (index: Z) : Z :=
+    let fix F s :=
+      if s is String x xs then
+        let n := find haystack (String x EmptyString) index
+        in
+          if n is (-1)%Z then
+            F xs
+          else
+            n
+      else
+        (-1)%Z
+    in F needle
+  .
+
+  Compute findChar "abcdefghi" "abc" 0.
+  Compute findChar "abcdefghi" "abc" 1.
+  Compute findChar "abcdefghi" "abc" 2.
+  Compute findChar "abcdefghi" "abc" 3.
+  Compute findChar "abcdefghi" "bac" 0.
+
+  Definition findChar2 (haystack needle : string) (index: Z) : Z :=
+    let fix F s n m :=
+      if n is S n' then
+        if s is String x xs then
+          F xs n' (S m)
+        else
+          (-1)%Z
+      else
+        let fix G s' m' :=
+          if s' is String z zs then
+            let fix H hs nd m'' :=
+              if nd is String x xs then
+                if hs is String y ys then
+                  if (x =? y)%char then
+                    Z.of_nat m''
+                  else
+                    H hs xs m''
+                else
+                  (-1)%Z
+              else
+                G zs (S m'')
+            in H s' needle m'
+          else
+            (-1)%Z
+        in G s m
+    in F haystack (Z.to_nat index) 0
+  .
+
+  Compute findChar2 "abcdefghi" "abc" 0.
+  Compute findChar2 "abcdefghi" "abc" 1.
+  Compute findChar2 "abcdefghi" "abc" 2.
+  Compute findChar2 "abcdefghi" "abc" 3.
+  Compute findChar2 "abcdefghi" "bac" 0.
+
+  (**
+     Still missing:
 
      I can't do because missing Float carrier:
      - Float2String(_)_STRING-COMMON_String_Float{}(SortFloat{}) : SortString{}
@@ -568,6 +708,8 @@ Module String.
      I can't do because no documentation and I can't figure them out:
      - categoryChar(_)_STRING-COMMON_String_String{}(SortString{}) : SortString{}
      - directionalityChar(_)_STRING-COMMON_String_String{}(SortString{}) : SortString{}
+     - rfindChar(_,_,_)_STRING-COMMON_Int_String_String_Int{}(SortString{}, SortString{}, SortInt{}) : SortInt{}
+     - rfindString(_,_,_)_STRING-COMMON_Int_String_String_Int{}(SortString{}, SortString{}, SortInt{}) : SortInt{}
    *)
 
   (* Search [is:Definition | is:Fixpoint] in String. *)
