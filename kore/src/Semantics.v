@@ -307,7 +307,6 @@ Section Semantics.
        eval_inj_simpl,
        eval_dv_simpl).
 
-
     (* simpler evaluation rule for σ ⋅ l *)
     Lemma eval_app_simpl :
       forall {ex mu} (σ : symbol) (l : hlist (Pattern ex mu) (arg_sorts σ)) (ρ : Valuation),
@@ -636,6 +635,18 @@ End with_model.
 
 End Semantics.
 
+    Lemma eval_propset_fa_union {Σ : Signature} {M : Model} ex mu s s' (x : evar s) (φ : Pattern ex mu s') ρ Q:
+        (forall (c : M s), eval (update_evar_val x c ρ) φ = Q c) ->
+        propset_fa_union (fun c => @eval _ _ ex _ _ (update_evar_val x c ρ) φ) =
+        propset_fa_union (fun c => Q c).
+    Proof.
+      intros.
+      apply set_eq; intros; split.
+      set_solver.
+      set_solver.
+    Qed.
+
+
 (** A tactic for deconstructing a concrete set. *)
 Ltac unfold_elem_of :=
 match goal with
@@ -643,11 +654,19 @@ match goal with
 end.
 
 (** Case separation based on the value of variables. *)
-Ltac destruct_evar_val :=
+(* Ltac destruct_evar_val :=
 match goal with
 | [ |- context [evar_valuation ?ρ ?x] ] =>
   let H := fresh "Val" in
     destruct (evar_valuation ρ x) eqn:H
+end. *)
+
+Ltac destruct_evar_val :=
+match goal with
+| [ |- context [evar_valuation ?ρ ?x] ] =>
+  let H := fresh "Val" in
+    destruct (evar_valuation ρ x) eqn:H;
+    try rewrite H in *
 end.
 
 (** This tactic is used to construct a proof for `all_singleton`. *)
@@ -702,10 +721,7 @@ Tactic Notation "deconstruct_elem_of_Theory" :=
   | [ H : _ ∈ _ |- _ ] => inversion H; subst; clear H
   end; clear; simpl.
 
-(** This tactic automatically simplifies the semantics of patterns with the
-    usual simplification tactic of `Equations`. However, in case of application
-    it uses a derived theorem. *)
-Tactic Notation "eval_helper" :=
+(* Tactic Notation "eval_helper" :=
   repeat
     match goal with
     | [ |- context [eval ?ρ (@kore_app ?Σ ?ex ?mu ?σ ?l) ] ] =>
@@ -727,7 +743,7 @@ Tactic Notation "eval_helper2" :=
        clear H;
        simpl hmap
     | _ => rewrite eval_simpl
-    end.
+    end. *)
 
 Tactic Notation "rewrite_singleton_all" :=
   unshelve (rewrite_strat bottomup app_ext_singleton); [repeat esplit.. |].
@@ -782,6 +798,131 @@ match goal with
       apply H;
   eexists; split; [reflexivity|]
 end.
+
+
+
+Ltac solve_ineqs_smart :=
+  lazymatch goal with
+  | |- context [decide (?X = ?X)] =>
+    (* idtac "haha"; *)
+    rewrite decide_eq_same
+  | |- context [decide ((@fresh ?A ?C ?I ?X) = (@fresh ?A ?C ?I ?Y))] =>
+       (* idtac "matched"; *)
+       let P := fresh "P" in
+       let e := fresh "e" in
+       destruct (decide ((@fresh A C I X) = (@fresh A C I Y))) as [e | e] eqn:P;
+         [
+          try rewrite P;
+          exfalso;
+          let H1 := fresh "H" in
+          let H2 := fresh "H" in
+          pose proof (infinite_is_fresh X) as H1;
+          pose proof (infinite_is_fresh Y) as H2;
+          rewrite -> e in *;
+          clear -H1 H2;
+          rewrite elem_of_elements in H1;
+          rewrite elem_of_elements in H2;
+          set_solver|
+          try rewrite P;
+          try rewrite e; clear P e(* ;  idtac "done" *)]
+    (* (
+      let P := fresh "P" in
+      destruct (decide (F = X)) eqn:P; [set_solver|
+        try rewrite P])
+    ) *)
+  | |- context [decide ((@fresh ?A ?C ?I ?X) = ?Y)] =>
+    let P := fresh "P" in
+    let e := fresh "e" in
+    destruct (decide ((@fresh A C I X) = Y)) as [e | e] eqn:P;
+         [
+          try rewrite P;
+          exfalso;
+          let H1 := fresh "H" in
+          pose proof (infinite_is_fresh X) as H1;
+          rewrite -> e in *;
+          clear -H1;
+          rewrite elem_of_elements in H1;
+          set_solver|
+          try rewrite P;
+          try rewrite e; clear P e(* ; idtac "done" *)]
+  | |- context [decide (?X = (@fresh ?A ?C ?I ?Y))] =>
+    let P := fresh "P" in
+    let e := fresh "e" in
+    destruct (decide (X = (@fresh A C I Y))) as [e | e] eqn:P;
+         [
+          try rewrite P;
+          exfalso;
+          let H1 := fresh "H" in
+          pose proof (infinite_is_fresh Y) as H1;
+          rewrite -> e in *;
+          clear -H1;
+          rewrite elem_of_elements in H1;
+          set_solver|
+          try rewrite P;
+          try rewrite e; clear P e(* ; idtac "done" *)]
+  end.
+
+
+
+
+
+(** This tactic automatically simplifies the semantics of patterns with the
+    usual simplification tactic of `Equations`. However, in case of application
+    it uses a derived theorem. *)
+Ltac simplify_fresh :=
+match goal with
+| |- context [@fresh_evar ?Σ ?pat_s ?ex ?mu ?s ?φ] =>
+  let H := fresh "Hass" in
+  eassert (Hass :
+    @fresh_evar Σ pat_s ex mu s φ = _
+  ); [
+    clear;
+    unfold fresh_evar;
+    cbn;
+    repeat rewrite decide_eq_same;
+    repeat (destruct decide; [congruence|]);
+    cbn;
+    repeat rewrite union_empty_l_L;
+    repeat rewrite union_empty_r_L;
+    reflexivity
+  |
+    rewrite Hass;
+    clear Hass
+  ]
+end.
+Ltac eval_simplifier :=
+  lazymatch goal with
+  | |- context [propset_fa_union (fun c => eval (update_evar_val _ c _) _)] =>
+      (* idtac "propset"; *)
+      erewrite eval_propset_fa_union;
+      [
+      |
+        intro; cbn;
+        repeat eval_simplifier;
+        cbn;
+        reflexivity
+      ] (* recursion, first the second goal should be solved *)
+
+  | [ |- context [eval ?ρ (@kore_app ?Σ ?ex ?mu ?σ ?l) ] ] =>
+     let H := fresh "H" in
+     pose proof (eval_app_simpl σ l ρ) as H;
+     rewrite H;
+     clear H;
+     simpl hmap
+  | [ |- context [eval ?ρ (kore_exists _ _) ]] =>
+    (* idtac "ex"; *)
+    rewrite eval_simpl;
+    simplify_fresh
+    (* remember_fresh - can't be done here, due to existential variables *)
+  | [ |- context [eval ?ρ (@kore_fevar ?Σ ?ex ?mu ?s ?x) ] ]
+     => (* idtac "var"; *)
+        rewrite eval_simpl;
+        simpl;
+        try solve_ineqs_smart
+  | _ =>
+    (* idtac "other"; *)
+    rewrite eval_simpl
+  end.
 
 Add Search Blacklist "_elim".
 Add Search Blacklist "FunctionalElimination_".
