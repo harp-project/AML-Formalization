@@ -4,6 +4,7 @@ From Kore Require Export Semantics.
 Import Signature.StringVariables.
 Import Kore.Syntax.Notations.
 Require Import BuiltIns DVParsers.
+Import BuiltIns.List BuiltIns.SSet BuiltIns.MMap.
 
 From Coq Require Import ZArith.
 
@@ -392,6 +393,8 @@ with SortMap_carrier : Set :=
 c_dv_SortMap (x : list (SortKItem_carrier * SortKItem_carrier))
 .
 
+Scheme Boolean Equality for SortK_carrier.
+
       Definition carrier (s : Ksorts) : Set := match s with
       SortK => SortK_carrier
 |SortKItem => SortKItem_carrier
@@ -490,20 +493,39 @@ Definition fun_ListItem (x : SortKItem_carrier) : option SortList_carrier :=
   Some (c_dv_SortList [x]).
 
 (* hooked-symbol LblMap'Coln'choice{}(SortMap{}) : SortKItem{} *)
+Definition fun_Mapchoice (m : SortMap_carrier) : option SortKItem_carrier :=
+  SortMap_carrier_rect _ MMap.choice m.
+
 
 (* hooked-symbol LblMap'Coln'lookup{}(SortMap{}, SortKItem{}) : SortKItem{} *)
+Definition fun_Maplookup (m : SortMap_carrier) (x : SortKItem_carrier) : option SortKItem_carrier :=
+  (SortMap_carrier_rect (fun _ => SortKItem_carrier -> option SortKItem_carrier) (MMap.lookup SortKItem_carrier_beq) m) x.
+
 
 (* hooked-symbol LblMap'Coln'lookupOrDefault{}(SortMap{}, SortKItem{}, SortKItem{}) : SortKItem{}  *)
+Definition fun_MaplookupOrDefault (m : SortMap_carrier) (x d : SortKItem_carrier) : option SortKItem_carrier :=
+  Some ((SortMap_carrier_rect (fun _ => SortKItem_carrier -> SortKItem_carrier -> SortKItem_carrier) (MMap.lookupOrDefault SortKItem_carrier_beq) m) x d).
 
 (* hooked-symbol LblMap'Coln'update{}(SortMap{}, SortKItem{}, SortKItem{}) : SortMap{} *)
+Definition fun_Mapupdate (m : SortMap_carrier) (k v : SortKItem_carrier) : option SortMap_carrier :=
+Some (c_dv_SortMap ((SortMap_carrier_rect (fun _ => SortKItem_carrier -> SortKItem_carrier -> _) (MMap.update SortKItem_carrier_beq) m) k v)).
 
 (* hooked-symbol LblSet'Coln'choice{}(SortSet{}) : SortKItem{} *)
+Definition fun_Setchoice (m : SortSet_carrier) : option SortKItem_carrier :=
+  SortSet_carrier_rect _ SSet.choice m.
 
 (* hooked-symbol LblSet'Coln'difference{}(SortSet{}, SortSet{}) : SortSet{} *)
+Definition fun_Set_difference (xs ys : SortSet_carrier) : option SortSet_carrier :=
+Some (c_dv_SortSet (SortSet_carrier_rect (fun _ => list SortKItem_carrier) (SortSet_carrier_rect _ (SSet.difference SortKItem_carrier_beq) xs) ys)).
 
 (* hooked-symbol LblSet'Coln'in{}(SortKItem{}, SortSet{}) : SortBool{} *)
+Definition fun_Setin (x : SortKItem_carrier) (xs : SortSet_carrier) : option SortBool_carrier :=
+  Some (c_dv_SortBool (SortSet_carrier_rect (fun _ => bool) (fun s => SSet.in_ SortKItem_carrier_beq x s) xs)).
 
 (* hooked-symbol LblSetItem{}(SortKItem{}) : SortSet{} *)
+Definition fun_SetItem (x : SortKItem_carrier) : option SortSet_carrier :=
+  Some (c_dv_SortSet (setitem x)).
+
 
 (* hooked-symbol LblString2Base'LParUndsCommUndsRParUnds'STRING-COMMON'Unds'Int'Unds'String'Unds'Int{}(SortString{}, SortInt{}) : SortInt{} *)
 
@@ -531,6 +553,9 @@ Definition fun_UndsPlusInt_Unds_ (z1 z2 : SortInt_carrier) : option (SortInt_car
 Definition fun_Unds_Int_Unds_ (z1 z2 : SortInt_carrier) : option (SortInt_carrier) :=
   Some (c_dv_SortInt (SortInt_carrier_rect (fun _ => Z) (SortInt_carrier_rect _ Z.sub z1) z2)).
 (* hooked-symbol Lbl'Unds'-Map'UndsUnds'MAP'Unds'Map'Unds'Map'Unds'Map{}(SortMap{}, SortMap{}) : SortMap{} *)
+Definition fun_Mapdifference (m1 m2 : SortMap_carrier) : option SortMap_carrier :=
+  Some (c_dv_SortMap (SortMap_carrier_rect _ (SortMap_carrier_rect (fun _ => Map SortKItem_carrier SortKItem_carrier -> Map SortKItem_carrier SortKItem_carrier) (MMap.difference SortKItem_carrier_beq SortKItem_carrier_beq) m1) m2)).
+
 
 (* hooked-symbol Lbl'UndsSlsh'Int'Unds'{}(SortInt{}, SortInt{}) : SortInt{} "_/Int_" *)
 Definition fun_UndsSlshInt_Unds_ (z1 z2 : SortInt_carrier) : option (SortInt_carrier) :=
@@ -542,8 +567,12 @@ Definition fun_Unds_LT__LT_Int_Unds_ (z1 z2 : SortInt_carrier) : option (SortInt
 Definition fun_Unds_LT_EqlsInt_Unds_ (z1 z2 : SortInt_carrier) : option (SortBool_carrier) :=
   Some (c_dv_SortBool (SortInt_carrier_rect (fun _ => bool) (SortInt_carrier_rect _ Z.leb z1) z2)).
 (* hooked-symbol Lbl'Unds-LT-Eqls'Map'UndsUnds'MAP'Unds'Bool'Unds'Map'Unds'Map{}(SortMap{}, SortMap{}) : SortBool{} *)
+Definition fun_Unds_LT_Eqls_Map (m1 m2 : SortMap_carrier) : option SortBool_carrier :=
+Some (c_dv_SortBool (SortMap_carrier_rect _ (SortMap_carrier_rect (fun _ => Map SortKItem_carrier SortKItem_carrier -> bool) (MMap.inclusion SortKItem_carrier_beq SortKItem_carrier_beq) m1) m2)).
 
 (* hooked-symbol Lbl'Unds-LT-Eqls'Set'UndsUnds'SET'Unds'Bool'Unds'Set'Unds'Set{}(SortSet{}, SortSet{}) : SortBool{} *)
+Definition fun_Unds_LT_Eqls_Set (s1 s2 : SortSet_carrier) : option SortBool_carrier :=
+Some (c_dv_SortBool (SortSet_carrier_rect _ (SortSet_carrier_rect (fun _ => SSet SortKItem_carrier -> bool) (SSet.inclusion SortKItem_carrier_beq) s1) s2)).
 
 (* hooked-symbol Lbl'Unds-LT-Eqls'String'UndsUnds'STRING-COMMON'Unds'Bool'Unds'String'Unds'String{}(SortString{}, SortString{}) : SortBool{} *)
 
@@ -597,12 +626,19 @@ Some (c_dv_SortList (SortList_carrier_rect (fun _ => list SortKItem_carrier) (So
 
 
 (* hooked-symbol Lbl'Unds'Map'Unds'{}(SortMap{}, SortMap{}) : SortMap{} "_Map_" *)
+Definition fun__Map_ (xs ys : SortMap_carrier) : option SortMap_carrier :=
+c_dv_SortMap <$> (SortMap_carrier_rect (fun _ => 
+ option (MMap.Map SortKItem_carrier SortKItem_carrier)) (SortMap_carrier_rect _ (MMap.concat SortKItem_carrier_beq SortKItem_carrier_beq) xs) ys).
 
 (* hooked-symbol Lbl'Unds'Set'Unds'{}(SortSet{}, SortSet{}) : SortSet{} "_Set_" *)
+Definition fun__Set_ (xs ys : SortSet_carrier) : option SortSet_carrier :=
+c_dv_SortSet <$> (SortSet_carrier_rect (fun _ => option (list SortKItem_carrier)) (SortSet_carrier_rect _ (SSet.concat SortKItem_carrier_beq) xs) ys).
 
 (* hooked-symbol Lbl'UndsLSqBUnds-LT-'-undef'RSqB'{}(SortMap{}, SortKItem{}) : SortMap{} -- MAP remove *)
+Definition fun_Mapremove (m : SortMap_carrier) (x : SortKItem_carrier) : option SortMap_carrier :=
+  Some (c_dv_SortMap ((SortMap_carrier_rect (fun _ => SortKItem_carrier -> MMap.Map SortKItem_carrier SortKItem_carrier) (MMap.remove SortKItem_carrier_beq) m) x)).
 
-(* hooked-symbol Lbl'UndsXor-Perc'Int'UndsUnds'{}(SortInt{}, SortInt{}, SortInt{}) : SortInt{} "_^+Int_" *)
+(* hooked-symbol Lbl'UndsXor-Perc'Int'UndsUnds'{}(SortInt{}, SortInt{}, SortInt{}) : SortInt{} "_^%Int_" *)
 Definition fun_Unds_Xor_Perc_Int_Unds_ (z1 z2 z3 : SortInt_carrier) : option (SortInt_carrier) :=
   Some (c_dv_SortInt (SortInt_carrier_rect (fun _ => Z) (SortInt_carrier_rect (fun _ => Z -> Z) (SortInt_carrier_rect _ modPow z1) z2) z3)).
 
@@ -627,10 +663,14 @@ Definition fun_Unds_impliesBool_Unds_ (b1 b2 : SortBool_carrier) : option (SortB
   Some (c_dv_SortBool (SortBool_carrier_rect (fun _ => bool) (SortBool_carrier_rect _ implb b1) b2)).
 
 (* hooked-symbol Lbl'Unds'inList'Unds'{}(SortKItem{}, SortList{}) : SortBool{} "_inList_" *)
-(* TODO: impossible without equality over all KItems! *)
+Definition fun_inList (x : SortKItem_carrier) (xs : SortList_carrier) : option SortBool_carrier :=
+Some (c_dv_SortBool (SortList_carrier_rect (fun _ => bool) (List.List_in SortKItem_carrier_beq x) xs)).
 
 
 (* hooked-symbol Lbl'Unds'in'Unds'keys'LParUndsRParUnds'MAP'Unds'Bool'Unds'KItem'Unds'Map{}(SortKItem{}, SortMap{}) : SortBool{} --- MAP in_keys *)
+Definition fun_Mapinkeys (x : SortKItem_carrier) (m : SortMap_carrier) : option SortBool_carrier :=
+Some (c_dv_SortBool
+(SortMap_carrier_rect _ (MMap.in_keys SortKItem_carrier_beq x) m)).
 
 (* hooked-symbol Lbl'Unds'modInt'Unds'{}(SortInt{}, SortInt{}) : SortInt{} "_modInt_" *)
 Definition fun_Unds_modInt_Int_Unds_ (z1 z2 : SortInt_carrier) : option (SortInt_carrier) :=
@@ -653,12 +693,17 @@ Definition fun_Unds_xorInt_Int_Unds_ (z1 z2 : SortInt_carrier) : option (SortInt
   Some (c_dv_SortInt (SortInt_carrier_rect (fun _ => Z) (SortInt_carrier_rect _ Z.lxor z1) z2)).
 
 (* hooked-symbol Lbl'UndsPipe'-'-GT-Unds'{}(SortKItem{}, SortKItem{}) : SortMap{} "_|->_" *)
+Definition fun_Mapelement (k v : SortKItem_carrier) : option SortMap_carrier :=
+  Some (c_dv_SortMap (element k v)).
+
 
 (* hooked-symbol Lbl'UndsPipe'Int'Unds'{}(SortInt{}, SortInt{}) : SortInt{} "_|Int_" *)
 Definition fun_Unds_orInt_Int_Unds_ (z1 z2 : SortInt_carrier) : option (SortInt_carrier) :=
   Some (c_dv_SortInt (SortInt_carrier_rect (fun _ => Z) (SortInt_carrier_rect _ Z.lor z1) z2)).
 
 (* hooked-symbol Lbl'UndsPipe'Set'UndsUnds'SET'Unds'Set'Unds'Set'Unds'Set{}(SortSet{}, SortSet{}) : SortSet{} -- SET union *)
+Definition fun_Set_union (xs ys : SortSet_carrier) : option SortSet_carrier :=
+Some (c_dv_SortSet (SortSet_carrier_rect (fun _ => list SortKItem_carrier) (SortSet_carrier_rect _ (SSet.union SortKItem_carrier_beq) xs) ys)).
 
 (* hooked-symbol LblabsInt'LParUndsRParUnds'INT-COMMON'Unds'Int'Unds'Int{}(SortInt{}) : SortInt{} *)
 Definition fun_absInt (z : SortInt_carrier) : option (SortInt_carrier) :=
@@ -684,12 +729,19 @@ Definition fun_bitRangeInt (z1 z2 z3 : SortInt_carrier) : option (SortInt_carrie
 (* hooked-symbol LblfindString'LParUndsCommUndsCommUndsRParUnds'STRING-COMMON'Unds'Int'Unds'String'Unds'String'Unds'Int{}(SortString{}, SortString{}, SortInt{}) : SortInt{} *)
 
 (* hooked-symbol LblintersectSet'LParUndsCommUndsRParUnds'SET'Unds'Set'Unds'Set'Unds'Set{}(SortSet{}, SortSet{}) : SortSet{} *)
+Definition fun_Set_intersect (xs ys : SortSet_carrier) : option SortSet_carrier :=
+Some (c_dv_SortSet (SortSet_carrier_rect (fun _ => list SortKItem_carrier) (SortSet_carrier_rect _ (SSet.intersection SortKItem_carrier_beq) xs) ys)).
+
 
 (* hooked-symbol Lblite{SortSort}(SortBool{}, SortSort, SortSort) : SortSort "ite" *)
 
 (* hooked-symbol Lblkeys'LParUndsRParUnds'MAP'Unds'Set'Unds'Map{}(SortMap{}) : SortSet{} -- MAP keys *)
+Definition fun_Mapkeys (m : SortMap_carrier) : SortSet_carrier :=
+  c_dv_SortSet (SortMap_carrier_rect (fun _ => list SortKItem_carrier) MapSet.keys m).
 
 (* hooked-symbol Lblkeys'Unds'list'LParUndsRParUnds'MAP'Unds'List'Unds'Map{}(SortMap{}) : SortList{} -- MAP keys list *)
+Definition fun_Mapkeyslist (m : SortMap_carrier) : SortSet_carrier :=
+  c_dv_SortSet (SortMap_carrier_rect (fun _ => list SortKItem_carrier) MapSet.keys_list m).
 
 (* hooked-symbol LbllengthString'LParUndsRParUnds'STRING-COMMON'Unds'Int'Unds'String{}(SortString{}) : SortInt{} *)
 
@@ -698,6 +750,10 @@ Definition fun_log2Int (z : SortInt_carrier) : option (SortInt_carrier) :=
   Some (c_dv_SortInt (SortInt_carrier_rect _ Z.log2 z)).
 
 (* hooked-symbol LblmakeList'LParUndsCommUndsRParUnds'LIST'Unds'List'Unds'Int'Unds'KItem{}(SortInt{}, SortKItem{}) : SortList{} *)
+Definition fun_Listmake (z : SortInt_carrier) (v : SortKItem_carrier) : option SortList_carrier :=
+  Some (c_dv_SortList ((SortInt_carrier_rect (fun _ => SortKItem_carrier -> list SortKItem_carrier) (List_make) z) v)).
+
+
 
 (* hooked-symbol LblmaxInt'LParUndsCommUndsRParUnds'INT-COMMON'Unds'Int'Unds'Int'Unds'Int{}(SortInt{}, SortInt{}) : SortInt{} *)
 Definition fun_maxInt (z1 z2 : SortInt_carrier) : option (SortInt_carrier) :=
@@ -718,6 +774,8 @@ Definition fun_pushList (x : SortKItem_carrier) (xs : SortList_carrier) : option
   Some (c_dv_SortList (SortList_carrier_rect _ (fun xs => x :: xs) xs)).
 
 (* hooked-symbol LblremoveAll'LParUndsCommUndsRParUnds'MAP'Unds'Map'Unds'Map'Unds'Set{}(SortMap{}, SortSet{}) : SortMap{} *)
+Definition fun_Mapremoveall (m : SortMap_carrier) (x : SortSet_carrier) : option SortMap_carrier :=
+  Some (c_dv_SortMap ((SortSet_carrier_rect _ (SortMap_carrier_rect (fun _ => SSet SortKItem_carrier -> MMap.Map SortKItem_carrier SortKItem_carrier) (MapSet.removeAll SortKItem_carrier_beq) m) x))).
 
 (* hooked-symbol Lblreplace'LParUndsCommUndsCommUndsCommUndsRParUnds'STRING-COMMON'Unds'String'Unds'String'Unds'String'Unds'String'Unds'Int{}(SortString{}, SortString{}, SortString{}, SortInt{}) : SortString{} *)
 
@@ -734,18 +792,31 @@ Definition fun_signExtendBitRangeInt (z1 z2 z3 : SortInt_carrier) : option (Sort
   Some (c_dv_SortInt (SortInt_carrier_rect (fun _ => Z) (SortInt_carrier_rect (fun _ => Z -> Z) (SortInt_carrier_rect _ signExtendBitRange z1) z2) z3)).
 
 (* hooked-symbol Lblsize'LParUndsRParUnds'SET'Unds'Int'Unds'Set{}(SortSet{}) : SortInt{} *)
+Definition fun_Setsize (x : SortSet_carrier) : option SortInt_carrier :=
+  Some (c_dv_SortInt (SortSet_carrier_rect _ (SSet.size) x)).
 
 (* hooked-symbol LblsizeList{}(SortList{}) : SortInt{} *)
+Definition fun_Listsize (x : SortList_carrier) : option SortInt_carrier :=
+  Some (c_dv_SortInt (Z.of_nat (SortList_carrier_rect _ length x))).
 
 (* hooked-symbol LblsizeMap{}(SortMap{}) : SortInt{} *)
+Definition fun_Mapsize (x : SortMap_carrier) : option SortInt_carrier :=
+  Some (c_dv_SortInt (SortMap_carrier_rect _ (MMap.size) x)).
 
 (* hooked-symbol LblsubstrString'LParUndsCommUndsCommUndsRParUnds'STRING-COMMON'Unds'String'Unds'String'Unds'Int'Unds'Int{}(SortString{}, SortInt{}, SortInt{}) : SortString{} *)
 
 (* hooked-symbol LblupdateList'LParUndsCommUndsCommUndsRParUnds'LIST'Unds'List'Unds'List'Unds'Int'Unds'List{}(SortList{}, SortInt{}, SortList{}) : SortList{} *)
+Definition fun_Listupdate (xs : SortList_carrier) (z : SortInt_carrier) (ys : SortList_carrier) : option SortList_carrier :=
+  c_dv_SortList <$> (SortList_carrier_rect (fun _ => option (list SortKItem_carrier)) (SortInt_carrier_rect (fun _ => list SortKItem_carrier -> option (list SortKItem_carrier)) (SortList_carrier_rect (fun _ => Z -> list SortKItem_carrier -> option (list SortKItem_carrier)) List_update xs) z) ys).
+
 
 (* hooked-symbol LblupdateMap'LParUndsCommUndsRParUnds'MAP'Unds'Map'Unds'Map'Unds'Map{}(SortMap{}, SortMap{}) : SortMap{} *)
+Definition fun_MapupdateAll (m1 m2 : SortMap_carrier) : option SortMap_carrier :=
+  Some (c_dv_SortMap ((SortMap_carrier_rect _ (SortMap_carrier_rect (fun _ => MMap.Map SortKItem_carrier SortKItem_carrier -> MMap.Map SortKItem_carrier SortKItem_carrier) (MMap.updateAll SortKItem_carrier_beq) m1) m2))).
 
 (* hooked-symbol Lblvalues'LParUndsRParUnds'MAP'Unds'List'Unds'Map{}(SortMap{}) : SortList{} *)
+Definition fun_Mapvals (m : SortMap_carrier) : SortSet_carrier :=
+  c_dv_SortList (SortMap_carrier_rect (fun _ => list SortKItem_carrier) MMap.values m).
 
 (* hooked-symbol Lbl'Tild'Int'Unds'{}(SortInt{}) : SortInt{} "~Int_ "*)
 Definition fun_TildInt_Unds_ (z : SortInt_carrier) : option (SortInt_carrier) :=
@@ -1024,6 +1095,13 @@ Ltac abstract_var :=
          try rewrite singleton_subseteq in H0; set_solver.
          1-2: by rewrite andb_comm.
     set_solver.
+  Defined.
+
+  Goal satT Theory_functional Model.
+  Proof.
+    unfold satT, satM, Theory_functional. intros.
+    unfold_elem_of; destruct_or?; destruct_ex?; subst; cbn.
+    all: try (solve_functional_axiom_option_sym; cbn; clear; repeat dependent destruction l; cbv; congruence).
   Defined.
 
       End TheorySemantics.

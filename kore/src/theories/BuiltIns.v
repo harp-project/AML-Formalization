@@ -79,7 +79,24 @@ Compute modPow (-7) 3 20.
 Definition divides (a b : Z) : bool :=
   Z.rem b a =? 0.
 
-Module Map.
+Section BuiltinLemmas.
+
+Lemma rem_abs_0 v0 v:
+  (if (v `rem` v0 <? 0)%Z
+   then v `rem` v0 + Z.abs v0
+   else v `rem` v0) =
+  (v `rem` Z.abs v0 + Z.abs v0) `rem` Z.abs v0.
+Proof.
+
+Admitted.
+
+
+
+
+End BuiltinLemmas.
+
+
+Module MMap.
   Section Map.
 
     Context {K V : Set}
@@ -173,11 +190,11 @@ Module Map.
 
     Definition updateAll : Map -> Map -> Map := fix F m m' := if m' is (k, v) :: xs then F (update m k v) xs else [].
 
-    Definition values : Map -> list V := fix F m := if m is (_, v) :: xs then v :: F xs else [].
+    Definition values : Map -> list V := map snd.
 
   End Map.
   Arguments Map K V : assert, clear implicits.
-End Map.
+End MMap.
 
 Module SSet.
   Section SSet.
@@ -189,11 +206,17 @@ Module SSet.
 
     Definition choice (s : SSet) : option V := if s is x :: xs then Some x else None.
 
-    Definition in_ (v : V) : SSet -> bool :=
-      fix F s' := if s' is x :: xs then if V_eqb x v then true else F xs else false.
+    Fixpoint in_ (v : V) (s : SSet) : bool :=
+      match s with
+      | [] => false
+      | x :: xs => if V_eqb x v then true else in_ v xs
+      end.
 
-    Definition difference (s s' : SSet) : SSet :=
-      let fix F s'' := if s'' is x :: xs then if in_ x s' then F xs else x :: F xs else [] in F s.
+    Fixpoint difference (s s' : SSet) : SSet :=
+      match s with
+      | [] => []
+      | x::xs => if in_ x s' then difference xs s' else x :: difference xs s'
+      end.
 
     (**
        I'm pretty sure this is supposed to be singleton, but it's not
@@ -228,13 +251,24 @@ Module SSet.
 
     Definition size (s : SSet) : Z := Z.of_nat (length s).
 
+  Section theorems.
+    (* Context {V_eqb_refl : forall v, V_eqb v v}. *)
+
+    Lemma concat_difference s1 s2 :
+      concat s1 (difference s2 s1) = Some (union s1 s2).
+    Proof.
+
+    Admitted.
+
+
+    End theorems.
   End SSet.
   Arguments SSet V : assert, clear implicits.
 End SSet.
 
 Module MapSet.
 
-  Import Map.
+  Import MMap.
   Import SSet.
 
   Section MapSet.
@@ -249,7 +283,7 @@ Module MapSet.
      *)
     Definition keys_list : Map K V -> list K := keys.
 
-    Definition removeAll : Map K V -> SSet K -> Map K V := fix F m s := if s is x :: xs then F (Map.remove K_eqb m x) xs else m.
+    Definition removeAll : Map K V -> SSet K -> Map K V := fix F m s := if s is x :: xs then F (MMap.remove K_eqb m x) xs else m.
 
   End MapSet.
 End MapSet.
@@ -275,7 +309,19 @@ Module List.
     then Some (take (Z.to_nat z) xs ++ t :: drop (1 + Z.to_nat z) xs)
     else None.
 
+  Fixpoint List_in (eqb : T -> T -> bool) (v : T) (xs : list T) :=
+  match xs with
+  | [] => false
+  | x::xs => eqb v x || List_in eqb v xs
+  end.
 
+  Definition List_make (z : Z) (v : T) : list T :=
+    repeat v (Z.to_nat z).
+
+  Definition List_update (xs : list T) (z : Z) (ys : list T) : option (list T) :=
+    if (Z.to_nat z + (length ys) <? length xs)%nat
+    then Some (take (Z.to_nat z) xs ++ ys ++ drop (Z.to_nat z + length ys)%nat xs)
+    else None.
 
   End List.
 End List.

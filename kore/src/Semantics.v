@@ -5,6 +5,69 @@ From Kore Require Export Substitution
 Require Import Coq.Program.Equality.
 
 
+Lemma propset_rewrite :
+  forall {T C : Type} (P Q : C -> Prop),
+    (forall x, P x = Q x) ->
+    {[x | P x]} =
+    {[x | Q x]}.
+Proof.
+  intros.
+  unfold propset_fa_union.
+  apply set_eq; intros.
+  do 2 rewrite elem_of_PropSet.
+  split; intros.
+  * by rewrite -H.
+  * by rewrite H.
+Qed.
+
+Lemma propset_fa_union_rewrite :
+  forall {T C : Type} (P Q : C -> propset T),
+    (forall x, P x = Q x) ->
+    propset_fa_union (fun x => P x) =
+    propset_fa_union (fun x => Q x).
+Proof.
+  intros.
+  unfold propset_fa_union.
+  apply set_eq; intros.
+  do 2 rewrite elem_of_PropSet.
+  split; intros.
+  * set_solver.
+  * set_solver.
+Qed.
+
+Lemma propset_fa_union_empty_2 :
+  forall {C T : Type} (P : C -> Prop),
+    (forall c, ~P c) ->
+    @propset_fa_union T C (fun c => {[ _ | P c]}) = ∅.
+Proof.
+  intros.
+  set_solver.
+Qed.
+
+Lemma propset_fa_union_full_2 :
+  forall {C T : Type} (P : C -> Prop),
+    (exists c, P c) ->
+    @propset_fa_union T C (fun c => {[ _ | P c]}) = ⊤.
+Proof.
+  intros.
+  set_solver.
+Qed.
+
+Lemma propset_fa_union_double :
+  forall {T C1 C2 : Type} (P : C1 -> C2 -> propset T),
+    {[ x | ∃ c : C1, x ∈ {[ x0 | ∃ c0 : C2, x0 ∈ P c c0 ]} ]} =
+    {[x | ∃ c1 c2, x ∈ P c1 c2]}.
+Proof.
+  intros.
+  unfold propset_fa_union.
+  apply set_eq; intros; split.
+  - intros. destruct H, H.
+    by exists x0, x1.
+  - intros.
+    destruct H, H.
+    apply elem_of_PropSet.
+    by exists x0, x1.
+Qed.
 
 Section Semantics.
   Context {Σ : Signature}.
