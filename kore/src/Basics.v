@@ -383,4 +383,12 @@ Proof.
   - by apply Classical_Prop.or_not_and.
 Qed.
 
-
+Definition hlist_app {T P}
+  {lty rty : list T}
+  (l : hlist P lty)
+  (r : hlist P rty) : hlist P (lty ++ rty).
+Proof.
+  induction l; simpl.
+  - exact r.
+  - exact (hcons f (IHl)).
+Defined.

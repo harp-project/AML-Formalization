@@ -376,6 +376,36 @@ Section Semantics.
       * rewrite IHvars. reflexivity.
     Defined.
 
+(*   Lemma app_ext_singleton_empty
+    {σ}
+    (n : nat)
+    (args1 : hlist (propset ∘ M) (take n (arg_sorts σ)))
+    (args2 : hlist (propset ∘ M) (drop (n + 1) (arg_sorts σ))) :
+      app_ext σ (hlist_app args1 (hcons ∅ args2)) = ∅. *)
+Definition contains_empty
+  {σ}
+  (args : hlist (propset ∘ M) (arg_sorts σ)) : Prop.
+Proof.
+  induction args.
+  - exact False.
+  - exact (f = ∅ \/ IHargs).
+Defined.
+
+Lemma app_ext_singleton_empty
+    {σ}
+    (args : hlist (propset ∘ M) (arg_sorts σ))
+    (H : contains_empty args) :
+      app_ext σ args = ∅.
+Proof.
+  apply set_eq. split; intros. 2: set_solver.
+  unfold app_ext in H0.
+  destruct H0 as [? []].
+  clear -H0 H1. exfalso.
+  assert (app M σ x0 ≠ ∅) by set_solver.
+  clear H1.
+
+Admitted.
+
 End with_model.
 
   (** Satisfaction *)
@@ -675,6 +705,15 @@ match goal with
   let H := fresh "Val" in
     destruct (evar_valuation ρ x) eqn:H;
     try rewrite H in *
+end.
+
+Ltac destruct_evar_val_hyp :=
+match goal with
+| [H : context [evar_valuation ?ρ ?x] |- _] =>
+  let H := fresh "Val" in
+    destruct (evar_valuation ρ x) eqn:H;
+    try rewrite H in *;
+    clear H
 end.
 
 (** This tactic is used to construct a proof for `all_singleton`. *)
