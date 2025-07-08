@@ -397,14 +397,18 @@ Lemma app_ext_singleton_empty
     (H : contains_empty args) :
       app_ext σ args = ∅.
 Proof.
+  clear -H.
   apply set_eq. split; intros. 2: set_solver.
-  unfold app_ext in H0.
-  destruct H0 as [? []].
-  clear -H0 H1. exfalso.
-  assert (app M σ x0 ≠ ∅) by set_solver.
-  clear H1.
-
-Admitted.
+  unfold app_ext in H0. destruct H0 as [? []].
+  exfalso. clear dependent x.
+  unfold contains_empty in H.
+  induction args; simpl in H.
+  - exact H.
+  - pose proof destruct_hcons x0 as [[] ->].
+    simpl in H0. destruct H0. destruct H.
+    * set_solver.
+    * by eapply IHargs.
+Defined.
 
 End with_model.
 
