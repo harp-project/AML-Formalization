@@ -98,6 +98,29 @@ Proof.
 
 Admitted.
 
+Lemma shift_rem v2 v3 v4 :
+match v4 with
+| 0 => 0
+| _ =>
+    if Z.testbit v2 (v3 + v4 - 1)
+    then
+     Z.land (Z.land v2 ((1 ≪ v4 - 1) ≪ v3) ≫ v3 + 1 ≪ (v4 - 1)) ((1 ≪ v4 - 1) ≪ 0) ≫ 0 -
+     1 ≪ (v4 - 1)
+    else Z.land v2 ((1 ≪ v4 - 1) ≪ v3) ≫ v3
+end =
+(if
+  ((Z.land v2 ((1 ≪ v4 - 1) ≪ v3) ≫ v3 + Z.of_nat 1 ≪ (v4 - Z.of_nat 1))
+   `rem` (Z.of_nat 1 ≪ v4) <? 0)%Z
+ then
+  (Z.land v2 ((1 ≪ v4 - 1) ≪ v3) ≫ v3 + Z.of_nat 1 ≪ (v4 - Z.of_nat 1))
+  `rem` (Z.of_nat 1 ≪ v4) + Z.abs (Z.of_nat 1 ≪ v4)
+ else
+  (Z.land v2 ((1 ≪ v4 - 1) ≪ v3) ≫ v3 + Z.of_nat 1 ≪ (v4 - Z.of_nat 1))
+  `rem` (Z.of_nat 1 ≪ v4)) - Z.of_nat 1 ≪ (v4 - Z.of_nat 1).
+Proof.
+
+Admitted.
+
 End BuiltinLemmas.
 
 

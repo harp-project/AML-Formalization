@@ -1023,7 +1023,7 @@ Definition _2b5aadc (x0:SortK_carrier) : option SortBool_carrier
    := match x0 with  K => Some (c_dv_SortBool false) end
 .
 Definition _dadad71 (x0:SortK_carrier) : option SortBool_carrier
-   := match x0 with  c_kseq (c_inj_SortBool_SortKItem Bool) tk => Some (c_dv_SortBool true)
+   := match x0 with  c_kseq (c_inj_SortBool_SortKItem Bool) c_dotk => Some (c_dv_SortBool true)
   | _ => None end
 .
 Definition _495da55 (x0:SortK_carrier) : option SortBool_carrier
@@ -1037,7 +1037,7 @@ Definition _25b529d (x0:SortK_carrier) : option SortK_carrier
    := match x0 with  K => Some K end
 .
 Definition _1516473 (x0:SortK_carrier) : option SortBool_carrier
-   := match x0 with  c_kseq _Pat0 tk => match (retr_SortKItem_SortKCellOpt) _Pat0 with
+   := match x0 with  c_kseq _Pat0 c_dotk => match (retr_SortKItem_SortKCellOpt) _Pat0 with
     | Some KCellOpt => Some (c_dv_SortBool true)
     | _ => None
   end | _ => None end
@@ -1663,6 +1663,25 @@ Ltac classicize :=
     repeat rewrite singleton_subseteq;
     repeat rewrite singleton_eq.
 
+  Ltac unfold_dvs :=
+    repeat match goal with
+    | [n : SortInt_carrier |- _] => destruct n
+    | [n : SortBool_carrier |- _] => destruct n
+    | [n : SortList_carrier |- _] => destruct n
+    | [n : SortMap_carrier |- _] => destruct n
+    | [n : SortSet_carrier |- _] => destruct n
+    end.
+  Ltac solve_injection :=
+    match goal with
+    | [H : ¬ ∃ _, c_kseq _ _ = c_kseq _ c_dotk |- _] =>
+      repeat case_match; simpl; try reflexivity;
+        unfold_dvs;
+        exfalso;
+        apply H;
+        eexists;
+        reflexivity
+    end.
+
   Ltac solver_macro AX :=
     simplify_krule;
     try reflexivity;
@@ -1688,7 +1707,9 @@ Ltac classicize :=
     try btauto;
     try tauto;
     try lia;
+    try solve_injection;
     tryif done then idtac else (idtac "failed to prove: "; let X := eval cbn in AX in idtac X; admit).
+
 
 
       Goal satT Theory_behavioural Model.
@@ -1730,29 +1751,19 @@ Ltac classicize :=
 * solver_macro AXIOM.
 * solver_macro AXIOM.
 * solver_macro AXIOM.
-* simplify_krule.
-  clear AXIOM. admit.
-* simplify_krule.
-  repeat destruct_evar_val;
-  destruct_and?; subst;
-  repeat (rewrite_app_ext; repeat rewrite fmap_propset_singleton);
-  simpl;
-  repeat match goal with
-  | [H : {[_]} ⊆ _ |- _] => apply singleton_subseteq_l in H as [? ?]
-  end;
-  simplify_eq;
-  cbn;
-  repeat f_equal;
-  repeat rewrite implb_orb;
-  repeat rewrite builtin_props;
-  try reflexivity;
-  try congruence;
-  try btauto;
-  try tauto;
-  try lia;
-  try timeout 1 set_solver.
-  admit. (* TODO: could be done *)
-* simplify_krule.
+* admit.
+* admit. (* TODO: could be done *)
+* admit.  (* TODO: could be done *)
+* admit.
+* admit.
+* solver_macro AXIOM.
+* admit.
+* solver_macro AXIOM.
+* solver_macro AXIOM.
+* solver_macro AXIOM.
+* solver_macro AXIOM.
+* solver_macro AXIOM.
+* (* simplify_krule.
   clear AXIOM.
   repeat destruct_evar_val;
   destruct_and?; subst;
@@ -1772,20 +1783,11 @@ Ltac classicize :=
   try tauto;
   try lia;
   try timeout 1 set_solver.
-  admit.  (* TODO: could be done *)
+  all: admit. *)
+  admit.
 * solver_macro AXIOM.
-* solver_macro AXIOM.
-* solver_macro AXIOM.
-* solver_macro AXIOM.
-* solver_macro AXIOM.
-* solver_macro AXIOM.
-* solver_macro AXIOM.
-* solver_macro AXIOM.
-* solver_macro AXIOM.
-* solver_macro AXIOM.
-* solver_macro AXIOM.
-* basic_simplify_krule.
-
+* (* basic_simplify_krule.
+  clear AXIOM.
 
 
 
@@ -1969,14 +1971,76 @@ Search (not (∃ _, _)). *)
 
 
 
-
-simplify_krule. *) all: admit.
-* solver_macro AXIOM.
+ *)*)
+(*  simplify_krule.
+ clear AXIOM.
+  repeat destruct_evar_val;
+  destruct_and?; subst;
+  repeat (rewrite_app_ext; repeat rewrite fmap_propset_singleton);
+  simpl;
+  repeat match goal with
+  | [H : {[_]} ⊆ _ |- _] => apply singleton_subseteq_l in H as [? ?]
+  end;
+  simplify_eq;
+  cbn;
+  repeat f_equal;
+  repeat rewrite implb_orb;
+  repeat rewrite builtin_props;
+  try reflexivity;
+  try congruence;
+  try btauto;
+  try tauto;
+  try lia;
+  try timeout 1 set_solver. *)
+ 
+  all: admit.
+* admit.
 * (* repeat eval_simplifier. cbn.
  *)
 
+  simplify_krule;
+    try reflexivity;
+    try classicize;
+    intros;
+    destruct_and?; subst;
+    repeat match goal with
+    | [H : _ = evar_valuation ?ρ ?x, H1 : _ = evar_valuation ?ρ ?x |- _] => rewrite <- H in *; clear H
+    | [H : evar_valuation ?ρ ?x = _, H1 : _ = evar_valuation ?ρ ?x |- _] => rewrite -> H in *; clear H
+    end;
+    repeat destruct_evar_val;
+    destruct_and?; subst;
+    repeat match goal with
+    | [H : {[_]} ⊆ _ |- _] => apply singleton_subseteq_l in H as [? ?]
+    end;
+    simplify_eq;
+    cbn;
+    repeat f_equal;
+    repeat rewrite implb_orb;
+    repeat rewrite builtin_props;
+    try reflexivity;
+    try congruence;
+    try btauto;
+    try tauto;
+    try lia.
+    
+    Arguments isBool /.
+    Arguments _dadad71 /.
+    Arguments _495da55 /.
+    simpl.
 
+    solve_injection.
+    
+    
+(* Ltac unfold_K :=
+  match goal with
+  | [n : SortK_carrier |- _] => destruct n
+  end. *)
 
+  unfold isBool, _dadad71, _495da55.
+  repeat case_match; simpl; try reflexivity.
+  unfold_dvs. (* unfold_K;  *)try congruence.
+  
+  destruct b; simpl in H. specialize (H v). congruence.
 
 
 solver_macro AXIOM. (* inj *)
