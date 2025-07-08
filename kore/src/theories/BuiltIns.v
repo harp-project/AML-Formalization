@@ -87,7 +87,28 @@ Lemma rem_abs_0 v0 v:
    else v `rem` v0) =
   (v `rem` Z.abs v0 + Z.abs v0) `rem` Z.abs v0.
 Proof.
+  destruct (Z_dec v  0) as [[Hvneg  |  Hvpos] |  Hveq],
+           (Z_dec v0 0) as [[Hv0neg | Hv0pos] | Hv0eq],
+           (v `rem` v0 <? 0) eqn:Hcond;
+  pose proof Zlt_cases (v `rem` v0) 0 as HcondProp;
+  rewrite Hcond in HcondProp.
+  - rewrite !Z.rem_abs_r; try lia.
+    rewrite !Z.rem_mod; try lia.
+    rewrite !(Z.sgn_neg v). assumption.
+    rewrite !(Z.abs_neq v). lia.
+    rewrite !(Z.abs_neq v0). lia.
+    rewrite !Zmod_opp_opp.
+    assert (forall x, -1 * x = - x) as -> by lia.
+    rewrite !Z.opp_involutive.
+    rewrite !Z.add_opp_r.
 
+  (* Z.rem_nonneg : ∀ a b : Z, b ≠ 0 → 0 ≤ a → 0 ≤ a `rem` b *)
+  (* Z.rem_nonpos : ∀ a b : Z, b ≠ 0 → a ≤ 0 → a `rem` b ≤ 0 *)
+  (* Z.rem_abs_r : ∀ a b : Z, b ≠ 0 → a `rem` Z.abs b = a `rem` b *)
+  (* Z.rem_small : ∀ a b : Z, 0 ≤ a < b → a `rem` b = a *)
+  (* Z.rem_mod_nonneg : ∀ a b : Z, 0 ≤ a → 0 < b → a `rem` b = a `mod` b *)
+  (* Z.rem_mod : ∀ a b : Z, b ≠ 0 → a `rem` b = Z.sgn a * Z.abs a `mod` Z.abs b *)
+  (* Z.add_rem_idemp_l : ∀ a b n : Z, n ≠ 0 → 0 ≤ a * b → (a `rem` n + b) `rem` n = (a + b) `rem` n *)
 Admitted.
 
 Lemma land_rem_abs v2 v3 v4:
@@ -285,7 +306,31 @@ Module SSet.
     Lemma concat_difference s1 s2 :
       concat s1 (difference s2 s1) = Some (union s1 s2).
     Proof.
-
+      unfold concat, union.
+      enough (intersection s1 (difference s2 s1) = []) as -> by reflexivity.
+      induction s2.
+      - cbn.
+        induction s1.
+        + cbv. reflexivity.
+        + cbn.
+          assert (V_eqb a a) as -> by admit.
+          assert (difference s1 [] = s1) as ->.
+          * clear IHs1 a.
+            induction s1.
+            -- cbn. reflexivity.
+            -- cbn. rewrite IHs1. reflexivity.
+          * clear IHs1. revert a.
+            induction s1; intros.
+            -- cbv. reflexivity.
+            -- cbn. 
+               assert (V_eqb a a) as -> by admit.
+               rewrite if_same.
+               rewrite <- (IHs1 a).
+               give_up.
+      - cbn. case_match.
+        + exact IHs2.
+        + rewrite <- IHs2.
+          give_up.
     Admitted.
 
 
