@@ -53,6 +53,14 @@ Proof.
   set_solver.
 Qed.
 
+Lemma propset_double :
+  forall {C1 C2 : Type} (P : C1 -> C2 -> Prop),
+    {[ x | ∃ c : C1, x ∈ {[ x0 | P c x0 ]} ]} =
+    {[x | ∃ c : C1, P c x]}.
+Proof.
+  set_solver.
+Qed.
+
 Lemma propset_fa_union_double :
   forall {T C1 C2 : Type} (P : C1 -> C2 -> propset T),
     {[ x | ∃ c : C1, x ∈ {[ x0 | ∃ c0 : C2, x0 ∈ P c c0 ]} ]} =

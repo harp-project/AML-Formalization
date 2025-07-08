@@ -4,6 +4,7 @@ From MatchingLogic Require Export stdpp_ext.
 From Kore Require Export Semantics.
 Import Signature.StringVariables.
 Import Kore.Syntax.Notations.
+Import Btauto.
 
 From Coq Require Import ZArith.
 
@@ -233,8 +234,11 @@ Ltac autorewrite_set :=
     rewrite fmap_propset_singleton
   ).
 
+Ltac classicize :=
+  apply Classical_Prop.imply_to_or.
+
 Ltac basic_simplify_krule :=
-  eval_helper2;
+  repeat eval_simplifier;
   simpl sort_inj;
   repeat (rewrite_app_ext; repeat rewrite fmap_propset_singleton);
   autorewrite_set.
@@ -248,23 +252,32 @@ Ltac simplify_krule :=
   repeat rewrite singleton_subseteq;
   repeat rewrite singleton_eq.
 
-Ltac classicize :=
-  apply Classical_Prop.imply_to_or.
-
-Ltac simplify_equality :=
-match goal with
-      | [H : _ _ = _ _ |- _] => simplify_eq H; clear H; intro
-      end.
-
-Ltac abstract_var := 
-  match goal with
-    | [|- context [evar_valuation ?σ ?s]] =>
-      let x := fresh "var" in
-      let Hx := fresh "Hvar" in
-        remember (evar_valuation σ s) as x eqn:Hx (*;
-        clear Hx;
-        revert x *)
-    end.
+Ltac solver_macro AX :=
+  simplify_krule;
+  try reflexivity;
+  try classicize;
+  intros;
+  destruct_and?; subst;
+  repeat match goal with
+  | [H : _ = evar_valuation ?ρ ?x, H1 : _ = evar_valuation ?ρ ?x |- _] => rewrite <- H in *; clear H
+  | [H : evar_valuation ?ρ ?x = _, H1 : _ = evar_valuation ?ρ ?x |- _] => rewrite -> H in *; clear H
+  end;
+  repeat destruct_evar_val;
+  destruct_and?; subst;
+  repeat match goal with
+  | [H : {[_]} ⊆ _ |- _] => apply singleton_subseteq_l in H as [? ?]
+  end;
+  simplify_eq;
+  cbn;
+  repeat f_equal;
+  repeat rewrite implb_orb;
+  (* repeat rewrite builtin_props; *)
+  try reflexivity;
+  try congruence;
+  try btauto;
+  try tauto;
+  try lia;
+  tryif done then idtac else (idtac "failed to prove: "; let X := eval cbn in AX in idtac X; shelve).
 
 
   Goal satT Theory_behavioural Model.
@@ -272,13 +285,27 @@ Ltac abstract_var :=
     unfold satT, satM. intros.
     unfold Theory_behavioural in H.
     unfold_elem_of; destruct_or?; destruct_ex?; subst.
-    all: simplify_krule; try reflexivity;
-         try classicize;
-         intros;
-         repeat destruct_evar_val; subst;
-         repeat simplify_equality; subst;
-         try tauto;
-         try congruence.
+    * solver_macro "".
+    * solver_macro "".
+    * solver_macro "".
+    * 
+    simplify_krule;
+  try reflexivity;
+  try classicize;
+  intros.
+  cbn in H.
+  apply singleton_subseteq_l in H.
+  destruct H.
+  destruct_and?; subst;
+  repeat match goal with
+  | [H : _ = evar_valuation ?ρ ?x, H1 : _ = evar_valuation ?ρ ?x |- _] => rewrite <- H in *; clear H
+  | [H : evar_valuation ?ρ ?x = _, H1 : _ = evar_valuation ?ρ ?x |- _] => rewrite -> H in *; clear H
+  end;
+  repeat destruct_evar_val;
+  destruct_and?; subst;
+  simplify_eq.
+  simpl.
+  
   Defined.
 
       End TheorySemantics.

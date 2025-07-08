@@ -356,3 +356,31 @@ match x with
 end.
 Notation "f <|> g" := (orElse f g) (at level 56, left associativity).
 
+Lemma propset_top_eq {A : Type} (P Q : Prop) :
+  P <-> Q ->
+  ({[ _ | P]} : propset A) = ({[_ | Q]} : propset A).
+Proof.
+  set_solver.
+Qed.
+
+Require Import Classical_Pred_Type.
+
+Lemma DM_exists :
+      ∀ (U : Type) (P : U → Prop),
+         ¬ (∃ n : U, P n) <-> (∀ n : U, ¬ P n).
+Proof.
+  intros.
+  split; intros.
+  - by apply not_ex_all_not with (n := n) in H.
+  - by apply all_not_not_ex.
+Qed.
+Lemma DM_and :
+      ∀ (A B : Prop),
+         ¬ (A /\ B) <-> (¬A \/ ¬B).
+Proof.
+  split.
+  - by apply Classical_Prop.not_and_or.
+  - by apply Classical_Prop.or_not_and.
+Qed.
+
+

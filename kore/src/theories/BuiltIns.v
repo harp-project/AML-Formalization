@@ -90,8 +90,13 @@ Proof.
 
 Admitted.
 
+Lemma land_rem_abs v2 v3 v4:
+  Z.land v2 ((1 ≪ v4 - 1) ≪ v3) ≫ v3 =
+  ((v2 ≫ v3) `rem` Z.abs (Z.of_nat 1 ≪ v4) +
+   Z.abs (Z.of_nat 1 ≪ v4)) `rem` Z.abs (Z.of_nat 1 ≪ v4).
+Proof.
 
-
+Admitted.
 
 End BuiltinLemmas.
 

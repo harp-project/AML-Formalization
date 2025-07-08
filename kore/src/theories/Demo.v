@@ -5,6 +5,7 @@ From MatchingLogic Require Export stdpp_ext.
 From Kore Require Export Semantics.
 Import Signature.StringVariables.
 Import Kore.Syntax.Notations.
+Require Import DVParsers.
 
 From Coq Require Import ZArith.
 
@@ -26,7 +27,7 @@ Ltac autorewrite_set :=
 
 Ltac basic_simplify_krule :=
   simpl;
-  eval_helper;
+  repeat eval_simplifier;
   repeat rewrite_app_ext;
   autorewrite_set.
 Ltac simplify_krule :=
@@ -135,7 +136,7 @@ Module DemoSyntaxSemantics.
         true
         false)
       ltac:(intros []; auto with typeclass_instances)
-      _.
+      _ (fun _ => None_parser).
   Final Obligation.
     intros s1 s2 H x; inversion H; subst.
   Defined.
@@ -1139,7 +1140,7 @@ Module ImpSemantics.
                     signExtendBitRange (* signExtendBitRangeInt *)
                     Z.lnot) (* not *)
       ltac:(intros []; auto with typeclass_instances)
-      _. (* Inhabited proof *)
+      _ (fun _ => None_parser). (* Inhabited proof *)
   Next Obligation.
     simpl. intros x y z. exact (x + y + z).
   Defined.

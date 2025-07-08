@@ -27,7 +27,7 @@ Ltac autorewrite_set :=
   ).
 
 Ltac basic_simplify_krule :=
-  eval_helper2;
+  repeat ;
   simpl sort_inj;
   repeat (rewrite_app_ext; try rewrite fmap_propset_singleton);
   autorewrite_set.
