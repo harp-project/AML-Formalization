@@ -68,7 +68,7 @@ module TREE
   //      else node(X, L, insert(R, V))
   //  )
   rule insert(Node(X, _, L, R), V) => balance(node(X, insert(L, V), R)) requires V <Int X
-  rule insert(Node(X, _, L, R), V) => balance(node(X, L, insert(R, V))) [owise]
+  rule insert(Node(X, _, L, R), V) => balance(node(X, L, insert(R, V))) requires V >=Int X
 
 
   // === Balance ===
@@ -81,7 +81,15 @@ module TREE
 
   rule balance(T) => rotateRightLeft(T) requires balanceFactor(T) <Int -1 andBool balanceFactor(rightT(T)) >Int 0
 
-  rule balance(T) => T [owise]
+  rule balance(T) => T requires notBool (
+                                  (balanceFactor(T) >Int 1 andBool balanceFactor(leftT(T)) >=Int 0)
+                                  orBool
+                                  (balanceFactor(T) >Int 1 andBool balanceFactor(leftT(T)) <Int 0)
+                                  orBool
+                                  (balanceFactor(T) <Int -1 andBool balanceFactor(rightT(T)) <=Int 0)
+                                  orBool
+                                  (balanceFactor(T) <Int -1 andBool balanceFactor(rightT(T)) >Int 0)
+                                )
 
   // === Traversal (in-order) ===
   syntax List ::= inorder(Tree) [function]
