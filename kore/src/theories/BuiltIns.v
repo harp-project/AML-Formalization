@@ -486,7 +486,10 @@ Module String.
         None
   .
 
-  Definition int2string (num : Z) : option string := base2string num 10.
+(*   Definition int2string (num : Z) : option string := base2string num 10. *)
+  Require Import Numbers.DecimalString Decimal.
+  Definition int2string (num : Z) : string :=
+    NilZero.string_of_int (Z.to_int num).
 
   (**
      I check to make sure the base is in range, but I don't check if it's

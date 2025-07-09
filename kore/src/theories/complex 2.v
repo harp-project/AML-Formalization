@@ -4,7 +4,7 @@ From Kore Require Export Semantics.
 Import Signature.StringVariables.
 Import Kore.Syntax.Notations.
 Require Import BuiltIns DVParsers.
-Import BuiltIns.List BuiltIns.SSet BuiltIns.MMap.
+Import BuiltIns.List BuiltIns.SSet BuiltIns.MMap BuiltIns.String.
 
 From Coq Require Import ZArith.
 
@@ -470,8 +470,15 @@ Some (c_dv_SortSet []).
 Definition fun_Id2String (x : SortId_carrier) : option SortString_carrier :=
 Some (c_dv_SortString (SortId_carrier_rect _ id x)).
 
-(* hooked-symbol LblInt2String'LParUndsRParUnds'STRING-COMMON'Unds'String'Unds'Int{}(SortInt{}) : SortString{} *)
+Search string "app".
+Definition fun_concatString (s1 s2 : SortString_carrier) :
+  option SortString_carrier :=
+  Some (c_dv_SortString (SortString_carrier_rect _ (SortString_carrier_rect (fun _ => string -> string) String.append s1) s2))
+.
 
+(* hooked-symbol LblInt2String'LParUndsRParUnds'STRING-COMMON'Unds'String'Unds'Int{}(SortInt{}) : SortString{} *)
+Definition fun_Int2String (z : SortInt_carrier) : option SortString_carrier :=
+  c_dv_SortString <$> SortInt_carrier_rect (fun _ => option string) String.int2string z.
 
 (* hooked-symbol LblList'Coln'get{}(SortList{}, SortInt{}) : SortKItem{} "List:get" *)
 Definition fun_List_get (xs : SortList_carrier) (x : SortInt_carrier) : option SortKItem_carrier :=
