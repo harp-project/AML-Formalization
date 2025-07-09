@@ -87,29 +87,30 @@ Lemma rem_abs_0 v0 v:
    else v `rem` v0) =
   (v `rem` Z.abs v0 + Z.abs v0) `rem` Z.abs v0.
 Proof.
+  Search Z.rem [Z.lt | Z.le | Z.gt | Z.ge].
   destruct (Z_dec v  0) as [[Hvneg  |  Hvpos] |  Hveq],
            (Z_dec v0 0) as [[Hv0neg | Hv0pos] | Hv0eq],
            (v `rem` v0 <? 0) eqn:Hcond;
   pose proof Zlt_cases (v `rem` v0) 0 as HcondProp;
-  rewrite Hcond in HcondProp.
-  - rewrite !Z.rem_abs_r; try lia.
-    rewrite !Z.rem_mod; try lia.
-    rewrite !(Z.sgn_neg v). assumption.
-    rewrite !(Z.abs_neq v). lia.
-    rewrite !(Z.abs_neq v0). lia.
-    rewrite !Zmod_opp_opp.
-    assert (forall x, -1 * x = - x) as -> by lia.
-    rewrite !Z.opp_involutive.
-    rewrite !Z.add_opp_r.
-
-  (* Z.rem_nonneg : ∀ a b : Z, b ≠ 0 → 0 ≤ a → 0 ≤ a `rem` b *)
-  (* Z.rem_nonpos : ∀ a b : Z, b ≠ 0 → a ≤ 0 → a `rem` b ≤ 0 *)
-  (* Z.rem_abs_r : ∀ a b : Z, b ≠ 0 → a `rem` Z.abs b = a `rem` b *)
-  (* Z.rem_small : ∀ a b : Z, 0 ≤ a < b → a `rem` b = a *)
-  (* Z.rem_mod_nonneg : ∀ a b : Z, 0 ≤ a → 0 < b → a `rem` b = a `mod` b *)
-  (* Z.rem_mod : ∀ a b : Z, b ≠ 0 → a `rem` b = Z.sgn a * Z.abs a `mod` Z.abs b *)
-  (* Z.add_rem_idemp_l : ∀ a b n : Z, n ≠ 0 → 0 ≤ a * b → (a `rem` n + b) `rem` n = (a + b) `rem` n *)
-Admitted.
+  rewrite Hcond in HcondProp; clear Hcond.
+  2,4: pose proof Z.rem_nonpos v v0 ltac:(lia) ltac:(lia);
+  assert (v `rem` v0 = 0) as Hzero by lia;
+  rewrite -> !Z.rem_abs_r, Hzero, Z.add_0_l, Z.rem_abs_l, Z.rem_same, Z.abs_0; lia.
+  3,4,9,10,15,16: rewrite -> Hv0eq, Z.abs_0, !Z.rem_0_r_ext, !Z.add_0_r; reflexivity.
+  3,5,7,9: pose proof Z.rem_nonneg v v0 ltac:(lia) ltac:(lia); lia.
+  5,6: rewrite -> Hveq, !Z.rem_0_l, Z.add_0_l, Z.rem_same; lia.
+  3,4: rewrite -> Z.add_rem_idemp_l, Z.add_rem, Z.rem_same, Z.add_0_r, Z.rem_rem, Z.rem_abs_r; lia.
+  assert (forall x, -1 * x = - x) as Hminus1 by lia;
+  assert (0 < v `mod` v0 - v0) as Hmodpos by (pose proof Z_mod_neg v v0 Hv0neg as []; lia);
+  assert (v `mod` v0 ≠ 0) as Hneq0 by (intros ?%Z.rem_mod_eq_0; lia);
+  rewrite -> !Z.rem_mod, !(Z.sgn_neg v), Z.abs_idemp, !(Z.abs_neq v), !(Z.abs_neq v0), Zmod_opp_opp, Hminus1, Z.opp_involutive, Z.add_opp_r, Z.sgn_pos, Z.abs_eq, Z.mul_1_l, <- Z_mod_nz_opp_r, Z.mod_mod; lia.
+  assert (forall x, -1 * x = - x) as Hminus1 by lia;
+  assert (0 < v `mod` (- v0) + v0) as Hmodpos by (pose proof Z_mod_neg v (- v0) ltac:(lia) as []; lia);
+  assert (v `mod` v0 ≠ 0) as Hneq0 by (intros ?%Z.rem_mod_eq_0; lia);
+  rewrite -> !Z.rem_mod, !(Z.sgn_neg v), Z.abs_idemp, !(Z.abs_neq v), !(Z.abs_eq v0); [|lia..].
+  rewrite -> Hminus1, <- Zmod_opp_opp, -> Z.opp_involutive.
+  rewrite -> Z.sgn_pos, Z.abs_eq, Z.mul_1_l, Z_mod_nz_opp_r, Z.sub_add, Z.mod_mod; lia.
+Defined.
 
 Lemma land_rem_abs v2 v3 v4:
   Z.land v2 ((1 ≪ v4 - 1) ≪ v3) ≫ v3 =
