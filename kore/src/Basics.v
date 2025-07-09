@@ -392,3 +392,94 @@ Proof.
   - exact r.
   - exact (hcons f (IHl)).
 Defined.
+
+Lemma Z_gtb_le x y:
+  ((x >? y) = false <-> x <= y)%Z.
+Proof.
+  lia.
+Qed.
+Lemma Z_geb_lt x y:
+  ((x >=? y) = false <-> x < y)%Z.
+Proof.
+  lia.
+Qed.
+
+
+
+Ltac all_to_prop :=
+  repeat
+  match goal with
+  (* ==== nat versions ==== *)
+  | [ H: Nat.eqb ?a ?b = true |- _ ] => apply Nat.eqb_eq in H
+  | [ H: Nat.eqb ?a ?b = false |- _ ] => apply Nat.eqb_neq in H
+  | [ H: ?a <=? ?b = true |- _ ] => apply Nat.leb_le in H
+  | [ H: ?a <=? ?b = false |- _ ] => apply Nat.leb_gt in H
+  | [ H: ?a <? ?b = true |- _ ] => apply Nat.ltb_lt in H
+  | [ H: ?a <? ?b = false |- _ ] => apply Nat.ltb_ge in H
+
+  (* ==== Z versions ==== *)
+  | [ H: Z.eqb ?a ?b = true |- _ ] => apply Z.eqb_eq in H
+  | [ H: Z.eqb ?a ?b = false |- _ ] => apply Z.eqb_neq in H
+  | [ H: Z.leb ?a ?b = true |- _ ] => apply Z.leb_le in H
+  | [ H: Z.leb ?a ?b = false |- _ ] => apply Z.leb_gt in H
+  | [ H: Z.ltb ?a ?b = true |- _ ] => apply Z.ltb_lt in H
+  | [ H: Z.ltb ?a ?b = false |- _ ] => apply Z.ltb_ge in H
+  | [ H: Z.geb ?a ?b = true |- _ ] => apply Z.geb_ge in H
+  | [ H: Z.geb ?a ?b = false |- _ ] => apply Z_geb_lt in H
+  | [ H: Z.gtb ?a ?b = true |- _ ] => apply Z.gtb_gt in H
+  | [ H: Z.gtb ?a ?b = false |- _ ] => apply Z_gtb_le in H
+
+  (* ==== Plain bools ==== *)
+  | [ H: true = true |- _ ] => clear H
+  | [ H: false = false |- _ ] => clear H
+  | [ H: true = false |- _ ] => discriminate H
+  | [ H: false = true |- _ ] => discriminate H
+  | [ H: negb ?b = true |- _ ] => apply Bool.negb_true_iff in H
+  | [ H: negb ?b = false |- _ ] => apply Bool.negb_false_iff in H
+  | [ H: andb _ _ = true |- _ ] => apply Bool.andb_true_iff in H as []
+  | [ H: orb _ _ = false |- _ ] => apply Bool.orb_false_iff in H as []
+  end.
+
+Open Scope Z_scope.
+Goal
+  forall x y : Z,
+    x >? y = true ->
+    x >=? y = true ->
+    x <? y = true ->
+    x <=? y = true ->
+    x >? y = false ->
+    x >=? y = false ->
+    x <? y = false ->
+    x <=? y = false ->
+    True.
+Proof.
+  intros.
+  all_to_prop.
+Abort.
+Close Scope Z_scope.
+
+Ltac bool_to_prop :=
+  repeat match goal with
+  (* ==== Plain bools ==== *)
+  | [ H: true = true |- _ ] => clear H
+  | [ H: false = false |- _ ] => clear H
+  | [ H: true = false |- _ ] => discriminate H
+  | [ H: false = true |- _ ] => discriminate H
+  | [ H: negb ?b = true |- _ ] => apply Bool.negb_true_iff in H
+  | [ H: negb ?b = false |- _ ] => apply Bool.negb_false_iff in H
+  | [ H: andb _ _ = true |- _ ] => apply Bool.andb_true_iff in H as []
+  | [ H: orb _ _ = false |- _ ] => apply Bool.orb_false_iff in H as []
+  end.
+
+Lemma simpl_none_bind : ∀ {A B : Type} (mx : option A),
+      (mx ≫= λ x : A, None : option B) = None.
+Proof.
+  unfold mbind, option_bind.
+  intros. by case_match.
+Qed.
+
+Lemma simpl_none_orelse :
+    forall T (X : option T), X <|> None = X.
+Proof.
+  unfold orElse. by destruct X.
+Qed.

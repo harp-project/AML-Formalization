@@ -1842,7 +1842,115 @@ Ltac classicize :=
 * solver_macro AXIOM.
 * solver_macro AXIOM.
 * admit.
-* admit. (* TODO *)
+* simplify_krule.
+  clear AXIOM.
+
+
+
+  Check @evar_valuation.
+  Ltac unfold_dvs2 :=
+    repeat match goal with
+    | [n : SortInt_carrier |- _] => destruct n
+    | [n : SortBool_carrier |- _] => destruct n
+    | [n : SortList_carrier |- _] => destruct n
+    | [n : SortMap_carrier |- _] => destruct n
+    | [n : SortSet_carrier |- _] => destruct n
+    | |- context [@evar_valuation ?Σ ?M ?ρ SortInt ?x] =>
+      destruct (@evar_valuation Σ M ρ SortInt x) eqn:H;
+      try rewrite -> H in *;
+      clear H
+    | |- context [@evar_valuation ?Σ ?M ?ρ SortBool ?x] =>
+      destruct (@evar_valuation Σ M ρ SortBool x) eqn:H;
+      try rewrite -> H in *;
+      clear H
+    | |- context [@evar_valuation ?Σ ?M ?ρ SortList ?x] =>
+      destruct (@evar_valuation Σ M ρ SortList x) eqn:H;
+      try rewrite -> H in *;
+      clear H
+    | |- context [@evar_valuation ?Σ ?M ?ρ SortMap ?x] =>
+      destruct (@evar_valuation Σ M ρ SortMap x) eqn:H;
+      try rewrite -> H in *;
+      clear H
+    | |- context [@evar_valuation ?Σ ?M ?ρ SortSet ?x] =>
+      destruct (@evar_valuation Σ M ρ SortSet x) eqn:H;
+      try rewrite -> H in *;
+      clear H
+    end.
+  unfold_dvs2; simpl in *.
+  classicize;
+  intros;
+  destruct_and?;
+  rewrite_evar_val;
+  cbn in *;
+  simplify_eq;
+  rewrite H0.
+  unfold mbind, option_bind, mret, option_ret in *;
+  simpl.
+  repeat case_match;
+  cbn in *;
+  simplify_eq;
+  repeat (rewrite_app_ext; repeat rewrite fmap_propset_singleton);
+  repeat app_ext_empty;
+  try set_solver;
+  destruct_oapps; simplify_eq;
+  try set_solver.
+
+  destruct_oapps;
+    classicize;
+    intros;
+    destruct_and?;
+    rewrite_evar_val;
+    cbn in *;
+    simplify_eq;
+    try set_solver;
+    unfold mbind, option_bind, mret, option_ret in *;
+    repeat case_match;
+    cbn in *;
+    simplify_eq.
+    all: try set_solver.
+    Arguments node________TREE_Tree_Int_Tree_Tree /.
+    - repeat destruct_evar_val_hyp;
+      cbn in *;
+      try set_solver.
+      unfold mbind, option_bind, mret, option_ret in *;
+      repeat case_match;
+      cbn in *;
+      simplify_eq;
+      try set_solver.
+      all: admit.
+    - repeat destruct_evar_val_hyp;
+      cbn in *;
+      try set_solver.
+      unfold mbind, option_bind, mret, option_ret in *;
+      repeat case_match;
+      cbn in *;
+      simplify_eq;
+      try set_solver.
+      all: cbn in *; simplify_eq.
+      all: admit.
+    
+    all: unfold node________TREE_Tree_Int_Tree_Tree, _780a187 in *;
+    simpl in *.
+    
+    
+    all: repeat destruct_evar_val_hyp;
+    cbn in *;
+    try set_solver.
+    rewrite -> H0 in *.
+
+    unfold mbind, option_bind, mret, option_ret in *.
+    cbn in *; try congruence;
+    simplify_eq;
+    try set_solver.
+    4: {
+    repeat case_match
+    unfold mbind, option_bind, mret, option_ret in *;
+    cbn in *;
+    unfold mbind, option_bind, mret, option_ret in *;
+    cbn in *;
+    simplify_eq;
+    repeat f_equal;
+    try set_solver
 * solver_macro AXIOM.
 * solver_macro AXIOM.
 * solver_macro AXIOM.

@@ -742,11 +742,11 @@ end.
     the arguments are singletons. The tactic rewrites the leftmost-innermost
     occurrence of such `app_ext`. *)
 Ltac rewrite_app_ext_innnermost G :=
-match G with
-| context [@app_ext _ ?M ?σ ?args] =>
+multimatch G with
+(* | context [@app_ext _ ?M ?σ ?args] =>
   rewrite_app_ext_innnermost args (* This step is just to reach
                                       the innermost app_ext *)
-  (* idtac "match" σ args *)
+  (* idtac "match" σ args *) *)
 | context [@app_ext _ ?M ?σ ?args] => (* This branch fails, if there is no
                                    more app_exts, therefore
                                    it succeeds for the last (innermost)
@@ -766,6 +766,32 @@ match goal with
 | |- ?G => rewrite_app_ext_innnermost G; simpl app
 end.
 
+(* Ltac rewrite_app_ext_innnermost_in H G :=
+match G with
+| context [@app_ext _ ?M ?σ ?args] =>
+  rewrite_app_ext_innnermost_in H args
+| context [@app_ext _ ?M ?σ ?args] => 
+  rewrite (@app_ext_singleton _ M σ args ltac:(solve_all_singleton)) in H
+end.
+
+Ltac rewrite_app_ext_in H :=
+match type of H with
+| ?T => rewrite_app_ext_innnermost_in H T; simpl Semantics.app in H
+end.
+Ltac rewrite_app_ext_in_single :=
+match goal with
+| [H : context [app_ext _ _] |- _] => rewrite_app_ext_in H
+end. *)
+Ltac rewrite_app_ext_in H0 :=
+multimatch type of H0 with
+| context [@app_ext _ ?M ?σ ?args] => 
+  try rewrite (@app_ext_singleton _ M σ args ltac:(solve_all_singleton)) in H0
+end.
+Ltac rewrite_app_ext_in_single :=
+lazymatch goal with
+| [H : context [@app_ext _ ?M ?σ ?args] |- _] =>
+  rewrite_app_ext_in H
+end.
 
 Tactic Notation "deconstruct_elem_of_Theory" :=
   repeat match goal with
