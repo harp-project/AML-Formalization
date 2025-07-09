@@ -881,10 +881,8 @@ end.
 Ltac solve_ineqs_smart :=
   lazymatch goal with
   | |- context [decide (?X = ?X)] =>
-    (* idtac "haha"; *)
     rewrite decide_eq_same
   | |- context [decide ((@fresh ?A ?C ?I ?X) = (@fresh ?A ?C ?I ?Y))] =>
-       (* idtac "matched"; *)
        let P := fresh "P" in
        let e := fresh "e" in
        destruct (decide ((@fresh A C I X) = (@fresh A C I Y))) as [e | e] eqn:P;
@@ -901,12 +899,7 @@ Ltac solve_ineqs_smart :=
           rewrite elem_of_elements in H2;
           set_solver|
           try rewrite P;
-          try rewrite e; clear P e(* ;  idtac "done" *)]
-    (* (
-      let P := fresh "P" in
-      destruct (decide (F = X)) eqn:P; [set_solver|
-        try rewrite P])
-    ) *)
+          try rewrite e; clear P e]
   | |- context [decide ((@fresh ?A ?C ?I ?X) = ?Y)] =>
     let P := fresh "P" in
     let e := fresh "e" in
@@ -921,7 +914,7 @@ Ltac solve_ineqs_smart :=
           rewrite elem_of_elements in H1;
           set_solver|
           try rewrite P;
-          try rewrite e; clear P e(* ; idtac "done" *)]
+          try rewrite e; clear P e]
   | |- context [decide (?X = (@fresh ?A ?C ?I ?Y))] =>
     let P := fresh "P" in
     let e := fresh "e" in
@@ -936,7 +929,7 @@ Ltac solve_ineqs_smart :=
           rewrite elem_of_elements in H1;
           set_solver|
           try rewrite P;
-          try rewrite e; clear P e(* ; idtac "done" *)]
+          try rewrite e; clear P e]
   end.
 
 
@@ -1000,6 +993,63 @@ Ltac eval_simplifier :=
     (* idtac "other"; *)
     rewrite eval_simpl
   end.
+
+Ltac destruct_oapp_hyp :=
+  match goal with
+  | [H : context [oapp singleton ∅ ?x] |- _] =>
+    let P := fresh "P" in
+    destruct x eqn:P; simpl in *
+  end.
+
+  Ltac app_ext_empty_smart :=
+    match goal with
+    | |- context [app_ext _ ?args] =>
+      match args with
+      | context [∅] =>
+    rewrite app_ext_singleton_empty;
+      [app_ext_empty_smart + (cbn; set_solver)
+      |
+      (cbn; set_solver)
+      ]
+      end
+    end.
+
+  Ltac app_ext_empty_hyp :=
+    match goal with
+    | [H : context [app_ext ?σ ?args] |- _] =>
+      match args with
+      | context [∅] =>
+        rewrite app_ext_singleton_empty in H;
+        [
+          app_ext_empty_smart
+        |
+          set_solver
+        ]
+      end
+    end.
+
+Ltac app_ext_empty :=
+    rewrite app_ext_singleton_empty;
+    [app_ext_empty || idtac (* for some reason, this idtac is needed here *);cbn; set_solver
+      |
+    ].
+Ltac destruct_oapps :=
+  repeat (match goal with
+  | [H : context [oapp singleton ∅ ?x] |- _] =>
+    let P := fresh "P" in
+    destruct x eqn:P; simpl in *
+  | |- context [oapp singleton ∅ ?x] =>
+    let P := fresh "P" in
+    destruct x eqn:P; simpl in *
+  end;
+  repeat (rewrite_app_ext; repeat rewrite fmap_propset_singleton);
+  repeat app_ext_empty;
+  repeat rewrite_app_ext_in_single).
+Ltac rewrite_evar_val :=
+  repeat match goal with
+    | [H : _ = evar_valuation ?ρ ?x |- _] => rewrite <- H in *; clear H
+    | [H : evar_valuation ?ρ ?x = _ |- _] => rewrite -> H in *; clear H
+    end.
 
 Add Search Blacklist "_elim".
 Add Search Blacklist "FunctionalElimination_".

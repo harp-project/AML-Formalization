@@ -471,6 +471,23 @@ Ltac bool_to_prop :=
   | [ H: orb _ _ = false |- _ ] => apply Bool.orb_false_iff in H as []
   end.
 
+Ltac destruct_Z_compares :=
+  let P := fresh "P" in
+  match goal with
+  | |- context [(?x >? ?y)%Z] => 
+     destruct (x >? y)%Z eqn:P; all_to_prop;try lia
+  | |- context [(?x <? ?y)%Z] => 
+     destruct (x <? y)%Z eqn:P; all_to_prop;try lia
+  | |- context [(?x <=? ?y)%Z] => 
+     destruct (x <=? y)%Z eqn:P; all_to_prop;try lia
+  | |- context [(?x >=? ?y)%Z] => 
+     destruct (x >=? y)%Z eqn:P; all_to_prop;try lia
+  end.
+Ltac rewrite_in_goal :=
+  match goal with
+  | [H : ?b = _ |- context [?b]] => rewrite H
+  (* | [H : _ = ?b |- context [?b]] => rewrite -H *)
+  end.
 Lemma simpl_none_bind : ∀ {A B : Type} (mx : option A),
       (mx ≫= λ x : A, None : option B) = None.
 Proof.
