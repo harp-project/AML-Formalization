@@ -96,9 +96,5 @@ module TREE
   rule inorder(Empty) => .List
   rule inorder(Node(V, _, L, R)) => inorder(L) ListItem(V) inorder(R)
 
-
-  syntax MYL ::= List{Int, ","}
-  configuration <k> fillList( $PGM , 1, 1, 1) </k>
-
 endmodule
 
