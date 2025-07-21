@@ -15,7 +15,7 @@ This subproject defines the syntax and semantics of Kore using a dependently typ
 
 The project also includes sevaral example theories, models for these theories, and satisfaction proofs in these models. There are 6 simple theories, which also serve as unit tests for the formalisation:
 
-- `src/theories/simple/InjectionTest.v` is a simple test for injections in Kore. This file highlight an inconsistency with transitive proofs: if a value can be injected into a supertype in two different ways, then these injected values do not necessarily are equal (while this is expected accoring to the transitivity axiom of injections).
+- `src/theories/simple/InjectionTest.v` is a simple test for injections in Kore. This file highlight an inconsistency with transitive proofs: if a value can be injected into a supertype in two different ways, then these injected values do not necessarily are equal (while this is expected accoring to the [transitivity axiom of injections](https://github.com/harp-project/AML-Formalization/blob/b1da1484bd73fd81dde4d331d5fbf64e55951d17/koreimport-test/korefiles/imp.kore#L53)).
 - `src/theories/simple/InjectionTest2.v` is another simple test for injections and subsorting in Kore.
 - `src/theories/simple/DVTest.v` is a test for domain values.
 - `src/theories/simple/Nat.v` defines a dependently typed signature for natural numbers and bools.
