@@ -22,11 +22,45 @@ Ltac autorewrite_set :=
     rewrite fmap_propset_singleton
   ).
 
+Ltac classicize :=
+  apply Classical_Prop.imply_to_or.
+Ltac app_ext_rewrite C :=
+lazymatch C with
+| context [propset_fa_union ?Cnew] =>
+    erewrite propset_fa_union_rewrite; [
+    |
+      intro;
+      match goal with
+      | |- ?G => app_ext_rewrite G
+      end;
+      unfold propset_fa_union;
+      try rewrite propset_double;
+      reflexivity
+    ]
+
+| context [app_ext ?sym _] =>
+  repeat (rewrite_app_ext; repeat rewrite fmap_propset_singleton);
+  autorewrite_set;
+  apply propset_top_eq;
+  repeat rewrite singleton_subseteq;
+  repeat rewrite singleton_eq;
+  simpl;
+  reflexivity
+end.
+Ltac app_ext_rewrite_all :=
+repeat match goal with
+| |- context [propset_fa_union ?C] =>
+    app_ext_rewrite (propset_fa_union C); unfold propset_fa_union at 1;
+    rewrite propset_double
+end.
+
 Ltac basic_simplify_krule :=
-  eval_helper2;
+  repeat eval_simplifier;
   simpl sort_inj;
-  repeat (rewrite_app_ext; try rewrite fmap_propset_singleton);
+  app_ext_rewrite_all;
+  repeat (rewrite_app_ext; repeat rewrite fmap_propset_singleton);
   autorewrite_set.
+
 Ltac simplify_krule :=
   basic_simplify_krule;
   apply propset_top_elem_of_2;
@@ -35,17 +69,6 @@ Ltac simplify_krule :=
   repeat rewrite elem_of_PropSet;
   repeat rewrite singleton_subseteq;
   repeat rewrite singleton_eq.
-
-
-Ltac abstract_var := 
-  match goal with
-    | [|- context [evar_valuation ?σ ?s]] =>
-      let x := fresh "var" in
-      let Hx := fresh "Hvar" in
-        remember (evar_valuation σ s) as x eqn:Hx (*;
-        clear Hx;
-        revert x *)
-    end.
 
 Module T.
 
@@ -104,24 +127,6 @@ Module T.
   | inj_bool_kitem : Demo_subsort SortBool SortKItem
   | inj_list_kitem : Demo_subsort SortList SortKItem
   | inj_map_kitem : Demo_subsort SortMap SortKItem.
-
-(*   Instance Demo_subsort_PreOrder : CRelationClasses.PreOrder Demo_subsort.
-  Proof.
-    split.
-    (* cbv. intro. constructor 1.
-    cbv. intros. inversion H; subst. assumption.
-    inversion H0; subst. assumption. assumption.
-    admit. *)
-  Admitted.
-
-  Instance Demo_subsort_PartialOrder : CRelationClasses.PartialOrder eq Demo_subsort.
-  Proof.
-    cbv. intros. split; intros. rewrite H. repeat constructor.
-    destruct H. (*  inversion d; subst. reflexivity.
-    inversion d0; subst; reflexivity.
-    inversion d0. *)
-  (* Defined. *)
-  Admitted. *)
 
   (* In the signature, we need to define the sorts, the variable types,
      and the typing/sorting rules for symbols: *)
@@ -281,28 +286,6 @@ Module T.
       - apply klist_carrier_beq_refl.
       - apply kmap_carrier_beq_refl.
   Qed.
-
-(*   Inductive knat_carrier {K} {Keqdec : EqDecision K} {Kcount : Countable K} : Set :=
-  | c_nat (n : nat)
-  with kbool_carrier {K} {Keqdec : EqDecision K} {Kcount : Countable K} : Set :=
-  | c_bool (b : bool)
-  with klist_carrier {K} {Keqdec : EqDecision K} {Kcount : Countable K} : Set :=
-  | c_nil
-  | c_cons (x : kitem_carrier) (xs : klist_carrier)
-  with k_carrier {K} {Keqdec : EqDecision K} {Kcount : Countable K} : Set  :=
-  | c_dotk
-  | c_kseq (x : kitem_carrier) (xs : k_carrier)
-  with k_map_carrier {K} {Keqdec : EqDecision K} {Kcount : Countable K} : Set :=
-  (* | c_map (x : gmap kitem_carrier kitem_carrier) -- This won't work due to the lack of EqDec *)
-  | c_map (x : gmap K kitem_carrier)
-  with kitem_carrier {K} {Keqdec : EqDecision K} {Kcount : Countable K} : Set :=
-  | c_nat_kitem (n : knat_carrier)
-  | c_bool_kitem (b : kbool_carrier)
-  | c_list_kitem (l : klist_carrier).
-
-  
-
-  Scheme Boolean Equality for knat_carrier. (* DANGER! *) *)
 
   Definition carrier (s : DemoSorts) : Set :=
   match s with
@@ -471,22 +454,26 @@ Module T.
       { remember (evar_valuation _ _) as l. clear.
         induction l. by simpl.
         simpl. by rewrite IHl. }
-    * simplify_krule. remember (fresh_evar _ _) as F.
-      simpl bevar_subst. cbn.
-      do 2 abstract_var.
+    * simplify_krule.
       destruct (klist_islist _) eqn:P; destruct b.
       2: by right.
-      left. intros []. subst var var0.
+      left. intros [].
       apply H. clear H.
       destruct (evar_valuation ρ "K"); simpl in *; try congruence.
       destruct c; simpl in *; try congruence.
       destruct x0; simpl in *; try congruence.
-      exists l. basic_simplify_krule.
-      apply elem_of_PropSet. apply singleton_subseteq.
-      rewrite decide_eq_same.
-      rewrite update_evar_val_diff_sort. congruence.
-      by rewrite H0.
+      exists l. assumption.
   Qed.
+
+  Ltac abstract_var := 
+    match goal with
+      | [|- context [evar_valuation ?σ ?s]] =>
+        let x := fresh "var" in
+        let Hx := fresh "Hvar" in
+          remember (evar_valuation σ s) as x eqn:Hx (*;
+          clear Hx;
+          revert x *)
+      end.
 
   Goal satT map_beh DemoModel.
   Proof.
@@ -512,4 +499,4 @@ Module T.
     * solve_functional_axiom_option.
       cbn. clear. repeat dependent destruction l. congruence.
   Qed.
-
+End T.

@@ -470,7 +470,6 @@ Some (c_dv_SortSet []).
 Definition fun_Id2String (x : SortId_carrier) : option SortString_carrier :=
 Some (c_dv_SortString (SortId_carrier_rect _ id x)).
 
-Search string "app".
 Definition fun_concatString (s1 s2 : SortString_carrier) :
   option SortString_carrier :=
   Some (c_dv_SortString (SortString_carrier_rect _ (SortString_carrier_rect (fun _ => string -> string) String.append s1) s2))
@@ -478,7 +477,7 @@ Definition fun_concatString (s1 s2 : SortString_carrier) :
 
 (* hooked-symbol LblInt2String'LParUndsRParUnds'STRING-COMMON'Unds'String'Unds'Int{}(SortInt{}) : SortString{} *)
 Definition fun_Int2String (z : SortInt_carrier) : option SortString_carrier :=
-  c_dv_SortString <$> SortInt_carrier_rect (fun _ => option string) String.int2string z.
+  Some (c_dv_SortString (SortInt_carrier_rect (fun _ => string) int2string z)).
 
 (* hooked-symbol LblList'Coln'get{}(SortList{}, SortInt{}) : SortKItem{} "List:get" *)
 Definition fun_List_get (xs : SortList_carrier) (x : SortInt_carrier) : option SortKItem_carrier :=
@@ -822,7 +821,7 @@ Definition fun_MapupdateAll (m1 m2 : SortMap_carrier) : option SortMap_carrier :
   Some (c_dv_SortMap ((SortMap_carrier_rect _ (SortMap_carrier_rect (fun _ => MMap.Map SortKItem_carrier SortKItem_carrier -> MMap.Map SortKItem_carrier SortKItem_carrier) (MMap.updateAll SortKItem_carrier_beq) m1) m2))).
 
 (* hooked-symbol Lblvalues'LParUndsRParUnds'MAP'Unds'List'Unds'Map{}(SortMap{}) : SortList{} *)
-Definition fun_Mapvals (m : SortMap_carrier) : SortSet_carrier :=
+Definition fun_Mapvals (m : SortMap_carrier) : SortList_carrier :=
   c_dv_SortList (SortMap_carrier_rect (fun _ => list SortKItem_carrier) MMap.values m).
 
 (* hooked-symbol Lbl'Tild'Int'Unds'{}(SortInt{}) : SortInt{} "~Int_ "*)
@@ -929,7 +928,6 @@ Definition retr_SortKResult_SortBool x := match x with
   | c_inj_SortBool_SortKResult x => Some x
   | _ => None end.
 
-Print Ksyms.
 (*      Definition _61fbef3 : SortBool_carrier -> SortBool_carrier -> option SortBool_carrier
    := fun x => match x with  false, _Gen0 => Some false
   | _, _ => None end.
@@ -1049,9 +1047,42 @@ Ltac autorewrite_set :=
     rewrite fmap_propset_singleton
   ).
 
+Ltac classicize :=
+  apply Classical_Prop.imply_to_or.
+Ltac app_ext_rewrite C :=
+lazymatch C with
+| context [propset_fa_union ?Cnew] =>
+    erewrite propset_fa_union_rewrite; [
+    |
+      intro;
+      match goal with
+      | |- ?G => app_ext_rewrite G
+      end;
+      unfold propset_fa_union;
+      try rewrite propset_double;
+      reflexivity
+    ]
+
+| context [app_ext ?sym _] =>
+  repeat (rewrite_app_ext; repeat rewrite fmap_propset_singleton);
+  autorewrite_set;
+  apply propset_top_eq;
+  repeat rewrite singleton_subseteq;
+  repeat rewrite singleton_eq;
+  simpl;
+  reflexivity
+end.
+Ltac app_ext_rewrite_all :=
+repeat match goal with
+| |- context [propset_fa_union ?C] =>
+    app_ext_rewrite (propset_fa_union C); unfold propset_fa_union at 1;
+    rewrite propset_double
+end.
+
 Ltac basic_simplify_krule :=
-  eval_helper2;
+  repeat eval_simplifier;
   simpl sort_inj;
+  app_ext_rewrite_all;
   repeat (rewrite_app_ext; repeat rewrite fmap_propset_singleton);
   autorewrite_set.
 
@@ -1063,9 +1094,6 @@ Ltac simplify_krule :=
   repeat rewrite elem_of_PropSet;
   repeat rewrite singleton_subseteq;
   repeat rewrite singleton_eq.
-
-Ltac classicize :=
-  apply Classical_Prop.imply_to_or.
 
 Ltac simplify_equality :=
 match goal with
@@ -1111,5 +1139,5 @@ Ltac abstract_var :=
     all: try (solve_functional_axiom_option_sym; cbn; clear; repeat dependent destruction l; cbv; congruence).
   Defined.
 
-      End TheorySemantics.
+End TheorySemantics.
 

@@ -1,16 +1,8 @@
+(**
+  These definitions are intended to express the behaviour of hooked symbols from
+  [K's builtins](https://kframework.org/k-distribution/include/kframework/builtin/domains).
+*)
 
-(* (** This won't work, because the data needs to be unboxed first! *)
-Definition fun_notBool_Unds_ {T : Type} (inj : bool -> T) (b : bool) : option T :=
-  Some (inj (negb b)).
-
-Definition fun_Unds_andBool_Unds_ {T : Type} (inj : bool -> T) (b1 b2 : bool) : option T :=
-  Some (inj (andb b1 b2)).
-
-Definition fun_Unds_orBool_Unds_ {T : Type} (inj : bool -> T) (b1 b2 : bool) : option T :=
-  Some (inj (orb b1 b2)).
-
-
- *)
 From MatchingLogic Require Export stdpp_ext.
 Require Import ZArith Bool.
 Require Import List.

@@ -22,30 +22,44 @@ Ltac autorewrite_set :=
     rewrite fmap_propset_singleton
   ).
 
+Ltac classicize :=
+  apply Classical_Prop.imply_to_or.
+Ltac app_ext_rewrite C :=
+lazymatch C with
+| context [propset_fa_union ?Cnew] =>
+    erewrite propset_fa_union_rewrite; [
+    |
+      intro;
+      match goal with
+      | |- ?G => app_ext_rewrite G
+      end;
+      unfold propset_fa_union;
+      try rewrite propset_double;
+      reflexivity
+    ]
+
+| context [app_ext ?sym _] =>
+  repeat (rewrite_app_ext; repeat rewrite fmap_propset_singleton);
+  autorewrite_set;
+  apply propset_top_eq;
+  repeat rewrite singleton_subseteq;
+  repeat rewrite singleton_eq;
+  simpl;
+  reflexivity
+end.
+Ltac app_ext_rewrite_all :=
+repeat match goal with
+| |- context [propset_fa_union ?C] =>
+    app_ext_rewrite (propset_fa_union C); unfold propset_fa_union at 1;
+    rewrite propset_double
+end.
+
 Ltac basic_simplify_krule :=
-  eval_helper2;
+  repeat eval_simplifier;
   simpl sort_inj;
+  app_ext_rewrite_all;
   repeat (rewrite_app_ext; repeat rewrite fmap_propset_singleton);
   autorewrite_set.
-Ltac simplify_krule :=
-  basic_simplify_krule;
-  apply propset_top_elem_of_2;
-  intro;
-  apply elem_of_PropSet;
-  repeat rewrite elem_of_PropSet;
-  repeat rewrite singleton_subseteq;
-  repeat rewrite singleton_eq.
-
-
-Ltac abstract_var := 
-  match goal with
-    | [|- context [evar_valuation ?σ ?s]] =>
-      let x := fresh "var" in
-      let Hx := fresh "Hvar" in
-        remember (evar_valuation σ s) as x eqn:Hx (*;
-        clear Hx;
-        revert x *)
-    end.
 
 Module T.
 
@@ -92,9 +106,6 @@ Module T.
   Next Obligation. compute_done. Defined.
   Final Obligation. destruct x; set_solver. Defined.
 
-  (* TODO generator: This should be generated based on
-     the subsorting relation/klean typeclass instances.
-     Each constructor is an Inj instance in KLean *)
   Inductive Demo_subsort : CRelationClasses.crelation DemoSorts :=
   | inj_bax_kitem : Demo_subsort SortBax SortKItem
   | inj_foo_kitem : Demo_subsort SortFoo SortKItem
@@ -106,8 +117,6 @@ Module T.
   | inj_baz_bar : Demo_subsort SortBaz SortBar
   | inj_baz_bax : Demo_subsort SortBaz SortBax.
 
-  (* TODO generator: These two goals can be generated as
-     they appear here *)
   Goal
     forall s1 s2 s3, Demo_subsort s1 s2 -> Demo_subsort s2 s3 ->
       Demo_subsort s1 s3.
@@ -152,12 +161,6 @@ Module T.
     |};
   |}.
 
-  (* TODO generator: a huge mutually inductive type should
-     be generated. Alternatively, the KLean's approach
-     could also work (by not making all of these mutual).
-     In the KLean project, KCell, GeneratedTop, GeneratedCounter
-     appear here too.
-     *)
   Inductive baz_carrier : Set :=
   | c_baz1
   | c_baz2
@@ -180,7 +183,7 @@ Module T.
   | c_inj_baz_kitem (b : baz_carrier)
   | c_inj_foo_kitem (b : foo_carrier).
 
-  (* TODO generator: This function assigns the inductive
+  (* This function assigns the inductive
      types above to their sorts. I don't think, KLean
      uses this concept. In our case, this will be the
      sort-indexed carrier. *)
@@ -194,7 +197,7 @@ Module T.
   | SortKItem => kitem_carrier
   end.
 
-  (* TODO generator: here retr of KLean should be
+  (* Hhere retr of KLean should be
      included in the function generation to handle
      injections. Retr is expressed here with 
      pattern matching. *)
@@ -224,8 +227,6 @@ Module T.
   Next Obligation.
     destruct s; repeat constructor.
   Defined.
-  (* TODO generator: these should be generated based on the injs
-     of KLean. *)
   Final Obligation.
     intros s1 s2 H x; inversion H; subst.
     * exact (c_inj_bax_kitem x).
@@ -239,7 +240,7 @@ Module T.
     * exact (c_inj_baz_bax x).
   Defined.
 
-  (* TODO generator: these are pre-defined tests *)
+  (* These are pre-defined tests *)
   Goal
     forall ρ, @eval DemoSignature DemoModel [] [] _ ρ
       (SymF ⋅ ⟨kore_inj _ inj_bar_foo (SymBar ⋅ ⟨⟩) ⟩) = {[c_baz1]}.

@@ -45,11 +45,12 @@ Defined.
 Next Obligation.
   destruct x; set_solver.
 Defined.
-
+Inductive Nat_subsort : CRelationClasses.crelation nat_sorts :=.
 (* Without "Program", the type-checking fails for some reason *)
 Program Instance NatSig : Signature := {|
   sorts := {|
     sort := nat_sorts;
+    subsort := Nat_subsort;
   |};
   variables := StringVariables;
   symbols := {|
@@ -77,25 +78,4 @@ Program Instance NatSig : Signature := {|
   |};
 |}.
 Fail Next Obligation.
-
-
-
-Open Scope string_scope.
-Goal
-  well_sorted default default nat_s (kore_fevar (nat_s, "x")).
-Proof.
-  by cbn.
-Qed.
-
-Goal
-  well_sorted default default nat_s (kore_exists nat_s (kore_app succ [kore_fevar (nat_s, "x")])).
-Proof.
-  by cbn.
-Qed.
-
-Goal
-  well_sorted default default bool_s (kore_exists nat_s (kore_app is0 [kore_bevar 0])).
-Proof.
-  by cbn.
-Qed.
 

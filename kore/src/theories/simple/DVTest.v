@@ -10,9 +10,6 @@ Open Scope kore_scope.
 Open Scope hlist_scope.
 Open Scope string_scope.
 
-(**
-   This is copied from the other file.
- *)
 Ltac autorewrite_set :=
   repeat (
     rewrite intersection_top_l_L +
@@ -26,10 +23,43 @@ Ltac autorewrite_set :=
     rewrite fmap_propset_singleton
   ).
 
+Ltac classicize :=
+  apply Classical_Prop.imply_to_or.
+Ltac app_ext_rewrite C :=
+lazymatch C with
+| context [propset_fa_union ?Cnew] =>
+    erewrite propset_fa_union_rewrite; [
+    |
+      intro;
+      match goal with
+      | |- ?G => app_ext_rewrite G
+      end;
+      unfold propset_fa_union;
+      try rewrite propset_double;
+      reflexivity
+    ]
+
+| context [app_ext ?sym _] =>
+  repeat (rewrite_app_ext; repeat rewrite fmap_propset_singleton);
+  autorewrite_set;
+  apply propset_top_eq;
+  repeat rewrite singleton_subseteq;
+  repeat rewrite singleton_eq;
+  simpl;
+  reflexivity
+end.
+Ltac app_ext_rewrite_all :=
+repeat match goal with
+| |- context [propset_fa_union ?C] =>
+    app_ext_rewrite (propset_fa_union C); unfold propset_fa_union at 1;
+    rewrite propset_double
+end.
+
 Ltac basic_simplify_krule :=
-  repeat ;
+  repeat eval_simplifier;
   simpl sort_inj;
-  repeat (rewrite_app_ext; try rewrite fmap_propset_singleton);
+  app_ext_rewrite_all;
+  repeat (rewrite_app_ext; repeat rewrite fmap_propset_singleton);
   autorewrite_set.
 
 Ltac simplify_krule :=
@@ -40,16 +70,6 @@ Ltac simplify_krule :=
   repeat rewrite elem_of_PropSet;
   repeat rewrite singleton_subseteq;
   repeat rewrite singleton_eq.
-
-Ltac abstract_var := 
-  match goal with
-    | [|- context [evar_valuation ?σ ?s]] =>
-      let x := fresh "var" in
-      let Hx := fresh "Hvar" in
-        remember (evar_valuation σ s) as x eqn:Hx (*;
-        clear Hx;
-        revert x *)
-    end.
 
 Module MInt.
 

@@ -1,3 +1,5 @@
+Set Warnings "-ambiguous-paths".
+
 From stdpp Require Export list propset.
 From Coq Require Export Program.Equality.
 

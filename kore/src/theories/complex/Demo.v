@@ -1,5 +1,5 @@
 
-From SMTCoq Require Import SMTCoq.
+(* From SMTCoq Require Import SMTCoq. *)
 
 From MatchingLogic Require Export stdpp_ext.
 From Kore Require Export Semantics.
@@ -115,7 +115,6 @@ Module DemoSyntaxSemantics.
   Fail Definition wrong :=
     ZeroPat and TruePat.
   Definition test : Pattern [] [] _ := SymZero ⋅ ⟨⟩.
-  Check test.
 
   Fail Definition wrong : NatPattern := SymSucc ⋅ ⟨ TruePat ⟩.
   Fail Definition wrong : NatPattern := SymZero ⋅ ⟨ OnePat ⟩.
@@ -1253,7 +1252,7 @@ Module ImpSemantics.
       apply Classical_Prop.imply_to_or. intros.
       destruct_and?; subst.
       simpl in *. Fail smt. admit.
-  Admitted.
+  Abort.
 
 End ImpSemantics.
 

@@ -1,3 +1,7 @@
+(**
+  This file includes parsers for [built-in types of K](https://kframework.org/k-distribution/include/kframework/builtin/domains) that
+  are annotated by "hasDomainValues".
+*)
 
 From Coq Require Import String Bool ZArith Ascii.
 Require Import ssreflect.
