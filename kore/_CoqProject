@@ -1,5 +1,4 @@
 -R src Kore
--Q ../matching-logic/src MatchingLogic
 
 src/Basics.v
 src/Signature.v
