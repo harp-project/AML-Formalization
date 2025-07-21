@@ -236,48 +236,160 @@ Ltac autorewrite_set :=
 
 Ltac classicize :=
   apply Classical_Prop.imply_to_or.
+  Ltac app_ext_rewrite C :=
+  lazymatch C with
+  | context [propset_fa_union ?Cnew] =>
+      erewrite propset_fa_union_rewrite; [
+      |
+        intro;
+        match goal with
+        | |- ?G => app_ext_rewrite G
+        end;
+        unfold propset_fa_union;
+        try rewrite propset_double;
+        reflexivity
+      ]
 
-Ltac basic_simplify_krule :=
-  repeat eval_simplifier;
-  simpl sort_inj;
-  repeat (rewrite_app_ext; repeat rewrite fmap_propset_singleton);
-  autorewrite_set.
-
-Ltac simplify_krule :=
-  basic_simplify_krule;
-  apply propset_top_elem_of_2;
-  intro;
-  apply elem_of_PropSet;
-  repeat rewrite elem_of_PropSet;
-  repeat rewrite singleton_subseteq;
-  repeat rewrite singleton_eq.
-
-Ltac solver_macro AX :=
-  simplify_krule;
-  try reflexivity;
-  try classicize;
-  intros;
-  destruct_and?; subst;
+  | context [app_ext ?sym _] =>
+    repeat (rewrite_app_ext; repeat rewrite fmap_propset_singleton);
+    autorewrite_set;
+    apply propset_top_eq;
+    repeat rewrite singleton_subseteq;
+    repeat rewrite singleton_eq;
+    simpl;
+    reflexivity
+  end.
+  Ltac app_ext_rewrite_all :=
   repeat match goal with
-  | [H : _ = evar_valuation ?ρ ?x, H1 : _ = evar_valuation ?ρ ?x |- _] => rewrite <- H in *; clear H
-  | [H : evar_valuation ?ρ ?x = _, H1 : _ = evar_valuation ?ρ ?x |- _] => rewrite -> H in *; clear H
-  end;
-  repeat destruct_evar_val;
-  destruct_and?; subst;
-  repeat match goal with
-  | [H : {[_]} ⊆ _ |- _] => apply singleton_subseteq_l in H as [? ?]
-  end;
-  simplify_eq;
-  cbn;
-  repeat f_equal;
-  repeat rewrite implb_orb;
-  (* repeat rewrite builtin_props; *)
-  try reflexivity;
-  try congruence;
-  try btauto;
-  try tauto;
-  try lia;
-  tryif done then idtac else (idtac "failed to prove: "; let X := eval cbn in AX in idtac X; shelve).
+  | |- context [propset_fa_union ?C] =>
+      app_ext_rewrite (propset_fa_union C); unfold propset_fa_union at 1;
+      rewrite propset_double
+  end.
+
+  Ltac basic_simplify_krule :=
+    repeat eval_simplifier;
+    simpl sort_inj;
+    app_ext_rewrite_all;
+    repeat (rewrite_app_ext; repeat rewrite fmap_propset_singleton);
+    autorewrite_set.
+
+  Ltac simplify_krule :=
+    basic_simplify_krule;
+    apply propset_top_elem_of_2;
+    intro;
+    apply elem_of_PropSet;
+    repeat rewrite elem_of_PropSet;
+    repeat rewrite singleton_subseteq;
+    repeat rewrite singleton_eq.
+
+  Ltac find_contra :=
+  match goal with
+  | [H : ¬ ∃ _, _ |- _] =>
+    exfalso;
+    apply H;
+    repeat eexists;
+    reflexivity
+  end.
+
+  Ltac simplification_solver :=
+    try reflexivity;
+    try classicize;
+    intros;
+    destruct_and?; subst;
+    rewrite_evar_val;
+    repeat destruct_evar_val;
+    destruct_and?; subst;
+    repeat match goal with
+    | [H : {[_]} ⊆ _ |- _] => apply singleton_subseteq_l in H as [? ?]
+    end;
+    simplify_eq;
+    cbn;
+    repeat f_equal;
+    repeat rewrite implb_orb;
+    try reflexivity;
+    try congruence;
+    try btauto;
+    try tauto;
+    try lia;
+    try find_contra.
+
+  Ltac destruct_solver :=
+    simpl in *;
+    classicize;
+    intros;
+    destruct_and?;
+    rewrite_evar_val;
+    cbn in *;
+    simplify_eq;
+    unfold mbind, option_bind, mret, option_ret in *;
+    simpl;
+    repeat case_match;
+    destruct_oapps;
+    cbn in *;
+    simplify_eq;
+    repeat (rewrite_app_ext; repeat rewrite fmap_propset_singleton);
+    repeat app_ext_empty;
+    bool_to_prop;
+    try lia;
+    try set_solver;
+    repeat destruct_evar_val_hyp;
+    cbn in *;
+    unfold mbind, option_bind, mret, option_ret in *;
+    repeat case_match;
+    simplify_eq;
+    bool_to_prop;
+    try lia;
+    try set_solver.
+
+  Ltac simplify_premise :=
+    destruct_oapp_hyp; [
+       repeat rewrite_app_ext_in_single;
+       simpl in *
+     | try app_ext_empty_hyp
+  ].
+
+  Ltac smart_solver :=
+    simpl in *;
+    classicize;
+    intros;
+    destruct_and?;
+    rewrite_evar_val;
+    repeat simplify_premise;
+    simplify_eq;
+    cbn in *;
+    bool_to_prop;
+    destruct_and?;
+    (* TODO: this is very fragile: *)
+    match goal with
+    | |- oapp singleton ∅ (?sym _) = _ => unfold sym
+    end;
+    (**)
+    repeat (rewrite_in_goal; simpl);
+    cbn in *; simplify_eq;
+    simpl;
+    repeat destruct_evar_val;
+    repeat (rewrite_in_goal; simpl);
+    cbn in *; simplify_eq;
+    repeat (rewrite_in_goal; simpl);
+    repeat (destruct_Z_compares; cbn);
+    repeat (rewrite_in_goal; simpl);
+    repeat rewrite simpl_none_bind;
+    repeat rewrite simpl_none_orelse;
+    unfold mbind, option_bind;
+    try case_match; try reflexivity;
+    repeat match goal with
+    | [H : _ && _ = false |- _] =>
+      apply andb_false_iff in H as [|]
+    end;
+    all_to_prop;
+    try lia.
+
+
+  Ltac solver_macro :=
+    simplify_krule;
+    ((by smart_solver) ||
+     (by simplification_solver) ||
+     (by timeout 1000 destruct_solver)).
 
 
   Goal satT Theory_behavioural Model.
@@ -285,27 +397,30 @@ Ltac solver_macro AX :=
     unfold satT, satM. intros.
     unfold Theory_behavioural in H.
     unfold_elem_of; destruct_or?; destruct_ex?; subst.
-    * solver_macro "".
-    * solver_macro "".
-    * solver_macro "".
-    * 
-    simplify_krule;
-  try reflexivity;
-  try classicize;
-  intros.
-  cbn in H.
-  apply singleton_subseteq_l in H.
-  destruct H.
-  destruct_and?; subst;
-  repeat match goal with
-  | [H : _ = evar_valuation ?ρ ?x, H1 : _ = evar_valuation ?ρ ?x |- _] => rewrite <- H in *; clear H
-  | [H : evar_valuation ?ρ ?x = _, H1 : _ = evar_valuation ?ρ ?x |- _] => rewrite -> H in *; clear H
-  end;
-  repeat destruct_evar_val;
-  destruct_and?; subst;
-  simplify_eq.
-  simpl.
-  
+    * solver_macro.
+    * solver_macro.
+    * solver_macro.
+    * simplify_krule.
+      destruct_evar_val.
+      - simpl. left.
+        intro.
+        apply singleton_subseteq_l in H.
+        destruct H. destruct H. inversion H.
+      - right. by destruct b.
+    * simplify_krule.
+      destruct_evar_val.
+      - simpl. left.
+        intro.
+        apply singleton_subseteq_l in H.
+        destruct H. destruct H. inversion H.
+      - right. by destruct b.
+    * simplify_krule.
+      destruct_evar_val.
+      - simpl. left.
+        intro.
+        apply singleton_subseteq_l in H.
+        destruct H. destruct H. inversion H.
+      - right. by destruct b.
   Defined.
 
       End TheorySemantics.
