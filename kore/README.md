@@ -10,4 +10,23 @@ This subproject defines the syntax and semantics of Kore using a dependently typ
 - `Freshness.v` defines how fresh variables are generated (for any sort).
 - `Substitution.v` defines bound (set and element) variable substitutions, and it proves some simple properties about them.
 - `Semantics.v` defines dependently-typed models for Kore, and the notion of satisfiability.
+- `Builtins.v` defines implementations of [K's builtin, hooked symbols](https://kframework.org/k-distribution/include/kframework/builtin/domains).
+- `DVParsers.v` defines custom parsers for [K's builtin types](https://kframework.org/k-distribution/include/kframework/builtin/domains), such as `Int`, `String`, `MInt`, etc. These parsers are used in the semantics of Kore to assign meaning to domain values (denoted by the `hasDomainValues` attribute in K).
+
+The project also includes sevaral example theories, models for these theories, and satisfaction proofs in these models. There are 6 simple theories, which also serve as unit tests for the formalisation:
+
+- `src/theories/simple/InjectionTest.v` is a simple test for injections in Kore. This file highlight an inconsistency with transitive proofs: if a value can be injected into a supertype in two different ways, then these injected values do not necessarily are equal (while this is expected accoring to the transitivity axiom of injections).
+- `src/theories/simple/InjectionTest2.v` is another simple test for injections and subsorting in Kore.
+- `src/theories/simple/DVTest.v` is a test for domain values.
+- `src/theories/simple/Nat.v` defines a dependently typed signature for natural numbers and bools.
+- `src/theories/simple/Maps.v` defines a theory and a model for K's `Map` type, including a few selected operations. This file also includes a number of satisfaction proofs for the theory.
+- `src/theories/simple/MInt.v` defines a theory and a model for K's `MInt` type, alongside with some proofs of satisfaction.
+- `src/theories/complex/Demo.v` defines a demo case study (with boolean and natural number values) on how to use the infrastructure around the formalisation.
+- `src/theories/complex/Imp.v` defines a partial theory for the [IMP case study](https://github.com/runtimeverification/k/blob/ea08909b72f56615ab7dfe7a6e17218b6be01de4/pyk/regression-new/pl-tutorial/1_k/2_imp/lesson_4/imp.k#L4) implemented with K, alogside with an example model and satisfaction proofs.
+
+Furthermore, the repository also includes some generated Roqc/Coq case studies:
+
+- `src/theories/generated/DemoGen.v` includes a simple, automatically generated theory for custom-defined bools in K, the corresponding model, and satisfaction proofs.
+- `src/theories/generated/DemoGen2.v` includes a generated theory that tests injections of Kore (generated from K), the corresponding model, and satisfaction proofs.
+- `src/theories/generated/tree.v` includes a portion of the Kore theory that can be generated from `tree.k` (which can be found at the same location). This file also includes an automatically generated model, and satisfaction proofs in this model.
 
