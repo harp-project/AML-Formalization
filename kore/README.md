@@ -2,6 +2,13 @@
 
 This subproject defines the syntax and semantics of Kore using a dependently typed, locally-nameless approach.
 
+## Usage instructions
+
+This package depends on [the `matching-logic` one](../matching-logic), follow the instructions in the [main README file](../README.md) to build it. The compiled files need to be accessible while building this package, which can be achieved easiest by running `make install` after the final `make` step in those instructions. Afterwards, this package may be built by running `make` in this folder. You may choose to `make install` this package as well, if you do not wish to work in this folder. Once the setup is completed, any theories may be written and tested using a Coq IDE. See [the theories folder](src/theories) for examples.
+
+> [!NOTE]
+> The installation of the `matching-logic` package may be circumvented by adding the `-Q ../matching-logic/src MatchingLogic` flag to the top of the [Coq project file](_CoqProject). In this case, running just `make` first in the `matching-logic` directory, followed by this one is sufficient. This is not recommended.
+
 ## Structure
 
 - `Basics.v` provides a definition for heterogeneous lists, and defines a number of properties for it alongside with computable definitions for some standard lemmas.
