@@ -103,5 +103,8 @@ src/OPML/KPreludeSignatures.v
 src/Experimental/Nat_ProofSystem.v
 src/Experimental/SumSort_ProofSystem.v
 src/Experimental/ProofModePattern.v
+src/Experimental/Unification/TacticsNotations.v
+src/Experimental/Unification/Helpers.v
+src/Experimental/Unification/Definitions.v
 src/Experimental/Unification.v
 
