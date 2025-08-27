@@ -10,29 +10,11 @@ Set Default Proof Mode "Classic".
 Class Sorts := {
     sort : Set;
     sort_eqdec :: EqDecision sort;
-    sort_countable :: Countable sort;
-(*     subsort : relation sort;
-    subsort_po :: PartialOrder subsort; *)
+    (* sort_countable :: Countable sort; *)
+    subsort : CRelationClasses.crelation sort;
+(*     subsort_preo :: CRelationClasses.PreOrder subsort;
+    subsort_po :: CRelationClasses.PartialOrder eq subsort; *)
 }.
-
-(* Class Variables {Ss : Sorts} := {
-  evar : Set;
-  svar : Set;
-  evar_eqdec :: EqDecision evar;
-  evar_countable :: Countable evar;
-  (* evar_infinite :: Infinite evar; *)
-  svar_eqdec :: EqDecision svar;
-  svar_countable :: Countable svar;
-  (* svar_infinite :: Infinite svar; *)
-
-  evar_sort : evar -> sort;
-  svar_sort : svar -> sort;
-
-  evar_infinite s ::
-    Infinite {x : evar & decide (evar_sort x = s)};
-  svar_infinite s ::
-    Infinite {x : svar & decide (svar_sort x = s)}
-}. *)
 
 Class Variables {Ss : Sorts} := {
   evar : sort -> Set;
@@ -47,8 +29,8 @@ Class Variables {Ss : Sorts} := {
 
 Class Symbols {Ss : Sorts} := {
   symbol : Set;
-  sym_eqdec :: EqDecision symbol;
-  sym_countable :: Countable symbol;
+  (* sym_eqdec :: EqDecision symbol;
+  sym_countable :: Countable symbol; *)
   arg_sorts : symbol -> list sort ;
   ret_sort : symbol -> sort ;
 }.

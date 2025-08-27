@@ -1,0 +1,422 @@
+From MatchingLogic Require Export stdpp_ext.
+From Kore Require Export Semantics.
+Import Signature.StringVariables.
+Import Kore.Syntax.Notations.
+
+From Coq Require Import ZArith.
+
+Open Scope kore_scope.
+Open Scope hlist_scope.
+Open Scope string_scope.
+
+Ltac autorewrite_set :=
+  repeat (
+    rewrite intersection_top_l_L +
+    rewrite intersection_top_r_L +
+    rewrite union_empty_l_L +
+    rewrite union_empty_r_L +
+    rewrite propset_difference_neg +
+    rewrite propset_union_simpl +
+    rewrite propset_intersection_simpl +
+    rewrite singleton_subseteq_l +
+    rewrite fmap_propset_singleton
+  ).
+
+Ltac classicize :=
+  apply Classical_Prop.imply_to_or.
+Ltac app_ext_rewrite C :=
+lazymatch C with
+| context [propset_fa_union ?Cnew] =>
+    erewrite propset_fa_union_rewrite; [
+    |
+      intro;
+      match goal with
+      | |- ?G => app_ext_rewrite G
+      end;
+      unfold propset_fa_union;
+      try rewrite propset_double;
+      reflexivity
+    ]
+
+| context [app_ext ?sym _] =>
+  repeat (rewrite_app_ext; repeat rewrite fmap_propset_singleton);
+  autorewrite_set;
+  apply propset_top_eq;
+  repeat rewrite singleton_subseteq;
+  repeat rewrite singleton_eq;
+  simpl;
+  reflexivity
+end.
+Ltac app_ext_rewrite_all :=
+repeat match goal with
+| |- context [propset_fa_union ?C] =>
+    app_ext_rewrite (propset_fa_union C); unfold propset_fa_union at 1;
+    rewrite propset_double
+end.
+
+Ltac basic_simplify_krule :=
+  repeat eval_simplifier;
+  simpl sort_inj;
+  app_ext_rewrite_all;
+  repeat (rewrite_app_ext; repeat rewrite fmap_propset_singleton);
+  autorewrite_set.
+
+Ltac simplify_krule :=
+  basic_simplify_krule;
+  apply propset_top_elem_of_2;
+  intro;
+  apply elem_of_PropSet;
+  repeat rewrite elem_of_PropSet;
+  repeat rewrite singleton_subseteq;
+  repeat rewrite singleton_eq.
+
+Module T.
+
+  (* We have two sorts: natural numbers and bools *)
+  Inductive DemoSorts :=
+  | SortNat
+  | SortBool
+  | SortK
+  | SortKItem
+  | SortList.
+
+  (* We prove decidable equality and finiteness of the type above. *)
+  Instance DemoSorts_eq_dec : EqDecision DemoSorts.
+  Proof. solve_decision. Defined.
+  Program Instance DemoSorts_finite : finite.Finite DemoSorts := {
+    enum := [SortNat; SortBool; SortK; SortKItem; SortList];
+  }.
+  Next Obligation. compute_done. Defined.
+  Final Obligation. destruct x; set_solver. Defined.
+
+
+  Inductive DemoSyms :=
+  | SymZero
+  | SymSucc
+  | SymAdd
+  | SymTrue
+  | SymFalse
+  | SymIsList
+  | SymNil
+  | SymCons
+  | SymInList
+  | SymAppend
+  | SymDotk
+  | SymKseq.
+
+  (* We prove decidable equality and finiteness of the type above. *)
+  Instance DemoSyms_eq_dec : EqDecision DemoSyms.
+  Proof. solve_decision. Defined.
+  Program Instance DemoSyms_finite : finite.Finite DemoSyms := {
+    enum := [SymZero;SymSucc;SymAdd;SymTrue;
+    SymFalse;SymIsList;SymNil;SymCons;SymInList;SymAppend;
+    SymDotk;SymKseq];
+  }.
+  Next Obligation. compute_done. Defined.
+  Final Obligation. destruct x; set_solver. Defined.
+
+  Inductive Demo_subsort : CRelationClasses.crelation DemoSorts :=
+ (*  | kitem_is_top s : s ≠ SortK -> s ≠ SortKItem -> Demo_subsort s SortKItem *)
+  | inj_nat_kitem : Demo_subsort SortNat SortKItem
+  | inj_bool_kitem : Demo_subsort SortBool SortKItem
+  | inj_list_kitem : Demo_subsort SortList SortKItem.
+
+(*   Instance Demo_subsort_PreOrder : CRelationClasses.PreOrder Demo_subsort.
+  Proof.
+    split.
+    (* cbv. intro. constructor 1.
+    cbv. intros. inversion H; subst. assumption.
+    inversion H0; subst. assumption. assumption.
+    admit. *)
+  Admitted.
+
+  Instance Demo_subsort_PartialOrder : CRelationClasses.PartialOrder eq Demo_subsort.
+  Proof.
+    cbv. intros. split; intros. rewrite H. repeat constructor.
+    destruct H. (*  inversion d; subst. reflexivity.
+    inversion d0; subst; reflexivity.
+    inversion d0. *)
+  (* Defined. *)
+  Admitted. *)
+
+  (* In the signature, we need to define the sorts, the variable types,
+     and the typing/sorting rules for symbols: *)
+  Program Instance DemoSignature : Signature := {|
+    sorts := {|
+      sort := DemoSorts;
+      subsort := Demo_subsort
+    |};
+    variables := StringVariables;
+    symbols := {|
+      symbol := DemoSyms;
+      arg_sorts :=
+        fun σ => match σ with
+                 | SymZero => []
+                 | SymSucc => [SortNat]
+                 | SymAdd => [SortNat; SortNat]
+                 | SymTrue => []
+                 | SymFalse => []
+                 | SymIsList => [SortK]
+                 | SymNil => []
+                 | SymCons => [SortKItem; SortList]
+                 | SymInList => [SortKItem; SortList]
+                 | SymAppend => [SortList; SortList]
+                 | SymDotk => []
+                 | SymKseq => [SortKItem; SortK]
+                 end;
+      ret_sort := fun σ => match σ with
+                           | SymZero | SymSucc | SymAdd => SortNat
+                           | SymTrue | SymFalse => SortBool
+                           | SymNil | SymCons | SymAppend => SortList
+                           | SymInList | SymIsList => SortBool
+                           | SymDotk | SymKseq => SortK
+                           end;
+    |};
+  |}.
+
+(*   Inductive mynat := FromNat (n : nat) | FromBool (b : bool).
+  Inductive kitem := KNat (n : mynat) | KBool (b : bool) | KList (l : list kitem).
+
+  Definition carrier (s : DemoSorts) : Set :=
+    match s with
+    | SortNat => mynat
+    | SortBool => bool
+    | SortList => list kitem
+    | SortKItem => kitem
+    | SortK => unit
+    end. *)
+
+(*   Inductive carrier : DemoSorts -> Set := *)
+  (* | c_nat (n : nat) : carrier SortNat *)
+  (* | c_bool (b : bool) : carrier SortBool *)
+  (* (1* | c_nil : carrier SortList *1) *)
+  (* (1* | c_cons : carrier SortKItem -> carrier SortList -> carrier SortList *1) *)
+  (* | c_list (l : list (carrier SortKItem)) : carrier SortList *)
+  (* (1* | c_subsort (s1 s2 : DemoSorts) (P : subsort s1 s2) (x : carrier s1) : carrier s2 *1) *)
+  (* (1* This should match the subsort relation *1) *)
+  (* | c_kitem {A} : A ≠ SortK -> A ≠ SortKItem -> carrier A -> carrier SortKItem *)
+  (* | c_boolnat : carrier SortBool -> carrier SortNat *)
+  (* | c_dotk : carrier SortK. *)
+
+  (* Check c_nat 1. *)
+  (* Check c_nil. *)
+  (* Check c_cons (c_kitem (eq_ind SortNat (λ x, if x is SortNat then True else False) I _) (c_nat 1)) c_nil. *)
+  (* Check c_cons (c_nat 1) (c_cons (c_bool false) c_nil). *)
+  (* Check c_cons (c_nat 1) (c_cons (c_bool false) (c_cons (c_cons (c_nat 1) c_nil) c_nil)). *)
+
+  Lemma neqs_eq {A} {a b : A} (p q : a ≠ b) : p = q.
+  Proof.
+    apply functional_extensionality. intros. destruct (p x).
+  Defined.
+
+  (* Lemma subsort_unique {s1 s2} (p1 p2 : Demo_subsort s1 s2) : p1 = p2. *)
+  (* Proof. *)
+  (*   dependent induction p1; dependent destruction p2. *)
+  (*   reflexivity. *)
+  (*   destruct n0. reflexivity. *)
+  (*   destruct n0. reflexivity. *)
+  (*   f_equal; apply neqs_eq. *)
+  (* Defined. *)
+
+  (* Instance carrier_eqdec A : EqDecision (carrier A). *)
+  (* Proof. *)
+  (*   unfold EqDecision, Decision. *)
+  (*   (1* No induction principle if the type appears in another *1) *)
+  (*   (1* type (list here). As usual... *1) *)
+  (*   revert A. fix IH 2. *)
+  (*   intros. *)
+  (*   dependent destruction x; dependent destruction y; try ((right; discriminate) + (left; reflexivity)). *)
+  (*   * destruct (decide (n = n0)) as [-> | ?]; [left; reflexivity | right; congruence]. *)
+  (*   * destruct (decide (b = b0)) as [-> | ?]; [left; reflexivity | right; congruence]. *)
+  (*   * pose proof @list_eq_dec _ (IH SortKItem) l l0 as [-> | ?]; [left; reflexivity | right; congruence]. *)
+  (*     Guarded. *)
+  (*   * destruct (decide (s0 = s1)) as [-> | ?]. *)
+  (*     - destruct (IH _ x y) as [-> | ?]. *)
+  (*       + rewrite (subsort_unique P P0); by left. *)
+  (*       + right. intro. inversion H. inversion_sigma H2. *)
+  (*         rewrite <- Eqdep.EqdepTheory.eq_rect_eq in H2_0. *)
+  (*         congruence. *)
+  (*     - right. intro. inversion H. congruence. *)
+  (* Qed. *)
+
+  Definition inb {A} {_ : EqDecision A} (x : A) (xs : list A) : bool.
+  Proof.
+    induction xs. exact false.
+    exact (if decide (x = a) then true else false).
+  Defined.
+
+  Inductive knat_carrier : Set :=
+  | c_nat (n : nat)
+  with kbool_carrier : Set :=
+  | c_bool (b : bool)
+  with klist_carrier : Set :=
+  | c_nil
+  | c_cons (x : kitem_carrier) (xs : klist_carrier)
+  with k_carrier : Set  :=
+  | c_dotk
+  | c_kseq (x : kitem_carrier) (xs : k_carrier)
+  with kitem_carrier : Set :=
+  | c_nat_kitem (n : knat_carrier)
+  | c_bool_kitem (b : kbool_carrier)
+  | c_list_kitem (l : klist_carrier).
+
+  Scheme Boolean Equality for knat_carrier. (* DANGER! *)
+
+  Definition carrier (s : DemoSorts) : Set :=
+  match s with
+   | SortNat => knat_carrier
+   | SortBool => kbool_carrier
+   | SortK => k_carrier
+   | SortKItem => kitem_carrier
+   | SortList => klist_carrier
+  end.
+
+  Fixpoint klist_elem_of (y : kitem_carrier) (xs : klist_carrier) : kbool_carrier :=
+  match xs with
+  | c_nil => c_bool false
+  | c_cons x xs => if kitem_carrier_beq x y
+                   then c_bool true
+                   else klist_elem_of y xs
+  end.
+
+  Fixpoint klist_app (xs ys : klist_carrier) : klist_carrier :=
+  match xs with
+  | c_nil => ys
+  | c_cons x xs => c_cons x (klist_app xs ys)
+  end.
+
+  Definition klist_islist (xs : k_carrier) : kbool_carrier :=
+  match xs with
+   | c_kseq x c_dotk =>
+     match x with
+     | c_nat_kitem n => c_bool false
+     | c_bool_kitem b => c_bool false
+     | c_list_kitem l => c_bool true
+     end
+   | _ => c_bool false
+  end.
+
+  Program Definition DemoModel : @Model DemoSignature := mkModel_singleton
+    carrier
+    (fun σ =>
+        match σ with
+        | SymZero => c_nat 0
+        | SymSucc => fun n =>
+                       match n with
+                       | c_nat m => c_nat (S m)
+                       end
+        | SymAdd => fun n m =>
+                      match n, m with
+                      | c_nat n, c_nat m => c_nat (n + m)
+                      end
+        | SymTrue => c_bool true
+        | SymFalse => c_bool false
+        | SymIsList => klist_islist
+        | SymNil => c_nil
+        | SymCons => c_cons
+        | SymInList => klist_elem_of
+        | SymAppend => klist_app
+        | SymDotk => c_dotk
+        | SymKseq => c_kseq
+        end
+      )
+    _
+    _
+    (λ _ _, None).
+  Next Obligation.
+    destruct s; repeat constructor.
+  Defined.
+  Final Obligation.
+    destruct s1, s2; simpl; intros H x; inversion H; subst.
+    * exact (c_nat_kitem x).
+    * exact (c_bool_kitem x).
+    * exact (c_list_kitem x).
+  Defined.
+
+  Set Transparent Obligations.
+  Program Definition test : @Theory DemoSignature := PropSet (λ pat,
+    (* 0 ∈ [1; 0] *)
+    (exists R, pat = existT R (SymTrue ⋅ ⟨ ⟩ =k{R} (let zero := SymZero ⋅ ⟨ ⟩ in let zero_i := kore_inj _ _ zero in kore_app SymInList ⟨ zero_i ; (SymCons ⋅ ⟨ (kore_inj _ _ (SymSucc ⋅ ⟨ zero ⟩)) ; SymCons ⋅ ⟨ zero_i ; SymNil ⋅ ⟨ ⟩ ⟩ ⟩) ⟩))) \/
+    (* [] ++ x = x *)
+    (exists R, pat = existT R (SymAppend ⋅ ⟨ SymNil ⋅ ⟨ ⟩ ; kore_fevar "x" ⟩ =k{R} kore_fevar "x")) \/
+    (* x ++ [] = x *)
+    (exists R, pat = existT R (SymAppend ⋅ ⟨ kore_fevar "x" ; SymNil ⋅ ⟨ ⟩ ⟩ =k{R} kore_fevar "x")
+  ) \/
+    (* isList (_ : K) = false if K <> kseq List dots *)
+    (exists R, pat = existT R (
+      (! ((∃k SortList, Top{R} and (kore_fevar "X0" ⊆k{R} SymKseq ⋅ ⟨kore_inj _ _ (kore_bevar In_nil); SymDotk ⋅⟨⟩⟩) and Top{R}) or ⊥{R})
+        and
+        (Top{R} and @kore_fevar _ _ _ SortK "X0" ⊆k{R} kore_fevar "K" and Top{R})
+      )
+      --->ₖ
+      (SymIsList ⋅ ⟨kore_fevar "K"⟩ =k{R} (SymFalse ⋅ ⟨⟩ and Top{SortBool}))
+    ))
+  ).
+  Solve Obligations with (constructor).
+
+  Goal satT test DemoModel.
+  Proof.
+    unfold satT, satM, test. intros.
+    unfold test_obligation_1, test_obligation_2, test_obligation_3 in *.
+    (* Generate a goal for each axiom: *)
+    unfold_elem_of; destruct_or?; destruct_ex?; subst; cbn.
+    * by simplify_krule.
+(* (*    Step-by-step simplification would look like this: *)
+      rewrite eval_simpl.
+      apply propset_top_elem_of_2;
+      intro;
+      apply elem_of_PropSet.
+      rewrite (@eval_app_simpl DemoSignature _ _ _ SymTrue).
+      simpl.
+      rewrite_app_ext.
+      simpl.
+      rewrite (@eval_app_simpl DemoSignature _ _ _ SymInList).
+      simpl.
+      rewrite eval_simpl. simpl.
+      rewrite (@eval_app_simpl DemoSignature _ _ _ SymZero).
+      simpl hmap.
+      rewrite_app_ext. rewrite fmap_propset_singleton.
+      unfold test_obligation_2, test_obligation_1.
+      rewrite (@eval_app_simpl DemoSignature _ _ _ SymCons).
+      simpl hmap.
+      rewrite eval_simpl. simpl.
+      rewrite (@eval_app_simpl DemoSignature _ _ _ SymSucc).
+      simpl hmap.
+      rewrite (@eval_app_simpl DemoSignature _ _ _ SymZero).
+      simpl hmap.
+      rewrite_app_ext. rewrite_app_ext.
+      rewrite fmap_propset_singleton.
+      rewrite (@eval_app_simpl DemoSignature _ _ _ SymCons).
+      simpl hmap.
+      rewrite eval_simpl. simpl.
+      rewrite (@eval_app_simpl DemoSignature _ _ _ SymZero).
+      simpl hmap.
+      rewrite_app_ext.
+      rewrite fmap_propset_singleton.
+      rewrite (@eval_app_simpl DemoSignature _ _ _ SymNil).
+      simpl hmap.
+      rewrite_app_ext.
+      rewrite_app_ext.
+      rewrite_app_ext.
+      rewrite_app_ext.
+      reflexivity. *)
+    * by simplify_krule.
+    * simplify_krule.
+      (* NOTE This is a simplification rule, therefore, we have
+         to show it by induction. *)
+      { remember (evar_valuation _ _) as l. clear.
+        induction l. by simpl.
+        simpl. by rewrite IHl. }
+    * simplify_krule.
+      destruct (klist_islist _) eqn:P; destruct b.
+      2: by right.
+      left. intros [].
+      apply H. clear H.
+      destruct (evar_valuation ρ "K"); simpl in *; try congruence.
+      destruct c; simpl in *; try congruence.
+      destruct x0; simpl in *; try congruence.
+      exists l.
+      assumption.
+  Qed.
+
+End T.

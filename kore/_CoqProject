@@ -6,4 +6,20 @@ src/Syntax.v
 src/Freshness.v
 src/Substitution.v
 src/Semantics.v
+src/DVParsers.v
+src/BuiltIns.v
+
+src/theories/simple/InjectionTest.v
+src/theories/simple/InjectionTest2.v
+src/theories/simple/DVTest.v
+src/theories/simple/Nat.v
+src/theories/simple/Maps.v
+src/theories/simple/MInt.v
+
+src/theories/complex/Imp.v
+src/theories/complex/Demo.v
+
+# src/theories/generated/DemoGen.v
+# src/theories/generated/DemoGen2.v
+# src/theories/generated/tree.v
 
