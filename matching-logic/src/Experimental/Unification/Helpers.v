@@ -11,11 +11,6 @@ Close Scope equations_scope. (* Because of [!] *)
 Section Helpers.
   Context {Σ : Signature} {syntax : Syntax}.
 
-  Definition get_fresh_evar (φ : Pattern) : sig (.∉ free_evars φ).
-  Proof.
-    exists (fresh_evar φ); auto.
-  Defined.
-
   Definition substitute_list (σ : list (evar * Pattern)) (t : Pattern) : Pattern := fold_left (fun φ '(x, φ') => φ^[[evar: x ↦ φ']]) σ t.
 
   Lemma wf_substitute_list : forall σ t, wf (map snd σ) -> well_formed t -> well_formed (substitute_list σ t).
@@ -158,18 +153,19 @@ Section Helpers.
       all: wf_auto2.
   Defined.
 
-Lemma set_fold_disj_union_strong_equiv `{FinSet A C} Γ (f : A → WFPattern → WFPattern) (b : WFPattern) (X Y : C) :
+Lemma set_fold_disj_union_strong_equiv `{FinSet A C} Γ (f : A → WFMFPattern → WFMFPattern) (b : WFMFPattern) (X Y : C) :
 (∀ x1 x2 b',
 x1 ∈ X ∪ Y → x2 ∈ X ∪ Y → x1 ≠ x2 →
-Γ ⊢wf (f x1 (f x2 b')) wf<---> (f x2 (f x1 b'))) →
+Γ ⊢ (f x1 (f x2 b')) wf<---> (f x2 (f x1 b'))) →
 X ## Y →
-Γ ⊢wf (set_fold f b (X ∪ Y)) wf<---> (set_fold f (set_fold f b X) Y).
+Γ ⊢ (set_fold f b (X ∪ Y)) wf<---> (set_fold f (set_fold f b X) Y).
+Proof.
+  intros Hf Hdisj. unfold set_fold; simpl.
+  rewrite <- foldr_app.
+  epose proof foldr_permutation.
+  Search "##" "strong".
+  Fail apply (foldr_permutation R f b).
 Admitted.
-(* Proof. *)
-(*   intros Hf Hdisj. unfold set_fold; simpl. *)
-(*   rewrite <- foldr_app. *)
-(*   epose proof foldr_permutation. *)
-(*   apply (foldr_permutation R f b). *)
 (*   - intros j1 x1 j2 x2 b' Hj Hj1 Hj2. apply Hf. *)
 (*     + apply elem_of_list_lookup_2 in Hj1. set_solver. *)
 (*     + apply elem_of_list_lookup_2 in Hj2. set_solver. *)
@@ -178,29 +174,29 @@ Admitted.
 (*   - by rewrite elements_disj_union, (comm (++)). *)
 (* Qed. *)
 
-Lemma in_set_implies_in_predicate `{FinSet A C} `{!LeibnizEquiv C} : forall Γ f b x (X : C), x ∈ X -> Γ ⊢wf set_fold (WFPatt_and ∘ f) b X wf---> f x.
+Lemma in_set_implies_in_predicate `{FinSet A C} `{!LeibnizEquiv C} : forall Γ f b x (X : C), x ∈ X -> Γ ⊢ set_fold (WFMF_and ∘ f) b X wf---> f x.
 Proof.
   intros.
-  opose proof* (set_ind' (fun X' => Γ ⊢wf set_fold (WFPatt_and ∘ f) b ({[x]} ∪ X') wf---> f x) _ _ X).
+  opose proof* (set_ind' (fun X' => Γ ⊢ set_fold (WFMF_and ∘ f) b ({[x]} ∪ X') wf---> f x) _ _ X).
   rewrite -> union_empty_r_L, set_fold_singleton. simpl.
-  unfold WFDerives. toMLGoal. apply wfWFPattern. rewrite ! unwrap_wfwrapper. mlDecomposeAll; mlAssumption.
+  toMLGoal. apply wfmfWF. rewrite ! unwrap_wfmfbWrapper. simpl.
+  mlDecomposeAll; mlAssumption.
   intros.
   rewrite union_assoc_L.
   destruct (EqDecision0 x x0) as [-> | ].
   rewrite union_idemp_L. exact H9.
   rewrite -> (union_comm_L {[x]}), <- union_assoc_L, union_comm_L.
-  opose proof* (set_fold_disj_union_strong_equiv Γ (WFPatt_and ∘ f) b ({[x]} ∪ X0) {[x0]} _ _).
+  opose proof* (set_fold_disj_union_strong_equiv Γ (WFMF_and ∘ f) b ({[x]} ∪ X0) {[x0]} _ _).
   intros. simpl.
-  unfold WFDerives. toMLGoal. apply wfWFPattern. rewrite ! unwrap_wfwrapper.
+  toMLGoal. apply wfmfWF. rewrite ! unwrap_wfmfbWrapper. simpl. 
   mlSplitAnd; mlDecomposeAll; repeat mlSplitAnd; mlAssumption.
   set_solver.
   rewrite set_fold_singleton in H10. simpl in H10.
-  unfold WFDerives in H10, H9 |- *.
-  toMLGoal. apply wfWFPattern.
-  rewrite ! unwrap_wfwrapper in H10, H9 |- *.
+  toMLGoal. apply wfmfWF.
+  rewrite ! unwrap_wfmfbWrapper in H10, H9 |- *. simpl in *.
   mlIntro. apply pf_iff_proj1 in H10. mlApplyMeta H10 in "0".
   mlDestructAnd "0". mlApplyMeta H9 in "2". mlAssumption.
-  1-2: refine_wf; apply wfWFPattern.
+  1-2: refine_wf; apply wfmfWF.
   simpl in H8.
   apply elem_of_subseteq_singleton in H7.
   apply subseteq_union_1_L in H7.
