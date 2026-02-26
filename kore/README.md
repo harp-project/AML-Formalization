@@ -20,7 +20,7 @@ This package depends on [the `matching-logic` one](../matching-logic), follow th
 - `Builtins.v` defines implementations of [K's builtin, hooked symbols](https://kframework.org/k-distribution/include/kframework/builtin/domains).
 - `DVParsers.v` defines custom parsers for [K's builtin types](https://kframework.org/k-distribution/include/kframework/builtin/domains), such as `Int`, `String`, `MInt`, etc. These parsers are used in the semantics of Kore to assign meaning to domain values (denoted by the `hasDomainValues` attribute in K).
 
-The project also includes sevaral example theories, models for these theories, and satisfaction proofs in these models. There are 6 simple theories, which also serve as unit tests for the formalisation:
+The project also includes sevaral example theories, models for these theories, and satisfaction proofs in these models. These theories also serve as unit tests for the formalisation:
 
 - `src/theories/simple/InjectionTest.v` is a simple test for injections in Kore. This file highlight an inconsistency with transitive proofs: if a value can be injected into a supertype in two different ways, then these injected values do not necessarily are equal (while this is expected accoring to the [transitivity axiom of injections](https://github.com/harp-project/AML-Formalization/blob/b1da1484bd73fd81dde4d331d5fbf64e55951d17/koreimport-test/korefiles/imp.kore#L53)).
 - `src/theories/simple/InjectionTest2.v` is another simple test for injections and subsorting in Kore.
@@ -30,6 +30,7 @@ The project also includes sevaral example theories, models for these theories, a
 - `src/theories/simple/MInt.v` defines a theory and a model for K's `MInt` type, alongside with some proofs of satisfaction.
 - `src/theories/complex/Demo.v` defines a demo case study (with boolean and natural number values) on how to use the infrastructure around the formalisation.
 - `src/theories/complex/Imp.v` defines a partial theory for the [IMP case study](https://github.com/runtimeverification/k/blob/ea08909b72f56615ab7dfe7a6e17218b6be01de4/pyk/regression-new/pl-tutorial/1_k/2_imp/lesson_4/imp.k#L4) implemented with K, alogside with an example model and satisfaction proofs.
+- `src/theories/BoolNatProductMInt.v` defines a complex theory of machine integers, natural numbers, boolean, and product values.
 
 Furthermore, the repository also includes some generated Roqc/Coq case studies:
 

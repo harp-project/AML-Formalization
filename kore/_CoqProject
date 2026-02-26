@@ -19,6 +19,8 @@ src/theories/simple/MInt.v
 src/theories/complex/Imp.v
 src/theories/complex/Demo.v
 
+src/theories/BoolNatProductMInt.v
+
 # src/theories/generated/DemoGen.v
 # src/theories/generated/DemoGen2.v
 # src/theories/generated/tree.v
