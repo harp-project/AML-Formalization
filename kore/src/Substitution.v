@@ -351,6 +351,11 @@ Section Substitution.
     - eapply kore_in.
       apply (fevar_subst _ _ _ _ _ ψ e φ1).
       apply (fevar_subst _ _ _ _ _ ψ e φ2).
+    - eapply kore_inj.
+      eassumption.
+      apply (fevar_subst _ _ _ _ _ ψ e φ).
+    - apply kore_dv.
+      exact str.
   Defined.
 
   Fixpoint fsvar_subst ex {mu mu' : list sort} {s s'}
@@ -400,6 +405,11 @@ Section Substitution.
     - eapply kore_in.
       apply (fsvar_subst _ _ _ _ _ ψ e φ1).
       apply (fsvar_subst _ _ _ _ _ ψ e φ2).
+    - eapply kore_inj.
+      eassumption.
+      apply (fsvar_subst _ _ _ _ _ ψ e φ).
+    - eapply kore_dv.
+      exact str.
   Defined.
 
 End Substitution.

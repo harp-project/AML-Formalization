@@ -1,5 +1,5 @@
 From stdpp Require Import finite.
-From Kore Require Export StdppExtra.
+From MatchingLogic Require Export stdpp_ext.
 From Kore Require Export Semantics DVParsers.
 Import Signature.StringVariables.
 Import Kore.Syntax.Notations.
