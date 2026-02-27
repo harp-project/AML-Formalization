@@ -18,7 +18,8 @@ Module Syntax.
   Inductive Symbols := o | s | plus | isZero
                     | tt | ff | andb
                     | pi1 (s1 s2 : Sorts) | pi2 (s1 s2 : Sorts) | pair (s1 s2 : Sorts)
-                    | len (n : nat) | neg (n : nat) | toUnsigned (n : nat) | fromUnsigned (n : nat).
+                    | len (n : nat) | neg (n : nat) | toUnsigned (n : nat) | fromUnsigned (n : nat)
+                    | isMint (n : nat).
 
   #[global]
   Instance sorts_eqdec : EqDecision Sorts.
@@ -32,7 +33,8 @@ Module Syntax.
     solve_decision.
   Defined.
 
-  Inductive Subsort : CRelationClasses.crelation Sorts :=.
+  Inductive Subsort : CRelationClasses.crelation Sorts :=
+  | mint_nat n : Subsort (mint_s n) nat_s.
 
   Program Instance Sig : Signature := {|
     sorts := {|
@@ -59,6 +61,7 @@ Module Syntax.
           | neg n => [mint_s n]
           | toUnsigned n => [mint_s n]
           | fromUnsigned n => [nat_s]
+          | isMint n => [nat_s]
           end;
       ret_sort :=
         fun x =>
@@ -77,6 +80,7 @@ Module Syntax.
           | neg n => mint_s n
           | toUnsigned n => nat_s
           | fromUnsigned n => mint_s n
+          | isMint n => bool_s
           end;
     |};
   |}.
@@ -147,6 +151,10 @@ Fail Next Obligation.
       exists R, exists n, pat =
         existT R (kore_forall nat_s (
           kore_exists (mint_s n) (fromUnsigned n ⋅ ⟨kore_bevar (In_cons In_nil)⟩ =k{R} kore_bevar (In_nil)
+      ))) \/
+      exists R, exists n, pat =
+        existT R (kore_forall nat_s (
+          kore_exists bool_s (isMint n ⋅ ⟨kore_bevar (In_cons In_nil)⟩ =k{R} kore_bevar (In_nil)
       )))
       ).
 
@@ -164,7 +172,7 @@ Fail Next Obligation.
     f_equal. by rewrite IHn.
   Qed.
 
-  Definition theory_rest : @Theory Sig :=
+  Program Definition theory_rest : @Theory Sig :=
       PropSet (fun pat =>
         exists R, pat = existT R (
           kore_top nat_s =k{R} kore_mu (o ⋅ ⟨⟩ or s ⋅ ⟨kore_bsvar In_nil⟩)
@@ -235,9 +243,36 @@ Fail Next Obligation.
           kore_forall (mint_s n) (
             fromUnsigned n ⋅ ⟨ toUnsigned n ⋅ ⟨kore_bevar In_nil⟩⟩ =k{R} kore_bevar In_nil
           )
+        ) \/
+        exists n, exists R, pat = existT R (
+          kore_forall (mint_s n) (
+            isMint n ⋅ ⟨kore_inj _ _ (kore_bevar In_nil)⟩ =k{R} tt ⋅ ⟨⟩
+          )
+        ) \/
+        exists n, exists R, pat = existT R (
+          kore_forall nat_s (
+            !kore_exists (mint_s n) (kore_bevar (In_cons In_nil) =k{R} kore_inj _ _ (kore_bevar In_nil)) --->ₖ
+            isMint n ⋅ ⟨kore_bevar In_nil⟩ =k{R} ff ⋅ ⟨⟩
+          )
+        ) \/
+        (
+          exists R, pat = existT R (
+            kore_inj _ _ (kore_dv (mint_s 2) "11") =k{R}
+              s ⋅ ⟨s ⋅ ⟨s ⋅ ⟨o ⋅ ⟨⟩⟩⟩⟩
+          )
         )
-        (** TODO: inductive domains for MInt *)
      ).
+  Next Obligation.
+    intros. econstructor.
+  Defined.
+  Next Obligation.
+    intros. econstructor.
+  Defined.
+  Next Obligation.
+    intros. econstructor.
+  Defined.
+  Fail Next Obligation.
+
 
 End Syntax.
 
@@ -293,7 +328,64 @@ Module Semantics.
         rewrite Nat.odd_even. f_equal.
         by rewrite Nat.div2_even.
   Qed.
+
+  Definition is_mint (len n : nat) : bool :=
+    Nat.ltb n (2 ^ len).
+
+  Lemma is_mint_nat_to_bin :
+    forall len (v : vec bool len), is_mint len (bin_to_nat v) = true.
+  Proof.
+    intros. induction v; cbn. reflexivity.
+    rewrite Nat.add_0_r. unfold is_mint in IHv.
+    case_match.
+    * exfalso. Search 0 Nat.pow lt.
+      destruct n. cbn in H. lia.
+      pose proof Nat.pow_gt_1 2 (S n). lia.
+    * apply Nat.ltb_lt in IHv. apply Nat.leb_le.
+      case_match. lia. lia.
+  Qed.
   Transparent Nat.div2.
+
+  Import Ascii.
+  Fixpoint parse_bits_list (s : string) : option (list bool) :=
+    match s with
+    | EmptyString => Some []
+    | String c s' =>
+        match parse_bits_list s' with
+        | None => None
+        | Some tl =>
+            if Ascii.eqb c "0"%char then
+              Some (false :: tl)
+            else if Ascii.eqb c "1"%char then
+              Some (true :: tl)
+            else
+              None
+        end
+    end.
+
+  Fixpoint list_to_vec {A} (l : list A) (n : nat)
+    : option (vec A n) :=
+    match l, n with
+    | [], 0 => Some vnil
+    | x :: xs, S n' =>
+        match list_to_vec xs n' with
+        | Some v => Some (x ::: v)
+        | None => None
+        end
+    | _, _ => None
+    end.
+  Definition MInt_parser
+    (len : nat) (s : string)
+    : option (vec bool len) :=
+    match parse_bits_list s with
+    | Some l => list_to_vec l len
+    | None => None
+    end.
+
+Compute MInt_parser 3 "0011100".
+Compute MInt_parser 3 "001".
+Compute MInt_parser 3 "101".
+Compute MInt_parser 10 "1". (* None *)
 
   Program Definition model : @Model Sig :=
     mkModel_singleton
@@ -315,11 +407,36 @@ Module Semantics.
         | neg n => negate
         | toUnsigned n => bin_to_nat
         | fromUnsigned n => fun m => nat_to_bin m n
+        | isMint n => fun m => is_mint n m
         end
       )
-      ltac:(induction s0; simpl; typeclasses eauto)
-      ltac:(intros; destruct X)
-      (fun _ => None_parser).
+      _
+      _
+      (fun s => match s with
+                | mint_s n => MInt_parser n
+                | _ => None_parser
+                end).
+  Next Obligation.
+    intros. induction s0; try by repeat constructor.
+    * do 2 constructor. apply IHs0_1. apply IHs0_2.
+    * constructor. induction n.
+      - apply vnil.
+      - apply vcons. exact true. exact IHn.
+  Defined.
+  Next Obligation.
+    intros. destruct X.
+    exact (bin_to_nat H).
+  Defined.
+  Next Obligation.
+    simpl. intros. intro. inversion H.
+  Defined.
+  Next Obligation.
+    simpl. intros. intro. inversion H.
+  Defined.
+  Next Obligation.
+    simpl. intros. intro. inversion H.
+  Defined.
+  Fail Next Obligation.
 
   Lemma eval_make_n {ex mu}:
     forall n ρ, @eval _ model ex mu _ ρ (make_n n) = ({[n]} : propset (model nat_s)).
@@ -330,6 +447,22 @@ Module Semantics.
     * eval_simplifier.
       rewrite IHn.
       by rewrite_app_ext. 
+  Qed.
+
+  Lemma bin_to_nat_nat_to_bin len n:
+    is_mint len n = true -> bin_to_nat (nat_to_bin n len) = n.
+  Proof.
+    revert n. induction len; intros; cbn.
+    * destruct n; cbn in H. reflexivity. congruence.
+    * unfold is_mint in *.
+      specialize (IHlen (Nat.div2 n)).
+      rewrite Nat.ltb_lt in IHlen, H.
+      simpl in H. rewrite Nat.add_0_r in H.
+      pose proof (Nat.div2_double n).
+      rewrite Nat.ltb_lt in H.
+      replace (2 ^ len0 + 2 ^ len0) with (2 * (2 ^ len0)) in H by lia.
+      pose proof (Nat.div2_odd n) as X. rewrite X in H.
+      case_match; simpl in *; specialize (IHlen ltac:(lia)); rewrite IHlen; lia.
   Qed.
 
   Goal satT theory_functional model.
@@ -364,6 +497,9 @@ Module Semantics.
     * eval_simplifier. cbn.
       apply propset_fa_intersection_full. intros.
       eval_simplifier. cbn.
+      apply propset_fa_intersection_full. intros.
+      solve_functional_axiom.
+    * eval_simplifier. cbn.
       apply propset_fa_intersection_full. intros.
       solve_functional_axiom.
     * eval_simplifier. cbn.
@@ -665,6 +801,43 @@ Ltac autorewrite_set :=
       repeat eval_simplifier.
       repeat rewrite_app_ext. cbn.
       rewrite nat_to_bin_eq. set_solver.
+    * repeat eval_simplifier. cbn.
+      apply propset_fa_intersection_full. intros.
+      remember (fresh_evar _ _) as f1. clear Heqf1.
+      repeat eval_simplifier.
+      case_match; try congruence.
+      2: {
+        cbn in n. congruence.
+      }
+      repeat eval_simplifier.
+      repeat rewrite_app_ext. cbn.
+      rewrite fmap_propset_singleton.
+      repeat rewrite_app_ext. simpl.
+      rewrite is_mint_nat_to_bin. set_solver.
+    * repeat eval_simplifier. cbn.
+      apply propset_fa_intersection_full. intros.
+      remember (fresh_evar _ _) as f1. clear Heqf1.
+      unfold Syntax.theory_rest_obligation_2. cbn.
+      repeat eval_simplifier.
+      case_match; try congruence.
+      repeat rewrite_app_ext.
+      autorewrite_set.
+      destruct (is_mint x25 c) eqn:P. 2: set_solver.
+      apply propset_top_elem_of_2. intros.
+      rewrite elem_of_PropSet. left. intro. destruct H0.
+      apply H1.
+      apply propset_top_elem_of.
+      rewrite propset_fa_union_full. intros.
+      exists (nat_to_bin c x25).
+      rewrite fmap_propset_singleton.
+      rewrite bin_to_nat_nat_to_bin. assumption.
+      set_solver.
+    * unfold Syntax.theory_rest_obligation_3.
+      repeat eval_simplifier. cbn.
+      rewrite fmap_propset_singleton.
+      cbn.
+      repeat rewrite_app_ext.
+      set_solver.
   Qed.
 
 End Semantics.
