@@ -254,8 +254,17 @@ Fail Next Obligation.
             !kore_exists (mint_s n) (kore_bevar (In_cons In_nil) =k{R} kore_inj _ _ (kore_bevar In_nil)) --->ₖ
             isMint n ⋅ ⟨kore_bevar In_nil⟩ =k{R} ff ⋅ ⟨⟩
           )
+        ) \/
+        (
+          exists R, pat = existT R (
+            kore_inj _ _ (kore_dv (mint_s 2) "11") =k{R}
+              s ⋅ ⟨s ⋅ ⟨s ⋅ ⟨o ⋅ ⟨⟩⟩⟩⟩
+          )
         )
      ).
+  Next Obligation.
+    intros. econstructor.
+  Defined.
   Next Obligation.
     intros. econstructor.
   Defined.
@@ -822,6 +831,12 @@ Ltac autorewrite_set :=
       exists (nat_to_bin c x25).
       rewrite fmap_propset_singleton.
       rewrite bin_to_nat_nat_to_bin. assumption.
+      set_solver.
+    * unfold Syntax.theory_rest_obligation_3.
+      repeat eval_simplifier. cbn.
+      rewrite fmap_propset_singleton.
+      cbn.
+      repeat rewrite_app_ext.
       set_solver.
   Qed.
 
