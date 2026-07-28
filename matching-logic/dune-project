@@ -1,3 +1,5 @@
 (lang dune 2.5)
 (using coq 0.2)
 (name coq-matching-logic)
+(package
+ (name coq-matching-logic))

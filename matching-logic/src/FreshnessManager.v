@@ -686,7 +686,7 @@ Proof.
     pose proof (fm_evars_nodup _ _ _ _ _ FM).
     clear-H.
     intro.
-    apply elem_of_list_lookup_1 in H0 as [i H0].
+    apply list_elem_of_lookup_1 in H0 as [i H0].
     by specialize (H 0 (S i) x x eq_refl H0 ltac:(lia)).
   }
   split.
@@ -694,7 +694,7 @@ Proof.
     pose proof (fm_avoids_evar _ _ _ _ _ FM).
     clear -H.
     intro.
-    apply elem_of_list_lookup_1 in H0 as [i H0].
+    apply list_elem_of_lookup_1 in H0 as [i H0].
     by specialize (H i 0 x x H0 eq_refl).
   }
   {
@@ -747,7 +747,7 @@ Proof.
     pose proof (fm_svars_nodup _ _ _ _ _ FM).
     clear-H.
     intro.
-    apply elem_of_list_lookup_1 in H0 as [i H0].
+    apply list_elem_of_lookup_1 in H0 as [i H0].
     by specialize (H 0 (S i) X X eq_refl H0 ltac:(lia)).
   }
   split.
@@ -755,7 +755,7 @@ Proof.
     pose proof (fm_avoids_svar _ _ _ _ _ FM).
     clear -H.
     intro.
-    apply elem_of_list_lookup_1 in H0 as [i H0].
+    apply list_elem_of_lookup_1 in H0 as [i H0].
     by specialize (H i 0 X X H0 eq_refl).
   }
   {

@@ -162,7 +162,10 @@ Section syntax.
       free_evars (foldr patt_imp g l) =
       free_evars g ∪ free_evars_of_list l.
   Proof.
-    induction l; intro g; set_solver.
+    induction l; intro g; simpl.
+    - rewrite union_empty_r_L. reflexivity.
+    - rewrite IHl. apply set_eq. intros x.
+      rewrite !elem_of_union. tauto.
   Qed.
 
   (* for bound set variables *)
@@ -1020,7 +1023,7 @@ Defined.
 
 Global Instance wfPattern_countable {Σ : Signature} : Countable wfPattern.
 Proof.
-  apply countable_sig.
+  apply sig_countable.
   solve_decision.
 Defined.
 
