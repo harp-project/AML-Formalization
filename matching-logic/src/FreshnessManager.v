@@ -261,7 +261,7 @@ Proof.
             subst y0.
             apply nesym.
             apply He0.
-            rewrite elem_of_list_lookup.
+            rewrite list_elem_of_lookup.
             exists i.
             exact Hi.
         }
@@ -285,14 +285,14 @@ Proof.
         {
             inversion Hi. subst x0.
             apply He2.
-            eapply elem_of_list_lookup_2.
+            eapply list_elem_of_lookup_2.
             apply Hj.
         }
         {
             inversion Hj. subst y0.
             apply nesym.
             apply He2.
-            eapply elem_of_list_lookup_2.
+            eapply list_elem_of_lookup_2.
             apply Hi.
         }
         {
@@ -321,12 +321,12 @@ Proof.
             }
             assert (Hϕinfmp: ϕ ∈ avoided_patterns).
             {
-                apply elem_of_list_lookup.
+                apply list_elem_of_lookup.
                 exists j. apply Hj.
             }
             clear Hj.
             subst evs.
-            setoid_rewrite elem_of_list_join in He1.
+            setoid_rewrite list_elem_of_join in He1.
             specialize (He1 x).
             apply He1.
             2: reflexivity.
@@ -337,11 +337,11 @@ Proof.
             }
             subst llevs.
             unfold fmap.
-            rewrite elem_of_list_fmap.
+            rewrite list_elem_of_fmap.
             eexists. split. reflexivity.
             subst levs.
             unfold fmap.
-            rewrite elem_of_list_fmap.
+            rewrite list_elem_of_fmap.
             eexists. split. reflexivity.
             exact Hϕinfmp.
         }
@@ -439,7 +439,7 @@ Proof.
             subst y0.
             apply nesym.
             apply He0.
-            rewrite elem_of_list_lookup.
+            rewrite list_elem_of_lookup.
             exists i.
             exact Hi.
         }
@@ -463,14 +463,14 @@ Proof.
         {
             inversion Hi. subst x0.
             apply He2.
-            eapply elem_of_list_lookup_2.
+            eapply list_elem_of_lookup_2.
             apply Hj.
         }
         {
             inversion Hj. subst y0.
             apply nesym.
             apply He2.
-            eapply elem_of_list_lookup_2.
+            eapply list_elem_of_lookup_2.
             apply Hi.
         }
         {
@@ -499,12 +499,12 @@ Proof.
             }
             assert (Hϕinfmp: ϕ ∈ avoided_patterns).
             {
-                apply elem_of_list_lookup.
+                apply list_elem_of_lookup.
                 exists j. apply Hj.
             }
             clear Hj.
             subst svs.
-            setoid_rewrite elem_of_list_join in He1.
+            setoid_rewrite list_elem_of_join in He1.
             specialize (He1 X).
             apply He1.
             2: reflexivity.
@@ -515,11 +515,11 @@ Proof.
             }
             subst llsvs.
             unfold fmap.
-            rewrite elem_of_list_fmap.
+            rewrite list_elem_of_fmap.
             eexists. split. reflexivity.
             subst lsvs.
             unfold fmap.
-            rewrite elem_of_list_fmap.
+            rewrite list_elem_of_fmap.
             eexists. split. reflexivity.
             exact Hϕinfmp.
         }
@@ -605,7 +605,7 @@ Proof.
     {
         rewrite elem_of_disjoint.
         intros x Hx HContra.
-        rewrite elem_of_list_lookup in Hx.
+        rewrite list_elem_of_lookup in Hx.
         destruct Hx as [i Hx].
         destruct FM.
         assert (H : evar_is_fresh_in x ap).
@@ -622,7 +622,7 @@ Proof.
     {
         rewrite elem_of_disjoint.
         intros x Hx HContra.
-        rewrite elem_of_list_lookup in Hx.
+        rewrite list_elem_of_lookup in Hx.
         destruct Hx as [i Hx].
         destruct FM.
         assert (H : svar_is_fresh_in x ap).

@@ -992,9 +992,10 @@ Section with_signature.
   - destruct H as [H _]. exact H.
   - unfold evar_is_fresh_in_list,evar_is_fresh_in in *. simpl in *.
     split;[set_solver|].
-    apply Forall_cons.
     destruct IHl as [IHl1 IHl2].
-    set_solver.
+    apply Forall_cons.
+    + set_solver.
+    + apply IHl1. set_solver.
   - unfold evar_is_fresh_in_list,evar_is_fresh_in in *. simpl in *.
     destruct IHl as [IHl1 IHl2].
     destruct H as [H1 H2].
@@ -2962,11 +2963,31 @@ Section with_signature.
       reflexivity.
       case_match. lia. reflexivity.
     * rewrite negb_or. rewrite negb_or in H0.
-      rewrite IHφ1. 1-3: wf_auto2.
-      rewrite IHφ2; wf_auto2.
+      assert (Hφ1 : ~~ bsvar_occur (bsvar_subst ψ x φ1) dbi).
+      { apply IHφ1.
+        - wf_auto2.
+        - wf_auto2.
+        - wf_auto2. }
+      assert (Hφ2 : ~~ bsvar_occur (bsvar_subst ψ x φ2) dbi).
+      { apply IHφ2.
+        - wf_auto2.
+        - wf_auto2.
+        - wf_auto2. }
+      rewrite Hφ1. rewrite Hφ2.
+      reflexivity.
     * rewrite negb_or. rewrite negb_or in H0.
-      rewrite IHφ1. 1-3: wf_auto2.
-      rewrite IHφ2; wf_auto2.
+      assert (Hφ1 : ~~ bsvar_occur (bsvar_subst ψ x φ1) dbi).
+      { apply IHφ1.
+        - wf_auto2.
+        - wf_auto2.
+        - wf_auto2. }
+      assert (Hφ2 : ~~ bsvar_occur (bsvar_subst ψ x φ2) dbi).
+      { apply IHφ2.
+        - wf_auto2.
+        - wf_auto2.
+        - wf_auto2. }
+      rewrite Hφ1. rewrite Hφ2.
+      reflexivity.
     * rewrite IHφ; wf_auto2.
     * rewrite IHφ; wf_auto2.
   Qed.
