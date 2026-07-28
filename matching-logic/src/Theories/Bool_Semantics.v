@@ -24,7 +24,7 @@ End with_model.
   }.
 
   Instance default_bool_syntax : Bool_Syntax.Syntax := {
-     inj := id;
+     sym_inj := id;
      imported_sorts := 
   }.
 

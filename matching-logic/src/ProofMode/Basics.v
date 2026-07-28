@@ -39,7 +39,7 @@ Proof.
 Defined.
 
 Definition find_hyp {Σ : Signature} (name : string) (hyps : hypotheses) : option (nat * named_hypothesis)%type
-:= stdpp.list.list_find (has_name name) hyps.
+:= list_find (has_name name) hyps.
 
 
 Record MLGoal {Σ : Signature} : Type := mkMLGoal

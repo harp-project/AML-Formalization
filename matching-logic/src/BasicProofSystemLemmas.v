@@ -233,17 +233,18 @@ Proof.
            ++ eapply MP.
               ** eapply MP.
                  --- apply(P2 _ A B C ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
-                 --- unshelve (eapply(P1 _ _ (A ---> B ---> C) _ _)); wf_auto2.
-              ** apply P2; wf_auto2.
+                 --- unshelve (eapply(P1 _ _ (A ---> B ---> C) _ _)).
+                     all: solve [wf_auto2].
+              ** apply P2. all: solve [wf_auto2].
         -- eapply MP.
            ++ apply t1.
            ++ apply(P2 _ ABC ((A ---> B) ---> (A ---> C)) (B ---> (A ---> B) ---> (A ---> C)) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
       * eapply MP.
         -- eapply MP.
            ++ apply(P2 _ B (A ---> B) (A ---> C) ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
-           ++ apply(P1 _ _ ABC); wf_auto2.
-        -- apply P2; wf_auto2.
-    + apply P2; wf_auto2.
+           ++ apply(P1 _ _ ABC). all: solve [wf_auto2].
+        -- apply P2. all: solve [wf_auto2].
+    + apply P2. all: solve [wf_auto2].
 Defined.
 
 Lemma reorder_meta {Σ : Signature} {Γ : Theory} {A B C : Pattern} {i : ProofInfo} :
@@ -269,12 +270,13 @@ Proof.
   intros WFA WFB WFC.
   apply reorder_meta;[wf_auto2|wf_auto2|wf_auto2|].
   eapply MP.
-  - apply(P1 _ (B ---> C) A); wf_auto2.
+  - apply(P1 _ (B ---> C) A). all: solve [wf_auto2].
   - eapply MP.
     + eapply MP.
-      * apply (P2 _ A B C); wf_auto2.
-      * apply (P1 _ ((A ---> B ---> C) ---> (A ---> B) ---> A ---> C) (B ---> C)); wf_auto2.
-    + apply P2; wf_auto2.
+      * apply (P2 _ A B C). all: solve [wf_auto2].
+      * apply (P1 _ ((A ---> B ---> C) ---> (A ---> B) ---> A ---> C) (B ---> C)).
+        all: solve [wf_auto2].
+    + apply P2. all: solve [wf_auto2].
 Defined.
 
 Lemma syllogism_meta {Σ : Signature} {Γ : Theory} {A B C : Pattern} {i : ProofInfo} :
@@ -292,7 +294,7 @@ Proof.
     + exact H3.
     + apply reorder_meta;[wf_auto2|wf_auto2|wf_auto2|].
       apply useBasicReasoning.
-      apply syllogism; wf_auto2.
+      apply syllogism. all: solve [wf_auto2].
 Defined.
 
 Lemma modus_ponens {Σ : Signature} (Γ : Theory) (A B : Pattern) :
@@ -309,7 +311,7 @@ Proof.
       * apply (A_impl_A _ (A ---> B) ltac:(wf_auto2)).
       * eapply (P2 _ (A ---> B) A B ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
     + apply reorder_meta;[wf_auto2|wf_auto2|wf_auto2|].
-      apply syllogism; wf_auto2.
+      apply syllogism. all: solve [wf_auto2].
 Defined.
 
 Lemma not_not_intro {Σ : Signature} (Γ : Theory) (A : Pattern) :
@@ -414,15 +416,17 @@ Proof.
         -- eapply MP.
            ++ exact H0.
            ++ apply useBasicReasoning. 
-              eapply (P1 _ (C ---> D) B _ _).
+              eapply (P1 _ (C ---> D) B
+                ltac:(wf_auto2) ltac:(wf_auto2)).
         -- apply useBasicReasoning.  
-            eapply (P2 _ B C D _ _ _).
+            eapply (P2 _ B C D
+              ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
       * apply useBasicReasoning. 
-        eapply (P1 _ ((B ---> C) ---> B ---> D) A _ _).
+        eapply (P1 _ ((B ---> C) ---> B ---> D) A
+          ltac:(wf_auto2) ltac:(wf_auto2)).
     + apply useBasicReasoning. 
-      eapply (P2 _ A (B ---> C) (B ---> D) _ _ _).
-      Unshelve.
-      all: wf_auto2.
+      eapply (P2 _ A (B ---> C) (B ---> D)
+        ltac:(wf_auto2) ltac:(wf_auto2) ltac:(wf_auto2)).
 Defined.
 
 Lemma bot_elim {Σ : Signature} (Γ : Theory) (A : Pattern) :
@@ -535,9 +539,11 @@ Lemma double_neg_elim {Σ : Signature} (Γ : Theory) (A B : Pattern) :
 Proof.
   intros WFA WFB.
   eapply syllogism_meta.
-  5: apply P4.
-  4: apply P4.
-  all: wf_auto2.
+  - wf_auto2.
+  - wf_auto2.
+  - wf_auto2.
+  - apply P4.
+  - apply P4.
 Defined.
 
 Lemma double_neg_elim_meta {Σ : Signature} (Γ : Theory) (A B : Pattern) (i : ProofInfo) :

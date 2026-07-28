@@ -450,7 +450,7 @@ Section sec.
             simp PMPattern_size.
             rewrite PMPattern_size_clause_2_PMPattern_size_vec_spec.
             remember (vec_to_list args) as args'.
-            apply elem_of_list_lookup_1 in pf.
+            apply list_elem_of_lookup_1 in pf.
             destruct pf as [i Hi].
             pose proof (Hargs := take_drop_middle args' i p Hi).
             subst.

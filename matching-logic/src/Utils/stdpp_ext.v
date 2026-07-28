@@ -3,6 +3,8 @@ From Coq Require Export ssreflect ssrfun ssrbool String.
 From Coq.Logic Require Import Classical_Prop Classical_Pred_Type Eqdep_dec.
 From stdpp Require Export list propset sets pmap gmap mapset coGset.
 Export list. (* to overwrite module qualifiers *)
+From stdpp Require Import list.
+Definition option_last {A} : list A -> option A := @last A.
 
 Lemma foldl_fold_left :
   forall {A B} f (l : list A) (b : B),
@@ -84,9 +86,9 @@ Proof.
   { reflexivity. }
   rewrite -> Hk at 1.
   split; intros H'.
-  + apply elem_of_list_fmap_2_inj in H'. apply H'.
-    apply inj_unit_r.
-  + apply elem_of_list_fmap_1. assumption.
+  + apply list_elem_of_fmap in H' as [[k' []] [Hkk' H']].
+    simpl in Hkk'. subst k'. exact H'.
+  + apply list_elem_of_fmap_2. assumption.
 Qed.
 
 Lemma mapset_elements_to_set `{Countable K} (X : gset K) : list_to_set (mapset_elements X) = X.
@@ -119,7 +121,7 @@ Qed.
 
 (* [1,2,3,4,5] -> [5,4,3,2,1] -> [4,3,2,1] -> [1,2,3,4] *)
 Lemma rev_tail_rev_app_last A (l : list A) (xlast : A):
-  stdpp.list.last l = Some xlast ->
+  option_last l = Some xlast ->
   (rev (tail (rev l)) ++ [xlast]) = l.
 Proof.        
   move: xlast.
@@ -167,7 +169,7 @@ Proof.
 Qed.
 
 
-Lemma last_rev_head A (l : list A) (x : A) : stdpp.list.last (x :: l) = hd_error (rev l ++ [x]).
+Lemma last_rev_head A (l : list A) (x : A) : option_last (x :: l) = hd_error (rev l ++ [x]).
 Proof.
   remember (length l) as len.
   assert (Hlen: length l <= len).
@@ -186,7 +188,7 @@ Proof.
 Qed.
 
 (* The same lemma for stdpp's `reverse *)
-Lemma last_reverse_head A (l : list A) (x : A) : stdpp.list.last (x :: l) = hd_error (reverse l ++ [x]).
+Lemma last_reverse_head A (l : list A) (x : A) : list.last (x :: l) = hd_error (reverse l ++ [x]).
 Proof.
   remember (length l) as len.
   assert (Hlen: length l <= len).
@@ -247,10 +249,11 @@ Definition tail_skip_eq {A} {eqdec: EqDecision A} (l : list (A * A)) :=
   reverse (skip_eq (reverse l)).
 
 Lemma tail_skip_eq_last_not_eq {A} {eqdec: EqDecision A} (l : list (A * A)) :
-  ∀ x y, stdpp.list.last (tail_skip_eq l) = Some (x, y) -> x <> y.
+  ∀ x y, option_last (tail_skip_eq l) = Some (x, y) -> x <> y.
 Proof.
   intros x y H.
   unfold tail_skip_eq in H.
+  unfold option_last in H.
   rewrite last_reverse in H.
   apply skip_eq_head_not_eq in H.
   apply H.
@@ -294,7 +297,7 @@ Abort.
 
 Lemma common_length_rev {A} {eqdec: EqDecision A} (x y : A) (xs ys : list A) :
   common_length (reverse (x::xs)) (y::ys) =
-  match (decide ((stdpp.list.last (x::xs)) = Some y)) with
+  match (decide ((option_last (x::xs)) = Some y)) with
   | left _ => S (common_length (reverse (tail (reverse (x::xs)))) ys)
   | right _ => 0
   end.
@@ -307,7 +310,7 @@ Proof.
 Abort.
 
 Lemma last_app_singleton {A} (m : A) (l : list A) :
-  stdpp.list.last (l ++ [m]) = Some m.
+  list.last (l ++ [m]) = Some m.
 Proof.
   induction l.
   - reflexivity.
@@ -333,24 +336,24 @@ Proof.
     move: ys H.
     induction xs as [|x xs]; intros ys H.
     + rewrite zip_with_nil_r.
-      apply stdpp.list.Forall_nil.
+      apply Forall_nil.
       exact I.
     + destruct ys as [|y ys].
-      { simpl. apply stdpp.list.Forall_nil. exact I. }
+      { simpl. apply Forall_nil. exact I. }
       simpl in H. simpl.
       inversion H. subst. simpl in H2.
-      apply stdpp.list.Forall_cons. split.
+      apply Forall_cons. split.
       { simpl. apply H2. }
       apply IHxs. apply H3.
   - intros H.
     move: ys H.
     induction xs as [|x xs]; intros ys H.
-    + simpl. apply stdpp.list.Forall_nil. exact I.
+    + simpl. apply Forall_nil. exact I.
     + destruct ys as [|y ys].
-      { simpl. apply stdpp.list.Forall_nil. exact I. }
+      { simpl. apply Forall_nil. exact I. }
       simpl in H. simpl.
       inversion H. subst. simpl in H2.
-      apply stdpp.list.Forall_cons. split.
+      apply Forall_cons. split.
       { simpl. apply H2. }
       apply IHxs. apply H3.
 Qed.
@@ -513,17 +516,17 @@ Proof.
     { rewrite drop_nil. apply H. }
     simpl in Hlen. lia.
   - destruct l as [|x l], n.
-    { simpl. apply stdpp.list.Forall_nil. exact I. }
-    { rewrite drop_nil. apply stdpp.list.Forall_nil. exact I. }
+    { simpl. apply Forall_nil. exact I. }
+    { rewrite drop_nil. apply Forall_nil. exact I. }
     { simpl. apply H. }
     simpl. apply IHlen. simpl in Hlen. lia.
     inversion H. assumption.
 Qed.
 
 Lemma last_drop {A : Type} (l : list A) (n : nat) (x : A) :
-  stdpp.list.last l = Some x ->
+  option_last l = Some x ->
   n < length l ->
-  stdpp.list.last (drop n l) = Some x.
+  option_last (drop n l) = Some x.
 Proof.
   remember (length l) as len.
   assert (Hlen: length l <= len).
@@ -629,7 +632,7 @@ Proof.
 Qed.
 
 Lemma list_last_length {A : Type} (l : list A):
-  stdpp.list.last l = l !! (length l - 1).
+  list.last l = l !! (length l - 1).
 Proof.
   remember (length l) as len.
   rewrite Heqlen.
@@ -682,9 +685,9 @@ Proof.
 Qed.
 
 Lemma last_tail {A : Type} (l : list A) (lst m : A) :
-  stdpp.list.last l = Some lst ->
+  option_last l = Some lst ->
   head (tail l) = Some m ->
-  stdpp.list.last (tail l) = Some lst.
+  option_last (tail l) = Some lst.
 Proof.
   remember (length l) as len.
   assert (Hlen: length l <= len).
@@ -1140,4 +1143,3 @@ Lemma propset_top_elem_of {A}:
 Proof.
   set_solver.
 Qed.
-

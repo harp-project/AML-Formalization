@@ -527,7 +527,17 @@ Section with_model.
 
       unfold evar_open. mlSortedSimpl.
       rewrite eval_forall_of_sort_predicate.
-      1: { eauto 8. (* TODO be more explicit. Have a tactic for this kind of goals. *) }
+      1: {
+        match goal with
+        | [ |- M_predicate _ (evar_open _ ?x _) ] => remember x
+        end.
+        unfold evar_open. mlSimpl.
+        case_match; try lia.
+        case_match; try lia.
+        repeat apply M_predicate_impl.
+        all: try apply M_predicate_bott.
+        all: apply (T_predicate_defined _ M M_satisfies_theory).
+      }
       remember
       (fresh_evar
              (! patt_equal
@@ -890,4 +900,3 @@ Hint Resolve M_predicate_exists_of_sort : core.
 
 #[export]
 Hint Resolve M_predicate_forall_of_sort : core.
-
