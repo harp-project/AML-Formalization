@@ -632,7 +632,7 @@ Proof.
 Qed.
 
 Lemma list_last_length {A : Type} (l : list A):
-  option_last l = l !! (length l - 1).
+  list.last l = l !! (length l - 1).
 Proof.
   remember (length l) as len.
   rewrite Heqlen.

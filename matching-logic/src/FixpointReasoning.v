@@ -221,7 +221,7 @@ Section with_signature.
       Qed.
 
       Definition is_witnessing_sequence_old (m : Domain M) (l : list (Domain M)) :=
-        (last l = Some m) /\
+        (list.last l = Some m) /\
         (match l with
          | [] => False
          | m₀::ms => (m₀ ∈ @eval Σ M ρ base)
@@ -241,7 +241,7 @@ Section with_signature.
       (* This sequence is the reversed version from the informal introduction in line 139 
          For example, for Nat model elements, the witnessing sequence for 5 is [5,4,3,2,1,0] *)
       Definition is_witnessing_sequence (m : Domain M) (l : list (Domain M)) :=
-        (∃ lst, last l = Some lst /\ lst ∈ @eval Σ M ρ base)
+        (∃ lst, list.last l = Some lst /\ lst ∈ @eval Σ M ρ base)
           /\
           hd_error l = Some m
           /\
@@ -421,49 +421,6 @@ Section with_signature.
               (* TODO: would this be easier to use/prove/understand to
                 have `m' ∈ app_ext (eval ρ step) {[m]}` instead? *)
         ) <-> (is_witnessing_sequence m' (m'::l) /\ l ≠ []).
-      Proof.
-        split.
-        - intros [[[lst [Hlst Hbase] ] [Hhd Hwit] ] [step' [Hstep' Hm'] ] ].
-          split.
-          2: { destruct l. simpl in Hhd. inversion Hhd. discriminate. }
-          move: m Hhd m' step' Hm' Hstep'.
-          induction l; intros m Hhd m' step' Hm' Hstep'.
-          + simpl in Hhd. inversion Hhd.
-          + simpl in Hhd. inversion Hhd. subst a. clear Hhd.
-            unfold is_witnessing_sequence.
-            destruct l.
-            { simpl in Hlst. inversion Hlst. subst m. clear Hlst.
-              split.
-              { exists lst. simpl. split. reflexivity. apply Hbase. }
-              simpl. split. reflexivity. apply Forall_cons.
-              split. exists step'. exists lst. split.
-              apply Hstep'. split. constructor. apply Hm'.
-              apply Forall_nil. exact I.
-            }
-            split.
-            { exists lst. split. simpl. simpl in Hlst. apply Hlst. apply Hbase. }
-            split.
-            { reflexivity. }
-            simpl in Hwit. simpl.
-            apply Forall_cons.
-            simpl in IHl. simpl in Hlst.
-            specialize (IHl Hlst).
-            inversion Hwit. subst. clear Hwit.
-            specialize (IHl H2). clear Hlst H2.
-            split.
-            { exists step'. exists m. split. apply Hstep'. split. constructor. apply Hm'. }
-            apply Forall_cons.
-            split.
-            { apply H1. }
-            specialize (IHl d erefl).
-            destruct H1 as [step'' [d'' [Hstep'' [Hd'' Hstep''d''] ] ] ].
-            inversion Hd''. subst d''. clear Hd''.
-            specialize (IHl m step'' Hstep''d'' Hstep'').
-            unfold is_witnessing_sequence in IHl.
-            simpl in IHl.
-            destruct IHl as [_ [_ Hforall] ].
-            inversion Hforall. subst. apply H2.
-        -
       Abort.
 
 
@@ -472,7 +429,7 @@ Section with_signature.
         (is_witnessing_sequence_old m (x::l) /\
         ∃ step', (step' ∈ eval ρ step /\
         m' ∈ app_interp _ step' m)) <->
-        (last (x::l) = Some m /\ is_witnessing_sequence_old m' ((x::l) ++ [m'])).
+        (list.last (x::l) = Some m /\ is_witnessing_sequence_old m' ((x::l) ++ [m'])).
       Proof.
         split.
         -
@@ -487,7 +444,7 @@ Section with_signature.
           { apply Hwit2. }
 
           destruct l.
-          { simpl. apply Forall_cons. split. 2: { apply Forall_nil. exact I. }
+          { simpl. apply Forall_cons. 2: { apply Forall_nil. }
             exists step'. exists x. split.
             { apply Hstep'. }
             split.
@@ -496,19 +453,18 @@ Section with_signature.
           }
           simpl.
           apply Forall_cons.
-          simpl in Hwit3. inversion Hwit3. subst. clear Hwit3.
-          rename H1 into Hd. rename H2 into Hwit.
-          split.
-          { apply Hd. } clear Hd.
+          simpl in Hwit3.
+          { apply (Forall_inv Hwit3). }
 
+          pose proof (Forall_inv_tail Hwit3) as Hwit.
+          clear Hwit3.
           move: d Hwit1 Hwit.
           induction l.
           + intros D Hm _.
             simpl. simpl in Hm. inversion Hm. subst.
             clear Hm.
             apply Forall_cons.
-            split.
-            2: { apply Forall_nil. exact I. }
+            2: { apply Forall_nil. }
             exists step'. exists m. split.
             { apply Hstep'. }
             split.
@@ -517,7 +473,6 @@ Section with_signature.
           + intros d Hlast Hwit. simpl.
             inversion Hwit. subst.
             apply Forall_cons.
-            split.
             { apply H1. }
             apply IHl. simpl in Hlast. simpl. apply Hlast.
             apply H2.
@@ -545,7 +500,7 @@ Section with_signature.
             2: { simpl in Hlen. lia.  }
             simpl. simpl in Hall.
             split.
-            { apply Forall_nil. exact I. }
+            { apply Forall_nil. }
             inversion Hall. subst. clear Hall. clear H2.
             destruct H1 as [step' [m'' [Hstep' [Hm'm'' Hstep'm''] ] ] ].
             inversion Hm'm''. subst. clear Hm'm''.
@@ -560,7 +515,7 @@ Section with_signature.
               clear H2.
               simpl.
               split.
-              { apply Forall_nil. exact I. }
+              { apply Forall_nil. }
               destruct H1 as [step' Hstep'].
               exists step'.
               destruct Hstep' as [m'' [Hstep' [Hmm'' Hm''] ] ].
@@ -571,14 +526,16 @@ Section with_signature.
             }
             simpl in Hall. simpl in IHlen. simpl in Hlast.
             inversion Hall. subst. clear Hall.
-            specialize (IHlen x' l' Hlast H2).
+            assert (Hlen' : length l' <= len) by (simpl in Hlen; lia).
+            specialize (IHlen x' l' Hlast H2 Hlen').
             simpl.
-            rewrite Forall_cons.
-            apply and_assoc.
+            destruct IHlen as [IHfor IHex].
             split.
-            { apply H1. }
-            apply IHlen.
-            simpl in Hlen. lia.
+            { apply Forall_cons.
+              { apply H1. }
+              apply IHfor.
+            }
+            apply IHex.
       Qed.
 
       Definition witnessed_elements_old : propset (Domain M) :=
@@ -720,7 +677,6 @@ Section with_signature.
                 split.
                 { apply Hd. }
                 apply Forall_nil.
-                exact I.
               }
               apply Hm.
             }
@@ -776,7 +732,7 @@ Section with_signature.
             simpl in P.
             rewrite -H2 in P.
 
-            assert (Hm : (match l with [] => Some d1 | _ :: _ => last l end ) = Some mprev).
+            assert (Hm : (match l with [] => Some d1 | _ :: _ => list.last l end ) = Some mprev).
             {
               clear P Heqrev H1 H3 H4 mp.
               destruct l.
