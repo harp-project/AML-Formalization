@@ -188,7 +188,7 @@ Proof.
 Qed.
 
 (* The same lemma for stdpp's `reverse *)
-Lemma last_reverse_head A (l : list A) (x : A) : option_last (x :: l) = hd_error (reverse l ++ [x]).
+Lemma last_reverse_head A (l : list A) (x : A) : list.last (x :: l) = hd_error (reverse l ++ [x]).
 Proof.
   remember (length l) as len.
   assert (Hlen: length l <= len).
@@ -310,7 +310,7 @@ Proof.
 Abort.
 
 Lemma last_app_singleton {A} (m : A) (l : list A) :
-  option_last (l ++ [m]) = Some m.
+  list.last (l ++ [m]) = Some m.
 Proof.
   induction l.
   - reflexivity.

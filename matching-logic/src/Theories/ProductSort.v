@@ -124,7 +124,7 @@ Section axioms.
         NAAxiom := axiom;
     |}.
     Next Obligation.
-    destruct name; simpl; wf_auto2.
+    destruct name; simpl. all: solve [wf_auto2].
     Qed.
 
     Definition theory := Definedness_Syntax.theory ∪
