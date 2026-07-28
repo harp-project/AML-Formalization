@@ -35,6 +35,7 @@ Require Import
 
 Import MatchingLogic.Logic.Notations.
 Import MatchingLogic.Semantics.Notations.
+Import MatchingLogic.Semantics.
 
 Open Scope ml_scope.
 
@@ -121,50 +122,10 @@ Section natbool.
   Definition get_signature {Σ : Signature} (m : @Model Σ) : Signature := Σ.
 
   Instance def_syntax : @Definedness_Syntax.Syntax (get_signature DefinedNatBoolModel) := {
-    inj _ := inr ();
+    sym_inj _ := inr ();
   }.
 
   Goal DefinedNatBoolModel ⊨ᵀ Definedness_Syntax.theory.
-  Proof.
-    unfold theory, named_axioms, theory_of_NamedAxioms. simpl.
-    unfold satisfies_theory. intros. apply elem_of_PropSet in H.
-    destruct H, x. subst. cbn. unfold satisfies_model. intros.
-    unfold patt_defined, p_x, ev_x. simp eval.
-    unfold app_ext. simpl. unshelve eapply leibniz_equiv.
-    exact (@propset_leibniz_equiv _ DefinedNatBoolModel).
-    eapply set_equiv. intros. split; intros. set_solver.
-    rewrite elem_of_PropSet.
-    exists (inr ()), (evar_valuation ρ (evar_fresh [])).
-    split. set_solver. split. set_solver.
-    case_match. set_solver.
-    (* This condition is unsolvable. It comes from
-     * Mext def -> obligation 1 -> case 4 and
-     * PlainDefinedness def -> app_interp.
-     * These definitions both seen sensible on their own.
-     * Use the second models app_interp if both elements are
-     * from the second model, then wrap it in inr. Also
-     * def $ def is full set (right?). However, when we combine
-     * these, we get something wrong. I suspect this is because
-     * def $ def needs to be full set even AFTER gluing the models,
-     * and not inr <$> full set. We could take as extra params in
-     * ModelCombiners two functions that specifiy these special
-     * behaviours, maybe even functions returning options,
-     * so we retain the default behaviour of delegating to
-     * the sets underlying app_interp. This raises two questions:
-     * - Are there any other cases where this is needed or is this
-     * special to definedness? Should definedness be treated as
-     * special and we don't need this change elsewhere?
-     * ∙ PB: Yes, potentially generic datatypes would raise this issue too.
-       For example, lists, maps, sets. Depending on the element's sort
-       you might need to extend the behaviour of list/set/etc. symbols.
-     * - If we override the models original app_interp, do we not
-     * lose any reasoning we did about the original one? Is there
-     * a way to retain the proofs and allow special behaviour?
-     * ∙ PB: This is a main question. I think, you can only retain the original
-         behaviour, if you override (or rather, extend) the behaviour in a
-         correct way. For example, in case of definedness, you extend its
-         interpretation in M₂ to full.
-     *)
   Abort.
 End natbool.
 
