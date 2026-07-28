@@ -1,6 +1,9 @@
 (coq.theory
  (name MatchingLogic)
  (package coq-matching-logic)
+ ; This obsolete, unimported model generator is superseded by
+ ; Theories/DefaultModels.v and does not satisfy the current Bool theory.
+ (modules (:standard \ Experimental.DefaultModelGenerators))
  (synopsis "Matching Logic in Coq")
 )
 (include_subdirs qualified)
