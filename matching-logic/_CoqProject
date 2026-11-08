@@ -43,6 +43,8 @@ src/ProofMode/Basics.v
 src/ProofMode/Propositional.v
 src/ProofMode/Firstorder.v
 src/ProofMode/FixPoint.v
+src/ProofMode/FixpointRules.v
+src/ProofMode/WrapUnwrap.v
 src/ProofMode/Reshaper.v
 src/ProofMode/Misc.v
 src/ProofMode/MLPM.v
